@@ -2951,17 +2951,7 @@ async function createCheckoutSession({ successUrl, cancelUrl, customerEmail, ins
     packId,
     appOrigin,
   });
-  let session;
-  try {
-    session = await stripe.checkout.sessions.create(sessionPayload);
-  } catch (err) {
-    if (!sessionPayload.branding_settings || !String(err && err.message).includes('branding_settings')) {
-      throw err;
-    }
-    const fallbackPayload = { ...sessionPayload };
-    delete fallbackPayload.branding_settings;
-    session = await stripe.checkout.sessions.create(fallbackPayload);
-  }
+  const session = await createSessionDroppingRejectedOptionals(stripe, sessionPayload);
 
   appendFunnelEvent({
     stage: 'acquisition',
@@ -2972,6 +2962,26 @@ async function createCheckoutSession({ successUrl, cancelUrl, customerEmail, ins
     metadata: { ...checkoutMetadata, packId },
   });
   return { sessionId: session.id, url: session.url, localMode: false, traceId: resolvedTraceId, metadata: checkoutMetadata };
+}
+
+// Optional fields Stripe can refuse for account-level reasons (branding not set
+// up; Checkout promotional-consent terms not yet accepted in the Dashboard).
+// Dropping one must never block a buyer from reaching checkout.
+const OPTIONAL_CHECKOUT_FIELDS = ['branding_settings', 'consent_collection'];
+
+async function createSessionDroppingRejectedOptionals(stripe, payload) {
+  let attempt = payload;
+  for (;;) {
+    try {
+      return await stripe.checkout.sessions.create(attempt);
+    } catch (err) {
+      const message = String((err && err.message) || '');
+      const rejected = OPTIONAL_CHECKOUT_FIELDS.find((field) => field in attempt && message.includes(field));
+      if (!rejected) throw err;
+      attempt = { ...attempt };
+      delete attempt[rejected];
+    }
+  }
 }
 
 function buildCheckoutSessionPayload({ successUrl, cancelUrl, customerEmail, checkoutMetadata, packId = null, appOrigin } = {}) {
@@ -3022,6 +3032,9 @@ function buildCheckoutSessionPayload({ successUrl, cancelUrl, customerEmail, che
     line_items: lineItems,
     allow_promotion_codes: true,
     after_expiration: { recovery: { enabled: true, allow_promotion_codes: true } },
+    // Stripe only emails an abandoned-cart recovery link to buyers who gave
+    // promotional consent; without this, recovery above never reaches anyone.
+    consent_collection: { promotions: 'auto' },
     branding_settings: buildCheckoutBrandingSettings(appOrigin),
     metadata: serializeStripeMetadata({
       ...checkoutMetadata,
@@ -4250,6 +4263,7 @@ function handleGithubWebhook(event, provenance = {}) {
 module.exports = {
   CONFIG, createCheckoutSession, getCheckoutSessionStatus, provisionApiKey, rotateApiKey, validateApiKey, recordUsage, disableCustomerKeys, handleWebhook, verifyWebhookSignature, verifyGithubWebhookSignature, verifyPayPalWebhookSignature, recordGithubMarketplaceWebhookDelivery, recordPayPalWebhookDelivery, handleGithubWebhook, loadKeyStore, appendFunnelEvent, appendRevenueEvent, loadFunnelLedger, loadRevenueLedger, loadGithubMarketplaceWebhookLedger, loadPayPalWebhookLedger, loadNewsletterSubscribers, loadResolvedRevenueEvents, getFunnelAnalytics, getBusinessAnalytics, getBillingSummary, getBillingSummaryLive, getBillingSummariesLive, listStripeReconciledRevenueEvents, repairGithubMarketplaceRevenueLedger,
   _buildCheckoutSessionPayload: buildCheckoutSessionPayload,
+  _createSessionDroppingRejectedOptionals: createSessionDroppingRejectedOptionals,
   _buildTrialActivationEmail: buildTrialActivationEmail,
   _sendTrialActivationEmail: sendTrialActivationEmail,
   _isDiagnosticCheckoutSession: isDiagnosticCheckoutSession,

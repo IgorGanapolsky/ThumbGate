@@ -111,6 +111,7 @@ const {
 } = require('../../scripts/internal-agent-bootstrap');
 const {
   classifyRequester,
+  isHumanCheckoutNavigation,
 } = require('../../scripts/bot-detection');
 const {
   recordCheckoutFunnelEvent,
@@ -3265,7 +3266,11 @@ function serveTrackedLinkRedirect({ req, res, parsed, hostedConfig, isHeadReques
 
   const { FEEDBACK_DIR } = getFeedbackPaths();
   const journeyState = resolveJourneyState(req, parsed);
-  const botClassification = classifyRequester(req.headers);
+  const requesterClassification = classifyRequester(req.headers);
+  const botClassification = requesterClassification.isBot
+    || isHumanCheckoutNavigation(req.headers, hostedConfig.appOrigin)
+    ? requesterClassification
+    : { isBot: true, reason: 'no_browser_navigation' };
   if (target.botDeflectPath && botClassification.isBot) {
     const deflectUrl = new URL(target.botDeflectPath, hostedConfig.appOrigin);
     appendTrackedLinkQueryParams(deflectUrl, parsed, target);
