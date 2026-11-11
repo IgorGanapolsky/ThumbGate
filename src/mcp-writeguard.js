@@ -143,17 +143,23 @@ function classifyMcpTool(toolName, customPolicies = {}) {
  * @returns {string}
  */
 function scrubSensitiveString(value) {
-  let out = value;
-  if (/-----BEGIN\s+(RSA|OPENSSH|PRIVATE)\s+KEY-----/i.test(out)) {
+  let out = String(value);
+  if (/-----BEGIN\s+(?:RSA\s+|EC\s+|OPENSSH\s+)?PRIVATE\s+KEY-----/i.test(out)) {
     return '[REDACTED_PRIVATE_KEY]';
   }
-  if (/\bbearer\s+[a-zA-Z0-9_\-.]{20,}/i.test(out)) {
-    out = out.replace(/\bbearer\s+[a-zA-Z0-9_\-.]{20,}/gi, 'Bearer [REDACTED]');
+  out = out
+    .replace(/\b(?:sk|rk)_(?:live|test)_[0-9a-zA-Z]{16,}\b/g, '[REDACTED_STRIPE_KEY]')
+    .replace(/\bsk-(?:proj|ant)-[0-9a-zA-Z_-]{16,}\b/g, '[REDACTED_LLM_KEY]')
+    .replace(/\bAIza[0-9A-Za-z_-]{35}\b/g, '[REDACTED_GOOGLE_KEY]')
+    .replace(/\bAKIA[0-9A-Z]{16}\b/g, '[REDACTED_AWS_KEY]')
+    .replace(/\b(?:gh[pousr]_[A-Za-z0-9_]{20,}|github_pat_[A-Za-z0-9_]{22,})\b/g, '[REDACTED_GITHUB_TOKEN]')
+    .replace(/\bxox[baprs]-[0-9A-Za-z-]{16,}\b/g, '[REDACTED_SLACK_TOKEN]');
+  if (/\bbearer\s+[a-zA-Z0-9_\-.]{16,}/i.test(out)) {
+    out = out.replace(/\bbearer\s+[a-zA-Z0-9_\-.]{16,}/gi, 'Bearer [REDACTED]');
   }
   if (/\bbasic\s+[a-zA-Z0-9+/=_-]{8,}/i.test(out)) {
     out = out.replace(/\bbasic\s+[a-zA-Z0-9+/=_-]{8,}/gi, 'Basic [REDACTED]');
   }
-  // Cookie / Set-Cookie style values (name=value pairs with auth-ish names)
   if (
     /(?:^|;\s*)(?:session|sid|token|auth|jwt|refresh)[^=]*=[^;]+/i.test(out)
     || (/^[^=;\s]+=[^;]+(?:;\s*[^=;\s]+=[^;]+)*$/.test(out.trim())
@@ -354,19 +360,23 @@ const STRIPE_OFFER_CATALOG = Object.freeze({
 });
 
 const DETERMINISTIC_SECRET_PATTERNS = [
-  /\bsk_(?:live|test)_[0-9a-zA-Z]{16,}\b/,
-  /\brk_(?:live|test)_[0-9a-zA-Z]{16,}\b/,
+  /\b(?:sk|rk)_(?:live|test)_[0-9a-zA-Z]{16,}\b/,
+  /\bsk-(?:proj|ant)-[0-9a-zA-Z_-]{16,}\b/,
+  /\bAIza[0-9A-Za-z_-]{35}\b/,
   /\bAKIA[0-9A-Z]{16}\b/,
-  /\bgh[pousr]_[A-Za-z0-9_]{20,}\b/,
+  /\b(?:gh[pousr]_[A-Za-z0-9_]{20,}|github_pat_[A-Za-z0-9_]{22,})\b/,
   /\bxox[baprs]-[0-9A-Za-z-]{16,}\b/,
+  /\bbearer\s+[a-zA-Z0-9_\-.]{20,}/i,
   /-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----/,
 ];
 
 const DETERMINISTIC_DESTRUCTIVE_PATTERNS = [
-  /\brm\s+-[a-zA-Z]*r[a-zA-Z]*f[a-zA-Z]*\s+(?:\/|~|\$HOME|\*)(?=$|[\s"'`;|&)])/,
-  /\bgit\s+push\b[^\n]*--force(?:-with-lease)?\b[^\n]*\b(?:main|master)\b/,
-  /\bDROP\s+(?:DATABASE|TABLE)\b/i,
+  /\brm\s+(?:-[a-zA-Z]+\s+)*(?:-[a-zA-Z]*r[a-zA-Z]*f[a-zA-Z]*|-[a-zA-Z]*f[a-zA-Z]*r[a-zA-Z]*|-r\s+-f|-f\s+-r)\s+(?:\/|~|\$HOME|\*)(?=$|[\s"'`;|&)])/,
+  /\bgit\s+push\b[^\n]*(?:(?:--force(?:-with-lease)?|-f)\b[^\n]*\b(?:main|master)\b|\b(?:main|master)\b[^\n]*(?:--force(?:-with-lease)?|-f)\b)/,
+  /\b(?:DROP|TRUNCATE)\s+(?:DATABASE|TABLE)\b/i,
   /\bmkfs(?:\.[a-z0-9]+)?\b/,
+  />\s*\/dev\/sd[a-z]\b/i,
+  /:()\s*\{\s*:\s*\|\s*:\s*&\s*\}\s*;/,
 ];
 
 function buildNoul(instructions, { trueDescription, falseDescription } = {}) {
@@ -421,10 +431,19 @@ function resolveGeminiApiKey(explicitKey) {
   const k = String(
     explicitKey
     || process.env.GEMINI_API_KEY
+    || process.env.THUMBGATE_GEMINI_API_KEY
     || process.env.GOOGLE_API_KEY
     || ''
   ).trim();
   return k || null;
+}
+
+function isEmptyDecisionInput(input) {
+  if (input === undefined || input === null) return true;
+  if (typeof input === 'string') return input.trim().length === 0;
+  if (Array.isArray(input)) return input.length === 0;
+  if (typeof input === 'object') return Object.keys(input).length === 0;
+  return false;
 }
 
 async function evaluateGeminiDecisions({
@@ -439,10 +458,14 @@ async function evaluateGeminiDecisions({
   if (!resolvedKey) {
     const err = new Error('GEMINI_API_KEY is not configured');
     err.code = 'missing_api_key';
+    err.statusCode = 503;
     throw err;
   }
-  if (input === undefined || input === null || input === '') {
-    throw new Error('Gemini Decisions input cannot be empty');
+  if (isEmptyDecisionInput(input)) {
+    const err = new Error('Gemini Decisions input cannot be empty');
+    err.code = 'invalid_input';
+    err.statusCode = 400;
+    throw err;
   }
   const qEntries = questions && typeof questions === 'object' ? Object.entries(questions) : [];
   if (qEntries.length < 1 || qEntries.length > 1000) {
@@ -470,22 +493,31 @@ async function evaluateGeminiDecisions({
     const latencyMs = Date.now() - startedAt;
     const body = await res.json().catch(() => ({}));
     if (!res.ok) {
-      const safetyCode = body && body.error && body.error.code ? String(body.error.code) : null;
-      if (res.status === 400 && safetyCode && ['safety', 'prohibited_content', 'blocklist', 'image_safety', 'content_blocked'].includes(safetyCode)) {
+      const rawCode = body && body.error && body.error.code !== undefined ? String(body.error.code).toLowerCase() : '';
+      const rawMsg = String((body && body.error && body.error.message) || '');
+      const isSafety = res.status === 400 && (
+        ['safety', 'prohibited_content', 'blocklist', 'image_safety', 'content_blocked'].includes(rawCode)
+        || /blocked by safety filter|prohibited content|safety violation/i.test(rawMsg)
+      );
+      if (isSafety) {
+        const normalizedSafetyCode = ['safety', 'prohibited_content', 'blocklist', 'image_safety', 'content_blocked'].includes(rawCode)
+          ? rawCode
+          : 'safety';
         return {
           ok: false,
           blockedBySafetyFilter: true,
-          safetyCode,
-          message: (body.error && body.error.message) || 'Blocked by Gemini safety filter',
+          safetyCode: normalizedSafetyCode,
+          message: 'Blocked by Gemini safety filter.',
           answers: {},
           usage: { total_input_tokens: 0, total_output_tokens: 0, total_tokens: 0 },
           latencyMs,
           model,
         };
       }
-      const err = new Error((body && body.error && body.error.message) || `Gemini Decisions HTTP ${res.status}`);
+      const err = new Error(`Gemini Decisions upstream HTTP ${res.status}`);
       err.status = res.status;
-      err.code = safetyCode || 'http_error';
+      err.statusCode = res.status;
+      err.code = rawCode || 'http_error';
       throw err;
     }
     return {
@@ -526,6 +558,11 @@ function runDeterministicToolFloor(toolName = '', serializedArgs = '') {
   return { matched: false };
 }
 
+function normalizeConfidenceFloor(value, defaultFloor = 0.7) {
+  if (typeof value !== 'number' || !Number.isFinite(value)) return defaultFloor;
+  return Math.min(0.99, Math.max(0.5, value));
+}
+
 async function evaluateToolCallDecision({
   toolName,
   toolArgs = {},
@@ -536,12 +573,15 @@ async function evaluateToolCallDecision({
   timeoutMs = 2500,
   fetchImpl = globalThis.fetch,
 } = {}) {
+  const effectiveFloor = normalizeConfidenceFloor(confidenceFloor, 0.7);
   const safeName = String(toolName || 'unknown_tool').slice(0, 128);
-  const serializedArgs = typeof toolArgs === 'string'
-    ? toolArgs.slice(0, 8192)
-    : JSON.stringify(toolArgs || {}).slice(0, 8192);
+  const fullArgsText = typeof toolArgs === 'string'
+    ? toolArgs
+    : JSON.stringify(toolArgs || {});
+  const fullContextText = String(contextText || '');
 
-  const floor = runDeterministicToolFloor(safeName, serializedArgs);
+  // Scan FULL unscrubbed arguments + context BEFORE truncation so >8 KiB payloads cannot bypass the floor.
+  const floor = runDeterministicToolFloor(safeName, `${fullArgsText}\n${fullContextText}`);
   if (floor.matched) {
     return {
       decision: floor.decision,
@@ -567,11 +607,20 @@ async function evaluateToolCallDecision({
     };
   }
 
+  // Scrub any residual sensitive keys/headers/tokens before egress to Google's API.
+  const scrubbedArgsObj = typeof toolArgs === 'string'
+    ? scrubSensitiveString(toolArgs)
+    : scrubSensitiveData(toolArgs || {});
+  const scrubbedArgsText = (typeof scrubbedArgsObj === 'string'
+    ? scrubbedArgsObj
+    : JSON.stringify(scrubbedArgsObj)).slice(0, 8192);
+  const scrubbedContextText = scrubSensitiveString(fullContextText).slice(0, 4000);
+
   const statePayload = JSON.stringify({
     tool_name: safeName,
-    tool_arguments: serializedArgs,
-    recent_context: String(contextText || '').slice(0, 4000),
-    active_policy_rules: String(rulesText || '').slice(0, 2000),
+    tool_arguments: scrubbedArgsText,
+    recent_context: scrubbedContextText,
+    active_policy_rules: scrubSensitiveString(String(rulesText || '')).slice(0, 2000),
   });
 
   const questions = {
@@ -607,13 +656,26 @@ async function evaluateToolCallDecision({
     ),
   };
 
-  const evalRes = await evaluateGeminiDecisions({
-    input: statePayload,
-    questions,
-    apiKey: resolvedKey,
-    timeoutMs,
-    fetchImpl,
-  });
+  let evalRes;
+  try {
+    evalRes = await evaluateGeminiDecisions({
+      input: statePayload,
+      questions,
+      apiKey: resolvedKey,
+      timeoutMs,
+      fetchImpl,
+    });
+  } catch (err) {
+    return {
+      decision: 'block',
+      reasonCode: err && err.name === 'AbortError' ? 'gemini_timeout_fail_closed' : 'gemini_upstream_fail_closed',
+      reason: 'Gemini Decisions check failed or timed out; failing closed.',
+      confidence: 0,
+      source: 'gemini-decision-1',
+      latencyMs: 0,
+      usage: { total_input_tokens: 0, total_output_tokens: 0, total_tokens: 0 },
+    };
+  }
 
   if (evalRes.blockedBySafetyFilter) {
     return {
@@ -628,15 +690,37 @@ async function evaluateToolCallDecision({
   }
 
   const a = evalRes.answers || {};
-  const pInjection = Number(a.prompt_injection?.noul ?? 0);
-  const pLeak = Number(a.secret_or_pii_leak?.noul ?? 0);
-  const pMutation = Number(a.unapproved_external_mutation?.noul ?? 0);
-  const blastScore = Number(a.blast_radius?.score ?? 0);
-  const minConf = Math.min(
-    Number(a.prompt_injection?.confidence ?? 1),
-    Number(a.secret_or_pii_leak?.confidence ?? 1),
-    Number(a.unapproved_external_mutation?.confidence ?? 1)
-  );
+  const pInjection = Number(a.prompt_injection?.noul);
+  const pLeak = Number(a.secret_or_pii_leak?.noul);
+  const pMutation = Number(a.unapproved_external_mutation?.noul);
+  const blastScore = Number(a.blast_radius?.score);
+  const cInj = Number(a.prompt_injection?.confidence);
+  const cLeak = Number(a.secret_or_pii_leak?.confidence);
+  const cMut = Number(a.unapproved_external_mutation?.confidence);
+  const cBlast = Number(a.blast_radius?.confidence);
+
+  if (
+    !Number.isFinite(pInjection)
+    || !Number.isFinite(pLeak)
+    || !Number.isFinite(pMutation)
+    || !Number.isFinite(blastScore)
+    || !Number.isFinite(cInj)
+    || !Number.isFinite(cLeak)
+    || !Number.isFinite(cMut)
+    || !Number.isFinite(cBlast)
+  ) {
+    return {
+      decision: 'block',
+      reasonCode: 'gemini_malformed_answers',
+      reason: 'Gemini Decisions returned incomplete or non-finite safety scores; failing closed.',
+      confidence: 0,
+      source: 'gemini-decision-1',
+      latencyMs: evalRes.latencyMs,
+      usage: evalRes.usage,
+    };
+  }
+
+  const minConf = Math.min(cInj, cLeak, cMut, cBlast);
 
   let decision = 'allow';
   let reasonCode = 'gemini_decision_allow';
@@ -654,9 +738,9 @@ async function evaluateToolCallDecision({
     decision = 'block';
     reasonCode = 'unapproved_high_blast_mutation';
     reason = `Blocked high-blast-radius external mutation (P=${pMutation.toFixed(2)}, blast=${blastScore.toFixed(2)}/3).`;
-  } else if (pMutation >= 0.5 || blastScore >= 2.2 || minConf < confidenceFloor) {
+  } else if (pMutation >= 0.5 || blastScore >= 2.2 || minConf < effectiveFloor) {
     decision = 'require_confirmation';
-    reasonCode = minConf < confidenceFloor ? 'low_confidence_escalate' : 'elevated_blast_radius';
+    reasonCode = minConf < effectiveFloor ? 'low_confidence_escalate' : 'elevated_blast_radius';
     reason = `Requires confirmation (mutation P=${pMutation.toFixed(2)}, blast=${blastScore.toFixed(2)}/3, confidence=${minConf.toFixed(2)}).`;
   }
 
@@ -705,11 +789,40 @@ function deterministicOfferFallback(reasonCode = '', reasonText = '') {
   return { ...STRIPE_OFFER_CATALOG.bundle_49, confidence: 0.75, source: 'deterministic_fallback', probabilities: { bundle_49: 0.75 } };
 }
 
+const OFFER_DECISION_CACHE = new Map();
+const OFFER_CACHE_MAX = 256;
+const OFFER_CACHE_TTL_MS = 10 * 60 * 1000;
+const OFFER_IP_BUCKETS = new Map();
+const OFFER_IP_WINDOW_MS = 60 * 1000;
+const OFFER_IP_MAX_CALLS = 10;
+
+function allowPublicOfferGeminiCall(clientIp) {
+  if (!clientIp) return true;
+  const now = Date.now();
+  if (OFFER_IP_BUCKETS.size > 2048) {
+    for (const [k, v] of OFFER_IP_BUCKETS.entries()) {
+      if (now - v.windowStart >= OFFER_IP_WINDOW_MS) OFFER_IP_BUCKETS.delete(k);
+    }
+  }
+  const key = String(clientIp).slice(0, 128);
+  const entry = OFFER_IP_BUCKETS.get(key);
+  if (!entry || now - entry.windowStart >= OFFER_IP_WINDOW_MS) {
+    OFFER_IP_BUCKETS.set(key, { windowStart: now, count: 1 });
+    return true;
+  }
+  if (entry.count >= OFFER_IP_MAX_CALLS) {
+    return false;
+  }
+  entry.count += 1;
+  return true;
+}
+
 async function recommendCheckoutOfferDecision({
   reasonCode = '',
   reasonText = '',
   page = '/checkout/pro',
   currentPlan = 'pro',
+  clientIp = '',
   apiKey,
   confidenceFloor = 0.55,
   timeoutMs = 1800,
@@ -721,12 +834,25 @@ async function recommendCheckoutOfferDecision({
     return fallback;
   }
 
+  const normPage = String(page || '/checkout/pro').slice(0, 120);
+  const normPlan = String(currentPlan || 'pro').slice(0, 60);
+  const normCode = String(reasonCode || 'unspecified').slice(0, 80);
+  const normNote = scrubSensitiveString(String(reasonText || '').trim()).slice(0, 600);
+  const cacheKey = `${normPage}|${normPlan}|${normCode.toLowerCase()}|${normNote.toLowerCase()}`;
+  const cached = OFFER_DECISION_CACHE.get(cacheKey);
+  if (cached && Date.now() - cached.ts < OFFER_CACHE_TTL_MS && fetchImpl === globalThis.fetch) {
+    return cached.value;
+  }
+  if (!allowPublicOfferGeminiCall(clientIp)) {
+    return { ...fallback, rateLimitedFallback: true };
+  }
+
   try {
     const input = JSON.stringify({
-      page: String(page || '/checkout/pro').slice(0, 120),
-      current_plan: String(currentPlan || 'pro').slice(0, 60),
-      objection_code: String(reasonCode || 'unspecified').slice(0, 80),
-      buyer_note: String(reasonText || '').slice(0, 600),
+      page: normPage,
+      current_plan: normPlan,
+      objection_code: normCode,
+      buyer_note: normNote,
     });
 
     const evalRes = await evaluateGeminiDecisions({
@@ -768,8 +894,9 @@ async function recommendCheckoutOfferDecision({
     const chosenKey = choiceAns?.choice && STRIPE_OFFER_CATALOG[choiceAns.choice]
       ? choiceAns.choice
       : null;
-    const conf = Number(choiceAns?.confidence ?? 0);
-    if (!chosenKey || conf < confidenceFloor) {
+    const conf = Number(choiceAns?.confidence);
+    const effectiveFloor = normalizeConfidenceFloor(confidenceFloor, 0.55);
+    if (!chosenKey || !Number.isFinite(conf) || conf < effectiveFloor) {
       return {
         ...fallback,
         latencyMs: evalRes.latencyMs,
@@ -777,16 +904,26 @@ async function recommendCheckoutOfferDecision({
       };
     }
 
-    return {
+    const subAv = Number(evalRes.answers?.subscription_aversion?.noul);
+    const intentSc = Number(evalRes.answers?.buyer_intent?.score);
+    const result = {
       ...STRIPE_OFFER_CATALOG[chosenKey],
       confidence: Number(conf.toFixed(4)),
-      subscriptionAversion: Number(evalRes.answers?.subscription_aversion?.noul ?? 0),
-      buyerIntentScore: Number(evalRes.answers?.buyer_intent?.score ?? 0),
+      subscriptionAversion: Number.isFinite(subAv) ? subAv : 0,
+      buyerIntentScore: Number.isFinite(intentSc) ? intentSc : 0,
       probabilities: choiceAns.probabilities || {},
       source: 'gemini-decision-1',
       latencyMs: evalRes.latencyMs,
       usage: evalRes.usage,
     };
+    if (fetchImpl === globalThis.fetch) {
+      if (OFFER_DECISION_CACHE.size >= OFFER_CACHE_MAX) {
+        const oldestKey = OFFER_DECISION_CACHE.keys().next().value;
+        if (oldestKey !== undefined) OFFER_DECISION_CACHE.delete(oldestKey);
+      }
+      OFFER_DECISION_CACHE.set(cacheKey, { ts: Date.now(), value: result });
+    }
+    return result;
   } catch (_) {
     return fallback;
   }

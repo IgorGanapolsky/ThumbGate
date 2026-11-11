@@ -9685,12 +9685,18 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
       try {
         const body = await parseJsonBody(req);
         const traceId = body.traceId || createTraceId('offer');
+        const clientIp = String(
+          (req.headers['x-forwarded-for'] && String(req.headers['x-forwarded-for']).split(',')[0])
+          || (req.socket && req.socket.remoteAddress)
+          || ''
+        ).trim();
         const { recommendCheckoutOfferDecision } = require('../mcp-writeguard');
         const recommendation = await recommendCheckoutOfferDecision({
           reasonCode: body.reasonCode,
           reasonText: body.reasonText,
           page: body.page,
           currentPlan: body.currentPlan,
+          clientIp,
         });
         sendJson(res, 200, { ...recommendation, traceId }, getPublicBillingHeaders(traceId));
       } catch (err) {
@@ -9698,7 +9704,7 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
           type: PROBLEM_TYPES.BAD_REQUEST,
           title: 'Request Error',
           status: err.statusCode || 400,
-          detail: err.message || 'Unable to recommend offer.',
+          detail: 'Unable to process offer recommendation request.',
         }, getPublicBillingHeaders(''));
       }
       return;
@@ -10382,13 +10388,17 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
         if (!body.toolName) {
           throw createHttpError(400, 'Missing toolName');
         }
+        const projectChatSettings = readProjectChatSettings(req, parsed);
         const { evaluateToolCallDecision } = require('../mcp-writeguard');
         const verdict = await evaluateToolCallDecision({
           toolName: body.toolName,
           toolArgs: body.toolArgs || {},
           contextText: body.contextText || '',
           rulesText: body.rulesText || '',
-          confidenceFloor: Number.isFinite(Number(body.confidenceFloor)) ? Number(body.confidenceFloor) : 0.7,
+          apiKey: projectChatSettings.geminiKey || undefined,
+          confidenceFloor: typeof body.confidenceFloor === 'number' && Number.isFinite(body.confidenceFloor)
+            ? body.confidenceFloor
+            : 0.7,
         });
         sendJson(res, 200, verdict);
         return;

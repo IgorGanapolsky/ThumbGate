@@ -178,6 +178,76 @@ describe('Gemini Decisions API (gemini-decision-1) engine & server integration',
     assert.match(geminiBundle.checkoutPath, /^\/go\/bundle-49\?/);
   });
 
+  it('fails closed on upstream timeout/500, malformed/NaN answers, >8KiB secrets, and rate-limits public offer Gemini calls', async () => {
+    const timeoutVerdict = await evaluateToolCallDecision({
+      toolName: 'bash',
+      toolArgs: { command: 'ls -la' },
+      apiKey: 'test-gemini-key',
+      fetchImpl: async () => {
+        const abortErr = new Error('aborted');
+        abortErr.name = 'AbortError';
+        throw abortErr;
+      },
+    });
+    assert.equal(timeoutVerdict.decision, 'block');
+    assert.equal(timeoutVerdict.reasonCode, 'gemini_timeout_fail_closed');
+
+    const malformedVerdict = await evaluateToolCallDecision({
+      toolName: 'bash',
+      toolArgs: { command: 'ls -la' },
+      apiKey: 'test-gemini-key',
+      fetchImpl: async () => ({
+        ok: true,
+        status: 200,
+        async json() {
+          return { answers: {} };
+        },
+      }),
+    });
+    assert.equal(malformedVerdict.decision, 'block');
+    assert.equal(malformedVerdict.reasonCode, 'gemini_malformed_answers');
+
+    const largePrefix = 'x'.repeat(10000);
+    const deepSecretVerdict = await evaluateToolCallDecision({
+      toolName: 'bash',
+      toolArgs: { payload: `${largePrefix} sk_live_1234567890abcdefghij` },
+      apiKey: 'test-gemini-key',
+      fetchImpl: async () => {
+        throw new Error('must not call Gemini when >8KiB secret trips floor');
+      },
+    });
+    assert.equal(deepSecretVerdict.decision, 'block');
+    assert.equal(deepSecretVerdict.reasonCode, 'deterministic_secret_leak');
+
+    let geminiCalls = 0;
+    for (let i = 0; i < 12; i += 1) {
+      const rec = await recommendCheckoutOfferDecision({
+        reasonCode: 'price_unclear',
+        reasonText: `note-${i}`,
+        clientIp: '203.0.113.77',
+        apiKey: 'test-gemini-key',
+        fetchImpl: async () => {
+          geminiCalls += 1;
+          return {
+            ok: true,
+            status: 200,
+            async json() {
+              return {
+                answers: {
+                  subscription_aversion: { type: 'noul', noul: 0.9, confidence: 0.9 },
+                  recommended_offer: { type: 'choice', choice: 'bundle_49', confidence: 0.9, probabilities: { bundle_49: 0.9 } },
+                  buyer_intent: { type: 'score', score: 2.0, confidence: 0.8 },
+                },
+              };
+            },
+          };
+        },
+      });
+      assert.equal(rec.offerId, 'bundle_49');
+    }
+    assert.equal(geminiCalls, 10);
+  });
+
   describe('HTTP server endpoints (/v1/billing/recommend-offer and /v1/gates/decide)', () => {
     const tmpRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'tg-gemini-http-'));
     const savedKey = process.env.THUMBGATE_API_KEY;
@@ -211,6 +281,7 @@ describe('Gemini Decisions API (gemini-decision-1) engine & server integration',
       else process.env.GEMINI_API_KEY = savedGemini;
       if (savedGoogle === undefined) delete process.env.GOOGLE_API_KEY;
       else process.env.GOOGLE_API_KEY = savedGoogle;
+      fs.rmSync(tmpRoot, { recursive: true, force: true });
     });
 
     it('serves POST /v1/billing/recommend-offer publicly and wires /checkout/pro rescue script', async () => {
