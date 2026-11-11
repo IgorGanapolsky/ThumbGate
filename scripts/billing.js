@@ -2970,17 +2970,14 @@ async function createCheckoutSession({ successUrl, cancelUrl, customerEmail, ins
 const OPTIONAL_CHECKOUT_FIELDS = ['branding_settings', 'consent_collection'];
 
 async function createSessionDroppingRejectedOptionals(stripe, payload) {
-  let attempt = payload;
-  for (;;) {
-    try {
-      return await stripe.checkout.sessions.create(attempt);
-    } catch (err) {
-      const message = String((err && err.message) || '');
-      const rejected = OPTIONAL_CHECKOUT_FIELDS.find((field) => field in attempt && message.includes(field));
-      if (!rejected) throw err;
-      attempt = { ...attempt };
-      delete attempt[rejected];
-    }
+  try {
+    return await stripe.checkout.sessions.create(payload);
+  } catch (err) {
+    const message = String(err?.message || '');
+    const rejected = OPTIONAL_CHECKOUT_FIELDS.find((field) => field in payload && message.includes(field));
+    if (!rejected) throw err;
+    const { [rejected]: _dropped, ...rest } = payload;
+    return createSessionDroppingRejectedOptionals(stripe, rest);
   }
 }
 
