@@ -1624,7 +1624,8 @@ function serializeCookie(name, value, options = {}) {
   const parts = [`${name}=${encodeURIComponent(String(value))}`];
   parts.push(`Path=${options.path || '/'}`);
   parts.push(`SameSite=${options.sameSite || 'Lax'}`);
-  if (options.maxAge) parts.push(`Max-Age=${options.maxAge}`);
+  if (Number.isInteger(options.maxAge) && options.maxAge >= 0) parts.push(`Max-Age=${options.maxAge}`);
+  else if (options.maxAge) parts.push(`Max-Age=${options.maxAge}`);
   if (options.httpOnly !== false) parts.push('HttpOnly');
   if (options.secure) parts.push('Secure');
   return parts.join('; ');
@@ -5668,22 +5669,120 @@ function extractBearerToken(req) {
   return auth.startsWith('Bearer ') ? auth.slice(7) : '';
 }
 
+const PAID_AUTH_COOKIE_NAME = 'thumbgate_auth_session';
+const PAID_AUTH_SESSION_TTL_SECONDS = 30 * 24 * 60 * 60;
+const PAID_AUTH_MAX_SESSIONS = 4096;
+const paidAuthSessions = new Map();
+
+function prunePaidAuthSessions(nowMs) {
+  for (const [token, entry] of paidAuthSessions.entries()) {
+    if (!entry || entry.expiresAt <= nowMs) paidAuthSessions.delete(token);
+  }
+  while (paidAuthSessions.size >= PAID_AUTH_MAX_SESSIONS) {
+    const oldestKey = paidAuthSessions.keys().next().value;
+    if (!oldestKey) break;
+    paidAuthSessions.delete(oldestKey);
+  }
+}
+
+function resolvePaidAuthSessionKey(req) {
+  const cookies = parseCookies(req && req.headers ? req.headers.cookie : '');
+  const sessionToken = cookies[PAID_AUTH_COOKIE_NAME];
+  if (!sessionToken) return '';
+  const entry = paidAuthSessions.get(sessionToken);
+  if (!entry) return '';
+  if (entry.expiresAt <= Date.now()) {
+    paidAuthSessions.delete(sessionToken);
+    return '';
+  }
+  return entry.apiKey || '';
+}
+
+function resolvePaidSessionTier(candidate, expectedApiKey, expectedOperatorKey) {
+  const key = String(candidate || '').trim();
+  if (!key) return null;
+  if (expectedApiKey && safeKeyEqual(key, expectedApiKey)) return 'Enterprise';
+  if (expectedOperatorKey && safeKeyEqual(key, expectedOperatorKey)) return 'Enterprise';
+  const validation = validateApiKey(key);
+  if (validation && validation.valid === true) {
+    return validation.plan === 'team' || validation.tier === 'Enterprise' ? 'Enterprise' : 'Pro';
+  }
+  if (!expectedApiKey && !expectedOperatorKey) {
+    return key.startsWith('tg_op_') || key.startsWith('tg_creator_') ? 'Enterprise' : 'Pro';
+  }
+  return null;
+}
+
+async function handlePaidAuthSessionRoute(req, res, expectedApiKey, expectedOperatorKey) {
+  const noStoreHeaders = { 'Cache-Control': 'no-store' };
+  if (req.method === 'GET') {
+    const tier = resolvePaidSessionTier(extractApiKey(req), expectedApiKey, expectedOperatorKey);
+    sendJson(res, 200, { ok: true, authenticated: Boolean(tier), tier: tier || null }, noStoreHeaders);
+    return;
+  }
+  if (req.method === 'DELETE') {
+    const cookies = parseCookies(req.headers.cookie);
+    if (cookies[PAID_AUTH_COOKIE_NAME]) {
+      paidAuthSessions.delete(cookies[PAID_AUTH_COOKIE_NAME]);
+    }
+    const clearCookie = serializeCookie(PAID_AUTH_COOKIE_NAME, '', {
+      maxAge: 0,
+      httpOnly: true,
+      sameSite: 'Lax',
+      secure: true,
+    });
+    sendJson(res, 200, { ok: true, authenticated: false }, { ...noStoreHeaders, 'Set-Cookie': clearCookie });
+    return;
+  }
+  if (req.method === 'POST') {
+    let body = {};
+    try {
+      body = await parseJsonBody(req);
+    } catch {
+      sendJson(res, 400, { ok: false, authenticated: false, error: 'Invalid JSON request body' }, noStoreHeaders);
+      return;
+    }
+    const candidate = extractBearerToken(req) || String((body && body.apiKey) || '').trim();
+    const tier = resolvePaidSessionTier(candidate, expectedApiKey, expectedOperatorKey);
+    if (!tier) {
+      sendJson(res, 401, { ok: false, authenticated: false, error: 'Invalid API key' }, noStoreHeaders);
+      return;
+    }
+    const nowMs = Date.now();
+    prunePaidAuthSessions(nowMs);
+    const sessionToken = crypto.randomBytes(32).toString('hex');
+    paidAuthSessions.set(sessionToken, {
+      apiKey: candidate,
+      createdAt: nowMs,
+      expiresAt: nowMs + PAID_AUTH_SESSION_TTL_SECONDS * 1000,
+    });
+    const setCookie = serializeCookie(PAID_AUTH_COOKIE_NAME, sessionToken, {
+      maxAge: PAID_AUTH_SESSION_TTL_SECONDS,
+      httpOnly: true,
+      sameSite: 'Lax',
+      secure: true,
+    });
+    sendJson(res, 200, { ok: true, authenticated: true, tier }, { ...noStoreHeaders, 'Set-Cookie': setCookie });
+    return;
+  }
+  sendJson(res, 405, { ok: false, error: 'Method Not Allowed' }, noStoreHeaders);
+}
+
 function extractApiKey(req) {
   const bearerToken = extractBearerToken(req);
   if (bearerToken) {
     return bearerToken;
   }
 
-  const alternateHeader = req.headers['x-api-key'];
+  const alternateHeader = req.headers['x-api-key'] || req.headers['x-thumbgate-key'];
   if (Array.isArray(alternateHeader)) {
-    return String(alternateHeader[0] || '').trim();
-  }
-
-  if (typeof alternateHeader === 'string') {
+    const first = String(alternateHeader[0] || '').trim();
+    if (first) return first;
+  } else if (typeof alternateHeader === 'string' && alternateHeader.trim()) {
     return alternateHeader.trim();
   }
 
-  return '';
+  return resolvePaidAuthSessionKey(req);
 }
 
 /**
@@ -5774,6 +5873,7 @@ const OPERATOR_READONLY_GET_PATHS = new Set([
   '/v1/dashboard/render-spec',
   '/v1/dashboard/ai-inventory',
   '/v1/dashboard/review-state',
+  '/v1/feedback/stats',
   '/v1/intake/workflow-sprint/queue',
   '/v1/task-outcomes/monitor',
 ]);
@@ -6678,13 +6778,24 @@ async function addContext(){
       return;
     }
 
-    if (isGetLikeRequest && pathname === '/dashboard') {
+    if (isGetLikeRequest && (pathname === '/dashboard' || pathname === '/cloud')) {
       try {
         const html = loadDashboardPageHtml(req, expectedApiKey);
         sendHtml(res, 200, html, {}, { headOnly: isHeadRequest });
       } catch {
         sendJson(res, 404, { error: 'Dashboard page not found' });
       }
+      return;
+    }
+
+    if (isGetLikeRequest && pathname === '/v1/cloud/sso/authorize') {
+      const provider = encodeURIComponent(String(parsed.searchParams.get('provider') || 'google').trim());
+      res.writeHead(302, {
+        'X-Content-Type-Options': 'nosniff',
+        Location: `/dashboard?sso=${provider}`,
+        'Cache-Control': 'no-store',
+      });
+      res.end();
       return;
     }
 
@@ -9610,6 +9721,11 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
           detail: err.message || 'An unexpected error occurred.',
         }, getPublicBillingHeaders(requestedTraceId));
       }
+      return;
+    }
+
+    if (pathname === '/v1/auth/session') {
+      await handlePaidAuthSessionRoute(req, res, expectedApiKey, expectedOperatorKey);
       return;
     }
 
