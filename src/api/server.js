@@ -112,7 +112,11 @@ const {
 const {
   classifyRequester,
   isHumanCheckoutNavigation,
+  checkoutRequesterKey,
+  createRapidCheckoutGuard,
 } = require('../../scripts/bot-detection');
+
+const rapidCheckoutGuard = createRapidCheckoutGuard();
 const {
   recordCheckoutFunnelEvent,
 } = require('../../scripts/plausible-server-events');
@@ -3390,10 +3394,18 @@ async function serveTrackedLinkRedirect({ req, res, parsed, hostedConfig, isHead
   const { FEEDBACK_DIR } = getFeedbackPaths();
   const journeyState = resolveJourneyState(req, parsed);
   const requesterClassification = classifyRequester(req.headers);
-  const botClassification = requesterClassification.isBot
+  let botClassification = requesterClassification.isBot
     || isHumanCheckoutNavigation(req.headers, hostedConfig.appOrigin)
     ? requesterClassification
     : { isBot: true, reason: 'no_browser_navigation' };
+  if (
+    target.botDeflectPath
+    && !botClassification.isBot
+    && !isHeadRequest
+    && rapidCheckoutGuard.hit(checkoutRequesterKey(req.headers))
+  ) {
+    botClassification = { isBot: true, reason: 'rapid_multi_checkout' };
+  }
   if (target.botDeflectPath && botClassification.isBot) {
     const deflectUrl = new URL(target.botDeflectPath, hostedConfig.appOrigin);
     appendTrackedLinkQueryParams(deflectUrl, parsed, target);
