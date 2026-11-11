@@ -2,10 +2,18 @@ import Stripe from 'stripe';
 import type { Env, ApiKeyRecord } from './types';
 import { problemResponse, PROBLEM_TYPES } from './problem-detail';
 
+export interface StripeCheckoutClient {
+  checkout: {
+    sessions: {
+      create(
+        params: Stripe.Checkout.SessionCreateParams,
+      ): Promise<{ id: string; url: string | null }>;
+    };
+  };
+}
+
 function getStripe(env: Env): Stripe {
   return new Stripe(env.STRIPE_SECRET_KEY, {
-    // Stripe 23.0.0 LatestApiVersion; workers typecheck fails if this lags the SDK.
-    apiVersion: '2026-10-28.endive',
     httpClient: Stripe.createFetchHttpClient(),
   });
 }
@@ -17,13 +25,60 @@ function generateApiKey(): string {
   return 'mmg_' + Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('');
 }
 
+const BOT_UA_PATTERN =
+  /(?:googlebot|bingbot|slurp|duckduckbot|baiduspider|yandexbot|ahrefsbot|semrushbot|mj12bot|dotbot|petalbot|bytespider|gptbot|chatgpt-user|oai-searchbot|claudebot|anthropic-ai|perplexitybot|ccbot|facebookexternalhit|linkedinbot|twitterbot|slackbot|discordbot|whatsapp|telegrambot|headlesschrome|phantomjs|playwright|puppeteer|selenium|\bcurl\b|\bwget\b|python-requests|python-httpx|aiohttp|go-http-client|node-fetch|\baxios\b|postmanruntime|\bbot\b|\bcrawler\b|\bspider\b)|^mozilla\/5\.0\s*$/i;
+
+export function isAutomatedCheckoutRequest(request: Request): boolean {
+  const ua = (request.headers.get('user-agent') || '').trim();
+  if (!ua) return true;
+  return BOT_UA_PATTERN.test(ua);
+}
+
+/**
+ * Linear-time email syntax validation (RFC 5321 length cap, no polynomial regexes).
+ */
+export function normalizeValidCheckoutEmail(raw: unknown): string | null {
+  if (typeof raw !== 'string') return null;
+  const trimmed = raw.trim().toLowerCase();
+  if (trimmed.length < 5 || trimmed.length > 254) return null;
+  for (let i = 0; i < trimmed.length; i += 1) {
+    const code = trimmed.charCodeAt(i);
+    if (code <= 32 || code === 127) return null;
+  }
+  const atIndex = trimmed.indexOf('@');
+  if (atIndex <= 0 || atIndex !== trimmed.lastIndexOf('@')) return null;
+  const local = trimmed.slice(0, atIndex);
+  const domain = trimmed.slice(atIndex + 1);
+  if (local.length > 64 || domain.length < 3) return null;
+  if (domain.startsWith('.') || domain.endsWith('.') || domain.includes('..')) return null;
+  const dotIndex = domain.lastIndexOf('.');
+  if (dotIndex <= 0 || dotIndex >= domain.length - 2) return null;
+  return trimmed;
+}
+
+function extractRequestedEmail(payload: unknown): string | null {
+  if (typeof payload !== 'object' || payload === null) return null;
+  if ('customerEmail' in payload) {
+    const normalized = normalizeValidCheckoutEmail(payload.customerEmail);
+    if (normalized) return normalized;
+  }
+  if ('email' in payload) {
+    const normalized = normalizeValidCheckoutEmail(payload.email);
+    if (normalized) return normalized;
+  }
+  return null;
+}
+
 /**
  * POST /billing/checkout
  * Creates a Stripe Checkout session for the $19/mo Pro subscription.
+ * Refuses bot/scanner user-agents and anonymous emailless requests so automated
+ * probes cannot mint unrecoverable Stripe sessions.
  */
 export async function handleCheckout(
   request: Request,
   env: Env,
+  stripeFactory: (workerEnv: Env) => StripeCheckoutClient = getStripe,
 ): Promise<Response> {
   if (!env.STRIPE_SECRET_KEY) {
     return problemResponse({
@@ -33,19 +88,38 @@ export async function handleCheckout(
       detail: 'Stripe is not configured. Set STRIPE_SECRET_KEY and STRIPE_PRICE_ID.',
     });
   }
-  const stripe = getStripe(env);
+
+  if (isAutomatedCheckoutRequest(request)) {
+    return problemResponse({
+      type: PROBLEM_TYPES.FORBIDDEN,
+      title: 'Forbidden',
+      status: 403,
+      detail: 'Automated crawlers and scanners cannot create Stripe Checkout sessions.',
+    });
+  }
+
+  let parsedBody: unknown = null;
+  try {
+    parsedBody = await request.json();
+  } catch {
+    parsedBody = null;
+  }
+
+  const customerEmail = extractRequestedEmail(parsedBody);
+  if (!customerEmail) {
+    return problemResponse({
+      type: PROBLEM_TYPES.BAD_REQUEST,
+      title: 'Bad Request',
+      status: 400,
+      detail: 'customerEmail (or email) must be a valid email address.',
+    });
+  }
+
+  const stripe = stripeFactory(env);
   const url = new URL(request.url);
   const origin = url.origin;
 
-  let email: string | undefined;
-  try {
-    const body = await request.json<{ email?: string }>();
-    email = body.email;
-  } catch {
-    // No body is fine
-  }
-
-  const session = await stripe.checkout.sessions.create({
+  const basePayload: Stripe.Checkout.SessionCreateParams = {
     mode: 'subscription',
     line_items: [
       {
@@ -53,13 +127,35 @@ export async function handleCheckout(
         quantity: 1,
       },
     ],
-    ...(email ? { customer_email: email } : {}),
+    customer_email: customerEmail,
+    allow_promotion_codes: true,
+    after_expiration: {
+      recovery: {
+        enabled: true,
+        allow_promotion_codes: true,
+      },
+    },
+    consent_collection: {
+      promotions: 'auto',
+    },
     success_url: `${origin}/billing/success?session_id={CHECKOUT_SESSION_ID}`,
     cancel_url: `${origin}/billing/cancel`,
     metadata: {
       product: 'thumbgate',
     },
-  });
+  };
+
+  let session: { id: string; url: string | null };
+  try {
+    session = await stripe.checkout.sessions.create(basePayload);
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    if (!message.includes('consent_collection')) {
+      throw err;
+    }
+    const { consent_collection: _ignored, ...fallbackPayload } = basePayload;
+    session = await stripe.checkout.sessions.create(fallbackPayload);
+  }
 
   return Response.json({ url: session.url, sessionId: session.id });
 }
@@ -92,7 +188,7 @@ export async function handleWebhook(
       signature,
       env.STRIPE_WEBHOOK_SECRET,
     );
-  } catch (err) {
+  } catch {
     return problemResponse({
       type: PROBLEM_TYPES.WEBHOOK_INVALID,
       title: 'Invalid Webhook Signature',

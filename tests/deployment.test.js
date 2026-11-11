@@ -717,6 +717,19 @@ test('Deploy verification fails closed on authenticated production search and ex
   assert.match(workflow, /--retry-delay-ms=10000/);
 });
 
+// thumbgate.ai and thumbgate-production.up.railway.app are different Railway deployments that rebuild at
+// different times (seen 2026-11-11). Release checks must read the host customers use.
+test('release checks verify the customer-facing host, thumbgate.ai', () => {
+  const oldHost = 'thumbgate-production.up.railway.app';
+  const workflow = fs.readFileSync(path.join(PROJECT_ROOT, '.github', 'workflows', 'deploy-verify.yml'), 'utf8');
+  const gate = fs.readFileSync(path.join(PROJECT_ROOT, 'CLAUDE.md'), 'utf8');
+  const marketing = fs.readFileSync(path.join(PROJECT_ROOT, 'scripts', 'verify-marketing-pages-deployed.js'), 'utf8');
+  assert.match(workflow, /PROD_URL: https:\/\/thumbgate\.ai\b/);
+  assert.ok(!workflow.includes(oldHost));
+  assert.match(gate, /PROD_URL\s+= https:\/\/thumbgate\.ai\b/);
+  assert.ok(!marketing.includes(oldHost));
+});
+
 test('Deploy verification workflow keeps embedded heredoc scripts valid YAML', () => {
   const workflow = fs.readFileSync(path.join(PROJECT_ROOT, '.github', 'workflows', 'verify-deploy-comment.yml'), 'utf8');
   const lines = workflow.split('\n');
@@ -942,8 +955,8 @@ test('SonarCloud workflow gates PRs and keeps main refresh non-blocking', () => 
   assert.match(workflow, /Read package version[\s\S]*?require\("\.\/package\.json"\)\.version/);
   assert.match(workflow, /Build Sonar mainline analysis version[\s\S]*?sha\.\$SHORT_SHA/);
   assert.match(workflow, /Run SonarCloud scan \(default branch refresh\)[\s\S]*?github\.event_name == 'push' \|\| github\.event_name == 'workflow_dispatch'/);
-  assert.match(workflow, /Skipping default-branch Sonar scanner refresh/);
-  assert.match(workflow, /mainline_version=\$\{\{\s*steps\.sonar-mainline-version\.outputs\.value\s*\}\}/);
+  assert.match(workflow, /Run SonarCloud scan \(default branch refresh\)[\s\S]*?sonarqube-scan-action/);
+  assert.match(workflow, /-Dsonar\.projectVersion=\$\{\{\s*steps\.sonar-mainline-version\.outputs\.value\s*\}\}/);
 });
 
 test('SonarCloud workflow polls quality gates only for PR and merge-queue scans', () => {

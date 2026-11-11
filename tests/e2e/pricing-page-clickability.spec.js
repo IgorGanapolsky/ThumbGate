@@ -5,7 +5,7 @@ test.describe('/pricing dual-offer cash path', () => {
     await page.goto('/pricing');
     await expect(page.getByRole('heading', { level: 1 })).toContainText('Stop paying for the same AI mistake twice');
     await expect(page.getByRole('link', { name: 'Start Pro', exact: true })).toBeVisible();
-    await expect(page.locator('a[href*="/checkout/pro"]')).not.toHaveCount(0);
+    await expect(page.locator('a[href*="/go/pro-direct"]')).not.toHaveCount(0);
     await expect(page.locator('#enterprise-gate .price')).toHaveText('$499');
     await expect(page.locator('form[data-primary-checkout]')).toHaveCount(1);
     await expect(page.getByText('$1,500', { exact: true })).toHaveCount(0);

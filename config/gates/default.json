@@ -504,7 +504,9 @@
       "toolNames": [
         "Edit",
         "Write",
-        "MultiEdit"
+        "MultiEdit",
+        "NotebookEdit",
+        "Bash"
       ],
       "pattern": "(?:config/gates/|config/(?:budget|enforcement|mcp-allowlists)\\.json|\\.thumbgate/config\\.json|thumbgate\\.json)",
       "action": "block",
@@ -552,6 +554,8 @@
       "toolNames": [
         "Edit",
         "Write",
+        "MultiEdit",
+        "NotebookEdit",
         "Bash"
       ],
       "pattern": "(?:\\.claude/settings(?:\\.local)?\\.json|\\.codex/config\\.toml|scripts/hook-[^/]+\\.(?:js|sh))",

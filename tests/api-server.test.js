@@ -3104,6 +3104,7 @@ test('billing checkout endpoint is public', async () => {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify({
+      customerEmail: 'buyer@example.com',
       installId: 'inst_public_checkout_test',
     }),
   });
@@ -3120,11 +3121,25 @@ test('billing checkout endpoint is public', async () => {
   assert.equal(res.headers.get('x-thumbgate-trace-id'), body.traceId);
 });
 
+test('billing checkout refuses requests without a valid customer email', async () => {
+  for (const body of [{}, { customerEmail: '' }, { customerEmail: 'not-an-email' }, { installId: 'inst_no_email' }]) {
+    const res = await fetch(apiUrl('/v1/billing/checkout'), {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    assert.equal(res.status, 400, JSON.stringify(body));
+    const problem = await res.json();
+    assert.match(problem.detail, /customerEmail/);
+  }
+});
+
 test('public billing checkout cannot choose Stripe trial duration through metadata', async () => {
   const res = await fetch(apiUrl('/v1/billing/checkout'), {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify({
+      customerEmail: 'buyer@example.com',
       installId: 'inst_public_trial_injection',
       metadata: {
         trial: 'true',
@@ -3838,6 +3853,7 @@ test('billing checkout supports annual Pro and Team seat selection', async () =>
     method: 'POST',
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify({
+      customerEmail: 'buyer@example.com',
       planId: 'pro',
       billingCycle: 'annual',
     }),
@@ -3853,6 +3869,7 @@ test('billing checkout supports annual Pro and Team seat selection', async () =>
     method: 'POST',
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify({
+      customerEmail: 'buyer@example.com',
       planId: 'team',
       seatCount: 2,
     }),
@@ -5184,6 +5201,7 @@ test('funnel analytics returns counts and conversion rates', async () => {
     method: 'POST',
     headers: { 'content-type': 'application/json', ...authHeader },
     body: JSON.stringify({
+      customerEmail: 'buyer@example.com',
       installId: 'inst_api_server_test',
       metadata: {
         source: 'reddit',

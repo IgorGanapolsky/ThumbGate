@@ -30,6 +30,7 @@ Classify each PR into exactly one bucket:
 | THREADS | unresolved review threads | fix, push, re-check (`.claude/rules/pr-thread-policy.md`) |
 | BEHIND / DIRTY | base moved / conflicts | BEHIND + green → step 4 (Trunk rebases); DIRTY on a live agent PR → rebase once; stale ≥5 days → close + delete branch per CLAUDE.md |
 | NOT MINE | human-authored or another live agent owns it | report only, never push to it (`fleet-coordination`) |
+| HELD (safety gate) | removes, disables or loosens a hook, gate, protection or permission check (e.g. #4850) | don't undraft, arm auto-merge or queue it without the operator's own message naming the PR (`safety-boundaries`) |
 
 Required checks (verify, they change): `gh api repos/IgorGanapolsky/ThumbGate/branches/main/protection/required_status_checks -q '.contexts[]'`.
 
@@ -72,6 +73,8 @@ REFUSED block (see `blocked-action-fallback`): don't retry it another way.
 Record it once on the checklist/report and move on to the next PR.
 
 Never: `gh pr merge --auto`, `--admin`, approving reviews, editing rulesets.
+Don't ask the operator to click Ready or merge; when the safety layer reserves
+the final merge for him, say so once in the report (`check-before-asking`).
 
 ## 5. Verify and close out
 

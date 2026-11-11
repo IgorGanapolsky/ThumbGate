@@ -36,7 +36,7 @@ const SELF_GOVERNANCE_PATH_PATTERNS = [
   /(?:^|\/)thumbgate\.json$/i,
 ];
 
-const EDIT_LIKE_TOOLS = new Set(['Edit', 'Write', 'MultiEdit']);
+const EDIT_LIKE_TOOLS = new Set(['Edit', 'Write', 'MultiEdit', 'NotebookEdit']);
 
 /**
  * Returns the matched governance file path, or null. Accepts both camelCase
@@ -44,7 +44,7 @@ const EDIT_LIKE_TOOLS = new Set(['Edit', 'Write', 'MultiEdit']);
  */
 function selfProtectionTarget(toolName, toolInput) {
   if (!EDIT_LIKE_TOOLS.has(toolName)) return null;
-  const filePath = String((toolInput && (toolInput.file_path || toolInput.filePath)) || '');
+  const filePath = String((toolInput && (toolInput.file_path || toolInput.filePath || toolInput.notebook_path || toolInput.notebookPath || toolInput.path)) || '');
   if (!filePath) return null;
   return SELF_GOVERNANCE_PATH_PATTERNS.some((re) => re.test(filePath)) ? filePath : null;
 }
