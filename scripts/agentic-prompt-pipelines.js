@@ -44,11 +44,21 @@ function estimateTokens(text) {
 
 /** Neutralise a closing tag inside untrusted text so it cannot end its block early. */
 function escapeClosingTag(text, tag) {
-  return String(text || '').split(`</${tag}>`).join(`<\\/${tag}>`);
+  return String(text || '').split(`</${tag}>`).join(String.raw`<\/` + `${tag}>`);
+}
+
+/** True when any of the (deliberately small) patterns matches. */
+function matchesAny(patterns, text) {
+  return patterns.some((re) => re.test(text));
+}
+
+/** Build `<before>(?:w1|w2|...)<after>` from a word list, keeping each literal regex simple. */
+function wordPattern(words, flags, { before = String.raw`\b`, after = String.raw`\b` } = {}) {
+  return new RegExp(`${before}(?:${words.join('|')})${after}`, flags);
 }
 
 function extractTag(text, tag) {
-  const match = new RegExp(`<${tag}>([\\s\\S]*?)</${tag}>`, 'i').exec(String(text || ''));
+  const match = new RegExp(`<${tag}>` + String.raw`([\s\S]*?)` + `</${tag}>`, 'i').exec(String(text || ''));
   return match ? match[1].trim() : null;
 }
 
@@ -111,19 +121,35 @@ function buildGraphTraversalUserPrompt(userQuery) {
   return `## CURRENT TASK\n<user_query>\n${escapeClosingTag(userQuery, 'user_query')}\n</user_query>`;
 }
 
-const CYPHER_WRITE_PATTERN = /(?<![.\w$])(CREATE|MERGE|DELETE|DETACH|SET|REMOVE|DROP|FOREACH|LOAD\s+CSV|GRANT|REVOKE|DENY|ALTER|RENAME|START|STOP|TERMINATE)(?![\w$])/i;
+const CYPHER_WRITE_KEYWORDS = [
+  'CREATE', 'MERGE', 'DELETE', 'DETACH', 'SET', 'REMOVE', 'DROP', 'FOREACH', String.raw`LOAD\s+CSV`,
+  'GRANT', 'REVOKE', 'DENY', 'ALTER', 'RENAME', 'START', 'STOP', 'TERMINATE',
+];
+// Lookbehind/lookahead keep property names such as `n.start` from matching.
+const CYPHER_WRITE_PATTERN = wordPattern([`(${CYPHER_WRITE_KEYWORDS.join('|')})`], 'i', { // group 1 = keyword
+  before: String.raw`(?<![.\w$])`,
+  after: String.raw`(?![\w$])`,
+});
 const CYPHER_CALL_ALLOWLIST = [
   /^db\.schema\.(visualization|nodeTypeProperties|relTypeProperties)$/i,
   /^db\.(labels|relationshipTypes|propertyKeys)$/i,
   /^db\.index\.(vector|fulltext)\.query(Nodes|Relationships)$/i,
 ];
 
+const CYPHER_LITERAL_TOKEN = new RegExp([
+  String.raw`\/\*[\s\S]*?\*\/`, // block comment
+  String.raw`\/\/[^\n]*`, // line comment
+  String.raw`'(?:\\.|[^'\\])*'`, // single-quoted string
+  String.raw`"(?:\\.|[^"\\])*"`, // double-quoted string
+  '`(?:``|[^`])*`', // backtick identifier
+].join('|'), 'g');
+
 /** Remove string literals and comments so keywords inside them are not flagged. */
 function stripCypherLiterals(query) {
   // One left-to-right pass: whichever token starts first wins, so a `//`
   // inside a string (e.g. a URL) cannot swallow the clauses after it.
   return String(query || '').replace(
-    /\/\*[\s\S]*?\*\/|\/\/[^\n]*|'(?:\\.|[^'\\])*'|"(?:\\.|[^"\\])*"|`(?:``|[^`])*`/g,
+    CYPHER_LITERAL_TOKEN,
     (m) => (m.startsWith('/') ? ' ' : m[0] + m[0]),
   );
 }
@@ -329,8 +355,21 @@ const EXPERT_MAX_TOKENS = Object.freeze({ [EXPERTS.CLAUDE]: 32000, [EXPERTS.GEMI
 const LARGE_PAYLOAD_TOKENS = 100000;
 const ROUTER_PREVIEW_CHARS = 12000;
 
-const CODE_SIGNALS = /\b(refactor|implement|fix (the )?bug|write (a )?(function|test|class)|code review|patch|pull request|diff|stack trace|typescript|python|javascript|unit test)\b|```|\bfunction\s+\w+\s*\(|\bclass\s+\w+|\bdef\s+\w+\s*\(/i;
-const LOG_LINE = /^\s*(\[?\d{4}-\d{2}-\d{2}[T ][\d:.]+|\w{3}\s+\d{1,2}\s[\d:]{8}|(INFO|WARN|WARNING|ERROR|DEBUG|TRACE)\b)/;
+const CODE_SIGNALS = [
+  wordPattern([
+    'refactor', 'implement', 'fix (?:the )?bug', 'write (?:a )?(?:function|test|class)', 'code review', 'patch',
+    'pull request', 'diff', 'stack trace', 'typescript', 'python', 'javascript', 'unit test',
+  ], 'i'),
+  /```/,
+  /\bfunction\s+\w+\s*\(/i,
+  /\bclass\s+\w+/i,
+  /\bdef\s+\w+\s*\(/i,
+];
+const LOG_LINE = [
+  /^\s*\[?\d{4}-\d{2}-\d{2}[T ][\d:.]+/, // ISO timestamp
+  /^\s*\w{3}\s+\d{1,2}\s[\d:]{8}/, // syslog timestamp
+  wordPattern(['INFO', 'WARN', 'WARNING', 'ERROR', 'DEBUG', 'TRACE'], '', { before: String.raw`^\s*` }),
+];
 
 function buildRouterSystemPrompt() {
   return `## ROLE
@@ -371,11 +410,11 @@ ${escapeClosingTag(preview, 'workload')}
 function describeWorkload(workload) {
   const text = String(workload || '');
   const lines = text.split('\n').filter((l) => l.trim());
-  const logLines = lines.filter((l) => LOG_LINE.test(l)).length;
+  const logLines = lines.filter((l) => matchesAny(LOG_LINE, l)).length;
   return {
     estimatedTokens: estimateTokens(text),
     logLineRatio: lines.length ? logLines / lines.length : 0,
-    codeSignals: CODE_SIGNALS.test(text),
+    codeSignals: matchesAny(CODE_SIGNALS, text),
   };
 }
 
@@ -385,9 +424,12 @@ function preRouteWorkload(workload) {
   const isLarge = meta.estimatedTokens > LARGE_PAYLOAD_TOKENS;
   const isLogStream = meta.logLineRatio >= 0.6;
   if ((isLarge || isLogStream) && !meta.codeSignals) {
+    const reason = isLarge
+      ? `~${meta.estimatedTokens} tokens exceeds ${LARGE_PAYLOAD_TOKENS}`
+      : `raw log stream (${Math.round(meta.logLineRatio * 100)}% log lines)`;
     return {
       primary_expert: EXPERTS.GEMINI,
-      routing_justification: `Constraint 2: ${isLarge ? `~${meta.estimatedTokens} tokens exceeds ${LARGE_PAYLOAD_TOKENS}` : `raw log stream (${Math.round(meta.logLineRatio * 100)}% log lines)`}.`,
+      routing_justification: `Constraint 2: ${reason}.`,
       max_tokens_allocated: 8192,
       source: 'rule',
     };
@@ -426,8 +468,16 @@ function validateRouterDecision(decision) {
   return { ok: errors.length === 0, errors };
 }
 
+/** Drop a surrounding ```json fence without a backtracking regex. */
+function stripCodeFence(text) {
+  let body = text.trim();
+  if (body.startsWith('```')) body = body.replace(/^```(?:json)?/i, '');
+  if (body.endsWith('```')) body = body.slice(0, -3);
+  return body.trim();
+}
+
 function parseJsonObject(text) {
-  const cleaned = String(text || '').replace(/^\s*```(?:json)?\s*/i, '').replace(/\s*```\s*$/, '').trim();
+  const cleaned = stripCodeFence(String(text || ''));
   try {
     return JSON.parse(cleaned);
   } catch {
@@ -505,7 +555,8 @@ async function dispatchWorkload(decision, workload, {
     const prior = outputs.length
       ? `\n\n<prior_expert_output>\n${outputs.map((o) => escapeClosingTag(o.output, 'prior_expert_output')).join('\n---\n')}\n</prior_expert_output>`
       : '';
-    const output = await callModel({
+    // Sequential on purpose: each expert reads the previous expert's output.
+    const output = await callModel({ // NOSONAR
       system: `You are ${task.expert}. ${task.instruction}`,
       messages: [{ role: 'user', content: `<workload>\n${escapeClosingTag(workload, 'workload')}\n</workload>${prior}` }],
       model: modelFor(task.expert),
@@ -520,10 +571,24 @@ async function dispatchWorkload(decision, workload, {
 // 3. Just-in-time context trimming
 // ===========================================================================
 
-const ANCHOR_PATTERN = /(\b(error|exception|fatal|panic|traceback|failed|failure|denied|timeout)\b|^\s+at\s+\S+|^\s*File\s+"[^"]+",\s+line\s+\d+|\btrace_?id\b|\bspan_?id\b)/i;
+const ANCHOR_PATTERNS = [
+  wordPattern(['error', 'exception', 'fatal', 'panic', 'traceback', 'failed', 'failure', 'denied', 'timeout'], 'i'),
+  /^\s+at\s+\S+/, // JS/Java stack frame
+  /^\s*File\s+"[^"]+",\s+line\s+\d+/, // Python stack frame
+  /\b(?:trace|span)_?id\b/i,
+];
 const ERRNO_CODE = /\bE[A-Z]{3,}\b/; // case-sensitive: ECONNRESET, ENOENT, ...
-const NOISE_LINE = /^\s*("?(created_at|updated_at|etag|request_id|_links|self|href|x-[\w-]+)"?\s*[:=]|[{}[\],]+\s*$|-{3,}\s*$)/i;
-const TIMESTAMP_PREFIX = /^\s*\[?\d{4}-\d{2}-\d{2}[T ][\d:.]+(Z|[+-]\d{2}:?\d{2})?\]?\s*/;
+const NOISE_LINES = [
+  wordPattern(['created_at', 'updated_at', 'etag', 'request_id', '_links', 'self', 'href', String.raw`x-[\w-]+`], 'i', {
+    before: String.raw`^\s*"?`,
+    after: String.raw`"?\s*[:=]`,
+  }),
+  /^\s*[{}[\],]+\s*$/, // bare JSON punctuation
+  /^\s*-{3,}\s*$/, // separator rule
+];
+const TIMESTAMP_PREFIX = new RegExp(
+  String.raw`^\s*\[?\d{4}-\d{2}-\d{2}[T ][\d:.]+` + String.raw`(?:Z|[+-]\d{2}:?\d{2})?\]?\s*`,
+);
 const STOP_WORDS = new Set(['the', 'and', 'for', 'with', 'from', 'that', 'this', 'into', 'what', 'which', 'when', 'why', 'how', 'are', 'was', 'not']);
 
 function buildContextTrimSystemPrompt(targetOperation) {
@@ -556,7 +621,7 @@ function findAnchorLines(rawContext, targetOperation) {
   const keys = lexicalKeys(targetOperation);
   return String(rawContext || '').split('\n').filter((line) => {
     if (!line.trim()) return false;
-    if (ANCHOR_PATTERN.test(line) || ERRNO_CODE.test(line)) return true;
+    if (matchesAny(ANCHOR_PATTERNS, line) || ERRNO_CODE.test(line)) return true;
     const lower = line.toLowerCase();
     return keys.some((k) => lower.includes(k)) && /\b(function|class|def|const|let|var|interface|type|CREATE\s+TABLE)\b/i.test(line);
   });
@@ -576,7 +641,7 @@ function prefilterContext(rawContext, targetOperation) {
       if (!seen.has(line)) { seen.set(line, out.length); out.push({ text: line, count: 1 }); } else { out[seen.get(line)].count += 1; }
       continue;
     }
-    if (NOISE_LINE.test(line)) continue;
+    if (matchesAny(NOISE_LINES, line)) continue;
     const normalized = line.replace(TIMESTAMP_PREFIX, '').trimEnd();
     if (!normalized.trim()) continue;
     if (seen.has(normalized)) { out[seen.get(normalized)].count += 1; continue; }
