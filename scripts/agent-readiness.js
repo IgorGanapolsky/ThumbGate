@@ -315,7 +315,9 @@ function generateAgentReadinessReport({
   const gitScale = summarizeGitScale(projectRoot);
 
   const warnings = [];
-  if (!runtime.isolated) warnings.push(runtime.recommendation);
+  // Host runtime is the normal case on a developer laptop, so it is advice, not a failure.
+  const advisories = [];
+  if (!runtime.isolated) advisories.push(runtime.recommendation);
   if (!bootstrap.ready) warnings.push(bootstrap.recommendation);
   if (!permissions.ready) warnings.push(permissions.recommendation);
   // Missing operator verifiers is advisory (not every project asserts SQL row counts).
@@ -351,6 +353,7 @@ function generateAgentReadinessReport({
       preToolUseHook: preToolUseHookRegistered,
     },
     warnings,
+    advisories,
   };
 }
 
@@ -387,6 +390,14 @@ function reportToText(report) {
     lines.push('Warnings:');
     report.warnings.forEach((warning) => {
       lines.push(`- ${warning}`);
+    });
+  }
+
+  if (report.advisories && report.advisories.length > 0) {
+    lines.push('');
+    lines.push('Advisories (do not affect readiness):');
+    report.advisories.forEach((advisory) => {
+      lines.push(`- ${advisory}`);
     });
   }
 
