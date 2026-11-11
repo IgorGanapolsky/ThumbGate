@@ -34,7 +34,7 @@ const SECRET_FILE_PATTERNS = [
   { id: 'pypirc_file', label: 'Python package credentials file', regex: /(^|\/)\.pypirc$/i },
   // Do not match *.pub — public keys are routinely read for SSH setup.
   { id: 'ssh_private_key', label: 'SSH private key', regex: /(^|\/)(?:id_rsa|id_ed25519|id_dsa|id_ecdsa)$/i },
-  { id: 'ssh_private_key_path', label: 'SSH private key path', regex: /(^|\/)\.ssh\/id_[A-Za-z0-9_-]+$/i },
+  { id: 'ssh_private_key_path', label: 'SSH private key path', regex: /(^|\/)\.ssh\/id_[a-z0-9_-]+$/i },
   { id: 'aws_credentials', label: 'AWS credentials file', regex: /(^|\/)\.aws\/credentials$/i },
   { id: 'kubeconfig', label: 'Kubernetes config', regex: /(^|\/)\.kube\/config$/i },
   { id: 'docker_config', label: 'Docker config credentials', regex: /(^|\/)\.docker\/config\.json$/i },
@@ -44,7 +44,46 @@ const SECRET_FILE_PATTERNS = [
 
 // Env vars that commonly hold secrets. Used to catch exfil when the secret
 // never appears as a literal in the command (e.g. echo $API_KEY | curl ...).
-const SECRET_ENV_VAR_PATTERN = /\$\{?(?:API[_-]?KEY|OPENAI_API_KEY|ANTHROPIC_API_KEY|GEMINI_API_KEY|AWS_SECRET_ACCESS_KEY|AWS_ACCESS_KEY_ID|AWS_SESSION_TOKEN|GITHUB_TOKEN|GH_TOKEN|STRIPE_SECRET_KEY|STRIPE_API_KEY|NPM_TOKEN|HF_TOKEN|HUGGINGFACE_TOKEN|DATABASE_URL|DB_PASSWORD|POSTGRES_PASSWORD|MYSQL_PWD|PRIVATE_KEY|SECRET_KEY|ACCESS_TOKEN|AUTH_TOKEN|CLIENT_SECRET|SLACK_BOT_TOKEN|DISCORD_TOKEN)(?!\w)/i;
+const SECRET_ENV_VAR_NAMES = new Set([
+  'API_KEY',
+  'APIKEY',
+  'API-KEY',
+  'OPENAI_API_KEY',
+  'ANTHROPIC_API_KEY',
+  'GEMINI_API_KEY',
+  'AWS_SECRET_ACCESS_KEY',
+  'AWS_ACCESS_KEY_ID',
+  'AWS_SESSION_TOKEN',
+  'GITHUB_TOKEN',
+  'GH_TOKEN',
+  'STRIPE_SECRET_KEY',
+  'STRIPE_API_KEY',
+  'NPM_TOKEN',
+  'HF_TOKEN',
+  'HUGGINGFACE_TOKEN',
+  'DATABASE_URL',
+  'DB_PASSWORD',
+  'POSTGRES_PASSWORD',
+  'MYSQL_PWD',
+  'PRIVATE_KEY',
+  'SECRET_KEY',
+  'ACCESS_TOKEN',
+  'AUTH_TOKEN',
+  'CLIENT_SECRET',
+  'SLACK_BOT_TOKEN',
+  'DISCORD_TOKEN',
+]);
+
+function hasSecretEnvVarRef(text) {
+  const input = String(text || '');
+  const refRe = /\$\{?([a-z0-9_-]+)(?!\w)/gi;
+  let match = refRe.exec(input);
+  while (match) {
+    if (SECRET_ENV_VAR_NAMES.has(match[1].toUpperCase())) return true;
+    match = refRe.exec(input);
+  }
+  return false;
+}
 
 const BASH_SECRET_READ_PREFIXES = [
   'cat',
@@ -221,6 +260,23 @@ function sonarScanFile(filePath) {
   };
 }
 
+function isCodePropertyAccessValue(rawMatch, nextChar) {
+  const sepIdx = rawMatch.search(/[:=]/);
+  if (sepIdx === -1) return false;
+  const rhs = rawMatch.slice(sepIdx + 1).trim();
+  const isQuoted = (rhs.startsWith('"') && rhs.endsWith('"')) || (rhs.startsWith("'") && rhs.endsWith("'"));
+  if (isQuoted) return false;
+  if (nextChar === '(' && /^[A-Za-z_$][A-Za-z0-9_$.]*$/.test(rhs)) return true;
+  return /^[A-Za-z_$][A-Za-z0-9_$]*(?:\.[A-Za-z_$][A-Za-z0-9_$]*)+$/.test(rhs);
+}
+
+function shouldSkipGenericAssignment(patternId, rawMatch, nextChar) {
+  if (patternId !== 'generic_assignment') return false;
+  const lowered = rawMatch.toLowerCase();
+  if (lowered.includes('sk_test_') || lowered.includes('test_token')) return true;
+  return isCodePropertyAccessValue(rawMatch, nextChar);
+}
+
 function heuristicScanText(text, source = 'text') {
   const input = String(text || '');
   const findings = [];
@@ -228,20 +284,16 @@ function heuristicScanText(text, source = 'text') {
     pattern.regex.lastIndex = 0;
     let match = pattern.regex.exec(input);
     while (match) {
-      // Safe test key bypass
-      const matchedString = match[0].toLowerCase();
-      if (pattern.id === 'generic_assignment' && (matchedString.includes('sk_test_') || matchedString.includes('test_token'))) {
-        match = pattern.regex.exec(input);
-        continue;
+      const nextChar = input[match.index + match[0].length] || '';
+      if (!shouldSkipGenericAssignment(pattern.id, match[0], nextChar)) {
+        findings.push({
+          id: pattern.id,
+          label: pattern.label,
+          source,
+          line: computeLineNumber(input, match.index),
+          reason: `${pattern.label} detected`,
+        });
       }
-      
-      findings.push({
-        id: pattern.id,
-        label: pattern.label,
-        source,
-        line: computeLineNumber(input, match.index),
-        reason: `${pattern.label} detected`,
-      });
       match = pattern.regex.exec(input);
     }
   }
@@ -706,9 +758,9 @@ function detectCommandSubstitutionExfil(command, cwd) {
   // $(cat .env), $(base64 .env), `cat .env`, <(cat .env) — secret not literal in curl argv.
   const findings = [];
   const patterns = [
-    /\$\(\s*([a-z0-9._+-]+)\s+([^)]+)\)/gi,
-    /`\s*([a-z0-9._+-]+)\s+([^`]+)`/gi,
-    /<\(\s*([a-z0-9._+-]+)\s+([^)]+)\)/gi,
+    /\$\(\s*([a-z0-9._+-]+)\s+([^\s)][^)]*)\)/gi,
+    /`\s*([a-z0-9._+-]+)\s+([^\s`][^`]*)`/gi,
+    /<\(\s*([a-z0-9._+-]+)\s+([^\s)][^)]*)\)/gi,
   ];
   for (const pattern of patterns) {
     pattern.lastIndex = 0;
@@ -744,7 +796,7 @@ function detectCommandSubstitutionExfil(command, cwd) {
 function detectPipelineExfil(command, cwd) {
   // cat .env | nc … ; base64 .env | curl … ; echo $API_KEY | curl …
   const findings = [];
-  const segments = String(command || '').split(/(?<![|])\|(?![|])/);
+  const segments = String(command || '').split(/(?<!\|)\|(?!\|)/);
   if (segments.length < 2) return findings;
 
   for (let i = 0; i < segments.length - 1; i += 1) {
@@ -762,8 +814,7 @@ function detectPipelineExfil(command, cwd) {
       });
     }
 
-    SECRET_ENV_VAR_PATTERN.lastIndex = 0;
-    if (SECRET_ENV_VAR_PATTERN.test(left) || SECRET_ENV_VAR_PATTERN.test(right)) {
+    if (hasSecretEnvVarRef(left) || hasSecretEnvVarRef(right)) {
       findings.push({
         id: 'secret_env_exfil',
         label: 'Secret environment variable',
@@ -775,7 +826,29 @@ function detectPipelineExfil(command, cwd) {
   return findings;
 }
 
-function detectScpRsyncExfil(command, cwd) {
+function resolveTransferLocalSide(token) {
+  const str = String(token);
+  if (str.includes(':') && !str.startsWith('/')) {
+    return str.split(':').slice(1).join(':');
+  }
+  return token;
+}
+
+function collectTransferTokenFindings(tokens, verb, findings) {
+  for (const token of tokens) {
+    if (String(token).startsWith('-')) continue;
+    const localSide = resolveTransferLocalSide(token);
+    const pathFinding = classifySecretPathToken(localSide) || classifySecretPathToken(token);
+    if (!pathFinding) continue;
+    findings.push({
+      ...pathFinding,
+      source: 'transfer_exfil',
+      reason: `${pathFinding.label} referenced by ${verb} transfer`,
+    });
+  }
+}
+
+function detectScpRsyncExfil(command) {
   const findings = [];
   for (const segment of splitCommandSegments(command)) {
     const tokens = tokenizeCommand(segment);
@@ -783,20 +856,8 @@ function detectScpRsyncExfil(command, cwd) {
     let index = 0;
     while (isShellAssignment(tokens[index])) index += 1;
     const verb = path.basename(String(tokens[index] || '')).toLowerCase();
-    if (verb !== 'scp' && verb !== 'rsync' && verb !== 'sftp') continue;
-    for (const token of tokens.slice(index + 1)) {
-      if (String(token).startsWith('-')) continue;
-      // scp local secret → remote  OR  remote → local (still sensitive move)
-      const localSide = String(token).includes(':') && !String(token).startsWith('/')
-        ? String(token).split(':').slice(1).join(':')
-        : token;
-      const pathFinding = classifySecretPathToken(localSide) || classifySecretPathToken(token);
-      if (!pathFinding) continue;
-      findings.push({
-        ...pathFinding,
-        source: 'transfer_exfil',
-        reason: `${pathFinding.label} referenced by ${verb} transfer`,
-      });
+    if (verb === 'scp' || verb === 'rsync' || verb === 'sftp') {
+      collectTransferTokenFindings(tokens.slice(index + 1), verb, findings);
     }
   }
   return findings;
@@ -808,8 +869,7 @@ function detectEnvVarNetworkExfil(command) {
   // Require a parsed network/transfer verb or /dev/tcp — a URL in docs text alone
   // must not hard-deny (e.g. printf 'Set $OPENAI_API_KEY then visit https://…').
   const text = String(command || '');
-  SECRET_ENV_VAR_PATTERN.lastIndex = 0;
-  const hasEnvRef = SECRET_ENV_VAR_PATTERN.test(text)
+  const hasEnvRef = hasSecretEnvVarRef(text)
     || /\bprintenv\s+(?:API[_-]?KEY|OPENAI_API_KEY|ANTHROPIC_API_KEY|AWS_SECRET_ACCESS_KEY|GITHUB_TOKEN|GH_TOKEN|STRIPE_SECRET_KEY|NPM_TOKEN|ACCESS_TOKEN|CLIENT_SECRET)\b/i.test(text)
     || /\benv\s+(?:API[_-]?KEY|OPENAI_API_KEY|ANTHROPIC_API_KEY|AWS_SECRET_ACCESS_KEY|GITHUB_TOKEN)\b/i.test(text);
   if (!hasEnvRef) return [];
@@ -835,7 +895,7 @@ function detectRedirectExfil(command, cwd) {
   if (!hasNetwork) return findings;
 
   // stdin redirect from a secret path
-  const redirectRe = /(?:^|[\s;|&])\d*\s*<\s*([^\s;|&><]+)/g;
+  const redirectRe = /(?<=^|[\s;|&0-9])<\s*([^\s;|&><]+)/g;
   let match = redirectRe.exec(text);
   while (match) {
     const pathFinding = classifySecretPathToken(match[1]);
@@ -848,7 +908,6 @@ function detectRedirectExfil(command, cwd) {
     }
     match = redirectRe.exec(text);
   }
-
   // Bash /dev/tcp with secret path anywhere in the same command
   if (/\/dev\/tcp\//i.test(text)) {
     const tokens = tokenizeCommand(text.replace(/[<>]/g, ' '));
@@ -945,7 +1004,7 @@ function detectArchivePipeExfil(command, cwd) {
   if (!/\|/.test(text) && !segmentHasNetworkExfil(text) && !/https?:\/\//i.test(text)) {
     return findings;
   }
-  const segments = text.split(/(?<![|])\|(?![|])/);
+  const segments = text.split(/(?<!\|)\|(?!\|)/);
   const left = segments[0] || text;
   const archiveVerb = path.basename(String(tokenizeCommand(left)[0] || '')).toLowerCase();
   if (!['tar', 'zip', 'gzip', 'pigz', '7z', 'rar'].includes(archiveVerb)) {
@@ -984,7 +1043,7 @@ function detectInterpreterExfil(command, cwd) {
     && /(?:-c|-e|--eval)\b/i.test(text);
   if (!isInterpreter) return [];
 
-  const touchesSecretPath = /\.env(?:\.[A-Za-z0-9_-]+)?|\.aws\/credentials|\.ssh\/id_|\.netrc|\.npmrc|application_default_credentials/i.test(text);
+  const touchesSecretPath = /\.env(?:\.[a-z0-9_-]+)?|\.aws\/credentials|\.ssh\/id_|\.netrc|\.npmrc|application_default_credentials/i.test(text);
   const touchesSecretEnv = /(?:API_KEY|OPENAI_API_KEY|AWS_SECRET|GITHUB_TOKEN|STRIPE_SECRET|os\.environ|process\.env)/i.test(text);
   const touchesNetwork = /https?:\/\/|requests\.|urllib|fetch\(|http\.request|httpx\.|aiohttp|socket\.|urlopen/i.test(text);
   if (!(touchesSecretPath || touchesSecretEnv) || !touchesNetwork) return [];
