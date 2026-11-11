@@ -8,6 +8,8 @@ const path = require('node:path');
 
 const {
   GEMINI_DECISIONS_URL,
+  STRIPE_OFFER_CATALOG,
+  OFFER_CHOICE_DESCRIPTIONS,
   buildNoul,
   buildChoice,
   buildScore,
@@ -15,7 +17,6 @@ const {
   evaluateToolCallDecision,
   recommendCheckoutOfferDecision,
 } = require('../src/mcp-writeguard');
-
 describe('Gemini Decisions API (gemini-decision-1) engine & server integration', () => {
   it('sends v1beta/decisions wire format with noul, choice, and score and zero output tokens', async () => {
     let capturedUrl = null;
@@ -284,7 +285,7 @@ describe('Gemini Decisions API (gemini-decision-1) engine & server integration',
       fs.rmSync(tmpRoot, { recursive: true, force: true });
     });
 
-    it('serves POST /v1/billing/recommend-offer publicly and wires /checkout/pro rescue script', async () => {
+    it('serves POST /v1/billing/recommend-offer publicly, enforces last-hop X-Forwarded-For IP limit, and matches every offer headline & rationale to its live product page', async () => {
       const offerRes = await fetch(`${origin}/v1/billing/recommend-offer`, {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
@@ -295,16 +296,50 @@ describe('Gemini Decisions API (gemini-decision-1) engine & server integration',
       assert.equal(offerJson.offerId, 'playbook_999');
       assert.match(offerJson.checkoutPath, /^\/go\/playbook-999\?/);
 
+      // Verify every offer's headline & rationale (and choice description) matches its live product page word-for-word
+      const stripHtml = (html) => html
+        .replace(/<script[\s\S]*?<\/script>/gi, ' ')
+        .replace(/<style[\s\S]*?<\/style>/gi, ' ')
+        .replace(/<[^>]+>/g, ' ')
+        .replace(/&amp;/g, '&')
+        .replace(/&middot;/g, '·')
+        .replace(/\s+/g, ' ')
+        .trim();
+      const pageCache = new Map();
+      for (const offer of Object.values(STRIPE_OFFER_CATALOG)) {
+        if (!pageCache.has(offer.productPagePath)) {
+          const pageRes = await fetch(`${origin}${offer.productPagePath}`);
+          assert.equal(pageRes.status, 200);
+          pageCache.set(offer.productPagePath, stripHtml(await pageRes.text()));
+        }
+        const pageText = pageCache.get(offer.productPagePath);
+        assert.ok(pageText.includes(offer.headline), `Offer ${offer.offerId} headline missing from ${offer.productPagePath}: "${offer.headline}"`);
+        assert.ok(pageText.includes(offer.rationale), `Offer ${offer.offerId} rationale missing from ${offer.productPagePath}: "${offer.rationale}"`);
+        const combinedCopy = `${offer.headline} ${offer.rationale} ${OFFER_CHOICE_DESCRIPTIONS[offer.offerId]}`;
+        assert.doesNotMatch(combinedCopy, /gate credits|40 PreToolUse rules|7-day refund/i);
+      }
+
+      // Verify spoofing the first X-Forwarded-For entry cannot bypass the per-IP limit (last Railway hop wins)
+      process.env.GEMINI_API_KEY = 'tg-fake-rate-limit-key';
+      let lastBody = null;
+      for (let i = 0; i < 12; i += 1) {
+        const r = await fetch(`${origin}/v1/billing/recommend-offer`, {
+          method: 'POST',
+          headers: {
+            'content-type': 'application/json',
+            'x-forwarded-for': `198.51.100.${i}, 203.0.113.250`,
+          },
+          body: JSON.stringify({ reasonCode: 'price_unclear', reasonText: `unique-spoof-${i}` }),
+        });
+        lastBody = await r.json();
+      }
+      process.env.GEMINI_API_KEY = '';
+      assert.equal(lastBody.rateLimitedFallback, true);
+
       const gateRes = await fetch(`${origin}/v1/gates/decide`, {
         method: 'POST',
-        headers: {
-          authorization: 'Bearer tg-test-admin-key',
-          'content-type': 'application/json',
-        },
-        body: JSON.stringify({
-          toolName: 'bash',
-          toolArgs: { command: 'rm -rf /' },
-        }),
+        headers: { authorization: 'Bearer tg-test-admin-key', 'content-type': 'application/json' },
+        body: JSON.stringify({ toolName: 'bash', toolArgs: { command: 'rm -rf /' } }),
       });
       assert.equal(gateRes.status, 200);
       const gateJson = await gateRes.json();

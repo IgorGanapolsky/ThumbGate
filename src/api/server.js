@@ -9685,8 +9685,11 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
       try {
         const body = await parseJsonBody(req);
         const traceId = body.traceId || createTraceId('offer');
+        const forwardedList = req.headers['x-forwarded-for']
+          ? String(req.headers['x-forwarded-for']).split(',').map((s) => s.trim()).filter(Boolean)
+          : [];
         const clientIp = String(
-          (req.headers['x-forwarded-for'] && String(req.headers['x-forwarded-for']).split(',')[0])
+          (forwardedList.length > 0 ? forwardedList[forwardedList.length - 1] : '')
           || (req.socket && req.socket.remoteAddress)
           || ''
         ).trim();
