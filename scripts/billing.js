@@ -3021,6 +3021,8 @@ function buildCheckoutSessionPayload({ successUrl, cancelUrl, customerEmail, che
     mode: pack ? 'payment' : 'subscription',
     line_items: lineItems,
     allow_promotion_codes: true,
+    billing_address_collection: 'auto',
+    tax_id_collection: { enabled: true },
     after_expiration: { recovery: { enabled: true, allow_promotion_codes: true } },
     branding_settings: buildCheckoutBrandingSettings(appOrigin),
     metadata: serializeStripeMetadata({
