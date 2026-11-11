@@ -111,6 +111,7 @@ const {
 } = require('../../scripts/internal-agent-bootstrap');
 const {
   classifyRequester,
+  isHumanCheckoutNavigation,
 } = require('../../scripts/bot-detection');
 const {
   recordCheckoutFunnelEvent,
@@ -3378,7 +3379,11 @@ async function serveTrackedLinkRedirect({ req, res, parsed, hostedConfig, isHead
 
   const { FEEDBACK_DIR } = getFeedbackPaths();
   const journeyState = resolveJourneyState(req, parsed);
-  const botClassification = classifyRequester(req.headers);
+  const requesterClassification = classifyRequester(req.headers);
+  const botClassification = requesterClassification.isBot
+    || isHumanCheckoutNavigation(req.headers, hostedConfig.appOrigin)
+    ? requesterClassification
+    : { isBot: true, reason: 'no_browser_navigation' };
   if (target.botDeflectPath && botClassification.isBot) {
     const deflectUrl = new URL(target.botDeflectPath, hostedConfig.appOrigin);
     appendTrackedLinkQueryParams(deflectUrl, parsed, target);
@@ -9518,7 +9523,13 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
         const responseHeaders = getPublicBillingHeaders(traceId);
         const analyticsMetadata = buildCheckoutAttributionMetadata(body, req, traceId);
         const offerSummary = resolveCheckoutOfferSummary(analyticsMetadata);
-        
+        // A session without an email can't be followed up and almost always
+        // expires unpaid; most of the 30-day emailless sessions came from here.
+        const customerEmail = normalizeCheckoutCustomerEmail(body.customerEmail);
+        if (!customerEmail) {
+          throw createHttpError(400, 'customerEmail must be a valid email address');
+        }
+
         const result = await createCheckoutSession({
           successUrl: body.successUrl || buildCheckoutFallbackUrl(
             buildHostedSuccessUrl(hostedConfig.appOrigin, traceId),
@@ -9528,7 +9539,7 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
             buildHostedCancelUrl(hostedConfig.appOrigin, traceId),
             analyticsMetadata,
           ),
-          customerEmail: body.customerEmail,
+          customerEmail,
           installId: body.installId,
           traceId,
           metadata: analyticsMetadata,

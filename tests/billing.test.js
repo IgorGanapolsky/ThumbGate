@@ -1987,7 +1987,7 @@ describe('API server — /v1/billing/* routes', () => {
     const res = await fetch(`http://localhost:${port}/v1/billing/checkout`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ installId: 'inst_api' })
+      body: JSON.stringify({ installId: 'inst_api', customerEmail: 'buyer@example.com' })
     });
     assert.equal(res.status, 200);
     assert.equal(res.headers.get('access-control-allow-origin'), '*');
