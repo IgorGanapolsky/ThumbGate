@@ -513,7 +513,9 @@ function buildSubscriptionPriceData(checkoutSelection, appOrigin) {
       name: isTeam ? 'ThumbGate Team' : 'ThumbGate Pro',
       description: isTeam
         ? 'Shared Pre-Action Checks, team governance, and workflow hardening for AI coding agents.'
-        : 'Local dashboard, DPO export, and Pre-Action Checks for AI coding agents.',
+        : annual
+          ? 'Annual Pro (save $79/yr): unlimited learned gates, multi-hop recall, visual debugger, DPO export, and instant Pro API key. 7-day refund.'
+          : 'Unlimited learned gates (removes 3-rule free cap), multi-hop recall, visual debugger, DPO export, and instant Pro API key. Cancel anytime · 7-day refund.',
       appOrigin,
       planId: isTeam ? 'team' : 'pro',
     }),

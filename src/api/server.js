@@ -570,6 +570,23 @@ const TRACKED_LINK_TARGETS = Object.freeze({
     allowCustomerEmail: true,
     prefillStripeEmail: true,
   },
+  'pro-annual': {
+    fallbackHref: PRO_CHECKOUT_URL,
+    external: true,
+    botDeflectPath: '/checkout/pro',
+    ctaId: 'pro_checkout_annual_stripe',
+    ctaPlacement: 'checkout_interstitial',
+    eventType: 'pro_checkout_direct_stripe',
+    defaults: {
+      utm_source: 'website',
+      utm_medium: 'checkout_interstitial',
+      utm_campaign: 'pro_annual_149',
+      plan_id: 'pro',
+      billing_cycle: 'annual',
+    },
+    allowCustomerEmail: true,
+    prefillStripeEmail: true,
+  },
   'bundle-49': {
     fallbackHref: 'https://iganapolsky.gumroad.com/l/vcrho',
     external: true,
@@ -2847,12 +2864,33 @@ function getOauthAuthorizeParamsFromForm(form, hostedConfig) {
   };
 }
 
+function resolveCheckoutIntentPlanView(parsed) {
+  const requestedCycle = String(parsed?.searchParams?.get('billing_cycle') || 'monthly').trim().toLowerCase();
+  if (requestedCycle === 'annual') {
+    return {
+      title: 'Start ThumbGate Pro Annual',
+      price: '$149',
+      unit: '/yr',
+      directHref: '/go/pro-annual?utm_source=website&amp;utm_medium=checkout_interstitial&amp;utm_campaign=pro_annual_149&amp;utm_content=skip_form&amp;cta_id=pro_checkout_direct_stripe&amp;cta_placement=checkout_interstitial&amp;plan_id=pro&amp;billing_cycle=annual',
+      ctaLabel: 'Pay $149/yr with Stripe →',
+    };
+  }
+  return {
+    title: 'Start ThumbGate Pro',
+    price: '$19',
+    unit: '/mo',
+    directHref: '/go/pro-direct?utm_source=website&amp;utm_medium=checkout_interstitial&amp;utm_campaign=pro_upgrade&amp;utm_content=skip_form&amp;cta_id=pro_checkout_direct_stripe&amp;cta_placement=checkout_interstitial',
+    ctaLabel: 'Pay $19/mo with Stripe →',
+  };
+}
+
 function renderCheckoutIntentPage(prefilledEmail = '', parsed = null, options = {}) {
   const plausibleDomain = escapeHtmlAttribute(resolvePlausibleDataDomain({ host: 'thumbgate.ai' }));
   const includeHiddenAttribution = options.includeHiddenAttribution === true;
   const hiddenInputs = includeHiddenAttribution
     ? buildCheckoutHiddenAttributionInputs(parsed)
     : '';
+  const planView = resolveCheckoutIntentPlanView(parsed);
   return `<!doctype html>
 <html lang="en">
 <head>
@@ -2885,10 +2923,10 @@ a{display:block;text-decoration:none}a.secondary,button.secondary{box-sizing:bor
 <body>
 <main>
 <div class="brand"><span class="brand-mark"></span><span>ThumbGate</span></div>
-<h1>Start ThumbGate Pro</h1>
-<div class="price">$19<small>/mo</small></div>
-<p>The npm package runs your gates locally. <strong>Pro</strong> removes solo caps and adds personal recall, proof, exports, and adapter maintenance. Enterprise service work is qualified after intake; hosted team sync and a hosted org dashboard are not generally available.</p>
-<a class="primary" data-i="pro_checkout_direct_stripe" rel="nofollow" href="/go/pro-direct?utm_source=website&amp;utm_medium=checkout_interstitial&amp;utm_campaign=pro_upgrade&amp;utm_content=skip_form&amp;cta_id=pro_checkout_direct_stripe&amp;cta_placement=checkout_interstitial">Pay $19/mo with Stripe →</a>
+<h1>${planView.title}</h1>
+<div class="price">${planView.price}<small>${planView.unit}</small></div>
+<p>The npm package runs your gates locally. <strong>Pro</strong> removes solo caps and adds personal recall, proof, exports, and adapter maintenance. Your Pro API key is provisioned on the next screen immediately after payment.</p>
+<a class="primary" data-i="pro_checkout_direct_stripe" rel="nofollow" href="${planView.directHref}">${planView.ctaLabel}</a>
 <form action="/checkout/pro" method="POST" data-i="pro_checkout_confirmed">
 ${hiddenInputs}
 <input type="hidden" name="confirm" value="1">
@@ -2901,8 +2939,8 @@ ${hiddenInputs}
 <a class="secondary" data-i="pro_checkout_bundle_49" rel="nofollow" href="/go/bundle-49?utm_source=website&amp;utm_medium=checkout_interstitial&amp;utm_campaign=bundle_49&amp;cta_id=pro_checkout_bundle_49&amp;cta_placement=checkout_interstitial">Buy the $49 bundle, once</a>
 <a class="secondary" data-i="workflow_sprint_intake" href="/#workflow-sprint-intake">Not sure yet? Send the workflow first</a>
 <p class="choice-note">Cancel anytime. 7-day refund, no questions.</p>
-<div class="objection-box" aria-label="Checkout feedback">
-<strong>Not buying today?</strong>
+<details class="objection-box" aria-label="Checkout feedback">
+<summary style="cursor:pointer;font-weight:600;color:#cbd5e1">Not buying today? Tell us what to fix (optional)</summary>
 <p class="objection-note">Tap one reason so we know what to fix. This does not sign you up.</p>
 <div class="objection-grid">
 <button type="button" data-reason="price_unclear">Price or scope is unclear</button>
@@ -2911,7 +2949,7 @@ ${hiddenInputs}
 <button type="button" data-reason="not_urgent">Not urgent right now</button>
 </div>
 <div class="feedback-saved" id="feedback-saved">Feedback saved.</div>
-</div>
+</details>
 <div class="trust"><div class="trust-item">Personal recall and proof exports without free-tier caps</div><div class="trust-item">Adapter matrix kept current for Claude Code, Cursor, Codex, Gemini, Amp, Cline, OpenCode</div><div class="trust-item">Personal dashboard: gate stats, rule evidence, DPO export</div><div class="trust-item">Enterprise service work is qualified after intake; hosted team sync and a hosted org dashboard are not generally available</div></div>
 <p class="back"><a href="/">← Back to thumbgate.ai</a></p>
 </main>
@@ -3226,7 +3264,82 @@ function buildTrackedLinkAttribution(target, parsed, req, journeyState, destinat
   };
 }
 
-function serveTrackedLinkRedirect({ req, res, parsed, hostedConfig, isHeadRequest, slug }) {
+function isSyntheticProbeQuery(parsed) {
+  const probe = String(parsed?.searchParams?.get('probe') || '').trim().toLowerCase();
+  return probe === '1' || probe === 'true';
+}
+
+function isDirectProSessionSlug(slug) {
+  return slug === 'pro-direct' || slug === 'pro-annual' || slug === 'founding-100';
+}
+
+/**
+ * Creates an attributable dynamic Stripe Checkout Session for human 1-click Pro
+ * redirects (`/go/pro-direct`, `/go/pro-annual`, `/go/founding-100`) when live
+ * Stripe credentials are present, ensuring `/success` key provisioning, `/cancel`
+ * recovery downsells, promotion codes, and exact `$19/mo` vs `$149/yr` pricing.
+ */
+async function tryCreateDirectProCheckoutRedirect({
+  target,
+  parsed,
+  req,
+  hostedConfig,
+  journeyState,
+  feedbackDir,
+}) {
+  if (!isDirectProSessionSlug(target.slug) || !process.env.STRIPE_SECRET_KEY || isSyntheticProbeQuery(parsed)) {
+    return null;
+  }
+  const requestedCycle = String(parsed.searchParams.get('billing_cycle') || '').trim().toLowerCase();
+  const billingCycle = (
+    target.slug === 'pro-annual'
+    || target.slug === 'founding-100'
+    || requestedCycle === 'annual'
+  ) ? 'annual' : 'monthly';
+  const customerEmail = normalizeCheckoutCustomerEmail(
+    parsed.searchParams.get('customer_email') || parsed.searchParams.get('prefilled_email')
+  ) || undefined;
+  const traceId = createJourneyId('checkout');
+  const bootstrapBody = buildCheckoutBootstrapBody(parsed, req, journeyState);
+  const defaults = target.defaults || {};
+  if (!parsed.searchParams.get('utm_source') && defaults.utm_source) bootstrapBody.utmSource = defaults.utm_source;
+  if (!parsed.searchParams.get('utm_medium') && defaults.utm_medium) bootstrapBody.utmMedium = defaults.utm_medium;
+  if (!parsed.searchParams.get('utm_campaign') && defaults.utm_campaign) bootstrapBody.utmCampaign = defaults.utm_campaign;
+  if (!parsed.searchParams.get('cta_id') && target.ctaId) bootstrapBody.ctaId = target.ctaId;
+  if (!parsed.searchParams.get('cta_placement') && target.ctaPlacement) bootstrapBody.ctaPlacement = target.ctaPlacement;
+  bootstrapBody.planId = 'pro';
+  bootstrapBody.billingCycle = billingCycle;
+  const analyticsMetadata = buildCheckoutAttributionMetadata(bootstrapBody, req, traceId);
+  const sessionResult = await createCheckoutSession({
+    successUrl: buildCheckoutFallbackUrl(buildHostedSuccessUrl(hostedConfig.appOrigin, traceId), analyticsMetadata),
+    cancelUrl: buildCheckoutFallbackUrl(buildHostedCancelUrl(hostedConfig.appOrigin, traceId), analyticsMetadata),
+    customerEmail,
+    installId: bootstrapBody.installId,
+    traceId,
+    metadata: analyticsMetadata,
+    appOrigin: hostedConfig.appOrigin,
+  });
+  if (!sessionResult || !sessionResult.url) {
+    return null;
+  }
+  const dynamicDestinationUrl = new URL(sessionResult.url);
+  const dynamicAttribution = buildTrackedLinkAttribution(target, parsed, req, journeyState, dynamicDestinationUrl);
+  appendBestEffortTelemetry(
+    feedbackDir,
+    {
+      ...dynamicAttribution,
+      traceId,
+      stripeSessionId: sessionResult.sessionId || null,
+      planId: 'pro',
+      billingCycle,
+    },
+    req.headers,
+    `tracked_link_redirect:${target.slug}`
+  );
+  return sessionResult.url;
+}
+
+async function serveTrackedLinkRedirect({ req, res, parsed, hostedConfig, isHeadRequest, slug }) {
   const target = getTrackedLinkTarget(slug);
   if (!target) {
     sendJson(res, 404, {
@@ -3295,6 +3408,32 @@ function serveTrackedLinkRedirect({ req, res, parsed, hostedConfig, isHeadReques
     });
     res.end();
     return;
+  }
+  if (!isHeadRequest && isDirectProSessionSlug(target.slug) && process.env.STRIPE_SECRET_KEY) {
+    try {
+      const dynamicSessionUrl = await tryCreateDirectProCheckoutRedirect({
+        target,
+        parsed,
+        req,
+        hostedConfig,
+        journeyState,
+        feedbackDir: FEEDBACK_DIR,
+      });
+      if (dynamicSessionUrl) {
+        res.writeHead(req.method === 'POST' ? 303 : 302, {
+          ...(journeyState.setCookieHeaders.length ? { 'Set-Cookie': journeyState.setCookieHeaders } : {}),
+          'Cache-Control': 'no-store',
+          'Referrer-Policy': 'strict-origin-when-cross-origin',
+          'X-Robots-Tag': 'noindex,nofollow',
+          'X-ThumbGate-Link-Slug': target.slug,
+          Location: dynamicSessionUrl,
+        });
+        res.end();
+        return;
+      }
+    } catch {
+      // Fall back cleanly to static Payment Link if dynamic session creation fails
+    }
   }
   const destinationUrl = buildTrackedLinkDestination(target, hostedConfig, parsed);
   const attribution = buildTrackedLinkAttribution(target, parsed, req, journeyState, destinationUrl);
@@ -6327,7 +6466,7 @@ function createApiServer() {
           }
         }
       }
-      serveTrackedLinkRedirect({
+      await serveTrackedLinkRedirect({
         req,
         res,
         parsed: trackedParsed,
