@@ -852,6 +852,10 @@ function renderTopBlockedGates(gates) {
 }
 
 let API_KEY = '';
+let HAS_COOKIE_SESSION = false;
+function hasActiveAuth() {
+  return Boolean(API_KEY || HAS_COOKIE_SESSION);
+}
 let currentSource = 'all';
 let isDemo = false;
 let demoData = [];
@@ -879,7 +883,10 @@ function preserveProjectQueryParams() {
 }
 
 function getHeaders() {
-  var headers = { 'Authorization': 'Bearer ' + API_KEY, 'Content-Type': 'application/json' };
+  var headers = { 'Content-Type': 'application/json' };
+  if (API_KEY) {
+    headers['Authorization'] = 'Bearer ' + API_KEY;
+  }
   if (ACTIVE_PROJECT_DIR) {
     headers['x-thumbgate-project-dir'] = ACTIVE_PROJECT_DIR;
   }
@@ -1020,11 +1027,9 @@ function disconnectKey() {
     __liveEventsController = null;
   }
   API_KEY = '';
+  HAS_COOKIE_SESSION = false;
   isDemo = false;
-  try {
-    sessionStorage.removeItem('tg_paid_api_key');
-    localStorage.removeItem('tg_paid_api_key');
-  } catch (_) {}
+  fetch('/v1/auth/session', { method: 'DELETE', credentials: 'same-origin' }).catch(function() {});
   var input = document.getElementById('apiKey');
   input.value = '';
   input.disabled = false;
@@ -1044,9 +1049,9 @@ async function connect(options) {
   var opts = options || {};
   var input = document.getElementById('apiKey');
   API_KEY = String(opts.key || input.value || '').trim();
-  if (!API_KEY) return;
+  if (!API_KEY && !opts.cookieSession) return;
   
-  var isEnterprise = API_KEY.startsWith('tg_op_') || API_KEY.startsWith('tg_creator_');
+  var isEnterprise = opts.tier === 'Enterprise' || API_KEY.startsWith('tg_op_') || API_KEY.startsWith('tg_creator_');
   var tierName = isEnterprise ? 'Enterprise' : 'Pro';
 
   const status = document.getElementById('authStatus');
@@ -1055,7 +1060,7 @@ async function connect(options) {
   status.className = 'auth-status';
   status.textContent = opts.localPro ? `Connecting local dashboard...` : 'Connecting...';
   try {
-    const res = await fetch('/v1/feedback/stats', { headers: getHeaders() });
+    const res = await fetch('/v1/feedback/stats', { credentials: 'same-origin', headers: getHeaders() });
     if (!res.ok) throw new Error('Invalid API key');
     const data = await res.json();
     
@@ -1087,14 +1092,21 @@ async function connect(options) {
     status.className = 'auth-status ok';
     status.textContent = opts.localPro ? `✓ Local ${tierName} connected` : '✓ Connected';
     if (!opts.localPro && API_KEY) {
-      try {
-        sessionStorage.removeItem('tg_paid_api_key');
-        localStorage.removeItem('tg_paid_api_key');
-        sessionStorage.setItem('tg_paid_session_active', '1');
-        localStorage.setItem('tg_paid_session_active', '1');
-      } catch (_) {}
+      fetch('/v1/auth/session', {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ apiKey: API_KEY }),
+      }).then(function(r) {
+        if (r.ok) HAS_COOKIE_SESSION = true;
+      }).catch(function() {});
+    } else if (opts.cookieSession) {
+      HAS_COOKIE_SESSION = true;
+      input.value = '';
+      input.placeholder = 'Session active (HttpOnly cookie)';
     }
     document.getElementById('disconnectBtn').style.display = 'inline-block';
+    const titleEl = document.getElementById('authTitle');
     if (titleEl) {
       titleEl.textContent = opts.localPro ? `${tierName} License Active` : 'API Key Connected';
     }
@@ -1401,7 +1413,7 @@ function switchTab(name) {
       history.replaceState(null, '', '#' + name);
     }
   } catch (e) { /* ignore: older browsers or sandboxed frames */ }
-  if (API_KEY && !isDemo) {
+  if (hasActiveAuth() && !isDemo) {
     if (name === 'ai-inventory') {
       loadAiInventory();
     } else if (name === 'enterprise') {
@@ -1496,7 +1508,7 @@ function ensureDashboardDataLoaded() {
 }
 
 function scheduleDashboardHydration(delayMs) {
-  if (!API_KEY || isDemo || dashboardDataPromise) return;
+  if (!hasActiveAuth() || isDemo || dashboardDataPromise) return;
   pauseDashboardHydration();
   dashboardHydrationTimer = setTimeout(function() {
     dashboardHydrationTimer = null;
@@ -1517,8 +1529,10 @@ async function subscribeToLiveEvents() {
   var controller = new AbortController();
   __liveEventsController = controller;
   try {
+    var eventHeaders = API_KEY ? { 'Authorization': 'Bearer ' + API_KEY } : {};
     var res = await fetch('/v1/events', {
-      headers: { 'Authorization': 'Bearer ' + API_KEY },
+      credentials: 'same-origin',
+      headers: eventHeaders,
       signal: controller.signal,
     });
     if (!res.ok || !res.body || !res.body.getReader) return;
@@ -2208,7 +2222,7 @@ function renderEnterpriseStatus(status) {
 }
 
 async function loadEnterpriseDataChatStatus() {
-  if (!API_KEY || isDemo) {
+  if (!hasActiveAuth() || isDemo) {
     renderEnterpriseStatus({ vertex: {}, dfcx: { verification: 'Connect to load local status.' } });
     return;
   }
@@ -2237,7 +2251,7 @@ async function sendEnterpriseChat() {
     answer.textContent = 'Ask a question first.';
     return;
   }
-  if (!API_KEY) {
+  if (!hasActiveAuth()) {
     answer.textContent = 'Connect your dashboard before using Enterprise Chat.';
     return;
   }
@@ -2550,19 +2564,22 @@ window.addEventListener('DOMContentLoaded', function() {
     connect({ key: BOOTSTRAP_API_KEY, localPro: true });
     return;
   }
-  var savedPaidKey = '';
-  try {
-    savedPaidKey = String(sessionStorage.getItem('tg_paid_api_key') || localStorage.getItem('tg_paid_api_key') || '').trim();
-  } catch (_) {}
-  if (savedPaidKey) {
-    var keyInput = document.getElementById('apiKey');
-    if (keyInput) keyInput.value = savedPaidKey;
-    connect({ key: savedPaidKey });
-    return;
-  }
-  if (!window.location.search.includes('noauto')) {
-    loadDemo();
-  }
+  fetch('/v1/auth/session', { credentials: 'same-origin' })
+    .then(function(res) { return res.ok ? res.json() : null; })
+    .then(function(session) {
+      if (session && session.authenticated) {
+        connect({ cookieSession: true, tier: session.tier });
+        return;
+      }
+      if (!window.location.search.includes('noauto')) {
+        loadDemo();
+      }
+    })
+    .catch(function() {
+      if (!window.location.search.includes('noauto')) {
+        loadDemo();
+      }
+    });
 });
 
 async function exportDpo() {

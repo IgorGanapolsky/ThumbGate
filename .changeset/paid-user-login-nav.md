@@ -2,4 +2,4 @@
 "thumbgate": patch
 ---
 
-Add a paid-user `Log in` button and Pro/operator API key login bar to the top navigation of `public/index.html` and auto-restore saved `tg_paid_api_key` sessions in `public/dashboard.html`.
+Add a paid-user `Log in` navbar drawer on `public/index.html` that exchanges a Pro or operator API key once via `/v1/auth/session` for an opaque `HttpOnly; Secure; SameSite=Lax` session cookie and restores `/dashboard` sessions from that cookie without browser storage.
