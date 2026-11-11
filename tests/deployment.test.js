@@ -942,8 +942,8 @@ test('SonarCloud workflow gates PRs and keeps main refresh non-blocking', () => 
   assert.match(workflow, /Read package version[\s\S]*?require\("\.\/package\.json"\)\.version/);
   assert.match(workflow, /Build Sonar mainline analysis version[\s\S]*?sha\.\$SHORT_SHA/);
   assert.match(workflow, /Run SonarCloud scan \(default branch refresh\)[\s\S]*?github\.event_name == 'push' \|\| github\.event_name == 'workflow_dispatch'/);
-  assert.match(workflow, /Skipping default-branch Sonar scanner refresh/);
-  assert.match(workflow, /mainline_version=\$\{\{\s*steps\.sonar-mainline-version\.outputs\.value\s*\}\}/);
+  assert.match(workflow, /Run SonarCloud scan \(default branch refresh\)[\s\S]*?sonarqube-scan-action/);
+  assert.match(workflow, /-Dsonar\.projectVersion=\$\{\{\s*steps\.sonar-mainline-version\.outputs\.value\s*\}\}/);
 });
 
 test('SonarCloud workflow polls quality gates only for PR and merge-queue scans', () => {
