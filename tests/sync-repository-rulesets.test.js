@@ -717,3 +717,70 @@ test('syncRepositoryRulesets --check folds classic/ruleset dual drift into issue
   assert.equal(result.dual.classicPresent, true);
   assert.ok(result.issues.some((issue) => /classic/i.test(issue)));
 });
+
+test('pr-size check passes under 1000 changed lines, excludes package-lock.json and generated files, and fails over 1000', () => {
+  const fs = require('node:fs');
+  const path = require('node:path');
+  const {
+    evaluatePrSize,
+    isExcludedPath,
+    parseNumstat,
+    runCli: runPrSizeCli,
+  } = require('../scripts/pr-size-check');
+  const realPolicy = require('../config/main-branch-ruleset.json');
+  const realMergeQuality = require('../config/merge-quality-checks.json');
+
+  assert.equal(isExcludedPath('package-lock.json'), true);
+  assert.equal(isExcludedPath('workers/package-lock.json'), true);
+  assert.equal(isExcludedPath('dist/bundle.js'), true);
+  assert.equal(isExcludedPath('public/app.min.js'), true);
+  assert.equal(isExcludedPath('scripts/pr-size-check.js'), false);
+
+  const underEntries = parseNumstat([
+    '400\t200\tscripts/foo.js',
+    '5000\t4000\tpackage-lock.json',
+    '2000\t0\tdist/bundle.js',
+    '-\t-\tpublic/logo.png',
+  ].join('\n'));
+  const underResult = evaluatePrSize(underEntries, { maxLines: 1000 });
+  assert.equal(underResult.ok, true);
+  assert.equal(underResult.totalChangedLines, 600);
+  assert.equal(underResult.excludedFileCount, 3);
+
+  const overEntries = parseNumstat([
+    '700\t350\tscripts/foo.js',
+    '2000\t1000\tpackage-lock.json',
+  ].join('\n'));
+  const overResult = evaluatePrSize(overEntries, { maxLines: 1000 });
+  assert.equal(overResult.ok, false);
+  assert.equal(overResult.totalChangedLines, 1050);
+  assert.match(overResult.remediation, /gh stack/);
+
+  const exitOk = runPrSizeCli(['--max-lines=1000', '--json'], {
+    loadNumstat: () => '100\t50\tscripts/bar.js\n',
+  });
+  assert.equal(exitOk, 0);
+
+  const exitFail = runPrSizeCli(['--max-lines=1000', '--json'], {
+    loadNumstat: () => '800\t300\tscripts/bar.js\n',
+  });
+  assert.equal(exitFail, 1);
+
+  const workflowRaw = fs.readFileSync(
+    path.join(__dirname, '..', '.github', 'workflows', 'pr-size.yml'),
+    'utf8',
+  );
+  assert.match(workflowRaw, /name:\s*pr-size/);
+  assert.match(workflowRaw, /node scripts\/pr-size-check\.js/);
+  assert.ok(expectedStatusContexts(realPolicy, realMergeQuality).includes('pr-size'));
+});
+
+test('pr-size-check rejects a missing or invalid --max-lines instead of silently using the default', () => {
+  const { parseArgs: parsePrSizeArgs } = require('../scripts/pr-size-check');
+  assert.equal(parsePrSizeArgs(['--max-lines', '1000']).maxLines, 1000);
+  assert.equal(parsePrSizeArgs(['--max-lines=250']).maxLines, 250);
+  assert.throws(() => parsePrSizeArgs(['--max-lines']), /positive whole number/);
+  assert.throws(() => parsePrSizeArgs(['--max-lines', 'abc']), /positive whole number/);
+  assert.throws(() => parsePrSizeArgs(['--max-lines=10x']), /positive whole number/);
+  assert.throws(() => parsePrSizeArgs(['--max-lines=0']), /positive whole number/);
+});
