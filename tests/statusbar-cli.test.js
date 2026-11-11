@@ -177,39 +177,77 @@ test('statusline.sh shows Control Tower alerts', () => {
   assert.ok(sh.includes('ANOMALIES'));
 });
 
-test('statusline-meta.js labels operator/creator keys as TG Enterprise instead of bare Enterprise', () => {
-  const { getStatuslineMeta } = require('../scripts/statusline-meta');
-  const { execFileSync } = require('node:child_process');
-  const emptyHome = fs.mkdtempSync(path.join(os.tmpdir(), 'tg-meta-home-'));
+// === getStatuslineMeta tier detection ===
+const { getStatuslineMeta } = require('../scripts/statusline-meta');
+const crypto = require('node:crypto');
+const { issueLicense } = require('../scripts/entitlement');
+
+test('getStatuslineMeta returns Free when operator.json with tg_op_... exists alone', () => {
+  const testHome = fs.mkdtempSync(path.join(os.tmpdir(), 'tg-statusline-free-'));
   try {
-    assert.equal(
-      getStatuslineMeta({ env: { THUMBGATE_OPERATOR_KEY: 'tg_op_1234567890abcdef' }, homeDir: emptyHome }).tier,
-      'TG Enterprise'
-    );
-    assert.equal(
-      getStatuslineMeta({ env: { THUMBGATE_API_KEY: 'tg_creator_1234567890abcdef' }, homeDir: emptyHome }).tier,
-      'TG Enterprise'
-    );
-    assert.equal(
-      getStatuslineMeta({ env: { THUMBGATE_API_KEY: 'tg_pro_1234567890abcdef' }, homeDir: emptyHome }).tier,
-      'Pro'
-    );
-    assert.equal(
-      getStatuslineMeta({ env: { THUMBGATE_OPERATOR_KEY: 'invalid' }, homeDir: emptyHome }).tier,
-      'Free'
+    const opDir = path.join(testHome, '.config', 'thumbgate');
+    fs.mkdirSync(opDir, { recursive: true });
+    fs.writeFileSync(
+      path.join(opDir, 'operator.json'),
+      JSON.stringify({ operatorKey: `tg_op_${'a'.repeat(40)}` })
     );
 
-    const cfgDir = path.join(emptyHome, '.config', 'thumbgate');
-    fs.mkdirSync(cfgDir, { recursive: true });
-    fs.writeFileSync(path.join(cfgDir, 'operator.json'), JSON.stringify({ operatorKey: 'tg_op_disk1234567890' }));
-    assert.equal(getStatuslineMeta({ env: {}, homeDir: emptyHome }).tier, 'TG Enterprise');
-
-    const cliOut = execFileSync(process.execPath, [path.join(__dirname, '..', 'scripts', 'statusline-meta.js')], {
-      encoding: 'utf8',
-      env: { ...process.env, THUMBGATE_OPERATOR_KEY: 'tg_op_cli1234567890', HOME: emptyHome },
-    });
-    assert.equal(JSON.parse(cliOut).tier, 'TG Enterprise');
+    const meta = getStatuslineMeta({ homeDir: testHome, env: {} });
+    assert.equal(meta.tier, 'Free', 'operator credential alone must not map to Enterprise');
   } finally {
-    fs.rmSync(emptyHome, { recursive: true, force: true });
+    fs.rmSync(testHome, { recursive: true, force: true });
+  }
+});
+
+test('getStatuslineMeta returns Pro when operator.json exists alongside Pro license', () => {
+  const testHome = fs.mkdtempSync(path.join(os.tmpdir(), 'tg-statusline-pro-'));
+  try {
+    const opDir = path.join(testHome, '.config', 'thumbgate');
+    fs.mkdirSync(opDir, { recursive: true });
+    fs.writeFileSync(
+      path.join(opDir, 'operator.json'),
+      JSON.stringify({ operatorKey: `tg_op_${'a'.repeat(40)}` })
+    );
+
+    const licDir = path.join(testHome, '.thumbgate');
+    fs.mkdirSync(licDir, { recursive: true });
+    fs.writeFileSync(
+      path.join(licDir, 'license.json'),
+      JSON.stringify({ key: `tg_pro_${'b'.repeat(32)}` })
+    );
+
+    const meta = getStatuslineMeta({ homeDir: testHome, env: {} });
+    assert.equal(meta.tier, 'Pro', 'operator credential + Pro license must return Pro');
+  } finally {
+    fs.rmSync(testHome, { recursive: true, force: true });
+  }
+});
+
+test('getStatuslineMeta returns Enterprise when THUMBGATE_API_KEY starts with tg_ent_ or signed enterprise license exists', () => {
+  const testHome = fs.mkdtempSync(path.join(os.tmpdir(), 'tg-statusline-ent-'));
+  try {
+    const metaEnv = getStatuslineMeta({
+      homeDir: testHome,
+      env: { THUMBGATE_API_KEY: `tg_ent_${'c'.repeat(32)}` },
+    });
+    assert.equal(metaEnv.tier, 'Enterprise', 'tg_ent_ prefix in THUMBGATE_API_KEY must return Enterprise');
+
+    const { publicKey, privateKey } = crypto.generateKeyPairSync('ed25519');
+    const pubPem = publicKey.export({ type: 'spki', format: 'pem' });
+    const privPem = privateKey.export({ type: 'pkcs8', format: 'pem' });
+    const signedEntToken = issueLicense(privPem, {
+      tier: 'enterprise',
+      customerId: 'acme-corp',
+      kid: 'test-kid',
+    });
+
+    const metaSigned = getStatuslineMeta({
+      homeDir: testHome,
+      trustedKeys: { 'test-kid': pubPem },
+      env: { THUMBGATE_LICENSE: signedEntToken },
+    });
+    assert.equal(metaSigned.tier, 'Enterprise', 'signed enterprise Ed25519 license must return Enterprise');
+  } finally {
+    fs.rmSync(testHome, { recursive: true, force: true });
   }
 });
