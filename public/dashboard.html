@@ -1073,10 +1073,6 @@ async function connect(options) {
     if (freeTitle) freeTitle.textContent = opts.ssoEmail ? `Signed in (${opts.ssoEmail}) · Free tier` : 'Signed in · Free tier';
     const freeHelp = document.getElementById('authHelp');
     if (freeHelp) freeHelp.innerHTML = 'No paid subscription found for this email. <a href="https://thumbgate.ai/pricing" style="color:var(--cyan);font-weight:600;">Upgrade to Pro ($19/mo)</a> or paste a <code style="font-family:var(--mono);font-size:12px;">THUMBGATE_API_KEY</code> below.';
-    var freeGoogleBtn = document.getElementById('ssoGoogleBtn');
-    var freeAppleBtn = document.getElementById('ssoAppleBtn');
-    if (freeGoogleBtn) freeGoogleBtn.style.display = 'none';
-    if (freeAppleBtn) freeAppleBtn.style.display = 'none';
     document.getElementById('dashboardContent').style.display = 'none';
     return;
   }
@@ -1146,14 +1142,6 @@ async function connect(options) {
         titleEl.textContent = 'API Key Connected';
       }
     }
-    if (opts.ssoEmail && !opts.localPro) {
-      var signedInWith = opts.ssoProvider === 'apple' ? 'Apple' : 'Google';
-      document.getElementById('authHelp').textContent = 'Signed in with ' + signedInWith + ' as ' + opts.ssoEmail + '.';
-    }
-    var signedInGoogleBtn = document.getElementById('ssoGoogleBtn');
-    var signedInAppleBtn = document.getElementById('ssoAppleBtn');
-    if (signedInGoogleBtn) signedInGoogleBtn.style.display = 'none';
-    if (signedInAppleBtn) signedInAppleBtn.style.display = 'none';
     document.getElementById('dashboardContent').style.display = 'block';
     if (opts.localPro) {
       const localProActiveMessage = 'Local Pro is active on this machine. Your dashboard is using the saved license key automatically.';
@@ -2601,28 +2589,6 @@ function loadDemo() {
   });
 }
 
-function showSignedInAccount(session) {
-  var providerName = session.ssoProvider === 'apple' ? 'Apple' : 'Google';
-  var title = document.getElementById('authTitle');
-  var status = document.getElementById('authStatus');
-  var help = document.getElementById('authHelp');
-  if (title) title.textContent = 'Signed in with ' + providerName;
-  if (status) {
-    status.className = 'auth-status ok';
-    status.textContent = session.ssoEmail;
-  }
-  if (help) help.textContent = 'This sign-in is your account. It is not a Pro license. Paste an API key or choose Get Pro for the paid dashboard.';
-  var googleBtn = document.getElementById('ssoGoogleBtn');
-  var appleBtn = document.getElementById('ssoAppleBtn');
-  if (googleBtn) googleBtn.style.display = 'none';
-  if (appleBtn) appleBtn.style.display = 'none';
-  var disconnect = document.getElementById('disconnectBtn');
-  if (disconnect) {
-    disconnect.style.display = 'inline-block';
-    disconnect.textContent = 'Log out';
-  }
-}
-
 // Auto-load demo on first visit so visitors see the product immediately
 window.addEventListener('DOMContentLoaded', function() {
   preserveProjectQueryParams();
@@ -2630,8 +2596,7 @@ window.addEventListener('DOMContentLoaded', function() {
     connect({ key: BOOTSTRAP_API_KEY, localPro: true });
     return;
   }
-  var ssoErr = new URLSearchParams(window.location.search).get('auth_error')
-    || new URLSearchParams(window.location.search).get('sso_error');
+  var ssoErr = new URLSearchParams(window.location.search).get('sso_error');
   if (ssoErr) {
     var errStatus = document.getElementById('authStatus');
     if (errStatus) {
@@ -2644,10 +2609,6 @@ window.addEventListener('DOMContentLoaded', function() {
     .then(function(session) {
       if (session && session.authenticated) {
         connect({ cookieSession: true, tier: session.tier, ssoProvider: session.ssoProvider, ssoEmail: session.ssoEmail });
-        return;
-      }
-      if (session && session.ssoEmail) {
-        showSignedInAccount(session);
         return;
       }
       if (!window.location.search.includes('noauto') && !ssoErr) {
