@@ -5704,6 +5704,234 @@ const PAID_AUTH_COOKIE_NAME = 'thumbgate_auth_session';
 const PAID_AUTH_SESSION_TTL_SECONDS = 30 * 24 * 60 * 60;
 const PAID_AUTH_MAX_SESSIONS = 4096;
 const paidAuthSessions = new Map();
+const GOOGLE_OAUTH_TOKEN_URL = 'https://oauth2.googleapis.com/token';
+const GOOGLE_OAUTH_JWKS_URL = 'https://www.googleapis.com/oauth2/v3/certs';
+const GOOGLE_VALID_ISSUERS = new Set(['accounts.google.com', 'https://accounts.google.com']);
+const SSO_OAUTH_STATE_TTL_MS = 10 * 60 * 1000;
+const SSO_OAUTH_MAX_PENDING_STATES = 2048;
+const GOOGLE_JWKS_CACHE_TTL_MS = 5 * 60 * 1000;
+const ssoPendingStates = new Map();
+let googleOAuthFetch = (...args) => fetch(...args);
+let googleJwksCache = { keys: [], expiresAt: 0 };
+
+function setGoogleOAuthFetchForTests(fn) {
+  googleOAuthFetch = typeof fn === 'function' ? fn : ((...args) => fetch(...args));
+  googleJwksCache = { keys: [], expiresAt: 0 };
+}
+
+function pruneSsoPendingStates(nowMs = Date.now()) {
+  for (const [token, entry] of ssoPendingStates.entries()) {
+    if (!entry || entry.expiresAt <= nowMs) ssoPendingStates.delete(token);
+  }
+  while (ssoPendingStates.size >= SSO_OAUTH_MAX_PENDING_STATES) {
+    const oldestKey = ssoPendingStates.keys().next().value;
+    if (!oldestKey) break;
+    ssoPendingStates.delete(oldestKey);
+  }
+}
+
+function issueSsoPendingState(provider, redirectUri, nowMs = Date.now()) {
+  pruneSsoPendingStates(nowMs);
+  const stateNonce = `st_${crypto.randomBytes(24).toString('hex')}`;
+  ssoPendingStates.set(stateNonce, {
+    provider,
+    redirectUri,
+    createdAt: nowMs,
+    expiresAt: nowMs + SSO_OAUTH_STATE_TTL_MS,
+  });
+  return stateNonce;
+}
+
+function consumeSsoPendingState(stateNonce, expectedProvider, nowMs = Date.now()) {
+  pruneSsoPendingStates(nowMs);
+  const key = String(stateNonce || '').trim();
+  if (!key) return null;
+  const entry = ssoPendingStates.get(key);
+  if (!entry) return null;
+  ssoPendingStates.delete(key);
+  if (entry.provider !== expectedProvider || entry.expiresAt <= nowMs) return null;
+  return entry;
+}
+
+function redirectSsoError(res, reason) {
+  const raw = String(reason || '').trim().toLowerCase();
+  const safeReason = /^[a-z0-9_]{1,48}$/.test(raw) ? raw : 'sso_failed';
+  res.writeHead(302, {
+    'X-Content-Type-Options': 'nosniff',
+    'Cache-Control': 'no-store',
+    Location: `/dashboard?sso_error=${safeReason}`,
+  });
+  res.end();
+}
+
+async function loadGoogleJwks(nowMs = Date.now(), forceRefresh = false) {
+  if (!forceRefresh && googleJwksCache.expiresAt > nowMs && googleJwksCache.keys.length > 0) {
+    return googleJwksCache.keys;
+  }
+  const jwksRes = await googleOAuthFetch(GOOGLE_OAUTH_JWKS_URL, {
+    method: 'GET',
+    headers: { Accept: 'application/json' },
+    signal: AbortSignal.timeout(8000),
+  });
+  if (!jwksRes || !jwksRes.ok) {
+    const err = new Error('Failed to load Google JWKS');
+    err.ssoReason = 'jwks_unavailable';
+    throw err;
+  }
+  const body = await jwksRes.json();
+  const keys = Array.isArray(body && body.keys) ? body.keys : [];
+  googleJwksCache = { keys, expiresAt: nowMs + GOOGLE_JWKS_CACHE_TTL_MS };
+  return keys;
+}
+
+async function verifyGoogleIdToken(idToken, expectedClientId, nowMs = Date.now()) {
+  const parts = String(idToken || '').split('.');
+  if (parts.length !== 3) {
+    const err = new Error('Malformed id_token');
+    err.ssoReason = 'invalid_id_token';
+    throw err;
+  }
+  let header;
+  let payload;
+  try {
+    header = JSON.parse(Buffer.from(parts[0], 'base64url').toString('utf8'));
+    payload = JSON.parse(Buffer.from(parts[1], 'base64url').toString('utf8'));
+  } catch {
+    const err = new Error('Unparseable id_token');
+    err.ssoReason = 'invalid_id_token';
+    throw err;
+  }
+  if (!header || header.alg !== 'RS256' || typeof header.kid !== 'string' || !header.kid) {
+    const err = new Error('Unsupported id_token header');
+    err.ssoReason = 'invalid_id_token';
+    throw err;
+  }
+  let keys = await loadGoogleJwks(nowMs, false);
+  let jwk = keys.find((k) => k && k.kid === header.kid && k.kty === 'RSA');
+  if (!jwk) {
+    keys = await loadGoogleJwks(nowMs, true);
+    jwk = keys.find((k) => k && k.kid === header.kid && k.kty === 'RSA');
+  }
+  if (!jwk) {
+    const err = new Error('Signing key not found');
+    err.ssoReason = 'unknown_signing_key';
+    throw err;
+  }
+  const publicKey = crypto.createPublicKey({ key: jwk, format: 'jwk' });
+  const sigValid = crypto.verify(
+    'RSA-SHA256',
+    Buffer.from(`${parts[0]}.${parts[1]}`),
+    publicKey,
+    Buffer.from(parts[2], 'base64url'),
+  );
+  if (!sigValid) {
+    const err = new Error('Invalid id_token signature');
+    err.ssoReason = 'invalid_signature';
+    throw err;
+  }
+  const audMatches = payload && (
+    payload.aud === expectedClientId
+    || (Array.isArray(payload.aud) && payload.aud.includes(expectedClientId))
+  );
+  if (!audMatches) {
+    const err = new Error('id_token audience mismatch');
+    err.ssoReason = 'wrong_audience';
+    throw err;
+  }
+  if (!GOOGLE_VALID_ISSUERS.has(String(payload.iss || ''))) {
+    const err = new Error('id_token issuer mismatch');
+    err.ssoReason = 'invalid_issuer';
+    throw err;
+  }
+  const expSec = Number(payload.exp);
+  if (!Number.isFinite(expSec) || expSec * 1000 <= nowMs) {
+    const err = new Error('id_token expired');
+    err.ssoReason = 'expired_token';
+    throw err;
+  }
+  const email = String(payload.email || '').trim().toLowerCase();
+  const sub = String(payload.sub || '').trim();
+  const emailVerified = payload.email_verified === true || payload.email_verified === 'true';
+  if (!emailVerified || !email || !sub) {
+    const err = new Error('Email not verified');
+    err.ssoReason = 'unverified_email';
+    throw err;
+  }
+  return { sub, email };
+}
+
+function hashSessionToken(token) {
+  return crypto.createHash('sha256').update(String(token || '')).digest('hex');
+}
+
+function resolveAuthSessionsStorePath() {
+  return path.join(getFeedbackPaths().FEEDBACK_DIR, 'auth-sessions.json');
+}
+
+function readPersistedAuthSessions(nowMs = Date.now()) {
+  const storePath = resolveAuthSessionsStorePath();
+  try {
+    if (!fs.existsSync(storePath)) return {};
+    const raw = JSON.parse(fs.readFileSync(storePath, 'utf8'));
+    if (!raw || typeof raw !== 'object') return {};
+    const out = {};
+    for (const [tokenHash, entry] of Object.entries(raw)) {
+      if (entry && typeof entry === 'object' && Number(entry.expiresAt) > nowMs) {
+        out[tokenHash] = entry;
+      }
+    }
+    return out;
+  } catch {
+    return {};
+  }
+}
+
+function writePersistedAuthSessions(records) {
+  const storePath = resolveAuthSessionsStorePath();
+  try {
+    fs.mkdirSync(path.dirname(storePath), { recursive: true });
+    const tmpPath = `${storePath}.${process.pid}.${Date.now()}.tmp`;
+    fs.writeFileSync(tmpPath, JSON.stringify(records), { mode: 0o600 });
+    fs.renameSync(tmpPath, storePath);
+  } catch {
+    // Best-effort disk persistence; in-memory Map remains authoritative in-process.
+  }
+}
+
+function persistPaidAuthSession(sessionToken, entry, nowMs = Date.now()) {
+  prunePaidAuthSessions(nowMs);
+  paidAuthSessions.set(sessionToken, entry);
+  const persisted = readPersistedAuthSessions(nowMs);
+  const hashes = Object.keys(persisted);
+  while (hashes.length >= PAID_AUTH_MAX_SESSIONS) {
+    const oldest = hashes.shift();
+    if (oldest) delete persisted[oldest];
+  }
+  persisted[hashSessionToken(sessionToken)] = {
+    subjectType: entry.subjectType || 'customer',
+    customerId: entry.customerId || null,
+    ssoProvider: entry.ssoProvider || null,
+    ssoEmail: entry.ssoEmail || null,
+    createdAt: entry.createdAt,
+    expiresAt: entry.expiresAt,
+  };
+  writePersistedAuthSessions(persisted);
+}
+
+function deletePaidAuthSession(sessionToken, nowMs = Date.now()) {
+  if (!sessionToken) return;
+  paidAuthSessions.delete(sessionToken);
+  const persisted = readPersistedAuthSessions(nowMs);
+  const tokenHash = hashSessionToken(sessionToken);
+  if (Object.prototype.hasOwnProperty.call(persisted, tokenHash)) {
+    delete persisted[tokenHash];
+    writePersistedAuthSessions(persisted);
+  }
+}
+
+function clearInMemoryAuthSessionsForTests() {
+  paidAuthSessions.clear();
+}
 
 function prunePaidAuthSessions(nowMs) {
   for (const [token, entry] of paidAuthSessions.entries()) {
@@ -5716,17 +5944,43 @@ function prunePaidAuthSessions(nowMs) {
   }
 }
 
+function getPaidAuthSessionEntry(sessionToken, expectedApiKey = getExpectedApiKey(), expectedOperatorKey = getExpectedOperatorKey()) {
+  if (!sessionToken) return null;
+  const nowMs = Date.now();
+  const inMemory = paidAuthSessions.get(sessionToken);
+  if (inMemory) {
+    if (inMemory.expiresAt <= nowMs) {
+      deletePaidAuthSession(sessionToken, nowMs);
+      return null;
+    }
+    return inMemory;
+  }
+  const persisted = readPersistedAuthSessions(nowMs);
+  const record = persisted[hashSessionToken(sessionToken)];
+  if (!record || record.expiresAt <= nowMs) return null;
+  let apiKey = '';
+  if (record.subjectType === 'admin') {
+    apiKey = expectedApiKey || '';
+  } else if (record.subjectType === 'operator') {
+    apiKey = expectedOperatorKey || '';
+  } else if (record.subjectType === 'customer' && record.customerId) {
+    const provisioned = provisionApiKey(record.customerId, { source: record.ssoProvider || 'session_restore' });
+    apiKey = (provisioned && provisioned.key) || '';
+  } else if (record.subjectType === 'dev_enterprise') {
+    apiKey = 'tg_op_dev_session';
+  } else if (record.subjectType === 'dev_pro') {
+    apiKey = 'tg_dev_session';
+  }
+  if (!apiKey) return null;
+  const hydrated = { ...record, apiKey };
+  paidAuthSessions.set(sessionToken, hydrated);
+  return hydrated;
+}
+
 function resolvePaidAuthSessionKey(req) {
   const cookies = parseCookies(req && req.headers ? req.headers.cookie : '');
-  const sessionToken = cookies[PAID_AUTH_COOKIE_NAME];
-  if (!sessionToken) return '';
-  const entry = paidAuthSessions.get(sessionToken);
-  if (!entry) return '';
-  if (entry.expiresAt <= Date.now()) {
-    paidAuthSessions.delete(sessionToken);
-    return '';
-  }
-  return entry.apiKey || '';
+  const entry = getPaidAuthSessionEntry(cookies[PAID_AUTH_COOKIE_NAME]);
+  return entry ? (entry.apiKey || '') : '';
 }
 
 function resolvePaidSessionTier(candidate, expectedApiKey, expectedOperatorKey) {
@@ -5748,7 +6002,7 @@ async function handlePaidAuthSessionRoute(req, res, expectedApiKey, expectedOper
   const noStoreHeaders = { 'Cache-Control': 'no-store' };
   if (req.method === 'GET') {
     const cookies = parseCookies(req && req.headers ? req.headers.cookie : '');
-    const sessionEntry = cookies[PAID_AUTH_COOKIE_NAME] ? paidAuthSessions.get(cookies[PAID_AUTH_COOKIE_NAME]) : null;
+    const sessionEntry = getPaidAuthSessionEntry(cookies[PAID_AUTH_COOKIE_NAME], expectedApiKey, expectedOperatorKey);
     const tier = resolvePaidSessionTier(extractApiKey(req), expectedApiKey, expectedOperatorKey);
     sendJson(res, 200, {
       ok: true,
@@ -5763,7 +6017,7 @@ async function handlePaidAuthSessionRoute(req, res, expectedApiKey, expectedOper
   if (req.method === 'DELETE') {
     const cookies = parseCookies(req.headers.cookie);
     if (cookies[PAID_AUTH_COOKIE_NAME]) {
-      paidAuthSessions.delete(cookies[PAID_AUTH_COOKIE_NAME]);
+      deletePaidAuthSession(cookies[PAID_AUTH_COOKIE_NAME]);
     }
     const clearCookie = serializeCookie(PAID_AUTH_COOKIE_NAME, '', {
       maxAge: 0,
@@ -5788,14 +6042,30 @@ async function handlePaidAuthSessionRoute(req, res, expectedApiKey, expectedOper
       sendJson(res, 401, { ok: false, authenticated: false, error: 'Invalid API key' }, noStoreHeaders);
       return;
     }
+    let subjectType = 'dev_pro';
+    let customerId = null;
+    if (expectedApiKey && safeKeyEqual(candidate, expectedApiKey)) {
+      subjectType = 'admin';
+    } else if (expectedOperatorKey && safeKeyEqual(candidate, expectedOperatorKey)) {
+      subjectType = 'operator';
+    } else {
+      const validation = validateApiKey(candidate);
+      if (validation && validation.valid === true && validation.customerId) {
+        subjectType = 'customer';
+        customerId = validation.customerId;
+      } else if (tier === 'Enterprise') {
+        subjectType = 'dev_enterprise';
+      }
+    }
     const nowMs = Date.now();
-    prunePaidAuthSessions(nowMs);
     const sessionToken = crypto.randomBytes(32).toString('hex');
-    paidAuthSessions.set(sessionToken, {
+    persistPaidAuthSession(sessionToken, {
       apiKey: candidate,
+      subjectType,
+      customerId,
       createdAt: nowMs,
       expiresAt: nowMs + PAID_AUTH_SESSION_TTL_SECONDS * 1000,
-    });
+    }, nowMs);
     const setCookie = serializeCookie(PAID_AUTH_COOKIE_NAME, sessionToken, {
       maxAge: PAID_AUTH_SESSION_TTL_SECONDS,
       httpOnly: true,
@@ -6833,10 +7103,10 @@ async function addContext(){
       const provider = ['google', 'apple'].includes(rawProvider) ? rawProvider : 'invalid';
       const appOrigin = hostedConfig.appOrigin || 'https://thumbgate.ai';
       const callbackUrl = `${appOrigin}/v1/cloud/sso/callback?provider=${encodeURIComponent(provider)}`;
-      const stateNonce = `st_${crypto.randomBytes(12).toString('hex')}`;
       const googleClientId = String(process.env.GOOGLE_CLIENT_ID || '').trim();
       const appleClientId = String(process.env.APPLE_CLIENT_ID || '').trim();
       if (provider === 'google' && googleClientId) {
+        const stateNonce = issueSsoPendingState('google', callbackUrl);
         const googleAuthUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${encodeURIComponent(googleClientId)}&redirect_uri=${encodeURIComponent(callbackUrl)}&response_type=code&scope=openid%20email%20profile&state=${encodeURIComponent(stateNonce)}`;
         if (parsed.searchParams.get('format') === 'json') {
           sendJson(res, 200, { ok: true, mode: 'oauth_redirect', provider, redirectUrl: googleAuthUrl }, { 'Cache-Control': 'no-store' });
@@ -6847,6 +7117,7 @@ async function addContext(){
         return;
       }
       if (provider === 'apple' && appleClientId) {
+        const stateNonce = issueSsoPendingState('apple', callbackUrl);
         const appleAuthUrl = `https://appleid.apple.com/auth/authorize?client_id=${encodeURIComponent(appleClientId)}&redirect_uri=${encodeURIComponent(callbackUrl)}&response_type=code&scope=name%20email&response_mode=form_post&state=${encodeURIComponent(stateNonce)}`;
         if (parsed.searchParams.get('format') === 'json') {
           sendJson(res, 200, { ok: true, mode: 'oauth_redirect', provider, redirectUrl: appleAuthUrl }, { 'Cache-Control': 'no-store' });
@@ -6866,6 +7137,97 @@ async function addContext(){
         },
         { 'Cache-Control': 'no-store' },
       );
+      return;
+    }
+
+    if (isGetLikeRequest && pathname === '/v1/cloud/sso/callback') {
+      try {
+        const rawProvider = String(parsed.searchParams.get('provider') || 'google').trim().toLowerCase();
+        if (rawProvider !== 'google') {
+          redirectSsoError(res, 'unsupported_provider');
+          return;
+        }
+        if (parsed.searchParams.get('error')) {
+          consumeSsoPendingState(parsed.searchParams.get('state'), 'google');
+          redirectSsoError(res, 'oauth_denied');
+          return;
+        }
+        const code = String(parsed.searchParams.get('code') || '').trim();
+        if (!code) {
+          consumeSsoPendingState(parsed.searchParams.get('state'), 'google');
+          redirectSsoError(res, 'missing_code');
+          return;
+        }
+        const stateEntry = consumeSsoPendingState(parsed.searchParams.get('state'), 'google');
+        if (!stateEntry) {
+          redirectSsoError(res, 'invalid_state');
+          return;
+        }
+        const googleClientId = String(process.env.GOOGLE_CLIENT_ID || '').trim();
+        const googleClientSecret = String(process.env.GOOGLE_CLIENT_SECRET || '').trim();
+        if (!googleClientId || !googleClientSecret) {
+          redirectSsoError(res, 'sso_not_configured');
+          return;
+        }
+        const tokenParams = new URLSearchParams({
+          code,
+          client_id: googleClientId,
+          client_secret: googleClientSecret,
+          redirect_uri: stateEntry.redirectUri,
+          grant_type: 'authorization_code',
+        });
+        const tokenRes = await googleOAuthFetch(GOOGLE_OAUTH_TOKEN_URL, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            Accept: 'application/json',
+          },
+          body: tokenParams.toString(),
+          signal: AbortSignal.timeout(8000),
+        });
+        if (!tokenRes || !tokenRes.ok) {
+          redirectSsoError(res, 'token_exchange_failed');
+          return;
+        }
+        const tokenBody = await tokenRes.json();
+        const idToken = String((tokenBody && tokenBody.id_token) || '').trim();
+        if (!idToken) {
+          redirectSsoError(res, 'missing_id_token');
+          return;
+        }
+        const claims = await verifyGoogleIdToken(idToken, googleClientId);
+        const provisioned = provisionApiKey(`google_sso:${claims.sub}`, { source: 'google_sso' });
+        if (!provisioned || !provisioned.key) {
+          redirectSsoError(res, 'account_revoked');
+          return;
+        }
+        const nowMs = Date.now();
+        const sessionToken = crypto.randomBytes(32).toString('hex');
+        persistPaidAuthSession(sessionToken, {
+          apiKey: provisioned.key,
+          subjectType: 'customer',
+          customerId: `google_sso:${claims.sub}`,
+          ssoProvider: 'google',
+          ssoEmail: claims.email,
+          createdAt: nowMs,
+          expiresAt: nowMs + PAID_AUTH_SESSION_TTL_SECONDS * 1000,
+        }, nowMs);
+        const setCookie = serializeCookie(PAID_AUTH_COOKIE_NAME, sessionToken, {
+          maxAge: PAID_AUTH_SESSION_TTL_SECONDS,
+          httpOnly: true,
+          sameSite: 'Lax',
+          secure: true,
+        });
+        res.writeHead(302, {
+          'X-Content-Type-Options': 'nosniff',
+          'Cache-Control': 'no-store',
+          'Set-Cookie': setCookie,
+          Location: '/dashboard',
+        });
+        res.end();
+      } catch (err) {
+        redirectSsoError(res, err && err.ssoReason ? err.ssoReason : 'callback_failed');
+      }
       return;
     }
 
@@ -12056,6 +12418,10 @@ module.exports = {
     partitionFeedbackPaths,
     buildLiveDashboardCacheKey,
     loadCachedLiveDashboardData,
+    setGoogleOAuthFetchForTests,
+    issueSsoPendingState,
+    consumeSsoPendingState,
+    clearInMemoryAuthSessionsForTests,
   },
 };
 

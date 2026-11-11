@@ -97,6 +97,7 @@ test('homepage navbar exposes paid-user Log in drawer and exchanges keys for an 
     THUMBGATE_FEEDBACK_DIR: process.env.THUMBGATE_FEEDBACK_DIR,
     STRIPE_SECRET_KEY: process.env.STRIPE_SECRET_KEY,
     GOOGLE_CLIENT_ID: process.env.GOOGLE_CLIENT_ID,
+    GOOGLE_CLIENT_SECRET: process.env.GOOGLE_CLIENT_SECRET,
     APPLE_CLIENT_ID: process.env.APPLE_CLIENT_ID,
   };
   process.env.THUMBGATE_API_KEY = 'tg_admin_test_secret_999';
@@ -104,9 +105,11 @@ test('homepage navbar exposes paid-user Log in drawer and exchanges keys for an 
   process.env.THUMBGATE_FEEDBACK_DIR = tmpDir;
   process.env.STRIPE_SECRET_KEY = '';
   delete process.env.GOOGLE_CLIENT_ID;
+  delete process.env.GOOGLE_CLIENT_SECRET;
   delete process.env.APPLE_CLIENT_ID;
 
-  const { startServer } = require('../src/api/server');
+  const crypto = require('node:crypto');
+  const { startServer, __test__: serverTestHooks } = require('../src/api/server');
   const handle = await startServer({ port: 0, host: '127.0.0.1' });
   const origin = `http://127.0.0.1:${handle.port}`;
   try {
@@ -176,6 +179,140 @@ test('homepage navbar exposes paid-user Log in drawer and exchanges keys for an 
     assert.equal(appleJson.mode, 'oauth_redirect');
     delete process.env.GOOGLE_CLIENT_ID;
     delete process.env.APPLE_CLIENT_ID;
+
+    // Google OIDC /v1/cloud/sso/callback end-to-end verification (bad state, missing code, token failure, wrong audience, expired/unverified, and happy path)
+    const { publicKey, privateKey } = crypto.generateKeyPairSync('rsa', { modulusLength: 2048 });
+    const publicJwk = { ...publicKey.export({ format: 'jwk' }), kid: 'google-test-kid-1', alg: 'RS256', use: 'sig' };
+    const signTestIdToken = (claims, kid = 'google-test-kid-1') => {
+      const h = Buffer.from(JSON.stringify({ alg: 'RS256', typ: 'JWT', kid })).toString('base64url');
+      const p = Buffer.from(JSON.stringify(claims)).toString('base64url');
+      const sig = crypto.sign('RSA-SHA256', Buffer.from(`${h}.${p}`), privateKey).toString('base64url');
+      return `${h}.${p}.${sig}`;
+    };
+    process.env.GOOGLE_CLIENT_ID = 'google-client-test.apps.googleusercontent.com';
+    process.env.GOOGLE_CLIENT_SECRET = 'google-secret-test-value';
+    const issueFreshState = async () => {
+      const authRes = await fetch(`${origin}/v1/cloud/sso/authorize?provider=google`, { redirect: 'manual' });
+      return new URL(authRes.headers.get('location')).searchParams.get('state');
+    };
+
+    // 1. Missing code -> 302 /dashboard?sso_error=missing_code (never 500)
+    const missingCodeRes = await fetch(`${origin}/v1/cloud/sso/callback?provider=google`, { redirect: 'manual' });
+    assert.equal(missingCodeRes.status, 302);
+    assert.equal(missingCodeRes.headers.get('location'), '/dashboard?sso_error=missing_code');
+    assert.equal(missingCodeRes.headers.get('set-cookie'), null);
+
+    // 2. Bad state & upstream OAuth denial -> 302 /dashboard?sso_error=invalid_state / oauth_denied
+    const badStateRes = await fetch(`${origin}/v1/cloud/sso/callback?provider=google&code=auth_code_1&state=st_bad`, { redirect: 'manual' });
+    assert.equal(badStateRes.status, 302);
+    assert.equal(badStateRes.headers.get('location'), '/dashboard?sso_error=invalid_state');
+    const deniedState = await issueFreshState();
+    const deniedRes = await fetch(`${origin}/v1/cloud/sso/callback?provider=google&error=access_denied&state=${deniedState}`, { redirect: 'manual' });
+    assert.equal(deniedRes.status, 302);
+    assert.equal(deniedRes.headers.get('location'), '/dashboard?sso_error=oauth_denied');
+    const unsupportedCb = await fetch(`${origin}/v1/cloud/sso/callback?provider=apple&code=x&state=y`, { redirect: 'manual' });
+    assert.equal(unsupportedCb.headers.get('location'), '/dashboard?sso_error=unsupported_provider');
+
+    // 3. Token exchange failure -> 302 /dashboard?sso_error=token_exchange_failed
+    serverTestHooks.setGoogleOAuthFetchForTests(async (url) => {
+      if (String(url).includes('oauth2.googleapis.com/token')) {
+        return { ok: false, status: 400, json: async () => ({ error: 'invalid_grant' }) };
+      }
+      return { ok: true, status: 200, json: async () => ({ keys: [publicJwk] }) };
+    });
+    const failState = await issueFreshState();
+    const tokenFailRes = await fetch(`${origin}/v1/cloud/sso/callback?provider=google&code=bad_code&state=${failState}`, { redirect: 'manual' });
+    assert.equal(tokenFailRes.status, 302);
+    assert.equal(tokenFailRes.headers.get('location'), '/dashboard?sso_error=token_exchange_failed');
+    // Replaying consumed state must fail closed
+    const replayFailRes = await fetch(`${origin}/v1/cloud/sso/callback?provider=google&code=bad_code&state=${failState}`, { redirect: 'manual' });
+    assert.equal(replayFailRes.headers.get('location'), '/dashboard?sso_error=invalid_state');
+
+    // 4. Wrong audience, invalid issuer, expired token, and unverified email -> 302 /dashboard?sso_error=<reason>
+    const nowSec = Math.floor(Date.now() / 1000);
+    const invalidCases = [
+      {
+        claims: { iss: 'https://accounts.google.com', aud: 'other-app.apps.googleusercontent.com', exp: nowSec + 300, email: 'user@example.com', email_verified: true, sub: 'sub_1' },
+        expected: 'wrong_audience',
+      },
+      {
+        claims: { iss: 'https://evil.example.com', aud: 'google-client-test.apps.googleusercontent.com', exp: nowSec + 300, email: 'user@example.com', email_verified: true, sub: 'sub_1' },
+        expected: 'invalid_issuer',
+      },
+      {
+        claims: { iss: 'accounts.google.com', aud: 'google-client-test.apps.googleusercontent.com', exp: nowSec - 10, email: 'user@example.com', email_verified: true, sub: 'sub_1' },
+        expected: 'expired_token',
+      },
+      {
+        claims: { iss: 'accounts.google.com', aud: 'google-client-test.apps.googleusercontent.com', exp: nowSec + 300, email: 'user@example.com', email_verified: false, sub: 'sub_1' },
+        expected: 'unverified_email',
+      },
+    ];
+    for (const tc of invalidCases) {
+      const badJwt = signTestIdToken(tc.claims);
+      serverTestHooks.setGoogleOAuthFetchForTests(async (url) => {
+        if (String(url).includes('oauth2.googleapis.com/token')) {
+          return { ok: true, status: 200, json: async () => ({ id_token: badJwt }) };
+        }
+        return { ok: true, status: 200, json: async () => ({ keys: [publicJwk] }) };
+      });
+      const st = await issueFreshState();
+      const r = await fetch(`${origin}/v1/cloud/sso/callback?provider=google&code=code_ok&state=${st}`, { redirect: 'manual' });
+      assert.equal(r.status, 302);
+      assert.equal(r.headers.get('location'), `/dashboard?sso_error=${tc.expected}`);
+      assert.equal(r.headers.get('set-cookie'), null);
+    }
+
+    // 5. Happy path with stubbed Google token & JWKS calls -> mints HttpOnly cookie, redirects to /dashboard, authenticates /v1/auth/session + /v1/feedback/stats
+    const validJwt = signTestIdToken({
+      iss: 'https://accounts.google.com',
+      aud: 'google-client-test.apps.googleusercontent.com',
+      exp: nowSec + 600,
+      email: 'founder@thumbgate.ai',
+      email_verified: true,
+      sub: 'google_uid_12345',
+    });
+    let capturedTokenPostBody = '';
+    serverTestHooks.setGoogleOAuthFetchForTests(async (url, opts) => {
+      if (String(url) === 'https://oauth2.googleapis.com/token') {
+        capturedTokenPostBody = String((opts && opts.body) || '');
+        return { ok: true, status: 200, json: async () => ({ access_token: 'ya29.stub', id_token: validJwt }) };
+      }
+      return { ok: true, status: 200, json: async () => ({ keys: [publicJwk] }) };
+    });
+    const goodState = await issueFreshState();
+    const goodCbRes = await fetch(`${origin}/v1/cloud/sso/callback?provider=google&code=valid_google_code&state=${goodState}`, { redirect: 'manual' });
+    assert.equal(goodCbRes.status, 302);
+    assert.equal(goodCbRes.headers.get('location'), '/dashboard');
+    assert.match(capturedTokenPostBody, /code=valid_google_code/);
+    assert.match(capturedTokenPostBody, /client_secret=google-secret-test-value/);
+    const ssoCookieHeader = goodCbRes.headers.get('set-cookie') || '';
+    assert.match(ssoCookieHeader, /^thumbgate_auth_session=[a-f0-9]{64};/);
+    assert.match(ssoCookieHeader, /\bHttpOnly\b/);
+    assert.match(ssoCookieHeader, /\bSecure\b/);
+    const ssoCookiePair = ssoCookieHeader.split(';')[0];
+    const ssoSessionCheck = await (await fetch(`${origin}/v1/auth/session`, { headers: { cookie: ssoCookiePair } })).json();
+    assert.equal(ssoSessionCheck.authenticated, true);
+    assert.equal(ssoSessionCheck.tier, 'Pro');
+    assert.equal(ssoSessionCheck.ssoProvider, 'google');
+    assert.equal(ssoSessionCheck.ssoEmail, 'founder@thumbgate.ai');
+    const ssoStatsRes = await fetch(`${origin}/v1/feedback/stats`, { headers: { cookie: ssoCookiePair } });
+    assert.equal(ssoStatsRes.status, 200);
+    // Simulate Railway redeploy / in-memory Map wipe: session must survive from persisted disk store without clear-text keys
+    serverTestHooks.clearInMemoryAuthSessionsForTests();
+    const persistedSessionCheck = await (await fetch(`${origin}/v1/auth/session`, { headers: { cookie: ssoCookiePair } })).json();
+    assert.equal(persistedSessionCheck.authenticated, true);
+    assert.equal(persistedSessionCheck.ssoProvider, 'google');
+    assert.equal(persistedSessionCheck.ssoEmail, 'founder@thumbgate.ai');
+    const rawSessionFile = fs.readFileSync(path.join(tmpDir, 'auth-sessions.json'), 'utf8');
+    assert.doesNotMatch(rawSessionFile, /tg_|thumbgate_auth_session|google-secret-test-value/);
+
+    // Reusing same state a second time must fail one-time-use check
+    const replayGoodState = await fetch(`${origin}/v1/cloud/sso/callback?provider=google&code=valid_google_code&state=${goodState}`, { redirect: 'manual' });
+    assert.equal(replayGoodState.headers.get('location'), '/dashboard?sso_error=invalid_state');
+    serverTestHooks.setGoogleOAuthFetchForTests(null);
+    delete process.env.GOOGLE_CLIENT_ID;
+    delete process.env.GOOGLE_CLIENT_SECRET;
 
     const badJsonRes = await fetch(`${origin}/v1/auth/session`, {
       method: 'POST',

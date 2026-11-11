@@ -312,7 +312,7 @@
       <button class="btn" id="connectBtn" onclick="connect()">Connect</button>
       <a class="btn-outline" id="getProBtn" href="https://thumbgate.ai/pricing" style="text-decoration:none;display:inline-flex;align-items:center;">Get Pro</a>
       <button class="btn-outline" id="demoBtn" onclick="loadDemo()">Try Demo</button>
-      <button class="btn-outline" id="disconnectBtn" onclick="disconnectKey()" style="display:none; border-color:#f87171; color:#f87171;">Disconnect Key</button>
+      <button class="btn-outline" id="disconnectBtn" onclick="disconnectKey()" style="display:none; border-color:#f87171; color:#f87171;">Log Out</button>
       <span class="auth-status" id="authStatus"></span>
     </div>
   </div>
@@ -1031,7 +1031,8 @@ function disconnectKey() {
   API_KEY = '';
   HAS_COOKIE_SESSION = false;
   isDemo = false;
-  fetch('/v1/auth/session', { method: 'DELETE', credentials: 'same-origin' }).catch(function() {});
+  var disconnectEl = document.getElementById('disconnectBtn');
+  if (disconnectEl) disconnectEl.disabled = true;
   var input = document.getElementById('apiKey');
   input.value = '';
   input.disabled = false;
@@ -1045,6 +1046,12 @@ function disconnectKey() {
   document.getElementById('authTitle').textContent = 'Connect your API key';
   document.getElementById('authHelp').innerHTML = 'Pro auto-connects locally when you launch with <code style="font-family:var(--mono);font-size:12px;background:var(--cyan-dim);color:var(--cyan);padding:2px 6px;border-radius:4px;">npx thumbgate pro</code>. Otherwise paste your <code style="font-family:var(--mono);font-size:12px;background:var(--cyan-dim);color:var(--cyan);padding:2px 6px;border-radius:4px;">THUMBGATE_API_KEY</code> manually.';
   document.getElementById('dashboardContent').style.display = 'none';
+  return fetch('/v1/auth/session', { method: 'DELETE', credentials: 'same-origin' })
+    .catch(function() {})
+    .finally(function() {
+      if (disconnectEl) disconnectEl.disabled = false;
+      window.location.assign('/dashboard?noauto=1');
+    });
 }
 
 async function connect(options) {
@@ -1094,14 +1101,15 @@ async function connect(options) {
     status.className = 'auth-status ok';
     status.textContent = opts.localPro ? `✓ Local ${tierName} connected` : '✓ Connected';
     if (!opts.localPro && API_KEY) {
-      fetch('/v1/auth/session', {
-        method: 'POST',
-        credentials: 'same-origin',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ apiKey: API_KEY }),
-      }).then(function(r) {
-        if (r.ok) HAS_COOKIE_SESSION = true;
-      }).catch(function() {});
+      try {
+        var sessionRes = await fetch('/v1/auth/session', {
+          method: 'POST',
+          credentials: 'same-origin',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ apiKey: API_KEY }),
+        });
+        if (sessionRes.ok) HAS_COOKIE_SESSION = true;
+      } catch (_) {}
     } else if (opts.cookieSession) {
       HAS_COOKIE_SESSION = true;
       input.value = '';
@@ -1110,7 +1118,13 @@ async function connect(options) {
     document.getElementById('disconnectBtn').style.display = 'inline-block';
     const titleEl = document.getElementById('authTitle');
     if (titleEl) {
-      titleEl.textContent = opts.localPro ? `${tierName} License Active` : 'API Key Connected';
+      if (opts.localPro) {
+        titleEl.textContent = `${tierName} License Active`;
+      } else if (opts.ssoProvider) {
+        titleEl.textContent = opts.ssoEmail ? `Signed in (${opts.ssoEmail})` : `${String(opts.ssoProvider).toUpperCase()} SSO Connected`;
+      } else {
+        titleEl.textContent = 'API Key Connected';
+      }
     }
     document.getElementById('dashboardContent').style.display = 'block';
     if (opts.localPro) {
@@ -2566,19 +2580,33 @@ window.addEventListener('DOMContentLoaded', function() {
     connect({ key: BOOTSTRAP_API_KEY, localPro: true });
     return;
   }
+  var ssoErr = new URLSearchParams(window.location.search).get('sso_error');
+  if (ssoErr) {
+    var errStatus = document.getElementById('authStatus');
+    if (errStatus) {
+      errStatus.className = 'auth-status err';
+      errStatus.textContent = '✗ Sign-in failed (' + ssoErr + ')';
+    }
+  }
   fetch('/v1/auth/session', { credentials: 'same-origin' })
     .then(function(res) { return res.ok ? res.json() : null; })
     .then(function(session) {
       if (session && session.authenticated) {
-        connect({ cookieSession: true, tier: session.tier, ssoProvider: session.ssoProvider });
+        connect({ cookieSession: true, tier: session.tier, ssoProvider: session.ssoProvider, ssoEmail: session.ssoEmail });
         return;
       }
-      if (!window.location.search.includes('noauto')) {
+      if (!window.location.search.includes('noauto') && !ssoErr) {
         loadDemo();
+      } else if (new URLSearchParams(window.location.search).get('noauto') === '1' && !ssoErr) {
+        var discStatus = document.getElementById('authStatus');
+        if (discStatus) {
+          discStatus.className = 'auth-status';
+          discStatus.textContent = 'Disconnected';
+        }
       }
     })
     .catch(function() {
-      if (!window.location.search.includes('noauto')) {
+      if (!window.location.search.includes('noauto') && !ssoErr) {
         loadDemo();
       }
     });
