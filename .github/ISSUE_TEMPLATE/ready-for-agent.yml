@@ -35,6 +35,13 @@ body:
     validations:
       required: true
 
+  - type: input
+    id: workdir
+    attributes:
+      label: Working directory
+      description: Folder on the Mac where the dispatch loop runs `claude -p`. Leave blank for ~/workspace/ThumbGate. Must sit under an allowed root (default ~/workspace).
+      placeholder: ~/workspace/ThumbGate
+
   - type: textarea
     id: out_of_scope
     attributes:
