@@ -2,24 +2,12 @@
 'use strict';
 
 /**
- * mac-dispatch-loop.js — let cloud sessions hand work to a Mac through GitHub issues.
- *
- * A cloud thread (or a human) opens an issue labeled `ready-for-agent`. This loop,
- * running on the Mac (launchd tick or a herdr pane), picks it up:
- *
- *   1. lists open `ready-for-agent` issues written by an allowed author
- *   2. claims one (claim comment + label swap) and checks no other machine won the race
- *   3. runs `claude -p` in the issue's working directory under the Mac's own
- *      Claude Code permission settings (this script never adds bypass flags)
- *   4. comments the evidence (command, exit code, git HEAD before/after, links, output tail)
- *   5. relabels the issue `agent-done` or `agent-blocked`
- *
- * Usage:
- *   node scripts/mac-dispatch-loop.js --once            one tick (what launchd runs)
- *   node scripts/mac-dispatch-loop.js --watch           loop forever (run in a herdr pane)
- *   node scripts/mac-dispatch-loop.js --once --dry-run  show what would run, touch nothing
- *
- * See docs/guides/mac-dispatch-loop.md.
+ * mac-dispatch-loop.js — cloud sessions hand work to a Mac through GitHub issues.
+ * Polls open `ready-for-agent` issues from allowed authors, claims one (claim comment,
+ * earliest claim wins across Macs), runs `claude -p` in the issue's folder under the
+ * Mac's own Claude Code permission settings (never adds bypass flags), comments the
+ * evidence, and relabels the issue `agent-done` or `agent-blocked`.
+ * Usage: --once (launchd) | --watch (herdr pane) [--dry-run]. See docs/guides/mac-dispatch-loop.md.
  */
 
 const { spawnSync } = require('node:child_process');
@@ -534,27 +522,8 @@ if (require.main === module) {
 }
 
 module.exports = {
-  LABELS,
-  CLAIM_MARKER,
-  RESULT_MARKER,
-  FORBIDDEN_CLAUDE_ARGS,
-  defaultConfig,
-  parseArgs,
-  assertNoPermissionBypass,
-  parseIssueForm,
-  resolveWorkdir,
-  isAuthorAllowed,
-  buildPrompt,
-  parseStatus,
-  parseClaudeOutput,
-  extractLinks,
-  decideOutcome,
-  buildEvidenceComment,
-  pickWinningClaim,
-  claimIssue,
-  processIssue,
-  tick,
-  makeContext,
-  makeRunner,
-  acquireLock,
+  LABELS, CLAIM_MARKER, RESULT_MARKER, FORBIDDEN_CLAUDE_ARGS, defaultConfig, parseArgs,
+  assertNoPermissionBypass, parseIssueForm, resolveWorkdir, isAuthorAllowed, buildPrompt,
+  parseStatus, parseClaudeOutput, extractLinks, decideOutcome, buildEvidenceComment,
+  pickWinningClaim, claimIssue, processIssue, tick, makeContext, makeRunner, acquireLock,
 };

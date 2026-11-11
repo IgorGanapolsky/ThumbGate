@@ -4,15 +4,7 @@ Cloud Claude sessions can't reach your Mac directly, but they can open GitHub is
 turns `ready-for-agent` issues into `claude -p` runs on your Mac and writes the evidence back to
 the issue.
 
-```
-cloud thread ──opens issue──▶ GitHub (ready-for-agent)
-                                  │  poll every 5 min (launchd) or --watch (herdr pane)
-                                  ▼
-                           Mac: claim ─▶ claude -p in the issue's folder ─▶ evidence comment
-                                  │
-                                  ▼
-                        label: agent-done  or  agent-blocked
-```
+Flow: cloud thread opens issue → Mac claims it → `claude -p` in the issue folder → evidence comment → `agent-done` or `agent-blocked`.
 
 ## Queue a task
 
@@ -101,15 +93,8 @@ log is kept at `~/.thumbgate-dispatch/receipts.jsonl`.
 
 ## Settings
 
-| Env var / flag | Default |
-| --- | --- |
-| `MAC_DISPATCH_REPO` / `--repo` | `IgorGanapolsky/ThumbGate` |
-| `MAC_DISPATCH_ALLOWED_AUTHORS` / `--allow-author` | repo owner |
-| `MAC_DISPATCH_DEFAULT_WORKDIR` / `--default-workdir` | `~/workspace/ThumbGate` |
-| `MAC_DISPATCH_WORKDIR_ROOTS` / `--workdir-root` | `~/workspace` |
-| `MAC_DISPATCH_MACHINE_ID` / `--machine-id` | hostname |
-| `MAC_DISPATCH_TIMEOUT_MINUTES` / `--timeout-minutes` | `45` |
-| `MAC_DISPATCH_CLAUDE_ARGS` / `--claude-arg` | none (e.g. `--max-turns 40`) |
-| `MAC_DISPATCH_INTERVAL` (installer) / `--interval` (`--watch`) | `300` seconds |
+Run `node scripts/mac-dispatch-loop.js --help` for flags. Each has a `MAC_DISPATCH_*` env var
+(`REPO`, `ALLOWED_AUTHORS`, `DEFAULT_WORKDIR`, `WORKDIR_ROOTS`, `MACHINE_ID`, `TIMEOUT_MINUTES`,
+`CLAUDE_ARGS`); the launchd installer passes them through, plus `MAC_DISPATCH_INTERVAL`.
 
 Requires `node`, `gh` (logged in) and `claude` (logged in) on the Mac.
