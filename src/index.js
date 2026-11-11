@@ -18,6 +18,7 @@ const {
   DEFAULT_READ_ONLY_TOOLS,
   DEFAULT_MUTATING_TOOLS,
 } = require('./integrations/ideabrowser-connector');
+const emeansCodebookQuantizer = require('./emeans-codebook-quantizer');
 
 // The package entry point is the production surface for `thumbgate`.
 // The hosted-Hermes identity/lifecycle/approval gates are exported here so
@@ -25,7 +26,7 @@ const {
 // module paths. See docs: hosted Hermes requests route through
 // HermesPlatformProtocol for turn lifecycle + approvals, and through
 // HermesSyncPlane for the authorized-shape read path.
-module.exports = Object.assign({}, feedbackLoop, {
+module.exports = Object.assign({}, feedbackLoop, emeansCodebookQuantizer, {
   HermesPlatformProtocol,
   HermesSyncPlane,
   ProtocolError,
