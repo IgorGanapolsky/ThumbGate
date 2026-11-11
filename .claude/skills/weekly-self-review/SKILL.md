@@ -45,6 +45,8 @@ For every miss, make one durable change, smallest that works:
 | Miss type | Durable fix |
 |-----------|-------------|
 | Behavior rule | Edit the relevant skill or CLAUDE.md (absolute ZERO/ALWAYS wording) via PR |
+| Operator answered the same question twice | Add it to "Settled facts" in `check-before-asking` and to project memory |
+| Someone asked not to be contacted | Add them to `outreach-do-not-contact` (domain only) and the full entry to project memory |
 | Fact the next session needed | Write/update the project memory file |
 | Broken route | Record the working route in `blocked-action-fallback` or memory |
 | Missing guard | Add a test or hook (policy belongs in gates, not prose) |
