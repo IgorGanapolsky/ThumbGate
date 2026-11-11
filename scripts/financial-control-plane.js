@@ -528,9 +528,50 @@ function splitShellSegmentsOutsideQuotes(command) {
 }
 
 function stripNonEconomicQuotedStrings(segment) {
-  return segment.replace(/(['"])((?:\\.|(?!\1)[\s\S])*)\1/g, (full, _quote, inner) => (
-    ECONOMIC_URL_PATTERNS.some((pattern) => pattern.test(inner)) ? full : ' '
-  ));
+  let out = '';
+  let i = 0;
+  while (i < segment.length) {
+    const ch = segment[i];
+    if (ch !== '\'' && ch !== '"') {
+      if (ch === '\\' && i + 1 < segment.length) {
+        out += ch + segment[i + 1];
+        i += 2;
+      } else {
+        out += ch;
+        i += 1;
+      }
+      continue;
+    }
+    const quote = ch;
+    let j = i + 1;
+    while (j < segment.length) {
+      if (segment[j] === '\\' && quote === '"' && j + 1 < segment.length) {
+        j += 2;
+        continue;
+      }
+      if (segment[j] === quote) break;
+      j += 1;
+    }
+    if (j >= segment.length) {
+      out += segment.slice(i);
+      break;
+    }
+    const full = segment.slice(i, j + 1);
+    const inner = segment.slice(i + 1, j);
+    out += ECONOMIC_URL_PATTERNS.some((pattern) => pattern.test(inner)) ? full : ' ';
+    i = j + 1;
+  }
+  return out;
+}
+
+function extractSubshellCommand(clean) {
+  const flagMatch = /^[\w./-]+\s+-[a-z]*c\s+/i.exec(clean);
+  if (!flagMatch) return null;
+  const rest = clean.slice(flagMatch[0].length).trim();
+  if (rest.length >= 2 && (rest[0] === '\'' || rest[0] === '"') && rest.at(-1) === rest[0]) {
+    return rest.slice(1, -1);
+  }
+  return null;
 }
 
 function shellEconomicText(toolName, rawCommand) {
@@ -540,16 +581,19 @@ function shellEconomicText(toolName, rawCommand) {
   const command = String(rawCommand || '');
   return splitShellSegmentsOutsideQuotes(command)
     .map((segment) => {
-      const clean = segment.trim().replace(/^(?:sudo\s+)?(?:env\s+)?(?:[A-Za-z_]\w*=[^\s]+\s+)*/, '');
+      let clean = segment.trim();
+      while (/^(?:sudo|env)\s+/.test(clean) || /^[A-Za-z_]\w*=[^\s]+\s+/.test(clean)) {
+        clean = clean.replace(/^(?:sudo|env)\s+/, '').replace(/^[A-Za-z_]\w*=[^\s]+\s+/, '');
+      }
       if (!clean) return '';
       const executable = /^([\w./-]+)/.exec(clean)?.[1]?.split('/').at(-1)?.toLowerCase();
       if (!executable || NON_ECONOMIC_SHELL_EXECUTABLES.has(executable)) {
         return '';
       }
       if (['bash', 'sh', 'zsh'].includes(executable)) {
-        const subshellMatch = /^[\w./-]+\s+-[a-z]*c\s+(['"])([\s\S]*)\1$/i.exec(clean);
-        if (subshellMatch) {
-          return shellEconomicText('Bash', subshellMatch[2]);
+        const subshellCmd = extractSubshellCommand(clean);
+        if (subshellCmd !== null) {
+          return shellEconomicText('Bash', subshellCmd);
         }
       }
       if (executable === 'gh' && /\b(?:issue|pr|release|run|workflow|repo|status|search)\b/i.test(clean)) {
