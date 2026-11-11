@@ -120,6 +120,24 @@ function isTranscriptShaped(input) {
   return false;
 }
 
+/** Prefer fixed absolute git paths (Sonar S4036 — avoid bare PATH lookup). */
+function resolveGitBinary() {
+  const candidates = [
+    process.env.GIT_BINARY,
+    '/usr/bin/git',
+    '/opt/homebrew/bin/git',
+    '/usr/local/bin/git',
+  ].filter(Boolean);
+  for (const candidate of candidates) {
+    try {
+      if (fs.existsSync(candidate)) return candidate;
+    } catch {
+      /* ignore */
+    }
+  }
+  return '/usr/bin/git';
+}
+
 /**
  * Resolve the project name from a working directory or git root with caching.
  */
@@ -161,7 +179,8 @@ function resolveProjectFromCwd(dir, options = {}) {
   // 2. Try git remote origin URL
   if (!resolved) {
     try {
-      const gitOutput = execFileSync('git', ['-C', targetDir, 'config', '--get', 'remote.origin.url'], {
+      const gitBin = resolveGitBinary();
+      const gitOutput = execFileSync(gitBin, ['-C', targetDir, 'config', '--get', 'remote.origin.url'], {
         encoding: 'utf8',
         stdio: ['ignore', 'pipe', 'ignore'],
         timeout: 1000,
@@ -183,7 +202,8 @@ function resolveProjectFromCwd(dir, options = {}) {
   // 3. Try git top-level
   if (!resolved) {
     try {
-      const topLevel = execFileSync('git', ['-C', targetDir, 'rev-parse', '--show-toplevel'], {
+      const gitBin = resolveGitBinary();
+      const topLevel = execFileSync(gitBin, ['-C', targetDir, 'rev-parse', '--show-toplevel'], {
         encoding: 'utf8',
         stdio: ['ignore', 'pipe', 'ignore'],
         timeout: 1000,
