@@ -2,7 +2,7 @@ name: Claude Code Review
 
 on:
   pull_request:
-    types: [opened, synchronize, reopened]
+    types: [ready_for_review]
   issue_comment:
     types: [created]
 
@@ -15,7 +15,8 @@ jobs:
     name: Claude Code Review
     if: |
       (github.actor != 'dependabot[bot]' && github.event.pull_request.user.login != 'dependabot[bot]') &&
-      ((github.event_name == 'pull_request') ||
+      !startsWith(github.head_ref, 'trunk-merge/') &&
+      ((github.event_name == 'pull_request' && !github.event.pull_request.draft) ||
       (github.event_name == 'issue_comment' && contains(github.event.comment.body, '@claude')))
     runs-on: ubuntu-latest
     permissions:
@@ -28,7 +29,7 @@ jobs:
         with:
           fetch-depth: 0
       - name: Run Claude Code Review
-        uses: anthropics/claude-code-action@925afb53776cf1a2b738c6bdbed37b4d4000ef13 # v1.0.262
+        uses: anthropics/claude-code-action@61a9c274fa7110a66dfafc1bbbced03833eb25fe # v1.0.269
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           trigger_phrase: "@claude"
