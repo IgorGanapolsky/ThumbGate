@@ -44,16 +44,21 @@ lives in a repo you can reach; otherwise note it in the report.
 
 ## 3. Follow up on leads and intro agents
 
+- **Run `outreach-do-not-contact` before every send.** A match means no send,
+  on any channel; log it as SKIPPED.
 - For each open lead / partnership / AI intro-agent thread (e.g. networking
-  agents the operator works with by email): read the latest message, then send
-  the next concrete ask — a specific intro profile, a call slot, or a yes/no.
+  agents the operator works with by email) that passes the gate: read the
+  latest message, then send the next concrete ask — a specific intro profile,
+  a call slot, or a yes/no.
 - Respect stop signals. If the latest message in a thread is an explicit
-  "stop contacting", only re-engage when the operator himself has asked to,
-  and say so in the reply.
+  "stop contacting", only re-engage when the operator himself has asked to in
+  his own words, and say so in the reply.
 - Follow-up cadence: no reply after 5 days → one short nudge; after a second
   silence, mark the lead cold. Never more than 2 unanswered nudges.
 - If the mail connector isn't available, follow `blocked-action-fallback`
   (other routes, then save the final send-ready reply for the next session).
+  Sends that need the operator's signed-in Mac go through `mac-dispatch`, with
+  the do-not-contact check written into the task.
 
 ## 4. Receipts (mandatory)
 
@@ -63,7 +68,8 @@ Every external effect gets a receipt line in the project's outreach log:
 <ISO time> | <channel> | <product> | <action: posted/sent/followed-up> | <URL or message id> | <result if known>
 ```
 
-No URL / message id = it didn't happen. Mark it ATTEMPTED, not DONE.
+No URL / message id = it didn't happen. Mark it ATTEMPTED, not DONE. Format
+and states: `receipts-or-blocked`.
 
 ## 5. Report
 
