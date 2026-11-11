@@ -123,6 +123,7 @@ test('syncBranchProtection falls back to REST branch protection when GraphQL ret
             'CodeQL',
             'Analyze JavaScript (javascript-typescript)',
             'Verify changeset',
+            'pr-size',
             'GitGuardian Security Checks',
             'Socket Security: Project Report',
             'Socket Security: Pull Request Alerts'
@@ -182,6 +183,7 @@ test('syncBranchProtection updates REST-backed branch protection when GraphQL ha
           'CodeQL',
           'Analyze JavaScript (javascript-typescript)',
           'Verify changeset',
+          'pr-size',
           'GitGuardian Security Checks',
           'Socket Security: Project Report',
           'Socket Security: Pull Request Alerts'
@@ -243,6 +245,7 @@ test('syncBranchProtection updates main branch protection to the configured qual
                 'CodeQL',
                 'Analyze JavaScript (javascript-typescript)',
                 'Verify changeset',
+                'pr-size',
                 'GitGuardian Security Checks',
                 'Socket Security: Project Report',
                 'Socket Security: Pull Request Alerts'
