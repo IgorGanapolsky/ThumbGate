@@ -379,6 +379,14 @@ const SEGMENT_FIELDS = [
   ['entryRoute', ['entryRoute', 'entry_route']],
 ];
 
+function sessionSuccessHost(session = {}) {
+  try {
+    return new URL(session.success_url).host || 'unknown';
+  } catch {
+    return 'unknown';
+  }
+}
+
 function sessionAmountLabel(session = {}) {
   if (session.amount_total == null) return 'unknown';
   return `${(Number(session.amount_total) / 100).toFixed(2)} ${String(session.currency || '').toUpperCase()}`.trim();
@@ -392,7 +400,7 @@ function summarizeRecentSegments(
 ) {
   const since = Number(nowEpochSeconds) - windowDays * 24 * 60 * 60;
   const recent = sessions.filter((session) => Number(session.created) >= since);
-  const buckets = { product: new Map(), amount: new Map(), mode: new Map(), day: new Map() };
+  const buckets = { product: new Map(), successHost: new Map(), amount: new Map(), mode: new Map(), day: new Map() };
   for (const [name] of SEGMENT_FIELDS) buckets[name] = new Map();
   const intentSessions = [];
 
@@ -401,6 +409,7 @@ function summarizeRecentSegments(
     const attribution = extractSessionAttribution(session);
     const isThumbGate = Boolean(attribution.hasTraceId || attribution.planId);
     incrementBucket(buckets.product, isThumbGate ? 'thumbgate_attributed' : 'other_or_unattributed');
+    incrementBucket(buckets.successHost, sessionSuccessHost(session));
     incrementBucket(buckets.amount, sessionAmountLabel(session));
     incrementBucket(buckets.mode, session.mode);
     incrementBucket(buckets.day, toIsoTimestamp(Number(session.created))?.slice(0, 10));
@@ -416,6 +425,7 @@ function summarizeRecentSegments(
         paymentStatus: session.payment_status || null,
         mode: session.mode || null,
         amount: sessionAmountLabel(session),
+        successHost: sessionSuccessHost(session),
         identity: identityKind,
         paymentAttempt: hasPaymentAttemptEvidence(session),
         source: attribution.source,
@@ -753,6 +763,7 @@ function renderMarkdown(report) {
     lines.push('Counts only. Use these to trace raw-only sessions to the CTA or route that created them.');
     const segmentTables = [
       ['product', 'Product attribution'],
+      ['successHost', 'Success URL host (which site opened it)'],
       ['entryRoute', 'Server entry route'],
       ['ctaId', 'CTA id'],
       ['utmMedium', 'utm_medium'],
@@ -773,10 +784,10 @@ function renderMarkdown(report) {
     lines.push('');
     lines.push(`### Sessions with buyer-intent evidence (${seg.intentSessions.length})`);
     lines.push('');
-    lines.push('| Created | Status | Pay status | Mode | Amount | Identity | Payment attempt | Source | CTA | Entry route |');
-    lines.push('| --- | --- | --- | --- | ---: | --- | --- | --- | --- | --- |');
+    lines.push('| Created | Site | Status | Pay status | Mode | Amount | Identity | Payment attempt | Source | CTA | Entry route |');
+    lines.push('| --- | --- | --- | --- | --- | ---: | --- | --- | --- | --- | --- |');
     for (const s of seg.intentSessions) {
-      lines.push(`| ${s.createdAt} | ${s.status} | ${s.paymentStatus} | ${s.mode || '—'} | ${s.amount} | ${s.identity} | ${s.paymentAttempt ? 'yes' : 'no'} | ${s.source || '—'} | ${s.ctaId || '—'} | ${s.entryRoute || '—'} |`);
+      lines.push(`| ${s.createdAt} | ${s.successHost} | ${s.status} | ${s.paymentStatus} | ${s.mode || '—'} | ${s.amount} | ${s.identity} | ${s.paymentAttempt ? 'yes' : 'no'} | ${s.source || '—'} | ${s.ctaId || '—'} | ${s.entryRoute || '—'} |`);
     }
     lines.push('');
   }
