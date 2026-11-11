@@ -111,6 +111,7 @@ const {
 } = require('../../scripts/internal-agent-bootstrap');
 const {
   classifyRequester,
+  isHumanCheckoutNavigation,
 } = require('../../scripts/bot-detection');
 const {
   recordCheckoutFunnelEvent,
@@ -567,6 +568,23 @@ const TRACKED_LINK_TARGETS = Object.freeze({
       utm_campaign: 'pro_upgrade',
       plan_id: 'pro',
       billing_cycle: 'monthly',
+    },
+    allowCustomerEmail: true,
+    prefillStripeEmail: true,
+  },
+  'pro-annual': {
+    fallbackHref: PRO_CHECKOUT_URL,
+    external: true,
+    botDeflectPath: '/checkout/pro',
+    ctaId: 'pro_checkout_annual_stripe',
+    ctaPlacement: 'checkout_interstitial',
+    eventType: 'pro_checkout_direct_stripe',
+    defaults: {
+      utm_source: 'website',
+      utm_medium: 'checkout_interstitial',
+      utm_campaign: 'pro_annual_149',
+      plan_id: 'pro',
+      billing_cycle: 'annual',
     },
     allowCustomerEmail: true,
     prefillStripeEmail: true,
@@ -1607,7 +1625,8 @@ function serializeCookie(name, value, options = {}) {
   const parts = [`${name}=${encodeURIComponent(String(value))}`];
   parts.push(`Path=${options.path || '/'}`);
   parts.push(`SameSite=${options.sameSite || 'Lax'}`);
-  if (options.maxAge) parts.push(`Max-Age=${options.maxAge}`);
+  if (Number.isInteger(options.maxAge) && options.maxAge >= 0) parts.push(`Max-Age=${options.maxAge}`);
+  else if (options.maxAge) parts.push(`Max-Age=${options.maxAge}`);
   if (options.httpOnly !== false) parts.push('HttpOnly');
   if (options.secure) parts.push('Secure');
   return parts.join('; ');
@@ -2848,12 +2867,33 @@ function getOauthAuthorizeParamsFromForm(form, hostedConfig) {
   };
 }
 
+function resolveCheckoutIntentPlanView(parsed) {
+  const requestedCycle = String(parsed?.searchParams?.get('billing_cycle') || 'monthly').trim().toLowerCase();
+  if (requestedCycle === 'annual') {
+    return {
+      title: 'Start ThumbGate Pro Annual',
+      price: '$149',
+      unit: '/yr',
+      directHref: '/go/pro-annual?utm_source=website&amp;utm_medium=checkout_interstitial&amp;utm_campaign=pro_annual_149&amp;utm_content=skip_form&amp;cta_id=pro_checkout_direct_stripe&amp;cta_placement=checkout_interstitial&amp;plan_id=pro&amp;billing_cycle=annual',
+      ctaLabel: 'Pay $149/yr with Stripe →',
+    };
+  }
+  return {
+    title: 'Start ThumbGate Pro',
+    price: '$19',
+    unit: '/mo',
+    directHref: '/go/pro-direct?utm_source=website&amp;utm_medium=checkout_interstitial&amp;utm_campaign=pro_upgrade&amp;utm_content=skip_form&amp;cta_id=pro_checkout_direct_stripe&amp;cta_placement=checkout_interstitial',
+    ctaLabel: 'Pay $19/mo with Stripe →',
+  };
+}
+
 function renderCheckoutIntentPage(prefilledEmail = '', parsed = null, options = {}) {
   const plausibleDomain = escapeHtmlAttribute(resolvePlausibleDataDomain({ host: 'thumbgate.ai' }));
   const includeHiddenAttribution = options.includeHiddenAttribution === true;
   const hiddenInputs = includeHiddenAttribution
     ? buildCheckoutHiddenAttributionInputs(parsed)
     : '';
+  const planView = resolveCheckoutIntentPlanView(parsed);
   return `<!doctype html>
 <html lang="en">
 <head>
@@ -2886,10 +2926,10 @@ a{display:block;text-decoration:none}a.secondary,button.secondary{box-sizing:bor
 <body>
 <main>
 <div class="brand"><span class="brand-mark"></span><span>ThumbGate</span></div>
-<h1>Start ThumbGate Pro</h1>
-<div class="price">$19<small>/mo</small></div>
-<p>The npm package runs your gates locally. <strong>Pro</strong> removes solo caps and adds personal recall, proof, exports, and adapter maintenance. Enterprise service work is qualified after intake; hosted team sync and a hosted org dashboard are not generally available.</p>
-<a class="primary" data-i="pro_checkout_direct_stripe" rel="nofollow" href="/go/pro-direct?utm_source=website&amp;utm_medium=checkout_interstitial&amp;utm_campaign=pro_upgrade&amp;utm_content=skip_form&amp;cta_id=pro_checkout_direct_stripe&amp;cta_placement=checkout_interstitial">Pay $19/mo with Stripe →</a>
+<h1>${planView.title}</h1>
+<div class="price">${planView.price}<small>${planView.unit}</small></div>
+<p>The npm package runs your gates locally. <strong>Pro</strong> removes solo caps and adds personal recall, proof, exports, and adapter maintenance. Your Pro API key is provisioned on the next screen immediately after payment.</p>
+<a class="primary" data-i="pro_checkout_direct_stripe" rel="nofollow" href="${planView.directHref}">${planView.ctaLabel}</a>
 <form action="/checkout/pro" method="POST" data-i="pro_checkout_confirmed">
 ${hiddenInputs}
 <input type="hidden" name="confirm" value="1">
@@ -2902,8 +2942,8 @@ ${hiddenInputs}
 <a class="secondary" data-i="pro_checkout_bundle_49" rel="nofollow" href="/go/bundle-49?utm_source=website&amp;utm_medium=checkout_interstitial&amp;utm_campaign=bundle_49&amp;cta_id=pro_checkout_bundle_49&amp;cta_placement=checkout_interstitial">Buy the $49 bundle, once</a>
 <a class="secondary" data-i="workflow_sprint_intake" href="/#workflow-sprint-intake">Not sure yet? Send the workflow first</a>
 <p class="choice-note">Cancel anytime. 7-day refund, no questions.</p>
-<div class="objection-box" aria-label="Checkout feedback">
-<strong>Not buying today?</strong>
+<details class="objection-box" aria-label="Checkout feedback">
+<summary style="cursor:pointer;font-weight:600;color:#cbd5e1">Not buying today? Tell us what to fix (optional)</summary>
 <p class="objection-note">Tap one reason so we know what to fix. This does not sign you up.</p>
 <div class="objection-grid">
 <button type="button" data-reason="price_unclear">Price or scope is unclear</button>
@@ -2912,7 +2952,7 @@ ${hiddenInputs}
 <button type="button" data-reason="not_urgent">Not urgent right now</button>
 </div>
 <div class="feedback-saved" id="feedback-saved">Feedback saved.</div>
-</div>
+</details>
 <div class="trust"><div class="trust-item">Personal recall and proof exports without free-tier caps</div><div class="trust-item">Adapter matrix kept current for Claude Code, Cursor, Codex, Gemini, Amp, Cline, OpenCode</div><div class="trust-item">Personal dashboard: gate stats, rule evidence, DPO export</div><div class="trust-item">Enterprise service work is qualified after intake; hosted team sync and a hosted org dashboard are not generally available</div></div>
 <p class="back"><a href="/">← Back to thumbgate.ai</a></p>
 </main>
@@ -3227,7 +3267,82 @@ function buildTrackedLinkAttribution(target, parsed, req, journeyState, destinat
   };
 }
 
-function serveTrackedLinkRedirect({ req, res, parsed, hostedConfig, isHeadRequest, slug }) {
+function isSyntheticProbeQuery(parsed) {
+  const probe = String(parsed?.searchParams?.get('probe') || '').trim().toLowerCase();
+  return probe === '1' || probe === 'true';
+}
+
+function isDirectProSessionSlug(slug) {
+  return slug === 'pro-direct' || slug === 'pro-annual' || slug === 'founding-100';
+}
+
+/**
+ * Creates an attributable dynamic Stripe Checkout Session for human 1-click Pro
+ * redirects (`/go/pro-direct`, `/go/pro-annual`, `/go/founding-100`) when live
+ * Stripe credentials are present, ensuring `/success` key provisioning, `/cancel`
+ * recovery downsells, promotion codes, and exact `$19/mo` vs `$149/yr` pricing.
+ */
+async function tryCreateDirectProCheckoutRedirect({
+  target,
+  parsed,
+  req,
+  hostedConfig,
+  journeyState,
+  feedbackDir,
+}) {
+  if (!isDirectProSessionSlug(target.slug) || !process.env.STRIPE_SECRET_KEY || isSyntheticProbeQuery(parsed)) {
+    return null;
+  }
+  const requestedCycle = String(parsed.searchParams.get('billing_cycle') || '').trim().toLowerCase();
+  const billingCycle = (
+    target.slug === 'pro-annual'
+    || target.slug === 'founding-100'
+    || requestedCycle === 'annual'
+  ) ? 'annual' : 'monthly';
+  const customerEmail = normalizeCheckoutCustomerEmail(
+    parsed.searchParams.get('customer_email') || parsed.searchParams.get('prefilled_email')
+  ) || undefined;
+  const traceId = createJourneyId('checkout');
+  const bootstrapBody = buildCheckoutBootstrapBody(parsed, req, journeyState);
+  const defaults = target.defaults || {};
+  if (!parsed.searchParams.get('utm_source') && defaults.utm_source) bootstrapBody.utmSource = defaults.utm_source;
+  if (!parsed.searchParams.get('utm_medium') && defaults.utm_medium) bootstrapBody.utmMedium = defaults.utm_medium;
+  if (!parsed.searchParams.get('utm_campaign') && defaults.utm_campaign) bootstrapBody.utmCampaign = defaults.utm_campaign;
+  if (!parsed.searchParams.get('cta_id') && target.ctaId) bootstrapBody.ctaId = target.ctaId;
+  if (!parsed.searchParams.get('cta_placement') && target.ctaPlacement) bootstrapBody.ctaPlacement = target.ctaPlacement;
+  bootstrapBody.planId = 'pro';
+  bootstrapBody.billingCycle = billingCycle;
+  const analyticsMetadata = buildCheckoutAttributionMetadata(bootstrapBody, req, traceId);
+  const sessionResult = await createCheckoutSession({
+    successUrl: buildCheckoutFallbackUrl(buildHostedSuccessUrl(hostedConfig.appOrigin, traceId), analyticsMetadata),
+    cancelUrl: buildCheckoutFallbackUrl(buildHostedCancelUrl(hostedConfig.appOrigin, traceId), analyticsMetadata),
+    customerEmail,
+    installId: bootstrapBody.installId,
+    traceId,
+    metadata: analyticsMetadata,
+    appOrigin: hostedConfig.appOrigin,
+  });
+  if (!sessionResult || !sessionResult.url) {
+    return null;
+  }
+  const dynamicDestinationUrl = new URL(sessionResult.url);
+  const dynamicAttribution = buildTrackedLinkAttribution(target, parsed, req, journeyState, dynamicDestinationUrl);
+  appendBestEffortTelemetry(
+    feedbackDir,
+    {
+      ...dynamicAttribution,
+      traceId,
+      stripeSessionId: sessionResult.sessionId || null,
+      planId: 'pro',
+      billingCycle,
+    },
+    req.headers,
+    `tracked_link_redirect:${target.slug}`
+  );
+  return sessionResult.url;
+}
+
+async function serveTrackedLinkRedirect({ req, res, parsed, hostedConfig, isHeadRequest, slug }) {
   const target = getTrackedLinkTarget(slug);
   if (!target) {
     sendJson(res, 404, {
@@ -3266,7 +3381,11 @@ function serveTrackedLinkRedirect({ req, res, parsed, hostedConfig, isHeadReques
 
   const { FEEDBACK_DIR } = getFeedbackPaths();
   const journeyState = resolveJourneyState(req, parsed);
-  const botClassification = classifyRequester(req.headers);
+  const requesterClassification = classifyRequester(req.headers);
+  const botClassification = requesterClassification.isBot
+    || isHumanCheckoutNavigation(req.headers, hostedConfig.appOrigin)
+    ? requesterClassification
+    : { isBot: true, reason: 'no_browser_navigation' };
   if (target.botDeflectPath && botClassification.isBot) {
     const deflectUrl = new URL(target.botDeflectPath, hostedConfig.appOrigin);
     appendTrackedLinkQueryParams(deflectUrl, parsed, target);
@@ -3296,6 +3415,32 @@ function serveTrackedLinkRedirect({ req, res, parsed, hostedConfig, isHeadReques
     });
     res.end();
     return;
+  }
+  if (!isHeadRequest && isDirectProSessionSlug(target.slug) && process.env.STRIPE_SECRET_KEY) {
+    try {
+      const dynamicSessionUrl = await tryCreateDirectProCheckoutRedirect({
+        target,
+        parsed,
+        req,
+        hostedConfig,
+        journeyState,
+        feedbackDir: FEEDBACK_DIR,
+      });
+      if (dynamicSessionUrl) {
+        res.writeHead(req.method === 'POST' ? 303 : 302, {
+          ...(journeyState.setCookieHeaders.length ? { 'Set-Cookie': journeyState.setCookieHeaders } : {}),
+          'Cache-Control': 'no-store',
+          'Referrer-Policy': 'strict-origin-when-cross-origin',
+          'X-Robots-Tag': 'noindex,nofollow',
+          'X-ThumbGate-Link-Slug': target.slug,
+          Location: dynamicSessionUrl,
+        });
+        res.end();
+        return;
+      }
+    } catch {
+      // Fall back cleanly to static Payment Link if dynamic session creation fails
+    }
   }
   const destinationUrl = buildTrackedLinkDestination(target, hostedConfig, parsed);
   const attribution = buildTrackedLinkAttribution(target, parsed, req, journeyState, destinationUrl);
@@ -5694,22 +5839,120 @@ function extractBearerToken(req) {
   return auth.startsWith('Bearer ') ? auth.slice(7) : '';
 }
 
+const PAID_AUTH_COOKIE_NAME = 'thumbgate_auth_session';
+const PAID_AUTH_SESSION_TTL_SECONDS = 30 * 24 * 60 * 60;
+const PAID_AUTH_MAX_SESSIONS = 4096;
+const paidAuthSessions = new Map();
+
+function prunePaidAuthSessions(nowMs) {
+  for (const [token, entry] of paidAuthSessions.entries()) {
+    if (!entry || entry.expiresAt <= nowMs) paidAuthSessions.delete(token);
+  }
+  while (paidAuthSessions.size >= PAID_AUTH_MAX_SESSIONS) {
+    const oldestKey = paidAuthSessions.keys().next().value;
+    if (!oldestKey) break;
+    paidAuthSessions.delete(oldestKey);
+  }
+}
+
+function resolvePaidAuthSessionKey(req) {
+  const cookies = parseCookies(req && req.headers ? req.headers.cookie : '');
+  const sessionToken = cookies[PAID_AUTH_COOKIE_NAME];
+  if (!sessionToken) return '';
+  const entry = paidAuthSessions.get(sessionToken);
+  if (!entry) return '';
+  if (entry.expiresAt <= Date.now()) {
+    paidAuthSessions.delete(sessionToken);
+    return '';
+  }
+  return entry.apiKey || '';
+}
+
+function resolvePaidSessionTier(candidate, expectedApiKey, expectedOperatorKey) {
+  const key = String(candidate || '').trim();
+  if (!key) return null;
+  if (expectedApiKey && safeKeyEqual(key, expectedApiKey)) return 'Enterprise';
+  if (expectedOperatorKey && safeKeyEqual(key, expectedOperatorKey)) return 'Enterprise';
+  const validation = validateApiKey(key);
+  if (validation && validation.valid === true) {
+    return validation.plan === 'team' || validation.tier === 'Enterprise' ? 'Enterprise' : 'Pro';
+  }
+  if (!expectedApiKey && !expectedOperatorKey) {
+    return key.startsWith('tg_op_') || key.startsWith('tg_creator_') ? 'Enterprise' : 'Pro';
+  }
+  return null;
+}
+
+async function handlePaidAuthSessionRoute(req, res, expectedApiKey, expectedOperatorKey) {
+  const noStoreHeaders = { 'Cache-Control': 'no-store' };
+  if (req.method === 'GET') {
+    const tier = resolvePaidSessionTier(extractApiKey(req), expectedApiKey, expectedOperatorKey);
+    sendJson(res, 200, { ok: true, authenticated: Boolean(tier), tier: tier || null }, noStoreHeaders);
+    return;
+  }
+  if (req.method === 'DELETE') {
+    const cookies = parseCookies(req.headers.cookie);
+    if (cookies[PAID_AUTH_COOKIE_NAME]) {
+      paidAuthSessions.delete(cookies[PAID_AUTH_COOKIE_NAME]);
+    }
+    const clearCookie = serializeCookie(PAID_AUTH_COOKIE_NAME, '', {
+      maxAge: 0,
+      httpOnly: true,
+      sameSite: 'Lax',
+      secure: true,
+    });
+    sendJson(res, 200, { ok: true, authenticated: false }, { ...noStoreHeaders, 'Set-Cookie': clearCookie });
+    return;
+  }
+  if (req.method === 'POST') {
+    let body = {};
+    try {
+      body = await parseJsonBody(req);
+    } catch {
+      sendJson(res, 400, { ok: false, authenticated: false, error: 'Invalid JSON request body' }, noStoreHeaders);
+      return;
+    }
+    const candidate = extractBearerToken(req) || String((body && body.apiKey) || '').trim();
+    const tier = resolvePaidSessionTier(candidate, expectedApiKey, expectedOperatorKey);
+    if (!tier) {
+      sendJson(res, 401, { ok: false, authenticated: false, error: 'Invalid API key' }, noStoreHeaders);
+      return;
+    }
+    const nowMs = Date.now();
+    prunePaidAuthSessions(nowMs);
+    const sessionToken = crypto.randomBytes(32).toString('hex');
+    paidAuthSessions.set(sessionToken, {
+      apiKey: candidate,
+      createdAt: nowMs,
+      expiresAt: nowMs + PAID_AUTH_SESSION_TTL_SECONDS * 1000,
+    });
+    const setCookie = serializeCookie(PAID_AUTH_COOKIE_NAME, sessionToken, {
+      maxAge: PAID_AUTH_SESSION_TTL_SECONDS,
+      httpOnly: true,
+      sameSite: 'Lax',
+      secure: true,
+    });
+    sendJson(res, 200, { ok: true, authenticated: true, tier }, { ...noStoreHeaders, 'Set-Cookie': setCookie });
+    return;
+  }
+  sendJson(res, 405, { ok: false, error: 'Method Not Allowed' }, noStoreHeaders);
+}
+
 function extractApiKey(req) {
   const bearerToken = extractBearerToken(req);
   if (bearerToken) {
     return bearerToken;
   }
 
-  const alternateHeader = req.headers['x-api-key'];
+  const alternateHeader = req.headers['x-api-key'] || req.headers['x-thumbgate-key'];
   if (Array.isArray(alternateHeader)) {
-    return String(alternateHeader[0] || '').trim();
-  }
-
-  if (typeof alternateHeader === 'string') {
+    const first = String(alternateHeader[0] || '').trim();
+    if (first) return first;
+  } else if (typeof alternateHeader === 'string' && alternateHeader.trim()) {
     return alternateHeader.trim();
   }
 
-  return '';
+  return resolvePaidAuthSessionKey(req);
 }
 
 /**
@@ -5800,6 +6043,7 @@ const OPERATOR_READONLY_GET_PATHS = new Set([
   '/v1/dashboard/render-spec',
   '/v1/dashboard/ai-inventory',
   '/v1/dashboard/review-state',
+  '/v1/feedback/stats',
   '/v1/intake/workflow-sprint/queue',
   '/v1/task-outcomes/monitor',
 ]);
@@ -6497,7 +6741,7 @@ function createApiServer() {
           }
         }
       }
-      serveTrackedLinkRedirect({
+      await serveTrackedLinkRedirect({
         req,
         res,
         parsed: trackedParsed,
@@ -6704,13 +6948,24 @@ async function addContext(){
       return;
     }
 
-    if (isGetLikeRequest && pathname === '/dashboard') {
+    if (isGetLikeRequest && (pathname === '/dashboard' || pathname === '/cloud')) {
       try {
         const html = loadDashboardPageHtml(req, expectedApiKey);
         sendHtml(res, 200, html, {}, { headOnly: isHeadRequest });
       } catch {
         sendJson(res, 404, { error: 'Dashboard page not found' });
       }
+      return;
+    }
+
+    if (isGetLikeRequest && pathname === '/v1/cloud/sso/authorize') {
+      const provider = encodeURIComponent(String(parsed.searchParams.get('provider') || 'google').trim());
+      res.writeHead(302, {
+        'X-Content-Type-Options': 'nosniff',
+        Location: `/dashboard?sso=${provider}`,
+        'Cache-Control': 'no-store',
+      });
+      res.end();
       return;
     }
 
@@ -9623,7 +9878,13 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
         const responseHeaders = getPublicBillingHeaders(traceId);
         const analyticsMetadata = buildCheckoutAttributionMetadata(body, req, traceId);
         const offerSummary = resolveCheckoutOfferSummary(analyticsMetadata);
-        
+        // A session without an email can't be followed up and almost always
+        // expires unpaid; most of the 30-day emailless sessions came from here.
+        const customerEmail = normalizeCheckoutCustomerEmail(body.customerEmail);
+        if (!customerEmail) {
+          throw createHttpError(400, 'customerEmail must be a valid email address');
+        }
+
         const result = await createCheckoutSession({
           successUrl: body.successUrl || buildCheckoutFallbackUrl(
             buildHostedSuccessUrl(hostedConfig.appOrigin, traceId),
@@ -9633,7 +9894,7 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
             buildHostedCancelUrl(hostedConfig.appOrigin, traceId),
             analyticsMetadata,
           ),
-          customerEmail: body.customerEmail,
+          customerEmail,
           installId: body.installId,
           traceId,
           metadata: analyticsMetadata,
@@ -9738,6 +9999,11 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
           detail: err.message || 'Unable to open billing portal session.',
         }, getPublicBillingHeaders(fallbackTraceId));
       }
+      return;
+    }
+
+    if (pathname === '/v1/auth/session') {
+      await handlePaidAuthSessionRoute(req, res, expectedApiKey, expectedOperatorKey);
       return;
     }
 
