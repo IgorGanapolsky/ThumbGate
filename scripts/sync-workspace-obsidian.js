@@ -14,7 +14,7 @@
  *     (live git remote, branch, HEAD SHA), `Logs.md` (recent git commits), and `Reports.md`.
  *  3. NEVER copies private/high-churn vault subfolders (`Meetings`, `Meetings-Prep`, `Email-Drafts`,
  *     `Email-Triage-Archive`, `Social-Drafts`, `Social-Drafts-Archive`, `Money`, `Gumroad-Products`,
- *     `Tax-Deed-Pre-Bid-Screen`, `content-source`) into `<repo>/obsidian/`.
+ *     `content-source`) into `<repo>/obsidian/`.
  *  4. Tracks `<repo>/obsidian/` in Igor's own repos (`visibility !== 'corporate-eci'`), and
  *     registers `/obsidian/` in `<repo>/.git/info/exclude` ONLY for `corporate-eci` repos.
  */
@@ -32,8 +32,6 @@ const TODAY = new Date().toISOString().slice(0, 10);
 const WORKSPACE_PROJECTS = [
   { name: 'ThumbGate', slug: 'thumbgate', repo: path.join(WORKSPACE_ROOT, 'ThumbGate'), role: 'Pre-action AI agent infrastructure firewall & MCP gateway', visibility: 'public' },
   { name: 'Dayglass', slug: 'dayglass', repo: path.join(WORKSPACE_ROOT, 'dayglass'), role: 'macOS native screen/audio memory & Gold semantic layer', visibility: 'public' },
-  { name: 'RealEstate', slug: 'realestate', repo: path.join(WORKSPACE_ROOT, 'RealEstate'), role: 'Florida tax-deed auction intelligence & skip-trace pipeline', visibility: 'private' },
-  { name: 'Joey-RealEstate', slug: 'joey-realestate', repo: path.join(WORKSPACE_ROOT, 'joey-realestate'), role: 'Joey RealEstate investor portal & verified officer leads (Vercel)', visibility: 'private' },
   { name: 'Trading', slug: 'trading', repo: path.join(WORKSPACE_ROOT, 'trading'), role: 'Quantitative options & systematic trading engine', visibility: 'private' },
   { name: 'YourStageTickets', slug: 'yourstagetickets', repo: path.join(WORKSPACE_ROOT, 'Jeff', 'YourStageTickets'), role: 'Hilltown / Jeff paying client ticketing & ClientOps platform', visibility: 'client' },
   { name: 'Secure-Yolo', slug: 'mac-yolo-safeguards', vaultFolder: 'mac-yolo-safeguards', repo: path.join(WORKSPACE_ROOT, 'projects', 'secure-yolo'), role: 'macOS agent harness, skills, hooks, and safety guardrails', visibility: 'private' },
