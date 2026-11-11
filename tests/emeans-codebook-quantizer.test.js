@@ -8,7 +8,7 @@ const {
   runEmeansClustering,
   compileEmeansCodebook,
   queryEmeansCodebook,
-} = require('../src/emeans-codebook-quantizer');
+} = require('../src/lesson-search');
 
 test('computeEmeansScalingLaws derives deterministic batch size and alpha0 without manual tuning', () => {
   const scaling = computeEmeansScalingLaws({ n: 1024, k: 16, epochs: 2 });
