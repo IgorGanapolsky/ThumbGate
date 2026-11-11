@@ -48,15 +48,20 @@ const MAX_RETRIEVAL_MEMORY_LINES = Math.max(
 function isRetrievableMemory(memory, options = {}) {
   if (!memory || typeof memory !== 'object') return false;
   const { looksLikeTransportBlob } = require('./feedback-sanitizer');
+  const { isTranscriptShaped } = require('./project-scope');
+  if (isTranscriptShaped(memory)) return false;
+
   const title = String(memory.title || '');
   const content = String(memory.content || '');
-  const combined = `${title}\n${content}`.trim();
+  const whatWentWrong = String(memory.whatWentWrong || '');
+  const combined = `${title}\n${content}\n${whatWentWrong}`.trim();
   const maxChars = Number.isFinite(options.maxMemoryChars)
     ? Math.max(1, options.maxMemoryChars)
     : MAX_RETRIEVAL_MEMORY_CHARS;
   if (!combined || combined.length > maxChars) return false;
   return !looksLikeTransportBlob(title)
     && !looksLikeTransportBlob(content)
+    && !looksLikeTransportBlob(whatWentWrong)
     && !looksLikeTransportBlob(combined);
 }
 
@@ -70,6 +75,12 @@ function selectRetrievalMemories(memories = [], options = {}) {
     selected = selectRecordsForScope(selected, options.scope, {
       includeShared: options.includeShared !== false,
     }).allowed;
+  }
+
+  const { resolveProjectFromCwd, isLessonRelevantForProject } = require('./project-scope');
+  const targetProject = options.project || (options.cwd ? resolveProjectFromCwd(options.cwd) : null);
+  if (targetProject) {
+    selected = selected.filter((memory) => isLessonRelevantForProject(memory, targetProject));
   }
   return selected
     .filter((memory) => {

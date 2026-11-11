@@ -1294,6 +1294,14 @@ function captureFeedback(params, options = {}) {
     };
   }
 
+  const { isTranscriptShaped, resolveProjectFromCwd } = require('./project-scope');
+  if (isTranscriptShaped(params)) {
+    return {
+      accepted: false,
+      reason: 'Rejected: feedback payload contains raw transport transcript tokens (<task-notification>, <tool-use-id>, etc.)',
+    };
+  }
+
   // Record vote on lesson if lessonId or lessonKey is provided
   const targetLessonId = params.lessonId || params.lessonKey;
   let lessonVoteResult = null;
@@ -1418,12 +1426,30 @@ function captureFeedback(params, options = {}) {
     : null;
 
   const now = new Date().toISOString();
+  const effectiveCwd = params.cwd || options.cwd || process.cwd();
+  const detectedProject = resolveProjectFromCwd(effectiveCwd);
+  const normalizedScope = require('./memory-scope-readiness').normalizeScope(params);
+  if (!normalizedScope.projectId && detectedProject) normalizedScope.projectId = detectedProject;
+  if (!normalizedScope.processId) normalizedScope.processId = 'agent';
+  if (!normalizedScope.sessionId) normalizedScope.sessionId = `session_${Date.now()}`;
+
+  const feedbackToolName = params.lastAction?.tool || params.tool || params.toolName || 'unknown';
+  const feedbackFailureClass = params.failureType || params.errorType || (signal === 'negative' ? 'execution' : 'success');
+  const metadata = {
+    ...(params.metadata || {}),
+    project: normalizedScope.projectId,
+    repo: normalizedScope.projectId,
+    tool: feedbackToolName,
+    failureClass: feedbackFailureClass,
+  };
+
   const rawFeedbackEvent = {
     id: `fb_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
     signal,
     context,
     submittedContext,
-    scope: require('./memory-scope-readiness').normalizeScope(params),
+    scope: normalizedScope,
+    metadata,
     relatedFeedbackId: params.relatedFeedbackId || null,
     lastAction,
     whatWentWrong,
@@ -1659,6 +1685,7 @@ function captureFeedback(params, options = {}) {
     id: `mem_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
     ...prepared.memory,
     scope: feedbackEvent.scope,
+    metadata: feedbackEvent.metadata || null,
     richContext: feedbackEvent.richContext || null,
     distillation: feedbackEvent.distillation || null,
     diagnosis: storedDiagnosis,

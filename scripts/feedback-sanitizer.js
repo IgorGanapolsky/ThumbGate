@@ -110,6 +110,11 @@ function looksLikeTransportBlob(text) {
   const trimmed = String(text || '').trim();
   if (!trimmed) return false;
 
+  // Transcript XML tags from runner envelopes must never be stored as lessons
+  if (/<\s*task-notification\b|<\s*tool-use-id\b|<\s*output-file\b|<\s*task-id\b/i.test(trimmed)) {
+    return true;
+  }
+
   if (hasTransportJsonKey(trimmed)) return true;
 
   // Multiple marker names identify non-JSON transport residue. A human
