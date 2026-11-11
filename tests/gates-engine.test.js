@@ -3876,3 +3876,101 @@ test('self-protect-config denies no-space and multi-redirect shell writes', () =
   }), null);
   cleanupStateFiles();
 });
+
+test('self-protect gates allow read-only commands, plain mentions, and heredocs to unrelated files while blocking protected writes', () => {
+  cleanupStateFiles();
+  const allowCases = [
+    {
+      tool_name: 'Bash',
+      tool_input: {
+        command: 'ls -la config/gates/ 2>/dev/null && gh pr view 4901 --json title --jq .title',
+      },
+    },
+    {
+      tool_name: 'Bash',
+      tool_input: {
+        command: 'cat config/gates/default.json && grep self-protect-config config/gates/default.json && git diff config/gates/default.json',
+      },
+    },
+    {
+      tool_name: 'Bash',
+      tool_input: {
+        command: [
+          "cat <<'EOF' > ~/.config/herdr/sessions/thumbgate/briefs/2026-11-11-self-protect-read-false-positive.md",
+          'Fix: fire only on writes to config/gates/default.json or .claude/settings.json.',
+          'Even if the heredoc body mentions sed -i config/gates/default.json or > config/gates/default.json, it is prose.',
+          'EOF',
+        ].join('\n'),
+      },
+    },
+    {
+      tool_name: 'Bash',
+      tool_input: {
+        command: 'cp config/gates/default.json /tmp/default-backup.json',
+      },
+    },
+    {
+      tool_name: 'NotebookEdit',
+      tool_input: {
+        notebook_path: 'notebooks/analysis.ipynb',
+        new_source: 'Mentioning config/gates/default.json in notebook prose',
+      },
+    },
+  ];
+
+  for (const input of allowCases) {
+    assert.equal(runHardFloor(input), null, `expected allow for ${JSON.stringify(input)}`);
+  }
+
+  const blockCases = [
+    ['self-protect-config', {
+      tool_name: 'Bash',
+      tool_input: { command: "echo '{}' >> config/gates/default.json" },
+    }],
+    ['self-protect-config', {
+      tool_name: 'Bash',
+      tool_input: { command: "cat <<'EOF' > config/gates/default.json\n{}\nEOF" },
+    }],
+    ['self-protect-config', {
+      tool_name: 'Bash',
+      tool_input: { command: "sed -i '' 's/block/warn/' config/gates/default.json" },
+    }],
+    ['self-protect-config', {
+      tool_name: 'Bash',
+      tool_input: { command: 'cp /tmp/override.json config/gates/default.json' },
+    }],
+    ['self-protect-config', {
+      tool_name: 'Bash',
+      tool_input: { command: 'mv /tmp/override.json config/enforcement.json' },
+    }],
+    ['self-protect-config', {
+      tool_name: 'Bash',
+      tool_input: { command: 'rm config/gates/default.json' },
+    }],
+    ['self-protect-config', {
+      tool_name: 'Bash',
+      tool_input: { command: 'tee config/budget.json </dev/null' },
+    }],
+    ['self-protect-config', {
+      tool_name: 'Bash',
+      tool_input: { command: 'truncate -s 0 config/gates/default.json' },
+    }],
+    ['self-protect-config', {
+      tool_name: 'NotebookEdit',
+      tool_input: { notebook_path: 'config/gates/default.json', new_source: '{}' },
+    }],
+    ['self-protect-hooks-disable', {
+      tool_name: 'NotebookEdit',
+      tool_input: { file_path: '.claude/settings.json', new_source: '{}' },
+    }],
+  ];
+
+  for (const [expectedGate, input] of blockCases) {
+    const output = runHardFloor(input);
+    assert.ok(output, `expected ${expectedGate} block for ${JSON.stringify(input)}`);
+    const hook = JSON.parse(output).hookSpecificOutput;
+    assert.equal(hook.permissionDecision, 'deny');
+    assert.match(hook.permissionDecisionReason, new RegExp(`\\[GATE:${expectedGate}\\]`));
+  }
+  cleanupStateFiles();
+});

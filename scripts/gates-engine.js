@@ -137,7 +137,7 @@ const DEFAULT_PROTECTED_FILE_GLOBS = [
   'SKILL.md',
   'config/gates/**',
 ];
-const EDIT_LIKE_TOOLS = new Set(['Edit', 'Write', 'MultiEdit']);
+const EDIT_LIKE_TOOLS = new Set(['Edit', 'Write', 'MultiEdit', 'NotebookEdit']);
 const HIGH_RISK_BASH_PATTERN = /\b(?:git\s+(?:add|commit|push)|gh\s+pr\s+(?:create|merge)|npm\s+publish|yarn\s+publish|pnpm\s+publish|rm\s+-rf)\b/i;
 const REMOTE_SIDE_EFFECT_BASH_PATTERN = /\b(?:git\s+push\b|gh\s+pr\s+(?:create|merge|close|reopen|ready|edit)\b|gh\s+release\s+(?:create|delete|edit|upload)\b|npm\s+publish\b|yarn\s+publish\b|pnpm\s+publish\b)\b/i;
 const MAX_COMMAND_SCAN_CHARS = 20000;
@@ -236,7 +236,7 @@ const CATASTROPHIC_DECLARATIVE_GATE_IDS = new Set([
 ]);
 const SELF_PROTECT_CONFIG_TARGET_PATTERN = /(?:^|\/)(?:config\/gates\/|config\/(?:budget|enforcement|mcp-allowlists)\.json$|\.thumbgate\/config\.json$|thumbgate\.json$)/i;
 const SELF_PROTECT_HOOK_TARGET_PATTERN = /(?:^|\/)(?:\.claude\/settings(?:\.local)?\.json|\.codex\/config\.toml|scripts\/hook-[^/]+\.(?:js|sh))$/i;
-const SELF_PROTECT_CONFIG_COMMAND_PATTERN = /(?:config\/gates\/|config\/(?:budget|enforcement|mcp-allowlists)\.json\b|\.thumbgate\/config\.json\b|thumbgate\.json\b)/i;
+const SELF_PROTECT_CONFIG_COMMAND_PATTERN = /(?:config\/gates(?:\/|$|\b)|config\/(?:budget|enforcement|mcp-allowlists)\.json\b|\.thumbgate\/config\.json\b|thumbgate\.json\b)/i;
 const SELF_PROTECT_HOOK_COMMAND_PATTERN = /(?:\.claude\/settings(?:\.local)?\.json|\.codex\/config\.toml|scripts\/hook-[^\s'";|]+\.(?:js|sh))\b/i;
 const SHELL_FILE_MUTATION_PATTERN = /\b(?:sed\s+-i|perl\s+-pi|python\d*\s+-c|node\s+-e|ruby\s+-e|tee|truncate|rm|mv|cp|install|patch|jq)\b|(?:^|[\s;&|])>{1,2}\s*\S/i;
 
@@ -1374,6 +1374,8 @@ function collectInlineAffectedFiles(toolInput = {}, repoRoot) {
   const scalarFields = [
     toolInput.file_path,
     toolInput.filePath,
+    toolInput.notebook_path,
+    toolInput.notebookPath,
     toolInput.path,
   ];
   for (const field of scalarFields) {
@@ -2833,6 +2835,20 @@ function matchGate(gate, toolName, toolInput = {}) {
     return { matched: false, matchText, affectedFiles };
   }
 
+  if (gate.id === 'self-protect-config' || gate.id === 'self-protect-hooks-disable') {
+    const floorMatch = matchSelfProtectHardFloor(gate, toolName, toolInput);
+    if (!floorMatch) {
+      return { matched: false, matchText, affectedFiles };
+    }
+    return {
+      matched: true,
+      matchText: floorMatch.matchText || matchText,
+      affectedFiles: floorMatch.affectedFiles || affectedFiles,
+      taskScopeViolation: null,
+      branchGovernanceViolation: null,
+    };
+  }
+
   if (gate.id === 'on-demand-freeze-mode' || (gate.when && gate.when.constraints && gate.when.constraints.freeze_mode)) {
     let freezePaths = [];
     if (process.env.THUMBGATE_FREEZE_PATHS) {
@@ -2966,6 +2982,300 @@ function hasActiveProtectedApproval(governanceState, affectedFiles) {
   }));
 }
 
+const HEREDOC_INTERPRETER_BINARIES = new Set([
+  'bash', 'sh', 'zsh', 'dash', 'ksh', 'python', 'python2', 'python3', 'node', 'perl', 'ruby',
+]);
+
+function parseHeredocHeaderLine(line) {
+  let quote = null;
+  for (let i = 0; i < line.length - 1; i += 1) {
+    const ch = line[i];
+    if (quote) {
+      if (ch === '\\' && quote === '"' && i + 1 < line.length) {
+        i += 1;
+      } else if (ch === quote) {
+        quote = null;
+      }
+      continue;
+    }
+    if (ch === '\'' || ch === '"') {
+      quote = ch;
+      continue;
+    }
+    if (ch === '<' && line[i + 1] === '<' && line[i + 2] !== '<') {
+      let j = i + 2;
+      if (line[j] === '-' || line[j] === '~') j += 1;
+      while (j < line.length && (line[j] === ' ' || line[j] === '\t')) j += 1;
+      if (j >= line.length) return null;
+      let delim = '';
+      if (line[j] === '\'' || line[j] === '"') {
+        const q = line[j];
+        j += 1;
+        while (j < line.length && line[j] !== q) {
+          delim += line[j];
+          j += 1;
+        }
+      } else {
+        if (line[j] === '\\') j += 1;
+        while (j < line.length && !/[\s;&|<>]/.test(line[j])) {
+          delim += line[j];
+          j += 1;
+        }
+      }
+      if (!delim) return null;
+      const prefixTokens = tokenizeShellWords(line.slice(0, i));
+      const invokesInterpreter = prefixTokens.some((tok) => {
+        const base = tok.split('/').at(-1)?.toLowerCase() || '';
+        return HEREDOC_INTERPRETER_BINARIES.has(base);
+      });
+      return { delim, invokesInterpreter };
+    }
+  }
+  return null;
+}
+
+function stripNonInterpreterHeredocBodies(command) {
+  const lines = String(command || '').split(/\r?\n/);
+  const kept = [];
+  let activeHeredoc = null;
+  for (const line of lines) {
+    if (activeHeredoc) {
+      if (line.trim() === activeHeredoc.delim) {
+        activeHeredoc = null;
+      } else if (activeHeredoc.invokesInterpreter) {
+        kept.push(line);
+      }
+      continue;
+    }
+    kept.push(line);
+    const parsed = parseHeredocHeaderLine(line);
+    if (parsed) {
+      activeHeredoc = parsed;
+    }
+  }
+  return kept.join('\n');
+}
+
+function splitSelfProtectShellSegments(command) {
+  const segments = [];
+  let current = '';
+  let quote = null;
+  for (let i = 0; i < command.length; i += 1) {
+    const ch = command[i];
+    if (quote) {
+      current += ch;
+      if (ch === '\\' && quote === '"' && i + 1 < command.length) {
+        i += 1;
+        current += command[i];
+      } else if (ch === quote) {
+        quote = null;
+      }
+      continue;
+    }
+    if (ch === '\'' || ch === '"') {
+      quote = ch;
+      current += ch;
+      continue;
+    }
+    if (ch === '\\' && i + 1 < command.length) {
+      current += ch + command[i + 1];
+      i += 1;
+      continue;
+    }
+    if ((ch === '&' && command[i + 1] === '&') || (ch === '|' && command[i + 1] === '|')) {
+      segments.push(current);
+      current = '';
+      i += 1;
+      continue;
+    }
+    if (ch === ';' || ch === '\n' || ch === '|') {
+      segments.push(current);
+      current = '';
+      continue;
+    }
+    current += ch;
+  }
+  if (current) segments.push(current);
+  return segments;
+}
+
+function extractRedirectTargetsFromSegment(segment) {
+  const targets = [];
+  let cleaned = '';
+  let quote = null;
+  let i = 0;
+  while (i < segment.length) {
+    const ch = segment[i];
+    if (quote) {
+      cleaned += ch;
+      if (ch === '\\' && quote === '"' && i + 1 < segment.length) {
+        i += 1;
+        cleaned += segment[i];
+      } else if (ch === quote) {
+        quote = null;
+      }
+      i += 1;
+      continue;
+    }
+    if (ch === '\'' || ch === '"') {
+      quote = ch;
+      cleaned += ch;
+      i += 1;
+      continue;
+    }
+    if (ch === '\\' && i + 1 < segment.length) {
+      cleaned += ch + segment[i + 1];
+      i += 2;
+      continue;
+    }
+    if (ch === '>') {
+      const prev = i > 0 ? segment[i - 1] : '';
+      if (prev === '-' || prev === '=' || prev === '<') {
+        cleaned += ch;
+        i += 1;
+        continue;
+      }
+      let j = i + 1;
+      if (segment[j] === '>' || segment[j] === '|') j += 1;
+      if (segment[j] === '&') {
+        j += 1;
+        while (j < segment.length && /[0-9-]/.test(segment[j])) j += 1;
+        i = j;
+        continue;
+      }
+      while (j < segment.length && (segment[j] === ' ' || segment[j] === '\t')) j += 1;
+      let target = '';
+      while (j < segment.length && !/[\s;&|<>]/.test(segment[j])) {
+        if (segment[j] === '\'' || segment[j] === '"') {
+          const q = segment[j];
+          j += 1;
+          while (j < segment.length && segment[j] !== q) {
+            if (segment[j] === '\\' && q === '"' && j + 1 < segment.length) {
+              j += 1;
+            }
+            target += segment[j];
+            j += 1;
+          }
+          if (j < segment.length && segment[j] === q) j += 1;
+        } else if (segment[j] === '\\' && j + 1 < segment.length) {
+          target += segment[j + 1];
+          j += 2;
+        } else {
+          target += segment[j];
+          j += 1;
+        }
+      }
+      if (target) targets.push(target);
+      cleaned += ' ';
+      i = j;
+      continue;
+    }
+    cleaned += ch;
+    i += 1;
+  }
+  return { targets, cleaned };
+}
+
+const INLINE_SCRIPT_WRITE_CALL_PATTERN = /(?:writeFileSync|writeFile|appendFileSync|appendFile|createWriteStream|unlinkSync|rmSync|renameSync|copyFileSync|truncateSync|chmodSync|\.write\s*\(|open\s*\([^)]*['"][wa+]|os\.(?:remove|unlink|rename|replace)|shutil\.(?:copy|move)|\.write_text\s*\(|\.write_bytes\s*\(|File\.write|IO\.write)/;
+
+function doesSegmentMutateProtectedTarget(segment, commandTargetPattern, depth = 0) {
+  if (depth > 4) return false;
+  const { targets, cleaned } = extractRedirectTargetsFromSegment(segment);
+  if (targets.some((target) => commandTargetPattern.test(target))) {
+    return true;
+  }
+
+  const tokens = tokenizeShellWords(cleaned);
+  let idx = 0;
+  while (idx < tokens.length) {
+    const tok = tokens[idx];
+    if (/^[A-Za-z_][A-Za-z0-9_]*=/.test(tok)) {
+      idx += 1;
+      continue;
+    }
+    const base = tok.split('/').at(-1)?.toLowerCase() || '';
+    if (COMMAND_WRAPPERS.has(base)) {
+      idx += 1;
+      while (idx < tokens.length && tokens[idx].startsWith('-')) idx += 1;
+      continue;
+    }
+    break;
+  }
+  if (idx >= tokens.length) return false;
+
+  const executable = tokens[idx].split('/').at(-1)?.toLowerCase() || '';
+  const args = tokens.slice(idx + 1);
+
+  if (['bash', 'sh', 'zsh', 'dash', 'ksh'].includes(executable)) {
+    for (let i = 0; i < args.length; i += 1) {
+      if (/^-[A-Za-z]*c$/.test(args[i]) && i + 1 < args.length) {
+        if (doesBashCommandMutateProtectedTarget(args[i + 1], commandTargetPattern, depth + 1)) {
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+
+  if (executable === 'sed') {
+    const hasInPlace = args.some((arg) => /^-(?:[A-Za-z]*i|-in-place(?:=|$))/.test(arg));
+    if (!hasInPlace) return false;
+    return args.some((arg) => !arg.startsWith('-') && commandTargetPattern.test(arg));
+  }
+
+  if (executable === 'perl' || executable === 'ruby') {
+    const hasInPlace = args.some((arg) => /^-[A-Za-z]*i/.test(arg));
+    if (hasInPlace && args.some((arg) => !arg.startsWith('-') && commandTargetPattern.test(arg))) {
+      return true;
+    }
+    return commandTargetPattern.test(cleaned) && INLINE_SCRIPT_WRITE_CALL_PATTERN.test(cleaned);
+  }
+
+  if (executable === 'cp' || executable === 'install') {
+    for (let i = 0; i < args.length; i += 1) {
+      const arg = args[i];
+      if ((arg === '-t' || arg === '--target-directory') && i + 1 < args.length) {
+        return commandTargetPattern.test(args[i + 1]);
+      }
+      if (arg.startsWith('--target-directory=')) {
+        return commandTargetPattern.test(arg.slice('--target-directory='.length));
+      }
+    }
+    const positional = args.filter((arg) => !arg.startsWith('-'));
+    if (positional.length === 0) return false;
+    const destination = positional.at(-1);
+    return commandTargetPattern.test(destination);
+  }
+
+  if (['mv', 'rm', 'unlink', 'tee', 'truncate', 'patch', 'chmod', 'chown'].includes(executable)) {
+    return args.some((arg) => !arg.startsWith('-') && commandTargetPattern.test(arg));
+  }
+
+  if (executable === 'dd') {
+    return args.some((arg) => arg.startsWith('of=') && commandTargetPattern.test(arg.slice(3)));
+  }
+
+  if (executable === 'git') {
+    const subcommand = args.find((arg) => !arg.startsWith('-'))?.toLowerCase();
+    if (['rm', 'mv', 'checkout', 'restore'].includes(subcommand)) {
+      return args.some((arg) => commandTargetPattern.test(arg));
+    }
+    return false;
+  }
+
+  if (['node', 'python', 'python2', 'python3'].includes(executable)) {
+    return commandTargetPattern.test(cleaned) && INLINE_SCRIPT_WRITE_CALL_PATTERN.test(cleaned);
+  }
+
+  return false;
+}
+
+function doesBashCommandMutateProtectedTarget(command, commandTargetPattern, depth = 0) {
+  const stripped = stripNonInterpreterHeredocBodies(command);
+  const segments = splitSelfProtectShellSegments(stripped);
+  return segments.some((segment) => doesSegmentMutateProtectedTarget(segment, commandTargetPattern, depth));
+}
+
 function matchSelfProtectHardFloor(gate, toolName, toolInput = {}) {
   const affected = extractAffectedFiles(toolName, toolInput);
   const affectedFiles = affected.files;
@@ -2986,26 +3296,8 @@ function matchSelfProtectHardFloor(gate, toolName, toolInput = {}) {
         ? SELF_PROTECT_CONFIG_COMMAND_PATTERN
         : SELF_PROTECT_HOOK_COMMAND_PATTERN;
 
-      // Inspect every shell redirection destination (optional fd, optional/no
-      // spaces, attached forms like printf x>file, multiple redirects).
-      const redirectPattern = /(?:^|[\s;&|]|[^\s;&|<>])(?:\d*)>{1,2}\s*([^\s;&|<>]+)/g;
-      const redirectTargets = [];
-      let redirectMatch = redirectPattern.exec(command);
-      while (redirectMatch) {
-        if (redirectMatch[1]) redirectTargets.push(redirectMatch[1]);
-        redirectMatch = redirectPattern.exec(command);
-      }
-      if (redirectTargets.length > 0) {
-        // Deny when any redirect destination is protected.
-        if (redirectTargets.some((target) => commandTargetPattern.test(target))) {
-          // fall through to deny
-        } else if (!SHELL_FILE_MUTATION_PATTERN.test(command) || !commandTargetPattern.test(command)) {
-          // Benign redirects and no other protected mutation → allow.
-          return null;
-        }
-        // Benign redirects but command still mutates a protected path another way → deny.
-      } else {
-        if (!SHELL_FILE_MUTATION_PATTERN.test(command) || !commandTargetPattern.test(command)) return null;
+      if (!doesBashCommandMutateProtectedTarget(command, commandTargetPattern)) {
+        return null;
       }
     } else {
       return null;
