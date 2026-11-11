@@ -1208,3 +1208,138 @@ test('Unified 3-Tier Agentic Graph RAG, Decisive DPO Distiller, and Spotify Conf
   assert.equal(evaluateModelRoutingParetoTrapGuard({ complexityScore: 0.55 }).selectedTier, 'FRONTIER_MODEL');
   assert.equal(evaluateModelRoutingParetoTrapGuard({ routesOnlyTop20PercentToFrontier: true }).allowed, false);
 });
+
+// Elephant/Goldfish sanctuary loop + McKinsey operating model audit
+// (https://www.youtube.com/watch?v=21tuT-e4NVo).
+const { evaluateElephantGoldfishAutonomousSanctuaryLoop } = require('../scripts/rrsi-doctor');
+
+function mckinseyPassInput() {
+  return {
+    spec: {
+      targetCycleHours: 24,
+      problemStatement: 'Wire the McKinsey operating model into the sanctuary spec gate.',
+      verifiableOutcomes: ['node --test exits 0'],
+      goldenReferences: [{ ref: 'src/mckinsey-top-company-ai-coding.js', qualityPercentile: 95 }],
+      sidewaysConstraints: { wcag: 'AA', dlp: 'airgap' },
+      tokenBudgetUsd: 0.5,
+    },
+    pod: {
+      podMembers: [
+        { name: 'Lead', role: 'definer' },
+        { name: 'Builder', role: 'builder' },
+        { name: 'Verifier', role: 'verifier' },
+      ],
+      generationMinutes: 20,
+      reviewAndVerificationMinutes: 12,
+      changedLines: 180,
+      verifiedTestAssertions: 14,
+    },
+    context: {
+      semanticLayer: { smeOwner: 'sme-owner@example.com', domainInvariants: ['$0 outbound spend'] },
+      candidateExamples: [{ id: 'golden-1', qualityPercentile: 95, passesArchitectureStandards: true }],
+      requestedSkills: [{ name: 'mckinsey-ai-coding-operating-model', centrallyVetted: true }],
+    },
+    sideways: {
+      upstreamSignals: ['inbox:customer-support'],
+      releaseChecklistComplete: true,
+      uiPalette: { foregroundHex: '#ffffff', backgroundHex: '#0a0e17', reliesOnRedGreenOnly: false, hasNonColorShapeOrLabel: true },
+      codeSnippet: 'module.exports = {};',
+      complianceTags: ['pretool_diode_verified'],
+    },
+    roi: {
+      featureId: 'mckinsey-operating-model-gate',
+      estimatedTokens: 25000,
+      costPerMillionTokensUsd: 3.0,
+      expectedRevenueImpactUsd: 499,
+      engineeringHoursSaved: 4,
+      hourlyEngineeringRateUsd: 150,
+      outboundCashSpendUsd: 0,
+    },
+  };
+}
+
+function sanctuaryPassArgs(mckinsey = mckinseyPassInput()) {
+  return {
+    goalStatement: 'Organize workspace projects in Obsidian and sync repo/obsidian/',
+    humanInterruptionsCount: 0,
+    lookAwayDurationHours: 24,
+    noCodeBeforeSpecEnforced: true,
+    agentOutputText: 'Critique first: /obsidian/ must be tracked in personal repos and excluded in work repos.',
+    specSections: {
+      problem: true,
+      technicalPlan: true,
+      alternativesRejected: true,
+      enumeratedFiles: ['scripts/sync-workspace-obsidian.js', 'scripts/rrsi-doctor.js'],
+    },
+    goldfishHasZeroConversationHistory: true,
+    goldfishComprehensionPassed: true,
+    goldfishCriticConvergedToNits: true,
+    goldfishImplementationReadinessPassed: true,
+    meanCodeReviewPassed: true,
+    peanutsAndHayLeavesToRootOrder: true,
+    sizeofDocsBytes: 4096,
+    sizeofCodeBytes: 65536,
+    astSpecDriftCount: 0,
+    syncedToRepoObsidianAndVault: true,
+    promotedMistakesToPreventionRules: true,
+    mckinsey,
+  };
+}
+
+test('sanctuary loop blocks sycophantic, interrupting, spec-less loops', () => {
+  const sycophanticInterruptedLoop = evaluateElephantGoldfishAutonomousSanctuaryLoop({
+    goalStatement: 'Organize workspace projects in Obsidian and sync repo/obsidian/',
+    humanInterruptionsCount: 2,
+    lookAwayDurationHours: 1,
+    noCodeBeforeSpecEnforced: false,
+    agentOutputText: "That's a brilliant idea! I apologize for missing the file.",
+    specSections: { problem: true, technicalPlan: true, alternativesRejected: false, enumeratedFiles: [] },
+    goldfishHasZeroConversationHistory: false,
+    goldfishCriticConvergedToNits: false,
+    meanCodeReviewPassed: false,
+    peanutsAndHayLeavesToRootOrder: false,
+    astSpecDriftCount: 3,
+    mckinsey: mckinseyPassInput(),
+  });
+  assert.equal(sycophanticInterruptedLoop.allowed, false);
+  assert.ok(sycophanticInterruptedLoop.blockers.includes('family_sanctuary_violation_never_interrupt_igor_with_babysitting_questions'));
+  assert.ok(sycophanticInterruptedLoop.blockers.includes('sycophantic_spiral_or_banned_apology_detected_challenge_assumptions_instead'));
+  assert.ok(sycophanticInterruptedLoop.blockers.includes('incomplete_4_section_elephant_spec_requires_problem_plan_alternatives_and_file_list'));
+  assert.ok(sycophanticInterruptedLoop.blockers.includes('goldfish_review_in_same_session_invalid_requires_amnesiac_subagent_context'));
+  assert.ok(sycophanticInterruptedLoop.blockers.includes('mean_code_review_failed_tear_it_to_shreds_before_claiming_done'));
+});
+
+test('sanctuary loop passes a 24h spec that also clears the McKinsey operating model audit', () => {
+  const autonomousSanctuaryPass = evaluateElephantGoldfishAutonomousSanctuaryLoop(sanctuaryPassArgs());
+  assert.deepEqual(autonomousSanctuaryPass.blockers, []);
+  assert.equal(autonomousSanctuaryPass.allowed, true);
+  assert.equal(autonomousSanctuaryPass.familySanctuaryProtected, true);
+  assert.equal(autonomousSanctuaryPass.compressionRatioCodeToDocs, 16);
+  assert.equal(autonomousSanctuaryPass.goldfishStagesPassed.length, 4);
+  assert.equal(autonomousSanctuaryPass.mckinseyAudit.ok, true);
+  assert.ok(autonomousSanctuaryPass.mckinseyAudit.roiVerdict.roiMultiplier >= 10);
+  assert.ok(autonomousSanctuaryPass.mckinseyAudit.podVerdict.reviewToGenerationRatio >= 0.5);
+});
+
+test('sanctuary loop blocks each McKinsey operating model violation by finding code', () => {
+  const cases = [
+    ['two-week sprint', (m) => { m.spec.targetCycleHours = 336; }, 'sprint_batch_too_large'],
+    ['no P90 golden reference', (m) => {
+      m.spec.goldenReferences = [{ ref: 'src/average.js', qualityPercentile: 60 }];
+    }, 'missing_golden_references'],
+    ['8 active vetted skills', (m) => {
+      m.context.requestedSkills = Array.from({ length: 8 }, (_, i) => ({ name: `skill-${i}`, centrallyVetted: true }));
+    }, 'skill_sprawl_decision_paralysis'],
+    ['contrast under 4.5:1', (m) => {
+      m.sideways.uiPalette = { foregroundHex: '#777777', backgroundHex: '#888888', hasNonColorShapeOrLabel: true };
+    }, 'accessibility_contrast_violation'],
+    ['outbound cash spend', (m) => { m.roi.outboundCashSpendUsd = 25; }, 'zero_outbound_spend_violation'],
+  ];
+  for (const [label, mutate, code] of cases) {
+    const mckinsey = mckinseyPassInput();
+    mutate(mckinsey);
+    const verdict = evaluateElephantGoldfishAutonomousSanctuaryLoop(sanctuaryPassArgs(mckinsey));
+    assert.equal(verdict.allowed, false, label);
+    assert.ok(verdict.blockers.includes(code), `${label} should block with ${code}, got ${verdict.blockers.join(', ')}`);
+  }
+});
