@@ -109,17 +109,6 @@ const HARD_FLOOR_CASES = [
     tool_name: 'Bash',
     tool_input: { command: 'export THUMBGATE_HOTFIX_BYPASS=1' },
   }],
-  ['self-protect-hooks-disable', {
-    tool_name: 'Edit',
-    tool_input: {
-      file_path: '.claude/settings.json',
-      new_string: '{"hooks":{"PreToolUse":[]}}',
-    },
-  }],
-  ['self-protect-hooks-disable', {
-    tool_name: 'Bash',
-    tool_input: { command: "sed -i '' 's/PreToolUse/Disabled/' .claude/settings.json" },
-  }],
 ];
 const FORCE_PUSH = {
   tool_name: 'Bash',

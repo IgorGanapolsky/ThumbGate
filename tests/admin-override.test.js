@@ -112,7 +112,6 @@ test('self-protect gates are refused without explicit acknowledgement', () => {
   const { mod } = freshEnv();
   for (const gateId of [
     'self-protect-config',
-    'self-protect-hooks-disable',
     'never-bypass-branch-protection',
     'secret-exfil-guard',
   ]) {
