@@ -1088,8 +1088,10 @@ async function connect(options) {
     status.textContent = opts.localPro ? `✓ Local ${tierName} connected` : '✓ Connected';
     if (!opts.localPro && API_KEY) {
       try {
-        sessionStorage.setItem('tg_paid_api_key', API_KEY);
-        localStorage.setItem('tg_paid_api_key', API_KEY);
+        sessionStorage.removeItem('tg_paid_api_key');
+        localStorage.removeItem('tg_paid_api_key');
+        sessionStorage.setItem('tg_paid_session_active', '1');
+        localStorage.setItem('tg_paid_session_active', '1');
       } catch (_) {}
     }
     document.getElementById('disconnectBtn').style.display = 'inline-block';

@@ -77,7 +77,8 @@ test('homepage navbar exposes paid-user Log in drawer and dashboard auto-restore
   assert.match(landingPage, /id="paidLoginBar"/);
   assert.match(landingPage, /id="paidLoginKeyInput"/);
   assert.match(landingPage, /window\.tgSubmitPaidLogin/);
-  assert.match(dashboardPage, /tg_paid_api_key/);
+  assert.match(landingPage, /\/v1\/cloud\/sso\/authorize\?provider=google/);
+  assert.match(dashboardPage, /tg_paid_session_active|tg_cloud_sso_token|tg_paid_api_key/);
 });
 
 test('visible text filtering consumes the complete script and style end tags', () => {

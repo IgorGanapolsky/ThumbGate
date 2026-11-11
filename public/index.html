@@ -762,7 +762,7 @@
         <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
           <input type="password" id="paidLoginKeyInput" placeholder="Paste Pro / API key (tg_...)" aria-label="ThumbGate Pro or API key" autocomplete="off" style="min-height:36px;padding:0 12px;border-radius:8px;border:1px solid var(--cyan);background:#080b10;color:var(--text);font-size:13px;width:240px;" onkeydown="if(event.key==='Enter'){event.preventDefault();window.tgSubmitPaidLogin();}" />
           <button type="button" id="paidLoginSubmitBtn" onclick="window.tgSubmitPaidLogin()" style="min-height:36px;padding:0 14px;border-radius:8px;border:0;background:var(--cyan);color:#041016;font:800 12px/1 inherit;">Unlock</button>
-          <a href="/dashboard" style="font-size:12px;font-weight:700;color:var(--muted);text-decoration:none;padding:0 6px;">Dashboard</a>
+          <a href="/v1/cloud/sso/authorize?provider=google" id="googleCloudLoginLink" title="Sign in with Google Cloud Identity" style="font-size:12px;font-weight:700;color:var(--cyan);text-decoration:none;padding:0 6px;">Google</a>
           <button type="button" onclick="window.tgTogglePaidLogin(false)" aria-label="Close login bar" style="min-height:36px;padding:0 10px;border-radius:8px;border:1px solid var(--line);background:transparent;color:var(--muted);font:700 12px/1 inherit;">✕</button>
         </div>
     </div>
@@ -1510,12 +1510,85 @@ next      decision recorded before execution</pre>
     var dashLink = document.getElementById('navPaidDashboardLink');
     var keyInput = document.getElementById('paidLoginKeyInput');
     var statusEl = document.getElementById('paidLoginStatus');
+    var navLinks = document.querySelector('.nav-links');
+    if (navLinks && loginBtn && !document.getElementById('navCloudPortalLink')) {
+      var cloudLink = document.createElement('a');
+      cloudLink.id = 'navCloudPortalLink';
+      cloudLink.href = '/cloud';
+      cloudLink.setAttribute('data-cta-id', 'nav_cloud_dashboard');
+      cloudLink.style.cssText = 'color:var(--cyan);font-weight:800;';
+      cloudLink.textContent = 'Cloud Portal';
+      navLinks.insertBefore(cloudLink, loginBtn);
+    }
+    if (loginBar && !document.getElementById('homeProjectsRow')) {
+      var projWrap = document.createElement('div');
+      projWrap.className = 'shell';
+      projWrap.id = 'homeProjectsRow';
+      projWrap.style.cssText = 'display:none;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-top:10px;padding-top:10px;border-top:1px solid var(--line);';
+      projWrap.innerHTML =
+        '<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">' +
+          '<span id="homeSsoSessionText" style="font:700 12px/1 ui-monospace,SFMono-Regular,Menlo,monospace;color:var(--green);"></span>' +
+          '<label for="homeProjectSelect" style="font-size:12px;color:var(--muted);font-weight:700;">Projects:</label>' +
+          '<select id="homeProjectSelect" style="min-height:34px;padding:0 10px;border-radius:8px;border:1px solid var(--line);background:#080b10;color:var(--text);font:700 12px/1 ui-monospace,SFMono-Regular,Menlo,monospace;"></select>' +
+        '</div>' +
+        '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">' +
+          '<input type="text" id="homeNewProjectInput" placeholder="New project (e.g. api-prod)" style="min-height:34px;padding:0 10px;border-radius:8px;border:1px solid var(--line);background:#080b10;color:var(--text);font:12px/1 ui-monospace,SFMono-Regular,Menlo,monospace;width:180px;" />' +
+          '<button type="button" id="homeCreateProjectBtn" style="min-height:34px;padding:0 12px;border-radius:8px;border:1px solid rgba(56,215,255,0.45);background:rgba(56,215,255,0.1);color:var(--cyan);font:800 12px/1 inherit;">+ Project</button>' +
+          '<a id="homeOpenProjectLink" href="/dashboard" style="display:inline-flex;align-items:center;min-height:34px;padding:0 12px;border-radius:8px;background:var(--green);color:#06130d;font:800 12px/1 inherit;text-decoration:none;">Dashboard</a>' +
+          '<a href="/cloud" style="display:inline-flex;align-items:center;min-height:34px;padding:0 12px;border-radius:8px;border:1px solid var(--cyan);color:var(--cyan);font:800 12px/1 inherit;text-decoration:none;">Cloud Portal</a>' +
+        '</div>';
+      loginBar.appendChild(projWrap);
+    }
+    window.tgSwitchHomeProject = function (slug) {
+      if (!slug) return;
+      try { localStorage.setItem('tg_active_project', slug); } catch (e) {}
+      var openLink = document.getElementById('homeOpenProjectLink');
+      if (openLink) openLink.href = '/dashboard?project=' + encodeURIComponent(slug);
+      if (dashLink) dashLink.href = '/dashboard?project=' + encodeURIComponent(slug);
+    };
+    async function hydrateCloudProjects() {
+      try {
+        var res = await fetch('/v1/projects', { credentials: 'same-origin' });
+        if (!res.ok) return;
+        var data = await res.json();
+        if (!data || !Array.isArray(data.projects)) return;
+        var row = document.getElementById('homeProjectsRow');
+        var sel = document.getElementById('homeProjectSelect');
+        var txt = document.getElementById('homeSsoSessionText');
+        if (row) row.style.display = 'flex';
+        if (txt) txt.textContent = 'Google Cloud Workspace' + (data.email ? ' · ' + data.email : '');
+        var active = data.activeProjectSlug || (data.projects[0] && data.projects[0].slug) || 'default';
+        if (sel) {
+          sel.innerHTML = data.projects.map(function (p) {
+            return '<option value="' + p.slug + '"' + (p.slug === active ? ' selected' : '') + '>' + (p.name || p.slug) + '</option>';
+          }).join('');
+          sel.onchange = function () { window.tgSwitchHomeProject(sel.value); };
+        }
+        window.tgSwitchHomeProject(active);
+      } catch (e) {}
+    }
+    var createProjBtn = document.getElementById('homeCreateProjectBtn');
+    if (createProjBtn) {
+      createProjBtn.onclick = async function () {
+        var inp = document.getElementById('homeNewProjectInput');
+        var name = inp ? String(inp.value || '').trim() : '';
+        if (!name) return;
+        var res = await fetch('/v1/projects', {
+          method: 'POST',
+          credentials: 'same-origin',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name: name })
+        });
+        if (res.ok && inp) { inp.value = ''; hydrateCloudProjects(); }
+      };
+    }
     function syncSavedPaidKey() {
       var saved = '';
-      try { saved = sessionStorage.getItem('tg_paid_api_key') || localStorage.getItem('tg_paid_api_key') || ''; } catch (e) {}
+      try { saved = sessionStorage.getItem('tg_paid_session_active') || localStorage.getItem('tg_paid_session_active') || ''; } catch (e) {}
       if (saved && dashLink) {
         dashLink.style.display = 'inline-flex';
-        if (loginBtn) loginBtn.textContent = 'Switch key';
+        if (loginBtn) loginBtn.textContent = 'Projects / Key';
+        hydrateCloudProjects();
       }
     }
     window.tgTogglePaidLogin = function (forceOpen) {
@@ -1524,6 +1597,7 @@ next      decision recorded before execution</pre>
       if (open) {
         loginBar.removeAttribute('hidden');
         if (loginBtn) loginBtn.setAttribute('aria-expanded', 'true');
+        hydrateCloudProjects();
         if (keyInput) keyInput.focus();
       } else {
         loginBar.setAttribute('hidden', '');
@@ -1540,12 +1614,21 @@ next      decision recorded before execution</pre>
       if (statusEl) { statusEl.style.color = 'var(--cyan)'; statusEl.textContent = 'Verifying key...'; }
       try {
         var res = await fetch('/v1/feedback/stats', {
+          credentials: 'same-origin',
           headers: { 'Authorization': 'Bearer ' + key, 'x-thumbgate-key': key }
         });
         if (!res.ok) throw new Error('Invalid API key');
+        await fetch('/v1/cloud/auth/login', {
+          method: 'POST',
+          credentials: 'same-origin',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ apiKey: key })
+        }).catch(function () {});
         try {
-          sessionStorage.setItem('tg_paid_api_key', key);
-          localStorage.setItem('tg_paid_api_key', key);
+          sessionStorage.removeItem('tg_paid_api_key');
+          localStorage.removeItem('tg_paid_api_key');
+          sessionStorage.setItem('tg_paid_session_active', '1');
+          localStorage.setItem('tg_paid_session_active', '1');
         } catch (e) {}
         window.location.href = '/dashboard';
       } catch (err) {
