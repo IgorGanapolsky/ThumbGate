@@ -138,13 +138,15 @@ function extractActionContext(toolName, toolInput) {
   return JSON.stringify(toolInput).slice(0, MAX_ACTION_CONTEXT_LEN);
 }
 
-function retrieveLessons(toolName, actionContext) {
+function retrieveLessons(toolName, actionContext, options = {}) {
   try {
     const pkgRoot = path.resolve(__dirname, '..');
     const { retrieveWithRerankingSync } = require(path.join(pkgRoot, 'scripts', 'cross-encoder-reranker'));
     const results = retrieveWithRerankingSync(toolName, actionContext, {
       candidateCount: 20,
       maxResults: MAX_LESSONS,
+      cwd: options.cwd,
+      project: options.project,
     });
     return Array.isArray(results) ? results : [];
   } catch (err) {
@@ -585,7 +587,13 @@ function main() {
   }
 
   const actionContext = extractActionContext(toolName, effectiveInput);
-  const lessons = retrieveLessons(toolName, actionContext);
+  const hookCwd = input.cwd || process.cwd();
+  const { resolveProjectFromCwd } = require('./project-scope');
+  const hookProject = resolveProjectFromCwd(hookCwd);
+  const lessons = retrieveLessons(toolName, actionContext, {
+    cwd: hookCwd,
+    project: hookProject,
+  });
 
   try {
     const { evaluatePreToolUse } = require('./token-shunt-honesty');

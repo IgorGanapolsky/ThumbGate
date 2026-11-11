@@ -5251,7 +5251,7 @@ function buildRecentCorrectiveActionsContext(options = {}) {
  * active governor. Without this, lessons stay in the DB and never get surfaced at
  * decision time — so the agent repeats mistakes.
  */
-function buildRelevantLessonContext(toolName, toolInput) {
+function buildRelevantLessonContext(toolName, toolInput, options = {}) {
   if (!toolName) return null;
 
   const { retrieveRelevantLessons, calculateRetrievalEntropy } = loadOptionalModule("./lesson-retrieval", () => ({ retrieveRelevantLessons: () => [], calculateRetrievalEntropy: () => 0 }));
@@ -5261,7 +5261,11 @@ function buildRelevantLessonContext(toolName, toolInput) {
   if (!actionContext) return null;
 
   try {
-    const lessons = retrieveRelevantLessons(toolName, actionContext, { maxResults: 3 });
+    const lessons = retrieveRelevantLessons(toolName, actionContext, {
+      maxResults: 3,
+      cwd: options.cwd || toolInput?.cwd,
+      project: options.project,
+    });
 
     const entropy = calculateRetrievalEntropy(lessons);
     if (entropy > KNOWLEDGE_ENTROPY_THRESHOLD) {
@@ -5279,7 +5283,7 @@ function buildRelevantLessonContext(toolName, toolInput) {
  * even when they share no keywords with the current action. Wired into runAsync.
  * Degrades to the lexical result automatically when no embedder is available.
  */
-async function buildRelevantLessonContextAsync(toolName, toolInput) {
+async function buildRelevantLessonContextAsync(toolName, toolInput, options = {}) {
   if (!toolName) return null;
 
   const { retrieveRelevantLessonsAsync, retrieveRelevantLessons, calculateRetrievalEntropy } = loadOptionalModule(
@@ -5291,9 +5295,14 @@ async function buildRelevantLessonContextAsync(toolName, toolInput) {
   if (!actionContext) return null;
 
   try {
+    const retrievalOpts = {
+      maxResults: 3,
+      cwd: options.cwd || toolInput?.cwd,
+      project: options.project,
+    };
     const lessons = retrieveRelevantLessonsAsync
-      ? await retrieveRelevantLessonsAsync(toolName, actionContext, { maxResults: 3 })
-      : retrieveRelevantLessons(toolName, actionContext, { maxResults: 3 });
+      ? await retrieveRelevantLessonsAsync(toolName, actionContext, retrievalOpts)
+      : retrieveRelevantLessons(toolName, actionContext, retrievalOpts);
     
     // Knowledge Conflict Detection: if retrieved lessons have high sentiment entropy,
     // it indicates conflicting past evidence. Warn by default; hard-block only in
