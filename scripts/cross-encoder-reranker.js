@@ -391,6 +391,8 @@ async function retrieveWithReranking(toolName, actionContext, options = {}) {
     metadataFilters: options.metadataFilters,
     queryRewrite: options.queryRewrite,
     includeRetrievalMeta: options.includeRetrievalMeta,
+    cwd: options.cwd,
+    project: options.project,
     embedder: options.embedder,
     embedderId: options.embedderId,
   });
@@ -416,6 +418,8 @@ function retrieveWithRerankingSync(toolName, actionContext, options = {}) {
     metadataFilters: options.metadataFilters,
     queryRewrite: options.queryRewrite,
     includeRetrievalMeta: options.includeRetrievalMeta,
+    cwd: options.cwd,
+    project: options.project,
   });
   if (candidates.length === 0) return [];
 
