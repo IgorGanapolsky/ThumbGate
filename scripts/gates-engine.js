@@ -2975,34 +2975,26 @@ function hasActiveProtectedApproval(governanceState, affectedFiles) {
   }));
 }
 
+const REDIRECT_STOP_CHARS = new Set([' ', '\t', '\n', '\r', ';', '&', '|', '<', '>']);
+
+function readRedirectTargetAt(text, afterGtIndex) {
+  const len = text.length;
+  let i = afterGtIndex;
+  if (i < len && text[i] === '>') i += 1;
+  while (i < len && (text[i] === ' ' || text[i] === '\t')) i += 1;
+  const start = i;
+  while (i < len && !REDIRECT_STOP_CHARS.has(text[i])) i += 1;
+  return { target: i > start ? text.slice(start, i) : '', nextIndex: i };
+}
+
 function extractShellRedirectTargets(command) {
   const targets = [];
   const text = String(command || '');
-  const len = text.length;
-  let i = 0;
-  while (i < len) {
-    if (text.charCodeAt(i) !== 62 /* '>' */) {
-      i += 1;
-      continue;
-    }
-    i += 1;
-    if (i < len && text.charCodeAt(i) === 62 /* '>>' */) {
-      i += 1;
-    }
-    while (i < len && (text.charCodeAt(i) === 32 || text.charCodeAt(i) === 9)) {
-      i += 1;
-    }
-    const start = i;
-    while (i < len) {
-      const ch = text[i];
-      if (ch === ' ' || ch === '\t' || ch === '\n' || ch === '\r' || ch === ';' || ch === '&' || ch === '|' || ch === '<' || ch === '>') {
-        break;
-      }
-      i += 1;
-    }
-    if (i > start) {
-      targets.push(text.slice(start, i));
-    }
+  let pos = text.indexOf('>');
+  while (pos !== -1) {
+    const { target, nextIndex } = readRedirectTargetAt(text, pos + 1);
+    if (target) targets.push(target);
+    pos = text.indexOf('>', nextIndex);
   }
   return targets;
 }
@@ -3016,75 +3008,73 @@ function hasPythonWriteOpenCall(segment) {
   return /['"][rwa]*[wa+][rwa+b]*['"]/.test(args);
 }
 
+function findFirstCommandTokenIndex(tokens) {
+  let idx = 0;
+  while (idx < tokens.length && /^[A-Za-z_][A-Za-z0-9_]*=/.test(tokens[idx])) {
+    idx += 1;
+  }
+  return idx;
+}
+
+function hasProtectedTokenAfter(tokens, startIdx) {
+  return tokens.slice(startIdx + 1).some((t) => SELF_PROTECT_CONFIG_COMMAND_PATTERN.test(t));
+}
+
+function isInPlaceFlag(token, allowLongInPlace) {
+  if (token === '-i' || token === '-pi' || /^-[a-zA-Z]*i/.test(token)) return true;
+  return Boolean(allowLongInPlace && token.startsWith('--in-place'));
+}
+
+function isInlineEvalWriteToProtectedConfig(tokens, binIdx, trimmedSegment, evalFlags) {
+  const hasInlineEval = tokens.slice(binIdx + 1).some((t) => evalFlags.includes(t));
+  if (!hasInlineEval) return false;
+  const writesFile = INLINE_INTERPRETER_MUTATION_API_PATTERN.test(trimmedSegment) || hasPythonWriteOpenCall(trimmedSegment);
+  return writesFile && SELF_PROTECT_CONFIG_COMMAND_PATTERN.test(trimmedSegment);
+}
+
+function isCpDestinationProtected(tokens, binIdx) {
+  const nonFlagTokens = tokens.slice(binIdx + 1).filter((t) => !t.startsWith('-'));
+  if (nonFlagTokens.length < 2) return false;
+  return SELF_PROTECT_CONFIG_COMMAND_PATTERN.test(nonFlagTokens[nonFlagTokens.length - 1]);
+}
+
+function isSegmentMutatingProtectedConfig(trimmedSegment) {
+  if (!trimmedSegment || !SELF_PROTECT_CONFIG_COMMAND_PATTERN.test(trimmedSegment)) return false;
+  const tokens = tokenizeShellWords(trimmedSegment);
+  const binIdx = findFirstCommandTokenIndex(tokens);
+  if (binIdx >= tokens.length) return false;
+
+  const binName = tokens[binIdx].split('/').pop().toLowerCase();
+  const argsAfterBin = tokens.slice(binIdx + 1);
+
+  if (binName === 'sed') {
+    return argsAfterBin.some((t) => isInPlaceFlag(t, true)) && hasProtectedTokenAfter(tokens, binIdx);
+  }
+  if (binName === 'perl') {
+    if (argsAfterBin.some((t) => isInPlaceFlag(t, false)) && hasProtectedTokenAfter(tokens, binIdx)) {
+      return true;
+    }
+    return isInlineEvalWriteToProtectedConfig(tokens, binIdx, trimmedSegment, ['-e', '-E']);
+  }
+  if (binName === 'cp') {
+    return isCpDestinationProtected(tokens, binIdx);
+  }
+  if (SELF_PROTECT_MUTATOR_BINARIES.has(binName)) {
+    return hasProtectedTokenAfter(tokens, binIdx);
+  }
+  if (binName === 'node' || /^python\d*$/.test(binName) || binName === 'ruby') {
+    return isInlineEvalWriteToProtectedConfig(tokens, binIdx, trimmedSegment, ['-e', '-c', '-E']);
+  }
+  return false;
+}
+
 function isBashSelfProtectConfigWriteTarget(command) {
   if (!command || !SELF_PROTECT_CONFIG_COMMAND_PATTERN.test(command)) return false;
-
-  // 1. Shell redirect target (> or >>) via O(n) character scanner
-  const redirectTargets = extractShellRedirectTargets(command);
-  if (redirectTargets.some((target) => SELF_PROTECT_CONFIG_COMMAND_PATTERN.test(target))) {
+  if (extractShellRedirectTargets(command).some((target) => SELF_PROTECT_CONFIG_COMMAND_PATTERN.test(target))) {
     return true;
   }
-  // 2. Command segments: mutator binaries or inline interpreters
   const segments = String(command).split(/\r?\n|&&|\|\||[;|&]/);
-  for (const segment of segments) {
-    const trimmedSegment = segment.trim();
-    if (!trimmedSegment || !SELF_PROTECT_CONFIG_COMMAND_PATTERN.test(trimmedSegment)) continue;
-
-    const tokens = tokenizeShellWords(trimmedSegment);
-    if (tokens.length === 0) continue;
-
-    // Find binary name skipping env var assignments (e.g. FOO=BAR)
-    let binIdx = 0;
-    while (binIdx < tokens.length && /^[A-Za-z_][A-Za-z0-9_]*=/.test(tokens[binIdx])) {
-      binIdx += 1;
-    }
-    if (binIdx >= tokens.length) continue;
-
-    const rawBin = tokens[binIdx];
-    const binName = rawBin.split('/').pop().toLowerCase();
-
-    // Mutator binaries: sed -i, perl -pi, tee, truncate, rm, mv, patch, install
-    if (binName === 'sed') {
-      const hasInPlace = tokens.some((t, idx) => idx > binIdx && (t === '-i' || /^-[a-zA-Z]*i/.test(t) || t.startsWith('--in-place')));
-      if (hasInPlace && tokens.some((t, idx) => idx > binIdx && SELF_PROTECT_CONFIG_COMMAND_PATTERN.test(t))) {
-        return true;
-      }
-    } else if (binName === 'perl') {
-      const hasInPlace = tokens.some((t, idx) => idx > binIdx && (t === '-pi' || t === '-i' || /^-[a-zA-Z]*i/.test(t)));
-      if (hasInPlace) {
-        if (tokens.some((t, idx) => idx > binIdx && SELF_PROTECT_CONFIG_COMMAND_PATTERN.test(t))) {
-          return true;
-        }
-      }
-      const hasInlineEval = tokens.some((t, idx) => idx > binIdx && (t === '-e' || t === '-E'));
-      if (hasInlineEval && INLINE_INTERPRETER_MUTATION_API_PATTERN.test(trimmedSegment) && SELF_PROTECT_CONFIG_COMMAND_PATTERN.test(trimmedSegment)) {
-        return true;
-      }
-    } else if (binName === 'cp') {
-      // cp where destination argument matches SELF_PROTECT_CONFIG_COMMAND_PATTERN
-      const nonFlagTokens = tokens.slice(binIdx + 1).filter((t) => !t.startsWith('-'));
-      if (nonFlagTokens.length >= 2) {
-        const destToken = nonFlagTokens[nonFlagTokens.length - 1];
-        if (SELF_PROTECT_CONFIG_COMMAND_PATTERN.test(destToken)) {
-          return true;
-        }
-      }
-    } else if (SELF_PROTECT_MUTATOR_BINARIES.has(binName)) {
-      // tee, truncate, rm, mv, patch, install
-      if (tokens.some((t, idx) => idx > binIdx && SELF_PROTECT_CONFIG_COMMAND_PATTERN.test(t))) {
-        return true;
-      }
-    } else if (binName === 'node' || /^python\d*$/.test(binName) || binName === 'ruby') {
-      // Inline interpreter: node -e, python -c, ruby -e
-      const hasInlineEval = tokens.some((t, idx) => idx > binIdx && (t === '-e' || t === '-c' || t === '-E'));
-      const writesFile = INLINE_INTERPRETER_MUTATION_API_PATTERN.test(trimmedSegment) || hasPythonWriteOpenCall(trimmedSegment);
-      if (hasInlineEval && writesFile && SELF_PROTECT_CONFIG_COMMAND_PATTERN.test(trimmedSegment)) {
-        return true;
-      }
-    }
-  }
-
-  return false;
+  return segments.some((segment) => isSegmentMutatingProtectedConfig(segment.trim()));
 }
 
 function matchSelfProtectHardFloor(gate, toolName, toolInput = {}) {
