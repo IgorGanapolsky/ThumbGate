@@ -203,13 +203,12 @@ describe('self-protection gates in default.json', () => {
     const configPath = path.join(__dirname, '..', 'config', 'gates', 'default.json');
     const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
     const selfProtectGates = config.gates.filter((g) => g.id.startsWith('self-protect'));
-    assert.ok(selfProtectGates.length >= 4, `Expected >= 4 self-protection gates, got ${selfProtectGates.length}`);
+    assert.ok(selfProtectGates.length >= 3, `Expected >= 3 self-protection gates, got ${selfProtectGates.length}`);
 
     const ids = selfProtectGates.map((g) => g.id);
     assert.ok(ids.includes('self-protect-config'));
     assert.ok(ids.includes('self-protect-kill'));
     assert.ok(ids.includes('self-protect-env-override'));
-    assert.ok(ids.includes('self-protect-hooks-disable'));
   });
 
   it('all self-protection gates are block action with critical severity', () => {

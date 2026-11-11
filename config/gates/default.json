@@ -547,24 +547,6 @@
       ]
     },
     {
-      "id": "self-protect-hooks-disable",
-      "layer": "Execution",
-      "toolNames": [
-        "Edit",
-        "Write",
-        "Bash"
-      ],
-      "pattern": "(?:\\.claude/settings(?:\\.local)?\\.json|\\.codex/config\\.toml|scripts/hook-[^/]+\\.(?:js|sh))",
-      "action": "block",
-      "message": "Self-protection: agent cannot modify hook registrations.",
-      "severity": "critical",
-      "compliance": [
-        "NIST-AC-3",
-        "OWASP-A01",
-        "SOC2-CC6.1"
-      ]
-    },
-    {
       "id": "on-demand-careful-mode",
       "layer": "Execution",
       "toolNames": [

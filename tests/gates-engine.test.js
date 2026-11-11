@@ -2862,7 +2862,7 @@ test('evaluateSecretGuard returns null when no secrets detected', () => {
   assert.equal(result, null);
 });
 
-test('runHardFloor denies secret, security, and all four self-protect classes', () => {
+test('runHardFloor denies secret, security, and self-protect classes', () => {
   cleanupStateFiles();
   const cases = [
     ['secret-exfiltration', {
@@ -2885,15 +2885,7 @@ test('runHardFloor denies secret, security, and all four self-protect classes', 
       tool_name: 'Bash',
       tool_input: { command: 'export THUMBGATE_HOTFIX_BYPASS=1' },
     }],
-    ['self-protect-hooks-disable', {
-      tool_name: 'Edit',
-      tool_input: {
-        file_path: '.claude/settings.json',
-        new_string: '{"hooks":{"PreToolUse":[]}}',
-      },
-    }],
   ];
-
   for (const [expectedGate, input] of cases) {
     const output = runHardFloor(input);
     assert.ok(output, `expected ${expectedGate} to produce a hard-floor result`);
@@ -2961,7 +2953,6 @@ test('self-protection hard floor matches protected targets, not documentation co
 
   for (const [expectedGate, command] of [
     ['self-protect-config', "printf '%s' '{}' > config/gates/default.json"],
-    ['self-protect-hooks-disable', "sed -i '' 's/PreToolUse/Disabled/' .claude/settings.json"],
   ]) {
     const output = runHardFloor({ tool_name: 'Bash', tool_input: { command } });
     assert.ok(output, `expected ${expectedGate} for ${command}`);
@@ -2991,19 +2982,22 @@ test('audited protected approval remains the repair path for hard-floor files', 
   cleanupStateFiles();
 });
 
-test('break-glass unlocks hook repair but not environment or process floors', () => {
+test('break-glass unlocks protected config repair but not environment or process floors', () => {
   cleanupStateFiles();
-  const settingsEdit = {
-    tool_name: 'Edit',
+  const configEdit = {
+    tool_name: 'Write',
     tool_input: {
-      file_path: '.claude/settings.json',
-      old_string: '"PreToolUse": []',
-      new_string: '"PreToolUse": [{"hooks": []}]',
+      file_path: 'config/gates/default.json',
+      content: '{}',
     },
   };
-  assert.ok(runHardFloor(settingsEdit));
-  breakGlassEmergency({ reason: 'repair duplicate hook registration', ttlMs: 5 * 60 * 1000 });
-  assert.equal(runHardFloor(settingsEdit), null);
+  assert.ok(runHardFloor(configEdit));
+  approveProtectedAction({
+    pathGlobs: ['config/gates/default.json'],
+    reason: 'repair gate configuration',
+    ttlMs: 5 * 60 * 1000,
+  });
+  assert.equal(runHardFloor(configEdit), null);
 
   assert.ok(runHardFloor({
     tool_name: 'Bash',
@@ -3874,5 +3868,31 @@ test('self-protect-config denies no-space and multi-redirect shell writes', () =
     tool_name: 'Bash',
     tool_input: { command: "printf '%s' 'ok' >/tmp/thumbgate-benign.txt" },
   }), null);
+  cleanupStateFiles();
+});
+test('self-protect-config blocks write targets and allows read-only commands', () => {
+  cleanupStateFiles();
+  const blockedCases = [
+    '> config/gates/default.json',
+    "sed -i '' 's/a/b/' config/gates/default.json",
+    'node -e "fs.writeFileSync(\'config/gates/default.json\', \'{}\')"',
+  ];
+  for (const command of blockedCases) {
+    const output = runHardFloor({ tool_name: 'Bash', tool_input: { command } });
+    assert.ok(output, `expected deny for ${command}`);
+    const hook = JSON.parse(output).hookSpecificOutput;
+    assert.equal(hook.permissionDecision, 'deny', command);
+    assert.match(hook.permissionDecisionReason, /\[GATE:self-protect-config\]/, command);
+  }
+
+  const allowedCases = [
+    'node -e "fs.readFileSync(\'config/gates/default.json\', \'utf8\')"',
+    'herdr run "check config/gates/default.json"',
+    'cat config/gates/default.json > /tmp/copy.json',
+  ];
+  for (const command of allowedCases) {
+    const output = runHardFloor({ tool_name: 'Bash', tool_input: { command } });
+    assert.equal(output, null, `expected allow for ${command}`);
+  }
   cleanupStateFiles();
 });

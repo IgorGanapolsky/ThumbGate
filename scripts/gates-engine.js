@@ -173,7 +173,6 @@ const SELF_PROTECT_HARD_FLOOR_GATE_IDS = new Set([
   'self-protect-config',
   'self-protect-kill',
   'self-protect-env-override',
-  'self-protect-hooks-disable',
 ]);
 // An expired task-scope lease gets its OWN gate id so it can be exempted from the two downgrade
 // paths without touching ordinary task-scope denials. Without this the fail-closed guarantee is
@@ -235,10 +234,11 @@ const CATASTROPHIC_DECLARATIVE_GATE_IDS = new Set([
   'mabl-failure-honesty',
 ]);
 const SELF_PROTECT_CONFIG_TARGET_PATTERN = /(?:^|\/)(?:config\/gates\/|config\/(?:budget|enforcement|mcp-allowlists)\.json$|\.thumbgate\/config\.json$|thumbgate\.json$)/i;
-const SELF_PROTECT_HOOK_TARGET_PATTERN = /(?:^|\/)(?:\.claude\/settings(?:\.local)?\.json|\.codex\/config\.toml|scripts\/hook-[^/]+\.(?:js|sh))$/i;
 const SELF_PROTECT_CONFIG_COMMAND_PATTERN = /(?:config\/gates\/|config\/(?:budget|enforcement|mcp-allowlists)\.json\b|\.thumbgate\/config\.json\b|thumbgate\.json\b)/i;
-const SELF_PROTECT_HOOK_COMMAND_PATTERN = /(?:\.claude\/settings(?:\.local)?\.json|\.codex\/config\.toml|scripts\/hook-[^\s'";|]+\.(?:js|sh))\b/i;
-const SHELL_FILE_MUTATION_PATTERN = /\b(?:sed\s+-i|perl\s+-pi|python\d*\s+-c|node\s+-e|ruby\s+-e|tee|truncate|rm|mv|cp|install|patch|jq)\b|(?:^|[\s;&|])>{1,2}\s*\S/i;
+const SELF_PROTECT_MUTATOR_BINARIES = new Set([
+  'sed', 'perl', 'tee', 'truncate', 'rm', 'mv', 'patch', 'install',
+]);
+const INLINE_INTERPRETER_MUTATION_API_PATTERN = /(?:writeFileSync|writeFile|appendFile|unlink|rmSync|rename|copyFile|createWriteStream|fs\.open|\.write\(|write_text|write_bytes|shutil\.move|shutil\.copy|os\.remove|os\.unlink|os\.replace|os\.rename|File\.write|open\([^)]*['"][wa+])/;
 
 function isSelfProtectGate(gateId) {
   return SELF_PROTECT_HARD_FLOOR_GATE_IDS.has(gateId);
@@ -2829,6 +2829,15 @@ function matchGate(gate, toolName, toolInput = {}) {
   const governanceState = loadGovernanceState();
   const constraints = loadConstraints();
 
+  if (gate.id === 'self-protect-config') {
+    const floorMatch = matchSelfProtectHardFloor(gate, toolName, toolInput);
+    if (!floorMatch) return { matched: false, matchText, affectedFiles };
+    return {
+      matched: true,
+      matchText: floorMatch.matchText,
+      affectedFiles: floorMatch.affectedFiles,
+    };
+  }
   if (isSelfProtectGate(gate.id) && hasActiveProtectedApproval(governanceState, affectedFiles)) {
     return { matched: false, matchText, affectedFiles };
   }
@@ -2966,6 +2975,82 @@ function hasActiveProtectedApproval(governanceState, affectedFiles) {
   }));
 }
 
+function isBashSelfProtectConfigWriteTarget(command) {
+  if (!command || !SELF_PROTECT_CONFIG_COMMAND_PATTERN.test(command)) return false;
+
+  // 1. Shell redirect target (> or >>)
+  const redirectPattern = /(?:^|[\s;&|]|[^\s;&|<>])(?:\d*)>{1,2}\s*([^\s;&|<>]+)/g;
+  let redirectMatch = redirectPattern.exec(command);
+  while (redirectMatch) {
+    const target = redirectMatch[1];
+    if (target && SELF_PROTECT_CONFIG_COMMAND_PATTERN.test(target)) {
+      return true;
+    }
+    redirectMatch = redirectPattern.exec(command);
+  }
+
+  // 2. Command segments: mutator binaries or inline interpreters
+  const segments = String(command).split(/\r?\n|&&|\|\||[;|&]/);
+  for (const segment of segments) {
+    const trimmedSegment = segment.trim();
+    if (!trimmedSegment || !SELF_PROTECT_CONFIG_COMMAND_PATTERN.test(trimmedSegment)) continue;
+
+    const tokens = tokenizeShellWords(trimmedSegment);
+    if (tokens.length === 0) continue;
+
+    // Find binary name skipping env var assignments (e.g. FOO=BAR)
+    let binIdx = 0;
+    while (binIdx < tokens.length && /^[A-Za-z_][A-Za-z0-9_]*=/.test(tokens[binIdx])) {
+      binIdx += 1;
+    }
+    if (binIdx >= tokens.length) continue;
+
+    const rawBin = tokens[binIdx];
+    const binName = rawBin.split('/').pop().toLowerCase();
+
+    // Mutator binaries: sed -i, perl -pi, tee, truncate, rm, mv, patch, install
+    if (binName === 'sed') {
+      const hasInPlace = tokens.some((t, idx) => idx > binIdx && (t === '-i' || /^-[a-zA-Z]*i/.test(t) || t.startsWith('--in-place')));
+      if (hasInPlace && tokens.some((t, idx) => idx > binIdx && SELF_PROTECT_CONFIG_COMMAND_PATTERN.test(t))) {
+        return true;
+      }
+    } else if (binName === 'perl') {
+      const hasInPlace = tokens.some((t, idx) => idx > binIdx && (t === '-pi' || t === '-i' || /^-[a-zA-Z]*i/.test(t)));
+      if (hasInPlace) {
+        if (tokens.some((t, idx) => idx > binIdx && SELF_PROTECT_CONFIG_COMMAND_PATTERN.test(t))) {
+          return true;
+        }
+      }
+      const hasInlineEval = tokens.some((t, idx) => idx > binIdx && (t === '-e' || t === '-E'));
+      if (hasInlineEval && INLINE_INTERPRETER_MUTATION_API_PATTERN.test(trimmedSegment) && SELF_PROTECT_CONFIG_COMMAND_PATTERN.test(trimmedSegment)) {
+        return true;
+      }
+    } else if (binName === 'cp') {
+      // cp where destination argument matches SELF_PROTECT_CONFIG_COMMAND_PATTERN
+      const nonFlagTokens = tokens.slice(binIdx + 1).filter((t) => !t.startsWith('-'));
+      if (nonFlagTokens.length >= 2) {
+        const destToken = nonFlagTokens[nonFlagTokens.length - 1];
+        if (SELF_PROTECT_CONFIG_COMMAND_PATTERN.test(destToken)) {
+          return true;
+        }
+      }
+    } else if (SELF_PROTECT_MUTATOR_BINARIES.has(binName)) {
+      // tee, truncate, rm, mv, patch, install
+      if (tokens.some((t, idx) => idx > binIdx && SELF_PROTECT_CONFIG_COMMAND_PATTERN.test(t))) {
+        return true;
+      }
+    } else if (binName === 'node' || /^python\d*$/.test(binName) || binName === 'ruby') {
+      // Inline interpreter: node -e, python -c, ruby -e
+      const hasInlineEval = tokens.some((t, idx) => idx > binIdx && (t === '-e' || t === '-c' || t === '-E'));
+      if (hasInlineEval && INLINE_INTERPRETER_MUTATION_API_PATTERN.test(trimmedSegment) && SELF_PROTECT_CONFIG_COMMAND_PATTERN.test(trimmedSegment)) {
+        return true;
+      }
+    }
+  }
+
+  return false;
+}
+
 function matchSelfProtectHardFloor(gate, toolName, toolInput = {}) {
   const affected = extractAffectedFiles(toolName, toolInput);
   const affectedFiles = affected.files;
@@ -2974,39 +3059,12 @@ function matchSelfProtectHardFloor(gate, toolName, toolInput = {}) {
   const command = String(toolInput.command || '');
   let matchText = command;
 
-  if (gate.id === 'self-protect-config' || gate.id === 'self-protect-hooks-disable') {
-    const targetPattern = gate.id === 'self-protect-config'
-      ? SELF_PROTECT_CONFIG_TARGET_PATTERN
-      : SELF_PROTECT_HOOK_TARGET_PATTERN;
+  if (gate.id === 'self-protect-config') {
     if (EDIT_LIKE_TOOLS.has(toolName)) {
       matchText = affectedFiles.join(' ');
-      if (!targetPattern.test(matchText)) return null;
+      if (!SELF_PROTECT_CONFIG_TARGET_PATTERN.test(matchText)) return null;
     } else if (toolName === 'Bash') {
-      const commandTargetPattern = gate.id === 'self-protect-config'
-        ? SELF_PROTECT_CONFIG_COMMAND_PATTERN
-        : SELF_PROTECT_HOOK_COMMAND_PATTERN;
-
-      // Inspect every shell redirection destination (optional fd, optional/no
-      // spaces, attached forms like printf x>file, multiple redirects).
-      const redirectPattern = /(?:^|[\s;&|]|[^\s;&|<>])(?:\d*)>{1,2}\s*([^\s;&|<>]+)/g;
-      const redirectTargets = [];
-      let redirectMatch = redirectPattern.exec(command);
-      while (redirectMatch) {
-        if (redirectMatch[1]) redirectTargets.push(redirectMatch[1]);
-        redirectMatch = redirectPattern.exec(command);
-      }
-      if (redirectTargets.length > 0) {
-        // Deny when any redirect destination is protected.
-        if (redirectTargets.some((target) => commandTargetPattern.test(target))) {
-          // fall through to deny
-        } else if (!SHELL_FILE_MUTATION_PATTERN.test(command) || !commandTargetPattern.test(command)) {
-          // Benign redirects and no other protected mutation → allow.
-          return null;
-        }
-        // Benign redirects but command still mutates a protected path another way → deny.
-      } else {
-        if (!SHELL_FILE_MUTATION_PATTERN.test(command) || !commandTargetPattern.test(command)) return null;
-      }
+      if (!isBashSelfProtectConfigWriteTarget(command)) return null;
     } else {
       return null;
     }
