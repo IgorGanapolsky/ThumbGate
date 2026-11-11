@@ -320,6 +320,7 @@ Full index: **[docs/INDEX.md](docs/INDEX.md)**
 |------|------|
 | Agent workflow contract | [WORKFLOW.md](WORKFLOW.md) |
 | Ready-for-agent intake | [.github/ISSUE_TEMPLATE/ready-for-agent.yml](.github/ISSUE_TEMPLATE/ready-for-agent.yml) |
+| Cloud-to-Mac dispatch loop | [docs/guides/mac-dispatch-loop.md](docs/guides/mac-dispatch-loop.md) |
 | Verification Evidence | [docs/VERIFICATION_EVIDENCE.md](docs/VERIFICATION_EVIDENCE.md) |
 | Release Confidence | [docs/RELEASE_CONFIDENCE.md](docs/RELEASE_CONFIDENCE.md) |
 | Changeset strategy | [docs/CHANGESET_STRATEGY.md](docs/CHANGESET_STRATEGY.md) |
