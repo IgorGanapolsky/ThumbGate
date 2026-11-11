@@ -578,3 +578,19 @@ test('scanHookInput Bash path denies curl @.env and command-substitution exfil',
     assert.equal(result.detected, true, `expected Bash hook deny for: ${command}`);
   }
 });
+
+test('scanBashCommand and scanFile do not false-positive on code property access in scripts/statusline-meta.js', () => {
+  const repoRoot = path.join(__dirname, '..');
+  const bashRes = scanBashCommand('grep -n -i enterprise scripts/statusline-meta.js', { cwd: repoRoot });
+  assert.equal(
+    bashRes.detected,
+    false,
+    `expected detected: false for grep on statusline-meta.js, got findings: ${JSON.stringify(bashRes.findings)}`
+  );
+
+  const propAccessRes = scanText('let apiKey = env.THUMBGATE_OPERATOR_KEY || config.operatorKey;');
+  assert.equal(propAccessRes.detected, false, 'unquoted JS property access must not trigger generic_assignment');
+
+  const literalSecretRes = scanText('const apiKey = "super_secret_token_value_123456";');
+  assert.equal(literalSecretRes.detected, true, 'quoted literal secret assignment must still be detected');
+});
