@@ -590,7 +590,7 @@ const TRACKED_LINK_TARGETS = Object.freeze({
     prefillStripeEmail: true,
   },
   'bundle-49': {
-    fallbackHref: 'https://iganapolsky.gumroad.com/l/vcrho',
+    fallbackHref: 'https://buy.stripe.com/dRm3cv1M85v819v6i73sJ12',
     external: true,
     botDeflectPath: '/checkout/pro',
     ctaId: 'pro_checkout_bundle_49',
@@ -603,9 +603,11 @@ const TRACKED_LINK_TARGETS = Object.freeze({
       plan_id: 'bundle_49',
       billing_cycle: 'one_time',
     },
+    allowCustomerEmail: true,
+    prefillStripeEmail: true,
   },
   'playbook-10': {
-    fallbackHref: 'https://iganapolsky.gumroad.com/l/odrkon',
+    fallbackHref: 'https://buy.stripe.com/8x2fZh3UgbTw19v21R3sJ11',
     external: true,
     botDeflectPath: '/checkout/pro',
     ctaId: 'pro_checkout_playbook_10',
@@ -618,9 +620,11 @@ const TRACKED_LINK_TARGETS = Object.freeze({
       plan_id: 'playbook_10',
       billing_cycle: 'one_time',
     },
+    allowCustomerEmail: true,
+    prefillStripeEmail: true,
   },
   'playbook-999': {
-    fallbackHref: 'https://iganapolsky.gumroad.com/l/odrkon',
+    fallbackHref: 'https://buy.stripe.com/8x2fZh3UgbTw19v21R3sJ11',
     external: true,
     botDeflectPath: '/checkout/pro',
     ctaId: 'pro_checkout_playbook_999',
@@ -633,6 +637,8 @@ const TRACKED_LINK_TARGETS = Object.freeze({
       plan_id: 'playbook_999',
       billing_cycle: 'one_time',
     },
+    allowCustomerEmail: true,
+    prefillStripeEmail: true,
   },
   'founding-100': {
     fallbackHref: PRO_CHECKOUT_URL,

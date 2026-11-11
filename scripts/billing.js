@@ -111,7 +111,22 @@ const CONFIG = {
   RESEND_API_KEY: process.env.RESEND_API_KEY || process.env.THUMBGATE_RESEND_API_KEY || '',
   TRIAL_EMAIL_FROM: process.env.THUMBGATE_TRIAL_EMAIL_FROM || process.env.RESEND_FROM_EMAIL || process.env.RESEND_FROM || 'onboarding@resend.dev',
   TRIAL_EMAIL_REPLY_TO: process.env.THUMBGATE_TRIAL_EMAIL_REPLY_TO || 'support@thumbgate.ai',
-  CREDIT_PACKS: {}
+  CREDIT_PACKS: {
+    bundle_49: {
+      id: 'bundle_49',
+      name: 'Corporate-Expense Reliability Kit',
+      currency: 'USD',
+      amountCents: 4900,
+      credits: 10000,
+    },
+    playbook_999: {
+      id: 'playbook_999',
+      name: 'Agent Safeguards Playbook',
+      currency: 'USD',
+      amountCents: 999,
+      credits: 1000,
+    },
+  }
 };
 
 const DEFAULT_DIAGNOSTIC_PAYMENT_LINK_ID = 'plink_1TsO6lGGBpd520QYsFToXuRC';
@@ -890,6 +905,12 @@ function resolveCheckoutProvisioningGrant(session = {}) {
   const credits = normalizeInteger(session.metadata?.credits);
   if (configuredPack?.credits !== undefined && credits === configuredPack.credits) {
     return { allowed: true, kind: 'credit_pack', credits };
+  }
+  if (session.payment_link === 'plink_1UYSOcGGBpd520QY6NK9tcnJ') {
+    return { allowed: true, kind: 'credit_pack', credits: 10000 };
+  }
+  if (session.payment_link === 'plink_1UYSOZGGBpd520QYsB3S18JB') {
+    return { allowed: true, kind: 'credit_pack', credits: 1000 };
   }
   return { allowed: false, kind: 'service_order', credits: null };
 }
