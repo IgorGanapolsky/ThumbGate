@@ -257,12 +257,12 @@ test('workflow sentinel fails closed on an Apollo upgrade with an explicit zero-
   assert.equal(report.decisionControl.executionMode, 'blocked');
 });
 
-test('workflow sentinel treats opaque browser and computer-use mutations as economic', () => {
+test('workflow sentinel treats payment-targeted browser and computer-use mutations as economic while allowing non-payment clicks', () => {
   const feedbackDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-sentinel-opaque-screen-'));
   try {
     for (const [toolName, toolInput] of [
-      ['Browser', { ref_id: 'page', id: 17 }],
-      ['computer', { action: 'click', coordinate: [920, 640] }],
+      ['Browser', { action: 'click', ref_id: 'page', id: 17, label: 'Pay now' }],
+      ['computer', { action: 'click', coordinate: [920, 640], pageUrl: 'https://checkout.stripe.com/c/pay/cs_live_123' }],
     ]) {
       const report = evaluateWorkflowSentinel(toolName, toolInput, {
         feedbackDir,
@@ -273,6 +273,19 @@ test('workflow sentinel treats opaque browser and computer-use mutations as econ
       assert.ok(report.financialControl.reasonCodes.includes('missing_purchase_requisition'));
       assert.equal(report.decision, 'deny');
     }
+
+    const nonPaymentReport = evaluateWorkflowSentinel('Browser', {
+      action: 'click',
+      ref_id: 'page',
+      id: 17,
+      url: 'https://accounts.google.com/o/oauth2/v2/auth',
+      label: 'Choose an account',
+    }, {
+      feedbackDir,
+      repoPath: process.cwd(),
+    });
+    assert.equal(nonPaymentReport.actionProfile.economicAction, false);
+    assert.equal(nonPaymentReport.financialControl.mode, 'allow');
   } finally {
     fs.rmSync(feedbackDir, { recursive: true, force: true });
   }

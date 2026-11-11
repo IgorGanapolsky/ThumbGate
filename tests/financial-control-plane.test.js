@@ -462,8 +462,8 @@ test('provider names in credential paths and read-only billing commands are not 
     customer: 'cus_123',
   }), true);
   assert.equal(detectOpaqueScreenMutation('Browser', { ref_id: 'page', id: 17 }), true);
-  assert.equal(detectEconomicAction('Browser', { ref_id: 'page', id: 17 }), true);
-  assert.equal(detectEconomicAction('computer', { action: 'click', coordinate: [920, 640] }), true);
+  assert.equal(detectEconomicAction('Browser', { ref_id: 'page', id: 17 }), false);
+  assert.equal(detectEconomicAction('computer', { action: 'click', coordinate: [920, 640] }), false);
   assert.equal(detectEconomicAction('mcp__playwright__browser_click', {
     element: 'Subscribe',
     ref: 'e42',
@@ -1639,25 +1639,83 @@ test('a non-screen tool carrying coordinates is not a screen mutation', () => {
   }), false);
 });
 
-test('opaque screen mutation escalates to an economic action', () => {
+test('ordinary and OAuth account-chooser clicks without payment controls are allowed', () => {
   assert.equal(detectEconomicAction('mcp__claude-in-chrome__computer', {
     action: 'left_click', coordinate: [10, 20], tabId: 1,
-  }), true);
+  }), false);
+  assert.equal(detectEconomicAction('mcp__browseros-neo__act', {
+    page: 62,
+    kind: 'click',
+    ref: 'e2',
+    session: 'bf3a78ee-2030-44e1-848d-2f72e6984ee2',
+    diff: 1500,
+  }), false);
+  assert.equal(detectEconomicAction('mcp__browseros-neo__act', {
+    page: 62,
+    kind: 'click',
+    ref: 'e2',
+    url: 'https://accounts.google.com/o/oauth2/v2/auth',
+    text: 'Choose an account',
+  }), false);
+  assert.equal(runHardFloor({
+    tool_name: 'mcp__browseros-neo__act',
+    tool_input: {
+      page: 62,
+      kind: 'click',
+      ref: 'e2',
+      url: 'https://accounts.google.com/o/oauth2/v2/auth',
+      text: 'Choose an account',
+    },
+  }), null);
 });
 
-test('routine shell work is not an economic action', () => {
-  for (const command of ['git status', 'git switch -c wip', 'npm run test:ops', 'ls -la']) {
+test('routine shell work and quoted agent prompts mentioning checkout are not economic actions', () => {
+  for (const command of [
+    'git status',
+    'git switch -c wip',
+    'npm run test:ops',
+    'ls -la',
+    'herdr --session thumbgate agent prompt w1:pN "Bug: PreToolUse blocked a click; the prompt mentioned pay, checkout, purchase, and card."',
+    'gh pr comment 4896 --body "Verify Pay now and Complete purchase controls stay denied on checkout."',
+    'echo "Click Pay now on checkout"',
+  ]) {
     assert.equal(detectEconomicAction('Bash', { command }), false, `expected "${command}" to be allowed`);
+    assert.equal(runHardFloor({ tool_name: 'Bash', tool_input: { command } }), null);
   }
 });
 
-test('control plane blocks a blind click but allows an observation', () => {
-  const clicked = evaluateFinancialControl({
-    toolName: 'mcp__claude-in-chrome__computer',
-    toolInput: { action: 'left_click', coordinate: [10, 20], tabId: 1 },
-  });
-  assert.equal(clicked.mode, 'block');
-  assert.equal(clicked.economicAction, true);
+test('control plane denies payment-control clicks and payment provider CLI/API charges', () => {
+  for (const toolInput of [
+    { page: 62, kind: 'click', ref: 'e5', text: 'Pay now' },
+    { action: 'click', element: 'Complete purchase', ref: 'e9' },
+  ]) {
+    assert.equal(detectEconomicAction('mcp__browseros-neo__act', toolInput), true);
+    const clicked = evaluateFinancialControl({
+      toolName: 'mcp__browseros-neo__act',
+      toolInput,
+    });
+    assert.equal(clicked.mode, 'block');
+    assert.equal(clicked.economicAction, true);
+    const hardFloor = JSON.parse(runHardFloor({
+      tool_name: 'mcp__browseros-neo__act',
+      tool_input: toolInput,
+    }));
+    assert.equal(hardFloor.hookSpecificOutput.permissionDecision, 'deny');
+    assert.match(hardFloor.hookSpecificOutput.permissionDecisionReason, /\[GATE:financial-control\]/);
+  }
+
+  for (const command of [
+    'stripe charges create --amount 5000 --currency usd',
+    'curl -X POST https://api.stripe.com/v1/charges -d amount=5000 -d currency=usd',
+  ]) {
+    assert.equal(detectEconomicAction('Bash', { command }), true);
+    const hardFloor = JSON.parse(runHardFloor({
+      tool_name: 'Bash',
+      tool_input: { command },
+    }));
+    assert.equal(hardFloor.hookSpecificOutput.permissionDecision, 'deny');
+    assert.match(hardFloor.hookSpecificOutput.permissionDecisionReason, /\[GATE:financial-control\]/);
+  }
 
   const observed = evaluateFinancialControl({
     toolName: 'mcp__claude-in-chrome__computer',
