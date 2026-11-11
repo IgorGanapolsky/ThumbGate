@@ -1,0 +1,54 @@
+name: PR Size Check
+
+on:
+  pull_request:
+    branches: [main]
+  merge_group:
+    branches: [main]
+    types: [checks_requested]
+
+permissions:
+  contents: read
+  pull-requests: read
+
+concurrency:
+  group: pr-size-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  pr-size:
+    name: pr-size
+    runs-on: ubuntu-latest
+    steps:
+      - name: Bypass for Trunk merge_group and Dependabot PRs
+        if: github.event_name == 'merge_group' || github.event.pull_request.user.login == 'dependabot[bot]'
+        run: |
+          echo "::notice::Skipping PR size check on merge_group / Dependabot PR."
+
+      - name: Checkout
+        if: github.event_name != 'merge_group' && github.event.pull_request.user.login != 'dependabot[bot]'
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          fetch-depth: 0
+
+      - name: Fetch base branch for PR size diff
+        if: github.event_name != 'merge_group' && github.event.pull_request.user.login != 'dependabot[bot]'
+        run: |
+          set -euo pipefail
+          delay=1
+          for attempt in 1 2 3 4 5; do
+            if git fetch --no-tags --prune origin '+refs/heads/main:refs/remotes/origin/main'; then
+              echo "Fetched origin/main on attempt ${attempt}"
+              exit 0
+            fi
+            if [ "${attempt}" -eq 5 ]; then
+              echo "git fetch origin main failed after 5 attempts" >&2
+              exit 1
+            fi
+            sleep "${delay}"
+            delay=$(( delay * 2 ))
+          done
+
+      - name: Enforce <= 1,000 changed lines
+        if: github.event_name != 'merge_group' && github.event.pull_request.user.login != 'dependabot[bot]'
+        run: node scripts/pr-size-check.js --base refs/remotes/origin/main --head HEAD --max-lines 1000

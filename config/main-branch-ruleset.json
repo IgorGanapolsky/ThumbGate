@@ -29,7 +29,10 @@
     "required_status_checks": {
       "strict_required_status_checks_policy": true,
       "do_not_enforce_on_create": false,
-      "contexts_from": "merge-quality-checks"
+      "contexts_from": "merge-quality-checks",
+      "additional_contexts": [
+        "pr-size"
+      ]
     }
   },
   "notes": [
