@@ -38,8 +38,8 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           DRY_RUN: ${{ github.event.inputs.dry_run || 'false' }}
         run: |
-          if [ "$DRY_RUN" = "true" ]; then
-            node scripts/pr-manager.js --sweep-stale --dry-run --json
-          else
-            node scripts/pr-manager.js --sweep-stale --json
-          fi
+          case "$DRY_RUN" in
+            true)  node scripts/pr-manager.js --sweep-stale --dry-run --json ;;
+            false) node scripts/pr-manager.js --sweep-stale --json ;;
+            *)     echo "::error::dry_run must be 'true' or 'false' (got '$DRY_RUN'); refusing to run a live sweep." ; exit 1 ;;
+          esac

@@ -482,7 +482,9 @@ async function managePrs(prNumber = '', runner = runGh, options = {}) {
   return { status: 'ok', prs: results };
 }
 
-const SWEEP_PR_FIELDS = 'number,state,isDraft,title,url,headRefName,updatedAt,createdAt,author,statusCheckRollup';
+const SWEEP_PR_FIELDS = 'number,state,isDraft,title,url,headRefName,baseRefName,updatedAt,createdAt,author,statusCheckRollup';
+const SWEEP_LIST_LIMIT = '1000';
+const SWEEP_REQUIRED_CHECKS_BASE = 'main';
 const DEFAULT_RED_MAX_AGE_MS = 24 * 60 * 60 * 1000;
 const DEFAULT_DRAFT_IDLE_MAX_AGE_MS = 3 * 24 * 60 * 60 * 1000;
 const REQUIRED_CHECK_SET = new Set(MERGE_QUALITY_CHECKS.requiredStatusCheckContexts || []);
@@ -543,6 +545,11 @@ function classifyStalePr(pr = {}, options = {}) {
 
   const checks = Array.isArray(pr.statusCheckRollup) ? pr.statusCheckRollup : [];
   const failingRequired = checks.filter((check) => isRequiredCheckFailing(check));
+  if (failingRequired.length > 0 && String(pr.baseRefName || '') !== SWEEP_REQUIRED_CHECKS_BASE) {
+    // The required-check set is only known for main. For any other base
+    // (or an unknown one) we cannot tell which red checks matter, so never close.
+    return { action: 'keep', reason: 'required_checks_unknown_for_base', baseRefName: pr.baseRefName || '' };
+  }
   if (failingRequired.length > 0) {
     const checkTimestamps = failingRequired
       .map((check) => Date.parse(check.completedAt || check.startedAt || ''))
@@ -568,9 +575,23 @@ function classifyStalePr(pr = {}, options = {}) {
   return { action: 'keep', reason: 'active' };
 }
 
+function stillEligibleForClose(number, options, runner) {
+  const viewResult = runner(['pr', 'view', String(number), '--json', SWEEP_PR_FIELDS]);
+  if (viewResult.status !== 0) {
+    return false;
+  }
+  try {
+    const fresh = JSON.parse(viewResult.stdout || '{}');
+    return fresh.state === 'OPEN' && classifyStalePr(fresh, options).action === 'close';
+  } catch {
+    return false;
+  }
+}
+
 function sweepStalePrs(options = {}, runner = runGh) {
   const dryRun = Boolean(options.dryRun);
-  const listResult = runner(['pr', 'list', '--state', 'open', '--limit', '100', '--json', SWEEP_PR_FIELDS]);
+  // A high limit makes gh paginate through every open PR, so none are silently skipped.
+  const listResult = runner(['pr', 'list', '--state', 'open', '--limit', SWEEP_LIST_LIMIT, '--json', SWEEP_PR_FIELDS]);
   if (listResult.status !== 0) {
     throw new Error(`Failed to list open PRs for sweep: ${formatGhError(listResult)}`);
   }
@@ -594,6 +615,11 @@ function sweepStalePrs(options = {}, runner = runGh) {
 
     if (verdict.action === 'skip') {
       skippedCount += 1;
+    } else if (verdict.action === 'close' && !dryRun && !stillEligibleForClose(pr.number, options, runner)) {
+      // The PR changed after it was listed (new push, checks recovered, undrafted).
+      record.action = 'keep';
+      record.reason = 'eligibility_changed';
+      keptCount += 1;
     } else if (verdict.action === 'close') {
       closedCount += 1;
       if (!dryRun) {

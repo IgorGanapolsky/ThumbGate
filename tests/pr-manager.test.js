@@ -841,6 +841,7 @@ test('sweepStalePrs skips dependabot/* and trunk-merge/*, closes non-draft red >
       number: 103,
       title: 'feat: red required check over 24h',
       headRefName: 'feat/stale-red',
+      baseRefName: 'main',
       isDraft: false,
       updatedAt: '2026-11-04T12:00:00Z',
       statusCheckRollup: [{ name: 'test', conclusion: 'FAILURE', completedAt: '2026-11-04T12:00:00Z' }],
@@ -880,23 +881,51 @@ test('sweepStalePrs skips dependabot/* and trunk-merge/*, closes non-draft red >
   assert.equal(drySummary.keptCount, 1);
   assert.equal(dryCalls.length, 1, 'dryRun must only list PRs and never comment or close');
 
+  assert.ok(dryCalls[0].includes('1000'), 'sweep must list every open PR, not only the first 100');
+
   const liveCalls = [];
   const liveSummary = sweepStalePrs({ dryRun: false, nowMs }, (args) => {
     liveCalls.push(args);
     if (args[1] === 'list') {
       return { status: 0, stdout: JSON.stringify(prs), stderr: '' };
     }
+    if (args[1] === 'view') {
+      const pr = prs.find((p) => String(p.number) === args[2]);
+      return { status: 0, stdout: JSON.stringify({ ...pr, state: 'OPEN' }), stderr: '' };
+    }
     return { status: 0, stdout: 'ok', stderr: '' };
   });
   assert.equal(liveSummary.closedCount, 2);
-  assert.equal(liveCalls.length, 5);
+  // 1 list + (view, comment, close) for each of the 2 closures.
+  assert.equal(liveCalls.length, 7);
   for (const call of liveCalls) {
     assert.equal(call.includes('--delete-branch'), false, 'sweeper must never delete branches');
   }
+
+  // Red checks on a non-main base are not judged: the required set is unknown there.
+  const offMain = { ...prs[2], baseRefName: 'release/1.x' };
+  assert.equal(classifyStalePr(offMain, { nowMs }).reason, 'required_checks_unknown_for_base');
+
+  // A PR that recovered between listing and closing is kept, not closed.
+  const recoveredCalls = [];
+  const recoveredSummary = sweepStalePrs({ dryRun: false, nowMs }, (args) => {
+    recoveredCalls.push(args);
+    if (args[1] === 'list') {
+      return { status: 0, stdout: JSON.stringify([prs[2]]), stderr: '' };
+    }
+    if (args[1] === 'view') {
+      return { status: 0, stdout: JSON.stringify({ ...prs[2], state: 'OPEN', statusCheckRollup: [{ name: 'test', conclusion: 'SUCCESS' }] }), stderr: '' };
+    }
+    return { status: 0, stdout: 'ok', stderr: '' };
+  });
+  assert.equal(recoveredSummary.closedCount, 0);
+  assert.equal(recoveredSummary.decisions[0].reason, 'eligibility_changed');
+  assert.equal(recoveredCalls.some((args) => args[1] === 'close' || args[1] === 'comment'), false);
 
   const workflowRaw = fs.readFileSync(
     path.join(__dirname, '..', '.github', 'workflows', 'pr-stale-sweeper.yml'),
     'utf8',
   );
   assert.match(workflowRaw, /node scripts\/pr-manager\.js --sweep-stale/);
+  assert.match(workflowRaw, /must be 'true' or 'false'/, 'workflow must reject ambiguous dry_run input');
 });
