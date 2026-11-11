@@ -6534,13 +6534,24 @@ async function addContext(){
       return;
     }
 
-    if (isGetLikeRequest && pathname === '/dashboard') {
+    if (isGetLikeRequest && (pathname === '/dashboard' || pathname === '/cloud')) {
       try {
         const html = loadDashboardPageHtml(req, expectedApiKey);
         sendHtml(res, 200, html, {}, { headOnly: isHeadRequest });
       } catch {
         sendJson(res, 404, { error: 'Dashboard page not found' });
       }
+      return;
+    }
+
+    if (isGetLikeRequest && pathname === '/v1/cloud/sso/authorize') {
+      const provider = encodeURIComponent(String(parsed.searchParams.get('provider') || 'google').trim());
+      res.writeHead(302, {
+        'X-Content-Type-Options': 'nosniff',
+        Location: `/dashboard?sso=${provider}`,
+        'Cache-Control': 'no-store',
+      });
+      res.end();
       return;
     }
 
