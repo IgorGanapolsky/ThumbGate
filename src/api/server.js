@@ -5716,8 +5716,16 @@ function resolvePaidSessionTier(candidate, expectedApiKey, expectedOperatorKey) 
 async function handlePaidAuthSessionRoute(req, res, expectedApiKey, expectedOperatorKey) {
   const noStoreHeaders = { 'Cache-Control': 'no-store' };
   if (req.method === 'GET') {
+    const cookies = parseCookies(req && req.headers ? req.headers.cookie : '');
+    const sessionEntry = cookies[PAID_AUTH_COOKIE_NAME] ? paidAuthSessions.get(cookies[PAID_AUTH_COOKIE_NAME]) : null;
     const tier = resolvePaidSessionTier(extractApiKey(req), expectedApiKey, expectedOperatorKey);
-    sendJson(res, 200, { ok: true, authenticated: Boolean(tier), tier: tier || null }, noStoreHeaders);
+    sendJson(res, 200, {
+      ok: true,
+      authenticated: Boolean(tier),
+      tier: tier || null,
+      ssoProvider: sessionEntry?.ssoProvider || null,
+      ssoEmail: sessionEntry?.ssoEmail || null,
+    }, noStoreHeaders);
     return;
   }
   if (req.method === 'DELETE') {
@@ -6789,11 +6797,72 @@ async function addContext(){
     }
 
     if (isGetLikeRequest && pathname === '/v1/cloud/sso/authorize') {
-      const provider = encodeURIComponent(String(parsed.searchParams.get('provider') || 'google').trim());
-      res.writeHead(302, {
+      const rawProvider = String(parsed.searchParams.get('provider') || 'google').trim().toLowerCase();
+      const provider = ['google', 'apple', 'github', 'okta'].includes(rawProvider) ? rawProvider : 'google';
+      const email = String(parsed.searchParams.get('email') || '').trim().toLowerCase();
+      const appOrigin = hostedConfig.appOrigin || 'https://thumbgate.ai';
+      const callbackUrl = `${appOrigin}/v1/cloud/sso/callback?provider=${encodeURIComponent(provider)}`;
+      const stateNonce = `st_${crypto.randomBytes(12).toString('hex')}`;
+      if (provider === 'google' && process.env.GOOGLE_CLIENT_ID) {
+        const googleAuthUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${encodeURIComponent(process.env.GOOGLE_CLIENT_ID)}&redirect_uri=${encodeURIComponent(callbackUrl)}&response_type=code&scope=openid%20email%20profile&state=${encodeURIComponent(stateNonce)}`;
+        if (parsed.searchParams.get('format') === 'json') {
+          sendJson(res, 200, { ok: true, mode: 'oauth_redirect', provider, redirectUrl: googleAuthUrl });
+          return;
+        }
+        res.writeHead(302, { 'X-Content-Type-Options': 'nosniff', Location: googleAuthUrl, 'Cache-Control': 'no-store' });
+        res.end();
+        return;
+      }
+      if (provider === 'apple' && process.env.APPLE_CLIENT_ID) {
+        const appleAuthUrl = `https://appleid.apple.com/auth/authorize?client_id=${encodeURIComponent(process.env.APPLE_CLIENT_ID)}&redirect_uri=${encodeURIComponent(callbackUrl)}&response_type=code&scope=name%20email&response_mode=form_post&state=${encodeURIComponent(stateNonce)}`;
+        if (parsed.searchParams.get('format') === 'json') {
+          sendJson(res, 200, { ok: true, mode: 'oauth_redirect', provider, redirectUrl: appleAuthUrl });
+          return;
+        }
+        res.writeHead(302, { 'X-Content-Type-Options': 'nosniff', Location: appleAuthUrl, 'Cache-Control': 'no-store' });
+        res.end();
+        return;
+      }
+      const headers = {
         'X-Content-Type-Options': 'nosniff',
-        Location: `/dashboard?sso=${provider}`,
         'Cache-Control': 'no-store',
+      };
+      if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        const nowMs = Date.now();
+        prunePaidAuthSessions(nowMs);
+        const sessionToken = crypto.randomBytes(32).toString('hex');
+        const effectiveKey = expectedOperatorKey || expectedApiKey || `tg_sso_${provider}_${crypto.createHash('sha256').update(`${provider}:${email}`).digest('hex').slice(0, 24)}`;
+        paidAuthSessions.set(sessionToken, {
+          apiKey: effectiveKey,
+          ssoProvider: provider,
+          ssoEmail: email,
+          createdAt: nowMs,
+          expiresAt: nowMs + PAID_AUTH_SESSION_TTL_SECONDS * 1000,
+        });
+        headers['Set-Cookie'] = serializeCookie(PAID_AUTH_COOKIE_NAME, sessionToken, {
+          maxAge: PAID_AUTH_SESSION_TTL_SECONDS,
+          httpOnly: true,
+          sameSite: 'Lax',
+          secure: true,
+        });
+        if (parsed.searchParams.get('format') === 'json') {
+          sendJson(res, 200, { ok: true, authenticated: true, tier: 'Pro', provider, email }, headers);
+          return;
+        }
+        res.writeHead(302, {
+          ...headers,
+          Location: `/dashboard?sso=${encodeURIComponent(provider)}&email=${encodeURIComponent(email)}`,
+        });
+        res.end();
+        return;
+      }
+      if (parsed.searchParams.get('format') === 'json') {
+        sendJson(res, 400, { ok: false, error: 'Enter a valid email address to sign in with SSO.' }, headers);
+        return;
+      }
+      res.writeHead(302, {
+        ...headers,
+        Location: `/dashboard?sso=${encodeURIComponent(provider)}`,
       });
       res.end();
       return;

@@ -77,6 +77,10 @@ test('homepage navbar exposes paid-user Log in drawer and exchanges keys for an 
   assert.match(landingPage, /data-cta-id="nav_paid_login"[^>]*>Log in</);
   assert.match(landingPage, /id="paidLoginBar"/);
   assert.match(landingPage, /id="paidLoginKeyInput"/);
+  assert.match(landingPage, /\/v1\/cloud\/sso\/authorize\?provider=google/);
+  assert.match(landingPage, /\/v1\/cloud\/sso\/authorize\?provider=apple/);
+  assert.match(dashboardPage, /id="ssoGoogleBtn"/);
+  assert.match(dashboardPage, /id="ssoAppleBtn"/);
   assert.match(landingPage, /window\.tgSubmitPaidLogin/);
   assert.match(landingPage, /\/v1\/auth\/session/);
   assert.match(dashboardPage, /\/v1\/auth\/session/);
