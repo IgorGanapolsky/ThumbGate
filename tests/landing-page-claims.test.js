@@ -42,7 +42,8 @@ test('free-tier limits on the homepage match code truth', () => {
   assert.equal(FREE_TIER_LIMITS.capture_feedback.daily, 2);
   assert.equal(FREE_TIER_LIMITS.capture_feedback.lifetime, 10);
   assert.equal(FREE_TIER_MAX_GATES, 3);
-  assert.match(HOME_HTML, /Free: 3 active prevention rules, 2 rule generations and 2 captures a day \(10 total\)/);
+  assert.match(HOME_HTML, /Free: 3 active learned rules\./);
+  assert.doesNotMatch(HOME_HTML, /2 captures\/day|2 captures a day|10 total/i);
   assert.doesNotMatch(PRICING_HTML, /2 captures\/day|10 total|3 active prevention rules/i);
 });
 

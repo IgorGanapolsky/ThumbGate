@@ -185,14 +185,25 @@ test('paid wedge includes managed implementation, regression, and rollout proof'
   assert.match(landingPage, /Multi-system implementation[\s\S]*require separate scope/);
 });
 
-test('Pro card states the free limits enforced by scripts/rate-limiter.js', () => {
+test('Pro card states only free limits that the MCP and gate engine enforce', () => {
   const { FREE_TIER_MAX_GATES, FREE_TIER_LIMITS } = require('../scripts/rate-limiter');
+  const gatesEngine = fs.readFileSync(path.join(__dirname, '..', 'scripts/gates-engine.js'), 'utf8');
+  const mcpServer = fs.readFileSync(path.join(__dirname, '..', 'adapters/mcp/server-stdio.js'), 'utf8');
   const proCard = landingPage.slice(landingPage.indexOf('id="pro"'), landingPage.indexOf('</aside>', landingPage.indexOf('id="pro"')));
+
   assert.match(proCard, /Unlimited gates[\s\S]*id="free-cap"/);
-  assert.match(proCard, new RegExp(`Free: ${FREE_TIER_MAX_GATES} active prevention rules`));
-  assert.match(proCard, new RegExp(`${FREE_TIER_LIMITS.prevention_rules.daily} rule generations and ${FREE_TIER_LIMITS.capture_feedback.daily} captures a day \\(${FREE_TIER_LIMITS.capture_feedback.lifetime} total\\)`));
-  assert.match(proCard, /Recall and lesson search are Pro/);
+  assert.match(proCard, new RegExp(`Free: ${FREE_TIER_MAX_GATES} active learned rules\\.`));
+  assert.match(gatesEngine, /autoGates\.slice\(0, FREE_TIER_MAX_GATES\)/);
+
+  assert.match(proCard, /Recall and exports are Pro\./);
+  assert.equal(FREE_TIER_LIMITS.recall.daily, 0);
+  assert.equal(FREE_TIER_LIMITS.export_dpo.daily, 0);
+  assert.match(mcpServer, /checkLimit\('recall'\)/);
+  assert.match(mcpServer, /enforceLimit\('export_dpo'\)/);
+
   assert.match(proCard, /Secrets stay denied\./);
+  // Capture and rule-generation caps are not enforced on the MCP path, so the homepage must not promise them.
+  assert.doesNotMatch(proCard, /captures a day|rule generations/);
 });
 
 test('enforcement promise distinguishes default denies from strict-mode blocks', () => {
