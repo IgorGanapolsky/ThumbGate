@@ -1428,8 +1428,7 @@ function captureFeedback(params, options = {}) {
   const effectiveCwd = params.cwd || options.cwd || process.cwd();
   const detectedProject = resolveProjectFromCwd(effectiveCwd);
   const normalizedScope = require('./memory-scope-readiness').normalizeScope(params);
-  if (!normalizedScope.projectId) normalizedScope.projectId = detectedProject;
-  if (!normalizedScope.entityId) normalizedScope.entityId = 'iganapolsky';
+  if (!normalizedScope.projectId && detectedProject) normalizedScope.projectId = detectedProject;
   if (!normalizedScope.processId) normalizedScope.processId = 'agent';
   if (!normalizedScope.sessionId) normalizedScope.sessionId = `session_${Date.now()}`;
 

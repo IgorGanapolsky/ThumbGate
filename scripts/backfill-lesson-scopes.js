@@ -41,23 +41,24 @@ function backfillMemoryLog(filePath, options = {}) {
       modified = true;
     }
 
-    // 2. Infer project if missing or generic
+    // 2. Infer project if missing or generic; unknown remains null (unscoped)
     const existingProject = record.scope?.projectId || record.metadata?.project;
     const inferredProject = inferProjectFromLesson(record);
     const resolvedProject = existingProject && existingProject !== 'default' && existingProject !== 'agent'
       ? existingProject
-      : (inferredProject || 'ThumbGate');
+      : (inferredProject || null);
 
-    projectCounts[resolvedProject] = (projectCounts[resolvedProject] || 0) + 1;
+    const countKey = resolvedProject || 'unscoped';
+    projectCounts[countKey] = (projectCounts[countKey] || 0) + 1;
 
     const existingScope = record.scope || {};
-    const scopeModified = !existingScope.projectId || existingScope.projectId !== resolvedProject;
+    const scopeModified = existingScope.projectId !== resolvedProject;
     if (scopeModified) {
       modified = true;
     }
 
     const updatedScope = {
-      entityId: existingScope.entityId || 'iganapolsky',
+      ...(existingScope.entityId ? { entityId: existingScope.entityId } : {}),
       projectId: resolvedProject,
       processId: existingScope.processId || 'agent',
       sessionId: existingScope.sessionId || `session_${record.timestamp ? new Date(record.timestamp).getTime() : Date.now()}`,
@@ -66,8 +67,7 @@ function backfillMemoryLog(filePath, options = {}) {
     const existingMetadata = record.metadata || {};
     const updatedMetadata = {
       ...existingMetadata,
-      project: resolvedProject,
-      repo: resolvedProject,
+      ...(resolvedProject ? { project: resolvedProject, repo: resolvedProject } : {}),
       tool: existingMetadata.tool || record.structuredRule?.metadata?.toolsUsed?.[0] || 'unknown',
       failureClass: existingMetadata.failureClass || (record.category === 'error' ? 'execution' : 'success'),
     };
@@ -113,7 +113,7 @@ function main() {
   process.stdout.write(JSON.stringify(result, null, 2) + '\n');
 }
 
-if (require.main === module) {
+if (process.argv[1] && path.resolve(process.argv[1]) === path.resolve(__filename)) {
   main();
 }
 

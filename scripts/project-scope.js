@@ -6,16 +6,16 @@
  *
  * Pattern: Dual-Model MoA & Agentic GraphRAG Playbook (Schema-Constrained Extraction).
  *
- * Solves:
- * 1. Scope pollution: Cross-project lesson leakage (e.g. StockService, Dayglass
- *    lessons appearing in a ThumbGate repository session).
- * 2. Transport transcript pollution: Junk lessons containing raw runner XML
- *    (<task-notification>, <tool-use-id>, <output-file>, <task-id>) cluttering
- *    PreToolUse additionalContext.
- * 3. Empty-over-noise: If nothing scoped scores above threshold, return empty.
+ * Principles:
+ * 1. Zero private client/project names or usernames in the public codebase.
+ * 2. Scope resolution derives strictly from cwd, package.json, and git remote origin.
+ * 3. Transport transcript tokens (<task-notification>, <tool-use-id>, etc.) are rejected.
+ * 4. Fast cached resolution: avoids spawning git subshells on every tool call (<0.1ms).
+ * 5. Unscoped/unknown lessons are excluded from PreToolUse injection unless explicitly global.
  */
 
 const fs = require('node:fs');
+const os = require('node:os');
 const path = require('node:path');
 const { execFileSync } = require('node:child_process');
 
@@ -30,42 +30,52 @@ const TRANSCRIPT_XML_TAGS = Object.freeze([
   '</output-file>',
 ]);
 
-const KNOWN_PROJECT_PATTERNS = Object.freeze([
-  {
-    name: 'StockService',
-    regex: /\b(?:stockservice|dist03-|opdx|swagger\s+dealer|single\s+sku|ado\s+rest|workitemrefs|ab#\d+)\b/i,
-  },
-  {
-    name: 'Dayglass',
-    regex: /\b(?:dayglass|screenpipe|foresight|dayglass-server|com\.iganapolsky\.dayglass)\b/i,
-  },
-  {
-    name: 'ECI-AI-Studio',
-    regex: /\b(?:jev\s+router|eci\s+ai\s+studio)\b/i,
-  },
-  {
-    name: 'Apple-Developer',
-    regex: /\b(?:apple\s+developer|setapp|provisioning\s+profile)\b/i,
-  },
-  {
-    name: 'Wisdom',
-    regex: /\b(?:wisdom\s+policy(?:-pack)?|wisdom\s+rules?)\b/i,
-  },
-  {
-    name: 'ThumbGate',
-    regex: /\b(?:thumbgate|thumbgate\.ai|gate-check|pretooluse|thumbgate-production)\b/i,
-  },
-  {
-    name: 'mac-yolo-safeguards',
-    regex: /\b(?:mac-yolo-safeguards|mac_yolo_safeguards)\b/i,
-  },
-  {
-    name: 'RealEstate',
-    regex: /\b(?:realestate|real_estate|tax-deed|fl-tax-deeds)\b/i,
-  },
-]);
-
 const GLOBAL_RULE_REGEX = /\b(?:never\s+kill\s+processes|bypass\s+branch\s+protection|git\s+worktree|fail-closed|branch\s+protection)\b/i;
+
+const CWD_CACHE = new Map();
+let diskCacheLoaded = false;
+let diskCache = {};
+
+function getDiskCachePath() {
+  return path.join(os.tmpdir(), 'thumbgate-cwd-scope-cache.json');
+}
+
+function loadDiskCache() {
+  if (diskCacheLoaded) return diskCache;
+  try {
+    const cacheFile = getDiskCachePath();
+    if (fs.existsSync(cacheFile)) {
+      diskCache = JSON.parse(fs.readFileSync(cacheFile, 'utf8')) || {};
+    }
+  } catch {
+    diskCache = {};
+  }
+  diskCacheLoaded = true;
+  return diskCache;
+}
+
+function saveDiskCache() {
+  try {
+    const cacheFile = getDiskCachePath();
+    fs.writeFileSync(cacheFile, JSON.stringify(diskCache), 'utf8');
+  } catch {
+    // Non-fatal cache write failure
+  }
+}
+
+function clearCwdCache() {
+  CWD_CACHE.clear();
+  diskCache = {};
+  diskCacheLoaded = false;
+  try {
+    const cacheFile = getDiskCachePath();
+    if (fs.existsSync(cacheFile)) {
+      fs.unlinkSync(cacheFile);
+    }
+  } catch {
+    // Non-fatal
+  }
+}
 
 function normalizeProjectName(name) {
   if (!name || typeof name !== 'string') return '';
@@ -111,46 +121,25 @@ function isTranscriptShaped(input) {
 }
 
 /**
- * Resolve the project name from a working directory or git root.
+ * Resolve the project name from a working directory or git root with caching.
  */
-function resolveProjectFromCwd(dir) {
+function resolveProjectFromCwd(dir, options = {}) {
   const targetDir = dir ? path.resolve(dir) : process.cwd();
 
-  // 1. Try git remote
-  try {
-    const gitOutput = execFileSync('git', ['-C', targetDir, 'config', '--get', 'remote.origin.url'], {
-      encoding: 'utf8',
-      stdio: ['ignore', 'pipe', 'ignore'],
-      timeout: 1500,
-    }).trim();
-    if (gitOutput) {
-      // Parse git@github.com:owner/Repo.git or https://github.com/owner/Repo.git
-      const match = gitOutput.match(/[/:](\w[-\w]+)\/(\w[-\w]+?)(?:\.git)?$/);
-      if (match && match[2]) {
-        return match[2];
-      }
-      const slashBase = path.basename(gitOutput.replace(/\.git$/, ''));
-      if (slashBase) return slashBase;
+  if (options.noCache !== true) {
+    if (CWD_CACHE.has(targetDir)) {
+      return CWD_CACHE.get(targetDir);
     }
-  } catch {
-    // Git probe failed, fall through
+    const dCache = loadDiskCache();
+    if (dCache[targetDir]) {
+      CWD_CACHE.set(targetDir, dCache[targetDir]);
+      return dCache[targetDir];
+    }
   }
 
-  // 2. Try git top-level directory name
-  try {
-    const topLevel = execFileSync('git', ['-C', targetDir, 'rev-parse', '--show-toplevel'], {
-      encoding: 'utf8',
-      stdio: ['ignore', 'pipe', 'ignore'],
-      timeout: 1500,
-    }).trim();
-    if (topLevel) {
-      return path.basename(topLevel);
-    }
-  } catch {
-    // Fall through
-  }
+  let resolved = null;
 
-  // 3. Try nearest package.json
+  // 1. Check nearest package.json first (pure fs, <0.1ms, zero subshell overhead)
   try {
     let curr = targetDir;
     while (curr && curr !== path.dirname(curr)) {
@@ -159,26 +148,78 @@ function resolveProjectFromCwd(dir) {
         const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf8'));
         if (pkg.name) {
           const pkgName = pkg.name.startsWith('@') ? pkg.name.split('/')[1] : pkg.name;
-          return pkgName;
+          resolved = pkgName;
+          break;
         }
       }
       curr = path.dirname(curr);
     }
   } catch {
-    // Fall through
+    // fall through
   }
 
-  return path.basename(targetDir);
+  // 2. Try git remote origin URL
+  if (!resolved) {
+    try {
+      const gitOutput = execFileSync('git', ['-C', targetDir, 'config', '--get', 'remote.origin.url'], {
+        encoding: 'utf8',
+        stdio: ['ignore', 'pipe', 'ignore'],
+        timeout: 1000,
+      }).trim();
+      if (gitOutput) {
+        const match = gitOutput.match(/[/:](\w[-\w]+)\/(\w[-\w]+?)(?:\.git)?$/);
+        if (match && match[2]) {
+          resolved = match[2];
+        } else {
+          const slashBase = path.basename(gitOutput.replace(/\.git$/, ''));
+          if (slashBase) resolved = slashBase;
+        }
+      }
+    } catch {
+      // Fall through
+    }
+  }
+
+  // 3. Try git top-level
+  if (!resolved) {
+    try {
+      const topLevel = execFileSync('git', ['-C', targetDir, 'rev-parse', '--show-toplevel'], {
+        encoding: 'utf8',
+        stdio: ['ignore', 'pipe', 'ignore'],
+        timeout: 1000,
+      }).trim();
+      if (topLevel) {
+        resolved = path.basename(topLevel);
+      }
+    } catch {
+      // Fall through
+    }
+  }
+
+  if (!resolved) {
+    resolved = path.basename(targetDir);
+  }
+
+  const normalized = normalizeProjectName(resolved) || resolved;
+
+  if (options.noCache !== true) {
+    CWD_CACHE.set(targetDir, normalized);
+    diskCache[targetDir] = normalized;
+    saveDiskCache();
+  }
+
+  return normalized;
 }
 
 /**
- * Infer the project associated with a lesson from its declared scope or text.
+ * Infer the project associated with a lesson from its declared scope, metadata, or tags.
+ * Unknown lessons return null (unscoped).
  */
 function inferProjectFromLesson(lesson) {
   if (!lesson || typeof lesson !== 'object') return null;
 
   // 1. Explicit scope or metadata
-  const declaredProject = lesson.scope?.projectId || lesson.metadata?.project || lesson.metadata?.repoId;
+  const declaredProject = lesson.scope?.projectId || lesson.metadata?.project || lesson.metadata?.repo || lesson.metadata?.repoId;
   if (declaredProject && typeof declaredProject === 'string' && declaredProject !== 'default' && declaredProject !== 'agent') {
     return declaredProject;
   }
@@ -188,13 +229,13 @@ function inferProjectFromLesson(lesson) {
     lesson.shared === true ||
     lesson.scope?.shared === true ||
     lesson.scope === 'global' ||
+    lesson.scope?.projectId === 'global' ||
     lesson.metadata?.scope === 'global' ||
     (Array.isArray(lesson.tags) && lesson.tags.includes('global'))
   ) {
     return 'global';
   }
 
-  // 3. Inspect text content
   const texts = [
     lesson.title,
     lesson.content,
@@ -210,9 +251,14 @@ function inferProjectFromLesson(lesson) {
     return 'global';
   }
 
-  for (const { name, regex } of KNOWN_PROJECT_PATTERNS) {
-    if (regex.test(texts)) {
-      return name;
+  // 3. Check tags for explicit repo or project annotations
+  if (Array.isArray(lesson.tags)) {
+    for (const tag of lesson.tags) {
+      const lower = String(tag).toLowerCase();
+      if (lower.startsWith('project:') || lower.startsWith('repo:')) {
+        const parts = lower.split(':');
+        if (parts[1]) return parts[1];
+      }
     }
   }
 
@@ -221,6 +267,7 @@ function inferProjectFromLesson(lesson) {
 
 /**
  * Determine if a lesson is relevant for the target project.
+ * Unscoped/unknown lessons are excluded unless explicitly global.
  */
 function isLessonRelevantForProject(lesson, targetProject) {
   if (!lesson) return false;
@@ -242,29 +289,18 @@ function isLessonRelevantForProject(lesson, targetProject) {
     return true;
   }
 
+  // If project is identified, compare
   if (inferred) {
     return normalizeProjectName(inferred) === normalizedTarget;
   }
 
-  // If no specific project was inferred, check if tags explicitly associate with another project
-  if (Array.isArray(lesson.tags)) {
-    for (const tag of lesson.tags) {
-      const lower = String(tag).toLowerCase();
-      if (lower.startsWith('project:') || lower.startsWith('repo:')) {
-        const tagProj = lower.split(':')[1];
-        if (tagProj && normalizeProjectName(tagProj) !== normalizedTarget) {
-          return false;
-        }
-      }
-    }
-  }
-
-  // Truly generic lesson with no project conflicts is allowed
-  return true;
+  // Unscoped/unknown lessons are excluded from project-specific injection
+  return false;
 }
 
 /**
  * Backfill scope and metadata on memory records.
+ * Unknown lessons are left unscoped (null) instead of guessing.
  */
 function backfillLessonScopes(memories = []) {
   return memories.map((mem) => {
@@ -272,29 +308,36 @@ function backfillLessonScopes(memories = []) {
     const inferred = inferProjectFromLesson(mem);
     const existingScope = mem.scope || {};
     const updatedScope = {
-      entityId: existingScope.entityId || 'iganapolsky',
-      projectId: existingScope.projectId || inferred || 'ThumbGate',
+      ...(existingScope.entityId ? { entityId: existingScope.entityId } : {}),
+      projectId: existingScope.projectId || inferred || null,
       processId: existingScope.processId || 'agent',
-      sessionId: existingScope.sessionId || `session_${Date.now()}`,
+      ...(existingScope.sessionId ? { sessionId: existingScope.sessionId } : {}),
+    };
+
+    const existingMeta = mem.metadata || {};
+    const resolvedProject = existingMeta.project || updatedScope.projectId || null;
+    const updatedMetadata = {
+      ...existingMeta,
+      ...(resolvedProject ? { project: resolvedProject, repo: resolvedProject } : {}),
     };
 
     return {
       ...mem,
       scope: updatedScope,
-      metadata: {
-        ...(mem.metadata || {}),
-        project: mem.metadata?.project || inferred || updatedScope.projectId,
-      },
+      metadata: updatedMetadata,
     };
   });
 }
 
 module.exports = {
   TRANSCRIPT_XML_TAGS,
+  GLOBAL_RULE_REGEX,
   normalizeProjectName,
   isTranscriptShaped,
   resolveProjectFromCwd,
   inferProjectFromLesson,
   isLessonRelevantForProject,
   backfillLessonScopes,
+  clearCwdCache,
+  getDiskCachePath,
 };
