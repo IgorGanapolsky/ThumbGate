@@ -20,6 +20,19 @@ const {
   getSecurityQuestionnaire,
   renderSecurityOverviewHtml,
 } = require('../security-questionnaire');
+const {
+  rememberSsoState,
+  consumeSsoState,
+  buildSsoCallbackUrl,
+  createSsoState,
+  buildGoogleAuthorizeUrl,
+  buildAppleAuthorizeUrl,
+  providerConfigured,
+  verifyRs256Jwt,
+  verifiedEmailFromPayload,
+  buildAppleClientSecret,
+  exchangeAuthorizationCode,
+} = require('../sso-oauth');
 
 const POSTHOG_API_PATHS = new Set(['/capture', '/batch', '/decide', '/e', '/engage']);
 const POSTHOG_INGEST_HOST = 'us.i.posthog.com';
@@ -3781,8 +3794,8 @@ function normalizePublicMarketingHtml(html, runtimeConfig, requestHost) {
 
 function getConfiguredSsoProviders(env = process.env) {
   return {
-    google: Boolean(String((env && env.GOOGLE_CLIENT_ID) || '').trim()),
-    apple: Boolean(String((env && env.APPLE_CLIENT_ID) || '').trim()),
+    google: providerConfigured(env, 'google'),
+    apple: providerConfigured(env, 'apple'),
   };
 }
 
@@ -5907,7 +5920,7 @@ function getPaidAuthSessionEntry(sessionToken, expectedApiKey = getExpectedApiKe
   const persisted = readPersistedAuthSessions(nowMs);
   const record = persisted[hashSessionToken(sessionToken)];
   if (!record || record.expiresAt <= nowMs) return null;
-  if (record.subjectType === 'sso_free') {
+  if (record.subjectType === 'sso_free' || record.subjectType === 'sso') {
     const hydratedFree = { ...record, apiKey: '' };
     paidAuthSessions.set(sessionToken, hydratedFree);
     return hydratedFree;
@@ -6290,6 +6303,183 @@ function resolveDocumentImportFilePath(inputPath, options = {}) {
     throw createHttpError(400, `Path does not exist: ${resolved}`);
   }
   return resolved;
+}
+
+function issueBrowserSsoSession(req, email, provider, expectedApiKey, expectedOperatorKey) {
+  const nowMs = Date.now();
+  prunePaidAuthSessions(nowMs);
+  const existingKey = resolvePaidAuthSessionKey(req);
+  const tier = resolvePaidSessionTier(existingKey, expectedApiKey, expectedOperatorKey);
+  const sessionToken = crypto.randomBytes(32).toString('hex');
+  const entry = {
+    apiKey: tier ? existingKey : '',
+    subjectType: tier ? 'paid_key' : 'sso',
+    ssoProvider: provider,
+    ssoEmail: email,
+    createdAt: nowMs,
+    expiresAt: nowMs + PAID_AUTH_SESSION_TTL_SECONDS * 1000,
+  };
+  if (tier) {
+    paidAuthSessions.set(sessionToken, entry);
+  } else {
+    persistPaidAuthSession(sessionToken, entry, nowMs);
+  }
+  return serializeCookie(PAID_AUTH_COOKIE_NAME, sessionToken, {
+    maxAge: PAID_AUTH_SESSION_TTL_SECONDS,
+    httpOnly: true,
+    sameSite: 'Lax',
+    secure: true,
+  });
+}
+
+function redirectSsoFailure(res, appOrigin, reason) {
+  const dest = new URL('/dashboard', appOrigin);
+  dest.searchParams.set('auth_error', reason);
+  res.writeHead(302, {
+    Location: dest.toString(),
+    'Cache-Control': 'no-store',
+    'X-Content-Type-Options': 'nosniff',
+  });
+  res.end();
+}
+
+async function readGoogleJwks(fetchImpl) {
+  const response = await fetchImpl('https://www.googleapis.com/oauth2/v3/certs');
+  if (!response.ok) return null;
+  return response.json().catch(() => null);
+}
+
+async function readAppleJwks(fetchImpl) {
+  const response = await fetchImpl('https://appleid.apple.com/auth/keys');
+  if (!response.ok) return null;
+  return response.json().catch(() => null);
+}
+
+async function handleCloudSsoCallback(req, res, parsed, hostedConfig, expectedApiKey, expectedOperatorKey) {
+  const appOrigin = hostedConfig.appOrigin || 'https://thumbgate.ai';
+  let params = parsed.searchParams;
+  if (req.method === 'POST') {
+    let form = {};
+    try {
+      form = await parseFormBody(req, 64 * 1024);
+    } catch {
+      redirectSsoFailure(res, appOrigin, 'sso_state_invalid');
+      return;
+    }
+    params = new URLSearchParams();
+    for (const [key, value] of Object.entries(form)) params.set(key, String(value || ''));
+  }
+  if (params.get('error')) {
+    consumeSsoState(params.get('state'));
+    redirectSsoFailure(res, appOrigin, 'sso_denied');
+    return;
+  }
+  const pending = consumeSsoState(params.get('state'));
+  const code = String(params.get('code') || '').trim();
+  if (!pending || !code) {
+    redirectSsoFailure(res, appOrigin, 'sso_state_invalid');
+    return;
+  }
+  const fetchImpl = googleOAuthFetch;
+  let idToken = '';
+  let jwks = null;
+  let issuers = [];
+  let audience = '';
+  try {
+    if (pending.provider === 'google' && providerConfigured(process.env, 'google')) {
+      audience = String(process.env.GOOGLE_CLIENT_ID).trim();
+      issuers = ['https://accounts.google.com', 'accounts.google.com'];
+      const token = await exchangeAuthorizationCode({
+        tokenUrl: 'https://oauth2.googleapis.com/token',
+        fetchImpl,
+        body: {
+          code,
+          client_id: audience,
+          client_secret: String(process.env.GOOGLE_CLIENT_SECRET).trim(),
+          redirect_uri: pending.redirectUri,
+          grant_type: 'authorization_code',
+        },
+      });
+      idToken = token && token.id_token;
+      jwks = idToken ? await readGoogleJwks(fetchImpl) : null;
+    } else if (pending.provider === 'apple' && providerConfigured(process.env, 'apple')) {
+      audience = String(process.env.APPLE_CLIENT_ID).trim();
+      issuers = ['https://appleid.apple.com'];
+      let clientSecret = '';
+      try {
+        clientSecret = buildAppleClientSecret({
+          teamId: String(process.env.APPLE_TEAM_ID).trim(),
+          clientId: audience,
+          keyId: String(process.env.APPLE_KEY_ID).trim(),
+          privateKey: String(process.env.APPLE_PRIVATE_KEY).replace(/\\n/g, '\n'),
+        });
+      } catch {
+        redirectSsoFailure(res, appOrigin, 'sso_provider_not_configured');
+        return;
+      }
+      const token = await exchangeAuthorizationCode({
+        tokenUrl: 'https://appleid.apple.com/auth/token',
+        fetchImpl,
+        body: {
+          code,
+          client_id: audience,
+          client_secret: clientSecret,
+          redirect_uri: pending.redirectUri,
+          grant_type: 'authorization_code',
+        },
+      });
+      idToken = token && token.id_token;
+      jwks = idToken ? await readAppleJwks(fetchImpl) : null;
+    } else {
+      redirectSsoFailure(res, appOrigin, 'sso_provider_not_configured');
+      return;
+    }
+    if (!idToken || !jwks) {
+      redirectSsoFailure(res, appOrigin, 'sso_provider_not_configured');
+      return;
+    }
+  } catch {
+    redirectSsoFailure(res, appOrigin, 'sso_provider_not_configured');
+    return;
+  }
+  const payload = verifyRs256Jwt(idToken, { jwks, audience, issuers });
+  const email = verifiedEmailFromPayload(payload);
+  if (!email) {
+    redirectSsoFailure(res, appOrigin, 'sso_email_unverified');
+    return;
+  }
+  let entitlement = { entitled: false, apiKey: null, customerId: null };
+  try {
+    entitlement = await resolvePaidEntitlementForEmail(email);
+  } catch {
+    entitlement = { entitled: false, apiKey: null, customerId: null };
+  }
+  const hasPaidKey = Boolean(entitlement && entitlement.entitled && entitlement.apiKey);
+  const nowMs = Date.now();
+  const sessionToken = crypto.randomBytes(32).toString('hex');
+  persistPaidAuthSession(sessionToken, {
+    apiKey: hasPaidKey ? entitlement.apiKey : '',
+    subjectType: hasPaidKey ? 'customer' : 'sso_free',
+    customerId: hasPaidKey ? entitlement.customerId : null,
+    ssoProvider: pending.provider,
+    ssoEmail: email,
+    createdAt: nowMs,
+    expiresAt: nowMs + PAID_AUTH_SESSION_TTL_SECONDS * 1000,
+  }, nowMs);
+  const setCookie = serializeCookie(PAID_AUTH_COOKIE_NAME, sessionToken, {
+    maxAge: PAID_AUTH_SESSION_TTL_SECONDS,
+    httpOnly: true,
+    sameSite: 'Lax',
+    secure: true,
+  });
+  const dest = new URL('/dashboard', appOrigin);
+  res.writeHead(302, {
+    Location: dest.toString(),
+    'Cache-Control': 'no-store',
+    'Set-Cookie': setCookie,
+    'X-Content-Type-Options': 'nosniff',
+  });
+  res.end();
 }
 
 function createApiServer() {
@@ -7052,12 +7242,15 @@ async function addContext(){
       const rawProvider = String(parsed.searchParams.get('provider') || 'google').trim().toLowerCase();
       const provider = ['google', 'apple'].includes(rawProvider) ? rawProvider : 'invalid';
       const appOrigin = hostedConfig.appOrigin || 'https://thumbgate.ai';
-      const callbackUrl = `${appOrigin}/v1/cloud/sso/callback?provider=${encodeURIComponent(provider)}`;
-      const googleClientId = String(process.env.GOOGLE_CLIENT_ID || '').trim();
-      const appleClientId = String(process.env.APPLE_CLIENT_ID || '').trim();
-      if (provider === 'google' && googleClientId) {
-        const stateNonce = issueSsoPendingState('google', callbackUrl);
-        const googleAuthUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${encodeURIComponent(googleClientId)}&redirect_uri=${encodeURIComponent(callbackUrl)}&response_type=code&scope=openid%20email%20profile&state=${encodeURIComponent(stateNonce)}`;
+      const callbackUrl = buildSsoCallbackUrl(appOrigin);
+      const stateNonce = createSsoState(provider);
+      if (provider === 'google' && providerConfigured(process.env, 'google')) {
+        const googleAuthUrl = buildGoogleAuthorizeUrl({
+          clientId: String(process.env.GOOGLE_CLIENT_ID).trim(),
+          redirectUri: callbackUrl,
+          state: stateNonce,
+        });
+        rememberSsoState(stateNonce, { provider: 'google', redirectUri: callbackUrl });
         if (parsed.searchParams.get('format') === 'json') {
           sendJson(res, 200, { ok: true, mode: 'oauth_redirect', provider, redirectUrl: googleAuthUrl }, { 'Cache-Control': 'no-store' });
           return;
@@ -7066,9 +7259,13 @@ async function addContext(){
         res.end();
         return;
       }
-      if (provider === 'apple' && appleClientId) {
-        const stateNonce = issueSsoPendingState('apple', callbackUrl);
-        const appleAuthUrl = `https://appleid.apple.com/auth/authorize?client_id=${encodeURIComponent(appleClientId)}&redirect_uri=${encodeURIComponent(callbackUrl)}&response_type=code&scope=name%20email&response_mode=form_post&state=${encodeURIComponent(stateNonce)}`;
+      if (provider === 'apple' && providerConfigured(process.env, 'apple')) {
+        const appleAuthUrl = buildAppleAuthorizeUrl({
+          clientId: String(process.env.APPLE_CLIENT_ID).trim(),
+          redirectUri: callbackUrl,
+          state: stateNonce,
+        });
+        rememberSsoState(stateNonce, { provider: 'apple', redirectUri: callbackUrl });
         if (parsed.searchParams.get('format') === 'json') {
           sendJson(res, 200, { ok: true, mode: 'oauth_redirect', provider, redirectUrl: appleAuthUrl }, { 'Cache-Control': 'no-store' });
           return;
@@ -7090,91 +7287,8 @@ async function addContext(){
       return;
     }
 
-    if (isGetLikeRequest && pathname === '/v1/cloud/sso/callback') {
-      try {
-        const rawProvider = String(parsed.searchParams.get('provider') || 'google').trim().toLowerCase();
-        if (rawProvider !== 'google') {
-          redirectSsoError(res, 'unsupported_provider');
-          return;
-        }
-        if (parsed.searchParams.get('error')) {
-          consumeSsoPendingState(parsed.searchParams.get('state'), 'google');
-          redirectSsoError(res, 'oauth_denied');
-          return;
-        }
-        const code = String(parsed.searchParams.get('code') || '').trim();
-        if (!code) {
-          consumeSsoPendingState(parsed.searchParams.get('state'), 'google');
-          redirectSsoError(res, 'missing_code');
-          return;
-        }
-        const stateEntry = consumeSsoPendingState(parsed.searchParams.get('state'), 'google');
-        if (!stateEntry) {
-          redirectSsoError(res, 'invalid_state');
-          return;
-        }
-        const googleClientId = String(process.env.GOOGLE_CLIENT_ID || '').trim();
-        const googleClientSecret = String(process.env.GOOGLE_CLIENT_SECRET || '').trim();
-        if (!googleClientId || !googleClientSecret) {
-          redirectSsoError(res, 'sso_not_configured');
-          return;
-        }
-        const tokenParams = new URLSearchParams({
-          code,
-          client_id: googleClientId,
-          client_secret: googleClientSecret,
-          redirect_uri: stateEntry.redirectUri,
-          grant_type: 'authorization_code',
-        });
-        const tokenRes = await googleOAuthFetch(GOOGLE_OAUTH_TOKEN_URL, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/x-www-form-urlencoded',
-            Accept: 'application/json',
-          },
-          body: tokenParams.toString(),
-          signal: AbortSignal.timeout(8000),
-        });
-        if (!tokenRes || !tokenRes.ok) {
-          redirectSsoError(res, 'token_exchange_failed');
-          return;
-        }
-        const tokenBody = await tokenRes.json();
-        const idToken = String((tokenBody && tokenBody.id_token) || '').trim();
-        if (!idToken) {
-          redirectSsoError(res, 'missing_id_token');
-          return;
-        }
-        const claims = await verifyGoogleIdToken(idToken, googleClientId);
-        const entitlement = await resolvePaidEntitlementForEmail(claims.email);
-        const hasPaidKey = Boolean(entitlement && entitlement.entitled && entitlement.apiKey);
-        const nowMs = Date.now();
-        const sessionToken = crypto.randomBytes(32).toString('hex');
-        persistPaidAuthSession(sessionToken, {
-          apiKey: hasPaidKey ? entitlement.apiKey : '',
-          subjectType: hasPaidKey ? 'customer' : 'sso_free',
-          customerId: hasPaidKey ? entitlement.customerId : null,
-          ssoProvider: 'google',
-          ssoEmail: claims.email,
-          createdAt: nowMs,
-          expiresAt: nowMs + PAID_AUTH_SESSION_TTL_SECONDS * 1000,
-        }, nowMs);
-        const setCookie = serializeCookie(PAID_AUTH_COOKIE_NAME, sessionToken, {
-          maxAge: PAID_AUTH_SESSION_TTL_SECONDS,
-          httpOnly: true,
-          sameSite: 'Lax',
-          secure: true,
-        });
-        res.writeHead(302, {
-          'X-Content-Type-Options': 'nosniff',
-          'Cache-Control': 'no-store',
-          'Set-Cookie': setCookie,
-          Location: '/dashboard',
-        });
-        res.end();
-      } catch (err) {
-        redirectSsoError(res, err && err.ssoReason ? err.ssoReason : 'callback_failed');
-      }
+    if ((req.method === 'GET' || req.method === 'POST') && pathname === '/v1/cloud/sso/callback') {
+      await handleCloudSsoCallback(req, res, parsed, hostedConfig, expectedApiKey, expectedOperatorKey);
       return;
     }
 

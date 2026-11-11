@@ -93,9 +93,13 @@ test.describe('/dashboard real-server login, redeploy persistence, Google SSO, a
       await page.route(/\/v1\/cloud\/sso\/authorize\b/, async (route) => {
         const upstream = await route.fetch({ maxRedirects: 0 });
         expect(upstream.status()).toBe(302);
-        const loc = upstream.headers().location || '';
-        expect(loc).toMatch(/^https:\/\/accounts\.google\.com\/o\/oauth2\/v2\/auth\?/);
-        await route.fulfill({ status: 302, headers: { Location: `${origin}/v1/cloud/sso/callback?provider=google&code=pw_google_code_1&state=${encodeURIComponent(new URL(loc).searchParams.get('state'))}` } });
+        const googleAuthLocation = upstream.headers().location || '';
+        expect(googleAuthLocation).toMatch(/^https:\/\/accounts\.google\.com\/o\/oauth2\/v2\/auth\?/);
+        const state = new URL(googleAuthLocation).searchParams.get('state');
+        const redirectUri = new URL(googleAuthLocation).searchParams.get('redirect_uri') || '';
+        expect(new URL(redirectUri).pathname).toBe('/v1/cloud/sso/callback');
+        expect(new URL(redirectUri).search).toBe('');
+        await route.fulfill({ status: 302, headers: { Location: `${origin}/v1/cloud/sso/callback?code=pw_google_code_1&state=${encodeURIComponent(state)}` } });
       });
 
       await page.goto(`${origin}/dashboard?noauto`);
@@ -111,6 +115,7 @@ test.describe('/dashboard real-server login, redeploy persistence, Google SSO, a
       await expect(page.locator('#getProBtn')).toHaveText('Upgrade to Pro');
       await expect(page.locator('#getProBtn')).toHaveAttribute('href', 'https://thumbgate.ai/pricing');
       await expect(page.locator('#dashboardContent')).toBeHidden();
+      await expect(page.locator('#ssoGoogleBtn')).toBeHidden();
 
       await Promise.all([
         page.waitForURL(/\/dashboard\?noauto=1$/),
@@ -118,7 +123,6 @@ test.describe('/dashboard real-server login, redeploy persistence, Google SSO, a
       ]);
       await expect(page.locator('#authStatus')).toHaveText('Disconnected');
 
-      // Part 2: Subscribed Google user gets Pro, survives redeploy, and logs out cleanly
       provisionApiKey('cus_pw_paid_1', {
         customerEmail: 'subscriber@thumbgate.ai',
         entitlementKind: 'subscription',
@@ -135,7 +139,6 @@ test.describe('/dashboard real-server login, redeploy persistence, Google SSO, a
       await expect(page.locator('#authTitle')).toHaveText('Signed in (subscriber@thumbgate.ai)');
       await expect(page.locator('#dashboardContent')).toBeVisible();
 
-      // Reload across simulated redeploy: still signed in with Pro
       serverTestHooks.clearInMemoryAuthSessionsForTests();
       await page.reload();
       await expect(page.locator('#authStatus')).toHaveText('✓ Connected');

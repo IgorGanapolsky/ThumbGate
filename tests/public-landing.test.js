@@ -99,6 +99,9 @@ test('homepage navbar exposes paid-user Log in drawer and exchanges keys for an 
     GOOGLE_CLIENT_ID: process.env.GOOGLE_CLIENT_ID,
     GOOGLE_CLIENT_SECRET: process.env.GOOGLE_CLIENT_SECRET,
     APPLE_CLIENT_ID: process.env.APPLE_CLIENT_ID,
+    APPLE_TEAM_ID: process.env.APPLE_TEAM_ID,
+    APPLE_KEY_ID: process.env.APPLE_KEY_ID,
+    APPLE_PRIVATE_KEY: process.env.APPLE_PRIVATE_KEY,
   };
   process.env.THUMBGATE_API_KEY = 'tg_admin_test_secret_999';
   process.env.THUMBGATE_OPERATOR_KEY = 'tg_op_test_secret_888';
@@ -107,6 +110,9 @@ test('homepage navbar exposes paid-user Log in drawer and exchanges keys for an 
   delete process.env.GOOGLE_CLIENT_ID;
   delete process.env.GOOGLE_CLIENT_SECRET;
   delete process.env.APPLE_CLIENT_ID;
+  delete process.env.APPLE_TEAM_ID;
+  delete process.env.APPLE_KEY_ID;
+  delete process.env.APPLE_PRIVATE_KEY;
 
   const crypto = require('node:crypto');
   const { startServer, __test__: serverTestHooks } = require('../src/api/server');
@@ -123,7 +129,7 @@ test('homepage navbar exposes paid-user Log in drawer and exchanges keys for an 
     const unconfiguredDashRes = await fetch(`${origin}/dashboard`);
     assert.equal(unconfiguredDashRes.status, 200);
     const unconfiguredDashHtml = await unconfiguredDashRes.text();
-    assert.doesNotMatch(unconfiguredDashHtml, /ssoGoogleBtn|ssoAppleBtn/);
+    assert.doesNotMatch(unconfiguredDashHtml, /id="ssoGoogleBtn"|id="ssoAppleBtn"/);
     assert.match(unconfiguredDashHtml, /id="apiKey"/);
     assert.match(unconfiguredDashHtml, /https:\/\/thumbgate\.ai\/pricing/);
     const dashAuthLinks = [...unconfiguredDashHtml.matchAll(/href="(\/[^"]*(?:auth|sso|oauth|login)[^"]*)"/gi)].map((m) => m[1]);
@@ -147,6 +153,7 @@ test('homepage navbar exposes paid-user Log in drawer and exchanges keys for an 
 
     // Configured Google + Apple OAuth providers: buttons shown only for configured IDs and redirect to real IdPs
     process.env.GOOGLE_CLIENT_ID = 'google-client-test.apps.googleusercontent.com';
+    process.env.GOOGLE_CLIENT_SECRET = 'google-client-test-secret';
     const googleOnlyDashHtml = await (await fetch(`${origin}/dashboard`)).text();
     assert.match(googleOnlyDashHtml, /id="ssoGoogleBtn"/);
     assert.doesNotMatch(googleOnlyDashHtml, /id="ssoAppleBtn"/);
@@ -155,12 +162,19 @@ test('homepage navbar exposes paid-user Log in drawer and exchanges keys for an 
     assert.doesNotMatch(googleOnlyHomeHtml, /id="appleSsoLoginLink"/);
     const google302 = await fetch(`${origin}/v1/cloud/sso/authorize?provider=google`, { redirect: 'manual' });
     assert.equal(google302.status, 302);
-    assert.match(google302.headers.get('location') || '', /^https:\/\/accounts\.google\.com\/o\/oauth2\/v2\/auth\?/);
+    const googleLoc = google302.headers.get('location') || '';
+    assert.match(googleLoc, /^https:\/\/accounts\.google\.com\/o\/oauth2\/v2\/auth\?/);
+    const googleRedirect = new URL(googleLoc).searchParams.get('redirect_uri');
+    assert.equal(new URL(googleRedirect).pathname, '/v1/cloud/sso/callback');
+    assert.equal(new URL(googleRedirect).search, '');
     const googleJson = await (await fetch(`${origin}/v1/cloud/sso/authorize?provider=google&format=json`)).json();
     assert.equal(googleJson.mode, 'oauth_redirect');
     assert.equal((await fetch(`${origin}/v1/cloud/sso/authorize?provider=apple`, { redirect: 'manual' })).status, 404);
 
     process.env.APPLE_CLIENT_ID = 'ai.thumbgate.web.test';
+    process.env.APPLE_TEAM_ID = 'TEAMID1234';
+    process.env.APPLE_KEY_ID = 'KEYID12345';
+    process.env.APPLE_PRIVATE_KEY = 'test-apple-key';
     const bothDashHtml = await (await fetch(`${origin}/dashboard`)).text();
     assert.match(bothDashHtml, /id="ssoGoogleBtn"/);
     assert.match(bothDashHtml, /id="ssoAppleBtn"/);
@@ -178,7 +192,11 @@ test('homepage navbar exposes paid-user Log in drawer and exchanges keys for an 
     const appleJson = await (await fetch(`${origin}/v1/cloud/sso/authorize?provider=apple&format=json`)).json();
     assert.equal(appleJson.mode, 'oauth_redirect');
     delete process.env.GOOGLE_CLIENT_ID;
+    delete process.env.GOOGLE_CLIENT_SECRET;
     delete process.env.APPLE_CLIENT_ID;
+    delete process.env.APPLE_TEAM_ID;
+    delete process.env.APPLE_KEY_ID;
+    delete process.env.APPLE_PRIVATE_KEY;
 
     // Google OIDC /v1/cloud/sso/callback end-to-end verification (bad state, missing code, token failure, wrong audience, expired/unverified, and happy path)
     const { publicKey, privateKey } = crypto.generateKeyPairSync('rsa', { modulusLength: 2048 });
@@ -196,24 +214,28 @@ test('homepage navbar exposes paid-user Log in drawer and exchanges keys for an 
       return new URL(authRes.headers.get('location')).searchParams.get('state');
     };
 
-    // 1. Missing code -> 302 /dashboard?sso_error=missing_code (never 500)
-    const missingCodeRes = await fetch(`${origin}/v1/cloud/sso/callback?provider=google`, { redirect: 'manual' });
+    const authErrorOf = (response) => new URL(response.headers.get('location')).searchParams.get('auth_error');
+
+    // 1. Missing code -> 302 auth_error=sso_state_invalid (never a dashboard loop, never a cookie)
+    const missingCodeRes = await fetch(`${origin}/v1/cloud/sso/callback`, { redirect: 'manual' });
     assert.equal(missingCodeRes.status, 302);
-    assert.equal(missingCodeRes.headers.get('location'), '/dashboard?sso_error=missing_code');
+    assert.equal(authErrorOf(missingCodeRes), 'sso_state_invalid');
+    assert.equal(new URL(missingCodeRes.headers.get('location')).searchParams.has('sso'), false);
     assert.equal(missingCodeRes.headers.get('set-cookie'), null);
 
-    // 2. Bad state & upstream OAuth denial -> 302 /dashboard?sso_error=invalid_state / oauth_denied
-    const badStateRes = await fetch(`${origin}/v1/cloud/sso/callback?provider=google&code=auth_code_1&state=st_bad`, { redirect: 'manual' });
+    // 2. Bad state and provider denial
+    const badStateRes = await fetch(`${origin}/v1/cloud/sso/callback?code=auth_code_1&state=st_bad`, { redirect: 'manual' });
     assert.equal(badStateRes.status, 302);
-    assert.equal(badStateRes.headers.get('location'), '/dashboard?sso_error=invalid_state');
+    assert.equal(authErrorOf(badStateRes), 'sso_state_invalid');
     const deniedState = await issueFreshState();
-    const deniedRes = await fetch(`${origin}/v1/cloud/sso/callback?provider=google&error=access_denied&state=${deniedState}`, { redirect: 'manual' });
+    const deniedRes = await fetch(`${origin}/v1/cloud/sso/callback?error=access_denied&state=${deniedState}`, { redirect: 'manual' });
     assert.equal(deniedRes.status, 302);
-    assert.equal(deniedRes.headers.get('location'), '/dashboard?sso_error=oauth_denied');
-    const unsupportedCb = await fetch(`${origin}/v1/cloud/sso/callback?provider=apple&code=x&state=y`, { redirect: 'manual' });
-    assert.equal(unsupportedCb.headers.get('location'), '/dashboard?sso_error=unsupported_provider');
+    assert.equal(authErrorOf(deniedRes), 'sso_denied');
+    assert.equal(deniedRes.headers.get('set-cookie'), null);
+    const unsupportedCb = await fetch(`${origin}/v1/cloud/sso/callback?code=x&state=y`, { redirect: 'manual' });
+    assert.equal(authErrorOf(unsupportedCb), 'sso_state_invalid');
 
-    // 3. Token exchange failure -> 302 /dashboard?sso_error=token_exchange_failed
+    // 3. Token exchange failure
     serverTestHooks.setGoogleOAuthFetchForTests(async (url) => {
       if (String(url).includes('oauth2.googleapis.com/token')) {
         return { ok: false, status: 400, json: async () => ({ error: 'invalid_grant' }) };
@@ -221,14 +243,14 @@ test('homepage navbar exposes paid-user Log in drawer and exchanges keys for an 
       return { ok: true, status: 200, json: async () => ({ keys: [publicJwk] }) };
     });
     const failState = await issueFreshState();
-    const tokenFailRes = await fetch(`${origin}/v1/cloud/sso/callback?provider=google&code=bad_code&state=${failState}`, { redirect: 'manual' });
+    const tokenFailRes = await fetch(`${origin}/v1/cloud/sso/callback?code=bad_code&state=${failState}`, { redirect: 'manual' });
     assert.equal(tokenFailRes.status, 302);
-    assert.equal(tokenFailRes.headers.get('location'), '/dashboard?sso_error=token_exchange_failed');
-    // Replaying consumed state must fail closed
-    const replayFailRes = await fetch(`${origin}/v1/cloud/sso/callback?provider=google&code=bad_code&state=${failState}`, { redirect: 'manual' });
-    assert.equal(replayFailRes.headers.get('location'), '/dashboard?sso_error=invalid_state');
+    assert.equal(authErrorOf(tokenFailRes), 'sso_provider_not_configured');
+    assert.equal(tokenFailRes.headers.get('set-cookie'), null);
+    const replayFailRes = await fetch(`${origin}/v1/cloud/sso/callback?code=bad_code&state=${failState}`, { redirect: 'manual' });
+    assert.equal(authErrorOf(replayFailRes), 'sso_state_invalid');
 
-    // 4. Wrong audience, invalid issuer, expired token, and unverified email -> 302 /dashboard?sso_error=<reason>
+    // 4. Wrong audience, invalid issuer, expired token, and unverified email set no cookie
     const nowSec = Math.floor(Date.now() / 1000);
     let capturedTokenPostBody = '';
     const mockGoogleJwt = (jwt) => serverTestHooks.setGoogleOAuthFetchForTests(async (url, opts) => (
@@ -237,16 +259,16 @@ test('homepage navbar exposes paid-user Log in drawer and exchanges keys for an 
         : { ok: true, status: 200, json: async () => ({ keys: [publicJwk] }) }
     ));
     const invalidCases = [
-      [{ iss: 'https://accounts.google.com', aud: 'other-app.apps.googleusercontent.com', exp: nowSec + 300, email: 'user@example.com', email_verified: true, sub: 'sub_1' }, 'wrong_audience'],
-      [{ iss: 'https://evil.example.com', aud: 'google-client-test.apps.googleusercontent.com', exp: nowSec + 300, email: 'user@example.com', email_verified: true, sub: 'sub_1' }, 'invalid_issuer'],
-      [{ iss: 'accounts.google.com', aud: 'google-client-test.apps.googleusercontent.com', exp: nowSec - 10, email: 'user@example.com', email_verified: true, sub: 'sub_1' }, 'expired_token'],
-      [{ iss: 'accounts.google.com', aud: 'google-client-test.apps.googleusercontent.com', exp: nowSec + 300, email: 'user@example.com', email_verified: false, sub: 'sub_1' }, 'unverified_email'],
+      { iss: 'https://accounts.google.com', aud: 'other-app.apps.googleusercontent.com', exp: nowSec + 300, email: 'user@example.com', email_verified: true, sub: 'sub_1' },
+      { iss: 'https://evil.example.com', aud: 'google-client-test.apps.googleusercontent.com', exp: nowSec + 300, email: 'user@example.com', email_verified: true, sub: 'sub_1' },
+      { iss: 'accounts.google.com', aud: 'google-client-test.apps.googleusercontent.com', exp: nowSec - 10, email: 'user@example.com', email_verified: true, sub: 'sub_1' },
+      { iss: 'accounts.google.com', aud: 'google-client-test.apps.googleusercontent.com', exp: nowSec + 300, email: 'user@example.com', email_verified: false, sub: 'sub_1' },
     ];
-    for (const [claims, expected] of invalidCases) {
+    for (const claims of invalidCases) {
       mockGoogleJwt(signTestIdToken(claims));
-      const r = await fetch(`${origin}/v1/cloud/sso/callback?provider=google&code=code_ok&state=${await issueFreshState()}`, { redirect: 'manual' });
+      const r = await fetch(`${origin}/v1/cloud/sso/callback?code=code_ok&state=${await issueFreshState()}`, { redirect: 'manual' });
       assert.equal(r.status, 302);
-      assert.equal(r.headers.get('location'), `/dashboard?sso_error=${expected}`);
+      assert.equal(authErrorOf(r), 'sso_email_unverified');
       assert.equal(r.headers.get('set-cookie'), null);
     }
 
@@ -261,11 +283,16 @@ test('homepage navbar exposes paid-user Log in drawer and exchanges keys for an 
       sub,
     });
     mockGoogleJwt(makeUserJwt('stranger@gmail.com', 'google_stranger_001'));
-    const freeCbRes = await fetch(`${origin}/v1/cloud/sso/callback?provider=google&code=valid_google_code&state=${await issueFreshState()}`, { redirect: 'manual' });
+    const freeCbRes = await fetch(`${origin}/v1/cloud/sso/callback?code=valid_google_code&state=${await issueFreshState()}`, { redirect: 'manual' });
     assert.equal(freeCbRes.status, 302);
-    assert.equal(freeCbRes.headers.get('location'), '/dashboard');
+    const freeDest = new URL(freeCbRes.headers.get('location'), origin);
+    assert.equal(freeDest.pathname, '/dashboard');
+    assert.equal(freeDest.search, '');
     assert.match(capturedTokenPostBody, /code=valid_google_code/);
     assert.match(capturedTokenPostBody, /client_secret=google-secret-test-value/);
+    const postedRedirect = new URL(new URLSearchParams(capturedTokenPostBody).get('redirect_uri'));
+    assert.equal(postedRedirect.pathname, '/v1/cloud/sso/callback');
+    assert.equal(postedRedirect.search, '');
     const freeCookiePair = (freeCbRes.headers.get('set-cookie') || '').split(';')[0];
     const freeSessionCheck = await (await fetch(`${origin}/v1/auth/session`, { headers: { cookie: freeCookiePair } })).json();
     assert.equal(freeSessionCheck.authenticated, true);
@@ -274,9 +301,8 @@ test('homepage navbar exposes paid-user Log in drawer and exchanges keys for an 
     assert.equal(freeSessionCheck.ssoEmail, 'stranger@gmail.com');
     assert.equal((await fetch(`${origin}/v1/feedback/stats`, { headers: { cookie: freeCookiePair } })).status, 401);
 
-    // 5c. Owner email without paid entitlement stays Free via Google SSO alone
     mockGoogleJwt(makeUserJwt('iganapolsky@gmail.com', 'google_owner_unpaid'));
-    const ownerCbRes = await fetch(`${origin}/v1/cloud/sso/callback?provider=google&code=owner_code&state=${await issueFreshState()}`, { redirect: 'manual' });
+    const ownerCbRes = await fetch(`${origin}/v1/cloud/sso/callback?code=owner_code&state=${await issueFreshState()}`, { redirect: 'manual' });
     const ownerSession = await (await fetch(`${origin}/v1/auth/session`, { headers: { cookie: (ownerCbRes.headers.get('set-cookie') || '').split(';')[0] } })).json();
     assert.equal(ownerSession.authenticated, true);
     assert.equal(ownerSession.tier, 'Free');
@@ -285,15 +311,18 @@ test('homepage navbar exposes paid-user Log in drawer and exchanges keys for an 
     provisionApiKey('cus_paid_subscriber_1', { customerEmail: 'subscriber@thumbgate.ai', entitlementKind: 'subscription', subscriptionId: 'sub_live_test_1', source: 'stripe_webhook_checkout_completed' });
     mockGoogleJwt(makeUserJwt('subscriber@thumbgate.ai', 'google_uid_sub_1'));
     const goodState = await issueFreshState();
-    const goodCbRes = await fetch(`${origin}/v1/cloud/sso/callback?provider=google&code=sub_google_code&state=${goodState}`, { redirect: 'manual' });
+    const goodCbRes = await fetch(`${origin}/v1/cloud/sso/callback?code=sub_google_code&state=${goodState}`, { redirect: 'manual' });
     assert.equal(goodCbRes.status, 302);
-    assert.equal(goodCbRes.headers.get('location'), '/dashboard');
+    const goodDest = new URL(goodCbRes.headers.get('location'), origin);
+    assert.equal(goodDest.pathname, '/dashboard');
+    assert.equal(goodDest.search, '');
     const ssoCookieHeader = goodCbRes.headers.get('set-cookie') || '';
     assert.match(ssoCookieHeader, /^thumbgate_auth_session=[a-f0-9]{64};.*HttpOnly.*Secure/);
     const ssoCookiePair = ssoCookieHeader.split(';')[0];
     const ssoSessionCheck = await (await fetch(`${origin}/v1/auth/session`, { headers: { cookie: ssoCookiePair } })).json();
     assert.equal(ssoSessionCheck.authenticated, true);
     assert.equal(ssoSessionCheck.tier, 'Pro');
+    assert.equal(ssoSessionCheck.ssoProvider, 'google');
     assert.equal(ssoSessionCheck.ssoEmail, 'subscriber@thumbgate.ai');
     assert.equal((await fetch(`${origin}/v1/feedback/stats`, { headers: { cookie: ssoCookiePair } })).status, 200);
     serverTestHooks.clearInMemoryAuthSessionsForTests();
@@ -301,10 +330,10 @@ test('homepage navbar exposes paid-user Log in drawer and exchanges keys for an 
     assert.equal(persistedSessionCheck.tier, 'Pro');
     assert.equal((await (await fetch(`${origin}/v1/auth/session`, { headers: { cookie: freeCookiePair } })).json()).tier, 'Free');
     const rawSessionFile = fs.readFileSync(path.join(tmpDir, 'auth-sessions.json'), 'utf8');
-    assert.doesNotMatch(rawSessionFile, /tg_|thumbgate_auth_session|google-secret-test-value/);
+    assert.doesNotMatch(rawSessionFile, /tg_|thumbgate_auth_session|google-secret-test-value|google_sso:/);
     for (const storedKey of Object.keys(JSON.parse(rawSessionFile))) assert.match(storedKey, /^[a-f0-9]{64}$/);
-    const replayGoodState = await fetch(`${origin}/v1/cloud/sso/callback?provider=google&code=sub_google_code&state=${goodState}`, { redirect: 'manual' });
-    assert.equal(replayGoodState.headers.get('location'), '/dashboard?sso_error=invalid_state');
+    const replayGoodState = await fetch(`${origin}/v1/cloud/sso/callback?code=sub_google_code&state=${goodState}`, { redirect: 'manual' });
+    assert.equal(authErrorOf(replayGoodState), 'sso_state_invalid');
     serverTestHooks.setGoogleOAuthFetchForTests(null);
     delete process.env.GOOGLE_CLIENT_ID;
     delete process.env.GOOGLE_CLIENT_SECRET;
