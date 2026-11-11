@@ -4,6 +4,7 @@
     "CodeQL",
     "Analyze JavaScript (javascript-typescript)",
     "Verify changeset",
+    "pr-size",
     "GitGuardian Security Checks",
     "Socket Security: Project Report",
     "Socket Security: Pull Request Alerts"
