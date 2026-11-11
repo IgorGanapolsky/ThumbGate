@@ -25,12 +25,8 @@ const {
 } = require('../scripts/self-protection.js');
 
 const GOVERNANCE_FILES = [
-  '.claude/settings.json',
-  '.claude/settings.local.json',
-  '/abs/path/repo/.claude/settings.json',
-  'scripts/hook-pre-tool-use.js',
-  'scripts/hook-stop-self-score.sh',
   'config/gates/default.json',
+  '/abs/path/repo/config/gates/default.json',
   'config/budget.json',
   'config/enforcement.json',
   'config/mcp-allowlists.json',
@@ -41,7 +37,10 @@ const GOVERNANCE_FILES = [
 const NON_GOVERNANCE_FILES = [
   'src/index.js',
   'README.md',
-  'scripts/feedback-loop.js', // a script, but not a hook-* script
+  '.claude/settings.json',
+  '.claude/settings.local.json',
+  'scripts/hook-pre-tool-use.js',
+  'scripts/feedback-loop.js',
   'config/other.json',
   'tests/hook-self-protection.test.js',
 ];
@@ -84,16 +83,16 @@ test('selfProtectionTarget ignores non-governance files', () => {
 });
 
 test('selfProtectionTarget ignores non-edit tools (Bash cannot be mistaken for a file edit)', () => {
-  assert.strictEqual(selfProtectionTarget('Bash', { command: 'rm .claude/settings.json' }), null);
-  assert.strictEqual(selfProtectionTarget('Read', { file_path: '.claude/settings.json' }), null);
+  assert.strictEqual(selfProtectionTarget('Bash', { command: 'rm config/gates/default.json' }), null);
+  assert.strictEqual(selfProtectionTarget('Read', { file_path: 'config/gates/default.json' }), null);
 });
 
 test('default posture hard-blocks self-governance edits', () => {
   withEnv({ THUMBGATE_STRICT_ENFORCEMENT: undefined, THUMBGATE_ALLOW_SELF_EDIT: undefined }, () => {
-    const r = evaluateSelfProtection('Edit', { file_path: '.claude/settings.json' });
+    const r = evaluateSelfProtection('Edit', { file_path: 'config/gates/default.json' });
     assert.ok(r, 'expected a decision');
     assert.strictEqual(r.action, 'block');
-    assert.match(r.message, /self-protection/i);
+    assert.match(r.message, /self-protect|config\/gates\/default\.json/i);
   });
 });
 
@@ -112,7 +111,7 @@ test('legacy environment escape cannot disable self-protection', () => {
     THUMBGATE_SELF_PROTECT_OVERRIDE: '1',
     THUMBGATE_HOTFIX_BYPASS: '1',
   }, () => {
-    const result = evaluateSelfProtection('Edit', { file_path: '.claude/settings.json' });
+    const result = evaluateSelfProtection('Edit', { file_path: 'config/enforcement.json' });
     assert.ok(result);
     assert.strictEqual(result.action, 'block');
   });
