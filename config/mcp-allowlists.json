@@ -93,7 +93,10 @@
       "track_action",
       "unified_context",
       "verify_claim",
-      "workflow_sentinel"
+      "workflow_sentinel",
+      "route_workload",
+      "trim_context",
+      "graphrag_traverse"
     ],
     "essential": [
       "append_feedback_context",
@@ -143,7 +146,9 @@
       "track_action",
       "unified_context",
       "verify_claim",
-      "workflow_sentinel"
+      "workflow_sentinel",
+      "route_workload",
+      "trim_context"
     ],
     "commerce": [
       "approve_protected_action",
@@ -194,6 +199,7 @@
       "get_reliability_rules",
       "get_scope_state",
       "get_task_outcomes",
+      "graphrag_traverse",
       "list_harnesses",
       "list_human_escalations",
       "list_intents",
@@ -213,11 +219,13 @@
       "reconcile_purchase_ledger",
       "require_evidence_for_claim",
       "retrieve_lessons",
+      "route_workload",
       "search_lessons",
       "search_thumbgate",
       "session_report",
       "settings_status",
       "suggest_fix",
+      "trim_context",
       "unified_context",
       "verify_claim",
       "workflow_sentinel"
@@ -240,6 +248,7 @@
       "get_reliability_rules",
       "get_scope_state",
       "get_task_outcomes",
+      "graphrag_traverse",
       "list_harnesses",
       "list_human_escalations",
       "list_intents",
@@ -259,12 +268,14 @@
       "reconcile_purchase_ledger",
       "require_evidence_for_claim",
       "retrieve_lessons",
+      "route_workload",
       "run_harness",
       "search_lessons",
       "search_thumbgate",
       "session_report",
       "settings_status",
       "suggest_fix",
+      "trim_context",
       "unified_context",
       "verify_claim",
       "workflow_sentinel"
@@ -298,7 +309,9 @@
       "settings_status",
       "suggest_fix",
       "verify_claim",
-      "workflow_sentinel"
+      "workflow_sentinel",
+      "route_workload",
+      "trim_context"
     ]
   }
 }

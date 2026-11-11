@@ -5,7 +5,7 @@ import { problemResponse, PROBLEM_TYPES } from './problem-detail';
 function getStripe(env: Env): Stripe {
   return new Stripe(env.STRIPE_SECRET_KEY, {
     // Stripe 23.0.0 LatestApiVersion; workers typecheck fails if this lags the SDK.
-    apiVersion: '2026-09-30.endive',
+    apiVersion: '2026-10-28.endive',
     httpClient: Stripe.createFetchHttpClient(),
   });
 }

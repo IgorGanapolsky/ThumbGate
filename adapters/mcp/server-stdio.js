@@ -1817,6 +1817,10 @@ async function callToolInner(name, args) {
         matryoshkaEmbedding: args.matryoshkaEmbedding !== false,
         matryoshkaOptions: args.matryoshkaOptions || undefined,
       }));
+    case 'graphrag_traverse':
+    case 'route_workload':
+    case 'trim_context':
+      return toTextResult(await require('../../scripts/agentic-prompt-pipelines').handlePipelineTool(name, args));
     case 'plan_agent_design_governance':
       return toTextResult(buildAgentDesignGovernancePlan(args));
     case 'plan_proactive_agent_eval_guardrails':

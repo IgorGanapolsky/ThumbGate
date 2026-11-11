@@ -25,6 +25,10 @@ updates:
       # @lancedb/lancedb@0.40.0 requires peer apache-arrow@">=15.0.0 <=18.1.0"
       - dependency-name: "apache-arrow"
         versions: [">= 19.0.0"]
+      # better-sqlite3@13 needs node >=22 and segfaults on the CI Node 20 job
+      # (see tests/deployment.test.js). Stay on 12.x until CI drops Node 20.
+      - dependency-name: "better-sqlite3"
+        versions: [">= 13.0.0"]
   - package-ecosystem: "npm"
     directory: "/workers"
     schedule:
