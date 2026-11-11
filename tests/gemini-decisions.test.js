@@ -14,7 +14,7 @@ const {
   evaluateGeminiDecisions,
   evaluateToolCallDecision,
   recommendCheckoutOfferDecision,
-} = require('../src/gemini-decisions');
+} = require('../src/mcp-writeguard');
 
 describe('Gemini Decisions API (gemini-decision-1) engine & server integration', () => {
   it('sends v1beta/decisions wire format with noul, choice, and score and zero output tokens', async () => {

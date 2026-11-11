@@ -9685,7 +9685,7 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
       try {
         const body = await parseJsonBody(req);
         const traceId = body.traceId || createTraceId('offer');
-        const { recommendCheckoutOfferDecision } = require('../gemini-decisions');
+        const { recommendCheckoutOfferDecision } = require('../mcp-writeguard');
         const recommendation = await recommendCheckoutOfferDecision({
           reasonCode: body.reasonCode,
           reasonText: body.reasonText,
@@ -10382,7 +10382,7 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
         if (!body.toolName) {
           throw createHttpError(400, 'Missing toolName');
         }
-        const { evaluateToolCallDecision } = require('../gemini-decisions');
+        const { evaluateToolCallDecision } = require('../mcp-writeguard');
         const verdict = await evaluateToolCallDecision({
           toolName: body.toolName,
           toolArgs: body.toolArgs || {},
