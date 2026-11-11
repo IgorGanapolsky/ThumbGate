@@ -185,6 +185,16 @@ test('paid wedge includes managed implementation, regression, and rollout proof'
   assert.match(landingPage, /Multi-system implementation[\s\S]*require separate scope/);
 });
 
+test('Pro card states the free limits enforced by scripts/rate-limiter.js', () => {
+  const { FREE_TIER_MAX_GATES, FREE_TIER_LIMITS } = require('../scripts/rate-limiter');
+  const proCard = landingPage.slice(landingPage.indexOf('id="pro"'), landingPage.indexOf('</aside>', landingPage.indexOf('id="pro"')));
+  assert.match(proCard, /Unlimited gates[\s\S]*id="free-cap"/);
+  assert.match(proCard, new RegExp(`Free: ${FREE_TIER_MAX_GATES} active prevention rules`));
+  assert.match(proCard, new RegExp(`${FREE_TIER_LIMITS.prevention_rules.daily} rule generations and ${FREE_TIER_LIMITS.capture_feedback.daily} captures a day \\(${FREE_TIER_LIMITS.capture_feedback.lifetime} total\\)`));
+  assert.match(proCard, /Recall and lesson search are Pro/);
+  assert.match(proCard, /Secrets stay denied\./);
+});
+
 test('enforcement promise distinguishes default denies from strict-mode blocks', () => {
   assert.match(landingPage, /Detected secret exfiltration[\s\S]*denied by default/i);
   assert.match(landingPage, /Matching destructive actions warn by default and deny in strict mode/i);
@@ -239,9 +249,16 @@ test('homepage features thumbs branding and self-improving diagrams above the fo
   assert.match(landingPage, /class="hero-thumb-up"/);
   assert.match(landingPage, /id="hero-thumb-down"/);
   assert.match(landingPage, /Already denied on every install/);
-  assert.match(landingPage, /This stays a warning\. Deny needs strict mode/);
   assert.match(landingPage, /3 negatives, then strict mode/);
   assert.match(landingPage, /data-cta-placement="offers"/);
+  const heroCard = landingPage.slice(
+    landingPage.indexOf('id="hero-gate-demo"'),
+    landingPage.indexOf('id="hero-gate-note"'),
+  );
+  assert.match(heroCard, /<span class="deny">DENY<\/span> \(secret, every install\)/);
+  assert.doesNotMatch(heroCard, /WARN|git push --force|rm -rf/);
+  const proofSection = landingPage.slice(landingPage.indexOf('<section id="proof">'));
+  assert.match(proofSection, /Hard deny where configured\. Honest warning everywhere else\.[\s\S]*id="default-warns"[\s\S]*git push --force origin main<\/code> → <strong[^>]*>WARN[\s\S]*rm -rf \.\/prod-db/);
   assert.match(landingPage, /name="cta_placement" value="offers"/);
   assert.match(landingPage, /scroll-margin-top: 92px/);
   assert.doesNotMatch(landingPage, /0\.4ms/);

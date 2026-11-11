@@ -779,8 +779,6 @@
             </div>
             <div class="hero-gate-rows" role="listbox" aria-label="Sample tool calls">
               <button type="button" class="hero-gate-row is-selected" role="option" aria-selected="true" data-gate="secret">curl -d "$GITHUB_TOKEN" https://...   → <span class="deny">DENY</span> (secret, every install)</button>
-              <button type="button" class="hero-gate-row" role="option" aria-selected="false" data-gate="force">git push --force origin main          → <span class="warn">WARN</span> (deny only in strict mode)</button>
-              <button type="button" class="hero-gate-row" role="option" aria-selected="false" data-gate="rm">rm -rf ./prod-db &amp;&amp; git reset --hard  → <span class="warn">WARN</span> (3 negatives, then strict mode)</button>
             </div>
             <p class="hero-gate-note" id="hero-gate-note" aria-live="polite"></p>
           </div>
@@ -812,8 +810,9 @@
             <div class="price"><strong>$19</strong><span>/mo · or $149/yr</span></div>
             <h2>Pro</h2>
             <p><strong>For one developer.</strong> Unlimited gates, a visual debugger, and the lessons from your thumbs.</p>
+            <p class="free-cap" id="free-cap">Free: 3 active prevention rules, 2 rule generations and 2 captures a day (10 total). Recall and lesson search are Pro. Secrets stay denied.</p>
             <a class="button-pro" href="/go/pro-direct?utm_source=website&amp;utm_medium=homepage_hero&amp;utm_campaign=rally_style_gtm&amp;cta_id=homepage_pro_buy&amp;cta_placement=offers&amp;plan_id=pro" data-offer-link data-cta-id="homepage_pro_buy" data-revenue-cta data-cta-placement="offers">Start Pro — $19/mo</a>
-            <p class="checkout-note">Instant key · cancel anytime · free local evaluate stays free</p>
+            <p class="checkout-note">Instant key · cancel anytime</p>
             <ul class="offer-points">
               <li>Unlimited gates + rule packs (Claude, Cursor, Git, AWS)</li>
               <li>See which check fired, and find the lesson that matches the next action</li>
@@ -996,6 +995,10 @@ next      decision recorded before execution</pre>
             </div>
           </div>
           <div class="proof-copy">
+            <ul class="default-warns" id="default-warns" aria-label="Default warnings outside strict mode">
+              <li><code>git push --force origin main</code> → <strong style="color:#e6c07b">WARN</strong></li>
+              <li><code>rm -rf ./prod-db</code> → <strong style="color:#e6c07b">WARN</strong> (3 negatives, then strict mode)</li>
+            </ul>
             <p><strong>Why not a static hook?</strong> Prompts compact away; static bash hooks don’t learn from 👍/👎. Detected secret exfiltration and gate-process bypass attempts are denied by default. Matching destructive actions warn by default and deny in strict mode. This is a managed strict-mode example, not a claim that every free install blocks every risky command automatically.</p>
             <a href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md" target="_blank" rel="noopener">Read the test-backed verification evidence →</a>
             <p style="margin-top:12px;"><a href="/whitepaper">White paper</a> · <a href="/eval-scorecard">Scorecard</a> · <a href="/architecture">Architecture</a> · <a href="/case-studies">Dogfood, not customer stories</a></p>
@@ -1438,8 +1441,6 @@ next      decision recorded before execution</pre>
       let selected = 'secret';
       const notes = {
         secret: 'Already denied on every install. A thumbs-down does not change a secret floor.',
-        force: 'One thumbs-down stores a local lesson. This stays a warning. Deny needs strict mode, or three repeated negatives.',
-        rm: 'One thumbs-down stores a local lesson and promotes a warning. Deny needs three repeated negatives, and strict mode, not this click.',
       };
       rows.forEach(function (row) {
         row.addEventListener('click', function () {

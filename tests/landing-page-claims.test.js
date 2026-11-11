@@ -36,13 +36,13 @@ test('pricing surfaces Pro self-serve and the $499 Setup Sprint together', () =>
   assert.doesNotMatch(PRICING_HTML, /\$1,500|\$3,000|\$10,000|\$15,000/);
 });
 
-test('free-tier limits remain code truth without crowding the cash path', () => {
+test('free-tier limits on the homepage match code truth', () => {
   const { FREE_TIER_LIMITS, FREE_TIER_MAX_GATES } = require('../scripts/rate-limiter');
 
   assert.equal(FREE_TIER_LIMITS.capture_feedback.daily, 2);
   assert.equal(FREE_TIER_LIMITS.capture_feedback.lifetime, 10);
   assert.equal(FREE_TIER_MAX_GATES, 3);
-  assert.doesNotMatch(HOME_HTML, /2 captures\/day|10 total|3 active prevention rules/i);
+  assert.match(HOME_HTML, /Free: 3 active prevention rules, 2 rule generations and 2 captures a day \(10 total\)/);
   assert.doesNotMatch(PRICING_HTML, /2 captures\/day|10 total|3 active prevention rules/i);
 });
 
