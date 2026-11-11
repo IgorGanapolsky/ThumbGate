@@ -71,10 +71,19 @@ function selectRetrievalMemories(memories = [], options = {}) {
       includeShared: options.includeShared !== false,
     }).allowed;
   }
-  return selected.filter((memory) => matchesMetadataFilters(
-    memory,
-    options.metadataFilters || options.filters,
-  ));
+  return selected
+    .filter((memory) => {
+      if (options.includeDemoted !== true) {
+        const up = Number(memory.upVotes || 0);
+        const down = Number(memory.downVotes || 0);
+        if (memory.demoted === true || down > up) return false;
+      }
+      return true;
+    })
+    .filter((memory) => matchesMetadataFilters(
+      memory,
+      options.metadataFilters || options.filters,
+    ));
 }
 
 function normalizedValues(value) {
@@ -298,7 +307,29 @@ function retrieveRelevantLessons(toolName, actionContext, options = {}) {
   const deduped = applyGraphResolution(dedupeSupersededLessons(reranked), options, memories);
   const selected = filterTopP(deduped, resolveTopP(options), { minKeep: options.minKeep });
 
-  const shaped = selected.slice(0, maxResults).map((x) => shapeLesson(x));
+  let finalPool = selected;
+  if (options.rankByVerifications === true || (options.rankByVerifications !== false && selected.some((item) => Number(item.verificationCount || 0) > 0))) {
+    finalPool = [...selected].sort((a, b) => {
+      const vcA = Number(a.verificationCount || 0);
+      const vcB = Number(b.verificationCount || 0);
+      if (vcB !== vcA) return vcB - vcA;
+      const tA = a.lastVerifiedAt ? new Date(a.lastVerifiedAt).getTime() : 0;
+      const tB = b.lastVerifiedAt ? new Date(b.lastVerifiedAt).getTime() : 0;
+      if (tB !== tA) return tB - tA;
+      return (b.relevanceScore || 0) - (a.relevanceScore || 0);
+    });
+  }
+  const shaped = finalPool.slice(0, maxResults).map((x) => {
+    const s = shapeLesson(x);
+    if (options.now) {
+      const t = s.lastVerifiedAt ? new Date(s.lastVerifiedAt).getTime() : null;
+      if (t && Number.isFinite(t)) {
+        const nowDate = (options.now instanceof Date ? options.now : new Date(options.now)).getTime();
+        s.stale = (nowDate - t) / (1000 * 60 * 60 * 24) > 30;
+      }
+    }
+    return s;
+  });
 
   // Attach retrieval quality tier once (non-enumerable-ish via property on array)
   try {
@@ -389,6 +420,24 @@ function shapeLesson(m, retrieval = null) {
     signal: m.signal === 'negative' || m.signal === 'positive' ? m.signal : (m.tags?.includes('negative') ? 'negative' : 'positive'),
     rule: m.structuredRule || null,
     relevanceScore: m.rerankedScore ?? m.relevanceScore,
+    verificationStatus: m.verificationStatus || (Number(m.verificationCount || 0) > 0 ? 'verified' : 'unverified'),
+    verificationCount: Number(m.verificationCount || 0),
+    verifications: Array.isArray(m.verifications) ? m.verifications : [],
+    lastVerifiedAt: m.lastVerifiedAt || null,
+    badge: (function() {
+      const count = Number(m.verificationCount || 0);
+      if (count <= 0 || !m.lastVerifiedAt) return 'unverified';
+      return `verified ${count}x, last ${String(m.lastVerifiedAt).split('T')[0]}`;
+    })(),
+    stale: (function() {
+      if (!m.lastVerifiedAt) return false;
+      const t = new Date(m.lastVerifiedAt).getTime();
+      if (!Number.isFinite(t)) return false;
+      return (Date.now() - t) / (1000 * 60 * 60 * 24) > 30;
+    })(),
+    upVotes: Number(m.upVotes || 0),
+    downVotes: Number(m.downVotes || 0),
+    netVotes: Number(m.upVotes || 0) - Number(m.downVotes || 0),
     timestamp: m.timestamp,
   };
   if (m.lessonGraph) shaped.graph = m.lessonGraph;

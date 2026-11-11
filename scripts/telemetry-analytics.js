@@ -433,6 +433,60 @@ function classifyTelemetryAudience(entry = {}, raw = {}) {
   };
 }
 
+function parseTelemetryCookies(headerValue) {
+  const cookies = {};
+  const raw = normalizeText(headerValue, 4096);
+  if (!raw) return cookies;
+  for (const chunk of raw.split(';')) {
+    const [name, ...rest] = chunk.split('=');
+    const key = normalizeText(name, 128);
+    if (!key) continue;
+    const value = normalizeText(rest.join('='), 512);
+    if (!value) continue;
+    try {
+      cookies[key] = decodeURIComponent(value);
+    } catch {
+      cookies[key] = value;
+    }
+  }
+  return cookies;
+}
+
+function inferCampaignVariant(raw = {}, cookies = {}, eventType = '') {
+  const explicit = pickFirstText(
+    raw.campaignVariant,
+    raw.variant,
+    cookies.thumbgate_campaign_variant,
+    cookies.tg_var
+  );
+  if (explicit) return explicit;
+  if (!isCheckoutStartEvent(eventType) && !isMarketingClickEvent(eventType)) {
+    return null;
+  }
+  const byOfferOrPlan = pickFirstText(
+    raw.offerCode,
+    raw.offer,
+    raw.coupon,
+    raw.planId,
+    raw.linkSlug,
+    raw.destinationSlug
+  );
+  if (byOfferOrPlan) return byOfferOrPlan.toLowerCase();
+  const campaign = pickFirstText(raw.utmCampaign, raw.campaign);
+  if (campaign && campaign.toLowerCase() !== 'organic') {
+    return campaign.toLowerCase();
+  }
+  const cta = pickFirstText(raw.ctaId);
+  if (cta) return cta.toLowerCase();
+  const pathText = (pickFirstText(raw.destinationPath, raw.page, raw.landingPath, raw.path) || '').toLowerCase();
+  if (pathText.includes('bundle-49') || pathText.includes('bundle_49')) return 'bundle_49';
+  if (pathText.includes('pro-direct') || pathText.includes('pro_direct')) return 'pro_direct';
+  if (pathText.includes('playbook')) return 'playbook_999';
+  if (pathText.includes('diagnostic')) return 'sprint_diagnostic_499';
+  if (pathText.includes('checkout/pro')) return 'pro_checkout';
+  return isCheckoutStartEvent(eventType) ? 'direct_checkout' : null;
+}
+
 function sanitizeTelemetryPayload(payload = {}, headers = {}) {
   const envelope = payload && typeof payload === 'object' ? payload : {};
   const nestedProps = envelope.props
@@ -443,6 +497,7 @@ function sanitizeTelemetryPayload(payload = {}, headers = {}) {
   // Browser analytics libraries conventionally wrap event properties in
   // `props`. Flatten that envelope while letting explicit top-level fields win.
   const raw = { ...nestedProps, ...envelope };
+  const cookies = parseTelemetryCookies(headers?.cookie || headers?.Cookie);
   const clientType = inferClientType(raw);
   const eventType = inferEventType(raw, clientType);
   const source = pickFirstText(raw.source, raw.utmSource, clientType === 'cli' ? 'cli' : 'direct');
@@ -451,6 +506,7 @@ function sanitizeTelemetryPayload(payload = {}, headers = {}) {
   const utmCampaign = pickFirstText(raw.utmCampaign, raw.campaign, clientType === 'web' ? 'organic' : null);
   const referrer = pickFirstText(raw.referrer, headers.referer, headers.referrer);
   const referrerHost = parseReferrerHost(referrer);
+  const campaignVariant = inferCampaignVariant(raw, cookies, eventType);
   const reasonCode = pickFirstText(
     raw.reasonCode,
     raw.reason,
@@ -465,10 +521,26 @@ function sanitizeTelemetryPayload(payload = {}, headers = {}) {
     event: eventType,
     eventType,
     installId: pickFirstText(raw.installId),
-    visitorId: pickFirstText(raw.visitorId),
-    sessionId: pickFirstText(raw.sessionId),
-    traceId: pickFirstText(raw.traceId),
-    acquisitionId: pickFirstText(raw.acquisitionId),
+    visitorId: pickFirstText(
+      raw.visitorId,
+      raw.visitor_id,
+      cookies.thumbgate_visitor_id,
+      cookies.tg_vid
+    ),
+    sessionId: pickFirstText(
+      raw.sessionId,
+      raw.session_id,
+      raw.visitor_session_id,
+      cookies.thumbgate_session_id,
+      cookies.tg_sid
+    ),
+    traceId: pickFirstText(raw.traceId, raw.trace_id),
+    acquisitionId: pickFirstText(
+      raw.acquisitionId,
+      raw.acquisition_id,
+      cookies.thumbgate_acquisition_id,
+      cookies.tg_aid
+    ),
     version: pickFirstText(raw.version, raw.appVersion),
     platform: pickFirstText(raw.platform),
     nodeVersion: pickFirstText(raw.nodeVersion),
@@ -486,7 +558,7 @@ function sanitizeTelemetryPayload(payload = {}, headers = {}) {
     utmContent: pickFirstText(raw.utmContent),
     utmTerm: pickFirstText(raw.utmTerm),
     creator: pickFirstText(raw.creator, raw.creatorHandle, raw.creator_handle),
-    campaignVariant: pickFirstText(raw.campaignVariant, raw.variant),
+    campaignVariant,
     offerCode: pickFirstText(raw.offerCode, raw.offer, raw.coupon),
     community: pickFirstText(raw.community, raw.subreddit),
     postId: pickFirstText(raw.postId, raw.post_id),
@@ -494,7 +566,7 @@ function sanitizeTelemetryPayload(payload = {}, headers = {}) {
     ctaId: pickFirstText(raw.ctaId),
     ctaPlacement: pickFirstText(raw.ctaPlacement),
     planId: pickFirstText(raw.planId),
-    segment: pickFirstText(raw.segment, raw.buyerSegment, raw.campaignVariant, raw.variant),
+    segment: pickFirstText(raw.segment, raw.buyerSegment, campaignVariant),
     experimentId: pickFirstText(raw.experimentId, raw.experiment, raw.utmCampaign),
     value: normalizeInteger(raw.value),
     currency: pickFirstText(raw.currency),
@@ -566,6 +638,19 @@ function appendTelemetryEvent(feedbackDir, payload = {}, headers = {}) {
 }
 
 const DEFAULT_BOUNDED_TELEMETRY_TAIL_BYTES = 8 * 1024 * 1024;
+const WINDOW_TELEMETRY_TAIL_BYTES = Object.freeze({
+  today: 8 * 1024 * 1024,
+  '7d': 16 * 1024 * 1024,
+  '30d': 32 * 1024 * 1024,
+  '90d': 64 * 1024 * 1024,
+});
+
+function resolveBoundedTelemetryTailBytes(analyticsWindow, options = {}) {
+  const explicit = Number(options.telemetryTailBytes);
+  if (Number.isFinite(explicit) && explicit > 0) return explicit;
+  const windowKey = analyticsWindow?.window;
+  return WINDOW_TELEMETRY_TAIL_BYTES[windowKey] || DEFAULT_BOUNDED_TELEMETRY_TAIL_BYTES;
+}
 
 // Delegates to readTextTail(), which applies an UNCONDITIONAL full-read ceiling
 // and drops the partial first line after a mid-file seek.
@@ -829,7 +914,7 @@ function summarizeExternalTrafficQuality(events) {
 function getTelemetrySummary(feedbackDir, options = {}) {
   const analyticsWindow = resolveAnalyticsWindow(options);
   const telemetryLoadOptions = analyticsWindow.bounded
-    ? { maxBytes: Number(options.telemetryTailBytes || DEFAULT_BOUNDED_TELEMETRY_TAIL_BYTES) }
+    ? { maxBytes: resolveBoundedTelemetryTailBytes(analyticsWindow, options) }
     : {};
   // readTextTail() applies an unconditional ceiling even for the unbounded
   // ("lifetime") window, so a large enough telemetry log is read as a tail.

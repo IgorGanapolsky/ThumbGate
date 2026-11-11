@@ -721,7 +721,8 @@ async function sendTrialActivationEmail(params = {}, options = {}) {
     : null;
   const transport = options.transport || sendResendEmail;
   const planId = normalizeText(params.planId);
-  const idempotencyKey = `trial-${crypto.createHash('sha256').update(`${sessionId}:${customerEmail}`).digest('hex')}`;
+  const sessionDigestInput = `${sessionId}:${customerEmail}`;
+  const idempotencyKey = `trial-${crypto.createHash('sha256').update(sessionDigestInput).digest('hex')}`;
 
   if (!customerEmail) {
     return { status: 'skipped', reason: 'missing_customer_email' };
@@ -869,7 +870,7 @@ function isDiagnosticCheckoutSession(session = {}) {
     .filter((value) => /^plink_[A-Za-z0-9]+$/.test(value));
   const paymentLinkId = typeof session.payment_link === 'string'
     ? session.payment_link
-    : normalizeText(session.payment_link && session.payment_link.id);
+    : normalizeText(session.payment_link?.id);
   return session.mode === 'payment'
     && configuredIds.includes(paymentLinkId);
 }
@@ -882,10 +883,10 @@ function resolveCheckoutProvisioningGrant(session = {}) {
     return { allowed: false, kind: 'unknown', credits: null };
   }
 
-  const packId = normalizeText(session.metadata && session.metadata.packId);
-  const configuredPack = packId && CONFIG.CREDIT_PACKS[packId];
-  const credits = normalizeInteger(session.metadata && session.metadata.credits);
-  if (configuredPack && credits === configuredPack.credits) {
+  const packId = normalizeText(session.metadata?.packId);
+  const configuredPack = packId ? CONFIG.CREDIT_PACKS[packId] : null;
+  const credits = normalizeInteger(session.metadata?.credits);
+  if (configuredPack?.credits !== undefined && credits === configuredPack.credits) {
     return { allowed: true, kind: 'credit_pack', credits };
   }
   return { allowed: false, kind: 'service_order', credits: null };
@@ -913,8 +914,7 @@ function findOrderEmailRecord({ sessionId, kind } = {}) {
   const normalizedKind = normalizeText(kind);
   if (!normalizedSessionId || !normalizedKind) return null;
   return loadJsonlRecords(CONFIG.ORDER_EMAIL_LEDGER_PATH).find((row) => (
-    row
-    && row.sessionId === normalizedSessionId
+    row?.sessionId === normalizedSessionId
     && row.kind === normalizedKind
     && row.status === 'sent'
   )) || null;
@@ -2506,6 +2506,14 @@ function getBusinessAnalytics(options = {}) {
     bySource: operatorGeneratedAcquisitionBySource,
   };
 
+  const telemetryWindowMeta = telemetry?.window ?? null;
+  const telemetryLogTruncated = Boolean(
+    telemetryWindowMeta?.truncated || telemetry?.telemetrySource?.truncated
+  );
+  const telemetryWindowComplete = typeof telemetryWindowMeta?.complete === 'boolean'
+    ? telemetryWindowMeta.complete
+    : !telemetryLogTruncated;
+
   const dataQuality = {
     telemetryCoverage: Number(((
       (telemetry.visitors ? telemetry.visitors.visitorIdCoverageRate || 0 : 0) +
@@ -2515,11 +2523,17 @@ function getBusinessAnalytics(options = {}) {
     attributionCoverage: telemetry.visitors ? telemetry.visitors.attributionCoverageRate || 0 : 0,
     amountKnownCoverage: paidOrders.length ? safeRate(amountKnownOrders, paidOrders.length) : 0,
     unreconciledPaidEvents,
+    telemetryLogTruncated,
+    telemetryWindowComplete,
   };
 
   return {
     generatedAt: new Date().toISOString(),
-    window: serializeAnalyticsWindow(analyticsWindow),
+    window: {
+      ...serializeAnalyticsWindow(analyticsWindow),
+      truncated: telemetryLogTruncated,
+      complete: telemetryWindowComplete,
+    },
     coverage: {
       source: 'funnel_ledger+revenue_ledger+workflow_sprint_leads',
       tracksBookedRevenue: true,
@@ -2761,10 +2775,10 @@ function getBillingSummary(options = {}) {
 }
 
 function buildBillingSummaryFailure(error) {
-  const isTimeout = error && error.message && error.message.includes('Stripe API timeout');
+  const isTimeout = Boolean(error?.message?.includes('Stripe API timeout'));
   return {
     error: isTimeout ? 'stripe_timeout' : 'billing_summary_error',
-    message: error && error.message ? error.message : 'Unknown error',
+    message: error?.message || 'Unknown error',
     revenue: { total: 0, mrr: 0, events: [] },
     usage: { totalUsage: 0, bySource: {}, activeBySource: {} },
     customers: [],
@@ -2779,7 +2793,7 @@ async function getBillingSummariesLive(optionsByWindow = {}, {
 
   try {
     const reconciliationTimeoutMs = entries
-      .map(([, options]) => normalizeInteger(options && options.stripeReconciliationTimeoutMs))
+      .map(([, options]) => normalizeInteger(options?.stripeReconciliationTimeoutMs))
       .find((value) => value !== null)
       || STRIPE_RECONCILIATION_SUMMARY_TIMEOUT_MS;
     const extraRevenueEvents = await withTimeout(
@@ -2789,7 +2803,7 @@ async function getBillingSummariesLive(optionsByWindow = {}, {
     return Object.fromEntries(entries.map(([key, options]) => [
       key,
       getBillingSummary({
-        ...(options || {}),
+        ...options,
         extraRevenueEvents,
       }),
     ]));
@@ -3806,6 +3820,50 @@ async function readPayPalJsonResponse(response) {
   }
 }
 
+function parseAndValidatePayPalWebhookEvent(rawBody) {
+  const body = Buffer.isBuffer(rawBody) ? rawBody : Buffer.from(rawBody || '');
+  if (body.length === 0) return { ok: false, reason: 'missing_paypal_webhook_body' };
+  if (body.length > PAYPAL_WEBHOOK_MAX_BYTES) return { ok: false, reason: 'paypal_webhook_body_too_large' };
+
+  let event;
+  try {
+    event = JSON.parse(body.toString('utf8'));
+  } catch {
+    return { ok: false, reason: 'invalid_paypal_webhook_json' };
+  }
+  const eventId = normalizeText(event?.id);
+  const eventType = normalizeText(event?.event_type);
+  const eventCreatedAt = normalizeText(event?.create_time);
+  const eventCreatedMs = new Date(eventCreatedAt || '').getTime();
+  const resourceValid = Boolean(event?.resource && typeof event.resource === 'object' && !Array.isArray(event.resource));
+  if (!eventId || eventId.length > 128 || !Number.isFinite(eventCreatedMs) || !resourceValid || !PAYPAL_REVENUE_WEBHOOK_EVENT_TYPES.has(eventType)) {
+    return { ok: false, reason: 'invalid_or_unsupported_paypal_webhook_event' };
+  }
+  return { ok: true, event, eventId, eventType, eventCreatedAt };
+}
+
+function validatePayPalTransmission(headers, now) {
+  const transmission = normalizePayPalTransmissionHeaders(headers);
+  if (Object.values(transmission).some((value) => !value)) {
+    return { ok: false, reason: 'missing_paypal_transmission_headers' };
+  }
+  let certUrl;
+  try {
+    certUrl = new URL(transmission.certUrl);
+  } catch {
+    return { ok: false, reason: 'invalid_paypal_cert_url' };
+  }
+  if (certUrl.protocol !== 'https:') return { ok: false, reason: 'invalid_paypal_cert_url' };
+  const nowMs = new Date(now).getTime();
+  const transmissionMs = new Date(transmission.transmissionTime).getTime();
+  if (!Number.isFinite(nowMs) || !Number.isFinite(transmissionMs) ||
+      transmissionMs > nowMs + PAYPAL_WEBHOOK_FUTURE_SKEW_MS ||
+      nowMs - transmissionMs > PAYPAL_WEBHOOK_REPLAY_WINDOW_MS) {
+    return { ok: false, reason: 'stale_or_future_paypal_transmission' };
+  }
+  return { ok: true, transmission };
+}
+
 async function verifyPayPalWebhookSignature({
   rawBody,
   headers,
@@ -3816,51 +3874,22 @@ async function verifyPayPalWebhookSignature({
   const config = resolvePayPalWebhookVerifierConfig(configOverrides);
   if (!config.configured) return { verified: false, reason: config.reason };
   if (typeof fetchImpl !== 'function') return { verified: false, reason: 'paypal_verification_fetch_unavailable' };
-  const body = Buffer.isBuffer(rawBody) ? rawBody : Buffer.from(rawBody || '');
-  if (body.length === 0) return { verified: false, reason: 'missing_paypal_webhook_body' };
-  if (body.length > PAYPAL_WEBHOOK_MAX_BYTES) return { verified: false, reason: 'paypal_webhook_body_too_large' };
 
-  let event;
-  try {
-    event = JSON.parse(body.toString('utf8'));
-  } catch {
-    return { verified: false, reason: 'invalid_paypal_webhook_json' };
-  }
-  const eventId = normalizeText(event && event.id);
-  const eventType = normalizeText(event && event.event_type);
-  const eventCreatedAt = normalizeText(event && event.create_time);
-  const eventCreatedMs = new Date(eventCreatedAt || '').getTime();
-  if (!eventId || eventId.length > 128 || !Number.isFinite(eventCreatedMs) ||
-      !event.resource || typeof event.resource !== 'object' || Array.isArray(event.resource) ||
-      !PAYPAL_REVENUE_WEBHOOK_EVENT_TYPES.has(eventType)) {
-    return { verified: false, reason: 'invalid_or_unsupported_paypal_webhook_event' };
-  }
+  const parsedEvent = parseAndValidatePayPalWebhookEvent(rawBody);
+  if (!parsedEvent.ok) return { verified: false, reason: parsedEvent.reason };
+  const { event, eventId, eventType, eventCreatedAt } = parsedEvent;
 
-  const transmission = normalizePayPalTransmissionHeaders(headers);
-  if (Object.values(transmission).some((value) => !value)) {
-    return { verified: false, reason: 'missing_paypal_transmission_headers' };
-  }
-  let certUrl;
-  try {
-    certUrl = new URL(transmission.certUrl);
-  } catch {
-    return { verified: false, reason: 'invalid_paypal_cert_url' };
-  }
-  if (certUrl.protocol !== 'https:') return { verified: false, reason: 'invalid_paypal_cert_url' };
-  const nowMs = new Date(now).getTime();
-  const transmissionMs = new Date(transmission.transmissionTime).getTime();
-  if (!Number.isFinite(nowMs) || !Number.isFinite(transmissionMs) ||
-      transmissionMs > nowMs + PAYPAL_WEBHOOK_FUTURE_SKEW_MS ||
-      nowMs - transmissionMs > PAYPAL_WEBHOOK_REPLAY_WINDOW_MS) {
-    return { verified: false, reason: 'stale_or_future_paypal_transmission' };
-  }
+  const parsedTransmission = validatePayPalTransmission(headers, now);
+  if (!parsedTransmission.ok) return { verified: false, reason: parsedTransmission.reason };
+  const { transmission } = parsedTransmission;
 
+  const basicCredentials = Buffer.from(`${config.clientId}:${config.clientSecret}`).toString('base64');
   let tokenResponse;
   try {
     tokenResponse = await withTimeout(fetchImpl(new URL('/v1/oauth2/token', config.apiBaseUrl), {
       method: 'POST',
       headers: {
-        Authorization: `Basic ${Buffer.from(`${config.clientId}:${config.clientSecret}`).toString('base64')}`,
+        Authorization: `Basic ${basicCredentials}`,
         Accept: 'application/json',
         'Content-Type': 'application/x-www-form-urlencoded',
       },
@@ -3870,7 +3899,7 @@ async function verifyPayPalWebhookSignature({
     return { verified: false, reason: 'paypal_oauth_request_failed' };
   }
   const tokenPayload = await readPayPalJsonResponse(tokenResponse);
-  if (!tokenResponse.ok || !normalizeText(tokenPayload && tokenPayload.access_token)) {
+  if (!tokenResponse.ok || !normalizeText(tokenPayload?.access_token)) {
     return { verified: false, reason: 'paypal_oauth_rejected' };
   }
 
@@ -3897,13 +3926,11 @@ async function verifyPayPalWebhookSignature({
     return { verified: false, reason: 'paypal_signature_verification_request_failed' };
   }
   const verificationPayload = await readPayPalJsonResponse(verificationResponse);
-  const verificationStatus = (normalizeText(verificationPayload && verificationPayload.verification_status) || '').toUpperCase();
+  const verificationStatus = (normalizeText(verificationPayload?.verification_status) || '').toUpperCase();
   if (!verificationResponse.ok || verificationStatus !== 'SUCCESS') {
     return { verified: false, reason: 'invalid_paypal_webhook_signature' };
   }
-  const paypalDebugId = normalizeText(verificationResponse.headers && verificationResponse.headers.get
-    ? verificationResponse.headers.get('paypal-debug-id')
-    : null);
+  const paypalDebugId = normalizeText(verificationResponse.headers?.get?.('paypal-debug-id') || null);
   return {
     verified: true,
     reason: null,
@@ -3915,6 +3942,7 @@ async function verifyPayPalWebhookSignature({
     verificationStatus,
     paypalDebugId: paypalDebugId || null,
     webhookId: config.webhookId,
+    apiBaseUrl: config.apiBaseUrl,
   };
 }
 
@@ -4050,7 +4078,7 @@ function recordGithubMarketplaceWebhookDelivery({
   } catch {
     return { verified: false, recorded: false, reason: 'invalid_github_webhook_json' };
   }
-  if (!event || !event.action || !event.marketplace_purchase) {
+  if (!event?.action || !event?.marketplace_purchase) {
     return { verified: false, recorded: false, reason: 'invalid_github_marketplace_payload' };
   }
 
@@ -4093,18 +4121,19 @@ function recordGithubMarketplaceWebhookDelivery({
   };
 }
 
-function buildGithubMarketplaceRevenueMetadata(marketplacePurchase = {}, marketplaceOrderId, planPricing = {}, provenance = {}) {
-  const plan = marketplacePurchase && typeof marketplacePurchase.plan === 'object'
-    ? marketplacePurchase.plan
+function buildGithubMarketplaceRevenueMetadata(marketplacePurchase, marketplaceOrderId, planPricing = {}, provenance = {}) {
+  const purchase = marketplacePurchase || {};
+  const plan = purchase && typeof purchase.plan === 'object'
+    ? purchase.plan
     : {};
   return {
-    accountId: normalizeText(marketplacePurchase.account && marketplacePurchase.account.id),
-    accountType: normalizeText(marketplacePurchase.account && marketplacePurchase.account.type),
+    accountId: normalizeText(purchase.account?.id),
+    accountType: normalizeText(purchase.account?.type),
     planId: normalizeText(plan.id),
     planName: normalizeText(plan.name),
     marketplaceOrderId: normalizeText(marketplaceOrderId),
-    billingCycle: normalizeText(marketplacePurchase.billing_cycle ?? marketplacePurchase.billingCycle),
-    unitCount: normalizeInteger(marketplacePurchase.unit_count ?? marketplacePurchase.unitCount),
+    billingCycle: normalizeText(purchase.billing_cycle ?? purchase.billingCycle),
+    unitCount: normalizeInteger(purchase.unit_count ?? purchase.unitCount),
     priceModel: normalizeText(plan.price_model ?? plan.priceModel),
     monthlyPriceInCents: normalizeInteger(plan.monthly_price_in_cents ?? plan.monthlyPriceInCents),
     yearlyPriceInCents: normalizeInteger(plan.yearly_price_in_cents ?? plan.yearlyPriceInCents),

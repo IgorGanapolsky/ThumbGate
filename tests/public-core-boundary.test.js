@@ -329,8 +329,8 @@ test('public-core-boundary: npm bundle stays thin (file count ceiling)', () => {
   // 639 -> 640 (2026-10-29): scripts/tailscale-october-access.js, a public pre-tool gate.
   // 640 -> 641 (2026-10-29): scripts/gitlab-sdlc-prompts.js, a public pre-tool gate.
   // 641 -> 642 (2026-10-29): scripts/mabl-failure-honesty.js arrived with main. Measured pack 642.
-  // 642 -> 645 (2026-11-05): lockstep with BASELINE_FILE_COUNT=655 in public-bundle-ratchet.test.js after PRs #4813-#4815.
-  const CEILING = 645;
+  // 642 -> 650 (2026-11-05): scripts/verified-lessons.js, src entrypoints, and merged main pre-tool gates.
+  const CEILING = 650;
   assert.ok(
     files.length <= CEILING,
     `public npm bundle should stay <= ${CEILING} files, got ${files.length}. ` +
