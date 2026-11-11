@@ -1,47 +1,45 @@
-# ReAct GraphRAG eval: MoE router, JIT compactor, stdio gate_check
+# ReAct GraphRAG eval behind stdio gate_check
 
 Dispatch task MAC-20261111-04 (lane-graphrag-mcp).
 
 ## Problem
 
-A GraphRAG agent that writes Cypher can write to the graph, query labels the
-schema never declared, or loop forever on a failing step. None of that was
-checked before the query ran, and ThumbGate's `gate_check` was not in the path.
+`scripts/agentic-prompt-pipelines.js` already has the ReAct GraphRAG loop,
+the Claude/Gemini expert router and the JIT context trimmer. Two gaps:
+its schema-first rule only checks that `get_graph_schema` was called, not
+that a query's labels exist, and no graph query passed through ThumbGate's
+own `gate_check`.
 
 ## Technical plan
 
-`runner.js` runs a ReAct loop as an explicit state machine:
-`THOUGHT -> COMPACT -> ROUTE -> GATE -> ACT -> OBSERVE`, ending a step in
-`DONE`, `FAILED` or `SKIPPED`.
+`runner.js` reuses the pipelines and adds a gated graph-tool wrapper. Per eval case:
 
-- **Read-only Cypher deny check**: CREATE, MERGE, DELETE, DETACH, SET, REMOVE,
-  DROP, FOREACH, LOAD CSV, IN TRANSACTIONS, `apoc.*`, `dbms.*` and any CALL
-  other than `db.labels`, `db.relationshipTypes`, `db.schema.visualization`
-  are denied. String literals and comments are stripped first.
-- **Schema-first Cypher gate**: every node label and relationship type in the
-  query must be in the declared schema. Queries with no typed node pattern or
-  with backtick identifiers are denied.
-- **stdio `gate_check`**: the query is then sent as `graph_query` to
-  `thumbgate serve` over JSON-RPC stdio. Only `allow` runs it; `warn`, `block`
-  and `error` fail closed.
-- **3-attempt topological fail-safe**: steps run in dependency order (Kahn's
-  algorithm). A cycle or unknown dependency fails before anything runs. Each
-  step gets at most 3 attempts, the planner sees the last error, then the step
-  fails closed and its dependents are skipped with the reason.
-- **Dual-stack MoE router**: `classifyTask` from `scripts/model-tier-router.js`
-  picks a tier; `frontier` and `bulkCloud` map to the frontier stack, every
-  other tier to the local stack. High risk plus retries escalates to frontier.
-- **JIT context compactor**: before each attempt, context is trimmed to the
-  step's token budget. Pinned items (goal, upstream observations) stay, others
-  are kept by priority then recency, the rest are dropped and reported.
+1. **JIT compactor**: `trimContextJustInTime` with model calls disabled, so
+   only the deterministic pass runs (noise and duplicate lines dropped, error
+   lines and stack frames kept verbatim).
+2. **Dual-stack MoE router**: `routeWorkload` with model calls disabled, so
+   the Claude/Gemini rules decide, or the safe fallback picks Claude.
+3. **ReAct GraphRAG**: `runGraphRagTraversal` with scripted model turns.
+   Each Cypher query passes, in order:
+   - the pipeline's read-only deny check (CREATE, MERGE, DELETE, DETACH, SET,
+     REMOVE, DROP, FOREACH, LOAD CSV, IN TRANSACTIONS, CALL subqueries, any
+     procedure outside the read allow list such as `apoc.*` and `dbms.*`);
+   - the **schema-first Cypher gate** (new): every node label and relationship
+     type must be in the schema `get_graph_schema` returned; untyped patterns
+     and backtick identifiers are denied;
+   - **`gate_check` over stdio** (new): `thumbgate serve` is asked about
+     `graph_query`. Only `allow` runs the query; `warn`, `block`, `error` throw.
+   Semantic searches also go through `gate_check`.
+4. **3-attempt fail-safe**: every denial or empty result is a failed attempt;
+   the pipeline halts after 3 and reports the missing link.
 
 ## Alternatives rejected
 
-- A Cypher parser dependency: adds to the bundle; the deny list fails closed.
-- A new router: `model-tier-router.js` already has deterministic rules.
+- A second router/compactor/ReAct loop in `evals/`: the pipeline already has them.
+- A Cypher parser dependency: it would grow the bundle; the checks fail closed.
 
 ## Files
 
 - `evals/graphrag-moe-jit/runner.js`, `fixture.js`, `SPEC.md`
 - `tests/graphrag-moe-jit-evals.test.js`
-- `GEMINI.md` (usage section), `package.json` (test registration)
+- `GEMINI.md` (usage section), `package.json` (test registration), `.changeset/`

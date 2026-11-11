@@ -3,25 +3,34 @@
 // Deterministic in-memory graph for the ReAct GraphRAG eval. No database, no network.
 
 const SCHEMA = Object.freeze({
-  labels: ['Gate', 'Lesson', 'FailureClass', 'File'],
-  relationships: ['PREVENTS', 'GATED_BY', 'LEARNED_FROM'],
+  labels: ['Gate', 'Lesson', 'FailureClass'],
+  relationshipTypes: ['PREVENTS', 'LEARNED_FROM'],
+  propertyKeys: ['id', 'name'],
 });
 
-const NODES = Object.freeze([
-  { id: 'gate:force-push', label: 'Gate', name: 'block force-push to main' },
-  { id: 'fc:history-rewrite', label: 'FailureClass', name: 'shared history rewrite' },
-  { id: 'lesson:42', label: 'Lesson', name: 'never force-push main' },
-  { id: 'scripts/gates-engine.js', label: 'File', name: 'gates-engine' },
-]);
+// Exact query text -> rows. Anything else returns no rows.
+const ROWS = Object.freeze({
+  "MATCH (g:Gate)-[:PREVENTS]->(f:FailureClass {name: 'shared history rewrite'}) RETURN g.id AS gate LIMIT 5":
+    [{ gate: 'gate:force-push' }],
+  "MATCH (g:Gate {id: 'gate:force-push'})-[:LEARNED_FROM]->(l:Lesson) RETURN l.name AS lesson LIMIT 5":
+    [{ lesson: 'never force-push main' }],
+});
 
-const EDGES = Object.freeze([
-  { from: 'gate:force-push', rel: 'PREVENTS', to: 'fc:history-rewrite' },
-  { from: 'gate:force-push', rel: 'LEARNED_FROM', to: 'lesson:42' },
-  { from: 'scripts/gates-engine.js', rel: 'GATED_BY', to: 'gate:force-push' },
-]);
-
-function neighbors(fromId, rel) {
-  return EDGES.filter((e) => e.from === fromId && e.rel === rel).map((e) => NODES.find((n) => n.id === e.to));
+function createGraph({ executed = [] } = {}) {
+  return {
+    executed,
+    async getGraphSchema() { return { ...SCHEMA }; },
+    async executeCypher(cypher) {
+      executed.push(cypher);
+      return ROWS[cypher] || [];
+    },
+    async semanticSearch(term) {
+      executed.push(`search:${term}`);
+      return term.includes('force') ? [{ node: { id: 'lesson:42' }, score: 0.91 }] : [];
+    },
+  };
 }
 
-module.exports = { SCHEMA, NODES, EDGES, neighbors };
+const call = (tool, input) => `<thought>next hop</thought><call>${JSON.stringify({ tool, input })}</call>`;
+
+module.exports = { SCHEMA, ROWS, createGraph, call };

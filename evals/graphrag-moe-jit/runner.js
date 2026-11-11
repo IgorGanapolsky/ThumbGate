@@ -3,30 +3,31 @@
 /**
  * ReAct GraphRAG eval runner (MAC-20261111-04).
  *
- * A ReAct loop written as an explicit state machine. Every graph query passes,
- * in order: the read-only Cypher deny check, the schema-first Cypher gate, and
- * ThumbGate's stdio MCP `gate_check` tool. Only an "allow" from all three runs
- * the query; warn, block and error all fail closed.
+ * Drives the existing pipelines in scripts/agentic-prompt-pipelines.js and puts
+ * ThumbGate's stdio MCP `gate_check` in front of every graph query:
  *
- * Steps run in topological order. Each step gets at most 3 attempts; the step's
- * planner may revise its query after a failed attempt. After the third failure
- * the step fails closed and every dependent step is skipped with that reason.
+ *   1. JIT compactor  -> trimContextJustInTime (deterministic pass, no model)
+ *   2. Dual-stack MoE -> routeWorkload (Claude/Gemini rules, safe fallback, no model)
+ *   3. ReAct GraphRAG -> runGraphRagTraversal (state machine: thought -> call ->
+ *      observation, read-only Cypher guard, 3-failed-attempt halt)
  *
- * Before each attempt the JIT compactor trims context to the step's token budget,
- * and the dual-stack router (built on scripts/model-tier-router.js classifyTask)
- * picks the local or frontier stack. No network or LLM calls: the graph store is
- * whatever `step.act` reads, which in the eval is an in-memory fixture.
+ * This file adds two things the pipeline does not do by itself:
+ *   - a schema-first Cypher gate: every label and relationship type in a query
+ *     must appear in the schema returned by get_graph_schema;
+ *   - the gate_check call: only an "allow" verdict runs the query. warn, block
+ *     and error throw, which the traversal records as a failed attempt.
+ *
+ * Model turns are scripted and the graph is an in-memory fixture, so a run is
+ * deterministic and makes no network or LLM calls.
  */
 
 const path = require('node:path');
 const { spawn } = require('node:child_process');
-const { classifyTask } = require('../../scripts/model-tier-router');
-const { estimateTokens } = require('../../scripts/context-footprint');
+const pipelines = require('../../scripts/agentic-prompt-pipelines');
 
-const MAX_ATTEMPTS = 3;
 const ROOT = path.resolve(__dirname, '..', '..');
 
-/* ------------------------------ Cypher checks ----------------------------- */
+/* ------------------------- schema-first Cypher gate ------------------------ */
 
 function stripLiteralsAndComments(cypher) {
   return String(cypher || '')
@@ -36,164 +37,84 @@ function stripLiteralsAndComments(cypher) {
     .replace(/"(?:[^"\\]|\\.)*"/g, '""');
 }
 
-const WRITE_CLAUSES = [
-  [/\bCREATE\b/i, 'CREATE'],
-  [/\bMERGE\b/i, 'MERGE'],
-  [/\bDELETE\b/i, 'DELETE'],
-  [/\bDETACH\b/i, 'DETACH'],
-  [/\bSET\b/i, 'SET'],
-  [/\bREMOVE\b/i, 'REMOVE'],
-  [/\bDROP\b/i, 'DROP'],
-  [/\bFOREACH\b/i, 'FOREACH'],
-  [/\bLOAD\s+CSV\b/i, 'LOAD CSV'],
-  [/\bIN\s+TRANSACTIONS\b/i, 'IN TRANSACTIONS'],
-  [/\bapoc\./i, 'apoc procedure'],
-  [/\bdbms\./i, 'dbms procedure'],
-];
-
-// Procedures a read-only agent may CALL. Everything else, including CALL { } subqueries, is denied.
-const READ_ONLY_PROCEDURES = new Set(['db.labels', 'db.relationshiptypes', 'db.schema.visualization']);
-
-function readOnlyCypherCheck(cypher) {
-  const text = stripLiteralsAndComments(cypher);
-  if (!text.trim()) return { allowed: false, reason: 'empty Cypher query' };
-  for (const [pattern, name] of WRITE_CLAUSES) {
-    if (pattern.test(text)) return { allowed: false, reason: `read-only deny: ${name} is not allowed` };
-  }
-  const calls = text.matchAll(/\bCALL\b\s*([\w.]+|\{)?/gi);
-  for (const m of calls) {
-    const proc = (m[1] || '').toLowerCase();
-    if (!READ_ONLY_PROCEDURES.has(proc)) {
-      return { allowed: false, reason: `read-only deny: CALL ${m[1] || ''} is not an allowed read procedure`.trim() };
-    }
-  }
-  return { allowed: true, reason: 'read-only' };
-}
-
 function extractPatternIdentifiers(cypher) {
   const text = stripLiteralsAndComments(cypher);
   const labels = new Set();
   const relationships = new Set();
-  // Node patterns: (var:Label:Other {props}) -- labels sit between "(" and "{" / ")".
+  // Node patterns: (var:Label:Other {props})
   for (const m of text.matchAll(/\(\s*\w*\s*((?::\s*\w+\s*)+)/g)) {
     for (const l of m[1].split(':').map((s) => s.trim()).filter(Boolean)) labels.add(l);
   }
-  // Label predicates in WHERE: n:Label (no whitespace, so map entries like {id: x} do not match).
-  for (const m of text.matchAll(/\bWHERE\b[\s\S]*$/gi)) {
-    for (const p of m[0].matchAll(/\b\w+:(\w+)\b/g)) labels.add(p[1]);
+  // Label predicates after WHERE: n:Label (no space, so map entries like {id: x} do not match)
+  const where = /\bWHERE\b([\s\S]*)$/i.exec(text);
+  if (where) {
+    for (const p of where[1].matchAll(/\b\w+:(\w+)\b/g)) labels.add(p[1]);
   }
-  // Relationship patterns: [var:TYPE|OTHER*1..3].
+  // Relationship patterns: [var:TYPE|OTHER*1..3]
   for (const m of text.matchAll(/\[\s*\w*\s*:\s*([\w|:\s]+)/g)) {
     for (const r of m[1].split(/[|:]/).map((s) => s.trim()).filter(Boolean)) relationships.add(r);
   }
   return { labels: [...labels], relationships: [...relationships], hasBackticks: text.includes('`') };
 }
 
-function schemaFirstCypherGate(cypher, schema) {
-  if (!schema || !Array.isArray(schema.labels) || !Array.isArray(schema.relationships)) {
-    return { allowed: false, reason: 'schema-first: no declared schema' };
+/** schema: the get_graph_schema shape, { labels: [], relationshipTypes: [] }. */
+function checkSchemaFirstCypher(cypher, schema) {
+  if (!schema || !Array.isArray(schema.labels) || !Array.isArray(schema.relationshipTypes)) {
+    return { ok: false, reason: 'schema_first:no_schema' };
   }
   const ids = extractPatternIdentifiers(cypher);
-  if (ids.hasBackticks) return { allowed: false, reason: 'schema-first: backtick identifiers cannot be verified' };
-  if (ids.labels.length === 0) return { allowed: false, reason: 'schema-first: query has no typed node pattern' };
+  if (ids.hasBackticks) return { ok: false, reason: 'schema_first:backtick_identifier' };
+  if (ids.labels.length === 0) return { ok: false, reason: 'schema_first:no_typed_node_pattern' };
   const unknownLabels = ids.labels.filter((l) => !schema.labels.includes(l));
-  const unknownRels = ids.relationships.filter((r) => !schema.relationships.includes(r));
-  if (unknownLabels.length || unknownRels.length) {
-    const parts = [];
-    if (unknownLabels.length) parts.push(`unknown labels ${unknownLabels.join(', ')}`);
-    if (unknownRels.length) parts.push(`unknown relationships ${unknownRels.join(', ')}`);
-    return { allowed: false, reason: `schema-first: ${parts.join('; ')}` };
-  }
-  return { allowed: true, reason: 'schema-first: all labels and relationships declared', ...ids };
+  const unknownRels = ids.relationships.filter((r) => !schema.relationshipTypes.includes(r));
+  if (unknownLabels.length) return { ok: false, reason: `schema_first:unknown_label:${unknownLabels.join(',')}` };
+  if (unknownRels.length) return { ok: false, reason: `schema_first:unknown_relationship:${unknownRels.join(',')}` };
+  return { ok: true, reason: null };
 }
 
-/* ---------------------------- Topological order --------------------------- */
+/* ------------------------------ gated graph tools -------------------------- */
 
-function topologicalOrder(steps) {
-  const ids = steps.map((s) => s.id);
-  const known = new Set(ids);
-  if (known.size !== ids.length) return { ok: false, reason: 'duplicate step id' };
-  for (const s of steps) {
-    for (const d of s.dependsOn || []) {
-      if (!known.has(d)) return { ok: false, reason: `step ${s.id} depends on unknown step ${d}` };
+/**
+ * Wrap graph tools so each query passes the schema-first gate and gate_check.
+ * The pipeline already runs checkReadOnlyCypher before executeCypher, so the
+ * order per query is: read-only deny -> schema-first -> gate_check -> query.
+ */
+function createGatedGraphTools(tools, { gateCheck }) {
+  if (typeof gateCheck !== 'function') throw new TypeError('gateCheck is required');
+  const gateLog = [];
+  let schema = null;
+
+  async function gate(toolInput) {
+    const verdict = (await gateCheck('graph_query', toolInput)) || { decision: 'error', reason: 'no verdict' };
+    gateLog.push({ input: toolInput, decision: verdict.decision });
+    if (verdict.decision !== 'allow') {
+      throw new Error(`gate_check_${verdict.decision}: ${verdict.reason || 'no reason'}`);
     }
   }
-  const indegree = new Map(steps.map((s) => [s.id, (s.dependsOn || []).length]));
-  const order = [];
-  const ready = ids.filter((id) => indegree.get(id) === 0);
-  while (ready.length) {
-    const id = ready.shift();
-    order.push(id);
-    for (const s of steps) {
-      if ((s.dependsOn || []).includes(id)) {
-        indegree.set(s.id, indegree.get(s.id) - 1);
-        if (indegree.get(s.id) === 0) ready.push(s.id);
-      }
-    }
-  }
-  if (order.length !== steps.length) return { ok: false, reason: 'dependency cycle detected' };
-  return { ok: true, order };
-}
 
-/* ------------------------------- MoE router ------------------------------- */
-
-const FRONTIER_TIERS = new Set(['frontier', 'bulkCloud']);
-
-function routeStep(step, { contextTokens, attempt }) {
-  const routed = classifyTask({
-    type: step.taskType || 'extraction',
-    contextTokens,
-    riskLevel: step.riskLevel || 'low',
-    retryCount: attempt - 1,
-    tags: step.tags || [],
-  });
-  return { stack: FRONTIER_TIERS.has(routed.tier) ? 'frontier' : 'local', tier: routed.tier, reason: routed.reason };
-}
-
-/* ------------------------------ JIT compactor ----------------------------- */
-
-function compactContext(items, budgetTokens) {
-  const budget = Math.max(0, Number(budgetTokens) || 0);
-  const indexed = (items || []).map((item, index) => ({ ...item, index, tokens: estimateTokens(item.text || '') }));
-  const pinned = indexed.filter((i) => i.pinned);
-  const optional = indexed.filter((i) => !i.pinned)
-    .sort((a, b) => (b.priority || 0) - (a.priority || 0) || b.index - a.index);
-  const kept = [];
-  let used = 0;
-  for (const item of pinned) {
-    if (used + item.tokens <= budget) {
-      kept.push(item);
-      used += item.tokens;
-    } else {
-      const room = Math.max(0, (budget - used) * 4 - 12);
-      const text = `${String(item.text).slice(0, room)} [truncated]`;
-      const tokens = estimateTokens(text);
-      kept.push({ ...item, text, tokens, truncated: true });
-      used += tokens;
-    }
-  }
-  const dropped = [];
-  for (const item of optional) {
-    if (used + item.tokens <= budget) {
-      kept.push(item);
-      used += item.tokens;
-    } else {
-      dropped.push(item.id);
-    }
-  }
-  kept.sort((a, b) => a.index - b.index);
   return {
-    items: kept.map(({ index, tokens, ...rest }) => rest),
-    usedTokens: used,
-    budgetTokens: budget,
-    dropped,
+    gateLog,
+    async getGraphSchema() {
+      schema = await tools.getGraphSchema();
+      return schema;
+    },
+    async executeCypher(cypher) {
+      const check = checkSchemaFirstCypher(cypher, schema);
+      if (!check.ok) throw new Error(check.reason);
+      await gate({ cypher });
+      return tools.executeCypher(cypher);
+    },
+    async semanticSearch(term) {
+      await gate({ semantic_search: term });
+      return tools.semanticSearch(term);
+    },
   };
 }
 
 /* --------------------------- stdio gate_check client ---------------------- */
 
 /**
- * Spawn `thumbgate serve` once and send gate_check calls over JSON-RPC stdio.
+ * Spawn `thumbgate serve` once and call gate_check over JSON-RPC stdio.
  * Returns { gateCheck(toolName, toolInput) -> verdict, close() }.
  */
 function createStdioGateClient({ env = {}, timeoutMs = 60000 } = {}) {
@@ -224,20 +145,21 @@ function createStdioGateClient({ env = {}, timeoutMs = 60000 } = {}) {
     for (const waiter of pending.values()) waiter({ error: { message: 'gate server exited' } });
     pending.clear();
   });
+  const send = (frame) => child.stdin.write(`${JSON.stringify({ jsonrpc: '2.0', ...frame })}\n`);
   const request = (method, params) => new Promise((resolve) => {
     const id = nextId++;
     const timer = setTimeout(() => {
       pending.delete(id);
-      resolve({ error: { message: `gate_check timed out after ${timeoutMs}ms` } });
+      resolve({ error: { message: `timed out after ${timeoutMs}ms` } });
     }, timeoutMs);
     pending.set(id, (msg) => { clearTimeout(timer); resolve(msg); });
-    child.stdin.write(`${JSON.stringify({ jsonrpc: '2.0', id, method, params })}\n`);
+    send({ id, method, params });
   });
   const ready = request('initialize', {
     protocolVersion: '2024-11-05',
     capabilities: {},
     clientInfo: { name: 'graphrag-moe-jit-eval', version: '1' },
-  }).then(() => child.stdin.write(`${JSON.stringify({ jsonrpc: '2.0', method: 'notifications/initialized' })}\n`));
+  }).then(() => send({ method: 'notifications/initialized' }));
 
   async function gateCheck(toolName, toolInput) {
     await ready;
@@ -260,100 +182,39 @@ function createStdioGateClient({ env = {}, timeoutMs = 60000 } = {}) {
   return { gateCheck, close };
 }
 
-/* ---------------------------- ReAct state machine -------------------------- */
+/* ---------------------------------- eval ---------------------------------- */
 
-const STATES = Object.freeze(['THOUGHT', 'COMPACT', 'ROUTE', 'GATE', 'ACT', 'OBSERVE', 'DONE', 'FAILED', 'SKIPPED']);
-
-async function attemptStep(step, attempt, ctx) {
-  const trace = [];
-  const lastError = ctx.lastError;
-  trace.push({ state: 'THOUGHT', attempt });
-  const cypher = step.plan({ attempt, lastError, observations: ctx.observations });
-
-  trace.push({ state: 'COMPACT' });
-  const compacted = compactContext([
-    { id: `${step.id}:goal`, text: step.goal || step.id, pinned: true },
-    ...(step.dependsOn || []).map((d) => ({ id: `${d}:observation`, text: JSON.stringify(ctx.observations[d]), pinned: true })),
-    ...(step.context || []),
-  ], step.budgetTokens || 2000);
-
-  trace.push({ state: 'ROUTE' });
-  const route = routeStep(step, { contextTokens: compacted.usedTokens, attempt });
-
-  trace.push({ state: 'GATE' });
-  const readOnly = readOnlyCypherCheck(cypher);
-  if (!readOnly.allowed) return { ok: false, error: readOnly.reason, trace, compacted, route, cypher };
-  const schemaGate = schemaFirstCypherGate(cypher, ctx.schema);
-  if (!schemaGate.allowed) return { ok: false, error: schemaGate.reason, trace, compacted, route, cypher };
-  const verdict = await ctx.gateCheck('graph_query', { cypher, step: step.id, stack: route.stack });
-  if (!verdict || verdict.decision !== 'allow') {
-    const decision = verdict ? verdict.decision : 'error';
-    return { ok: false, error: `gate_check ${decision}: ${(verdict && verdict.reason) || 'no reason'}`, trace, compacted, route, cypher, verdict };
-  }
-
-  trace.push({ state: 'ACT' });
-  let observation;
-  try {
-    observation = await step.act({ cypher, context: compacted.items, route, observations: ctx.observations });
-  } catch (err) {
-    return { ok: false, error: `act failed: ${err.message}`, trace, compacted, route, cypher, verdict };
-  }
-  trace.push({ state: 'OBSERVE' });
-  if (step.accept && !step.accept(observation)) {
-    return { ok: false, error: 'observation rejected', trace, compacted, route, cypher, verdict };
-  }
-  return { ok: true, observation, trace, compacted, route, cypher, verdict };
+function scriptedModel(turns) {
+  const queue = [...turns];
+  return async () => (queue.length ? queue.shift() : '<halt>script exhausted</halt>');
 }
 
-async function runGraphRagEval({ steps, schema, gateCheck, maxAttempts = MAX_ATTEMPTS }) {
-  if (typeof gateCheck !== 'function') throw new TypeError('gateCheck is required');
-  const attemptsCap = Math.min(MAX_ATTEMPTS, Math.max(1, maxAttempts));
-  const topo = topologicalOrder(steps);
-  if (!topo.ok) return { status: 'failed', reason: `fail-closed before execution: ${topo.reason}`, order: [], results: {} };
+const noModel = async () => { throw new Error('model_disabled'); };
 
-  const byId = new Map(steps.map((s) => [s.id, s]));
-  const observations = {};
-  const results = {};
-  let failed = false;
-  for (const id of topo.order) {
-    const step = byId.get(id);
-    const blocker = (step.dependsOn || []).find((d) => results[d].state !== 'DONE');
-    if (blocker) {
-      results[id] = { state: 'SKIPPED', attempts: 0, reason: `fail-closed: upstream step ${blocker} did not complete` };
-      continue;
-    }
-    const attempts = [];
-    let lastError = null;
-    let done = false;
-    for (let attempt = 1; attempt <= attemptsCap; attempt++) {
-      const outcome = await attemptStep(step, attempt, { schema, gateCheck, observations, lastError });
-      attempts.push({ attempt, ok: outcome.ok, error: outcome.error || null, stack: outcome.route.stack, tier: outcome.route.tier, cypher: outcome.cypher, usedTokens: outcome.compacted.usedTokens, dropped: outcome.compacted.dropped, states: outcome.trace.map((t) => t.state) });
-      if (outcome.ok) {
-        observations[id] = outcome.observation;
-        done = true;
-        break;
-      }
-      lastError = outcome.error;
-    }
-    if (done) {
-      results[id] = { state: 'DONE', attempts: attempts.length, history: attempts };
-    } else {
-      failed = true;
-      results[id] = { state: 'FAILED', attempts: attempts.length, history: attempts, reason: `fail-closed after ${attempts.length} attempts: ${lastError}` };
-    }
-  }
-  return { status: failed ? 'failed' : 'passed', order: topo.order, results, observations };
+/**
+ * Run one eval case: compact context, route, then traverse behind gate_check.
+ * @param {object} c  { query, turns, rawContext?, tokenBudget?, graph }
+ * @param {object} deps { gateCheck }
+ */
+async function runEvalCase(c, { gateCheck }) {
+  const trim = await pipelines.trimContextJustInTime(c.rawContext || '', c.query, {
+    callModel: noModel,
+    tokenBudget: c.tokenBudget || 2000,
+  });
+  const route = await pipelines.routeWorkload(`${c.query}\n${trim.context}`, { callModel: noModel });
+  const tools = createGatedGraphTools(c.graph, { gateCheck });
+  const traversal = await pipelines.runGraphRagTraversal(c.query, {
+    callModel: scriptedModel(c.turns),
+    tools,
+  });
+  return { trim, route, traversal, gateLog: tools.gateLog };
 }
 
 module.exports = {
-  MAX_ATTEMPTS,
-  STATES,
-  readOnlyCypherCheck,
-  schemaFirstCypherGate,
   extractPatternIdentifiers,
-  topologicalOrder,
-  routeStep,
-  compactContext,
+  checkSchemaFirstCypher,
+  createGatedGraphTools,
   createStdioGateClient,
-  runGraphRagEval,
+  scriptedModel,
+  runEvalCase,
 };
