@@ -100,34 +100,47 @@ test('Adobe Creative MCP & GenStudio Brand Intelligence block destructive layer 
   assert.equal(cleanPost.compliant, true);
 });
 
-test('Lovable self-correcting design engine emits inline AST/JSX edits, CSS overrides, and Tailwind patches + CLI commands work end-to-end', () => {
+test('Lovable AST self-correcting design engine inherits ancestor bg, mutates JSX style={{}}, and converts visual-model findings into inline edits + CSS + Tailwind', () => {
   const { execFileSync } = require('node:child_process');
   const fs = require('node:fs');
   const os = require('node:os');
   const path = require('node:path');
-  const { inspectAndPatchDesignSource, computeContrastRatio } = require('../src/openshell-lovable-engine');
+  const { parseDesignAst, inspectAndPatchDesignSource, remediateVisualFindings, computeContrastRatio } = require('../src/openshell-lovable-engine');
 
   const brokenMarkup = [
-    '<div className="w-[640px] bg-slate-900">',
-    '  <p className="text-slate-600">Low contrast subtitle</p>',
-    '  <button className="h-6 p-1 outline-none bg-slate-900 text-slate-500">Save</button>',
-    '</div>',
+    '<section id="hero" className="w-[640px] bg-slate-950">',
+    '  <div className="card-shell">',
+    '    <p className="hero-sub text-slate-600">Low contrast inherited from ancestor</p>',
+    '    <span id="jsx-pill" style={{ color: \'#475569\', width: 520, height: 28 }} role="button">JSX Style AST</span>',
+    '    <button className="cta-btn h-6 p-1 outline-none text-slate-500">Save</button>',
+    '  </div>',
+    '</section>',
   ].join('\n');
 
-  const report = inspectAndPatchDesignSource(brokenMarkup, { defaultBgHex: '#0f172a' });
+  const ast = parseDesignAst(brokenMarkup, '#ffffff');
+  assert.equal(ast.nodes.find((n) => n.tagName === 'p').inheritedBgHex, '#020617');
+
+  const report = inspectAndPatchDesignSource(brokenMarkup, { defaultBgHex: '#ffffff' });
   assert.equal(report.changed, true);
-  assert.ok(report.patches.some((p) => p.type === 'low_contrast' && p.fixedRatio >= 4.5));
-  assert.ok(report.patches.some((p) => p.type === 'undersized_tap_target'));
-  assert.ok(report.patches.some((p) => p.type === 'missing_focus_ring'));
-  assert.ok(report.patches.some((p) => p.type === 'fixed_width_mobile_overflow'));
-  assert.match(report.patchedSource, /w-full/);
-  assert.match(report.patchedSource, /max-w-\[640px\]/);
+  assert.ok(report.inlineEdits.length >= 4);
+  assert.ok(report.cssOverrides.length >= 4);
+  assert.match(report.stylesheetOverride, /p\.hero-sub \{ color: #[0-9a-f]{6}; \}/i);
+  assert.match(report.patchedSource, /\bw-full\b[\s\S]*max-w-\[640px\]/);
   assert.match(report.patchedSource, /min-h-11 min-w-11 px-4 py-2\.5/);
   assert.match(report.patchedSource, /focus-visible:ring-2/);
+  assert.match(report.patchedSource, /maxWidth: '520px'/);
+  assert.match(report.patchedSource, /minHeight: '44px'/);
   assert.doesNotMatch(report.patchedSource, /text-slate-600/);
-  assert.ok(computeContrastRatio('#cbd5e1', '#0f172a') >= 4.5);
+  assert.ok(computeContrastRatio('#cbd5e1', '#020617') >= 4.5);
 
-  // Verify CLI `policy-prove` and `design-fix --write`
+  const visualFixed = remediateVisualFindings(
+    '<div className="bg-slate-900"><p className="caption">Passive visual finding</p><button id="buy">Buy</button></div>',
+    ['The text contrast is too low on .caption', { selector: '#buy', issue: 'tap_target_too_small' }],
+  );
+  assert.equal(visualFixed.changed, true);
+  assert.match(visualFixed.patchedSource, /caption text-slate-300/);
+  assert.match(visualFixed.patchedSource, /id="buy" className="min-h-11 min-w-11 px-4 py-2\.5"/);
+
   const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'tg-openshell-cli-'));
   try {
     const candPath = path.join(tmpDir, 'cand.json');
@@ -135,14 +148,11 @@ test('Lovable self-correcting design engine emits inline AST/JSX edits, CSS over
     const uiPath = path.join(tmpDir, 'card.tsx');
     fs.writeFileSync(candPath, JSON.stringify({ filesystem_policy: { read_only: ['/usr'] } }));
     fs.writeFileSync(boundPath, JSON.stringify({ filesystem_policy: { read_only: ['/usr', '/etc'] } }));
-    fs.writeFileSync(uiPath, brokenMarkup);
-
+    fs.writeFileSync(uiPath, '<div className="bg-slate-900"><p className="sub">Hello</p></div>');
     const proveOut = execFileSync(process.execPath, [path.join(__dirname, '..', 'bin', 'cli.js'), 'policy-prove', candPath, '--boundary', boundPath, '--json'], { encoding: 'utf8' });
     assert.equal(JSON.parse(proveOut).result, 'within_boundary');
-
-    execFileSync(process.execPath, [path.join(__dirname, '..', 'bin', 'cli.js'), 'design-fix', uiPath, '--write'], { encoding: 'utf8' });
-    const rewritten = fs.readFileSync(uiPath, 'utf8');
-    assert.match(rewritten, /min-h-11/);
+    execFileSync(process.execPath, [path.join(__dirname, '..', 'bin', 'cli.js'), 'design-fix', uiPath, '--findings', 'The text contrast is too low on .sub', '--write'], { encoding: 'utf8' });
+    assert.match(fs.readFileSync(uiPath, 'utf8'), /text-slate-300/);
   } finally {
     fs.rmSync(tmpDir, { recursive: true, force: true });
   }

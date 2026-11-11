@@ -5676,25 +5676,28 @@ switch (COMMAND) {
     const args = process.argv.slice(3);
     const writeInPlace = args.includes('--write');
     const jsonFlag = args.includes('--json');
-    const targetFile = args.find((a) => !a.startsWith('--'));
+    const fIdx = args.indexOf('--findings');
+    const findingsArg = fIdx >= 0 ? args[fIdx + 1] : null;
+    const targetFile = args.find((a, idx) => !a.startsWith('--') && idx !== fIdx + 1);
     if (!targetFile) {
-      console.error('Usage: npx thumbgate design-fix <file.html|file.tsx> [--write] [--json]');
+      console.error('Usage: npx thumbgate design-fix <file.html|file.tsx> [--findings <json-or-text>] [--write] [--json]');
       process.exit(2);
     }
     const fullPath = path.resolve(CWD, targetFile);
     const raw = fs.readFileSync(fullPath, 'utf8');
-    const { inspectAndPatchDesignSource } = require(path.join(PKG_ROOT, 'src', 'openshell-lovable-engine'));
-    const report = inspectAndPatchDesignSource(raw);
-    if (writeInPlace && report.changed) {
-      fs.writeFileSync(fullPath, report.patchedSource, 'utf8');
+    let visualFindings = [];
+    if (findingsArg) {
+      const maybePath = path.resolve(CWD, findingsArg);
+      const rawFindings = fs.existsSync(maybePath) ? fs.readFileSync(maybePath, 'utf8') : findingsArg;
+      try { visualFindings = JSON.parse(rawFindings); } catch { visualFindings = [rawFindings]; }
     }
-    if (jsonFlag) {
-      console.log(JSON.stringify(report, null, 2));
-    } else {
-      console.log(`design-fix: ${report.issueCount} optimization(s) generated${writeInPlace && report.changed ? ` (written to ${targetFile})` : ''}`);
-      for (const p of report.patches) {
-        console.log(`  - [${p.type}] <${p.element}> -> CSS { ${p.cssOverride} }`);
-      }
+    const { inspectAndPatchDesignSource } = require(path.join(PKG_ROOT, 'src', 'openshell-lovable-engine'));
+    const report = inspectAndPatchDesignSource(raw, { visualFindings });
+    if (writeInPlace && report.changed) fs.writeFileSync(fullPath, report.patchedSource, 'utf8');
+    if (jsonFlag) console.log(JSON.stringify(report, null, 2));
+    else {
+      console.log(`design-fix: ${report.issueCount} AST optimization(s)${writeInPlace && report.changed ? ` written to ${targetFile}` : ''}`);
+      for (const p of report.patches) console.log(`  - [${p.type}] ${p.astPath} -> CSS { ${p.cssOverride} }`);
     }
     process.exit(0);
   }

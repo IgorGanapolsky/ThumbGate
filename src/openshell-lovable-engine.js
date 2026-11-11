@@ -1,25 +1,9 @@
 'use strict';
 
 /**
- * NVIDIA OpenShell (v0.1.8) + Adobe MAX Nov-2026 + Lovable Self-Correcting Design Engine
- *
- * 1. Formal Policy Boundary Prover (`provePolicyBoundary`) & Policy Advisor Risk Check (`evaluateProposalRisk`)
- *    modeled on NVIDIA OpenShell (`openshell-prover` & `policy.local` advisor).
- * 2. Endpoint-Bound Credential Provider Egress Guard (`verifyProviderCredentialEgress`).
- * 3. Adobe Creative Agent / GenStudio Governance (`verifyNonDestructiveProjectEdit`, `evaluateBrandAdherence`).
- * 4. Lovable Active Self-Correcting Design Engine (`inspectAndPatchDesignSource`) that transforms visual/layout
- *    issues (WCAG contrast, <44px tap targets, mobile fixed-width overflow, focus-ring stripping) directly into
- *    inline HTML/JSX source edits, CSS overrides, and Tailwind utility patches.
+ * NVIDIA OpenShell (v0.1.8) + Adobe MAX Nov-2026 + Lovable AST Self-Correcting Design Engine.
  */
-
-const PROVER_COVERAGE_DOMAINS = Object.freeze([
-  'filesystem',
-  'network_l4',
-  'network_rest',
-  'process',
-  'landlock',
-]);
-
+const PROVER_COVERAGE_DOMAINS = Object.freeze(['filesystem', 'network_l4', 'network_rest', 'process', 'landlock']);
 const MODELED_PROTOCOLS = new Set(['tcp', 'rest']);
 const OPAQUE_L4_BINARIES = new Set(['git', 'ssh', 'scp', 'sftp', 'nc', 'ncat', 'netcat', 'socat', 'openssl', 'telnet']);
 const DB_OR_CACHE_PORTS = new Set([3306, 5432, 6379, 9200, 11211, 27017]);
@@ -38,32 +22,15 @@ function isAscii(value) {
 function isPrivateOrLinkLocalHost(host) {
   const h = String(host || '').trim().toLowerCase();
   if (!h) return { linkLocal: false, privateIp: false };
-  if (
-    h === 'metadata.google.internal'
-    || h === 'metadata'
-    || h === '100.100.100.200'
-    || h === 'localhost'
-    || /^127\./.test(h)
-    || /^169\.254\./.test(h)
-    || /^fe80:/i.test(h)
-    || h === '::1'
-  ) {
+  if (['metadata.google.internal', 'metadata', '100.100.100.200', 'localhost', '::1'].includes(h) || /^(?:127\.|169\.254\.|fe80:)/i.test(h)) {
     return { linkLocal: true, privateIp: true };
   }
-  if (/^10\./.test(h) || /^192\.168\./.test(h) || /^172\.(1[6-9]|2\d|3[01])\./.test(h) || /^fc00:|^fd/i.test(h)) {
-    return { linkLocal: false, privateIp: true };
-  }
+  if (/^(?:10\.|192\.168\.|172\.(?:1[6-9]|2\d|3[01])\.|fc00:|fd)/i.test(h)) return { linkLocal: false, privateIp: true };
   return { linkLocal: false, privateIp: false };
 }
 
 function proverVerdict(result, exitCode, extra = {}) {
-  return {
-    result,
-    exitCode,
-    passed: result === 'within_boundary',
-    coverage: { domains: [...PROVER_COVERAGE_DOMAINS] },
-    ...extra,
-  };
+  return { result, exitCode, passed: result === 'within_boundary', coverage: { domains: [...PROVER_COVERAGE_DOMAINS] }, ...extra };
 }
 
 /**
@@ -83,74 +50,36 @@ function provePolicyBoundary(candidate, boundary) {
 
   // 1. Landlock check
   const cLandlock = candidate.landlock?.compatibility;
-  const bLandlock = boundary.landlock?.compatibility;
-  if (bLandlock === 'hard_requirement' && cLandlock && cLandlock !== 'hard_requirement') {
-    return proverVerdict('exceeds_boundary', 1, {
-      reason_code: 'landlock_downgrade',
-      counterexample: `landlock compatibility ${cLandlock}`,
-    });
+  if (boundary.landlock?.compatibility === 'hard_requirement' && cLandlock && cLandlock !== 'hard_requirement') {
+    return proverVerdict('exceeds_boundary', 1, { reason_code: 'landlock_downgrade', counterexample: `landlock compatibility ${cLandlock}` });
   }
-
-  // 2. Process identity check
   for (const field of ['run_as_user', 'run_as_group']) {
     const cVal = candidate.process_policy?.[field];
     const bVal = boundary.process_policy?.[field];
     if (cVal !== undefined && bVal !== undefined && String(cVal) !== String(bVal)) {
       const cRoot = String(cVal) === '0' || String(cVal).toLowerCase() === 'root';
       const bRoot = String(bVal) === '0' || String(bVal).toLowerCase() === 'root';
-      if (cRoot && !bRoot) {
-        return proverVerdict('exceeds_boundary', 1, {
-          reason_code: 'privilege_escalation_root',
-          counterexample: `process ${field} ${cVal}`,
-        });
-      }
-      return proverVerdict('unsupported', 3, {
-        reason_code: 'uid_remap_unverifiable',
-        reason: `Cannot verify ${field} change from '${bVal}' to '${cVal}' without sandbox /etc/passwd.`,
-      });
+      if (cRoot && !bRoot) return proverVerdict('exceeds_boundary', 1, { reason_code: 'privilege_escalation_root', counterexample: `process ${field} ${cVal}` });
+      return proverVerdict('unsupported', 3, { reason_code: 'uid_remap_unverifiable', reason: `Cannot verify ${field} remap '${bVal}' -> '${cVal}'.` });
     }
   }
-
-  // 3. Filesystem access check (symlink-strict per OpenShell prover semantics)
   const cRo = new Set(candidate.filesystem_policy?.read_only || []);
   const cRw = new Set(candidate.filesystem_policy?.read_write || []);
   const bRo = new Set(boundary.filesystem_policy?.read_only || []);
   const bRw = new Set(boundary.filesystem_policy?.read_write || []);
   const bAllRead = new Set([...bRo, ...bRw]);
-
   for (const p of [...cRo, ...cRw]) {
-    if (!String(p).startsWith('/')) {
-      return proverVerdict('unsupported', 3, {
-        reason_code: 'workdir_relative_path',
-        reason: `Filesystem path '${p}' depends on sandbox working directory.`,
-      });
-    }
+    if (!String(p).startsWith('/')) return proverVerdict('unsupported', 3, { reason_code: 'workdir_relative_path', reason: `Relative path '${p}'.` });
   }
   for (const p of cRw) {
     if (bRw.has('/') || bRw.has(p)) continue;
-    if (bRw.size === 0 || bRo.has(p)) {
-      return proverVerdict('exceeds_boundary', 1, {
-        reason_code: 'filesystem_write_exceeds',
-        counterexample: `filesystem write ${p}`,
-      });
-    }
-    return proverVerdict('unsupported', 3, {
-      reason_code: 'symlink_subpath_unverifiable',
-      reason: `Candidate write path '${p}' differs from boundary paths and symlinks cannot be statically resolved.`,
-    });
+    if (bRw.size === 0 || bRo.has(p)) return proverVerdict('exceeds_boundary', 1, { reason_code: 'filesystem_write_exceeds', counterexample: `filesystem write ${p}` });
+    return proverVerdict('unsupported', 3, { reason_code: 'symlink_subpath_unverifiable', reason: `Unverifiable write subpath '${p}'.` });
   }
   for (const p of cRo) {
     if (bAllRead.has('/') || bAllRead.has(p)) continue;
-    if (bAllRead.size === 0) {
-      return proverVerdict('exceeds_boundary', 1, {
-        reason_code: 'filesystem_read_exceeds',
-        counterexample: `filesystem read ${p}`,
-      });
-    }
-    return proverVerdict('unsupported', 3, {
-      reason_code: 'symlink_subpath_unverifiable',
-      reason: `Candidate read path '${p}' differs from boundary paths and symlinks cannot be statically resolved.`,
-    });
+    if (bAllRead.size === 0) return proverVerdict('exceeds_boundary', 1, { reason_code: 'filesystem_read_exceeds', counterexample: `filesystem read ${p}` });
+    return proverVerdict('unsupported', 3, { reason_code: 'symlink_subpath_unverifiable', reason: `Unverifiable read subpath '${p}'.` });
   }
 
   // 4 & 5. Network L4 + REST checks
@@ -167,76 +96,40 @@ function provePolicyBoundary(candidate, boundary) {
     for (const ep of rule?.endpoints || []) {
       const proto = String(ep.protocol || 'tcp').toLowerCase();
       if (!MODELED_PROTOCOLS.has(proto)) {
-        return proverVerdict('unsupported', 3, {
-          reason_code: 'unsupported_policy_shape',
-          reason: `candidate policy rule '${rule.name || 'unnamed'}' uses protocol '${proto}'; only L4 TCP and REST are modeled`,
-        });
+        return proverVerdict('unsupported', 3, { reason_code: 'unsupported_policy_shape', reason: `Protocol '${proto}' unmodeled; only tcp and rest supported.` });
       }
       if (!ep.host || (ep.port !== undefined && ep.ports !== undefined) || String(ep.host).includes(':') || !isAscii(ep.host)) {
-        return proverVerdict('unsupported', 3, {
-          reason_code: 'unsupported_endpoint_shape',
-          reason: `Endpoint '${ep.host || '(missing)'}' omits host, mixes port/ports, uses IPv6, or has non-ASCII characters.`,
-        });
+        return proverVerdict('unsupported', 3, { reason_code: 'unsupported_endpoint_shape', reason: `Unsupported endpoint '${ep.host || '(missing)'}'.` });
       }
       if (proto === 'rest' && ep.enforcement && ep.enforcement !== 'enforce') {
-        return proverVerdict('unsupported', 3, {
-          reason_code: 'audit_mode_non_enforcing',
-          reason: `REST endpoint '${ep.host}:${ep.port || 443}' uses enforcement '${ep.enforcement}'; audit mode does not block requests.`,
-        });
+        return proverVerdict('unsupported', 3, { reason_code: 'audit_mode_non_enforcing', reason: `REST endpoint '${ep.host}' is non-enforcing.` });
       }
-
       const port = Number(ep.port || 443);
       const matchingBoundary = bEndpoints.find((b) => b.host === ep.host && Number(b.port || 443) === port);
       if (!matchingBoundary) {
         const wildcardOverlap = bEndpoints.find((b) => Number(b.port || 443) === port && (String(b.host).startsWith('*.') || String(ep.host).startsWith('*.')));
         if (wildcardOverlap && (!ep.allowed_ips || !wildcardOverlap.allowed_ips)) {
-          return proverVerdict('unsupported', 3, {
-            reason_code: 'wildcard_host_overlap',
-            reason: `Wildcard and exact host share port ${port} without allowed_ips.`,
-          });
+          return proverVerdict('unsupported', 3, { reason_code: 'wildcard_host_overlap', reason: `Wildcard host overlap on port ${port}.` });
         }
-        return proverVerdict('exceeds_boundary', 1, {
-          reason_code: 'network_destination_exceeds',
-          counterexample: `network ${proto} ${ep.host}:${port}`,
-        });
+        return proverVerdict('exceeds_boundary', 1, { reason_code: 'network_destination_exceeds', counterexample: `network ${proto} ${ep.host}:${port}` });
       }
-
-      // Binary glob vs exact symlink check
       for (const cb of cBins) {
         if (matchingBoundary.binaries.length > 0 && !matchingBoundary.binaries.includes(cb)) {
           const globMatch = matchingBoundary.binaries.find((bb) => String(bb).endsWith('*') && String(cb).startsWith(String(bb).slice(0, -1)));
-          if (globMatch) {
-            return proverVerdict('unsupported', 3, {
-              reason_code: 'binary_glob_symlink_unverifiable',
-              reason: `Candidate binary '${cb}' matched only via boundary glob '${globMatch}'.`,
-            });
-          }
-          return proverVerdict('exceeds_boundary', 1, {
-            reason_code: 'binary_exceeds_boundary',
-            counterexample: `binary ${cb} -> ${ep.host}:${port}`,
-          });
+          if (globMatch) return proverVerdict('unsupported', 3, { reason_code: 'binary_glob_symlink_unverifiable', reason: `Glob '${globMatch}' unverifiable.` });
+          return proverVerdict('exceeds_boundary', 1, { reason_code: 'binary_exceeds_boundary', counterexample: `binary ${cb} -> ${ep.host}:${port}` });
         }
       }
-
-      // REST method + path allow rules check
       if (proto === 'rest') {
         if (String(matchingBoundary.protocol || 'tcp').toLowerCase() !== 'rest') {
-          return proverVerdict('unsupported', 3, {
-            reason_code: 'mixed_rest_and_l4_endpoint',
-            reason: `Host '${ep.host}:${port}' mixes REST and non-REST endpoint rules.`,
-          });
+          return proverVerdict('unsupported', 3, { reason_code: 'mixed_rest_and_l4_endpoint', reason: `Mixed REST/L4 on '${ep.host}:${port}'.` });
         }
         const bAllows = (matchingBoundary.rules || []).filter((r) => r.allow).map((r) => r.allow);
         for (const r of ep.rules || []) {
           if (!r.allow) continue;
           const method = String(r.allow.method || 'GET').toUpperCase();
           const rPath = String(r.allow.path || '/');
-          if (rPath.includes('?') || rPath.includes('[')) {
-            return proverVerdict('unsupported', 3, {
-              reason_code: 'unsupported_rest_path_matcher',
-              reason: `REST path '${rPath}' uses query parameters or bracket expressions.`,
-            });
-          }
+          if (rPath.includes('?') || rPath.includes('[')) return proverVerdict('unsupported', 3, { reason_code: 'unsupported_rest_path_matcher', reason: `Unsupported path '${rPath}'.` });
           const covered = bAllows.some((ba) => {
             const bm = String(ba.method || '*').toUpperCase();
             if (bm !== '*' && bm !== method) return false;
@@ -342,89 +235,45 @@ function evaluateProposalRisk(currentPolicy, proposedRule, options = {}) {
 
   const findingsList = [...findings];
   const flagsList = [...securityFlags];
-  const autoApproved = !neverApprovable
-    && !globalPolicyActive
-    && approvalMode === 'auto'
-    && findingsList.length === 0
-    && flagsList.length === 0;
-
+  const autoApproved = !neverApprovable && !globalPolicyActive && approvalMode === 'auto' && findingsList.length === 0 && flagsList.length === 0;
   return {
     valid: true,
     status: neverApprovable ? 'blocked_never_approvable' : (autoApproved ? 'auto_approved' : 'pending_human_review'),
-    autoApproved,
-    neverApprovable,
-    findings: findingsList,
-    securityFlags: flagsList,
+    autoApproved, neverApprovable, findings: findingsList, securityFlags: flagsList,
   };
 }
 
-/**
- * NVIDIA OpenShell Endpoint-Bound Provider Credential Egress Check.
- * Agents hold placeholders (`tg_cred://<provider>/<KEY>`) and never transmit credentials to unapproved hosts.
- */
 function verifyProviderCredentialEgress(request, providers = []) {
-  const urlStr = String(request?.url || '');
   let parsed;
-  try {
-    parsed = new URL(urlStr);
-  } catch {
-    return { allowed: false, reason: 'invalid_destination_url' };
-  }
+  try { parsed = new URL(String(request?.url || '')); } catch { return { allowed: false, reason: 'invalid_destination_url' }; }
   const host = parsed.hostname.toLowerCase();
   const port = Number(parsed.port || (parsed.protocol === 'http:' ? 80 : 443));
   const method = String(request?.method || 'GET').toUpperCase();
-  const serializedHeaders = JSON.stringify(request?.headers || {});
-  const placeholderMatch = serializedHeaders.match(/tg_cred:\/\/([a-z0-9_-]+)\/([A-Za-z0-9_]+)/i);
+  const placeholderMatch = JSON.stringify(request?.headers || {}).match(/tg_cred:\/\/([a-z0-9_-]+)\/([A-Za-z0-9_]+)/i);
   const providerName = request?.provider || (placeholderMatch ? placeholderMatch[1] : null);
   if (!providerName) return { allowed: true, injected: false };
-
   const provider = providers.find((p) => p && p.name === providerName);
-  if (!provider || !Array.isArray(provider.endpoints) || provider.endpoints.length === 0) {
-    return { allowed: false, reason: 'profileless_or_unknown_provider' };
-  }
-
-  const endpointOk = provider.endpoints.some((ep) => {
-    if (String(ep.host || '').toLowerCase() !== host) return false;
-    if (Number(ep.port || 443) !== port) return false;
-    if (Array.isArray(ep.methods) && ep.methods.length > 0 && !ep.methods.map((m) => m.toUpperCase()).includes(method)) {
-      return false;
-    }
-    if (ep.pathPrefix && !parsed.pathname.startsWith(ep.pathPrefix)) return false;
-    return true;
-  });
-
+  if (!provider || !Array.isArray(provider.endpoints) || provider.endpoints.length === 0) return { allowed: false, reason: 'profileless_or_unknown_provider' };
+  const endpointOk = provider.endpoints.some((ep) => (
+    String(ep.host || '').toLowerCase() === host
+    && Number(ep.port || 443) === port
+    && (!Array.isArray(ep.methods) || ep.methods.length === 0 || ep.methods.map((m) => m.toUpperCase()).includes(method))
+    && (!ep.pathPrefix || parsed.pathname.startsWith(ep.pathPrefix))
+  ));
   if (!endpointOk) {
-    return {
-      allowed: false,
-      reason: 'credential_destination_mismatch',
-      detail: `Provider '${providerName}' credential cannot be sent to ${method} ${host}:${port}${parsed.pathname}`,
-    };
+    return { allowed: false, reason: 'credential_destination_mismatch', detail: `Provider '${providerName}' credential cannot be sent to ${method} ${host}:${port}${parsed.pathname}` };
   }
   return { allowed: true, injected: true, provider: providerName };
 }
 
-/**
- * Adobe MAX Nov-2026 Local Creative MCP Guard: keep layers, sequences, and compositions editable.
- */
 function verifyNonDestructiveProjectEdit(action = {}) {
   const targetPath = String(action.targetPath || action.file || '').trim();
   const outputPath = String(action.outputPath || '').trim();
   const operation = String(action.operation || action.command || '').trim();
-  if (!LAYERED_PROJECT_EXT_RE.test(targetPath)) {
-    return { allowed: true, nonDestructive: true };
-  }
-  const overwritesInPlace = !outputPath || outputPath === targetPath;
-  if (DESTRUCTIVE_ASSET_OP_RE.test(operation) && overwritesInPlace && action.preserveLayers !== true) {
+  if (!LAYERED_PROJECT_EXT_RE.test(targetPath)) return { allowed: true, nonDestructive: true };
+  if (DESTRUCTIVE_ASSET_OP_RE.test(operation) && (!outputPath || outputPath === targetPath) && action.preserveLayers !== true) {
     const ext = targetPath.match(LAYERED_PROJECT_EXT_RE)[0];
-    const suggestedOutput = targetPath.slice(0, -ext.length) + `.export${ext}`;
-    return {
-      allowed: false,
-      reason: 'destructive_layer_flatten_blocked',
-      suggestedPatch: {
-        preserveLayers: true,
-        outputPath: suggestedOutput,
-      },
-    };
+    return { allowed: false, reason: 'destructive_layer_flatten_blocked', suggestedPatch: { preserveLayers: true, outputPath: `${targetPath.slice(0, -ext.length)}.export${ext}` } };
   }
   return { allowed: true, nonDestructive: true };
 }
@@ -522,13 +371,45 @@ function solveAccessibleForeground(fgHex, bgHex, minRatio = 4.5) {
   };
 }
 
-function resolveColorFromClassesOrStyle(classAttr, styleAttr, kind) {
-  const prefix = kind === 'fg' ? 'text-' : 'bg-';
-  const cssProp = kind === 'fg' ? 'color' : 'background(?:-color)?';
-  const styleMatch = new RegExp(`(?:^|;)\\s*${cssProp}\\s*:\\s*(#[0-9a-fA-F]{3,6})\\b`).exec(styleAttr || '');
-  if (styleMatch) return { hex: styleMatch[1], token: null, fromStyle: true };
+const VOID_HTML_TAGS = new Set(['area', 'base', 'br', 'col', 'embed', 'hr', 'img', 'input', 'link', 'meta', 'param', 'source', 'track', 'wbr']);
 
-  const classes = String(classAttr || '').trim().split(/\s+/).filter(Boolean);
+function parseStyleEntries(attrsRaw) {
+  const jsxMatch = /\bstyle=\{\{([^}]*)\}\}/.exec(attrsRaw || '');
+  if (jsxMatch) {
+    const map = {};
+    for (const part of jsxMatch[1].split(',')) {
+      const m = /^\s*([a-zA-Z]+)\s*:\s*(?:'([^']*)'|"([^"]*)"|(-?\d+(?:\.\d+)?))\s*$/.exec(part);
+      if (m) map[m[1]] = m[4] !== undefined ? `${m[4]}px` : (m[2] ?? m[3]);
+    }
+    return { kind: 'jsx', rawMatch: jsxMatch[0], map };
+  }
+  const cssMatch = /\bstyle=(?:"([^"]*)"|'([^']*)')/.exec(attrsRaw || '');
+  if (cssMatch) {
+    const map = {};
+    for (const decl of (cssMatch[1] ?? cssMatch[2] ?? '').split(';')) {
+      const idx = decl.indexOf(':');
+      if (idx > 0) map[decl.slice(0, idx).trim().toLowerCase()] = decl.slice(idx + 1).trim();
+    }
+    return { kind: 'css', rawMatch: cssMatch[0], map };
+  }
+  return { kind: null, rawMatch: null, map: {} };
+}
+
+function serializeStyleAttr(kind, map) {
+  const entries = Object.entries(map).filter(([, v]) => v !== undefined && v !== '');
+  if (kind === 'jsx') {
+    const toCamel = (k) => k.replace(/-([a-z])/g, (_, ch) => ch.toUpperCase());
+    return `style={{ ${entries.map(([k, v]) => `${toCamel(k)}: '${v}'`).join(', ')} }}`;
+  }
+  const toKebab = (k) => k.replace(/[A-Z]/g, (ch) => `-${ch.toLowerCase()}`);
+  return `style="${entries.map(([k, v]) => `${toKebab(k)}: ${v}`).join('; ')}"`;
+}
+
+function resolveColorFromNode(classes, styleMap, kind) {
+  const styleVal = kind === 'fg' ? styleMap.color : (styleMap.backgroundColor || styleMap['background-color'] || styleMap.background);
+  const styleHex = styleVal && /(#[0-9a-fA-F]{3,6})\b/.exec(String(styleVal));
+  if (styleHex) return { hex: styleHex[1], token: null, fromStyle: true };
+  const prefix = kind === 'fg' ? 'text-' : 'bg-';
   for (const cls of classes) {
     if (!cls.startsWith(prefix)) continue;
     const suffix = cls.slice(prefix.length);
@@ -540,163 +421,271 @@ function resolveColorFromClassesOrStyle(classAttr, styleAttr, kind) {
 }
 
 /**
- * Inspect HTML/JSX markup for visual/layout optimization issues and emit BOTH
- * structured CSS/Tailwind patches AND an inline AST-rewritten `patchedSource`.
+ * Parse HTML/JSX markup into a hierarchical Element AST with line/offset spans & inherited background context.
+ */
+function parseDesignAst(source, defaultBgHex = '#0f172a') {
+  const text = String(source || '');
+  const lineAt = (offset) => text.slice(0, offset).split('\n').length;
+  const root = { type: 'Root', astPath: 'root', inheritedBgHex: defaultBgHex, children: [] };
+  const stack = [root];
+  const nodes = [];
+  const tokenRe = /<(\/?)([a-zA-Z][a-zA-Z0-9.-]*)(\s(?:[^<>"{}]|\{\{[^}]*\}\}|"[^"]*"|'[^']*')*)?(\/?)>/g;
+  let m;
+  while ((m = tokenRe.exec(text)) !== null) {
+    const [, closing, tagName, attrsRaw = '', selfClose] = m;
+    if (closing) {
+      for (let i = stack.length - 1; i >= 1; i--) {
+        if (stack[i].tagName === tagName) { stack.length = i; break; }
+      }
+      continue;
+    }
+    const parent = stack[stack.length - 1];
+    const idMatch = /\bid=(?:"([^"]+)"|'([^']+)')/.exec(attrsRaw);
+    const classMatch = /\b(class|className)=(?:"([^"]*)"|'([^']*)')/.exec(attrsRaw);
+    const classes = classMatch ? (classMatch[2] ?? classMatch[3] ?? '').trim().split(/\s+/).filter(Boolean) : [];
+    const styleInfo = parseStyleEntries(attrsRaw);
+    const ownBg = resolveColorFromNode(classes, styleInfo.map, 'bg');
+    const effectiveBgHex = ownBg ? ownBg.hex : parent.inheritedBgHex;
+    const siblingIdx = parent.children.filter((c) => c.tagName === tagName).length;
+    const id = idMatch ? (idMatch[1] ?? idMatch[2]) : null;
+    const selector = id ? `#${id}` : (classes[0] && !classes[0].includes('[') && !classes[0].includes(':') ? `${tagName}.${classes[0]}` : tagName);
+    const seg = `${tagName}${id ? `#${id}` : (classes[0] ? `.${classes[0]}` : '')}[${siblingIdx}]`;
+    const node = {
+      type: 'Element',
+      tagName,
+      id,
+      selector,
+      astPath: parent === root ? seg : `${parent.astPath} > ${seg}`,
+      openTag: m[0],
+      attrsRaw,
+      selfClose,
+      startOffset: m.index,
+      endOffset: m.index + m[0].length,
+      startLine: lineAt(m.index),
+      endLine: lineAt(m.index + m[0].length),
+      classAttrName: classMatch ? classMatch[1] : 'className',
+      classRawMatch: classMatch ? classMatch[0] : null,
+      classes,
+      styleInfo,
+      ownBgHex: ownBg ? ownBg.hex : null,
+      inheritedBgHex: effectiveBgHex,
+      children: [],
+    };
+    parent.children.push(node);
+    nodes.push(node);
+    if (!selfClose && !VOID_HTML_TAGS.has(tagName.toLowerCase())) stack.push(node);
+  }
+  return { root, nodes };
+}
+
+function normalizeVisualFindings(findings = []) {
+  const list = Array.isArray(findings) ? findings : (findings ? [findings] : []);
+  return list.map((item) => {
+    if (typeof item === 'string') {
+      const selMatch = /(#[a-zA-Z0-9_-]+|\.[a-zA-Z0-9_-]+|\b(?:button|a|p|span|h[1-6]|div|section|img|input)(?:\.[a-zA-Z0-9_-]+)?)/i.exec(item);
+      const issue = /contrast/i.test(item) ? 'low_contrast'
+        : /tap|touch|target|44px|small\s+button/i.test(item) ? 'undersized_tap_target'
+          : /overflow|clip|viewport|horizontal/i.test(item) ? 'fixed_width_mobile_overflow'
+            : /focus|outline|ring/i.test(item) ? 'missing_focus_ring'
+              : /cls|shift|aspect|dimension/i.test(item) ? 'cls_unsized_media' : 'low_contrast';
+      return { selector: selMatch ? selMatch[1] : null, issue, raw: item };
+    }
+    return { ...item, issue: String(item.issue || item.type || 'low_contrast') };
+  });
+}
+
+function nodeMatchesSelector(node, sel) {
+  if (!sel) return true;
+  const s = String(sel).trim();
+  if (s === node.astPath || s === node.selector || s === node.tagName) return true;
+  if (s.startsWith('#')) return node.id === s.slice(1);
+  if (s.startsWith('.')) return node.classes.includes(s.slice(1));
+  const [tag, cls] = s.split('.');
+  return (!tag || node.tagName.toLowerCase() === tag.toLowerCase()) && (!cls || node.classes.includes(cls));
+}
+
+/**
+ * Lovable Active Self-Correcting AST Design Engine: inspects AST + visual-model findings
+ * and outputs inline AST code edits, exact CSS override rules, Tailwind utility adjustments, and `patchedSource`.
  */
 function inspectAndPatchDesignSource(source, options = {}) {
   const minContrast = Number(options.minContrast || 4.5);
   const defaultBg = options.defaultBgHex || '#0f172a';
+  const ast = parseDesignAst(source, defaultBg);
+  const visualQueue = normalizeVisualFindings(options.visualFindings);
   const patches = [];
-  const tagRegex = /<([a-zA-Z][a-zA-Z0-9.-]*)(\s[^<>]*?)?(\/?)>/g;
+  const inlineEdits = [];
+  const cssOverrides = [];
+  const tailwindAdjustments = [];
 
-  let patchedSource = String(source || '');
-  let offsetDelta = 0;
-  let match;
-
-  while ((match = tagRegex.exec(String(source || ''))) !== null) {
-    const fullOpenTag = match[0];
-    const tagName = match[1];
-    const attrsRaw = match[2] || '';
-    const selfClose = match[3] || '';
-    const classAttrMatch = /\b(class|className)=("([^"]*)"|'([^']*)')/.exec(attrsRaw);
-    const classAttrName = classAttrMatch ? classAttrMatch[1] : 'className';
-    const classQuote = classAttrMatch ? classAttrMatch[2][0] : '"';
-    let classes = classAttrMatch ? (classAttrMatch[3] ?? classAttrMatch[4] ?? '').trim().split(/\s+/).filter(Boolean) : [];
-
-    const styleAttrMatch = /\bstyle="([^"]*)"/.exec(attrsRaw);
-    let inlineStyle = styleAttrMatch ? styleAttrMatch[1].trim() : '';
-
+  for (const node of ast.nodes) {
+    let classes = [...node.classes];
+    const styleMap = { ...node.styleInfo.map };
     let mutatedClasses = false;
     let mutatedStyle = false;
-    const cssOverrides = {};
-    const tailwindEdits = [];
+    const nodeCssProps = {};
+    const matchedVisuals = visualQueue.filter((vf) => nodeMatchesSelector(node, vf.selector));
 
-    // 1. Contrast check & self-correction
-    const fgInfo = resolveColorFromClassesOrStyle(classes.join(' '), inlineStyle, 'fg');
-    const bgInfo = resolveColorFromClassesOrStyle(classes.join(' '), inlineStyle, 'bg');
-    if (fgInfo && (bgInfo || options.defaultBgHex)) {
-      const bgHex = bgInfo ? bgInfo.hex : defaultBg;
-      const currentRatio = computeContrastRatio(fgInfo.hex, bgHex);
-      if (currentRatio !== null && currentRatio < minContrast) {
-        const solved = solveAccessibleForeground(fgInfo.hex, bgHex, minContrast);
-        cssOverrides.color = solved.hex;
-        if (fgInfo.fromStyle) {
-          inlineStyle = inlineStyle.replace(/(?:^|;)\s*color\s*:\s*#[0-9a-fA-F]{3,6}/i, (m) => m.replace(/#[0-9a-fA-F]{3,6}/, solved.hex));
+    // 1. Contrast AST check + visual-model `low_contrast` remediation (uses ancestor-inherited bg!)
+    const fgInfo = resolveColorFromNode(classes, styleMap, 'fg');
+    const vfContrast = matchedVisuals.find((v) => /contrast/i.test(v.issue));
+    const effFgHex = vfContrast?.fgHex || fgInfo?.hex;
+    const effBgHex = vfContrast?.bgHex || node.inheritedBgHex || defaultBg;
+    if (effFgHex || vfContrast) {
+      const startFg = effFgHex || '#64748b';
+      const currentRatio = computeContrastRatio(startFg, effBgHex);
+      if (vfContrast || (currentRatio !== null && currentRatio < minContrast)) {
+        const solved = solveAccessibleForeground(startFg, effBgHex, Number(vfContrast?.minContrast || minContrast));
+        nodeCssProps.color = solved.hex;
+        if (fgInfo?.fromStyle || node.styleInfo.kind) {
+          styleMap.color = solved.hex;
           mutatedStyle = true;
-        } else if (fgInfo.token) {
-          classes = classes.map((c) => (c === fgInfo.token ? solved.tailwindClass : c));
-          tailwindEdits.push({ remove: fgInfo.token, add: solved.tailwindClass });
+        } else {
+          classes = fgInfo?.token ? classes.map((c) => (c === fgInfo.token ? solved.tailwindClass : c)) : [...classes, solved.tailwindClass];
           mutatedClasses = true;
         }
+        const twPatch = { remove: fgInfo?.token ? [fgInfo.token] : [], add: [solved.tailwindClass] };
+        tailwindAdjustments.push({ selector: node.selector, astPath: node.astPath, ...twPatch });
         patches.push({
           type: 'low_contrast',
-          element: tagName,
+          element: node.tagName,
+          selector: node.selector,
+          astPath: node.astPath,
           measuredRatio: currentRatio,
           targetRatio: minContrast,
           fixedRatio: solved.ratio,
           cssOverride: `color: ${solved.hex};`,
-          tailwindPatch: tailwindEdits[tailwindEdits.length - 1] || { add: solved.tailwindClass },
+          tailwindPatch: twPatch,
         });
       }
     }
 
-    // 2. Interactive tap-target (<44px) check & self-correction
-    const isInteractive = /^(button|a|input|select)$/i.test(tagName) || /\brole=["']button["']/i.test(attrsRaw);
-    if (isInteractive) {
+    // 2. Interactive tap-target (<44px) AST check + visual-model remediation
+    const isInteractive = /^(button|a|input|select)$/i.test(node.tagName) || /\brole=["']button["']/i.test(node.attrsRaw);
+    const vfTap = matchedVisuals.find((v) => /tap|target/i.test(v.issue));
+    if (isInteractive || vfTap) {
       const smallTw = classes.filter((c) => /^(h-[45678]|p-[01]|py-(?:0|0\.5|1)|px-(?:1|1\.5)|text-\[(?:9|10)px\])$/.test(c));
-      const smallCssMatch = /(?:^|;)\s*height\s*:\s*(\d+)px/i.exec(inlineStyle);
-      const smallCssPx = smallCssMatch ? Number(smallCssMatch[1]) : null;
-      if (smallTw.length > 0 || (smallCssPx !== null && smallCssPx < 44)) {
-        cssOverrides['min-height'] = '44px';
-        cssOverrides['min-width'] = '44px';
-        if (smallTw.length > 0) {
+      const cssHeightPx = styleMap.height ? parseFloat(styleMap.height) : null;
+      if (vfTap || smallTw.length > 0 || (cssHeightPx !== null && cssHeightPx < 44)) {
+        nodeCssProps['min-height'] = '44px';
+        nodeCssProps['min-width'] = '44px';
+        const addTw = ['min-h-11', 'min-w-11', 'px-4', 'py-2.5'];
+        if (node.styleInfo.kind && cssHeightPx !== null && cssHeightPx < 44) {
+          delete styleMap.height;
+          styleMap.minHeight = '44px';
+          styleMap.minWidth = '44px';
+          mutatedStyle = true;
+        } else {
           classes = classes.filter((c) => !smallTw.includes(c));
-          for (const addCls of ['min-h-11', 'min-w-11', 'px-4', 'py-2.5']) {
-            if (!classes.includes(addCls)) classes.push(addCls);
-          }
-          tailwindEdits.push({ remove: smallTw, add: ['min-h-11', 'min-w-11', 'px-4', 'py-2.5'] });
+          for (const cls of addTw) if (!classes.includes(cls)) classes.push(cls);
           mutatedClasses = true;
         }
-        if (smallCssPx !== null && smallCssPx < 44) {
-          inlineStyle = inlineStyle.replace(/(?:^|;)\s*height\s*:\s*\d+px/i, (m) => m.replace(/height\s*:\s*\d+px/i, 'min-height: 44px; min-width: 44px'));
-          mutatedStyle = true;
-        }
+        const twPatch = { remove: smallTw, add: addTw };
+        tailwindAdjustments.push({ selector: node.selector, astPath: node.astPath, ...twPatch });
         patches.push({
           type: 'undersized_tap_target',
-          element: tagName,
+          element: node.tagName,
+          selector: node.selector,
+          astPath: node.astPath,
           cssOverride: 'min-height: 44px; min-width: 44px; padding: 0.625rem 1rem;',
-          tailwindPatch: { remove: smallTw, add: ['min-h-11', 'min-w-11', 'px-4', 'py-2.5'] },
+          tailwindPatch: twPatch,
         });
       }
-
-      // 3. Focus-ring stripping (`outline-none` without `focus-visible:ring-*`)
-      if (classes.includes('outline-none') && !classes.some((c) => c.startsWith('focus-visible:ring') || c.startsWith('focus:ring'))) {
+      const vfFocus = matchedVisuals.find((v) => /focus|ring/i.test(v.issue));
+      if (vfFocus || (classes.includes('outline-none') && !classes.some((c) => c.startsWith('focus-visible:ring') || c.startsWith('focus:ring')))) {
         const ringClasses = ['focus-visible:ring-2', 'focus-visible:ring-cyan-400', 'focus-visible:ring-offset-2'];
-        classes.push(...ringClasses);
+        for (const rc of ringClasses) if (!classes.includes(rc)) classes.push(rc);
         mutatedClasses = true;
-        cssOverrides.outline = '2px solid #22d3ee';
+        nodeCssProps.outline = '2px solid #22d3ee';
+        tailwindAdjustments.push({ selector: node.selector, astPath: node.astPath, remove: [], add: ringClasses });
         patches.push({
           type: 'missing_focus_ring',
-          element: tagName,
+          element: node.tagName,
+          selector: node.selector,
+          astPath: node.astPath,
           cssOverride: 'outline: 2px solid #22d3ee; outline-offset: 2px;',
           tailwindPatch: { remove: [], add: ringClasses },
         });
       }
     }
 
-    // 4. Fixed-width mobile overflow (`w-[600px]` or `width: 600px` >= 360px without `max-w-full`)
+    // 3. Mobile horizontal overflow AST check + visual-model remediation
     const fixedTw = classes.find((c) => /^w-\[(\d+)px\]$/.test(c) && Number(/^w-\[(\d+)px\]$/.exec(c)[1]) >= 360);
-    const fixedCss = /(?:^|;)\s*width\s*:\s*(\d+)px/i.exec(inlineStyle);
-    if ((fixedTw && !classes.includes('max-w-full')) || (fixedCss && Number(fixedCss[1]) >= 360 && !/max-width/i.test(inlineStyle))) {
-      if (fixedTw) {
-        const px = /^w-\[(\d+)px\]$/.exec(fixedTw)[1];
-        const maxCls = `max-w-[${px}px]`;
-        classes = classes.map((c) => (c === fixedTw ? 'w-full' : c));
-        if (!classes.includes(maxCls)) classes.push(maxCls);
-        mutatedClasses = true;
-        patches.push({
-          type: 'fixed_width_mobile_overflow',
-          element: tagName,
-          cssOverride: `width: 100%; max-width: ${px}px; box-sizing: border-box;`,
-          tailwindPatch: { remove: [fixedTw], add: ['w-full', maxCls] },
-        });
-      } else if (fixedCss) {
-        const px = fixedCss[1];
-        inlineStyle = inlineStyle.replace(/(?:^|;)\s*width\s*:\s*\d+px/i, (m) => m.replace(/width\s*:\s*\d+px/i, `width: 100%; max-width: ${px}px`));
+    const cssWidthPx = styleMap.width && /^\d+(?:\.\d+)?px$/.test(styleMap.width) ? Number.parseFloat(styleMap.width) : null;
+    const vfOverflow = matchedVisuals.find((v) => /overflow/i.test(v.issue));
+    if (vfOverflow || (fixedTw && !classes.includes('max-w-full')) || (cssWidthPx !== null && cssWidthPx >= 360 && !styleMap.maxWidth && !styleMap['max-width'])) {
+      const px = fixedTw ? /^w-\[(\d+)px\]$/.exec(fixedTw)[1] : String(cssWidthPx || vfOverflow?.measuredWidthPx || 640);
+      nodeCssProps.width = '100%';
+      nodeCssProps['max-width'] = `${px}px`;
+      nodeCssProps['box-sizing'] = 'border-box';
+      if (node.styleInfo.kind && cssWidthPx !== null) {
+        styleMap.width = '100%';
+        styleMap.maxWidth = `${px}px`;
         mutatedStyle = true;
-        patches.push({
-          type: 'fixed_width_mobile_overflow',
-          element: tagName,
-          cssOverride: `width: 100%; max-width: ${px}px; box-sizing: border-box;`,
-          tailwindPatch: { remove: [], add: ['w-full', `max-w-[${px}px]`] },
-        });
+      } else {
+        classes = fixedTw ? classes.map((c) => (c === fixedTw ? 'w-full' : c)) : [...classes, 'w-full'];
+        if (!classes.includes(`max-w-[${px}px]`)) classes.push(`max-w-[${px}px]`);
+        mutatedClasses = true;
       }
+      const twPatch = { remove: fixedTw ? [fixedTw] : [], add: ['w-full', `max-w-[${px}px]`] };
+      tailwindAdjustments.push({ selector: node.selector, astPath: node.astPath, ...twPatch });
+      patches.push({
+        type: 'fixed_width_mobile_overflow',
+        element: node.tagName,
+        selector: node.selector,
+        astPath: node.astPath,
+        cssOverride: `width: 100%; max-width: ${px}px; box-sizing: border-box;`,
+        tailwindPatch: twPatch,
+      });
     }
 
     if (mutatedClasses || mutatedStyle) {
-      let updatedAttrs = attrsRaw;
+      let updatedAttrs = node.attrsRaw;
       if (mutatedClasses) {
-        const serialized = `${classAttrName}=${classQuote}${classes.join(' ')}${classQuote}`;
-        updatedAttrs = classAttrMatch
-          ? updatedAttrs.replace(classAttrMatch[0], serialized)
-          : `${updatedAttrs} ${serialized}`;
+        const serializedClass = `${node.classAttrName}="${classes.join(' ')}"`;
+        updatedAttrs = node.classRawMatch ? updatedAttrs.replace(node.classRawMatch, serializedClass) : `${updatedAttrs} ${serializedClass}`;
       }
-      if (mutatedStyle && styleAttrMatch) {
-        updatedAttrs = updatedAttrs.replace(styleAttrMatch[0], `style="${inlineStyle}"`);
+      if (mutatedStyle) {
+        const serializedStyle = serializeStyleAttr(node.styleInfo.kind || 'css', styleMap);
+        updatedAttrs = node.styleInfo.rawMatch ? updatedAttrs.replace(node.styleInfo.rawMatch, serializedStyle) : `${updatedAttrs} ${serializedStyle}`;
       }
-      const replacementTag = `<${tagName}${updatedAttrs}${selfClose}>`;
-      const startIdx = match.index + offsetDelta;
-      patchedSource = patchedSource.slice(0, startIdx) + replacementTag + patchedSource.slice(startIdx + fullOpenTag.length);
-      offsetDelta += replacementTag.length - fullOpenTag.length;
+      const afterTag = `<${node.tagName}${updatedAttrs}${node.selfClose}>`;
+      inlineEdits.push({
+        astPath: node.astPath,
+        selector: node.selector,
+        startOffset: node.startOffset,
+        endOffset: node.endOffset,
+        startLine: node.startLine,
+        endLine: node.endLine,
+        before: node.openTag,
+        after: afterTag,
+      });
+      if (Object.keys(nodeCssProps).length > 0) {
+        const decls = Object.entries(nodeCssProps).map(([k, v]) => `${k}: ${v};`).join(' ');
+        cssOverrides.push({ selector: node.selector, properties: nodeCssProps, cssRule: `${node.selector} { ${decls} }` });
+      }
     }
   }
 
+  let patchedSource = String(source || '');
+  for (const edit of [...inlineEdits].sort((a, b) => b.startOffset - a.startOffset)) {
+    patchedSource = patchedSource.slice(0, edit.startOffset) + edit.after + patchedSource.slice(edit.endOffset);
+  }
+
   return {
-    changed: patches.length > 0,
+    changed: inlineEdits.length > 0,
     issueCount: patches.length,
     patches,
+    inlineEdits,
+    cssOverrides,
+    stylesheetOverride: cssOverrides.map((r) => r.cssRule).join('\n'),
+    tailwindAdjustments,
     patchedSource,
   };
+}
+
+function remediateVisualFindings(source, visualFindings = [], options = {}) {
+  return inspectAndPatchDesignSource(source, { ...options, visualFindings });
 }
 
 module.exports = {
@@ -708,5 +697,7 @@ module.exports = {
   evaluateBrandAdherence,
   computeContrastRatio,
   solveAccessibleForeground,
+  parseDesignAst,
   inspectAndPatchDesignSource,
+  remediateVisualFindings,
 };
