@@ -45,6 +45,7 @@ function mockGraph() {
 test('default model ids are current and env-overridable', () => {
   assert.equal(p.MODEL_DEFAULTS.claude, 'claude-sonnet-5-5');
   assert.equal(p.MODEL_DEFAULTS.router, 'claude-haiku-5-5');
+  assert.equal(p.MODEL_DEFAULTS.gemini, 'gemini-3.8-flash');
   const m = p.resolveModels({ THUMBGATE_PIPELINE_GEMINI_MODEL: 'gemini-x', THUMBGATE_PIPELINE_CLAUDE_MODEL: 'claude-opus-5-5' });
   assert.equal(m.gemini, 'gemini-x');
   assert.equal(m.claude, 'claude-opus-5-5');
@@ -79,6 +80,8 @@ test('read-only Cypher guard rejects writes, multi-statements and unsafe procedu
   const cases = {
     'MATCH (n) DETACH DELETE n': 'write_clause:DETACH',
     'MATCH (n) SET n.x = 1 RETURN n': 'write_clause:SET',
+    "CALL db.labels() YIELD label MATCH (n) WHERE n.u = 'http://a' SET n.x = 1 RETURN n": 'write_clause:SET',
+    'MATCH (n) WHERE n.u = "x/*" DELETE n RETURN 1 // */': 'write_clause:DELETE',
     'merge (n:X) return n': 'write_clause:MERGE',
     'MATCH (n) RETURN n; MATCH (m) DELETE m': 'multiple_statements',
     'CALL apoc.periodic.iterate("a","b",{}) YIELD batches RETURN batches': 'procedure_not_allowed:apoc.periodic.iterate',

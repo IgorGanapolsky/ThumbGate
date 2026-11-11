@@ -24,9 +24,9 @@
 const MODEL_DEFAULTS = Object.freeze({
   claude: 'claude-sonnet-5-5',
   router: 'claude-haiku-5-5',
-  // Matches the Gemini id already used elsewhere in this repo; override with
-  // THUMBGATE_PIPELINE_GEMINI_MODEL when a newer Flash/Pro id is preferred.
-  gemini: 'gemini-2.5-flash',
+  // Latest stable Flash per ai.google.dev/gemini-api/docs/deprecations
+  // (checked 2026-11-11). Override with THUMBGATE_PIPELINE_GEMINI_MODEL.
+  gemini: 'gemini-3.8-flash',
 });
 
 function resolveModels(env = process.env) {
@@ -120,12 +120,12 @@ const CYPHER_CALL_ALLOWLIST = [
 
 /** Remove string literals and comments so keywords inside them are not flagged. */
 function stripCypherLiterals(query) {
-  return String(query || '')
-    .replace(/\/\*[\s\S]*?\*\//g, ' ')
-    .replace(/\/\/[^\n]*/g, ' ')
-    .replace(/'(?:\\.|[^'\\])*'/g, "''")
-    .replace(/"(?:\\.|[^"\\])*"/g, '""')
-    .replace(/`(?:``|[^`])*`/g, '``');
+  // One left-to-right pass: whichever token starts first wins, so a `//`
+  // inside a string (e.g. a URL) cannot swallow the clauses after it.
+  return String(query || '').replace(
+    /\/\*[\s\S]*?\*\/|\/\/[^\n]*|'(?:\\.|[^'\\])*'|"(?:\\.|[^"\\])*"|`(?:``|[^`])*`/g,
+    (m) => (m.startsWith('/') ? ' ' : m[0] + m[0]),
+  );
 }
 
 /**
