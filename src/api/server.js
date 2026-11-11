@@ -3317,7 +3317,10 @@ async function tryCreateDirectProCheckoutRedirect({
   if (!parsed.searchParams.get('cta_placement') && target.ctaPlacement) bootstrapBody.ctaPlacement = target.ctaPlacement;
   bootstrapBody.planId = 'pro';
   bootstrapBody.billingCycle = billingCycle;
-  const analyticsMetadata = buildCheckoutAttributionMetadata(bootstrapBody, req, traceId);
+  const analyticsMetadata = {
+    ...buildCheckoutAttributionMetadata(bootstrapBody, req, traceId),
+    entryRoute: `go:${target.slug}`,
+  };
   const sessionResult = await createCheckoutSession({
     successUrl: buildCheckoutFallbackUrl(buildHostedSuccessUrl(hostedConfig.appOrigin, traceId), analyticsMetadata),
     cancelUrl: buildCheckoutFallbackUrl(buildHostedCancelUrl(hostedConfig.appOrigin, traceId), analyticsMetadata),
@@ -7877,6 +7880,7 @@ async function addContext(){
       }
 
       try {
+        analyticsMetadata.entryRoute = 'checkout_pro_confirm';
         const result = await createCheckoutSession({
           successUrl: buildCheckoutFallbackUrl(
             buildHostedSuccessUrl(hostedConfig.appOrigin, traceId),
@@ -9638,7 +9642,10 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
         const body = await parseJsonBody(req);
         const traceId = body.traceId || createTraceId('checkout');
         const responseHeaders = getPublicBillingHeaders(traceId);
-        const analyticsMetadata = buildCheckoutAttributionMetadata(body, req, traceId);
+        const analyticsMetadata = {
+          ...buildCheckoutAttributionMetadata(body, req, traceId),
+          entryRoute: 'api_billing_checkout',
+        };
         const offerSummary = resolveCheckoutOfferSummary(analyticsMetadata);
         // A session without an email can't be followed up and almost always
         // expires unpaid; most of the 30-day emailless sessions came from here.

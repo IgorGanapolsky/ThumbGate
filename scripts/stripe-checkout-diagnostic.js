@@ -369,6 +369,74 @@ function summarizeSessionRecency(
   };
 }
 
+// Segments recent sessions by entry point so the abandoned-session pile can be
+// traced to a CTA, route, or caller. Emits counts only: no emails or ids.
+const SEGMENT_FIELDS = [
+  ['ctaId', ['ctaId', 'cta_id']],
+  ['utmMedium', ['utmMedium', 'utm_medium']],
+  ['landingPath', ['landingPath', 'landing_path']],
+  ['referrerHost', ['referrerHost', 'referrer_host']],
+  ['entryRoute', ['entryRoute', 'entry_route']],
+];
+
+function sessionAmountLabel(session = {}) {
+  if (session.amount_total == null) return 'unknown';
+  return `${(Number(session.amount_total) / 100).toFixed(2)} ${String(session.currency || '').toUpperCase()}`.trim();
+}
+
+function summarizeRecentSegments(
+  sessions = [],
+  nowEpochSeconds = Math.floor(Date.now() / 1000),
+  windowDays = 30,
+  topN = 12
+) {
+  const since = Number(nowEpochSeconds) - windowDays * 24 * 60 * 60;
+  const recent = sessions.filter((session) => Number(session.created) >= since);
+  const buckets = { product: new Map(), amount: new Map(), mode: new Map(), day: new Map() };
+  for (const [name] of SEGMENT_FIELDS) buckets[name] = new Map();
+  const intentSessions = [];
+
+  for (const session of recent) {
+    const metadata = session.metadata && typeof session.metadata === 'object' ? session.metadata : {};
+    const attribution = extractSessionAttribution(session);
+    const isThumbGate = Boolean(attribution.hasTraceId || attribution.planId);
+    incrementBucket(buckets.product, isThumbGate ? 'thumbgate_attributed' : 'other_or_unattributed');
+    incrementBucket(buckets.amount, sessionAmountLabel(session));
+    incrementBucket(buckets.mode, session.mode);
+    incrementBucket(buckets.day, toIsoTimestamp(Number(session.created))?.slice(0, 10));
+    for (const [name, keys] of SEGMENT_FIELDS) {
+      const value = keys.map((key) => metadata[key]).find((v) => normalizeEvidenceText(v));
+      incrementBucket(buckets[name], value || 'none');
+    }
+    const identityKind = identityEvidenceKind(session);
+    if (identityKind === 'non_placeholder_email' || hasPaymentAttemptEvidence(session) || isCompletedSession(session)) {
+      intentSessions.push({
+        createdAt: toIsoTimestamp(Number(session.created)),
+        status: session.status || null,
+        paymentStatus: session.payment_status || null,
+        mode: session.mode || null,
+        amount: sessionAmountLabel(session),
+        identity: identityKind,
+        paymentAttempt: hasPaymentAttemptEvidence(session),
+        source: attribution.source,
+        ctaId: normalizeEvidenceText(metadata.ctaId || metadata.cta_id),
+        entryRoute: normalizeEvidenceText(metadata.entryRoute || metadata.entry_route),
+      });
+    }
+  }
+
+  const top = (map) => [...map.entries()]
+    .sort((left, right) => right[1] - left[1])
+    .slice(0, topN);
+  const result = { windowDays, sessions: recent.length, intentSessions };
+  for (const [name, map] of Object.entries(buckets)) {
+    result[name] = name === 'day'
+      ? [...map.entries()].sort((left, right) => left[0].localeCompare(right[0]))
+      : top(map);
+  }
+  return result;
+}
+
 function classifyCheckoutFunnel({
   sessions = [],
   paymentIntents = [],
@@ -579,6 +647,7 @@ async function runDiagnostic({
   const nowEpochSeconds = Math.floor(generatedAt.getTime() / 1000);
   const sessionEvidence = summarizeSessionEvidence(sessions);
   const sessionRecency = summarizeSessionRecency(sessions, nowEpochSeconds);
+  const recentSegments = summarizeRecentSegments(sessions, nowEpochSeconds);
   const funnelDiagnosis = classifyCheckoutFunnel({
     sessions,
     paymentIntents,
@@ -594,6 +663,7 @@ async function runDiagnostic({
     sessionBuckets: bucketSessions(sessions),
     sessionEvidence,
     sessionRecency,
+    recentSegments,
     paymentIntentErrors: bucketPaymentIntentErrors(paymentIntents),
     funnelDiagnosis,
     account,
@@ -676,6 +746,40 @@ function renderMarkdown(report) {
     lines.push(`| ${k} | ${v} |`);
   }
   lines.push('');
+  if (report.recentSegments) {
+    const seg = report.recentSegments;
+    lines.push(`## Last ${seg.windowDays} days by entry point (${seg.sessions} sessions)`);
+    lines.push('');
+    lines.push('Counts only. Use these to trace raw-only sessions to the CTA or route that created them.');
+    const segmentTables = [
+      ['product', 'Product attribution'],
+      ['entryRoute', 'Server entry route'],
+      ['ctaId', 'CTA id'],
+      ['utmMedium', 'utm_medium'],
+      ['landingPath', 'Landing path'],
+      ['referrerHost', 'Referrer host'],
+      ['amount', 'Amount'],
+      ['mode', 'Mode'],
+      ['day', 'Day (UTC)'],
+    ];
+    for (const [key, label] of segmentTables) {
+      lines.push('');
+      lines.push(`| ${label} | Sessions |`);
+      lines.push('| --- | ---: |');
+      for (const [value, count] of seg[key] || []) {
+        lines.push(`| ${String(value).replace(/\|/g, '/')} | ${count} |`);
+      }
+    }
+    lines.push('');
+    lines.push(`### Sessions with buyer-intent evidence (${seg.intentSessions.length})`);
+    lines.push('');
+    lines.push('| Created | Status | Pay status | Mode | Amount | Identity | Payment attempt | Source | CTA | Entry route |');
+    lines.push('| --- | --- | --- | --- | ---: | --- | --- | --- | --- | --- |');
+    for (const s of seg.intentSessions) {
+      lines.push(`| ${s.createdAt} | ${s.status} | ${s.paymentStatus} | ${s.mode || '—'} | ${s.amount} | ${s.identity} | ${s.paymentAttempt ? 'yes' : 'no'} | ${s.source || '—'} | ${s.ctaId || '—'} | ${s.entryRoute || '—'} |`);
+    }
+    lines.push('');
+  }
   lines.push('## Payment intent failure modes');
   lines.push('');
   const pie = report.paymentIntentErrors;
@@ -809,6 +913,7 @@ module.exports = {
   identityEvidenceKind,
   summarizeSessionEvidence,
   summarizeSessionRecency,
+  summarizeRecentSegments,
   countPossibleAutomationClusters,
   classifyCheckoutFunnel,
   runDiagnostic,
