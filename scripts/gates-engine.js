@@ -237,7 +237,7 @@ const CATASTROPHIC_DECLARATIVE_GATE_IDS = new Set([
 const SELF_PROTECT_CONFIG_TARGET_PATTERN = /(?:^|\/)(?:config\/gates\/|config\/(?:budget|enforcement|mcp-allowlists)\.json$|\.thumbgate\/config\.json$|thumbgate\.json$)/i;
 const SELF_PROTECT_HOOK_TARGET_PATTERN = /(?:^|\/)(?:\.claude\/settings(?:\.local)?\.json|\.codex\/config\.toml|scripts\/hook-[^/]+\.(?:js|sh))$/i;
 const SELF_PROTECT_CONFIG_COMMAND_PATTERN = /(?:config\/gates(?:\/|$|\b)|config\/(?:budget|enforcement|mcp-allowlists)\.json\b|\.thumbgate\/config\.json\b|thumbgate\.json\b)/i;
-const SELF_PROTECT_HOOK_COMMAND_PATTERN = /(?:\.claude\/settings(?:\.local)?\.json|\.codex\/config\.toml|scripts\/hook-[^\s'";|]+\.(?:js|sh))\b/i;
+const SELF_PROTECT_HOOK_COMMAND_PATTERN = /(?:\.claude\/settings(?:\.local)?\.json|\.codex\/config\.toml|scripts\/hook-[^/\s'";|]+\.(?:js|sh))\b/i;
 const SHELL_FILE_MUTATION_PATTERN = /\b(?:sed\s+-i|perl\s+-pi|python\d*\s+-c|node\s+-e|ruby\s+-e|tee|truncate|rm|mv|cp|install|patch|jq)\b|(?:^|[\s;&|])>{1,2}\s*\S/i;
 
 function isSelfProtectGate(gateId) {
@@ -3176,7 +3176,7 @@ function extractRedirectTargetsFromSegment(segment) {
   return { targets, cleaned };
 }
 
-const INLINE_SCRIPT_WRITE_CALL_PATTERN = /(?:writeFileSync|writeFile|appendFileSync|appendFile|createWriteStream|unlinkSync|rmSync|renameSync|copyFileSync|truncateSync|chmodSync|\.write\s*\(|open\s*\([^)]*['"][wa+]|os\.(?:remove|unlink|rename|replace)|shutil\.(?:copy|move)|\.write_text\s*\(|\.write_bytes\s*\(|File\.write|IO\.write)/;
+const INLINE_SCRIPT_WRITE_CALL_PATTERN = /(?:writeFileSync|writeFile|appendFileSync|appendFile|createWriteStream|unlinkSync|rmSync|renameSync|copyFileSync|truncateSync|chmodSync|\.write\s*\(|open\s*\([^()\n]{0,120}['"][wa+]|os\.(?:remove|unlink|rename|replace)|shutil\.(?:copy|move)|\.write_text\s*\(|\.write_bytes\s*\(|File\.write|IO\.write)/;
 
 function doesSegmentMutateProtectedTarget(segment, commandTargetPattern, depth = 0) {
   if (depth > 4) return false;
