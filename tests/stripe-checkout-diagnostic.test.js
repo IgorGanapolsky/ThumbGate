@@ -370,3 +370,39 @@ test('renderMarkdown emits an evidence-limited diagnosis when anonymous sessions
   assert.doesNotMatch(md, /Buyers are leaving|buyers are abandoning|price too high/);
   assert.match(md, /Checkout completion rate: 0\.00%/);
 });
+
+test('summarizeRecentSegments splits sessions by site, CTA and entry route without emails', () => {
+  const { summarizeRecentSegments } = require('../scripts/stripe-checkout-diagnostic');
+  const now = 2_000_000_000;
+  const summary = summarizeRecentSegments([
+    {
+      created: now - 60,
+      amount_total: 1900,
+      currency: 'usd',
+      mode: 'subscription',
+      status: 'expired',
+      payment_status: 'unpaid',
+      success_url: 'https://thumbgate.ai/success?session_id={CHECKOUT_SESSION_ID}',
+      metadata: { traceId: 'tr_1', planId: 'pro', ctaId: 'pricing_pro_buy', entryRoute: 'go:pro-direct' },
+    },
+    {
+      created: now - 120,
+      amount_total: 300000,
+      currency: 'usd',
+      mode: 'payment',
+      status: 'open',
+      payment_status: 'unpaid',
+      payment_intent: 'pi_1',
+      customer_email: 'buyer@example.org',
+      success_url: 'https://deals.example.com/thanks',
+      metadata: {},
+    },
+    { created: now - 40 * 24 * 60 * 60, metadata: {} },
+  ], now);
+  assert.equal(summary.sessions, 2);
+  assert.deepEqual(summary.entryRoute[0], ['go:pro-direct', 1]);
+  assert.ok(summary.successHost.some(([host]) => host === 'deals.example.com'));
+  assert.equal(summary.intentSessions.length, 1);
+  assert.equal(summary.intentSessions[0].successHost, 'deals.example.com');
+  assert.ok(!JSON.stringify(summary).includes('buyer@example.org'));
+});

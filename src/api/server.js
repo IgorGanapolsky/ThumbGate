@@ -112,7 +112,11 @@ const {
 const {
   classifyRequester,
   isHumanCheckoutNavigation,
+  checkoutRequesterKey,
+  createRapidCheckoutGuard,
 } = require('../../scripts/bot-detection');
+
+const rapidCheckoutGuard = createRapidCheckoutGuard();
 const {
   recordCheckoutFunnelEvent,
 } = require('../../scripts/plausible-server-events');
@@ -3317,7 +3321,10 @@ async function tryCreateDirectProCheckoutRedirect({
   if (!parsed.searchParams.get('cta_placement') && target.ctaPlacement) bootstrapBody.ctaPlacement = target.ctaPlacement;
   bootstrapBody.planId = 'pro';
   bootstrapBody.billingCycle = billingCycle;
-  const analyticsMetadata = buildCheckoutAttributionMetadata(bootstrapBody, req, traceId);
+  const analyticsMetadata = {
+    ...buildCheckoutAttributionMetadata(bootstrapBody, req, traceId),
+    entryRoute: `go:${target.slug}`,
+  };
   const sessionResult = await createCheckoutSession({
     successUrl: buildCheckoutFallbackUrl(buildHostedSuccessUrl(hostedConfig.appOrigin, traceId), analyticsMetadata),
     cancelUrl: buildCheckoutFallbackUrl(buildHostedCancelUrl(hostedConfig.appOrigin, traceId), analyticsMetadata),
@@ -3387,10 +3394,18 @@ async function serveTrackedLinkRedirect({ req, res, parsed, hostedConfig, isHead
   const { FEEDBACK_DIR } = getFeedbackPaths();
   const journeyState = resolveJourneyState(req, parsed);
   const requesterClassification = classifyRequester(req.headers);
-  const botClassification = requesterClassification.isBot
+  let botClassification = requesterClassification.isBot
     || isHumanCheckoutNavigation(req.headers, hostedConfig.appOrigin)
     ? requesterClassification
     : { isBot: true, reason: 'no_browser_navigation' };
+  if (
+    target.botDeflectPath
+    && !botClassification.isBot
+    && !isHeadRequest
+    && rapidCheckoutGuard.hit(checkoutRequesterKey(req.headers))
+  ) {
+    botClassification = { isBot: true, reason: 'rapid_multi_checkout' };
+  }
   if (target.botDeflectPath && botClassification.isBot) {
     const deflectUrl = new URL(target.botDeflectPath, hostedConfig.appOrigin);
     appendTrackedLinkQueryParams(deflectUrl, parsed, target);
@@ -7877,6 +7892,7 @@ async function addContext(){
       }
 
       try {
+        analyticsMetadata.entryRoute = 'checkout_pro_confirm';
         const result = await createCheckoutSession({
           successUrl: buildCheckoutFallbackUrl(
             buildHostedSuccessUrl(hostedConfig.appOrigin, traceId),
@@ -9638,7 +9654,10 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
         const body = await parseJsonBody(req);
         const traceId = body.traceId || createTraceId('checkout');
         const responseHeaders = getPublicBillingHeaders(traceId);
-        const analyticsMetadata = buildCheckoutAttributionMetadata(body, req, traceId);
+        const analyticsMetadata = {
+          ...buildCheckoutAttributionMetadata(body, req, traceId),
+          entryRoute: 'api_billing_checkout',
+        };
         const offerSummary = resolveCheckoutOfferSummary(analyticsMetadata);
         // A session without an email can't be followed up and almost always
         // expires unpaid; most of the 30-day emailless sessions came from here.
