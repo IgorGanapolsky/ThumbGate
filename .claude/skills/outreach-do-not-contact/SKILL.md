@@ -26,7 +26,9 @@ outreach; it wins over this file if they differ. As of 2026-11-11:
 
 Also skip anyone whose latest message says "stop", "unsubscribe", "remove me",
 or "not interested", and any lead with 2 unanswered nudges (see
-`revenue-push`).
+`revenue-push`). The only exception is the operator's own message asking to
+re-engage that named person; record it in project memory. Listed entries
+above follow section 3 instead.
 
 Addresses are matched by domain, case-insensitive, after trimming display
 names and `+tags`. When in doubt whether a recipient is on the list, don't
