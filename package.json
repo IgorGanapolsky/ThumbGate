@@ -962,7 +962,7 @@
     "test:funnel-invariants": "node --test tests/funnel-invariants.test.js",
     "test:cli-telemetry": "node --test tests/cli-telemetry.test.js",
     "test:pro-parity": "node --test tests/pro-parity.test.js",
-    "test:pricing-page-telemetry": "node --test tests/pricing-page-telemetry.test.js",
+    "test:pricing-page-telemetry": "node --test tests/pricing-page-telemetry.test.js tests/stripe-checkout-abandonment-fix.test.js",
     "test:skill-exporter": "node --test tests/skill-exporter.test.js",
     "test:model-tier-router": "node --test tests/model-tier-router.test.js",
     "test:computer-use-firewall": "node --test tests/computer-use-firewall.test.js",
