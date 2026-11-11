@@ -3403,7 +3403,7 @@ async function resolvePaidEntitlementForEmail(email) {
   const normalizedEmail = normalizeEmail(email);
   if (!normalizedEmail) return { entitled: false, apiKey: null, customerId: null };
   const store = loadKeyStore();
-  const customerIds = new Set([normalizedEmail, resolveStripeCustomerLedgerId({}, normalizedEmail)]);
+  const customerIds = new Set([normalizedEmail]);
   const orderIds = new Set();
   for (const ledgerPath of [CONFIG.TRIAL_EMAIL_LEDGER_PATH, CONFIG.ORDER_EMAIL_LEDGER_PATH]) {
     for (const row of loadJsonlRecords(ledgerPath)) {
