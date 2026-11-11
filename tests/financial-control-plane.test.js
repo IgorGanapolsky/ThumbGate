@@ -1639,6 +1639,32 @@ test('a non-screen tool carrying coordinates is not a screen mutation', () => {
   }), false);
 });
 
+// Regression: on 2026-11-11 a Mac dispatch run (issue #4922) was denied a
+// read-only `mcp__browseros-neo__read` of a Google AI Mode page because a
+// pre-#4901 checkout treated any browser call with a selector as an opaque
+// economic click. Reading page text must never need a purchase requisition.
+test('read-only browser page reads with a locator are not economic actions', () => {
+  const reads = [
+    { page: 60 },
+    { page: 60, format: 'markdown', links: true, selector: 'main' },
+    { page: 60, ref: 'e5', format: 'markdown' },
+    { page: 60, url: 'https://www.google.com/search?q=agentic+graphrag&udm=50' },
+  ];
+  for (const toolInput of reads) {
+    assert.equal(
+      detectEconomicAction('mcp__browseros-neo__read', toolInput),
+      false,
+      `expected read ${JSON.stringify(toolInput)} to be non-economic`,
+    );
+    assert.equal(runHardFloor({ tool_name: 'mcp__browseros-neo__read', tool_input: toolInput }), null);
+  }
+  // A read that lands on a real checkout surface still fails closed.
+  assert.equal(
+    detectEconomicAction('mcp__browseros-neo__read', { page: 60, url: 'https://checkout.stripe.com/c/pay/cs_test_123' }),
+    true,
+  );
+});
+
 test('ordinary and OAuth account-chooser clicks without payment controls are allowed', () => {
   assert.equal(detectEconomicAction('mcp__claude-in-chrome__computer', {
     action: 'left_click', coordinate: [10, 20], tabId: 1,
