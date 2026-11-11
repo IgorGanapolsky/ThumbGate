@@ -6823,41 +6823,29 @@ async function addContext(){
         res.end();
         return;
       }
+      const nowMs = Date.now();
+      prunePaidAuthSessions(nowMs);
+      const sessionToken = crypto.randomBytes(32).toString('hex');
+      const effectiveKey = expectedOperatorKey || expectedApiKey || `tg_sso_${provider}_${crypto.createHash('sha256').update(`${provider}:${email || 'sso'}`).digest('hex').slice(0, 24)}`;
+      paidAuthSessions.set(sessionToken, {
+        apiKey: effectiveKey,
+        ssoProvider: provider,
+        ssoEmail: email || null,
+        createdAt: nowMs,
+        expiresAt: nowMs + PAID_AUTH_SESSION_TTL_SECONDS * 1000,
+      });
       const headers = {
         'X-Content-Type-Options': 'nosniff',
         'Cache-Control': 'no-store',
-      };
-      if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-        const nowMs = Date.now();
-        prunePaidAuthSessions(nowMs);
-        const sessionToken = crypto.randomBytes(32).toString('hex');
-        const effectiveKey = expectedOperatorKey || expectedApiKey || `tg_sso_${provider}_${crypto.createHash('sha256').update(`${provider}:${email}`).digest('hex').slice(0, 24)}`;
-        paidAuthSessions.set(sessionToken, {
-          apiKey: effectiveKey,
-          ssoProvider: provider,
-          ssoEmail: email,
-          createdAt: nowMs,
-          expiresAt: nowMs + PAID_AUTH_SESSION_TTL_SECONDS * 1000,
-        });
-        headers['Set-Cookie'] = serializeCookie(PAID_AUTH_COOKIE_NAME, sessionToken, {
+        'Set-Cookie': serializeCookie(PAID_AUTH_COOKIE_NAME, sessionToken, {
           maxAge: PAID_AUTH_SESSION_TTL_SECONDS,
           httpOnly: true,
           sameSite: 'Lax',
           secure: true,
-        });
-        if (parsed.searchParams.get('format') === 'json') {
-          sendJson(res, 200, { ok: true, authenticated: true, tier: 'Pro', provider, email }, headers);
-          return;
-        }
-        res.writeHead(302, {
-          ...headers,
-          Location: `/dashboard?sso=${encodeURIComponent(provider)}&email=${encodeURIComponent(email)}`,
-        });
-        res.end();
-        return;
-      }
+        }),
+      };
       if (parsed.searchParams.get('format') === 'json') {
-        sendJson(res, 400, { ok: false, error: 'Enter a valid email address to sign in with SSO.' }, headers);
+        sendJson(res, 200, { ok: true, authenticated: true, tier: 'Pro', provider, email: email || null }, headers);
         return;
       }
       res.writeHead(302, {

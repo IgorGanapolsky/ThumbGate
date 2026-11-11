@@ -302,23 +302,22 @@
 
 <div class="auth-bar" id="authBar">
   <div class="container">
-    <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:10px;">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;">
       <div>
-        <span id="authTitle" style="font-size:14px;font-weight:600;">Sign in with SSO or connect your API key</span>
-        <span id="authHelp" style="font-size:13px;color:var(--text-muted);margin-left:8px;">Sign in with Google SSO or Apple SSO, or launch locally with <code style="font-family:var(--mono);font-size:12px;background:var(--cyan-dim);color:var(--cyan);padding:2px 6px;border-radius:4px;">npx thumbgate pro</code>. Otherwise paste your <code style="font-family:var(--mono);font-size:12px;background:var(--cyan-dim);color:var(--cyan);padding:2px 6px;border-radius:4px;">THUMBGATE_API_KEY</code> manually.</span>
+        <span id="authTitle" style="font-size:14px;font-weight:600;">Sign in to your workspace</span>
+        <span id="authHelp" style="font-size:13px;color:var(--text-muted);margin-left:8px;">Continue with Google SSO or Apple SSO, or launch locally with <code style="font-family:var(--mono);font-size:12px;background:var(--cyan-dim);color:var(--cyan);padding:2px 6px;border-radius:4px;">npx thumbgate pro</code>.</span>
       </div>
-      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
-        <input type="email" class="auth-input" id="ssoEmailInput" placeholder="work@company.com" style="max-width:210px;" onkeydown="if(event.key==='Enter'){event.preventDefault();signInWithSso('google', event);}" />
-        <a class="btn" id="ssoGoogleBtn" href="/v1/cloud/sso/authorize?provider=google" onclick="return signInWithSso('google', event)" style="padding:8px 14px;font-size:12px;text-decoration:none;display:inline-flex;align-items:center;gap:6px;">G Google SSO</a>
-        <a class="btn" id="ssoAppleBtn" href="/v1/cloud/sso/authorize?provider=apple" onclick="return signInWithSso('apple', event)" style="padding:8px 14px;font-size:12px;background:#f8fafc;color:#090d16;font-weight:700;text-decoration:none;display:inline-flex;align-items:center;gap:6px;"> Apple SSO</a>
+      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+        <a class="btn" id="ssoGoogleBtn" href="/v1/cloud/sso/authorize?provider=google" style="padding:8px 14px;font-size:12px;text-decoration:none;display:inline-flex;align-items:center;gap:6px;">G Continue with Google</a>
+        <a class="btn" id="ssoAppleBtn" href="/v1/cloud/sso/authorize?provider=apple" style="padding:8px 14px;font-size:12px;background:#f8fafc;color:#090d16;font-weight:700;text-decoration:none;display:inline-flex;align-items:center;gap:6px;"> Continue with Apple</a>
+        <button class="btn-outline" id="demoBtn" onclick="loadDemo()">Try Demo</button>
+        <button class="btn-outline" id="disconnectBtn" onclick="disconnectKey()" style="display:none; border-color:#f87171; color:#f87171;">Log Out</button>
+        <span class="auth-status" id="authStatus"></span>
       </div>
     </div>
-    <div style="display:flex;gap:12px;align-items:center;">
-      <input type="password" class="auth-input" id="apiKey" placeholder="Paste your API key here (THUMBGATE_API_KEY or THUMBGATE_PRO_KEY)..." />
+    <div style="display:none;" aria-hidden="true">
+      <input type="hidden" class="auth-input" id="apiKey" value="" />
       <button class="btn" id="connectBtn" onclick="connect()">Connect</button>
-       <button class="btn-outline" id="demoBtn" onclick="loadDemo()">Try Demo</button>
-       <button class="btn-outline" id="disconnectBtn" onclick="disconnectKey()" style="display:none; border-color:#f87171; color:#f87171;">Disconnect Key</button>
-       <span class="auth-status" id="authStatus"></span>
     </div>
   </div>
 </div>
@@ -2564,54 +2563,6 @@ function loadDemo() {
   });
 }
 
-async function signInWithSso(provider, evt) {
-  if (evt && typeof evt.preventDefault === 'function') evt.preventDefault();
-  var chosenProvider = provider || 'google';
-  var emailEl = document.getElementById('ssoEmailInput');
-  var chosenEmail = (emailEl && emailEl.value.trim()) || '';
-  var status = document.getElementById('authStatus');
-  if (!chosenEmail && typeof window.prompt === 'function') {
-    var prompted = window.prompt('Sign in with ' + String(chosenProvider).toUpperCase() + ' SSO — enter your work email:', '');
-    if (prompted && prompted.trim()) {
-      chosenEmail = prompted.trim();
-      if (emailEl) emailEl.value = chosenEmail;
-    }
-  }
-  if (!chosenEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(chosenEmail)) {
-    if (emailEl) emailEl.focus();
-    if (status) {
-      status.className = 'auth-status err';
-      status.textContent = 'Enter your work email above to sign in with ' + String(chosenProvider).toUpperCase() + ' SSO';
-    }
-    return false;
-  }
-  if (status) {
-    status.className = 'auth-status';
-    status.textContent = 'Signing in with ' + String(chosenProvider).toUpperCase() + ' SSO...';
-  }
-  try {
-    var res = await fetch('/v1/cloud/sso/authorize?provider=' + encodeURIComponent(chosenProvider) + '&email=' + encodeURIComponent(chosenEmail) + '&format=json', {
-      credentials: 'same-origin',
-      headers: { 'Accept': 'application/json' }
-    });
-    var data = await res.json();
-    if (data && data.mode === 'oauth_redirect' && data.redirectUrl) {
-      window.location.href = data.redirectUrl;
-      return false;
-    }
-    if (!res.ok || !data || !data.ok) {
-      throw new Error((data && data.error) || 'SSO sign-in failed');
-    }
-    await connect({ cookieSession: true, tier: data.tier || 'Pro' });
-  } catch (err) {
-    if (status) {
-      status.className = 'auth-status err';
-      status.textContent = err.message || 'SSO sign-in failed';
-    }
-  }
-  return false;
-}
-
 // Auto-load demo on first visit so visitors see the product immediately
 window.addEventListener('DOMContentLoaded', function() {
   preserveProjectQueryParams();
@@ -2623,7 +2574,7 @@ window.addEventListener('DOMContentLoaded', function() {
     .then(function(res) { return res.ok ? res.json() : null; })
     .then(function(session) {
       if (session && session.authenticated) {
-        connect({ cookieSession: true, tier: session.tier });
+        connect({ cookieSession: true, tier: session.tier, ssoProvider: session.ssoProvider });
         return;
       }
       if (!window.location.search.includes('noauto')) {
