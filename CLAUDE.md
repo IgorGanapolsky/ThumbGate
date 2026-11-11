@@ -3,7 +3,7 @@
 ## Constants
 
 ```
-PROD_URL    = https://thumbgate-production.up.railway.app
+PROD_URL    = https://thumbgate.ai
 REPO        = IgorGanapolsky/ThumbGate
 CORE_REPO   = IgorGanapolsky/ThumbGate-Core
 NPM_PKG     = thumbgate
@@ -20,7 +20,7 @@ ThumbGate (`IgorGanapolsky/ThumbGate`, npm `thumbgate`) is a pre-action enforcem
 
 ## Deployment Verification Gate (MANDATORY)
 
-- **Rule:** NEVER say `"done"`, `"deployed"`, `"live"`, or `"shipped"` without first waiting for the post-merge Railway rebuild (`sleep 180`) and showing live `curl -s https://thumbgate-production.up.railway.app/health | grep "\"version\":\"$(node -p "require('./package.json').version")\""` and `curl -s https://thumbgate-production.up.railway.app/dashboard | grep 'ThumbGate Dashboard'` outputs in the same response.
+- **Rule:** NEVER say `"done"`, `"deployed"`, `"live"`, or `"shipped"` without first waiting for the post-merge Railway rebuild (`sleep 180`) and showing live `curl -s https://thumbgate.ai/health | grep "\"version\":\"$(node -p "require('./package.json').version")\""` and `curl -s https://thumbgate.ai/dashboard | grep 'ThumbGate Dashboard'` outputs in the same response.
 - **Why:** On 2026-03-26 the agent claimed `"deployed"` three times without checking live production while containers were failing to rebuild.
 
 ## NEVER Bypass Branch Protection (ABSOLUTE)
