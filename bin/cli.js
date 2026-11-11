@@ -5643,6 +5643,61 @@ switch (COMMAND) {
     }
     break;
   }
+  case 'policy-prove': {
+    const args = process.argv.slice(3);
+    const jsonFlag = args.includes('--json') || args.includes('--output=json');
+    const bIdx = args.indexOf('--boundary');
+    const boundaryFile = bIdx >= 0 ? args[bIdx + 1] : null;
+    const candidateFile = args.find((a, idx) => !a.startsWith('--') && idx !== bIdx + 1);
+    if (!candidateFile || !boundaryFile) {
+      console.error('Usage: npx thumbgate policy-prove <candidate.json> --boundary <boundary.json> [--json]');
+      process.exit(2);
+    }
+    try {
+      const { provePolicyBoundary } = require(path.join(PKG_ROOT, 'src', 'openshell-lovable-engine'));
+      const candidate = JSON.parse(fs.readFileSync(path.resolve(CWD, candidateFile), 'utf8'));
+      const boundary = JSON.parse(fs.readFileSync(path.resolve(CWD, boundaryFile), 'utf8'));
+      const verdict = provePolicyBoundary(candidate, boundary);
+      if (jsonFlag) {
+        console.log(JSON.stringify(verdict, null, 2));
+      } else {
+        console.log(`result: ${verdict.result}`);
+        console.log(`coverage: domains=${verdict.coverage.domains.join(',')}`);
+        if (verdict.counterexample) console.log(`counterexample: ${verdict.counterexample}`);
+        if (verdict.reason) console.log(`reason: ${verdict.reason}`);
+      }
+      process.exit(verdict.exitCode);
+    } catch (err) {
+      console.error(`result: error\nreason: ${err.message}`);
+      process.exit(2);
+    }
+  }
+  case 'design-fix': {
+    const args = process.argv.slice(3);
+    const writeInPlace = args.includes('--write');
+    const jsonFlag = args.includes('--json');
+    const targetFile = args.find((a) => !a.startsWith('--'));
+    if (!targetFile) {
+      console.error('Usage: npx thumbgate design-fix <file.html|file.tsx> [--write] [--json]');
+      process.exit(2);
+    }
+    const fullPath = path.resolve(CWD, targetFile);
+    const raw = fs.readFileSync(fullPath, 'utf8');
+    const { inspectAndPatchDesignSource } = require(path.join(PKG_ROOT, 'src', 'openshell-lovable-engine'));
+    const report = inspectAndPatchDesignSource(raw);
+    if (writeInPlace && report.changed) {
+      fs.writeFileSync(fullPath, report.patchedSource, 'utf8');
+    }
+    if (jsonFlag) {
+      console.log(JSON.stringify(report, null, 2));
+    } else {
+      console.log(`design-fix: ${report.issueCount} optimization(s) generated${writeInPlace && report.changed ? ` (written to ${targetFile})` : ''}`);
+      for (const p of report.patches) {
+        console.log(`  - [${p.type}] <${p.element}> -> CSS { ${p.cssOverride} }`);
+      }
+    }
+    process.exit(0);
+  }
   default:
     if (COMMAND) {
       console.error(`Unknown command: ${COMMAND}`);
