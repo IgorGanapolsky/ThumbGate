@@ -176,3 +176,40 @@ test('statusline.sh shows Control Tower alerts', () => {
   assert.ok(sh.includes('AT_RISK'));
   assert.ok(sh.includes('ANOMALIES'));
 });
+
+test('statusline-meta.js labels operator/creator keys as TG Enterprise instead of bare Enterprise', () => {
+  const { getStatuslineMeta } = require('../scripts/statusline-meta');
+  const { execFileSync } = require('node:child_process');
+  const emptyHome = fs.mkdtempSync(path.join(os.tmpdir(), 'tg-meta-home-'));
+  try {
+    assert.equal(
+      getStatuslineMeta({ env: { THUMBGATE_OPERATOR_KEY: 'tg_op_1234567890abcdef' }, homeDir: emptyHome }).tier,
+      'TG Enterprise'
+    );
+    assert.equal(
+      getStatuslineMeta({ env: { THUMBGATE_API_KEY: 'tg_creator_1234567890abcdef' }, homeDir: emptyHome }).tier,
+      'TG Enterprise'
+    );
+    assert.equal(
+      getStatuslineMeta({ env: { THUMBGATE_API_KEY: 'tg_pro_1234567890abcdef' }, homeDir: emptyHome }).tier,
+      'Pro'
+    );
+    assert.equal(
+      getStatuslineMeta({ env: { THUMBGATE_OPERATOR_KEY: 'invalid' }, homeDir: emptyHome }).tier,
+      'Free'
+    );
+
+    const cfgDir = path.join(emptyHome, '.config', 'thumbgate');
+    fs.mkdirSync(cfgDir, { recursive: true });
+    fs.writeFileSync(path.join(cfgDir, 'operator.json'), JSON.stringify({ operatorKey: 'tg_op_disk1234567890' }));
+    assert.equal(getStatuslineMeta({ env: {}, homeDir: emptyHome }).tier, 'TG Enterprise');
+
+    const cliOut = execFileSync(process.execPath, [path.join(__dirname, '..', 'scripts', 'statusline-meta.js')], {
+      encoding: 'utf8',
+      env: { ...process.env, THUMBGATE_OPERATOR_KEY: 'tg_op_cli1234567890', HOME: emptyHome },
+    });
+    assert.equal(JSON.parse(cliOut).tier, 'TG Enterprise');
+  } finally {
+    fs.rmSync(emptyHome, { recursive: true, force: true });
+  }
+});
