@@ -249,6 +249,73 @@ test('dispatch runs Gemini sub-tasks before Claude and passes their output forwa
   assert.equal(r.final, 'fixed by claude-sonnet-5-5');
 });
 
+const MODELS = { claude: 'claude-sonnet-5-5', gemini: 'gemini-3.8-flash' };
+const single = (expert) => ({ primary_expert: expert, routing_justification: 't', max_tokens_allocated: 2048 });
+const boom = () => { throw new Error('529 overloaded'); };
+
+test('dispatch falls back to the other provider when the primary call fails', async () => {
+  const model = scriptedModel([boom, (req) => `answered by ${req.model}`]);
+  const r = await p.dispatchWorkload(single(p.EXPERTS.CLAUDE), 'refactor this', { callModel: model, models: MODELS });
+  assert.deepEqual(model.calls.map((c) => c.model), ['claude-sonnet-5-5', 'gemini-3.8-flash']);
+  assert.equal(r.final, 'answered by gemini-3.8-flash');
+  assert.equal(r.outputs[0].fallbackFrom, p.EXPERTS.CLAUDE);
+  assert.match(r.attempts[0].error, /call_failed:529 overloaded/);
+});
+
+test('dispatch treats schema-invalid output as a failure and falls back', async () => {
+  const model = scriptedModel(['not json at all', '{"verdict":"ok","reasons":[]}']);
+  const r = await p.dispatchWorkload(single(p.EXPERTS.GEMINI), 'parse logs', {
+    callModel: model,
+    models: MODELS,
+    validateOutput: p.requireJsonObject(['verdict', 'reasons']),
+  });
+  assert.deepEqual(model.calls.map((c) => c.model), ['gemini-3.8-flash', 'claude-sonnet-5-5']);
+  assert.equal(r.attempts[0].error, 'schema_invalid:invalid_json');
+  assert.equal(r.outputs[0].expert, p.EXPERTS.CLAUDE);
+});
+
+test('dispatch caps fallback hops and reports every attempt', async () => {
+  const model = scriptedModel([boom, boom, boom, boom, boom]);
+  await assert.rejects(
+    p.dispatchWorkload(single(p.EXPERTS.CLAUDE), 'x', { callModel: model, models: MODELS, maxFallbackHops: 2 }),
+    (error) => {
+      assert.match(error.message, /exhausted 2 fallback hop/);
+      assert.equal(error.attempts.length, 3);
+      return true;
+    },
+  );
+  assert.equal(model.calls.length, 3);
+});
+
+test('fallback hops are clamped to the hard maximum and zero disables fallback', async () => {
+  const many = scriptedModel(Array.from({ length: 10 }, () => boom));
+  await assert.rejects(p.dispatchWorkload(single(p.EXPERTS.CLAUDE), 'x', { callModel: many, models: MODELS, maxFallbackHops: 99 }));
+  assert.equal(many.calls.length, 1 + p.MAX_FALLBACK_HOPS);
+  const none = scriptedModel([boom]);
+  await assert.rejects(p.dispatchWorkload(single(p.EXPERTS.CLAUDE), 'x', { callModel: none, models: MODELS, maxFallbackHops: 0 }));
+  assert.equal(none.calls.length, 1);
+});
+
+test('dispatch does not fall back to an expert whose context cannot hold the prompt', async () => {
+  const model = scriptedModel([boom]);
+  await assert.rejects(
+    p.dispatchWorkload(single(p.EXPERTS.GEMINI), 'y'.repeat(4000), {
+      callModel: model,
+      models: MODELS,
+      contextTokens: { [p.EXPERTS.CLAUDE]: 100, [p.EXPERTS.GEMINI]: 1000000 },
+    }),
+    /fallback to Expert_Claude_Sonnet skipped/,
+  );
+  assert.equal(model.calls.length, 1);
+});
+
+test('requireJsonObject accepts fenced JSON and lists missing keys', () => {
+  const v = p.requireJsonObject(['a', 'b']);
+  assert.deepEqual(v('```json\n{"a":1,"b":2}\n```'), { ok: true, errors: [] });
+  assert.deepEqual(v('{"a":1}'), { ok: false, errors: ['missing_key:b'] });
+  assert.deepEqual(v('[1,2]'), { ok: false, errors: ['invalid_json'] });
+});
+
 // ---------------------------------------------------------------- Context trimming
 
 const RAW = [
