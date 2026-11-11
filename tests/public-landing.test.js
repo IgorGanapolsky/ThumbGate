@@ -71,6 +71,15 @@ test('homepage exposes Pro $19/mo and the $499 Setup Sprint', () => {
   assert.match(landingPage, /See the \$499 setup/);
 });
 
+test('homepage navbar exposes paid-user Log in drawer and dashboard auto-restores saved paid key', () => {
+  const dashboardPage = fs.readFileSync(path.join(__dirname, '..', 'public', 'dashboard.html'), 'utf8');
+  assert.match(landingPage, /data-cta-id="nav_paid_login"[^>]*>Log in</);
+  assert.match(landingPage, /id="paidLoginBar"/);
+  assert.match(landingPage, /id="paidLoginKeyInput"/);
+  assert.match(landingPage, /window\.tgSubmitPaidLogin/);
+  assert.match(dashboardPage, /tg_paid_api_key/);
+});
+
 test('visible text filtering consumes the complete script and style end tags', () => {
   const html = '<body>shown<script>hidden</script\t\n data-test>after<style>hidden</style extra>done</body>';
   assert.equal(visibleBodyText(html), 'shown after done');

@@ -1021,6 +1021,10 @@ function disconnectKey() {
   }
   API_KEY = '';
   isDemo = false;
+  try {
+    sessionStorage.removeItem('tg_paid_api_key');
+    localStorage.removeItem('tg_paid_api_key');
+  } catch (_) {}
   var input = document.getElementById('apiKey');
   input.value = '';
   input.disabled = false;
@@ -1082,8 +1086,13 @@ async function connect(options) {
 
     status.className = 'auth-status ok';
     status.textContent = opts.localPro ? `✓ Local ${tierName} connected` : '✓ Connected';
+    if (!opts.localPro && API_KEY) {
+      try {
+        sessionStorage.setItem('tg_paid_api_key', API_KEY);
+        localStorage.setItem('tg_paid_api_key', API_KEY);
+      } catch (_) {}
+    }
     document.getElementById('disconnectBtn').style.display = 'inline-block';
-    const titleEl = document.getElementById('authTitle');
     if (titleEl) {
       titleEl.textContent = opts.localPro ? `${tierName} License Active` : 'API Key Connected';
     }
@@ -2537,6 +2546,16 @@ window.addEventListener('DOMContentLoaded', function() {
   preserveProjectQueryParams();
   if (hasBootstrapKey()) {
     connect({ key: BOOTSTRAP_API_KEY, localPro: true });
+    return;
+  }
+  var savedPaidKey = '';
+  try {
+    savedPaidKey = String(sessionStorage.getItem('tg_paid_api_key') || localStorage.getItem('tg_paid_api_key') || '').trim();
+  } catch (_) {}
+  if (savedPaidKey) {
+    var keyInput = document.getElementById('apiKey');
+    if (keyInput) keyInput.value = savedPaidKey;
+    connect({ key: savedPaidKey });
     return;
   }
   if (!window.location.search.includes('noauto')) {
