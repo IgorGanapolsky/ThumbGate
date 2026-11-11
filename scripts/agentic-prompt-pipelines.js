@@ -44,11 +44,21 @@ function estimateTokens(text) {
 
 /** Neutralise a closing tag inside untrusted text so it cannot end its block early. */
 function escapeClosingTag(text, tag) {
-  return String(text || '').split(`</${tag}>`).join(`<\\/${tag}>`);
+  return String(text || '').split(`</${tag}>`).join(String.raw`<\/` + `${tag}>`);
+}
+
+/** True when any of the (deliberately small) patterns matches. */
+function matchesAny(patterns, text) {
+  return patterns.some((re) => re.test(text));
+}
+
+/** Build `<before>(?:w1|w2|...)<after>` from a word list, keeping each literal regex simple. */
+function wordPattern(words, flags, { before = String.raw`\b`, after = String.raw`\b` } = {}) {
+  return new RegExp(`${before}(?:${words.join('|')})${after}`, flags);
 }
 
 function extractTag(text, tag) {
-  const match = new RegExp(`<${tag}>([\\s\\S]*?)</${tag}>`, 'i').exec(String(text || ''));
+  const match = new RegExp(`<${tag}>` + String.raw`([\s\S]*?)` + `</${tag}>`, 'i').exec(String(text || ''));
   return match ? match[1].trim() : null;
 }
 
@@ -111,19 +121,35 @@ function buildGraphTraversalUserPrompt(userQuery) {
   return `## CURRENT TASK\n<user_query>\n${escapeClosingTag(userQuery, 'user_query')}\n</user_query>`;
 }
 
-const CYPHER_WRITE_PATTERN = /(?<![.\w$])(CREATE|MERGE|DELETE|DETACH|SET|REMOVE|DROP|FOREACH|LOAD\s+CSV|GRANT|REVOKE|DENY|ALTER|RENAME|START|STOP|TERMINATE)(?![\w$])/i;
+const CYPHER_WRITE_KEYWORDS = [
+  'CREATE', 'MERGE', 'DELETE', 'DETACH', 'SET', 'REMOVE', 'DROP', 'FOREACH', String.raw`LOAD\s+CSV`,
+  'GRANT', 'REVOKE', 'DENY', 'ALTER', 'RENAME', 'START', 'STOP', 'TERMINATE',
+];
+// Lookbehind/lookahead keep property names such as `n.start` from matching.
+const CYPHER_WRITE_PATTERN = wordPattern([`(${CYPHER_WRITE_KEYWORDS.join('|')})`], 'i', { // group 1 = keyword
+  before: String.raw`(?<![.\w$])`,
+  after: String.raw`(?![\w$])`,
+});
 const CYPHER_CALL_ALLOWLIST = [
   /^db\.schema\.(visualization|nodeTypeProperties|relTypeProperties)$/i,
   /^db\.(labels|relationshipTypes|propertyKeys)$/i,
   /^db\.index\.(vector|fulltext)\.query(Nodes|Relationships)$/i,
 ];
 
+const CYPHER_LITERAL_TOKEN = new RegExp([
+  String.raw`\/\*[\s\S]*?\*\/`, // block comment
+  String.raw`\/\/[^\n]*`, // line comment
+  String.raw`'(?:\\.|[^'\\])*'`, // single-quoted string
+  String.raw`"(?:\\.|[^"\\])*"`, // double-quoted string
+  '`(?:``|[^`])*`', // backtick identifier
+].join('|'), 'g');
+
 /** Remove string literals and comments so keywords inside them are not flagged. */
 function stripCypherLiterals(query) {
   // One left-to-right pass: whichever token starts first wins, so a `//`
   // inside a string (e.g. a URL) cannot swallow the clauses after it.
   return String(query || '').replace(
-    /\/\*[\s\S]*?\*\/|\/\/[^\n]*|'(?:\\.|[^'\\])*'|"(?:\\.|[^"\\])*"|`(?:``|[^`])*`/g,
+    CYPHER_LITERAL_TOKEN,
     (m) => (m.startsWith('/') ? ' ' : m[0] + m[0]),
   );
 }
@@ -171,8 +197,8 @@ function parseAgentTurn(text) {
     } catch {
       return { kind: 'invalid', thought, error: 'call_not_json', turn };
     }
-    if (!call || !GRAPH_TOOLS.includes(call.tool)) {
-      return { kind: 'invalid', thought, error: `unknown_tool:${call && call.tool}`, turn };
+    if (!GRAPH_TOOLS.includes(call?.tool)) {
+      return { kind: 'invalid', thought, error: `unknown_tool:${call?.tool}`, turn };
     }
     return { kind: 'call', thought, tool: call.tool, input: String(call.input ?? ''), turn };
   }
@@ -221,6 +247,46 @@ function createNeo4jTools(driver, { database, vectorIndex = 'text_embeddings', e
   };
 }
 
+function errorMessage(error, limit) {
+  return String(error?.message || error).slice(0, limit);
+}
+
+const INVALID_TURN_HINT = 'Reply with <thought> plus exactly one <call>{"tool","input"}</call>, or <final_answer>/<halt>.';
+
+async function runCypherTool(turn, tools, state, maxRows) {
+  if (!state.schemaSeen) {
+    return { observation: { error: 'schema_first', hint: 'Call get_graph_schema before writing Cypher.' }, failed: true };
+  }
+  const guard = checkReadOnlyCypher(turn.input);
+  if (!guard.ok) return { observation: { error: 'rejected_query', reason: guard.reason }, failed: true };
+  try {
+    const rows = await tools.executeCypher(turn.input);
+    return { observation: { rows: rows.slice(0, maxRows), truncated: rows.length > maxRows }, failed: rows.length === 0 };
+  } catch (error) {
+    return { observation: { error: 'query_failed', message: errorMessage(error, 300) }, failed: true };
+  }
+}
+
+async function runSemanticSearchTool(turn, tools) {
+  try {
+    const hits = await tools.semanticSearch(turn.input);
+    return { observation: { hits }, failed: !hits?.length };
+  } catch (error) {
+    return { observation: { error: 'search_failed', message: errorMessage(error, 300) }, failed: true };
+  }
+}
+
+/** Execute one parsed non-terminal turn and report the observation plus whether it counts as a failed attempt. */
+async function observeTurn(turn, tools, state, maxRows) {
+  if (turn.kind === 'invalid') return { observation: { error: turn.error, hint: INVALID_TURN_HINT }, failed: true };
+  if (turn.tool === 'get_graph_schema') {
+    state.schemaSeen = true;
+    return { observation: await tools.getGraphSchema(), failed: false };
+  }
+  if (turn.tool === 'execute_cypher_query') return runCypherTool(turn, tools, state, maxRows);
+  return runSemanticSearchTool(turn, tools);
+}
+
 /**
  * Run the GraphRAG ReAct loop.
  * @param {string} userQuery
@@ -240,7 +306,7 @@ async function runGraphRagTraversal(userQuery, {
   const system = buildGraphTraversalSystemPrompt();
   const messages = [{ role: 'user', content: buildGraphTraversalUserPrompt(userQuery) }];
   const trace = [];
-  let schemaSeen = false;
+  const state = { schemaSeen: false };
   let failedAttempts = 0;
 
   for (let step = 1; step <= maxSteps; step += 1) {
@@ -256,51 +322,15 @@ async function runGraphRagTraversal(userQuery, {
       return { status: 'halted', answer: null, missingLink: turn.missingLink, steps: step, failedAttempts, trace };
     }
 
-    let observation;
-    let failed = false;
-    if (turn.kind === 'invalid') {
-      observation = { error: turn.error, hint: 'Reply with <thought> plus exactly one <call>{"tool","input"}</call>, or <final_answer>/<halt>.' };
-      failed = true;
-    } else if (turn.tool === 'get_graph_schema') {
-      observation = await tools.getGraphSchema();
-      schemaSeen = true;
-    } else if (turn.tool === 'execute_cypher_query') {
-      const guard = checkReadOnlyCypher(turn.input);
-      if (!schemaSeen) {
-        observation = { error: 'schema_first', hint: 'Call get_graph_schema before writing Cypher.' };
-        failed = true;
-      } else if (!guard.ok) {
-        observation = { error: 'rejected_query', reason: guard.reason };
-        failed = true;
-      } else {
-        try {
-          const rows = await tools.executeCypher(turn.input);
-          observation = { rows: rows.slice(0, maxRows), truncated: rows.length > maxRows };
-          failed = rows.length === 0;
-        } catch (error) {
-          observation = { error: 'query_failed', message: String(error && error.message || error).slice(0, 300) };
-          failed = true;
-        }
-      }
-    } else {
-      try {
-        const hits = await tools.semanticSearch(turn.input);
-        observation = { hits };
-        failed = !hits || hits.length === 0;
-      } catch (error) {
-        observation = { error: 'search_failed', message: String(error && error.message || error).slice(0, 300) };
-        failed = true;
-      }
-    }
-
-    trace[trace.length - 1].failed = failed;
+    const { observation, failed } = await observeTurn(turn, tools, state, maxRows);
+    trace.at(-1).failed = failed;
     if (failed) failedAttempts += 1;
     if (failedAttempts >= maxFailedAttempts) {
-      const lastCypher = [...trace].reverse().find((t) => t.tool === 'execute_cypher_query');
+      const lastCypher = trace.findLast((t) => t.tool === 'execute_cypher_query');
       return {
         status: 'halted',
         answer: null,
-        missingLink: `No valid path after ${failedAttempts} failed attempts. Last thought: ${turn.thought || 'n/a'}. Last query: ${lastCypher ? lastCypher.input : 'n/a'}`,
+        missingLink: `No valid path after ${failedAttempts} failed attempts. Last thought: ${turn.thought || 'n/a'}. Last query: ${lastCypher?.input ?? 'n/a'}`,
         steps: step,
         failedAttempts,
         trace,
@@ -325,8 +355,21 @@ const EXPERT_MAX_TOKENS = Object.freeze({ [EXPERTS.CLAUDE]: 32000, [EXPERTS.GEMI
 const LARGE_PAYLOAD_TOKENS = 100000;
 const ROUTER_PREVIEW_CHARS = 12000;
 
-const CODE_SIGNALS = /\b(refactor|implement|fix (the )?bug|write (a )?(function|test|class)|code review|patch|pull request|diff|stack trace|typescript|python|javascript|unit test)\b|```|\bfunction\s+\w+\s*\(|\bclass\s+\w+|\bdef\s+\w+\s*\(/i;
-const LOG_LINE = /^\s*(\[?\d{4}-\d{2}-\d{2}[T ][\d:.]+|\w{3}\s+\d{1,2}\s[\d:]{8}|(INFO|WARN|WARNING|ERROR|DEBUG|TRACE)\b)/;
+const CODE_SIGNALS = [
+  wordPattern([
+    'refactor', 'implement', 'fix (?:the )?bug', 'write (?:a )?(?:function|test|class)', 'code review', 'patch',
+    'pull request', 'diff', 'stack trace', 'typescript', 'python', 'javascript', 'unit test',
+  ], 'i'),
+  /```/,
+  /\bfunction\s+\w+\s*\(/i,
+  /\bclass\s+\w+/i,
+  /\bdef\s+\w+\s*\(/i,
+];
+const LOG_LINE = [
+  /^\s*\[?\d{4}-\d{2}-\d{2}[T ][\d:.]+/, // ISO timestamp
+  /^\s*\w{3}\s+\d{1,2}\s[\d:]{8}/, // syslog timestamp
+  wordPattern(['INFO', 'WARN', 'WARNING', 'ERROR', 'DEBUG', 'TRACE'], '', { before: String.raw`^\s*` }),
+];
 
 function buildRouterSystemPrompt() {
   return `## ROLE
@@ -367,11 +410,11 @@ ${escapeClosingTag(preview, 'workload')}
 function describeWorkload(workload) {
   const text = String(workload || '');
   const lines = text.split('\n').filter((l) => l.trim());
-  const logLines = lines.filter((l) => LOG_LINE.test(l)).length;
+  const logLines = lines.filter((l) => matchesAny(LOG_LINE, l)).length;
   return {
     estimatedTokens: estimateTokens(text),
     logLineRatio: lines.length ? logLines / lines.length : 0,
-    codeSignals: CODE_SIGNALS.test(text),
+    codeSignals: matchesAny(CODE_SIGNALS, text),
   };
 }
 
@@ -381,9 +424,12 @@ function preRouteWorkload(workload) {
   const isLarge = meta.estimatedTokens > LARGE_PAYLOAD_TOKENS;
   const isLogStream = meta.logLineRatio >= 0.6;
   if ((isLarge || isLogStream) && !meta.codeSignals) {
+    const reason = isLarge
+      ? `~${meta.estimatedTokens} tokens exceeds ${LARGE_PAYLOAD_TOKENS}`
+      : `raw log stream (${Math.round(meta.logLineRatio * 100)}% log lines)`;
     return {
       primary_expert: EXPERTS.GEMINI,
-      routing_justification: `Constraint 2: ${isLarge ? `~${meta.estimatedTokens} tokens exceeds ${LARGE_PAYLOAD_TOKENS}` : `raw log stream (${Math.round(meta.logLineRatio * 100)}% log lines)`}.`,
+      routing_justification: `Constraint 2: ${reason}.`,
       max_tokens_allocated: 8192,
       source: 'rule',
     };
@@ -422,8 +468,16 @@ function validateRouterDecision(decision) {
   return { ok: errors.length === 0, errors };
 }
 
+/** Drop a surrounding ```json fence without a backtracking regex. */
+function stripCodeFence(text) {
+  let body = text.trim();
+  if (body.startsWith('```')) body = body.replace(/^```(?:json)?/i, '');
+  if (body.endsWith('```')) body = body.slice(0, -3);
+  return body.trim();
+}
+
 function parseJsonObject(text) {
-  const cleaned = String(text || '').replace(/^\s*```(?:json)?\s*/i, '').replace(/\s*```\s*$/, '').trim();
+  const cleaned = stripCodeFence(String(text || ''));
   try {
     return JSON.parse(cleaned);
   } catch {
@@ -465,15 +519,17 @@ async function routeWorkload(workload, {
     try {
       text = await callModel({ system, messages: [...messages], model, maxTokens: 512 });
     } catch (error) {
-      lastErrors = [`router_call_failed:${String(error && error.message || error).slice(0, 120)}`];
+      lastErrors = [`router_call_failed:${errorMessage(error, 120)}`];
       break;
     }
     const parsed = parseJsonObject(text);
     const check = validateRouterDecision(parsed);
     if (check.ok) return { ...clampDecision(parsed), source: 'llm' };
     lastErrors = parsed === null ? ['invalid_json'] : check.errors;
-    messages.push({ role: 'assistant', content: String(text || '') });
-    messages.push({ role: 'user', content: `Your output failed validation: ${lastErrors.join('; ')}. Return only the corrected JSON object.` });
+    messages.push(
+      { role: 'assistant', content: String(text || '') },
+      { role: 'user', content: `Your output failed validation: ${lastErrors.join('; ')}. Return only the corrected JSON object.` },
+    );
   }
   return {
     primary_expert: EXPERTS.CLAUDE,
@@ -499,7 +555,8 @@ async function dispatchWorkload(decision, workload, {
     const prior = outputs.length
       ? `\n\n<prior_expert_output>\n${outputs.map((o) => escapeClosingTag(o.output, 'prior_expert_output')).join('\n---\n')}\n</prior_expert_output>`
       : '';
-    const output = await callModel({
+    // Sequential on purpose: each expert reads the previous expert's output.
+    const output = await callModel({ // NOSONAR
       system: `You are ${task.expert}. ${task.instruction}`,
       messages: [{ role: 'user', content: `<workload>\n${escapeClosingTag(workload, 'workload')}\n</workload>${prior}` }],
       model: modelFor(task.expert),
@@ -507,17 +564,31 @@ async function dispatchWorkload(decision, workload, {
     });
     outputs.push({ expert: task.expert, model: modelFor(task.expert), output });
   }
-  return { decision, outputs, final: outputs[outputs.length - 1].output };
+  return { decision, outputs, final: outputs.at(-1).output };
 }
 
 // ===========================================================================
 // 3. Just-in-time context trimming
 // ===========================================================================
 
-const ANCHOR_PATTERN = /(\b(error|exception|fatal|panic|traceback|failed|failure|denied|timeout)\b|^\s+at\s+\S+|^\s*File\s+"[^"]+",\s+line\s+\d+|\btrace_?id\b|\bspan_?id\b)/i;
+const ANCHOR_PATTERNS = [
+  wordPattern(['error', 'exception', 'fatal', 'panic', 'traceback', 'failed', 'failure', 'denied', 'timeout'], 'i'),
+  /^\s+at\s+\S+/, // JS/Java stack frame
+  /^\s*File\s+"[^"]+",\s+line\s+\d+/, // Python stack frame
+  /\b(?:trace|span)_?id\b/i,
+];
 const ERRNO_CODE = /\bE[A-Z]{3,}\b/; // case-sensitive: ECONNRESET, ENOENT, ...
-const NOISE_LINE = /^\s*("?(created_at|updated_at|etag|request_id|_links|self|href|x-[\w-]+)"?\s*[:=]|[{}[\],]+\s*$|-{3,}\s*$)/i;
-const TIMESTAMP_PREFIX = /^\s*\[?\d{4}-\d{2}-\d{2}[T ][\d:.]+(Z|[+-]\d{2}:?\d{2})?\]?\s*/;
+const NOISE_LINES = [
+  wordPattern(['created_at', 'updated_at', 'etag', 'request_id', '_links', 'self', 'href', String.raw`x-[\w-]+`], 'i', {
+    before: String.raw`^\s*"?`,
+    after: String.raw`"?\s*[:=]`,
+  }),
+  /^\s*[{}[\],]+\s*$/, // bare JSON punctuation
+  /^\s*-{3,}\s*$/, // separator rule
+];
+const TIMESTAMP_PREFIX = new RegExp(
+  String.raw`^\s*\[?\d{4}-\d{2}-\d{2}[T ][\d:.]+` + String.raw`(?:Z|[+-]\d{2}:?\d{2})?\]?\s*`,
+);
 const STOP_WORDS = new Set(['the', 'and', 'for', 'with', 'from', 'that', 'this', 'into', 'what', 'which', 'when', 'why', 'how', 'are', 'was', 'not']);
 
 function buildContextTrimSystemPrompt(targetOperation) {
@@ -550,7 +621,7 @@ function findAnchorLines(rawContext, targetOperation) {
   const keys = lexicalKeys(targetOperation);
   return String(rawContext || '').split('\n').filter((line) => {
     if (!line.trim()) return false;
-    if (ANCHOR_PATTERN.test(line) || ERRNO_CODE.test(line)) return true;
+    if (matchesAny(ANCHOR_PATTERNS, line) || ERRNO_CODE.test(line)) return true;
     const lower = line.toLowerCase();
     return keys.some((k) => lower.includes(k)) && /\b(function|class|def|const|let|var|interface|type|CREATE\s+TABLE)\b/i.test(line);
   });
@@ -570,7 +641,7 @@ function prefilterContext(rawContext, targetOperation) {
       if (!seen.has(line)) { seen.set(line, out.length); out.push({ text: line, count: 1 }); } else { out[seen.get(line)].count += 1; }
       continue;
     }
-    if (NOISE_LINE.test(line)) continue;
+    if (matchesAny(NOISE_LINES, line)) continue;
     const normalized = line.replace(TIMESTAMP_PREFIX, '').trimEnd();
     if (!normalized.trim()) continue;
     if (seen.has(normalized)) { out[seen.get(normalized)].count += 1; continue; }
@@ -622,6 +693,88 @@ async function trimContextJustInTime(rawContext, targetOperation, {
   return result;
 }
 
+// ===========================================================================
+// MCP tool handlers
+// ===========================================================================
+
+/** A caller that refuses, so the pipelines take their deterministic path. */
+function deterministicOnlyCaller() {
+  return async () => { throw new Error('model_disabled: pass useModel=true to allow an LLM call'); };
+}
+
+/**
+ * Build Neo4j READ tools from env (NEO4J_URI, NEO4J_USERNAME, NEO4J_PASSWORD,
+ * optional NEO4J_DATABASE). neo4j-driver is an optional dependency.
+ */
+function createNeo4jToolsFromEnv(env = process.env, { requireDriver = require } = {}) {
+  if (!env.NEO4J_URI) return { tools: null, reason: 'NEO4J_URI is not set' };
+  let neo4j;
+  try {
+    neo4j = requireDriver('neo4j-driver');
+  } catch {
+    return { tools: null, reason: 'neo4j-driver is not installed (npm install neo4j-driver)' };
+  }
+  const driver = neo4j.driver(env.NEO4J_URI, neo4j.auth.basic(env.NEO4J_USERNAME || 'neo4j', env.NEO4J_PASSWORD || ''));
+  return { tools: createNeo4jTools(driver, { database: env.NEO4J_DATABASE || undefined }), driver, reason: null };
+}
+
+const MCP_TOOL_NAMES = Object.freeze(['graphrag_traverse', 'route_workload', 'trim_context']);
+
+/**
+ * Run one of the pipeline MCP tools. Route and trim are deterministic unless
+ * `useModel` is true. GraphRAG always needs a model and a Neo4j instance and
+ * reports `unavailable` instead of throwing when either is missing.
+ */
+function boundedMaxSteps(value) {
+  return Number.isInteger(value) ? Math.min(Math.max(value, 1), GRAPH_MAX_STEPS) : GRAPH_MAX_STEPS;
+}
+
+function runRouteTool(args, modelCaller) {
+  if (typeof args.workload !== 'string' || !args.workload) throw new Error('workload must be a non-empty string');
+  return routeWorkload(args.workload, { callModel: modelCaller });
+}
+
+function runTrimTool(args, modelCaller) {
+  if (typeof args.rawContext !== 'string') throw new Error('rawContext must be a string');
+  const tokenBudget = Number.isInteger(args.tokenBudget) && args.tokenBudget > 0 ? args.tokenBudget : undefined;
+  return trimContextJustInTime(args.rawContext, String(args.targetOperation || ''), { callModel: modelCaller, tokenBudget });
+}
+
+async function runGraphRagTool(args, { env, callModel, graphTools, requireDriver }) {
+  if (typeof args.query !== 'string' || !args.query.trim()) throw new Error('query must be a non-empty string');
+  let tools = graphTools;
+  let driver = null;
+  if (!tools) {
+    const built = createNeo4jToolsFromEnv(env, requireDriver ? { requireDriver } : undefined);
+    if (!built.tools) return { status: 'unavailable', reason: built.reason, answer: null, trace: [] };
+    ({ tools, driver } = built);
+  }
+  try {
+    return await runGraphRagTraversal(args.query, {
+      callModel: callModel || createLlmClientCaller(),
+      tools,
+      maxSteps: boundedMaxSteps(args.maxSteps),
+    });
+  } catch (error) {
+    return { status: 'unavailable', reason: errorMessage(error, 200), answer: null, trace: [] };
+  } finally {
+    if (driver) await driver.close();
+  }
+}
+
+async function handlePipelineTool(name, args = {}, {
+  env = process.env,
+  callModel,
+  graphTools,
+  requireDriver,
+} = {}) {
+  const modelCaller = callModel || (args.useModel ? createLlmClientCaller() : deterministicOnlyCaller());
+  if (name === 'route_workload') return runRouteTool(args, modelCaller);
+  if (name === 'trim_context') return runTrimTool(args, modelCaller);
+  if (name === 'graphrag_traverse') return runGraphRagTool(args, { env, callModel, graphTools, requireDriver });
+  throw new Error(`unknown_pipeline_tool:${name}`);
+}
+
 module.exports = {
   MODEL_DEFAULTS,
   resolveModels,
@@ -650,4 +803,8 @@ module.exports = {
   findAnchorLines,
   prefilterContext,
   trimContextJustInTime,
+  // MCP
+  MCP_TOOL_NAMES,
+  createNeo4jToolsFromEnv,
+  handlePipelineTool,
 };

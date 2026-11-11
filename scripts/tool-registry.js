@@ -469,6 +469,47 @@ const TOOLS = [
     },
   }),
   readOnlyTool({
+    name: 'graphrag_traverse',
+    description: 'Answer a multi-hop question over a Neo4j graph with a schema-first ReAct loop. Only read-only Cypher runs (static guard plus READ session); stops after 3 failed attempts and names the missing link instead of guessing. Needs NEO4J_URI, neo4j-driver and model credentials; otherwise returns status "unavailable".',
+    inputSchema: {
+      type: 'object',
+      additionalProperties: false,
+      required: ['query'],
+      properties: {
+        query: { type: 'string', description: 'The multi-hop question to answer.' },
+        maxSteps: { type: 'integer', minimum: 1, maximum: 10, description: 'Upper bound on ReAct steps. Default: 10.' },
+      },
+    },
+  }),
+  readOnlyTool({
+    name: 'route_workload',
+    description: 'Decide whether a workload goes to Claude (code, tool use, strict JSON) or Gemini (huge payloads, raw logs), or splits into ordered sub-tasks. Deterministic rules first; an LLM router is used for ambiguous work only when useModel is true. Returns a validated routing decision; does not run the workload.',
+    inputSchema: {
+      type: 'object',
+      additionalProperties: false,
+      required: ['workload'],
+      properties: {
+        workload: { type: 'string', description: 'The task text or payload to route.' },
+        useModel: { type: 'boolean', description: 'Allow an LLM router call for ambiguous workloads. Default: false.' },
+      },
+    },
+  }),
+  readOnlyTool({
+    name: 'trim_context',
+    description: 'Compact retrieved context for one target operation before inference: drops metadata and boilerplate, collapses repeats, and keeps error lines, stack frames, trace ids and matching declarations verbatim. Deterministic unless useModel is true and the result is still over tokenBudget.',
+    inputSchema: {
+      type: 'object',
+      additionalProperties: false,
+      required: ['rawContext', 'targetOperation'],
+      properties: {
+        rawContext: { type: 'string', description: 'Raw retrieved text to compact.' },
+        targetOperation: { type: 'string', description: 'What the downstream model must do with the context.' },
+        tokenBudget: { type: 'integer', minimum: 1, description: 'Target size in estimated tokens. Default: 2000.' },
+        useModel: { type: 'boolean', description: 'Allow an LLM compaction pass when over budget. Default: false.' },
+      },
+    },
+  }),
+  readOnlyTool({
     name: 'plan_agent_design_governance',
     description: 'Evaluate an agent workflow before adding tools, autonomy, or subagents. Recommends single-agent vs manager/decentralized patterns, baseline evals, instruction fixes, and tool safeguards.',
     inputSchema: {
