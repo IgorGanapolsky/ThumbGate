@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>OpenCode and ThumbGate | ThumbGate</title>
+  <meta name="description" content="How npx thumbgate init --agent opencode registers the ThumbGate MCP server in OpenCode. Advisory gate_check, pinned to thumbgate@1.39.1. It does not call Gemini." />
+  <meta property="og:title" content="OpenCode and ThumbGate" />
+  <meta property="og:description" content="Register ThumbGate's MCP server in OpenCode. The check is advisory. OpenCode has no ThumbGate hook." />
+  <meta property="og:type" content="article" />
+  <meta property="og:url" content="https://thumbgate.ai/blog/opencode-and-thumbgate" />
+  <link rel="canonical" href="https://thumbgate.ai/blog/opencode-and-thumbgate" />
+  <link rel="icon" type="image/png" href="/thumbgate-icon.png" />
+  <meta property="og:image" content="https://thumbgate.ai/og.png" />
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "BlogPosting",
+    "headline": "OpenCode and ThumbGate",
+    "datePublished": "2026-11-11",
+    "dateModified": "2026-11-11",
+    "author": { "@type": "Organization", "name": "ThumbGate" },
+    "publisher": { "@type": "Organization", "name": "ThumbGate", "url": "https://thumbgate.ai" },
+    "description": "npx thumbgate init --agent opencode merges the ThumbGate MCP server into OpenCode's config. The check is advisory.",
+    "mainEntityOfPage": "https://thumbgate.ai/blog/opencode-and-thumbgate"
+  }
+  </script>
+  <style>
+    :root { --bg: #0a0a0b; --bg-raised: #111113; --bg-card: #161618; --line: #222225; --text: #e8e8ec; --muted: #8b8b96; --cyan: #22d3ee; }
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); line-height: 1.7; }
+    a { color: var(--cyan); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    .container { max-width: 760px; margin: 0 auto; padding: 0 24px; }
+    .topbar { position: sticky; top: 0; z-index: 20; backdrop-filter: blur(12px); background: rgba(10,10,11,0.88); border-bottom: 1px solid var(--line); }
+    .topbar .container { display: flex; justify-content: space-between; align-items: center; padding: 14px 24px; max-width: 980px; }
+    .brand { font-weight: 700; color: var(--text); }
+    article { padding: 56px 0 72px; }
+    .eyebrow { color: var(--cyan); text-transform: uppercase; letter-spacing: 0.08em; font-size: 12px; font-weight: 700; }
+    h1 { font-size: clamp(30px, 4.6vw, 46px); line-height: 1.1; letter-spacing: -0.03em; margin: 14px 0 10px; }
+    .meta { color: var(--muted); font-size: 14px; margin-bottom: 32px; }
+    h2 { font-size: 26px; letter-spacing: -0.02em; margin: 40px 0 12px; }
+    p, li { color: #d4d4dc; }
+    .lede { font-size: 20px; color: var(--text); }
+    code, pre { background: var(--bg-raised); border: 1px solid var(--line); border-radius: 5px; }
+    code { padding: 1px 6px; font-size: 0.92em; }
+    pre { border-radius: 10px; padding: 16px; overflow-x: auto; font-size: 13px; line-height: 1.55; }
+    pre code { background: none; border: none; padding: 0; }
+    .footer-cta { margin: 48px 0 0; padding: 22px; border: 1px solid var(--line); border-radius: 14px; background: var(--bg-card); }
+  </style>
+</head>
+<body>
+  <div class="topbar">
+    <div class="container"><a class="brand" href="/">ThumbGate</a><a href="/blog">All posts</a></div>
+  </div>
+
+  <article class="container">
+    <span class="eyebrow">Setup · November 11, 2026</span>
+    <h1>OpenCode and ThumbGate</h1>
+    <p class="meta">2026-11-11 · guide</p>
+
+    <p class="lede"><a href="https://blog.google/innovation-and-ai/technology/developers-tools/gemini-decisions-api/">Google's Decisions announcement</a> lists <a href="https://opencode.ai/">OpenCode</a> among the launch integrations. ThumbGate is not one of those integrations. ThumbGate has its own OpenCode adapter, and that adapter does not call Gemini.</p>
+
+    <h2>Install</h2>
+    <pre><code>npx thumbgate init --agent opencode</code></pre>
+    <p>Init reads <code>adapters/opencode/opencode.json</code> from the installed package and merges the <code>mcp.thumbgate</code> entry into <code>~/.config/opencode/opencode.json</code>. The file shipped in 1.39.1 starts the server with this command:</p>
+    <pre><code>npx --yes --package thumbgate@1.39.1 thumbgate serve</code></pre>
+    <p>If <code>~/.config/opencode/opencode.json</code> is already there and does not parse as JSON, init stops, sets a failing exit code, and leaves the file as it was. Fix or move that file, then run init again. Restart OpenCode so it loads the MCP server.</p>
+
+    <h2>What the check can do</h2>
+    <p>OpenCode's row in the install table is advisory MCP <code>gate_check</code>. OpenCode has no ThumbGate hook. OpenCode decides whether to honor the MCP result. When it does not, the tool call runs.</p>
+    <p>A hard stop before the tool runs is the hook path, on Claude Code, Codex, Gemini CLI, and ForgeCode:</p>
+    <pre><code>npx thumbgate init --agent claude-code
+npx thumbgate init --agent codex
+npx thumbgate init --agent gemini
+npx thumbgate init --agent forge</code></pre>
+    <p>Any other MCP agent can run <code>npx thumbgate serve</code>. That is the same advisory check.</p>
+
+    <div class="footer-cta">
+      <p style="margin-top:0">Why a score is not a gate: <a href="/blog/gemini-decisions-and-the-gate">ThumbGate enforces the tool call</a>.</p>
+      <p style="margin-bottom:0;font-size:14px;color:var(--muted)">Pro is $19/mo or $149/yr on <a href="https://thumbgate.ai/pricing">the pricing page</a>. Setup Sprint is $499 one-time for one workflow on <a href="https://thumbgate.ai/diagnostic">the diagnostic page</a>.</p>
+    </div>
+  </article>
+</body>
+</html>

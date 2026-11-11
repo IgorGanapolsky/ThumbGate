@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ThumbGate enforces the tool call. Gemini Decisions scores it. | ThumbGate</title>
+  <meta name="description" content="Google's Decisions API returns a confidence score. ThumbGate's shipped gate runs before the tool call on Claude Code, Codex, Gemini CLI, and ForgeCode, and keeps the lesson record on the machine." />
+  <meta property="og:title" content="ThumbGate enforces the tool call. Gemini Decisions scores it." />
+  <meta property="og:description" content="A confidence score does not stop a tool call. The PreToolUse hook does, on the agents that install one." />
+  <meta property="og:type" content="article" />
+  <meta property="og:url" content="https://thumbgate.ai/blog/gemini-decisions-and-the-gate" />
+  <link rel="canonical" href="https://thumbgate.ai/blog/gemini-decisions-and-the-gate" />
+  <link rel="icon" type="image/png" href="/thumbgate-icon.png" />
+  <meta property="og:image" content="https://thumbgate.ai/og.png" />
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "BlogPosting",
+    "headline": "ThumbGate enforces the tool call. Gemini Decisions scores it.",
+    "datePublished": "2026-11-11",
+    "dateModified": "2026-11-11",
+    "author": { "@type": "Organization", "name": "ThumbGate" },
+    "publisher": { "@type": "Organization", "name": "ThumbGate", "url": "https://thumbgate.ai" },
+    "description": "Google's Decisions API returns a confidence score. The shipped ThumbGate gate runs before the tool call and keeps the lesson record on the machine.",
+    "mainEntityOfPage": "https://thumbgate.ai/blog/gemini-decisions-and-the-gate"
+  }
+  </script>
+  <style>
+    :root { --bg: #0a0a0b; --bg-raised: #111113; --bg-card: #161618; --line: #222225; --text: #e8e8ec; --muted: #8b8b96; --cyan: #22d3ee; }
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); line-height: 1.7; }
+    a { color: var(--cyan); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    .container { max-width: 760px; margin: 0 auto; padding: 0 24px; }
+    .topbar { position: sticky; top: 0; z-index: 20; backdrop-filter: blur(12px); background: rgba(10,10,11,0.88); border-bottom: 1px solid var(--line); }
+    .topbar .container { display: flex; justify-content: space-between; align-items: center; padding: 14px 24px; max-width: 980px; }
+    .brand { font-weight: 700; color: var(--text); }
+    article { padding: 56px 0 72px; }
+    .eyebrow { color: var(--cyan); text-transform: uppercase; letter-spacing: 0.08em; font-size: 12px; font-weight: 700; }
+    h1 { font-size: clamp(30px, 4.6vw, 46px); line-height: 1.1; letter-spacing: -0.03em; margin: 14px 0 10px; }
+    .meta { color: var(--muted); font-size: 14px; margin-bottom: 32px; }
+    h2 { font-size: 26px; letter-spacing: -0.02em; margin: 40px 0 12px; }
+    p, li { color: #d4d4dc; }
+    .lede { font-size: 20px; color: var(--text); }
+    code { background: var(--bg-raised); border: 1px solid var(--line); border-radius: 5px; padding: 1px 6px; font-size: 0.92em; }
+    table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 14px; }
+    th, td { border: 1px solid var(--line); padding: 10px 12px; text-align: left; vertical-align: top; }
+    th { background: var(--bg-raised); color: var(--cyan); }
+    .footer-cta { margin: 48px 0 0; padding: 22px; border: 1px solid var(--line); border-radius: 14px; background: var(--bg-card); }
+    .footer-cta pre { background: var(--bg-raised); border: 1px solid var(--line); border-radius: 10px; padding: 16px; overflow-x: auto; }
+    .footer-cta pre code { background: none; border: none; padding: 0; }
+  </style>
+</head>
+<body>
+  <div class="topbar">
+    <div class="container"><a class="brand" href="/">ThumbGate</a><a href="/blog">All posts</a></div>
+  </div>
+
+  <article class="container">
+    <span class="eyebrow">November 11, 2026</span>
+    <h1>ThumbGate enforces the tool call. Gemini Decisions scores it.</h1>
+    <p class="meta">2026-11-11 · engineering</p>
+
+    <p class="lede">Google published Gemini Decisions today. It returns a confidence score for a fixed question about one input. ThumbGate is the check that runs before the tool call, writes the verdict to the local lesson record, and can turn a thumbs-down into the next rule.</p>
+
+    <h2>What Google shipped</h2>
+    <p>The announcement is <a href="https://blog.google/innovation-and-ai/technology/developers-tools/gemini-decisions-api/">Gemini Decisions</a>. Read Google's post for Google's description. A score from that API does not, by itself, stop a tool call. Something in the agent harness has to refuse the call before it runs.</p>
+
+    <h2>What ThumbGate ships today</h2>
+    <p>The install table is the contract. <code>npx thumbgate init</code> wires a hard hook on four agents. On those agents the hook sees the proposed tool call and returns the verdict before the tool runs. The shipped hook does not call a language model. The same call gets the same verdict. That path is the one in <a href="/blog/no-llm-in-the-gate">No LLM in the gate</a>.</p>
+    <table>
+      <thead><tr><th>Agent</th><th>Command</th><th>What you get</th></tr></thead>
+      <tbody>
+        <tr><td>Claude Code</td><td><code>npx thumbgate init --agent claude-code</code></td><td>Hard PreToolUse hook</td></tr>
+        <tr><td>Codex</td><td><code>npx thumbgate init --agent codex</code></td><td>Hard pre_tool_use hook</td></tr>
+        <tr><td>Gemini CLI</td><td><code>npx thumbgate init --agent gemini</code></td><td>Hard PreToolUse hook</td></tr>
+        <tr><td>ForgeCode</td><td><code>npx thumbgate init --agent forge</code></td><td>Hard pre_tool_use hook</td></tr>
+        <tr><td>Cursor</td><td><code>npx thumbgate init --agent cursor</code></td><td>Advisory MCP gate_check</td></tr>
+        <tr><td>Cline</td><td><code>npx thumbgate init --agent cline</code></td><td>Advisory MCP plus .clinerules</td></tr>
+        <tr><td>OpenCode</td><td><code>npx thumbgate init --agent opencode</code></td><td>Advisory MCP gate_check</td></tr>
+        <tr><td>Amp</td><td><code>npx thumbgate init --agent amp</code></td><td>Feedback capture</td></tr>
+      </tbody>
+    </table>
+    <p>Cursor, Cline, and OpenCode do not get that hook. They can ask <code>gate_check</code> over MCP. The tool still runs unless that client honors the result. Any other MCP agent can run <code>npx thumbgate serve</code> and gets the same advisory check.</p>
+    <p>Secrets stay denied. A thumbs-down is stored with the local lesson record on the machine, and a repeated rejection can become a prevention rule. The record is that local store.</p>
+
+    <h2>Separate from today's gate</h2>
+    <p>An opt-in Gemini Decisions check is in review: <a href="https://github.com/IgorGanapolsky/ThumbGate/pull/4941">this pull request</a>. It is not what runs today.</p>
+
+    <h2>OpenCode</h2>
+    <p>Google's launch list names OpenCode. ThumbGate's OpenCode adapter does not call Gemini. It registers a local MCP server. The setup steps are in <a href="/blog/opencode-and-thumbgate">OpenCode and ThumbGate</a>.</p>
+
+    <div class="footer-cta">
+      <p style="margin-top:0"><strong>Install the local gate.</strong></p>
+      <pre><code>npx thumbgate init</code></pre>
+      <p style="margin-bottom:0;font-size:14px;color:var(--muted)">Pro is $19/mo or $149/yr on <a href="https://thumbgate.ai/pricing">the pricing page</a>. Setup Sprint is $499 one-time for one workflow on <a href="https://thumbgate.ai/diagnostic">the diagnostic page</a>.</p>
+    </div>
+  </article>
+</body>
+</html>
