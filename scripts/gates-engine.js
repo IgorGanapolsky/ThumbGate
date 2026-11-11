@@ -238,7 +238,7 @@ const SELF_PROTECT_CONFIG_COMMAND_PATTERN = /(?:config\/gates\/|config\/(?:budge
 const SELF_PROTECT_MUTATOR_BINARIES = new Set([
   'sed', 'perl', 'tee', 'truncate', 'rm', 'mv', 'patch', 'install',
 ]);
-const INLINE_INTERPRETER_MUTATION_API_PATTERN = /(?:writeFileSync|writeFile|appendFile|unlink|rmSync|rename|copyFile|createWriteStream|fs\.open|\.write\(|write_text|write_bytes|shutil\.move|shutil\.copy|os\.remove|os\.unlink|os\.replace|os\.rename|File\.write|open\([^)]*['"][wa+])/;
+const INLINE_INTERPRETER_MUTATION_API_PATTERN = /(?:writeFileSync|writeFile|appendFile|unlink|rmSync|rename|copyFile|createWriteStream|fs\.open|\.write\(|write_text|write_bytes|shutil\.move|shutil\.copy|os\.remove|os\.unlink|os\.replace|os\.rename|File\.write)/;
 
 function isSelfProtectGate(gateId) {
   return SELF_PROTECT_HARD_FLOOR_GATE_IDS.has(gateId);
@@ -2975,20 +2975,55 @@ function hasActiveProtectedApproval(governanceState, affectedFiles) {
   }));
 }
 
+function extractShellRedirectTargets(command) {
+  const targets = [];
+  const text = String(command || '');
+  const len = text.length;
+  let i = 0;
+  while (i < len) {
+    if (text.charCodeAt(i) !== 62 /* '>' */) {
+      i += 1;
+      continue;
+    }
+    i += 1;
+    if (i < len && text.charCodeAt(i) === 62 /* '>>' */) {
+      i += 1;
+    }
+    while (i < len && (text.charCodeAt(i) === 32 || text.charCodeAt(i) === 9)) {
+      i += 1;
+    }
+    const start = i;
+    while (i < len) {
+      const ch = text[i];
+      if (ch === ' ' || ch === '\t' || ch === '\n' || ch === '\r' || ch === ';' || ch === '&' || ch === '|' || ch === '<' || ch === '>') {
+        break;
+      }
+      i += 1;
+    }
+    if (i > start) {
+      targets.push(text.slice(start, i));
+    }
+  }
+  return targets;
+}
+
+function hasPythonWriteOpenCall(segment) {
+  const idx = segment.indexOf('open(');
+  if (idx < 0) return false;
+  const closeIdx = segment.indexOf(')', idx + 5);
+  if (closeIdx < 0) return false;
+  const args = segment.slice(idx + 5, closeIdx);
+  return /['"][rwa]*[wa+][rwa+b]*['"]/.test(args);
+}
+
 function isBashSelfProtectConfigWriteTarget(command) {
   if (!command || !SELF_PROTECT_CONFIG_COMMAND_PATTERN.test(command)) return false;
 
-  // 1. Shell redirect target (> or >>)
-  const redirectPattern = /(?:^|[\s;&|]|[^\s;&|<>])(?:\d*)>{1,2}\s*([^\s;&|<>]+)/g;
-  let redirectMatch = redirectPattern.exec(command);
-  while (redirectMatch) {
-    const target = redirectMatch[1];
-    if (target && SELF_PROTECT_CONFIG_COMMAND_PATTERN.test(target)) {
-      return true;
-    }
-    redirectMatch = redirectPattern.exec(command);
+  // 1. Shell redirect target (> or >>) via O(n) character scanner
+  const redirectTargets = extractShellRedirectTargets(command);
+  if (redirectTargets.some((target) => SELF_PROTECT_CONFIG_COMMAND_PATTERN.test(target))) {
+    return true;
   }
-
   // 2. Command segments: mutator binaries or inline interpreters
   const segments = String(command).split(/\r?\n|&&|\|\||[;|&]/);
   for (const segment of segments) {
@@ -3042,7 +3077,8 @@ function isBashSelfProtectConfigWriteTarget(command) {
     } else if (binName === 'node' || /^python\d*$/.test(binName) || binName === 'ruby') {
       // Inline interpreter: node -e, python -c, ruby -e
       const hasInlineEval = tokens.some((t, idx) => idx > binIdx && (t === '-e' || t === '-c' || t === '-E'));
-      if (hasInlineEval && INLINE_INTERPRETER_MUTATION_API_PATTERN.test(trimmedSegment) && SELF_PROTECT_CONFIG_COMMAND_PATTERN.test(trimmedSegment)) {
+      const writesFile = INLINE_INTERPRETER_MUTATION_API_PATTERN.test(trimmedSegment) || hasPythonWriteOpenCall(trimmedSegment);
+      if (hasInlineEval && writesFile && SELF_PROTECT_CONFIG_COMMAND_PATTERN.test(trimmedSegment)) {
         return true;
       }
     }
