@@ -5366,14 +5366,14 @@ switch (COMMAND) {
           }) + '\n');
         } else {
           // warn / no match → allow. The gate engine already logged the decision.
-          process.stdout.write(JSON.stringify({}) + '\n');
+          process.stdout.write(JSON.stringify({ decision: 'allow' }) + '\n');
         }
         process.exit(0);
       } catch (err) {
         // Hermes hooks fail OPEN on error/timeout — emit an explicit allow so a gate fault
         // never wedges the agent (reliability ≈ enforcement; keep this fast).
         process.stderr.write(`hermes-gate error: ${err.message}\n`);
-        process.stdout.write(JSON.stringify({}) + '\n');
+        process.stdout.write(JSON.stringify({ decision: 'allow' }) + '\n');
         process.exit(0);
       }
     });
