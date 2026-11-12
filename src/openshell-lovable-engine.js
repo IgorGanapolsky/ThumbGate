@@ -429,7 +429,8 @@ function parseDesignAst(source, defaultBgHex = '#0f172a') {
   const root = { type: 'Root', astPath: 'root', inheritedBgHex: defaultBgHex, children: [] };
   const stack = [root];
   const nodes = [];
-  const tokenRe = /<(\/?)([a-zA-Z][a-zA-Z0-9.-]*)(\s(?:[^<>"{}]|\{\{[^}]*\}\}|"[^"]*"|'[^']*')*)?(\/?)>/g;
+  // Each alternative starts with a different character, so the attribute run cannot backtrack exponentially.
+  const tokenRe = /<(\/?)([a-zA-Z][a-zA-Z0-9.-]*)(\s(?:[^<>"'{}]|\{\{[^}]*\}\}|"[^"]*"|'[^']*')*)?(\/?)>/g;
   let m;
   while ((m = tokenRe.exec(text)) !== null) {
     const [, closing, tagName, attrsRaw = '', selfClose] = m;
