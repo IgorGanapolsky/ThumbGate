@@ -1151,7 +1151,7 @@ test('pricing page is the single source of truth for what ThumbGate sells', asyn
   assert.equal(res.status, 200);
   assert.match(String(res.headers.get('content-type')), /text\/html/);
   const body = await res.text();
-  assert.match(body, /Managed Workflow Diagnostic/i);
+  assert.match(body, /Managed AI Agent Workflow Gate/i);
   assert.match(body, /\$499/);
   assert.doesNotMatch(body, /\$19\/mo|\$149\/yr|>Start Pro<\/a>|\/checkout\/pro/);
   assert.match(body, /Subscriber login/);

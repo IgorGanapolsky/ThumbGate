@@ -30,7 +30,7 @@ test('pricing exposes Pro self-serve and direct $499 managed-gate checkout', () 
   assert.match(pricingHtml, /action="\/go\/diagnostic-pay" method="POST"/);
   assert.match(pricingHtml, /Book the \$499 setup/);
   assert.match(pricingHtml, /name="customer_email"[^>]*required/);
-  assert.match(pricingHtml, /"name": "ThumbGate Managed Workflow Diagnostic"/);
+  assert.match(pricingHtml, /"name": "Managed AI Agent Workflow Gate"/);
   assert.match(pricingHtml, /"price": "499"/);
   // Pro JSON-LD removed
   // Pro JSON-LD removed
