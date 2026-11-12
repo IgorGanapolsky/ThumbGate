@@ -4,7 +4,7 @@ Cloud Claude sessions can't reach your Mac directly, but they can open GitHub is
 turns issues whose body contains `<!-- agent:ready -->` into `claude -p` runs on your Mac and writes the evidence back to
 the issue.
 
-Flow: cloud thread opens issue → Mac claims it → `claude -p` in the issue folder → evidence comment → `<!-- agent:done -->` or `agent-blocked`.
+Flow: cloud thread opens issue → Mac claims it → `claude -p` in the issue folder → evidence comment → `<!-- agent:done -->` or `<!-- agent:blocked -->`.
 
 ## Queue a task
 
@@ -51,11 +51,11 @@ overlapping tick) but pointless.
 | Signal | Meaning |
 | --- | --- |
 | `<!-- agent:ready -->` in the body | queued. This is not a label. |
-| `agent-claimed` | a Mac is running it now |
+| `<!-- agent:claimed -->` in the body | a Mac is running it now. This is not a label. |
 | `<!-- agent:done -->` in the body | the run ended with `STATUS: DONE`; read the evidence comment before trusting it |
-| `agent-blocked` | the run failed, timed out, hit a permission denial it couldn't finish without, or didn't report a status |
+| `<!-- agent:blocked -->` in the body | the run failed, timed out, hit a permission denial it couldn't finish without, or didn't report a status |
 
-The loop does not create `ready-for-agent` or `agent-done`. To requeue, put `<!-- agent:ready -->` back in the body and remove `<!-- agent:done -->`.
+The loop does not create or apply `ready-for-agent`, `agent-done`, `agent-claimed`, or `agent-blocked`. To requeue, put `<!-- agent:ready -->` back in the body and remove `<!-- agent:done -->`, `<!-- agent:blocked -->`, and `<!-- agent:claimed -->`.
 
 ## Several Macs
 
@@ -63,7 +63,7 @@ Each Mac posts a claim comment, waits 5 seconds, then re-reads the comments. The
 since the issue was queued wins, and the others delete their claim and
 move on. Set `MAC_DISPATCH_MACHINE_ID` (default: hostname) so the comments say which Mac ran it.
 
-If a Mac sleeps or crashes mid-run, the issue stays `agent-claimed`. Put `<!-- agent:ready -->` back in the body to retry; the old claim is ignored.
+If a Mac sleeps or crashes mid-run, the issue body keeps `<!-- agent:claimed -->`. Put `<!-- agent:ready -->` back in the body and remove `<!-- agent:claimed -->` to retry; the old claim comment is ignored.
 
 ## Permissions and safety
 

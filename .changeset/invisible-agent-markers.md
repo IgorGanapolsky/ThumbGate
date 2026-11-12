@@ -2,4 +2,4 @@
 "thumbgate": patch
 ---
 
-Queue Mac dispatch with an invisible issue-body marker instead of the ready-for-agent and agent-done labels.
+Queue Mac dispatch with invisible issue-body markers instead of the ready-for-agent, agent-done, agent-claimed, and agent-blocked labels.
