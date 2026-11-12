@@ -5678,7 +5678,7 @@ switch (COMMAND) {
     const jsonFlag = args.includes('--json');
     const fIdx = args.indexOf('--findings');
     const findingsArg = fIdx >= 0 ? args[fIdx + 1] : null;
-    const targetFile = args.find((a, idx) => !a.startsWith('--') && idx !== fIdx + 1);
+    const targetFile = args.find((a, idx) => !a.startsWith('--') && (fIdx < 0 || idx !== fIdx + 1));
     if (!targetFile) {
       console.error('Usage: npx thumbgate design-fix <file.html|file.tsx> [--findings <json-or-text>] [--write] [--json]');
       process.exit(2);

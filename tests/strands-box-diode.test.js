@@ -280,6 +280,8 @@ describe('NVIDIA OpenShell Policy Prover, Advisor & Endpoint-Bound Credential Pr
       network_policies: [{ name: 'bad_rest', binaries: [{ path: '/usr/bin/gh' }], endpoints: [{ host: 'api.github.com', port: 443, protocol: 'rest', enforcement: 'enforce', rules: [{ allow: { method: 'DELETE', path: '/repos/IgorGanapolsky/ThumbGate' } }] }] }],
     }, boundary);
     assert.equal(deleteEscalation.counterexample, 'network rest DELETE api.github.com:443/repos/IgorGanapolsky/ThumbGate');
+    assert.equal(provePolicyBoundary({ ...validSubagent, landlock: undefined }, boundary).reason_code, 'landlock_downgrade');
+    assert.equal(provePolicyBoundary({ ...validSubagent, network_policies: [{ name: 'tcp_downgrade', endpoints: [{ host: 'api.github.com', port: 443, protocol: 'tcp' }] }] }, boundary).reason_code, 'protocol_mismatch_exceeds');
     assert.equal(provePolicyBoundary({ ...validSubagent, network_policies: [{ name: 'g', endpoints: [{ host: 'api.github.com', port: 443, protocol: 'graphql' }] }] }, boundary).exitCode, 3);
   });
 

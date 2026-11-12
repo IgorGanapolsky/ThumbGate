@@ -153,6 +153,9 @@ test('Lovable AST self-correcting design engine inherits ancestor bg, mutates JS
     assert.equal(JSON.parse(proveOut).result, 'within_boundary');
     execFileSync(process.execPath, [path.join(__dirname, '..', 'bin', 'cli.js'), 'design-fix', uiPath, '--findings', 'The text contrast is too low on .sub', '--write'], { encoding: 'utf8' });
     assert.match(fs.readFileSync(uiPath, 'utf8'), /text-slate-300/);
+    fs.writeFileSync(uiPath, '<button style={{ minHeight: "20px" }}>Click</button>');
+    execFileSync(process.execPath, [path.join(__dirname, '..', 'bin', 'cli.js'), 'design-fix', uiPath, '--write'], { encoding: 'utf8' });
+    assert.match(fs.readFileSync(uiPath, 'utf8'), /minHeight: '44px'/);
   } finally {
     fs.rmSync(tmpDir, { recursive: true, force: true });
   }

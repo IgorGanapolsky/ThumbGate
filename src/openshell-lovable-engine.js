@@ -48,10 +48,10 @@ function provePolicyBoundary(candidate, boundary) {
     return proverVerdict('inconclusive', 3, { reason_code: 'resource_limit', reason: 'Policy exceeds 1,024 network rules or 4,096 endpoints.' });
   }
 
-  // 1. Landlock check
+  // 1. Landlock check (fails closed if boundary hard_requirement is downgraded or omitted)
   const cLandlock = candidate.landlock?.compatibility;
-  if (boundary.landlock?.compatibility === 'hard_requirement' && cLandlock && cLandlock !== 'hard_requirement') {
-    return proverVerdict('exceeds_boundary', 1, { reason_code: 'landlock_downgrade', counterexample: `landlock compatibility ${cLandlock}` });
+  if (boundary.landlock?.compatibility === 'hard_requirement' && cLandlock !== 'hard_requirement') {
+    return proverVerdict('exceeds_boundary', 1, { reason_code: 'landlock_downgrade', counterexample: `landlock compatibility ${cLandlock || '(missing)'}` });
   }
   for (const field of ['run_as_user', 'run_as_group']) {
     const cVal = candidate.process_policy?.[field];
@@ -120,10 +120,14 @@ function provePolicyBoundary(candidate, boundary) {
           return proverVerdict('exceeds_boundary', 1, { reason_code: 'binary_exceeds_boundary', counterexample: `binary ${cb} -> ${ep.host}:${port}` });
         }
       }
+      const bProto = String(matchingBoundary.protocol || 'tcp').toLowerCase();
+      if (proto !== bProto) {
+        return proverVerdict('exceeds_boundary', 1, {
+          reason_code: 'protocol_mismatch_exceeds',
+          counterexample: `network protocol mismatch ${proto} -> boundary ${bProto} on ${ep.host}:${port}`,
+        });
+      }
       if (proto === 'rest') {
-        if (String(matchingBoundary.protocol || 'tcp').toLowerCase() !== 'rest') {
-          return proverVerdict('unsupported', 3, { reason_code: 'mixed_rest_and_l4_endpoint', reason: `Mixed REST/L4 on '${ep.host}:${port}'.` });
-        }
         const bAllows = (matchingBoundary.rules || []).filter((r) => r.allow).map((r) => r.allow);
         for (const r of ep.rules || []) {
           if (!r.allow) continue;
@@ -566,13 +570,15 @@ function inspectAndPatchDesignSource(source, options = {}) {
     const vfTap = matchedVisuals.find((v) => /tap|target/i.test(v.issue));
     if (isInteractive || vfTap) {
       const smallTw = classes.filter((c) => /^(h-[45678]|p-[01]|py-(?:0|0\.5|1)|px-(?:1|1\.5)|text-\[(?:9|10)px\])$/.test(c));
-      const cssHeightPx = styleMap.height ? parseFloat(styleMap.height) : null;
+      const rawCssH = styleMap.height || styleMap.minHeight || styleMap['min-height'];
+      const cssHeightPx = rawCssH ? parseFloat(rawCssH) : null;
       if (vfTap || smallTw.length > 0 || (cssHeightPx !== null && cssHeightPx < 44)) {
         nodeCssProps['min-height'] = '44px';
         nodeCssProps['min-width'] = '44px';
         const addTw = ['min-h-11', 'min-w-11', 'px-4', 'py-2.5'];
         if (node.styleInfo.kind && cssHeightPx !== null && cssHeightPx < 44) {
           delete styleMap.height;
+          delete styleMap['min-height'];
           styleMap.minHeight = '44px';
           styleMap.minWidth = '44px';
           mutatedStyle = true;
