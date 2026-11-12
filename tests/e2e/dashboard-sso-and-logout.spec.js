@@ -115,6 +115,8 @@ test.describe('/dashboard real-server login, redeploy persistence, Google SSO, a
 
       await page.goto(`${origin}/dashboard?noauto`);
       await expect(page.locator('#ssoGoogleBtn')).toBeVisible();
+      await expect(page.locator('#authHelp')).toBeVisible();
+      await expect(page.locator('#authHelp')).toContainText('Sign in to open your workspace');
       await expect(page.locator('#ssoAppleBtn')).toHaveCount(0);
 
       await Promise.all([
@@ -123,6 +125,8 @@ test.describe('/dashboard real-server login, redeploy persistence, Google SSO, a
       ]);
       await expect(page.locator('#authStatus')).toHaveText('✓ Free tier');
       await expect(page.locator('#authTitle')).toHaveText('Signed in (newuser@example.com) · Free tier');
+      await expect(page.locator('#ssoGoogleBtn')).toBeHidden();
+      await expect(page.locator('#dashboardSsoButtons')).toBeHidden();
       await expect(page.locator('#getProBtn')).toHaveText('Upgrade to Pro');
       await expect(page.locator('#getProBtn')).toHaveAttribute('href', 'https://thumbgate.ai/pricing');
       await expect(page.locator('#dashboardContent')).toBeHidden();
@@ -132,8 +136,10 @@ test.describe('/dashboard real-server login, redeploy persistence, Google SSO, a
         page.locator('#disconnectBtn').click(),
       ]);
       await expect(page.locator('#authStatus')).toHaveText('Disconnected');
+      await expect(page.locator('#ssoGoogleBtn')).toBeVisible();
+      await expect(page.locator('#authHelp')).toBeVisible();
 
-      // Part 2: Subscribed Google user gets Pro, survives redeploy, and logs out cleanly
+      // Part 2: Subscribed Google user gets Pro, hides sign-in button & copy, renders Today features, survives redeploy, and logs out cleanly
       provisionApiKey('cus_pw_paid_1', {
         customerEmail: 'subscriber@thumbgate.ai',
         entitlementKind: 'subscription',
@@ -148,25 +154,48 @@ test.describe('/dashboard real-server login, redeploy persistence, Google SSO, a
       ]);
       await expect(page.locator('#authStatus')).toHaveText('✓ Connected');
       await expect(page.locator('#authTitle')).toHaveText('Signed in (subscriber@thumbgate.ai)');
+      await expect(page.locator('#disconnectBtn')).toBeVisible();
+      await expect(page.locator('#ssoGoogleBtn')).toBeHidden();
+      await expect(page.locator('#dashboardSsoButtons')).toBeHidden();
+      await expect(page.locator('#authHelp')).toBeHidden();
       await expect(page.locator('#dashboardContent')).toBeVisible();
 
-      // Reload across simulated redeploy: still signed in with Pro
+      // Verify Dayglass Today additions: Up next card (1 button), 0-safe status chips, chat model/privacy route, and private memory footer
+      await expect(page.locator('#upNextCard')).toBeVisible();
+      await expect(page.locator('#upNextTitle')).toHaveText('Connect your agent');
+      await expect(page.locator('#upNextCard a, #upNextCard button')).toHaveCount(1);
+      await expect(page.locator('#chipBlockedToday')).toContainText('0 BLOCKED TODAY');
+      await expect(page.locator('#chipWarnedToday')).toContainText('0 WARNED TODAY');
+      await expect(page.locator('#lessonStorageSummary')).toContainText('100% On-Device Private Memory');
+      await expect(page.locator('#lessonStorageSummary')).toContainText('0 B');
+
+      await page.locator('#chatInput').fill('How many gates are active?');
+      await page.locator('#chatSend').click();
+      await expect(page.locator('.chat-model-route')).toContainText('Local, no cloud');
+
+      // Reload across simulated redeploy: still signed in with Pro and sign-in button/copy remain hidden
       serverTestHooks.clearInMemoryAuthSessionsForTests();
       await page.reload();
       await expect(page.locator('#authStatus')).toHaveText('✓ Connected');
       await expect(page.locator('#authTitle')).toHaveText('Signed in (subscriber@thumbgate.ai)');
+      await expect(page.locator('#ssoGoogleBtn')).toBeHidden();
+      await expect(page.locator('#authHelp')).toBeHidden();
       await expect(page.locator('#dashboardContent')).toBeVisible();
 
-      // Click Log Out -> /dashboard?noauto=1 Disconnected -> reload still signed out
+      // Click Log Out -> /dashboard?noauto=1 Disconnected -> sign-in button & copy visible again -> reload still signed out
       await Promise.all([
         page.waitForURL(/\/dashboard\?noauto=1$/),
         page.locator('#disconnectBtn').click(),
       ]);
       await expect(page.locator('#authStatus')).toHaveText('Disconnected');
+      await expect(page.locator('#ssoGoogleBtn')).toBeVisible();
+      await expect(page.locator('#authHelp')).toBeVisible();
       await expect(page.locator('#dashboardContent')).toBeHidden();
 
       await page.reload();
       await expect(page.locator('#authStatus')).toHaveText('Disconnected');
+      await expect(page.locator('#ssoGoogleBtn')).toBeVisible();
+      await expect(page.locator('#authHelp')).toBeVisible();
       await expect(page.locator('#dashboardContent')).toBeHidden();
     } finally {
       await context.close();
