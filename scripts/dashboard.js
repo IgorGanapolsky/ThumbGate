@@ -404,19 +404,21 @@ function computeApprovalStats(entries) {
 }
 
 
-function computeGateStats() {
-  const autoGatesPath = getAutoGatesPath();
-  const statsPath = path.join(
+function computeGateStats(feedbackDir, options = {}) {
+  const autoGatesPath = options.autoGatesPath || getAutoGatesPath();
+  const statsPath = options.statsPath || path.join(
     process.env.HOME || '/tmp',
     '.thumbgate',
     'gate-stats.json'
   );
   const stats = readJsonFile(statsPath) || { blocked: 0, warned: 0, passed: 0, byGate: {} };
 
-  const defaultGates = readJsonFile(DEFAULT_GATES_PATH);
+  const defaultGates = readJsonFile(options.manualGatesPath || DEFAULT_GATES_PATH);
   const autoGates = readJsonFile(autoGatesPath);
-  const manualCount = defaultGates && Array.isArray(defaultGates.gates) ? defaultGates.gates.length : 0;
-  const autoCount = autoGates && Array.isArray(autoGates.gates) ? autoGates.gates.length : 0;
+  const manualList = Array.isArray(defaultGates?.gates) ? defaultGates.gates : [];
+  const autoList = Array.isArray(autoGates?.gates) ? autoGates.gates : [];
+  const manualCount = manualList.filter((g) => g?.enabled !== false && g?.disabled !== true && g?.action !== 'off' && g?.action !== 'disabled').length;
+  const autoCount = autoList.filter((g) => g?.enabled !== false && g?.disabled !== true && g?.action !== 'off' && g?.action !== 'disabled').length;
   const totalGates = manualCount + autoCount;
 
   let topBlocked = null;
@@ -431,6 +433,13 @@ function computeGateStats() {
     }
   }
 
+  let bypassStats = { weeklyTotal: 0, bypassRate: null, noVerifyAttempts: 0, breakGlass: 0, disabledGates: 0, satisfyGateOverrides: 0 };
+  try {
+    const { computeWeeklyBypassStats } = require('./gate-stats');
+    const allGates = [...manualList, ...autoList];
+    const auditLogPath = feedbackDir ? path.join(feedbackDir, AUDIT_LOG_FILENAME) : undefined;
+    bypassStats = computeWeeklyBypassStats({ allGates, auditLogPath, now: options.now });
+  } catch { /* optional */ }
   return {
     totalGates,
     manualCount,
@@ -438,6 +447,9 @@ function computeGateStats() {
     blocked: stats.blocked || 0,
     warned: stats.warned || 0,
     passed: stats.passed || 0,
+    weeklyBypasses: bypassStats.weeklyTotal,
+    weeklyBypassRate: bypassStats.bypassRate,
+    bypassStats,
     topBlocked,
     topBlockedCount,
     byGate: stats.byGate || {},
@@ -585,7 +597,7 @@ function computeTodayOverview(feedbackDir, options = {}) {
   const entries = Array.isArray(options.entries) ? options.entries : collectAllFeedbackEntries(feedbackDir);
   const memoryEntries = Array.isArray(options.memoryEntries) ? options.memoryEntries : readJSONL(path.join(feedbackDir, 'memory-log.jsonl'));
   const auditEntries = Array.isArray(options.auditEntries) ? options.auditEntries : readJSONL(path.join(feedbackDir, AUDIT_LOG_FILENAME));
-  const gateStats = options.gateStats || computeGateStats();
+  const gateStats = options.gateStats || computeGateStats(feedbackDir, { now: options.now });
   const gateAudit = options.gateAudit || computeGateAuditSeries(feedbackDir);
   const gates = Array.isArray(options.gates) ? options.gates : listActiveGates();
   const nowMs = options.now ? new Date(options.now).getTime() : Date.now();
@@ -598,6 +610,8 @@ function computeTodayOverview(feedbackDir, options = {}) {
     blockedToday: Number(todayBucket.deny) || 0,
     warnedToday: Number(todayBucket.warn) || 0,
     activeGates: Number(gateStats.totalGates) || 0,
+    bypassedThisWeek: Number(gateStats.weeklyBypasses) || 0,
+    weeklyBypassRate: gateStats.weeklyBypassRate ?? null,
   };
 
   const fired24h = new Map();
@@ -1965,7 +1979,7 @@ function generateDashboard(feedbackDir, options = {}) {
   const billingSummary = options.billingSummary || getBillingSummary(analyticsWindow);
 
   const approval = computeApprovalStats(entries);
-  const gateStats = mergeRepeatMetricIntoGateStats(computeGateStats());
+  const gateStats = mergeRepeatMetricIntoGateStats(computeGateStats(feedbackDir, { now: options.now }));
   const prevention = computePreventionImpact(feedbackDir, gateStats);
   const trend = computeSessionTrend(entries, 10);
   const health = computeSystemHealth(feedbackDir, gateStats);
@@ -2185,6 +2199,8 @@ function printDashboard(data) {
   console.log('\uD83D\uDEE1\uFE0F  Gate Enforcement');
   console.log(`  Active Gates     : ${gateStats.totalGates} (${gateStats.manualCount} manual, ${gateStats.autoCount} auto-promoted)`);
   console.log(`  Actions Blocked  : ${gateStats.blocked}`);
+  const bypassRateSuffix = gateStats.weeklyBypassRate != null ? ` (${(gateStats.weeklyBypassRate * 100).toFixed(1)}%)` : '';
+  console.log(`  Bypassed (7d)    : ${gateStats.weeklyBypasses || 0}${bypassRateSuffix}`);
   console.log(`  Actions Warned   : ${gateStats.warned}`);
   if (gateStats.topBlocked) {
     console.log(`  Top Blocked      : ${gateStats.topBlocked} (${gateStats.topBlockedCount}\u00D7)`);

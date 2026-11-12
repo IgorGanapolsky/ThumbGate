@@ -1276,7 +1276,7 @@
     "test:solver-parity": "node --test tests/solver-parity.test.js",
     "solver:parity": "node scripts/solver-parity.js",
     "test:guide-progressive": "node --test tests/guide-progressive.test.js",
-    "test:override-audit": "node --test tests/override-audit.test.js",
+    "test:override-audit": "node --test tests/override-audit.test.js tests/bypass-rate.test.js",
     "test:admin-override": "node --test tests/admin-override.test.js",
     "test:progressive-wiring": "node --test tests/progressive-wiring.test.js",
     "test:security-questionnaire": "node --test tests/security-questionnaire.test.js",

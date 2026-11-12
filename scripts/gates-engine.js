@@ -3880,7 +3880,7 @@ async function evaluateGatesAsyncInner(toolName, toolInput, configPath) {
       }
       recordStat(gate.id, 'warn', gate, { toolName, toolInput });
       const result = { decision: 'warn', gate: gate.id, message: `[approval gate disabled] ${message}`, severity: gate.severity, reasoning };
-      const auditRecord = recordAuditEvent({ toolName, toolInput, decision: 'warn', gateId: gate.id, message, severity: gate.severity, source: 'gates-engine' });
+      const auditRecord = recordAuditEvent({ toolName, toolInput, decision: 'warn', gateId: gate.id, message: result.message, severity: gate.severity, source: 'gates-engine' });
       auditToFeedback(auditRecord);
       return result;
     }
@@ -4198,7 +4198,7 @@ function evaluateGatesInner(toolName, toolInput, configPath) {
       }
       recordStat(gate.id, 'warn', gate, { toolName, toolInput });
       const result = { decision: 'warn', gate: gate.id, message: `[approval gate disabled] ${message}`, severity: gate.severity, reasoning };
-      const auditRecord = recordAuditEvent({ toolName, toolInput, decision: 'warn', gateId: gate.id, message, severity: gate.severity, source: 'gates-engine' });
+      const auditRecord = recordAuditEvent({ toolName, toolInput, decision: 'warn', gateId: gate.id, message: result.message, severity: gate.severity, source: 'gates-engine' });
       auditToFeedback(auditRecord);
       return result;
     }

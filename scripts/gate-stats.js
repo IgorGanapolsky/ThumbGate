@@ -7,6 +7,8 @@ const { getAutoGatesPath } = require('./auto-promote-gates');
 const { computeBayesErrorRate } = require('./bayes-optimal-gate');
 const { sequencePathFor } = require('./risk-scorer');
 
+const { getAuditLogPath } = require('./audit-trail');
+const { readTextTail } = require('./fs-utils');
 const PROJECT_ROOT = path.join(__dirname, '..');
 const MANUAL_GATES_PATH = path.join(PROJECT_ROOT, 'config', 'gates', 'default.json');
 const STATS_PATH = path.join(process.env.HOME || '/tmp', '.thumbgate', 'gate-stats.json');
@@ -94,17 +96,28 @@ function calculateStats(options = {}) {
   // Returns null when there is no recorded block/warn data yet.
   const firstTimeFixRate = computeFirstTimeFixRate();
 
+  const activeAllGates = allGates.filter((g) => !isDisabledGateDefinition(g));
+  const activeManualCount = manualGates.filter((g) => !isDisabledGateDefinition(g)).length;
+  const activeAutoCount = autoGates.filter((g) => !isDisabledGateDefinition(g)).length;
+  const bypassStats = computeWeeklyBypassStats({
+    allGates,
+    auditLogPath: options.auditLogPath,
+    now: options.now,
+  });
   return {
-    totalGates: allGates.length,
-    manualGates: manualGates.length,
-    autoPromotedGates: autoGates.length,
-    blockGates: blockGates.length,
-    warnGates: warnGates.length,
+    totalGates: activeAllGates.length,
+    manualGates: activeManualCount,
+    autoPromotedGates: activeAutoCount,
+    blockGates: activeAllGates.filter((g) => g.action === 'block').length,
+    warnGates: activeAllGates.filter((g) => g.action === 'warn').length,
     totalBlocked,
     lifetimeBlocked: totalBlocked,
     distinctBlocked,
     recurringBlocks,
     repeatBlocks: recurringBlocks,
+    weeklyBypasses: bypassStats.weeklyTotal,
+    weeklyBypassRate: bypassStats.bypassRate,
+    bypassStats,
     totalWarned,
     topBlocked,
     lastPromotion,
@@ -235,6 +248,11 @@ function formatStats(stats) {
   lines.push('─'.repeat(38));
   lines.push(`  Active gates: ${stats.totalGates} (${stats.manualGates} manual, ${stats.autoPromotedGates} auto-promoted)`);
   lines.push(`  Actions blocked: ${stats.totalBlocked}`);
+  if (stats.bypassStats) {
+    const b = stats.bypassStats;
+    const rateLabel = b.bypassRate !== null ? ` (${(b.bypassRate * 100).toFixed(1)}% of gated decisions)` : '';
+    lines.push(`  Gates bypassed (7d): ${b.weeklyTotal}${rateLabel} [--no-verify: ${b.noVerifyAttempts}, break-glass: ${b.breakGlass}, disabled: ${b.disabledGates}, satisfy_gate: ${b.satisfyGateOverrides}]`);
+  }
   if (stats.recurringBlocks !== undefined && stats.recurringBlocks > 0) {
     const fallback = toCount(Math.max(0, stats.totalBlocked - stats.recurringBlocks), 0);
     const distinct = toCount(stats.distinctBlocked, fallback);
@@ -270,6 +288,155 @@ function formatFirstTimeFixRate(rate) {
   if (rate >= 0.80) return `${pct}% — most blocks resolved first time (good)`;
   return `${pct}% — recurring blocks detected; agents may be ignoring gate feedback`;
 }
+const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
+const DISABLED_GATE_MSG_RE = /\[[^\]]*gate disabled\]/i;
+const NO_VERIFY_GATE_RE = /^(?:git-no-verify|deploy-skip-ci|no-skip-hooks)$/i;
+const BREAK_GLASS_TTL_MS = 5 * 60 * 1000;
+const DEDUP_WINDOW_MS = 5000;
+
+function safeDefaultAuditPath() {
+  try { return getAuditLogPath(); } catch { return null; }
+}
+
+function parseAuditLine(line, sinceMs) {
+  const trimmed = line.trim();
+  if (!trimmed) return null;
+  try {
+    const rec = JSON.parse(trimmed);
+    const ts = Date.parse(rec?.timestamp || '');
+    return rec && Number.isFinite(ts) && ts >= sinceMs ? { rec, ts } : null;
+  } catch {
+    return null;
+  }
+}
+
+function readRecentAuditRows(auditLogPath, sinceMs) {
+  const resolved = auditLogPath || safeDefaultAuditPath();
+  if (!resolved || !fs.existsSync(resolved)) return [];
+  try {
+    const { text } = readTextTail(resolved, 8 * 1024 * 1024);
+    const rows = [];
+    for (const line of text.split('\n')) {
+      const parsed = parseAuditLine(line, sinceMs);
+      if (parsed) rows.push(parsed);
+    }
+    return rows;
+  } catch {
+    return [];
+  }
+}
+
+function isDisabledGateDefinition(gate) {
+  if (!gate || typeof gate !== 'object') return false;
+  return gate.enabled === false || gate.disabled === true || gate.action === 'disabled' || gate.action === 'off';
+}
+
+function commandSegmentHasNoVerify(segment) {
+  const unquoted = segment.replace(/"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'/g, ' ');
+  if (/(?:^|\s)--no-verify(?:\s|$)/.test(unquoted)) return true;
+  if (!/\bgit\s+commit\b/.test(unquoted)) return false;
+  return /\s-n(?:\s|$)/.test(unquoted);
+}
+
+function isNoVerifyRecord(rec) {
+  const gateId = String(rec?.gateId || '');
+  if (NO_VERIFY_GATE_RE.test(gateId) || /no-verify/i.test(gateId)) return true;
+  const cmd = String(rec?.toolInput?.command || rec?.inputSummary || '');
+  if (!cmd) return false;
+  for (const segment of cmd.split(/&&|\|\||;|\||\n/)) {
+    if (commandSegmentHasNoVerify(segment)) return true;
+  }
+  return false;
+}
+
+function resolveOverrideGateKey(rec) {
+  return String(rec?.gateId || rec?.toolInput?.gate || rec?.toolInput?.gateId || rec?.toolInput?.gate_id || 'gate');
+}
+
+function isRecentTimestamp(lastTs, ts, windowMs) {
+  return lastTs !== undefined && Math.abs(ts - lastTs) <= windowMs;
+}
+
+function matchBreakGlassBypass(rec, ts, state) {
+  const isBg = rec.override?.source === 'break-glass' || rec.gateId === 'thumbgate_break_glass' || rec.toolName === 'break_glass_emergency';
+  if (!isBg) return false;
+  if (rec.override?.reason === 'grant revoked before expiry') return true;
+  if (rec.decision === 'allow' && isRecentTimestamp(state.lastBreakGlassTs, ts, BREAK_GLASS_TTL_MS)) return true;
+  if (isRecentTimestamp(state.lastBreakGlassTs, ts, DEDUP_WINDOW_MS)) return true;
+  state.lastBreakGlassTs = ts;
+  state.counts.breakGlass += 1;
+  return true;
+}
+
+function matchSatisfyBypass(rec, ts, state) {
+  if (rec.toolName === 'satisfy_gate' && (rec.source === 'tool-latency' || rec.source === 'structured-reasoning')) return true;
+  const isOverride = rec.decision === 'override' || (rec.decision === 'allow' && rec.source === 'gates-engine-admin-override');
+  if (!isOverride && rec.toolName !== 'satisfy_gate') return false;
+  if (rec.override?.reason === 'grant revoked before expiry') return true;
+  const gateKey = resolveOverrideGateKey(rec);
+  if (isRecentTimestamp(state.lastSatisfyByGate.get(gateKey), ts, DEDUP_WINDOW_MS)) return true;
+  state.lastSatisfyByGate.set(gateKey, ts);
+  state.counts.satisfyGateOverrides += 1;
+  return true;
+}
+
+function recordBypassAuditRow(rec, ts, state) {
+  const isDeny = rec.decision === 'deny';
+  if (isDeny) state.weeklyBlocks += 1;
+  if (matchBreakGlassBypass(rec, ts, state)) return;
+  if (matchSatisfyBypass(rec, ts, state)) return;
+  if (rec.decision === 'skip' || rec.disabledGate === true || DISABLED_GATE_MSG_RE.test(String(rec.message || ''))) {
+    state.counts.disabledGateSkips += 1;
+    return;
+  }
+  if (isNoVerifyRecord(rec)) {
+    state.counts.noVerifyAttempts += 1;
+    if (isDeny) state.deniedBypassAttempts += 1;
+  }
+}
+
+function resolveGatesList(options) {
+  if (Array.isArray(options.allGates)) return options.allGates;
+  const manual = loadGatesFile(options.manualGatesPath || MANUAL_GATES_PATH);
+  const auto = loadGatesFile(options.autoGatesPath || getAutoGatesPath());
+  return [...manual, ...auto];
+}
+
+function computeWeeklyBypassStats(options = {}) {
+  const parsedNow = options.now ? new Date(options.now).getTime() : Date.now();
+  const nowMs = Number.isFinite(parsedNow) ? parsedNow : Date.now();
+  const sinceMs = nowMs - WEEK_MS;
+  const disabledGateDefinitions = resolveGatesList(options).filter(isDisabledGateDefinition).length;
+  const state = {
+    counts: { noVerifyAttempts: 0, breakGlass: 0, disabledGateSkips: 0, satisfyGateOverrides: 0 },
+    weeklyBlocks: 0,
+    deniedBypassAttempts: 0,
+    lastBreakGlassTs: undefined,
+    lastSatisfyByGate: new Map(),
+  };
+  for (const { rec, ts } of readRecentAuditRows(options.auditLogPath, sinceMs)) {
+    recordBypassAuditRow(rec, ts, state);
+  }
+  const disabledGates = disabledGateDefinitions + state.counts.disabledGateSkips;
+  const eventBypasses = state.counts.noVerifyAttempts + state.counts.breakGlass + state.counts.disabledGateSkips + state.counts.satisfyGateOverrides;
+  const weeklyTotal = eventBypasses + disabledGateDefinitions;
+  const nonBypassBlocks = Math.max(0, state.weeklyBlocks - state.deniedBypassAttempts);
+  const denom = eventBypasses + nonBypassBlocks;
+  return {
+    windowDays: 7,
+    since: new Date(sinceMs).toISOString(),
+    weeklyTotal,
+    eventBypasses,
+    weeklyBlocks: state.weeklyBlocks,
+    bypassRate: denom > 0 ? Math.round((eventBypasses / denom) * 10000) / 10000 : null,
+    noVerifyAttempts: state.counts.noVerifyAttempts,
+    breakGlass: state.counts.breakGlass,
+    disabledGates,
+    disabledGateDefinitions,
+    disabledGateSkips: state.counts.disabledGateSkips,
+    satisfyGateOverrides: state.counts.satisfyGateOverrides,
+  };
+}
 
 if (require.main === module) {
   try {
@@ -291,6 +458,7 @@ module.exports = {
   loadGatesFile,
   tryComputeBayesErrorRate,
   computeCalibration,
+  computeWeeklyBypassStats,
   MANUAL_GATES_PATH,
   STATS_PATH,
 };

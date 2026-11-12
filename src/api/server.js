@@ -10770,7 +10770,7 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
         // succeeds (and never updates if that call fails).
         try {
           const { computeGateStats, computeTodayOverview } = require('../../scripts/dashboard');
-          const gateStats = computeGateStats();
+          const gateStats = computeGateStats(requestFeedbackPaths.FEEDBACK_DIR);
           const todayOverview = computeTodayOverview(requestFeedbackPaths.FEEDBACK_DIR, { gateStats });
           stats.activeGateCount = Number(gateStats.totalGates) || 0;
           stats.gateStats = {
@@ -10779,6 +10779,8 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
             autoCount: Number(gateStats.autoCount) || 0,
             blocked: Number(gateStats.blocked) || 0,
             warned: Number(gateStats.warned) || 0,
+            weeklyBypasses: Number(gateStats.weeklyBypasses) || 0,
+            weeklyBypassRate: gateStats.weeklyBypassRate ?? null,
             blockedToday: todayOverview.gateStatusChips.blockedToday,
             warnedToday: todayOverview.gateStatusChips.warnedToday,
           };
@@ -10792,6 +10794,8 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
             autoCount: 0,
             blocked: 0,
             warned: 0,
+            weeklyBypasses: 0,
+            weeklyBypassRate: null,
             blockedToday: 0,
             warnedToday: 0,
           };

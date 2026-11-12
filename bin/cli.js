@@ -1558,6 +1558,8 @@ function stats() {
     gatesBlocked: gateData.blocked,
     gatesWarned: gateData.warned,
     totalGates: gateConfigData.totalGates,
+    weeklyBypasses: gateConfigData.weeklyBypasses || 0,
+    weeklyBypassRate: gateConfigData.weeklyBypassRate ?? null,
     autoPromotedGates: gateConfigData.autoPromotedGates,
     estimatedHoursSaved: gateConfigData.estimatedHoursSaved,
     topBlockedGate: gateConfigData.topBlocked ? gateConfigData.topBlocked.id : null,
@@ -1579,6 +1581,8 @@ function stats() {
   if (totalInterceptions > 0 || payload.totalGates > 0) {
     console.log('\n🛡️  PRE-ACTION GATE ENFORCEMENT');
     console.log(`  Actions blocked : ${payload.gatesBlocked}`);
+    const bypassPct = payload.weeklyBypassRate != null ? ` (${(payload.weeklyBypassRate * 100).toFixed(1)}%)` : '';
+    console.log(`  Gates bypassed  : ${payload.weeklyBypasses} in 7d${bypassPct}`);
     console.log(`  Actions warned  : ${payload.gatesWarned}`);
     console.log(`  Active gates    : ${payload.totalGates} (${payload.autoPromotedGates} auto-promoted)`);
     if (payload.topBlockedGate) console.log(`  Top blocker     : ${payload.topBlockedGate}`);

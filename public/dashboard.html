@@ -385,6 +385,7 @@
 
   <div id="gateStatusChips" aria-label="Gate enforcement status" style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px;font-family:var(--mono);font-size:12px;">
     <span id="chipBlockedToday" style="padding:5px 10px;border-radius:999px;background:rgba(248,113,113,0.12);border:1px solid rgba(248,113,113,0.32);color:#fca5a5;"><strong data-chip-count="blocked-today">0</strong> BLOCKED TODAY</span>
+    <span id="chipBypassedWeek" style="padding:5px 10px;border-radius:999px;background:rgba(168,85,247,0.12);border:1px solid rgba(168,85,247,0.32);color:#d8b4fe;"><strong data-chip-count="bypassed-week">0</strong> <span data-chip-label="bypassed-week">BYPASSED (7D)</span></span>
     <span id="chipWarnedToday" style="padding:5px 10px;border-radius:999px;background:rgba(251,191,36,0.12);border:1px solid rgba(251,191,36,0.32);color:#fde68a;"><strong data-chip-count="warned-today">0</strong> WARNED TODAY</span>
     <span id="chipActiveGates" style="padding:5px 10px;border-radius:999px;background:rgba(34,211,238,0.12);border:1px solid rgba(34,211,238,0.32);color:var(--cyan);"><strong data-chip-count="active-gates">0</strong> ACTIVE GATES</span>
   </div>
@@ -485,6 +486,7 @@
       <h2>Active Pre-Action Checks</h2>
       <div id="gatesTabStatusChips" style="display:flex;gap:10px;flex-wrap:wrap;margin:10px 0 18px;font-family:var(--mono);font-size:12px;">
         <span style="padding:5px 10px;border-radius:999px;background:rgba(248,113,113,0.12);border:1px solid rgba(248,113,113,0.32);color:#fca5a5;"><strong data-chip-count="blocked-today">0</strong> BLOCKED TODAY</span>
+        <span style="padding:5px 10px;border-radius:999px;background:rgba(168,85,247,0.12);border:1px solid rgba(168,85,247,0.32);color:#d8b4fe;"><strong data-chip-count="bypassed-week">0</strong> <span data-chip-label="bypassed-week">BYPASSED (7D)</span></span>
         <span style="padding:5px 10px;border-radius:999px;background:rgba(251,191,36,0.12);border:1px solid rgba(251,191,36,0.32);color:#fde68a;"><strong data-chip-count="warned-today">0</strong> WARNED TODAY</span>
         <span style="padding:5px 10px;border-radius:999px;background:rgba(34,211,238,0.12);border:1px solid rgba(34,211,238,0.32);color:var(--cyan);"><strong data-chip-count="active-gates">0</strong> ACTIVE GATES</span>
       </div>
@@ -1315,9 +1317,14 @@ function resolveActiveGateCount(data) {
 function renderGateStatusChips(chips) {
   var c = chips || {};
   var blockedToday = Number.isFinite(Number(c.blockedToday)) ? Math.max(0, Math.trunc(Number(c.blockedToday))) : 0;
+  var bypassedThisWeek = Number.isFinite(Number(c.bypassedThisWeek)) ? Math.max(0, Math.trunc(Number(c.bypassedThisWeek))) : 0;
+  var rateNum = c.weeklyBypassRate != null && Number.isFinite(Number(c.weeklyBypassRate)) ? Number(c.weeklyBypassRate) : null;
+  var bypassLabel = rateNum != null ? ('BYPASSED (7D · ' + (rateNum * 100).toFixed(1) + '%)') : 'BYPASSED (7D)';
   var warnedToday = Number.isFinite(Number(c.warnedToday)) ? Math.max(0, Math.trunc(Number(c.warnedToday))) : 0;
   var activeGates = Number.isFinite(Number(c.activeGates)) ? Math.max(0, Math.trunc(Number(c.activeGates))) : 0;
   document.querySelectorAll('[data-chip-count="blocked-today"]').forEach(function(el) { el.textContent = String(blockedToday); });
+  document.querySelectorAll('[data-chip-count="bypassed-week"]').forEach(function(el) { el.textContent = String(bypassedThisWeek); });
+  document.querySelectorAll('[data-chip-label="bypassed-week"]').forEach(function(el) { el.textContent = bypassLabel; });
   document.querySelectorAll('[data-chip-count="warned-today"]').forEach(function(el) { el.textContent = String(warnedToday); });
   document.querySelectorAll('[data-chip-count="active-gates"]').forEach(function(el) { el.textContent = String(activeGates); });
 }
@@ -1368,6 +1375,8 @@ function renderStats(data) {
   var overview = data.todayOverview || {};
   renderGateStatusChips(overview.gateStatusChips || {
     blockedToday: gs.blockedToday != null ? gs.blockedToday : 0,
+    bypassedThisWeek: gs.weeklyBypasses != null ? gs.weeklyBypasses : 0,
+    weeklyBypassRate: gs.weeklyBypassRate != null ? gs.weeklyBypassRate : null,
     warnedToday: gs.warnedToday != null ? gs.warnedToday : 0,
     activeGates: gateCount != null ? gateCount : 0,
   });
@@ -1836,6 +1845,8 @@ function renderDashboardData(data) {
   var todayBucket = auditDays.length ? auditDays[auditDays.length - 1] : {};
   renderGateStatusChips(overview.gateStatusChips || {
     blockedToday: todayBucket.deny != null ? todayBucket.deny : 0,
+    bypassedThisWeek: gateStats.weeklyBypasses != null ? gateStats.weeklyBypasses : 0,
+    weeklyBypassRate: gateStats.weeklyBypassRate != null ? gateStats.weeklyBypassRate : null,
     warnedToday: todayBucket.warn != null ? todayBucket.warn : 0,
     activeGates: gateCount != null ? gateCount : 0,
   });
@@ -2487,7 +2498,7 @@ function loadDemo() {
   document.getElementById('statNegative').textContent = '93';
   document.getElementById('statGates').textContent = '14';
   setSelectedCard('all');
-  renderGateStatusChips({ blockedToday: 0, warnedToday: 0, activeGates: 14 });
+  renderGateStatusChips({ blockedToday: 0, bypassedThisWeek: 2, weeklyBypassRate: 0.1538, warnedToday: 0, activeGates: 14 });
   renderUpNext({ kicker: 'Up next · Demo preview', title: 'Connect your agent', detail: 'Sample preview active. Sign in or run npx thumbgate init to inspect your live agent memory.', actionLabel: 'Connect Agent', actionHref: '/install', actionTab: null }, 0);
   renderLessonStorageFooter({ label: '100% On-Device Private Memory (Demo sample)', location: '~/.thumbgate/feedback/memory-log.jsonl', lessonDbSizeDisplay: '0 B' });
   var demoSavings = TG_TOKEN_SAVINGS.compute(93, 42);
