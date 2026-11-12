@@ -777,8 +777,11 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // Bumped 9.35 MB -> 9.40 MB (2026-10-15): HotData DB integration & Google Universal Cart firewall. Local pack 9,340,830; CI slack.
   // Bumped 9.40 MB -> 9.85 MB (2026-10-26): email-triage MCP server, Poolside/OpenUI/ICM/ARC-AGI-3 gates, and 4-tier checkout routes.
   // Bumped 9.85 MB -> 9.88 MB (2026-11-11): Gemini Decisions engine & Stripe offer closer in mcp-writeguard.js + server.js.
-  manifest.unpackedSize <= 9_880_000,
-  `npm package should stay <= 9.88 MB unpacked, got ${manifest.unpackedSize}`
+  // Bumped 9.88 MB -> 9.89 MB (2026-11-12, PR #4920): self-serve billing portal
+  // routes (/portal, /billing, POST /v1/billing/portal) and createBillingPortalSession
+  // in server.js + billing.js. CI measured 9,882,997 unpacked on 519f1c8a.
+  manifest.unpackedSize <= 9_890_000,
+  `npm package should stay <= 9.89 MB unpacked, got ${manifest.unpackedSize}`
 );
 
   for (const file of requiredRuntimeFiles) {
