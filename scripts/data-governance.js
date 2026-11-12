@@ -13,6 +13,7 @@ const fs = require('fs');
 const path = require('path');
 const { scanForPii, redactPii, gateDpoExport } = require('./pii-scanner');
 const { resolveFeedbackDir } = require('./feedback-paths');
+const { tokenizeFormatPreservingVaultless } = require('./secret-redaction');
 
 const PREFERENCES_FILE = 'data-usage-preferences.json';
 
@@ -76,12 +77,25 @@ function isOperationAllowed(operation) {
  * Apply governance policies to a DPO export: check preferences, scan PII, gate output.
  * Returns { allowed, pairs, blocked, reason, piiStats }.
  */
-function governedDpoExport(pairs) {
+function tokenizePairFieldsAtSource(pair, salt) {
+  const opts = { salt, preserveSecretReferentialIntegrity: true };
+  return {
+    prompt: tokenizeFormatPreservingVaultless(pair.prompt || '', opts),
+    chosen: tokenizeFormatPreservingVaultless(pair.chosen || '', opts),
+    rejected: tokenizeFormatPreservingVaultless(pair.rejected || '', opts),
+  };
+}
+
+function governedDpoExport(pairs, options = {}) {
   const prefs = loadPreferences();
   if (!prefs.allowDpoExport) {
     return { allowed: false, pairs: [], blocked: pairs.length, reason: 'DPO export disabled by user preference', piiStats: null };
   }
-  const gateResult = gateDpoExport(pairs, { maxSensitivity: prefs.maxExportSensitivity });
+  const useSourceTokenization = options.tokenizeAtSource === true;
+  const candidatePairs = useSourceTokenization
+    ? pairs.map((pair) => tokenizePairFieldsAtSource(pair, options.salt))
+    : pairs;
+  const gateResult = gateDpoExport(candidatePairs, { maxSensitivity: prefs.maxExportSensitivity });
   let safePairs = gateResult.safePairs;
   if (prefs.piiRedactionEnabled) {
     safePairs = safePairs.map((p) => ({
@@ -97,7 +111,12 @@ function governedDpoExport(pairs) {
     totalScanned: gateResult.totalScanned,
     passRate: gateResult.passRate,
     reason: gateResult.blockedCount > 0 ? `${gateResult.blockedCount} pairs blocked by PII gate` : 'all pairs clean',
-    piiStats: { blockedCount: gateResult.blockedCount, redactionEnabled: prefs.piiRedactionEnabled, maxSensitivity: prefs.maxExportSensitivity },
+    piiStats: {
+      blockedCount: gateResult.blockedCount,
+      redactionEnabled: prefs.piiRedactionEnabled,
+      maxSensitivity: prefs.maxExportSensitivity,
+      protectionMode: useSourceTokenization ? 'source_format_preserving_tokenization' : 'masking_redaction',
+    },
   };
 }
 
@@ -166,8 +185,121 @@ function generateDataUsageSummary() {
   };
 }
 
+const CLASSICAL_PQC_COUNTDOWN_RE = /^(?:rsa|ecdsa|es256|es384|es512|rs256|rs384|rs512|ps256|ps384|ps512|dh|ecdh)(?:[-_/\d]|$)/i;
+
+function isPositiveFiniteNumber(val) {
+  const num = Number(val);
+  return Number.isFinite(num) && num > 0;
+}
+
+function computeProjectedExhaustionMonths(annualBudgetUsd, spendToDateUsd, elapsedMonths) {
+  if (!isPositiveFiniteNumber(annualBudgetUsd) || !isPositiveFiniteNumber(spendToDateUsd) || !isPositiveFiniteNumber(elapsedMonths)) {
+    return null;
+  }
+  const monthlyBurn = Number(spendToDateUsd) / Number(elapsedMonths);
+  return Number((Number(annualBudgetUsd) / monthlyBurn).toFixed(2));
+}
+
+/**
+ * Gartner Symposium 2026 Inference-Paradox & Cost-Exhaustion Circuit Breaker.
+ * Shifts orchestration from tokenmaxxing to valuemaxxing and halts cost-exhaustion amplification.
+ */
+function evaluateInferenceParadoxGuard({
+  baselineTaskTokens = 1000,
+  agentWorkflowTokens = 1000,
+  annualBudgetUsd = 0,
+  spendToDateUsd = 0,
+  elapsedMonths = 1,
+  publicFacing = false,
+  requestsPerMinute = 0,
+  maxPublicRpm = 60,
+  positiveReturnVerified = false,
+  maxAmplificationRatio = 30,
+} = {}) {
+  const safeBaseline = Math.max(1, Number(baselineTaskTokens) || 1);
+  const safeAgentTokens = Math.max(0, Number(agentWorkflowTokens) || 0);
+  const tokenAmplificationRatio = Number((safeAgentTokens / safeBaseline).toFixed(2));
+  const projectedExhaustionMonths = computeProjectedExhaustionMonths(annualBudgetUsd, spendToDateUsd, elapsedMonths);
+  const costExhaustionRisk = Boolean(publicFacing) && (requestsPerMinute > maxPublicRpm || tokenAmplificationRatio > maxAmplificationRatio);
+  const budgetBurnAlert = projectedExhaustionMonths !== null && projectedExhaustionMonths < 12;
+
+  const blockers = [];
+  if (costExhaustionRisk) blockers.push('cost_exhaustion_circuit_open');
+  if (tokenAmplificationRatio > maxAmplificationRatio) blockers.push('runaway_agent_token_amplification');
+  if (budgetBurnAlert) blockers.push('annual_budget_exhaustion_trajectory');
+  if (!positiveReturnVerified) blockers.push('unverified_roi_scale_out_blocked');
+
+  const allowScaleOut = blockers.length === 0;
+  return {
+    tokenAmplificationRatio,
+    inGartnerAgentMultiplierBand: tokenAmplificationRatio >= 5 && tokenAmplificationRatio <= 30,
+    projectedExhaustionMonths,
+    budgetBurnAlert,
+    costExhaustionRisk,
+    circuitState: costExhaustionRisk ? 'OPEN' : 'CLOSED',
+    operatingMode: allowScaleOut ? 'valuemaxxing' : 'tokenmaxxing_contained',
+    allowScaleOut,
+    blockers,
+  };
+}
+
+function auditCryptoAlgorithmsForPqc(cryptoAlgorithms = [], currentYear = 2026) {
+  return cryptoAlgorithms.map((rawAlg) => {
+    const algorithm = String(rawAlg || '').trim();
+    const vulnerable = CLASSICAL_PQC_COUNTDOWN_RE.test(algorithm);
+    return {
+      algorithm,
+      classicalPublicKeyVulnerable: vulnerable,
+      deprecatedByYear: vulnerable ? 2030 : null,
+      disallowedByYear: vulnerable ? 2035 : null,
+      yearsUntilDeprecation: vulnerable ? Math.max(0, 2030 - currentYear) : null,
+    };
+  });
+}
+
+/**
+ * Gartner Symposium 2026 Agentic Governance System of Record.
+ * Tracks AI Custodian accountability, Shadow AI, Dark AI, urgency bypasses, and NIST 2030/2035 PQC countdown.
+ */
+function evaluateGartnerAgenticGovernanceRecord({
+  custodianOwner = '',
+  registeredAgents = [],
+  observedAgents = [],
+  darkAiEvents = [],
+  bypassAttempts = 0,
+  cryptoAlgorithms = [],
+  currentYear = 2026,
+} = {}) {
+  const custodianAssigned = typeof custodianOwner === 'string' && custodianOwner.trim().length > 0;
+  const registeredSet = new Set(registeredAgents);
+  const shadowAiAgents = observedAgents.filter((agentId) => !registeredSet.has(agentId));
+  const darkAiIncidents = Array.isArray(darkAiEvents) ? [...darkAiEvents] : [];
+  const bypassCount = Math.max(0, Number(bypassAttempts) || 0);
+  const pqcCountdown = auditCryptoAlgorithmsForPqc(cryptoAlgorithms, currentYear);
+  const classicalCryptoCount = pqcCountdown.filter((item) => item.classicalPublicKeyVulnerable).length;
+
+  const blockers = [];
+  if (!custodianAssigned) blockers.push('missing_accountable_ai_custodian');
+  if (shadowAiAgents.length > 0) blockers.push('unregistered_shadow_ai_detected');
+  if (darkAiIncidents.length > 0) blockers.push('dark_ai_rogue_or_sandbox_escape_detected');
+  if (bypassCount > 0) blockers.push('paperwork_only_governance_bypass_detected');
+
+  return {
+    compliant: blockers.length === 0,
+    custodianAssigned,
+    custodianOwner: custodianAssigned ? custodianOwner.trim() : null,
+    shadowAiAgents,
+    darkAiIncidents,
+    bypassCount,
+    paperworkOnlyRisk: bypassCount > 0,
+    pqcCountdown,
+    classicalCryptoMigrationRequired: classicalCryptoCount > 0,
+    blockers,
+  };
+}
+
 module.exports = {
   DEFAULT_PREFERENCES, loadPreferences, savePreferences, updatePreference,
   isOperationAllowed, governedDpoExport, enforceRetention, generateDataUsageSummary,
-  getPreferencesPath,
+  getPreferencesPath, evaluateInferenceParadoxGuard, evaluateGartnerAgenticGovernanceRecord,
 };

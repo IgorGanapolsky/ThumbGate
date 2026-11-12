@@ -158,40 +158,166 @@ function redactSecretsDeep(value) {
   return value;
 }
 const crypto = require('node:crypto');
+const fs = require('node:fs');
+const path = require('node:path');
 
-/**
- * Capital One Databolt-style Vaultless Format-Preserving Tokenization (FPT).
- */
-function tokenizeFormatPreservingVaultless(text, { salt = process.env.THUMBGATE_FPT_KEY } = {}) {
-  if (typeof text !== 'string' || text.length === 0) return text;
-  if (typeof salt !== 'string' || salt.length < 16) {
-    throw new Error('tokenizeFormatPreservingVaultless requires a secret key of at least 16 characters');
+function computeLuhnCheckDigit(digitsWithoutCheck) {
+  let sum = 0;
+  let shouldDouble = true;
+  for (let i = digitsWithoutCheck.length - 1; i >= 0; i -= 1) {
+    let digit = Number(digitsWithoutCheck[i]);
+    if (shouldDouble) {
+      digit *= 2;
+      if (digit > 9) digit -= 9;
+    }
+    sum += digit;
+    shouldDouble = !shouldDouble;
   }
-  const digestHex = (val) => crypto.createHmac('sha256', String(salt)).update(String(val)).digest('hex');
+  return String((10 - (sum % 10)) % 10);
+}
+
+function formatCardToken(rawMatch, digestDigits) {
+  const digitsOnly = rawMatch.replaceAll(/\D/g, '');
+  if (digitsOnly.startsWith('9999')) return rawMatch;
+  const middleLen = digitsOnly.length - 5;
+  const payload = `9999${digestDigits(digitsOnly, middleLen)}`;
+  const fullDigits = `${payload}${computeLuhnCheckDigit(payload)}`;
+  let cursor = 0;
+  let formatted = '';
+  for (const ch of rawMatch) {
+    if (ch >= '0' && ch <= '9') {
+      formatted += fullDigits[cursor];
+      cursor += 1;
+    } else {
+      formatted += ch;
+    }
+  }
+  return formatted;
+}
+
+function tokenizeSecretsReferentially(text, digestHex) {
+  let out = text;
+  for (const pattern of SECRET_REDACTION_PATTERNS) {
+    pattern.regex.lastIndex = 0;
+    if (pattern.id === 'bearer_token') {
+      out = out.replaceAll(pattern.regex, (full, scheme) => {
+        const rawSecret = full.slice(scheme.length).trim();
+        return `${scheme} [FPT:bearer_token#${digestHex(rawSecret).slice(0, 8)}]`;
+      });
+    } else if (pattern.id === 'secret_assignment') {
+      out = out.replaceAll(pattern.regex, (match, key, pre, value, post) => (
+        (SECRET_KEY_NAME.test(key) && !PUBLIC_KEY_NAME.test(key))
+          ? `${key}${pre}[FPT:secret_assignment#${digestHex(value).slice(0, 8)}]${post}`
+          : match
+      ));
+    } else {
+      out = out.replaceAll(pattern.regex, (match) => `[FPT:${pattern.id}#${digestHex(match).slice(0, 8)}]`);
+    }
+  }
+  return out;
+}
+
+function createVaultlessDigesters(salt) {
+  const digestHex = (val) => crypto.createHmac('sha256', salt).update(String(val)).digest('hex');
   const digestDigits = (val, len) => {
     const hex = digestHex(val);
     let out = '';
-    for (let i = 0; i < hex.length && out.length < len; i += 2) {
+    for (let i = 0; i < len * 2; i += 2) {
       out += String(Number.parseInt(hex.slice(i, i + 2), 16) % 10);
     }
-    return out.padEnd(len, '0').slice(0, len);
+    return out;
   };
+  return { digestHex, digestDigits };
+}
 
-  let out = redactSecrets(text);
-  out = out.replace(/\b([A-Za-z0-9._%+-]{1,64})@([A-Za-z0-9.-]+\.[A-Za-z]{2,})\b/g, (match, _local, domain) => {
-    if (domain.toLowerCase() === 'tokenized.local') return match;
-    return `tok_${digestHex(match.toLowerCase()).slice(0, 8)}@tokenized.local`;
-  });
-  out = out.replace(/\b(?!900-)\d{3}-\d{2}-\d{4}\b/g, (match) => {
-    const d = digestDigits(match, 6);
-    return `900-${d.slice(0, 2)}-${d.slice(2, 6)}`;
-  });
-  out = out.replace(/\b(\d{3})-(\d{3})-(\d{4})\b/g, (match, a, b) => {
-    if (a === '900' || (a === '555' && b.startsWith('01'))) return match;
-    const d = digestDigits(match, 6);
-    return `555-01${d.slice(0, 1)}-${d.slice(1, 5)}`;
+function formatEmailToken(match, _local, domain, digestHex) {
+  if (domain.toLowerCase() === 'tokenized.local') return match;
+  return `tok_${digestHex(match.toLowerCase()).slice(0, 8)}@tokenized.local`;
+}
+
+function formatSsnToken(match, sep, digestDigits) {
+  const canonical = match.replaceAll(/\D/g, '');
+  const d = digestDigits(canonical, 6);
+  return `900${sep}${d.slice(0, 2)}${sep}${d.slice(2, 6)}`;
+}
+
+function formatUsPhoneToken(match, countryPrefix, area, exchange, digestDigits) {
+  if (area === '900' || (area === '555' && exchange.startsWith('01'))) return match;
+  const canonical = `${area}${exchange}${match.replaceAll(/\D/g, '').slice(-4)}`;
+  const d = digestDigits(canonical, 6);
+  const prefix = countryPrefix || '';
+  return `${prefix}555-01${d.slice(0, 1)}-${d.slice(1, 5)}`;
+}
+
+const FPT_EMAIL_RE = /\b([A-Za-z0-9._%+-]{1,64})@([A-Za-z0-9.-]{1,253}\.[A-Za-z]{2,24})\b/g;
+const FPT_CARD_RE = /\b(?:\d{4}[ -]?){3}\d{1,7}\b/g;
+const FPT_SSN_RE = /\b(?!900[-.\s])\d{3}([-.\s])\d{2}\1\d{4}\b/g;
+const FPT_US_PHONE_RE = /(?:\+?1[-.\s]?)?\(?(\d{3})\)?[-.\s](\d{3})[-.\s]\d{4}\b/g;
+
+/**
+ * Capital One Databolt-style Vaultless Format-Preserving Tokenization (FPT).
+ * Tokenizes sensitive values at ingestion while preserving format and referential integrity.
+ */
+function tokenizeFormatPreservingVaultless(text, {
+  salt = process.env.THUMBGATE_FPT_KEY,
+  preserveSecretReferentialIntegrity = false,
+} = {}) {
+  if (typeof text !== 'string' || text.length === 0) return text;
+  if (typeof salt !== 'string' || salt.length < 16) {
+    throw new TypeError('tokenizeFormatPreservingVaultless requires a secret key of at least 16 characters');
+  }
+  const { digestHex, digestDigits } = createVaultlessDigesters(salt);
+  let out = preserveSecretReferentialIntegrity
+    ? tokenizeSecretsReferentially(text, digestHex)
+    : redactSecrets(text);
+  out = out.replaceAll(FPT_EMAIL_RE, (m, local, dom) => formatEmailToken(m, local, dom, digestHex));
+  out = out.replaceAll(FPT_CARD_RE, (m) => formatCardToken(m, digestDigits));
+  out = out.replaceAll(FPT_SSN_RE, (m, sep) => formatSsnToken(m, sep, digestDigits));
+  out = out.replaceAll(FPT_US_PHONE_RE, (m, area, exch) => {
+    const prefixMatch = m.match(/^\+?1[-.\s]/);
+    return formatUsPhoneToken(m, prefixMatch ? prefixMatch[0] : '', area, exch, digestDigits);
   });
   return out;
+}
+
+function tokenizeDeepAtSource(value, options = {}) {
+  let fieldsTokenized = 0;
+  function walk(node) {
+    if (typeof node === 'string') {
+      const tokenized = tokenizeFormatPreservingVaultless(node, options);
+      if (tokenized !== node) fieldsTokenized += 1;
+      return tokenized;
+    }
+    if (Array.isArray(node)) return node.map((item) => walk(item));
+    if (node && typeof node === 'object') {
+      const copy = {};
+      for (const [k, v] of Object.entries(node)) copy[k] = walk(v);
+      return copy;
+    }
+    return node;
+  }
+  return {
+    data: walk(value),
+    fieldsTokenized,
+    referentialIntegrity: true,
+  };
+}
+
+function collectFieldDetokenizationBlockers(requestedFields, allowedFields) {
+  if (!Array.isArray(requestedFields) || requestedFields.length === 0) return [];
+  if (!Array.isArray(allowedFields)) return [];
+  const allowedSet = new Set(allowedFields);
+  return requestedFields
+    .filter((field) => !allowedSet.has(field))
+    .map((field) => `unauthorized_field_detokenization:${field}`);
+}
+
+function writeDetokenizationAudit(auditEntry, { auditLogPath, onAuditEvent }) {
+  if (typeof onAuditEvent === 'function') onAuditEvent(auditEntry);
+  if (typeof auditLogPath === 'string' && auditLogPath.length > 0) {
+    fs.mkdirSync(path.dirname(auditLogPath), { recursive: true });
+    fs.appendFileSync(auditLogPath, `${JSON.stringify(auditEntry)}\n`, { mode: 0o600 });
+  }
 }
 
 function enforceZeroTrustDetokenizationGate({
@@ -199,6 +325,11 @@ function enforceZeroTrustDetokenizationGate({
   roleAuthorizedForPlaintext = false,
   explicitDetokenizePermission = false,
   crossesExternalNetwork = false,
+  principalId = null,
+  requestedFields = [],
+  allowedFields = null,
+  auditLogPath = null,
+  onAuditEvent = null,
 } = {}) {
   const blockers = [];
   if (authenticated !== true) blockers.push('unauthenticated_caller');
@@ -206,11 +337,24 @@ function enforceZeroTrustDetokenizationGate({
   if (roleAuthorizedForPlaintext !== true || explicitDetokenizePermission !== true) {
     blockers.push('default_tokenized_view_enforced_explicit_detokenize_permission_required');
   }
+  blockers.push(...collectFieldDetokenizationBlockers(requestedFields, allowedFields));
+  const allowed = blockers.length === 0;
+  const viewMode = allowed ? 'DETOKENIZED_PLAINTEXT' : 'TOKENIZED_ONLY';
+  const auditEntry = {
+    recordedAt: new Date().toISOString(),
+    principalId: principalId || 'anonymous',
+    requestedFields: Array.isArray(requestedFields) ? [...requestedFields] : [],
+    allowed,
+    viewMode,
+    blockers: [...blockers],
+  };
+  writeDetokenizationAudit(auditEntry, { auditLogPath, onAuditEvent });
   return {
-    allowed: blockers.length === 0,
-    viewMode: blockers.length === 0 ? 'DETOKENIZED_PLAINTEXT' : 'TOKENIZED_ONLY',
+    allowed,
+    viewMode,
     vaultlessInEnvironment: !crossesExternalNetwork,
     blockers,
+    auditEntry,
   };
 }
 
@@ -219,6 +363,8 @@ module.exports = {
   redactSecrets,
   redactSecretsDeep,
   containsSecret,
+  computeLuhnCheckDigit,
   tokenizeFormatPreservingVaultless,
+  tokenizeDeepAtSource,
   enforceZeroTrustDetokenizationGate,
 };
