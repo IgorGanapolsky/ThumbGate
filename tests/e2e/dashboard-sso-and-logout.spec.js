@@ -103,7 +103,14 @@ test.describe('/dashboard real-server login, redeploy persistence, Google SSO, a
         expect(upstream.status()).toBe(302);
         const loc = upstream.headers().location || '';
         expect(loc).toMatch(/^https:\/\/accounts\.google\.com\/o\/oauth2\/v2\/auth\?/);
-        await route.fulfill({ status: 302, headers: { Location: `${origin}/v1/cloud/sso/callback?provider=google&code=pw_google_code_1&state=${encodeURIComponent(new URL(loc).searchParams.get('state'))}` } });
+        const setCookieHdr = upstream.headers()['set-cookie'];
+        await route.fulfill({
+          status: 302,
+          headers: {
+            ...(setCookieHdr ? { 'Set-Cookie': setCookieHdr } : {}),
+            Location: `${origin}/v1/cloud/sso/callback?provider=google&code=pw_google_code_1&state=${encodeURIComponent(new URL(loc).searchParams.get('state'))}`,
+          },
+        });
       });
 
       await page.goto(`${origin}/dashboard?noauto`);

@@ -583,12 +583,13 @@ function buildSuggestFixResponse(args = {}) {
   const isDesignQuery = /\b(contrast|tap\s*target|touch\s*target|44px|overflow|focus\s*ring|colorblind|cls|layout\s*shift)\b/i.test(context)
     || typeof args.sourceCode === 'string'
     || Array.isArray(args.visualFindings);
-  if (isDesignQuery) {
+  const rawDesignSrc = typeof args.sourceCode === 'string' ? args.sourceCode : '';
+  if (isDesignQuery && rawDesignSrc.length <= 262144) {
     try {
       const { runDesignSelfCorrectionPipeline } = require('../../src/openshell-lovable-engine');
       const vf = Array.isArray(args.visualFindings) ? args.visualFindings : (context ? [context] : []);
       designSelfCorrection = runDesignSelfCorrectionPipeline({
-        sourceCode: typeof args.sourceCode === 'string' ? args.sourceCode : '',
+        sourceCode: rawDesignSrc,
         visualFindings: vf,
       });
       for (const p of designSelfCorrection.patches) {
@@ -1268,17 +1269,19 @@ async function callToolInner(name, args) {
         reason = 'gate engine returned unparseable output';
       }
       let designSelfCorrection = null;
-      try {
-        const ti = canonical.toolInput || {};
-        const fp = String(ti.file_path || ti.filePath || '').trim();
-        const src = String(ti.content ?? ti.new_string ?? ti.sourceCode ?? '');
-        const hasVf = Array.isArray(ti.visualFindings) && ti.visualFindings.length > 0;
-        if ((/\.(?:html?|jsx|tsx|css)$/i.test(fp) && src && src.length <= 262144) || hasVf) {
-          const { runDesignSelfCorrectionPipeline } = require('../../src/openshell-lovable-engine');
-          const rep = runDesignSelfCorrectionPipeline({ sourceCode: src, filePath: fp || null, visualFindings: ti.visualFindings });
-          if (rep.issueCount > 0) designSelfCorrection = rep;
-        }
-      } catch { /* non-fatal */ }
+      if (decision !== 'block' && decision !== 'error') {
+        try {
+          const ti = canonical.toolInput || {};
+          const fp = String(ti.file_path || ti.filePath || '').trim();
+          const src = String(ti.content ?? ti.new_string ?? ti.sourceCode ?? '');
+          const hasVf = Array.isArray(ti.visualFindings) && ti.visualFindings.length > 0;
+          if (src.length <= 262144 && ((/\.(?:html?|jsx|tsx|css)$/i.test(fp) && Boolean(src)) || hasVf)) {
+            const { runDesignSelfCorrectionPipeline } = require('../../src/openshell-lovable-engine');
+            const rep = runDesignSelfCorrectionPipeline({ sourceCode: src, visualFindings: ti.visualFindings });
+            if (rep.issueCount > 0) designSelfCorrection = rep;
+          }
+        } catch { /* non-fatal */ }
+      }
       const strict = process.env.THUMBGATE_STRICT_ENFORCEMENT === '1';
       return {
         content: [{

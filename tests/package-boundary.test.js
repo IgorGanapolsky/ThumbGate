@@ -785,8 +785,9 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // Bumped 9.96 MB -> 9.99 MB (2026-11-12): scripts/brand-standards-gate.js + config/brand-standards.json for Adobe MAX Brand Intelligence and voice gating.
   // Bumped 9.99 MB -> 10.02 MB (2026-11-12, PR #4964): financial-control spend-surface URL & browser page state gating on top of #4960/#4963 (measured 9,999,857 unpacked; file count stays 655).
   // Bumped 10.02 MB -> 10.05 MB (2026-11-12, PR #4961): Apple OIDC callback (#4966) + destructive-delete variant detection in operational-integrity.js + harness-tool-names.js (measured 10,026,146 unpacked; CI slack).
-  manifest.unpackedSize <= 10_050_000,
-  `npm package should stay <= 10.05 MB unpacked, got ${manifest.unpackedSize}`
+  // Bumped 10.05 MB -> 10.065 MB (2026-11-12, PR #4965): SSO CSRF hardening, AST confinement, BoostMyAgents lane, and SubQ Snap 1.2 SystemOne client (measured 10,053,592 unpacked; file count stays 655).
+  manifest.unpackedSize <= 10_065_000,
+  `npm package should stay <= 10.065 MB unpacked, got ${manifest.unpackedSize}`
 );
 
   for (const file of requiredRuntimeFiles) {
