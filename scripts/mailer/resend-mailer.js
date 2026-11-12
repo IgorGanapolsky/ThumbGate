@@ -1,22 +1,9 @@
 'use strict';
 
-/**
- * scripts/mailer/resend-mailer.js
- *
- * Resend-backed transactional email sender for ThumbGate.
- *
- * Design goals:
- *  - Zero-dep: uses global `fetch` (Node 18+) to hit https://api.resend.com/emails.
- *  - Gracefully optional: if RESEND_API_KEY is unset, sends are skipped with a
- *    logged warning and the caller receives `{ sent: false, reason: 'no_api_key' }`.
- *    This prevents the Stripe webhook from failing when email is not configured.
- *  - Testable: accepts an injectable `fetch` implementation via opts.fetchImpl.
- *  - CAN-SPAM compliant: every commercial email carries business name, physical
- *    address, and a functional unsubscribe method.
- */
-
+// Resend-backed transactional email sender for ThumbGate (zero-dep, CAN-SPAM compliant).
 const dns = require('node:dns').promises;
-
+const fs = require('node:fs');
+const path = require('node:path');
 const PRODUCT_NAME = 'ThumbGate Pro';
 const DASHBOARD_URL = 'https://thumbgate-production.up.railway.app/dashboard';
 const DEFAULT_CONTACT_EMAIL = 'igor@igorganapolsky.com';
@@ -36,21 +23,18 @@ const SENDER_DNS_CACHE_MS = 10 * 60 * 1000;
 const ANGLE_EMAIL_RE = /<([^<>@\s]{1,64}@[^<>@\s]{1,255})>/;
 const BARE_EMAIL_RE = /([^\s<>@]{1,64}@[^\s<>@]{1,255})/;
 const DKIM_PUBLIC_KEY_RE = /^p=/i;
-// Resend fronts outbound mail with Amazon SES; the MX for send.<domain> points
-// at feedback-smtp.<region>.amazonses.com. Earlier revisions of this regex
-// mistakenly matched `amazonaws.com`, so the positive branch never fired in
-// production. Matching `amazonses.com` (optionally with a trailing dot) is
-// what Resend's DNS setup wizard actually publishes.
 const AMAZON_SES_MX_RE = /feedback-smtp\..*amazonses\.com\.?$/i;
 const AMAZON_SES_SPF_RE = /include:amazonses\.com/i;
 const TRAILING_EMAIL_DOMAIN_PUNCTUATION = new Set(['>', ')', ',', '.', ';']);
+const BLOCKED_WELCOME_EMAILS = new Set(['igor@igorganapolsky.com', 'iganapolsky@gmail.com', 'igor.ganapolsky@gmail.com', 'support@thumbgate.ai', 'hello@thumbgate.app']);
+const BLOCKED_WELCOME_DOMAINS = new Set(['igorganapolsky.com', 'thumbgate.ai', 'thumbgate.app', 'macyolosafeguards.io', 'ecisolutions.com', 'ecinexus.com', 'eci.com', 'example.com', 'example.org', 'example.net', 'test.com', 'localhost', 'formtests.info', 'mailinator.com', 'privaterelay.appleid.com']);
+const BLOCKED_WELCOME_TLD_RE = /\.(?:test|example|invalid|local|localhost)$/i;
+const BLOCKED_WELCOME_LOCAL_PREFIXES = ['test', 'testing', 'smoke', 'probe', 'synthetic', 'e2e', 'playwright', 'cypress', 'noreply', 'no-reply', 'donotreply', 'mailer-daemon', 'postmaster'];
+const BLOCKED_WELCOME_SUBTAGS = ['test', 'testing', 'smoke', 'probe', 'e2e'];
+const VALID_RECIPIENT_RE = /^[^\s@]{1,64}@[^\s@]{1,255}\.[^\s@.]{2,63}$/;
 const senderDnsCache = new Map();
 
 function getApiKey() {
-  // Accept both `RESEND_API_KEY` (Railway default, matches provider docs) and
-  // the `THUMBGATE_`-prefixed variant that `scripts/billing.js` already honors.
-  // Keeping the two readers in sync prevents a silent "skipped: no_api_key"
-  // regression if an operator sets only the prefixed name.
   return process.env.RESEND_API_KEY || process.env.THUMBGATE_RESEND_API_KEY || '';
 }
 
@@ -340,6 +324,31 @@ function formatTrialEndDate(trialEndAt) {
   return `${month} ${day}, ${year}`;
 }
 
+const PRIMARY_CTA_STYLE = 'display:inline-block;background:#45bfd8;color:#061015;text-decoration:none;font-weight:700;padding:12px 20px;border-radius:6px;font-size:14px;';
+const CODE_PRE_STYLE = 'margin:0 0 20px;border-radius:6px;padding:14px;font-size:13px;white-space:pre-wrap;word-break:break-word;';
+
+function getFooterContext() {
+  const unsubscribeEmail = getUnsubscribeEmail();
+  return {
+    supportEmail: getSupportEmail(),
+    unsubscribeEmail,
+    businessName: getBusinessName(),
+    businessAddress: getBusinessAddress(),
+    unsubscribeMailto: `mailto:${unsubscribeEmail}?subject=unsubscribe&body=Please%20remove%20me%20from%20ThumbGate%20emails.`,
+  };
+}
+
+function renderEmailShell({ preheader = '', eyebrow = 'ThumbGate', headline, subhead = '', showLogo = false, bodyRowsHtml, footerReason, customerId = '', footer = getFooterContext() }) {
+  const eyebrowHtml = `<div style="font-size:13px;font-weight:700;letter-spacing:0.02em;text-transform:uppercase;color:#73d4e9;">${escapeHtml(eyebrow)}</div>`;
+  const headerBrand = showLogo
+    ? `<table role="presentation" cellpadding="0" cellspacing="0"><tr><td style="padding-right:12px;"><img src="${BRAND_MARK_URL}" width="40" height="40" alt="ThumbGate" style="display:block;border-radius:8px;"></td><td>${eyebrowHtml}</td></tr></table>`
+    : eyebrowHtml;
+  const preheaderDiv = preheader ? `<div style="display:none;max-height:0;overflow:hidden;opacity:0;">${escapeHtml(preheader)}</div>` : '';
+  const subheadHtml = subhead ? `<p style="margin:0;font-size:14px;color:#9cbac4;">${escapeHtml(subhead)}</p>` : '';
+  const customerHtml = customerId ? `<p style="margin:8px 0 0;font-size:11px;color:#a0abb2;">Customer ID (for support): <code>${escapeHtml(customerId)}</code></p>` : '';
+  return `<!doctype html><html><body style="margin:0;background:#f5f7fb;padding:28px 12px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif;color:#17212b;">${preheaderDiv}<table role="presentation" width="100%" cellspacing="0" cellpadding="0"><tr><td align="center"><table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:640px;background:#fff;border:1px solid #d8e2ea;border-radius:10px;overflow:hidden;"><tr><td style="background:#071115;padding:24px 28px;color:#e7fbff;">${headerBrand}<h1 style="margin:12px 0 6px;font-size:24px;color:#fff;">${escapeHtml(headline)}</h1>${subheadHtml}</td></tr>${bodyRowsHtml}<tr><td style="padding:16px 28px 22px;border-top:1px solid #e2e8ec;background:#fafbfc;"><p style="margin:0 0 6px;font-size:12px;color:#7a8790;">${escapeHtml(footerReason)} <a href="${escapeHtml(footer.unsubscribeMailto)}" style="color:#7a8790;">Unsubscribe</a> (${escapeHtml(footer.unsubscribeEmail)}).</p><p style="margin:0;font-size:12px;color:#7a8790;">${escapeHtml(footer.businessName)} &middot; ${escapeHtml(footer.businessAddress)}</p>${customerHtml}</td></tr></table></td></tr></table></body></html>`;
+}
+
 function renderTrialWelcomeBodies({ licenseKey, customerId, customerName, trialEndAt } = {}) {
   const activationCommand = `npx thumbgate pro --activate --key=${licenseKey}`;
   const name = firstName(customerName);
@@ -353,11 +362,8 @@ function renderTrialWelcomeBodies({ licenseKey, customerId, customerName, trialE
   const exampleFeedback =
     'thumbs down: the answer skipped exact files and tests; next time include paths, commands, and verification evidence.';
   const proofUrl = 'https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md';
-  const supportEmail = getSupportEmail();
-  const unsubscribeEmail = getUnsubscribeEmail();
-  const businessName = getBusinessName();
-  const businessAddress = getBusinessAddress();
-  const unsubscribeMailto = `mailto:${unsubscribeEmail}?subject=unsubscribe&body=Please%20remove%20me%20from%20ThumbGate%20emails.`;
+  const footer = getFooterContext();
+  const { supportEmail, unsubscribeEmail, businessName, businessAddress } = footer;
   const postscript =
     `P.S. The first 10 minutes are the best time to catch your agent's most-repeated failure. ` +
     `Open the dashboard, give one concrete thumbs down on a mistake you've seen twice, and watch ThumbGate build the gate.`;
@@ -398,94 +404,19 @@ function renderTrialWelcomeBodies({ licenseKey, customerId, customerName, trialE
   const safeKey = escapeHtml(licenseKey);
   const safeCmd = escapeHtml(activationCommand);
   const safeGreeting = escapeHtml(greeting);
-  const safeSubhead = escapeHtml(subhead);
-  const safeHeadline = escapeHtml(headline);
-  const safeDescription = escapeHtml(description);
-  const safeExample = escapeHtml(exampleFeedback);
-  const safePostscript = escapeHtml(postscript);
   const safeSupportEmail = escapeHtml(supportEmail);
-  const safeBusinessName = escapeHtml(businessName);
-  const safeBusinessAddress = escapeHtml(businessAddress);
-  const safeUnsubscribeEmail = escapeHtml(unsubscribeEmail);
-  const safeUnsubscribeMailto = escapeHtml(unsubscribeMailto);
-  const safeCustomer = customerId ? escapeHtml(customerId) : '';
-
-  const html = `<!doctype html>
-<html>
-  <body style="margin:0;background:#f5f7fb;padding:28px 12px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif;color:#17212b;">
-    <div style="display:none;max-height:0;overflow:hidden;opacity:0;color:transparent;">Activate Pro in one command, open the dashboard, and start blocking repeated AI coding mistakes.</div>
-    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border-collapse:collapse;">
-      <tr>
-        <td align="center">
-          <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border-collapse:collapse;max-width:640px;background:#ffffff;border:1px solid #d8e2ea;border-radius:10px;overflow:hidden;">
-            <tr>
-              <td style="background:#071115;padding:24px 28px;color:#e7fbff;">
-                <table role="presentation" cellpadding="0" cellspacing="0" style="border-collapse:collapse;">
-                  <tr>
-                    <td style="vertical-align:middle;padding-right:12px;">
-                      <img src="${BRAND_MARK_URL}" width="40" height="40" alt="ThumbGate" style="display:block;border-radius:8px;">
-                    </td>
-                    <td style="vertical-align:middle;">
-                      <div style="font-size:13px;font-weight:700;letter-spacing:0.02em;text-transform:uppercase;color:#73d4e9;">${escapeHtml(PRODUCT_NAME)}</div>
-                    </td>
-                  </tr>
-                </table>
-                <h1 style="margin:16px 0 8px;font-size:26px;line-height:1.2;color:#ffffff;">${safeHeadline}</h1>
-                <p style="margin:0;font-size:14px;line-height:1.5;color:#9cbac4;">${safeSubhead}</p>
-              </td>
-            </tr>
-            <tr>
-              <td style="padding:26px 28px 6px;">
-                <p style="margin:0 0 12px;font-size:15px;line-height:1.6;color:#17212b;">${safeGreeting}</p>
-                <p style="margin:0 0 18px;font-size:15px;line-height:1.6;color:#344451;">${safeDescription}</p>
-                <p style="margin:0 0 24px;">
-                  <a href="${DASHBOARD_URL}" style="display:inline-block;background:#45bfd8;color:#061015;text-decoration:none;font-weight:700;padding:12px 22px;border-radius:6px;font-size:15px;">Open your dashboard</a>
-                </p>
-              </td>
-            </tr>
-            <tr>
-              <td style="padding:0 28px 10px;">
-                <h2 style="margin:0 0 10px;font-size:17px;line-height:1.3;color:#17212b;">Your first 10 minutes</h2>
-                <p style="margin:0 0 8px;font-size:14px;line-height:1.55;color:#344451;"><strong>1. Activate Pro locally</strong></p>
-                <pre style="margin:0 0 20px;background:#081016;color:#d8f7e4;border:1px solid #23343d;border-radius:6px;padding:14px;font-size:13px;line-height:1.45;white-space:pre-wrap;word-break:break-word;"><code>${safeCmd}</code></pre>
-
-                <p style="margin:0 0 8px;font-size:14px;line-height:1.55;color:#344451;"><strong>2. Save your trial key</strong></p>
-                <pre style="margin:0 0 20px;background:#eef6f7;color:#0b343c;border:1px solid #c7e2e7;border-radius:6px;padding:14px;font-size:13px;line-height:1.45;white-space:pre-wrap;word-break:break-word;"><code>${safeKey}</code></pre>
-
-                <p style="margin:0 0 8px;font-size:14px;line-height:1.55;color:#344451;"><strong>3. Give one concrete thumbs up or thumbs down</strong></p>
-                <p style="margin:0 0 8px;font-size:13px;line-height:1.55;color:#526273;">Start with the failure you most want your agent to stop repeating.</p>
-                <pre style="margin:0 0 22px;background:#f1fff2;color:#22602b;border:1px solid #bae7c0;border-radius:6px;padding:14px;font-size:13px;line-height:1.45;white-space:pre-wrap;word-break:break-word;"><code>${safeExample}</code></pre>
-              </td>
-            </tr>
-            <tr>
-              <td style="padding:6px 28px 22px;">
-                <p style="margin:0 0 14px;font-size:14px;line-height:1.6;color:#344451;font-style:italic;">${safePostscript}</p>
-                <p style="margin:0 0 4px;font-size:14px;line-height:1.6;color:#17212b;">— Igor, founder of ThumbGate</p>
-                <p style="margin:0;font-size:13px;line-height:1.55;color:#526273;">
-                  Questions? Just reply to this email or write
-                  <a href="mailto:${safeSupportEmail}" style="color:#087a91;">${safeSupportEmail}</a>.
-                </p>
-              </td>
-            </tr>
-            <tr>
-              <td style="padding:16px 28px 22px;border-top:1px solid #e2e8ec;background:#fafbfc;">
-                <p style="margin:0 0 6px;font-size:12px;line-height:1.5;color:#7a8790;">
-                  You're getting this one-time email because you started a ${escapeHtml(PRODUCT_NAME)} trial.
-                  <a href="${safeUnsubscribeMailto}" style="color:#7a8790;text-decoration:underline;">Unsubscribe</a>
-                  (${safeUnsubscribeEmail}).
-                </p>
-                <p style="margin:0;font-size:12px;line-height:1.5;color:#7a8790;">
-                  ${safeBusinessName} &middot; ${safeBusinessAddress}
-                </p>
-                ${safeCustomer ? `<p style="margin:8px 0 0;font-size:11px;color:#a0abb2;">Customer ID (for support): <code>${safeCustomer}</code></p>` : ''}
-              </td>
-            </tr>
-          </table>
-        </td>
-      </tr>
-    </table>
-  </body>
-</html>`;
+  const bodyRowsHtml = `<tr><td style="padding:26px 28px 6px;"><p style="margin:0 0 12px;font-size:15px;">${safeGreeting}</p><p style="margin:0 0 18px;font-size:15px;color:#344451;">${escapeHtml(description)}</p><p style="margin:0 0 24px;"><a href="${DASHBOARD_URL}" style="${PRIMARY_CTA_STYLE}">Open your dashboard</a></p></td></tr><tr><td style="padding:0 28px 10px;"><h2 style="margin:0 0 10px;font-size:17px;">Your first 10 minutes</h2><p style="margin:0 0 8px;font-size:14px;"><strong>1. Activate Pro locally</strong></p><pre style="${CODE_PRE_STYLE}background:#081016;color:#d8f7e4;border:1px solid #23343d;"><code>${safeCmd}</code></pre><p style="margin:0 0 8px;font-size:14px;"><strong>2. Save your trial key</strong></p><pre style="${CODE_PRE_STYLE}background:#eef6f7;color:#0b343c;border:1px solid #c7e2e7;"><code>${safeKey}</code></pre><p style="margin:0 0 8px;font-size:14px;"><strong>3. Give one concrete thumbs up or thumbs down</strong></p><p style="margin:0 0 8px;font-size:13px;color:#526273;">Start with the failure you most want your agent to stop repeating.</p><pre style="${CODE_PRE_STYLE}background:#f1fff2;color:#22602b;border:1px solid #bae7c0;"><code>${escapeHtml(exampleFeedback)}</code></pre></td></tr><tr><td style="padding:6px 28px 22px;"><p style="margin:0 0 14px;font-size:14px;font-style:italic;">${escapeHtml(postscript)}</p><p style="margin:0 0 4px;font-size:14px;">— Igor, founder of ThumbGate</p><p style="margin:0;font-size:13px;color:#526273;">Questions? Just reply to this email or write <a href="mailto:${safeSupportEmail}" style="color:#087a91;">${safeSupportEmail}</a>.</p></td></tr>`;
+  const html = renderEmailShell({
+    preheader: 'Activate Pro in one command, open the dashboard, and start blocking repeated AI coding mistakes.',
+    eyebrow: PRODUCT_NAME,
+    headline,
+    subhead,
+    showLogo: true,
+    bodyRowsHtml,
+    footerReason: `You're getting this one-time email because you started a ${PRODUCT_NAME} trial.`,
+    customerId,
+    footer,
+  });
 
   return { html, text, activationCommand, trialEndLabel, greeting, unsubscribeEmail, businessName, businessAddress };
 }
@@ -513,11 +444,8 @@ async function sendTrialWelcomeEmail({ to, licenseKey, customerId, customerName,
 }
 
 function renderNewsletterWelcomeBodies() {
-  const supportEmail = getSupportEmail();
-  const unsubscribeEmail = getUnsubscribeEmail();
-  const businessName = getBusinessName();
-  const businessAddress = getBusinessAddress();
-  const unsubscribeMailto = `mailto:${unsubscribeEmail}?subject=unsubscribe&body=Please%20remove%20me%20from%20ThumbGate%20emails.`;
+  const footer = getFooterContext();
+  const { supportEmail, unsubscribeEmail, businessName, businessAddress } = footer;
   const headline = 'Welcome to ThumbGate.';
   const subhead =
     'One concrete AI coding failure prevented per email. No theory, no fluff.';
@@ -545,70 +473,26 @@ function renderNewsletterWelcomeBodies() {
     `${businessName} · ${businessAddress}`,
   ].join('\n');
 
-  const safeHeadline = escapeHtml(headline);
-  const safeSubhead = escapeHtml(subhead);
-  const safeFirstLesson = escapeHtml(firstLesson);
   const safeSupportEmail = escapeHtml(supportEmail);
-  const safeBusinessName = escapeHtml(businessName);
-  const safeBusinessAddress = escapeHtml(businessAddress);
-  const safeUnsubscribeEmail = escapeHtml(unsubscribeEmail);
-  const safeUnsubscribeMailto = escapeHtml(unsubscribeMailto);
-
-  const html = `<!doctype html>
-<html>
-  <body style="margin:0;background:#f5f7fb;padding:28px 12px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif;color:#17212b;">
-    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border-collapse:collapse;">
-      <tr>
-        <td align="center">
-          <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border-collapse:collapse;max-width:640px;background:#ffffff;border:1px solid #d8e2ea;border-radius:10px;overflow:hidden;">
-            <tr>
-              <td style="background:#071115;padding:24px 28px;color:#e7fbff;">
-                <div style="font-size:13px;font-weight:700;letter-spacing:0.02em;text-transform:uppercase;color:#73d4e9;">ThumbGate</div>
-                <h1 style="margin:10px 0 6px;font-size:24px;line-height:1.25;color:#ffffff;">${safeHeadline}</h1>
-                <p style="margin:0;font-size:14px;line-height:1.5;color:#9cbac4;">${safeSubhead}</p>
-              </td>
-            </tr>
-            <tr>
-              <td style="padding:24px 28px 10px;">
-                <p style="margin:0 0 18px;font-size:15px;line-height:1.6;color:#344451;">${safeFirstLesson}</p>
-                <p style="margin:0 0 22px;">
-                  <a href="${ctaLink}" style="display:inline-block;background:#45bfd8;color:#061015;text-decoration:none;font-weight:700;padding:12px 22px;border-radius:6px;font-size:15px;">See the full Pro loop</a>
-                </p>
-              </td>
-            </tr>
-            <tr>
-              <td style="padding:0 28px 22px;">
-                <p style="margin:0 0 4px;font-size:14px;line-height:1.6;color:#17212b;">— Igor, founder of ThumbGate</p>
-                <p style="margin:0;font-size:13px;line-height:1.55;color:#526273;">
-                  Questions? Reply or write
-                  <a href="mailto:${safeSupportEmail}" style="color:#087a91;">${safeSupportEmail}</a>.
-                </p>
-              </td>
-            </tr>
-            <tr>
-              <td style="padding:16px 28px 22px;border-top:1px solid #e2e8ec;background:#fafbfc;">
-                <p style="margin:0 0 6px;font-size:12px;line-height:1.5;color:#7a8790;">
-                  You signed up on thumbgate.ai.
-                  <a href="${safeUnsubscribeMailto}" style="color:#7a8790;text-decoration:underline;">Unsubscribe</a>
-                  (${safeUnsubscribeEmail}).
-                </p>
-                <p style="margin:0;font-size:12px;line-height:1.5;color:#7a8790;">
-                  ${safeBusinessName} &middot; ${safeBusinessAddress}
-                </p>
-              </td>
-            </tr>
-          </table>
-        </td>
-      </tr>
-    </table>
-  </body>
-</html>`;
+  const html = renderEmailShell({
+    headline,
+    subhead,
+    bodyRowsHtml: `<tr><td style="padding:24px 28px 10px;"><p style="margin:0 0 18px;font-size:15px;color:#344451;">${escapeHtml(firstLesson)}</p><p style="margin:0 0 22px;"><a href="${ctaLink}" style="${PRIMARY_CTA_STYLE}">See the full Pro loop</a></p></td></tr><tr><td style="padding:0 28px 22px;"><p style="margin:0 0 4px;font-size:14px;">— Igor, founder of ThumbGate</p><p style="margin:0;font-size:13px;color:#526273;">Questions? Reply or write <a href="mailto:${safeSupportEmail}" style="color:#087a91;">${safeSupportEmail}</a>.</p></td></tr>`,
+    footerReason: 'You signed up on thumbgate.ai.',
+    footer,
+  });
 
   return { html, text };
 }
 
 async function sendNewsletterWelcomeEmail({ to, fetchImpl, dnsResolver } = {}) {
   if (!isNonEmptyString(to)) throw new Error('sendNewsletterWelcomeEmail: `to` is required');
+  const addr = extractEmailAddress(to).toLowerCase();
+  const at = addr.lastIndexOf('@');
+  const baseLocal = at > 0 ? addr.slice(0, at).split('+')[0] : '';
+  if (isOwnerEmailAlias(addr, baseLocal, getEmailDomain(addr)) || (getApiKey() && isBlockedSignupWelcomeRecipient(to))) {
+    return { sent: false, reason: 'blocked_test_or_owner_recipient' };
+  }
   const { html, text } = renderNewsletterWelcomeBodies();
   return sendEmail({
     to,
@@ -621,12 +505,162 @@ async function sendNewsletterWelcomeEmail({ to, fetchImpl, dnsResolver } = {}) {
   });
 }
 
+function isBlockedDomain(domain) {
+  if (!domain || BLOCKED_WELCOME_DOMAINS.has(domain) || BLOCKED_WELCOME_TLD_RE.test(domain)) return true;
+  for (const blocked of BLOCKED_WELCOME_DOMAINS) {
+    if (domain.endsWith(`.${blocked}`)) return true;
+  }
+  return false;
+}
+
+function isOwnerEmailAlias(addr, baseLocal, domain) {
+  const blockedSet = new Set([...BLOCKED_WELCOME_EMAILS, ...splitCsv(process.env.THUMBGATE_OWNER_EMAILS)]);
+  if (blockedSet.has(addr) || blockedSet.has(`${baseLocal}@${domain}`)) return true;
+  if (domain !== 'gmail.com' && domain !== 'googlemail.com') return false;
+  const canonicalLocal = baseLocal.replaceAll('.', '');
+  for (const candidate of blockedSet) {
+    const at = candidate.lastIndexOf('@');
+    const candDomain = at > 0 ? candidate.slice(at + 1) : '';
+    if ((candDomain === 'gmail.com' || candDomain === 'googlemail.com') && candidate.slice(0, at).split('+')[0].replaceAll('.', '') === canonicalLocal) {
+      return true;
+    }
+  }
+  return false;
+}
+
+function hasBlockedTokenPrefix(segment, prefixes) {
+  for (const prefix of prefixes) {
+    if (segment === prefix) return true;
+    const sep = segment[prefix.length];
+    if (segment.startsWith(prefix) && (sep === '.' || sep === '_' || sep === '-')) return true;
+  }
+  return false;
+}
+
+function isBlockedLocalPart(localPart) {
+  const [base = '', ...subtags] = localPart.split('+');
+  if (hasBlockedTokenPrefix(base, BLOCKED_WELCOME_LOCAL_PREFIXES)) return true;
+  return subtags.some((tag) => hasBlockedTokenPrefix(tag, BLOCKED_WELCOME_SUBTAGS));
+}
+
+function isBlockedSignupWelcomeRecipient(value) {
+  const addr = extractEmailAddress(value).toLowerCase();
+  if (!addr || !VALID_RECIPIENT_RE.test(addr)) return true;
+  const at = addr.lastIndexOf('@');
+  const localPart = addr.slice(0, at);
+  const baseLocal = localPart.split('+')[0];
+  const domain = getEmailDomain(addr);
+  if (isOwnerEmailAlias(addr, baseLocal, domain)) return true;
+  return isBlockedLocalPart(localPart) || isBlockedDomain(domain);
+}
+
+function resolvePublicOrigin(appOrigin) {
+  let trimmed = String(appOrigin || process.env.THUMBGATE_PUBLIC_APP_ORIGIN || 'https://thumbgate.ai').trim();
+  while (trimmed.endsWith('/')) trimmed = trimmed.slice(0, -1);
+  return trimmed || 'https://thumbgate.ai';
+}
+
+function renderSignupWelcomeBodies({ customerName, appOrigin } = {}) {
+  const origin = resolvePublicOrigin(appOrigin);
+  const installUrl = `${origin}/#install`;
+  const diagnosticUrl = `${origin}/diagnostic`;
+  const greeting = firstName(customerName) ? `Hi ${firstName(customerName)},` : 'Hi there,';
+  const footer = getFooterContext();
+  const { unsubscribeEmail, businessName, businessAddress } = footer;
+  const intro = 'ThumbGate blocks leaked secrets and repeated AI coding mistakes at PreToolUse before a tool call runs.';
+  const text = [
+    greeting, '', 'Welcome to ThumbGate.', intro, '',
+    `1. Install free in 30 seconds (npx thumbgate init): ${installUrl}`,
+    `2. Want one workflow wired with you? Book the $499 diagnostic: ${diagnosticUrl}`, '',
+    '— Igor, founder of ThumbGate', '', '---',
+    `You signed up on thumbgate.ai. Don't want these emails? Unsubscribe: ${unsubscribeEmail}`,
+    `${businessName} · ${businessAddress}`,
+  ].join('\n');
+  const html = renderEmailShell({
+    headline: 'Welcome to ThumbGate.',
+    bodyRowsHtml: `<tr><td style="padding:24px 28px 18px;"><p style="margin:0 0 12px;font-size:15px;">${escapeHtml(greeting)}</p><p style="margin:0 0 20px;font-size:15px;color:#344451;">${escapeHtml(intro)} Run <code>npx thumbgate init</code> locally, or have us wire one workflow end-to-end with you.</p><p style="margin:0 0 22px;"><a href="${escapeHtml(installUrl)}" style="${PRIMARY_CTA_STYLE}margin:0 10px 8px 0;">Install ThumbGate free</a><a href="${escapeHtml(diagnosticUrl)}" style="display:inline-block;background:#0f172a;color:#fff;text-decoration:none;font-weight:700;padding:12px 20px;border-radius:6px;font-size:14px;margin:0 0 8px 0;">Book the $499 diagnostic</a></p><p style="margin:0;font-size:14px;">— Igor, founder of ThumbGate</p></td></tr>`,
+    footerReason: 'You signed up on thumbgate.ai.',
+    footer,
+  });
+  return { html, text, installUrl, diagnosticUrl, unsubscribeEmail, businessName, businessAddress };
+}
+
+async function sendSignupWelcomeEmail({ to, customerName, appOrigin, idempotencyKey, fetchImpl, dnsResolver } = {}) {
+  if (!isNonEmptyString(to)) throw new Error('sendSignupWelcomeEmail: `to` is required');
+  if (isBlockedSignupWelcomeRecipient(to)) {
+    return { sent: false, reason: 'blocked_test_or_owner_recipient' };
+  }
+  const cleanTo = extractEmailAddress(to).toLowerCase();
+  const { html, text } = renderSignupWelcomeBodies({ customerName, appOrigin });
+  const name = firstName(customerName);
+  const subject = name ? `${name}, welcome to ThumbGate` : 'Welcome to ThumbGate';
+  return sendEmail({
+    to: cleanTo,
+    subject,
+    html,
+    text,
+    replyTo: getReplyTo(),
+    idempotencyKey: idempotencyKey || `signup-welcome:${cleanTo}`,
+    fetchImpl,
+    dnsResolver,
+  });
+}
+
+function hasPriorSentSignupWelcome(ledgerPath, normalizedEmail) {
+  if (!ledgerPath || !fs.existsSync(ledgerPath)) return false;
+  let lines;
+  try { lines = fs.readFileSync(ledgerPath, 'utf8').split('\n').filter(Boolean); } catch { return false; }
+  for (const line of lines) {
+    try {
+      const row = JSON.parse(line);
+      if (String(row?.email || '').toLowerCase() === normalizedEmail && row?.status === 'sent') return true;
+    } catch { /* skip malformed ledger line */ }
+  }
+  return false;
+}
+
+const inFlightWelcomeDispatches = new Set();
+
+async function dispatchSignupWelcomeEmail({ to, customerName, source = 'sso_signup', feedbackDir, appOrigin, fetchImpl, dnsResolver } = {}) {
+  if (isBlockedSignupWelcomeRecipient(to)) return { sent: false, reason: 'blocked_test_or_owner_recipient' };
+  const cleanTo = extractEmailAddress(to).toLowerCase();
+  const ledgerPath = feedbackDir ? path.join(feedbackDir, 'signup-welcome-emails.jsonl') : null;
+  const flightKey = `${ledgerPath || ''}:${cleanTo}`;
+  if (inFlightWelcomeDispatches.has(flightKey) || hasPriorSentSignupWelcome(ledgerPath, cleanTo)) {
+    return { sent: false, reason: 'already_sent' };
+  }
+  inFlightWelcomeDispatches.add(flightKey);
+  try {
+    const result = await sendSignupWelcomeEmail({ to: cleanTo, customerName, appOrigin, fetchImpl, dnsResolver });
+    if (ledgerPath) {
+      try {
+        fs.mkdirSync(path.dirname(ledgerPath), { recursive: true });
+        fs.appendFileSync(ledgerPath, `${JSON.stringify({
+          recordedAt: new Date().toISOString(),
+          email: cleanTo,
+          source,
+          status: result.sent ? 'sent' : 'skipped',
+          reason: result.reason || null,
+          providerId: result.id || null,
+        })}\n`, { mode: 0o600 });
+      } catch { /* best-effort ledger write */ }
+    }
+    return result;
+  } finally {
+    inFlightWelcomeDispatches.delete(flightKey);
+  }
+}
+
 module.exports = {
   sendEmail,
   sendTrialWelcomeEmail,
   sendNewsletterWelcomeEmail,
+  sendSignupWelcomeEmail,
+  dispatchSignupWelcomeEmail,
+  isBlockedSignupWelcomeRecipient,
   renderTrialWelcomeBodies,
   renderNewsletterWelcomeBodies,
+  renderSignupWelcomeBodies,
   _resolveSenderAddress: resolveSenderAddress,
   _hasResendSenderDns: hasResendSenderDns,
   _recordsHaveResendDns: recordsHaveResendDns,

@@ -1018,6 +1018,31 @@ function disconnectKey() {
     });
 }
 
+function renderFreeTierTalkToUsHtml(workflow) {
+  return '<span data-talk-wrap style="display:inline-flex;gap:6px;align-items:center;flex-wrap:wrap;margin-left:4px;"><input type="email" data-talk-email placeholder="you@company.com" aria-label="Work email" style="display:none;padding:4px 8px;border-radius:6px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:12px;"><button type="button" data-talk-to-us data-workflow="' + escAttr(workflow || 'Free-tier dashboard limit (Talk to us)') + '" onclick="submitDashboardTalkToUs(this)" style="background:transparent;border:1px solid var(--cyan);color:var(--cyan);padding:3px 10px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;">Talk to us</button><span data-talk-status style="font-size:12px;color:var(--cyan);"></span></span>';
+}
+
+async function submitDashboardTalkToUs(btn) {
+  var wrap = btn.closest('[data-talk-wrap]'), emailEl = wrap && wrap.querySelector('[data-talk-email]'), statusEl = wrap && wrap.querySelector('[data-talk-status]');
+  btn.disabled = true;
+  try {
+    var res = await fetch('/v1/intake/workflow-sprint', { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: (emailEl && emailEl.value.trim()) || undefined, workflow: btn.getAttribute('data-workflow') || 'Free-tier dashboard limit (Talk to us)', urgency: 'Hit free-tier limit on /dashboard', planId: 'diagnostic', ctaId: 'workflow_sprint_intake', ctaPlacement: 'free_tier_limit', page: '/dashboard' }) });
+    if (res.status === 400 && emailEl && emailEl.style.display === 'none') {
+      emailEl.style.display = 'inline-block'; emailEl.focus();
+      if (statusEl) statusEl.textContent = 'Enter work email, then click Talk to us.';
+      btn.disabled = false; return;
+    }
+    var data = await res.json().catch(function() { return {}; });
+    if (res.ok && data.ok) {
+      if (statusEl) statusEl.textContent = '✓ Queued — Igor will follow up.';
+      if (emailEl) emailEl.style.display = 'none';
+      btn.textContent = 'Request sent'; return;
+    }
+    if (statusEl) statusEl.textContent = data.detail || data.error || 'Could not queue request.';
+  } catch (_e) { if (statusEl) statusEl.textContent = 'Network error. Try again.'; }
+  btn.disabled = false;
+}
+
 async function connect(options) {
   var opts = options || {};
   var input = document.getElementById('apiKey');
@@ -1034,7 +1059,7 @@ async function connect(options) {
     const freeTitle = document.getElementById('authTitle');
     if (freeTitle) freeTitle.textContent = opts.ssoEmail ? `Signed in (${opts.ssoEmail}) · Free tier` : 'Signed in · Free tier';
     const freeHelp = document.getElementById('authHelp');
-    if (freeHelp) freeHelp.innerHTML = 'No paid subscription found for this email. <a href="https://thumbgate.ai/pricing" style="color:var(--cyan);font-weight:600;">Upgrade to Pro ($19/mo)</a> or click <strong>Have a Pro license key?</strong> below.';
+    if (freeHelp) freeHelp.innerHTML = 'No paid subscription found for this email. <a href="https://thumbgate.ai/pricing" style="color:var(--cyan);font-weight:600;">Upgrade to Pro ($19/mo)</a>, click <strong>Have a Pro license key?</strong> below, or ' + renderFreeTierTalkToUsHtml('Free-tier dashboard sign-in (Talk to us)');
     document.getElementById('dashboardContent').style.display = 'none';
   var onboardingEl = document.getElementById('firstBlockOnboarding');
   if (onboardingEl) onboardingEl.style.display = 'none';
@@ -1265,6 +1290,11 @@ async function search() {
       headers: getHeaders(),
       body: JSON.stringify({ query: query, source: currentSource, limit: 20 })
     });
+    if (res.status === 429) {
+      var limitErr = await res.json().catch(function() { return {}; });
+      container.innerHTML = '<div class="empty">' + escHtml(limitErr.detail || limitErr.error || 'Free tier limit reached.') + ' ' + renderFreeTierTalkToUsHtml('Free-tier search limit (Talk to us)') + '</div>';
+      return;
+    }
     if (!res.ok) throw new Error('Search failed');
     const data = await res.json();
     const results = data.results || data.memories || [];
@@ -1420,8 +1450,12 @@ function selectCard(el, action) {
   var signalParam = action === 'all' ? '' : '&signal=' + action;
   container.innerHTML = '<div class="loading">Loading...</div>';
   fetch('/v1/search?q=*&limit=50' + signalParam, { method: 'GET', headers: getHeaders() })
-    .then(function(res) { return res.json(); })
-    .then(function(data) {
+    .then(async function(res) {
+      var data = await res.json().catch(function() { return {}; });
+      if (res.status === 429) {
+        container.innerHTML = '<div class="empty">' + escHtml(data.detail || data.error || 'Free tier limit reached.') + ' ' + renderFreeTierTalkToUsHtml('Free-tier search limit (Talk to us)') + '</div>';
+        return;
+      }
       var items = data.results || [];
       container.innerHTML = items.length ? items.map(renderResult).join('') : '<div class="empty">No ' + (action === 'all' ? '' : action + ' ') + 'feedback found</div>';
     })
@@ -2683,6 +2717,11 @@ async function exportDpo() {
       body: JSON.stringify({ includePairs: true })
     });
     const data = await res.json();
+    if (res.status === 429) {
+      status.innerHTML = '✗ ' + escHtml(data.detail || data.error || 'Free tier limit reached.') + ' ' + renderFreeTierTalkToUsHtml('Free-tier DPO export limit (Talk to us)');
+      status.style.color = 'var(--red)';
+      return;
+    }
     if (!res.ok) throw new Error(data.detail || data.error || 'Export failed');
     if (!Array.isArray(data.records)) throw new Error('Export response did not include DPO pairs');
     const records = data.records;
