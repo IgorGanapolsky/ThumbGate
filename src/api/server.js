@@ -2585,6 +2585,8 @@ async function trySendLocalDashboardChat(res, parsed, feedbackDir, prompt, suffi
       topic: localChat.topic,
       provider: 'local-data',
       llm: 'none',
+      model: 'Deterministic local data',
+      privacyRoute: 'Local, no cloud',
       grounded: true,
     });
     return true;
@@ -2655,6 +2657,9 @@ async function answerEnterpriseDataChat({ prompt, feedbackDir, parsed }) {
       evaluation: guarded.evaluation,
       response: guarded.response,
     },
+    provider: 'local-data',
+    model: 'Deterministic local data',
+    privacyRoute: 'Local, no cloud',
     sources: chat.sources,
   };
 }
@@ -10635,8 +10640,9 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
         // stuck on the HTML placeholder "—" until a later /v1/dashboard call
         // succeeds (and never updates if that call fails).
         try {
-          const { computeGateStats } = require('../../scripts/dashboard');
+          const { computeGateStats, computeTodayOverview } = require('../../scripts/dashboard');
           const gateStats = computeGateStats();
+          const todayOverview = computeTodayOverview(requestFeedbackPaths.FEEDBACK_DIR, { gateStats });
           stats.activeGateCount = Number(gateStats.totalGates) || 0;
           stats.gateStats = {
             totalGates: Number(gateStats.totalGates) || 0,
@@ -10644,7 +10650,10 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
             autoCount: Number(gateStats.autoCount) || 0,
             blocked: Number(gateStats.blocked) || 0,
             warned: Number(gateStats.warned) || 0,
+            blockedToday: todayOverview.gateStatusChips.blockedToday,
+            warnedToday: todayOverview.gateStatusChips.warnedToday,
           };
+          stats.todayOverview = todayOverview;
         } catch (error) {
           debugApiFallback('gate stats unavailable for feedback/stats', error);
           stats.activeGateCount = 0;
@@ -10654,6 +10663,8 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
             autoCount: 0,
             blocked: 0,
             warned: 0,
+            blockedToday: 0,
+            warnedToday: 0,
           };
         }
 

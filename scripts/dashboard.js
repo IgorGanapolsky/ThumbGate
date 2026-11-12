@@ -98,16 +98,7 @@ function buildUnavailableOrgDashboard(windowHours) {
   };
 }
 
-// ---------------------------------------------------------------------------
-// Data readers
-// ---------------------------------------------------------------------------
 
-// Prod feedback/memory logs can grow past V8's max string size (~512MB–1GB).
-// Full-file readFileSync/stringify then throws:
-//   "Cannot create a string longer than 0x1fffffe8 characters"
-// Cap dashboard JSONL ingestion to a recent tail so /v1/dashboard stays live.
-// A 32 MiB default is still too large: generateDashboard reads several logs
-// and aggregation/analyze used to full-scan the same files again.
 const DEFAULT_JSONL_MAX_BYTES = DEFAULT_JSONL_TAIL_BYTES;
 const DEFAULT_JSONL_MAX_ENTRIES = DEFAULT_JSONL_TAIL_ENTRIES;
 
@@ -121,7 +112,6 @@ function readJSONL(filePath, options = {}) {
   try {
     text = readTextTail(filePath, maxBytes).text;
   } catch (err) {
-    // Never let a single bloated/unreadable log take down the whole dashboard.
     return [];
   }
   if (!text?.trim()) return [];
@@ -186,8 +176,6 @@ function resolveGitDir(projectRoot) {
   if (!fs.existsSync(gitPath)) return null;
   const stat = fs.statSync(gitPath);
   if (stat.isDirectory()) return gitPath;
-  // Worktree / submodule: .git is a file like "gitdir: /path/to/real/gitdir".
-  // Parse with startsWith+slice — no regex, so no ReDoS surface (S5852).
   if (stat.isFile()) {
     const contents = fs.readFileSync(gitPath, 'utf8').trim();
     const prefix = 'gitdir:';
@@ -207,20 +195,13 @@ function readGitHead(projectRoot) {
   const gitDir = resolveGitDir(projectRoot);
   if (!gitDir) return null;
   try {
-    // Read .git/HEAD directly instead of spawning `git rev-parse HEAD`.
-    // Avoids S4036 (PATH-resolved binary) and is faster: no subprocess.
     const head = fs.readFileSync(path.join(gitDir, 'HEAD'), 'utf8').trim();
     if (!head) return null;
-    // Detached HEAD: the file contains the raw SHA.
     if (/^[0-9a-f]{40}$/i.test(head)) return head;
-    // Symbolic ref: "ref: refs/heads/<branch>" — resolve the ref file.
-    // Parse with startsWith+slice — no regex, so no ReDoS surface (S5852).
     const refPrefix = 'ref:';
     if (!head.startsWith(refPrefix)) return null;
     const refName = head.slice(refPrefix.length).trim();
     if (!refName) return null;
-    // For worktrees, the commondir points to the main .git. Refs may live
-    // there rather than in the per-worktree gitdir.
     const commonDirFile = path.join(gitDir, 'commondir');
     let commonDir = gitDir;
     if (fs.existsSync(commonDirFile)) {
@@ -234,7 +215,6 @@ function readGitHead(projectRoot) {
         if (/^[0-9a-f]{40}$/i.test(sha)) return sha;
       }
     }
-    // Packed refs fallback.
     const packed = path.join(commonDir, 'packed-refs');
     if (!fs.existsSync(packed)) return null;
     const lines = fs.readFileSync(packed, 'utf8').split(/\r?\n/);
@@ -390,9 +370,6 @@ function summarizeReviewDelta(feedbackEntries, memoryEntries, auditEntries, base
   };
 }
 
-// ---------------------------------------------------------------------------
-// Approval rate + trend
-// ---------------------------------------------------------------------------
 
 function computeApprovalStats(entries) {
   const total = entries.length;
@@ -400,7 +377,6 @@ function computeApprovalStats(entries) {
   const negative = entries.filter((e) => e.signal === 'negative').length;
   const approvalRate = total > 0 ? Math.round((positive / total) * 100) : 0;
 
-  // 7-day trend
   const now = Date.now();
   const sevenDaysAgo = now - 7 * 24 * 60 * 60 * 1000;
   const recentEntries = entries.filter((e) => {
@@ -427,9 +403,6 @@ function computeApprovalStats(entries) {
   };
 }
 
-// ---------------------------------------------------------------------------
-// Gate enforcement stats
-// ---------------------------------------------------------------------------
 
 function computeGateStats() {
   const autoGatesPath = getAutoGatesPath();
@@ -440,14 +413,12 @@ function computeGateStats() {
   );
   const stats = readJsonFile(statsPath) || { blocked: 0, warned: 0, passed: 0, byGate: {} };
 
-  // Count manual vs auto-promoted gates
   const defaultGates = readJsonFile(DEFAULT_GATES_PATH);
   const autoGates = readJsonFile(autoGatesPath);
   const manualCount = defaultGates && Array.isArray(defaultGates.gates) ? defaultGates.gates.length : 0;
   const autoCount = autoGates && Array.isArray(autoGates.gates) ? autoGates.gates.length : 0;
   const totalGates = manualCount + autoCount;
 
-  // Top blocked gate
   let topBlocked = null;
   let topBlockedCount = 0;
   if (stats.byGate) {
@@ -541,9 +512,161 @@ function listActiveGates() {
   }
 }
 
-// ---------------------------------------------------------------------------
-// Prevention impact
-// ---------------------------------------------------------------------------
+function formatStorageBytes(bytes) {
+  const n = Number.isFinite(bytes) && bytes > 0 ? Math.trunc(bytes) : 0;
+  if (n === 0) return '0 B';
+  if (n < 1024) return `${n} B`;
+  if (n < 1024 * 1024) return `${(n / 1024).toFixed(2)} KB`;
+  if (n < 1024 * 1024 * 1024) return `${(n / (1024 * 1024)).toFixed(2)} MB`;
+  return `${(n / (1024 * 1024 * 1024)).toFixed(2)} GB`;
+}
+
+function measureDirBytesBounded(targetPath, depth = 0) {
+  if (depth > 3 || !targetPath || !fs.existsSync(targetPath)) return 0;
+  try {
+    const st = fs.lstatSync(targetPath);
+    if (st.isSymbolicLink()) return 0;
+    if (st.isFile()) return st.size;
+    if (!st.isDirectory()) return 0;
+    let total = 0;
+    for (const entry of fs.readdirSync(targetPath).slice(0, 128)) {
+      total += measureDirBytesBounded(path.join(targetPath, entry), depth + 1);
+    }
+    return total;
+  } catch {
+    return 0;
+  }
+}
+
+function formatDisplayStoragePath(rawDir) {
+  const resolved = path.resolve(String(rawDir || ''));
+  const home = process.env.HOME ? path.resolve(process.env.HOME) : '';
+  if (home && (resolved === home || resolved.startsWith(`${home}${path.sep}`))) {
+    return `~${resolved.slice(home.length)}`;
+  }
+  return path.basename(path.dirname(resolved))
+    ? `${path.basename(path.dirname(resolved))}/${path.basename(resolved)}`
+    : path.basename(resolved) || '.thumbgate';
+}
+
+function computeLessonStorageSummary(feedbackDir, memoryCount = 0) {
+  const memoryLogPath = path.join(feedbackDir, 'memory-log.jsonl');
+  const trackedNames = ['memory-log.jsonl', 'prevention-rules.md', 'auto-promoted-gates.json', 'lancedb', 'vectors'];
+  let lessonDbBytes = 0;
+  for (const name of trackedNames) {
+    lessonDbBytes += measureDirBytesBounded(path.join(feedbackDir, name), 0);
+  }
+  const dirDisplay = formatDisplayStoragePath(feedbackDir);
+  return {
+    label: '100% On-Device Private Memory',
+    location: `${dirDisplay}/memory-log.jsonl`,
+    exists: fs.existsSync(memoryLogPath),
+    lessonCount: Number.isFinite(memoryCount) && memoryCount > 0 ? Math.trunc(memoryCount) : 0,
+    lessonDbBytes,
+    lessonDbSizeDisplay: formatStorageBytes(lessonDbBytes),
+  };
+}
+
+function findMatchingLessonText(gateId, memoryEntries, gates) {
+  const needle = String(gateId || '').toLowerCase();
+  for (let i = memoryEntries.length - 1; i >= 0; i -= 1) {
+    const m = memoryEntries[i];
+    if (!m) continue;
+    const blob = `${m.gateId || ''} ${m.id || ''} ${(m.tags || []).join(' ')} ${m.title || ''}`.toLowerCase();
+    if (needle && blob.includes(needle)) {
+      return String(m.title || m.summary || m.content || m.context || '').trim().slice(0, 160);
+    }
+  }
+  const gateObj = (gates || []).find((g) => g && (g.id === gateId || g.name === gateId));
+  return gateObj && gateObj.pattern ? `Pattern: ${String(gateObj.pattern).slice(0, 140)}` : '';
+}
+
+function computeTodayOverview(feedbackDir, options = {}) {
+  const entries = Array.isArray(options.entries) ? options.entries : collectAllFeedbackEntries(feedbackDir);
+  const memoryEntries = Array.isArray(options.memoryEntries) ? options.memoryEntries : readJSONL(path.join(feedbackDir, 'memory-log.jsonl'));
+  const auditEntries = Array.isArray(options.auditEntries) ? options.auditEntries : readJSONL(path.join(feedbackDir, AUDIT_LOG_FILENAME));
+  const gateStats = options.gateStats || computeGateStats();
+  const gateAudit = options.gateAudit || computeGateAuditSeries(feedbackDir);
+  const gates = Array.isArray(options.gates) ? options.gates : listActiveGates();
+  const nowMs = options.now ? new Date(options.now).getTime() : Date.now();
+  const cutoff24h = nowMs - 24 * 60 * 60 * 1000;
+
+  const todayBucket = Array.isArray(gateAudit.days) && gateAudit.days.length > 0
+    ? gateAudit.days[gateAudit.days.length - 1]
+    : { deny: 0, warn: 0, allow: 0 };
+  const gateStatusChips = {
+    blockedToday: Number(todayBucket.deny) || 0,
+    warnedToday: Number(todayBucket.warn) || 0,
+    activeGates: Number(gateStats.totalGates) || 0,
+  };
+
+  const fired24h = new Map();
+  for (const ev of auditEntries) {
+    if (!ev || !['deny', 'warn'].includes(ev.decision)) continue;
+    const ts = ev.timestamp ? new Date(ev.timestamp).getTime() : NaN;
+    if (!Number.isFinite(ts) || ts < cutoff24h) continue;
+    const gId = String(ev.gateId || ev.gate || ev.ruleId || '').trim();
+    if (!gId) continue;
+    const prev = fired24h.get(gId) || { total: 0, deny: 0, warn: 0 };
+    prev.total += 1;
+    if (ev.decision === 'deny') prev.deny += 1; else prev.warn += 1;
+    fired24h.set(gId, prev);
+  }
+  const ranked24h = Array.from(fired24h.entries()).sort((a, b) => (b[1].total - a[1].total) || a[0].localeCompare(b[0]));
+
+  let upNext;
+  if (ranked24h.length > 0) {
+    const [topGateId, counts] = ranked24h[0];
+    const lessonNote = findMatchingLessonText(topGateId, memoryEntries, gates);
+    upNext = {
+      kind: 'top_gate_24h',
+      kicker: 'Up next · Most active gate (24h)',
+      title: `${topGateId} (${counts.total} intercepted in last 24h)`,
+      detail: lessonNote || `${counts.deny} blocked, ${counts.warn} warned in the last 24 hours.`,
+      actionLabel: 'Inspect Gates',
+      actionTab: 'gates',
+      actionHref: '#tab-gates',
+    };
+  } else if (entries.length === 0) {
+    upNext = {
+      kind: 'connect_agent',
+      kicker: 'Up next · First signal',
+      title: 'Connect your agent',
+      detail: 'Total Feedback is 0. Wire ThumbGate into Claude Code, Cursor, or Codex to capture feedback and block repeat mistakes.',
+      actionLabel: 'Connect Agent',
+      actionTab: null,
+      actionHref: '/install',
+    };
+  } else if (gateStats.topBlocked && Number(gateStats.topBlockedCount) > 0) {
+    const lessonNote = findMatchingLessonText(gateStats.topBlocked, memoryEntries, gates);
+    upNext = {
+      kind: 'top_gate_all_time',
+      kicker: 'Up next · Top guardrail',
+      title: `${gateStats.topBlocked} (${gateStats.topBlockedCount} blocked)`,
+      detail: lessonNote || 'Highest-volume active PreToolUse block rule.',
+      actionLabel: 'Inspect Gates',
+      actionTab: 'gates',
+      actionHref: '#tab-gates',
+    };
+  } else {
+    upNext = {
+      kind: 'review_lessons',
+      kicker: 'Up next · Memory review',
+      title: `Review ${memoryEntries.length} captured lesson${memoryEntries.length === 1 ? '' : 's'}`,
+      detail: `${entries.length} feedback signal${entries.length === 1 ? '' : 's'} recorded with 0 gate blocks in the last 24h.`,
+      actionLabel: 'View Lessons',
+      actionTab: null,
+      actionHref: '/lessons',
+    };
+  }
+
+  return {
+    upNext,
+    gateStatusChips,
+    lessonStorage: computeLessonStorageSummary(feedbackDir, memoryEntries.length),
+  };
+}
+
 
 function computePreventionImpact(feedbackDir, gateStats) {
   const autoGatesPath = getAutoGatesPath();
@@ -555,17 +678,12 @@ function computePreventionImpact(feedbackDir, gateStats) {
     ruleCount = headers ? headers.length : 0;
   }
 
-  // Estimate time saved: ~16 min per blocked action (conservative)
-  // Based on: Claude Code review takes ~30 min, guard saves ~14 min
   const estimatedMinutesSaved = gateStats.blocked * 16;
   const estimatedHoursSaved = Number((estimatedMinutesSaved / 60).toFixed(1));
 
-  // Estimate cost savings: $0.004 per blocked action (16 min @ $1.50/hr = 40 cents)
-  // This is the cost of the agent time saved
   const estimatedCostSavingsCents = gateStats.blocked * (16 / 60) * 1.5 * 100; // 16min * $1.50/hr -> cents
   const estimatedCostSavings = `$${(estimatedCostSavingsCents / 100).toFixed(2)}`;
 
-  // Last auto-promotion
   const autoGates = readJsonFile(autoGatesPath);
   let lastPromotion = null;
   if (autoGates && Array.isArray(autoGates.promotionLog) && autoGates.promotionLog.length > 0) {
@@ -579,8 +697,6 @@ function computePreventionImpact(feedbackDir, gateStats) {
     }
   }
 
-  // Feedback-to-gate conversion rate
-  // How many blocked actions led to prevention rules — rate per blocked event
   const feedbackCount = gateStats.blocked; // denominator: blocked actions
   const conversionRate = feedbackCount > 0 ? Math.min(gateStats.totalGates / feedbackCount, 1) : 0;
 
@@ -595,61 +711,45 @@ function computePreventionImpact(feedbackDir, gateStats) {
 }
 
 function computeRoiSummary(gateStats, prevention, analytics, billing) {
-  // North Star: Earn $100/day after-tax profit
-  // ROI metrics that drive acquisition and retention
 
   const blockedActions = gateStats.blocked || 0;
   const warnedActions = gateStats.warned || 0;
   const passedActions = gateStats.passed || 0;
 
-  // Time saved from blocked actions (16 min per block)
   const hoursSaved = prevention.estimatedHoursSaved || 0;
 
-  // Conversion funnel effectiveness
   const funnel = analytics.funnel || {};
   const visitorToPaidRate = funnel.visitorToPaidRate || 0;
   const ctaToPaidRate = funnel.ctaToPaidRate || 0;
 
-  // Revenue tracking — aligns with billing.js getBillingSummary: revenue.bookedRevenueCents
   const paidOrders = funnel.paidOrders || 0;
   const monthlyRevenueCents = billing.revenue ? billing.revenue.bookedRevenueCents || 0 : 0;
   const monthlyRevenue = monthlyRevenueCents / 100;
 
-  // Prevention effectiveness: blocked actions per attempted action
   const totalActions = blockedActions + warnedActions + passedActions;
   const preventionRate = totalActions > 0 ? (blockedActions / totalActions) : 0;
 
-  // PR merge efficiency (GitHub Label Archiving impact)
   const decisionMetrics = analytics.decisionMetrics || {};
   const prMergeRate = decisionMetrics.mergeRate || 0;
 
   return {
-    // Cost savings from prevention (time-based ROI)
     hoursSaved: Number(hoursSaved.toFixed(1)),
     preventionRate: Number(preventionRate.toFixed(4)),
     blockedActions,
 
-    // Conversion metrics (acquisition ROI)
     visitorToPaidRate: Number((visitorToPaidRate * 100).toFixed(2)),
     ctaToPaidRate: Number((ctaToPaidRate * 100).toFixed(2)),
 
-    // Revenue signals (retention/retention)
     monthlyRevenue: Number(monthlyRevenue.toFixed(2)),
     paidOrders,
 
-    // North Star tracking
     monthlyRevenueTarget: 3000, // $100/day after tax
     revenueProgress: monthlyRevenue > 0 ? (monthlyRevenue / 3000 * 100).toFixed(1) : 0,
 
-    // Process efficiency (GitHub Label Archiving benefits)
     prMergeRate: Number((prMergeRate * 100).toFixed(1)),
-    // Higher merge rate = better process efficiency from archived labels reducing noise
   };
 }
 
-// ---------------------------------------------------------------------------
-// Feedback time series (daily up/down for charts)
-// ---------------------------------------------------------------------------
 
 function computeFeedbackTimeSeries(entries, dayCount = 30) {
   const today = new Date();
@@ -682,9 +782,6 @@ function isAuditTrailEntry(entry) {
   return Array.isArray(entry.tags) && entry.tags.includes('audit-trail');
 }
 
-// ---------------------------------------------------------------------------
-// Lesson pipeline (feedback → lesson → gate conversion)
-// ---------------------------------------------------------------------------
 
 function computeLessonPipeline(feedbackDir, entries, gateStats) {
   const memoryLogPath = path.join(feedbackDir, 'memory-log.jsonl');
@@ -711,7 +808,6 @@ function computeLessonPipeline(feedbackDir, entries, gateStats) {
     ? Math.min(100, Math.round((promotedGates / totalLessons) * 100)) : 0;
   const totalBlocked = gateStats.blocked || 0;
 
-  // Populate lesson counts onto the time series if available
   const lessonsByDay = new Map();
   for (const m of memories) {
     if (!m.timestamp) continue;
@@ -734,9 +830,6 @@ function computeLessonPipeline(feedbackDir, entries, gateStats) {
   };
 }
 
-// ---------------------------------------------------------------------------
-// Session trend (last N sessions)
-// ---------------------------------------------------------------------------
 
 function computeSessionTrend(entries, windowCount) {
   if (entries.length < 10) return { bars: '', percentage: 0 };
@@ -754,9 +847,6 @@ function computeSessionTrend(entries, windowCount) {
   return { bars, percentage: avg };
 }
 
-// ---------------------------------------------------------------------------
-// System health
-// ---------------------------------------------------------------------------
 
 function computeSystemHealth(feedbackDir, gateStats) {
   const feedbackLogPath = path.join(feedbackDir, 'feedback-log.jsonl');
@@ -1260,12 +1350,8 @@ function computeObservabilityStats(diagnosticEntries, diagnostics, secretGuard, 
   };
 }
 
-// ---------------------------------------------------------------------------
-// Agent File Audit (high-ROI improvement for agent governance)
-// ---------------------------------------------------------------------------
 
 function computeAgentFileAudit(projectRoot = PROJECT_ROOT) {
-  // Audit agent configuration files for governance compliance
   const auditResults = {
     totalAgentFiles: 0,
     auditPassCount: 0,
@@ -1274,7 +1360,6 @@ function computeAgentFileAudit(projectRoot = PROJECT_ROOT) {
     lastAuditAt: new Date().toISOString(),
   };
 
-  // Find all agent/MCP configuration files
   const agentFilePatterns = [
     '.mcp.json',
     '.cursor/mcp.json',
@@ -1284,7 +1369,6 @@ function computeAgentFileAudit(projectRoot = PROJECT_ROOT) {
 
   const agentFiles = [];
 
-  // Scan for agent files
   for (const pattern of agentFilePatterns) {
     const fullPath = path.join(projectRoot, pattern);
     if (fs.existsSync(fullPath)) {
@@ -1292,7 +1376,6 @@ function computeAgentFileAudit(projectRoot = PROJECT_ROOT) {
     }
   }
 
-  // Check adapters directory for MCP configs
   const adaptersDir = path.join(projectRoot, 'adapters');
   if (fs.existsSync(adaptersDir)) {
     const entries = fs.readdirSync(adaptersDir, { withFileTypes: true });
@@ -1306,7 +1389,6 @@ function computeAgentFileAudit(projectRoot = PROJECT_ROOT) {
     }
   }
 
-  // Check plugins directory
   const pluginsDir = path.join(projectRoot, 'plugins');
   if (fs.existsSync(pluginsDir)) {
     const entries = fs.readdirSync(pluginsDir, { withFileTypes: true });
@@ -1322,7 +1404,6 @@ function computeAgentFileAudit(projectRoot = PROJECT_ROOT) {
 
   auditResults.totalAgentFiles = agentFiles.length;
 
-  // Audit each file for basic governance
   for (const file of agentFiles) {
     try {
       const content = fs.readFileSync(file.fullPath, 'utf-8');
@@ -1331,12 +1412,9 @@ function computeAgentFileAudit(projectRoot = PROJECT_ROOT) {
       let auditPass = true;
       const issues = [];
 
-      // Check for required safety fields
       if (!config.permissions && !config.allowAllPermissions) {
-        // Not all configs require permissions, so this is optional
       }
 
-      // Check for proper command structure
       if (config.mcpServers) {
         for (const [name, server] of Object.entries(config.mcpServers)) {
           if (!server.command) {
@@ -1369,7 +1447,6 @@ function computeAgentFileAudit(projectRoot = PROJECT_ROOT) {
     }
   }
 
-  // Check for server-card.json (MCP registry compatibility)
   const serverCardPath = path.join(projectRoot, '.well-known', 'mcp', 'server-card.json');
   if (fs.existsSync(serverCardPath)) {
     auditResults.serverCard = {
@@ -1381,9 +1458,6 @@ function computeAgentFileAudit(projectRoot = PROJECT_ROOT) {
   return auditResults;
 }
 
-// ---------------------------------------------------------------------------
-// Agent Surface Inventory for Pro Dashboard
-// ---------------------------------------------------------------------------
 
 function computeAgentFileAuditFromFeedback(feedbackDir, options = {}) {
   const readiness = options.readiness || generateAgentReadinessReport({ projectRoot: PROJECT_ROOT });
@@ -1724,7 +1798,6 @@ function computeAgentSurfaceInventory(feedbackDir, options = {}) {
     writeCapableTools: readiness.permissions.writeCapableTools.slice(0, 8),
     activeBootstrapFiles: readiness.bootstrap.requiredPresent,
     requiredBootstrapFiles: readiness.bootstrap.requiredCount,
-    // Merged from computeAgentFileAuditFromFeedback — audit pass/fail for dashboard
     ...(() => {
       const audit = computeAgentFileAuditFromFeedback(feedbackDir, options);
       return {
@@ -1797,9 +1870,6 @@ function resolveTeamWindowHours(analyticsWindow) {
   return 24;
 }
 
-// ---------------------------------------------------------------------------
-// Full dashboard data
-// ---------------------------------------------------------------------------
 
 function collectAllFeedbackEntries(feedbackDir) {
   if (shouldAggregateFeedback()) {
@@ -1823,11 +1893,8 @@ function collectAllFeedbackEntries(feedbackDir) {
     }
   }
 
-  // Primary: the passed feedbackDir (global ~/.thumbgate)
   mergeFrom(path.join(feedbackDir, 'feedback-log.jsonl'));
 
-  // Project-local .thumbgate directories (e.g. repo/.thumbgate/feedback-log.jsonl)
-  // The MCP server may write to a project-scoped dir that differs from the global one.
   const projectsDir = path.join(feedbackDir, 'projects');
   if (fs.existsSync(projectsDir)) {
     try {
@@ -1837,9 +1904,6 @@ function collectAllFeedbackEntries(feedbackDir) {
     } catch { /* ignore read errors */ }
   }
 
-  // Also check the project root's .thumbgate if feedbackDir is global
-  // The MCP server often resolves to PROJECT_ROOT/.thumbgate for project-scoped feedback
-  // Skip this merge when feedbackDir is a temp/test directory (not ~/.thumbgate)
   const homeThumbgate = path.join(process.env.HOME || '/tmp', '.thumbgate');
   const projectLocalDir = path.join(PROJECT_ROOT, '.thumbgate');
   if (
@@ -1850,7 +1914,6 @@ function collectAllFeedbackEntries(feedbackDir) {
     mergeFrom(path.join(projectLocalDir, 'feedback-log.jsonl'));
   }
 
-  // Sort by timestamp for consistent ordering
   entries.sort((a, b) => {
     const ta = a.timestamp ? new Date(a.timestamp).getTime() : 0;
     const tb = b.timestamp ? new Date(b.timestamp).getTime() : 0;
@@ -1879,10 +1942,6 @@ function generateDashboard(feedbackDir, options = {}) {
   const billingSummary = options.billingSummary || getBillingSummary(analyticsWindow);
 
   const approval = computeApprovalStats(entries);
-  // Surface the "repeat-attempts blocked before execution" metric on the
-  // dashboard JSON and the /v1/dashboard HTTP route. Use the non-mutating
-  // helper (mirrors server-stdio.js) instead of mutating computeGateStats()'s
-  // return value. (mergeRepeatMetricIntoGateStats is imported at top of file.)
   const gateStats = mergeRepeatMetricIntoGateStats(computeGateStats());
   const prevention = computePreventionImpact(feedbackDir, gateStats);
   const trend = computeSessionTrend(entries, 10);
@@ -1951,7 +2010,6 @@ function generateDashboard(feedbackDir, options = {}) {
     readiness,
   );
 
-  // Live metrics — gate hit rate, lesson effectiveness, error trend
   const now = Date.now();
   const day = 24 * 60 * 60 * 1000;
   const weekAgo = now - 7 * day;
@@ -1981,10 +2039,6 @@ function generateDashboard(feedbackDir, options = {}) {
   const feedbackTimeSeries = computeFeedbackTimeSeries(entries, 30);
   const lessonPipeline = computeLessonPipeline(feedbackDir, entries, gateStats);
 
-  // Estimated token savings — computed from gate blocked counts using the
-  // conservative methodology in scripts/token-savings.js. This is the ONLY
-  // place "$ saved" appears that's backed by real gate-block data; the landing
-  // page hero uses a hardcoded sample number disclosed as "Sample".
   let tokenSavings = null;
   try {
     const { computeTokenSavings } = require('./token-savings');
@@ -1993,7 +2047,6 @@ function generateDashboard(feedbackDir, options = {}) {
     });
   } catch { /* module missing — skip */ }
 
-  // Merge lesson counts into feedbackTimeSeries days
   for (const day of feedbackTimeSeries.days) {
     day.lessons = lessonPipeline.lessonsByDay.get(day.dayKey) || 0;
   }
@@ -2015,10 +2068,17 @@ function generateDashboard(feedbackDir, options = {}) {
     team,
   });
   const reviewDelta = summarizeReviewDelta(entries, memoryEntries, auditEntries, reviewBaseline, reviewSnapshot);
+  const todayOverview = computeTodayOverview(feedbackDir, {
+    entries,
+    memoryEntries,
+    auditEntries,
+    gateStats,
+    gateAudit,
+    gates,
+    now: options.now,
+  });
 
-  // High-ROI metrics for North Star: $100/day after-tax profit
   const roiSummary = computeRoiSummary(gateStats, prevention, analytics, billingSummary);
-
   return {
     operational: {
       source: options.billingSource || 'local',
@@ -2055,6 +2115,7 @@ function generateDashboard(feedbackDir, options = {}) {
     reviewDelta,
     feedbackTimeSeries,
     tokenSavings,
+    todayOverview,
     lessonPipeline: {
       stages: lessonPipeline.stages,
       rates: lessonPipeline.rates,
@@ -2062,9 +2123,6 @@ function generateDashboard(feedbackDir, options = {}) {
   };
 }
 
-// ---------------------------------------------------------------------------
-// Rich CLI output
-// ---------------------------------------------------------------------------
 
 function printDashboard(data) {
   const {
@@ -2330,9 +2388,6 @@ function printDashboard(data) {
   console.log('');
 }
 
-// ---------------------------------------------------------------------------
-// Exports + CLI
-// ---------------------------------------------------------------------------
 
 module.exports = {
   generateDashboard,
@@ -2343,6 +2398,9 @@ module.exports = {
   computeApprovalStats,
   computeDecisionMetrics,
   computeGateStats,
+  computeTodayOverview,
+  computeLessonStorageSummary,
+  formatStorageBytes,
   computePreventionImpact,
   computeRoiSummary,
   computeSessionTrend,
