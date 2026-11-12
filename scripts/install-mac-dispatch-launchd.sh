@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # install-mac-dispatch-launchd.sh — run the cloud-to-Mac dispatch loop every few minutes.
 #
-# Polls open `ready-for-agent` issues and runs `claude -p` on them under YOUR Claude Code
+# Polls open issues marked <!-- agent:ready --> and runs `claude -p` on them under YOUR Claude Code
 # permission settings. This installer never changes those settings.
 #
 # Usage:

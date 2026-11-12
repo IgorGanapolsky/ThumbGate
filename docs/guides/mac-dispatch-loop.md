@@ -1,20 +1,20 @@
 # Cloud-to-Mac dispatch loop
 
 Cloud Claude sessions can't reach your Mac directly, but they can open GitHub issues. This loop
-turns `ready-for-agent` issues into `claude -p` runs on your Mac and writes the evidence back to
+turns issues whose body contains `<!-- agent:ready -->` into `claude -p` runs on your Mac and writes the evidence back to
 the issue.
 
-Flow: cloud thread opens issue → Mac claims it → `claude -p` in the issue folder → evidence comment → `agent-done` or `agent-blocked`.
+Flow: cloud thread opens issue → Mac claims it → `claude -p` in the issue folder → evidence comment → `<!-- agent:done -->` or `agent-blocked`.
 
 ## Queue a task
 
-Open an issue with the **Ready for Agent** template (it adds the `ready-for-agent` label), or from
+Open an issue with the **Ready for Agent** template (it puts `<!-- agent:ready -->` in the body and adds no label), or from
 a cloud session:
 
 ```bash
-gh issue create --repo IgorGanapolsky/ThumbGate --label ready-for-agent \
+gh issue create --repo IgorGanapolsky/ThumbGate \
   --title "[Agent] Re-run the weekly revenue report" \
-  --body $'### Working directory\n\n~/workspace/ThumbGate\n\n### Acceptance criteria\n\n- report saved and linked'
+  --body $'<!-- agent:ready -->\n\n### Working directory\n\n~/workspace/ThumbGate\n\n### Acceptance criteria\n\n- report saved and linked'
 ```
 
 The whole issue body is the prompt. **Working directory** is optional; blank means
@@ -46,26 +46,24 @@ node scripts/mac-dispatch-loop.js --watch --interval 300
 Pick launchd **or** a herdr pane on a given Mac. Running both is safe (a local lock skips the
 overlapping tick) but pointless.
 
-## Labels
+## Queue signal
 
-| Label | Meaning |
+| Signal | Meaning |
 | --- | --- |
-| `ready-for-agent` | queued |
+| `<!-- agent:ready -->` in the body | queued. This is not a label. |
 | `agent-claimed` | a Mac is running it now |
-| `agent-done` | the run ended with `STATUS: DONE`; read the evidence comment before trusting it |
+| `<!-- agent:done -->` in the body | the run ended with `STATUS: DONE`; read the evidence comment before trusting it |
 | `agent-blocked` | the run failed, timed out, hit a permission denial it couldn't finish without, or didn't report a status |
 
-The loop creates these labels on its first run. To requeue, swap the result label back to
-`ready-for-agent`.
+The loop does not create `ready-for-agent` or `agent-done`. To requeue, put `<!-- agent:ready -->` back in the body and remove `<!-- agent:done -->`.
 
 ## Several Macs
 
 Each Mac posts a claim comment, waits 5 seconds, then re-reads the comments. The earliest claim
-since the issue was last labeled `ready-for-agent` wins, and the others delete their claim and
+since the issue was queued wins, and the others delete their claim and
 move on. Set `MAC_DISPATCH_MACHINE_ID` (default: hostname) so the comments say which Mac ran it.
 
-If a Mac sleeps or crashes mid-run, the issue stays `agent-claimed`. Swap it back to
-`ready-for-agent` to retry; the old claim is ignored.
+If a Mac sleeps or crashes mid-run, the issue stays `agent-claimed`. Put `<!-- agent:ready -->` back in the body to retry; the old claim is ignored.
 
 ## Permissions and safety
 

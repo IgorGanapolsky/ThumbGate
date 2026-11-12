@@ -3,7 +3,7 @@ name: mac-dispatch
 description: >
   Route work that needs the operator's Mac (local scripts, signed-in apps,
   launchd jobs, Mac-only CLIs) through the existing dispatch: a
-  `ready-for-agent` GitHub issue, or a new row in the operator's existing herdr
+  GitHub issue whose body contains `<!-- agent:ready -->`, or a new row in the operator's existing herdr
   Google Sheet. Use whenever a cloud thread can't do a step itself because it
   needs the Mac. Never ask the operator to run it, and never create a new sheet.
 ---
@@ -23,7 +23,7 @@ files, launchd, or a CLI that exists only on the Mac.
 
 | Queue | Use for | How |
 |-------|---------|-----|
-| **GitHub `ready-for-agent` issue** (default) | anything a `claude -p` run in a repo folder can do | see step 2 |
+| **GitHub issue with `<!-- agent:ready -->`** (default) | anything a `claude -p` run in a repo folder can do | see step 2 |
 | **herdr Google Sheet** (the operator's existing sheet; URL in project memory) | tasks the operator's herdr panes already pull from the sheet | append one row via the Google Sheets connector, same columns as existing rows |
 
 Rules for the sheet:
@@ -39,7 +39,7 @@ Rules for the sheet:
 
 Requirements (from `docs/guides/mac-dispatch-loop.md`):
 
-- Repo `IgorGanapolsky/ThumbGate`, label `ready-for-agent`.
+- Repo `IgorGanapolsky/ThumbGate`. The body must contain `<!-- agent:ready -->`. Do not add a label.
 - The issue must be authored by the operator's account (the allow list); the
   Mac loop ignores issues from anyone else. Create it with the session's
   GitHub tools, which act as the operator.
@@ -50,12 +50,10 @@ Requirements (from `docs/guides/mac-dispatch-loop.md`):
 
 ```bash
 gh api repos/IgorGanapolsky/ThumbGate/issues -f title="[Agent] <task>" \
-  -f body=$'<prompt>\n\n### Working directory\n\n~/workspace/ThumbGate\n\n### Acceptance criteria\n\n- <evidence to post>' \
-  -f 'labels[]=ready-for-agent'
+  -f body=$'<!-- agent:ready -->\n\n<prompt>\n\n### Working directory\n\n~/workspace/ThumbGate\n\n### Acceptance criteria\n\n- <evidence to post>'
 ```
 
-Search open `ready-for-agent` / `agent-claimed` issues first, so the same task
-isn't queued twice.
+Search open issues for `<!-- agent:ready -->` first, so the same task isn't queued twice.
 
 ## 3. Write a prompt the Mac can finish unattended
 
@@ -71,13 +69,13 @@ isn't queued twice.
 ## 4. Follow through
 
 - Record the issue URL (or sheet row) as the receipt for "queued".
-- Results come back as an evidence comment plus `agent-done` or
-  `agent-blocked`. Read the comment before claiming anything; `agent-done`
-  alone is not proof.
+- Results come back as an evidence comment. A finished run has `<!-- agent:done -->`
+  in the body. A run that could not finish gets `agent-blocked`. Read the comment
+  before claiming anything; the marker alone is not proof.
 - `agent-blocked` on a permission denial: report it once as BLOCKED with the
   denied tool. Adding allow rules is the operator's call; don't add them
   yourself.
-- Requeue a failed run by swapping its label back to `ready-for-agent`, at
-  most once, after fixing the prompt.
+- Requeue a failed run by putting `<!-- agent:ready -->` back in the body and
+  removing `<!-- agent:done -->`, at most once, after fixing the prompt.
 - Queued is not done. Report "queued on the Mac: <link>" until the evidence
   comment arrives.

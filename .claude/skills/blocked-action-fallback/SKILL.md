@@ -53,7 +53,7 @@ result) — that log is the evidence if you end up reporting a blocker.
    workflow whose purpose is to get around a control.
 5. **The operator's machine** — when the work genuinely needs local
    credentials, apps or files (Mac-only scripts, signed-in browsers, launchd
-   jobs), queue it through `mac-dispatch` (a `ready-for-agent` issue or a row
+   jobs), queue it through `mac-dispatch` (an issue marked `<!-- agent:ready -->` or a row
    in the existing herdr sheet), or start a Remote Control session / use
    connected folder access when the thread has them. Never queue a REFUSED
    action on the Mac.

@@ -1,9 +1,10 @@
 name: Ready for Agent
 description: Queue a bounded, proof-ready implementation run for the ThumbGate.
 title: '[Agent] '
-labels:
-  - ready-for-agent
 body:
+  - type: markdown
+    attributes:
+      value: "<!-- agent:ready -->"
   - type: textarea
     id: business_outcome
     attributes:
