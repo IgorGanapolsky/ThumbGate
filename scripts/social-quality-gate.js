@@ -1,6 +1,9 @@
 #!/usr/bin/env node
 'use strict';
 
+const PROHIBITED_REAL_ESTATE_PATTERN =
+  /real.?estate|tax.?deed|197\.552|\bfolios?\b|miami-dade|broward|propstream|rexera|eliseai|deals\.igorganapolsky|biggerpockets/i;
+
 const BOT_SLOP_PATTERNS = [
   { id: 'emoji_spam', pattern: /(?:🚀|💡|🔥|⚡|🎯|💪|🙌|👀){3,}/g, reason: 'Excessive emoji spam' },
   { id: 'generic_opener', pattern: /^(?:Just|Excited to|Thrilled to|Happy to|Proud to) (?:\w+ )*?(?:launch|ship|release|publish|built|creat|announc)/i, reason: 'Generic shipped opener' },
@@ -11,6 +14,11 @@ const BOT_SLOP_PATTERNS = [
   { id: 'fake_urgency', pattern: /(?:Don't miss out|Act now|Limited time|Last chance|You won't believe)/i, reason: 'Fake urgency' },
   { id: 'self_congratulation', pattern: /(?:We're proud to|I'm honored to|Humbled to|Grateful to announce)/i, reason: 'Self-congratulatory opener' },
   { id: 'empty_hype', pattern: /(?:game.?changer|revolutionary|disruptive|next.?gen|cutting.?edge|world.?class|best.?in.?class)/i, reason: 'Empty hype words' },
+  {
+    id: 'prohibited_real_estate',
+    pattern: PROHIBITED_REAL_ESTATE_PATTERN,
+    reason: 'Real estate and tax-deed content is prohibited in ThumbGate outbound posts',
+  },
 ];
 
 const REPLY_TOPIC_PATTERNS = {
@@ -122,8 +130,17 @@ function gatePost(postText) {
   return scan;
 }
 
+function assertAllowedOutboundTopic(text, caller = 'publisher') {
+  const match = PROHIBITED_REAL_ESTATE_PATTERN.exec(String(text || ''));
+  if (match) {
+    throw new Error(`${caller}: outbound post blocked due to prohibited off-brand term "${match[0]}"`);
+  }
+}
+
 module.exports = {
   BOT_SLOP_PATTERNS,
+  PROHIBITED_REAL_ESTATE_PATTERN,
+  assertAllowedOutboundTopic,
   MAX_POST_LENGTH,
   MIN_POST_LENGTH,
   commentExplicitlyRequestsProduct,

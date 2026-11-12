@@ -582,15 +582,15 @@
         <div style="display:flex; gap:0.75rem; align-items:flex-end; margin:0.75rem 0; flex-wrap:wrap">
           <div style="flex:1; min-width:240px">
             <label style="font-size:0.8rem; color:var(--muted); display:block; margin-bottom:0.25rem">Party / Company Name</label>
-            <input id="conflict-input" type="text" placeholder="Latam Real Capital" value="Latam Real Capital S.A." style="width:100%; background:#0f0f11; color:var(--text); border:1px solid var(--line); border-radius:8px; padding:0.6rem; font-size:0.95rem">
+            <input id="conflict-input" type="text" placeholder="Latam Cloud Ventures" value="Latam Cloud Ventures S.A." style="width:100%; background:#0f0f11; color:var(--text); border:1px solid var(--line); border-radius:8px; padding:0.6rem; font-size:0.95rem">
           </div>
           <button onclick="runConflictDemo()" class="cta" style="padding:0.6rem 1.1rem; font-size:0.9rem; white-space:nowrap">Check Against Adverse List</button>
         </div>
         <div style="display:flex; gap:0.5rem; flex-wrap:wrap; margin-bottom:0.5rem">
-          <button type="button" onclick="document.getElementById('conflict-input').value='Latam Real Capital S.A.';" style="padding:0.4rem 0.8rem; font-size:0.8rem; background:transparent; color:var(--cyan); border:1px solid var(--cyan); border-radius:6px; cursor:pointer">Fill &mdash; will BLOCK</button>
+          <button type="button" onclick="document.getElementById('conflict-input').value='Latam Cloud Ventures S.A.';" style="padding:0.4rem 0.8rem; font-size:0.8rem; background:transparent; color:var(--cyan); border:1px solid var(--cyan); border-radius:6px; cursor:pointer">Fill &mdash; will BLOCK</button>
           <button type="button" onclick="document.getElementById('conflict-input').value='Acme Manufacturing LLC';" style="padding:0.4rem 0.8rem; font-size:0.8rem; background:transparent; color:var(--green); border:1px solid var(--green); border-radius:6px; cursor:pointer">Fill &mdash; will CLEAR</button>
         </div>
-        <div style="font-size:0.8rem; color:var(--muted); margin-bottom:0.5rem">Sample adverse list (synthetic, illustrative): Latam Real Capital S.A. (real estate #M-2847), Hospitalia Holdings (hospitality M&amp;A #M-2911), NovaIA Latam (AI venture #M-2755)</div>
+        <div style="font-size:0.8rem; color:var(--muted); margin-bottom:0.5rem">Sample adverse list (synthetic, illustrative): Latam Cloud Ventures S.A. (enterprise SaaS #M-2847), Hospitalia Holdings (hospitality M&amp;A #M-2911), NovaIA Latam (AI venture #M-2755)</div>
         <div id="conflict-result" class="demo-result" style="display:none"></div>
       </div>
 
@@ -720,7 +720,7 @@
           var party = document.getElementById('conflict-input').value.trim().toLowerCase();
           var resultDiv = document.getElementById('conflict-result');
           if (!party) { resultDiv.style.display = 'none'; return; }
-          var adverseList = ['latam real capital', 'latam real', 'hospitalia holdings', 'hospitalia', 'novaia latam', 'novaia'];
+          var adverseList = ['latam cloud ventures', 'latam cloud', 'hospitalia holdings', 'hospitalia', 'novaia latam', 'novaia'];
           var isAdverse = adverseList.some(function(a) { return party.indexOf(a) !== -1; });
           if (isAdverse) {
             var conflictPayload = __thumbgateBuildAudit({
