@@ -776,9 +776,10 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // Bumped 9.25 MB -> 9.35 MB (2026-10-15): Autotomy Dual-Lock doctor, skills, and docs. Local pack 9,293,036; CI slack.
   // Bumped 9.35 MB -> 9.40 MB (2026-10-15): HotData DB integration & Google Universal Cart firewall. Local pack 9,340,830; CI slack.
   // Bumped 9.40 MB -> 9.85 MB (2026-10-26): email-triage MCP server, Poolside/OpenUI/ICM/ARC-AGI-3 gates, and 4-tier checkout routes.
-  // Bumped 9.85 MB -> 9.90 MB (2026-11-11): openshell-lovable-engine.js (NVIDIA OpenShell policy prover/advisor, Adobe brand/layer guards, Lovable inline CSS/Tailwind self-correcting design engine) + CLI commands.
-  manifest.unpackedSize <= 9_920_000,
-  `npm package should stay <= 9.92 MB unpacked, got ${manifest.unpackedSize}`
+  // Bumped 9.85 MB -> 9.88 MB (2026-11-11): Gemini Decisions engine & Stripe offer closer in mcp-writeguard.js + server.js.
+  // Bumped 9.88 MB -> 9.95 MB (2026-11-12): openshell-lovable-engine.js (NVIDIA OpenShell policy prover/advisor, Adobe brand/layer guards, Lovable inline CSS/Tailwind self-correcting design engine) + CLI commands, on top of main.
+  manifest.unpackedSize <= 9_950_000,
+  `npm package should stay <= 9.95 MB unpacked, got ${manifest.unpackedSize}`
 );
 
   for (const file of requiredRuntimeFiles) {

@@ -19,6 +19,8 @@
 const fs = require('node:fs');
 const path = require('node:path');
 
+const PROHIBITED_REAL_ESTATE_RE =
+  /real.?estate|tax.?deed|197\.552|\bfolios?\b|miami-dade|broward|propstream|rexera|eliseai/i;
 const LIMITS = {
   threads:   { max: 500,  note: 'Meta/Threads API hard limit. Exceeding = publish failure (code:100 THApiException).' },
   x:         { max: 280,  note: 'Free X/Twitter. Premium lifts to 4000 but most audiences still read first-280 preview.' },
@@ -92,13 +94,27 @@ const FEED_POST_PLATFORMS = new Set([
 
 function evaluateBlock(block) {
   const len = charCount(block.body);
+  const prohibitedMatch = PROHIBITED_REAL_ESTATE_RE.exec(block.body);
+  const prohibitedTerm = prohibitedMatch ? prohibitedMatch[0] : null;
   const results = [];
   for (const [platform, { max, note }] of Object.entries(LIMITS)) {
-    const ok = len <= max;
-    const blocking = FEED_POST_PLATFORMS.has(platform);
-    results.push({ platform, ok, len, max, note, over: Math.max(0, len - max), blocking });
+    const ok = len <= max && !prohibitedTerm;
+    const blocking = FEED_POST_PLATFORMS.has(platform) || Boolean(prohibitedTerm);
+    const effectiveNote = prohibitedTerm
+      ? `prohibited real-estate/tax-deed term "${prohibitedTerm}"`
+      : note;
+    results.push({
+      platform,
+      ok,
+      len,
+      max,
+      note: effectiveNote,
+      over: Math.max(0, len - max),
+      prohibitedTerm,
+      blocking,
+    });
   }
-  return { block, len, results };
+  return { block, len, prohibitedTerm, results };
 }
 
 function previewBody(body) {
@@ -112,7 +128,12 @@ function resultMarker(result) {
 }
 
 function renderResult(result) {
-  const tail = result.ok ? '' : `  — OVER by ${result.over} (${result.note})`;
+  let tail = '';
+  if (!result.ok) {
+    tail = result.prohibitedTerm
+      ? `  — BLOCKED (${result.note})`
+      : `  — OVER by ${result.over} (${result.note})`;
+  }
   console.log(`    ${resultMarker(result)} ${result.platform.padEnd(10)} ${result.len}/${result.max}${tail}`);
   return !result.ok && result.blocking ? 1 : 0;
 }
@@ -156,6 +177,7 @@ if (isDirectRun()) {
 module.exports = {
   LIMITS,
   FEED_POST_PLATFORMS,
+  PROHIBITED_REAL_ESTATE_RE,
   charCount,
   parseArgs,
   readSources,

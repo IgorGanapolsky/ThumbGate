@@ -27,6 +27,7 @@
  */
 
 const { safeForLog, buildHeaders, LI_REST_BASE } = require('./linkedin-comment');
+const { assertAllowedOutboundTopic } = require('../../social-quality-gate');
 
 /**
  * Publishes a quote-post (reshare with commentary) on the authenticated
@@ -43,6 +44,7 @@ async function publishQuotePost(token, personUrn, parentUrn, text) {
   if (!personUrn) throw new Error('publishQuotePost: personUrn is required');
   if (!parentUrn) throw new Error('publishQuotePost: parentUrn is required');
   if (!text) throw new Error('publishQuotePost: text is required');
+  assertAllowedOutboundTopic(text, 'publishQuotePost');
 
   const url = `${LI_REST_BASE}/posts`;
   const body = {

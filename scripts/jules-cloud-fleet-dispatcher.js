@@ -10,7 +10,7 @@
  *   1. Reads `JULES_API_KEY` from environment or macOS Keychain (`/usr/bin/security find-generic-password -s JULES_API_KEY -w`)
  *      with zero plaintext secret storage and fixed binary path.
  *   2. Enforces origin pinning (`https://jules.googleapis.com`) before attaching `X-Goog-Api-Key`.
- *   3. Lists active cloud sessions across `sources/github/IgorGanapolsky/ThumbGate`, `RealEstate`, and `trading`.
+ *   3. Lists active cloud sessions across `sources/github/IgorGanapolsky/ThumbGate` and `trading`.
  *   4. Auto-unblocks stalled `AWAITING_PLAN_APPROVAL` (via `:approvePlan`) or `AWAITING_USER_FEEDBACK`
  *      (via `:sendMessage`) sessions without sending duplicate prompts after plan approval.
  *   5. Dispatches parallel Google Jules cloud coding sessions with `requirePlanApproval: false`,
