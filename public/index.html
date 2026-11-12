@@ -13,10 +13,10 @@
   <meta property="og:image" content="https://thumbgate.ai/og.png">
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:image" content="https://thumbgate.ai/og.png">
-  <title>ThumbGate — Stop AI agent mistakes before they cost you</title>
-  <meta name="description" content="Stop AI agent mistakes before they cost you. Install free. Pro is $19/mo. The $499 Setup Sprint installs one hard, test-backed safety gate for a supported AI-agent workflow in two business days.">
-  <meta property="og:title" content="ThumbGate — Stop AI agent mistakes before they cost you">
-  <meta property="og:description" content="Not a prompt. Not a postmortem. The rules learn from your thumbs and stay on your machine. Pro is $19/mo. The $499 one-time setup is one workflow.">
+  <title>ThumbGate — One repeated agent mistake. One configured gate</title>
+  <meta name="description" content="ThumbGate checks proposed tool calls before execution in supported hook integrations. The $499 Setup Sprint turns one recurring failure in a supported local workflow into a configured gate, a regression test, and rollout and rollback evidence.">
+  <meta property="og:title" content="ThumbGate — One repeated agent mistake. One configured gate">
+  <meta property="og:description" content="ThumbGate checks proposed tool calls before execution in supported hook integrations. The $499 Setup Sprint turns one recurring failure in a supported local workflow into a configured gate, a regression test, and rollout and rollback evidence.">
   <meta property="og:type" content="website">
   <meta property="og:url" content="__APP_ORIGIN__/">
   <script defer data-domain="thumbgate.ai" src="https://plausible.io/js/script.tagged-events.js"></script>
@@ -224,7 +224,7 @@
     }
     .nav-enterprise:hover { background: rgba(86, 227, 159, 0.14); color: var(--text) !important; }
     .offer-stack { display: grid; gap: 14px; }
-    #offers .offer-stack { grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; }
+    #offers .offer-stack { grid-template-columns: minmax(0, 1fr); max-width: 760px; align-items: start; }
     .pro-card {
       padding: 22px 24px;
       border: 1px solid rgba(56, 215, 255, 0.35);
@@ -252,10 +252,10 @@
       font-weight: 900;
     }
     .checkout-card .button-primary { width: 100%; }
-    .hero { padding: clamp(72px, 10vw, 128px) 0 72px; }
+    .hero { padding: clamp(48px, 6vw, 80px) 0 56px; }
     .hero-grid { display: grid; grid-template-columns: minmax(0, 1.08fr) minmax(340px, 0.92fr); gap: clamp(42px, 7vw, 88px); align-items: center; }
     .eyebrow, .section-kicker { color: var(--green); font: 800 12px/1.2 ui-monospace, SFMono-Regular, Menlo, monospace; letter-spacing: 0.13em; text-transform: uppercase; }
-    h1 { max-width: 760px; margin: 18px 0; font-size: clamp(46px, 7vw, 78px); line-height: 0.98; letter-spacing: -0.055em; }
+    h1 { max-width: 760px; margin: 18px 0; font-size: clamp(40px, 5vw, 64px); line-height: 0.98; letter-spacing: -0.055em; }
     .hero-lede { max-width: 650px; margin: 0 0 24px; color: #c5ceda; font-size: clamp(18px, 2vw, 22px); line-height: 1.5; }
     .fit-line { margin: 0 0 18px; color: var(--muted); font-size: 14px; }
     .fit-line strong { color: var(--text); }
@@ -789,9 +789,13 @@
             <span class="up" aria-hidden="true"><svg class="hero-thumb-up" viewBox="0 0 32 32" aria-hidden="true"><use href="#thumb-glyph"/></svg></span>
             <button type="button" class="down" id="hero-thumb-down" aria-label="Record a thumbs-down for the selected command"><svg class="hero-thumb-down" viewBox="0 0 32 32" aria-hidden="true"><use href="#thumb-glyph"/></svg></button>
           </div>
-          <h1>Stop AI agent mistakes before they cost you.</h1>
-          <p class="hero-lede">Rules learn from your thumbs locally; static hooks do not. Detected secrets are denied at the tool-call boundary.</p>
-          <div class="hero-terminal" id="hero-gate-demo" aria-label="Live pre-action interception demo">
+          <h1>One repeated agent mistake. One configured gate.</h1>
+          <p class="hero-lede">ThumbGate checks proposed tool calls before execution in supported hook integrations. The $499 Setup Sprint turns one recurring failure in a supported local workflow into a configured gate, a regression test, and rollout and rollback evidence.</p>
+          <div class="actions" style="display:flex;gap:12px;flex-wrap:wrap;margin:0 0 24px;">
+            <a class="button-primary" href="/diagnostic#intake" data-cta-id="homepage_workflow_fit">Check my workflow fit</a>
+            <a class="button-pro" style="background:transparent;color:var(--text) !important;border:1px solid var(--border);box-shadow:none;" href="#install" data-cta-id="homepage_free_evaluation">Evaluate the free local runtime</a>
+          </div>
+          <div class="hero-terminal" id="hero-gate-demo" aria-label="Illustrative tool-call decisions">
             <div class="terminal-chrome" aria-hidden="true">
               <div class="dots"><span></span><span></span><span></span></div>
               <span class="title">local gate</span>
@@ -804,6 +808,7 @@
             </div>
             <p class="hero-gate-note" id="hero-gate-note" aria-live="polite"></p>
           </div>
+          <p class="hero-note" data-illustrative-caption>Illustrative example, not a recorded result. Matching destructive actions warn by default; advisory integrations do not guarantee execution blocking.</p>
           <p class="install-hint" id="install"><strong style="color:var(--text)">Free (MIT):</strong> <code>npx thumbgate init</code> <button type="button" class="copy-cmd" data-copy-install data-cta-id="hero_install_copy" style="margin-left:8px">Copy</button></p>
           <nav class="spec-chips" aria-label="Install ThumbGate" style="margin-top:14px">
             <a class="spec-chip" href="/install" title="npx thumbgate init --agent claude">Claude</a>
@@ -828,18 +833,6 @@
         <p class="install-hint">Claude Code, Cursor, Codex, or similar agents.</p>
         <p class="install-hint" id="thumbgate-dashboard-command" style="margin-top:10px;">Dashboard: <code>npx thumbgate dashboard --open</code> · <code>/thumbgate-dashboard</code> · <code>thumbgate-dashboard</code> · <a href="/dashboard#insights">demo</a> · <a class="proof-link" href="#proof">strict-mode deny example ↓</a></p>
         <div class="offer-stack">
-          <aside class="pro-card" id="pro" aria-label="ThumbGate Pro subscription">
-            <div class="price"><strong>$19</strong><span>/mo · or $149/yr</span></div>
-            <h2>Pro</h2>
-            <p><strong>For one developer.</strong> Unlimited gates, a visual debugger, and the lessons from your thumbs.</p>
-            <a class="button-pro" href="/go/pro-direct?utm_source=website&amp;utm_medium=homepage_hero&amp;utm_campaign=rally_style_gtm&amp;cta_id=homepage_pro_buy&amp;cta_placement=offers&amp;plan_id=pro" data-offer-link data-cta-id="homepage_pro_buy" data-revenue-cta data-cta-placement="offers">Start Pro — $19/mo</a>
-            <p class="checkout-note">Instant key · cancel anytime · free local evaluate stays free</p>
-            <ul class="offer-points">
-              <li>Unlimited gates + rule packs (Claude, Cursor, Git, AWS)</li>
-              <li>See which check fired, and find the lesson that matches the next action</li>
-              <li>Export your thumbs as training data</li>
-            </ul>
-          </aside>
           <form id="buy" class="checkout-card" action="/go/diagnostic-pay" method="POST" data-primary-checkout style="border-color:rgba(0,110,82,.35);box-shadow:0 18px 50px rgba(0,110,82,.12);">
             <span id="workflow-sprint-intake" data-legacy-intake-alias aria-hidden="true"></span>
             <span id="enterprise-gate"></span>
@@ -853,7 +846,7 @@
             <input type="hidden" name="landing_path" value="/">
             <div class="price"><strong>$__SPRINT_DIAGNOSTIC_PRICE_DOLLARS__</strong><span>one time · done-with-you setup</span></div>
             <h2>Setup Sprint</h2>
-            <p><strong>One workflow, done with you.</strong> Not an enterprise contract.</p>
+            <p>One 60-minute working review, one supported local workflow, one configured gate and regression test, plus written rollout and rollback proof. Delivery within two business days after access and agreed materials are available, subject to confirmed scheduling. If it cannot be reduced to a supported gate, the existing refund boundary applies. No enterprise rollout, SSO, hosted team sync or org-wide audit dashboard.</p>
             <label for="buyer-email">Work email for receipt &amp; onboarding</label>
             <input id="buyer-email" type="email" name="customer_email" autocomplete="email" required placeholder="you@company.com">
             <button class="button-primary" type="submit" data-revenue-cta data-cta-id="homepage_diagnostic_buy" data-cta-placement="offers">Book the $499 setup</button>
@@ -861,7 +854,7 @@
             <ul class="offer-points">
               <li>60-minute working review for one workflow</li>
               <li>One configured local gate and its regression test</li>
-              <li>Rollout and rollback proof within two business days</li>
+              <li>Delivery within two business days after access and agreed materials are available, subject to confirmed scheduling.</li>
             </ul>
           </form>
         </div>
@@ -1077,6 +1070,20 @@ next      decision recorded before execution</pre>
     </section>
   </main>
 
+  <section aria-label="ThumbGate Pro subscription details"><div class="shell" style="padding:32px 0;">
+          <aside class="pro-card" id="pro" aria-label="ThumbGate Pro subscription">
+            <div class="price"><strong>$19</strong><span>/mo · or $149/yr</span></div>
+            <h2>Pro</h2>
+            <p><strong>For one developer.</strong> Unlimited gates, a visual debugger, and the lessons from your thumbs.</p>
+            <a class="button-pro" href="/go/pro-direct?utm_source=website&amp;utm_medium=homepage_hero&amp;utm_campaign=rally_style_gtm&amp;cta_id=homepage_pro_buy&amp;cta_placement=offers&amp;plan_id=pro" data-offer-link data-cta-id="homepage_pro_buy" data-revenue-cta data-cta-placement="offers">Start Pro — $19/mo</a>
+            <p class="checkout-note">Instant key · cancel anytime · free local evaluate stays free</p>
+            <ul class="offer-points">
+              <li>Unlimited gates + rule packs (Claude, Cursor, Git, AWS)</li>
+              <li>See which check fired, and find the lesson that matches the next action</li>
+              <li>Export your thumbs as training data</li>
+            </ul>
+          </aside>
+  </div></section>
   <footer>
     <div class="shell footer-inner">
       <span>ThumbGate · MIT License · npm v1.39.1</span>
@@ -1591,4 +1598,4 @@ next      decision recorded before execution</pre>
   })();
 </script>
 </body>
-</html>
+            </html>
