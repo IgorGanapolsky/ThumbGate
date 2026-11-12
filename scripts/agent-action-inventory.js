@@ -1,42 +1,13 @@
 #!/usr/bin/env node
 'use strict';
 
-/**
- * agent-action-inventory.js — "what did the agents actually do here?"
- *
- * WHY THIS EXISTS
- * ---------------
- * ThumbGate already records gate decisions (`audit-trail.jsonl`), gate firings
- * (`gate-events-log.jsonl`) and per-tool KPIs (`tool-kpi.jsonl`). What it did
- * not have is one read-only rollup an operator can point at a repo and get:
- * which agents ran, which tools they reached for, how much was allowed, how
- * much was blocked, by which gate, on which day — and how often a block was
- * later reversed (the false-deny signal).
- *
- * TWO HONESTY RULES THIS FILE ENFORCES
- * ------------------------------------
- * 1. A missing source and an empty source are DIFFERENT facts and must look
- *    different in the output. `sources.auditTrail === 'missing'` means the file
- *    is not there; `'empty'` means it is there and holds nothing. Reporting
- *    both as `0` would let "we never instrumented this" masquerade as "the
- *    agents did nothing".
- * 2. `falseDenyRate` is null unless a real numerator AND a real denominator
- *    were observed. A rate over zero denies is an invented denominator, so it
- *    stays null and `falseDenyReason` says why. `falseDenyNumerator` and
- *    `falseDenyDenominator` are always present so a reader can redo the math.
- *
- * All functions here are read-only. Nothing in this module writes to the store.
- */
+// Read-only rollup + 30-day AI governance system of record over audit-trail, gate-events, tool-kpi, and agent-registry.
 
 const fs = require('node:fs');
+const os = require('node:os');
 const path = require('node:path');
 
-// Filenames come from the modules that own the writes, so a rename there can
-// never silently turn this report into a "source missing" false negative.
-const { AUDIT_LOG_FILENAME, GATE_EVENTS_LOG_FILENAME } = require('./audit-trail');
-
-// scripts/tool-kpi-tracker.js writes this; it is the only store in the feedback
-// dir that carries an agentId, which is why agent identity comes from here.
+const { AUDIT_LOG_FILENAME, GATE_EVENTS_LOG_FILENAME, REGISTRY_FILENAME, OBSERVED_FILENAME } = require('./audit-trail');
 const KPI_LOG_FILENAME = 'tool-kpi.jsonl';
 
 const MIN_WINDOW_DAYS = 1;
@@ -45,31 +16,7 @@ const DEFAULT_WINDOW_DAYS = 30;
 
 const DENY_DECISION = 'deny';
 
-/**
- * WHAT COUNTS AS A REVERSAL — and the trap that makes this subtle.
- *
- * Only two record shapes in audit-trail.jsonl mean "a block was actually cleared":
- *
- *   1. decision === 'override'
- *      Written by scripts/override-audit.js for satisfy_gate, the CLI
- *      satisfyCondition path, and break-glass. Always carries the cleared gateId.
- *
- *   2. decision === 'allow' AND source === 'gates-engine-admin-override'
- *      Written by gates-engine.js when a single-use admin override is CONSUMED
- *      against a blocking gate. The decision field reads 'allow' — the reversal
- *      is identifiable only by the source.
- *
- * `decision: 'approve'` is NOT a reversal, despite the name. gates-engine.js
- * emits it when a gate's action is 'approve' and the action needs human
- * sign-off: it ships alongside `requiresApproval: true`, formatOutput renders it
- * to the harness as `permissionDecision: 'deny'` with "APPROVAL REQUIRED",
- * isBlockingDecision() groups it with 'deny', and recordStat files it under
- * `pendingApproval`. It is a HELD action — another kind of block.
- *
- * Counting 'approve' as a clearance inflates the false-deny numerator with
- * records that are themselves blocks. It is reported separately as
- * `approvalRequiredCount` and never enters the numerator.
- */
+// Only decision==='override' or consumed admin-override ('allow' + ADMIN_OVERRIDE_SOURCE) clears a block; 'approve' is a held block.
 const CLEARING_DECISION = 'override';
 const ADMIN_OVERRIDE_SOURCE = 'gates-engine-admin-override';
 const APPROVAL_REQUIRED_DECISION = 'approve';
@@ -106,29 +53,7 @@ function normalizeWindowDays(input) {
 // Source reading
 // ---------------------------------------------------------------------------
 
-/**
- * Default tail window per source. Matches scripts/override-audit.js, which
- * reads the tail rather than the whole file because audit logs reach hundreds
- * of MB and a report must not allocate the entire history to summarise it.
- */
 const DEFAULT_MAX_BYTES = 8 * 1024 * 1024;
-
-/**
- * Read one JSONL store and report WHY it produced the records it did.
- *
- * Reads at most `maxBytes` from the END of the file, following the
- * scripts/override-audit.js convention: allocate `Math.min(size, maxBytes)`,
- * seek to `size - readBytes`, then discard the partial first line, since a
- * byte-offset read almost always lands mid-record.
- *
- * When the file was larger than the window, `truncated` is true and
- * `records`/`lines` describe only the tail that was read. Callers MUST surface
- * that — a truncated `recordsTotal` presented as a whole-file count is exactly
- * the kind of silently-partial number this module exists to avoid.
- *
- * @returns {{ status: string, path: string, records: object[], lines: number,
- *             malformed: number, truncated: boolean, bytesRead: number, fileBytes: number }}
- */
 function readJsonlSource(filePath, options = {}) {
   const maxBytes = Number.isFinite(options.maxBytes) && options.maxBytes > 0
     ? options.maxBytes
@@ -219,13 +144,7 @@ function readJsonlSource(filePath, options = {}) {
   };
 }
 
-/**
- * Did the tail window actually cover the whole requested window?
- *
- * If the file was truncated AND its oldest surviving record is newer than
- * `since`, then records inside the window were dropped and every count derived
- * from this source is a partial view. That must be reported, not assumed away.
- */
+// False when truncated and oldest surviving record is newer than sinceMs.
 function coversWindow(source, sinceMs) {
   if (source.status !== SOURCE_STATUS.OK) return null;
   if (!source.truncated) return true;
@@ -258,22 +177,7 @@ function dayKey(record, field = 'timestamp') {
   return new Date(ms).toISOString().slice(0, 10);
 }
 
-// ---------------------------------------------------------------------------
-// False-deny pairing
-// ---------------------------------------------------------------------------
-
-/**
- * Pair each clearing event (override/approve) with the most recent UNPAIRED
- * preceding deny of the same gate.
- *
- * Why 1:1 and not "any later clear marks every earlier deny of that gate":
- * one break-glass override would then retroactively brand hundreds of
- * force-push denies as false, which is a fabricated numerator. One receipt
- * clears at most one block. The pairing is therefore a LOWER BOUND on
- * reversals, and the method string in the output says so.
- *
- * @returns {{ numerator: number, denominator: number, clearEvents: number, pairs: object[] }}
- */
+// 1:1 pairing: each reversal matches the most recent unpaired preceding deny of the same gate.
 function pairDeniesWithClears(records) {
   const denyStack = new Map(); // gateId -> ascending [{ ts, record }]
   const clearEvents = [];
@@ -389,12 +293,6 @@ function buildTopGates(records, limit = 5) {
     .slice(0, limit);
 }
 
-/**
- * Per-day calls/denies. Only days that ACTUALLY APPEAR in the log are listed —
- * a zero-filled calendar would print "0 calls" for days the store may simply
- * predate, which is exactly the measured-vs-absent confusion this report exists
- * to avoid. `undated` counts rows whose timestamp could not be parsed.
- */
 function buildDaily(records) {
   const byDay = new Map();
   let undated = 0;
@@ -411,11 +309,6 @@ function buildDaily(records) {
   return { daily, undated };
 }
 
-/**
- * Agents come from tool-kpi.jsonl — the ONLY store here that records an agentId.
- * audit-trail.jsonl rows carry no agent identity, which is why gate decisions
- * are reported repo-wide and never split per agent.
- */
 function buildAgents(kpiRecords) {
   const byAgent = new Map();
   for (const r of kpiRecords) {
@@ -465,8 +358,6 @@ function sourceDetail(source, inWindow, sinceMs) {
   const detail = {
     status: source.status,
     path: source.path,
-    // NOTE: when `truncated` is true this counts only the records inside the
-    // tail window that was read, never the whole file.
     recordsTotal: source.records.length,
     recordsInWindow: source.status === SOURCE_STATUS.OK ? inWindow : null,
     malformedLines: source.malformed,
@@ -482,8 +373,6 @@ function sourceDetail(source, inWindow, sinceMs) {
 function buildAgentAttribution(kpiSource, agents) {
   const base = {
     identitySource: KPI_LOG_FILENAME,
-    // Stated explicitly because it is the single biggest limitation of this
-    // report: allow/deny counts are repo-wide, NOT per-agent.
     gateDecisionsPerAgent: 'unavailable',
     reason: `${AUDIT_LOG_FILENAME} records carry no agentId, so allow/deny/warn counts cannot be split per agent. Agent rows come from ${KPI_LOG_FILENAME} and cover tool calls only.`,
   };
@@ -524,13 +413,7 @@ function buildAgentAttribution(kpiSource, agents) {
   };
 }
 
-/**
- * falseDenyRate = paired reversals / denies observed.
- *
- * Returns null (with a reason) whenever a real denominator was not observed.
- * The numerator and denominator are ALWAYS returned raw so the caller can see
- * exactly what the rate was — or was not — computed from.
- */
+// falseDenyRate = paired reversals / denies observed (null when denominator is 0 or source missing/empty).
 function computeFalseDeny(auditSource, auditInWindow, windowDays) {
   const unmeasurable = (reason) => ({
     falseDenyRate: null,
@@ -575,18 +458,7 @@ function computeFalseDeny(auditSource, auditInWindow, windowDays) {
   };
 }
 
-/**
- * Build the agent action inventory for one ThumbGate data directory.
- *
- * Read-only: opens files, writes nothing.
- *
- * @param {object} [opts]
- * @param {string} [opts.dataDir] — a ThumbGate store dir (e.g. `<repo>/.thumbgate`).
- *                                  Defaults to the resolved feedback dir.
- * @param {number|string} [opts.windowDays] — lookback in days (clamped 1..365, default 30).
- * @param {number} [opts.topGateLimit=5]
- * @returns {object} the inventory
- */
+// Build read-only agent action inventory for dataDir.
 function buildInventory(opts = {}) {
   const windowDays = normalizeWindowDays(opts.windowDays);
   const topGateLimit = Number.isFinite(opts.topGateLimit) && opts.topGateLimit > 0
@@ -627,8 +499,6 @@ function buildInventory(opts = {}) {
     else if (r.decision === 'warn') warnCount += 1;
     else if (r.decision === 'allow') allowCount += 1;
     else otherDecisionCount += 1;
-    // Counted independently of the buckets above: a consumed admin override is
-    // recorded as decision 'allow', so it is both an allow and a reversal.
     if (isClearingRecord(r)) overrideCount += 1;
   }
 
@@ -645,16 +515,11 @@ function buildInventory(opts = {}) {
       gateEvents: gateSource.status,
       toolKpi: kpiSource.status,
     },
-    // Per-source detail so "0 calls" is always traceable to a file that exists,
-    // parsed, and simply had nothing inside the window.
     sourceDetail: {
       auditTrail: sourceDetail(auditSource, auditInWindow.length, sinceMs),
       gateEvents: sourceDetail(gateSource, gateInWindow.length, sinceMs),
       toolKpi: sourceDetail(kpiSource, kpiInWindow.length, sinceMs),
     },
-    // false when a source's tail window did not reach back to `since`, i.e.
-    // records inside the requested window were dropped and every count below is
-    // a partial view. null when the audit trail was not readable at all.
     windowFullyCovered: coversWindow(auditSource, sinceMs),
 
     agents,
@@ -806,6 +671,225 @@ function renderInventoryText(inv) {
   return lines.join('\n') + '\n';
 }
 
+const AGENT_REGISTER_CONFIG_FILENAME = 'agent-register.json';
+const UNSAFE_KEYS = new Set(['__proto__', 'constructor', 'prototype']);
+const UNREGISTERED_AGENT_FLAG = 'unregistered agent';
+const UNATTRIBUTED_IDS = new Set(['unknown', '(no agentId recorded)']);
+const BUILTIN_MCP_SERVERS = new Set(['thumbgate', 'mcp', 'mcp-http']);
+const alphaCmp = (a, b) => a.localeCompare(b);
+const isSafeKey = (k) => typeof k === 'string' && k.trim().length > 0 && k.trim().length <= 128 && !UNSAFE_KEYS.has(k.trim());
+const firstStr = (arr) => { for (const v of arr) if (typeof v === 'string' && v.trim()) return v.trim(); return null; };
+const resolveDataDir = (d) => path.resolve(d ? String(d) : require('./feedback-paths').resolveFeedbackDir());
+
+function badRequestError(msg) {
+  const err = new Error(msg);
+  err.statusCode = 400;
+  return err;
+}
+
+function resolveDefaultOwner(opts = {}) {
+  const explicit = firstStr([opts.defaultOwner, process.env.THUMBGATE_DEFAULT_OWNER]);
+  if (explicit) return explicit;
+  try { const u = os.userInfo().username; if (u?.trim()) return u.trim(); } catch {}
+  return firstStr([process.env.USER, process.env.USERNAME]) || 'local-operator';
+}
+
+function readJsonObj(p) {
+  if (!p || !fs.existsSync(p)) return null;
+  try { const x = JSON.parse(fs.readFileSync(p, 'utf8')); return x && typeof x === 'object' && !Array.isArray(x) ? x : null; } catch { return null; }
+}
+
+function mergeOwnersObj(owners, raw) {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return;
+  for (const [k, v] of Object.entries(raw)) {
+    if (isSafeKey(k) && typeof v === 'string' && v.trim()) owners.set(k.trim(), v.trim().slice(0, 128));
+  }
+}
+
+function mergeRegDoc(owners, registered, src) {
+  if (!src || typeof src !== 'object') return;
+  mergeOwnersObj(owners, src.owners);
+  if (!Array.isArray(src.registered)) return;
+  for (const x of src.registered) if (isSafeKey(x)) registered.add(x.trim());
+}
+
+function loadAgentRegisterConfig(dataDir) {
+  const owners = new Map(), registered = new Set();
+  for (const f of ['settings.json', 'settings.local.json']) mergeRegDoc(owners, registered, readJsonObj(path.join(dataDir, f))?.agents);
+  mergeRegDoc(owners, registered, readJsonObj(path.join(dataDir, AGENT_REGISTER_CONFIG_FILENAME)));
+  return { owners, registered };
+}
+
+function applyOwnerUpdate(owners, key, owner) {
+  if (owner === undefined) return;
+  if (owner !== null && typeof owner !== 'string') throw badRequestError('Owner must be a string or null.');
+  const clean = owner === null ? '' : owner.trim().slice(0, 128);
+  if (!clean) owners.delete(key);
+  else owners.set(key, clean);
+}
+
+function updateAgentRegisterEntry({ dataDir, id, owner, registered } = {}) {
+  if (!isSafeKey(id)) throw badRequestError('Valid agent or surface id is required.');
+  const dir = resolveDataDir(dataDir), filePath = path.join(dir, AGENT_REGISTER_CONFIG_FILENAME);
+  const owners = new Map(), regSet = new Set(), key = id.trim();
+  mergeRegDoc(owners, regSet, readJsonObj(filePath));
+  applyOwnerUpdate(owners, key, owner);
+  if (registered === true) regSet.add(key);
+  else if (registered === false) regSet.delete(key);
+  const nextDoc = { owners: Object.fromEntries(owners), registered: [...regSet].sort(alphaCmp), updatedAt: new Date().toISOString() };
+  fs.mkdirSync(dir, { recursive: true });
+  fs.writeFileSync(filePath, `${JSON.stringify(nextDoc, null, 2)}\n`);
+  return nextDoc;
+}
+
+function parseMcpTool(t) {
+  const raw = typeof t === 'string' ? t.trim() : '';
+  if (!raw.startsWith('mcp__')) return null;
+  const rest = raw.slice(5), d = rest.indexOf('__'), s = rest.indexOf('_');
+  if (d > 0) return { server: rest.slice(0, d), tool: rest.slice(d + 2) };
+  return s > 0 ? { server: rest.slice(0, s), tool: rest.slice(s + 1) } : null;
+}
+
+function loadMcpAllowlistIndex(allowlistsPath) {
+  const p = allowlistsPath || process.env.THUMBGATE_MCP_POLICY_PATH || path.join(__dirname, '..', 'config', 'mcp-allowlists.json');
+  const parsed = readJsonObj(p) || {}, tools = new Set(), agents = new Set(), mcpServers = new Set(BUILTIN_MCP_SERVERS);
+  for (const list of Object.values(parsed.profiles || {})) {
+    if (Array.isArray(list)) for (const t of list) if (typeof t === 'string' && t.trim()) tools.add(t.trim());
+  }
+  for (const a of (parsed.agents || parsed.allowlistedAgents || [])) if (isSafeKey(a)) agents.add(a.trim());
+  for (const s of (parsed.mcpServers || parsed.servers || [])) if (isSafeKey(s)) mcpServers.add(s.trim());
+  return { path: p, tools, agents, mcpServers };
+}
+
+function touchBucket(map, id, kind, tsMs, delta = 1) {
+  if (!isSafeKey(id)) return null;
+  const key = id.trim();
+  let b = map.get(key);
+  if (!b) { b = { id: key, kind, callCount: 0, firstSeenMs: null, lastSeenMs: null, tools: new Set() }; map.set(key, b); }
+  b.callCount += delta;
+  if (tsMs !== null && Number.isFinite(tsMs)) {
+    if (b.firstSeenMs === null || tsMs < b.firstSeenMs) b.firstSeenMs = tsMs;
+    if (b.lastSeenMs === null || tsMs > b.lastSeenMs) b.lastSeenMs = tsMs;
+  }
+  return b;
+}
+
+function resolveRecordMcpServer(r, tool, allowTools) {
+  const pm = parseMcpTool(tool);
+  const explicit = pm?.server || firstStr([r.mcpServer, r.metadata?.mcpServer, r.metadata?.serverName, r.serverName]);
+  if (explicit && explicit !== 'default') return explicit;
+  return tool && allowTools.has(tool) ? 'thumbgate' : null;
+}
+
+function ingestSingleRecord(r, maps, allowTools) {
+  const ts = timestampMs(r), tool = firstStr([r.toolName]) || '';
+  const rawAgent = firstStr([r.agentId]);
+  if (rawAgent && !UNATTRIBUTED_IDS.has(rawAgent)) {
+    const ab = touchBucket(maps.agents, rawAgent, 'agent', ts, 1);
+    if (ab && tool) ab.tools.add(tool);
+  } else {
+    maps.unattributedCalls += 1;
+  }
+  const model = firstStr([r.model, r.metadata?.model, r.toolInput?.model]);
+  if (model) touchBucket(maps.models, model, 'model', ts, 1);
+  const srv = resolveRecordMcpServer(r, tool, allowTools);
+  if (srv) { const sb = touchBucket(maps.mcpServers, srv, 'mcp_server', ts, 1); if (sb && tool) sb.tools.add(tool); }
+  const hook = firstStr([r.source, r.metadata?.hookSource, r.metadata?.source]);
+  if (hook) touchBucket(maps.hookSources, hook, 'hook_source', ts, 1);
+}
+
+function ingestRecords(records, maps, allowTools) {
+  for (const r of records) if (r && typeof r === 'object') ingestSingleRecord(r, maps, allowTools);
+}
+
+function ingestRegistryEntry(reg, sinceMs, maps, state) {
+  if (!reg || !isSafeKey(reg.id)) return;
+  const id = reg.id.trim(), meta = reg.metadata && typeof reg.metadata === 'object' ? reg.metadata : {};
+  if (meta.lifecycleStatus === 'retired') { state.retired.add(id); state.active.delete(id); }
+  else { state.retired.delete(id); state.active.add(id); }
+  if (typeof meta.owner === 'string' && meta.owner.trim()) state.owners.set(id, meta.owner.trim());
+  const lastMs = timestampMs(reg, 'lastSeenAt') ?? timestampMs(reg, 'registeredAt');
+  if (lastMs === null || lastMs < sinceMs) return;
+  const b = touchBucket(maps.agents, id, 'agent', timestampMs(reg, 'registeredAt') ?? lastMs, 0);
+  if (b) { touchBucket(maps.agents, id, 'agent', lastMs, 0); b.callCount = Math.max(b.callCount, Number(reg.toolCalls) || 0); }
+  const m = firstStr([meta.model]), s = firstStr([reg.source]);
+  if (m) touchBucket(maps.models, m, 'model', lastMs, 0);
+  if (s && s !== 'unknown') touchBucket(maps.hookSources, s, 'hook_source', lastMs, 0);
+}
+
+function ingestObservedEntry(obs, sinceMs, maps) {
+  if (!obs || !isSafeKey(obs.id)) return;
+  const lastMs = timestampMs(obs, 'lastSeenAt') ?? timestampMs(obs, 'seenAt');
+  if (lastMs === null || lastMs < sinceMs) return;
+  const id = obs.id.trim(), cnt = Number(obs.observations) > 0 ? Number(obs.observations) : 1;
+  const cur = maps.agents.get(id);
+  const b = touchBucket(maps.agents, id, 'agent', timestampMs(obs, 'firstSeenAt') ?? lastMs, cur ? Math.max(0, cnt - cur.callCount) : cnt);
+  if (b) touchBucket(maps.agents, id, 'agent', lastMs, 0);
+}
+
+function isMcpServerRegistered(b, regCfg, allow) {
+  if (regCfg.registered.has(b.id) || allow.mcpServers.has(b.id)) return true;
+  return b.tools.size > 0 && [...b.tools].every((t) => allow.tools.has(t));
+}
+
+const toRow = (b, owner, registered) => ({
+  id: b.id, kind: b.kind,
+  firstSeen: b.firstSeenMs !== null ? new Date(b.firstSeenMs).toISOString() : null,
+  lastSeen: b.lastSeenMs !== null ? new Date(b.lastSeenMs).toISOString() : null,
+  callCount: b.callCount, owner, registered,
+  status: registered ? 'registered' : UNREGISTERED_AGENT_FLAG,
+  flag: registered ? null : UNREGISTERED_AGENT_FLAG,
+  tools: [...b.tools].sort(alphaCmp),
+});
+const sortRows = (rows) => rows.sort((a, b) => b.callCount - a.callCount || a.id.localeCompare(b.id));
+
+function buildAgentRegister(opts = {}) {
+  const windowDays = normalizeWindowDays(opts.windowDays), dataDir = resolveDataDir(opts.dataDir);
+  const parsedNow = opts.now ? new Date(opts.now).getTime() : Date.now();
+  const nowMs = Number.isFinite(parsedNow) ? parsedNow : Date.now(), sinceMs = nowMs - windowDays * 86400000;
+  const defaultOwner = resolveDefaultOwner(opts), regCfg = loadAgentRegisterConfig(dataDir), allow = loadMcpAllowlistIndex(opts.allowlistsPath);
+  const ro = { maxBytes: opts.maxBytes };
+  const maps = { agents: new Map(), models: new Map(), mcpServers: new Map(), hookSources: new Map(), unattributedCalls: 0 };
+  ingestRecords(readJsonlSource(path.join(dataDir, AUDIT_LOG_FILENAME), ro).records.filter((r) => withinWindow(r, sinceMs)), maps, allow.tools);
+  ingestRecords(readJsonlSource(path.join(dataDir, KPI_LOG_FILENAME), ro).records.filter((r) => withinWindow(r, sinceMs)), maps, allow.tools);
+  const regState = { active: new Set(), retired: new Set(), owners: new Map() };
+  for (const reg of readJsonlSource(path.join(dataDir, REGISTRY_FILENAME), ro).records) ingestRegistryEntry(reg, sinceMs, maps, regState);
+  for (const obs of readJsonlSource(path.join(dataDir, OBSERVED_FILENAME), ro).records) ingestObservedEntry(obs, sinceMs, maps);
+  const ownerFor = (id) => regCfg.owners.get(id) || regState.owners.get(id) || defaultOwner;
+  const agents = sortRows([...maps.agents.values()].map((b) => {
+    const inReg = regCfg.registered.has(b.id) || (regState.active.has(b.id) && !regState.retired.has(b.id));
+    return toRow(b, ownerFor(b.id), inReg || allow.agents.has(b.id));
+  }));
+  const mcpServers = sortRows([...maps.mcpServers.values()].map((b) => toRow(b, ownerFor(b.id), isMcpServerRegistered(b, regCfg, allow))));
+  const models = sortRows([...maps.models.values()].map((b) => toRow(b, ownerFor(b.id), true)));
+  const hookSources = sortRows([...maps.hookSources.values()].map((b) => toRow(b, ownerFor(b.id), true)));
+  const unregisteredAgentsList = agents.filter((a) => !a.registered);
+  const unregistered = [...unregisteredAgentsList, ...mcpServers.filter((s) => !s.registered)];
+  return {
+    generatedAt: new Date(nowMs).toISOString(), dataDir, windowDays, since: new Date(sinceMs).toISOString(), defaultOwner, allowlistsPath: allow.path,
+    summary: {
+      totalAgents: agents.length, registeredAgents: agents.length - unregisteredAgentsList.length, unregisteredAgents: unregisteredAgentsList.length,
+      unregisteredMcpServers: mcpServers.length - mcpServers.filter((s) => s.registered).length, unregisteredTotal: unregistered.length,
+      unattributedCalls: maps.unattributedCalls, totalModels: models.length, totalMcpServers: mcpServers.length, totalHookSources: hookSources.length,
+    },
+    agents, models, mcpServers, hookSources, unregistered,
+  };
+}
+
+function renderAgentRegisterText(report) {
+  const out = [
+    `ThumbGate Agent Register (last ${report.windowDays}d, default owner: ${report.defaultOwner})`,
+    `  agents: ${report.summary.totalAgents} (${report.summary.registeredAgents} registered, ${report.summary.unregisteredAgents} ${UNREGISTERED_AGENT_FLAG})`,
+    `  models: ${report.summary.totalModels} · mcp servers: ${report.summary.totalMcpServers} · hook sources: ${report.summary.totalHookSources}`, '',
+  ];
+  for (const [label, rows, badge] of [['Agents', report.agents, true], ['Models', report.models, false], ['MCP servers', report.mcpServers, true], ['Hook sources', report.hookSources, false]]) {
+    out.push(label);
+    if (!rows.length) out.push('  none seen in window');
+    for (const r of rows) out.push(`  ${r.id.padEnd(24)} calls=${r.callCount}  owner=${r.owner}  first=${r.firstSeen || 'n/a'}  last=${r.lastSeen || 'n/a'}${badge ? `  [${r.status}]` : ''}`);
+    out.push('');
+  }
+  return out.join('\n');
+}
 // ---------------------------------------------------------------------------
 // Exports
 // ---------------------------------------------------------------------------
@@ -813,6 +897,12 @@ function renderInventoryText(inv) {
 module.exports = {
   buildInventory,
   renderInventoryText,
+  buildAgentRegister,
+  renderAgentRegisterText,
+  updateAgentRegisterEntry,
+  loadAgentRegisterConfig,
+  isSafeKey,
+  resolveDefaultOwner,
   normalizeWindowDays,
   readJsonlSource,
   pairDeniesWithClears,
@@ -829,6 +919,8 @@ module.exports = {
   APPROVAL_REQUIRED_DECISION,
   DEFAULT_MAX_BYTES,
   KPI_LOG_FILENAME,
+  AGENT_REGISTER_CONFIG_FILENAME,
+  UNREGISTERED_AGENT_FLAG,
   MIN_WINDOW_DAYS,
   MAX_WINDOW_DAYS,
   DEFAULT_WINDOW_DAYS,
