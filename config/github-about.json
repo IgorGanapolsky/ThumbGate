@@ -23,5 +23,5 @@
     "thompson-sampling",
     "self-improving-agents"
   ],
-  "metaDescription": "Stop AI agent mistakes before they cost you. Install free. Pro is $19/mo. The $499 Setup Sprint installs one hard, test-backed safety gate for a supported AI-agent workflow in two business days."
+  "metaDescription": "ThumbGate checks proposed tool calls before execution in supported hook integrations. The $499 Setup Sprint turns one recurring failure in a supported local workflow into a configured gate, a regression test, and rollout and rollback evidence."
 }
