@@ -520,8 +520,9 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
     // 621 -> 641 (2026-10-15): operator framework landing, blog posts, policy packs, and continuity pages (+20).
     // 641 -> 650 (2026-11-05): HotData DB integration adapters, Google Universal Cart spend firewall, and scripts/verified-lessons.js (+9).
     // 650 -> 652 (2026-11-11): scripts/project-scope.js (required by the PreToolUse hook and lesson retrieval) and scripts/backfill-lesson-scopes.js (tags existing lessons with their repo) (+2).
-    manifest.fileCount <= 652,
-    `npm package should stay <= 652 files, got ${manifest.fileCount}`
+    // 652 -> 653 (2026-11-11): src/openshell-lovable-engine.js (+1).
+    manifest.fileCount <= 653,
+    `npm package should stay <= 653 files, got ${manifest.fileCount}`
   );
   // Ceiling bumped from 2.75 MB → 2.85 MB (2026-04-16) to accommodate the
   // incremental review-delta demo content in public/dashboard.html landing
@@ -779,8 +780,9 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // Bumped 9.88 MB -> 9.89 MB (2026-11-12, PR #4920): self-serve billing portal
   // routes (/portal, /billing, POST /v1/billing/portal) and createBillingPortalSession
   // in server.js + billing.js. CI measured 9,882,997 unpacked on 519f1c8a.
-  manifest.unpackedSize <= 9_890_000,
-  `npm package should stay <= 9.89 MB unpacked, got ${manifest.unpackedSize}`
+  // Bumped 9.89 MB -> 9.96 MB (2026-11-12): openshell-lovable-engine.js + CLI commands, on top of main.
+  manifest.unpackedSize <= 9_960_000,
+  `npm package should stay <= 9.96 MB unpacked, got ${manifest.unpackedSize}`
 );
 
   for (const file of requiredRuntimeFiles) {
