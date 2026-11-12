@@ -1,0 +1,131 @@
+{
+  "version": "1.0.0",
+  "updatedAt": "2026-11-11",
+  "maxPricesPerPost": 1,
+  "maxLinksPerPost": 1,
+  "brands": {
+    "thumbgate": {
+      "name": "ThumbGate",
+      "canonicalOrigin": "https://thumbgate.ai",
+      "allowedDomains": [
+        "thumbgate.ai",
+        "www.thumbgate.ai",
+        "github.com/IgorGanapolsky/ThumbGate",
+        "npmjs.com/package/thumbgate"
+      ],
+      "verifiedPrices": [
+        "$19/mo",
+        "$19",
+        "$149/yr",
+        "$149",
+        "$499"
+      ],
+      "crossProductForbidden": [
+        "Dayglass",
+        "dayglass.io",
+        "Mac YOLO",
+        "macyolosafeguards.io",
+        "Bops",
+        "deals.igorganapolsky.com",
+        "BiggerPockets"
+      ]
+    },
+    "mac-yolo": {
+      "name": "Mac YOLO Safeguards",
+      "canonicalOrigin": "https://macyolosafeguards.io",
+      "allowedDomains": [
+        "macyolosafeguards.io",
+        "www.macyolosafeguards.io"
+      ],
+      "verifiedPrices": [
+        "$9.99",
+        "$19",
+        "$29"
+      ],
+      "crossProductForbidden": [
+        "ThumbGate",
+        "thumbgate.ai",
+        "Dayglass",
+        "dayglass.io",
+        "Bops",
+        "deals.igorganapolsky.com",
+        "BiggerPockets"
+      ]
+    }
+  },
+  "rules": [
+    {
+      "id": "no-real-estate-or-tax-deed",
+      "description": "Never mention real estate, tax-deed auctions, parcel folios, or property diligence packets.",
+      "phrases": [
+        "real estate",
+        "real-estate",
+        "tax deed",
+        "tax-deed",
+        "197.552",
+        "5-folio",
+        "folio packet",
+        "miami-dade",
+        "broward",
+        "palm beach",
+        "propstream",
+        "rexera",
+        "eliseai",
+        "deals.igorganapolsky.com",
+        "biggerpockets",
+        "pre-bid diligence"
+      ]
+    },
+    {
+      "id": "no-unverified-refund-or-guarantee",
+      "description": "Never promise a refund, guarantee, credit, or hosted capability not listed on the matching product page.",
+      "phrases": [
+        "7-day refund guarantee",
+        "14-day refund guarantee",
+        "30-day refund guarantee",
+        "30-day money-back guarantee",
+        "money-back guarantee",
+        "refund guarantee",
+        "100% refund",
+        "full refund",
+        "sla credit",
+        "service credit guarantee",
+        "soc 2 type ii certified",
+        "fedramp authorized",
+        "hipaa baa included",
+        "org-wide audit log is generally available",
+        "hosted team sso is live"
+      ]
+    },
+    {
+      "id": "voice-no-stacked-jargon",
+      "description": "Flag stacked sales jargon, procurement-hack copy, and bot-slop line labels.",
+      "phrases": [
+        "corporate-expensable",
+        "rule-pack kit",
+        "zero procurement friction",
+        "card limit",
+        "one-time corporate-expensable",
+        "synergistic",
+        "paradigm shift",
+        "game-changer",
+        "revolutionary",
+        "battle-tested enterprise-grade",
+        "unlock next-gen",
+        "in today's rapidly evolving"
+      ]
+    },
+    {
+      "id": "voice-no-unverified-claims",
+      "description": "Flag unverified performance, ROI, or zero-risk claims absent from the product page.",
+      "phrases": [
+        "guaranteed 10x",
+        "100% bug-free",
+        "zero false positives guaranteed",
+        "blocks 100% of attacks",
+        "replaces human engineers",
+        "corporate-card expensable"
+      ]
+    }
+  ]
+}

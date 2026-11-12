@@ -5582,12 +5582,22 @@ function applyOneShotPretool(toolName, toolInput) {
     return oneshotUnreadableDeny();
   }
 }
+function applyBrandStandardsHook(toolName, toolInput) {
+  try {
+    const { applyBrandStandardsPretool } = require('./brand-standards-gate');
+    return applyBrandStandardsPretool(toolName, toolInput);
+  } catch {
+    return null;
+  }
+}
 
 async function evaluateGatesAsync(toolName, toolInput, configPath) {
   const oneshot = applyOneShotPretool(toolName, toolInput);
   if (oneshot) return oneshot;
   const direct = await evaluateGatesAsyncInner(toolName, toolInput, configPath);
   if (direct) return direct;
+  const brandStandards = applyBrandStandardsHook(toolName, toolInput);
+  if (brandStandards) return brandStandards;
   const retry = canonicalRetryInput(toolName, toolInput);
   if (!retry) return null;
   return evaluateGatesAsyncInner(toolName, retry, configPath);
@@ -5598,6 +5608,8 @@ function evaluateGates(toolName, toolInput, configPath) {
   if (oneshot) return oneshot;
   const direct = evaluateGatesInner(toolName, toolInput, configPath);
   if (direct) return direct;
+  const brandStandards = applyBrandStandardsHook(toolName, toolInput);
+  if (brandStandards) return brandStandards;
   const retry = canonicalRetryInput(toolName, toolInput);
   if (!retry) return null;
   return evaluateGatesInner(toolName, retry, configPath);

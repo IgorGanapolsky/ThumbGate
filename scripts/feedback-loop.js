@@ -1949,6 +1949,13 @@ function captureFeedback(params, options = {}) {
     if (riskScorer) riskScorer.trainAndPersistRiskModel(FEEDBACK_DIR);
   } catch { /* non-critical */ }
   try {
+    const { stageCandidateBrandRuleFromFeedback } = require('./brand-standards-gate');
+    const candidateRule = stageCandidateBrandRuleFromFeedback(feedbackEvent, { feedbackDir: FEEDBACK_DIR });
+    if (candidateRule) {
+      result.candidateBrandRule = candidateRule;
+    }
+  } catch { /* brand rule candidate learning is non-blocking */ }
+  try {
     const { trainAndPersistInterventionPolicy } = require('./intervention-policy');
     trainAndPersistInterventionPolicy(FEEDBACK_DIR);
   } catch { /* non-critical */ }
