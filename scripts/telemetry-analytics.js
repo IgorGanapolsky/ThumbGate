@@ -89,6 +89,12 @@ function normalizeInteger(value) {
   return Number.isFinite(parsed) ? Math.trunc(parsed) : null;
 }
 
+function normalizeFiniteNumber(value) {
+  if (value === undefined || value === null || value === '') return null;
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? Number(parsed.toFixed(4)) : null;
+}
+
 function normalizeRate(value) {
   if (value === undefined || value === null || value === '') return null;
   const parsed = Number(value);
@@ -601,6 +607,14 @@ function sanitizeTelemetryPayload(payload = {}, headers = {}) {
     isBot: pickFirstText(raw.isBot),
     interstitialSampled: pickFirstText(raw.interstitialSampled),
     interstitialSampleRate: normalizeRate(raw.interstitialSampleRate),
+    gateId: pickFirstText(raw.gateId, raw.gate),
+    latencyMs: normalizeInteger(raw.latencyMs),
+    signupToFirstBlockMs: normalizeInteger(raw.signupToFirstBlockMs),
+    elapsedSinceOpenMs: normalizeInteger(raw.elapsedSinceOpenMs),
+    minutesSinceInstall: normalizeFiniteNumber(raw.minutesSinceInstall),
+    minutesToFirstBlock: normalizeFiniteNumber(raw.minutesToFirstBlock),
+    daysSinceInstall: normalizeInteger(raw.daysSinceInstall),
+    visitorType: pickFirstText(raw.visitorType),
     attributionTagged: Boolean(
       pickFirstText(raw.utmSource, raw.utmMedium, raw.utmCampaign, raw.utmContent, raw.utmTerm)
     ),
