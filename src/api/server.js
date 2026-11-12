@@ -3629,8 +3629,9 @@ function getPublicBillingHeaders(traceId = '') {
     'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-ThumbGate-Trace-Id',
     'Access-Control-Expose-Headers': 'X-ThumbGate-Trace-Id',
   };
-  if (traceId) {
-    headers['X-ThumbGate-Trace-Id'] = traceId;
+  const cleanTrace = typeof traceId === 'string' && /^[a-zA-Z0-9._:-]{1,128}$/.test(traceId.trim()) ? traceId.trim() : '';
+  if (cleanTrace) {
+    headers['X-ThumbGate-Trace-Id'] = cleanTrace;
   }
   return headers;
 }
@@ -5848,6 +5849,7 @@ function extractBearerToken(req) {
 const PAID_AUTH_COOKIE_NAME = 'thumbgate_auth_session';
 const PAID_AUTH_SESSION_TTL_SECONDS = 30 * 24 * 60 * 60;
 const PAID_AUTH_MAX_SESSIONS = 4096;
+const SSO_STATE_COOKIE_NAME = 'thumbgate_sso_state';
 const paidAuthSessions = new Map();
 const GOOGLE_OAUTH_TOKEN_URL = 'https://oauth2.googleapis.com/token';
 const GOOGLE_OAUTH_JWKS_URL = 'https://www.googleapis.com/oauth2/v3/certs';
@@ -6236,10 +6238,17 @@ async function completeSsoSessionAndRedirect(res, { provider, email, ssoName = n
     sameSite: 'Lax',
     secure: true,
   });
+  const clearStateCookie = serializeCookie(SSO_STATE_COOKIE_NAME, '', {
+    maxAge: 0,
+    path: '/v1/cloud/sso',
+    httpOnly: true,
+    sameSite: 'Lax',
+    secure: true,
+  });
   res.writeHead(redirectStatus, {
     'X-Content-Type-Options': 'nosniff',
     'Cache-Control': 'no-store',
-    'Set-Cookie': setCookie,
+    'Set-Cookie': provider === 'google' ? [setCookie, clearStateCookie] : setCookie,
     Location: '/dashboard',
   });
   res.end();
@@ -6248,6 +6257,17 @@ async function completeSsoSessionAndRedirect(res, { provider, email, ssoName = n
 async function handleAppleSsoCallback(req, res) {
   try {
     const form = await parseFormBody(req, 64 * 1024);
+    const reqOrigin = String(req.headers.origin || '').trim().toLowerCase();
+    const secFetchSite = String(req.headers['sec-fetch-site'] || '').trim().toLowerCase();
+    const publicOrigin = String(getPublicOrigin(req) || '').toLowerCase();
+    const isLoopbackServer = /^http:\/\/(?:127\.0\.0\.1|localhost)(?::\d+)?$/.test(publicOrigin);
+    const isLoopbackOrigin = isLoopbackServer && /^http:\/\/(?:127\.0\.0\.1|localhost)(?::\d+)?$/.test(reqOrigin);
+    const allowedPostOrigins = new Set([APPLE_ISSUER, publicOrigin]);
+    if (!reqOrigin || (!allowedPostOrigins.has(reqOrigin) && !isLoopbackOrigin) || (secFetchSite === 'cross-site' && reqOrigin !== APPLE_ISSUER && !isLoopbackOrigin)) {
+      consumeSsoPendingState(form.state, 'apple');
+      redirectSsoError(res, 'invalid_origin', 303);
+      return;
+    }
     if (form.error) {
       consumeSsoPendingState(form.state, 'apple');
       redirectSsoError(res, 'oauth_denied', 303);
@@ -7421,11 +7441,18 @@ async function addContext(){
       if (provider === 'google' && googleClientId) {
         const stateNonce = issueSsoPendingState('google', callbackUrl);
         const googleAuthUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${encodeURIComponent(googleClientId)}&redirect_uri=${encodeURIComponent(callbackUrl)}&response_type=code&scope=openid%20email%20profile&state=${encodeURIComponent(stateNonce)}`;
+        const ssoStateCookie = serializeCookie(SSO_STATE_COOKIE_NAME, stateNonce, {
+          maxAge: Math.floor(SSO_OAUTH_STATE_TTL_MS / 1000),
+          path: '/v1/cloud/sso',
+          httpOnly: true,
+          sameSite: 'Lax',
+          secure: true,
+        });
         if (parsed.searchParams.get('format') === 'json') {
-          sendJson(res, 200, { ok: true, mode: 'oauth_redirect', provider, redirectUrl: googleAuthUrl }, { 'Cache-Control': 'no-store' });
+          sendJson(res, 200, { ok: true, mode: 'oauth_redirect', provider, redirectUrl: googleAuthUrl }, { 'Cache-Control': 'no-store', 'Set-Cookie': ssoStateCookie });
           return;
         }
-        res.writeHead(302, { 'X-Content-Type-Options': 'nosniff', Location: googleAuthUrl, 'Cache-Control': 'no-store' });
+        res.writeHead(302, { 'X-Content-Type-Options': 'nosniff', Location: googleAuthUrl, 'Cache-Control': 'no-store', 'Set-Cookie': ssoStateCookie });
         res.end();
         return;
       }
@@ -7471,6 +7498,13 @@ async function addContext(){
         if (!code) {
           consumeSsoPendingState(parsed.searchParams.get('state'), 'google');
           redirectSsoError(res, 'missing_code');
+          return;
+        }
+        const stateParam = parsed.searchParams.get('state');
+        const reqCookies = parseCookies(req && req.headers ? req.headers.cookie : '');
+        if (!stateParam || !safeKeyEqual(String(reqCookies[SSO_STATE_COOKIE_NAME] || ''), String(stateParam))) {
+          consumeSsoPendingState(stateParam, 'google');
+          redirectSsoError(res, 'invalid_state');
           return;
         }
         const stateEntry = consumeSsoPendingState(parsed.searchParams.get('state'), 'google');
@@ -10275,7 +10309,7 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
       return;
     }
 
-    if (req.method === 'OPTIONS' && (pathname === '/v1/billing/checkout' || pathname === '/v1/billing/session' || pathname === '/v1/billing/portal' || pathname === '/v1/billing/recommend-offer' || pathname === '/v1/design/self-correct')) {
+    if (req.method === 'OPTIONS' && (pathname === '/v1/billing/checkout' || pathname === '/v1/billing/session' || pathname === '/v1/billing/portal' || pathname === '/v1/billing/recommend-offer' || pathname === '/v1/design/self-correct' || pathname === '/v1/boost/evaluate' || pathname === '/v1/decisions/subq-snap')) {
       sendPublicBillingPreflight(res);
       return;
     }
@@ -10283,7 +10317,11 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
     if (req.method === 'POST' && pathname === '/v1/design/self-correct') {
       try {
         const body = await parseJsonBody(req);
-        const traceId = body.traceId || createTraceId('design');
+        if (!body || typeof body !== 'object' || Array.isArray(body)) {
+          throw createHttpError(400, 'JSON object body is required');
+        }
+        const rawTrace = typeof body.traceId === 'string' ? body.traceId.trim() : '';
+        const traceId = /^[a-zA-Z0-9._:-]{1,128}$/.test(rawTrace) ? rawTrace : createTraceId('design');
         const sourceCode = typeof body.sourceCode === 'string' ? body.sourceCode : '';
         if (!sourceCode && !Array.isArray(body.visualFindings)) {
           throw createHttpError(400, 'sourceCode (string) or visualFindings (array) is required');
@@ -10305,7 +10343,55 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
           type: PROBLEM_TYPES.BAD_REQUEST,
           title: 'Request Error',
           status: err.statusCode || 400,
-          detail: err.message || 'Unable to process design self-correction request.',
+          detail: err.statusCode ? err.message : 'Unable to process design self-correction request.',
+        }, getPublicBillingHeaders(''));
+      }
+      return;
+    }
+
+    if (req.method === 'POST' && pathname === '/v1/boost/evaluate') {
+      try {
+        const body = await parseJsonBody(req);
+        if (!body || typeof body !== 'object' || Array.isArray(body)) {
+          throw createHttpError(400, 'JSON object body is required');
+        }
+        const rawTrace = typeof body.traceId === 'string' ? body.traceId.trim() : '';
+        const traceId = /^[a-zA-Z0-9._:-]{1,128}$/.test(rawTrace) ? rawTrace : createTraceId('boost');
+        const { evaluateComputeBoostLane } = require('../openshell-lovable-engine');
+        const result = evaluateComputeBoostLane(body);
+        sendJson(res, 200, { ...result, traceId }, getPublicBillingHeaders(traceId));
+      } catch (err) {
+        sendProblem(res, {
+          type: PROBLEM_TYPES.BAD_REQUEST,
+          title: 'Request Error',
+          status: err.statusCode || 400,
+          detail: err.statusCode ? err.message : 'Unable to evaluate compute boost lane.',
+        }, getPublicBillingHeaders(''));
+      }
+      return;
+    }
+
+    if (req.method === 'POST' && pathname === '/v1/decisions/subq-snap') {
+      try {
+        const body = await parseJsonBody(req);
+        if (!body || typeof body !== 'object' || Array.isArray(body)) {
+          throw createHttpError(400, 'JSON object body is required');
+        }
+        const rawTrace = typeof body.traceId === 'string' ? body.traceId.trim() : '';
+        const traceId = /^[a-zA-Z0-9._:-]{1,128}$/.test(rawTrace) ? rawTrace : createTraceId('subq');
+        const isAuthedCaller = Boolean(resolvePaidSessionTier(extractApiKey(req), expectedApiKey, expectedOperatorKey));
+        const { callSubQSnapSystemOneApi } = require('../openshell-lovable-engine');
+        const result = await callSubQSnapSystemOneApi(body, {
+          confidenceThreshold: body.confidenceThreshold,
+          apiKey: isAuthedCaller ? undefined : '',
+        });
+        sendJson(res, result.ok ? 200 : 422, { ...result, traceId }, getPublicBillingHeaders(traceId));
+      } catch (err) {
+        sendProblem(res, {
+          type: PROBLEM_TYPES.BAD_REQUEST,
+          title: 'Request Error',
+          status: err.statusCode || 400,
+          detail: err.statusCode ? err.message : 'Unable to evaluate SubQ Snap decision.',
         }, getPublicBillingHeaders(''));
       }
       return;
@@ -11073,7 +11159,7 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
         const uiTarget = String((body.toolArgs && (body.toolArgs.file_path || body.toolArgs.filePath)) || '');
         const uiSource = String((body.toolArgs && (body.toolArgs.content ?? body.toolArgs.new_string ?? body.toolArgs.sourceCode)) || '');
         const hasVisual = Array.isArray(body.visualFindings) && body.visualFindings.length > 0;
-        if ((/\.(?:html?|jsx|tsx|css)$/i.test(uiTarget) && uiSource && uiSource.length <= 262144) || hasVisual) {
+        if (uiSource.length <= 262144 && ((/\.(?:html?|jsx|tsx|css)$/i.test(uiTarget) && Boolean(uiSource)) || hasVisual)) {
           const { runDesignSelfCorrectionPipeline } = require('../openshell-lovable-engine');
           verdict.designSelfCorrection = runDesignSelfCorrectionPipeline({
             sourceCode: uiSource,

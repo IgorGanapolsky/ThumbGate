@@ -443,10 +443,11 @@ function buildLineLookup(text) {
   };
 }
 
-/**
- * Linear O(N) span-preserving CSS AST parser for `.css` files and `<style>` blocks.
- */
-function parseCssRulesAst(source, baseOffset = 0, lineAt = buildLineLookup(source)) {
+const UNITLESS_JSX_PROPS = new Set([
+  'opacity', 'zIndex', 'fontWeight', 'lineHeight', 'flex', 'flexGrow', 'flexShrink', 'order', 'zoom', 'scale', 'aspectRatio', 'gridRow', 'gridColumn',
+]);
+
+function parseCssRulesAst(source, baseOffset = 0, lineAt = buildLineLookup(source), recursionDepth = 0) {
   const rules = [];
   const len = source.length;
   let i = 0;
@@ -457,7 +458,15 @@ function parseCssRulesAst(source, baseOffset = 0, lineAt = buildLineLookup(sourc
       i = endC === -1 ? len : endC + 2;
       continue;
     }
+    if (i >= len) break;
     const openBrace = source.indexOf('{', i);
+    if (source[i] === '@') {
+      const semi = source.indexOf(';', i);
+      if (semi !== -1 && (openBrace === -1 || semi < openBrace)) {
+        i = semi + 1;
+        continue;
+      }
+    }
     if (openBrace === -1) break;
     const selector = source.slice(i, openBrace).trim();
     let depth = 1; let j = openBrace + 1;
@@ -467,82 +476,168 @@ function parseCssRulesAst(source, baseOffset = 0, lineAt = buildLineLookup(sourc
     }
     const closeBrace = j - 1;
     if (depth !== 0) break;
-    if (selector.startsWith('@') && !selector.startsWith('@font-face')) {
-      rules.push(...parseCssRulesAst(source.slice(openBrace + 1, closeBrace), baseOffset + openBrace + 1, lineAt));
+    if (selector.startsWith('@')) {
+      if (recursionDepth < 8 && /^@(?:media|supports|layer|container|scope)\b/i.test(selector)) {
+        rules.push(...parseCssRulesAst(source.slice(openBrace + 1, closeBrace), baseOffset + openBrace + 1, lineAt, recursionDepth + 1));
+      }
       i = j;
       continue;
     }
     const declarations = {};
-    for (const part of source.slice(openBrace + 1, closeBrace).split(';')) {
+    for (const part of splitCssDeclarations(source.slice(openBrace + 1, closeBrace))) {
       const colon = part.indexOf(':');
       if (colon > 0) declarations[part.slice(0, colon).trim().toLowerCase()] = part.slice(colon + 1).trim();
     }
     const startOffset = baseOffset + i;
     const endOffset = baseOffset + closeBrace + 1;
     rules.push({
-      type: 'CssRule',
-      selector,
-      declarations,
-      bodyText: source.slice(openBrace + 1, closeBrace),
-      startOffset,
-      endOffset,
-      startLine: lineAt(startOffset),
-      endLine: lineAt(endOffset),
-      rawRule: source.slice(i, closeBrace + 1),
+      type: 'CssRule', selector, declarations, bodyText: source.slice(openBrace + 1, closeBrace),
+      startOffset, endOffset, startLine: lineAt(startOffset), endLine: lineAt(endOffset), rawRule: source.slice(i, closeBrace + 1),
     });
     i = closeBrace + 1;
   }
   return rules;
 }
 
+function splitCssDeclarations(str) {
+  const out = [];
+  let start = 0; let paren = 0; let quote = null;
+  for (let i = 0; i < str.length; i++) {
+    const ch = str[i];
+    if (quote) { if (ch === '\\') i++; else if (ch === quote) quote = null; }
+    else if (ch === '"' || ch === "'") quote = ch;
+    else if (ch === '(') paren++; else if (ch === ')' && paren > 0) paren--;
+    else if (ch === ';' && paren === 0) { out.push(str.slice(start, i)); start = i + 1; }
+  }
+  out.push(str.slice(start));
+  return out;
+}
+
+function extractSafeColorHex(val) {
+  const cleaned = String(val || '').replace(/(?:url|image-set)\s*\([^()]*\)/gi, ' ');
+  return /(#[0-9a-fA-F]{3,6})\b/.exec(cleaned);
+}
+
+function escapeCssIdent(ident) {
+  return String(ident || '').replace(/[^a-zA-Z0-9_-]/g, (ch) => `\\${ch}`);
+}
+
+function unescapeCssIdent(ident) {
+  return String(ident || '').replace(/\\(.)/g, '$1');
+}
+
+function splitTopLevelCommas(str) {
+  const out = [];
+  let start = 0; let paren = 0; let brace = 0; let quote = null;
+  for (let i = 0; i < str.length; i++) {
+    const ch = str[i];
+    if (quote) { if (ch === '\\') i++; else if (ch === quote) quote = null; }
+    else if (ch === '"' || ch === "'" || ch === '`') quote = ch;
+    else if (ch === '(') paren++; else if (ch === ')' && paren > 0) paren--;
+    else if (ch === '{') brace++; else if (ch === '}' && brace > 0) brace--;
+    else if (ch === ',' && paren === 0 && brace === 0) { out.push(str.slice(start, i)); start = i + 1; }
+  }
+  out.push(str.slice(start));
+  return out;
+}
+
+function formatJsxStyleValue(v) {
+  if (typeof v === 'number') return String(v);
+  const s = String(v);
+  if (s.includes("'")) return JSON.stringify(s);
+  return `'${s.replace(/\\/g, '\\\\').replace(/\n/g, '\\n').replace(/\r/g, '\\r')}'`;
+}
+
 function parseStyleEntries(attrsRaw) {
-  const sIdx = attrsRaw ? attrsRaw.search(/\bstyle\s*=/) : -1;
-  if (sIdx >= 0) {
-    let cur = sIdx + attrsRaw.slice(sIdx).indexOf('=') + 1;
+  const sMatch = /(?:^|[\s"'`}])(style\s*=)/.exec(attrsRaw || '');
+  if (sMatch) {
+    const sIdx = sMatch.index + (sMatch[0].length - sMatch[1].length);
+    let cur = sIdx + sMatch[1].length;
     while (cur < attrsRaw.length && /\s/.test(attrsRaw[cur])) cur++;
     if (attrsRaw.startsWith('{{', cur)) {
-      let d = 2; let k = cur + 2;
+      let d = 2; let k = cur + 2; let quote = null;
       while (k < attrsRaw.length && d > 0) {
-        if (attrsRaw[k] === '{') d++; else if (attrsRaw[k] === '}') d--;
+        const ch = attrsRaw[k];
+        if (quote) { if (ch === '\\') k++; else if (ch === quote) quote = null; }
+        else if (ch === '"' || ch === "'" || ch === '`') quote = ch;
+        else if (ch === '{') d++; else if (ch === '}') d--;
         k++;
       }
       const inner = attrsRaw.slice(cur + 2, Math.max(cur + 2, k - 2));
       const map = {};
-      for (const part of inner.split(',')) {
-        const m = /^\s*([a-zA-Z]+)\s*:\s*(?:'([^']*)'|"([^"]*)"|(-?\d+(?:\.\d+)?))\s*$/.exec(part);
-        if (m) map[m[1]] = m[4] !== undefined ? `${m[4]}px` : (m[2] ?? m[3]);
+      const preserved = [];
+      for (const part of splitTopLevelCommas(inner)) {
+        const trimmed = part.trim();
+        if (!trimmed) continue;
+        const m = /^([a-zA-Z_$][a-zA-Z0-9_$]*)\s*:\s*(?:'((?:\\.|[^'\\])*)'|"((?:\\.|[^"\\])*)"|(-?\d+(?:\.\d+)?))$/.exec(trimmed);
+        if (m) {
+          const key = m[1];
+          if (m[4] !== undefined) {
+            map[key] = UNITLESS_JSX_PROPS.has(key) ? Number(m[4]) : `${m[4]}px`;
+          } else {
+            const rawStr = m[2] !== undefined ? m[2].replace(/\\'/g, "'").replace(/\\\\/g, '\\') : m[3].replace(/\\"/g, '"').replace(/\\\\/g, '\\');
+            map[key] = rawStr;
+          }
+          preserved.push({ type: 'prop', key, static: true });
+        } else {
+          const dynKey = /^([a-zA-Z_$][a-zA-Z0-9_$]*)\s*:/.exec(trimmed);
+          if (dynKey) preserved.push({ type: 'prop', key: dynKey[1], static: false, raw: trimmed });
+          else preserved.push({ type: 'raw', raw: trimmed });
+        }
       }
-      return { kind: 'jsx', rawMatch: attrsRaw.slice(sIdx, k), map };
+      return { kind: 'jsx', rawMatch: attrsRaw.slice(sIdx, k), map, preserved };
     }
     if (attrsRaw[cur] === '"' || attrsRaw[cur] === "'") {
       const q = attrsRaw[cur];
       const endQ = attrsRaw.indexOf(q, cur + 1);
       if (endQ > cur) {
         const map = {};
-        for (const decl of attrsRaw.slice(cur + 1, endQ).split(';')) {
+        for (const decl of splitCssDeclarations(attrsRaw.slice(cur + 1, endQ))) {
           const idx = decl.indexOf(':');
           if (idx > 0) map[decl.slice(0, idx).trim().toLowerCase()] = decl.slice(idx + 1).trim();
         }
-        return { kind: 'css', rawMatch: attrsRaw.slice(sIdx, endQ + 1), map };
+        return { kind: 'css', rawMatch: attrsRaw.slice(sIdx, endQ + 1), map, preserved: [] };
       }
     }
   }
-  return { kind: null, rawMatch: null, map: {} };
+  return { kind: null, rawMatch: null, map: {}, preserved: [] };
 }
 
-function serializeStyleAttr(kind, map) {
-  const entries = Object.entries(map).filter(([, v]) => v !== undefined && v !== '');
-  if (kind === 'jsx') {
-    const toCamel = (k) => k.replace(/-([a-z])/g, (_, ch) => ch.toUpperCase());
-    return `style={{ ${entries.map(([k, v]) => `${toCamel(k)}: '${v}'`).join(', ')} }}`;
-  }
+function serializeStyleAttr(kind, map, preserved = []) {
+  const toCamel = (k) => k.replace(/-([a-z])/g, (_, ch) => ch.toUpperCase());
   const toKebab = (k) => k.replace(/[A-Z]/g, (ch) => `-${ch.toLowerCase()}`);
+  if (kind === 'jsx') {
+    const normalizedMap = new Map();
+    for (const [k, v] of Object.entries(map)) {
+      if (v !== undefined && v !== '') normalizedMap.set(toCamel(k), v);
+    }
+    const emitted = new Set();
+    const out = [];
+    for (const item of preserved) {
+      if (typeof item === 'string') { out.push(item); continue; }
+      if (item.type === 'raw') { out.push(item.raw); continue; }
+      const ck = toCamel(item.key);
+      if (emitted.has(ck)) continue;
+      if (normalizedMap.has(ck)) {
+        out.push(`${ck}: ${formatJsxStyleValue(normalizedMap.get(ck))}`);
+        emitted.add(ck);
+      } else if (!item.static) {
+        out.push(item.raw);
+        emitted.add(ck);
+      }
+    }
+    for (const [ck, v] of normalizedMap.entries()) {
+      if (!emitted.has(ck)) out.push(`${ck}: ${formatJsxStyleValue(v)}`);
+    }
+    return `style={{ ${out.join(', ')} }}`;
+  }
+  const entries = Object.entries(map).filter(([, v]) => v !== undefined && v !== '');
   return `style="${entries.map(([k, v]) => `${toKebab(k)}: ${v}`).join('; ')}"`;
 }
 
 function resolveColorFromNode(classes, styleMap, kind) {
   const styleVal = kind === 'fg' ? styleMap.color : (styleMap.backgroundColor || styleMap['background-color'] || styleMap.background);
-  const styleHex = styleVal && /(#[0-9a-fA-F]{3,6})\b/.exec(String(styleVal));
+  const styleHex = styleVal && extractSafeColorHex(styleVal);
   if (styleHex) return { hex: styleHex[1], token: null, fromStyle: true };
   const prefix = kind === 'fg' ? 'text-' : 'bg-';
   for (const cls of classes) {
@@ -550,15 +645,11 @@ function resolveColorFromNode(classes, styleMap, kind) {
     const suffix = cls.slice(prefix.length);
     const arb = /^\[(#[0-9a-fA-F]{3,6})\]$/.exec(suffix);
     if (arb) return { hex: arb[1], token: cls, fromStyle: false };
-    if (TAILWIND_HEX_PALETTE[suffix]) return { hex: TAILWIND_HEX_PALETTE[suffix], token: cls, fromStyle: false };
+    if (Object.hasOwn(TAILWIND_HEX_PALETTE, suffix)) return { hex: TAILWIND_HEX_PALETTE[suffix], token: cls, fromStyle: false };
   }
   return null;
 }
 
-/**
- * Linear O(N) state-machine HTML/JSX + embedded <style> AST parser.
- * Handles arbitrary balanced JSX `{...}` props (`onClick={() => fn(x > 0)}`, `{...rest}`), quotes, comments, and CSS rules.
- */
 function parseDesignAst(source, defaultBgHex = '#0f172a') {
   const text = String(source || '');
   const lineAt = buildLineLookup(text);
@@ -581,6 +672,12 @@ function parseDesignAst(source, defaultBgHex = '#0f172a') {
       i = endC === -1 ? len : endC + 3;
       continue;
     }
+    const lineStart = text.lastIndexOf('\n', lt - 1) + 1;
+    if (/^\s*\/\//.test(text.slice(lineStart, lt))) {
+      const nl = text.indexOf('\n', lt);
+      i = nl === -1 ? len : nl + 1;
+      continue;
+    }
     let cur = lt + 1;
     let closing = false;
     if (text[cur] === '/') { closing = true; cur++; }
@@ -596,6 +693,12 @@ function parseDesignAst(source, defaultBgHex = '#0f172a') {
       if (quote) {
         if (ch === '\\') cur++;
         else if (ch === quote) quote = null;
+      } else if (ch === '/' && text[cur + 1] === '*' && braceDepth > 0) {
+        const cEnd = text.indexOf('*/', cur + 2);
+        cur = cEnd === -1 ? len : cEnd + 1;
+      } else if (ch === '/' && text[cur + 1] === '/' && braceDepth > 0) {
+        const nl = text.indexOf('\n', cur + 2);
+        cur = nl === -1 ? len : nl;
       } else if (ch === '"' || ch === "'" || ch === '`') {
         quote = ch;
       } else if (ch === '{') {
@@ -619,29 +722,29 @@ function parseDesignAst(source, defaultBgHex = '#0f172a') {
 
     const selfClose = text[cur - 1] === '/' ? '/' : '';
     const attrsRaw = text.slice(nameStart + tagName.length, selfClose ? cur - 1 : cur);
-    if (tagName.toLowerCase() === 'style' && !selfClose) {
-      const closeStyle = text.toLowerCase().indexOf('</style>', tagEnd);
-      if (closeStyle >= tagEnd) {
-        cssRules.push(...parseCssRulesAst(text.slice(tagEnd, closeStyle), tagEnd, lineAt));
-        i = closeStyle + 8;
-        continue;
+    const tagLower = tagName.toLowerCase();
+    if ((tagLower === 'style' || tagLower === 'script') && !selfClose) {
+      const closeRe = tagLower === 'style' ? /<\/style\b[^<>]*>/ig : /<\/script\b[^<>]*>/ig;
+      closeRe.lastIndex = tagEnd;
+      const closeMatch = closeRe.exec(text);
+      if (!closeMatch) break;
+      if (tagLower === 'style') {
+        const styleBody = text.slice(tagEnd, closeMatch.index);
+        if (!styleBody.trimStart().startsWith('{')) cssRules.push(...parseCssRulesAst(styleBody, tagEnd, lineAt));
       }
-    }
-    if (tagName.toLowerCase() === 'script' && !selfClose) {
-      const closeScript = text.toLowerCase().indexOf('</script>', tagEnd);
-      i = closeScript >= tagEnd ? closeScript + 9 : tagEnd;
+      i = closeMatch.index + closeMatch[0].length;
       continue;
     }
 
     const parent = stack[stack.length - 1];
-    const idMatch = /\bid=(?:"([^"]+)"|'([^']+)')/.exec(attrsRaw);
-    const classMatch = /\b(class|className)=(?:"([^"]*)"|'([^']*)')/.exec(attrsRaw);
-    const classes = classMatch ? (classMatch[2] ?? classMatch[3] ?? '').trim().split(/\s+/).filter(Boolean) : [];
+    const idMatch = /(?:^|[\s"'`}])id=(?:"([^"]+)"|'([^']+)')/.exec(attrsRaw);
+    const classMatch = /(?:^|[\s"'`}])((class|className)=(?:"([^"]*)"|'([^']*)'))/.exec(attrsRaw);
+    const classes = classMatch ? (classMatch[3] ?? classMatch[4] ?? '').trim().split(/\s+/).filter(Boolean) : [];
     const styleInfo = parseStyleEntries(attrsRaw);
     const id = idMatch ? (idMatch[1] ?? idMatch[2]) : null;
-    const selector = id ? `#${id}` : (classes[0] && !classes[0].includes('[') && !classes[0].includes(':') ? `${tagName}.${classes[0]}` : tagName);
-    const matchedCssBg = cssRules.find((r) => r.selector === selector || (id && r.selector === `#${id}`) || classes.some((c) => r.selector === `.${c}`));
-    const cssBgHex = matchedCssBg && /(#[0-9a-fA-F]{3,6})\b/.exec(String(matchedCssBg.declarations['background-color'] || matchedCssBg.declarations.background || ''));
+    const selector = id ? `#${escapeCssIdent(id)}` : (classes[0] && !classes[0].includes('[') && !classes[0].includes(':') ? `${tagName}.${escapeCssIdent(classes[0])}` : tagName);
+    const matchedCssBg = cssRules.find((r) => r.selector === selector || (id && r.selector === `#${escapeCssIdent(id)}`) || classes.some((c) => r.selector === `.${escapeCssIdent(c)}`));
+    const cssBgHex = matchedCssBg && extractSafeColorHex(matchedCssBg.declarations['background-color'] || matchedCssBg.declarations.background || '');
     const ownBg = resolveColorFromNode(classes, styleInfo.map, 'bg') || (cssBgHex ? { hex: cssBgHex[1], token: null, fromStyle: true } : null);
     const effectiveBgHex = ownBg ? ownBg.hex : parent.inheritedBgHex;
     const siblingIdx = parent.children.filter((c) => c.tagName === tagName).length;
@@ -660,8 +763,8 @@ function parseDesignAst(source, defaultBgHex = '#0f172a') {
       endOffset: tagEnd,
       startLine: lineAt(lt),
       endLine: lineAt(tagEnd),
-      classAttrName: classMatch ? classMatch[1] : (/\bclassName=/.test(text) ? 'className' : 'class'),
-      classRawMatch: classMatch ? classMatch[0] : null,
+      classAttrName: classMatch ? classMatch[2] : (/\bclassName=/.test(text) ? 'className' : 'class'),
+      classRawMatch: classMatch ? classMatch[1] : null,
       classes,
       styleInfo,
       ownBgHex: ownBg ? ownBg.hex : null,
@@ -676,35 +779,45 @@ function parseDesignAst(source, defaultBgHex = '#0f172a') {
   return { root, nodes, cssRules, language: /\bclassName=|\bstyle=\{\{/.test(text) ? 'jsx' : 'html' };
 }
 
+const SAFE_VISUAL_SELECTOR_RE = /^(?:#[a-zA-Z0-9_\\-]+|\.[a-zA-Z0-9_\\-]+|[a-zA-Z][a-zA-Z0-9_-]*(?:(?:#|\.)[a-zA-Z0-9_\\-]+)?)$/;
+
 function normalizeVisualFindings(findings = []) {
-  const list = Array.isArray(findings) ? findings : (findings ? [findings] : []);
-  return list.map((item) => {
-    if (typeof item === 'string') {
-      const selMatch = /(#[a-zA-Z0-9_-]+|\.[a-zA-Z0-9_-]+|\b(?:button|a|p|span|h[1-6]|div|section|img|input)(?:\.[a-zA-Z0-9_-]+)?)/i.exec(item);
-      const issue = /colorblind|red\/green/i.test(item) ? 'colorblind_unsafe_status'
-        : /contrast/i.test(item) ? 'low_contrast'
-          : /tap|touch|target|44px|small\s+button/i.test(item) ? 'undersized_tap_target'
-            : /overflow|clip|viewport|horizontal/i.test(item) ? 'fixed_width_mobile_overflow'
-              : /focus|outline|ring/i.test(item) ? 'missing_focus_ring'
-                : /cls|shift|aspect|dimension/i.test(item) ? 'cls_unsized_media' : 'low_contrast';
-      return { selector: selMatch ? selMatch[1] : null, issue, raw: item };
-    }
-    return {
-      ...item,
-      fgHex: item.fgHex || item.foregroundHex,
-      bgHex: item.bgHex || item.backgroundHex,
-      issue: String(item.issue || item.type || item.code || 'low_contrast'),
-    };
-  });
+  const rawList = Array.isArray(findings) ? findings : (findings ? [findings] : []);
+  return rawList
+    .slice(0, 64)
+    .filter((item) => typeof item === 'string' || (item !== null && typeof item === 'object' && !Array.isArray(item)))
+    .map((item) => {
+      if (typeof item === 'string') {
+        const selMatch = /(#[a-z0-9_-]+|\.[a-z0-9_-]+|\b(?:button|a|p|span|h[1-6]|div|section|img|input)(?:\.[a-z0-9_-]+)?)/i.exec(item);
+        const issue = /colorblind|red\/green/i.test(item) ? 'colorblind_unsafe_status'
+          : /contrast/i.test(item) ? 'low_contrast'
+            : /tap|touch|target|44px|small\s+button/i.test(item) ? 'undersized_tap_target'
+              : /overflow|clip|viewport|horizontal/i.test(item) ? 'fixed_width_mobile_overflow'
+                : /focus|outline|ring/i.test(item) ? 'missing_focus_ring'
+                  : /cls|shift|aspect|dimension/i.test(item) ? 'cls_unsized_media' : 'low_contrast';
+        return { selector: selMatch ? selMatch[1] : null, issue, raw: item };
+      }
+      const rawSel = typeof item.selector === 'string' ? item.selector.trim() : '';
+      return {
+        ...item,
+        selector: rawSel && SAFE_VISUAL_SELECTOR_RE.test(rawSel) ? rawSel : null,
+        fgHex: typeof (item.fgHex || item.foregroundHex) === 'string' ? (item.fgHex || item.foregroundHex) : null,
+        bgHex: typeof (item.bgHex || item.backgroundHex) === 'string' ? (item.bgHex || item.backgroundHex) : null,
+        issue: String(item.issue || item.type || item.code || 'low_contrast'),
+      };
+    });
 }
 
 function nodeMatchesSelector(node, sel) {
   if (!sel) return true;
   const s = String(sel).trim();
   if (s === node.astPath || s === node.selector || s === node.tagName) return true;
-  if (s.startsWith('#')) return node.id === s.slice(1);
-  if (s.startsWith('.')) return node.classes.includes(s.slice(1));
-  const [tag, cls] = s.split('.');
+  if (s.startsWith('#')) return node.id === unescapeCssIdent(s.slice(1));
+  if (s.startsWith('.')) return node.classes.includes(unescapeCssIdent(s.slice(1)));
+  const dotIdx = s.search(/(?<!\\)\./);
+  if (dotIdx === -1) return node.tagName.toLowerCase() === s.toLowerCase();
+  const tag = s.slice(0, dotIdx);
+  const cls = unescapeCssIdent(s.slice(dotIdx + 1));
   return (!tag || node.tagName.toLowerCase() === tag.toLowerCase()) && (!cls || node.classes.includes(cls));
 }
 
@@ -717,8 +830,8 @@ function inspectCssAstRules(source, ast, visualQueue, options = {}) {
   for (const rule of ast.cssRules || []) {
     const decls = { ...rule.declarations };
     const ruleProps = {};
-    const fgM = /(#[0-9a-fA-F]{3,6})\b/.exec(String(decls.color || ''));
-    const bgM = /(#[0-9a-fA-F]{3,6})\b/.exec(String(decls['background-color'] || decls.background || '')) || [null, defaultBg];
+    const fgM = extractSafeColorHex(decls.color || '');
+    const bgM = extractSafeColorHex(decls['background-color'] || decls.background || '') || [null, defaultBg];
     const vfC = visualQueue.find((v) => (!v.selector || v.selector === rule.selector) && /contrast/i.test(v.issue));
     if (fgM || vfC) {
       const fgHex = vfC?.fgHex || fgM?.[1] || '#64748b';
@@ -744,29 +857,13 @@ function inspectCssAstRules(source, ast, visualQueue, options = {}) {
     if (Object.keys(ruleProps).length > 0) {
       const body = Object.entries(decls).map(([k, v]) => `${k}: ${v};`).join(' ');
       const afterRule = `${rule.selector} { ${body} }`;
-      inlineEdits.push({
-        filePath: options.filePath || null,
-        nodeType: 'CssRule',
-        astPath: `css:${rule.selector}`,
-        selector: rule.selector,
-        startOffset: rule.startOffset,
-        endOffset: rule.endOffset,
-        startLine: rule.startLine,
-        endLine: rule.endLine,
-        expectedChunkHash: computeChunkHash(rule.rawRule),
-        before: rule.rawRule,
-        after: afterRule,
-      });
+      inlineEdits.push({ filePath: options.filePath || null, nodeType: 'CssRule', astPath: `css:${rule.selector}`, selector: rule.selector, startOffset: rule.startOffset, endOffset: rule.endOffset, startLine: rule.startLine, endLine: rule.endLine, expectedChunkHash: computeChunkHash(rule.rawRule), before: rule.rawRule, after: afterRule });
       cssOverrides.push({ selector: rule.selector, properties: ruleProps, cssRule: `${rule.selector} { ${Object.entries(ruleProps).map(([k, v]) => `${k}: ${v};`).join(' ')} }` });
     }
   }
   return { patches, inlineEdits, cssOverrides };
 }
 
-/**
- * Lovable Active Self-Correcting AST Design Engine: inspects HTML/JSX + CSS AST + visual-model findings
- * and outputs hash-anchored inline AST code edits, exact CSS override rules, Tailwind utility adjustments, and `patchedSource`.
- */
 function inspectAndPatchDesignSource(source, options = {}) {
   const rawSource = String(source || '');
   const minContrast = Number(options.minContrast || 4.5);
@@ -937,11 +1034,11 @@ function inspectAndPatchDesignSource(source, options = {}) {
       let updatedAttrs = node.attrsRaw;
       if (mutatedClasses) {
         const serializedClass = `${node.classAttrName}="${classes.join(' ')}"`;
-        updatedAttrs = node.classRawMatch ? updatedAttrs.replace(node.classRawMatch, serializedClass) : `${updatedAttrs} ${serializedClass}`;
+        updatedAttrs = node.classRawMatch ? updatedAttrs.replace(node.classRawMatch, () => serializedClass) : `${updatedAttrs} ${serializedClass}`;
       }
       if (mutatedStyle) {
-        const serializedStyle = serializeStyleAttr(node.styleInfo.kind || (ast.language === 'jsx' ? 'jsx' : 'css'), styleMap);
-        updatedAttrs = node.styleInfo.rawMatch ? updatedAttrs.replace(node.styleInfo.rawMatch, serializedStyle) : `${updatedAttrs} ${serializedStyle}`;
+        const serializedStyle = serializeStyleAttr(node.styleInfo.kind || (ast.language === 'jsx' ? 'jsx' : 'css'), styleMap, node.styleInfo.preserved);
+        updatedAttrs = node.styleInfo.rawMatch ? updatedAttrs.replace(node.styleInfo.rawMatch, () => serializedStyle) : `${updatedAttrs} ${serializedStyle}`;
       }
       const afterTag = `<${node.tagName}${updatedAttrs}${node.selfClose}>`;
       inlineEdits.push({
@@ -1019,10 +1116,61 @@ function remediateVisualFindings(source, visualFindings = [], options = {}) {
   return inspectAndPatchDesignSource(source, { ...options, visualFindings });
 }
 
+function makeFailedDesignReport(error) {
+  return {
+    ok: false,
+    error,
+    mode: 'active_self_correcting_design_engine',
+    changed: false,
+    language: 'html',
+    issueCount: 0,
+    patches: [],
+    inlineEdits: [],
+    cssOverrides: [],
+    stylesheetOverride: '',
+    tailwindAdjustments: [],
+    patchedSource: '',
+    appliedInPlace: false,
+    guardReceipt: null,
+    verification: { changed: false, remainingIssueCount: 0, remainingIssues: [] },
+  };
+}
+
 function runDesignSelfCorrectionPipeline(input = {}) {
+  const maxBytes = Math.max(4096, Number(process.env.THUMBGATE_DESIGN_MAX_SOURCE_BYTES) || 262144);
   const filePath = input.filePath ? path.resolve(String(input.filePath)) : null;
   let sourceCode = typeof input.sourceCode === 'string' ? input.sourceCode : '';
-  if (!sourceCode && filePath && fs.existsSync(filePath)) sourceCode = fs.readFileSync(filePath, 'utf8');
+  if (!sourceCode && input.allowDiskRead === true && filePath) {
+    let lst;
+    try {
+      lst = fs.lstatSync(filePath);
+    } catch {
+      return makeFailedDesignReport('file_not_found');
+    }
+    if (lst.isSymbolicLink() || !lst.isFile()) {
+      return makeFailedDesignReport('symlink_or_non_regular_file_rejected');
+    }
+    if (input.workspaceRoot) {
+      let realRoot;
+      let realFile;
+      try {
+        realRoot = fs.realpathSync(path.resolve(String(input.workspaceRoot)));
+        realFile = fs.realpathSync(filePath);
+      } catch {
+        return makeFailedDesignReport('outside_workspace_root');
+      }
+      if (realFile !== realRoot && !realFile.startsWith(realRoot + path.sep)) {
+        return makeFailedDesignReport('outside_workspace_root');
+      }
+    }
+    if (lst.size > maxBytes) {
+      return makeFailedDesignReport('source_too_large');
+    }
+    sourceCode = fs.readFileSync(filePath, 'utf8');
+  }
+  if (Buffer.byteLength(sourceCode, 'utf8') > maxBytes) {
+    return makeFailedDesignReport('source_too_large');
+  }
   const report = inspectAndPatchDesignSource(sourceCode, {
     filePath,
     visualFindings: input.visualFindings,
@@ -1033,11 +1181,15 @@ function runDesignSelfCorrectionPipeline(input = {}) {
   const postReport = report.patchedSource ? inspectAndPatchDesignSource(report.patchedSource, { defaultBgHex: input.defaultBgHex, minContrast: input.minContrast }) : { issueCount: 0, patches: [] };
   let appliedInPlace = false;
   let guardReceipt = null;
-  if (input.applyInPlace === true && filePath && sourceCode && report.changed) {
-    guardReceipt = evaluateHashAnchoredEdit({ filePath, targetContent: sourceCode, expectedHash: computeChunkHash(sourceCode) });
-    if (guardReceipt.allowed) {
-      fs.writeFileSync(filePath, report.patchedSource, 'utf8');
-      appliedInPlace = true;
+  if (input.applyInPlace === true && input.allowDiskRead === true && filePath && sourceCode && report.changed) {
+    let currentStat = null;
+    try { currentStat = fs.lstatSync(filePath); } catch { currentStat = null; }
+    if (currentStat && !currentStat.isSymbolicLink() && currentStat.isFile()) {
+      guardReceipt = evaluateHashAnchoredEdit({ filePath, targetContent: sourceCode, expectedHash: computeChunkHash(sourceCode) });
+      if (guardReceipt.allowed) {
+        fs.writeFileSync(filePath, report.patchedSource, 'utf8');
+        appliedInPlace = true;
+      }
     }
   }
   return {
@@ -1051,6 +1203,253 @@ function runDesignSelfCorrectionPipeline(input = {}) {
       remainingIssueCount: postReport.issueCount,
       remainingIssues: postReport.patches.map((p) => ({ type: p.type, selector: p.selector })),
     },
+  };
+}
+
+function parseFiniteNonNeg(v, fallback = 0) {
+  if (v === undefined || v === null || v === '') return { ok: true, value: fallback, provided: false };
+  if (typeof v === 'boolean' || typeof v === 'object') return { ok: false, value: 0, provided: true };
+  const n = Number(v);
+  if (!Number.isFinite(n) || n < 0) return { ok: false, value: 0, provided: true };
+  return { ok: true, value: n, provided: true };
+}
+
+function scrubBoostTelemetryMetadata(event = {}) {
+  const ev = event && typeof event === 'object' && !Array.isArray(event) ? event : {};
+  const safeModel = String(ev.model || 'unknown').replace(/[^a-zA-Z0-9._:-]/g, '').slice(0, 64) || 'unknown';
+  const safeGate = ev.gateRuleId ? String(ev.gateRuleId).replace(/[^a-zA-Z0-9._:-]/g, '').slice(0, 64) : null;
+  const inTok = parseFiniteNonNeg(ev.inputTokens, 0);
+  const outTok = parseFiniteNonNeg(ev.outputTokens, 0);
+  const cost = parseFiniteNonNeg(ev.costUsd, 0);
+  const rawTs = typeof ev.timestamp === 'string' ? ev.timestamp.trim() : '';
+  const safeTs = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,9})?(?:Z|[+-]\d{2}:\d{2})$/.test(rawTs) ? rawTs : new Date().toISOString();
+  return {
+    storesPrompts: false,
+    storesResponses: false,
+    storesRepoPromptContext: false,
+    metadata: {
+      timestamp: safeTs,
+      lane: ev.lane === 'boost_lane' ? 'boost_lane' : 'primary_subscription',
+      model: safeModel,
+      inputTokens: Math.trunc(inTok.value),
+      outputTokens: Math.trunc(outTok.value),
+      costUsd: Math.round(cost.value * 1e6) / 1e6,
+      gateRuleId: safeGate,
+    },
+  };
+}
+
+function evaluateComputeBoostLane(rawInput = {}) {
+  const input = rawInput && typeof rawInput === 'object' && !Array.isArray(rawInput) ? rawInput : null;
+  if (!input) {
+    return { ok: false, allowed: false, stopReason: 'invalid_boost_input', selectedLane: 'boost_lane', economics: { cashWithdrawalAllowed: false, canOverspend: false, outboundCashSpendUsd: 0 }, balances: { totalAvailableBoostUsd: 0, deductedBoostUsd: 0, remainingBoostUsd: 0, savedBoostUsd: 0 }, metering: { meteredUnits: 0 }, telemetry: scrubBoostTelemetryMetadata({}) };
+  }
+  const grossP = parseFiniteNonNeg(input.grossBoostUsd, 0);
+  const sharedP = parseFiniteNonNeg(input.sharedPoolReleaseUsd, 0);
+  const balP = parseFiniteNonNeg(input.boostBalanceUsd, 0);
+  const estP = parseFiniteNonNeg(input.estimatedRequestUsd, 0);
+  const inFlightP = parseFiniteNonNeg(input.activeInFlightRequests, 0);
+  const opKind = String(input.operationKind || 'cloud_chat_reply').trim().toLowerCase();
+  const isUnmeteredLocal = opKind === 'pre_tool_use_gate' || opKind === 'kb_setup_upload' || opKind === 'greeting_no_model' || input.blockedBeforeModel === true;
+  const chatP = parseFiniteNonNeg(input.chatReplies, isUnmeteredLocal ? 0 : 1);
+  const docsP = parseFiniteNonNeg(input.documentsUploaded, 0);
+  const pagesP = parseFiniteNonNeg(input.pagesGenerated, 0);
+  const tasksP = parseFiniteNonNeg(input.tasksExecuted, 0);
+  if (![grossP, sharedP, balP, estP, inFlightP, chatP, docsP, pagesP, tasksP].every((x) => x.ok)) {
+    return { ok: false, allowed: false, stopReason: 'invalid_boost_input', selectedLane: 'boost_lane', economics: { cashWithdrawalAllowed: false, canOverspend: false, outboundCashSpendUsd: 0 }, balances: { totalAvailableBoostUsd: 0, deductedBoostUsd: 0, remainingBoostUsd: 0, savedBoostUsd: 0 }, metering: { meteredUnits: 0 }, telemetry: scrubBoostTelemetryMetadata(input.telemetry) };
+  }
+  const grossBoostUsd = grossP.value;
+  const platformFeeUsd = Math.round(grossBoostUsd * 0.05 * 100) / 100;
+  const creditedCapacityUsd = Math.round((grossBoostUsd - platformFeeUsd) * 100) / 100;
+  const totalAvailableBoostUsd = Math.round((balP.value + creditedCapacityUsd + sharedP.value) * 1e6) / 1e6;
+  const chatReplies = Math.trunc(chatP.value);
+  const documentsUploaded = Math.trunc(docsP.value);
+  const pagesGenerated = Math.trunc(pagesP.value);
+  const tasksExecuted = Math.trunc(tasksP.value);
+  const meteredUnits = isUnmeteredLocal ? 0 : (chatReplies + documentsUploaded + pagesGenerated + tasksExecuted);
+  const effectiveCostUsd = isUnmeteredLocal ? 0 : estP.value;
+  const savedBoostUsd = input.blockedBeforeModel === true ? estP.value : 0;
+  const primaryStatus = String(input.primarySubscriptionStatus || 'active').trim().toLowerCase();
+  const primaryPaused = primaryStatus === 'window_paused' || primaryStatus === 'rate_limited' || primaryStatus === 'none';
+  const inFlight = Math.trunc(inFlightP.value);
+  const selectedLane = isUnmeteredLocal ? 'local_zero_burn' : (primaryPaused ? 'boost_lane' : 'primary_subscription');
+  let allowed = true;
+  let stopReason = null;
+  if (selectedLane === 'boost_lane') {
+    if (inFlight >= 1) { allowed = false; stopReason = 'boost_single_flight_busy'; }
+    else if (effectiveCostUsd <= 0) { allowed = false; stopReason = totalAvailableBoostUsd <= 0 ? 'boost_balance_exhausted' : 'invalid_boost_input'; }
+    else if (effectiveCostUsd > totalAvailableBoostUsd) { allowed = false; stopReason = 'boost_balance_exhausted'; }
+  }
+  const deductedBoostUsd = allowed && selectedLane === 'boost_lane' ? effectiveCostUsd : 0;
+  const remainingBoostUsd = Math.max(0, Math.round((totalAvailableBoostUsd - deductedBoostUsd) * 1e6) / 1e6);
+  return {
+    ok: true,
+    allowed,
+    stopReason,
+    selectedLane,
+    economics: { grossBoostUsd, creditedCapacityUsd, platformFeeUsd, developerCapacitySharePct: 95, platformFeePct: 5, cashWithdrawalAllowed: false, supporterAccountRequired: false, canOverspend: false, outboundCashSpendUsd: 0 },
+    balances: { totalAvailableBoostUsd, deductedBoostUsd, remainingBoostUsd, savedBoostUsd },
+    metering: {
+      operationKind: opKind,
+      isUnmeteredLocal,
+      meteredUnits,
+      regenerationsCountFresh: true,
+      breakdown: isUnmeteredLocal ? { chatReplies: 0, documentsUploaded: 0, pagesGenerated: 0, tasksExecuted: 0 } : { chatReplies, documentsUploaded, pagesGenerated, tasksExecuted },
+    },
+    telemetry: scrubBoostTelemetryMetadata({ ...(input.telemetry && typeof input.telemetry === 'object' ? input.telemetry : {}), lane: selectedLane === 'boost_lane' ? 'boost_lane' : 'primary_subscription', costUsd: deductedBoostUsd }),
+  };
+}
+
+const SUBQ_SNAP_MODELS = new Set(['subq-snap-1.2', 'subq-snap-latest', 'subq-snap']);
+const SUBQ_ALLOWED_IMAGE_MEDIA = new Set(['image/png', 'image/jpeg', 'image/webp']);
+const SUBQ_SAFE_KEY_RE = /^(?!__proto__$|constructor$|prototype$)[a-zA-Z0-9_.-]{1,100}$/;
+const SUBQ_MAX_WINDOW_TOKENS = 393216;
+const SUBQ_PRICE_PER_MILLION_INPUT_USD = 0.04;
+
+function buildSubQSnap12Payload(rawInput = {}) {
+  const input = rawInput && typeof rawInput === 'object' && !Array.isArray(rawInput) ? rawInput : null;
+  if (!input || input.state === undefined || input.state === null) return { ok: false, error: 'missing_state' };
+  const requestedModel = String(input.model || 'subq-snap-1.2').trim();
+  const model = SUBQ_SNAP_MODELS.has(requestedModel) ? requestedModel : 'subq-snap-1.2';
+  const rawQuestions = input.questions && typeof input.questions === 'object' && !Array.isArray(input.questions) ? input.questions : null;
+  const qEntries = rawQuestions ? Object.entries(rawQuestions) : [];
+  if (qEntries.length < 1 || qEntries.length > 128) return { ok: false, error: 'invalid_questions_count' };
+  const questionPairs = [];
+  for (const [qName, qDef] of qEntries) {
+    if (!SUBQ_SAFE_KEY_RE.test(qName) || !qDef || typeof qDef !== 'object' || Array.isArray(qDef)) return { ok: false, error: 'invalid_question_key' };
+    const qType = String(qDef.type || '').trim();
+    const instructions = String(qDef.instructions || '').trim();
+    if (!instructions || !['noul', 'choice', 'score'].includes(qType)) return { ok: false, error: `invalid_question_schema:${qName}` };
+    if (qType === 'choice') {
+      const cObj = qDef.criteria && typeof qDef.criteria === 'object' && !Array.isArray(qDef.criteria) ? qDef.criteria : null;
+      const keys = cObj ? Object.keys(cObj) : [];
+      if (keys.length < 2 || keys.length > 255 || !keys.every((k) => SUBQ_SAFE_KEY_RE.test(k))) return { ok: false, error: `invalid_choice_criteria:${qName}` };
+      const criteria = Object.fromEntries([...keys].sort((a, b) => (a < b ? -1 : a > b ? 1 : 0)).map((k) => [k, cObj[k] === null ? null : String(cObj[k])]));
+      questionPairs.push([qName, { type: 'choice', instructions, criteria }]);
+    } else if (qType === 'score') {
+      if (!Array.isArray(qDef.criteria) || qDef.criteria.length < 2 || qDef.criteria.length > 10) return { ok: false, error: `invalid_score_criteria:${qName}` };
+      questionPairs.push([qName, { type: 'score', instructions, criteria: qDef.criteria.map((x) => String(x)) }]);
+    } else {
+      const entry = { type: 'noul', instructions };
+      if (qDef.criteria && typeof qDef.criteria === 'object' && !Array.isArray(qDef.criteria)) {
+        const noulPairs = [];
+        if (Object.hasOwn(qDef.criteria, 'true')) noulPairs.push(['true', String(qDef.criteria.true)]);
+        if (Object.hasOwn(qDef.criteria, 'false')) noulPairs.push(['false', String(qDef.criteria.false)]);
+        if (noulPairs.length > 0) entry.criteria = Object.fromEntries(noulPairs);
+      }
+      questionPairs.push([qName, entry]);
+    }
+  }
+  const questions = Object.fromEntries(questionPairs);
+  let images;
+  let imageTokens = 0;
+  if (input.images !== undefined) {
+    if (!Array.isArray(input.images) || input.images.length > 4) return { ok: false, error: 'invalid_images_count' };
+    let totalDecodedBytes = 0;
+    images = [];
+    for (const img of input.images) {
+      if (!img || typeof img !== 'object') return { ok: false, error: 'invalid_image_entry' };
+      const mediaType = String(img.mediaType || '').trim().toLowerCase();
+      if (!SUBQ_ALLOWED_IMAGE_MEDIA.has(mediaType)) return { ok: false, error: 'unsupported_image_media_type' };
+      const cleanedB64 = String(img.base64 || '').replace(/^data:[^;]+;base64,/i, '').replace(/\s+/g, '');
+      if (!cleanedB64 || /^https?:\/\//i.test(cleanedB64)) return { ok: false, error: 'invalid_image_base64' };
+      const decodedLen = Buffer.from(cleanedB64, 'base64').length;
+      if (decodedLen <= 0 || decodedLen > 4 * 1024 * 1024) return { ok: false, error: 'image_over_4_mib' };
+      totalDecodedBytes += decodedLen;
+      if (totalDecodedBytes > 8 * 1024 * 1024) return { ok: false, error: 'images_over_8_mib_total' };
+      imageTokens += 800;
+      images.push({ mediaType, base64: cleanedB64 });
+    }
+  }
+  const stateSerialized = typeof input.state === 'string' ? input.state : String(JSON.stringify(input.state) ?? '');
+  const questionsSerialized = JSON.stringify(questions);
+  const estTokens = Math.ceil((Buffer.byteLength(stateSerialized, 'utf8') + Buffer.byteLength(questionsSerialized, 'utf8')) / 4) + imageTokens;
+  if (estTokens > SUBQ_MAX_WINDOW_TOKENS) return { ok: false, error: 'exceeds_384k_context_window', estimatedInputTokens: estTokens };
+  return {
+    ok: true,
+    payload: { model, state: input.state, questions, ...(images && images.length > 0 ? { images } : {}) },
+    estimatedInputTokens: estTokens,
+    estimatedInputCostUsd: Math.round((estTokens / 1e6) * SUBQ_PRICE_PER_MILLION_INPUT_USD * 1e8) / 1e8,
+    outputCostUsd: 0,
+  };
+}
+
+async function callSubQSnapSystemOneApi(rawInput = {}, options = {}) {
+  const built = buildSubQSnap12Payload(rawInput);
+  if (!built.ok) return { ok: false, mode: 'validation_rejected', error: built.error, abstained: true, action: 'UNCERTAIN_ESCALATE_TO_FRONTIER' };
+  const rawTau = typeof options.confidenceThreshold === 'number' && Number.isFinite(options.confidenceThreshold) ? options.confidenceThreshold : 0.65;
+  const tau = Math.min(1, Math.max(0.01, rawTau));
+  const apiKey = String(options.apiKey !== undefined ? options.apiKey : (process.env.SUBQ_API_KEY || '')).trim();
+  const fetchImpl = typeof options.fetchImpl === 'function' ? options.fetchImpl : fetch;
+  if (!apiKey) {
+    return {
+      ok: true,
+      mode: 'local_offline_no_api_key',
+      model: built.payload.model,
+      estimatedInputTokens: built.estimatedInputTokens,
+      estimatedInputCostUsd: built.estimatedInputCostUsd,
+      outputCostUsd: 0,
+      abstained: true,
+      action: 'UNCERTAIN_ESCALATE_TO_FRONTIER',
+      reason: 'subq_api_key_missing',
+    };
+  }
+  let res;
+  try {
+    res = await fetchImpl('https://api.subq.ai/v1/systemone', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify(built.payload),
+      signal: AbortSignal.timeout(Number(options.timeoutMs) > 0 ? Number(options.timeoutMs) : 8000),
+    });
+  } catch {
+    return { ok: false, mode: 'upstream_error', status: 502, error: 'subq_network_error', abstained: true, action: 'UNCERTAIN_ESCALATE_TO_FRONTIER' };
+  }
+  if (res.status === 402) {
+    return { ok: false, mode: 'credit_exhausted_zero_overspend', status: 402, error: 'subq_credits_exhausted', outboundCashSpendUsd: 0, abstained: true, action: 'UNCERTAIN_ESCALATE_TO_FRONTIER' };
+  }
+  if (!res.ok) {
+    return { ok: false, mode: 'upstream_error', status: res.status, error: `subq_http_${res.status}`, abstained: true, action: 'UNCERTAIN_ESCALATE_TO_FRONTIER' };
+  }
+  let data;
+  try {
+    data = await res.json();
+  } catch {
+    return { ok: false, mode: 'upstream_error', status: 502, error: 'subq_invalid_json', abstained: true, action: 'UNCERTAIN_ESCALATE_TO_FRONTIER' };
+  }
+  const answers = data && typeof data.answers === 'object' && !Array.isArray(data.answers) ? data.answers : {};
+  const expectedKeys = Object.keys(built.payload.questions);
+  let invalidAnswer = expectedKeys.length === 0;
+  let minConfidence = expectedKeys.length > 0 ? 1 : 0;
+  for (const qk of expectedKeys) {
+    const expectedType = built.payload.questions[qk].type;
+    const ans = Object.hasOwn(answers, qk) ? answers[qk] : null;
+    if (!ans || typeof ans !== 'object' || ans.type !== expectedType) { invalidAnswer = true; minConfidence = 0; break; }
+    let conf = NaN;
+    if (expectedType === 'noul') {
+      const nv = typeof ans.noul === 'number' ? ans.noul : NaN;
+      conf = Number.isFinite(nv) && nv >= 0 && nv <= 1 ? Math.max(nv, 1 - nv) : NaN;
+    } else {
+      const cv = typeof ans.confidence === 'number' ? ans.confidence : NaN;
+      conf = Number.isFinite(cv) && cv >= 0 && cv <= 1 ? cv : NaN;
+    }
+    if (!Number.isFinite(conf)) { invalidAnswer = true; minConfidence = 0; break; }
+    if (conf < minConfidence) minConfidence = conf;
+  }
+  const usageTok = parseFiniteNonNeg(data?.usage?.input_tokens, built.estimatedInputTokens);
+  const inputTokens = Math.trunc(usageTok.ok ? usageTok.value : built.estimatedInputTokens);
+  const abstained = invalidAnswer || minConfidence < tau;
+  return {
+    ok: true,
+    mode: 'live_subq_systemone',
+    model: data?.model || built.payload.model,
+    answers,
+    usage: { input_tokens: inputTokens, output_tokens: 0 },
+    costUsd: Math.round((inputTokens / 1e6) * SUBQ_PRICE_PER_MILLION_INPUT_USD * 1e8) / 1e8,
+    outboundCashSpendUsd: 0,
+    minConfidence: Math.round(minConfidence * 1e4) / 1e4,
+    abstained,
+    action: abstained ? 'UNCERTAIN_ESCALATE_TO_FRONTIER' : 'PROCEED_WITH_SUBQ_DECISION',
   };
 }
 
@@ -1069,4 +1468,8 @@ module.exports = {
   inspectAndPatchDesignSource,
   remediateVisualFindings,
   runDesignSelfCorrectionPipeline,
+  scrubBoostTelemetryMetadata,
+  evaluateComputeBoostLane,
+  buildSubQSnap12Payload,
+  callSubQSnapSystemOneApi,
 };
