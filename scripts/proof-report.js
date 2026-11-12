@@ -104,9 +104,12 @@ function anonymizeExample(text) {
   let out = String(text || '').replace(/\s+/g, ' ').trim();
   out = out
     .replace(/\/(?:Users|home)\/[^\s'"]+/gi, '~/<redacted-path>')
+    .replace(/\b[\w.-]+\/[\w./-]+/g, '<redacted-path>')
     .replace(/\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b/gi, '<redacted-email>')
     .replace(/\b(?:sk|rk|pk|ghp|gho|github_pat|xox[baprs]|AKIA|ASIA)[_-][A-Za-z0-9_\-]{8,}\b/g, '<redacted-secret>')
-    .replace(/\b(?:api[_-]?key|token|secret|password|passwd|credential)\s*[:=]\s*\S+/gi, '<redacted-secret>');
+    .replace(/\b[A-Z][A-Z0-9_]*(?:PAT|TOKEN|SECRET|PASSWORD|KEY)\b/g, '<redacted-secret>')
+    .replace(/\bwith-secrets\b/gi, '<redacted-secret>')
+    .replace(/\b(?:api[_-]?key|token|secret|password|passwd|credential|pat)\s*[:=]\s*\S+/gi, '<redacted-secret>');
   if (out.length > MAX_EXAMPLE_CHARS) out = `${out.slice(0, MAX_EXAMPLE_CHARS - 1)}…`;
   return out;
 }

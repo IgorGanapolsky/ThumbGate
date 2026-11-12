@@ -52,11 +52,11 @@ test('buildProofReport counts only real blocked agent tool calls in the window a
 });
 
 test('anonymizeExample strips paths, emails, and secret literals', () => {
-  const out = anonymizeExample('curl -H token=abc123 /Users/ada/proj x@y.com ghp_abcdefghijklmnopqrstuvwxyz');
-  assert.match(out, /~\/<redacted-path>/);
+  const out = anonymizeExample('curl -H token=abc123 /Users/ada/proj x@y.com ghp_abcdefghijklmnopqrstuvwxyz with-secrets ADO_PAT dayglass/server.py');
+  assert.match(out, /<redacted-path>/);
   assert.match(out, /<redacted-email>/);
   assert.match(out, /<redacted-secret>/);
-  assert.doesNotMatch(out, /\/Users\/ada|x@y\.com|ghp_/);
+  assert.doesNotMatch(out, /\/Users\/ada|x@y\.com|ghp_|ADO_PAT|with-secrets|dayglass\/server\.py/);
 });
 
 test('thumbgate proof --days 30 --json is rerunnable from the audit trail and prints no secrets', () => {
