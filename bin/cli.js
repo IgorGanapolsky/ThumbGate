@@ -4569,6 +4569,9 @@ switch (COMMAND) {
       process.exit(1);
     });
     break;
+  case 'proof':
+    require(path.join(PKG_ROOT, 'scripts', 'proof-report')).runProofCli(process.argv.slice(3));
+    break;
   case 'stats':
     stats();
     upgradeNudge();
