@@ -807,6 +807,7 @@ test('homepage features thumbs branding and self-improving diagrams above the fo
 });
 
 test('THUMBGATE_OWNER_EMAILS grants Enterprise tier on Google and Apple SSO while leaving other emails unchanged', async () => {
+  // Owner SSO entitlement check
   const crypto = require('node:crypto');
   const os = require('node:os');
   const { startServer, __test__: serverTestHooks } = require('../src/api/server');
@@ -982,4 +983,88 @@ test('THUMBGATE_OWNER_EMAILS grants Enterprise tier on Google and Apple SSO whil
     }
     fs.rmSync(tmpDir, { recursive: true, force: true });
   }
+});
+
+test('signed-in app nav removes Landing Page link, links logo to /, and shares one header across /dashboard, /lessons, and /lessons/:id', async (t) => {
+  const os = require('node:os');
+  const { startServer } = require('../src/api/server');
+  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'tg-top-nav-'));
+  const prevFeedbackDir = process.env.THUMBGATE_FEEDBACK_DIR;
+  const prevApiKey = process.env.THUMBGATE_API_KEY;
+  process.env.THUMBGATE_FEEDBACK_DIR = tmpDir;
+  process.env.THUMBGATE_API_KEY = 'tg_test_nav_key_123';
+  t.after(() => {
+    if (prevFeedbackDir === undefined) delete process.env.THUMBGATE_FEEDBACK_DIR;
+    else process.env.THUMBGATE_FEEDBACK_DIR = prevFeedbackDir;
+    if (prevApiKey === undefined) delete process.env.THUMBGATE_API_KEY;
+    else process.env.THUMBGATE_API_KEY = prevApiKey;
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+  });
+  fs.writeFileSync(
+    path.join(tmpDir, 'memory-log.jsonl'),
+    `${JSON.stringify({
+      id: 'mem_nav_test_1',
+      title: 'MISTAKE: Keep top nav clean',
+      content: 'Never duplicate logo home links with a redundant home anchor.',
+      signal: 'down',
+      timestamp: '2026-11-12T22:00:00.000Z',
+    })}\n`,
+    'utf8',
+  );
+
+  const { server, port } = await startServer({ port: 0, host: '127.0.0.1' });
+  t.after(() => new Promise((resolve) => server.close(resolve)));
+  const origin = `http://127.0.0.1:${port}`;
+
+  const loginRes = await fetch(`${origin}/v1/auth/session`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ apiKey: 'tg_test_nav_key_123' }),
+  });
+  assert.equal(loginRes.status, 200);
+  const cookiePair = (loginRes.headers.get('set-cookie') || '').split(';')[0];
+  assert.ok(cookiePair.startsWith('thumbgate_auth_session='));
+
+  const landingRes = await fetch(`${origin}/`, {
+    headers: { cookie: cookiePair },
+    redirect: 'manual',
+  });
+  assert.equal(landingRes.status, 200);
+  assert.match(await landingRes.text(), /<title>ThumbGate/i);
+
+  const [dashboardRes, lessonsRes, detailRes] = await Promise.all([
+    fetch(`${origin}/dashboard`, { headers: { cookie: cookiePair } }),
+    fetch(`${origin}/lessons`, { headers: { cookie: cookiePair } }),
+    fetch(`${origin}/lessons/mem_nav_test_1`, { headers: { cookie: cookiePair } }),
+  ]);
+  assert.equal(dashboardRes.status, 200);
+  assert.equal(lessonsRes.status, 200);
+  assert.equal(detailRes.status, 200);
+
+  const [dashboardHtml, lessonsHtml, detailHtml] = await Promise.all([
+    dashboardRes.text(),
+    lessonsRes.text(),
+    detailRes.text(),
+  ]);
+
+  for (const [routeName, html] of [
+    ['/dashboard', dashboardHtml],
+    ['/lessons', lessonsHtml],
+    ['/lessons/:id', detailHtml],
+  ]) {
+    assert.doesNotMatch(html, /Landing Page/, `${routeName} must not contain a Landing Page link`);
+    assert.match(html, /<nav class="app-top-nav" aria-label="Primary navigation">/, `${routeName} must render shared app-top-nav`);
+    assert.match(html, /<a href="\/" class="nav-logo" aria-label="ThumbGate home">/, `${routeName} logo must link to /`);
+    assert.match(html, /<span class="logo-text">ThumbGate<\/span>/, `${routeName} must show clean ThumbGate wordmark`);
+    assert.match(html, /class="nav-github"[^>]*aria-label="GitHub"/, `${routeName} must render GitHub icon link`);
+  }
+  assert.match(dashboardHtml, /<a href="\/dashboard" class="nav-tab active" aria-current="page">Dashboard<\/a>/);
+  assert.doesNotMatch(
+    dashboardHtml,
+    /querySelectorAll\([^)]*a\[href="\/"\]/,
+    'preserveProjectQueryParams must not rewrite href="/" links with ?project=',
+  );
+  assert.match(lessonsHtml, /<a href="\/lessons" class="nav-tab active" aria-current="page">Lessons<\/a>/);
+  assert.match(detailHtml, /<a href="\/lessons" class="nav-tab active" aria-current="page">Lessons<\/a>/);
+  // End shared app-top-nav assertions
 });
