@@ -199,6 +199,7 @@ const UNCONDITIONAL_HARD_FLOOR_GATE_IDS = new Set([
   // separately authenticated admin override bound to the exact action digest
   // authorizes one retry (AGENT-259 / District Cyber 2026-08-04).
   'outbound-email-send',
+  'outbound-off-brand-vertical-block',
   'swarm-claim-exit-3-write-after-loss',
   'teams-single-reply-per-message',
   'az-repos-pr-publish-requires-cross-review',
@@ -229,6 +230,7 @@ const CATASTROPHIC_DECLARATIVE_GATE_IDS = new Set([
   'oneshot-goal-done',
   // Never daily-cap discount a denied autonomous email send (same class as force-push).
   'outbound-email-send',
+  'outbound-off-brand-vertical-block',
   'swarm-claim-exit-3-write-after-loss',
   'teams-single-reply-per-message',
   'az-repos-pr-publish-requires-cross-review',
@@ -2782,6 +2784,14 @@ function buildMatchSurfaces(toolName, toolInput = {}) {
     push(v);
     if (name) push(`${name} ${v}`);
   }
+  if (/(?:browseros[-_]neo|browser_(?:type|fill|navigate|click)|zernio|linkedin|bluesky|threads|reddit)/i.test(name)) {
+    for (const key of ['code', 'text', 'value', 'post', 'caption']) {
+      if (toolInput[key] == null) continue;
+      const v = String(toolInput[key]).slice(0, 4000);
+      push(v);
+      if (name) push(`${name} ${v}`);
+    }
+  }
   return surfaces;
 }
 
@@ -2873,6 +2883,18 @@ function matchGate(gate, toolName, toolInput = {}) {
 
   if (Array.isArray(gate.toolNames) && gate.toolNames.length > 0 && !gate.toolNames.includes(toolName)) {
     return { matched: false, matchText, affectedFiles };
+  }
+
+  if (gate.id === 'outbound-off-brand-vertical-block') {
+    if (EDIT_LIKE_TOOLS.has(toolName) || toolName === 'Read' || toolName === 'Glob' || toolName === 'Grep' || toolName === 'LS') {
+      return { matched: false, matchText, affectedFiles };
+    }
+    if (toolName === 'Bash') {
+      const trimmedCmd = String(toolInput.command || '').trimStart();
+      if (/^(?:git|rg|grep|ls|cat|head|tail|wc|find)\b/.test(trimmedCmd) || /^node\s+--test\b/.test(trimmedCmd) || /^npm\s+(?:test|run\s+test)\b/.test(trimmedCmd)) {
+        return { matched: false, matchText, affectedFiles };
+      }
+    }
   }
 
   if (gate.pattern) {
