@@ -7,7 +7,7 @@
  *
  * Reads `config/post-deploy-marketing-pages.json` and curls every entry
  * against the live production URL (default
- * https://thumbgate-production.up.railway.app, overridable via
+ * https://thumbgate.ai, overridable via
  * THUMBGATE_PROD_URL env or --prod-url=…). Each response body must
  * contain the configured sentinel string and must not contain any configured
  * `mustNotContain` strings. Any mismatch fails the run and the route is
@@ -32,7 +32,7 @@
 const fs = require('node:fs');
 const path = require('node:path');
 
-const DEFAULT_PROD_URL = 'https://thumbgate-production.up.railway.app';
+const DEFAULT_PROD_URL = 'https://thumbgate.ai';
 const DEFAULT_TIMEOUT_MS = 12000;
 const DEFAULT_MAX_ATTEMPTS = 2;
 const DEFAULT_RETRY_DELAY_MS = 500;

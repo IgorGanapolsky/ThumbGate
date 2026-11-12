@@ -241,4 +241,36 @@ describe('/checkout/pro confirmation gate (closes 0/50 conversion leak)', () => 
     assert.equal(interstitial.reasonCode, 'invalid_customer_email');
     assert.equal(interstitial.isBot, 'true');
   });
+
+  it('routes /go/playbook-999 and /go/bundle-49 to Stripe Payment Links for browser navigations and deflects probes', async () => {
+    const http = require('node:http');
+    const getRaw = (urlPath, headers) =>
+      new Promise((resolve, reject) => {
+        http
+          .get(`${origin}${urlPath}`, { headers }, (res) => {
+            res.resume();
+            resolve({ status: res.statusCode, location: res.headers.location || '' });
+          })
+          .on('error', reject);
+      });
+    const navHeaders = {
+      'user-agent': BROWSER_UA,
+      accept: BROWSER_ACCEPT,
+      'sec-fetch-mode': 'navigate',
+      'sec-fetch-site': 'same-origin',
+      'sec-fetch-dest': 'document',
+      referer: `${origin}/checkout/pro`,
+    };
+    const pbRes = await getRaw('/go/playbook-999', navHeaders);
+    assert.equal(pbRes.status, 302);
+    assert.match(pbRes.location, /^https:\/\/buy\.stripe\.com\/8x2fZh3UgbTw19v21R3sJ11/);
+
+    const bdRes = await getRaw('/go/bundle-49', navHeaders);
+    assert.equal(bdRes.status, 302);
+    assert.match(bdRes.location, /^https:\/\/buy\.stripe\.com\/dRm3cv1M85v819v6i73sJ12/);
+
+    const probeRes = await getRaw('/go/playbook-999', { 'user-agent': BROWSER_UA, accept: BROWSER_ACCEPT });
+    assert.equal(probeRes.status, 302);
+    assert.match(probeRes.location, /\/checkout\/pro/);
+  });
 });

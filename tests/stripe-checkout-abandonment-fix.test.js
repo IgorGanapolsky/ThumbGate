@@ -194,6 +194,41 @@ describe('Stripe checkout conversion & Payment Link / Annual routing fixes', () 
     assert.match(fallbackRes.location, /^https:\/\/buy\.stripe\.com\//);
   });
 
+  it('tags direct sessions with their entry route and deflects a requester that opens a second checkout within seconds', async () => {
+    const startIdx = createdStripePayloads.length;
+    const agentHeaders = { 'x-forwarded-for': '203.0.113.77, 10.0.0.2' };
+
+    const first = await rawBrowserGet(`${origin}/go/pro-direct?utm_source=pricing`, agentHeaders);
+    assert.equal(first.status, 302);
+    assert.match(first.location, /^https:\/\/checkout\.stripe\.com\//);
+    assert.equal(createdStripePayloads.length, startIdx + 1);
+    assert.equal(createdStripePayloads[startIdx].metadata.entryRoute, 'go:pro-direct');
+
+    const second = await rawBrowserGet(`${origin}/go/pro-annual?utm_source=pricing`, agentHeaders);
+    assert.equal(second.status, 302);
+    assert.match(second.location, /\/checkout\/pro/);
+    assert.equal(createdStripePayloads.length, startIdx + 1, 'a rapid second checkout must not open another Stripe session');
+
+    const otherVisitor = await rawBrowserGet(`${origin}/go/pro-annual?utm_source=pricing`, {
+      'x-forwarded-for': '198.51.100.9',
+    });
+    assert.match(otherVisitor.location, /^https:\/\/checkout\.stripe\.com\//);
+    assert.equal(createdStripePayloads.length, startIdx + 2);
+  });
+
+  it('rapid checkout guard flags only repeat hits from one requester inside the window', () => {
+    const { createRapidCheckoutGuard, checkoutRequesterKey } = require('../scripts/bot-detection');
+    const guard = createRapidCheckoutGuard({ windowMs: 20000 });
+    const key = checkoutRequesterKey({ 'x-forwarded-for': '1.2.3.4, 10.0.0.1', 'user-agent': 'Chrome' });
+    assert.equal(key, '1.2.3.4|Chrome');
+    assert.equal(checkoutRequesterKey({ 'user-agent': 'Chrome' }), null);
+    assert.equal(guard.hit(key, 0), false);
+    assert.equal(guard.hit(key, 3000), true);
+    assert.equal(guard.hit(key, 40000), false);
+    assert.equal(guard.hit('5.6.7.8|Chrome', 40001), false);
+    assert.equal(guard.hit(null, 40002), false);
+  });
+
   it('renders annual $149/yr view on /checkout/pro?billing_cycle=annual and routes /pricing Pro CTAs to 1-click /go/pro-direct', async () => {
     const annualIntent = await rawBrowserGet(`${origin}/checkout/pro?plan_id=pro&billing_cycle=annual`);
     assert.equal(annualIntent.status, 200);

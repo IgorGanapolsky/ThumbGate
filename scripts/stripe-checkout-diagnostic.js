@@ -369,6 +369,148 @@ function summarizeSessionRecency(
   };
 }
 
+// Segments recent sessions by entry point so the abandoned-session pile can be
+// traced to a CTA, route, or caller. Emits counts only: no emails or ids.
+const SEGMENT_FIELDS = [
+  ['ctaId', ['ctaId', 'cta_id']],
+  ['utmMedium', ['utmMedium', 'utm_medium']],
+  ['landingPath', ['landingPath', 'landing_path']],
+  ['referrerHost', ['referrerHost', 'referrer_host']],
+  ['entryRoute', ['entryRoute', 'entry_route']],
+];
+
+function sessionSuccessHost(session = {}) {
+  try {
+    return new URL(session.success_url).host || 'unknown';
+  } catch {
+    return 'unknown';
+  }
+}
+
+function sessionAmountLabel(session = {}) {
+  if (session.amount_total == null) return 'unknown';
+  return `${(Number(session.amount_total) / 100).toFixed(2)} ${String(session.currency || '').toUpperCase()}`.trim();
+}
+
+function summarizeRecentSegments(
+  sessions = [],
+  nowEpochSeconds = Math.floor(Date.now() / 1000),
+  windowDays = 30,
+  topN = 12
+) {
+  const since = Number(nowEpochSeconds) - windowDays * 24 * 60 * 60;
+  const recent = sessions.filter((session) => Number(session.created) >= since);
+  const buckets = { product: new Map(), successHost: new Map(), amount: new Map(), mode: new Map(), day: new Map() };
+  for (const [name] of SEGMENT_FIELDS) buckets[name] = new Map();
+  const intentSessions = [];
+
+  for (const session of recent) {
+    const metadata = session.metadata && typeof session.metadata === 'object' ? session.metadata : {};
+    const attribution = extractSessionAttribution(session);
+    const isThumbGate = Boolean(attribution.hasTraceId || attribution.planId);
+    incrementBucket(buckets.product, isThumbGate ? 'thumbgate_attributed' : 'other_or_unattributed');
+    incrementBucket(buckets.successHost, sessionSuccessHost(session));
+    incrementBucket(buckets.amount, sessionAmountLabel(session));
+    incrementBucket(buckets.mode, session.mode);
+    incrementBucket(buckets.day, toIsoTimestamp(Number(session.created))?.slice(0, 10));
+    for (const [name, keys] of SEGMENT_FIELDS) {
+      const value = keys.map((key) => metadata[key]).find((v) => normalizeEvidenceText(v));
+      incrementBucket(buckets[name], value || 'none');
+    }
+    const identityKind = identityEvidenceKind(session);
+    if (identityKind === 'non_placeholder_email' || hasPaymentAttemptEvidence(session) || isCompletedSession(session)) {
+      intentSessions.push({
+        createdAt: toIsoTimestamp(Number(session.created)),
+        status: session.status || null,
+        paymentStatus: session.payment_status || null,
+        mode: session.mode || null,
+        amount: sessionAmountLabel(session),
+        successHost: sessionSuccessHost(session),
+        identity: identityKind,
+        paymentAttempt: hasPaymentAttemptEvidence(session),
+        source: attribution.source,
+        ctaId: normalizeEvidenceText(metadata.ctaId || metadata.cta_id),
+        entryRoute: normalizeEvidenceText(metadata.entryRoute || metadata.entry_route),
+      });
+    }
+  }
+
+  const top = (map) => [...map.entries()]
+    .sort((left, right) => right[1] - left[1])
+    .slice(0, topN);
+  const result = { windowDays, sessions: recent.length, intentSessions };
+  for (const [name, map] of Object.entries(buckets)) {
+    result[name] = name === 'day'
+      ? [...map.entries()].sort((left, right) => left[0].localeCompare(right[0]))
+      : top(map);
+  }
+  return result;
+}
+
+// Masks an email for public CI logs: keeps the first character and the
+// top-level domain only (j***@g***.com).
+function maskEmail(value) {
+  const email = String(value || '').trim();
+  const at = email.indexOf('@');
+  if (at < 1) return null;
+  const domain = email.slice(at + 1);
+  const dot = domain.lastIndexOf('.');
+  const tld = dot >= 0 ? domain.slice(dot) : '';
+  return `${email[0]}***@${domain[0] || ''}***${tld}`;
+}
+
+// For recent sessions that reached a payment attempt, pull what Stripe knows
+// about why the attempt did not finish: the Payment Link and product, the
+// PaymentIntent status and error, and the latest charge outcome. Emails are
+// masked because these reports land in public CI logs.
+async function collectPaymentAttemptForensics(stripe, sessions, nowEpochSeconds, { windowDays = 30, max = 10 } = {}) {
+  const since = Number(nowEpochSeconds) - windowDays * 24 * 60 * 60;
+  const candidates = sessions
+    .filter((s) => Number(s.created) >= since && typeof s.payment_intent === 'string')
+    .slice(0, max);
+  const rows = [];
+  for (const session of candidates) {
+    const row = {
+      createdAt: toIsoTimestamp(Number(session.created)),
+      status: session.status || null,
+      amount: sessionAmountLabel(session),
+      paymentLink: typeof session.payment_link === 'string' ? session.payment_link : (session.payment_link?.id || null),
+      successHost: sessionSuccessHost(session),
+      maskedEmail: maskEmail(getSessionEmail(session)),
+      country: session.customer_details?.address?.country || null,
+      products: [],
+      piStatus: null,
+      piError: null,
+      paymentMethodType: null,
+      chargeOutcome: null,
+    };
+    try {
+      if (stripe.checkout.sessions.listLineItems) {
+        const items = await stripe.checkout.sessions.listLineItems(session.id, { limit: 5, expand: ['data.price.product'] });
+        row.products = (items?.data || []).map((item) => {
+          const product = item.price?.product;
+          const name = (product && typeof product === 'object' ? product.name : null) || item.description || 'unknown';
+          return `${name} (${item.price?.id || 'no price id'})`;
+        });
+      }
+    } catch (_e) { /* line items are best-effort */ }
+    try {
+      const pi = await stripe.paymentIntents.retrieve(session.payment_intent, { expand: ['latest_charge'] });
+      row.piStatus = pi.status || null;
+      const err = pi.last_payment_error;
+      row.piError = err ? [err.type, err.code, err.decline_code].filter(Boolean).join(' / ') || 'error without code' : null;
+      row.paymentMethodType = err?.payment_method?.type || (pi.payment_method_types || []).join(',') || null;
+      const charge = pi.latest_charge && typeof pi.latest_charge === 'object' ? pi.latest_charge : null;
+      if (charge?.outcome) {
+        row.chargeOutcome = [charge.status, charge.outcome.network_status, charge.outcome.reason, charge.outcome.risk_level]
+          .filter(Boolean).join(' / ');
+      }
+    } catch (_e) { /* PI lookup is best-effort */ }
+    rows.push(row);
+  }
+  return rows;
+}
+
 function classifyCheckoutFunnel({
   sessions = [],
   paymentIntents = [],
@@ -579,6 +721,8 @@ async function runDiagnostic({
   const nowEpochSeconds = Math.floor(generatedAt.getTime() / 1000);
   const sessionEvidence = summarizeSessionEvidence(sessions);
   const sessionRecency = summarizeSessionRecency(sessions, nowEpochSeconds);
+  const recentSegments = summarizeRecentSegments(sessions, nowEpochSeconds);
+  const paymentAttemptForensics = await collectPaymentAttemptForensics(stripe, sessions, nowEpochSeconds);
   const funnelDiagnosis = classifyCheckoutFunnel({
     sessions,
     paymentIntents,
@@ -594,6 +738,8 @@ async function runDiagnostic({
     sessionBuckets: bucketSessions(sessions),
     sessionEvidence,
     sessionRecency,
+    recentSegments,
+    paymentAttemptForensics,
     paymentIntentErrors: bucketPaymentIntentErrors(paymentIntents),
     funnelDiagnosis,
     account,
@@ -676,6 +822,54 @@ function renderMarkdown(report) {
     lines.push(`| ${k} | ${v} |`);
   }
   lines.push('');
+  if (report.recentSegments) {
+    const seg = report.recentSegments;
+    lines.push(`## Last ${seg.windowDays} days by entry point (${seg.sessions} sessions)`);
+    lines.push('');
+    lines.push('Counts only. Use these to trace raw-only sessions to the CTA or route that created them.');
+    const segmentTables = [
+      ['product', 'Product attribution'],
+      ['successHost', 'Success URL host (which site opened it)'],
+      ['entryRoute', 'Server entry route'],
+      ['ctaId', 'CTA id'],
+      ['utmMedium', 'utm_medium'],
+      ['landingPath', 'Landing path'],
+      ['referrerHost', 'Referrer host'],
+      ['amount', 'Amount'],
+      ['mode', 'Mode'],
+      ['day', 'Day (UTC)'],
+    ];
+    for (const [key, label] of segmentTables) {
+      lines.push('');
+      lines.push(`| ${label} | Sessions |`);
+      lines.push('| --- | ---: |');
+      for (const [value, count] of seg[key] || []) {
+        lines.push(`| ${String(value).replace(/\|/g, '/')} | ${count} |`);
+      }
+    }
+    lines.push('');
+    lines.push(`### Sessions with buyer-intent evidence (${seg.intentSessions.length})`);
+    lines.push('');
+    lines.push('| Created | Site | Status | Pay status | Mode | Amount | Identity | Payment attempt | Source | CTA | Entry route |');
+    lines.push('| --- | --- | --- | --- | --- | ---: | --- | --- | --- | --- | --- |');
+    for (const s of seg.intentSessions) {
+      lines.push(`| ${s.createdAt} | ${s.successHost} | ${s.status} | ${s.paymentStatus} | ${s.mode || '—'} | ${s.amount} | ${s.identity} | ${s.paymentAttempt ? 'yes' : 'no'} | ${s.source || '—'} | ${s.ctaId || '—'} | ${s.entryRoute || '—'} |`);
+    }
+    lines.push('');
+  }
+  if (Array.isArray(report.paymentAttemptForensics) && report.paymentAttemptForensics.length) {
+    lines.push('### Payment attempts in the last 30 days (why they did not finish)');
+    lines.push('');
+    lines.push('| Created | Site | Status | Amount | Payment Link | Products | PI status | PI error | Method | Charge outcome | Buyer | Country |');
+    lines.push('| --- | --- | --- | ---: | --- | --- | --- | --- | --- | --- | --- | --- |');
+    for (const r of report.paymentAttemptForensics) {
+      const cells = [r.createdAt, r.successHost, r.status, r.amount, r.paymentLink || '—', (r.products || []).join('; ') || '—',
+        r.piStatus || '—', r.piError || '—', r.paymentMethodType || '—', r.chargeOutcome || '—', r.maskedEmail || '—', r.country || '—']
+        .map((v) => String(v).replace(/\|/g, '/'));
+      lines.push(`| ${cells.join(' | ')} |`);
+    }
+    lines.push('');
+  }
   lines.push('## Payment intent failure modes');
   lines.push('');
   const pie = report.paymentIntentErrors;
@@ -809,6 +1003,9 @@ module.exports = {
   identityEvidenceKind,
   summarizeSessionEvidence,
   summarizeSessionRecency,
+  summarizeRecentSegments,
+  maskEmail,
+  collectPaymentAttemptForensics,
   countPossibleAutomationClusters,
   classifyCheckoutFunnel,
   runDiagnostic,
