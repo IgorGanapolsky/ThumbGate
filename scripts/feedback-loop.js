@@ -593,7 +593,7 @@ function maybeBlockMemoryIngress({ feedbackEvent, memoryRecord = null, summary, 
     status: 'blocked',
     reason: decision.reason,
     message: 'Feedback blocked by memory-ingress security checks.',
-    feedbackEvent,
+    feedbackEvent: require('./secret-redaction').redactSourceDataStableDeep(feedbackEvent),
     security: {
       provider: decision.provider || 'unknown',
       mode: decision.mode || null,
@@ -703,7 +703,8 @@ function buildFeedbackSourceIdentity(input = {}) {
   // Emoji-only prompts normalize to no alphanumeric text. Preserve a stable,
   // non-sensitive canonical value so duplicate 👍/👎 hook deliveries still
   // share one source identity and cannot create duplicate feedback rows.
-  const normalizedText = normalizeFeedbackText(input.promptText || input.context) || `thumbs-${signal}`;
+  const { redactSourceDataStable } = require('./secret-redaction');
+  const normalizedText = normalizeFeedbackText(redactSourceDataStable(String(input.promptText || input.context || ''))) || `thumbs-${signal}`;
 
   const sessionHash = hashFeedbackSourcePart(input.sessionId);
   const promptIdHash = hashFeedbackSourcePart(input.promptId);
@@ -733,9 +734,10 @@ function normalizeFeedbackSourceIdentity(identity, params = {}) {
   if (!identity || typeof identity !== 'object' || typeof identity.key !== 'string') return null;
   const signal = normalizeSignal(params.signal || identity.signal);
   if (!signal) return null;
-  const normalizedText = normalizeFeedbackText(
-    identity.normalizedText || params.context || params.whatWentWrong || params.whatWorked,
-  ) || `thumbs-${signal}`;
+  const { redactSourceDataStable } = require('./secret-redaction');
+  const normalizedText = normalizeFeedbackText(redactSourceDataStable(String(
+    identity.normalizedText || params.context || params.whatWentWrong || params.whatWorked || '',
+  ))) || `thumbs-${signal}`;
 
   return {
     key: `fev_${hashFeedbackSourcePart(identity.key)}`,
@@ -1283,6 +1285,19 @@ function inferLessonFromConversation(conversationWindow, signal) {
   };
 }
 
+function finalizeRedactedPromotion(feedbackEvent, memoryRecord, inferredContext) {
+  const { redactSourceDataStableDeep, redactSourceDataStable } = require('./secret-redaction');
+  const cleanEvent = redactSourceDataStableDeep(feedbackEvent);
+  Object.assign(memoryRecord, redactSourceDataStableDeep(memoryRecord));
+  const cleanInferred = redactSourceDataStable(inferredContext);
+  try {
+    const { canonicalHash } = require('./lesson-canonical');
+    const hash = canonicalHash(memoryRecord);
+    if (hash) memoryRecord.canonicalHash = hash;
+  } catch (_canonErr) { /* canonical hashing is non-blocking */ }
+  return { feedbackEvent: cleanEvent, inferredContext: cleanInferred };
+}
+
 function captureFeedback(params, options = {}) {
   const _captureStart = Date.now();
   const { FEEDBACK_LOG_PATH, MEMORY_LOG_PATH, FEEDBACK_DIR } = getFeedbackPaths(options);
@@ -1300,6 +1315,12 @@ function captureFeedback(params, options = {}) {
       accepted: false,
       reason: 'Rejected: feedback payload contains raw transport transcript tokens (<task-notification>, <tool-use-id>, etc.)',
     };
+  }
+  const explicitBlockingFirewall = ['local', 'shieldcortex'].includes(
+    String(process.env.THUMBGATE_MEMORY_FIREWALL_PROVIDER || '').trim().toLowerCase(),
+  );
+  if (!explicitBlockingFirewall) {
+    params = require('./secret-redaction').redactSourceDataStableDeep(params);
   }
 
   // Record vote on lesson if lessonId or lessonKey is provided
@@ -1327,6 +1348,9 @@ function captureFeedback(params, options = {}) {
     lastAction: params.lastAction,
     feedbackDir: FEEDBACK_DIR,
   });
+  if (!explicitBlockingFirewall && distillation && typeof distillation === 'object') {
+    Object.assign(distillation, require('./secret-redaction').redactSourceDataStableDeep(distillation));
+  }
 
   const shouldUseDistilledContext = !submittedContext || isGenericFeedbackText(submittedContext, signal);
   const context = shouldUseDistilledContext && distillation.inferredFields.context
@@ -1544,13 +1568,15 @@ function captureFeedback(params, options = {}) {
     if (firewallBlocked) {
       return firewallBlocked;
     }
-    const clarification = buildClarificationMessage({
+    const { redactSourceDataStableDeep } = require('./secret-redaction');
+    feedbackEvent = redactSourceDataStableDeep(feedbackEvent);
+    const clarification = redactSourceDataStableDeep(buildClarificationMessage({
       signal,
-      context,
-      whatWentWrong,
-      whatToChange,
-      whatWorked,
-    });
+      context: feedbackEvent.context,
+      whatWentWrong: feedbackEvent.whatWentWrong,
+      whatToChange: feedbackEvent.whatToChange,
+      whatWorked: feedbackEvent.whatWorked,
+    }));
     summary.rejected += 1;
     summary.lastUpdated = now;
     saveSummary(summary);
@@ -1619,11 +1645,11 @@ function captureFeedback(params, options = {}) {
         summary.rejected += 1;
         summary.lastUpdated = now;
         saveSummary(summary);
-        const blockedEvent = {
+        const blockedEvent = require('./secret-redaction').redactSourceDataStableDeep({
           ...feedbackEvent,
           lifecycleDecision: lifecycle.decision,
           lifecycleIssues: lifecycle.issues,
-        };
+        });
         appendJSONL(FEEDBACK_LOG_PATH, blockedEvent);
         emitAnonymousFeedbackPing(signal);
         return {
@@ -1644,12 +1670,14 @@ function captureFeedback(params, options = {}) {
     /* lifecycle evaluation is fail-open for soft issues only; hard path above is explicit */
   }
 
+  const prePrepareBlocked = maybeBlockMemoryIngress({ feedbackEvent, memoryRecord: action.memory, summary, now });
+  if (prePrepareBlocked) {
+    return prePrepareBlocked;
+  }
+  action.memory = require('./secret-redaction').redactSourceDataStableDeep(action.memory);
+  feedbackEvent = require('./secret-redaction').redactSourceDataStableDeep(feedbackEvent);
   const prepared = prepareForStorage(action.memory);
   if (!prepared.ok) {
-    const firewallBlocked = maybeBlockMemoryIngress({ feedbackEvent, summary, now });
-    if (firewallBlocked) {
-      return firewallBlocked;
-    }
     summary.rejected += 1;
     summary.lastUpdated = now;
     saveSummary(summary);
@@ -1741,18 +1769,15 @@ function captureFeedback(params, options = {}) {
   if (firewallBlocked) {
     return firewallBlocked;
   }
+  const redactedCapture = finalizeRedactedPromotion(feedbackEvent, memoryRecord, inferredContext);
+  feedbackEvent = redactedCapture.feedbackEvent;
+  inferredContext = redactedCapture.inferredContext;
 
-  // Grade the correction the operator actually wrote, and persist it with the
-  // entry. assessFeedbackActionability already answered the binary question
-  // (promotable at all); this is the graded one, and without computing it here
-  // the scorer would be reachable-but-never-called — the same defect class it
-  // was added to help detect.
   const rewardScore = scoreFeedbackReward(feedbackEvent);
   if (rewardScore) feedbackEvent.rewardScore = rewardScore;
 
   appendJSONL(FEEDBACK_LOG_PATH, feedbackEvent);
   emitAnonymousFeedbackPing(signal);
-
   // Synthesis: merge similar lessons instead of creating duplicates
   let synthesisResult = null;
   try {
@@ -1919,7 +1944,7 @@ function captureFeedback(params, options = {}) {
       systemReminder: correctiveActionsReminder,
       thumbgateSystemReminder: correctiveActionsReminder,
     }),
-    ...(reflection && { reflection }),
+    ...(reflection && { reflection: require('./secret-redaction').redactSourceDataStableDeep(reflection) }),
     ...(feedbackSession && { feedbackSession }),
     ...(synthesisResult && { synthesis: synthesisResult }),
   };

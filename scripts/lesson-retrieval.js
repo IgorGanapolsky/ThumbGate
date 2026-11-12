@@ -236,9 +236,10 @@ function retrieveWithLatencyBudget(toolName, actionContext, options = {}) {
   };
 }
 
-function retrieveRelevantLessons(toolName, actionContext, options = {}) {
+function retrieveRelevantLessons(toolName, rawActionContext, options = {}) {
+  const { redactSourceDataStable } = require('./secret-redaction');
+  const actionContext = redactSourceDataStable(String(rawActionContext || ''));
   const { maxResults = 5, feedbackDir } = options;
-
   // Prefer pragmatic path (attribute-aware first stage + diversify) when enabled.
   // Scope / requireScope / maxMemoryChars must flow into loadMemories so we never
   // bypass four-field memory scope filters.
@@ -266,11 +267,12 @@ function retrieveRelevantLessons(toolName, actionContext, options = {}) {
         topIds: results.slice(0, maxResults).map((r) => r.id),
         mode: 'sync',
       }, { feedbackDir });
-      return filterTopP(
+      const shapedRows = filterTopP(
         applyGraphResolution(dedupeSupersededLessons(results), options, memories),
         resolveTopP(options),
         { minKeep: options.minKeep },
       ).slice(0, maxResults).map((x) => shapeLesson(x));
+      return attachArrayRetrievalMeta(shapedRows, { strategy: meta.strategy || 'pragmatic' });
     } catch {
       // fall through to classic path
     }
@@ -283,8 +285,9 @@ function retrieveRelevantLessons(toolName, actionContext, options = {}) {
     ? { MEMORY_LOG_PATH: pathMod.join(feedbackDir, 'memory-log.jsonl') }
     : getFeedbackPaths();
 
+  const { redactSourceDataStableDeep } = require('./secret-redaction');
   const memories = selectRetrievalMemories(
-    readJSONL(paths.MEMORY_LOG_PATH, { maxLines: MAX_RETRIEVAL_MEMORY_LINES }),
+    readJSONL(paths.MEMORY_LOG_PATH, { maxLines: MAX_RETRIEVAL_MEMORY_LINES }).map((m) => redactSourceDataStableDeep(m)),
     options,
   );
   if (memories.length === 0) return [];
@@ -399,12 +402,13 @@ function reciprocalRankFusion(rankedLists = [], options = {}) {
 
 function loadMemories(feedbackDir, options = {}) {
   const { getFeedbackPaths, readJSONL } = require('./feedback-loop');
+  const { redactSourceDataStableDeep } = require('./secret-redaction');
   const pathMod = require('path');
   const paths = feedbackDir
     ? { MEMORY_LOG_PATH: pathMod.join(feedbackDir, 'memory-log.jsonl') }
     : getFeedbackPaths();
   return selectRetrievalMemories(
-    readJSONL(paths.MEMORY_LOG_PATH, { maxLines: MAX_RETRIEVAL_MEMORY_LINES }),
+    readJSONL(paths.MEMORY_LOG_PATH, { maxLines: MAX_RETRIEVAL_MEMORY_LINES }).map((m) => redactSourceDataStableDeep(m)),
     options,
   );
 }
@@ -423,7 +427,9 @@ function applyGraphResolution(lessons, options = {}, memories) {
   }
 }
 
-function shapeLesson(m, retrieval = null) {
+function shapeLesson(rawM, retrieval = null) {
+  const { redactSourceDataStableDeep } = require('./secret-redaction');
+  const m = redactSourceDataStableDeep(rawM);
   const shaped = {
     id: m.id,
     title: m.title,
@@ -493,9 +499,10 @@ function attachArrayRetrievalMeta(rows, options = {}) {
  * returns the pure-lexical result (identical to retrieveRelevantLessons). Never
  * fabricates semantics.
  */
-async function retrieveRelevantLessonsAsync(toolName, actionContext, options = {}) {
+async function retrieveRelevantLessonsAsync(toolName, rawActionContext, options = {}) {
+  const { redactSourceDataStable } = require('./secret-redaction');
+  const actionContext = redactSourceDataStable(String(rawActionContext || ''));
   const { maxResults = 5, feedbackDir } = options;
-
   let embeddingIndex;
   try {
     embeddingIndex = require('./lesson-embedding-index');

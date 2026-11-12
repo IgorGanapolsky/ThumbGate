@@ -125,7 +125,9 @@ function initDB(dbPath) {
 /**
  * Upsert a session note into SQLite for cross-session search.
  */
-function upsertSession(db, session) {
+function upsertSession(db, rawSession) {
+  const { redactSourceDataStableDeep } = require('./secret-redaction');
+  const session = redactSourceDataStableDeep(rawSession || {});
   db.prepare(`
     INSERT OR REPLACE INTO sessions (id, project, branch, summary, content, created_at)
     VALUES (?, ?, ?, ?, ?, ?)
@@ -143,9 +145,12 @@ function upsertSession(db, session) {
 /**
  * Full-text search across past sessions using FTS5.
  */
-function searchSessions(db, query, limit = 10) {
+function searchSessions(db, rawQuery, limit = 10) {
+  const { redactSourceDataStable, redactSourceDataStableDeep } = require('./secret-redaction');
+  const query = redactSourceDataStable(String(rawQuery || ''));
   if (!query || !query.trim()) {
-    return db.prepare('SELECT * FROM sessions ORDER BY created_at DESC LIMIT ?').all(limit);
+    return db.prepare('SELECT * FROM sessions ORDER BY created_at DESC LIMIT ?').all(limit)
+      .map((r) => redactSourceDataStableDeep(r));
   }
   const ftsQuery = sanitizeFtsQuery(query);
   try {
@@ -156,11 +161,11 @@ function searchSessions(db, query, limit = 10) {
       WHERE sessions_fts MATCH ?
       ORDER BY rank
       LIMIT ?
-    `).all(ftsQuery, limit);
+    `).all(ftsQuery, limit).map((r) => redactSourceDataStableDeep(r));
   } catch {
     return db.prepare(
       'SELECT * FROM sessions WHERE content LIKE ? OR summary LIKE ? ORDER BY created_at DESC LIMIT ?',
-    ).all(`%${query}%`, `%${query}%`, limit);
+    ).all(`%${query}%`, `%${query}%`, limit).map((r) => redactSourceDataStableDeep(r));
   }
 }
 
@@ -174,8 +179,10 @@ function searchSessions(db, query, limit = 10) {
  *    (bumps the existing record's importance instead)
  * 3. Always store if whatToChange is empty (raw feedback, not actionable yet)
  */
-function upsertLesson(db, feedbackEvent, memoryRecord) {
-  // Rule 1: skip pruned records — they add noise, not signal
+function upsertLesson(db, rawFeedbackEvent, rawMemoryRecord) {
+  const { redactSourceDataStableDeep } = require('./secret-redaction');
+  const feedbackEvent = redactSourceDataStableDeep(rawFeedbackEvent || {});
+  const memoryRecord = rawMemoryRecord ? redactSourceDataStableDeep(rawMemoryRecord) : rawMemoryRecord;
   if (memoryRecord?.pruned) {
     return null;
   }
@@ -376,11 +383,16 @@ function compactLessons(db) {
  * @param {string} [options.domain] - Filter by domain
  * @returns {Array<object>}
  */
-function searchLessons(db, query, options = {}) {
-  const limit = Math.min(options.limit || 10, 50);
+function hydrateRedactedLessonRow(row) {
+  const { redactSourceDataStableDeep } = require('./secret-redaction');
+  return redactSourceDataStableDeep(parseRow(row));
+}
 
+function searchLessons(db, rawQuery, options = {}) {
+  const { redactSourceDataStable } = require('./secret-redaction');
+  const query = redactSourceDataStable(String(rawQuery || ''));
+  const limit = Math.min(options.limit || 10, 50);
   if (!query || !query.trim()) {
-    // No query — return most recent lessons with optional filters
     let sql = 'SELECT * FROM lessons WHERE 1=1';
     const params = [];
 
@@ -397,10 +409,9 @@ function searchLessons(db, query, options = {}) {
     params.push(limit);
 
     const rows = db.prepare(sql).all(...params);
-    return rows.map(parseRow);
+    return rows.map(hydrateRedactedLessonRow);
   }
 
-  // FTS5 search with ranking
   const safeQuery = sanitizeFtsQuery(query);
   let sql = `
     SELECT l.*, rank
@@ -430,10 +441,9 @@ function searchLessons(db, query, options = {}) {
     rows = fallbackLikeSearch(db, query, options, limit);
   }
 
-  const parsed = rows.map(parseRow);
+  const parsed = rows.map(hydrateRedactedLessonRow);
 
-  // Post-filter by tags (JSON array stored as text)
-  if (options.tags && options.tags.length > 0) {
+  if (options.tags?.length > 0) {
     return parsed.filter((row) => {
       const rowTags = row.tags || [];
       return options.tags.every((t) => rowTags.includes(t));
@@ -535,7 +545,9 @@ function getStatsFromDB(db) {
   const negative = db.prepare("SELECT COUNT(*) as count FROM lessons WHERE signal = 'negative'").get().count;
   const byDomain = db.prepare('SELECT domain, COUNT(*) as count FROM lessons GROUP BY domain ORDER BY count DESC').all();
   const byImportance = db.prepare('SELECT importance, COUNT(*) as count FROM lessons GROUP BY importance ORDER BY count DESC').all();
-  const recentLessons = db.prepare('SELECT id, signal, context, domain, timestamp FROM lessons ORDER BY timestamp DESC LIMIT 10').all();
+  const { redactSourceDataStableDeep } = require('./secret-redaction');
+  const recentLessons = db.prepare('SELECT id, signal, context, domain, timestamp FROM lessons ORDER BY timestamp DESC LIMIT 10').all()
+    .map((r) => redactSourceDataStableDeep(r));
   const sessionCount = db.prepare('SELECT COUNT(*) as count FROM sessions').get().count;
 
   return {

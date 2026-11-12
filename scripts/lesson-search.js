@@ -501,7 +501,9 @@ function buildLessonResult(memory, sourceFeedback, options = {}) {
   };
 }
 
-function searchLessons(query = '', options = {}) {
+function searchLessons(rawQuery = '', options = {}) {
+  const { redactSourceDataStable, redactSourceDataStableDeep } = require('./secret-redaction');
+  const query = redactSourceDataStable(String(rawQuery || ''));
   const { MEMORY_LOG_PATH, FEEDBACK_DIR, FEEDBACK_LOG_PATH } = resolveLessonPaths(options);
 
   // Try SQLite FTS5 first — falls back to JSONL Jaccard if unavailable
@@ -512,9 +514,9 @@ function searchLessons(query = '', options = {}) {
   const { lookupLessonByError } = require('./verified-lessons');
   const exactErrorMatch = lookupLessonByError(query, { feedbackDir: FEEDBACK_DIR, now: options.now });
 
-  const allMemories = readJSONL(MEMORY_LOG_PATH);
+  const allMemories = readJSONL(MEMORY_LOG_PATH).map((m) => redactSourceDataStableDeep(m));
   const memories = selectRetrievalMemories(allMemories, options);
-  const feedbackEntries = readJSONL(FEEDBACK_LOG_PATH);
+  const feedbackEntries = readJSONL(FEEDBACK_LOG_PATH).map((e) => redactSourceDataStableDeep(e));
   const feedbackById = new Map(feedbackEntries.map((entry) => [entry.id, entry]));
   const parsedLimit = Number(options.limit || 10);
   const limit = Number.isFinite(parsedLimit) && parsedLimit > 0 ? parsedLimit : 10;

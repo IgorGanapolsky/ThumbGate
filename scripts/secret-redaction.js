@@ -214,6 +214,184 @@ function enforceZeroTrustDetokenizationGate({
   };
 }
 
+const os = require('node:os');
+
+const TOKEN_PATTERN_IDS = new Set([
+  'github_pat',
+  'github_fine_grained_pat',
+  'slack_token',
+  'jwt',
+  'bearer_token',
+]);
+const STABLE_SKIP_OBJECT_KEYS = new Set([
+  'id',
+  'sourceFeedbackId',
+  'relatedFeedbackId',
+  'canonicalHash',
+  'receiptHash',
+  'timestamp',
+  'recordedAt',
+  'lastVerifiedAt',
+  'createdAt',
+  'updatedAt',
+  'signal',
+  'type',
+  'status',
+  'domain',
+  'importance',
+  'verificationStatus',
+]);
+const NON_EMAIL_EXT_RE = /\.(?:[cm]?[jt]sx?|json|ya?ml|md|png|jpe?g|gif|webp|svg|ico|css|scss|html?|lock|service|socket|timer|target|git|py|rb|go|rs|java|kt|swift|sh)$/i;
+const PLACEHOLDER_GUARD_RE = /\[(?:SECRET|TOKEN|EMAIL|PHONE|REDACTED):[A-Za-z0-9_-]+\]/g;
+const SENTINEL_RE = /\uE000TGPH_(\d+)_\uE000/g;
+const EMAIL_SOURCE_RE = /(?<![A-Za-z0-9._%+-:/])([A-Za-z0-9](?:[A-Za-z0-9._%+-]{0,62}[A-Za-z0-9])?)@([A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?(?:\.[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?)+)(?![A-Za-z0-9_:]|[.-][A-Za-z0-9])/g;
+const US_PAREN_PHONE_RE = /(?<![0-9A-Za-z_./-])(?:\+?1[-.\s]?)?\([2-9]\d{2}\)[-.\s]?[2-9]\d{2}[-.\s]\d{4}(?![0-9A-Za-z_]|[.-]\d)/g;
+const US_SEP_PHONE_RE = /(?<![0-9A-Za-z_./-])(?:\+1[-.\s]?)?[2-9]\d{2}([-.])[2-9]\d{2}\1\d{4}(?![0-9A-Za-z_]|[.-]\d)/g;
+const US_PLUS_SPACE_PHONE_RE = /(?<![0-9A-Za-z_./-])\+1\s[2-9]\d{2}\s[2-9]\d{2}\s\d{4}(?![0-9A-Za-z_]|[.-]\d)/g;
+const INTL_PHONE_SOURCE_RE = /(?<![0-9A-Za-z_./-])\+[1-9]\d{0,2}(?:[-.\s]\d{2,8}){2,4}(?![0-9A-Za-z_]|[.-]\d)/g;
+const E164_PHONE_SOURCE_RE = /(?<![0-9A-Za-z_./-])\+[1-9]\d{9,14}(?![0-9A-Za-z_]|[.-]\d)/g;
+
+let cachedDefaultSalt = null;
+function resolveSourceRedactionSalt(explicitSalt) {
+  if (typeof explicitSalt === 'string' && explicitSalt.trim()) return explicitSalt.trim();
+  const envSalt = process.env.THUMBGATE_PLACEHOLDER_SALT;
+  if (typeof envSalt === 'string' && envSalt.trim()) return envSalt.trim();
+  if (cachedDefaultSalt) return cachedDefaultSalt;
+  let user = 'local';
+  try {
+    user = os.userInfo().username || 'local';
+  } catch {
+    /* fallback when os.userInfo throws in keyless containers */
+  }
+  cachedDefaultSalt = crypto.createHash('sha256')
+    .update(`thumbgate-source-placeholder-v1:${os.hostname()}:${user}`)
+    .digest('hex');
+  return cachedDefaultSalt;
+}
+
+function stablePlaceholder(kind, canonicalValue, salt) {
+  const digest = crypto.createHmac('sha256', salt).update(String(canonicalValue)).digest('hex').slice(0, 8);
+  return `[${kind}:${digest}]`;
+}
+
+function maskExistingPlaceholders(text) {
+  const saved = [];
+  const masked = text.replace(PLACEHOLDER_GUARD_RE, (m) => {
+    const idx = saved.push(m) - 1;
+    return `\uE000TGPH_${idx}_\uE000`;
+  });
+  return { masked, saved };
+}
+
+function unmaskPlaceholders(text, saved) {
+  if (!saved.length) return text;
+  return text.replace(SENTINEL_RE, (_m, idx) => saved[Number(idx)] || '');
+}
+
+function trimTrailingDot(cred) {
+  return cred.endsWith('.') ? { core: cred.slice(0, -1), suffix: '.' } : { core: cred, suffix: '' };
+}
+
+function replacePatternWithStablePlaceholder(out, pattern, salt) {
+  pattern.regex.lastIndex = 0;
+  if (pattern.id === 'bearer_token') {
+    return out.replace(/\b(Bearer)\s+([A-Za-z0-9._~+/=-]{16,})/g, (_m, scheme, cred) => {
+      const { core, suffix } = trimTrailingDot(cred);
+      return `${scheme} ${stablePlaceholder('TOKEN', core, salt)}${suffix}`;
+    });
+  }
+  if (pattern.id === 'secret_assignment') {
+    return out.replace(pattern.regex, (match, key, pre, value, post) => {
+      if (!SECRET_KEY_NAME.test(key) || PUBLIC_KEY_NAME.test(key)) return match;
+      const { core, suffix } = trimTrailingDot(value);
+      const kind = /token/i.test(key) ? 'TOKEN' : 'SECRET';
+      return `${key}${pre}${stablePlaceholder(kind, core, salt)}${suffix}${post}`;
+    });
+  }
+  const kind = TOKEN_PATTERN_IDS.has(pattern.id) ? 'TOKEN' : 'SECRET';
+  return out.replace(pattern.regex, (match) => stablePlaceholder(kind, match, salt));
+}
+
+function normalizePhoneDigits(raw) {
+  const digits = String(raw || '').replace(/\D/g, '');
+  return digits.length === 11 && digits.startsWith('1') ? digits.slice(1) : digits;
+}
+
+function shouldKeepEmailLiteral(local, domain) {
+  const lowerDomain = domain.toLowerCase();
+  if (lowerDomain === 'tokenized.local') return true;
+  if (NON_EMAIL_EXT_RE.test(lowerDomain)) return true;
+  if (/^\d+x\./i.test(lowerDomain) || /^\d+\.\d+/.test(lowerDomain)) return true;
+  return local.toLowerCase() === 'git' && /github|gitlab|bitbucket/i.test(lowerDomain);
+}
+
+function replacePhoneMatch(match, salt) {
+  const norm = normalizePhoneDigits(match);
+  if (norm.length < 10 || /^55501\d{5}$/.test(norm)) return match;
+  return stablePlaceholder('PHONE', norm, salt);
+}
+
+function redactSourceDataStable(text, options = {}) {
+  if (typeof text !== 'string' || text.length === 0) return text;
+  const salt = resolveSourceRedactionSalt(options.salt);
+  const { masked, saved } = maskExistingPlaceholders(text);
+  let out = masked;
+  for (const pattern of SECRET_REDACTION_PATTERNS) {
+    out = replacePatternWithStablePlaceholder(out, pattern, salt);
+  }
+  out = out.replace(EMAIL_SOURCE_RE, (match, local, domain) => (
+    shouldKeepEmailLiteral(local, domain) ? match : stablePlaceholder('EMAIL', match.toLowerCase(), salt)
+  ));
+  for (const phoneRe of [US_PAREN_PHONE_RE, US_SEP_PHONE_RE, US_PLUS_SPACE_PHONE_RE, INTL_PHONE_SOURCE_RE, E164_PHONE_SOURCE_RE]) {
+    out = out.replace(phoneRe, (m) => replacePhoneMatch(m, salt));
+  }
+  return unmaskPlaceholders(out, saved);
+}
+
+function isNonPlainObject(value) {
+  return value instanceof Date || value instanceof RegExp || Buffer.isBuffer(value) || ArrayBuffer.isView(value) || value instanceof Map || value instanceof Set;
+}
+
+function isSafeTopLevelSkipValue(key, val, depth) {
+  if (depth > 0 || !STABLE_SKIP_OBJECT_KEYS.has(key)) return false;
+  if (typeof val !== 'string') return true;
+  return val.length <= 128 && !val.includes('@') && !val.includes(' ') && !containsSecret(val);
+}
+
+function redactArrayDeep(arr, options, seen, depth) {
+  const mapped = [];
+  seen.set(arr, mapped);
+  for (const item of arr) {
+    mapped.push(redactValueDeep(item, options, seen, depth + 1));
+  }
+  const metaDesc = Object.getOwnPropertyDescriptor(arr, 'retrievalMeta');
+  if (metaDesc && 'value' in metaDesc) {
+    Object.defineProperty(mapped, 'retrievalMeta', {
+      ...metaDesc,
+      value: redactValueDeep(metaDesc.value, options, seen, depth + 1),
+    });
+  }
+  return mapped;
+}
+
+function redactValueDeep(value, options, seen, depth) {
+  if (typeof value === 'string') return redactSourceDataStable(value, options);
+  if (!value || typeof value !== 'object') return value;
+  if (value instanceof Date) return new Date(value.getTime());
+  if (isNonPlainObject(value)) return value;
+  if (seen.has(value)) return seen.get(value);
+  if (Array.isArray(value)) return redactArrayDeep(value, options, seen, depth);
+  const out = {};
+  seen.set(value, out);
+  for (const [key, val] of Object.entries(value)) {
+    out[key] = isSafeTopLevelSkipValue(key, val, depth) ? val : redactValueDeep(val, options, seen, depth + 1);
+  }
+  return out;
+}
+
+function redactSourceDataStableDeep(value, options = {}) {
+  return redactValueDeep(value, options, new WeakMap(), 0);
+}
 module.exports = {
   SECRET_REDACTION_PATTERNS,
   redactSecrets,
@@ -221,4 +399,6 @@ module.exports = {
   containsSecret,
   tokenizeFormatPreservingVaultless,
   enforceZeroTrustDetokenizationGate,
+  redactSourceDataStable,
+  redactSourceDataStableDeep,
 };

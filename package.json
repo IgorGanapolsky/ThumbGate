@@ -834,7 +834,7 @@
     "test:hermes-gate": "node --test tests/hermes-gate.test.js",
     "test:verify-run": "node --test tests/verify-run.test.js",
     "test:export-dpo-pairs": "node --test tests/export-dpo-pairs.test.js",
-    "test:secret-redaction": "node --test tests/secret-redaction.test.js",
+    "test:secret-redaction": "node --test tests/secret-redaction.test.js tests/source-data-redaction.test.js",
     "test:export-hf-dataset": "node --test tests/export-hf-dataset.test.js",
     "export:hf": "node scripts/export-hf-dataset.js",
     "seo:gsd": "node scripts/seo-gsd.js plan",

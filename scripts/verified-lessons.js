@@ -112,7 +112,8 @@ function updateMemoryRecord(memoryId, updater, options = {}) {
       const record = JSON.parse(line);
       if (record.id === memoryId || record.canonicalHash === memoryId || record.title === memoryId) {
         found = true;
-        updatedRecord = updater(record);
+        const { redactSourceDataStableDeep } = require('./secret-redaction');
+        updatedRecord = redactSourceDataStableDeep(updater(record));
         return JSON.stringify(updatedRecord);
       }
       return line;
@@ -129,7 +130,8 @@ function updateMemoryRecord(memoryId, updater, options = {}) {
       timestamp: (options.now instanceof Date ? options.now : new Date(options.now || Date.now())).toISOString(),
       signal: 'negative',
     };
-    updatedRecord = updater(baseRecord);
+    const { redactSourceDataStableDeep } = require('./secret-redaction');
+    updatedRecord = redactSourceDataStableDeep(updater(baseRecord));
     newLines.push(JSON.stringify(updatedRecord));
   }
 
@@ -218,8 +220,9 @@ function findMemoryErrorMatch(cleanQuery, options = {}) {
   const paths = getFeedbackPaths(options);
   if (!fs.existsSync(paths.MEMORY_LOG_PATH)) return null;
   const rawMemories = readJSONL(paths.MEMORY_LOG_PATH, { maxLines: 500 });
-  for (const mem of rawMemories) {
-    const norm = normalizeVerificationFields(mem);
+  const { redactSourceDataStableDeep } = require('./secret-redaction');
+  for (const rawMem of rawMemories) {
+    const norm = normalizeVerificationFields(redactSourceDataStableDeep(rawMem));
     if (matchesErrorMemory(norm, cleanQuery)) {
       return {
         ...norm,
@@ -236,7 +239,8 @@ function findMemoryErrorMatch(cleanQuery, options = {}) {
  */
 function lookupLessonByError(errorText, options = {}) {
   if (!errorText || typeof errorText !== 'string') return null;
-  const cleanQuery = errorText.trim().toLowerCase();
+  const { redactSourceDataStable } = require('./secret-redaction');
+  const cleanQuery = redactSourceDataStable(errorText).trim().toLowerCase();
   if (!cleanQuery) return null;
 
   for (const seed of SEEDED_LESSONS) {
