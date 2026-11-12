@@ -1097,6 +1097,18 @@ test('/go/sprint opens the scoped sprint path without exposing a provider checko
   assert.equal(url.searchParams.get('client_reference_id'), null);
 });
 
+test('/go/diagnostic-499 and /go/diagnostic-direct route README and newsletter buyers to /diagnostic without 404', async () => {
+  for (const slug of ['diagnostic-499', 'diagnostic-direct']) {
+    const res = await fetch(apiUrl(`/go/${slug}?utm_source=github&utm_medium=readme`), { redirect: 'manual' });
+    assert.equal(res.status, 302);
+    const url = new URL(res.headers.get('location'));
+    assert.equal(url.pathname, '/diagnostic');
+    assert.equal(url.searchParams.get('plan_id'), 'sprint_diagnostic');
+    assert.equal(url.searchParams.get('utm_source'), 'github');
+    assert.equal(url.searchParams.get('landing_path'), `/go/${slug}`);
+  }
+});
+
 test('/go/:slug returns 404 JSON for slugs not registered in TRACKED_LINK_TARGETS', async () => {
   const res = await fetch(apiUrl('/go/malicious?utm_source=x'), { redirect: 'manual' });
   assert.equal(res.status, 404);
