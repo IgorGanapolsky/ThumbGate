@@ -830,7 +830,6 @@
         <div class="trust-strip" aria-label="Where the gate runs">
           <span>7 CLIs · local gate</span>
         </div>
-        <p class="install-hint">Claude Code, Cursor, Codex, or similar agents.</p>
         <p class="install-hint" id="thumbgate-dashboard-command" style="margin-top:10px;">Dashboard: <code>npx thumbgate dashboard --open</code> · <code>/thumbgate-dashboard</code> · <code>thumbgate-dashboard</code> · <a href="/dashboard#insights">demo</a> · <a class="proof-link" href="#proof">strict-mode deny example ↓</a></p>
         <div class="offer-stack">
           <form id="buy" class="checkout-card" action="/go/diagnostic-pay" method="POST" data-primary-checkout style="border-color:rgba(0,110,82,.35);box-shadow:0 18px 50px rgba(0,110,82,.12);">
@@ -851,11 +850,7 @@
             <input id="buyer-email" type="email" name="customer_email" autocomplete="email" required placeholder="you@company.com">
             <button class="button-primary" type="submit" data-revenue-cta data-cta-id="homepage_diagnostic_buy" data-cta-placement="offers">Book the $499 setup</button>
             <p class="checkout-note">Prefer a call? <a href="/support" style="color:var(--cyan);font-weight:750;">Book a 15-min triage call →</a></p>
-            <ul class="offer-points">
-              <li>60-minute working review for one workflow</li>
-              <li>One configured local gate and its regression test</li>
-              <li>Delivery within two business days after access and agreed materials are available, subject to confirmed scheduling.</li>
-            </ul>
+            <ul class="offer-points"><li>One configured local gate and its regression test</li></ul>
           </form>
         </div>
       </div>
@@ -966,21 +961,6 @@
       <div class="shell">
         <div class="section-kicker">What the $499 setup buys</div>
         <h2 class="section-title">A managed gate for one painful workflow.</h2>
-        <p class="section-lede">One workflow, done with you. SSO and a hosted audit log are not included.</p>
-        <div class="deliverables">
-          <article class="deliverable">
-            <h3>Failure map</h3>
-            <p>The exact risky action, trigger, accountable owner, current safeguard, and missing proof.</p>
-          </article>
-          <article class="deliverable">
-            <h3>Configured gate</h3>
-            <p>One supported local rule wired to deny, warn, or require a human before execution.</p>
-          </article>
-          <article class="deliverable">
-            <h3>Regression and rollout proof</h3>
-            <p>The test, how to undo the gate, and the receipt.</p>
-          </article>
-        </div>
         <div class="boundary"><strong>Boundary:</strong> the offer covers one supported local workflow. Multi-system implementation, legal or compliance certification, guaranteed savings, and hosted team features require separate scope. If the workflow cannot be reduced to one supported gate, the order is refunded instead of silently upsold.</div>
       </div>
     </section>
@@ -1061,7 +1041,6 @@ next      decision recorded before execution</pre>
       <div class="shell">
         <div class="section-kicker">Start free today</div>
         <h2 class="section-title">Block the mistake your agent made last week.</h2>
-        <p class="section-lede">Run <code>npx thumbgate init</code> (MIT), upgrade to <strong style="color:var(--text)">Pro ($19/mo)</strong> for unlimited gates, or book a <strong style="color:var(--text)">$499 setup</strong>.</p>
         <div style="display:flex;flex-wrap:wrap;gap:12px;justify-content:center;margin-top:22px">
           <a class="nav-buy" href="#install" data-cta-id="final_install_free">Install free</a>
           <a class="nav-enterprise" href="#enterprise-gate" data-offer-link data-cta-id="final_diagnostic_buy">See the $499 setup</a>
