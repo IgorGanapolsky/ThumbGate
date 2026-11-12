@@ -710,7 +710,7 @@ test('paid wedge includes managed implementation, regression, and rollout proof'
   assert.match(landingPage, /Setup Sprint/);
   assert.match(landingPage, /Book the \$499 setup/);
   assert.match(landingPage, /One configured local gate \+ regression test|One configured local gate and its regression test/);
-  assert.match(landingPage, /Rollout and rollback proof within two business days/);
+  assert.match(landingPage, /Delivery within two business days after access and agreed materials are available, subject to confirmed scheduling/);
   assert.match(landingPage, /If the workflow cannot be reduced to one supported gate, the order is refunded/);
   assert.match(landingPage, /Multi-system implementation[\s\S]*require separate scope/);
 });
