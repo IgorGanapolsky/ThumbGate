@@ -793,3 +793,181 @@ test('homepage features thumbs branding and self-improving diagrams above the fo
   assert.ok(heroBlock.includes('class="hero-thumbs"'), 'big thumbs must appear in hero');
   assert.doesNotMatch(heroBlock, /👍|👎/, 'hero art uses vector thumbs, not stock emoji');
 });
+
+test('THUMBGATE_OWNER_EMAILS grants Enterprise tier on Google and Apple SSO while leaving other emails unchanged', async () => {
+  const crypto = require('node:crypto');
+  const os = require('node:os');
+  const { startServer, __test__: serverTestHooks } = require('../src/api/server');
+  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-owner-pro-'));
+  const prevEnv = {
+    THUMBGATE_FEEDBACK_DIR: process.env.THUMBGATE_FEEDBACK_DIR,
+    THUMBGATE_API_KEY: process.env.THUMBGATE_API_KEY,
+    THUMBGATE_OPERATOR_KEY: process.env.THUMBGATE_OPERATOR_KEY,
+    THUMBGATE_OWNER_EMAILS: process.env.THUMBGATE_OWNER_EMAILS,
+    STRIPE_SECRET_KEY: process.env.STRIPE_SECRET_KEY,
+    _TEST_API_KEYS_PATH: process.env._TEST_API_KEYS_PATH,
+    GOOGLE_CLIENT_ID: process.env.GOOGLE_CLIENT_ID,
+    GOOGLE_CLIENT_SECRET: process.env.GOOGLE_CLIENT_SECRET,
+    APPLE_CLIENT_ID: process.env.APPLE_CLIENT_ID,
+    APPLE_TEAM_ID: process.env.APPLE_TEAM_ID,
+    APPLE_KEY_ID: process.env.APPLE_KEY_ID,
+    APPLE_PRIVATE_KEY: process.env.APPLE_PRIVATE_KEY,
+  };
+
+  process.env.THUMBGATE_FEEDBACK_DIR = tmpDir;
+  process.env.THUMBGATE_API_KEY = 'tg_admin_owner_test_key_01';
+  process.env.THUMBGATE_OPERATOR_KEY = 'tg_op_owner_test_key_01';
+  process.env.THUMBGATE_OWNER_EMAILS = '  IGanapolsky@gmail.com , igor.ganapolsky@icloud.com ';
+  process.env.STRIPE_SECRET_KEY = '';
+  process.env._TEST_API_KEYS_PATH = path.join(tmpDir, 'api-keys.json');
+  process.env.GOOGLE_CLIENT_ID = 'google-client-owner-test.apps.googleusercontent.com';
+  process.env.GOOGLE_CLIENT_SECRET = 'google-secret-owner-test';
+  const { publicKey: rsaPub, privateKey: rsaPriv } = crypto.generateKeyPairSync('rsa', { modulusLength: 2048 });
+  const googleJwk = { ...rsaPub.export({ format: 'jwk' }), kid: 'owner-google-kid', alg: 'RS256', use: 'sig' };
+  const appleIdKeyPair = crypto.generateKeyPairSync('rsa', { modulusLength: 2048 });
+  const appleIdJwk = { ...appleIdKeyPair.publicKey.export({ format: 'jwk' }), kid: 'owner-apple-kid', alg: 'RS256', use: 'sig' };
+  const appleClientKeyPair = crypto.generateKeyPairSync('ec', { namedCurve: 'prime256v1' });
+
+  process.env.APPLE_CLIENT_ID = 'com.iganapolsky.thumbgate.web';
+  process.env.APPLE_TEAM_ID = 'TEAM123456';
+  process.env.APPLE_KEY_ID = 'KEY1234567';
+  process.env.APPLE_PRIVATE_KEY = appleClientKeyPair.privateKey
+    .export({ type: 'pkcs8', format: 'pem' })
+    .replace(/\n/g, '\\n');
+
+  let nextGoogleEmail = '';
+  let nextAppleEmail = '';
+  let nextAppleNonce = '';
+
+  const signJwt = (privKey, kid, payload) => {
+    const header = Buffer.from(JSON.stringify({ alg: 'RS256', kid, typ: 'JWT' })).toString('base64url');
+    const body = Buffer.from(JSON.stringify(payload)).toString('base64url');
+    const sig = crypto.sign('RSA-SHA256', Buffer.from(`${header}.${body}`), privKey).toString('base64url');
+    return `${header}.${body}.${sig}`;
+  };
+
+  serverTestHooks.setGoogleOAuthFetchForTests(async (url) => {
+    if (String(url).includes('certs')) {
+      return { ok: true, status: 200, json: async () => ({ keys: [googleJwk] }) };
+    }
+    const nowSec = Math.floor(Date.now() / 1000);
+    const idToken = signJwt(rsaPriv, 'owner-google-kid', {
+      iss: 'https://accounts.google.com',
+      aud: process.env.GOOGLE_CLIENT_ID,
+      sub: `google_${nextGoogleEmail}`,
+      email: nextGoogleEmail,
+      email_verified: true,
+      iat: nowSec - 10,
+      exp: nowSec + 300,
+    });
+    return { ok: true, status: 200, json: async () => ({ id_token: idToken }) };
+  });
+
+  serverTestHooks.setAppleOAuthFetchForTests(async (url) => {
+    if (String(url).includes('/auth/keys')) {
+      return { ok: true, status: 200, json: async () => ({ keys: [appleIdJwk] }) };
+    }
+    const nowSec = Math.floor(Date.now() / 1000);
+    const idToken = signJwt(appleIdKeyPair.privateKey, 'owner-apple-kid', {
+      iss: 'https://appleid.apple.com',
+      aud: process.env.APPLE_CLIENT_ID,
+      sub: `apple_${nextAppleEmail}`,
+      email: nextAppleEmail,
+      email_verified: 'true',
+      nonce: nextAppleNonce,
+      iat: nowSec - 10,
+      exp: nowSec + 300,
+    });
+    return { ok: true, status: 200, json: async () => ({ id_token: idToken }) };
+  });
+
+  const started = await startServer({ port: 0, host: '127.0.0.1' });
+  const origin = `http://127.0.0.1:${started.port}`;
+
+  try {
+    const googleStart = await fetch(`${origin}/v1/cloud/sso/authorize?provider=google`, { redirect: 'manual' });
+    const googleStateCookie = (googleStart.headers.get('set-cookie') || '').split(';')[0];
+    const googleState = new URL(googleStart.headers.get('location')).searchParams.get('state');
+    nextGoogleEmail = 'iganapolsky@gmail.com';
+    const googleCb = await fetch(
+      `${origin}/v1/cloud/sso/callback?provider=google&code=ok_owner_google&state=${googleState}`,
+      { redirect: 'manual', headers: { cookie: googleStateCookie } },
+    );
+    assert.equal(googleCb.status, 302);
+    const ownerGoogleCookie = (googleCb.headers.get('set-cookie') || '').split(';')[0];
+    const ownerGoogleSession = await (await fetch(`${origin}/v1/auth/session`, { headers: { cookie: ownerGoogleCookie } })).json();
+    assert.equal(ownerGoogleSession.authenticated, true);
+    assert.equal(ownerGoogleSession.tier, 'Enterprise');
+    assert.equal(ownerGoogleSession.ssoProvider, 'google');
+    assert.equal(ownerGoogleSession.ssoEmail, 'iganapolsky@gmail.com');
+    assert.equal((await fetch(`${origin}/v1/feedback/stats`, { headers: { cookie: ownerGoogleCookie } })).status, 200);
+    assert.equal((await fetch(`${origin}/v1/lessons/search?limit=5`, { headers: { cookie: ownerGoogleCookie } })).status, 200);
+    assert.equal((await fetch(`${origin}/v1/search?q=*&limit=40&source=feedback`, { headers: { cookie: ownerGoogleCookie } })).status, 200);
+    assert.equal((await fetch(`${origin}/v1/dashboard`, { headers: { cookie: ownerGoogleCookie } })).status, 200);
+
+    const appleStart = await fetch(`${origin}/v1/cloud/sso/authorize?provider=apple`, { redirect: 'manual' });
+    const appleRedirectUrl = new URL(appleStart.headers.get('location'));
+    const appleState = appleRedirectUrl.searchParams.get('state');
+    nextAppleNonce = appleRedirectUrl.searchParams.get('nonce');
+    nextAppleEmail = 'Igor.Ganapolsky@icloud.com';
+    const appleCb = await fetch(`${origin}/v1/cloud/sso/apple/callback`, {
+      method: 'POST',
+      redirect: 'manual',
+      headers: {
+        'content-type': 'application/x-www-form-urlencoded',
+        origin: 'https://appleid.apple.com',
+      },
+      body: new URLSearchParams({ code: 'ok_owner_apple', state: appleState }).toString(),
+    });
+    assert.equal(appleCb.status, 303);
+    const ownerAppleCookie = (appleCb.headers.get('set-cookie') || '').split(';')[0];
+    serverTestHooks.clearInMemoryAuthSessionsForTests();
+    const ownerAppleSession = await (await fetch(`${origin}/v1/auth/session`, { headers: { cookie: ownerAppleCookie } })).json();
+    assert.equal(ownerAppleSession.authenticated, true);
+    assert.equal(ownerAppleSession.tier, 'Enterprise');
+    assert.equal(ownerAppleSession.ssoProvider, 'apple');
+    assert.equal((await fetch(`${origin}/v1/feedback/stats`, { headers: { cookie: ownerAppleCookie } })).status, 200);
+
+    const relayStart = await fetch(`${origin}/v1/cloud/sso/authorize?provider=apple`, { redirect: 'manual' });
+    const relayUrl = new URL(relayStart.headers.get('location'));
+    nextAppleNonce = relayUrl.searchParams.get('nonce');
+    nextAppleEmail = 'anon123@privaterelay.appleid.com';
+    const relayCb = await fetch(`${origin}/v1/cloud/sso/apple/callback`, {
+      method: 'POST',
+      redirect: 'manual',
+      headers: {
+        'content-type': 'application/x-www-form-urlencoded',
+        origin: 'https://appleid.apple.com',
+      },
+      body: new URLSearchParams({ code: 'ok_relay_apple', state: relayUrl.searchParams.get('state') }).toString(),
+    });
+    const relayCookie = (relayCb.headers.get('set-cookie') || '').split(';')[0];
+    const relaySession = await (await fetch(`${origin}/v1/auth/session`, { headers: { cookie: relayCookie } })).json();
+    assert.equal(relaySession.authenticated, true);
+    assert.equal(relaySession.tier, 'Free');
+    assert.equal((await fetch(`${origin}/v1/feedback/stats`, { headers: { cookie: relayCookie } })).status, 401);
+
+    const lessonsHtml = await (await fetch(`${origin}/lessons`)).text();
+    assert.match(lessonsHtml, /fetch\('\/v1\/auth\/session',\s*\{\s*credentials:\s*'include'\s*\}\)/);
+    assert.match(lessonsHtml, /resolveLessonsTierName/);
+    assert.doesNotMatch(lessonsHtml, />Landing Page</);
+    assert.match(lessonsHtml, /<a href="\/" class="nav-logo"/);
+    assert.match(lessonsHtml, /aria-label="GitHub"/);
+    const dashboardHtml = await (await fetch(`${origin}/dashboard`)).text();
+    assert.doesNotMatch(dashboardHtml, />Landing Page</);
+    assert.doesNotMatch(dashboardHtml, /<span class="logo-text">ThumbGate Dashboard<\/span>/);
+    assert.match(dashboardHtml, /<a href="\/" class="nav-logo"/);
+    assert.match(dashboardHtml, /aria-label="GitHub"/);
+    const serverSource = fs.readFileSync(path.join(__dirname, '..', 'src', 'api', 'server.js'), 'utf8');
+    assert.doesNotMatch(serverSource, />Landing Page</);
+  } finally {
+    serverTestHooks.setGoogleOAuthFetchForTests(null);
+    serverTestHooks.setAppleOAuthFetchForTests(null);
+    await new Promise((resolve) => started.server.close(resolve));
+    for (const [k, v] of Object.entries(prevEnv)) {
+      if (v === undefined) delete process.env[k];
+      else process.env[k] = v;
+    }
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+  }
+});
