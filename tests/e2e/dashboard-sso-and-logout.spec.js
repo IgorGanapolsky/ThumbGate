@@ -130,6 +130,10 @@ test.describe('/dashboard real-server login, redeploy persistence, Google SSO, a
       await expect(page.locator('#getProBtn')).toHaveText('Upgrade to Pro');
       await expect(page.locator('#getProBtn')).toHaveAttribute('href', 'https://thumbgate.ai/pricing');
       await expect(page.locator('#dashboardContent')).toBeHidden();
+      await expect(page.locator('#upNextCard')).toBeVisible();
+      await expect(page.locator('#upNextTitle')).toHaveText('Finish setup to record your first gate block →');
+      await expect(page.locator('#upNextActionBtn')).toHaveAttribute('href', '/install#quickstart');
+      await expect(page.locator('#demoBanner')).toBeHidden();
 
       await Promise.all([
         page.waitForURL(/\/dashboard\?noauto=1$/),
@@ -138,6 +142,7 @@ test.describe('/dashboard real-server login, redeploy persistence, Google SSO, a
       await expect(page.locator('#authStatus')).toHaveText('Disconnected');
       await expect(page.locator('#ssoGoogleBtn')).toBeVisible();
       await expect(page.locator('#authHelp')).toBeVisible();
+      await expect(page.locator('#upNextCard')).toBeHidden();
 
       // Part 2: Subscribed Google user gets Pro, hides sign-in button & copy, renders Today features, survives redeploy, and logs out cleanly
       provisionApiKey('cus_pw_paid_1', {
@@ -160,10 +165,13 @@ test.describe('/dashboard real-server login, redeploy persistence, Google SSO, a
       await expect(page.locator('#authHelp')).toBeHidden();
       await expect(page.locator('#dashboardContent')).toBeVisible();
 
-      // Verify Dayglass Today additions: Up next card (1 button), 0-safe status chips, chat model/privacy route, and private memory footer
+      // State 1 (0 gate blocks recorded): single Finish setup bar is visible, links to /install#quickstart, and no second banner
       await expect(page.locator('#upNextCard')).toBeVisible();
-      await expect(page.locator('#upNextTitle')).toHaveText('Connect your agent');
+      await expect(page.locator('#upNextTitle')).toHaveText('Finish setup to record your first gate block →');
+      await expect(page.locator('#upNextDetail')).toContainText('npx thumbgate quickstart');
+      await expect(page.locator('#upNextActionBtn')).toHaveAttribute('href', '/install#quickstart');
       await expect(page.locator('#upNextCard a, #upNextCard button')).toHaveCount(1);
+      await expect(page.locator('#demoBanner')).toBeHidden();
       await expect(page.locator('#chipBlockedToday')).toContainText('0 BLOCKED TODAY');
       await expect(page.locator('#chipWarnedToday')).toContainText('0 WARNED TODAY');
       await expect(page.locator('#lessonStorageSummary')).toContainText('100% On-Device Private Memory');
@@ -173,7 +181,15 @@ test.describe('/dashboard real-server login, redeploy persistence, Google SSO, a
       await page.locator('#chatSend').click();
       await expect(page.locator('.chat-model-route')).toContainText('Local, no cloud');
 
-      // Reload across simulated redeploy: still signed in with Pro and sign-in button/copy remain hidden
+      // State 2 (first gate block recorded): Finish setup bar disappears completely, 0 banners visible, and survives redeploy
+      const subscriberTenantId = `tenant_${crypto.scryptSync('cus_pw_paid_1', 'thumbgate-tenant-data-identity-v1', 16, { N: 16384, r: 8, p: 1 }).toString('hex').slice(0, 24)}`;
+      const subscriberTenantDir = path.join(tmpDir, 'tenants', subscriberTenantId);
+      fs.mkdirSync(subscriberTenantDir, { recursive: true });
+      fs.writeFileSync(
+        path.join(subscriberTenantDir, 'audit-trail.jsonl'),
+        `${JSON.stringify({ decision: 'deny', gateId: 'gate:force-push', timestamp: new Date().toISOString() })}\n`
+      );
+
       serverTestHooks.clearInMemoryAuthSessionsForTests();
       await page.reload();
       await expect(page.locator('#authStatus')).toHaveText('✓ Connected');
@@ -181,7 +197,9 @@ test.describe('/dashboard real-server login, redeploy persistence, Google SSO, a
       await expect(page.locator('#ssoGoogleBtn')).toBeHidden();
       await expect(page.locator('#authHelp')).toBeHidden();
       await expect(page.locator('#dashboardContent')).toBeVisible();
-
+      await expect(page.locator('#upNextCard')).toBeHidden();
+      await expect(page.locator('#demoBanner')).toBeHidden();
+      await expect(page.locator('#chipBlockedToday')).toContainText('1 BLOCKED TODAY');
       // Click Log Out -> /dashboard?noauto=1 Disconnected -> sign-in button & copy visible again -> reload still signed out
       await Promise.all([
         page.waitForURL(/\/dashboard\?noauto=1$/),

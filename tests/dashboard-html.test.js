@@ -169,12 +169,17 @@ test('dashboard demo keeps paid and revenue placeholders evidence-safe', () => {
   assert.doesNotMatch(dashboard, /Live demo data below\./);
 });
 
-test('dashboard hides sign-in button and sign-in copy when signed in and includes Dayglass Today elements', () => {
+test('dashboard hides sign-in button and sign-in copy when signed in and renders a single Finish setup bar keyed on first block', () => {
   const dashboard = readDashboard();
+  const installHtml = fs.readFileSync(path.join(__dirname, '..', 'public', 'install.html'), 'utf8');
 
   assert.match(dashboard, /function syncAuthBarVisibility\(state, options\)/);
-  assert.match(dashboard, /id="upNextCard"/);
-  assert.match(dashboard, /id="upNextActionBtn"/);
+  assert.equal((dashboard.match(/id="upNextCard"/g) || []).length, 1, 'must have exactly one Finish setup bar');
+  assert.equal((dashboard.match(/data-finish-setup-bar="true"/g) || []).length, 1, 'no second setup banner');
+  assert.match(dashboard, /id="upNextActionBtn" href="\/install#quickstart"/);
+  assert.match(dashboard, /npx thumbgate quickstart/);
+  assert.match(installHtml, /id="quickstart"/);
+  assert.match(installHtml, /npx thumbgate quickstart/);
   assert.match(dashboard, /id="gateStatusChips"/);
   assert.match(dashboard, /data-chip-count="blocked-today"/);
   assert.match(dashboard, /data-chip-count="warned-today"/);
