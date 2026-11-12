@@ -3462,71 +3462,26 @@ test('workflow sprint intake validation failure records failure telemetry and wr
   assert.doesNotMatch(JSON.stringify(failure), /sk_test_1234567890abcdef/);
 });
 
-test('broker audit intake captures form leads first-party and records telemetry', async () => {
-  const body = new URLSearchParams({
-    name: 'Ava Broker',
-    brokerage: 'Northside Realty',
-    website: 'https://northside.example/leads',
-    email: 'Ava@Example.com',
-    suspected_leak: 'Zillow leads are getting a slow first response.',
-  }).toString();
+test('removed real-estate /broker-audit and /v1/intake/broker-audit routes return 404', async () => {
+  const pageRes = await fetch(apiUrl('/broker-audit'));
+  assert.equal(pageRes.status, 404);
 
-  const res = await fetch(apiUrl('/v1/intake/broker-audit'), {
+  const unauthIntakeRes = await fetch(apiUrl('/v1/intake/broker-audit'), {
     method: 'POST',
-    headers: {
-      'content-type': 'application/x-www-form-urlencoded',
-      referer: 'https://thumbgate.ai/broker-audit?utm_source=linkedin&utm_medium=organic_social&utm_campaign=broker_audit_launch',
-    },
-    body,
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ email: 'test@example.com' }),
   });
+  assert.equal(unauthIntakeRes.status, 401);
 
-  assert.equal(res.status, 201);
-  assert.match(String(res.headers.get('content-type')), /text\/html/);
-  const html = await res.text();
-  assert.match(html, /Broker audit request received/);
-  assert.match(html, /Lead ID:/);
-
-  const leads = readJsonl(path.join(tmpFeedbackDir, 'broker-audit-leads.jsonl'));
-  const lead = leads.find((entry) => entry.contact.email === 'ava@example.com');
-  assert.ok(lead);
-  assert.match(lead.leadId, /^broker_audit_lead_/);
-  assert.equal(lead.contact.name, 'Ava Broker');
-  assert.equal(lead.contact.brokerage, 'Northside Realty');
-  assert.equal(lead.contact.website, 'https://northside.example/leads');
-  assert.equal(lead.qualification.suspectedLeak, 'Zillow leads are getting a slow first response.');
-  assert.equal(lead.attribution.utmSource, 'linkedin');
-  assert.equal(lead.attribution.utmCampaign, 'broker_audit_launch');
-
-  const telemetry = readJsonl(path.join(tmpFeedbackDir, 'telemetry-pings.jsonl'));
-  assert.ok(telemetry.some((entry) => (
-    entry.eventType === 'broker_audit_lead_submitted' &&
-    entry.ctaId === 'broker_audit_form' &&
-    entry.utmSource === 'linkedin'
-  )));
-});
-
-test('broker audit intake rejects invalid leads and writes no broker lead', async () => {
-  const before = readJsonl(path.join(tmpFeedbackDir, 'broker-audit-leads.jsonl')).length;
-  const res = await fetch(apiUrl('/v1/intake/broker-audit'), {
+  const authIntakeRes = await fetch(apiUrl('/v1/intake/broker-audit'), {
     method: 'POST',
     headers: {
       'content-type': 'application/json',
-      referer: 'https://thumbgate.ai/broker-audit?utm_source=direct',
+      authorization: 'Bearer test-api-key',
     },
-    body: JSON.stringify({
-      name: 'Missing Email',
-      brokerage: 'Example Realty',
-      website: 'javascript:alert(1)',
-      email: 'not-an-email',
-    }),
+    body: JSON.stringify({ email: 'test@example.com' }),
   });
-
-  assert.equal(res.status, 400);
-  const after = readJsonl(path.join(tmpFeedbackDir, 'broker-audit-leads.jsonl')).length;
-  assert.equal(after, before);
-
-  const telemetry = readJsonl(path.join(tmpFeedbackDir, 'telemetry-pings.jsonl'));
-  assert.ok(telemetry.some((entry) => entry.eventType === 'broker_audit_lead_failed'));
+  assert.equal(authIntakeRes.status, 404);
 });
 
 test('workflow sprint advance endpoint requires the static admin key', async () => {
@@ -5307,50 +5262,6 @@ test('loss analytics endpoint returns ranked causes and behavioral signals', asy
   assert.ok(Array.isArray(body.lossAnalysis.explicitReasons));
   assert.equal(body.lossAnalysis.explicitThemes[0].key, 'trust');
   assert.equal(body.telemetry.behavior.topExitSection.key, 'hero');
-});
-
-
-test('/broker-audit serves the public landing page with telemetry script', async () => {
-  const res = await fetch(apiUrl('/broker-audit'));
-  assert.equal(res.status, 200);
-  assert.match(String(res.headers.get('content-type')), /text\/html/);
-
-  const body = await res.text();
-  // Title + framing: free-audit primary, $49 fast-lane secondary.
-  assert.match(body, /Free 20-Minute Broker Lead-Flow Audit/);
-  assert.match(body, /action="https:\/\/site-gamma-one-15\.vercel\.app\/api\/audit-form"/);
-  assert.doesNotMatch(body, /REPLACE_ME/);
-  assert.doesNotMatch(body, /phc_[A-Za-z0-9]+/);
-  assert.match(body, /api_host:'\/ingest'/);
-  assert.match(body, /Request free audit/);
-  assert.match(body, /\$49 fast-lane/);
-  // Stripe link wired to the verified plink
-  assert.match(body, /buy\.stripe\.com\/9B600jaiE7Dg6tPayn3sI2L/);
-  // Inline telemetry script wires the three events
-  assert.match(body, /broker_audit_page_view/);
-  assert.match(body, /broker_audit_cta_clicked/);
-  assert.match(body, /broker_audit_unload/);
-  // CSP-safe randomness (no Math.random in the telemetry block)
-  assert.match(body, /crypto\.randomUUID/);
-  // HEAD request should also succeed (route handles isHeadRequest)
-  const head = await fetch(apiUrl('/broker-audit'), { method: 'HEAD' });
-  assert.equal(head.status, 200);
-});
-
-test('/broker-audit returns 500 problem-json when static asset is missing', async () => {
-  // Exercises the catch branch of the /broker-audit handler so the read
-  // failure path is covered (Sonar new_coverage gate).
-  const assetPath = path.resolve(__dirname, '..', 'assets', 'static', 'broker-audit.html');
-  const backupPath = `${assetPath}.swap-${process.pid}`;
-  fs.renameSync(assetPath, backupPath);
-  try {
-    const res = await fetch(apiUrl('/broker-audit'));
-    assert.equal(res.status, 500);
-    const body = await res.json();
-    assert.equal(body.error, 'broker-audit page unavailable');
-  } finally {
-    fs.renameSync(backupPath, assetPath);
-  }
 });
 
 test('/leash-beta serves the Hermes founding beta landing page', async () => {
