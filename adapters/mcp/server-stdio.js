@@ -579,6 +579,28 @@ function buildSuggestFixResponse(args = {}) {
     .slice(0, limit)
     .map(({ action, source }) => ({ action, source }));
 
+  let designSelfCorrection = null;
+  const isDesignQuery = /\b(contrast|tap\s*target|touch\s*target|44px|overflow|focus\s*ring|colorblind|cls|layout\s*shift)\b/i.test(context)
+    || typeof args.sourceCode === 'string'
+    || Array.isArray(args.visualFindings);
+  if (isDesignQuery) {
+    try {
+      const { runDesignSelfCorrectionPipeline } = require('../../src/openshell-lovable-engine');
+      const vf = Array.isArray(args.visualFindings) ? args.visualFindings : (context ? [context] : []);
+      designSelfCorrection = runDesignSelfCorrectionPipeline({
+        sourceCode: typeof args.sourceCode === 'string' ? args.sourceCode : '',
+        visualFindings: vf,
+      });
+      for (const p of designSelfCorrection.patches) {
+        const tw = p.tailwindPatch?.add?.length ? ` | Tailwind +[${p.tailwindPatch.add.join(' ')}]` : '';
+        all.unshift({
+          action: `Apply [${p.type}] on ${p.selector || p.astPath}: CSS { ${p.cssOverride} }${tw}`,
+          source: 'lovable-ast-design-engine',
+        });
+      }
+    } catch { /* non-fatal */ }
+  }
+
   // If nothing matched, add generic fallback
   if (all.length === 0) {
     all.push({
@@ -587,10 +609,12 @@ function buildSuggestFixResponse(args = {}) {
     });
   }
 
+  const capped = all.slice(0, limit);
   return toTextResult({
-    suggestions: all,
+    suggestions: capped,
     query: context,
-    totalFound: all.length,
+    totalFound: capped.length,
+    ...(designSelfCorrection ? { designSelfCorrection } : {}),
   });
 }
 
@@ -1243,6 +1267,18 @@ async function callToolInner(name, args) {
         decision = 'error';
         reason = 'gate engine returned unparseable output';
       }
+      let designSelfCorrection = null;
+      try {
+        const ti = canonical.toolInput || {};
+        const fp = String(ti.file_path || ti.filePath || '').trim();
+        const src = String(ti.content ?? ti.new_string ?? ti.sourceCode ?? '');
+        const hasVf = Array.isArray(ti.visualFindings) && ti.visualFindings.length > 0;
+        if ((/\.(?:html?|jsx|tsx|css)$/i.test(fp) && src && src.length <= 262144) || hasVf) {
+          const { runDesignSelfCorrectionPipeline } = require('../../src/openshell-lovable-engine');
+          const rep = runDesignSelfCorrectionPipeline({ sourceCode: src, filePath: fp || null, visualFindings: ti.visualFindings });
+          if (rep.issueCount > 0) designSelfCorrection = rep;
+        }
+      } catch { /* non-fatal */ }
       const strict = process.env.THUMBGATE_STRICT_ENFORCEMENT === '1';
       return {
         content: [{
@@ -1259,6 +1295,7 @@ async function callToolInner(name, args) {
                   ? 'Gate evaluation failed. Treat as unsafe and ask the user.'
                   : 'No policy gate matched.',
             reason,
+            ...(designSelfCorrection ? { designSelfCorrection } : {}),
           }, null, 2),
         }],
       };

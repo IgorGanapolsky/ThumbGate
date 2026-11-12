@@ -160,3 +160,119 @@ test('Lovable AST self-correcting design engine inherits ancestor bg, mutates JS
     fs.rmSync(tmpDir, { recursive: true, force: true });
   }
 });
+
+test('ThumbGate pipeline outputs active AST inline edits, CSS overrides, and Tailwind adjustments across JSX {...}, CSS, PreToolUse, MCP, guardrails, and /v1/design/self-correct', async () => {
+  const fs = require('node:fs');
+  const os = require('node:os');
+  const path = require('node:path');
+  const { runDesignSelfCorrectionPipeline } = require('../src/openshell-lovable-engine');
+  const { evaluateSidewaysEnterpriseGuardrails } = require('../src/mckinsey-top-company-ai-coding');
+  const gatesEngine = require('../scripts/gates-engine');
+  const { callTool } = require('../adapters/mcp/server-stdio');
+
+  // 1. Real JSX balanced-brace AST (with `>` inside arrow fn + `{...rest}`) + HSL hue preservation + CSS <style> AST
+  const realJsx = [
+    '<style>.card-wrap { background-color: #0f172a; } .tiny-btn { height: 28px; color: #475569; }</style>',
+    '<div className="card-wrap" {...restProps}>',
+    '  <button id="act" onClick={() => setCount(count > 0 ? count + 1 : 1)} className="h-6 text-blue-700 outline-none">Run</button>',
+    '</div>',
+  ].join('\n');
+  const jsxPipeline = runDesignSelfCorrectionPipeline({ sourceCode: realJsx });
+  assert.equal(jsxPipeline.ok, true);
+  assert.equal(jsxPipeline.verification.remainingIssueCount, 0);
+  assert.match(jsxPipeline.patchedSource, /min-h-11 min-w-11 px-4 py-2\.5/);
+  assert.match(jsxPipeline.patchedSource, /text-blue-(?:200|300|400)/);
+  assert.match(jsxPipeline.patchedSource, /focus-visible:ring-2/);
+  assert.match(jsxPipeline.patchedSource, /\.tiny-btn \{[^}]*min-height: 44px;/);
+  assert.ok(jsxPipeline.inlineEdits.every((e) => typeof e.expectedChunkHash === 'string' && e.expectedChunkHash.length === 16));
+
+  // 2. Enterprise guardrails emit active remediation instead of passive text
+  const guard = evaluateSidewaysEnterpriseGuardrails({
+    upstreamSignals: ['posthog'],
+    releaseChecklistComplete: true,
+    complianceTags: ['pretool_diode_verified'],
+    uiPalette: {
+      selector: '.status-badge',
+      foregroundHex: '#475569',
+      backgroundHex: '#0f172a',
+      reliesOnRedGreenOnly: true,
+      hasNonColorShapeOrLabel: false,
+      layoutSource: '<span className="status-badge text-slate-600">Failing</span>',
+    },
+  });
+  const contrastFinding = guard.findings.find((f) => f.code === 'accessibility_contrast_violation');
+  const cbFinding = guard.findings.find((f) => f.code === 'colorblind_accessibility_violation');
+  assert.ok(contrastFinding.remediation.cssOverrides.cssRule.includes('color:'));
+  assert.ok(contrastFinding.remediation.tailwindAdjustments.add.length > 0);
+  assert.ok(contrastFinding.remediation.inlineCodeEdit.after.includes('status-badge'));
+  assert.ok(cbFinding.remediation.cssOverrides.cssRule.includes('underline'));
+  assert.match(guard.selfCorrection.patchedSource, /underline decoration-2/);
+
+  // 3. PreToolUse hook pipeline (`gates-engine.runAsync`) + MCP `gate_check` and `suggest_fix`
+  const rawHook = await gatesEngine.runAsync({
+    tool_name: 'Write',
+    tool_input: { file_path: 'src/Hero.tsx', content: '<div className="bg-slate-950"><p className="sub text-slate-600">Low</p></div>' },
+  });
+  const parsedHook = JSON.parse(rawHook);
+  assert.match(parsedHook.hookSpecificOutput.additionalContext, /\[ThumbGate Active Design Engine\]/);
+  assert.match(parsedHook.hookSpecificOutput.additionalContext, /Tailwind \+\[text-slate-300\]/);
+
+  const mcpGate = JSON.parse((await callTool('gate_check', {
+    tool_name: 'Write',
+    tool_input: { file_path: 'src/Button.tsx', content: '<button className="h-5">Tap</button>' },
+  })).content[0].text);
+  assert.ok(mcpGate.designSelfCorrection.issueCount >= 1);
+  assert.match(mcpGate.designSelfCorrection.patchedSource, /min-h-11/);
+
+  const mcpFix = JSON.parse((await callTool('suggest_fix', {
+    context: 'The text contrast is too low on .caption',
+  })).content[0].text);
+  assert.equal(mcpFix.suggestions[0].source, 'lovable-ast-design-engine');
+  assert.ok(mcpFix.designSelfCorrection.cssOverrides.length >= 1);
+
+  // 4. Hosted API (`POST /v1/design/self-correct` & `/v1/gates/decide`) + live `public/index.html` >= 44px tap targets
+  const tmpRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'tg-design-http-'));
+  const savedKey = process.env.THUMBGATE_API_KEY;
+  const savedFb = process.env.THUMBGATE_FEEDBACK_DIR;
+  process.env.THUMBGATE_API_KEY = 'tg-test-design-key';
+  process.env.THUMBGATE_FEEDBACK_DIR = tmpRoot;
+  const { startServer } = require('../src/api/server');
+  const handle = await startServer({ port: 0, host: '127.0.0.1' });
+  try {
+    const origin = `http://127.0.0.1:${handle.server.address().port}`;
+    const scRes = await fetch(`${origin}/v1/design/self-correct`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({
+        sourceCode: '<div className="bg-slate-900"><p className="lead">Text</p></div>',
+        visualFindings: ['The text contrast is too low on .lead'],
+      }),
+    });
+    assert.equal(scRes.status, 200);
+    const scJson = await scRes.json();
+    assert.equal(scJson.ok, true);
+    assert.equal(scJson.mode, 'active_self_correcting_design_engine');
+    assert.match(scJson.patchedSource, /lead text-slate-300/);
+
+    const gdRes = await fetch(`${origin}/v1/gates/decide`, {
+      method: 'POST',
+      headers: { authorization: 'Bearer tg-test-design-key', 'content-type': 'application/json' },
+      body: JSON.stringify({
+        toolName: 'Write',
+        toolArgs: { file_path: 'public/card.html', content: '<button style="min-height: 24px">Go</button>' },
+      }),
+    });
+    assert.equal(gdRes.status, 200);
+    const gdJson = await gdRes.json();
+    assert.match(gdJson.designSelfCorrection.patchedSource, /min-height: 44px/);
+
+    const homeHtml = await (await fetch(`${origin}/`)).text();
+    assert.doesNotMatch(homeHtml, /id="(?:navPaidLoginBtn|navPaidDashboardLink|paidLoginKeyInput|paidLoginSubmitBtn|googleCloudLoginLink)"[^>]*min-height:\s*(?:36|38)px/);
+  } finally {
+    if (typeof handle.server.closeAllConnections === 'function') handle.server.closeAllConnections();
+    await new Promise((resolve) => handle.server.close(() => resolve()));
+    if (savedKey === undefined) delete process.env.THUMBGATE_API_KEY; else process.env.THUMBGATE_API_KEY = savedKey;
+    if (savedFb === undefined) delete process.env.THUMBGATE_FEEDBACK_DIR; else process.env.THUMBGATE_FEEDBACK_DIR = savedFb;
+    fs.rmSync(tmpRoot, { recursive: true, force: true });
+  }
+});

@@ -3850,10 +3850,10 @@ function buildDashboardSsoButtonsHtml(providers = getConfiguredSsoProviders()) {
 function buildLandingSsoButtonsHtml(providers = getConfiguredSsoProviders()) {
   const parts = [];
   if (providers.google) {
-    parts.push('<a href="/v1/cloud/sso/authorize?provider=google" id="googleCloudLoginLink" style="display:inline-flex;align-items:center;gap:6px;min-height:36px;padding:0 14px;border-radius:8px;border:1px solid rgba(56,215,255,0.45);background:rgba(56,215,255,0.1);color:var(--cyan);font:800 12px/1 inherit;text-decoration:none;">G Continue with Google</a>');
+    parts.push('<a href="/v1/cloud/sso/authorize?provider=google" id="googleCloudLoginLink" style="display:inline-flex;align-items:center;gap:6px;min-height:44px;min-width:44px;padding:0 14px;border-radius:8px;border:1px solid rgba(56,215,255,0.45);background:rgba(56,215,255,0.1);color:var(--cyan);font:800 12px/1 inherit;text-decoration:none;">G Continue with Google</a>');
   }
   if (providers.apple) {
-    parts.push('<a href="/v1/cloud/sso/authorize?provider=apple" id="appleSsoLoginLink" style="display:inline-flex;align-items:center;gap:6px;min-height:36px;padding:0 14px;border-radius:8px;border:1px solid #f8fafc;background:#f8fafc;color:#090d16;font:800 12px/1 inherit;text-decoration:none;">\uF8FF Continue with Apple</a>');
+    parts.push('<a href="/v1/cloud/sso/authorize?provider=apple" id="appleSsoLoginLink" style="display:inline-flex;align-items:center;gap:6px;min-height:44px;min-width:44px;padding:0 14px;border-radius:8px;border:1px solid #f8fafc;background:#f8fafc;color:#090d16;font:800 12px/1 inherit;text-decoration:none;">\uF8FF Continue with Apple</a>');
   }
   return parts.join('\n          ');
 }
@@ -10057,8 +10057,39 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
       return;
     }
 
-    if (req.method === 'OPTIONS' && (pathname === '/v1/billing/checkout' || pathname === '/v1/billing/session' || pathname === '/v1/billing/portal' || pathname === '/v1/billing/recommend-offer')) {
+    if (req.method === 'OPTIONS' && (pathname === '/v1/billing/checkout' || pathname === '/v1/billing/session' || pathname === '/v1/billing/portal' || pathname === '/v1/billing/recommend-offer' || pathname === '/v1/design/self-correct')) {
       sendPublicBillingPreflight(res);
+      return;
+    }
+
+    if (req.method === 'POST' && pathname === '/v1/design/self-correct') {
+      try {
+        const body = await parseJsonBody(req);
+        const traceId = body.traceId || createTraceId('design');
+        const sourceCode = typeof body.sourceCode === 'string' ? body.sourceCode : '';
+        if (!sourceCode && !Array.isArray(body.visualFindings)) {
+          throw createHttpError(400, 'sourceCode (string) or visualFindings (array) is required');
+        }
+        if (sourceCode.length > 262144) {
+          throw createHttpError(413, 'sourceCode exceeds 256 KiB limit');
+        }
+        const { runDesignSelfCorrectionPipeline } = require('../openshell-lovable-engine');
+        const result = runDesignSelfCorrectionPipeline({
+          sourceCode,
+          visualFindings: Array.isArray(body.visualFindings) ? body.visualFindings : [],
+          minContrast: typeof body.minContrast === 'number' ? body.minContrast : 4.5,
+          defaultBgHex: typeof body.defaultBgHex === 'string' ? body.defaultBgHex : '#0f172a',
+          allowTailwind: body.allowTailwind !== false,
+        });
+        sendJson(res, 200, { ...result, traceId }, getPublicBillingHeaders(traceId));
+      } catch (err) {
+        sendProblem(res, {
+          type: PROBLEM_TYPES.BAD_REQUEST,
+          title: 'Request Error',
+          status: err.statusCode || 400,
+          detail: err.message || 'Unable to process design self-correction request.',
+        }, getPublicBillingHeaders(''));
+      }
       return;
     }
 
@@ -10821,6 +10852,16 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
             ? body.confidenceFloor
             : 0.7,
         });
+        const uiTarget = String((body.toolArgs && (body.toolArgs.file_path || body.toolArgs.filePath)) || '');
+        const uiSource = String((body.toolArgs && (body.toolArgs.content ?? body.toolArgs.new_string ?? body.toolArgs.sourceCode)) || '');
+        const hasVisual = Array.isArray(body.visualFindings) && body.visualFindings.length > 0;
+        if ((/\.(?:html?|jsx|tsx|css)$/i.test(uiTarget) && uiSource && uiSource.length <= 262144) || hasVisual) {
+          const { runDesignSelfCorrectionPipeline } = require('../openshell-lovable-engine');
+          verdict.designSelfCorrection = runDesignSelfCorrectionPipeline({
+            sourceCode: uiSource,
+            visualFindings: body.visualFindings,
+          });
+        }
         sendJson(res, 200, verdict);
         return;
       }
