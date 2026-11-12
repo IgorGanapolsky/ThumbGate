@@ -139,6 +139,7 @@ const {
 const {
   appendFunnelEvent,
   createCheckoutSession,
+  isSyntheticOrOwnerCheckoutEmail,
   createBillingPortalSession,
   getCheckoutSessionStatus,
   provisionApiKey,
@@ -3264,10 +3265,16 @@ function applyTrackedLinkQueryKeys(destinationUrl, params) {
   }
 }
 
+function trackedLinkQueryEmail(params) {
+  return normalizeCheckoutCustomerEmail(
+    params.get('customer_email') || params.get('prefilled_email')
+  );
+}
+
 function applyTrackedLinkCustomerEmail(destinationUrl, params, target) {
   if (!target.allowCustomerEmail) return;
-  const customerEmail = normalizeCheckoutCustomerEmail(params.get('customer_email'));
-  if (!customerEmail) return;
+  const customerEmail = trackedLinkQueryEmail(params);
+  if (!customerEmail || isSyntheticOrOwnerCheckoutEmail(customerEmail)) return;
   appendQueryParam(
     destinationUrl,
     target.prefillStripeEmail ? 'prefilled_email' : 'customer_email',
@@ -3552,6 +3559,20 @@ async function serveTrackedLinkRedirect({ req, res, parsed, hostedConfig, isHead
       // Fall back cleanly to static Payment Link if dynamic session creation fails
     }
   }
+  if (target.external && isSyntheticOrOwnerCheckoutEmail(trackedLinkQueryEmail(parsed.searchParams))) {
+    const deflectUrl = new URL(target.botDeflectPath || '/checkout/pro', hostedConfig.appOrigin);
+    appendTrackedLinkQueryParams(deflectUrl, parsed, target);
+    res.writeHead(302, {
+      ...(journeyState.setCookieHeaders.length ? { 'Set-Cookie': journeyState.setCookieHeaders } : {}),
+      'Cache-Control': 'no-store',
+      'X-Robots-Tag': 'noindex,nofollow',
+      'X-ThumbGate-Link-Slug': target.slug,
+      Location: deflectUrl.toString(),
+    });
+    res.end();
+    return;
+  }
+
   const destinationUrl = buildTrackedLinkDestination(target, hostedConfig, parsed);
   const attribution = buildTrackedLinkAttribution(target, parsed, req, journeyState, destinationUrl);
   if (target.external) {

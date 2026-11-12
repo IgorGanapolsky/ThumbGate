@@ -2,4 +2,4 @@
 "thumbgate": patch
 ---
 
-Refuse live Stripe Checkout for known fixture and synthetic emails, including formtests.info, and do not redirect that refusal to a Payment Link.
+Refuse live Stripe Checkout for fixture emails, including plus-tags and every acme.io or acme.com mailbox, and do not send those addresses to a Payment Link.

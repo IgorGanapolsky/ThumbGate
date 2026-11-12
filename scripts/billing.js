@@ -3032,7 +3032,7 @@ const AUTOMATED_CHECKOUT_SOURCES = new Set([
   'internal_audit', 'probe', 'health_check', 'smoke_test', 'codex_audit', 'synthetic', 'e2e_probe',
 ]);
 const AUTOMATED_CHECKOUT_MARKER_PATTERN = /(?:^|[^a-z0-9])(?:internal[-_]audit|smoke[-_]test|health[-_]check|codex[-_]verification|codex[-_]audit|e2e[-_]probe|checkout[-_]probe|money-v\d+-audit)(?:$|[^a-z0-9])/i;
-const SYNTHETIC_CHECKOUT_EMAIL_PATTERN = /^(?:[^@\s]+@(?:example\.(?:com|org|net)|formtests\.info|mailinator\.com|invalid)|test@test\.com|buyer@acme\.(?:io|com)|founder@agent-startup\.io|audit@thumbgate\.ai|(?:e2e[-_]?probe|test[-_]?checkout[-_]?probe|probe|smoke[-_]?test)@[^@\s]+)$/i;
+const SYNTHETIC_CHECKOUT_EMAIL_PATTERN = /^(?:[^@\s]+@(?:example\.(?:com|org|net)|formtests\.info|mailinator\.com|acme\.(?:io|com)|invalid)|test@test\.com|founder@agent-startup\.io|audit@thumbgate\.ai|(?:e2e[-_]?probe|test[-_]?checkout[-_]?probe|probe|smoke[-_]?test)@[^@\s]+)$/i;
 
 function canonicalizeEmailAddress(rawEmail = '') {
   const email = String(rawEmail || '').trim().toLowerCase();
@@ -3046,8 +3046,9 @@ function canonicalizeEmailAddress(rawEmail = '') {
 function isSyntheticOrOwnerCheckoutEmail(rawEmail = '') {
   const email = String(rawEmail || '').trim().toLowerCase();
   if (!email) return false;
-  if (SYNTHETIC_CHECKOUT_EMAIL_PATTERN.test(email)) return true;
   const canonical = canonicalizeEmailAddress(email);
+  if (canonical && SYNTHETIC_CHECKOUT_EMAIL_PATTERN.test(canonical)) return true;
+  if (SYNTHETIC_CHECKOUT_EMAIL_PATTERN.test(email)) return true;
   if (!canonical) return false;
   return getOwnerEmails().some((ownerEmail) => canonicalizeEmailAddress(ownerEmail) === canonical);
 }
@@ -4711,7 +4712,7 @@ function handleGithubWebhook(event, provenance = {}) {
 }
 
 module.exports = {
-  CONFIG, createCheckoutSession, isAutomatedCheckoutRequest, createBillingPortalSession, getCheckoutSessionStatus, provisionApiKey, resolvePaidEntitlementForEmail, rotateApiKey, validateApiKey, recordUsage, disableCustomerKeys, handleWebhook, verifyWebhookSignature, verifyGithubWebhookSignature, verifyPayPalWebhookSignature, recordGithubMarketplaceWebhookDelivery, recordPayPalWebhookDelivery, handleGithubWebhook, loadKeyStore, appendFunnelEvent, appendRevenueEvent, loadFunnelLedger, loadRevenueLedger, loadGithubMarketplaceWebhookLedger, loadPayPalWebhookLedger, loadNewsletterSubscribers, loadResolvedRevenueEvents, getFunnelAnalytics, getBusinessAnalytics, getBillingSummary, getBillingSummaryLive, getBillingSummariesLive, listStripeReconciledRevenueEvents, repairGithubMarketplaceRevenueLedger,
+  CONFIG, createCheckoutSession, isAutomatedCheckoutRequest, isSyntheticOrOwnerCheckoutEmail, createBillingPortalSession, getCheckoutSessionStatus, provisionApiKey, resolvePaidEntitlementForEmail, rotateApiKey, validateApiKey, recordUsage, disableCustomerKeys, handleWebhook, verifyWebhookSignature, verifyGithubWebhookSignature, verifyPayPalWebhookSignature, recordGithubMarketplaceWebhookDelivery, recordPayPalWebhookDelivery, handleGithubWebhook, loadKeyStore, appendFunnelEvent, appendRevenueEvent, loadFunnelLedger, loadRevenueLedger, loadGithubMarketplaceWebhookLedger, loadPayPalWebhookLedger, loadNewsletterSubscribers, loadResolvedRevenueEvents, getFunnelAnalytics, getBusinessAnalytics, getBillingSummary, getBillingSummaryLive, getBillingSummariesLive, listStripeReconciledRevenueEvents, repairGithubMarketplaceRevenueLedger,
   _buildCheckoutSessionPayload: buildCheckoutSessionPayload,
   _filterQualifiedCheckoutFunnelEvents: filterQualifiedCheckoutFunnelEvents,
   _createSessionDroppingRejectedOptionals: createSessionDroppingRejectedOptionals,
