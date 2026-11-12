@@ -123,3 +123,41 @@ test('GET /success page includes billing portal link and manage subscription but
   assert.match(body, /id="manage-portal-btn"/);
   assert.match(body, /id="billing-portal-link"/);
 });
+
+test('GET /portal ignores a bare email or customer id (no portal without proof)', async () => {
+  provisionApiKey('cus_test_victim_user', { planId: 'pro', customerEmail: 'victim@example.com' });
+  for (const qs of ['email=victim@example.com', 'customer=cus_test_victim_user']) {
+    const res = await fetch(apiUrl(`/portal?${qs}&format=json`), {
+      headers: { Accept: 'application/json' },
+      redirect: 'manual',
+    });
+    assert.notEqual(res.status, 302, `${qs} must not redirect to a portal`);
+    const text = await res.text();
+    assert.doesNotMatch(text, /cus_test_victim_user/, `${qs} must not reveal the customer`);
+    assert.doesNotMatch(text, /billing=portal/, `${qs} must not return a portal URL`);
+  }
+});
+
+test('POST /v1/billing/portal rejects a bare email or customer id', async () => {
+  provisionApiKey('cus_test_victim_api', { planId: 'pro', customerEmail: 'victim2@example.com' });
+  for (const body of [{ email: 'victim2@example.com' }, { customerId: 'cus_test_victim_api' }]) {
+    const res = await fetch(apiUrl('/v1/billing/portal'), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    assert.equal(res.status, 400, `${JSON.stringify(body)} must be rejected`);
+  }
+});
+
+test('POST /v1/billing/portal ignores a caller-supplied returnUrl', async () => {
+  const provisioned = provisionApiKey('cus_test_return_url', { planId: 'pro' });
+  const res = await fetch(apiUrl('/v1/billing/portal'), {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ apiKey: provisioned.key, returnUrl: 'https://evil.example/' }),
+  });
+  assert.equal(res.status, 200);
+  const json = await res.json();
+  assert.doesNotMatch(json.url, /evil\.example/);
+});
