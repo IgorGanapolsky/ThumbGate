@@ -28,6 +28,15 @@ function sensitivityRank(level) {
   return idx >= 0 ? idx : 0;
 }
 
+function isVaultlessTokenMatch(patternId, match) {
+  const value = String(match || '');
+  if (patternId === 'email') return value.toLowerCase().endsWith('@tokenized.local');
+  if (patternId === 'ssn') return /^900[-.\s]/.test(value);
+  if (patternId === 'phone_us') return /^(?:\+?1[-.\s]?)?\(?555\)?[-.\s]?01\d/.test(value);
+  if (patternId === 'credit_card') return value.startsWith('9999');
+  return false;
+}
+
 /**
  * Scan text for PII and return findings with sensitivity labels.
  */
@@ -40,8 +49,9 @@ function scanForPii(text) {
   for (const pattern of PII_PATTERNS) {
     // Reset regex lastIndex for global patterns
     pattern.regex.lastIndex = 0;
-    const matches = str.match(pattern.regex);
-    if (matches && matches.length > 0) {
+    const rawMatches = str.match(pattern.regex) || [];
+    const matches = rawMatches.filter((m) => !isVaultlessTokenMatch(pattern.id, m));
+    if (matches.length > 0) {
       findings.push({
         id: pattern.id,
         label: pattern.label,
@@ -69,7 +79,9 @@ function redactPii(text) {
   // Then redact PII
   for (const pattern of PII_PATTERNS) {
     pattern.regex.lastIndex = 0;
-    redacted = redacted.replace(pattern.regex, `[REDACTED:${pattern.id}]`);
+    redacted = redacted.replaceAll(pattern.regex, (match) => (
+      isVaultlessTokenMatch(pattern.id, match) ? match : `[REDACTED:${pattern.id}]`
+    ));
   }
   return redacted;
 }

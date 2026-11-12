@@ -22,6 +22,10 @@ const {
   redactSecrets,
   redactSecretsDeep,
   containsSecret,
+  computeLuhnCheckDigit,
+  tokenizeFormatPreservingVaultless,
+  tokenizeDeepAtSource,
+  enforceZeroTrustDetokenizationGate,
   SECRET_REDACTION_PATTERNS,
 } = require('../scripts/secret-redaction');
 const { recordConversationEntry } = require('../scripts/feedback-history-distiller');
@@ -191,5 +195,120 @@ test('export: exportDatabricksBundle redacts a planted secret in every bundle ta
 
   for (const dir of [feedbackDir, proofDir, outputDir]) {
     fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+// ---------------------------------------------------------------------------
+// 5. Capital One Databolt / Gartner 2026 Shift-Left Source Tokenization
+// ---------------------------------------------------------------------------
+
+function isValidLuhn(digits) {
+  const payload = digits.slice(0, -1);
+  return computeLuhnCheckDigit(payload) === digits.slice(-1);
+}
+
+test('tokenizeFormatPreservingVaultless preserves card format, Luhn validity, idempotence, and secret referential integrity', () => {
+  const salt = 'gartner-2026-databolt-source-fpt-key';
+  const cardA = ['4111', '1111', '1111', '1111'].join('-');
+  const secretA = ['sk_live_', 'A1b2C3d4E5f6G7h8I9j0K1l2M3'].join('');
+  const secretB = ['sk_live_', 'Z9y8X7w6V5u4T3s2R1q0P9o8N7'].join('');
+  const bearerSecret = ['Bearer ', 'opaque_bearer_cred_99887766'].join('');
+  const kvAssign = ['client_secret=', 'super_confidential_value_12345'].join('');
+  const pubAssign = 'publishable_key=pk_live_public_identifier_12345';
+
+  const input = `Charge ${cardA} for maya@acme.io using ${secretA}, ${secretB}, ${bearerSecret}, ${kvAssign}, ${pubAssign}`;
+  const first = tokenizeFormatPreservingVaultless(input, {
+    salt,
+    preserveSecretReferentialIntegrity: true,
+  });
+  const second = tokenizeFormatPreservingVaultless(input, {
+    salt,
+    preserveSecretReferentialIntegrity: true,
+  });
+
+  assert.equal(first, second, 'deterministic referential integrity');
+  assert.equal(
+    tokenizeFormatPreservingVaultless(first, { salt, preserveSecretReferentialIntegrity: true }),
+    first,
+    'idempotent on already-tokenized payload',
+  );
+  assert.ok(!first.includes(cardA));
+  assert.ok(!first.includes('maya@acme.io'));
+  assert.ok(!first.includes(secretA));
+  assert.ok(!first.includes(secretB));
+  assert.ok(first.includes(pubAssign), 'preserves public key assignment');
+
+  const tokenCardMatch = first.match(/\b9999-\d{4}-\d{4}-\d{4}\b/);
+  assert.ok(tokenCardMatch, 'preserves 4-4-4-4 hyphenated card layout');
+  assert.equal(isValidLuhn(tokenCardMatch[0].replaceAll('-', '')), true, 'tokenized card is Luhn-valid');
+
+  const secretTokens = [...first.matchAll(/\[FPT:stripe_live_secret#([0-9a-f]{8})\]/g)].map((m) => m[1]);
+  assert.equal(secretTokens.length, 2);
+  assert.notEqual(secretTokens[0], secretTokens[1], 'distinct secrets map to distinct tokens for join correlation');
+  assert.match(first, /Bearer \[FPT:bearer_token#[0-9a-f]{8}\]/);
+  assert.match(first, /client_secret=\[FPT:secret_assignment#[0-9a-f]{8}\]/);
+  assert.equal(tokenizeFormatPreservingVaultless('', { salt }), '');
+});
+
+test('tokenizeDeepAtSource tokenizes nested payloads without mutating input and enforceZeroTrustDetokenizationGate writes audit trail', () => {
+  const salt = 'gartner-2026-databolt-deep-source-key';
+  const tmpAuditDir = mkTmp('tg-detok-audit-');
+  const auditLogPath = path.join(tmpAuditDir, 'detok-audit.jsonl');
+  try {
+    const sourcePayload = {
+      user: { email: 'cto@enterprise.io', ssn: '123-45-6789', phone: '415-890-1234' },
+      events: ['login from cto@enterprise.io', 'clean note'],
+      count: 2,
+    };
+    const result = tokenizeDeepAtSource(sourcePayload, { salt });
+    assert.equal(result.referentialIntegrity, true);
+    assert.equal(result.fieldsTokenized, 4);
+    assert.equal(sourcePayload.user.email, 'cto@enterprise.io', 'caller input not mutated');
+    assert.ok(result.data.events[0].includes(result.data.user.email), 'same email joins across nested fields');
+
+    const emitted = [];
+    const deniedField = enforceZeroTrustDetokenizationGate({
+      authenticated: true,
+      roleAuthorizedForPlaintext: true,
+      explicitDetokenizePermission: true,
+      crossesExternalNetwork: false,
+      principalId: 'analyst-pod-1',
+      requestedFields: ['email', 'ssn'],
+      allowedFields: ['email'],
+      auditLogPath,
+      onAuditEvent: (entry) => emitted.push(entry),
+    });
+    assert.equal(deniedField.allowed, false);
+    assert.equal(deniedField.viewMode, 'TOKENIZED_ONLY');
+    assert.ok(deniedField.blockers.includes('unauthorized_field_detokenization:ssn'));
+    assert.equal(emitted.length, 1);
+
+    const allowedField = enforceZeroTrustDetokenizationGate({
+      authenticated: true,
+      roleAuthorizedForPlaintext: true,
+      explicitDetokenizePermission: true,
+      crossesExternalNetwork: false,
+      principalId: 'custodian-1',
+      requestedFields: ['email'],
+      allowedFields: ['email'],
+      auditLogPath,
+    });
+    assert.equal(allowedField.allowed, true);
+    assert.equal(allowedField.viewMode, 'DETOKENIZED_PLAINTEXT');
+    const unrestrictedFields = enforceZeroTrustDetokenizationGate({
+      authenticated: true,
+      roleAuthorizedForPlaintext: true,
+      explicitDetokenizePermission: true,
+      requestedFields: ['email'],
+      allowedFields: null,
+    });
+    assert.equal(unrestrictedFields.allowed, true);
+
+    const auditLines = fs.readFileSync(auditLogPath, 'utf8').trim().split('\n').map((l) => JSON.parse(l));
+    assert.equal(auditLines.length, 2);
+    assert.equal(auditLines[0].principalId, 'analyst-pod-1');
+    assert.equal(auditLines[1].allowed, true);
+  } finally {
+    fs.rmSync(tmpAuditDir, { recursive: true, force: true });
   }
 });
