@@ -1674,9 +1674,9 @@ test('ordinary and OAuth account-chooser clicks without payment controls are all
   assert.equal(detectEconomicAction('mcp__browseros-neo__act', {
     page: 62, kind: 'click', ref: 'e2', session: 'bf3a78ee-2030-44e1-848d-2f72e6984ee2', diff: 1500,
   }), false);
-  const oauthClick = { page: 62, kind: 'click', ref: 'e2', url: 'https://accounts.google.com/o/oauth2/v2/auth', text: 'Choose an account' };
-  assert.equal(detectEconomicAction('mcp__browseros-neo__act', oauthClick), false);
-  assert.equal(runHardFloor({ tool_name: 'mcp__browseros-neo__act', tool_input: oauthClick }), null);
+  const chooserClick = { page: 62, kind: 'click', ref: 'e2', url: 'https://accounts.google.com/o/oauth2/v2/auth', text: 'Choose an account' };
+  assert.equal(detectEconomicAction('mcp__browseros-neo__act', chooserClick), false);
+  assert.equal(runHardFloor({ tool_name: 'mcp__browseros-neo__act', tool_input: chooserClick }), null);
   // BrowserOS act clicks on linkedin.com and Gmail send buttons are allowed.
   const linkedinSave = { page: 64, kind: 'click', ref: 'e12', url: 'https://www.linkedin.com/feed/update/urn:li:activity:7526253985255817216/', text: 'Save' };
   assert.equal(detectEconomicAction('mcp__browseros-neo__act', linkedinSave), false);
