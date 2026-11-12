@@ -328,17 +328,46 @@ function evaluateSidewaysEnterpriseGuardrails({
   const minContrast = uiPalette.isLargeText ? WCAG_AA_LARGE_CONTRAST : WCAG_AA_NORMAL_CONTRAST;
   const contrastRatio = computeContrastRatio(fg, bg);
 
+  const visualIssues = Array.isArray(uiPalette.visualFindings) ? [...uiPalette.visualFindings] : [];
+  const sel = uiPalette.selector || '.tg-surface';
+
   if (contrastRatio === null || contrastRatio < minContrast) {
+    visualIssues.push({ type: 'low_contrast', selector: sel, fgHex: fg, bgHex: bg, minContrast });
+  }
+  if (uiPalette.reliesOnRedGreenOnly === true && uiPalette.hasNonColorShapeOrLabel !== true) {
+    visualIssues.push({ type: 'colorblind_unsafe_status', selector: sel });
+  }
+
+  const { runDesignSelfCorrectionPipeline } = require('./openshell-lovable-engine');
+  const selfCorrection = (visualIssues.length > 0 || uiPalette.layoutSource)
+    ? runDesignSelfCorrectionPipeline({
+      sourceCode: String(uiPalette.layoutSource || ''),
+      visualFindings: visualIssues,
+      defaultBgHex: bg,
+      minContrast,
+      allowTailwind: uiPalette.allowTailwind !== false,
+    })
+    : null;
+
+  if (contrastRatio === null || contrastRatio < minContrast) {
+    const cEdit = selfCorrection?.inlineEdits.find((e) => e.selector === sel) || selfCorrection?.inlineEdits[0] || null;
+    const cCss = selfCorrection?.cssOverrides.find((c) => c.selector === sel) || selfCorrection?.cssOverrides[0] || null;
+    const cTw = selfCorrection?.tailwindAdjustments.find((t) => t.selector === sel) || selfCorrection?.tailwindAdjustments[0] || null;
     findings.push({
       code: 'accessibility_contrast_violation',
       message: `UI contrast ratio (${contrastRatio ?? 'invalid'}) between ${fg} and ${bg} is below WCAG AA minimum (${minContrast}:1).`,
+      remediation: { cssOverrides: cCss, tailwindAdjustments: cTw, inlineCodeEdit: cEdit },
     });
   }
 
   if (uiPalette.reliesOnRedGreenOnly === true && uiPalette.hasNonColorShapeOrLabel !== true) {
+    const cbEdit = selfCorrection?.inlineEdits[selfCorrection.inlineEdits.length - 1] || null;
+    const cbCss = selfCorrection?.cssOverrides[selfCorrection.cssOverrides.length - 1] || null;
+    const cbTw = selfCorrection?.tailwindAdjustments[selfCorrection.tailwindAdjustments.length - 1] || null;
     findings.push({
       code: 'colorblind_accessibility_violation',
       message: 'Colorblind accessibility guardrail: status indicators cannot rely on red/green hue alone without an icon/text label.',
+      remediation: { cssOverrides: cbCss, tailwindAdjustments: cbTw, inlineCodeEdit: cbEdit },
     });
   }
 
@@ -361,6 +390,7 @@ function evaluateSidewaysEnterpriseGuardrails({
     ok: findings.length === 0,
     contrastRatio,
     findings,
+    ...(selfCorrection ? { selfCorrection } : {}),
   };
 }
 
