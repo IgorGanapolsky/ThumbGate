@@ -288,3 +288,18 @@ test('intervention policy CLI trains and prints the model path', () => {
   assert.equal(parsed.model.modelType, 'multinomial_naive_bayes');
   assert.match(parsed.modelPath, /intervention-policy\.json$/);
 });
+
+test('buildRuntimeCandidate tags find -delete and Windows recursive delete commands with cmd:destructive_delete', () => {
+  const { buildRuntimeCandidate } = require('../scripts/intervention-policy');
+  for (const command of [
+    'find $T -type f -delete',
+    'cmd /c rmdir /s /q "D:\\projects\\old"',
+    'Remove-Item -Recurse -Force D:\\projects\\old',
+    'rm "$T/"',
+  ]) {
+    const candidate = buildRuntimeCandidate({ toolName: 'Bash', command });
+    assert.ok(candidate.tokens.includes('cmd_destructive_delete'), `missing token for ${command}`);
+  }
+  const benign = buildRuntimeCandidate({ toolName: 'Bash', command: "find . -name '*.log'" });
+  assert.equal(benign.tokens.includes('cmd_destructive_delete'), false);
+});

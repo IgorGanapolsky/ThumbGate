@@ -11,6 +11,7 @@ const {
   classifyCommand,
   evaluateOperationalIntegrity,
   findReleaseSensitiveFiles,
+  isDestructiveDeleteCommand,
   normalizePosix,
   resolveRepoRoot,
 } = require('./operational-integrity');
@@ -22,6 +23,7 @@ const {
   buildWorkflowControl,
   normalizeProviderAction,
 } = require('./provider-action-normalizer');
+const { canonicalizeToolCall } = require('./harness-tool-names');
 const {
   detectEconomicAction,
   evaluateFinancialControl,
@@ -272,7 +274,8 @@ function collectAffectedFiles(toolName, toolInput = {}, repoRoot) {
 function isHighRiskAction(toolName, toolInput = {}, affectedFiles = []) {
   if (EDIT_LIKE_TOOLS.has(toolName) && affectedFiles.length > 0) return true;
   if (toolName !== 'Bash') return false;
-  return HIGH_RISK_BASH_PATTERN.test(String(toolInput.command || ''));
+  const command = String(toolInput.command || '');
+  return HIGH_RISK_BASH_PATTERN.test(command) || isDestructiveDeleteCommand(command);
 }
 
 function classifyActionProfile(toolInput = {}, toolName = '', options = {}) {
@@ -667,7 +670,7 @@ function scoreRisk({
   if (/\bgh\s+pr\s+merge\b.*--admin\b/i.test(commandInfo.text)) {
     addDriver(drivers, 'admin_merge_bypass', 0.45, 'Admin merge bypass skips the protected merge path.');
   }
-  if (/\brm\s+-rf\b/i.test(commandInfo.text)) {
+  if (/\brm\s+-rf\b/i.test(commandInfo.text) || commandInfo.isDestructiveDelete) {
     addDriver(drivers, 'destructive_delete', 0.28, 'Recursive delete is destructive and difficult to recover from.');
   }
   if (taskScopeViolation) {
@@ -1251,6 +1254,7 @@ function classifyReversibility({ command, blastRadius, integrity, protectedSurfa
   const destructiveCommand = /\bgit\s+push\b.*(?:--force|-f)\b/i.test(text)
     || /\bgh\s+pr\s+merge\b.*--admin\b/i.test(text)
     || /\brm\s+-rf\b/i.test(text)
+    || isDestructiveDeleteCommand(text)
     || /\b(?:npm|yarn|pnpm)\s+publish\b/i.test(text)
     || /\bgh\s+release\s+create\b/i.test(text)
     || /\bgit\s+tag\b/i.test(text);
@@ -1550,12 +1554,14 @@ function evaluateWorkflowSentinel(toolName, toolInput = {}, options = {}) {
     tokenEstimate: options.tokenEstimate,
     costUsd: options.costUsd,
   });
-  const normalizedToolName = normalizedAction.toolName || toolName;
-  const normalizedToolInput = {
+  const reportedToolName = normalizedAction.toolName || toolName;
+  const canonicalCall = canonicalizeToolCall(reportedToolName, {
     ...toolInput,
     ...normalizedAction.toolInput,
-  };
-  if (normalizedAction.command && !normalizedToolInput.command) {
+  });
+  const normalizedToolName = canonicalCall.toolName;
+  const normalizedToolInput = canonicalCall.toolInput;
+  if (normalizedAction.command && (!normalizedToolInput.command || Array.isArray(normalizedToolInput.command))) {
     normalizedToolInput.command = normalizedAction.command;
   }
   if (normalizedAction.affectedFiles.length > 0 && !normalizedToolInput.changed_files && !normalizedToolInput.changedFiles) {
@@ -1776,7 +1782,7 @@ function evaluateWorkflowSentinel(toolName, toolInput = {}, options = {}) {
       : 'Predicted workflow failure before execution.';
   const report = {
     sentinelVersion: 'workflow-sentinel-v2',
-    toolName: normalizedToolName,
+    toolName: reportedToolName,
     normalizedAction,
     costControl,
     financialControl,
@@ -1840,6 +1846,7 @@ module.exports = {
   collectAffectedFiles,
   evaluateWorkflowSentinel,
   isHighRiskAction,
+  isDestructiveDeleteCommand,
   isVersionOrProbeCommand,
   loadGovernanceState,
   normalizeLearnedPolicyForSentinel,

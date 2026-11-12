@@ -17,6 +17,7 @@ const {
   getCurrentBranch,
   gitVerifyRef,
   isSafeBranchName,
+  isDestructiveDeleteCommand,
   isSafeGitObjectId,
   isSafeGitRevision,
   isHeadReachableFrom,
@@ -424,4 +425,59 @@ test('runCli reports the PR head branch during pull_request CI integrity checks'
 
   const report = JSON.parse(output[0]);
   assert.equal(report.currentBranch, 'feat/docker-sandbox-story');
+});
+
+test('isDestructiveDeleteCommand detects recursive, wrapper, and unset-variable delete variants', () => {
+  const positives = [
+    'rm -rf ./build-output', 'rm -fr ./build-output', 'rm --recursive --force ./build-output', 'rm -Recurse D:\\projects\\old',
+    'find $T -type f -delete', 'find . -name "*.tmp" -exec echo {} \\; -delete', 'find . -type f -exec rm {} +',
+    'find . -execdir /bin/rm -f {} \\;', 'find . -exec sh -c "rm -rf \\"$1\\"" _ {} \\;',
+    'cmd /c rmdir /s /q "D:\\projects\\old"', 'cmd.exe /d /s /c "cd D:\\ && rd /s /q D:\\projects\\old"',
+    'rmdir /s build', 'del /s /q C:\\temp\\*', 'rd /s D:\\projects\\old', 'erase /s /q C:\\temp\\*',
+    'Remove-Item -Recurse -Force D:\\projects\\old', 'Remove-Item D:\\projects\\old -Recurse',
+    'powershell -NoProfile -ExecutionPolicy Bypass -Command "Remove-Item -Recurse -Force D:\\projects\\old"',
+    'pwsh "ri -r D:\\projects\\old"', 'bash -o pipefail -lc "find . -delete"', 'sudo -u root find /tmp/work -delete',
+    'git clean -fdx', 'git -C /tmp/repo clean -d -x -f', 'git clean --force -e "*.keep"',
+    'rm $T', 'rm ${T}', 'rm "$T/"', 'rm "${T}/"', 'rm "${T:-}"', 'rm ""', 'rm "/"',
+    'rmdir $T', 'del %T%', 'rd "$T/"', 'Remove-Item $T', 'Remove-Item -Include *.tmp -Path "$T/"',
+    'Remove-Item $env:T', 'unlink $T', 'git clean $T',
+    'T="" && rm "$T/subdir"', 'export T="" && rm "$T"', 'T=/tmp/ok && unset T && rm "$T"', 'T=/tmp/ok && env -u T rm "$T"',
+    'echo "$(find . -name \'*.bak\' -delete)"', 'echo `find $T -type f -delete`', 'echo "say \\"hi\'s $(find . -delete)"',
+    'echo "foo\\\\" && rm -rf ./build-output && echo "bar"', 'echo "foo\\\\" && find $T -type f -delete && echo "bar"',
+    'cmd /c "C:\\Windows\\System32\\rmdir.exe" /s /q "D:\\projects\\old"', 'cmd /c "rmdir" /s /q "D:\\projects\\old"',
+    'cmd /c"rmdir /s /q D:\\projects\\old"', 'powershell -Command \'Remove-Item\' -Recurse \'D:\\projects\\old\'',
+    'del /s/ar C:\\temp\\*', '$T = ""; Remove-Item "$T/subdir"', '$T = $null; Remove-Item "$T/subdir"',
+    'Remove-Item D:\\projects\\old\\ -Recurse', 'rmdir D:\\projects\\old\\ /s /q',
+    'Set-Location D:\\projects\\old\\; Remove-Item -Recurse .',
+    'Remove-Item "D:\\My Projects\\old\\" -Recurse -Filter "my *.tmp"',
+    'rmdir "D:\\projects\\old\\" /s /q && echo "done"',
+    ['Remove-Item', 'D:\\projects\\old\\', '-Recurse'],
+    ['cmd', '/c', 'rmdir', '/s', '/q', 'D:\\projects\\old'], ['bash', '-lc', 'rm -rf ./build-output'],
+    ['sh', '-c', 'find $T -type f -delete'], ['rm', ''],
+  ];
+  for (const command of positives) {
+    assert.equal(isDestructiveDeleteCommand(command), true, `expected match for: ${JSON.stringify(command)}`);
+  }
+  assert.equal(classifyCommand('find $T -type f -delete').isDestructiveDelete, true);
+});
+
+test('isDestructiveDeleteCommand ignores non-delete find, plain rmdir, dry-runs, quoted mentions, and bound vars', () => {
+  const negatives = [
+    '', "find . -name '*.log'", 'find . -name -delete', 'find . -type f -exec ls -la {} +',
+    'rmdir emptydir', 'rmdir /srv/emptydir', 'rmdir -p build/empty', 'del /q file.tmp',
+    'Remove-Item D:\\projects\\old\\single.txt', 'Remove-Item -Recurse:$false D:\\projects\\old\\single.txt',
+    'powershell -File cleanup.ps1', 'git clean -fdn', 'git clean --dry-run -fdx', 'git status',
+    'gh pr create --title "fix: detect find -delete and rmdir /s"',
+    'echo "find $T -type f -delete && rmdir /s /q old"', "echo '$(find . -delete)'", "rm '$T'",
+    'for f in a.tmp b.tmp; do rm "$f"; done', 'T=/tmp/safe.tmp && rm "$T"', 'export T=/tmp/safe.tmp && rm "$T"',
+    'set T=C:\\temp\\safe.tmp && del "%T%"', 'env T=/tmp/safe.tmp rm "$T"',
+    'while read -r f; do rm "$f"; done < list.txt', 'while IFS= read -r line; do rm -f "$line"; done',
+    'while read; do rm "$REPLY"; done < list.txt', '$T = "D:\\\\safe\\\\file.txt"; Remove-Item $T',
+    '$env:T = "D:\\\\safe\\\\file.txt"; Remove-Item $env:T',
+  ];
+  for (const command of negatives) {
+    assert.equal(isDestructiveDeleteCommand(command), false, `expected NO match for: ${command}`);
+  }
+  assert.equal(classifyCommand("find . -name '*.log'").isDestructiveDelete, false);
+  assert.equal(classifyCommand('rmdir emptydir').isDestructiveDelete, false);
 });
