@@ -67,7 +67,15 @@ async function runActivationFlow({ ask, out, isTTY, deps = {} }) {
     }
   }
   const trackEvent = deps.trackEvent || (() => {});
-
+  const recordFirstBlock = deps.recordFirstBlock !== undefined
+    ? deps.recordFirstBlock
+    : (() => {
+        try {
+          return require(path.join(PKG_ROOT, 'scripts', 'activation-tracker')).recordFirstBlockedToolCall;
+        } catch {
+          return () => {};
+        }
+      })();
   out('');
   out(`thumbgate quickstart v${pkgVersion()}`);
   out('');
@@ -146,6 +154,11 @@ async function runActivationFlow({ ask, out, isTTY, deps = {} }) {
   out('');
 
   try { trackEvent('cli_quickstart_activated', { command: 'quickstart', blocked }); } catch { /* telemetry best-effort */ }
+  if (blocked && typeof recordFirstBlock === 'function') {
+    try {
+      recordFirstBlock({ gateId: promotion.gateId, source: 'cli_quickstart' });
+    } catch {}
+  }
 
   return {
     interactive: true,
@@ -166,18 +179,25 @@ function quickstart() {
   const trackEvent = (() => {
     try { return require(path.join(PKG_ROOT, 'scripts', 'cli-telemetry')).trackEvent; } catch { return () => {}; }
   })();
+  const recordFirstBlock = (() => {
+    try {
+      return require(path.join(PKG_ROOT, 'scripts', 'activation-tracker')).recordFirstBlockedToolCall;
+    } catch {
+      return () => {};
+    }
+  })();
 
   if (!isTTY) {
     // Mirror the non-interactive branch without opening readline (which would
     // otherwise keep the process alive waiting for input that never comes).
-    return runActivationFlow({ ask: async () => '', out, isTTY: false, deps: { trackEvent } });
+    return runActivationFlow({ ask: async () => '', out, isTTY: false, deps: { trackEvent, recordFirstBlock } });
   }
 
   const readline = require('node:readline');
   const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
   const ask = (q) => new Promise((resolve) => rl.question(q, resolve));
 
-  return runActivationFlow({ ask, out, isTTY: true, deps: { trackEvent } })
+  return runActivationFlow({ ask, out, isTTY: true, deps: { trackEvent, recordFirstBlock } })
     .catch((err) => {
       console.error(`quickstart error: ${err?.message ?? err}`);
       process.exitCode = 1;

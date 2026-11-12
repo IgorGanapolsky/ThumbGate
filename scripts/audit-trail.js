@@ -239,9 +239,24 @@ function loadObservedAgents() {
  * @returns {object} the stored audit record
  */
 function recordAuditEvent(params = {}) {
+  if (process.env.THUMBGATE_SANDBOX_EVAL === '1' || params.dryRun) {
+    return {
+      id: 'audit_sandbox',
+      timestamp: new Date().toISOString(),
+      toolName: params.toolName || 'unknown',
+      toolInput: sanitizeToolInput(params.toolInput || {}),
+      agentId: params.agentId || resolveAuditAgentId(),
+      decision: params.decision || 'allow',
+      gateId: params.gateId || null,
+      message: params.message || null,
+      severity: params.severity || null,
+      latencyMs: typeof params.latencyMs === 'number' ? params.latencyMs : null,
+      source: params.source || 'gates-engine',
+      _sandbox: true,
+    };
+  }
   const logPath = getAuditLogPath();
   ensureDir(path.dirname(logPath));
-
   const record = {
     id: `audit_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
     timestamp: new Date().toISOString(),
@@ -346,6 +361,7 @@ function getCircularReplacer() {
  * internal analytics only — they never pollute thumbs-up/thumbs-down counts.
  */
 function auditToFeedback(auditRecord) {
+  if (!auditRecord || auditRecord._sandbox || process.env.THUMBGATE_SANDBOX_EVAL === '1') return null;
   if (auditRecord.decision === 'allow') return null;
 
   try {
