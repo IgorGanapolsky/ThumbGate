@@ -31,6 +31,7 @@ const { trackEvent, getInstallId, classifyInstall, INSTALL_ID_PATH } = require('
 
 const MARKER_DIR = path.join(path.dirname(INSTALL_ID_PATH), 'activation');
 const MARKER_PATH = path.join(MARKER_DIR, 'first-rule-promoted.json');
+const FIRST_BLOCK_MARKER_PATH = path.join(MARKER_DIR, 'first-blocked-call.json');
 
 function readMarker() {
   try {
@@ -64,6 +65,24 @@ function computeDaysSinceInstall() {
   } catch {
     return null;
   }
+}
+
+function computeMinutesSinceInstall() {
+  try {
+    if (!fs.existsSync(INSTALL_ID_PATH)) return null;
+    const installed = fs.statSync(INSTALL_ID_PATH).mtimeMs;
+    if (!Number.isFinite(installed) || installed <= 0) return null;
+    return Math.round((Math.max(0, Date.now() - installed) / 60_000) * 10) / 10;
+  } catch { /* ignore stat race */
+    return null;
+  }
+}
+
+function writeFirstBlockMarker(data) {
+  try {
+    if (!fs.existsSync(MARKER_DIR)) fs.mkdirSync(MARKER_DIR, { recursive: true });
+    fs.writeFileSync(FIRST_BLOCK_MARKER_PATH, JSON.stringify(data, null, 2));
+  } catch { /* best-effort marker */ }
 }
 
 /**
@@ -109,19 +128,80 @@ function recordFirstRulePromotion(metadata = {}) {
   return true;
 }
 
+function recordFirstBlockedToolCall(metadata = {}) {
+  try {
+    if (fs.existsSync(FIRST_BLOCK_MARKER_PATH)) return false;
+  } catch { /* ignore fs error */
+    return false;
+  }
+  const installId = getInstallId();
+  const minutesSinceInstall = computeMinutesSinceInstall();
+  const visitorType = classifyInstall();
+  const optedOut = process.env.THUMBGATE_NO_TELEMETRY === '1' || process.env.DO_NOT_TRACK === '1';
+  writeFirstBlockMarker({
+    installId,
+    blockedAt: new Date().toISOString(),
+    minutesSinceInstall,
+    ...(optedOut ? { telemetryOptOut: true } : { visitorType, ...metadata }),
+  });
+  if (optedOut) return false;
+  trackEvent('first_blocked_tool_call', { minutesSinceInstall, visitorType, ...metadata });
+  return true;
+}
+
+function extractEntryBlockMinutes(e) {
+  if (typeof e.minutesSinceInstall === 'number' && Number.isFinite(e.minutesSinceInstall)) return e.minutesSinceInstall;
+  if (typeof e.minutesToFirstBlock === 'number' && Number.isFinite(e.minutesToFirstBlock)) return e.minutesToFirstBlock;
+  const ms = typeof e.signupToFirstBlockMs === 'number' && Number.isFinite(e.signupToFirstBlockMs)
+    ? e.signupToFirstBlockMs
+    : e.elapsedSinceOpenMs;
+  return typeof ms === 'number' && Number.isFinite(ms) ? Math.round((ms / 60_000) * 10) / 10 : null;
+}
+
+function summarizeFirstBlockEvents(entries = []) {
+  if (!Array.isArray(entries) || entries.length === 0) {
+    return { count: 0, medianMinutes: null, under5MinutesCount: 0 };
+  }
+  let count = 0;
+  const minutesList = [];
+  for (const e of entries) {
+    if ((e?.eventType || e?.event) !== 'first_blocked_tool_call') continue;
+    if (e.visitorType === 'bot' || e.visitorType === 'ci') continue;
+    count += 1;
+    const m = extractEntryBlockMinutes(e);
+    if (m !== null && m >= 0) minutesList.push(m);
+  }
+  if (count === 0 || minutesList.length === 0) {
+    return { count, medianMinutes: null, under5MinutesCount: 0 };
+  }
+  minutesList.sort((a, b) => a - b);
+  const mid = Math.floor(minutesList.length / 2);
+  const rawMedian = minutesList.length % 2 === 0
+    ? (minutesList[mid - 1] + minutesList[mid]) / 2
+    : minutesList[mid];
+  return {
+    count,
+    medianMinutes: Math.round(rawMedian * 10) / 10,
+    under5MinutesCount: minutesList.filter((v) => v <= 5).length,
+  };
+}
+
 function resetForTesting() {
-  // Test-only helper. Removes the marker so a subsequent recordFirstRulePromotion
-  // call re-fires. Never used in production code paths.
   try {
     if (fs.existsSync(MARKER_PATH)) fs.unlinkSync(MARKER_PATH);
-  } catch {}
+    if (fs.existsSync(FIRST_BLOCK_MARKER_PATH)) fs.unlinkSync(FIRST_BLOCK_MARKER_PATH);
+  } catch { /* test cleanup */ }
 }
 
 module.exports = {
   recordFirstRulePromotion,
+  recordFirstBlockedToolCall,
+  summarizeFirstBlockEvents,
   computeDaysSinceInstall,
+  computeMinutesSinceInstall,
   readMarker,
   writeMarker,
   MARKER_PATH,
+  FIRST_BLOCK_MARKER_PATH,
   resetForTesting,
 };
