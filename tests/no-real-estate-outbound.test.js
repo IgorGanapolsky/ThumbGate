@@ -282,6 +282,8 @@ test('tracked ThumbGate code, docs, skills, sales, and public assets contain zer
     'scripts/social-quality-gate.js',
     'scripts/validate-social-post.js',
     'scripts/thumbgate-24x7-sales-promotion-job.js',
+    // Detection-only: the design guard blocks drafts that mix real-estate terms into ThumbGate copy.
+    'src/openshell-lovable-engine.js',
   ]);
   const rootsToScan = ['src', 'scripts', 'public', 'docs', 'sales', 'skills', '.agents/skills', 'assets'];
   const tracked = execFileSync('git', ['ls-files', '--', ...rootsToScan], {

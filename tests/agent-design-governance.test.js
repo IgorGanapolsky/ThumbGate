@@ -90,7 +90,7 @@ test('Adobe Creative MCP & GenStudio Brand Intelligence block destructive layer 
     { disallowedClaims: ['7-day refund guarantee', '1,000 hosted gate credits'], requireDisclosure: true },
   );
   assert.equal(conflatedPost.compliant, false);
-  assert.ok(conflatedPost.violations.some((v) => v.id === 'realestate_conflation'));
+  assert.ok(conflatedPost.violations.some((v) => v.id === 'other_business_conflation'));
   assert.ok(conflatedPost.violations.some((v) => v.id === 'missing_builder_disclosure'));
 
   const cleanPost = evaluateBrandAdherence(

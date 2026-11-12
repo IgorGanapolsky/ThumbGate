@@ -11,7 +11,7 @@ const LAYERED_PROJECT_EXT_RE = /\.(psd|psb|ai|prproj|aep|indd|fig|sketch|svg)$/i
 const DESTRUCTIVE_ASSET_OP_RE = /(?:^|[^a-z])(flatten|rasterize|merge[-_ ]?visible|bake[-_ ]?layers|overwrite[-_ ]?master|strip[-_ ]?layers)(?:[^a-z]|$)/i;
 
 const DEFAULT_FORBIDDEN_CROSS_BRAND_PATTERNS = Object.freeze([
-  { id: 'realestate_conflation', pattern: /\b(tax[- ]deeds?|197\.552|5[- ]folio|miami[- ]dade|foreclosures?|real\s*estate|deals\.igorganapolsky\.com|bJe28rduQ5v82dz6i73sJ0n)\b/i },
+  { id: 'other_business_conflation', pattern: /\b(tax[- ]deeds?|197\.552|5[- ]folio|miami[- ]dade|foreclosures?|real\s*estate|deals\.igorganapolsky\.com|bJe28rduQ5v82dz6i73sJ0n)\b/i },
   { id: 'corporate_airgap', pattern: /\b(ecisolutions\.com|ecinexus\.com|lore\.eciplatform\.net|psn[-_]stockservice|dist03)\b/i },
 ]);
 
