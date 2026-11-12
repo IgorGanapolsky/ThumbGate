@@ -784,7 +784,7 @@
     "memory:compact": "node scripts/compact-memory-store.js",
     "test:lesson-db": "node --test tests/lesson-db.test.js",
     "test:lesson-rotation": "node --test tests/lesson-rotation.test.js",
-    "test:feedback-quality": "node --test tests/feedback-quality.test.js tests/feedback-event-idempotency.test.js tests/feedback-capture-e2e.test.js tests/verified-lessons.test.js",
+    "test:feedback-quality": "node --test tests/feedback-quality.test.js tests/feedback-event-idempotency.test.js tests/feedback-capture-e2e.test.js tests/verified-lessons.test.js tests/recent-thumbs-cloud.test.js",
     "test:sync-version": "node --test tests/sync-version.test.js",
     "test:release-window": "node --test tests/release-window.test.js",
     "test:team-sync": "node --test tests/team-sync.test.js",
