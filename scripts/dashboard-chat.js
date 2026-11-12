@@ -624,8 +624,15 @@ async function answerDataQuestion(question, opts = {}) { // NOSONAR
       },
     });
 
+    const resolvedModel = structured.model || route.model;
+    const privacyRoute = route.provider === 'local'
+      ? 'Local, no cloud'
+      : `BYO model (${route.provider})`;
     return {
       ...structured,
+      model: resolvedModel,
+      provider: route.provider,
+      privacyRoute,
       qualityTier: quality.qualityTier,
       semanticClaimsAllowed: quality.semanticClaimsAllowed,
       degradedReasons: quality.degradedReasons,

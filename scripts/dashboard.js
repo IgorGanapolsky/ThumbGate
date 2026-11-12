@@ -541,6 +541,161 @@ function listActiveGates() {
   }
 }
 
+function formatStorageBytes(bytes) {
+  const n = Number.isFinite(bytes) && bytes > 0 ? Math.trunc(bytes) : 0;
+  if (n === 0) return '0 B';
+  if (n < 1024) return `${n} B`;
+  if (n < 1024 * 1024) return `${(n / 1024).toFixed(2)} KB`;
+  if (n < 1024 * 1024 * 1024) return `${(n / (1024 * 1024)).toFixed(2)} MB`;
+  return `${(n / (1024 * 1024 * 1024)).toFixed(2)} GB`;
+}
+
+function measureDirBytesBounded(targetPath, depth = 0) {
+  if (depth > 3 || !targetPath || !fs.existsSync(targetPath)) return 0;
+  try {
+    const st = fs.lstatSync(targetPath);
+    if (st.isSymbolicLink()) return 0;
+    if (st.isFile()) return st.size;
+    if (!st.isDirectory()) return 0;
+    let total = 0;
+    for (const entry of fs.readdirSync(targetPath).slice(0, 128)) {
+      total += measureDirBytesBounded(path.join(targetPath, entry), depth + 1);
+    }
+    return total;
+  } catch {
+    return 0;
+  }
+}
+
+function formatDisplayStoragePath(rawDir) {
+  const resolved = path.resolve(String(rawDir || ''));
+  const home = process.env.HOME ? path.resolve(process.env.HOME) : '';
+  if (home && (resolved === home || resolved.startsWith(`${home}${path.sep}`))) {
+    return `~${resolved.slice(home.length)}`;
+  }
+  return path.basename(path.dirname(resolved))
+    ? `${path.basename(path.dirname(resolved))}/${path.basename(resolved)}`
+    : path.basename(resolved) || '.thumbgate';
+}
+
+function computeLessonStorageSummary(feedbackDir, memoryCount = 0) {
+  const memoryLogPath = path.join(feedbackDir, 'memory-log.jsonl');
+  const trackedNames = ['memory-log.jsonl', 'prevention-rules.md', 'auto-promoted-gates.json', 'lancedb', 'vectors'];
+  let lessonDbBytes = 0;
+  for (const name of trackedNames) {
+    lessonDbBytes += measureDirBytesBounded(path.join(feedbackDir, name), 0);
+  }
+  const dirDisplay = formatDisplayStoragePath(feedbackDir);
+  return {
+    label: '100% On-Device Private Memory',
+    location: `${dirDisplay}/memory-log.jsonl`,
+    exists: fs.existsSync(memoryLogPath),
+    lessonCount: Number.isFinite(memoryCount) && memoryCount > 0 ? Math.trunc(memoryCount) : 0,
+    lessonDbBytes,
+    lessonDbSizeDisplay: formatStorageBytes(lessonDbBytes),
+  };
+}
+
+function findMatchingLessonText(gateId, memoryEntries, gates) {
+  const needle = String(gateId || '').toLowerCase();
+  for (let i = memoryEntries.length - 1; i >= 0; i -= 1) {
+    const m = memoryEntries[i];
+    if (!m) continue;
+    const blob = `${m.gateId || ''} ${m.id || ''} ${(m.tags || []).join(' ')} ${m.title || ''}`.toLowerCase();
+    if (needle && blob.includes(needle)) {
+      return String(m.title || m.summary || m.content || m.context || '').trim().slice(0, 160);
+    }
+  }
+  const gateObj = (gates || []).find((g) => g && (g.id === gateId || g.name === gateId));
+  return gateObj && gateObj.pattern ? `Pattern: ${String(gateObj.pattern).slice(0, 140)}` : '';
+}
+
+function computeTodayOverview(feedbackDir, options = {}) {
+  const entries = Array.isArray(options.entries) ? options.entries : collectAllFeedbackEntries(feedbackDir);
+  const memoryEntries = Array.isArray(options.memoryEntries) ? options.memoryEntries : readJSONL(path.join(feedbackDir, 'memory-log.jsonl'));
+  const auditEntries = Array.isArray(options.auditEntries) ? options.auditEntries : readJSONL(path.join(feedbackDir, AUDIT_LOG_FILENAME));
+  const gateStats = options.gateStats || computeGateStats();
+  const gateAudit = options.gateAudit || computeGateAuditSeries(feedbackDir);
+  const gates = Array.isArray(options.gates) ? options.gates : listActiveGates();
+  const nowMs = options.now ? new Date(options.now).getTime() : Date.now();
+  const cutoff24h = nowMs - 24 * 60 * 60 * 1000;
+
+  const todayBucket = Array.isArray(gateAudit.days) && gateAudit.days.length > 0
+    ? gateAudit.days[gateAudit.days.length - 1]
+    : { deny: 0, warn: 0, allow: 0 };
+  const gateStatusChips = {
+    blockedToday: Number(todayBucket.deny) || 0,
+    warnedToday: Number(todayBucket.warn) || 0,
+    activeGates: Number(gateStats.totalGates) || 0,
+  };
+
+  const fired24h = new Map();
+  for (const ev of auditEntries) {
+    if (!ev || !['deny', 'warn'].includes(ev.decision)) continue;
+    const ts = ev.timestamp ? new Date(ev.timestamp).getTime() : NaN;
+    if (!Number.isFinite(ts) || ts < cutoff24h) continue;
+    const gId = String(ev.gateId || ev.gate || ev.ruleId || '').trim();
+    if (!gId) continue;
+    const prev = fired24h.get(gId) || { total: 0, deny: 0, warn: 0 };
+    prev.total += 1;
+    if (ev.decision === 'deny') prev.deny += 1; else prev.warn += 1;
+    fired24h.set(gId, prev);
+  }
+  const ranked24h = Array.from(fired24h.entries()).sort((a, b) => (b[1].total - a[1].total) || a[0].localeCompare(b[0]));
+
+  let upNext;
+  if (ranked24h.length > 0) {
+    const [topGateId, counts] = ranked24h[0];
+    const lessonNote = findMatchingLessonText(topGateId, memoryEntries, gates);
+    upNext = {
+      kind: 'top_gate_24h',
+      kicker: 'Up next · Most active gate (24h)',
+      title: `${topGateId} (${counts.total} intercepted in last 24h)`,
+      detail: lessonNote || `${counts.deny} blocked, ${counts.warn} warned in the last 24 hours.`,
+      actionLabel: 'Inspect Gates',
+      actionTab: 'gates',
+      actionHref: '#tab-gates',
+    };
+  } else if (entries.length === 0) {
+    upNext = {
+      kind: 'connect_agent',
+      kicker: 'Up next · First signal',
+      title: 'Connect your agent',
+      detail: 'Total Feedback is 0. Wire ThumbGate into Claude Code, Cursor, or Codex to capture feedback and block repeat mistakes.',
+      actionLabel: 'Connect Agent',
+      actionTab: null,
+      actionHref: '/install',
+    };
+  } else if (gateStats.topBlocked && Number(gateStats.topBlockedCount) > 0) {
+    const lessonNote = findMatchingLessonText(gateStats.topBlocked, memoryEntries, gates);
+    upNext = {
+      kind: 'top_gate_all_time',
+      kicker: 'Up next · Top guardrail',
+      title: `${gateStats.topBlocked} (${gateStats.topBlockedCount} blocked)`,
+      detail: lessonNote || 'Highest-volume active PreToolUse block rule.',
+      actionLabel: 'Inspect Gates',
+      actionTab: 'gates',
+      actionHref: '#tab-gates',
+    };
+  } else {
+    upNext = {
+      kind: 'review_lessons',
+      kicker: 'Up next · Memory review',
+      title: `Review ${memoryEntries.length} captured lesson${memoryEntries.length === 1 ? '' : 's'}`,
+      detail: `${entries.length} feedback signal${entries.length === 1 ? '' : 's'} recorded with 0 gate blocks in the last 24h.`,
+      actionLabel: 'View Lessons',
+      actionTab: null,
+      actionHref: '/lessons',
+    };
+  }
+
+  return {
+    upNext,
+    gateStatusChips,
+    lessonStorage: computeLessonStorageSummary(feedbackDir, memoryEntries.length),
+  };
+}
+
 // ---------------------------------------------------------------------------
 // Prevention impact
 // ---------------------------------------------------------------------------
@@ -2015,10 +2170,18 @@ function generateDashboard(feedbackDir, options = {}) {
     team,
   });
   const reviewDelta = summarizeReviewDelta(entries, memoryEntries, auditEntries, reviewBaseline, reviewSnapshot);
+  const todayOverview = computeTodayOverview(feedbackDir, {
+    entries,
+    memoryEntries,
+    auditEntries,
+    gateStats,
+    gateAudit,
+    gates,
+    now: options.now,
+  });
 
   // High-ROI metrics for North Star: $100/day after-tax profit
   const roiSummary = computeRoiSummary(gateStats, prevention, analytics, billingSummary);
-
   return {
     operational: {
       source: options.billingSource || 'local',
@@ -2055,6 +2218,7 @@ function generateDashboard(feedbackDir, options = {}) {
     reviewDelta,
     feedbackTimeSeries,
     tokenSavings,
+    todayOverview,
     lessonPipeline: {
       stages: lessonPipeline.stages,
       rates: lessonPipeline.rates,
@@ -2343,6 +2507,9 @@ module.exports = {
   computeApprovalStats,
   computeDecisionMetrics,
   computeGateStats,
+  computeTodayOverview,
+  computeLessonStorageSummary,
+  formatStorageBytes,
   computePreventionImpact,
   computeRoiSummary,
   computeSessionTrend,
