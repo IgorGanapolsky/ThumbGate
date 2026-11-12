@@ -266,6 +266,26 @@ test('ThumbGate pipeline outputs active AST inline edits, CSS overrides, and Tai
     const gdJson = await gdRes.json();
     assert.match(gdJson.designSelfCorrection.patchedSource, /min-height: 44px/);
 
+    const nullFindingsRes = await fetch(`${origin}/v1/gates/decide`, {
+      method: 'POST',
+      headers: { authorization: 'Bearer tg-test-design-key', 'content-type': 'application/json' },
+      body: JSON.stringify({ toolName: 'Write', toolArgs: { file_path: 'public/card.html', content: '<div>ok</div>' }, visualFindings: [null, 42] }),
+    });
+    assert.equal(nullFindingsRes.status, 200);
+
+    // Arbitrary filePath without allowDiskRead must never read host files
+    const noDiskLeak = runDesignSelfCorrectionPipeline({ filePath: __filename, visualFindings: ['low contrast on .x'] });
+    assert.equal(noDiskLeak.patchedSource, '');
+
+    // Unitless JSX props + spreads + data-class attributes + @tailwind CSS rules remain intact
+    const edgeJsx = runDesignSelfCorrectionPipeline({
+      sourceCode: '<style>@tailwind base; @media (min-width:640px){ .btn { height: 26px; } }</style><button data-class="keep-me" style={{ ...baseStyle, opacity: 0.8, minHeight: 24 }} className="btn">Tap</button>',
+    });
+    assert.match(edgeJsx.patchedSource, /data-class="keep-me"/);
+    assert.match(edgeJsx.patchedSource, /\.\.\.baseStyle,\s*opacity:\s*0\.8/);
+    assert.match(edgeJsx.patchedSource, /minHeight:\s*'44px'/);
+    assert.match(edgeJsx.patchedSource, /\.btn \{[^}]*min-height: 44px;/);
+
     const homeHtml = await (await fetch(`${origin}/`)).text();
     assert.doesNotMatch(homeHtml, /id="(?:navPaidLoginBtn|navPaidDashboardLink|paidLoginKeyInput|paidLoginSubmitBtn|googleCloudLoginLink)"[^>]*min-height:\s*(?:36|38)px/);
   } finally {
