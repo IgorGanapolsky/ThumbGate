@@ -121,9 +121,11 @@ test.describe('/lessons clickability — comprehensive E2E coverage', () => {
     await page.waitForURL(/\/dashboard$/);
   });
 
-  test('nav: clicking brand logo navigates to /', async ({ page }) => {
+  test('nav: omits Landing Page link and clicking ThumbGate logo navigates to /', async ({ page }) => {
     await page.goto('/lessons');
-    await page.locator('nav a.nav-logo').click();
-    await page.waitForURL(/\/$/);
+    await expect(page.locator('nav a', { hasText: /Landing Page/i })).toHaveCount(0);
+    await expect(page.locator('nav .nav-logo')).toHaveAttribute('href', '/');
+    await page.locator('nav .nav-logo').click();
+    await page.waitForURL((url) => url.pathname === '/');
   });
 });
