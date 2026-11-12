@@ -93,10 +93,13 @@ test.describe('/dashboard clickability — non-stat-card surfaces', () => {
     await expect(page.locator('#dashboardContent')).toBeVisible();
     expect(await page.evaluate(() => dashboardHydrationTimer !== null)).toBe(true);
 
-    await page.locator('#disconnectBtn').click();
+    await Promise.all([
+      page.waitForURL(/\/dashboard\?noauto=1$/),
+      page.locator('#disconnectBtn').click(),
+    ]);
+    await expect(page.locator('#authStatus')).toHaveText('Disconnected');
     expect(await page.evaluate(() => dashboardHydrationTimer === null && dashboardDataPromise === null)).toBe(true);
     expect(dashboardRequests).toHaveLength(0);
-
     await page.locator('#apiKey').fill('test-key-456');
     await page.locator('#connectBtn').click();
     await page.locator('.tab', { hasText: 'Active Gates' }).click();
