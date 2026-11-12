@@ -53,6 +53,7 @@ test('ordinary reply -> REPLIED-eligible, counts as sent only on provider confir
     }).allowed, true);
     assert.equal(evaluatePreSendCheck(thread, { to: [], body: 'Hello' }).allowed, false);
     assert.equal(evaluatePreSendCheck(thread, { to: ['dana@devagent.io'], bcc: ['leak@ecisolutions.com'], body: 'Hello' }).allowed, false);
+    assert.equal(evaluatePreSendCheck(thread, { to: ['dana@devagent.io'], cc: ['stranger@outside.io'], body: 'Hello' }).allowed, false);
     assert.equal(evaluatePreSendCheck(thread, { to: ['dana@devagent.io'], body: 'We are ISO 27001 and SOC 2 Type II certified with 25% off [TODO].' }).allowed, false);
 
     writeLedgerSnapshot(unconfirmed, tmpDir);
@@ -75,12 +76,18 @@ test('ordinary reply -> REPLIED-eligible, counts as sent only on provider confir
 
     const confirmed = classifyThreads(messages, { providerConfirmations: { th_ordinary_1: { confirmed: true, providerMessageId: '<sent-uid-9001@mail.gmail.com>' } } });
     assert.equal(confirmed.threads[0].sentConfirmed, true);
+    assert.equal(confirmed.threads[0].sendEligible, false);
     assert.equal(confirmed.cycleReport.sentCount, 1);
 
-    const nextCycle = classifyThreads(messages, { stateDir: tmpDir });
-    assert.equal(nextCycle.threads[0].disposition, 'NO_REPLY_NEEDED');
-    assert.equal(nextCycle.threads[0].status, 'REPLIED_IN_SENT');
-    assert.equal(nextCycle.threads[0].oneTouchLocked, true);
+    const nextCycle = classifyThreads([
+      ...messages,
+      msg('th_same_subj_other_sender', 'INBOX', 'Other <other@another.io>', 'ThumbGate MCP PreToolUse hook setup question', 'Can we try ThumbGate Pro too?'),
+    ], { stateDir: tmpDir });
+    const byId = new Map(nextCycle.threads.map((t) => [t.threadId, t]));
+    assert.equal(byId.get('th_ordinary_1').disposition, 'NO_REPLY_NEEDED');
+    assert.equal(byId.get('th_ordinary_1').status, 'REPLIED_IN_SENT');
+    assert.equal(byId.get('th_same_subj_other_sender').disposition, 'REPLIED');
+    assert.equal(byId.get('th_same_subj_other_sender').sendEligible, true);
   } finally {
     fs.rmSync(tmpDir, { recursive: true, force: true });
   }
@@ -109,8 +116,9 @@ test('discount ask and all six approval-exception categories -> DRAFTED_FOR_APPR
 test('unsubscribe -> OPTED_OUT across distinct senders with identical subject and persists in ledger', () => {
   const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'tg-inbox-optout-'));
   try {
+    const sampleOffBrand = brandStandards.rules.find((r) => r.id.startsWith('no-') && !r.id.includes('refund')).phrases[0];
     const report = classifyThreads([
-      msg(null, 'INBOX', 'Pat <pat@example.org>', 'Unsubscribe', 'Please unsubscribe me and remove me from your list.'),
+      msg(null, 'INBOX', 'Pat <pat@example.org>', 'Unsubscribe', `Please unsubscribe me (${sampleOffBrand}).`),
       msg(null, 'INBOX', 'Jordan <jordan@example.net>', 'Unsubscribe', 'unsubscribe'),
     ], { stateDir: tmpDir });
     assert.equal(report.threadCount, 2);
@@ -159,6 +167,7 @@ test('corporate ECI addresses, DNC list, off-brand content, and wrong-recipient 
     assert.equal(byId.get('th_dnc').reason, 'do_not_contact_list');
     assert.equal(byId.get('th_offbrand').reason, 'off_brand_prohibited_content');
     assert.equal(byId.get('th_wrong_recipient').reason, 'recipient_or_thread_mismatch');
+    assert.equal(evaluatePreSendCheck(byId.get('th_wrong_recipient'), { to: ['mallory@unrelated.io'], body: 'Hi' }).blockers.includes('recipient_not_in_thread'), true);
     assert.throws(() => recordProviderSendConfirmation({ threadId: 'th_corp', recipient: 'colleague@eci.com' }), { code: 'THUMBGATE_ECI_ISOLATION_BLOCK' });
     assert.throws(() => classifyThreads([msg('th_corp', 'INBOX', 'a@eci.com', 's', 'b')], { throwOnCorporateLeak: true }), { code: 'THUMBGATE_ECI_ISOLATION_BLOCK' });
   } finally {
