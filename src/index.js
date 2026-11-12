@@ -18,6 +18,7 @@ const {
   DEFAULT_READ_ONLY_TOOLS,
   DEFAULT_MUTATING_TOOLS,
 } = require('./integrations/ideabrowser-connector');
+const openshellLovable = require('./openshell-lovable-engine');
 
 // The package entry point is the production surface for `thumbgate`.
 // The hosted-Hermes identity/lifecycle/approval gates are exported here so
@@ -39,4 +40,5 @@ module.exports = Object.assign({}, feedbackLoop, {
   ToolTier,
   DEFAULT_READ_ONLY_TOOLS,
   DEFAULT_MUTATING_TOOLS,
+  ...openshellLovable,
 });
