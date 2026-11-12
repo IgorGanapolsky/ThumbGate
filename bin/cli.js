@@ -4276,6 +4276,7 @@ const SUBCOMMAND_HELP = {
   compact:       'Usage: npx thumbgate compact\n\nCompact the lesson database and reclaim disk space.',
   'context-packs': 'Usage: npx thumbgate context-packs\n\nGenerate context packs from top failure patterns.',
   suggest:       'Usage: npx thumbgate suggest <gate-id>\n\nSuggest fixes for a specific gate based on lesson history.',
+  agents:        'Usage: npx thumbgate agents [--json] [--days=30] [--data-dir=path] [--owner=<id>=<user>] [--register=<id>]\n\n30-day AI governance system of record: lists agents, models, MCP servers, and hook sources with first/last seen, call counts, editable owner (default: machine user), and flags callers outside config/mcp-allowlists.json or the register as "unregistered agent".',
   inventory:     'Usage: npx thumbgate inventory [--json] [--days=N] [--data-dir=path] [--max-bytes=N]\n\nRead-only inventory of agent activity in this repo\'s ThumbGate store: agents seen, tool calls by tool, allow/deny counts, deny reasons per gate, top gates, per-day activity, and the false-deny rate.\n\nEvery source reports its own status (ok / empty / missing) so an uninstrumented store never looks like a quiet one. falseDenyRate is null with a stated reason whenever a real denominator was not observed; falseDenyNumerator and falseDenyDenominator are always emitted raw.\n\nEach source is read as a bounded tail (default 8 MiB, --max-bytes to change) so a multi-hundred-MB audit log is never loaded whole. If the tail did not reach back to the start of the window, windowFullyCovered is false and the text output says so.',
   'conflict-audit': 'Usage: npx thumbgate conflict-audit [--json] [--offline] [--repo-root=path] [--github-repo=owner/name] [--branch=main] [--consecutive-failures=N] [--excluded-lines=N] [--commits=N]\n\nDeterministic detector for controls that report success but enforce nothing. Six detectors, no model involved:\n\n  D1 gate configs declaring a `patterns` array when the engine reads `pattern` (the match block is skipped, so the gate fires on every tool in its toolNames)\n  D2 gate patterns that cannot compile (an inline (?i) flag group throws; the engine swallows the throw as "no match")\n  D3 checks required by NEITHER classic branch protection NOR any repository ruleset, which have failed on N or more consecutive recent commits\n  D4 sonar.exclusions / sonar.coverage.exclusions entries that hide non-trivial code inside sonar.sources from scanning\n  D5 modules and entry exports with zero production call sites outside their own tests (for a PUBLISHED package the entry surface is public API whose callers are downstream npm consumers, so those are reported NOT INSPECTED rather than dead)\n  D6 the bare `path.resolve(process.argv[1]) === path.resolve(__filename)` main check, which no-ops under an npm bin shim\n\nEvery detector reports its own status: `ran` (inspected), `partial` (some of the surface was not inspected, and which), or `unavailable` (could not inspect at all). An unavailable detector is NEVER reported as clean. D3 needs the `gh` CLI (resolved from a fixed install location, never through $PATH) plus read access to branch protection and repository rulesets; use --offline to skip it explicitly.',
   cost:          'Usage: npx thumbgate cost [--json] [--stats <path>] [--mix \'{"claude-sonnet-4-5":0.8,...}\']\n\nShow cumulative $ and tokens saved by PreToolUse gate blocks. Reads ~/.thumbgate/gate-stats.json.',
@@ -5486,6 +5487,44 @@ switch (COMMAND) {
       console.log(JSON.stringify(inventory, null, 2));
     } else {
       process.stdout.write(renderInventoryText(inventory));
+    }
+    break;
+  }
+  case 'agents': {
+    const agentArgs = parseArgs(process.argv.slice(3));
+    const {
+      buildAgentRegister,
+      renderAgentRegisterText,
+      updateAgentRegisterEntry,
+    } = require(path.join(PKG_ROOT, 'scripts', 'agent-action-inventory'));
+    const { resolveFeedbackDir } = require(path.join(PKG_ROOT, 'scripts', 'feedback-paths'));
+    const targetDir = agentArgs['data-dir'] || resolveFeedbackDir();
+    if (typeof agentArgs.owner === 'string' && agentArgs.owner.includes('=')) {
+      const eq = agentArgs.owner.indexOf('=');
+      const targetId = agentArgs.owner.slice(0, eq).trim();
+      const nextOwner = agentArgs.owner.slice(eq + 1).trim();
+      updateAgentRegisterEntry({ dataDir: targetDir, id: targetId, owner: nextOwner });
+    }
+    if (typeof agentArgs.register === 'string' && agentArgs.register.trim()) {
+      const ownerOpt = typeof agentArgs.owner === 'string' && !agentArgs.owner.includes('=')
+        ? agentArgs.owner.trim()
+        : undefined;
+      updateAgentRegisterEntry({
+        dataDir: targetDir,
+        id: agentArgs.register.trim(),
+        owner: ownerOpt,
+        registered: true,
+      });
+    }
+    const registerReport = buildAgentRegister({
+      dataDir: targetDir,
+      windowDays: agentArgs.days,
+      maxBytes: agentArgs['max-bytes'] ? Number(agentArgs['max-bytes']) : undefined,
+    });
+    if (agentArgs.json) {
+      console.log(JSON.stringify(registerReport, null, 2));
+    } else {
+      process.stdout.write(renderAgentRegisterText(registerReport));
     }
     break;
   }
