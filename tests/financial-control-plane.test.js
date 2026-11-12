@@ -6,7 +6,7 @@ const crypto = require('node:crypto');
 const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
-const { spawn } = require('node:child_process');
+const { spawn, spawnSync } = require('node:child_process');
 
 const {
   buildActionAuthorization,
@@ -14,13 +14,16 @@ const {
   detectEconomicAction,
   detectOpaqueScreenMutation,
   evaluateFinancialControl,
+  getBrowserPageStatePath,
   getLedgerHeadPath,
   getLedgerJournalPath,
   getLedgerPath,
   getFinancialControlRuntimeOptions,
   getRuntimePrincipal,
+  lookupRecordedBrowserPageUrl,
   projectRequisition,
   reconcilePurchaseLedger,
+  recordBrowserPageNavigation,
   reservePurchaseRequisition,
   settlePurchaseRequisition,
 } = require('../scripts/financial-control-plane');
@@ -1669,67 +1672,20 @@ test('ordinary and OAuth account-chooser clicks without payment controls are all
     action: 'left_click', coordinate: [10, 20], tabId: 1,
   }), false);
   assert.equal(detectEconomicAction('mcp__browseros-neo__act', {
-    page: 62,
-    kind: 'click',
-    ref: 'e2',
-    session: 'bf3a78ee-2030-44e1-848d-2f72e6984ee2',
-    diff: 1500,
+    page: 62, kind: 'click', ref: 'e2', session: 'bf3a78ee-2030-44e1-848d-2f72e6984ee2', diff: 1500,
   }), false);
-  assert.equal(detectEconomicAction('mcp__browseros-neo__act', {
-    page: 62,
-    kind: 'click',
-    ref: 'e2',
-    url: 'https://accounts.google.com/o/oauth2/v2/auth',
-    text: 'Choose an account',
-  }), false);
-  // BrowserOS act click on linkedin.com (e.g. editing a post) is allowed.
-  assert.equal(detectEconomicAction('mcp__browseros-neo__act', {
-    page: 64,
-    kind: 'click',
-    ref: 'e12',
-    url: 'https://www.linkedin.com/feed/update/urn:li:activity:7526253985255817216/',
-    text: 'Save',
-  }), false);
-  assert.equal(runHardFloor({
-    tool_name: 'mcp__browseros-neo__act',
-    tool_input: {
-      page: 64,
-      kind: 'click',
-      ref: 'e12',
-      url: 'https://www.linkedin.com/feed/update/urn:li:activity:7526253985255817216/',
-      text: 'Save',
-    },
-  }), null);
-  // BrowserOS act click on a Gmail send button is allowed by financial-control.
-  assert.equal(detectEconomicAction('mcp__browseros-neo__act', {
-    page: 65,
-    kind: 'click',
-    ref: 'e18',
-    url: 'https://mail.google.com/mail/u/0/#inbox?compose=new',
-    text: 'Send',
-  }), false);
-  assert.equal(evaluateFinancialControl({
-    toolName: 'mcp__browseros-neo__act',
-    toolInput: {
-      page: 65,
-      kind: 'click',
-      ref: 'e18',
-      url: 'https://mail.google.com/mail/u/0/#inbox?compose=new',
-      text: 'Send',
-    },
-  }).mode, 'allow');
-  assert.equal(runHardFloor({
-    tool_name: 'mcp__browseros-neo__act',
-    tool_input: {
-      page: 65,
-      kind: 'click',
-      ref: 'e18',
-      url: 'https://mail.google.com/mail/u/0/#inbox?compose=new',
-      text: 'Send',
-    },
-  }), null);
-  // Submitting a free directory form or clicking/reading LinkedIn, GitHub, and docs URLs whose
-  // slugs contain buy/purchase/subscribe/billing is allowed when not on a spend surface.
+  const oauthClick = { page: 62, kind: 'click', ref: 'e2', url: 'https://accounts.google.com/o/oauth2/v2/auth', text: 'Choose an account' };
+  assert.equal(detectEconomicAction('mcp__browseros-neo__act', oauthClick), false);
+  assert.equal(runHardFloor({ tool_name: 'mcp__browseros-neo__act', tool_input: oauthClick }), null);
+  // BrowserOS act clicks on linkedin.com and Gmail send buttons are allowed.
+  const linkedinSave = { page: 64, kind: 'click', ref: 'e12', url: 'https://www.linkedin.com/feed/update/urn:li:activity:7526253985255817216/', text: 'Save' };
+  assert.equal(detectEconomicAction('mcp__browseros-neo__act', linkedinSave), false);
+  assert.equal(runHardFloor({ tool_name: 'mcp__browseros-neo__act', tool_input: linkedinSave }), null);
+  const gmailSend = { page: 65, kind: 'click', ref: 'e18', url: 'https://mail.google.com/mail/u/0/#inbox?compose=new', text: 'Send' };
+  assert.equal(detectEconomicAction('mcp__browseros-neo__act', gmailSend), false);
+  assert.equal(evaluateFinancialControl({ toolName: 'mcp__browseros-neo__act', toolInput: gmailSend }).mode, 'allow');
+  assert.equal(runHardFloor({ tool_name: 'mcp__browseros-neo__act', tool_input: gmailSend }), null);
+  // Free directory forms and LinkedIn/GitHub/docs URLs with buy/purchase/billing in non-spend slugs stay allowed.
   for (const toolInput of [
     { page: 66, kind: 'submit', ref: 'e21', url: 'https://mcp.so/submit', text: 'Submit listing' },
     { page: 64, kind: 'fill', ref: 'e13', url: 'https://www.linkedin.com/feed/', value: 'ThumbGate blocks unauthorized purchase calls' },
@@ -1737,37 +1693,17 @@ test('ordinary and OAuth account-chooser clicks without payment controls are all
     { page: 67, kind: 'click', ref: 'e30', url: 'https://github.com/IgorGanapolsky/ThumbGate/blob/main/scripts/billing.js', text: 'Raw' },
     { page: 67, kind: 'click', ref: 'e31', url: 'https://github.com/IgorGanapolsky/ThumbGate/blob/main/tests/purchase-flow.test.js', text: 'Raw' },
     { page: 67, kind: 'click', ref: 'e32', url: 'https://github.com/acme/billing', text: 'Code' },
+    { kind: 'click', ref: 'e1', url: 'https://[::1' },
+    { kind: 'click', ref: 'e1', url: 'https://example.com/%ZZ' },
   ]) {
     assert.equal(detectEconomicAction('mcp__browseros-neo__act', toolInput), false, `expected ${JSON.stringify(toolInput)} to be non-economic`);
     assert.equal(runHardFloor({ tool_name: 'mcp__browseros-neo__act', tool_input: toolInput }), null);
   }
-  assert.equal(detectEconomicAction('WebFetch', {
-    url: 'https://docs.stripe.com/subscriptions/how-to-subscribe',
-  }), false);
-  assert.equal(detectEconomicAction('mcp__browseros-neo__act', {
-    kind: 'click',
-    ref: 'e1',
-    url: 'https://[::1',
-  }), false);
-  assert.equal(detectEconomicAction('mcp__browseros-neo__act', {
-    kind: 'click',
-    ref: 'e1',
-    url: 'https://example.com/%ZZ',
-  }), false);
+  assert.equal(detectEconomicAction('WebFetch', { url: 'https://docs.stripe.com/subscriptions/how-to-subscribe' }), false);
   assert.equal(detectEconomicAction('Bash', {
     command: 'gh issue comment --body "a paid tier"',
     metadata: { context: 'Fix the purchase button' },
   }), false);
-  assert.equal(runHardFloor({
-    tool_name: 'mcp__browseros-neo__act',
-    tool_input: {
-      page: 62,
-      kind: 'click',
-      ref: 'e2',
-      url: 'https://accounts.google.com/o/oauth2/v2/auth',
-      text: 'Choose an account',
-    },
-  }), null);
 });
 
 test('routine shell work and quoted agent prompts mentioning checkout are not economic actions', () => {
@@ -1884,6 +1820,121 @@ test('control plane denies payment-control clicks, spend-surface clicks, and pay
   });
   assert.equal(observed.mode, 'allow');
   assert.equal(observed.economicAction, false);
+});
+
+test('recorded browser navigate and tabs-new URLs gate subsequent page-only act clicks', () => {
+  const { feedbackDir, requester } = fixture();
+  const runtimeDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-browser-pages-'));
+  const previousRuntimeDir = process.env.THUMBGATE_RUNTIME_DIR;
+  const previousFeedbackDir = process.env.THUMBGATE_FEEDBACK_DIR;
+  const hookPath = path.resolve(__dirname, '..', 'scripts', 'hook-pre-tool-use.js');
+  const runHook = (toolName, toolInput) => spawnSync(process.execPath, [hookPath], {
+    input: JSON.stringify({ tool_name: toolName, tool_input: toolInput }),
+    encoding: 'utf8',
+    env: { ...process.env, THUMBGATE_RUNTIME_DIR: runtimeDir, THUMBGATE_FEEDBACK_DIR: feedbackDir },
+  });
+  process.env.THUMBGATE_RUNTIME_DIR = runtimeDir;
+  process.env.THUMBGATE_FEEDBACK_DIR = feedbackDir;
+  try {
+    // 1. Navigate page 7 to checkout.stripe.com (passes hook via approved reservation) -> act click page 7 denied.
+    const navInput = { page: 7, url: 'https://checkout.stripe.com/c/pay/cs_live_123', costUsd: 19 };
+    const created = createPurchaseRequisition({
+      taskId: 'open-stripe-checkout-tab', vendor: 'Stripe', amountUsd: 19, purpose: 'Inspect checkout session',
+      sourceMessageId: 'user-msg-page-7', evidence: ['Checkout session $19'], idempotencyKey: 'page-7-stripe-nav',
+      toolName: 'mcp__browseros-neo__navigate', toolInput: navInput,
+    }, authOptions(feedbackDir, requester));
+    decideEscalation({
+      escalationId: created.requisition.escalationId, decision: 'approved', reason: 'Approved opening checkout page 7.',
+    }, reviewerOptions(feedbackDir));
+    const reserved = reservePurchaseRequisition({
+      requisitionId: created.requisition.requisitionId, amountUsd: 19, vendor: 'Stripe',
+      purpose: 'Inspect checkout session', sourceMessageId: 'user-msg-page-7',
+    }, authOptions(feedbackDir, requester));
+    const approvedNavigateCall = {
+      tool_name: 'mcp__browseros-neo__navigate',
+      tool_input: {
+        ...navInput,
+        financialControl: {
+          requisitionId: reserved.requisition.requisitionId, reservationId: reserved.requisition.reservationId,
+          actionId: 'nav-page-7-once', vendor: 'Stripe', purpose: 'Inspect checkout session', sourceMessageId: 'user-msg-page-7',
+        },
+      },
+      budget: { maxCostUsdPerAction: 19, remainingCostUsd: 19, hasMaxCostUsdPerAction: true, hasRemainingCostUsd: true },
+    };
+    const runtimeOpts = authOptions(feedbackDir, requester, { runtimeDir });
+    assert.equal(runHardFloor(approvedNavigateCall, runtimeOpts), null);
+    assert.equal(finalizeFinancialAuthorization(approvedNavigateCall, runtimeOpts), null);
+    assert.equal(lookupRecordedBrowserPageUrl(7, { runtimeDir }), 'https://checkout.stripe.com/c/pay/cs_live_123');
+    assert.equal(fs.existsSync(getBrowserPageStatePath({ runtimeDir })), true);
+
+    const page7Click = { page: 7, kind: 'click', ref: 'e4' };
+    assert.equal(detectEconomicAction('mcp__browseros-neo__act', page7Click), true);
+    const page7Floor = JSON.parse(runHardFloor({ tool_name: 'mcp__browseros-neo__act', tool_input: page7Click }));
+    assert.equal(page7Floor.hookSpecificOutput.permissionDecision, 'deny');
+    assert.match(page7Floor.hookSpecificOutput.permissionDecisionReason, /\[GATE:financial-control\]/);
+    assert.equal(JSON.parse(runHook('mcp__browseros-neo__act', page7Click).stdout).hookSpecificOutput.permissionDecision, 'deny');
+
+    // 2. Navigate page 8 to linkedin.com through real hook -> act click page 8 allowed.
+    const page8NavHook = runHook('mcp__browseros-neo__navigate', { page: 8, url: 'https://www.linkedin.com/feed/' });
+    assert.equal(page8NavHook.status, 0);
+    assert.notEqual(JSON.parse(page8NavHook.stdout || '{}').hookSpecificOutput?.permissionDecision, 'deny');
+    assert.equal(lookupRecordedBrowserPageUrl('8', { runtimeDir }), 'https://www.linkedin.com/feed/');
+    const page8Click = { page: 8, kind: 'click', ref: 'e12' };
+    assert.equal(detectEconomicAction('mcp__browseros-neo__act', page8Click), false);
+    assert.equal(runHardFloor({ tool_name: 'mcp__browseros-neo__act', tool_input: page8Click }), null);
+    assert.notEqual(JSON.parse(runHook('mcp__browseros-neo__act', page8Click).stdout || '{}').hookSpecificOutput?.permissionDecision, 'deny');
+
+    // Denied navigate on page 8 does NOT overwrite recorded linkedin.com state.
+    const blockedNavHook = runHook('mcp__browseros-neo__navigate', { page: 8, url: 'https://checkout.stripe.com/c/pay/cs_blocked' });
+    assert.equal(JSON.parse(blockedNavHook.stdout).hookSpecificOutput.permissionDecision, 'deny');
+    assert.equal(lookupRecordedBrowserPageUrl(8, { runtimeDir }), 'https://www.linkedin.com/feed/');
+
+    // 3. Act click on page 99 never seen -> allowed.
+    const page99Click = { page: 99, kind: 'click', ref: 'e1' };
+    assert.equal(detectEconomicAction('mcp__browseros-neo__act', page99Click), false);
+    assert.equal(runHardFloor({ tool_name: 'mcp__browseros-neo__act', tool_input: page99Click }), null);
+
+    // 4. tabs-new recording + navigating page 7 away to non-spend URL + edge guards.
+    assert.equal(recordBrowserPageNavigation('mcp__browseros-neo__tabs', {
+      action: 'new', page: 17, url: 'https://console.cloud.google.com/billing/012345',
+    }, { runtimeDir }), true);
+    assert.equal(recordBrowserPageNavigation('mcp__playwright__browser_tab_new', {
+      page: 18, url: 'https://checkout.stripe.com/c/pay/cs_tab_18',
+    }, { runtimeDir }), true);
+    assert.equal(detectEconomicAction('mcp__browseros-neo__act', { page: 17, kind: 'click', ref: 'e3', href: '#submit' }), true);
+    assert.equal(detectEconomicAction('mcp__claude-in-chrome__computer', { page: 99, tabId: 18, action: 'left_click', coordinate: [10, 10] }), true);
+    assert.equal(recordBrowserPageNavigation('mcp__browseros-neo__tabs', {
+      action: 'list', page: 17, url: 'https://www.linkedin.com/feed/',
+    }, { runtimeDir }), false);
+    assert.equal(recordBrowserPageNavigation('Browser', {
+      action: 'navigate', tabId: 7, url: 'https://www.linkedin.com/feed/',
+    }, { runtimeDir }), true);
+    assert.equal(detectEconomicAction('mcp__browseros-neo__act', page7Click), false);
+    assert.equal(recordBrowserPageNavigation('Bash', { command: 'ls' }, { runtimeDir }), false);
+    assert.equal(recordBrowserPageNavigation('mcp__browseros-neo__navigate', { page: '__proto__', url: 'https://checkout.stripe.com/c/pay/1' }, { runtimeDir }), false);
+    assert.equal(recordBrowserPageNavigation('mcp__browseros-neo__navigate', { page: 19, url: 'javascript:void(0)' }, { runtimeDir }), false);
+    assert.equal(lookupRecordedBrowserPageUrl('', { runtimeDir }), '');
+
+    const corruptDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-browser-corrupt-'));
+    const blockerFile = path.join(corruptDir, 'not-a-dir');
+    fs.writeFileSync(blockerFile, 'file', 'utf8');
+    fs.writeFileSync(getBrowserPageStatePath({ runtimeDir: corruptDir }), '{not-json', 'utf8');
+    try {
+      assert.equal(lookupRecordedBrowserPageUrl(7, { runtimeDir: corruptDir }), '');
+      assert.equal(recordBrowserPageNavigation('mcp__browseros-neo__navigate', {
+        page: 7, url: 'https://www.linkedin.com/feed/',
+      }, { runtimeDir: blockerFile }), false);
+    } finally {
+      fs.rmSync(corruptDir, { recursive: true, force: true });
+    }
+  } finally {
+    if (previousRuntimeDir === undefined) delete process.env.THUMBGATE_RUNTIME_DIR;
+    else process.env.THUMBGATE_RUNTIME_DIR = previousRuntimeDir;
+    if (previousFeedbackDir === undefined) delete process.env.THUMBGATE_FEEDBACK_DIR;
+    else process.env.THUMBGATE_FEEDBACK_DIR = previousFeedbackDir;
+    fs.rmSync(runtimeDir, { recursive: true, force: true });
+    fs.rmSync(feedbackDir, { recursive: true, force: true });
+  }
 });
 
 test('withdrawn human approval after reservation fails closed at T=0 execution', () => {

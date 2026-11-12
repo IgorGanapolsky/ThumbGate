@@ -275,7 +275,7 @@ function isHighRiskAction(toolName, toolInput = {}, affectedFiles = []) {
   return HIGH_RISK_BASH_PATTERN.test(String(toolInput.command || ''));
 }
 
-function classifyActionProfile(toolInput = {}, toolName = '') {
+function classifyActionProfile(toolInput = {}, toolName = '', options = {}) {
   const command = String(toolInput.command || '');
   const metadata = toolInput && typeof toolInput.metadata === 'object' ? toolInput.metadata : {};
   const source = String(toolInput.source || metadata.source || '');
@@ -301,7 +301,7 @@ function classifyActionProfile(toolInput = {}, toolName = '') {
       || detectEconomicAction(effectiveToolName, {
         ...toolInput,
         metadata: { ...metadata, context: metadataContext },
-      })
+      }, options)
   );
   const customerSystemAction = Boolean(
     toolInput.customerSystemAction === true
@@ -1594,7 +1594,7 @@ function evaluateWorkflowSentinel(toolName, toolInput = {}, options = {}) {
         .map((filePath) => toRepoRelativePath(filePath, repoRoot))
         .filter(Boolean)
       : collectAffectedFiles(normalizedToolName, normalizedToolInput, repoRoot));
-  let actionProfile = classifyActionProfile(normalizedToolInput, normalizedToolName);
+  let actionProfile = classifyActionProfile(normalizedToolInput, normalizedToolName, options);
   const financialControl = evaluateFinancialControl({
     toolName: normalizedToolName,
     toolInput: normalizedToolInput,
@@ -1603,6 +1603,9 @@ function evaluateWorkflowSentinel(toolName, toolInput = {}, options = {}) {
     budget: options.budget || toolInput.budget || {},
     financialControl: options.financialControl || toolInput.financialControl,
   }, getFinancialControlRuntimeOptions({
+    runtimeDir: options.runtimeDir,
+    home: options.home,
+    env: options.env,
     feedbackDir: options.feedbackDir
       || process.env.THUMBGATE_FEEDBACK_DIR
       || (repoRoot ? path.join(repoRoot, '.thumbgate') : null),

@@ -16,7 +16,7 @@ const crypto = require('node:crypto');
 const { spawnSync } = require('node:child_process');
 const fs = require('node:fs');
 const path = require('node:path');
-const { getFeedbackPaths } = require('./feedback-paths');
+const { getFeedbackPaths, getRuntimeDir } = require('./feedback-paths');
 const { withFileLedgerLock } = require('./file-ledger-lock');
 const {
   consumeVerifiedApproval,
@@ -175,6 +175,14 @@ const SCREEN_FORM_ACTION_PATTERN = /(?:fill|type|input|enter|submit|select|check
 const SCREEN_TOOL_PATTERN = /(?:browser|chrome|computer|playwright|puppeteer|selenium|form[_-]?input|click|tap|press)/i;
 const SCREEN_MUTATION_PATTERN = /(?:click|double[_ -]?click|tap|press|select|submit|confirm|activate)/i;
 const SCREEN_OBSERVATION_PATTERN = /(?:screenshot|snapshot)/i;
+const BROWSER_PAGE_STATE_FILE = 'browser-page-urls.json';
+const MAX_TRACKED_BROWSER_PAGES = 256;
+const DISALLOWED_PAGE_KEYS = new Set(['__proto__', 'constructor', 'prototype']);
+const BROWSER_ACT_TOOL_PATTERN = /(?:^|[_.:-])act$/i;
+const BROWSER_NAVIGATE_TOOL_PATTERN = /(?:^|[_.:-])(?:navigate(?:[_-]page)?|goto|tabs?[_-](?:new|create)|new[_-](?:page|tab))(?:[_-]mcp)?$/i;
+const BROWSER_TABS_TOOL_PATTERN = /(?:^|[_.:-])tabs$/i;
+const BROWSER_NAVIGATE_ACTION_SET = new Set(['navigate', 'goto', 'new_tab', 'tabs-new']);
+const BROWSER_TABS_NEW_ACTION_SET = new Set(['new', 'open', 'create', 'new_tab', 'tabs-new']);
 
 // A process principal cannot be selected through a tool call. Operators that
 // need an approved purchase to survive separate MCP/hook processes must set a
@@ -569,25 +577,40 @@ function isAwsEconomicCli(positional) {
   return service === 'route53domains' && AWS_DOMAIN_SPEND_ACTIONS.has(action);
 }
 
+function isHerokuEconomicCli(pos) {
+  return Boolean(pos[0] && (pos[0].startsWith('addons:create') || pos[0].startsWith('addons:upgrade')));
+}
+
 function isFlyEconomicCli(pos) {
   return pos[0] === 'scale' || (pos[0] === 'volumes' && pos[1] === 'create');
 }
 
-const CLI_ECONOMIC_HANDLERS = new Map([
-  ['stripe', (pos) => pos.some((tok) => STRIPE_CLI_RESOURCES.has(tok))],
-  ['gcloud', (pos) => pos.includes('billing')],
-  ['aws', (pos) => isAwsEconomicCli(pos)],
-  ['az', (pos) => pos[0] === 'billing' || pos[0] === 'consumption'],
-  ['heroku', (pos) => Boolean(pos[0] && (pos[0].startsWith('addons:create') || pos[0].startsWith('addons:upgrade')))],
-  ['fly', isFlyEconomicCli],
-  ['flyctl', isFlyEconomicCli],
-  ['wrangler', (pos) => pos[0] === 'billing'],
-  ['vercel', (pos) => pos[0] === 'billing' || (pos[0] === 'domains' && pos[1] === 'buy')],
-]);
+function isVercelEconomicCli(pos) {
+  return pos[0] === 'billing' || (pos[0] === 'domains' && pos[1] === 'buy');
+}
 
 function isPlatformEconomicCli(executable, positional) {
-  const handler = CLI_ECONOMIC_HANDLERS.get(executable);
-  return handler ? handler(positional) : false;
+  switch (executable) {
+    case 'stripe':
+      return positional.some((tok) => STRIPE_CLI_RESOURCES.has(tok));
+    case 'gcloud':
+      return positional.includes('billing');
+    case 'aws':
+      return isAwsEconomicCli(positional);
+    case 'az':
+      return positional[0] === 'billing' || positional[0] === 'consumption';
+    case 'heroku':
+      return isHerokuEconomicCli(positional);
+    case 'fly':
+    case 'flyctl':
+      return isFlyEconomicCli(positional);
+    case 'wrangler':
+      return positional[0] === 'billing';
+    case 'vercel':
+      return isVercelEconomicCli(positional);
+    default:
+      return false;
+  }
 }
 
 const PACKAGE_RUNNERS = new Set(['npx', 'bunx']);
@@ -753,7 +776,126 @@ function collectNavigationTargets(toolInput, metadata) {
   ].map((value) => String(value || '')).join(' ');
 }
 
-function detectEconomicAction(toolName, toolInput = {}) {
+function getBrowserPageStatePath(options = {}) {
+  const explicitDir = optionalString(options.runtimeDir)
+    || optionalString(process.env.THUMBGATE_RUNTIME_DIR);
+  const runtimeDir = explicitDir ? path.resolve(explicitDir) : getRuntimeDir(options);
+  return path.join(runtimeDir, BROWSER_PAGE_STATE_FILE);
+}
+
+function normalizeBrowserPageId(value) {
+  if (typeof value === 'number' && Number.isFinite(value)) return String(value);
+  if (typeof value !== 'string') return '';
+  const trimmed = value.trim();
+  if (!trimmed || trimmed.length > 128 || DISALLOWED_PAGE_KEYS.has(trimmed)) return '';
+  return trimmed;
+}
+
+function extractBrowserPageIds(toolInput = {}) {
+  const input = objectValue(toolInput);
+  const ids = [];
+  for (const candidate of [input.page, input.pageId, input.page_id, input.tabId, input.tab_id, input.tab]) {
+    const normalized = normalizeBrowserPageId(candidate);
+    if (normalized && !ids.includes(normalized)) ids.push(normalized);
+  }
+  return ids;
+}
+
+function extractExplicitPageUrl(toolInput = {}, metadata = {}) {
+  for (const candidate of [
+    toolInput.url,
+    toolInput.uri,
+    toolInput.href,
+    toolInput.navigate,
+    toolInput.pageUrl,
+    toolInput.page_url,
+    toolInput.tabUrl,
+    toolInput.tab_url,
+    toolInput.currentUrl,
+    toolInput.current_url,
+    metadata.url,
+    metadata.pageUrl,
+    metadata.tabUrl,
+  ]) {
+    const text = optionalString(candidate);
+    if (text && parseEconomicCandidateUrl(text)) return text;
+  }
+  return '';
+}
+
+function readBrowserPageStateMap(options = {}) {
+  try {
+    const parsed = JSON.parse(fs.readFileSync(getBrowserPageStatePath(options), 'utf8'));
+    const pages = objectValue(parsed?.pages);
+    const map = new Map();
+    for (const [key, value] of Object.entries(pages)) {
+      if (!DISALLOWED_PAGE_KEYS.has(key) && typeof value === 'string' && value) {
+        map.set(key, value);
+      }
+    }
+    return map;
+  } catch {
+    return new Map();
+  }
+}
+
+function writeBrowserPageStateMap(map, options = {}) {
+  const statePath = getBrowserPageStatePath(options);
+  const pages = Object.fromEntries(Array.from(map.entries()).slice(-MAX_TRACKED_BROWSER_PAGES));
+  fs.mkdirSync(path.dirname(statePath), { recursive: true });
+  const tempPath = `${statePath}.${process.pid}.${crypto.randomUUID()}.tmp`;
+  fs.writeFileSync(tempPath, `${JSON.stringify({ pages }, null, 2)}\n`, 'utf8');
+  fs.renameSync(tempPath, statePath);
+}
+
+function isBrowserNavigateOrTabsNewCall(normalizedToolName, toolInput) {
+  if (!SCREEN_TOOL_PATTERN.test(normalizedToolName)) return false;
+  if (BROWSER_NAVIGATE_TOOL_PATTERN.test(normalizedToolName)) return true;
+  const action = String(toolInput.action || toolInput.kind || toolInput.operation || toolInput.mode || '')
+    .trim()
+    .toLowerCase();
+  if (BROWSER_TABS_TOOL_PATTERN.test(normalizedToolName)) {
+    return BROWSER_TABS_NEW_ACTION_SET.has(action);
+  }
+  return toolInput.new_tab === true || BROWSER_NAVIGATE_ACTION_SET.has(action);
+}
+
+function recordBrowserPageNavigation(toolName, toolInput = {}, options = {}) {
+  try {
+    const normalizedToolName = String(toolName || '').trim();
+    const input = objectValue(toolInput);
+    if (!isBrowserNavigateOrTabsNewCall(normalizedToolName, input)) return false;
+    const pageIds = extractBrowserPageIds(input);
+    const url = extractExplicitPageUrl(input, objectValue(input.metadata));
+    if (pageIds.length === 0 || !url) return false;
+    const map = readBrowserPageStateMap(options);
+    for (const pageId of pageIds) {
+      map.delete(pageId);
+      map.set(pageId, url);
+    }
+    writeBrowserPageStateMap(map, options);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function lookupRecordedBrowserPageUrl(pageId, options = {}) {
+  const normalizedPageId = normalizeBrowserPageId(pageId);
+  if (!normalizedPageId) return '';
+  return readBrowserPageStateMap(options).get(normalizedPageId) || '';
+}
+
+function hasRecordedEconomicPageUrl(normalizedToolName, toolInput, metadata, options) {
+  if (!isDeclaredScreenMutation(normalizedToolName, toolInput)) return false;
+  if (extractExplicitPageUrl(toolInput, metadata)) return false;
+  const pageIds = extractBrowserPageIds(toolInput);
+  if (pageIds.length === 0) return false;
+  const stateMap = readBrowserPageStateMap(options);
+  return pageIds.some((id) => containsEconomicUrl(stateMap.get(id) || ''));
+}
+
+function detectEconomicAction(toolName, toolInput = {}, options = {}) {
   const normalizedToolName = String(toolName || '').trim();
   if (isRemedyControlTool(normalizedToolName)) return false;
   const metadata = objectValue(toolInput.metadata);
@@ -764,6 +906,7 @@ function detectEconomicAction(toolName, toolInput = {}) {
   }
   const navigationTargets = collectNavigationTargets(toolInput, metadata);
   if (containsEconomicUrl(navigationTargets)) return true;
+  if (hasRecordedEconomicPageUrl(normalizedToolName, toolInput, metadata, options)) return true;
   const command = shellEconomicText(normalizedToolName, toolInput.command || toolInput.cmd);
   if (containsEconomicUrl(command)) return true;
   const screenMutationTargets = collectScreenMutationTargets(normalizedToolName, toolInput, metadata);
@@ -801,7 +944,8 @@ function isDeclaredScreenMutation(toolName, toolInput = {}) {
   const declaredOperation = [input.action, input.operation, input.type, input.kind]
     .map((value) => String(value || ''))
     .join(' ');
-  return SCREEN_MUTATION_PATTERN.test(normalizedToolName)
+  return BROWSER_ACT_TOOL_PATTERN.test(normalizedToolName)
+    || SCREEN_MUTATION_PATTERN.test(normalizedToolName)
     || SCREEN_MUTATION_PATTERN.test(declaredOperation)
     || SCREEN_FORM_ACTION_PATTERN.test(normalizedToolName)
     || SCREEN_FORM_ACTION_PATTERN.test(declaredOperation);
@@ -972,7 +1116,7 @@ function createPurchaseRequisition(input = {}, options = {}) {
   const sourceMessageId = requiredString(input.sourceMessageId, 'sourceMessageId');
   const amountUsd = positiveMoney(input.amountUsd, 'amountUsd');
   const approvedAction = buildActionAuthorization(input.toolName, input.toolInput, amountUsd);
-  if (!detectEconomicAction(approvedAction.toolName, objectValue(input.toolInput))) {
+  if (!detectEconomicAction(approvedAction.toolName, objectValue(input.toolInput), options)) {
     throw financialError('purchase requisitions must bind an exact economic tool action');
   }
   const evidence = stringArray(input.evidence);
@@ -1296,11 +1440,19 @@ function reconcilePurchaseLedgerUnlocked(options = {}) {
   };
 }
 
+function maybeRecordAllowedBrowserPage(input, options, allowed) {
+  if (!allowed || options.consumeReservation !== true) return;
+  recordBrowserPageNavigation(input.toolName, input.toolInput, options);
+}
+
 function evaluateFinancialControl(input = {}, options = {}) {
   const actionProfile = objectValue(input.actionProfile);
   const economicAction = actionProfile.economicAction === true
-    || detectEconomicAction(input.toolName, input.toolInput);
-  if (!economicAction) return allowNonEconomicAction();
+    || detectEconomicAction(input.toolName, input.toolInput, options);
+  if (!economicAction) {
+    maybeRecordAllowedBrowserPage(input, options, true);
+    return allowNonEconomicAction();
+  }
 
   const result = financialEvaluationContext(input, options);
   validateBudget(result);
@@ -1308,7 +1460,9 @@ function evaluateFinancialControl(input = {}, options = {}) {
   validateRequisition(result, options);
   validateCostControl(result);
   consumeReservationIfAuthorized(result, input, options);
-  return buildFinancialDecision(result);
+  const decision = buildFinancialDecision(result);
+  maybeRecordAllowedBrowserPage(input, options, decision.mode === 'allow');
+  return decision;
 }
 
 function allowNonEconomicAction() {
@@ -2150,14 +2304,17 @@ module.exports = {
   isRemedyControlTool,
   detectOpaqueScreenMutation,
   evaluateFinancialControl,
+  getBrowserPageStatePath,
   getLedgerHeadPath,
   getLedgerJournalPath,
   getLedgerPath,
   getFinancialControlRuntimeOptions,
   getRuntimePrincipal,
   listPurchaseRequisitions,
+  lookupRecordedBrowserPageUrl,
   projectRequisition,
   readEvents,
+  recordBrowserPageNavigation,
   reconcilePurchaseLedger,
   reservePurchaseRequisition,
   settlePurchaseRequisition,
