@@ -491,6 +491,7 @@ function loadJSON(filePath) {
 }
 
 function saveJSON(filePath, data) {
+  if (process.env.THUMBGATE_SANDBOX_EVAL === '1') return;
   fs.mkdirSync(path.dirname(filePath), { recursive: true });
   fs.writeFileSync(filePath, JSON.stringify(data, null, 2) + '\n');
 }
@@ -1063,6 +1064,7 @@ function buildGateActionFingerprint(gateId, options = {}) {
 }
 
 function recordStat(gateId, action, gate, options = {}) {
+  if (process.env.THUMBGATE_SANDBOX_EVAL === '1') return;
   const stats = loadStats();
   if (action === 'block') stats.blocked = (stats.blocked || 0) + 1;
   else if (action === 'warn') stats.warned = (stats.warned || 0) + 1;
@@ -1149,6 +1151,7 @@ function incrementTodayBlockCount() {
  * a deny result to a warn with an upgrade CTA. Returns null if no cap applies.
  */
 function applyDailyBlockCap(denyResult) {
+  if (process.env.THUMBGATE_SANDBOX_EVAL === '1') return null;
   // Catastrophic/irreversible commands (force-push, git reset --hard, git
   // clean -f, rm -rf on home/root) never get the free-tier daily-cap
   // discount — see issue #2782. Checked first, before any tier/CI shortcut,
@@ -2797,7 +2800,7 @@ function buildMatchSurfaces(toolName, toolInput = {}) {
   return surfaces;
 }
 
-function matchGate(gate, toolName, toolInput = {}) {
+function matchGate(gate, toolName, toolInput = {}, options = {}) {
   // Primary text for audit/reasoning: prefer command, then tool name (MCP).
   const matchSurfaces = buildMatchSurfaces(toolName, toolInput);
   let matchText = matchSurfaces[0] || String(toolName || '');
@@ -2837,11 +2840,11 @@ function matchGate(gate, toolName, toolInput = {}) {
     if (!matchSurfaces.includes(matchText)) matchSurfaces.push(matchText);
   }
 
-  const affected = extractAffectedFiles(toolName, toolInput);
+  const affected = options.affected || extractAffectedFiles(toolName, toolInput);
   const affectedFiles = affected.files;
   const repoRoot = affected.repoRoot;
-  const governanceState = loadGovernanceState();
-  const constraints = loadConstraints();
+  const governanceState = options.governanceState || loadGovernanceState();
+  const constraints = options.constraints || loadConstraints();
 
   if (isSelfProtectGate(gate.id) && hasActiveProtectedApproval(governanceState, affectedFiles)) {
     return { matched: false, matchText, affectedFiles };
@@ -3526,7 +3529,7 @@ function buildSentinelGateResult(report) {
 }
 
 function recordSentinelDecision(report, toolName, toolInput) {
-  if (!report) return null;
+  if (!report || process.env.THUMBGATE_SANDBOX_EVAL === '1') return null;
   const entry = recordDecisionEvaluation(report, {
     source: 'gates-engine',
     toolName,
@@ -3761,8 +3764,9 @@ async function evaluateGatesAsyncInner(toolName, toolInput, configPath) {
   const METRIC_SKIP_TOOLS = ['capture_feedback', 'feedback_stats', 'recall', 'feedback_summary', 'prevention_rules'];
   const skipMetrics = METRIC_SKIP_TOOLS.includes(toolName);
 
+  const sharedAffectedAsync = extractAffectedFiles(toolName, toolInput);
   for (const gate of config.gates) {
-    const matchDetails = matchGate(gate, toolName, toolInput);
+    const matchDetails = matchGate(gate, toolName, toolInput, { affected: sharedAffectedAsync, governanceState, constraints });
     if (!matchDetails.matched) continue;
 
     // EvoSkill Hardening: check contextual 'when' clause
@@ -4101,9 +4105,9 @@ function evaluateGatesInner(toolName, toolInput, configPath) {
       return { decision: 'deny', gate: 'strategic-drift', message: trajectory.message, severity: 'high' };
     }
   }
-
+  const sharedAffected = extractAffectedFiles(toolName, toolInput);
   for (const gate of config.gates) {
-    const matchDetails = matchGate(gate, toolName, toolInput);
+    const matchDetails = matchGate(gate, toolName, toolInput, { affected: sharedAffected, governanceState, constraints });
     if (!matchDetails.matched) continue;
 
     // EvoSkill Hardening: check contextual 'when' clause
