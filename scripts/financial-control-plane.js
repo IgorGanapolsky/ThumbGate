@@ -133,6 +133,10 @@ const NON_SPEND_HOST_PREFIXES = [
 const STRIPE_CHECKOUT_HOSTS = new Set([
   'checkout.stripe.com', 'buy.stripe.com', 'billing.stripe.com',
 ]);
+const THUMBGATE_CHECKOUT_HOSTS = new Set([
+  'thumbgate.ai', 'mcp.thumbgate.ai', 'thumbgate.app', 'thumbgate-production.up.railway.app',
+]);
+const THUMBGATE_SESSION_MINTING_GO_ROUTES = /^\/go\/(?:pro-direct|pro-annual|founding-100|diagnostic-pay|sprint-pay|bundle-49|playbook-999|playbook-10|operator-diagnostic|operator-turnkey|operator-retainer|operator-pro)(?:\/|$)/i;
 const STRIPE_API_SPEND_SEGMENTS = new Set([
   'charges', 'payment_intents', 'payment_methods', 'payment_links', 'subscriptions',
   'invoices', 'refunds', 'payouts', 'transfers', 'topups', 'treasury', 'billing', 'issuing',
@@ -478,6 +482,7 @@ function parseEconomicCandidateUrl(rawToken) {
     return {
       host,
       pathname: decodedPath,
+      search: decodedSearch,
       route: `${decodedPath}${decodedSearch}${decodedHash}`,
       spaRoute: `${decodedPath}${decodedHash}`,
       hasExplicitScheme,
@@ -512,6 +517,12 @@ function isStripeOrApolloSpendUrl(host, pathname, route) {
   return (host === 'apollo.io' || host === 'app.apollo.io') && APOLLO_SPEND_ROUTE_PATTERN.test(route);
 }
 
+function isThumbGateLiveCheckoutMintUrl({ host, pathname, search = '' }) {
+  if (!THUMBGATE_CHECKOUT_HOSTS.has(host)) return false;
+  if (!THUMBGATE_SESSION_MINTING_GO_ROUTES.test(pathname)) return false;
+  return !/(?:^|[?&])probe=(?:1|true)(?:&|$)/i.test(search);
+}
+
 function isAdsSpendUrl(host, route) {
   if (AD_SPEND_HOSTS.has(host)) return true;
   if (host === 'business.facebook.com' && route.startsWith('/adsmanager')) return true;
@@ -534,9 +545,10 @@ function isAppStoreSpendUrl(host, route) {
   return host === 'appstoreconnect.apple.com' && ASC_BILLING_PATTERN.test(route);
 }
 
-function isProviderSpendUrl({ host, pathname, route }) {
+function isProviderSpendUrl({ host, pathname, search, route }) {
   return isPaymentGatewayApiUrl(host, pathname)
     || isStripeOrApolloSpendUrl(host, pathname, route)
+    || isThumbGateLiveCheckoutMintUrl({ host, pathname, search })
     || isAdsSpendUrl(host, route)
     || isCloudConsoleSpendUrl(host, route)
     || isAppStoreSpendUrl(host, route);
