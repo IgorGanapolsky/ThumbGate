@@ -446,7 +446,11 @@ function buildLineLookup(text) {
 /**
  * Linear O(N) span-preserving CSS AST parser for `.css` files and `<style>` blocks.
  */
-function parseCssRulesAst(source, baseOffset = 0, lineAt = buildLineLookup(source)) {
+const UNITLESS_JSX_PROPS = new Set([
+  'opacity', 'zIndex', 'fontWeight', 'lineHeight', 'flex', 'flexGrow', 'flexShrink', 'order', 'zoom', 'scale', 'aspectRatio', 'gridRow', 'gridColumn',
+]);
+
+function parseCssRulesAst(source, baseOffset = 0, lineAt = buildLineLookup(source), recursionDepth = 0) {
   const rules = [];
   const len = source.length;
   let i = 0;
@@ -457,7 +461,15 @@ function parseCssRulesAst(source, baseOffset = 0, lineAt = buildLineLookup(sourc
       i = endC === -1 ? len : endC + 2;
       continue;
     }
+    if (i >= len) break;
     const openBrace = source.indexOf('{', i);
+    if (source[i] === '@') {
+      const semi = source.indexOf(';', i);
+      if (semi !== -1 && (openBrace === -1 || semi < openBrace)) {
+        i = semi + 1;
+        continue;
+      }
+    }
     if (openBrace === -1) break;
     const selector = source.slice(i, openBrace).trim();
     let depth = 1; let j = openBrace + 1;
@@ -467,8 +479,10 @@ function parseCssRulesAst(source, baseOffset = 0, lineAt = buildLineLookup(sourc
     }
     const closeBrace = j - 1;
     if (depth !== 0) break;
-    if (selector.startsWith('@') && !selector.startsWith('@font-face')) {
-      rules.push(...parseCssRulesAst(source.slice(openBrace + 1, closeBrace), baseOffset + openBrace + 1, lineAt));
+    if (selector.startsWith('@')) {
+      if (recursionDepth < 8 && /^@(?:media|supports|layer|container|scope)\b/i.test(selector)) {
+        rules.push(...parseCssRulesAst(source.slice(openBrace + 1, closeBrace), baseOffset + openBrace + 1, lineAt, recursionDepth + 1));
+      }
       i = j;
       continue;
     }
@@ -480,25 +494,34 @@ function parseCssRulesAst(source, baseOffset = 0, lineAt = buildLineLookup(sourc
     const startOffset = baseOffset + i;
     const endOffset = baseOffset + closeBrace + 1;
     rules.push({
-      type: 'CssRule',
-      selector,
-      declarations,
-      bodyText: source.slice(openBrace + 1, closeBrace),
-      startOffset,
-      endOffset,
-      startLine: lineAt(startOffset),
-      endLine: lineAt(endOffset),
-      rawRule: source.slice(i, closeBrace + 1),
+      type: 'CssRule', selector, declarations, bodyText: source.slice(openBrace + 1, closeBrace),
+      startOffset, endOffset, startLine: lineAt(startOffset), endLine: lineAt(endOffset), rawRule: source.slice(i, closeBrace + 1),
     });
     i = closeBrace + 1;
   }
   return rules;
 }
 
+function splitTopLevelCommas(str) {
+  const out = [];
+  let start = 0; let paren = 0; let brace = 0; let quote = null;
+  for (let i = 0; i < str.length; i++) {
+    const ch = str[i];
+    if (quote) { if (ch === '\\') i++; else if (ch === quote) quote = null; }
+    else if (ch === '"' || ch === "'" || ch === '`') quote = ch;
+    else if (ch === '(') paren++; else if (ch === ')' && paren > 0) paren--;
+    else if (ch === '{') brace++; else if (ch === '}' && brace > 0) brace--;
+    else if (ch === ',' && paren === 0 && brace === 0) { out.push(str.slice(start, i)); start = i + 1; }
+  }
+  out.push(str.slice(start));
+  return out;
+}
+
 function parseStyleEntries(attrsRaw) {
-  const sIdx = attrsRaw ? attrsRaw.search(/\bstyle\s*=/) : -1;
-  if (sIdx >= 0) {
-    let cur = sIdx + attrsRaw.slice(sIdx).indexOf('=') + 1;
+  const sMatch = /(?:^|[\s"'`}])(style\s*=)/.exec(attrsRaw || '');
+  if (sMatch) {
+    const sIdx = sMatch.index + (sMatch[0].length - sMatch[1].length);
+    let cur = sIdx + sMatch[1].length;
     while (cur < attrsRaw.length && /\s/.test(attrsRaw[cur])) cur++;
     if (attrsRaw.startsWith('{{', cur)) {
       let d = 2; let k = cur + 2;
@@ -508,11 +531,15 @@ function parseStyleEntries(attrsRaw) {
       }
       const inner = attrsRaw.slice(cur + 2, Math.max(cur + 2, k - 2));
       const map = {};
-      for (const part of inner.split(',')) {
-        const m = /^\s*([a-zA-Z]+)\s*:\s*(?:'([^']*)'|"([^"]*)"|(-?\d+(?:\.\d+)?))\s*$/.exec(part);
-        if (m) map[m[1]] = m[4] !== undefined ? `${m[4]}px` : (m[2] ?? m[3]);
+      const preserved = [];
+      for (const part of splitTopLevelCommas(inner)) {
+        const trimmed = part.trim();
+        if (!trimmed) continue;
+        const m = /^([a-zA-Z]+)\s*:\s*(?:'([^']*)'|"([^"]*)"|(-?\d+(?:\.\d+)?))$/.exec(trimmed);
+        if (m) map[m[1]] = m[4] !== undefined ? (UNITLESS_JSX_PROPS.has(m[1]) ? Number(m[4]) : `${m[4]}px`) : (m[2] ?? m[3]);
+        else preserved.push(trimmed);
       }
-      return { kind: 'jsx', rawMatch: attrsRaw.slice(sIdx, k), map };
+      return { kind: 'jsx', rawMatch: attrsRaw.slice(sIdx, k), map, preserved };
     }
     if (attrsRaw[cur] === '"' || attrsRaw[cur] === "'") {
       const q = attrsRaw[cur];
@@ -523,18 +550,19 @@ function parseStyleEntries(attrsRaw) {
           const idx = decl.indexOf(':');
           if (idx > 0) map[decl.slice(0, idx).trim().toLowerCase()] = decl.slice(idx + 1).trim();
         }
-        return { kind: 'css', rawMatch: attrsRaw.slice(sIdx, endQ + 1), map };
+        return { kind: 'css', rawMatch: attrsRaw.slice(sIdx, endQ + 1), map, preserved: [] };
       }
     }
   }
-  return { kind: null, rawMatch: null, map: {} };
+  return { kind: null, rawMatch: null, map: {}, preserved: [] };
 }
 
-function serializeStyleAttr(kind, map) {
+function serializeStyleAttr(kind, map, preserved = []) {
   const entries = Object.entries(map).filter(([, v]) => v !== undefined && v !== '');
   if (kind === 'jsx') {
     const toCamel = (k) => k.replace(/-([a-z])/g, (_, ch) => ch.toUpperCase());
-    return `style={{ ${entries.map(([k, v]) => `${toCamel(k)}: '${v}'`).join(', ')} }}`;
+    const serialized = entries.map(([k, v]) => `${toCamel(k)}: ${typeof v === 'number' ? v : `'${v}'`}`);
+    return `style={{ ${[...preserved, ...serialized].join(', ')} }}`;
   }
   const toKebab = (k) => k.replace(/[A-Z]/g, (ch) => `-${ch.toLowerCase()}`);
   return `style="${entries.map(([k, v]) => `${toKebab(k)}: ${v}`).join('; ')}"`;
@@ -550,7 +578,7 @@ function resolveColorFromNode(classes, styleMap, kind) {
     const suffix = cls.slice(prefix.length);
     const arb = /^\[(#[0-9a-fA-F]{3,6})\]$/.exec(suffix);
     if (arb) return { hex: arb[1], token: cls, fromStyle: false };
-    if (TAILWIND_HEX_PALETTE[suffix]) return { hex: TAILWIND_HEX_PALETTE[suffix], token: cls, fromStyle: false };
+    if (Object.hasOwn(TAILWIND_HEX_PALETTE, suffix)) return { hex: TAILWIND_HEX_PALETTE[suffix], token: cls, fromStyle: false };
   }
   return null;
 }
@@ -581,6 +609,12 @@ function parseDesignAst(source, defaultBgHex = '#0f172a') {
       i = endC === -1 ? len : endC + 3;
       continue;
     }
+    const lineStart = text.lastIndexOf('\n', lt - 1) + 1;
+    if (/^\s*\/\//.test(text.slice(lineStart, lt))) {
+      const nl = text.indexOf('\n', lt);
+      i = nl === -1 ? len : nl + 1;
+      continue;
+    }
     let cur = lt + 1;
     let closing = false;
     if (text[cur] === '/') { closing = true; cur++; }
@@ -596,6 +630,12 @@ function parseDesignAst(source, defaultBgHex = '#0f172a') {
       if (quote) {
         if (ch === '\\') cur++;
         else if (ch === quote) quote = null;
+      } else if (ch === '/' && text[cur + 1] === '*' && braceDepth > 0) {
+        const cEnd = text.indexOf('*/', cur + 2);
+        cur = cEnd === -1 ? len : cEnd + 1;
+      } else if (ch === '/' && text[cur + 1] === '/' && braceDepth > 0) {
+        const nl = text.indexOf('\n', cur + 2);
+        cur = nl === -1 ? len : nl;
       } else if (ch === '"' || ch === "'" || ch === '`') {
         quote = ch;
       } else if (ch === '{') {
@@ -619,24 +659,24 @@ function parseDesignAst(source, defaultBgHex = '#0f172a') {
 
     const selfClose = text[cur - 1] === '/' ? '/' : '';
     const attrsRaw = text.slice(nameStart + tagName.length, selfClose ? cur - 1 : cur);
-    if (tagName.toLowerCase() === 'style' && !selfClose) {
-      const closeStyle = text.toLowerCase().indexOf('</style>', tagEnd);
-      if (closeStyle >= tagEnd) {
-        cssRules.push(...parseCssRulesAst(text.slice(tagEnd, closeStyle), tagEnd, lineAt));
-        i = closeStyle + 8;
-        continue;
+    const tagLower = tagName.toLowerCase();
+    if ((tagLower === 'style' || tagLower === 'script') && !selfClose) {
+      const closeRe = tagLower === 'style' ? /<\/style\b[^>]*>/ig : /<\/script\b[^>]*>/ig;
+      closeRe.lastIndex = tagEnd;
+      const closeMatch = closeRe.exec(text);
+      if (!closeMatch) break;
+      if (tagLower === 'style') {
+        const styleBody = text.slice(tagEnd, closeMatch.index);
+        if (!styleBody.trimStart().startsWith('{')) cssRules.push(...parseCssRulesAst(styleBody, tagEnd, lineAt));
       }
-    }
-    if (tagName.toLowerCase() === 'script' && !selfClose) {
-      const closeScript = text.toLowerCase().indexOf('</script>', tagEnd);
-      i = closeScript >= tagEnd ? closeScript + 9 : tagEnd;
+      i = closeMatch.index + closeMatch[0].length;
       continue;
     }
 
     const parent = stack[stack.length - 1];
-    const idMatch = /\bid=(?:"([^"]+)"|'([^']+)')/.exec(attrsRaw);
-    const classMatch = /\b(class|className)=(?:"([^"]*)"|'([^']*)')/.exec(attrsRaw);
-    const classes = classMatch ? (classMatch[2] ?? classMatch[3] ?? '').trim().split(/\s+/).filter(Boolean) : [];
+    const idMatch = /(?:^|[\s"'`}])id=(?:"([^"]+)"|'([^']+)')/.exec(attrsRaw);
+    const classMatch = /(?:^|[\s"'`}])((class|className)=(?:"([^"]*)"|'([^']*)'))/.exec(attrsRaw);
+    const classes = classMatch ? (classMatch[3] ?? classMatch[4] ?? '').trim().split(/\s+/).filter(Boolean) : [];
     const styleInfo = parseStyleEntries(attrsRaw);
     const id = idMatch ? (idMatch[1] ?? idMatch[2]) : null;
     const selector = id ? `#${id}` : (classes[0] && !classes[0].includes('[') && !classes[0].includes(':') ? `${tagName}.${classes[0]}` : tagName);
@@ -660,8 +700,8 @@ function parseDesignAst(source, defaultBgHex = '#0f172a') {
       endOffset: tagEnd,
       startLine: lineAt(lt),
       endLine: lineAt(tagEnd),
-      classAttrName: classMatch ? classMatch[1] : (/\bclassName=/.test(text) ? 'className' : 'class'),
-      classRawMatch: classMatch ? classMatch[0] : null,
+      classAttrName: classMatch ? classMatch[2] : (/\bclassName=/.test(text) ? 'className' : 'class'),
+      classRawMatch: classMatch ? classMatch[1] : null,
       classes,
       styleInfo,
       ownBgHex: ownBg ? ownBg.hex : null,
@@ -677,25 +717,29 @@ function parseDesignAst(source, defaultBgHex = '#0f172a') {
 }
 
 function normalizeVisualFindings(findings = []) {
-  const list = Array.isArray(findings) ? findings : (findings ? [findings] : []);
-  return list.map((item) => {
-    if (typeof item === 'string') {
-      const selMatch = /(#[a-zA-Z0-9_-]+|\.[a-zA-Z0-9_-]+|\b(?:button|a|p|span|h[1-6]|div|section|img|input)(?:\.[a-zA-Z0-9_-]+)?)/i.exec(item);
-      const issue = /colorblind|red\/green/i.test(item) ? 'colorblind_unsafe_status'
-        : /contrast/i.test(item) ? 'low_contrast'
-          : /tap|touch|target|44px|small\s+button/i.test(item) ? 'undersized_tap_target'
-            : /overflow|clip|viewport|horizontal/i.test(item) ? 'fixed_width_mobile_overflow'
-              : /focus|outline|ring/i.test(item) ? 'missing_focus_ring'
-                : /cls|shift|aspect|dimension/i.test(item) ? 'cls_unsized_media' : 'low_contrast';
-      return { selector: selMatch ? selMatch[1] : null, issue, raw: item };
-    }
-    return {
-      ...item,
-      fgHex: item.fgHex || item.foregroundHex,
-      bgHex: item.bgHex || item.backgroundHex,
-      issue: String(item.issue || item.type || item.code || 'low_contrast'),
-    };
-  });
+  const rawList = Array.isArray(findings) ? findings : (findings ? [findings] : []);
+  return rawList
+    .slice(0, 64)
+    .filter((item) => typeof item === 'string' || (item !== null && typeof item === 'object' && !Array.isArray(item)))
+    .map((item) => {
+      if (typeof item === 'string') {
+        const selMatch = /(#[a-z0-9_-]+|\.[a-z0-9_-]+|\b(?:button|a|p|span|h[1-6]|div|section|img|input)(?:\.[a-z0-9_-]+)?)/i.exec(item);
+        const issue = /colorblind|red\/green/i.test(item) ? 'colorblind_unsafe_status'
+          : /contrast/i.test(item) ? 'low_contrast'
+            : /tap|touch|target|44px|small\s+button/i.test(item) ? 'undersized_tap_target'
+              : /overflow|clip|viewport|horizontal/i.test(item) ? 'fixed_width_mobile_overflow'
+                : /focus|outline|ring/i.test(item) ? 'missing_focus_ring'
+                  : /cls|shift|aspect|dimension/i.test(item) ? 'cls_unsized_media' : 'low_contrast';
+        return { selector: selMatch ? selMatch[1] : null, issue, raw: item };
+      }
+      return {
+        ...item,
+        selector: typeof item.selector === 'string' ? item.selector : null,
+        fgHex: typeof (item.fgHex || item.foregroundHex) === 'string' ? (item.fgHex || item.foregroundHex) : null,
+        bgHex: typeof (item.bgHex || item.backgroundHex) === 'string' ? (item.bgHex || item.backgroundHex) : null,
+        issue: String(item.issue || item.type || item.code || 'low_contrast'),
+      };
+    });
 }
 
 function nodeMatchesSelector(node, sel) {
@@ -937,11 +981,11 @@ function inspectAndPatchDesignSource(source, options = {}) {
       let updatedAttrs = node.attrsRaw;
       if (mutatedClasses) {
         const serializedClass = `${node.classAttrName}="${classes.join(' ')}"`;
-        updatedAttrs = node.classRawMatch ? updatedAttrs.replace(node.classRawMatch, serializedClass) : `${updatedAttrs} ${serializedClass}`;
+        updatedAttrs = node.classRawMatch ? updatedAttrs.replace(node.classRawMatch, () => serializedClass) : `${updatedAttrs} ${serializedClass}`;
       }
       if (mutatedStyle) {
-        const serializedStyle = serializeStyleAttr(node.styleInfo.kind || (ast.language === 'jsx' ? 'jsx' : 'css'), styleMap);
-        updatedAttrs = node.styleInfo.rawMatch ? updatedAttrs.replace(node.styleInfo.rawMatch, serializedStyle) : `${updatedAttrs} ${serializedStyle}`;
+        const serializedStyle = serializeStyleAttr(node.styleInfo.kind || (ast.language === 'jsx' ? 'jsx' : 'css'), styleMap, node.styleInfo.preserved);
+        updatedAttrs = node.styleInfo.rawMatch ? updatedAttrs.replace(node.styleInfo.rawMatch, () => serializedStyle) : `${updatedAttrs} ${serializedStyle}`;
       }
       const afterTag = `<${node.tagName}${updatedAttrs}${node.selfClose}>`;
       inlineEdits.push({
@@ -1022,7 +1066,13 @@ function remediateVisualFindings(source, visualFindings = [], options = {}) {
 function runDesignSelfCorrectionPipeline(input = {}) {
   const filePath = input.filePath ? path.resolve(String(input.filePath)) : null;
   let sourceCode = typeof input.sourceCode === 'string' ? input.sourceCode : '';
-  if (!sourceCode && filePath && fs.existsSync(filePath)) sourceCode = fs.readFileSync(filePath, 'utf8');
+  if (!sourceCode && input.allowDiskRead === true && filePath && fs.existsSync(filePath)) {
+    const st = fs.statSync(filePath);
+    if (st.isFile() && st.size <= 262144) sourceCode = fs.readFileSync(filePath, 'utf8');
+  }
+  if (sourceCode.length > 262144) {
+    return { ok: false, mode: 'active_self_correcting_design_engine', changed: false, language: 'html', issueCount: 0, patches: [], inlineEdits: [], cssOverrides: [], stylesheetOverride: '', tailwindAdjustments: [], patchedSource: '', appliedInPlace: false, guardReceipt: null, verification: { changed: false, remainingIssueCount: 0, remainingIssues: [] } };
+  }
   const report = inspectAndPatchDesignSource(sourceCode, {
     filePath,
     visualFindings: input.visualFindings,
@@ -1033,7 +1083,7 @@ function runDesignSelfCorrectionPipeline(input = {}) {
   const postReport = report.patchedSource ? inspectAndPatchDesignSource(report.patchedSource, { defaultBgHex: input.defaultBgHex, minContrast: input.minContrast }) : { issueCount: 0, patches: [] };
   let appliedInPlace = false;
   let guardReceipt = null;
-  if (input.applyInPlace === true && filePath && sourceCode && report.changed) {
+  if (input.applyInPlace === true && input.allowDiskRead === true && filePath && sourceCode && report.changed) {
     guardReceipt = evaluateHashAnchoredEdit({ filePath, targetContent: sourceCode, expectedHash: computeChunkHash(sourceCode) });
     if (guardReceipt.allowed) {
       fs.writeFileSync(filePath, report.patchedSource, 'utf8');

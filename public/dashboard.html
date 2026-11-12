@@ -303,18 +303,23 @@
 <div class="auth-bar" id="authBar">
   <div class="container">
     <div style="margin-bottom:10px;">
-      <span id="authTitle" style="font-size:14px;font-weight:600;">Connect your API key</span>
-      <span id="authHelp" style="font-size:13px;color:var(--text-muted);margin-left:8px;">Pro auto-connects locally when you launch with <code style="font-family:var(--mono);font-size:12px;background:var(--cyan-dim);color:var(--cyan);padding:2px 6px;border-radius:4px;">npx thumbgate pro</code>. Otherwise paste your <code style="font-family:var(--mono);font-size:12px;background:var(--cyan-dim);color:var(--cyan);padding:2px 6px;border-radius:4px;">THUMBGATE_API_KEY</code> manually.</span>
+      <span id="authTitle" style="font-size:14px;font-weight:600;">Sign in to ThumbGate</span>
+      <span id="authHelp" style="font-size:13px;color:var(--text-muted);margin-left:8px;">Sign in with 1-click SSO in the browser — <code style="font-family:var(--mono);font-size:12px;background:var(--cyan-dim);color:var(--cyan);padding:2px 6px;border-radius:4px;">THUMBGATE_API_KEY</code> is only needed for headless CLI/CI or <code style="font-family:var(--mono);font-size:12px;background:var(--cyan-dim);color:var(--cyan);padding:2px 6px;border-radius:4px;">npx thumbgate pro</code>.</span>
     </div>
     <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;">
       <!-- __DASHBOARD_SSO_BUTTONS__ -->
-      <input type="password" class="auth-input" id="apiKey" placeholder="Paste your API key here (THUMBGATE_API_KEY or THUMBGATE_PRO_KEY)..." />
-      <button class="btn" id="connectBtn" onclick="connect()">Connect</button>
-      <a class="btn-outline" id="getProBtn" href="https://thumbgate.ai/pricing" style="text-decoration:none;display:inline-flex;align-items:center;">Get Pro</a>
-      <button class="btn-outline" id="demoBtn" onclick="loadDemo()">Try Demo</button>
-      <button class="btn-outline" id="disconnectBtn" onclick="disconnectKey()" style="display:none; border-color:#f87171; color:#f87171;">Log Out</button>
+      <a class="btn-outline" id="getProBtn" href="https://thumbgate.ai/pricing" style="min-height:44px;text-decoration:none;display:inline-flex;align-items:center;">Get Pro</a>
+      <button class="btn-outline" id="demoBtn" onclick="loadDemo()" style="min-height:44px;">Try Demo</button>
+      <button class="btn-outline" id="disconnectBtn" onclick="disconnectKey()" style="display:none;min-height:44px;border-color:#f87171;color:#f87171;">Log Out</button>
       <span class="auth-status" id="authStatus"></span>
     </div>
+    <details id="cliApiKeyDetails" open style="margin-top:10px;">
+      <summary id="cliApiKeySummary" style="display:inline-flex;align-items:center;min-height:44px;min-width:44px;cursor:pointer;font-size:12px;color:var(--text-muted);user-select:none;">Using headless CLI or CI? Connect with an API key</summary>
+      <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-top:8px;">
+        <input type="password" class="auth-input" id="apiKey" style="min-height:44px;" placeholder="Paste headless CLI / CI key (THUMBGATE_API_KEY or THUMBGATE_PRO_KEY)..." />
+        <button class="btn" id="connectBtn" style="min-height:44px;min-width:44px;" onclick="connect()">Connect</button>
+      </div>
+    </details>
   </div>
 </div>
 
@@ -1036,15 +1041,15 @@ function disconnectKey() {
   var input = document.getElementById('apiKey');
   input.value = '';
   input.disabled = false;
-  input.placeholder = "Paste your API key here (THUMBGATE_API_KEY or THUMBGATE_PRO_KEY)...";
+  input.placeholder = "Paste headless CLI / CI key (THUMBGATE_API_KEY or THUMBGATE_PRO_KEY)...";
   var btn = document.getElementById('connectBtn');
   btn.disabled = false;
   document.getElementById('demoBtn').style.display = 'inline-block';
   document.getElementById('disconnectBtn').style.display = 'none';
   document.getElementById('authStatus').className = 'auth-status';
   document.getElementById('authStatus').textContent = 'Disconnected';
-  document.getElementById('authTitle').textContent = 'Connect your API key';
-  document.getElementById('authHelp').innerHTML = 'Pro auto-connects locally when you launch with <code style="font-family:var(--mono);font-size:12px;background:var(--cyan-dim);color:var(--cyan);padding:2px 6px;border-radius:4px;">npx thumbgate pro</code>. Otherwise paste your <code style="font-family:var(--mono);font-size:12px;background:var(--cyan-dim);color:var(--cyan);padding:2px 6px;border-radius:4px;">THUMBGATE_API_KEY</code> manually.';
+  document.getElementById('authTitle').textContent = 'Sign in to ThumbGate';
+  document.getElementById('authHelp').innerHTML = 'Sign in with 1-click SSO in the browser — <code style="font-family:var(--mono);font-size:12px;background:var(--cyan-dim);color:var(--cyan);padding:2px 6px;border-radius:4px;">THUMBGATE_API_KEY</code> is only needed for headless CLI/CI or <code style="font-family:var(--mono);font-size:12px;background:var(--cyan-dim);color:var(--cyan);padding:2px 6px;border-radius:4px;">npx thumbgate pro</code>.';
   document.getElementById('dashboardContent').style.display = 'none';
   return fetch('/v1/auth/session', { method: 'DELETE', credentials: 'same-origin' })
     .catch(function() {})

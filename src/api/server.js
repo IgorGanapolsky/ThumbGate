@@ -3839,10 +3839,10 @@ function getConfiguredSsoProviders(env = process.env) {
 function buildDashboardSsoButtonsHtml(providers = getConfiguredSsoProviders()) {
   const parts = [];
   if (providers.google) {
-    parts.push('<a class="btn" id="ssoGoogleBtn" href="/v1/cloud/sso/authorize?provider=google" style="padding:8px 14px;font-size:12px;text-decoration:none;display:inline-flex;align-items:center;gap:6px;">G Continue with Google</a>');
+    parts.push('<a class="btn" id="ssoGoogleBtn" href="/v1/cloud/sso/authorize?provider=google" style="min-height:44px;min-width:44px;padding:0 16px;font-size:13px;font-weight:700;text-decoration:none;display:inline-flex;align-items:center;gap:6px;">G Continue with Google</a>');
   }
   if (providers.apple) {
-    parts.push('<a class="btn" id="ssoAppleBtn" href="/v1/cloud/sso/authorize?provider=apple" style="padding:8px 14px;font-size:12px;background:#f8fafc;color:#090d16;font-weight:700;text-decoration:none;display:inline-flex;align-items:center;gap:6px;">\uF8FF Continue with Apple</a>');
+    parts.push('<a class="btn" id="ssoAppleBtn" href="/v1/cloud/sso/authorize?provider=apple" style="min-height:44px;min-width:44px;padding:0 16px;font-size:13px;background:#f8fafc;color:#090d16;font-weight:700;text-decoration:none;display:inline-flex;align-items:center;gap:6px;">\uF8FF Continue with Apple</a>');
   }
   return parts.join('\n      ');
 }
@@ -3905,6 +3905,10 @@ function loadPublicMarketingTemplateHtml(templatePath, runtimeConfig, pageContex
     '__GITHUB_URL__': 'https://github.com/IgorGanapolsky/ThumbGate',
     '__POSTHOG_API_KEY__': runtimeConfig.posthogApiKey || '',
     '<!-- __LANDING_SSO_BUTTONS__ -->': buildLandingSsoButtonsHtml(getConfiguredSsoProviders()),
+    'id="paidLoginKeyDetails" open': (() => {
+      const p = getConfiguredSsoProviders();
+      return (p.google || p.apple) ? 'id="paidLoginKeyDetails"' : 'id="paidLoginKeyDetails" open';
+    })(),
   });
   const normalized = normalizePublicMarketingHtml(rendered, runtimeConfig, pageContext.requestHost);
   if (!privacyOptOut) return normalized;
@@ -4108,11 +4112,12 @@ function loadDashboardPageHtml(req, expectedApiKey) {
   const bootstrap = resolveLocalPageBootstrap(req, expectedApiKey);
   const template = readOptionalPublicTemplate(DASHBOARD_PAGE_PATH);
   if (!template) return renderPackagedDashboardHtml(bootstrap);
-
+  const ssoProviders = getConfiguredSsoProviders();
   return fillTemplate(template, {
     '__DASHBOARD_BOOTSTRAP_KEY__': bootstrap.serializedBootstrapKey,
     '__DASHBOARD_BOOTSTRAP_ENABLED__': bootstrap.bootstrapActive ? 'true' : 'false',
-    '<!-- __DASHBOARD_SSO_BUTTONS__ -->': buildDashboardSsoButtonsHtml(getConfiguredSsoProviders()),
+    '<!-- __DASHBOARD_SSO_BUTTONS__ -->': buildDashboardSsoButtonsHtml(ssoProviders),
+    'id="cliApiKeyDetails" open': (ssoProviders.google || ssoProviders.apple) ? 'id="cliApiKeyDetails"' : 'id="cliApiKeyDetails" open',
   });
 }
 
@@ -5849,18 +5854,22 @@ const paidAuthSessions = new Map();
 const GOOGLE_OAUTH_TOKEN_URL = 'https://oauth2.googleapis.com/token';
 const GOOGLE_OAUTH_JWKS_URL = 'https://www.googleapis.com/oauth2/v3/certs';
 const GOOGLE_VALID_ISSUERS = new Set(['accounts.google.com', 'https://accounts.google.com']);
+const APPLE_OAUTH_TOKEN_URL = 'https://appleid.apple.com/auth/token';
+const APPLE_OAUTH_JWKS_URL = 'https://appleid.apple.com/auth/keys';
+const APPLE_VALID_ISSUERS = new Set(['https://appleid.apple.com']);
 const SSO_OAUTH_STATE_TTL_MS = 10 * 60 * 1000;
 const SSO_OAUTH_MAX_PENDING_STATES = 2048;
 const GOOGLE_JWKS_CACHE_TTL_MS = 5 * 60 * 1000;
 const ssoPendingStates = new Map();
 let googleOAuthFetch = (...args) => fetch(...args);
 let googleJwksCache = { keys: [], expiresAt: 0 };
+let appleJwksCache = { keys: [], expiresAt: 0 };
 
 function setGoogleOAuthFetchForTests(fn) {
   googleOAuthFetch = typeof fn === 'function' ? fn : ((...args) => fetch(...args));
   googleJwksCache = { keys: [], expiresAt: 0 };
+  appleJwksCache = { keys: [], expiresAt: 0 };
 }
-
 function pruneSsoPendingStates(nowMs = Date.now()) {
   for (const [token, entry] of ssoPendingStates.entries()) {
     if (!entry || entry.expiresAt <= nowMs) ssoPendingStates.delete(token);
@@ -5882,6 +5891,13 @@ function issueSsoPendingState(provider, redirectUri, nowMs = Date.now()) {
     expiresAt: nowMs + SSO_OAUTH_STATE_TTL_MS,
   });
   return stateNonce;
+}
+
+function peekSsoPendingProvider(stateNonce, nowMs = Date.now()) {
+  pruneSsoPendingStates(nowMs);
+  const key = String(stateNonce || '').trim();
+  const entry = key ? ssoPendingStates.get(key) : null;
+  return entry && entry.expiresAt > nowMs ? entry.provider : '';
 }
 
 function consumeSsoPendingState(stateNonce, expectedProvider, nowMs = Date.now()) {
@@ -5906,21 +5922,43 @@ function redirectSsoError(res, reason) {
   res.end();
 }
 
-async function loadGoogleJwks(nowMs = Date.now(), forceRefresh = false) {
-  if (!forceRefresh && googleJwksCache.expiresAt > nowMs && googleJwksCache.keys.length > 0) return googleJwksCache.keys;
-  const jwksRes = await googleOAuthFetch(GOOGLE_OAUTH_JWKS_URL, {
+async function loadOidcJwks(url, cacheRef, nowMs = Date.now(), forceRefresh = false) {
+  if (!forceRefresh && cacheRef.expiresAt > nowMs && cacheRef.keys.length > 0) return cacheRef.keys;
+  const jwksRes = await googleOAuthFetch(url, {
     method: 'GET',
     headers: { Accept: 'application/json' },
     signal: AbortSignal.timeout(8000),
   });
-  if (!jwksRes || !jwksRes.ok) throw ssoError('jwks_unavailable', 'Failed to load Google JWKS');
+  if (!jwksRes || !jwksRes.ok) throw ssoError('jwks_unavailable', 'Failed to load OIDC JWKS');
   const body = await jwksRes.json();
   const keys = Array.isArray(body && body.keys) ? body.keys : [];
-  googleJwksCache = { keys, expiresAt: nowMs + GOOGLE_JWKS_CACHE_TTL_MS };
+  cacheRef.keys = keys;
+  cacheRef.expiresAt = nowMs + GOOGLE_JWKS_CACHE_TTL_MS;
   return keys;
 }
 
-async function verifyGoogleIdToken(idToken, expectedClientId, nowMs = Date.now()) {
+function buildAppleClientSecret(env = process.env, nowMs = Date.now()) {
+  const directSecret = String((env && env.APPLE_CLIENT_SECRET) || '').trim();
+  if (directSecret) return directSecret;
+  const clientId = String((env && env.APPLE_CLIENT_ID) || '').trim();
+  const teamId = String((env && env.APPLE_TEAM_ID) || '').trim();
+  const keyId = String((env && env.APPLE_KEY_ID) || '').trim();
+  const rawKey = String((env && env.APPLE_PRIVATE_KEY) || '').replace(/\\n/g, '\n').trim();
+  if (!clientId || !teamId || !keyId || !rawKey) return '';
+  const nowSec = Math.floor(nowMs / 1000);
+  const header = Buffer.from(JSON.stringify({ alg: 'ES256', kid: keyId, typ: 'JWT' })).toString('base64url');
+  const payload = Buffer.from(JSON.stringify({
+    iss: teamId,
+    iat: nowSec,
+    exp: nowSec + 300,
+    aud: 'https://appleid.apple.com',
+    sub: clientId,
+  })).toString('base64url');
+  const sig = crypto.sign('sha256', Buffer.from(`${header}.${payload}`), { key: rawKey, dsaEncoding: 'ieee-p1363' }).toString('base64url');
+  return `${header}.${payload}.${sig}`;
+}
+
+async function verifyOidcIdToken(idToken, { expectedClientId, validIssuers, jwksUrl, jwksCache }, nowMs = Date.now()) {
   const parts = String(idToken || '').split('.');
   if (parts.length !== 3) throw ssoError('invalid_id_token', 'Malformed id_token');
   let header;
@@ -5934,10 +5972,10 @@ async function verifyGoogleIdToken(idToken, expectedClientId, nowMs = Date.now()
   if (!header || header.alg !== 'RS256' || typeof header.kid !== 'string' || !header.kid) {
     throw ssoError('invalid_id_token', 'Unsupported id_token header');
   }
-  let keys = await loadGoogleJwks(nowMs, false);
+  let keys = await loadOidcJwks(jwksUrl, jwksCache, nowMs, false);
   let jwk = keys.find((k) => k && k.kid === header.kid && k.kty === 'RSA');
   if (!jwk) {
-    keys = await loadGoogleJwks(nowMs, true);
+    keys = await loadOidcJwks(jwksUrl, jwksCache, nowMs, true);
     jwk = keys.find((k) => k && k.kid === header.kid && k.kty === 'RSA');
   }
   if (!jwk) throw ssoError('unknown_signing_key', 'Signing key not found');
@@ -5946,7 +5984,7 @@ async function verifyGoogleIdToken(idToken, expectedClientId, nowMs = Date.now()
   if (!sigValid) throw ssoError('invalid_signature', 'Invalid id_token signature');
   const audMatches = payload && (payload.aud === expectedClientId || (Array.isArray(payload.aud) && payload.aud.includes(expectedClientId)));
   if (!audMatches) throw ssoError('wrong_audience', 'id_token audience mismatch');
-  if (!GOOGLE_VALID_ISSUERS.has(String(payload.iss || ''))) throw ssoError('invalid_issuer', 'id_token issuer mismatch');
+  if (!validIssuers.has(String(payload.iss || ''))) throw ssoError('invalid_issuer', 'id_token issuer mismatch');
   const expSec = Number(payload.exp);
   if (!Number.isFinite(expSec) || expSec * 1000 <= nowMs) throw ssoError('expired_token', 'id_token expired');
   const email = String(payload.email || '').trim().toLowerCase();
@@ -7187,10 +7225,10 @@ async function addContext(){
       const rawProvider = String(parsed.searchParams.get('provider') || 'google').trim().toLowerCase();
       const provider = ['google', 'apple'].includes(rawProvider) ? rawProvider : 'invalid';
       const appOrigin = hostedConfig.appOrigin || 'https://thumbgate.ai';
-      const callbackUrl = `${appOrigin}/v1/cloud/sso/callback?provider=${encodeURIComponent(provider)}`;
       const googleClientId = String(process.env.GOOGLE_CLIENT_ID || '').trim();
       const appleClientId = String(process.env.APPLE_CLIENT_ID || '').trim();
       if (provider === 'google' && googleClientId) {
+        const callbackUrl = `${appOrigin}/v1/cloud/sso/callback?provider=google`;
         const stateNonce = issueSsoPendingState('google', callbackUrl);
         const googleAuthUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${encodeURIComponent(googleClientId)}&redirect_uri=${encodeURIComponent(callbackUrl)}&response_type=code&scope=openid%20email%20profile&state=${encodeURIComponent(stateNonce)}`;
         if (parsed.searchParams.get('format') === 'json') {
@@ -7202,6 +7240,7 @@ async function addContext(){
         return;
       }
       if (provider === 'apple' && appleClientId) {
+        const callbackUrl = String(process.env.APPLE_REDIRECT_URI || '').trim() || `${appOrigin}/v1/cloud/sso/callback`;
         const stateNonce = issueSsoPendingState('apple', callbackUrl);
         const appleAuthUrl = `https://appleid.apple.com/auth/authorize?client_id=${encodeURIComponent(appleClientId)}&redirect_uri=${encodeURIComponent(callbackUrl)}&response_type=code&scope=name%20email&response_mode=form_post&state=${encodeURIComponent(stateNonce)}`;
         if (parsed.searchParams.get('format') === 'json') {
@@ -7225,43 +7264,72 @@ async function addContext(){
       return;
     }
 
-    if (isGetLikeRequest && pathname === '/v1/cloud/sso/callback') {
+    if ((isGetLikeRequest || req.method === 'POST') && pathname === '/v1/cloud/sso/callback') {
       try {
-        const rawProvider = String(parsed.searchParams.get('provider') || 'google').trim().toLowerCase();
-        if (rawProvider !== 'google') {
+        let params = parsed.searchParams;
+        if (req.method === 'POST') {
+          const formObj = await parseFormBody(req, 64 * 1024);
+          params = new URLSearchParams();
+          for (const [k, v] of Object.entries(formObj || {})) params.set(k, String(v ?? ''));
+        }
+        const explicitProvider = String(parsed.searchParams.get('provider') || params.get('provider') || '').trim().toLowerCase();
+        const rawProvider = explicitProvider || peekSsoPendingProvider(params.get('state')) || (req.method === 'POST' ? 'apple' : 'google');
+        if (req.method === 'POST') {
+          const reqOrigin = String(req.headers.origin || '').trim().toLowerCase();
+          const secFetchSite = String(req.headers['sec-fetch-site'] || '').trim().toLowerCase();
+          const allowedPostOrigins = new Set([
+            'https://appleid.apple.com',
+            String(getPublicOrigin(req) || '').toLowerCase(),
+            String((hostedConfig && hostedConfig.appOrigin) || '').toLowerCase(),
+          ]);
+          if ((reqOrigin && !allowedPostOrigins.has(reqOrigin)) || (secFetchSite === 'cross-site' && reqOrigin !== 'https://appleid.apple.com')) {
+            consumeSsoPendingState(params.get('state'), rawProvider);
+            redirectSsoError(res, 'invalid_origin');
+            return;
+          }
+        }
+        if (rawProvider !== 'google' && rawProvider !== 'apple') {
           redirectSsoError(res, 'unsupported_provider');
           return;
         }
-        if (parsed.searchParams.get('error')) {
-          consumeSsoPendingState(parsed.searchParams.get('state'), 'google');
+        const stateVal = params.get('state');
+        if (params.get('error')) {
+          consumeSsoPendingState(stateVal, rawProvider);
           redirectSsoError(res, 'oauth_denied');
           return;
         }
-        const code = String(parsed.searchParams.get('code') || '').trim();
+        const code = String(params.get('code') || '').trim();
         if (!code) {
-          consumeSsoPendingState(parsed.searchParams.get('state'), 'google');
+          consumeSsoPendingState(stateVal, rawProvider);
           redirectSsoError(res, 'missing_code');
           return;
         }
-        const stateEntry = consumeSsoPendingState(parsed.searchParams.get('state'), 'google');
+        const isApple = rawProvider === 'apple';
+        const clientId = String((isApple ? process.env.APPLE_CLIENT_ID : process.env.GOOGLE_CLIENT_ID) || '').trim();
+        let clientSecret = '';
+        try {
+          clientSecret = isApple ? buildAppleClientSecret(process.env) : String(process.env.GOOGLE_CLIENT_SECRET || '').trim();
+        } catch {
+          clientSecret = '';
+        }
+        if (!clientId || !clientSecret) {
+          consumeSsoPendingState(stateVal, rawProvider);
+          redirectSsoError(res, 'sso_not_configured');
+          return;
+        }
+        const stateEntry = consumeSsoPendingState(stateVal, rawProvider);
         if (!stateEntry) {
           redirectSsoError(res, 'invalid_state');
           return;
         }
-        const googleClientId = String(process.env.GOOGLE_CLIENT_ID || '').trim();
-        const googleClientSecret = String(process.env.GOOGLE_CLIENT_SECRET || '').trim();
-        if (!googleClientId || !googleClientSecret) {
-          redirectSsoError(res, 'sso_not_configured');
-          return;
-        }
         const tokenParams = new URLSearchParams({
           code,
-          client_id: googleClientId,
-          client_secret: googleClientSecret,
+          client_id: clientId,
+          client_secret: clientSecret,
           redirect_uri: stateEntry.redirectUri,
           grant_type: 'authorization_code',
         });
-        const tokenRes = await googleOAuthFetch(GOOGLE_OAUTH_TOKEN_URL, {
+        const tokenRes = await googleOAuthFetch(isApple ? APPLE_OAUTH_TOKEN_URL : GOOGLE_OAUTH_TOKEN_URL, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/x-www-form-urlencoded',
@@ -7280,7 +7348,12 @@ async function addContext(){
           redirectSsoError(res, 'missing_id_token');
           return;
         }
-        const claims = await verifyGoogleIdToken(idToken, googleClientId);
+        const claims = await verifyOidcIdToken(idToken, {
+          expectedClientId: clientId,
+          validIssuers: isApple ? APPLE_VALID_ISSUERS : GOOGLE_VALID_ISSUERS,
+          jwksUrl: isApple ? APPLE_OAUTH_JWKS_URL : GOOGLE_OAUTH_JWKS_URL,
+          jwksCache: isApple ? appleJwksCache : googleJwksCache,
+        });
         const entitlement = await resolvePaidEntitlementForEmail(claims.email);
         const hasPaidKey = Boolean(entitlement && entitlement.entitled && entitlement.apiKey);
         const nowMs = Date.now();
@@ -7289,7 +7362,7 @@ async function addContext(){
           apiKey: hasPaidKey ? entitlement.apiKey : '',
           subjectType: hasPaidKey ? 'customer' : 'sso_free',
           customerId: hasPaidKey ? entitlement.customerId : null,
-          ssoProvider: 'google',
+          ssoProvider: rawProvider,
           ssoEmail: claims.email,
           createdAt: nowMs,
           expiresAt: nowMs + PAID_AUTH_SESSION_TTL_SECONDS * 1000,
@@ -10852,16 +10925,18 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
             ? body.confidenceFloor
             : 0.7,
         });
-        const uiTarget = String((body.toolArgs && (body.toolArgs.file_path || body.toolArgs.filePath)) || '');
-        const uiSource = String((body.toolArgs && (body.toolArgs.content ?? body.toolArgs.new_string ?? body.toolArgs.sourceCode)) || '');
-        const hasVisual = Array.isArray(body.visualFindings) && body.visualFindings.length > 0;
-        if ((/\.(?:html?|jsx|tsx|css)$/i.test(uiTarget) && uiSource && uiSource.length <= 262144) || hasVisual) {
-          const { runDesignSelfCorrectionPipeline } = require('../openshell-lovable-engine');
-          verdict.designSelfCorrection = runDesignSelfCorrectionPipeline({
-            sourceCode: uiSource,
-            visualFindings: body.visualFindings,
-          });
-        }
+        try {
+          const uiTarget = String((body.toolArgs && (body.toolArgs.file_path || body.toolArgs.filePath)) || '');
+          const uiSource = String((body.toolArgs && (body.toolArgs.content ?? body.toolArgs.new_string ?? body.toolArgs.sourceCode)) || '');
+          const hasVisual = Array.isArray(body.visualFindings) && body.visualFindings.length > 0;
+          if (uiSource.length <= 262144 && ((/\.(?:html?|jsx|tsx|css)$/i.test(uiTarget) && Boolean(uiSource)) || hasVisual)) {
+            const { runDesignSelfCorrectionPipeline } = require('../openshell-lovable-engine');
+            verdict.designSelfCorrection = runDesignSelfCorrectionPipeline({
+              sourceCode: uiSource,
+              visualFindings: body.visualFindings,
+            });
+          }
+        } catch { /* non-fatal */ }
         sendJson(res, 200, verdict);
         return;
       }

@@ -85,6 +85,7 @@ test('homepage navbar exposes paid-user Log in drawer and exchanges keys for an 
   assert.match(dashboardPage, /id="connectBtn"/);
   assert.match(dashboardPage, /id="getProBtn"[^>]*href="https:\/\/thumbgate\.ai\/pricing"/);
   assert.match(landingPage, /window\.tgSubmitPaidLogin/);
+  assert.match(landingPage, /loginBar\.setAttribute\('hidden',\s*''\)/);
   assert.match(landingPage, /\/v1\/auth\/session/);
   assert.match(dashboardPage, /\/v1\/auth\/session/);
   assert.doesNotMatch(landingPage, /tg_paid_api_key|localStorage\.setItem|sessionStorage\.setItem/);
@@ -99,6 +100,10 @@ test('homepage navbar exposes paid-user Log in drawer and exchanges keys for an 
     GOOGLE_CLIENT_ID: process.env.GOOGLE_CLIENT_ID,
     GOOGLE_CLIENT_SECRET: process.env.GOOGLE_CLIENT_SECRET,
     APPLE_CLIENT_ID: process.env.APPLE_CLIENT_ID,
+    APPLE_TEAM_ID: process.env.APPLE_TEAM_ID,
+    APPLE_KEY_ID: process.env.APPLE_KEY_ID,
+    APPLE_PRIVATE_KEY: process.env.APPLE_PRIVATE_KEY,
+    APPLE_CLIENT_SECRET: process.env.APPLE_CLIENT_SECRET,
   };
   process.env.THUMBGATE_API_KEY = 'tg_admin_test_secret_999';
   process.env.THUMBGATE_OPERATOR_KEY = 'tg_op_test_secret_888';
@@ -125,6 +130,7 @@ test('homepage navbar exposes paid-user Log in drawer and exchanges keys for an 
     const unconfiguredDashHtml = await unconfiguredDashRes.text();
     assert.doesNotMatch(unconfiguredDashHtml, /ssoGoogleBtn|ssoAppleBtn/);
     assert.match(unconfiguredDashHtml, /id="apiKey"/);
+    assert.match(unconfiguredDashHtml, /id="cliApiKeyDetails" open/);
     assert.match(unconfiguredDashHtml, /https:\/\/thumbgate\.ai\/pricing/);
     const dashAuthLinks = [...unconfiguredDashHtml.matchAll(/href="(\/[^"]*(?:auth|sso|oauth|login)[^"]*)"/gi)].map((m) => m[1]);
     for (const relHref of dashAuthLinks) {
@@ -137,7 +143,7 @@ test('homepage navbar exposes paid-user Log in drawer and exchanges keys for an 
     assert.equal(unconfiguredHomeRes.status, 200);
     const unconfiguredHomeHtml = await unconfiguredHomeRes.text();
     assert.doesNotMatch(unconfiguredHomeHtml, /googleCloudLoginLink|appleSsoLoginLink/);
-
+    assert.match(unconfiguredHomeHtml, /id="paidLoginKeyDetails" open/);
     for (const p of ['google', 'apple', 'unsupported']) {
       const sso404 = await fetch(`${origin}/v1/cloud/sso/authorize?provider=${p}`, { redirect: 'manual' });
       assert.equal(sso404.status, 404);
@@ -150,9 +156,11 @@ test('homepage navbar exposes paid-user Log in drawer and exchanges keys for an 
     const googleOnlyDashHtml = await (await fetch(`${origin}/dashboard`)).text();
     assert.match(googleOnlyDashHtml, /id="ssoGoogleBtn"/);
     assert.doesNotMatch(googleOnlyDashHtml, /id="ssoAppleBtn"/);
+    assert.doesNotMatch(googleOnlyDashHtml, /id="cliApiKeyDetails" open/);
     const googleOnlyHomeHtml = await (await fetch(`${origin}/`)).text();
     assert.match(googleOnlyHomeHtml, /id="googleCloudLoginLink"/);
     assert.doesNotMatch(googleOnlyHomeHtml, /id="appleSsoLoginLink"/);
+    assert.doesNotMatch(googleOnlyHomeHtml, /id="paidLoginKeyDetails" open/);
     const google302 = await fetch(`${origin}/v1/cloud/sso/authorize?provider=google`, { redirect: 'manual' });
     assert.equal(google302.status, 302);
     assert.match(google302.headers.get('location') || '', /^https:\/\/accounts\.google\.com\/o\/oauth2\/v2\/auth\?/);
@@ -210,8 +218,10 @@ test('homepage navbar exposes paid-user Log in drawer and exchanges keys for an 
     const deniedRes = await fetch(`${origin}/v1/cloud/sso/callback?provider=google&error=access_denied&state=${deniedState}`, { redirect: 'manual' });
     assert.equal(deniedRes.status, 302);
     assert.equal(deniedRes.headers.get('location'), '/dashboard?sso_error=oauth_denied');
-    const unsupportedCb = await fetch(`${origin}/v1/cloud/sso/callback?provider=apple&code=x&state=y`, { redirect: 'manual' });
+    const unsupportedCb = await fetch(`${origin}/v1/cloud/sso/callback?provider=github&code=x&state=y`, { redirect: 'manual' });
     assert.equal(unsupportedCb.headers.get('location'), '/dashboard?sso_error=unsupported_provider');
+    const unconfiguredAppleCb = await fetch(`${origin}/v1/cloud/sso/callback?provider=apple&code=x&state=y`, { redirect: 'manual' });
+    assert.equal(unconfiguredAppleCb.headers.get('location'), '/dashboard?sso_error=sso_not_configured');
 
     // 3. Token exchange failure -> 302 /dashboard?sso_error=token_exchange_failed
     serverTestHooks.setGoogleOAuthFetchForTests(async (url) => {
@@ -305,9 +315,100 @@ test('homepage navbar exposes paid-user Log in drawer and exchanges keys for an 
     for (const storedKey of Object.keys(JSON.parse(rawSessionFile))) assert.match(storedKey, /^[a-f0-9]{64}$/);
     const replayGoodState = await fetch(`${origin}/v1/cloud/sso/callback?provider=google&code=sub_google_code&state=${goodState}`, { redirect: 'manual' });
     assert.equal(replayGoodState.headers.get('location'), '/dashboard?sso_error=invalid_state');
+    // 6. Apple Sign-In OIDC form_post callback + ES256 client_secret + Apple JWKS verification
+    const appleEcKeys = crypto.generateKeyPairSync('ec', { namedCurve: 'P-256' });
+    const appleRsaKeys = crypto.generateKeyPairSync('rsa', { modulusLength: 2048 });
+    const appleJwk = { ...appleRsaKeys.publicKey.export({ format: 'jwk' }), kid: 'apple-test-kid-1', alg: 'RS256', use: 'sig' };
+    process.env.APPLE_CLIENT_ID = 'com.iganapolsky.thumbgate.web';
+    process.env.APPLE_TEAM_ID = '9GMM26JC5X';
+    process.env.APPLE_KEY_ID = '8URYJ3K256';
+    process.env.APPLE_PRIVATE_KEY = appleEcKeys.privateKey.export({ type: 'pkcs8', format: 'pem' }).replace(/\n/g, '\\n');
+    delete process.env.APPLE_CLIENT_SECRET;
+
+    const signAppleIdToken = (claims) => {
+      const h = Buffer.from(JSON.stringify({ alg: 'RS256', typ: 'JWT', kid: 'apple-test-kid-1' })).toString('base64url');
+      const p = Buffer.from(JSON.stringify(claims)).toString('base64url');
+      const sig = crypto.sign('RSA-SHA256', Buffer.from(`${h}.${p}`), appleRsaKeys.privateKey).toString('base64url');
+      return `${h}.${p}.${sig}`;
+    };
+    let capturedAppleTokenPost = '';
+    let activeAppleIdToken = '';
+    serverTestHooks.setGoogleOAuthFetchForTests(async (url, opts) => {
+      if (String(url) === 'https://appleid.apple.com/auth/token') {
+        capturedAppleTokenPost = String(opts?.body || '');
+        return { ok: true, status: 200, json: async () => ({ access_token: 'apple.at', id_token: activeAppleIdToken }) };
+      }
+      if (String(url) === 'https://appleid.apple.com/auth/keys') {
+        return { ok: true, status: 200, json: async () => ({ keys: [appleJwk] }) };
+      }
+      throw new Error(`unexpected URL ${url}`);
+    });
+
+    const appleAuthRes = await fetch(`${origin}/v1/cloud/sso/authorize?provider=apple`, { redirect: 'manual' });
+    assert.equal(appleAuthRes.status, 302);
+    const appleAuthorizeUrl = new URL(appleAuthRes.headers.get('location'));
+    assert.equal(appleAuthorizeUrl.searchParams.get('response_mode'), 'form_post');
+    assert.equal(appleAuthorizeUrl.searchParams.get('redirect_uri'), `${origin}/v1/cloud/sso/callback`);
+    const appleState = appleAuthorizeUrl.searchParams.get('state');
+
+    activeAppleIdToken = signAppleIdToken({
+      iss: 'https://appleid.apple.com',
+      aud: 'com.iganapolsky.thumbgate.web',
+      exp: nowSec + 600,
+      email: 'subscriber@thumbgate.ai',
+      email_verified: 'true',
+      sub: 'apple_sub_001',
+    });
+    const appleCbRes = await fetch(`${origin}/v1/cloud/sso/callback`, {
+      method: 'POST',
+      redirect: 'manual',
+      headers: { 'content-type': 'application/x-www-form-urlencoded', origin: 'https://appleid.apple.com' },
+      body: new URLSearchParams({ code: 'apple_form_code_1', state: appleState }).toString(),
+    });
+    assert.equal(appleCbRes.status, 302);
+    assert.equal(appleCbRes.headers.get('location'), '/dashboard');
+    const postedAppleParams = new URLSearchParams(capturedAppleTokenPost);
+    assert.equal(postedAppleParams.get('code'), 'apple_form_code_1');
+    assert.equal(postedAppleParams.get('redirect_uri'), `${origin}/v1/cloud/sso/callback`);
+    const es256SecretParts = (postedAppleParams.get('client_secret') || '').split('.');
+    assert.equal(es256SecretParts.length, 3);
+    assert.equal(
+      crypto.verify('sha256', Buffer.from(`${es256SecretParts[0]}.${es256SecretParts[1]}`), { key: appleEcKeys.publicKey, dsaEncoding: 'ieee-p1363' }, Buffer.from(es256SecretParts[2], 'base64url')),
+      true,
+    );
+    const appleCookie = (appleCbRes.headers.get('set-cookie') || '').split(';')[0];
+    const appleSession = await (await fetch(`${origin}/v1/auth/session`, { headers: { cookie: appleCookie } })).json();
+    assert.equal(appleSession.authenticated, true);
+    assert.equal(appleSession.tier, 'Pro');
+    assert.equal(appleSession.ssoProvider, 'apple');
+    assert.equal(appleSession.ssoEmail, 'subscriber@thumbgate.ai');
+
+    const appleReplayRes = await fetch(`${origin}/v1/cloud/sso/callback`, {
+      method: 'POST',
+      redirect: 'manual',
+      headers: { 'content-type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({ code: 'apple_form_code_1', state: appleState }).toString(),
+    });
+    assert.equal(appleReplayRes.headers.get('location'), '/dashboard?sso_error=invalid_state');
+
+    const csrfAuthRes = await fetch(`${origin}/v1/cloud/sso/authorize?provider=apple`, { redirect: 'manual' });
+    const csrfState = new URL(csrfAuthRes.headers.get('location')).searchParams.get('state');
+    const evilOriginRes = await fetch(`${origin}/v1/cloud/sso/callback`, {
+      method: 'POST',
+      redirect: 'manual',
+      headers: { 'content-type': 'application/x-www-form-urlencoded', origin: 'https://evil.example', 'sec-fetch-site': 'cross-site' },
+      body: new URLSearchParams({ code: 'attacker_code', state: csrfState }).toString(),
+    });
+    assert.equal(evilOriginRes.status, 302);
+    assert.equal(evilOriginRes.headers.get('location'), '/dashboard?sso_error=invalid_origin');
+    assert.equal(evilOriginRes.headers.get('set-cookie'), null);
     serverTestHooks.setGoogleOAuthFetchForTests(null);
     delete process.env.GOOGLE_CLIENT_ID;
     delete process.env.GOOGLE_CLIENT_SECRET;
+    delete process.env.APPLE_CLIENT_ID;
+    delete process.env.APPLE_TEAM_ID;
+    delete process.env.APPLE_KEY_ID;
+    delete process.env.APPLE_PRIVATE_KEY;
     const badJsonRes = await fetch(`${origin}/v1/auth/session`, {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
@@ -365,6 +466,7 @@ test('homepage navbar exposes paid-user Log in drawer and exchanges keys for an 
     });
     assert.equal(afterLogoutRes.status, 401);
   } finally {
+    if (typeof handle.server.closeAllConnections === 'function') handle.server.closeAllConnections();
     await new Promise((resolve) => handle.server.close(resolve));
     fs.rmSync(tmpDir, { recursive: true, force: true });
     for (const [k, v] of Object.entries(savedEnv)) {
