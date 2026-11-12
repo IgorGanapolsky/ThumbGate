@@ -368,7 +368,7 @@ test('inbox sentinel enforces ONE-TOUCH lock when Sent Mail already replied afte
   assert.deepEqual(markThread.externalGuests, ['mark@arqua.com.au']);
 });
 
-test('inbox sentinel surfaces unsent Boardy intro draft as DRAFT_READY_AWAITING_IGOR_YES and flags missing Boardy CC', () => {
+test('inbox sentinel blocks Boardy intro draft missing Boardy CC and marks valid ordinary reply REPLIED-eligible', () => {
   const report = classifyThreads([
     {
       mailbox: 'INBOX',
@@ -402,7 +402,10 @@ test('inbox sentinel surfaces unsent Boardy intro draft as DRAFT_READY_AWAITING_
   assert.equal(report.threadCount, 1);
   assert.equal(report.actionableCount, 1);
   const keshavThread = report.threads[0];
-  assert.equal(keshavThread.status, 'DRAFT_READY_AWAITING_IGOR_YES');
+  assert.equal(keshavThread.disposition, 'BLOCKED');
+  assert.equal(keshavThread.status, 'BLOCKED_DRAFT_MISSING_BOARDY_CC');
+  assert.equal(keshavThread.reason, 'draft_missing_boardy_cc');
+  assert.equal(keshavThread.sendEligible, false);
   assert.equal(keshavThread.actionRequired, true);
   assert.equal(keshavThread.oneTouchLocked, false);
   assert.equal(keshavThread.sentCount, 0);
