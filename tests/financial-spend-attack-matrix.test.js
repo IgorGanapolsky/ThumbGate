@@ -108,7 +108,49 @@ const SPEND_MATRIX = [
     toolInput: { command: 'stripe subscriptions create --customer cus_x --items price_x' },
     economic: true,
   },
-  // Non-economic: free search / docs must not false-positive the money floor.
+  {
+    id: 'browseros-act-click-stripe-checkout',
+    toolName: 'mcp__browseros-neo__act',
+    toolInput: { page: 62, kind: 'click', ref: 'e4', url: 'https://checkout.stripe.com/c/pay/cs_live_123' },
+    economic: true,
+  },
+  {
+    id: 'bash-stripe-charges-create',
+    toolName: 'Bash',
+    toolInput: { command: 'stripe charges create' },
+    economic: true,
+  },
+  // Non-economic: free search / docs / non-money clicks / prose args must not false-positive the money floor.
+  {
+    id: 'browseros-act-click-linkedin',
+    toolName: 'mcp__browseros-neo__act',
+    toolInput: { page: 64, kind: 'click', ref: 'e12', url: 'https://www.linkedin.com/feed/', text: 'Save' },
+    economic: false,
+  },
+  {
+    id: 'browseros-act-click-gmail-send',
+    toolName: 'mcp__browseros-neo__act',
+    toolInput: { page: 65, kind: 'click', ref: 'e18', url: 'https://mail.google.com/mail/u/0/#inbox', text: 'Send' },
+    economic: false,
+  },
+  {
+    id: 'browseros-act-submit-free-directory',
+    toolName: 'mcp__browseros-neo__act',
+    toolInput: { page: 66, kind: 'submit', ref: 'e21', url: 'https://mcp.so/submit', text: 'Submit listing' },
+    economic: false,
+  },
+  {
+    id: 'bash-gh-issue-comment-paid-tier',
+    toolName: 'Bash',
+    toolInput: { command: 'gh issue comment --body "a paid tier"' },
+    economic: false,
+  },
+  {
+    id: 'bash-git-commit-purchase-prose',
+    toolName: 'Bash',
+    toolInput: { command: 'git commit -m "docs: describe paid purchase flow"' },
+    economic: false,
+  },
   {
     id: 'bash-apollo-cli-search',
     toolName: 'Bash',
