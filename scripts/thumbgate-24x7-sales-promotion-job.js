@@ -86,8 +86,9 @@ async function runSalesPromotion24x7Cycle({
       if (fetched && fetched.error) {
         throw new Error(fetched.error);
       }
-      inboxReport = classifyThreads(fetched.messages || []);
-      writeLedgerSnapshot(inboxReport, path.join(REPO_ROOT, '.thumbgate'));
+      const runtimeDir = path.join(REPO_ROOT, '.thumbgate');
+      inboxReport = classifyThreads(fetched.messages || [], { stateDir: runtimeDir });
+      writeLedgerSnapshot(inboxReport, runtimeDir);
     } catch (err) {
       if (err && err.code === 'THUMBGATE_ECI_ISOLATION_BLOCK') {
         throw err;

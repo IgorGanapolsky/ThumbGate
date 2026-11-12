@@ -318,6 +318,13 @@ Rules:
 
 Details: [`docs/agents/code-search.md`](./docs/agents/code-search.md). Skill: `.agents/skills/graphify/SKILL.md`.
 
+## Inbox Correspondence & Send Dispositions (2026-11-12 — supersedes 2026-10-17 Hard No-Send Mandate)
+
+Per Igor (10:28 AM Nov 12, 2026: `"use this. steal their ideas. take care of this"`), ordinary business email correspondence defaults to sending (`REPLIED`) instead of staging every reply under the 2026-10-17 no-send rule:
+- **Six Exhaustive Dispositions (`scripts/thumbgate-inbox-sentinel.js`):** Every relevant thread ends a cycle as `REPLIED`, `DRAFTED_FOR_APPROVAL`, `NO_REPLY_NEEDED`, `WAITING_FOR_INFORMATION`, `BLOCKED`, or `OPTED_OUT` with zero silent skips, recorded in `.thumbgate/inbox-dispositions.jsonl`.
+- **Approval Exceptions Only (`DRAFTED_FOR_APPROVAL`):** Draft and ask Igor only for contracts/legal commitments, discounts/refunds/price changes, scope changes, sensitive personal/financial info, unverified claims/pricing, or deals above `THUMBGATE_EMAIL_APPROVAL_THRESHOLD_USD` (`$500` default). Unsolicited vendor cold pitches with no question resolve to `NO_REPLY_NEEDED`.
+- **Pre-Send & Confirmation Invariants:** Preserve ECI corporate address isolation (`@ecisolutions.com`, `@ecinexus.com`, `@eci.com` -> `BLOCKED`), `REPLIED_IN_SENT` ONE-TOUCH dedup (`NO_REPLY_NEEDED`), opt-outs/do-not-contact, bot-slop guard, and `config/brand-standards.json`. The sentinel decides and records; the lead agent's mail path executes sends, and a reply counts as sent (`sentConfirmed: true`) only after mail-provider confirmation.
+
 ## HARD — ZERO OUTBOUND SPEND: THEY PAY US (added 2026-10-22)
 
 Igor / ThumbGate **NEVER** spends money (`$0` outbound cash spend, forever). Never offer to pay cash, wire money, pay a fixed buyout price out of pocket, or purchase paid tiers/subscriptions from external founders or vendors. Steal the architecture natively at `$0` cost and flip every external conversation so **THEY PAY US**: (1) **`$499` Managed Workflow / Partner Integration Diagnostic** or **`$19/mo` Pro**, or (2) **`$0` upfront**, paid strictly out of net cash collected from paying customers the partner brings into our Stripe checkout first. Skill: `.agents/skills/zero-outbound-spend-they-pay-us/SKILL.md`.
