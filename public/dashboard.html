@@ -253,11 +253,11 @@ h2{font-size:20px;font-weight:700;margin-bottom:16px;letter-spacing:-.02em}
 <div class="container" id="finishSetupWrap" style="display:none;margin-bottom:16px">
   <div class="panel" id="upNextCard" data-finish-setup-bar="true" style="display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap;border-color:rgba(34,211,238,0.28)">
     <div style="min-width:220px;flex:1">
-      <div id="upNextKicker" style="font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--cyan);margin-bottom:4px">Finish setup</div>
-      <div id="upNextTitle" style="font-size:16px;font-weight:700;color:var(--text);margin-bottom:4px">Finish setup to record your first gate block →</div>
-      <div id="upNextDetail" style="font-size:13px;color:var(--text-muted);line-height:1.5">Run npx thumbgate quickstart to fire your first PreToolUse block and unlock the built-in safety rule pack + 3 custom block rules on the Free tier (7-day local Pro trial included).</div>
+      <div id="upNextKicker" style="font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--cyan);margin-bottom:4px">Connect local CLI</div>
+      <div id="upNextTitle" style="font-size:16px;font-weight:700;color:var(--text);margin-bottom:4px">Connect your local ThumbGate</div>
+      <div id="upNextDetail" style="font-size:13px;color:var(--text-muted);line-height:1.5">ThumbGate runs 100% on-device. Run npx thumbgate quickstart in your terminal to wire PreToolUse hooks and enforce safety gates locally.</div>
     </div>
-    <a class="btn" id="upNextActionBtn" href="/install#quickstart" style="text-decoration:none;white-space:nowrap">Finish setup →</a>
+    <a class="btn" id="upNextActionBtn" href="/install#quickstart" style="text-decoration:none;white-space:nowrap">Quickstart guide →</a>
   </div>
 </div>
 <div class="container" id="dashboardContent" style="display:none;">
@@ -954,6 +954,8 @@ function toggleLicenseKeyBox(forceOpen) {
 
 var DEFAULT_AUTH_HELP_HTML = 'Sign in to open your workspace, or launch locally with <code style="font-family:var(--mono);font-size:12px;background:var(--cyan-dim);color:var(--cyan);padding:2px 6px;border-radius:4px;">npx thumbgate pro</code>.';
 
+var IS_PAID_DASHBOARD_SESSION = false;
+
 function syncAuthBarVisibility(state, options) {
   var opts = options || {}, ssoBox = document.getElementById('dashboardSsoButtons'), helpEl = document.getElementById('authHelp'), keyToggle = document.getElementById('dashboardKeyToggle'), proBtn = document.getElementById('getProBtn'), demoBtn = document.getElementById('demoBtn'), discBtn = document.getElementById('disconnectBtn');
   var signedIn = state === 'signed_in' || state === 'signed_in_free';
@@ -961,8 +963,9 @@ function syncAuthBarVisibility(state, options) {
     var showSso = !signedIn && ssoBox.children.length > 0;
     ssoBox.style.display = showSso ? 'flex' : 'none';
   }
-  if (!signedIn) renderUpNext(null, true);
+  if (!signedIn || state === 'signed_in') renderUpNext(null, true);
   if (state === 'signed_in') {
+    IS_PAID_DASHBOARD_SESSION = true;
     toggleLicenseKeyBox(false);
     if (helpEl) helpEl.style.display = opts.localPro ? '' : 'none';
     if (keyToggle) keyToggle.style.display = 'none';
@@ -970,12 +973,14 @@ function syncAuthBarVisibility(state, options) {
     if (demoBtn) demoBtn.style.display = 'none';
     if (discBtn) discBtn.style.display = 'inline-block';
   } else if (state === 'signed_in_free') {
+    IS_PAID_DASHBOARD_SESSION = false;
     if (helpEl) helpEl.style.display = '';
     if (keyToggle) keyToggle.style.display = '';
     if (proBtn) { proBtn.style.display = 'inline-flex'; proBtn.textContent = 'Upgrade to Pro'; }
     if (demoBtn) demoBtn.style.display = 'none';
     if (discBtn) discBtn.style.display = 'inline-block';
   } else {
+    IS_PAID_DASHBOARD_SESSION = false;
     if (helpEl) { helpEl.style.display = ''; helpEl.innerHTML = DEFAULT_AUTH_HELP_HTML; }
     if (keyToggle) keyToggle.style.display = '';
     if (proBtn) { proBtn.style.display = 'inline-flex'; proBtn.textContent = 'Get Pro'; }
@@ -1038,7 +1043,7 @@ async function connect(options) {
     document.getElementById('dashboardContent').style.display = 'none';
   var onboardingEl = document.getElementById('firstBlockOnboarding');
   if (onboardingEl) onboardingEl.style.display = 'none';
-    renderUpNext(opts.upNext || null, Boolean(opts.firstBlockRecorded));
+    renderUpNext(opts.upNext || null, Boolean(opts.firstBlockRecorded) || !opts.upNext);
     return;
   }
   var isEnterprise = opts.tier === 'Enterprise' || API_KEY.startsWith('tg_op_') || API_KEY.startsWith('tg_creator_');
@@ -1179,31 +1184,31 @@ function renderGateStatusChips(chips) {
   document.querySelectorAll('[data-chip-count="active-gates"]').forEach(function(el) { el.textContent = String(activeGates); });
 }
 
-var DEFAULT_FINISH_SETUP_BAR = {
-  kicker: 'Finish setup',
-  title: 'Finish setup to record your first gate block →',
-  detail: 'Run npx thumbgate quickstart to fire your first PreToolUse block and unlock the built-in safety rule pack + 3 custom block rules on the Free tier (7-day local Pro trial included).',
-  actionLabel: 'Finish setup →',
+var DEFAULT_CONNECT_LOCAL_BAR = {
+  kicker: 'Connect local CLI',
+  title: 'Connect your local ThumbGate',
+  detail: 'ThumbGate runs 100% on-device. Run npx thumbgate quickstart in your terminal to wire PreToolUse hooks and enforce safety gates locally.',
+  actionLabel: 'Quickstart guide →',
   actionHref: '/install#quickstart'
 };
-function renderUpNext(upNext, firstBlockRecorded) {
+function renderUpNext(upNext, hideBar) {
   var wrapEl = document.getElementById('finishSetupWrap'), cardEl = document.getElementById('upNextCard'), kickerEl = document.getElementById('upNextKicker'), titleEl = document.getElementById('upNextTitle'), detailEl = document.getElementById('upNextDetail'), btnEl = document.getElementById('upNextActionBtn');
   if (!cardEl || !titleEl || !detailEl || !btnEl) return;
-  if (firstBlockRecorded) {
+  if (hideBar || IS_PAID_DASHBOARD_SESSION || !upNext || typeof upNext !== 'object') {
     if (wrapEl) wrapEl.style.display = 'none';
     cardEl.style.display = 'none';
     cardEl.setAttribute('hidden', '');
     return;
   }
-  var card = (upNext && typeof upNext === 'object') ? upNext : DEFAULT_FINISH_SETUP_BAR;
+  var card = upNext;
   if (wrapEl) wrapEl.style.display = 'block';
   cardEl.removeAttribute('hidden');
   cardEl.style.display = 'flex';
-  if (kickerEl) kickerEl.textContent = card.kicker || DEFAULT_FINISH_SETUP_BAR.kicker;
-  titleEl.textContent = card.title || DEFAULT_FINISH_SETUP_BAR.title;
-  detailEl.textContent = card.detail || DEFAULT_FINISH_SETUP_BAR.detail;
-  btnEl.textContent = card.actionLabel || DEFAULT_FINISH_SETUP_BAR.actionLabel;
-  btnEl.setAttribute('href', card.actionHref || DEFAULT_FINISH_SETUP_BAR.actionHref);
+  if (kickerEl) kickerEl.textContent = card.kicker || DEFAULT_CONNECT_LOCAL_BAR.kicker;
+  titleEl.textContent = card.title || DEFAULT_CONNECT_LOCAL_BAR.title;
+  detailEl.textContent = card.detail || DEFAULT_CONNECT_LOCAL_BAR.detail;
+  btnEl.textContent = card.actionLabel || DEFAULT_CONNECT_LOCAL_BAR.actionLabel;
+  btnEl.setAttribute('href', card.actionHref || DEFAULT_CONNECT_LOCAL_BAR.actionHref);
   btnEl.onclick = card.actionTab ? function(ev) { ev.preventDefault(); switchTab(card.actionTab); } : null;
 }
 function renderLessonStorageFooter(s) {
@@ -1226,9 +1231,7 @@ function renderStats(data) {
     warnedToday: gs.warnedToday != null ? gs.warnedToday : 0,
     activeGates: gateCount != null ? gateCount : 0,
   });
-  var firstBlocked = overview.firstBlockRecorded != null ? Boolean(overview.firstBlockRecorded) : (Number(gs.blocked) > 0 || Number(gs.blockedToday) > 0);
-  var paidUpNext = overview.upNext ? Object.assign({}, overview.upNext, { detail: String(overview.upNext.detail || '').replace(' on the Free tier (7-day local Pro trial included)', '') }) : { title: DEFAULT_FINISH_SETUP_BAR.title, detail: DEFAULT_FINISH_SETUP_BAR.detail.replace(' on the Free tier (7-day local Pro trial included)', ''), actionLabel: DEFAULT_FINISH_SETUP_BAR.actionLabel, actionHref: DEFAULT_FINISH_SETUP_BAR.actionHref };
-  renderUpNext(paidUpNext, firstBlocked);
+  renderUpNext(null, true);
   if (overview.lessonStorage) renderLessonStorageFooter(overview.lessonStorage);
 }
 
@@ -1694,8 +1697,7 @@ function renderDashboardData(data) {
     warnedToday: todayBucket.warn != null ? todayBucket.warn : 0,
     activeGates: gateCount != null ? gateCount : 0,
   });
-  var firstBlockedDash = overview.firstBlockRecorded != null ? Boolean(overview.firstBlockRecorded) : (Number(gateStats.blocked) > 0 || Number(todayBucket.deny) > 0);
-  renderUpNext(overview.upNext || null, firstBlockedDash);
+  renderUpNext(null, true);
   if (overview.lessonStorage) {
     renderLessonStorageFooter(overview.lessonStorage);
   }

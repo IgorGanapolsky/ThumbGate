@@ -6424,22 +6424,85 @@ async function handleAppleSsoCallback(req, res) {
   }
 }
 
+const DEFAULT_OWNER_BAR_SUPPRESS_EMAILS = new Set([
+  'iganapolsky@gmail.com',
+  'igor.ganapolsky@gmail.com',
+  'igor@igorganapolsky.com',
+  'igor@thumbgate.ai',
+]);
+
+function canonicalizeOwnerLookupEmail(email) {
+  const normalized = String(email || '').trim().toLowerCase();
+  const atIdx = normalized.indexOf('@');
+  if (atIdx <= 0) return normalized;
+  const localPart = normalized.slice(0, atIdx).split('+')[0];
+  const domainPart = normalized.slice(atIdx + 1);
+  return `${localPart}@${domainPart}`;
+}
+
+function isOwnerAccountEmail(email, env = process.env) {
+  const canonical = canonicalizeOwnerLookupEmail(email);
+  if (!canonical) return false;
+  if (DEFAULT_OWNER_BAR_SUPPRESS_EMAILS.has(canonical)) return true;
+  for (const configured of parseConfiguredOwnerEmails(env?.THUMBGATE_OWNER_EMAILS)) {
+    if (canonical === canonicalizeOwnerLookupEmail(configured)) return true;
+  }
+  return false;
+}
+
+const CONNECT_LOCAL_THUMBGATE_BAR = Object.freeze({
+  kind: 'connect_local',
+  kicker: 'Connect local CLI',
+  title: 'Connect your local ThumbGate',
+  command: 'npx thumbgate quickstart',
+  detail: 'ThumbGate runs 100% on-device. Run npx thumbgate quickstart in your terminal to wire PreToolUse hooks and enforce safety gates locally.',
+  actionLabel: 'Quickstart guide →',
+  actionHref: '/install#quickstart',
+});
+
+function hasNonEmptyFile(filePath) {
+  try {
+    return fs.statSync(filePath).size > 0;
+  } catch {
+    return false;
+  }
+}
+
+function hasHostedTenantActivity(scopedDir, overview) {
+  if (overview?.firstBlockRecorded || Number(overview?.totalGateBlocks) > 0) return true;
+  if (!scopedDir) return false;
+  return (
+    hasNonEmptyFile(path.join(scopedDir, 'feedback-log.jsonl'))
+    || hasNonEmptyFile(path.join(scopedDir, 'memory-log.jsonl'))
+    || hasNonEmptyFile(path.join(scopedDir, 'audit-trail.jsonl'))
+  );
+}
+
 function resolveSessionSetupOverview(req, tier, sessionEntry, expectedApiKey) {
   if (!tier) return { firstBlockRecorded: false, upNext: null };
+  if (tier !== 'Free' || isOwnerAccountEmail(sessionEntry?.ssoEmail)) {
+    return { firstBlockRecorded: true, upNext: null };
+  }
   try {
     const { computeTodayOverview } = require('../../scripts/dashboard');
     const basePaths = getFeedbackPaths();
-    const scopedDir = tier === 'Free' && sessionEntry?.ssoEmail
+    const scopedDir = sessionEntry?.ssoEmail
       ? path.join(basePaths.FEEDBACK_DIR, 'tenants', hashDataIdentity('sso_free', sessionEntry.ssoEmail))
       : partitionFeedbackPaths(basePaths, resolveRequestDataIdentity(req, expectedApiKey)).FEEDBACK_DIR;
     const overview = computeTodayOverview(scopedDir);
+    if (hasHostedTenantActivity(scopedDir, overview)) {
+      return { firstBlockRecorded: true, upNext: null };
+    }
     return {
-      firstBlockRecorded: Boolean(overview.firstBlockRecorded),
-      upNext: overview.upNext,
+      firstBlockRecorded: false,
+      upNext: { ...CONNECT_LOCAL_THUMBGATE_BAR },
     };
   } catch (error) {
     debugApiFallback('session setup overview unavailable', error);
-    return { firstBlockRecorded: false, upNext: null };
+    return {
+      firstBlockRecorded: false,
+      upNext: { ...CONNECT_LOCAL_THUMBGATE_BAR },
+    };
   }
 }
 

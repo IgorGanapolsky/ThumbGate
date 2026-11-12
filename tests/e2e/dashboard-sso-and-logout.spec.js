@@ -131,7 +131,9 @@ test.describe('/dashboard real-server login, redeploy persistence, Google SSO, a
       await expect(page.locator('#getProBtn')).toHaveAttribute('href', 'https://thumbgate.ai/pricing');
       await expect(page.locator('#dashboardContent')).toBeHidden();
       await expect(page.locator('#upNextCard')).toBeVisible();
-      await expect(page.locator('#upNextTitle')).toHaveText('Finish setup to record your first gate block →');
+      await expect(page.locator('#upNextTitle')).toHaveText('Connect your local ThumbGate');
+      await expect(page.locator('#upNextDetail')).toContainText('npx thumbgate quickstart');
+      await expect(page.locator('#upNextCard')).not.toContainText(/Finish setup/i);
       await expect(page.locator('#upNextActionBtn')).toHaveAttribute('href', '/install#quickstart');
       await expect(page.locator('#demoBanner')).toBeHidden();
 
@@ -165,12 +167,9 @@ test.describe('/dashboard real-server login, redeploy persistence, Google SSO, a
       await expect(page.locator('#authHelp')).toBeHidden();
       await expect(page.locator('#dashboardContent')).toBeVisible();
 
-      // State 1 (0 gate blocks recorded): single Finish setup bar is visible, links to /install#quickstart, and no second banner
-      await expect(page.locator('#upNextCard')).toBeVisible();
-      await expect(page.locator('#upNextTitle')).toHaveText('Finish setup to record your first gate block →');
-      await expect(page.locator('#upNextDetail')).toContainText('npx thumbgate quickstart');
-      await expect(page.locator('#upNextActionBtn')).toHaveAttribute('href', '/install#quickstart');
-      await expect(page.locator('#upNextCard a, #upNextCard button')).toHaveCount(1);
+      // State 1 (paid Pro account with 0 hosted blocks): setup bar is NEVER shown to paid accounts
+      await expect(page.locator('#upNextCard')).toBeHidden();
+      await expect(page.locator('#finishSetupWrap')).toBeHidden();
       await expect(page.locator('#demoBanner')).toBeHidden();
       await expect(page.locator('#chipBlockedToday')).toContainText('0 BLOCKED TODAY');
       await expect(page.locator('#chipWarnedToday')).toContainText('0 WARNED TODAY');
