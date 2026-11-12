@@ -298,11 +298,11 @@ describe('Gemini Decisions API (gemini-decision-1) engine & server integration',
 
       // Verify every offer's headline & rationale (and choice description) matches its live product page word-for-word
       const stripHtml = (html) => html
-        .replace(/<script[\s\S]*?<\/script>/gi, ' ')
-        .replace(/<style[\s\S]*?<\/style>/gi, ' ')
+        .replace(/<script\b[^>]*>[\s\S]*?<\/script\b[^>]*>/gi, ' ')
+        .replace(/<style\b[^>]*>[\s\S]*?<\/style\b[^>]*>/gi, ' ')
         .replace(/<[^>]+>/g, ' ')
-        .replace(/&amp;/g, '&')
         .replace(/&middot;/g, '·')
+        .replace(/&amp;/g, '&')
         .replace(/\s+/g, ' ')
         .trim();
       const pageCache = new Map();
