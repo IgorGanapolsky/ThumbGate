@@ -3070,6 +3070,8 @@ function buildCheckoutSessionPayload({ successUrl, cancelUrl, customerEmail, che
     mode: pack ? 'payment' : 'subscription',
     line_items: lineItems,
     allow_promotion_codes: true,
+    billing_address_collection: 'auto',
+    tax_id_collection: { enabled: true },
     after_expiration: { recovery: { enabled: true, allow_promotion_codes: true } },
     // Stripe only emails an abandoned-cart recovery link to buyers who gave
     // promotional consent; without this, recovery above never reaches anyone.
@@ -3245,6 +3247,90 @@ async function getCheckoutSessionStatus(sessionId) {
   } catch {
     return { found: false };
   }
+}
+
+async function createBillingPortalSession({ customerId, apiKey, sessionId, customerEmail, returnUrl } = {}) {
+  let resolvedCustomerId = normalizeText(customerId);
+
+  if (!resolvedCustomerId && apiKey) {
+    const keyInfo = validateApiKey(apiKey);
+    if (keyInfo && keyInfo.valid && keyInfo.customerId) {
+      resolvedCustomerId = normalizeText(keyInfo.customerId);
+    }
+  }
+
+  if (!resolvedCustomerId && sessionId) {
+    if (LOCAL_MODE()) {
+      const store = loadLocalCheckoutSessions();
+      const localSession = store.sessions?.[sessionId] || store[sessionId];
+      if (localSession && localSession.customer) {
+        resolvedCustomerId = normalizeText(localSession.customer);
+      }
+    } else {
+      try {
+        const stripe = getStripeClient();
+        const checkoutSession = await stripe.checkout.sessions.retrieve(sessionId);
+        if (checkoutSession && checkoutSession.customer) {
+          resolvedCustomerId = normalizeText(checkoutSession.customer);
+        }
+      } catch {
+        // Continue to other lookup methods
+      }
+    }
+  }
+
+  if (!resolvedCustomerId && customerEmail) {
+    const normalizedEmail = normalizeEmail(customerEmail);
+    const store = loadKeyStore();
+    for (const meta of Object.values(store.keys || {})) {
+      if (meta && normalizeEmail(meta.customerEmail || meta.email) === normalizedEmail && meta.customerId) {
+        resolvedCustomerId = normalizeText(meta.customerId);
+        break;
+      }
+    }
+  }
+
+  if (resolvedCustomerId && resolvedCustomerId.startsWith('stripe:')) {
+    resolvedCustomerId = resolvedCustomerId.slice(7);
+  }
+
+  const effectiveReturnUrl = returnUrl || `${process.env.THUMBGATE_PUBLIC_APP_ORIGIN || 'https://thumbgate.ai'}/`;
+
+  if (LOCAL_MODE()) {
+    if (!resolvedCustomerId && (apiKey || sessionId || customerEmail)) {
+      resolvedCustomerId = 'cus_mock_local';
+    }
+    if (!resolvedCustomerId) {
+      const err = new Error('A valid license key, session ID, or customer ID is required to access the billing portal.');
+      err.statusCode = 400;
+      throw err;
+    }
+    return {
+      url: `${effectiveReturnUrl}?billing=portal&customer=${encodeURIComponent(resolvedCustomerId)}`,
+      id: `bps_mock_${crypto.randomBytes(8).toString('hex')}`,
+      customerId: resolvedCustomerId,
+      localMode: true,
+    };
+  }
+
+  if (!resolvedCustomerId || !resolvedCustomerId.startsWith('cus_')) {
+    const err = new Error('A valid Stripe customer ID (cus_...) is required to access the billing portal.');
+    err.statusCode = 400;
+    throw err;
+  }
+
+  const stripe = getStripeClient();
+  const portalSession = await stripe.billingPortal.sessions.create({
+    customer: resolvedCustomerId,
+    return_url: effectiveReturnUrl,
+  });
+
+  return {
+    url: portalSession.url,
+    id: portalSession.id,
+    customerId: resolvedCustomerId,
+    localMode: false,
+  };
 }
 
 function provisionApiKey(customerId, opts = {}) {
@@ -4357,7 +4443,7 @@ function handleGithubWebhook(event, provenance = {}) {
 }
 
 module.exports = {
-  CONFIG, createCheckoutSession, isAutomatedCheckoutRequest, getCheckoutSessionStatus, provisionApiKey, resolvePaidEntitlementForEmail, rotateApiKey, validateApiKey, recordUsage, disableCustomerKeys, handleWebhook, verifyWebhookSignature, verifyGithubWebhookSignature, verifyPayPalWebhookSignature, recordGithubMarketplaceWebhookDelivery, recordPayPalWebhookDelivery, handleGithubWebhook, loadKeyStore, appendFunnelEvent, appendRevenueEvent, loadFunnelLedger, loadRevenueLedger, loadGithubMarketplaceWebhookLedger, loadPayPalWebhookLedger, loadNewsletterSubscribers, loadResolvedRevenueEvents, getFunnelAnalytics, getBusinessAnalytics, getBillingSummary, getBillingSummaryLive, getBillingSummariesLive, listStripeReconciledRevenueEvents, repairGithubMarketplaceRevenueLedger,
+  CONFIG, createCheckoutSession, isAutomatedCheckoutRequest, createBillingPortalSession, getCheckoutSessionStatus, provisionApiKey, resolvePaidEntitlementForEmail, rotateApiKey, validateApiKey, recordUsage, disableCustomerKeys, handleWebhook, verifyWebhookSignature, verifyGithubWebhookSignature, verifyPayPalWebhookSignature, recordGithubMarketplaceWebhookDelivery, recordPayPalWebhookDelivery, handleGithubWebhook, loadKeyStore, appendFunnelEvent, appendRevenueEvent, loadFunnelLedger, loadRevenueLedger, loadGithubMarketplaceWebhookLedger, loadPayPalWebhookLedger, loadNewsletterSubscribers, loadResolvedRevenueEvents, getFunnelAnalytics, getBusinessAnalytics, getBillingSummary, getBillingSummaryLive, getBillingSummariesLive, listStripeReconciledRevenueEvents, repairGithubMarketplaceRevenueLedger,
   _buildCheckoutSessionPayload: buildCheckoutSessionPayload,
   _createSessionDroppingRejectedOptionals: createSessionDroppingRejectedOptionals,
   _buildTrialActivationEmail: buildTrialActivationEmail,
