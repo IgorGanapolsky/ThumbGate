@@ -757,6 +757,30 @@ const TRACKED_LINK_TARGETS = Object.freeze({
       plan_id: 'sprint_diagnostic',
     },
   },
+  'diagnostic-499': {
+    path: '/diagnostic',
+    ctaId: 'diagnostic_499',
+    ctaPlacement: 'link_router',
+    eventType: 'diagnostic_intent_open',
+    defaults: {
+      utm_source: 'github',
+      utm_medium: 'link_router',
+      utm_campaign: 'sprint_diagnostic',
+      plan_id: 'sprint_diagnostic',
+    },
+  },
+  'diagnostic-direct': {
+    path: '/diagnostic',
+    ctaId: 'diagnostic_direct',
+    ctaPlacement: 'link_router',
+    eventType: 'diagnostic_intent_open',
+    defaults: {
+      utm_source: 'newsletter',
+      utm_medium: 'link_router',
+      utm_campaign: 'sprint_diagnostic',
+      plan_id: 'sprint_diagnostic',
+    },
+  },
   'diagnostic-pay': {
     configUrlKey: 'sprintDiagnosticCheckoutUrl',
     fallbackHref: SPRINT_DIAGNOSTIC_CHECKOUT_URL,
