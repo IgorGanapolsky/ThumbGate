@@ -13,6 +13,10 @@ process.env.THUMBGATE_LOCAL_STORAGE_DIR = tmpFeedbackDir;
 process.env.OPERATOR_API_KEY = 'test_operator_key_billing_portal';
 process.env.THUMBGATE_API_KEY = 'test_api_key_billing_portal';
 process.env.THUMBGATE_ALLOW_INSECURE = 'true';
+// Force local Stripe mode: CI exports a real STRIPE_SECRET_KEY, and these
+// tests provision fake local customers that live Stripe does not know.
+const savedStripeSecretKey = process.env.STRIPE_SECRET_KEY;
+process.env.STRIPE_SECRET_KEY = '';
 
 const { startServer } = require('../src/api/server');
 const { createBillingPortalSession, provisionApiKey } = require('../scripts/billing');
@@ -33,6 +37,8 @@ test.after(async () => {
   if (!handle) return;
   await new Promise((resolve) => handle.server.close(resolve));
   fs.rmSync(tmpDir, { recursive: true, force: true });
+  if (savedStripeSecretKey === undefined) delete process.env.STRIPE_SECRET_KEY;
+  else process.env.STRIPE_SECRET_KEY = savedStripeSecretKey;
 });
 
 test('scripts/billing: createBillingPortalSession resolves API key in local mode', async () => {
