@@ -787,8 +787,9 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // Bumped 10.02 MB -> 10.05 MB (2026-11-12, PR #4961): Apple OIDC callback (#4966) + destructive-delete variant detection in operational-integrity.js + harness-tool-names.js (measured 10,026,146 unpacked; CI slack).
   // Bumped 10.05 MB -> 10.065 MB (2026-11-12, PR #4965): SSO CSRF hardening, AST confinement, BoostMyAgents lane, and SubQ Snap 1.2 SystemOne client (measured 10,053,592 unpacked; file count stays 655).
   // Bumped 10.065 MB -> 10.08 MB (2026-11-12): SubQ Snap 1.2 (/v1/systemone) engine, order-invariance, context curation & passage grounding in mcp-writeguard.js + lesson-retrieval.js + server.js.
-  manifest.unpackedSize <= 10_080_000,
-  `npm package should stay <= 10.08 MB unpacked, got ${manifest.unpackedSize}`
+  // Bumped 10.08 MB -> 10.09 MB (2026-11-12, PR #4975): signed-in dashboard state + Today overview on top of main (measured 10,080,993 unpacked).
+  manifest.unpackedSize <= 10_090_000,
+  `npm package should stay <= 10.09 MB unpacked, got ${manifest.unpackedSize}`
 );
 
   for (const file of requiredRuntimeFiles) {
