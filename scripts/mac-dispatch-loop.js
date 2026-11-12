@@ -3,10 +3,10 @@
 
 /**
  * mac-dispatch-loop.js — cloud sessions hand work to a Mac through GitHub issues.
- * Polls open `ready-for-agent` issues from allowed authors, claims one (claim comment,
+ * Polls open `agent-signal-ready` issues from allowed authors, claims one (claim comment,
  * earliest claim wins across Macs), runs `claude -p` in the issue's folder under the
  * Mac's own Claude Code permission settings (never adds bypass flags), comments the
- * evidence, and relabels the issue `agent-done` or `agent-blocked`.
+ * evidence, and relabels the issue `agent-signal-done` or `agent-blocked`.
  * Usage: --once (launchd) | --watch (herdr pane) [--dry-run]. See docs/guides/mac-dispatch-loop.md.
  */
 
@@ -18,9 +18,9 @@ const path = require('node:path');
 const { redactSecrets } = require('./secret-redaction');
 
 const LABELS = Object.freeze({
-  ready: { name: 'ready-for-agent', color: '0E8A16', description: 'Queued for a Mac agent run' },
+  ready: { name: 'agent-signal-ready', color: '0E8A16', description: 'Queued for a Mac agent run' },
   claimed: { name: 'agent-claimed', color: 'FBCA04', description: 'A Mac agent is working on this' },
-  done: { name: 'agent-done', color: '1D76DB', description: 'Mac agent finished; review the evidence comment' },
+  done: { name: 'agent-signal-done', color: '1D76DB', description: 'Mac agent finished; review the evidence comment' },
   blocked: { name: 'agent-blocked', color: 'D93F0B', description: 'Mac agent could not finish; see the evidence comment' },
 });
 
@@ -307,7 +307,7 @@ function listComments(ctx, issue) {
 }
 
 // Picks the winning claim: the earliest claim comment posted since the issue was last
-// labeled ready-for-agent. Comment ids only grow, so every machine reaches the same answer.
+// labeled agent-signal-ready. Comment ids only grow, so every machine reaches the same answer.
 function pickWinningClaim(comments, sinceIso) {
   const since = Date.parse(sinceIso);
   const re = new RegExp(`<!-- ${CLAIM_MARKER} id=(\\S+) machine=(\\S+) -->`);
@@ -464,7 +464,7 @@ function tick(ctx) {
         results.push({ issue: issue.number, action: 'error', reason: err.message });
       }
     }
-    if (issues.length === 0) ctx.log('no ready-for-agent issues');
+    if (issues.length === 0) ctx.log('no agent-signal-ready issues');
     return results;
   } finally {
     release();
