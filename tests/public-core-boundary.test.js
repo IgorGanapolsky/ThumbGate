@@ -331,7 +331,8 @@ test('public-core-boundary: npm bundle stays thin (file count ceiling)', () => {
   // 641 -> 642 (2026-10-29): scripts/mabl-failure-honesty.js arrived with main. Measured pack 642.
   // 642 -> 650 (2026-11-05): scripts/verified-lessons.js, src entrypoints, and merged main pre-tool gates.
   // 650 -> 652 (2026-11-11): scripts/project-scope.js (required by the PreToolUse hook and lesson retrieval) and scripts/backfill-lesson-scopes.js (tags existing lessons with their repo). Both are hook-layer public shell.
-  const CEILING = 652;
+  // 652 -> 654 (2026-11-12): two marketing blog posts under public/blog/ (gemini-decisions-and-the-gate, opencode-and-thumbgate). Public shell marketing scope.
+  const CEILING = 654;
   assert.ok(
     files.length <= CEILING,
     `public npm bundle should stay <= ${CEILING} files, got ${files.length}. ` +

@@ -520,8 +520,9 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
     // 621 -> 641 (2026-10-15): operator framework landing, blog posts, policy packs, and continuity pages (+20).
     // 641 -> 650 (2026-11-05): HotData DB integration adapters, Google Universal Cart spend firewall, and scripts/verified-lessons.js (+9).
     // 650 -> 652 (2026-11-11): scripts/project-scope.js (required by the PreToolUse hook and lesson retrieval) and scripts/backfill-lesson-scopes.js (tags existing lessons with their repo) (+2).
-    manifest.fileCount <= 652,
-    `npm package should stay <= 652 files, got ${manifest.fileCount}`
+    // 652 -> 654 (2026-11-12): two marketing blog posts under public/blog/ (gemini-decisions-and-the-gate, opencode-and-thumbgate). Public shell marketing scope.
+    manifest.fileCount <= 654,
+    `npm package should stay <= 654 files, got ${manifest.fileCount}`
   );
   // Ceiling bumped from 2.75 MB → 2.85 MB (2026-04-16) to accommodate the
   // incremental review-delta demo content in public/dashboard.html landing
