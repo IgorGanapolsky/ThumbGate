@@ -276,12 +276,32 @@ test('answerDataQuestion exposes model and privacyRoute for local vs BYO cloud a
       gateAudit: { days: [{ dayKey: '2026-11-12', deny: 0, warn: 0, allow: 0 }] },
       gates: [],
     });
-    assert.equal(emptyOverview.upNext.kind, 'connect_agent');
-    assert.equal(emptyOverview.upNext.title, 'Connect your agent');
+    assert.equal(emptyOverview.firstBlockRecorded, false);
+    assert.equal(emptyOverview.totalGateBlocks, 0);
+    assert.equal(emptyOverview.upNext.kind, 'finish_setup');
+    assert.equal(emptyOverview.upNext.title, 'Finish setup to record your first gate block →');
+    assert.equal(emptyOverview.upNext.command, 'npx thumbgate quickstart');
+    assert.equal(emptyOverview.upNext.actionHref, '/install#quickstart');
+    assert.match(emptyOverview.upNext.detail, /npx thumbgate quickstart/);
+    assert.match(emptyOverview.upNext.detail, /built-in safety rule pack \+ 3 custom block rules/);
     assert.deepEqual(emptyOverview.gateStatusChips, { blockedToday: 0, warnedToday: 0, activeGates: 0 });
     assert.equal(emptyOverview.lessonStorage.lessonDbBytes, 0);
     assert.equal(emptyOverview.lessonStorage.lessonDbSizeDisplay, '0 B');
 
+    // Feedback captured + warnings logged, but STILL 0 gate blocks -> Finish setup bar remains shown (keyed on first block, not feedback count)
+    const feedbackNoBlocksOverview = computeTodayOverview(tmpDir, {
+      entries: [{ signal: 'positive', timestamp: '2026-11-12T10:00:00.000Z' }, { signal: 'negative', timestamp: '2026-11-12T10:05:00.000Z' }],
+      memoryEntries: [],
+      auditEntries: [{ decision: 'warn', gateId: 'gate:env-read', timestamp: '2026-11-12T10:06:00.000Z' }],
+      gateStats: { totalGates: 12, blocked: 0, warned: 1 },
+      gateAudit: { days: [{ dayKey: '2026-11-12', deny: 0, warn: 1, allow: 4 }], totals: { deny: 0, warn: 1, allow: 4 } },
+    });
+    assert.equal(feedbackNoBlocksOverview.firstBlockRecorded, false);
+    assert.equal(feedbackNoBlocksOverview.totalGateBlocks, 0);
+    assert.ok(feedbackNoBlocksOverview.upNext, 'Finish setup bar must stay visible when feedback > 0 but gate blocks === 0');
+    assert.equal(feedbackNoBlocksOverview.upNext.kind, 'finish_setup');
+
+    // Once >= 1 gate block is recorded, Finish setup bar disappears (upNext === null)
     const lessonLine = JSON.stringify({ id: 'mem_1', gateId: 'gate:force-push', title: 'Never force-push protected branches', tags: ['git'] }) + '\n';
     fs.writeFileSync(path.join(tmpDir, 'memory-log.jsonl'), lessonLine);
     const nowIso = new Date().toISOString();
@@ -294,13 +314,12 @@ test('answerDataQuestion exposes model and privacyRoute for local vs BYO cloud a
         { decision: 'warn', gateId: 'gate:env-read', timestamp: nowIso },
       ],
       gateStats: { totalGates: 12, blocked: 2, warned: 1 },
-      gateAudit: { days: [{ dayKey: '2026-11-12', deny: 2, warn: 1, allow: 5 }] },
-      gates: [{ id: 'gate:force-push', pattern: 'git push --force' }],
+      gateAudit: { days: [{ dayKey: '2026-11-12', deny: 2, warn: 1, allow: 5 }], totals: { deny: 2, warn: 1, allow: 5 } },
       now: nowIso,
     });
-    assert.equal(activeOverview.upNext.kind, 'top_gate_24h');
-    assert.match(activeOverview.upNext.title, /gate:force-push \(2 intercepted in last 24h\)/);
-    assert.match(activeOverview.upNext.detail, /Never force-push protected branches/);
+    assert.equal(activeOverview.firstBlockRecorded, true);
+    assert.equal(activeOverview.totalGateBlocks, 2);
+    assert.equal(activeOverview.upNext, null, 'Finish setup bar must be null/gone once first gate block is recorded');
     assert.deepEqual(activeOverview.gateStatusChips, { blockedToday: 2, warnedToday: 1, activeGates: 12 });
     assert.equal(activeOverview.lessonStorage.lessonDbBytes, Buffer.byteLength(lessonLine));
   } finally {
