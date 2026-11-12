@@ -491,6 +491,7 @@ function loadJSON(filePath) {
 }
 
 function saveJSON(filePath, data) {
+  if (process.env.THUMBGATE_SANDBOX_EVAL === '1') return;
   fs.mkdirSync(path.dirname(filePath), { recursive: true });
   fs.writeFileSync(filePath, JSON.stringify(data, null, 2) + '\n');
 }
@@ -1150,6 +1151,7 @@ function incrementTodayBlockCount() {
  * a deny result to a warn with an upgrade CTA. Returns null if no cap applies.
  */
 function applyDailyBlockCap(denyResult) {
+  if (process.env.THUMBGATE_SANDBOX_EVAL === '1') return null;
   // Catastrophic/irreversible commands (force-push, git reset --hard, git
   // clean -f, rm -rf on home/root) never get the free-tier daily-cap
   // discount — see issue #2782. Checked first, before any tier/CI shortcut,
@@ -3527,7 +3529,7 @@ function buildSentinelGateResult(report) {
 }
 
 function recordSentinelDecision(report, toolName, toolInput) {
-  if (!report) return null;
+  if (!report || process.env.THUMBGATE_SANDBOX_EVAL === '1') return null;
   const entry = recordDecisionEvaluation(report, {
     source: 'gates-engine',
     toolName,

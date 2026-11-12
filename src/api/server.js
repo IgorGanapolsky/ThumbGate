@@ -9359,14 +9359,17 @@ a{color:#8b9}</style></head><body><form class="card" method="post" action="/oaut
         }
       }
 
-      if (signupToFirstBlockMs === null && req.headers?.cookie) {
+      let sessionTokenForDedup = '';
+      if (req.headers?.cookie) {
         try {
-          const cookieMatch = req.headers.cookie.match(/tg_session=([^;]+)/);
-          if (cookieMatch) {
-            const sessId = cookieMatch[1].trim();
-            const session = global.__inMemoryAuthSessions?.get(sessId);
-            if (session?.createdAt) {
-              const sessCreated = new Date(session.createdAt).getTime();
+          const cookies = parseCookies(req.headers.cookie);
+          sessionTokenForDedup = cookies[PAID_AUTH_COOKIE_NAME] || '';
+          if (signupToFirstBlockMs === null && sessionTokenForDedup) {
+            const sessionEntry = getPaidAuthSessionEntry(sessionTokenForDedup, expectedApiKey, expectedOperatorKey);
+            if (sessionEntry?.createdAt) {
+              const sessCreated = typeof sessionEntry.createdAt === 'number'
+                ? sessionEntry.createdAt
+                : Date.parse(sessionEntry.createdAt);
               if (Number.isFinite(sessCreated) && sessCreated > 0) {
                 signupToFirstBlockMs = Math.max(0, Date.now() - sessCreated);
               }
@@ -9375,26 +9378,35 @@ a{color:#8b9}</style></head><body><form class="card" method="post" action="/oaut
         } catch {}
       }
 
-      const elapsedSinceOpenMs = typeof body.elapsedSinceOpenMs === 'number' && body.elapsedSinceOpenMs >= 0
-        ? Math.min(body.elapsedSinceOpenMs, 86_400_000)
+      const elapsedSinceOpenMs = typeof body.elapsedSinceOpenMs === 'number' && Number.isFinite(body.elapsedSinceOpenMs) && body.elapsedSinceOpenMs >= 0
+        ? Math.min(Math.trunc(body.elapsedSinceOpenMs), 86_400_000)
         : null;
 
       if (isBlocked) {
         try {
           const { FEEDBACK_DIR } = getFeedbackPaths();
           const bd = require('../../scripts/bot-detection');
-          const cls = bd.classifyVisitor({ headers: { 'user-agent': req.headers?.['user-agent'] || '' } });
-          const visitorKey = `${req.headers?.['x-forwarded-for'] || req.socket?.remoteAddress || 'ip'}_${req.headers?.['user-agent'] || 'ua'}`;
+          const ua = String(req.headers?.['user-agent'] || '').slice(0, 160);
+          const cls = bd.classifyVisitor({ headers: { 'user-agent': ua } });
+          const clientIp = String(req.headers?.['x-forwarded-for'] || req.socket?.remoteAddress || 'ip').split(',')[0].trim().slice(0, 64);
+          const visitorKey = sessionTokenForDedup
+            ? `sess_${hashSessionToken(sessionTokenForDedup).slice(0, 24)}`
+            : `${clientIp}_${ua}`;
           if (!global.__onboardingFirstBlockSeen) global.__onboardingFirstBlockSeen = new Set();
           if (!global.__onboardingFirstBlockSeen.has(visitorKey)) {
+            if (global.__onboardingFirstBlockSeen.size >= 4096) {
+              const oldest = global.__onboardingFirstBlockSeen.values().next().value;
+              if (oldest !== undefined) global.__onboardingFirstBlockSeen.delete(oldest);
+            }
             global.__onboardingFirstBlockSeen.add(visitorKey);
+            const effectiveDurationMs = signupToFirstBlockMs !== null ? signupToFirstBlockMs : elapsedSinceOpenMs;
             appendTelemetryPing(FEEDBACK_DIR, {
               eventType: 'first_blocked_tool_call',
               source: 'dashboard_onboarding_sandbox',
               gateId: gateResult.gate || 'unknown',
               latencyMs,
               signupToFirstBlockMs,
-              minutesToFirstBlock: signupToFirstBlockMs !== null ? Math.round((signupToFirstBlockMs / 60000) * 10) / 10 : null,
+              minutesToFirstBlock: effectiveDurationMs !== null ? Math.round((effectiveDurationMs / 60000) * 10) / 10 : null,
               elapsedSinceOpenMs,
               visitorType: cls.type,
             }, req.headers);

@@ -179,12 +179,14 @@ function summarizeFirstBlockEvents(entries = []) {
     return { count: 0, medianMinutes: null, under5MinutesCount: 0 };
   }
 
+  let count = 0;
   const minutesList = [];
   for (const e of entries) {
     if (!e || typeof e !== 'object') continue;
-    const et = e.eventType || '';
+    const et = e.eventType || e.event || '';
     if (et !== 'first_blocked_tool_call') continue;
     if (e.visitorType === 'bot' || e.visitorType === 'ci') continue;
+    count += 1;
 
     let m = null;
     if (typeof e.minutesSinceInstall === 'number' && Number.isFinite(e.minutesSinceInstall)) {
@@ -193,6 +195,8 @@ function summarizeFirstBlockEvents(entries = []) {
       m = e.minutesToFirstBlock;
     } else if (typeof e.signupToFirstBlockMs === 'number' && Number.isFinite(e.signupToFirstBlockMs)) {
       m = Math.round((e.signupToFirstBlockMs / 60_000) * 10) / 10;
+    } else if (typeof e.elapsedSinceOpenMs === 'number' && Number.isFinite(e.elapsedSinceOpenMs)) {
+      m = Math.round((e.elapsedSinceOpenMs / 60_000) * 10) / 10;
     }
 
     if (m !== null && m >= 0) {
@@ -200,14 +204,16 @@ function summarizeFirstBlockEvents(entries = []) {
     }
   }
 
-  if (minutesList.length === 0) {
+  if (count === 0) {
     return { count: 0, medianMinutes: null, under5MinutesCount: 0 };
+  }
+  if (minutesList.length === 0) {
+    return { count, medianMinutes: null, under5MinutesCount: 0 };
   }
 
   minutesList.sort((a, b) => a - b);
-  const count = minutesList.length;
-  const mid = Math.floor(count / 2);
-  const medianMinutes = count % 2 === 0
+  const mid = Math.floor(minutesList.length / 2);
+  const medianMinutes = minutesList.length % 2 === 0
     ? Math.round(((minutesList[mid - 1] + minutesList[mid]) / 2) * 10) / 10
     : Math.round(minutesList[mid] * 10) / 10;
   const under5MinutesCount = minutesList.filter(v => v <= 5).length;
