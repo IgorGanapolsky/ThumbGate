@@ -171,6 +171,7 @@ const {
   generateSkills,
 } = require('../../scripts/skill-generator');
 const {
+  evaluateGates,
   satisfyCondition,
   loadStats: loadGateStats,
   setConstraint,
@@ -181,6 +182,9 @@ const {
   getBranchGovernanceState,
   approveProtectedAction,
 } = require('../../scripts/gates-engine');
+const {
+  summarizeFirstBlockEvents,
+} = require('../../scripts/activation-tracker');
 const {
   evaluateOperationalIntegrity,
 } = require('../../scripts/operational-integrity');
@@ -9291,7 +9295,127 @@ a{color:#8b9}</style></head><body><form class="card" method="post" action="/oaut
       res.end();
       return;
     }
+    if (req.method === 'OPTIONS' && pathname === '/v1/onboarding/try-block') {
+      res.writeHead(204, {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'POST, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type',
+      });
+      res.end();
+      return;
+    }
 
+    if (req.method === 'POST' && pathname === '/v1/onboarding/try-block') {
+      const startTime = Date.now();
+      let body;
+      try {
+        body = await parseJsonBody(req, 8 * 1024);
+      } catch (_err) {
+        sendJson(res, 400, { error: 'invalid_json', message: 'Malformed JSON payload' }, {
+          'Access-Control-Allow-Origin': '*',
+        });
+        return;
+      }
+
+      const command = typeof body?.command === 'string' ? body.command.trim() : '';
+      if (!command) {
+        sendJson(res, 400, { error: 'missing_command', message: 'Command is required' }, {
+          'Access-Control-Allow-Origin': '*',
+        });
+        return;
+      }
+      if (command.length > 2048) {
+        sendJson(res, 400, { error: 'command_too_long', message: 'Command exceeds 2048 characters' }, {
+          'Access-Control-Allow-Origin': '*',
+        });
+        return;
+      }
+
+      let gateResult = null;
+      const prevSandbox = process.env.THUMBGATE_SANDBOX_EVAL;
+      process.env.THUMBGATE_SANDBOX_EVAL = '1';
+      try {
+        gateResult = evaluateGates('Bash', { command });
+      } catch (_evalErr) {
+        gateResult = null;
+      } finally {
+        if (prevSandbox === undefined) {
+          delete process.env.THUMBGATE_SANDBOX_EVAL;
+        } else {
+          process.env.THUMBGATE_SANDBOX_EVAL = prevSandbox;
+        }
+      }
+
+      const latencyMs = Math.max(1, Date.now() - startTime);
+      const isBlocked = Boolean(gateResult && (gateResult.decision === 'deny' || gateResult.decision === 'block'));
+
+      let signupToFirstBlockMs = null;
+      if (typeof body.signupTimestamp === 'number' && Number.isFinite(body.signupTimestamp) && body.signupTimestamp > 0) {
+        signupToFirstBlockMs = Math.max(0, Date.now() - body.signupTimestamp);
+      } else if (typeof body.signupTimestamp === 'string') {
+        const parsed = Date.parse(body.signupTimestamp);
+        if (Number.isFinite(parsed) && parsed > 0) {
+          signupToFirstBlockMs = Math.max(0, Date.now() - parsed);
+        }
+      }
+
+      if (signupToFirstBlockMs === null && req.headers?.cookie) {
+        try {
+          const cookieMatch = req.headers.cookie.match(/tg_session=([^;]+)/);
+          if (cookieMatch) {
+            const sessId = cookieMatch[1].trim();
+            const session = global.__inMemoryAuthSessions?.get(sessId);
+            if (session?.createdAt) {
+              const sessCreated = new Date(session.createdAt).getTime();
+              if (Number.isFinite(sessCreated) && sessCreated > 0) {
+                signupToFirstBlockMs = Math.max(0, Date.now() - sessCreated);
+              }
+            }
+          }
+        } catch {}
+      }
+
+      const elapsedSinceOpenMs = typeof body.elapsedSinceOpenMs === 'number' && body.elapsedSinceOpenMs >= 0
+        ? Math.min(body.elapsedSinceOpenMs, 86_400_000)
+        : null;
+
+      if (isBlocked) {
+        try {
+          const { FEEDBACK_DIR } = getFeedbackPaths();
+          const bd = require('../../scripts/bot-detection');
+          const cls = bd.classifyVisitor({ headers: { 'user-agent': req.headers?.['user-agent'] || '' } });
+          const visitorKey = `${req.headers?.['x-forwarded-for'] || req.socket?.remoteAddress || 'ip'}_${req.headers?.['user-agent'] || 'ua'}`;
+          if (!global.__onboardingFirstBlockSeen) global.__onboardingFirstBlockSeen = new Set();
+          if (!global.__onboardingFirstBlockSeen.has(visitorKey)) {
+            global.__onboardingFirstBlockSeen.add(visitorKey);
+            appendTelemetryPing(FEEDBACK_DIR, {
+              eventType: 'first_blocked_tool_call',
+              source: 'dashboard_onboarding_sandbox',
+              gateId: gateResult.gate || 'unknown',
+              latencyMs,
+              signupToFirstBlockMs,
+              minutesToFirstBlock: signupToFirstBlockMs !== null ? Math.round((signupToFirstBlockMs / 60000) * 10) / 10 : null,
+              elapsedSinceOpenMs,
+              visitorType: cls.type,
+            }, req.headers);
+            delete global._metricsRealCache;
+          }
+        } catch {}
+      }
+
+      sendJson(res, 200, {
+        ok: true,
+        decision: isBlocked ? 'block' : 'allow',
+        gateId: gateResult?.gate || null,
+        message: gateResult?.message || (isBlocked ? 'Blocked by ThumbGate policy.' : 'Command permitted. No dangerous patterns detected.'),
+        latencyMs,
+        elapsedSinceOpenMs,
+        signupToFirstBlockMs,
+      }, {
+        'Access-Control-Allow-Origin': '*',
+      });
+      return;
+    }
     if (req.method === 'GET' && pathname === '/v1/metrics/real') {
       const bd = require('../../scripts/bot-detection');
       const { FEEDBACK_DIR: metricsDir } = getFeedbackPaths();
@@ -9355,6 +9479,7 @@ a{color:#8b9}</style></head><body><form class="card" method="post" action="/oaut
       const ACTIVE_EVENTS = new Set([
         'cli_capture', 'cli_recall', 'cli_stats',
         'activation_first_rule_promoted',
+        'first_blocked_tool_call',
       ]);
       const thirtyDaysAgo = now - 30 * 24 * 60 * 60 * 1000;
       const last30 = classified.filter(e => {
@@ -9398,11 +9523,13 @@ a{color:#8b9}</style></head><body><form class="card" method="post" action="/oaut
           ci: classified.filter(e => e.visitorType === 'ci').length,
           uniqueInstalls: uniqueInstallIds.size,
           activeInstalls: allTimeActiveInstalls.size,
+          firstBlockedToolCall: summarizeFirstBlockEvents(classified),
         },
         last30Days: {
           uniqueInstalls: new Set(last30.filter(e => e.installId).map(e => e.installId)).size,
           activeInstalls: activeInstalls30d.size,
           uniqueSessions: uniqueSessions30d.size,
+          firstBlockedToolCall: summarizeFirstBlockEvents(last30),
         },
         last7Days: {
           total: recent.length,
@@ -9413,6 +9540,7 @@ a{color:#8b9}</style></head><body><form class="card" method="post" action="/oaut
           uniqueInstalls: recentInstallIds.size,
           activeInstalls: activeInstalls7d.size,
           uniqueSessions: uniqueSessions7d.size,
+          firstBlockedToolCall: summarizeFirstBlockEvents(recent),
         },
         byEventType,
         byVisitorType,
