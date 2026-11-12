@@ -7508,7 +7508,7 @@ async function addContext(){
           return;
         }
         const stateParam = parsed.searchParams.get('state');
-        const reqCookies = parseCookies(req && req.headers ? req.headers.cookie : '');
+        const reqCookies = parseCookies(req?.headers?.cookie || '');
         if (!stateParam || !safeKeyEqual(String(reqCookies[SSO_STATE_COOKIE_NAME] || ''), String(stateParam))) {
           consumeSsoPendingState(stateParam, 'google');
           redirectSsoError(res, 'invalid_state');
