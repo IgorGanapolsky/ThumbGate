@@ -332,7 +332,8 @@ test('public-core-boundary: npm bundle stays thin (file count ceiling)', () => {
   // 642 -> 650 (2026-11-05): scripts/verified-lessons.js, src entrypoints, and merged main pre-tool gates.
   // 650 -> 652 (2026-11-11): scripts/project-scope.js (required by the PreToolUse hook and lesson retrieval) and scripts/backfill-lesson-scopes.js (tags existing lessons with their repo). Both are hook-layer public shell.
   // 652 -> 653 (2026-11-12): src/openshell-lovable-engine.js (OpenShell policy prover / design guard, exported from src/index.js and used by bin/cli.js). Public shell CLI scope.
-  const CEILING = 653;
+  // 653 -> 655 (2026-11-12): scripts/brand-standards-gate.js + config/brand-standards.json for Adobe MAX Brand Intelligence and voice gating (+2).
+  const CEILING = 655;
   assert.ok(
     files.length <= CEILING,
     `public npm bundle should stay <= ${CEILING} files, got ${files.length}. ` +
