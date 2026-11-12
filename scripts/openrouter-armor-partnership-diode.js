@@ -2120,9 +2120,10 @@ function evaluateSubQSnapCoarseModuleRouter({
 } = {}) {
   const isV12 = String(modelVersion) === '1.2' || String(modelVersion).toLowerCase() === 'subq-snap-latest';
   const effectiveWindow = isV12 && maxSnapWindowTokens === 384000 ? 393216 : Number(maxSnapWindowTokens);
+  const defaultSnapPrice = isV12 ? 0.04 : 0.05;
   const unitPrice = pricePerMillionInputUsd !== undefined
     ? Number(pricePerMillionInputUsd)
-    : (isV12 ? 0.04 : 0.05);
+    : defaultSnapPrice;
   const totalModuleTokens = (Array.isArray(modules) ? modules : []).reduce(
     (acc, m) => acc + Math.max(0, Number(m.tokens) || 0),
     0,
@@ -2142,9 +2143,10 @@ function evaluateSubQSnapCoarseModuleRouter({
   const realWorkPillar = ['tool_calls', 'context_curation', 'unstructured_document_analysis'].includes(taskLower)
     ? taskLower
     : 'coarse_module_analysis';
+  const wholeModuleEngine = isV12 ? 'subq_snap_1_2_384k_multimodal' : 'subq_snap_384k_ssa';
   return {
     selectedEngine: fitsCoarseWholeModules
-      ? (isV12 ? 'subq_snap_1_2_384k_multimodal' : 'subq_snap_384k_ssa')
+      ? wholeModuleEngine
       : 'coarse_module_filter_then_subq_snap',
     retrievalStrategy: fitsCoarseWholeModules ? 'whole_modules_no_snippet_chunking' : 'coarse_module_selection',
     fragileSnippetChunkingEliminated: fitsCoarseWholeModules,
