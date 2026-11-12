@@ -1,9 +1,5 @@
 'use strict';
 
-const fs = require('node:fs');
-const os = require('node:os');
-const path = require('node:path');
-
 const test = require('node:test');
 const assert = require('node:assert/strict');
 
@@ -1262,20 +1258,7 @@ function mckinseyPassInput() {
   };
 }
 
-function goldfishEvidenceFixture({ reportNewer = true } = {}) {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'tg-goldfish-'));
-  const specPath = path.join(dir, 'spec.md');
-  const reportPath = path.join(dir, 'review.md');
-  fs.writeFileSync(specPath, 'spec\n');
-  fs.writeFileSync(reportPath, 'fresh-context review\n');
-  const specTime = new Date(Date.now() - 120_000);
-  const reportTime = new Date(reportNewer ? Date.now() : Date.now() - 180_000);
-  fs.utimesSync(specPath, specTime, specTime);
-  fs.utimesSync(reportPath, reportTime, reportTime);
-  return { goldfishReviewReportPath: reportPath, goldfishReviewedSpecPath: specPath };
-}
-
-function sanctuaryPassArgs(mckinsey = mckinseyPassInput(), evidence = goldfishEvidenceFixture()) {
+function sanctuaryPassArgs(mckinsey = mckinseyPassInput()) {
   return {
     goalStatement: 'Organize workspace projects in Obsidian and sync repo/obsidian/',
     humanInterruptionsCount: 0,
@@ -1288,7 +1271,6 @@ function sanctuaryPassArgs(mckinsey = mckinseyPassInput(), evidence = goldfishEv
       alternativesRejected: true,
       enumeratedFiles: ['scripts/sync-workspace-obsidian.js', 'scripts/rrsi-doctor.js'],
     },
-    ...evidence,
     goldfishHasZeroConversationHistory: true,
     goldfishComprehensionPassed: true,
     goldfishCriticConvergedToNits: true,
@@ -1337,20 +1319,6 @@ test('sanctuary loop passes a 24h spec that also clears the McKinsey operating m
   assert.equal(autonomousSanctuaryPass.mckinseyAudit.ok, true);
   assert.ok(autonomousSanctuaryPass.mckinseyAudit.roiVerdict.roiMultiplier >= 10);
   assert.ok(autonomousSanctuaryPass.mckinseyAudit.podVerdict.reviewToGenerationRatio >= 0.5);
-});
-
-test('sanctuary loop fails closed without a fresh-context review file', () => {
-  const verdict = evaluateElephantGoldfishAutonomousSanctuaryLoop(sanctuaryPassArgs(mckinseyPassInput(), {}));
-  assert.equal(verdict.allowed, false);
-  assert.ok(verdict.blockers.includes('goldfish_review_evidence_required_fresh_context_report_newer_than_spec'));
-});
-
-test('sanctuary loop fails when the review report is not newer than the spec', () => {
-  const verdict = evaluateElephantGoldfishAutonomousSanctuaryLoop(
-    sanctuaryPassArgs(mckinseyPassInput(), goldfishEvidenceFixture({ reportNewer: false })),
-  );
-  assert.equal(verdict.allowed, false);
-  assert.ok(verdict.blockers.includes('goldfish_review_report_not_newer_than_reviewed_spec'));
 });
 
 test('sanctuary loop blocks each McKinsey operating model violation by finding code', () => {

@@ -74,4 +74,4 @@ No drift detected
 
 ## scripts/rrsi-doctor.js
 
-- `evaluateElephantGoldfishAutonomousSanctuaryLoop` defaulted `goldfishHasZeroConversationHistory` to true, so the amnesia check passed by self-assertion. It now fails closed unless `goldfishReviewReportPath` exists, is non-empty, and is newer than `goldfishReviewedSpecPath`. The boolean alone is not evidence. No caller passes that evidence; `--egm-sanctuary` without it exits failed.
+- `evaluateElephantGoldfishAutonomousSanctuaryLoop` defaulted `goldfishHasZeroConversationHistory` to true, so the amnesia check passed by self-assertion. The fail-closed fix is in https://github.com/IgorGanapolsky/ThumbGate/pull/5028, not this PR.
