@@ -275,12 +275,18 @@ function isHighRiskAction(toolName, toolInput = {}, affectedFiles = []) {
   return HIGH_RISK_BASH_PATTERN.test(String(toolInput.command || ''));
 }
 
-function classifyActionProfile(toolInput = {}) {
+function classifyActionProfile(toolInput = {}, toolName = '', options = {}) {
   const command = String(toolInput.command || '');
   const metadata = toolInput && typeof toolInput.metadata === 'object' ? toolInput.metadata : {};
   const source = String(toolInput.source || metadata.source || '');
   const runType = String(toolInput.runType || metadata.runType || '');
   const combined = [command, source, runType, metadata.context || ''].filter(Boolean).join(' ');
+  const metadataContext = [source, runType, metadata.context || '']
+    .map((part) => String(part || '').replace(/[_-]+/g, ' '))
+    .filter(Boolean)
+    .join(' ');
+  const effectiveToolName = String(toolName || '').trim()
+    || (typeof toolInput.command === 'string' && !toolInput.action && !toolInput.url ? 'Bash' : '');
 
   const backgroundAgent = Boolean(
     toolInput.backgroundAgent === true
@@ -292,7 +298,10 @@ function classifyActionProfile(toolInput = {}) {
   const economicAction = Boolean(
     toolInput.economicAction === true
       || metadata.economicAction === true
-      || detectEconomicAction('', { ...toolInput, metadata: { ...metadata, context: combined } })
+      || detectEconomicAction(effectiveToolName, {
+        ...toolInput,
+        metadata: { ...metadata, context: metadataContext },
+      }, options)
   );
   const customerSystemAction = Boolean(
     toolInput.customerSystemAction === true
@@ -1585,7 +1594,7 @@ function evaluateWorkflowSentinel(toolName, toolInput = {}, options = {}) {
         .map((filePath) => toRepoRelativePath(filePath, repoRoot))
         .filter(Boolean)
       : collectAffectedFiles(normalizedToolName, normalizedToolInput, repoRoot));
-  let actionProfile = classifyActionProfile(normalizedToolInput);
+  let actionProfile = classifyActionProfile(normalizedToolInput, normalizedToolName, options);
   const financialControl = evaluateFinancialControl({
     toolName: normalizedToolName,
     toolInput: normalizedToolInput,
@@ -1594,6 +1603,9 @@ function evaluateWorkflowSentinel(toolName, toolInput = {}, options = {}) {
     budget: options.budget || toolInput.budget || {},
     financialControl: options.financialControl || toolInput.financialControl,
   }, getFinancialControlRuntimeOptions({
+    runtimeDir: options.runtimeDir,
+    home: options.home,
+    env: options.env,
     feedbackDir: options.feedbackDir
       || process.env.THUMBGATE_FEEDBACK_DIR
       || (repoRoot ? path.join(repoRoot, '.thumbgate') : null),

@@ -274,18 +274,21 @@ test('workflow sentinel treats payment-targeted browser and computer-use mutatio
       assert.equal(report.decision, 'deny');
     }
 
-    const nonPaymentReport = evaluateWorkflowSentinel('Browser', {
-      action: 'click',
-      ref_id: 'page',
-      id: 17,
-      url: 'https://accounts.google.com/o/oauth2/v2/auth',
-      label: 'Choose an account',
-    }, {
-      feedbackDir,
-      repoPath: process.cwd(),
-    });
-    assert.equal(nonPaymentReport.actionProfile.economicAction, false);
-    assert.equal(nonPaymentReport.financialControl.mode, 'allow');
+    for (const [toolName, toolInput] of [
+      ['Browser', { action: 'click', ref_id: 'page', id: 17, url: 'https://accounts.google.com/o/oauth2/v2/auth', label: 'Choose an account' }],
+      ['mcp__browseros-neo__act', { page: 64, kind: 'click', ref: 'e12', url: 'https://www.linkedin.com/feed/', text: 'Save' }],
+      ['mcp__browseros-neo__act', { page: 65, kind: 'click', ref: 'e18', url: 'https://mail.google.com/mail/u/0/#inbox', text: 'Send' }],
+      ['Bash', { command: 'gh issue comment --body "a paid tier"' }],
+      ['Bash', { command: 'gh issue comment --body "purchase a subscription"' }],
+      ['Bash', { command: 'git commit -m "docs: describe purchase flow"' }],
+    ]) {
+      const nonPaymentReport = evaluateWorkflowSentinel(toolName, toolInput, {
+        feedbackDir,
+        repoPath: process.cwd(),
+      });
+      assert.equal(nonPaymentReport.actionProfile.economicAction, false, `expected ${toolName} ${JSON.stringify(toolInput)} to stay non-economic`);
+      assert.equal(nonPaymentReport.financialControl.mode, 'allow');
+    }
   } finally {
     fs.rmSync(feedbackDir, { recursive: true, force: true });
   }
