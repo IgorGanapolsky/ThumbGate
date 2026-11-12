@@ -174,6 +174,8 @@ function matchesDoNotContact(addr, dncSet) {
   return dncSet.has(domain) || dncSet.has(`@${domain}`);
 }
 
+const scopedThreadKey = (threadKey, recipient) => (threadKey && recipient ? `${threadKey}::${extractEmailAddress(recipient)}` : null);
+
 function loadPersistedLedgerState(stateDir) {
   const confirmedSent = new Map();
   const optedOutRecipients = new Set();
@@ -184,7 +186,8 @@ function loadPersistedLedgerState(stateDir) {
       const row = JSON.parse(line);
       if (row?.sentConfirmed === true && row.threadId) {
         confirmedSent.set(String(row.threadId), row);
-        if (row.threadKey) confirmedSent.set(String(row.threadKey), row);
+        const sk = scopedThreadKey(row.threadKey, row.recipient);
+        if (sk) confirmedSent.set(sk, row);
       }
       if (row?.disposition === 'OPTED_OUT' && row.recipient) optedOutRecipients.add(extractEmailAddress(row.recipient));
     }
@@ -221,13 +224,14 @@ function inspectCandidateReplyBlockers(thread, candidateReply, dncSet, approvalT
   const toAddrs = toAddressList(candidateReply.to);
   const allRecipients = [...toAddrs, ...toAddressList(candidateReply.cc), ...toAddressList(candidateReply.bcc)];
   const externalTo = toAddrs.filter((addr) => !SELF_RE.test(addr));
+  const externalAll = allRecipients.filter((addr) => !SELF_RE.test(addr));
   if (externalTo.length === 0) blockers.push('missing_valid_recipient');
   for (const addr of allRecipients) {
     if (FORBIDDEN_CORP_RE.test(addr)) blockers.push('eci_corporate_address_isolation');
     if (matchesDoNotContact(addr, dncSet)) blockers.push('do_not_contact_list');
   }
   const allowed = new Set([...(thread.externalGuests || []), ...(thread.participants || [])].map((a) => a.toLowerCase()));
-  if (allowed.size > 0 && externalTo.some((addr) => !allowed.has(addr))) blockers.push('recipient_not_in_thread');
+  if (allowed.size > 0 && externalAll.some((addr) => !allowed.has(addr))) blockers.push('recipient_not_in_thread');
   if (candidateReply.threadId && thread.threadId && String(candidateReply.threadId) !== String(thread.threadId)) {
     blockers.push('thread_mismatch');
   }
@@ -327,7 +331,7 @@ function bucketMessagesByThread(messages, strictRelevanceFilter = false) {
 function collectNonSelfAddresses(messages) {
   const out = new Set();
   for (const m of messages) {
-    for (const addr of [extractEmailAddress(m.from), ...toAddressList(m.to), ...toAddressList(m.cc)]) {
+    for (const addr of [extractEmailAddress(m.from), ...toAddressList(m.to), ...toAddressList(m.cc), ...toAddressList(m.bcc)]) {
       if (addr && !SELF_RE.test(addr)) out.add(addr);
     }
   }
@@ -343,8 +347,9 @@ function evaluateDraftWarnings(bucket, latestDraft, draftBody, isBoardyIntro, th
     const draftRecips = [...toAddressList(latestDraft.to), ...toAddressList(latestDraft.cc)];
     if (!draftRecips.some((r) => hasEmailDomain(r, 'boardy.ai'))) warnings.push('draft_missing_boardy_cc');
   }
-  const draftTo = toAddressList(latestDraft.to).filter((a) => !SELF_RE.test(a));
-  const badRecipient = threadParticipants.size > 0 && draftTo.some((addr) => !threadParticipants.has(addr));
+  const draftExt = [...toAddressList(latestDraft.to), ...toAddressList(latestDraft.cc), ...toAddressList(latestDraft.bcc)]
+    .filter((a) => !SELF_RE.test(a) && !(isBoardyIntro && hasEmailDomain(a, 'boardy.ai')));
+  const badRecipient = threadParticipants.size > 0 && draftExt.some((addr) => !threadParticipants.has(addr));
   const badThread = Boolean(latestDraft.targetThreadId && String(latestDraft.targetThreadId) !== bucket.threadId);
   if (badRecipient) warnings.push('draft_recipient_not_in_thread');
   if (badThread) warnings.push('draft_thread_mismatch');
@@ -353,18 +358,19 @@ function evaluateDraftWarnings(bucket, latestDraft, draftBody, isBoardyIntro, th
 
 function collectParticipantsAndWarnings(bucket, latestDraft, draftBody) {
   const threadParticipants = collectNonSelfAddresses([...bucket.inbound, ...bucket.sent]);
-  const participants = collectNonSelfAddresses([...bucket.inbound, ...bucket.sent, ...bucket.drafts]);
+  const allParticipants = collectNonSelfAddresses([...bucket.inbound, ...bucket.sent, ...bucket.drafts]);
+  const trustedParticipants = threadParticipants.size > 0 ? threadParticipants : allParticipants;
   const externalGuests = new Set();
   let hasBoardy = false;
   let hasFoWajo = false;
-  for (const addr of participants) {
+  for (const addr of allParticipants) {
     if (hasEmailDomain(addr, 'boardy.ai')) hasBoardy = true;
     else if (hasEmailDomain(addr, 'wajo.ai')) hasFoWajo = true;
-    else if (threadParticipants.size === 0 || threadParticipants.has(addr)) externalGuests.add(addr);
+    else if (trustedParticipants.has(addr)) externalGuests.add(addr);
   }
   const isBoardyIntro = /^boardy intro:/i.test(bucket.subject);
   const { warnings, draftRecipientMismatch } = evaluateDraftWarnings(bucket, latestDraft, draftBody, isBoardyIntro, threadParticipants);
-  return { warnings, participants, externalGuests, hasBoardy, hasFoWajo, isBoardyIntro, draftRecipientMismatch };
+  return { warnings, participants: trustedParticipants, allParticipants, externalGuests, hasBoardy, hasFoWajo, isBoardyIntro, draftRecipientMismatch };
 }
 
 function checkBlockedReason(b) {
@@ -388,7 +394,7 @@ function checkBlockedReason(b) {
 
 function applyProviderConfirmationOutcome(providerConf, checkedAt) {
   if (providerConf?.confirmed === true) {
-    return { disposition: 'REPLIED', status: 'SENT_CONFIRMED', result: 'SENT_CONFIRMED', sentConfirmed: true, confirmedAt: providerConf.confirmedAt || checkedAt, providerMessageId: providerConf.providerMessageId || providerConf.uid || null, sendError: null, actionRequired: false, oneTouchLocked: true };
+    return { disposition: 'REPLIED', status: 'SENT_CONFIRMED', result: 'SENT_CONFIRMED', sendEligible: false, sentConfirmed: true, confirmedAt: providerConf.confirmedAt || checkedAt, providerMessageId: providerConf.providerMessageId || providerConf.uid || null, sendError: null, actionRequired: false, oneTouchLocked: true };
   }
   if (providerConf?.confirmed === false) {
     return { status: 'SEND_FAILED', result: 'SEND_FAILED', sentConfirmed: false, confirmedAt: null, providerMessageId: null, sendError: String(providerConf.error || 'provider_confirmation_failed'), actionRequired: true, oneTouchLocked: false };
@@ -414,8 +420,9 @@ function requiresMissingInformation(p) {
 }
 
 function resolveEarlyDisposition(p, make) {
-  if (p.blocked) return make('BLOCKED', p.blocked.status, p.blocked.reason, 'BLOCKED', p.blocked);
+  if (p.blocked?.reason === 'eci_corporate_address_isolation') return make('BLOCKED', p.blocked.status, p.blocked.reason, 'BLOCKED', p.blocked);
   if (p.hasOptOutMessage) return make('OPTED_OUT', 'OPTED_OUT', 'recipient_opted_out', 'OPTED_OUT', { oneTouchLocked: true });
+  if (p.blocked) return make('BLOCKED', p.blocked.status, p.blocked.reason, 'BLOCKED', p.blocked);
   if (p.alreadyAnsweredInSent) {
     return make('NO_REPLY_NEEDED', 'REPLIED_IN_SENT', 'already_replied_in_sent', 'ALREADY_REPLIED_IN_SENT', {
       sentConfirmed: true, confirmedAt: p.latestSent?.date || p.persistedSent?.time || null,
@@ -489,22 +496,24 @@ function evaluateBucket(bucket, ctx) {
   const promisedFollowup = PROMISED_FOLLOWUP_RE.test(latestSent ? stripQuotedLines(latestSent.body || latestSent.snippet || '') : '');
   if (promisedFollowup) meta.warnings.push('sent_reply_promised_dns_followup_verify_http_307');
 
-  const inboundViolations = latestInboundUnquoted ? evaluateBrandStandards(latestInboundUnquoted, { brand: 'thumbgate' }).violations : [];
+  const inboundText = latestInbound ? `${bucket.subject}\n${latestInboundUnquoted}` : '';
+  const inboundViolations = inboundText ? evaluateBrandStandards(inboundText, { brand: 'thumbgate' }).violations : [];
   const draftViolations = draftBody ? evaluateBrandStandards(draftBody, { brand: 'thumbgate' }).violations : [];
   const allBrandViolations = [...inboundViolations.filter((v) => !isApprovalBrandRuleId(v.ruleId) || INBOUND_CLAIM_RULE_IDS.has(v.ruleId)), ...draftViolations];
-  const persistedSent = ctx.persistedConfirmed.get(bucket.threadId) || ctx.persistedConfirmed.get(bucket.threadKey) || null;
+  const sk = scopedThreadKey(bucket.threadKey, primaryRecipient);
+  const persistedSent = ctx.persistedConfirmed.get(bucket.threadId) || (sk ? ctx.persistedConfirmed.get(sk) : null) || null;
   const alreadyAnsweredInSent = isAlreadyAnsweredInSent(latestInbound, latestSent, persistedSent, promisedFollowup);
   const hasOptOutMessage = bucket.inbound.some((m) => isDirectOptOut(m.subject || bucket.subject, stripQuotedLines(m.body || m.snippet || ''))) ||
-    [...meta.participants].some((addr) => ctx.optedOutRecipients.has(addr));
+    [...meta.allParticipants].some((addr) => ctx.optedOutRecipients.has(addr));
   const blocked = checkBlockedReason({
-    corporateLeakDetected: bucket.corporateLeakDetected, dncMatched: [...meta.participants].some((addr) => matchesDoNotContact(addr, ctx.dncSet)),
+    corporateLeakDetected: bucket.corporateLeakDetected, dncMatched: [...meta.allParticipants].some((addr) => matchesDoNotContact(addr, ctx.dncSet)),
     warnings: meta.warnings, hasBoardy: meta.hasBoardy, hasFoWajo: meta.hasFoWajo,
     hasOffBrandContent: allBrandViolations.some((v) => !isApprovalBrandRuleId(v.ruleId)), primaryRecipient, draftRecipientMismatch: meta.draftRecipientMismatch,
   });
   const state = resolveDispositionState({
     bucket, meta, blocked, hasOptOutMessage, alreadyAnsweredInSent, latestInbound, latestInboundRaw,
     latestInboundUnquoted, latestSent, persistedSent, promisedFollowup, draftBody, allBrandViolations,
-    providerConf: ctx.getProviderConfirmation(bucket.threadId, bucket.threadKey), ctx,
+    providerConf: ctx.getProviderConfirmation(bucket.threadId, sk || bucket.threadKey), ctx,
   });
   if (state.disposition === 'OPTED_OUT' && primaryRecipient) ctx.optedOutRecipients.add(primaryRecipient);
   return {
