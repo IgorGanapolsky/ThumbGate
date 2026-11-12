@@ -4,17 +4,16 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 __GOOGLE_SITE_VERIFICATION_META__
-<title>Enterprise AI Governance & Firewall for Gemini at Work | ThumbGate</title>
-<meta name="description" content="Sub-millisecond pre-action interdiction firewall for enterprise AI agents across Google Cloud Gemini at Work, Vertex AI, and Workspace. Prevents runaway tool loops, unauthorized data egress, and destructive API mutations before execution.">
-<meta property="og:title" content="Enterprise AI Governance for Gemini at Work | ThumbGate">
-<meta property="og:description" content="In-line pre-action firewall for enterprise AI agents. Sub-1ms latency, zero data exfiltration, deterministic policy enforcement.">
+<title>ThumbGate Setup Sprint</title>
+<meta name="description" content="ThumbGate checks proposed tool calls before execution in supported hook integrations. The $499 Setup Sprint turns one recurring failure in a supported local workflow into a configured gate, a regression test, and rollout and rollback evidence.">
+<meta property="og:title" content="ThumbGate Setup Sprint">
+<meta property="og:description" content="ThumbGate checks proposed tool calls before execution in supported hook integrations. The $499 Setup Sprint turns one recurring failure in a supported local workflow into a configured gate, a regression test, and rollout and rollback evidence.">
 <meta property="og:type" content="website">
 <meta property="og:url" content="__APP_ORIGIN__/enterprise-governance">
 <link rel="canonical" href="__APP_ORIGIN__/enterprise-governance">
 <link rel="icon" type="image/png" href="/thumbgate-icon.png">
 <link rel="apple-touch-icon" href="/assets/brand/thumbgate-mark.svg">
 <meta property="og:image" content="/og.png">
-<meta name="keywords" content="Gemini at Work governance, Vertex AI agent firewall, enterprise AI guardrails, pre-action interdiction, LLM tool-use security, AI runaway loop prevention, BigQuery agent security, MCP security firewall">
 
 <script defer data-domain="thumbgate.ai" src="https://plausible.io/js/script.js"></script>
 __GA_BOOTSTRAP__
@@ -27,57 +26,9 @@ __GA_BOOTSTRAP__
   const serverTelemetryCaptured = '__SERVER_TELEMETRY_CAPTURED__' === 'true';
 </script>
 
-<script type="application/ld+json">
-{
-  "@context": "https://schema.org",
-  "@type": "SoftwareApplication",
-  "name": "ThumbGate Enterprise AI Firewall",
-  "applicationCategory": "SecurityApplication",
-  "operatingSystem": "Linux, macOS, Windows, Docker, Cloud Run, Kubernetes",
-  "description": "Pre-action interdiction firewall for enterprise AI agents. Sits in front of Gemini at Work, Vertex AI, Anthropic, and OpenAI tool executions to block unauthorized mutations, data egress, and runaway loops in under 1 millisecond.",
-  "url": "__APP_ORIGIN__/enterprise-governance",
-  "creator": { "@type": "Person", "name": "Igor Ganapolsky", "url": "https://github.com/IgorGanapolsky" },
-  "offers": {
-    "@type": "Offer",
-    "price": "499.00",
-    "priceCurrency": "USD",
-    "description": "Enterprise Team Tier with unlimited pre-action gates and audit telemetry"
-  }
-}
-</script>
 
-<script type="application/ld+json">
-{
-  "@context": "https://schema.org",
-  "@type": "FAQPage",
-  "mainEntity": [
-    {
-      "@type": "Question",
-      "name": "How does ThumbGate integrate with Google Cloud Gemini at Work and Vertex AI?",
-      "acceptedAnswer": {
-        "@type": "Answer",
-        "text": "ThumbGate deploys as an ultra-fast (<1ms) PreToolUse diode or proxy between the agent's function-calling engine and your enterprise APIs (BigQuery, Workspace, Salesforce, ERPs). When Gemini generates a tool call, ThumbGate validates parameters against deterministic safety policies before any write or external request occurs."
-      }
-    },
-    {
-      "@type": "Question",
-      "name": "Why is pre-action interdiction better than post-action observability?",
-      "acceptedAnswer": {
-        "@type": "Answer",
-        "text": "Observability tools (Datadog, LangSmith) record what happened after an incident. By the time an alert fires, a runaway agent loop may have already executed hundreds of unauthorized writes or burned thousands of dollars in tokens. ThumbGate intercepts calls pre-action, stopping the first invalid mutation cold."
-      }
-    },
-    {
-      "@type": "Question",
-      "name": "Does ThumbGate slow down agent response times?",
-      "acceptedAnswer": {
-        "@type": "Answer",
-        "text": "No. The hot-path decision engine runs locally in memory on CPU using compiled deterministic AST rules and non-stationary bandit prioritizers (ActiveSaddler curriculum). Gating decisions resolve in under 0.5 milliseconds."
-      }
-    }
-  ]
-}
-</script>
+
+
 
 <style>
   *, *::before, *::after { box-sizing: border-box; }
@@ -187,125 +138,28 @@ __GA_BOOTSTRAP__
     font-size: 13px;
   }
 </style>
-</head>
-<body>
-
-<nav>
-  <div class="container">
-    <a href="/" class="logo">Thumb<span>Gate</span> Enterprise</a>
-    <div class="nav-links">
-      <a href="/pricing">Pricing</a>
-      <a href="/federal">Federal</a>
-      <a href="/docs/connectors">Connectors</a>
-      <a href="mailto:igor@igorganapolsky.com" class="btn-primary">Schedule Enterprise Pilot</a>
-    </div>
-  </div>
-</nav>
-
-<header class="hero">
-  <div class="container">
-    <div class="badge">Google Cloud Partner Ready</div>
-    <h1>The Infrastructure Firewall for<br>Gemini at Work & Vertex AI Agents</h1>
-    <p class="lead">
-      Observability tells you after an agent breaks your database or burns $10,000 in token loops. 
-      ThumbGate intercepts and validates every tool execution in <strong>&lt;0.5 milliseconds</strong> before it hits your production infrastructure.
-    </p>
-    <div>
-      <a href="mailto:igor@igorganapolsky.com?subject=Gemini%20at%20Work%20Enterprise%20Pilot" class="btn-primary" style="padding: 12px 28px; font-size: 16px;">Deploy Enterprise Pilot</a>
-    </div>
-  </div>
-</header>
-
-<main class="container">
-  <div class="stats-banner">
-    <div>
-      <div class="stat-val">&lt;0.5ms</div>
-      <div class="stat-lbl">Gating Latency</div>
-    </div>
-    <div>
-      <div class="stat-val">100%</div>
-      <div class="stat-lbl">Pre-Action Interdiction</div>
-    </div>
-    <div>
-      <div class="stat-val">$0</div>
-      <div class="stat-lbl">Runaway Loop Exposure</div>
-    </div>
-    <div>
-      <div class="stat-val">Zero</div>
-      <div class="stat-lbl">Secret / PII Egress</div>
-    </div>
-  </div>
-
-  <h2>Enterprise Agent Vulnerabilities Solved In-Line</h2>
-  <div class="grid-2">
-    <div class="card">
-      <h3>1. Runaway Tool Loops & Token Burn</h3>
-      <p style="color: var(--text-muted);">
-        When autonomous agents encounter unclear query schemas or external network timeouts, they enter recursive re-query loops (e.g. 300M+ tokens burned in recent agent incidents). ThumbGate's ActiveSaddler dynamic curriculum and loop governor halts runaway sequences at the first sign of cyclical failure.
-      </p>
-    </div>
-    <div class="card">
-      <h3>2. Unauthorized Bulk Mutations</h3>
-      <p style="color: var(--text-muted);">
-        Gemini Workspace or BigQuery agents generating DML queries can accidentally execute unindexed table drops, partition truncations, or unbounded customer updates. ThumbGate checks blast-radius parameters and enforces human sign-off before mutations execute.
-      </p>
-    </div>
-    <div class="card">
-      <h3>3. PII & Secret Exfiltration Diodes</h3>
-      <p style="color: var(--text-muted);">
-        Enterprise MCP servers and webhooks frequently leak customer authentication tokens or internal IDs. ThumbGate sanitizes all outbound parameter payloads, blocking unallowlisted IP ranges and untrusted destinations.
-      </p>
-    </div>
-    <div class="card">
-      <h3>4. Continuous DPO / RLHF Memory</h3>
-      <p style="color: var(--text-muted);">
-        Every time a developer or human supervisor hits thumbs-down on an agent action, ThumbGate automatically compiles that correction into a permanent, deterministic prevention rule enforced across your entire agent fleet.
-      </p>
-    </div>
-  </div>
-
-  <h2>How It Works: In-Line PreToolUse Diode (Specification Contract)</h2>
-  <div class="card" style="margin-bottom: 60px;">
-    <div class="code-block">
-# Enterprise Gateway PreToolUse Diode Contract
-POST /v1/gate/pre-tool-use
-Host: thumbgate.enterprise.internal
-Content-Type: application/json
-
+<script type="application/ld+json">
 {
-  "agent": "gemini-bigquery-analyst",
-  "tool": "execute_sql_query",
-  "parameters": {
-    "sql": "DELETE FROM production_orders WHERE status = 'CANCELLED' AND created_at < '2026-01-01'",
-    "estimatedBytesScanned": 842949672960
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  "name": "ThumbGate",
+  "applicationCategory": "SecurityApplication",
+  "description": "ThumbGate checks proposed tool calls before execution in supported hook integrations. The $499 Setup Sprint turns one recurring failure in a supported local workflow into a configured gate, a regression test, and rollout and rollback evidence.",
+  "url": "__APP_ORIGIN__/enterprise-governance",
+  "offers": {
+    "@type": "Offer",
+    "name": "Setup Sprint",
+    "price": "499.00",
+    "priceCurrency": "USD",
+    "description": "Setup Sprint \u00b7 $499 once. One 60-minute working review, one supported local workflow, one configured gate and regression test, plus written rollout and rollback proof. Delivery within two business days after access and agreed materials are available, subject to confirmed scheduling. If it cannot be reduced to a supported gate, the existing refund boundary applies. No enterprise rollout, SSO, hosted team sync or org-wide audit dashboard."
   }
 }
-
-HTTP/1.1 403 Forbidden
-Content-Type: application/json
-
-{
-  "verdict": "BLOCK",
-  "ruleId": "rule:high-blast-radius-dml-protection",
-  "severity": "CRITICAL",
-  "reason": "Destructive query scans 842GB without required partition constraint. Human approval required.",
-  "latencyMs": 0.32,
-  "evidenceReceipt": "sha256:d8b2e1548...b891"
-}
-    </div>
-  </div>
-
-  <h2>Architecture & Compliance Standards</h2>
-  <p style="color: var(--text-muted); font-size: 16px;">
-    ThumbGate conforms to NIST SP 800-53 Rev. 5 controls (AC-3, AU-2, AU-12, SI-4) and OMB M-24-10. Deployment options include zero-telemetry air-gapped on-premise containers, Google Cloud Run, and Kubernetes sidecar diodes.
-  </p>
-</main>
-
-<footer>
-  <div class="container">
-    <p>&copy; 2026 ThumbGate. All rights reserved. Built for mission-critical enterprise AI fleets.</p>
-  </div>
-</footer>
-
+</script>
+</head>
+<body>
+<nav><div class="container"><a href="/" class="logo">Thumb<span>Gate</span></a><div class="nav-links"><a href="/pricing">Pricing</a><a href="/docs/connectors">Connectors</a></div></div></nav>
+<header class="hero"><div class="container"><h1>One repeated agent mistake. One configured gate.</h1><p class="lead">ThumbGate checks proposed tool calls before execution in supported hook integrations. The $499 Setup Sprint turns one recurring failure in a supported local workflow into a configured gate, a regression test, and rollout and rollback evidence.</p><a class="btn-primary" href="/diagnostic#intake">Check my workflow fit</a></div></header>
+<main class="container"><div class="card" style="margin-bottom:60px;"><h2>Setup Sprint</h2><p>Setup Sprint · $499 once. One 60-minute working review, one supported local workflow, one configured gate and regression test, plus written rollout and rollback proof. Delivery within two business days after access and agreed materials are available, subject to confirmed scheduling. If it cannot be reduced to a supported gate, the existing refund boundary applies. No enterprise rollout, SSO, hosted team sync or org-wide audit dashboard.</p><p>Matching destructive actions warn by default; advisory integrations do not guarantee execution blocking.</p><a href="/install" style="color:var(--cyan)">Evaluate the free local runtime</a></div></main>
+<footer><div class="container"><p>&copy; 2026 ThumbGate. All rights reserved.</p></div></footer>
 </body>
 </html>
