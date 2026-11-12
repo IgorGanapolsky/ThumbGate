@@ -134,3 +134,121 @@ test('generateDataUsageSummary reflects disabled preferences', () => {
   assert.equal(s.preferences.piiRedaction, 'disabled');
   assert.ok(s.compliance.exportGating.includes('disabled'));
 });
+
+// === Capital One / Gartner Symposium 2026 AI Risk & Business Value Controls ===
+test('governedDpoExport with tokenizeAtSource preserves referential integrity across turns without dropping PII pairs', () => {
+  gov.savePreferences({ allowDpoExport: true, piiRedactionEnabled: true, maxExportSensitivity: 'internal' });
+  const salt = 'gartner-2026-dpo-source-tokenization-key';
+  const pairs = [{
+    prompt: 'Investigate billing failure for buyer@acmecorp.com (SSN 123 45 6789, phone +1-415-890-1234, acct 123456789012)',
+    chosen: 'Verified account for buyer@acmecorp.com without printing SSN 123 45 6789 or +1-415-890-1234',
+    rejected: 'Emailed raw SSN 123 45 6789 to buyer@acmecorp.com',
+  }];
+
+  const exported = gov.governedDpoExport(pairs, { tokenizeAtSource: true, salt });
+  assert.equal(exported.allowed, true);
+  assert.equal(exported.blocked, 0);
+  assert.equal(exported.pairs.length, 1);
+  assert.equal(exported.piiStats.protectionMode, 'source_format_preserving_tokenization');
+
+  const [outPair] = exported.pairs;
+  assert.ok(!outPair.prompt.includes('buyer@acmecorp.com'));
+  assert.ok(!outPair.prompt.includes('123 45 6789'));
+  assert.ok(!outPair.prompt.includes('415-890-1234'));
+  assert.ok(!outPair.prompt.includes('123456789012'), 'untokenized AWS account ID still scrubbed by redactPii');
+  assert.ok(outPair.prompt.includes('[REDACTED:aws_account]'));
+  assert.match(outPair.prompt, /\+1-555-01\d-\d{4}/, 'country-prefixed US phone tokenized and preserved past redactPii');
+  const promptEmailToken = outPair.prompt.match(/tok_[0-9a-f]{8}@tokenized\.local/)?.[0];
+  assert.ok(promptEmailToken);
+  assert.ok(outPair.chosen.includes(promptEmailToken), 'chosen turn preserves exact same email token');
+  assert.ok(outPair.rejected.includes(promptEmailToken), 'rejected turn preserves exact same email token');
+});
+
+test('evaluateInferenceParadoxGuard shifts from tokenmaxxing to valuemaxxing and opens circuit on public cost-exhaustion', () => {
+  const runaway = gov.evaluateInferenceParadoxGuard({
+    baselineTaskTokens: 2000,
+    agentWorkflowTokens: 70000,
+    annualBudgetUsd: 120000,
+    spendToDateUsd: 120000,
+    elapsedMonths: 4,
+    publicFacing: true,
+    requestsPerMinute: 240,
+    maxPublicRpm: 60,
+    positiveReturnVerified: false,
+  });
+  assert.equal(runaway.tokenAmplificationRatio, 35);
+  assert.equal(runaway.projectedExhaustionMonths, 4);
+  assert.equal(runaway.budgetBurnAlert, true);
+  assert.equal(runaway.costExhaustionRisk, true);
+  assert.equal(runaway.circuitState, 'OPEN');
+  assert.equal(runaway.operatingMode, 'tokenmaxxing_contained');
+  assert.equal(runaway.allowScaleOut, false);
+  assert.deepEqual(runaway.blockers, [
+    'cost_exhaustion_circuit_open',
+    'runaway_agent_token_amplification',
+    'annual_budget_exhaustion_trajectory',
+    'unverified_roi_scale_out_blocked',
+  ]);
+
+  const governed = gov.evaluateInferenceParadoxGuard({
+    baselineTaskTokens: 2000,
+    agentWorkflowTokens: 16000,
+    annualBudgetUsd: 120000,
+    spendToDateUsd: 25000,
+    elapsedMonths: 4,
+    publicFacing: true,
+    requestsPerMinute: 25,
+    maxPublicRpm: 60,
+    positiveReturnVerified: true,
+  });
+  assert.equal(governed.tokenAmplificationRatio, 8);
+  assert.equal(governed.inGartnerAgentMultiplierBand, true);
+  assert.equal(governed.circuitState, 'CLOSED');
+  assert.equal(governed.operatingMode, 'valuemaxxing');
+  assert.equal(governed.allowScaleOut, true);
+  assert.deepEqual(governed.blockers, []);
+  const infiniteBudget = gov.evaluateInferenceParadoxGuard({ annualBudgetUsd: Infinity, spendToDateUsd: 100, elapsedMonths: 1, positiveReturnVerified: true });
+  assert.equal(infiniteBudget.projectedExhaustionMonths, null);
+});
+
+test('evaluateGartnerAgenticGovernanceRecord enforces AI Custodian, Shadow AI, Dark AI, zero-bypass, and NIST 2030/2035 PQC countdown', () => {
+  const failing = gov.evaluateGartnerAgenticGovernanceRecord({
+    custodianOwner: '',
+    registeredAgents: ['claude-prod'],
+    observedAgents: ['claude-prod', 'personal-shadow-bot'],
+    darkAiEvents: ['sandbox_escape_probe'],
+    bypassAttempts: 2,
+    cryptoAlgorithms: ['RS256', 'ECDSA-P256', 'ML-DSA-65'],
+    currentYear: 2026,
+  });
+  assert.equal(failing.compliant, false);
+  assert.equal(failing.custodianAssigned, false);
+  assert.deepEqual(failing.shadowAiAgents, ['personal-shadow-bot']);
+  assert.deepEqual(failing.darkAiIncidents, ['sandbox_escape_probe']);
+  assert.equal(failing.paperworkOnlyRisk, true);
+  assert.equal(failing.classicalCryptoMigrationRequired, true);
+  assert.equal(failing.pqcCountdown[0].deprecatedByYear, 2030);
+  assert.equal(failing.pqcCountdown[0].disallowedByYear, 2035);
+  assert.equal(failing.pqcCountdown[0].yearsUntilDeprecation, 4);
+  assert.equal(failing.pqcCountdown[2].classicalPublicKeyVulnerable, false);
+  assert.deepEqual(failing.blockers, [
+    'missing_accountable_ai_custodian',
+    'unregistered_shadow_ai_detected',
+    'dark_ai_rogue_or_sandbox_escape_detected',
+    'paperwork_only_governance_bypass_detected',
+  ]);
+
+  const passing = gov.evaluateGartnerAgenticGovernanceRecord({
+    custodianOwner: 'cio@enterprise.io',
+    registeredAgents: ['claude-prod', 'omp-worker'],
+    observedAgents: ['claude-prod', 'omp-worker'],
+    darkAiEvents: [],
+    bypassAttempts: 0,
+    cryptoAlgorithms: ['ML-KEM-768', 'AES-256-GCM'],
+    currentYear: 2026,
+  });
+  assert.equal(passing.compliant, true);
+  assert.equal(passing.custodianOwner, 'cio@enterprise.io');
+  assert.equal(passing.classicalCryptoMigrationRequired, false);
+  assert.deepEqual(passing.blockers, []);
+});
