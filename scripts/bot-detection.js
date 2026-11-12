@@ -116,6 +116,11 @@ const BOT_PATTERNS = [
   /\blighthouse\b/i,
   /\bspeedcurve\b/i,
   /\bpagespeed\b/i,
+  /\bmoney-v\d+-audit\b/i,
+  /\bprotocolv\d+-gate\b/i,
+  /\bfuzz faster u fool\b/i,
+  /\bffuf\b/i,
+  /\bfirstpage\//i,
 ];
 
 function normalizeHeader(value) {
@@ -172,18 +177,54 @@ function isProbablyBot(headers) {
  * expired sessions nobody saw. Browsers send Sec-Fetch-Mode: navigate on a link
  * click; older browsers without Sec-Fetch pass when the Referer is our own site.
  */
+const THUMBGATE_REFERER_HOSTS = new Set([
+  'thumbgate.ai',
+  'www.thumbgate.ai',
+  'thumbgate.app',
+  'mcp.thumbgate.ai',
+  'thumbgate-production.up.railway.app',
+]);
+
+function parseSafeUrl(rawUrl) {
+  try {
+    return new URL(rawUrl);
+  } catch {
+    return null;
+  }
+}
+
+function engineSendsSecFetchUser(headers = {}) {
+  if (normalizeHeader(headers['sec-ch-ua']).trim()) return true;
+  const ua = normalizeHeader(headers['user-agent'] || headers['User-Agent']);
+  return /\b(?:Chrome|Chromium|Edg|OPR|Firefox)\//i.test(ua);
+}
+
 function isHumanCheckoutNavigation(headers = {}, appOrigin = '') {
+  const referer = normalizeHeader(headers.referer || headers.referrer);
+  const parsedReferer = referer ? parseSafeUrl(referer) : null;
+  const parsedOrigin = appOrigin ? parseSafeUrl(appOrigin) : null;
+  if (parsedReferer && /^\/go\//i.test(parsedReferer.pathname || '')) {
+    const refererHost = parsedReferer.host.toLowerCase();
+    const isOwnHost = parsedOrigin
+      ? refererHost === parsedOrigin.host.toLowerCase()
+      : THUMBGATE_REFERER_HOSTS.has(parsedReferer.hostname.toLowerCase());
+    if (isOwnHost) {
+      return false;
+    }
+  }
   const mode = normalizeHeader(headers['sec-fetch-mode']).toLowerCase();
   const dest = normalizeHeader(headers['sec-fetch-dest']).toLowerCase();
-  if (mode === 'navigate' && (!dest || dest === 'document')) return true;
-  if (mode) return false;
-  const referer = normalizeHeader(headers.referer || headers.referrer);
-  if (!referer || !appOrigin) return false;
-  try {
-    return new URL(referer).host === new URL(appOrigin).host;
-  } catch {
-    return false;
+  const site = normalizeHeader(headers['sec-fetch-site']).toLowerCase();
+  const user = normalizeHeader(headers['sec-fetch-user']).toLowerCase();
+  if (mode === 'navigate' && (!dest || dest === 'document')) {
+    if ((site === 'none' || site === 'cross-site') && user !== '?1' && engineSendsSecFetchUser(headers)) {
+      return false;
+    }
+    return true;
   }
+  if (mode) return false;
+  if (!parsedReferer || !parsedOrigin) return false;
+  return parsedReferer.host.toLowerCase() === parsedOrigin.host.toLowerCase();
 }
 
 // --- Rapid multi-checkout guard ---------------------------------------------
@@ -199,7 +240,10 @@ const RAPID_CHECKOUT_MAX_KEYS = 5000;
 // X-Forwarded-For set. Direct socket connections (local dev, tests) are not
 // tracked, so a missing header yields no key.
 function checkoutRequesterKey(headers = {}) {
-  const ip = normalizeHeader(headers['x-forwarded-for']).split(',')[0].trim();
+  const ip = (
+    normalizeHeader(headers['cf-connecting-ip']).trim() ||
+    normalizeHeader(headers['x-forwarded-for']).split(',')[0].trim()
+  );
   if (!ip) return null;
   return `${ip}|${normalizeHeader(headers['user-agent'])}`;
 }

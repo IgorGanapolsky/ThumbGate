@@ -30,6 +30,7 @@ const {
   resolveFallbackArtifactPath,
 } = require('./feedback-paths');
 const { getTelemetryAnalytics, getTelemetrySourceDiagnostics } = require('./telemetry-analytics');
+const { getOwnerEmails } = require('./bot-detection');
 const { normalizeCampaignId } = require('./growth-campaigns');
 const {
   PRO_MONTHLY_PRICE_ID,
@@ -2134,11 +2135,15 @@ async function listStripeReconciledRevenueEvents() {
 function getFunnelAnalytics(options = {}) {
   const analyticsWindow = resolveAnalyticsWindow(options);
   const extraRevenueEvents = Array.isArray(options.extraRevenueEvents) ? options.extraRevenueEvents : [];
-  const events = filterEntriesForWindow(
-    loadFunnelLedger(),
-    analyticsWindow,
-    (entry) => entry && entry.timestamp
-  );
+  const rawEvents = Array.isArray(options._rawFunnelEvents)
+    ? options._rawFunnelEvents
+    : filterEntriesForWindow(
+      loadFunnelLedger(),
+      analyticsWindow,
+      (entry) => entry && entry.timestamp
+    );
+  const { events, excludedSyntheticCheckoutSessions } = options._filteredFunnel
+    || filterQualifiedCheckoutFunnelEvents(rawEvents);
   const paidOrders = loadResolvedRevenueEvents({ ...analyticsWindow, extraRevenueEvents }).filter((entry) => entry && entry.status === 'paid');
   const stageCounts = { acquisition: 0, activation: 0, paid: 0 };
   const eventCounts = {};
@@ -2152,6 +2157,7 @@ function getFunnelAnalytics(options = {}) {
   return {
     window: serializeAnalyticsWindow(analyticsWindow),
     totalEvents: events.length,
+    excludedSyntheticCheckoutSessions,
     stageCounts,
     eventCounts,
     conversionRates: {
@@ -2169,11 +2175,13 @@ function getBusinessAnalytics(options = {}) {
   const { FEEDBACK_DIR } = getFeedbackPaths();
   const telemetry = getTelemetryAnalytics(FEEDBACK_DIR, analyticsWindow);
   const sourceDiagnostics = buildBillingSourceDiagnostics(FEEDBACK_DIR);
-  const events = filterEntriesForWindow(
+  const rawEvents = filterEntriesForWindow(
     loadFunnelLedger(),
     analyticsWindow,
     (entry) => entry && entry.timestamp
   );
+  const filteredFunnel = filterQualifiedCheckoutFunnelEvents(rawEvents);
+  const { events } = filteredFunnel;
   const revenueEvents = loadResolvedRevenueEvents({ ...analyticsWindow, extraRevenueEvents });
   const workflowSprintIntake = loadWorkflowSprintIntakeModule();
   const workflowSprintLeads = filterEntriesForWindow(
@@ -2186,7 +2194,12 @@ function getBusinessAnalytics(options = {}) {
     analyticsWindow,
     (entry) => entry && entry.subscribedAt
   );
-  const funnel = getFunnelAnalytics({ ...analyticsWindow, extraRevenueEvents });
+  const funnel = getFunnelAnalytics({
+    ...analyticsWindow,
+    extraRevenueEvents,
+    _rawFunnelEvents: rawEvents,
+    _filteredFunnel: filteredFunnel,
+  });
   const acquisitionEvents = events.filter((entry) => entry && entry.stage === 'acquisition');
   const paidEvents = events.filter((entry) => entry && entry.stage === 'paid');
   const paidOrders = revenueEvents.filter((entry) => entry && entry.status === 'paid');
@@ -2512,9 +2525,9 @@ function getBusinessAnalytics(options = {}) {
     sessions: telemetry.visitors ? telemetry.visitors.uniqueSessions || 0 : 0,
     pageViews: telemetry.visitors ? telemetry.visitors.pageViews || 0 : 0,
     ctaClicks: telemetry.ctas ? telemetry.ctas.totalClicks || 0 : 0,
-    checkoutStarts: telemetry.ctas ? telemetry.ctas.checkoutStarts || 0 : 0,
+    checkoutStarts: telemetry.ctas ? (telemetry.ctas.qualifiedCheckoutStarts ?? telemetry.ctas.checkoutStarts ?? 0) : 0,
     checkoutSuccessPageViews: telemetry.ctas ? telemetry.ctas.successPageViews || 0 : 0,
-    checkoutCancelPageViews: telemetry.ctas ? telemetry.ctas.cancelPageViews || 0 : 0,
+    checkoutCancelPageViews: telemetry.ctas ? (telemetry.ctas.qualifiedCancelPageViews ?? telemetry.ctas.cancelPageViews ?? 0) : 0,
     checkoutPaidConfirmations: telemetry.ctas ? telemetry.ctas.paidConfirmations || 0 : 0,
     checkoutPendingSessions: telemetry.ctas ? telemetry.ctas.sessionPending || 0 : 0,
     checkoutLookupFailures: telemetry.ctas ? telemetry.ctas.lookupFailures || 0 : 0,
@@ -2915,12 +2928,164 @@ function withKeyStoreLock(mutator) {
 
 // Probes, audits and health checks mark themselves with one of these. They must
 // never open live Checkout sessions: each one shows up as an abandoned checkout.
-const AUTOMATED_CHECKOUT_SOURCES = new Set(['internal_audit', 'probe', 'health_check', 'smoke_test']);
+const AUTOMATED_CHECKOUT_SOURCES = new Set([
+  'internal_audit', 'probe', 'health_check', 'smoke_test', 'codex_audit', 'synthetic', 'e2e_probe',
+]);
+const AUTOMATED_CHECKOUT_MARKER_PATTERN = /(?:^|[^a-z0-9])(?:internal[-_]audit|smoke[-_]test|health[-_]check|codex[-_]verification|codex[-_]audit|e2e[-_]probe|checkout[-_]probe|money-v\d+-audit)(?:$|[^a-z0-9])/i;
+const SYNTHETIC_CHECKOUT_EMAIL_PATTERN = /^(?:[^@\s]+@(?:example\.(?:com|org|net)|invalid)|test@test\.com|buyer@acme\.(?:io|com)|audit@thumbgate\.ai|(?:e2e[-_]?probe|test[-_]?checkout[-_]?probe|probe|smoke[-_]?test)@[^@\s]+)$/i;
 
-function isAutomatedCheckoutRequest(metadata = {}) {
+function canonicalizeEmailAddress(rawEmail = '') {
+  const email = String(rawEmail || '').trim().toLowerCase();
+  const atIdx = email.indexOf('@');
+  if (atIdx <= 0 || atIdx !== email.lastIndexOf('@') || atIdx === email.length - 1) return '';
+  const localPart = email.slice(0, atIdx).replace(/\+.*$/, '');
+  const domainPart = email.slice(atIdx + 1);
+  return localPart && domainPart ? `${localPart}@${domainPart}` : '';
+}
+
+function isSyntheticOrOwnerCheckoutEmail(rawEmail = '') {
+  const email = String(rawEmail || '').trim().toLowerCase();
+  if (!email) return false;
+  if (SYNTHETIC_CHECKOUT_EMAIL_PATTERN.test(email)) return true;
+  const canonical = canonicalizeEmailAddress(email);
+  if (!canonical) return false;
+  return getOwnerEmails().some((ownerEmail) => canonicalizeEmailAddress(ownerEmail) === canonical);
+}
+
+function isAutomatedCheckoutRequest(metadata = {}, customerEmail = '') {
   const source = String(metadata.source || metadata.utmSource || '').toLowerCase();
   const installId = String(metadata.installId || '').toLowerCase();
-  return AUTOMATED_CHECKOUT_SOURCES.has(source) || installId.endsWith('_probe') || installId.startsWith('probe_');
+  if (AUTOMATED_CHECKOUT_SOURCES.has(source)) return true;
+  if (installId.endsWith('_probe') || installId.startsWith('probe_')) return true;
+  if (metadata.probe === true || metadata.probe === '1' || metadata.probe === 'true'
+    || metadata.isBot === true || metadata.isBot === 'true') {
+    return true;
+  }
+  const markerText = [
+    installId,
+    metadata.utmCampaign,
+    metadata.campaign,
+    metadata.ctaId,
+    metadata.traceId,
+    metadata.visitorId,
+    metadata.sessionId,
+  ].filter(Boolean).join(' ');
+  if (AUTOMATED_CHECKOUT_MARKER_PATTERN.test(markerText)) return true;
+  const email = customerEmail || metadata.customerEmail || metadata.email || '';
+  return isSyntheticOrOwnerCheckoutEmail(email);
+}
+
+function filterQualifiedCheckoutFunnelEvents(entries = []) {
+  if (!Array.isArray(entries) || entries.length === 0) {
+    return { events: [], excludedSyntheticCheckoutSessions: 0 };
+  }
+  const excludedIndices = new Set();
+  const checkoutRows = [];
+  const identityEventTotals = new Map();
+
+  for (const entry of entries) {
+    if (!entry) continue;
+    const metadata = sanitizeMetadata(entry.metadata);
+    const key = (
+      entry.visitorId || entry.sessionId || entry.acquisitionId ||
+      metadata.visitorId || metadata.sessionId || metadata.acquisitionId || metadata.customerId ||
+      (entry.installId && entry.installId !== 'unknown' ? entry.installId : '')
+    );
+    if (key) identityEventTotals.set(key, (identityEventTotals.get(key) || 0) + 1);
+  }
+
+  entries.forEach((entry, idx) => {
+    if (!entry || entry.stage !== 'acquisition' || entry.event !== 'checkout_session_created') return;
+    const metadata = sanitizeMetadata(entry.metadata);
+    const merged = { ...metadata, ...sanitizeMetadata(entry) };
+    const email = entry.customerEmail || entry.email || metadata.customerEmail || metadata.email || '';
+    if (isAutomatedCheckoutRequest(merged, email)) {
+      excludedIndices.add(idx);
+      return;
+    }
+    const ms = Date.parse(entry.timestamp || '');
+    const identityKey = (
+      entry.visitorId || entry.sessionId || entry.acquisitionId ||
+      metadata.visitorId || metadata.sessionId || metadata.acquisitionId || metadata.customerId ||
+      (entry.installId && entry.installId !== 'unknown' ? entry.installId : '')
+    ) || '__anon__';
+    const hasCustomer = Boolean(metadata.customerId);
+    const hasBuyerEmail = Boolean(String(email || '').trim()) && !isSyntheticOrOwnerCheckoutEmail(email);
+    const totalIdentityEvents = identityKey === '__anon__' ? 0 : (identityEventTotals.get(identityKey) || 0);
+    const offerKey = [
+      metadata.packId || '',
+      metadata.planId || '',
+      metadata.billingCycle || '',
+      metadata.ctaId || '',
+    ].join(':');
+    checkoutRows.push({
+      idx,
+      ms,
+      identityKey,
+      hasCustomer,
+      hasBuyerEmail,
+      totalIdentityEvents,
+      offerKey,
+    });
+  });
+
+  const validTimed = checkoutRows
+    .filter((row) => Number.isFinite(row.ms))
+    .sort((a, b) => a.ms - b.ms);
+  const byIdentity = new Map();
+  for (const row of validTimed) {
+    if (!byIdentity.has(row.identityKey)) byIdentity.set(row.identityKey, []);
+    byIdentity.get(row.identityKey).push(row);
+  }
+
+  for (const [identityKey, rows] of byIdentity.entries()) {
+    for (let i = 0; i < rows.length; i += 1) {
+      const base = rows[i];
+      const window60 = [base];
+      const window30Anon = identityKey === '__anon__' ? [base] : [];
+      for (let j = i + 1; j < rows.length; j += 1) {
+        const delta = rows[j].ms - base.ms;
+        if (delta > 60 * 1000) break;
+        window60.push(rows[j]);
+        if (delta <= 30 * 1000 && identityKey === '__anon__') {
+          window30Anon.push(rows[j]);
+        }
+      }
+      const distinctOffers = new Set(window60.map((row) => row.offerKey).filter(Boolean));
+      if (window60.length >= 3 && (distinctOffers.size >= 2 || identityKey === '__anon__')) {
+        for (const row of window60) excludedIndices.add(row.idx);
+      }
+      if (window30Anon.length >= 2) {
+        for (const row of window30Anon) excludedIndices.add(row.idx);
+      }
+    }
+  }
+
+  const ephemeralSingleHits = validTimed.filter((row) => (
+    !excludedIndices.has(row.idx) &&
+    !row.hasCustomer &&
+    !row.hasBuyerEmail &&
+    row.totalIdentityEvents <= 1 &&
+    (byIdentity.get(row.identityKey)?.length || 0) <= 1
+  ));
+  for (let i = 0; i < ephemeralSingleHits.length; i += 1) {
+    const sweep60 = [ephemeralSingleHits[i]];
+    for (let j = i + 1; j < ephemeralSingleHits.length; j += 1) {
+      if (ephemeralSingleHits[j].ms - ephemeralSingleHits[i].ms > 60 * 1000) break;
+      sweep60.push(ephemeralSingleHits[j]);
+    }
+    const distinctOffers = new Set(sweep60.map((row) => row.offerKey).filter(Boolean));
+    if (sweep60.length >= 3 && distinctOffers.size >= 3) {
+      for (const row of sweep60) excludedIndices.add(row.idx);
+    }
+  }
+  if (excludedIndices.size === 0) {
+    return { events: entries, excludedSyntheticCheckoutSessions: 0 };
+  }
+  return {
+    events: entries.filter((_entry, idx) => !excludedIndices.has(idx)),
+    excludedSyntheticCheckoutSessions: excludedIndices.size,
+  };
 }
 
 // Secret (sk_live_) and restricted (rk_live_) keys are both live.
@@ -2975,8 +3140,11 @@ async function createCheckoutSession({ successUrl, cancelUrl, customerEmail, ins
     return { sessionId: localSessionId, url: null, localMode: true, traceId: resolvedTraceId, metadata: checkoutMetadata };
   }
 
-  if (isAutomatedCheckoutRequest(checkoutMetadata) && isLiveStripeKey(CONFIG.STRIPE_SECRET_KEY)) {
-    throw new Error('Refusing to open a live Stripe Checkout session for a probe or test request. Use a test-mode key.');
+  if (isAutomatedCheckoutRequest(checkoutMetadata, customerEmail) && isLiveStripeKey(CONFIG.STRIPE_SECRET_KEY)) {
+    const blockedErr = new Error('Refusing to open a live Stripe Checkout session for a probe or test request. Use a test-mode key.');
+    blockedErr.statusCode = 403;
+    blockedErr.code = 'AUTOMATED_CHECKOUT_BLOCKED';
+    throw blockedErr;
   }
 
   const stripe = getStripeClient();
@@ -4445,6 +4613,7 @@ function handleGithubWebhook(event, provenance = {}) {
 module.exports = {
   CONFIG, createCheckoutSession, isAutomatedCheckoutRequest, createBillingPortalSession, getCheckoutSessionStatus, provisionApiKey, resolvePaidEntitlementForEmail, rotateApiKey, validateApiKey, recordUsage, disableCustomerKeys, handleWebhook, verifyWebhookSignature, verifyGithubWebhookSignature, verifyPayPalWebhookSignature, recordGithubMarketplaceWebhookDelivery, recordPayPalWebhookDelivery, handleGithubWebhook, loadKeyStore, appendFunnelEvent, appendRevenueEvent, loadFunnelLedger, loadRevenueLedger, loadGithubMarketplaceWebhookLedger, loadPayPalWebhookLedger, loadNewsletterSubscribers, loadResolvedRevenueEvents, getFunnelAnalytics, getBusinessAnalytics, getBillingSummary, getBillingSummaryLive, getBillingSummariesLive, listStripeReconciledRevenueEvents, repairGithubMarketplaceRevenueLedger,
   _buildCheckoutSessionPayload: buildCheckoutSessionPayload,
+  _filterQualifiedCheckoutFunnelEvents: filterQualifiedCheckoutFunnelEvents,
   _createSessionDroppingRejectedOptionals: createSessionDroppingRejectedOptionals,
   _buildTrialActivationEmail: buildTrialActivationEmail,
   _sendTrialActivationEmail: sendTrialActivationEmail,
