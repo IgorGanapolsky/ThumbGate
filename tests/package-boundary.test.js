@@ -780,8 +780,10 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // Bumped 9.88 MB -> 9.89 MB (2026-11-12, PR #4920): self-serve billing portal
   // routes (/portal, /billing, POST /v1/billing/portal) and createBillingPortalSession
   // in server.js + billing.js. CI measured 9,882,997 unpacked on 519f1c8a.
-  manifest.unpackedSize <= 9_890_000,
-  `npm package should stay <= 9.89 MB unpacked, got ${manifest.unpackedSize}`
+  // Bumped 9.89 MB -> 9.92 MB (2026-11-12, PR #4942): Gemini Decisions week blog pages
+  // on top of #4920. Local pack 9,898,551 unpacked after merging main; CI slack.
+  manifest.unpackedSize <= 9_920_000,
+  `npm package should stay <= 9.92 MB unpacked, got ${manifest.unpackedSize}`
 );
 
   for (const file of requiredRuntimeFiles) {
