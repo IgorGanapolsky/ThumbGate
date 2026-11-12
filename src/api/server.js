@@ -112,7 +112,11 @@ const {
 const {
   classifyRequester,
   isHumanCheckoutNavigation,
+  checkoutRequesterKey,
+  createRapidCheckoutGuard,
 } = require('../../scripts/bot-detection');
+
+const rapidCheckoutGuard = createRapidCheckoutGuard();
 const {
   recordCheckoutFunnelEvent,
 } = require('../../scripts/plausible-server-events');
@@ -3318,7 +3322,10 @@ async function tryCreateDirectProCheckoutRedirect({
   if (!parsed.searchParams.get('cta_placement') && target.ctaPlacement) bootstrapBody.ctaPlacement = target.ctaPlacement;
   bootstrapBody.planId = 'pro';
   bootstrapBody.billingCycle = billingCycle;
-  const analyticsMetadata = buildCheckoutAttributionMetadata(bootstrapBody, req, traceId);
+  const analyticsMetadata = {
+    ...buildCheckoutAttributionMetadata(bootstrapBody, req, traceId),
+    entryRoute: `go:${target.slug}`,
+  };
   const sessionResult = await createCheckoutSession({
     successUrl: buildCheckoutFallbackUrl(buildHostedSuccessUrl(hostedConfig.appOrigin, traceId), analyticsMetadata),
     cancelUrl: buildCheckoutFallbackUrl(buildHostedCancelUrl(hostedConfig.appOrigin, traceId), analyticsMetadata),
@@ -3388,10 +3395,18 @@ async function serveTrackedLinkRedirect({ req, res, parsed, hostedConfig, isHead
   const { FEEDBACK_DIR } = getFeedbackPaths();
   const journeyState = resolveJourneyState(req, parsed);
   const requesterClassification = classifyRequester(req.headers);
-  const botClassification = requesterClassification.isBot
+  let botClassification = requesterClassification.isBot
     || isHumanCheckoutNavigation(req.headers, hostedConfig.appOrigin)
     ? requesterClassification
     : { isBot: true, reason: 'no_browser_navigation' };
+  if (
+    target.botDeflectPath
+    && !botClassification.isBot
+    && !isHeadRequest
+    && rapidCheckoutGuard.hit(checkoutRequesterKey(req.headers))
+  ) {
+    botClassification = { isBot: true, reason: 'rapid_multi_checkout' };
+  }
   if (target.botDeflectPath && botClassification.isBot) {
     const deflectUrl = new URL(target.botDeflectPath, hostedConfig.appOrigin);
     appendTrackedLinkQueryParams(deflectUrl, parsed, target);
@@ -5481,39 +5496,6 @@ function renderWorkflowSprintIntakeResultPage(runtimeConfig, { title, detail, le
 </html>`;
 }
 
-function renderBrokerAuditIntakeResultPage(runtimeConfig, { title, detail, leadId = null }) {
-  const safeTitle = escapeHtmlAttribute(title || 'Broker audit request received');
-  const safeDetail = escapeHtmlAttribute(detail || 'Your broker lead-flow audit request is in the queue.');
-  const safeLeadId = leadId ? `<p><strong>Lead ID:</strong> ${escapeHtmlAttribute(leadId)}</p>` : '';
-  return `<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>${safeTitle}</title>
-  <meta name="robots" content="noindex,nofollow" />
-  <style>
-    body { margin: 0; font-family: system-ui, -apple-system, sans-serif; background: #0b1220; color: #e5edf8; line-height: 1.6; }
-    main { max-width: 680px; margin: 0 auto; padding: 72px 20px; }
-    .card { border: 1px solid #26354f; border-radius: 14px; padding: 24px; background: #111a2b; }
-    h1 { margin: 0 0 10px; font-size: 30px; }
-    p { color: #b8c5d8; }
-    a { color: #7dd3fc; font-weight: 700; text-decoration: none; }
-  </style>
-</head>
-<body>
-  <main>
-    <div class="card">
-      <h1>${safeTitle}</h1>
-      <p>${safeDetail}</p>
-      ${safeLeadId}
-      <p><a href="${escapeHtmlAttribute(runtimeConfig.appOrigin)}/broker-audit">Back to broker audit page</a></p>
-    </div>
-  </main>
-</body>
-</html>`;
-}
-
 function readBodyBuffer(req, maxBytes = 1024 * 1024) {
   return new Promise((resolve, reject) => {
     let total = 0;
@@ -5563,14 +5545,6 @@ async function parseFormBody(req, maxBytes = 1024 * 1024) {
   return Object.fromEntries(params.entries());
 }
 
-function normalizeLeadEmail(value) {
-  const email = normalizeNullableText(value);
-  if (!email || !/^[^\s@]{1,64}@[^\s@]{1,255}\.[^\s@]{1,63}$/.test(email)) {
-    throw createHttpError(400, 'A valid email is required');
-  }
-  return email.toLowerCase();
-}
-
 function buildIntakeAlertRateLimitKey(req, env = process.env) {
   const transportPeer = String(req.socket?.remoteAddress || 'unknown');
   const railwayRealIp = String(req.headers['x-real-ip'] || '').trim();
@@ -5582,64 +5556,6 @@ function buildIntakeAlertRateLimitKey(req, env = process.env) {
     ? railwayRealIp
     : transportPeer;
   return crypto.createHash('sha256').update(clientAddress).digest('hex');
-}
-
-function normalizeHttpUrl(value, fieldName) {
-  const raw = normalizeNullableText(value);
-  if (!raw) throw createHttpError(400, `${fieldName} is required`);
-  try {
-    const parsedUrl = new URL(raw);
-    if (parsedUrl.protocol !== 'http:' && parsedUrl.protocol !== 'https:') {
-      throw new Error('unsupported protocol');
-    }
-    return parsedUrl.toString();
-  } catch {
-    throw createHttpError(400, `${fieldName} must be an http(s) URL`);
-  }
-}
-
-function appendBrokerAuditLead(feedbackDir, payload) {
-  const lead = {
-    leadId: createTraceId('broker_audit_lead'),
-    status: 'new',
-    offer: 'broker_lead_flow_audit_free',
-    requestedAt: new Date().toISOString(),
-    contact: {
-      name: normalizeNullableText(payload.name),
-      email: normalizeLeadEmail(payload.email),
-      brokerage: normalizeNullableText(payload.brokerage),
-      website: normalizeHttpUrl(payload.website, 'website'),
-    },
-    qualification: {
-      suspectedLeak: normalizeNullableText(payload.suspected_leak || payload.suspectedLeak),
-    },
-    attribution: {
-      traceId: payload.traceId,
-      acquisitionId: payload.acquisitionId,
-      visitorId: payload.visitorId,
-      sessionId: payload.sessionId,
-      source: payload.source,
-      utmSource: payload.utmSource,
-      utmMedium: payload.utmMedium,
-      utmCampaign: payload.utmCampaign,
-      utmContent: payload.utmContent,
-      utmTerm: payload.utmTerm,
-      ctaId: payload.ctaId,
-      ctaPlacement: payload.ctaPlacement,
-      page: payload.page,
-      landingPath: payload.landingPath,
-      referrer: payload.referrer,
-      referrerHost: payload.referrerHost,
-    },
-  };
-
-  if (!lead.contact.name) throw createHttpError(400, 'name is required');
-  if (!lead.contact.brokerage) throw createHttpError(400, 'brokerage is required');
-
-  const leadsPath = path.join(feedbackDir, 'broker-audit-leads.jsonl');
-  fs.mkdirSync(path.dirname(leadsPath), { recursive: true });
-  fs.appendFileSync(leadsPath, `${JSON.stringify(lead)}\n`, 'utf8');
-  return lead;
 }
 
 function parseOptionalObject(input, name) {
@@ -8250,6 +8166,7 @@ async function addContext(){
       }
 
       try {
+        analyticsMetadata.entryRoute = 'checkout_pro_confirm';
         const result = await createCheckoutSession({
           successUrl: buildCheckoutFallbackUrl(
             buildHostedSuccessUrl(hostedConfig.appOrigin, traceId),
@@ -8435,29 +8352,6 @@ async function addContext(){
         renderCheckoutCancelledPage(hostedConfig),
         journeyState.setCookieHeaders.length ? { 'Set-Cookie': journeyState.setCookieHeaders } : {}
       );
-      return;
-    }
-
-    if (isGetLikeRequest && pathname === '/broker-audit') {
-      // Public-facing broker lead-flow audit landing page. Wedge for the
-      // real-estate broker outreach. Static HTML served from src/api/static.
-      try {
-        const host = getSafePublicRequestHost(req);
-        const html = normalizePublicMarketingHtml(fillTemplate(fs.readFileSync(
-          path.resolve(__dirname, '../../assets/static/broker-audit.html'),
-          'utf8'
-        ), {
-          '__POSTHOG_API_KEY__': hostedConfig.posthogApiKey || '',
-        }), hostedConfig, host);
-        if (isHeadRequest) {
-          sendHtml(res, 200, html, {}, { headOnly: true });
-          return;
-        }
-        sendHtml(res, 200, html);
-      } catch (err) {
-        console.error('broker-audit page read failed:', err?.message);
-        sendJson(res, 500, { error: 'broker-audit page unavailable' });
-      }
       return;
     }
 
@@ -9272,130 +9166,6 @@ a{color:#8b9}</style></head><body><form class="card" method="post" action="/oaut
       return;
     }
 
-    if (req.method === 'OPTIONS' && pathname === '/v1/intake/broker-audit') {
-      sendPublicBillingPreflight(res);
-      return;
-    }
-
-    if (req.method === 'POST' && pathname === '/v1/intake/broker-audit') {
-      const { FEEDBACK_DIR } = getFeedbackPaths();
-      const traceId = createTraceId('broker_audit');
-      const journeyState = resolveJourneyState(req, parsed);
-      const referrerAttribution = buildReferrerAttribution(req);
-      const contentType = String(req.headers['content-type'] || '').toLowerCase();
-      const isFormSubmission = contentType.includes('application/x-www-form-urlencoded');
-      try {
-        const body = isFormSubmission
-          ? await parseFormBody(req, 16 * 1024)
-          : await parseJsonBody(req, 16 * 1024);
-        const lead = appendBrokerAuditLead(FEEDBACK_DIR, {
-          ...body,
-          traceId: body.traceId || traceId,
-          acquisitionId: body.acquisitionId || journeyState.acquisitionId,
-          visitorId: body.visitorId || journeyState.visitorId,
-          sessionId: body.sessionId || journeyState.sessionId,
-          page: body.page || referrerAttribution.page || '/broker-audit',
-          landingPath: body.landingPath || referrerAttribution.landingPath || '/broker-audit',
-          ctaId: body.ctaId || 'broker_audit_form',
-          ctaPlacement: body.ctaPlacement || 'broker_audit',
-          source: body.source || body.utmSource || referrerAttribution.source || 'website',
-          utmSource: body.utmSource || body.source || referrerAttribution.utmSource || 'website',
-          utmMedium: body.utmMedium || referrerAttribution.utmMedium || 'broker_audit',
-          utmCampaign: body.utmCampaign || referrerAttribution.utmCampaign || 'broker_audit_free',
-          utmContent: body.utmContent || referrerAttribution.utmContent || null,
-          utmTerm: body.utmTerm || referrerAttribution.utmTerm || null,
-          referrerHost: body.referrerHost || referrerAttribution.referrerHost || null,
-          referrer: body.referrer || referrerAttribution.referrer || null,
-        });
-
-        appendBestEffortTelemetry(FEEDBACK_DIR, {
-          eventType: 'broker_audit_lead_submitted',
-          clientType: 'web',
-          traceId: lead.attribution.traceId,
-          acquisitionId: lead.attribution.acquisitionId,
-          visitorId: lead.attribution.visitorId,
-          sessionId: lead.attribution.sessionId,
-          source: lead.attribution.source,
-          utmSource: lead.attribution.utmSource,
-          utmMedium: lead.attribution.utmMedium,
-          utmCampaign: lead.attribution.utmCampaign,
-          utmContent: lead.attribution.utmContent,
-          utmTerm: lead.attribution.utmTerm,
-          ctaId: lead.attribution.ctaId,
-          ctaPlacement: lead.attribution.ctaPlacement,
-          page: lead.attribution.page,
-          landingPath: lead.attribution.landingPath,
-          referrerHost: lead.attribution.referrerHost,
-          referrer: lead.attribution.referrer,
-        }, req.headers, 'broker_audit_lead_submitted');
-
-        if (isFormSubmission && !wantsJson(req, parsed)) {
-          sendHtml(
-            res,
-            201,
-            renderBrokerAuditIntakeResultPage(hostedConfig, {
-              title: 'Broker audit request received',
-              detail: 'Your free broker lead-flow audit request is captured. The next step is the 1-page PDF with the specific lead leaks.',
-              leadId: lead.leadId,
-            }),
-            journeyState.setCookieHeaders.length ? { 'Set-Cookie': journeyState.setCookieHeaders } : {}
-          );
-          return;
-        }
-
-        sendJson(res, 201, {
-          ok: true,
-          leadId: lead.leadId,
-          status: lead.status,
-          offer: lead.offer,
-          nextStep: 'deliver_1_page_pdf',
-        }, {
-          ...getPublicBillingHeaders(lead.attribution.traceId),
-          ...(journeyState.setCookieHeaders.length ? { 'Set-Cookie': journeyState.setCookieHeaders } : {}),
-        });
-      } catch (err) {
-        appendBestEffortTelemetry(FEEDBACK_DIR, {
-          eventType: 'broker_audit_lead_failed',
-          clientType: 'web',
-          traceId,
-          acquisitionId: journeyState.acquisitionId,
-          visitorId: journeyState.visitorId,
-          sessionId: journeyState.sessionId,
-          source: referrerAttribution.source || 'website',
-          utmSource: referrerAttribution.utmSource || 'website',
-          utmMedium: referrerAttribution.utmMedium || 'broker_audit',
-          utmCampaign: referrerAttribution.utmCampaign || 'broker_audit_free',
-          ctaId: 'broker_audit_form',
-          ctaPlacement: 'broker_audit',
-          page: referrerAttribution.page || '/broker-audit',
-          landingPath: referrerAttribution.landingPath || '/broker-audit',
-          referrerHost: referrerAttribution.referrerHost,
-          referrer: referrerAttribution.referrer,
-          failureCode: err?.message ? err.message : 'broker_audit_lead_failed',
-          httpStatus: err && err.statusCode ? err.statusCode : null,
-        }, req.headers, 'broker_audit_lead_failed');
-        if (isFormSubmission && !wantsJson(req, parsed)) {
-          sendHtml(
-            res,
-            err.statusCode || 500,
-            renderBrokerAuditIntakeResultPage(hostedConfig, {
-              title: 'Broker audit request failed',
-              detail: err.message || 'Unable to capture broker audit request.',
-            }),
-            journeyState.setCookieHeaders.length ? { 'Set-Cookie': journeyState.setCookieHeaders } : {}
-          );
-          return;
-        }
-        sendProblem(res, {
-          type: !err.statusCode || err.statusCode >= 500 ? PROBLEM_TYPES.INTERNAL : PROBLEM_TYPES.BAD_REQUEST,
-          title: !err.statusCode || err.statusCode >= 500 ? 'Internal Server Error' : 'Request Error',
-          status: err.statusCode || 500,
-          detail: err.message || 'Unable to capture broker audit request.',
-        }, getPublicBillingHeaders(traceId));
-      }
-      return;
-    }
-
     if (req.method === 'POST' && pathname === '/v1/intake/workflow-sprint') {
       const { FEEDBACK_DIR } = getFeedbackPaths();
       const traceId = createTraceId('sprint_intake');
@@ -10011,7 +9781,10 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
         const body = await parseJsonBody(req);
         const traceId = body.traceId || createTraceId('checkout');
         const responseHeaders = getPublicBillingHeaders(traceId);
-        const analyticsMetadata = buildCheckoutAttributionMetadata(body, req, traceId);
+        const analyticsMetadata = {
+          ...buildCheckoutAttributionMetadata(body, req, traceId),
+          entryRoute: 'api_billing_checkout',
+        };
         const offerSummary = resolveCheckoutOfferSummary(analyticsMetadata);
         // A session without an email can't be followed up and almost always
         // expires unpaid; most of the 30-day emailless sessions came from here.
