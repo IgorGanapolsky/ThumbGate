@@ -41,7 +41,7 @@ function fakeWorld({ issues, claudeStdout, claudeStatus = 0, rivalClaimFirst = f
   const calls = [];
   const comments = [];
   let nextId = 100;
-  const labels = new Map(issues.map((i) => [i.number, new Set(['ready-for-agent'])]));
+  const labels = new Map(issues.map((i) => [i.number, new Set()]));
   const run = (cmd, args, opts = {}) => {
     calls.push({ cmd, args, opts });
     const ok = (stdout = '') => ({ status: 0, stdout, stderr: '', error: null, timedOut: false });
@@ -51,7 +51,7 @@ function fakeWorld({ issues, claudeStdout, claudeStatus = 0, rivalClaimFirst = f
     const [a, b] = args;
     if (a === 'label') return ok();
     if (a === 'issue' && b === 'list') {
-      return ok(JSON.stringify(issues.filter((i) => labels.get(i.number).has('ready-for-agent'))));
+      return ok(JSON.stringify(issues));
     }
     if (a === 'issue' && b === 'edit') {
       const set = labels.get(Number(args[2]));
@@ -68,6 +68,13 @@ function fakeWorld({ issues, claudeStdout, claudeStatus = 0, rivalClaimFirst = f
     if (a === 'api') {
       const target = args.find((x) => x.startsWith('repos/'));
       if (target.endsWith('/events')) return ok(JSON.stringify([[]]));
+      if (args.includes('PATCH')) {
+        const num = Number(target.split('/').pop());
+        const payload = JSON.parse(opts.input || '{}');
+        const found = issues.find((i) => i.number === num);
+        if (found && payload.body !== undefined) found.body = payload.body;
+        return ok(JSON.stringify(found || {}));
+      }
       if (args.includes('POST')) {
         if (rivalClaimFirst) {
           comments.push({ id: nextId++, body: `<!-- ${d.CLAIM_MARKER} id=rival machine=mac-b -->`, created_at: new Date().toISOString() });
@@ -82,11 +89,11 @@ function fakeWorld({ issues, claudeStdout, claudeStatus = 0, rivalClaimFirst = f
     }
     throw new Error(`unhandled gh ${args.join(' ')}`);
   };
-  return { run, calls, comments, labels };
+  return { run, calls, comments, labels, issues };
 }
 
 function issue(number, extra = {}) {
-  return {
+  const row = {
     number,
     title: `Task ${number}`,
     body: FORM_BODY(),
@@ -95,6 +102,8 @@ function issue(number, extra = {}) {
     url: `https://github.com/IgorGanapolsky/ThumbGate/issues/${number}`,
     ...extra,
   };
+  if (!String(row.body || '').includes(d.READY_MARKER)) row.body = `${d.READY_MARKER}\n${row.body || ''}`;
+  return row;
 }
 
 function ctxFor(config, world) {
@@ -168,9 +177,15 @@ test('happy path: claims, runs claude without bypass flags, comments evidence, l
   for (const bad of d.FORBIDDEN_CLAUDE_ARGS) assert.ok(!claude.args.join(' ').includes(bad));
 
   const labels = world.labels.get(7);
-  assert.ok(labels.has('agent-done'));
+  const doneBody = world.issues.find((i) => i.number === 7).body;
+  assert.ok(doneBody.includes(d.DONE_MARKER));
+  assert.ok(!doneBody.includes(d.READY_MARKER));
+  assert.ok(!labels.has('agent-done'));
   assert.ok(!labels.has('ready-for-agent'));
   assert.ok(!labels.has('agent-claimed'));
+  const ghArgs = world.calls.filter((c) => c.cmd === 'gh').map((c) => c.args.join(' ')).join('\n');
+  assert.ok(!ghArgs.includes('ready-for-agent'));
+  assert.ok(!ghArgs.includes('agent-done'));
 
   const evidence = world.comments.find((c) => c.body.includes(d.RESULT_MARKER));
   assert.match(evidence.body, /\*\*DONE\*\*/);
@@ -203,7 +218,18 @@ test('ignores issues from authors outside the allow list', () => {
   const world = fakeWorld({ issues: [issue(10, { author: { login: 'stranger' } })], claudeStdout: '' });
   assert.equal(d.tick(ctxFor(config, world))[0].action, 'skipped-author');
   assert.ok(!world.calls.some((c) => c.cmd === 'claude'));
-  assert.ok(world.labels.get(10).has('ready-for-agent'));
+  assert.ok(world.issues.find((i) => i.number === 10).body.includes(d.READY_MARKER));
+  assert.ok(!world.labels.get(10).has('ready-for-agent'));
+});
+
+test('ignores an open issue that has no ready marker', () => {
+  const config = baseConfig({ dryRun: true });
+  const plain = issue(13);
+  plain.body = 'no marker here';
+  const world = fakeWorld({ issues: [plain, issue(14)], claudeStdout: '' });
+  const results = d.tick(ctxFor(config, world));
+  assert.deepEqual(results.map((r) => r.issue), [14]);
+  assert.equal(results[0].action, 'would-run');
 });
 
 test('blocks without running claude when the workdir is outside the allowed roots', () => {

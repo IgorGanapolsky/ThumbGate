@@ -3,10 +3,10 @@
 
 /**
  * mac-dispatch-loop.js — cloud sessions hand work to a Mac through GitHub issues.
- * Polls open `ready-for-agent` issues from allowed authors, claims one (claim comment,
- * earliest claim wins across Macs), runs `claude -p` in the issue's folder under the
- * Mac's own Claude Code permission settings (never adds bypass flags), comments the
- * evidence, and relabels the issue `agent-done` or `agent-blocked`.
+ * Polls open issues whose body contains `<!-- agent:ready -->` from allowed authors,
+ * claims one (claim comment, earliest claim wins across Macs), runs `claude -p` in the
+ * issue's folder under the Mac's own Claude Code permission settings (never adds bypass
+ * flags), comments the evidence, and writes `<!-- agent:done -->` or the `agent-blocked` label.
  * Usage: --once (launchd) | --watch (herdr pane) [--dry-run]. See docs/guides/mac-dispatch-loop.md.
  */
 
@@ -17,10 +17,11 @@ const os = require('node:os');
 const path = require('node:path');
 const { redactSecrets } = require('./secret-redaction');
 
+const READY_MARKER = '<!-- agent:ready -->';
+const DONE_MARKER = '<!-- agent:done -->';
+
 const LABELS = Object.freeze({
-  ready: { name: 'ready-for-agent', color: '0E8A16', description: 'Queued for a Mac agent run' },
   claimed: { name: 'agent-claimed', color: 'FBCA04', description: 'A Mac agent is working on this' },
-  done: { name: 'agent-done', color: '1D76DB', description: 'Mac agent finished; review the evidence comment' },
   blocked: { name: 'agent-blocked', color: 'D93F0B', description: 'Mac agent could not finish; see the evidence comment' },
 });
 
@@ -251,7 +252,7 @@ function buildEvidenceComment(r) {
   if (r.stderr && r.stderr.trim()) {
     lines.push('', '<details><summary>stderr (tail)</summary>', '', fence(tail(r.stderr.trim())), '', '</details>');
   }
-  lines.push('', `Requeue: remove \`${LABELS[r.outcome].name}\` and add \`${LABELS.ready.name}\`.`);
+  lines.push('', `Requeue: put \`${READY_MARKER}\` back in the issue body and remove \`${DONE_MARKER}\`.`);
   let body = redactSecrets(lines.join('\n'));
   if (body.length > MAX_COMMENT_CHARS) body = `${body.slice(0, MAX_COMMENT_CHARS)}\n\n…(comment cut to fit GitHub's limit)`;
   return body;
@@ -288,12 +289,23 @@ function ensureLabels(ctx) {
 
 function listReadyIssues(ctx) {
   const out = gh(ctx, [
-    'issue', 'list', '--repo', ctx.config.repo, '--label', LABELS.ready.name, '--state', 'open',
+    'issue', 'list', '--repo', ctx.config.repo, '--state', 'open',
     '--json', 'number,title,body,author,createdAt,url,labels', '--limit', '50',
   ]);
   return JSON.parse(out || '[]')
+    .filter((i) => {
+      const body = String(i.body || '');
+      return body.includes(READY_MARKER) && !body.includes(DONE_MARKER);
+    })
     .map((i) => ({ ...i, repo: ctx.config.repo }))
     .sort((a, b) => a.number - b.number);
+}
+
+function writeIssueBody(ctx, issue, body) {
+  gh(ctx, ['api', '-X', 'PATCH', `repos/${ctx.config.repo}/issues/${issue.number}`, '--input', '-'], {
+    input: JSON.stringify({ body }),
+  });
+  issue.body = body;
 }
 
 function readyLabeledAt(ctx, issue) {
@@ -306,8 +318,8 @@ function listComments(ctx, issue) {
   return JSON.parse(gh(ctx, ['api', '--paginate', '--slurp', `repos/${ctx.config.repo}/issues/${issue.number}/comments`]) || '[]').flat();
 }
 
-// Picks the winning claim: the earliest claim comment posted since the issue was last
-// labeled ready-for-agent. Comment ids only grow, so every machine reaches the same answer.
+// Picks the winning claim: the earliest claim comment posted since the issue was queued.
+// Comment ids only grow, so every machine reaches the same answer.
 function pickWinningClaim(comments, sinceIso) {
   const since = Date.parse(sinceIso);
   const re = new RegExp(`<!-- ${CLAIM_MARKER} id=(\\S+) machine=(\\S+) -->`);
@@ -331,7 +343,8 @@ function claimIssue(ctx, issue) {
     } catch (_) { /* a leftover losing claim is harmless: it is never the earliest */ }
     return { won: false, winner };
   }
-  gh(ctx, ['issue', 'edit', String(issue.number), '--repo', ctx.config.repo, '--add-label', LABELS.claimed.name, '--remove-label', LABELS.ready.name]);
+  writeIssueBody(ctx, issue, String(issue.body || '').split(READY_MARKER).join(''));
+  gh(ctx, ['issue', 'edit', String(issue.number), '--repo', ctx.config.repo, '--add-label', LABELS.claimed.name]);
   return { won: true, claimId };
 }
 
@@ -423,9 +436,14 @@ function processIssue(ctx, issue) {
 function finish(ctx, issue, claimId, outcome, reason, record) {
   const body = record
     ? buildEvidenceComment(record)
-    : `<!-- ${RESULT_MARKER} claim=${claimId} outcome=${outcome} -->\n### Mac agent run: **${outcome.toUpperCase()}**\n\n- Reason: ${reason}\n- Machine: \`${ctx.config.machineId}\`\n- Claude was not started.\n\nRequeue: fix the issue, remove \`${LABELS[outcome].name}\` and add \`${LABELS.ready.name}\`.`;
+    : `<!-- ${RESULT_MARKER} claim=${claimId} outcome=${outcome} -->\n### Mac agent run: **${outcome.toUpperCase()}**\n\n- Reason: ${reason}\n- Machine: \`${ctx.config.machineId}\`\n- Claude was not started.\n\nRequeue: put \`${READY_MARKER}\` back in the issue body.`;
   gh(ctx, ['issue', 'comment', String(issue.number), '--repo', ctx.config.repo, '--body-file', '-'], { input: body });
-  gh(ctx, ['issue', 'edit', String(issue.number), '--repo', ctx.config.repo, '--add-label', LABELS[outcome].name, '--remove-label', LABELS.claimed.name]);
+  let nextBody = String(issue.body || '').split(READY_MARKER).join('');
+  if (outcome === 'done' && !nextBody.includes(DONE_MARKER)) nextBody = `${DONE_MARKER}\n${nextBody}`;
+  writeIssueBody(ctx, issue, nextBody);
+  const edit = ['issue', 'edit', String(issue.number), '--repo', ctx.config.repo, '--remove-label', LABELS.claimed.name];
+  if (outcome === 'blocked') edit.push('--add-label', LABELS.blocked.name);
+  gh(ctx, edit);
   appendReceipt(ctx, { issue: issue.number, url: issue.url, outcome, reason, claimId, at: new Date(ctx.now()).toISOString() });
 }
 
@@ -464,7 +482,7 @@ function tick(ctx) {
         results.push({ issue: issue.number, action: 'error', reason: err.message });
       }
     }
-    if (issues.length === 0) ctx.log('no ready-for-agent issues');
+    if (issues.length === 0) ctx.log('no issues marked <!-- agent:ready -->');
     return results;
   } finally {
     release();
@@ -524,7 +542,7 @@ if (require.main === module) {
 }
 
 module.exports = {
-  LABELS, CLAIM_MARKER, RESULT_MARKER, FORBIDDEN_CLAUDE_ARGS, defaultConfig, parseArgs,
+  LABELS, READY_MARKER, DONE_MARKER, CLAIM_MARKER, RESULT_MARKER, FORBIDDEN_CLAUDE_ARGS, defaultConfig, parseArgs,
   assertNoPermissionBypass, parseIssueForm, resolveWorkdir, isAuthorAllowed, buildPrompt,
   parseStatus, parseClaudeOutput, extractLinks, decideOutcome, buildEvidenceComment,
   pickWinningClaim, claimIssue, processIssue, tick, makeContext, makeRunner, acquireLock,
