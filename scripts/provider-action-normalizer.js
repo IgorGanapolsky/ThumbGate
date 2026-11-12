@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 'use strict';
 
+const { normalizeCommandValue } = require('./harness-tool-names');
 const DEFAULT_SOFT_TOKEN_LIMIT = 8000;
 const DEFAULT_MAX_PARALLEL_BRANCHES = 4;
 
@@ -215,13 +216,20 @@ function collectAffectedFiles(toolInput = {}, fallback = {}) {
   return uniqueStrings(files);
 }
 
+function coerceCommandCandidate(candidate) {
+  if (Array.isArray(candidate)) {
+    return normalizeCommandValue(candidate);
+  }
+  return candidate;
+}
+
 function inferCommand(toolName, toolInput = {}, fallback = {}) {
   return firstString(
-    toolInput.command,
-    toolInput.cmd,
-    toolInput.shell,
-    fallback.command,
-    fallback.cmd
+    coerceCommandCandidate(toolInput.command),
+    coerceCommandCandidate(toolInput.cmd),
+    coerceCommandCandidate(toolInput.shell),
+    coerceCommandCandidate(fallback.command),
+    coerceCommandCandidate(fallback.cmd)
   );
 }
 
@@ -232,7 +240,7 @@ function inferActionType(toolName, toolInput = {}, fallback = {}) {
   if (fallback.method === 'prompts/get') return 'prompt.get';
   const normalizedTool = String(toolName || '').trim();
   const lowerTool = normalizedTool.toLowerCase();
-  if (normalizedTool === 'Bash' || containsAny(lowerTool, ['bash', 'shell', 'terminal', 'exec', 'run_command'])) {
+  if (normalizedTool === 'Bash' || containsAny(lowerTool, ['bash', 'shell', 'terminal', 'exec', 'run_command', 'powershell', 'pwsh'])) {
     return 'shell.exec';
   }
   if (EDIT_TOOL_NAMES.has(normalizedTool) || containsAny(lowerTool, ['edit', 'write', 'patch', 'file'])) {

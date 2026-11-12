@@ -5,6 +5,7 @@ const fs = require('fs');
 const path = require('path');
 const { resolveFeedbackDir } = require('./feedback-paths');
 const { getDecisionLogPath, readDecisionLog, collapseDecisionTimeline } = require('./decision-journal');
+const { isDestructiveDeleteCommand } = require('./operational-integrity');
 const { requireLearnedModelsEntitlement } = require('./entitlement');
 const {
   readTextTail,
@@ -158,7 +159,7 @@ function extractCommandTokens(command) {
   if (/\bgh pr create\b/.test(text)) pushToken(tokens, 'cmd:pr_create');
   if (/\bgh pr merge\b/.test(text)) pushToken(tokens, 'cmd:pr_merge');
   if (/\bnpm publish\b|\byarn publish\b|\bpnpm publish\b/.test(text)) pushToken(tokens, 'cmd:publish');
-  if (/\brm -rf\b/.test(text)) pushToken(tokens, 'cmd:destructive_delete');
+  if (/\brm -rf\b/.test(text) || isDestructiveDeleteCommand(command)) pushToken(tokens, 'cmd:destructive_delete');
   if (/\b(test|jest|vitest|coverage|prove:|self-heal:check)\b/.test(text)) pushToken(tokens, 'cmd:verification');
   if (/\b(deploy|release|tag)\b/.test(text)) pushToken(tokens, 'cmd:release');
   if (/\b(readme|docs?)\b/.test(text)) pushToken(tokens, 'cmd:docs');
