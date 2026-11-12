@@ -73,7 +73,8 @@ async function main() {
 
   const verdicts = {};
   for (const c of cases) {
-    const v = await gatesEngine.evaluateGatesAsync(c.toolName, { command: c.command, cwd: repo });
+    const input = c.toolName === 'Bash' ? { command: c.command, cwd: repo } : { file_path: c.command, cwd: repo };
+    const v = await gatesEngine.evaluateGatesAsync(c.toolName, input);
     verdicts[`${c.toolName}|${c.command}`] = v ? v.decision : 'none';
   }
   fs.rmSync(sandbox, { recursive: true, force: true });

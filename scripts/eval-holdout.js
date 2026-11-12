@@ -42,12 +42,11 @@ const path = require('node:path');
 const crypto = require('node:crypto');
 const { execFileSync } = require('node:child_process');
 
-const GOLDEN = process.env.THUMBGATE_EVAL_GOLDEN
-  || path.join(__dirname, '..', 'evals', 'gate-decisions.golden.jsonl');
-const HOLDOUT_MANIFEST = process.env.THUMBGATE_EVAL_HOLDOUT
-  || path.join(__dirname, '..', 'evals', 'gate-decisions.holdout.json');
+const ROOT = path.join(__dirname, '..');
+const GOLDEN = process.env.THUMBGATE_EVAL_GOLDEN || path.join(ROOT, 'evals', 'gate-decisions.golden.jsonl');
+const HOLDOUT_MANIFEST = process.env.THUMBGATE_EVAL_HOLDOUT || path.join(ROOT, 'evals', 'gate-decisions.holdout.json');
+const CUSTOM_SINGLE_SUITE = Boolean(process.env.THUMBGATE_EVAL_GOLDEN || process.env.THUMBGATE_EVAL_HOLDOUT);
 const DEFAULT_HOLDOUT_RATIO = 1 / 3;
-
 function caseHash(toolName, command) {
   return crypto.createHash('sha256')
     .update(`${toolName}\u0000${command}`)
@@ -147,16 +146,131 @@ async function replayHoldout(holdoutCases) {
   try {
     const verdicts = new Map();
     for (const c of holdoutCases) {
-      const v = await sandbox.gatesEngine.evaluateGatesAsync(c.toolName, {
-        command: c.command,
-        cwd: sandbox.repo,
-      });
+      const input = c.toolName === 'Bash'
+        ? { command: c.command, cwd: sandbox.repo }
+        : { file_path: c.command, cwd: sandbox.repo };
+      const v = await sandbox.gatesEngine.evaluateGatesAsync(c.toolName, input);
       verdicts.set(c.caseHash, v ? v.decision : 'none');
     }
     return verdicts;
   } finally {
     sandbox.dispose();
   }
+}
+
+// --- Secondary golden-suite seals (retrieval ranking, RAG answer quality, agent outcomes) ---
+
+function retrievalVerdict(metrics) {
+  if (metrics['recall@1'] > 0) return 'hit1';
+  if (metrics['recall@5'] > 0) return 'hit5';
+  return 'miss';
+}
+
+function loadSecondarySuites(opts = {}) {
+  const { rankCorpusForQuery, loadGolden: loadRetrieval } = require('./retrieval-ranking-eval.js');
+  const { scoreRanking } = require('./ir-metrics.js');
+  const { loadAnswerGolden } = require('./rag-answer-quality-eval.js');
+  const { evaluateAnswerQuality } = require('./rag-structured-output.js');
+  const { runCase } = require('./agent-outcome-eval.js');
+  const rootDir = opts.rootDir || ROOT;
+  const manifestDir = opts.manifestDir || path.join(rootDir, 'evals');
+  return [
+    {
+      name: 'retrieval-ranking',
+      manifestPath: path.join(manifestDir, 'retrieval-ranking.holdout.json'),
+      load: () => {
+        const g = loadRetrieval(opts.retrievalGolden || path.join(rootDir, 'config', 'evals', 'retrieval-ranking-golden.json'));
+        return g.queries.map((q) => ({
+          hash: caseHash('retrieval-query', JSON.stringify(q)),
+          probes: [String(q.query || '').slice(0, 40)],
+          evalVerdict: () => retrievalVerdict(scoreRanking(rankCorpusForQuery(g.corpus, q, { topK: 5 }).ranked, q.qrels || {}, { kValues: [1, 5] })),
+        }));
+      },
+    },
+    {
+      name: 'rag-answer-quality',
+      manifestPath: path.join(manifestDir, 'rag-answer-quality.holdout.json'),
+      load: () => loadAnswerGolden(opts.answerGolden || path.join(rootDir, 'config', 'evals', 'rag-answer-quality-golden.json')).cases.map((c) => ({
+        hash: caseHash('rag-answer', JSON.stringify(c)),
+        probes: [String(c.query || '').slice(0, 40), String(c.answer || '').slice(0, 40)],
+        evalVerdict: () => (evaluateAnswerQuality(c).passed ? 'pass' : 'fail'),
+      })),
+    },
+    {
+      name: 'agent-outcomes',
+      manifestPath: path.join(manifestDir, 'agent-outcomes.holdout.json'),
+      load: () => (JSON.parse(fs.readFileSync(opts.outcomeGolden || path.join(rootDir, 'config', 'evals', 'agent-outcomes-golden.json'), 'utf8')).cases || []).map((c) => ({
+        hash: caseHash('agent-outcome', JSON.stringify(c)),
+        probes: [String(c.receipt?.goal || '').slice(0, 40)],
+        evalVerdict: () => runCase(c).status,
+      })),
+    },
+  ];
+}
+
+function freezeSecondarySuites(ratio = DEFAULT_HOLDOUT_RATIO, opts = {}) {
+  if (CUSTOM_SINGLE_SUITE && !opts.force) return 0;
+  for (const suite of loadSecondarySuites(opts)) {
+    const rows = suite.load();
+    const holdout = rows.filter((r) => isHoldout(r.hash, ratio));
+    const manifest = {
+      version: 1, suite: suite.name, scheme: 'sha256(kind + NUL + canonicalJSON(case)); holdout when first 8 hex < ratio * 2^32',
+      holdoutRatio: ratio, holdoutThreshold: Math.floor(ratio * 0x100000000),
+      goldenCases: rows.length, holdoutCases: holdout.length, publicCases: rows.length - holdout.length,
+      holdout: holdout.map((r) => ({ caseHash: r.hash, sealedVerdict: r.evalVerdict() })),
+      sealedAt: new Date().toISOString(),
+    };
+    manifest.contentHash = contentHash(manifest);
+    fs.mkdirSync(path.dirname(suite.manifestPath), { recursive: true });
+    fs.writeFileSync(suite.manifestPath, `${JSON.stringify(manifest)}\n`);
+    process.stdout.write(`Holdout sealed (${suite.name}): ${holdout.length}/${rows.length} cases -> ${suite.manifestPath}\n`);
+  }
+  return 0;
+}
+
+function hasLeakedProbe(raw, rows) {
+  return rows.some((r) => r.probes.some((p) => p.length >= 12 && raw.includes(p)));
+}
+
+function checkSecondarySuites(opts = {}) {
+  if (CUSTOM_SINGLE_SUITE && !opts.force) return 0;
+  for (const suite of loadSecondarySuites(opts)) {
+    if (!fs.existsSync(suite.manifestPath)) {
+      process.stderr.write(`eval-holdout check (${suite.name}): no manifest at ${suite.manifestPath}\n`);
+      return 2;
+    }
+    const raw = fs.readFileSync(suite.manifestPath, 'utf8');
+    const manifest = JSON.parse(raw);
+    const rows = suite.load();
+    const derived = new Set(rows.filter((r) => isHoldout(r.hash, manifest.holdoutRatio ?? DEFAULT_HOLDOUT_RATIO)).map((r) => r.hash));
+    const entries = manifest.holdout || [];
+    const sealed = new Set(entries.map((e) => e.caseHash));
+    const badPartition = manifest.goldenCases !== rows.length || entries.length !== derived.size || derived.size !== sealed.size || [...derived].some((h) => !sealed.has(h));
+    if (manifest.contentHash !== contentHash(manifest) || badPartition || hasLeakedProbe(raw, rows)) {
+      process.stderr.write(`eval-holdout check (${suite.name}): SEAL BROKEN\n`);
+      return 1;
+    }
+    process.stdout.write(`Holdout seal intact (${suite.name}): ${sealed.size}/${rows.length} cases sealed.\n`);
+  }
+  return 0;
+}
+
+function verifySecondarySuites(opts = {}) {
+  if (CUSTOM_SINGLE_SUITE && !opts.force) return 0;
+  for (const suite of loadSecondarySuites(opts)) {
+    if (!fs.existsSync(suite.manifestPath)) return 2;
+    const manifest = JSON.parse(fs.readFileSync(suite.manifestPath, 'utf8'));
+    const byHash = new Map(suite.load().map((r) => [r.hash, r]));
+    const entries = manifest.holdout || [];
+    const compared = entries.filter((e) => byHash.has(e.caseHash)).length;
+    const drifted = entries.filter((e) => byHash.has(e.caseHash) && byHash.get(e.caseHash).evalVerdict() !== e.sealedVerdict).length;
+    if (!compared || compared !== entries.length || drifted > 0) {
+      process.stderr.write(`Holdout verify (${suite.name}): compared=${compared} drifted=${drifted}\n`);
+      return 1;
+    }
+    process.stdout.write(`Holdout verify (${suite.name}): compared=${compared} drifted=0 (sealed set)\n`);
+  }
+  return 0;
 }
 
 // --- Modes ---
@@ -187,7 +301,7 @@ async function freeze(ratio = DEFAULT_HOLDOUT_RATIO) {
     `Holdout sealed: ${holdout.length}/${cases.length} cases held out `
     + `(public ${publicCases.length}) -> ${HOLDOUT_MANIFEST}\n`,
   );
-  return 0;
+  return freezeSecondarySuites(ratio);
 }
 
 function check() {
@@ -214,6 +328,9 @@ function check() {
   if (manifest.goldenCases !== cases.length) {
     violations.push(`goldenCases ${manifest.goldenCases} != current ${cases.length}`);
   }
+  if ((manifest.holdout || []).length !== derivedHoldout.length) {
+    violations.push(`holdout length ${(manifest.holdout || []).length} != derived ${derivedHoldout.length}`);
+  }
   for (const hash of derived) {
     if (!sealed.has(hash)) violations.push(`derived holdout case ${hash.slice(0, 12)}… missing from manifest`);
   }
@@ -239,7 +356,7 @@ function check() {
   process.stdout.write(
     `Holdout seal intact: ${sealed.size}/${cases.length} cases sealed, no question leakage.\n`,
   );
-  return 0;
+  return checkSecondarySuites();
 }
 
 async function verify() {
@@ -280,7 +397,7 @@ async function verify() {
     );
     return 1;
   }
-  return 0;
+  return verifySecondarySuites();
 }
 
 async function main() {
@@ -299,8 +416,11 @@ module.exports = {
   contentHash,
   loadGolden,
   freeze,
+  freezeSecondarySuites,
   check,
+  checkSecondarySuites,
   verify,
+  verifySecondarySuites,
   GOLDEN,
   HOLDOUT_MANIFEST,
   DEFAULT_HOLDOUT_RATIO,

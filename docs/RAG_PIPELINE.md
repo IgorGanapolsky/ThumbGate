@@ -41,7 +41,7 @@ npm run test:dashboard-chat
 | **MRR** | 1/rank of first relevant hit | same |
 | **nDCG@k** | Graded relevance with log discount | same |
 
-Golden qrels: `config/evals/retrieval-ranking-golden.json` (20 graded queries)
+Golden qrels: `config/evals/retrieval-ranking-golden.json` (108 graded queries across 37 docs, including hard non-saturated slice)
 System under test: pragmatic hybrid + BM25 second stage (same pieces as gate retrieval).
 
 ### Generation quality (offline Ragas-style)

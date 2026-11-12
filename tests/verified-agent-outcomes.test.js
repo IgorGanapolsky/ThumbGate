@@ -279,12 +279,28 @@ test('human escalation requires evidence and a distinct human decision maker', (
   }
 });
 
-test('golden outcome evaluation is complete and regression-free', () => {
+test('golden outcome evaluation has >= 50 cases, is non-saturated, and regression-free', () => {
   const report = runAgentOutcomeEval();
   assert.equal(report.pass, true);
-  assert.equal(report.score, 100);
-  assert.equal(report.total, 8);
+  assert.ok(report.score >= 92 && report.score < 100);
+  assert.equal(report.saturated, false);
+  assert.ok(report.total >= 50);
   assert.deepEqual(report.regressions, []);
+
+  const tmpSuite = path.join(os.tmpdir(), `tg-saturated-outcomes-${process.pid}.json`);
+  const rawSuite = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'config', 'evals', 'agent-outcomes-golden.json'), 'utf8'));
+  fs.writeFileSync(tmpSuite, JSON.stringify({
+    ...rawSuite,
+    successCriteria: { minAggregateScore: 90, minimumCases: 1 },
+    cases: [rawSuite.cases[0]],
+  }));
+  try {
+    const sat = runAgentOutcomeEval({ suitePath: tmpSuite, baselinePath: path.join(os.tmpdir(), 'absent-baseline.json') });
+    assert.equal(sat.saturated, true);
+    assert.equal(sat.pass, false);
+  } finally {
+    fs.rmSync(tmpSuite, { force: true });
+  }
 });
 
 test('production monitor distinguishes insufficient evidence, blocked, and healthy', () => {

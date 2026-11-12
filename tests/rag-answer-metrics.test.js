@@ -88,13 +88,25 @@ test('malformed judge diagnostics degrade to null', async () => {
   assert.equal(result.judgeDiagnostic, null);
 });
 
-test('answer-quality golden is adversarial and passes without false positives', () => {
+test('answer-quality golden is adversarial, >= 50 cases, non-saturated, and passes with zero false positives', () => {
   const golden = loadAnswerGolden();
-  assert.ok(golden.cases.length >= 8);
+  assert.ok(golden.cases.length >= 50);
   assert.ok(golden.cases.some((sample) => sample.id === 'negation-flip'));
   assert.ok(golden.cases.some((sample) => sample.id === 'numeric-drift'));
   const result = evaluateAnswerGolden({ golden });
   assert.equal(result.passed, true, result.failures.join('; '));
-  assert.equal(result.summary.classificationAccuracy, 1);
+  assert.ok(result.summary.classificationAccuracy >= 0.85 && result.summary.classificationAccuracy < 1);
   assert.equal(result.summary.falsePasses, 0);
+});
+
+test('evaluateAnswerGolden fails saturation check when accuracy sits at 1.000', () => {
+  const golden = loadAnswerGolden();
+  const easyOnly = {
+    ...golden,
+    thresholds: { minCases: 1, minClassificationAccuracy: 0.8, maxFalsePasses: 0 },
+    cases: golden.cases.slice(0, 8),
+  };
+  const result = evaluateAnswerGolden({ golden: easyOnly });
+  assert.equal(result.passed, false);
+  assert.ok(result.failures.some((f) => f.startsWith('saturated:')));
 });

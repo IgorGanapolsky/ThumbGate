@@ -85,14 +85,16 @@ after(() => {
 test('the mined benchmark exists and is not vacuous', () => {
   const cases = loadCases();
   assert.ok(fs.existsSync(GOLDEN), `missing benchmark at ${GOLDEN} — run: npm run eval:mine`);
-  assert.ok(cases.length >= 20, `benchmark has only ${cases.length} cases; expected >= 20`);
+  // Mined across every repo and worktree trail on the machine (npm run eval:mine -- --source ...).
+  // 60 cases from one trail left whole gates untested; 200 is the floor that held 30+ gates.
+  assert.ok(cases.length >= 200, `benchmark has only ${cases.length} cases; expected >= 200`);
   // Every case must be replayable. Mining the wrong log once produced entries with empty
   // commands, which pass trivially and look like coverage.
   const unreplayable = cases.filter((c) => !c.command);
   assert.deepEqual(unreplayable, [], 'benchmark contains cases with no command to replay');
   // And it must span more than one gate, or it is measuring one code path.
   const gates = new Set(cases.map((c) => c.expect?.gateId));
-  assert.ok(gates.size >= 5, `benchmark covers only ${gates.size} gate(s); expected >= 5`);
+  assert.ok(gates.size >= 30, `benchmark covers only ${gates.size} gate(s); expected >= 30`);
 });
 
 test('the benchmark carries no home paths or credentials', () => {
@@ -101,6 +103,9 @@ test('the benchmark carries no home paths or credentials', () => {
   assert.doesNotMatch(raw, /\/Users\/(?!redacted)[A-Za-z0-9._]+/, 'unredacted /Users/ path');
   assert.doesNotMatch(raw, /-Users-(?!redacted)[A-Za-z0-9._]+/, 'unredacted dash-encoded home path');
   assert.doesNotMatch(raw, /\b(gh[pousr]_|sk-|npm_)[A-Za-z0-9]{8,}/, 'possible credential');
+  // Sibling-repo trails also carry cloud account IDs and private infrastructure.
+  assert.doesNotMatch(raw, /arn:aws:|\b\d{12}\b/, 'cloud account identifier');
+  assert.doesNotMatch(raw, /workspace\/(?!ThumbGate)[A-Za-z]/, 'another project\'s checkout path');
 });
 
 // WHY THIS ASSERTS DRIFT, NOT CORRECTNESS-VS-PRODUCTION.
@@ -125,8 +130,16 @@ test('no enforcement drift on real production commands', async () => {
     assert.fail(`missing baseline at ${BASELINE} — run: npm run eval:baseline`);
   }
   const baseline = JSON.parse(fs.readFileSync(BASELINE, 'utf8'));
-  assert.ok(Object.keys(baseline.verdicts || {}).length >= 20,
+  assert.ok(Object.keys(baseline.verdicts || {}).length >= 180,
     'baseline is too small to be meaningful');
+  // Saturation guard: if 100% of mined commands collapse to one verdict (e.g. all deny or all
+  // none), the benchmark has lost its boundary cases and cannot catch over-blocking or silence.
+  const verdictValues = Object.values(baseline.verdicts || {});
+  const distinctVerdicts = new Set(verdictValues);
+  assert.ok(distinctVerdicts.size >= 2, 'saturated baseline: every case has the same verdict');
+  const matchProduction = cases.filter((c) => baseline.verdicts[`${c.toolName}|${c.command}`] === c.expect?.decision).length;
+  assert.ok(matchProduction < cases.length,
+    'saturated gate benchmark: 100% of isolated replays match stateful production verdicts');
 
   const emptyFeedbackDir = fs.mkdtempSync(path.join(os.tmpdir(), 'tg-eval-test-feedback-'));
   const origFeedbackDir = process.env.THUMBGATE_FEEDBACK_DIR;
@@ -142,10 +155,10 @@ test('no enforcement drift on real production commands', async () => {
       const expected = baseline.verdicts[key];
       if (expected === undefined) continue;   // new case, not yet baselined
       compared += 1;
-      const verdict = await evaluateGatesAsync(testCase.toolName, {
-        command: testCase.command,
-        cwd: repo,
-      });
+      const input = testCase.toolName === 'Bash'
+        ? { command: testCase.command, cwd: repo }
+        : { file_path: testCase.command, cwd: repo };
+      const verdict = await evaluateGatesAsync(testCase.toolName, input);
       const actual = verdict ? verdict.decision : 'none';
       if (actual !== expected) {
         drift.push(`${JSON.stringify(testCase.command.slice(0, 60))}: ${expected} -> ${actual}`);

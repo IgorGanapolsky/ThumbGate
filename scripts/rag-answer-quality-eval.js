@@ -44,6 +44,10 @@ function evaluateAnswerGolden(options = {}) {
   if (classificationAccuracy < Number(thresholds.minClassificationAccuracy || 1)) {
     failures.push(`classification accuracy ${classificationAccuracy.toFixed(3)} < ${thresholds.minClassificationAccuracy}`);
   }
+  const maxAcc = Number(thresholds.maxClassificationAccuracy ?? 0.999);
+  if (cases.length > 0 && classificationAccuracy >= maxAcc) {
+    failures.push(`saturated: classification accuracy ${classificationAccuracy.toFixed(3)} >= ${maxAcc}`);
+  }
   if (falsePasses > Number(thresholds.maxFalsePasses || 0)) {
     failures.push(`false passes ${falsePasses} > ${thresholds.maxFalsePasses}`);
   }

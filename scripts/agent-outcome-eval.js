@@ -61,6 +61,9 @@ function runAgentOutcomeEval(options = {}) {
   const score = Math.round((results.reduce((sum, result) => sum + result.score, 0) / results.length));
   const minimumCases = Number(suite.successCriteria?.minimumCases || 1);
   const minimumScore = Number(suite.successCriteria?.minAggregateScore || 100);
+  const maximumScore = suite.successCriteria?.maxAggregateScore == null
+    ? 99
+    : Number(suite.successCriteria.maxAggregateScore);
   const baselinePath = path.resolve(options.baselinePath || DEFAULT_BASELINE);
   const baseline = fs.existsSync(baselinePath)
     ? JSON.parse(fs.readFileSync(baselinePath, 'utf8'))
@@ -75,10 +78,13 @@ function runAgentOutcomeEval(options = {}) {
     failed: results.length - passed,
     score,
     minimumScore,
+    maximumScore,
+    saturated: score > maximumScore,
     minimumCases,
     regressions,
     pass: results.length >= minimumCases
       && score >= minimumScore
+      && score <= maximumScore
       && (!suite.successCriteria?.requireNoRegressions || regressions.length === 0),
     metrics: calculateTaskOutcomeMetrics(results.map((result) => result.receipt)),
     results,

@@ -128,3 +128,29 @@ test('verify fails when sealed verdicts are forged', async () => {
     fs.writeFileSync(holdout.HOLDOUT_MANIFEST, original);
   }
 });
+
+test('secondary suite seals freeze, check, detect tamper/leak, and verify', () => {
+  const manifestDir = path.join(workDir, 'sec-evals');
+  const opts = { force: true, manifestDir };
+  assert.equal(holdout.checkSecondarySuites(opts), 2, 'missing manifest returns 2');
+  assert.equal(holdout.verifySecondarySuites(opts), 2, 'missing manifest on verify returns 2');
+  assert.equal(holdout.freezeSecondarySuites(1 / 3, opts), 0);
+  assert.equal(holdout.checkSecondarySuites(opts), 0);
+  assert.equal(holdout.verifySecondarySuites(opts), 0);
+
+  const aqPath = path.join(manifestDir, 'rag-answer-quality.holdout.json');
+  const origAq = fs.readFileSync(aqPath, 'utf8');
+  try {
+    const tampered = JSON.parse(origAq);
+    tampered.holdout[0].sealedVerdict = tampered.holdout[0].sealedVerdict === 'pass' ? 'fail' : 'pass';
+    fs.writeFileSync(aqPath, JSON.stringify(tampered));
+    assert.equal(holdout.checkSecondarySuites(opts), 1, 'tampered hash breaks seal');
+    assert.equal(holdout.verifySecondarySuites(opts), 1, 'drifted verdict fails verify');
+    tampered.leaked = 'How should I update protected main?';
+    tampered.contentHash = holdout.contentHash(tampered);
+    fs.writeFileSync(aqPath, JSON.stringify(tampered));
+    assert.equal(holdout.checkSecondarySuites(opts), 1, 'leaked query breaks seal');
+  } finally {
+    fs.writeFileSync(aqPath, origAq);
+  }
+});

@@ -160,7 +160,7 @@ production traces to the published npm artifact:
 
 ```mermaid
 flowchart TD
-    A["audit-trail.jsonl<br/>real production decisions"] -->|"mine-eval-set.js<br/>redact + dedupe by shape"| G["gate-decisions.golden.jsonl<br/>60 cases · 12 gates"]
+    A["audit-trail.jsonl<br/>real production decisions"] -->|"mine-eval-set.js<br/>redact + dedupe by shape"| G["gate-decisions.golden.jsonl<br/>210 cases · 34 gates"]
     G -->|eval-baseline.js| B["gate-decisions.baseline.json<br/>recorded verdicts"]
     G --> D
     B --> D{{"gate-golden-set.test.js<br/>fails when any real command's<br/>verdict MOVES"}}

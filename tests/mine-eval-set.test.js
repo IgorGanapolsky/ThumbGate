@@ -14,11 +14,14 @@ const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
 
-const { redact, commandShape, mine, readEvents } = require('../scripts/mine-eval-set.js');
+const {
+  redact, commandShape, isPublishable, mine, readEvents, readSources, parseArgs,
+} = require('../scripts/mine-eval-set.js');
 
 test('redact removes slash-form home paths', () => {
   assert.strictEqual(redact('/Users/igorganapolsky/workspace/x'), '/Users/redacted/workspace/x');
   assert.strictEqual(redact('/home/someone/thing'), '/home/redacted/thing');
+  assert.strictEqual(redact('git -C /var/folders/66/fkp57h8x0000gp/T/tg-bypass-Ab12Cd push'), 'git -C /tmp/redacted push');
 });
 
 test('redact removes DASH-encoded home paths', () => {
@@ -32,8 +35,8 @@ test('redact removes DASH-encoded home paths', () => {
 });
 
 test('redact removes credentials and emails', () => {
-  for (const token of ['ghp_abcdefgh12345678', 'sk-abcdefgh12345678', 'npm_abcdefgh12345678']) {
-    assert.doesNotMatch(redact(`export TOKEN=${token}`), /abcdefgh/, `leaked: ${token}`);
+  for (const token of ['ghp_abcdefgh12345678', 'sk-ant-api03-abcdefgh1234', 'rk_live_abcdefgh1234', 'AKIAIOSFODNN7EXAMPLE', 'npm_abcdefgh12345678']) {
+    assert.doesNotMatch(redact(`export TOKEN=${token}`), /abcdefgh|IOSFODNN/, `leaked: ${token}`);
   }
   assert.strictEqual(redact('mail me at person@example.com'), 'mail me at redacted@example.com');
 });
@@ -107,6 +110,34 @@ test('mine drops cases that cannot be replayed', () => {
   assert.deepEqual(mine(events), [], 'unreplayable events must be dropped, not padded into the set');
 });
 
+test('mine skips structured gate objects, unpublishable commands, and --exclude matches', () => {
+  assert.strictEqual(isPublishable('git push --force origin main'), true);
+  assert.strictEqual(isPublishable('cd ~/workspace/ThumbGate && npm test'), true);
+  for (const bad of [
+    'aws budgets create-budget --account-id 461415799724',
+    'aws secretsmanager get-secret-value --secret-id arn:aws:secretsmanager:x',
+    'cd /Users/redacted/workspace/projects/other && ls',
+    'cd ~/repo.worktrees/agent-x && ls',
+    'with-secrets FOO -- curl x',
+    'curl https://10.10.20.83/login',
+    'a\nb\nc\nd\ne',
+    'x'.repeat(401),
+    `${'x'.repeat(200)}...`,
+  ]) assert.strictEqual(isPublishable(bad), false, bad);
+  const { exclude } = parseArgs(['--exclude', 'acmecorp']);
+  const cases = mine([
+    { toolName: 'Bash', toolInput: { command: 'git push --force' }, gateId: { id: 'x' }, decision: 'deny' },
+    { toolName: 'Bash', toolInput: { command: 'aws iam list-users --profile 123456789012' }, gateId: 'g', decision: 'deny' },
+    { toolName: 'Bash', toolInput: { command: 'tail /tmp/AcmeCorp-web.log' }, gateId: 'g', decision: 'deny' },
+    { toolName: 'Bash', toolInput: { command: 'rm -rf ~' }, gateId: 'g', decision: 'deny' },
+    { toolName: 'Edit', toolInput: { file_path: 'config/gates/default.json' }, gateId: null, decision: 'allow' },
+  ], { exclude });
+  assert.deepEqual(cases.map((c) => `${c.toolName}:${c.command}:${c.expect.gateId}`), [
+    'Bash:rm -rf ~:g',
+    'Edit:config/gates/default.json:none',
+  ]);
+});
+
 test('mine accepts the alternate tool_name spelling', () => {
   const cases = mine([
     { tool_name: 'Bash', toolInput: { command: 'echo hi' }, gateId: 'g1', decision: 'none' },
@@ -131,6 +162,27 @@ test('readEvents survives corrupt lines without losing the rest of the corpus', 
   const events = readEvents(file);
   assert.strictEqual(events.length, 2, 'one bad line should not discard the whole trace');
   fs.rmSync(path.dirname(file), { recursive: true, force: true });
+});
+
+test('readSources unions trails and counts a line copied into a worktree once', () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'tg-mine-'));
+  const shared = JSON.stringify({ toolName: 'Bash', toolInput: { command: 'a b' }, gateId: 'g', decision: 'deny' });
+  const own = JSON.stringify({ toolName: 'Bash', toolInput: { command: 'c d' }, gateId: 'g', decision: 'deny' });
+  const main = path.join(dir, 'main.jsonl');
+  const wt = path.join(dir, 'wt.jsonl');
+  fs.writeFileSync(main, `${shared}\n`);
+  fs.writeFileSync(wt, `${shared}\n${own}\n`);
+
+  const events = readSources([main, wt, path.join(dir, 'absent.jsonl')]);
+  assert.strictEqual(events.length, 2, 'duplicate line across sources inflated observation counts');
+  assert.strictEqual(mine(events)[0].observed, 1);
+  assert.strictEqual(readSources([path.join(dir, 'absent.jsonl')]), null, 'no readable source must be an error');
+  fs.rmSync(dir, { recursive: true, force: true });
+});
+
+test('parseArgs honors repeated --source and falls back to the default trail', () => {
+  assert.deepEqual(parseArgs(['--source', 'a.jsonl', '--dry-run', '--source', 'b.jsonl']).sources, ['a.jsonl', 'b.jsonl']);
+  assert.ok(parseArgs(['--dry-run']).sources.length >= 1);
 });
 
 test('a mined case carries everything needed to replay and check it', () => {

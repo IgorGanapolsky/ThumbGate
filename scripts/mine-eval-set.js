@@ -17,8 +17,7 @@
  * Redaction is mandatory, not optional: gate messages embed absolute paths, and a benchmark
  * committed to a public repo must not carry someone's home directory or repo layout.
  *
- *   node scripts/mine-eval-set.js            # mine into evals/
- *   node scripts/mine-eval-set.js --dry-run  # print what would be written
+ *   node scripts/mine-eval-set.js [--source path]... [--exclude regex]... [--dry-run]
  */
 
 const fs = require('node:fs');
@@ -30,7 +29,9 @@ const HOME = process.env.THUMBGATE_HOME || path.join(os.homedir(), '.thumbgate')
 // (gateId, decision, toolName) but drops toolInput, so nothing in it can be replayed —
 // mining it produced 7 cases with empty commands, a benchmark that would pass vacuously.
 // The audit trail keeps sanitizeToolInput(toolInput), which is what makes a case runnable.
-const SOURCE = process.env.THUMBGATE_AUDIT_TRAIL || path.join(HOME, 'audit-trail.jsonl');
+const DEFAULT_SOURCES = (process.env.THUMBGATE_AUDIT_TRAIL || path.join(HOME, 'audit-trail.jsonl'))
+  .split(path.delimiter)
+  .filter(Boolean);
 const OUT_DIR = path.join(__dirname, '..', 'evals');
 const OUT_FILE = path.join(OUT_DIR, 'gate-decisions.golden.jsonl');
 
@@ -39,6 +40,7 @@ const REPLAYABLE_TOOLS = new Set(['Bash', 'Edit', 'Write', 'MultiEdit']);
 
 function redact(text) {
   return String(text || '')
+    .replace(/\/(?:private\/)?var\/folders\/[A-Za-z0-9_]+\/[A-Za-z0-9_]+\/T\/[A-Za-z0-9._-]+/g, '/tmp/redacted')
     .replace(/\/Users\/[^\s/"']+/g, '/Users/redacted')
     .replace(/\/home\/[^\s/"']+/g, '/home/redacted')
     // Claude/tooling encode paths with dashes: "-Users-igorganapolsky-workspace-...".
@@ -47,7 +49,7 @@ function redact(text) {
     .replace(/-Users-[A-Za-z0-9_.]+/g, '-Users-redacted')
     .replace(/-home-[A-Za-z0-9_.]+/g, '-home-redacted')
     .replace(/\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b/g, 'redacted@example.com')
-    .replace(/\b(gh[pousr]_|sk-|npm_)[A-Za-z0-9]{8,}/g, '<redacted-token>')
+    .replace(/\b(?:gh[pousr]_|sk-|sk_live_|sk_test_|rk_live_|rk_test_|npm_|AKIA)[A-Za-z0-9_-]{8,}/g, '<redacted-token>')
     .replace(/:\d{4,5}\b/g, ':PORT');
 }
 
@@ -62,7 +64,24 @@ function commandShape(command) {
     .join(' ');
 }
 
-function readEvents(file) {
+// Drop sibling-repo infra, private operator home dotfiles, secret helpers, oversized scripts, and 200-char slices.
+const UNPUBLISHABLE = [
+  /arn:aws:|\b\d{12}\b/,
+  /workspace\/(?!ThumbGate)[A-Za-z]|\.worktrees\//,
+  /\/(?:Users|home)\/[^\s/"']+\/\.(?:local|claude\/plans)\//,
+  /with-secrets|find-generic-password|\.thumbgate\/secrets/,
+  /\b(?:10|192\.168|172\.(?:1[6-9]|2\d|3[01]))\.\d{1,3}\.\d{1,3}(?:\.\d{1,3})?\b/,
+];
+
+function isPublishable(command, exclude = []) {
+  if (command.length > 400 || (command.length >= 200 && command.endsWith('...'))) return false;
+  if (command.split('\n').length > 4) return false;
+  if (UNPUBLISHABLE.some((pattern) => pattern.test(command))) return false;
+  const lower = command.toLowerCase();
+  return !exclude.some((needle) => lower.includes(needle));
+}
+
+function readEvents(file, seenLines = new Set()) {
   let raw;
   try {
     raw = fs.readFileSync(file, 'utf8');
@@ -71,7 +90,8 @@ function readEvents(file) {
   }
   const events = [];
   for (const line of raw.split('\n')) {
-    if (!line.trim()) continue;
+    if (!line.trim() || seenLines.has(line)) continue;
+    seenLines.add(line);
     try {
       events.push(JSON.parse(line));
     } catch {
@@ -81,47 +101,96 @@ function readEvents(file) {
   return events;
 }
 
-function mine(events) {
-  const seen = new Map();
-  for (const event of events) {
-    const toolName = event.toolName || event.tool_name;
-    const command = event.toolInput?.command || event.command || '';
-    const gateId = event.gateId || event.gate;
-    const decision = event.decision;
-    if (!toolName || !gateId || !decision) continue;
-    if (!REPLAYABLE_TOOLS.has(toolName)) continue;
-    // A case with no input cannot be replayed, and a benchmark of unreplayable cases
-    // passes trivially while looking like coverage. Drop them rather than pad the count.
-    if (!command) continue;
+// Union of several trails. Returns null only when NO source could be read.
+function readSources(files) {
+  const seenLines = new Set();
+  let found = false;
+  const events = [];
+  for (const file of files) {
+    const batch = readEvents(file, seenLines);
+    if (batch === null) continue;
+    found = true;
+    events.push(...batch);
+  }
+  return found ? events : null;
+}
 
-    const shape = commandShape(command);
-    const key = `${toolName}|${shape}|${gateId}|${decision}`;
+function parseArgs(argv) {
+  const sources = [];
+  const exclude = [];
+  let index = 0;
+  while (index < argv.length) {
+    const flag = argv[index];
+    const next = argv[index + 1];
+    if (flag === '--source' && next) {
+      sources.push(next);
+      index += 2;
+    } else if (flag === '--exclude' && next) {
+      exclude.push(String(next).toLowerCase());
+      index += 2;
+    } else {
+      index += 1;
+    }
+  }
+  return { sources: sources.length > 0 ? sources : DEFAULT_SOURCES, exclude };
+}
+
+function extractReplayableInput(event, toolName) {
+  const ti = event.toolInput || {};
+  if (toolName === 'Bash') return ti.command || event.command || '';
+  return ti.command || event.command || ti.file_path || ti.filePath || '';
+}
+
+function normalizeTraceEvent(event, exclude) {
+  const toolName = event.toolName || event.tool_name;
+  if (typeof toolName !== 'string' || !REPLAYABLE_TOOLS.has(toolName)) return null;
+  const decision = event.decision;
+  if (typeof decision !== 'string' || !decision) return null;
+  const rawGate = event.gateId ?? event.gate;
+  const gateId = rawGate === undefined || rawGate === null
+    ? (decision === 'allow' ? 'none' : '')
+    : rawGate;
+  if (typeof gateId !== 'string' || !gateId) return null;
+  const command = extractReplayableInput(event, toolName);
+  if (typeof command !== 'string' || !command || !isPublishable(command, exclude)) return null;
+  return { toolName, command: redact(command), gateId, decision };
+}
+
+function mine(events, { exclude = [] } = {}) {
+  const needles = exclude.map((x) => String(x).toLowerCase()).filter(Boolean);
+  const seen = new Map();
+  const seenInputs = new Set();
+  for (const event of events) {
+    const row = normalizeTraceEvent(event, needles);
+    if (!row) continue;
+    const shape = commandShape(row.command);
+    const key = `${row.toolName}|${shape}|${row.gateId}|${row.decision}`;
     if (seen.has(key)) {
       seen.get(key).observed += 1;
       continue;
     }
+    const inputKey = `${row.toolName}|${row.command}`;
+    if (seenInputs.has(inputKey)) continue;
+    seenInputs.add(inputKey);
     seen.set(key, {
-      // instruction: what to run
-      toolName,
-      command: redact(command),
-      // expectation: what production actually decided
-      expect: { gateId, decision },
-      // provenance: this is a mined case, not an invented one
+      toolName: row.toolName,
+      command: row.command,
+      expect: { gateId: row.gateId, decision: row.decision },
       source: 'production-trace',
       observed: 1,
     });
   }
-  // Most-observed first: the cases that recur in production matter most.
   return [...seen.values()].sort((a, b) => b.observed - a.observed);
 }
 
 function main(argv) {
-  const events = readEvents(SOURCE);
+  const { sources, exclude } = parseArgs(argv);
+  const events = readSources(sources);
   if (events === null) {
-    process.stderr.write(`mine-eval-set: no trace source at ${SOURCE}\n`);
+    process.stderr.write(`mine-eval-set: no trace source at ${sources.join(', ')}\n`);
     return 2;
   }
-  const cases = mine(events);
+  const cases = mine(events, { exclude });
   if (cases.length === 0) {
     // An empty benchmark looks like coverage and provides none.
     process.stderr.write(`mine-eval-set: ${events.length} events yielded 0 replayable cases\n`);
@@ -145,7 +214,7 @@ function main(argv) {
   return 0;
 }
 
-module.exports = { redact, commandShape, mine, readEvents, main, OUT_FILE };
+module.exports = { redact, commandShape, isPublishable, mine, readEvents, readSources, parseArgs, main, OUT_FILE };
 
 if (require.main && require.main.filename === module.filename) {
   process.exit(main(process.argv.slice(2)));

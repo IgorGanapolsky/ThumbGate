@@ -153,6 +153,13 @@ function evaluateRankingGolden(options = {}) {
       );
     }
   }
+  // Saturation guard: a benchmark where MRR and Recall@5 both sit at 1.000 has no hard
+  // cases left and cannot discriminate ranking improvements from stagnation.
+  const maxMrr = thresholds.maxMrr ?? 0.999;
+  const maxRecallAt5 = thresholds.maxRecallAt5 ?? 0.999;
+  if (summary.queries > 0 && summary.mrr >= maxMrr && summary['recall@5'] >= maxRecallAt5) {
+    failures.push(`saturated: mrr ${summary.mrr.toFixed(3)} >= ${maxMrr} and recall@5 ${summary['recall@5'].toFixed(3)} >= ${maxRecallAt5}`);
+  }
 
   return {
     goldenPath,
