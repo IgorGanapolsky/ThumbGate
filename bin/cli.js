@@ -5692,7 +5692,7 @@ switch (COMMAND) {
       try { visualFindings = JSON.parse(rawFindings); } catch { visualFindings = [rawFindings]; }
     }
     const { runDesignSelfCorrectionPipeline } = require(path.join(PKG_ROOT, 'src', 'openshell-lovable-engine'));
-    const report = runDesignSelfCorrectionPipeline({ filePath: fullPath, visualFindings, allowTailwind, applyInPlace: writeInPlace });
+    const report = runDesignSelfCorrectionPipeline({ filePath: fullPath, visualFindings, allowTailwind, applyInPlace: writeInPlace, allowDiskRead: true });
     if (jsonFlag) console.log(JSON.stringify(report, null, 2));
     else {
       console.log(`design-fix: ${report.issueCount} AST optimization(s)${report.appliedInPlace ? ` written to ${targetFile}` : ''}`);
