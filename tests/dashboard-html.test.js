@@ -169,13 +169,19 @@ test('dashboard demo keeps paid and revenue placeholders evidence-safe', () => {
   assert.doesNotMatch(dashboard, /Live demo data below\./);
 });
 
-test('dashboard hides sign-in button and sign-in copy when signed in and renders a single Finish setup bar keyed on first block', () => {
+test('dashboard hides setup bar for paid/owner accounts and shows Connect your local ThumbGate (never Finish setup) only for unheard-from Free sign-ups', async (t) => {
+  const os = require('node:os');
+  const crypto = require('node:crypto');
+  const { startServer, __test__: serverTestHooks } = require('../src/api/server');
+  const { provisionApiKey } = require('../scripts/billing');
   const dashboard = readDashboard();
   const installHtml = fs.readFileSync(path.join(__dirname, '..', 'public', 'install.html'), 'utf8');
 
   assert.match(dashboard, /function syncAuthBarVisibility\(state, options\)/);
-  assert.equal((dashboard.match(/id="upNextCard"/g) || []).length, 1, 'must have exactly one Finish setup bar');
+  assert.equal((dashboard.match(/id="upNextCard"/g) || []).length, 1, 'must have at most one setup card');
   assert.equal((dashboard.match(/data-finish-setup-bar="true"/g) || []).length, 1, 'no second setup banner');
+  assert.doesNotMatch(dashboard, /Finish setup/i, 'dashboard HTML/JS must never render Finish setup');
+  assert.match(dashboard, /Connect your local ThumbGate/);
   assert.match(dashboard, /id="upNextActionBtn" href="\/install#quickstart"/);
   assert.match(dashboard, /npx thumbgate quickstart/);
   assert.match(installHtml, /id="quickstart"/);
@@ -187,4 +193,125 @@ test('dashboard hides sign-in button and sign-in copy when signed in and renders
   assert.match(dashboard, /function chatRenderModelRoute\(data\)/);
   assert.match(dashboard, /id="lessonStorageFooter"/);
   assert.match(dashboard, /100% On-Device Private Memory/);
+
+  // HTTP session contract: Pro, Enterprise, and owner emails NEVER receive upNext; unheard-from Free gets Connect your local ThumbGate
+  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'tg-finish-setup-'));
+  const savedEnv = {};
+  for (const k of [
+    'THUMBGATE_FEEDBACK_DIR',
+    'THUMBGATE_API_KEY',
+    'THUMBGATE_OPERATOR_KEY',
+    'THUMBGATE_OWNER_EMAILS',
+    'STRIPE_SECRET_KEY',
+    '_TEST_API_KEYS_PATH',
+    'GOOGLE_CLIENT_ID',
+    'GOOGLE_CLIENT_SECRET',
+  ]) {
+    savedEnv[k] = process.env[k];
+  }
+  process.env.THUMBGATE_FEEDBACK_DIR = tmpDir;
+  process.env.THUMBGATE_API_KEY = 'tg_admin_setup_test_01';
+  process.env.THUMBGATE_OPERATOR_KEY = 'tg_op_setup_test_01';
+  delete process.env.THUMBGATE_OWNER_EMAILS;
+  process.env.STRIPE_SECRET_KEY = '';
+  process.env._TEST_API_KEYS_PATH = path.join(tmpDir, 'api-keys.json');
+  process.env.GOOGLE_CLIENT_ID = 'setup-test-google.apps.googleusercontent.com';
+  process.env.GOOGLE_CLIENT_SECRET = 'setup-test-google-secret';
+
+  const { publicKey, privateKey } = crypto.generateKeyPairSync('rsa', { modulusLength: 2048 });
+  const googleJwk = { ...publicKey.export({ format: 'jwk' }), kid: 'setup-kid-1', alg: 'RS256', use: 'sig' };
+  let nextEmail = '';
+  serverTestHooks.setGoogleOAuthFetchForTests(async (url) => {
+    if (String(url).includes('certs')) {
+      return { ok: true, status: 200, json: async () => ({ keys: [googleJwk] }) };
+    }
+    const nowSec = Math.floor(Date.now() / 1000);
+    const hdr = Buffer.from(JSON.stringify({ alg: 'RS256', kid: 'setup-kid-1', typ: 'JWT' })).toString('base64url');
+    const payload = Buffer.from(JSON.stringify({
+      iss: 'https://accounts.google.com',
+      aud: process.env.GOOGLE_CLIENT_ID,
+      sub: `sub_${nextEmail}`,
+      email: nextEmail,
+      email_verified: true,
+      iat: nowSec - 5,
+      exp: nowSec + 300,
+    })).toString('base64url');
+    const sig = crypto.sign('RSA-SHA256', Buffer.from(`${hdr}.${payload}`), privateKey).toString('base64url');
+    return { ok: true, status: 200, json: async () => ({ id_token: `${hdr}.${payload}.${sig}` }) };
+  });
+
+  const { server, port } = await startServer({ port: 0, host: '127.0.0.1' });
+  t.after(async () => {
+    serverTestHooks.setGoogleOAuthFetchForTests(null);
+    await new Promise((resolve) => server.close(resolve));
+    for (const [k, v] of Object.entries(savedEnv)) {
+      if (v === undefined) delete process.env[k];
+      else process.env[k] = v;
+    }
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+  });
+  const origin = `http://127.0.0.1:${port}`;
+
+  async function googleSignIn(email) {
+    nextEmail = email;
+    const startRes = await fetch(`${origin}/v1/cloud/sso/authorize?provider=google`, { redirect: 'manual' });
+    const stateCookie = (startRes.headers.get('set-cookie') || '').split(';')[0];
+    const state = new URL(startRes.headers.get('location')).searchParams.get('state');
+    const cbRes = await fetch(`${origin}/v1/cloud/sso/callback?provider=google&code=code_${encodeURIComponent(email)}&state=${state}`, {
+      redirect: 'manual',
+      headers: { cookie: stateCookie },
+    });
+    const authCookie = (cbRes.headers.get('set-cookie') || '').split(';')[0];
+    const sessionRes = await fetch(`${origin}/v1/auth/session`, { headers: { cookie: authCookie } });
+    return { authCookie, session: await sessionRes.json() };
+  }
+
+  // 1. Unheard-from Free sign-up gets "Connect your local ThumbGate" + real command, never "Finish setup"
+  const freeUnheard = await googleSignIn('brandnew@example.com');
+  assert.equal(freeUnheard.session.tier, 'Free');
+  assert.equal(freeUnheard.session.firstBlockRecorded, false);
+  assert.ok(freeUnheard.session.upNext);
+  assert.equal(freeUnheard.session.upNext.title, 'Connect your local ThumbGate');
+  assert.equal(freeUnheard.session.upNext.command, 'npx thumbgate quickstart');
+  assert.match(freeUnheard.session.upNext.detail, /npx thumbgate quickstart/);
+  assert.doesNotMatch(JSON.stringify(freeUnheard.session.upNext), /Finish setup/i);
+
+  // 2. Free sign-up the site HAS heard from (feedback/memory/audit present) hides the bar
+  const freeTenantHash = `sso_free_${crypto.scryptSync('brandnew@example.com', 'thumbgate-sso_free-data-identity-v1', 16, { N: 16384, r: 8, p: 1 }).toString('hex').slice(0, 24)}`;
+  const freeTenantDir = path.join(tmpDir, 'tenants', freeTenantHash);
+  fs.mkdirSync(freeTenantDir, { recursive: true });
+  fs.writeFileSync(path.join(freeTenantDir, 'feedback-log.jsonl'), `${JSON.stringify({ signal: 'up', timestamp: '2026-11-12T22:00:00Z' })}\n`);
+  const freeHeardRes = await fetch(`${origin}/v1/auth/session`, { headers: { cookie: freeUnheard.authCookie } });
+  const freeHeard = await freeHeardRes.json();
+  assert.equal(freeHeard.firstBlockRecorded, true);
+  assert.equal(freeHeard.upNext, null);
+
+  // 3. Owner email never sees the bar even when THUMBGATE_OWNER_EMAILS is unset (tier === 'Free')
+  const ownerUnpaid = await googleSignIn('iganapolsky@gmail.com');
+  assert.equal(ownerUnpaid.session.firstBlockRecorded, true);
+  assert.equal(ownerUnpaid.session.upNext, null);
+
+  // 4. Paid Pro subscriber with empty hosted tenant folder NEVER sees the bar
+  provisionApiKey('cus_setup_pro_1', {
+    customerEmail: 'paidpro@example.com',
+    entitlementKind: 'subscription',
+    subscriptionId: 'sub_setup_pro_1',
+    source: 'stripe_webhook_checkout_completed',
+  });
+  const proSession = await googleSignIn('paidpro@example.com');
+  assert.equal(proSession.session.tier, 'Pro');
+  assert.equal(proSession.session.firstBlockRecorded, true);
+  assert.equal(proSession.session.upNext, null);
+
+  // 5. Enterprise session NEVER sees the bar
+  const entLogin = await fetch(`${origin}/v1/auth/session`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ apiKey: 'tg_admin_setup_test_01' }),
+  });
+  const entCookie = (entLogin.headers.get('set-cookie') || '').split(';')[0];
+  const entSession = await (await fetch(`${origin}/v1/auth/session`, { headers: { cookie: entCookie } })).json();
+  assert.equal(entSession.tier, 'Enterprise');
+  assert.equal(entSession.firstBlockRecorded, true);
+  assert.equal(entSession.upNext, null);
 });
