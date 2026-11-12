@@ -297,14 +297,23 @@ describe('Gemini Decisions API (gemini-decision-1) engine & server integration',
       assert.match(offerJson.checkoutPath, /^\/go\/playbook-999\?/);
 
       // Verify every offer's headline & rationale (and choice description) matches its live product page word-for-word
-      const stripHtml = (html) => html
-        .replace(/<script[\s\S]*?<\/script>/gi, ' ')
-        .replace(/<style[\s\S]*?<\/style>/gi, ' ')
-        .replace(/<[^>]+>/g, ' ')
-        .replace(/&amp;/g, '&')
-        .replace(/&middot;/g, '·')
-        .replace(/\s+/g, ' ')
-        .trim();
+      const stripHtml = (html) => {
+        let text = '';
+        let inTag = false;
+        let inScript = false;
+        let inStyle = false;
+        const lower = html.toLowerCase();
+        for (let i = 0; i < html.length; i += 1) {
+          if (lower.startsWith('<script', i)) { inScript = true; }
+          else if (lower.startsWith('</script>', i)) { inScript = false; i += 8; continue; }
+          if (lower.startsWith('<style', i)) { inStyle = true; }
+          else if (lower.startsWith('</style>', i)) { inStyle = false; i += 7; continue; }
+          if (html[i] === '<') { inTag = true; continue; }
+          if (html[i] === '>') { inTag = false; text += ' '; continue; }
+          if (!inTag && !inScript && !inStyle) text += html[i];
+        }
+        return text.replace(/&amp;/g, '&').replace(/&middot;/g, '·').replace(/\s+/g, ' ').trim();
+      };
       const pageCache = new Map();
       for (const offer of Object.values(STRIPE_OFFER_CATALOG)) {
         if (!pageCache.has(offer.productPagePath)) {
