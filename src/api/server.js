@@ -3059,8 +3059,42 @@ ${hiddenInputs}
       });
       try { window.plausible && window.plausible('Checkout Pro Reason Not Buying', { props: { page:'/checkout/pro', reasonCode: reason } }); } catch(_) {}
       var saved = document.getElementById('feedback-saved');
-      if (saved) saved.style.display = 'block';
-    });
+      if (saved) {
+        saved.style.display = 'block';
+        saved.textContent = 'Finding the best fit...';
+      }
+      fetch('/v1/billing/recommend-offer', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ reasonCode: reason, page: '/checkout/pro', currentPlan: pick('plan_id') || 'pro' })
+      }).then(function(r){ return r.ok ? r.json() : null; }).then(function(rec){
+        if (!saved || !rec || !rec.checkoutPath) return;
+        saved.innerHTML = '';
+        var title = document.createElement('strong');
+        title.style.display = 'block';
+        title.style.marginBottom = '4px';
+        title.textContent = rec.headline || 'Recommended option';
+        var note = document.createElement('span');
+        note.style.display = 'block';
+        note.style.marginBottom = '8px';
+        note.textContent = rec.rationale || '';
+        var cta = document.createElement('a');
+        cta.href = rec.checkoutPath;
+        cta.style.cssText = 'display:inline-block;padding:8px 12px;border-radius:6px;background:#22d3ee;color:#0f172a;font-weight:700;text-decoration:none;margin-right:8px';
+        cta.textContent = rec.ctaLabel || 'Continue with Stripe →';
+        saved.appendChild(title);
+        saved.appendChild(note);
+        saved.appendChild(cta);
+        if (rec.proofPath) {
+          var proof = document.createElement('a');
+          proof.href = rec.proofPath;
+          proof.style.cssText = 'color:#93c5fd;text-decoration:underline;font-size:13px';
+          proof.textContent = 'Inspect live benchmark proof';
+          saved.appendChild(proof);
+        }
+      }).catch(function(){
+        if (saved) saved.textContent = 'Feedback saved.';
+      });
   });
   window.addEventListener('pagehide', function(){
     if (!submitted && !feedbackSent) {
@@ -5385,6 +5419,21 @@ function renderCheckoutCancelledPage(runtimeConfig) {
           statusEl.textContent = selectedReason
             ? 'Feedback saved: ' + selectedReason.replaceAll('_', ' ') + '.'
             : 'Feedback saved.';
+          fetch('/v1/billing/recommend-offer', {
+            method: 'POST',
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify({ reasonCode: selectedReason || 'unspecified', reasonText: noteEl.value || '', page: '/cancel', currentPlan: 'pro' })
+          }).then(function (r) { return r.ok ? r.json() : null; }).then(function (rec) {
+            if (!rec || !rec.checkoutPath) return;
+            statusEl.textContent = '';
+            var strong = document.createElement('strong');
+            strong.textContent = rec.headline + ' — ';
+            var link = document.createElement('a');
+            link.href = rec.checkoutPath;
+            link.textContent = rec.ctaLabel || 'Open Stripe checkout →';
+            statusEl.appendChild(strong);
+            statusEl.appendChild(link);
+          }).catch(function () {});
         });
 
         document.querySelectorAll('[data-recovery-offer]').forEach(function (link) {
@@ -9770,8 +9819,40 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
       return;
     }
 
-    if (req.method === 'OPTIONS' && (pathname === '/v1/billing/checkout' || pathname === '/v1/billing/session')) {
+    if (req.method === 'OPTIONS' && (pathname === '/v1/billing/checkout' || pathname === '/v1/billing/session' || pathname === '/v1/billing/recommend-offer')) {
       sendPublicBillingPreflight(res);
+      return;
+    }
+
+    if (req.method === 'POST' && pathname === '/v1/billing/recommend-offer') {
+      try {
+        const body = await parseJsonBody(req);
+        const traceId = body.traceId || createTraceId('offer');
+        const forwardedList = req.headers['x-forwarded-for']
+          ? String(req.headers['x-forwarded-for']).split(',').map((s) => s.trim()).filter(Boolean)
+          : [];
+        const clientIp = String(
+          (forwardedList.length > 0 ? forwardedList[forwardedList.length - 1] : '')
+          || (req.socket && req.socket.remoteAddress)
+          || ''
+        ).trim();
+        const { recommendCheckoutOfferDecision } = require('../mcp-writeguard');
+        const recommendation = await recommendCheckoutOfferDecision({
+          reasonCode: body.reasonCode,
+          reasonText: body.reasonText,
+          page: body.page,
+          currentPlan: body.currentPlan,
+          clientIp,
+        });
+        sendJson(res, 200, { ...recommendation, traceId }, getPublicBillingHeaders(traceId));
+      } catch (err) {
+        sendProblem(res, {
+          type: PROBLEM_TYPES.BAD_REQUEST,
+          title: 'Request Error',
+          status: err.statusCode || 400,
+          detail: 'Unable to process offer recommendation request.',
+        }, getPublicBillingHeaders(''));
+      }
       return;
     }
 
@@ -10449,6 +10530,27 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
           });
           return;
         }
+      }
+
+      if (req.method === 'POST' && pathname === '/v1/gates/decide') {
+        const body = await parseJsonBody(req);
+        if (!body.toolName) {
+          throw createHttpError(400, 'Missing toolName');
+        }
+        const projectChatSettings = readProjectChatSettings(req, parsed);
+        const { evaluateToolCallDecision } = require('../mcp-writeguard');
+        const verdict = await evaluateToolCallDecision({
+          toolName: body.toolName,
+          toolArgs: body.toolArgs || {},
+          contextText: body.contextText || '',
+          rulesText: body.rulesText || '',
+          apiKey: projectChatSettings.geminiKey || undefined,
+          confidenceFloor: typeof body.confidenceFloor === 'number' && Number.isFinite(body.confidenceFloor)
+            ? body.confidenceFloor
+            : 0.7,
+        });
+        sendJson(res, 200, verdict);
+        return;
       }
 
       if (req.method === 'POST' && pathname === '/v1/gates/constraint') {
