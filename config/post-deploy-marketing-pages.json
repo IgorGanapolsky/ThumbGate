@@ -4,7 +4,7 @@
   "pages": [
     {
       "route": "/",
-      "sentinel": "Stop AI agent mistakes before they cost you",
+      "sentinel": "One repeated agent mistake. One configured gate.",
       "description": "Home page hero (lifeblood \u2014 never regress)"
     },
     {
