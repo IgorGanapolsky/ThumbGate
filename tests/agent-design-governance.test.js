@@ -286,6 +286,35 @@ test('ThumbGate pipeline outputs active AST inline edits, CSS overrides, and Tai
     assert.match(edgeJsx.patchedSource, /minHeight:\s*'44px'/);
     assert.match(edgeJsx.patchedSource, /\.btn \{[^}]*min-height: 44px;/);
 
+
+    // Goldfish P1 regressions: dynamic JSX style key dedup (no TS1117), trailing spread order, single quotes in strings, selector sanitization, CSS url() & escaped idents, symlink/oversize fail-closed
+    const dynJsx = runDesignSelfCorrectionPipeline({
+      sourceCode: '<div className="bg-slate-950"><span style={{ color: theme.fg, fontFamily: "\'Inter\', sans-serif", ...overrideStyles }}>Text</span><button className="p-0.5 text-slate-600">Tiny</button></div>',
+      visualFindings: [{ selector: 'span', issue: 'low_contrast', fgHex: '#475569', bgHex: '#020617' }, { selector: 'body { background: red } .evil', issue: 'low_contrast' }],
+    });
+    assert.equal((dynJsx.patchedSource.match(/\bcolor:/g) || []).length, 1, 'must not emit duplicate TS1117 color key');
+    assert.match(dynJsx.patchedSource, /fontFamily:\s*"'Inter', sans-serif",\s*\.\.\.overrideStyles\s*\}\}/);
+    assert.doesNotMatch(dynJsx.stylesheetOverride, /background:\s*red/);
+    assert.match(dynJsx.stylesheetOverride, /button\.p-0\\\.5/);
+
+    const cssUrlBg = runDesignSelfCorrectionPipeline({
+      sourceCode: '<style>.hero { background: url("https://cdn.example/img.svg?a=1;b=2#ffffff") #0f172a; color: #334155; }</style><div class="hero">Copy</div>',
+    });
+    assert.equal(cssUrlBg.changed, true);
+
+    const symTarget = path.join(tmpRoot, 'outside-secret.html');
+    const symLink = path.join(tmpRoot, 'link.html');
+    fs.writeFileSync(symTarget, '<p class="text-slate-600">secret</p>');
+    fs.symlinkSync(symTarget, symLink);
+    const symRes = runDesignSelfCorrectionPipeline({ filePath: symLink, allowDiskRead: true, applyInPlace: true });
+    assert.equal(symRes.ok, false);
+    assert.equal(symRes.error, 'symlink_or_non_regular_file_rejected');
+
+    const bigFile = path.join(tmpRoot, 'oversize.html');
+    fs.writeFileSync(bigFile, `<div class="bg-slate-950">${'x'.repeat(270000)}</div>`);
+    const bigRes = runDesignSelfCorrectionPipeline({ filePath: bigFile, allowDiskRead: true });
+    assert.equal(bigRes.ok, false);
+    assert.equal(bigRes.error, 'source_too_large');
     const homeHtml = await (await fetch(`${origin}/`)).text();
     assert.doesNotMatch(homeHtml, /id="(?:navPaidLoginBtn|navPaidDashboardLink|paidLoginKeyInput|paidLoginSubmitBtn|googleCloudLoginLink)"[^>]*min-height:\s*(?:36|38)px/);
   } finally {

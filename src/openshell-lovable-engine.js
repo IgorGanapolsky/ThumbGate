@@ -1,8 +1,5 @@
 'use strict';
 
-/**
- * NVIDIA OpenShell (v0.1.8) + Adobe MAX Nov-2026 + Lovable AST Self-Correcting Design Engine.
- */
 const fs = require('node:fs');
 const path = require('node:path');
 const { computeChunkHash, evaluateHashAnchoredEdit } = require('./hash-anchored-edit');
@@ -37,10 +34,6 @@ function proverVerdict(result, exitCode, extra = {}) {
   return { result, exitCode, passed: result === 'within_boundary', coverage: { domains: [...PROVER_COVERAGE_DOMAINS] }, ...extra };
 }
 
-/**
- * NVIDIA OpenShell Formal Policy Boundary Check (`openshell-prover check`).
- * Only `within_boundary` (exitCode 0) passes; every other verdict fails closed.
- */
 function provePolicyBoundary(candidate, boundary) {
   if (!candidate || typeof candidate !== 'object' || !boundary || typeof boundary !== 'object') {
     return proverVerdict('error', 2, { reason_code: 'invalid_policy_object', reason: 'Both candidate and boundary policies must be objects.' });
@@ -52,7 +45,6 @@ function provePolicyBoundary(candidate, boundary) {
     return proverVerdict('inconclusive', 3, { reason_code: 'resource_limit', reason: 'Policy exceeds 1,024 network rules or 4,096 endpoints.' });
   }
 
-  // 1. Landlock check (fails closed if boundary hard_requirement is downgraded or omitted)
   const cLandlock = candidate.landlock?.compatibility;
   if (boundary.landlock?.compatibility === 'hard_requirement' && cLandlock !== 'hard_requirement') {
     return proverVerdict('exceeds_boundary', 1, { reason_code: 'landlock_downgrade', counterexample: `landlock compatibility ${cLandlock || '(missing)'}` });
@@ -86,7 +78,6 @@ function provePolicyBoundary(candidate, boundary) {
     return proverVerdict('unsupported', 3, { reason_code: 'symlink_subpath_unverifiable', reason: `Unverifiable read subpath '${p}'.` });
   }
 
-  // 4 & 5. Network L4 + REST checks
   const bEndpoints = [];
   for (const rule of boundRules) {
     const bins = Array.isArray(rule?.binaries) ? rule.binaries.map((b) => b.path || b) : [];
@@ -443,9 +434,6 @@ function buildLineLookup(text) {
   };
 }
 
-/**
- * Linear O(N) span-preserving CSS AST parser for `.css` files and `<style>` blocks.
- */
 const UNITLESS_JSX_PROPS = new Set([
   'opacity', 'zIndex', 'fontWeight', 'lineHeight', 'flex', 'flexGrow', 'flexShrink', 'order', 'zoom', 'scale', 'aspectRatio', 'gridRow', 'gridColumn',
 ]);
@@ -487,7 +475,7 @@ function parseCssRulesAst(source, baseOffset = 0, lineAt = buildLineLookup(sourc
       continue;
     }
     const declarations = {};
-    for (const part of source.slice(openBrace + 1, closeBrace).split(';')) {
+    for (const part of splitCssDeclarations(source.slice(openBrace + 1, closeBrace))) {
       const colon = part.indexOf(':');
       if (colon > 0) declarations[part.slice(0, colon).trim().toLowerCase()] = part.slice(colon + 1).trim();
     }
@@ -500,6 +488,33 @@ function parseCssRulesAst(source, baseOffset = 0, lineAt = buildLineLookup(sourc
     i = closeBrace + 1;
   }
   return rules;
+}
+
+function splitCssDeclarations(str) {
+  const out = [];
+  let start = 0; let paren = 0; let quote = null;
+  for (let i = 0; i < str.length; i++) {
+    const ch = str[i];
+    if (quote) { if (ch === '\\') i++; else if (ch === quote) quote = null; }
+    else if (ch === '"' || ch === "'") quote = ch;
+    else if (ch === '(') paren++; else if (ch === ')' && paren > 0) paren--;
+    else if (ch === ';' && paren === 0) { out.push(str.slice(start, i)); start = i + 1; }
+  }
+  out.push(str.slice(start));
+  return out;
+}
+
+function extractSafeColorHex(val) {
+  const cleaned = String(val || '').replace(/(?:url|image-set)\s*\([^)]*\)/gi, ' ');
+  return /(#[0-9a-fA-F]{3,6})\b/.exec(cleaned);
+}
+
+function escapeCssIdent(ident) {
+  return String(ident || '').replace(/[^a-zA-Z0-9_-]/g, (ch) => `\\${ch}`);
+}
+
+function unescapeCssIdent(ident) {
+  return String(ident || '').replace(/\\(.)/g, '$1');
 }
 
 function splitTopLevelCommas(str) {
@@ -517,6 +532,13 @@ function splitTopLevelCommas(str) {
   return out;
 }
 
+function formatJsxStyleValue(v) {
+  if (typeof v === 'number') return String(v);
+  const s = String(v);
+  if (s.includes("'")) return JSON.stringify(s);
+  return `'${s.replace(/\\/g, '\\\\').replace(/\n/g, '\\n').replace(/\r/g, '\\r')}'`;
+}
+
 function parseStyleEntries(attrsRaw) {
   const sMatch = /(?:^|[\s"'`}])(style\s*=)/.exec(attrsRaw || '');
   if (sMatch) {
@@ -524,9 +546,12 @@ function parseStyleEntries(attrsRaw) {
     let cur = sIdx + sMatch[1].length;
     while (cur < attrsRaw.length && /\s/.test(attrsRaw[cur])) cur++;
     if (attrsRaw.startsWith('{{', cur)) {
-      let d = 2; let k = cur + 2;
+      let d = 2; let k = cur + 2; let quote = null;
       while (k < attrsRaw.length && d > 0) {
-        if (attrsRaw[k] === '{') d++; else if (attrsRaw[k] === '}') d--;
+        const ch = attrsRaw[k];
+        if (quote) { if (ch === '\\') k++; else if (ch === quote) quote = null; }
+        else if (ch === '"' || ch === "'" || ch === '`') quote = ch;
+        else if (ch === '{') d++; else if (ch === '}') d--;
         k++;
       }
       const inner = attrsRaw.slice(cur + 2, Math.max(cur + 2, k - 2));
@@ -535,9 +560,21 @@ function parseStyleEntries(attrsRaw) {
       for (const part of splitTopLevelCommas(inner)) {
         const trimmed = part.trim();
         if (!trimmed) continue;
-        const m = /^([a-zA-Z]+)\s*:\s*(?:'([^']*)'|"([^"]*)"|(-?\d+(?:\.\d+)?))$/.exec(trimmed);
-        if (m) map[m[1]] = m[4] !== undefined ? (UNITLESS_JSX_PROPS.has(m[1]) ? Number(m[4]) : `${m[4]}px`) : (m[2] ?? m[3]);
-        else preserved.push(trimmed);
+        const m = /^([a-zA-Z_$][a-zA-Z0-9_$]*)\s*:\s*(?:'((?:\\.|[^'\\])*)'|"((?:\\.|[^"\\])*)"|(-?\d+(?:\.\d+)?))$/.exec(trimmed);
+        if (m) {
+          const key = m[1];
+          if (m[4] !== undefined) {
+            map[key] = UNITLESS_JSX_PROPS.has(key) ? Number(m[4]) : `${m[4]}px`;
+          } else {
+            const rawStr = m[2] !== undefined ? m[2].replace(/\\'/g, "'").replace(/\\\\/g, '\\') : m[3].replace(/\\"/g, '"').replace(/\\\\/g, '\\');
+            map[key] = rawStr;
+          }
+          preserved.push({ type: 'prop', key, static: true });
+        } else {
+          const dynKey = /^([a-zA-Z_$][a-zA-Z0-9_$]*)\s*:/.exec(trimmed);
+          if (dynKey) preserved.push({ type: 'prop', key: dynKey[1], static: false, raw: trimmed });
+          else preserved.push({ type: 'raw', raw: trimmed });
+        }
       }
       return { kind: 'jsx', rawMatch: attrsRaw.slice(sIdx, k), map, preserved };
     }
@@ -546,7 +583,7 @@ function parseStyleEntries(attrsRaw) {
       const endQ = attrsRaw.indexOf(q, cur + 1);
       if (endQ > cur) {
         const map = {};
-        for (const decl of attrsRaw.slice(cur + 1, endQ).split(';')) {
+        for (const decl of splitCssDeclarations(attrsRaw.slice(cur + 1, endQ))) {
           const idx = decl.indexOf(':');
           if (idx > 0) map[decl.slice(0, idx).trim().toLowerCase()] = decl.slice(idx + 1).trim();
         }
@@ -558,19 +595,40 @@ function parseStyleEntries(attrsRaw) {
 }
 
 function serializeStyleAttr(kind, map, preserved = []) {
-  const entries = Object.entries(map).filter(([, v]) => v !== undefined && v !== '');
-  if (kind === 'jsx') {
-    const toCamel = (k) => k.replace(/-([a-z])/g, (_, ch) => ch.toUpperCase());
-    const serialized = entries.map(([k, v]) => `${toCamel(k)}: ${typeof v === 'number' ? v : `'${v}'`}`);
-    return `style={{ ${[...preserved, ...serialized].join(', ')} }}`;
-  }
+  const toCamel = (k) => k.replace(/-([a-z])/g, (_, ch) => ch.toUpperCase());
   const toKebab = (k) => k.replace(/[A-Z]/g, (ch) => `-${ch.toLowerCase()}`);
+  if (kind === 'jsx') {
+    const normalizedMap = new Map();
+    for (const [k, v] of Object.entries(map)) {
+      if (v !== undefined && v !== '') normalizedMap.set(toCamel(k), v);
+    }
+    const emitted = new Set();
+    const out = [];
+    for (const item of preserved) {
+      if (typeof item === 'string') { out.push(item); continue; }
+      if (item.type === 'raw') { out.push(item.raw); continue; }
+      const ck = toCamel(item.key);
+      if (emitted.has(ck)) continue;
+      if (normalizedMap.has(ck)) {
+        out.push(`${ck}: ${formatJsxStyleValue(normalizedMap.get(ck))}`);
+        emitted.add(ck);
+      } else if (!item.static) {
+        out.push(item.raw);
+        emitted.add(ck);
+      }
+    }
+    for (const [ck, v] of normalizedMap.entries()) {
+      if (!emitted.has(ck)) out.push(`${ck}: ${formatJsxStyleValue(v)}`);
+    }
+    return `style={{ ${out.join(', ')} }}`;
+  }
+  const entries = Object.entries(map).filter(([, v]) => v !== undefined && v !== '');
   return `style="${entries.map(([k, v]) => `${toKebab(k)}: ${v}`).join('; ')}"`;
 }
 
 function resolveColorFromNode(classes, styleMap, kind) {
   const styleVal = kind === 'fg' ? styleMap.color : (styleMap.backgroundColor || styleMap['background-color'] || styleMap.background);
-  const styleHex = styleVal && /(#[0-9a-fA-F]{3,6})\b/.exec(String(styleVal));
+  const styleHex = styleVal && extractSafeColorHex(styleVal);
   if (styleHex) return { hex: styleHex[1], token: null, fromStyle: true };
   const prefix = kind === 'fg' ? 'text-' : 'bg-';
   for (const cls of classes) {
@@ -583,10 +641,6 @@ function resolveColorFromNode(classes, styleMap, kind) {
   return null;
 }
 
-/**
- * Linear O(N) state-machine HTML/JSX + embedded <style> AST parser.
- * Handles arbitrary balanced JSX `{...}` props (`onClick={() => fn(x > 0)}`, `{...rest}`), quotes, comments, and CSS rules.
- */
 function parseDesignAst(source, defaultBgHex = '#0f172a') {
   const text = String(source || '');
   const lineAt = buildLineLookup(text);
@@ -679,9 +733,9 @@ function parseDesignAst(source, defaultBgHex = '#0f172a') {
     const classes = classMatch ? (classMatch[3] ?? classMatch[4] ?? '').trim().split(/\s+/).filter(Boolean) : [];
     const styleInfo = parseStyleEntries(attrsRaw);
     const id = idMatch ? (idMatch[1] ?? idMatch[2]) : null;
-    const selector = id ? `#${id}` : (classes[0] && !classes[0].includes('[') && !classes[0].includes(':') ? `${tagName}.${classes[0]}` : tagName);
-    const matchedCssBg = cssRules.find((r) => r.selector === selector || (id && r.selector === `#${id}`) || classes.some((c) => r.selector === `.${c}`));
-    const cssBgHex = matchedCssBg && /(#[0-9a-fA-F]{3,6})\b/.exec(String(matchedCssBg.declarations['background-color'] || matchedCssBg.declarations.background || ''));
+    const selector = id ? `#${escapeCssIdent(id)}` : (classes[0] && !classes[0].includes('[') && !classes[0].includes(':') ? `${tagName}.${escapeCssIdent(classes[0])}` : tagName);
+    const matchedCssBg = cssRules.find((r) => r.selector === selector || (id && r.selector === `#${escapeCssIdent(id)}`) || classes.some((c) => r.selector === `.${escapeCssIdent(c)}`));
+    const cssBgHex = matchedCssBg && extractSafeColorHex(matchedCssBg.declarations['background-color'] || matchedCssBg.declarations.background || '');
     const ownBg = resolveColorFromNode(classes, styleInfo.map, 'bg') || (cssBgHex ? { hex: cssBgHex[1], token: null, fromStyle: true } : null);
     const effectiveBgHex = ownBg ? ownBg.hex : parent.inheritedBgHex;
     const siblingIdx = parent.children.filter((c) => c.tagName === tagName).length;
@@ -716,6 +770,8 @@ function parseDesignAst(source, defaultBgHex = '#0f172a') {
   return { root, nodes, cssRules, language: /\bclassName=|\bstyle=\{\{/.test(text) ? 'jsx' : 'html' };
 }
 
+const SAFE_VISUAL_SELECTOR_RE = /^(?:#[a-zA-Z0-9_\\-]+|\.[a-zA-Z0-9_\\-]+|[a-zA-Z][a-zA-Z0-9_-]*(?:(?:#|\.)[a-zA-Z0-9_\\-]+)?)$/;
+
 function normalizeVisualFindings(findings = []) {
   const rawList = Array.isArray(findings) ? findings : (findings ? [findings] : []);
   return rawList
@@ -732,9 +788,10 @@ function normalizeVisualFindings(findings = []) {
                   : /cls|shift|aspect|dimension/i.test(item) ? 'cls_unsized_media' : 'low_contrast';
         return { selector: selMatch ? selMatch[1] : null, issue, raw: item };
       }
+      const rawSel = typeof item.selector === 'string' ? item.selector.trim() : '';
       return {
         ...item,
-        selector: typeof item.selector === 'string' ? item.selector : null,
+        selector: rawSel && SAFE_VISUAL_SELECTOR_RE.test(rawSel) ? rawSel : null,
         fgHex: typeof (item.fgHex || item.foregroundHex) === 'string' ? (item.fgHex || item.foregroundHex) : null,
         bgHex: typeof (item.bgHex || item.backgroundHex) === 'string' ? (item.bgHex || item.backgroundHex) : null,
         issue: String(item.issue || item.type || item.code || 'low_contrast'),
@@ -746,9 +803,12 @@ function nodeMatchesSelector(node, sel) {
   if (!sel) return true;
   const s = String(sel).trim();
   if (s === node.astPath || s === node.selector || s === node.tagName) return true;
-  if (s.startsWith('#')) return node.id === s.slice(1);
-  if (s.startsWith('.')) return node.classes.includes(s.slice(1));
-  const [tag, cls] = s.split('.');
+  if (s.startsWith('#')) return node.id === unescapeCssIdent(s.slice(1));
+  if (s.startsWith('.')) return node.classes.includes(unescapeCssIdent(s.slice(1)));
+  const dotIdx = s.search(/(?<!\\)\./);
+  if (dotIdx === -1) return node.tagName.toLowerCase() === s.toLowerCase();
+  const tag = s.slice(0, dotIdx);
+  const cls = unescapeCssIdent(s.slice(dotIdx + 1));
   return (!tag || node.tagName.toLowerCase() === tag.toLowerCase()) && (!cls || node.classes.includes(cls));
 }
 
@@ -761,8 +821,8 @@ function inspectCssAstRules(source, ast, visualQueue, options = {}) {
   for (const rule of ast.cssRules || []) {
     const decls = { ...rule.declarations };
     const ruleProps = {};
-    const fgM = /(#[0-9a-fA-F]{3,6})\b/.exec(String(decls.color || ''));
-    const bgM = /(#[0-9a-fA-F]{3,6})\b/.exec(String(decls['background-color'] || decls.background || '')) || [null, defaultBg];
+    const fgM = extractSafeColorHex(decls.color || '');
+    const bgM = extractSafeColorHex(decls['background-color'] || decls.background || '') || [null, defaultBg];
     const vfC = visualQueue.find((v) => (!v.selector || v.selector === rule.selector) && /contrast/i.test(v.issue));
     if (fgM || vfC) {
       const fgHex = vfC?.fgHex || fgM?.[1] || '#64748b';
@@ -807,10 +867,6 @@ function inspectCssAstRules(source, ast, visualQueue, options = {}) {
   return { patches, inlineEdits, cssOverrides };
 }
 
-/**
- * Lovable Active Self-Correcting AST Design Engine: inspects HTML/JSX + CSS AST + visual-model findings
- * and outputs hash-anchored inline AST code edits, exact CSS override rules, Tailwind utility adjustments, and `patchedSource`.
- */
 function inspectAndPatchDesignSource(source, options = {}) {
   const rawSource = String(source || '');
   const minContrast = Number(options.minContrast || 4.5);
@@ -1008,32 +1064,22 @@ function inspectAndPatchDesignSource(source, options = {}) {
     }
   }
 
-  // Synthesize standalone CSS/Tailwind overrides when visualFindings are provided without matching source elements
   if (ast.nodes.length === 0 && (ast.cssRules || []).length === 0 && visualQueue.length > 0) {
+    const emitOv = (sel, type, props, cssOverride, add, extra = {}) => {
+      const cssRule = `${sel} { ${cssOverride} }`;
+      cssOverrides.push({ selector: sel, properties: props, cssRule });
+      tailwindAdjustments.push({ selector: sel, astPath: null, remove: [], add });
+      inlineEdits.push({ filePath: options.filePath || null, nodeType: 'CssStyleSheetOverride', astPath: null, selector: sel, startOffset: null, endOffset: null, startLine: null, endLine: null, expectedChunkHash: null, before: '', after: cssRule });
+      patches.push({ type, element: null, selector: sel, astPath: null, ...extra, cssOverride, tailwindPatch: { remove: [], add } });
+    };
     for (const vf of visualQueue) {
       const sel = vf.selector || '.tg-surface';
-      if (/colorblind/i.test(vf.issue)) {
-        const cssRule = `${sel} { text-decoration: underline 2px solid currentColor; font-weight: 600; }`;
-        cssOverrides.push({ selector: sel, properties: { 'text-decoration': 'underline 2px solid currentColor', 'font-weight': '600' }, cssRule });
-        tailwindAdjustments.push({ selector: sel, astPath: null, remove: [], add: ['underline', 'decoration-2', 'underline-offset-2', 'font-semibold'] });
-        inlineEdits.push({ filePath: options.filePath || null, nodeType: 'CssStyleSheetOverride', astPath: null, selector: sel, startOffset: null, endOffset: null, startLine: null, endLine: null, expectedChunkHash: null, before: '', after: cssRule });
-        patches.push({ type: 'colorblind_unsafe_status', element: null, selector: sel, astPath: null, cssOverride: 'text-decoration: underline 2px solid currentColor; font-weight: 600;', tailwindPatch: { remove: [], add: ['underline', 'decoration-2', 'underline-offset-2', 'font-semibold'] } });
-      } else if (/tap|touch|target/i.test(vf.issue)) {
-        const cssRule = `${sel} { min-height: 44px; min-width: 44px; padding: 0.625rem 1rem; }`;
-        cssOverrides.push({ selector: sel, properties: { 'min-height': '44px', 'min-width': '44px', padding: '0.625rem 1rem' }, cssRule });
-        tailwindAdjustments.push({ selector: sel, astPath: null, remove: [], add: ['min-h-11', 'min-w-11', 'px-4', 'py-2.5'] });
-        inlineEdits.push({ filePath: options.filePath || null, nodeType: 'CssStyleSheetOverride', astPath: null, selector: sel, startOffset: null, endOffset: null, startLine: null, endLine: null, expectedChunkHash: null, before: '', after: cssRule });
-        patches.push({ type: 'undersized_tap_target', element: null, selector: sel, astPath: null, cssOverride: 'min-height: 44px; min-width: 44px; padding: 0.625rem 1rem;', tailwindPatch: { remove: [], add: ['min-h-11', 'min-w-11', 'px-4', 'py-2.5'] } });
-      } else {
-        const startFg = vf.fgHex || '#64748b';
-        const bg = vf.bgHex || defaultBg;
-        const tMin = Number(vf.minContrast || minContrast);
+      if (/colorblind/i.test(vf.issue)) emitOv(sel, 'colorblind_unsafe_status', { 'text-decoration': 'underline 2px solid currentColor', 'font-weight': '600' }, 'text-decoration: underline 2px solid currentColor; font-weight: 600;', ['underline', 'decoration-2', 'underline-offset-2', 'font-semibold']);
+      else if (/tap|touch|target/i.test(vf.issue)) emitOv(sel, 'undersized_tap_target', { 'min-height': '44px', 'min-width': '44px', padding: '0.625rem 1rem' }, 'min-height: 44px; min-width: 44px; padding: 0.625rem 1rem;', ['min-h-11', 'min-w-11', 'px-4', 'py-2.5']);
+      else {
+        const startFg = vf.fgHex || '#64748b'; const bg = vf.bgHex || defaultBg; const tMin = Number(vf.minContrast || minContrast);
         const solved = solveAccessibleForeground(startFg, bg, tMin);
-        const cssRule = `${sel} { color: ${solved.hex}; }`;
-        cssOverrides.push({ selector: sel, properties: { color: solved.hex }, cssRule });
-        tailwindAdjustments.push({ selector: sel, astPath: null, remove: [], add: [solved.tailwindClass] });
-        inlineEdits.push({ filePath: options.filePath || null, nodeType: 'CssStyleSheetOverride', astPath: null, selector: sel, startOffset: null, endOffset: null, startLine: null, endLine: null, expectedChunkHash: null, before: '', after: cssRule });
-        patches.push({ type: 'low_contrast', element: null, selector: sel, astPath: null, measuredRatio: computeContrastRatio(startFg, bg), targetRatio: tMin, fixedRatio: solved.ratio, cssOverride: `color: ${solved.hex};`, tailwindPatch: { remove: [], add: [solved.tailwindClass] } });
+        emitOv(sel, 'low_contrast', { color: solved.hex }, `color: ${solved.hex};`, [solved.tailwindClass], { measuredRatio: computeContrastRatio(startFg, bg), targetRatio: tMin, fixedRatio: solved.ratio });
       }
     }
   }
@@ -1063,15 +1109,60 @@ function remediateVisualFindings(source, visualFindings = [], options = {}) {
   return inspectAndPatchDesignSource(source, { ...options, visualFindings });
 }
 
+function makeFailedDesignReport(error) {
+  return {
+    ok: false,
+    error,
+    mode: 'active_self_correcting_design_engine',
+    changed: false,
+    language: 'html',
+    issueCount: 0,
+    patches: [],
+    inlineEdits: [],
+    cssOverrides: [],
+    stylesheetOverride: '',
+    tailwindAdjustments: [],
+    patchedSource: '',
+    appliedInPlace: false,
+    guardReceipt: null,
+    verification: { changed: false, remainingIssueCount: 0, remainingIssues: [] },
+  };
+}
+
 function runDesignSelfCorrectionPipeline(input = {}) {
+  const maxBytes = Math.max(4096, Number(process.env.THUMBGATE_DESIGN_MAX_SOURCE_BYTES) || 262144);
   const filePath = input.filePath ? path.resolve(String(input.filePath)) : null;
   let sourceCode = typeof input.sourceCode === 'string' ? input.sourceCode : '';
-  if (!sourceCode && input.allowDiskRead === true && filePath && fs.existsSync(filePath)) {
-    const st = fs.statSync(filePath);
-    if (st.isFile() && st.size <= 262144) sourceCode = fs.readFileSync(filePath, 'utf8');
+  if (!sourceCode && input.allowDiskRead === true && filePath) {
+    let lst;
+    try {
+      lst = fs.lstatSync(filePath);
+    } catch {
+      return makeFailedDesignReport('file_not_found');
+    }
+    if (lst.isSymbolicLink() || !lst.isFile()) {
+      return makeFailedDesignReport('symlink_or_non_regular_file_rejected');
+    }
+    if (input.workspaceRoot) {
+      let realRoot;
+      let realFile;
+      try {
+        realRoot = fs.realpathSync(path.resolve(String(input.workspaceRoot)));
+        realFile = fs.realpathSync(filePath);
+      } catch {
+        return makeFailedDesignReport('outside_workspace_root');
+      }
+      if (realFile !== realRoot && !realFile.startsWith(realRoot + path.sep)) {
+        return makeFailedDesignReport('outside_workspace_root');
+      }
+    }
+    if (lst.size > maxBytes) {
+      return makeFailedDesignReport('source_too_large');
+    }
+    sourceCode = fs.readFileSync(filePath, 'utf8');
   }
-  if (sourceCode.length > 262144) {
-    return { ok: false, mode: 'active_self_correcting_design_engine', changed: false, language: 'html', issueCount: 0, patches: [], inlineEdits: [], cssOverrides: [], stylesheetOverride: '', tailwindAdjustments: [], patchedSource: '', appliedInPlace: false, guardReceipt: null, verification: { changed: false, remainingIssueCount: 0, remainingIssues: [] } };
+  if (Buffer.byteLength(sourceCode, 'utf8') > maxBytes) {
+    return makeFailedDesignReport('source_too_large');
   }
   const report = inspectAndPatchDesignSource(sourceCode, {
     filePath,
@@ -1084,10 +1175,14 @@ function runDesignSelfCorrectionPipeline(input = {}) {
   let appliedInPlace = false;
   let guardReceipt = null;
   if (input.applyInPlace === true && input.allowDiskRead === true && filePath && sourceCode && report.changed) {
-    guardReceipt = evaluateHashAnchoredEdit({ filePath, targetContent: sourceCode, expectedHash: computeChunkHash(sourceCode) });
-    if (guardReceipt.allowed) {
-      fs.writeFileSync(filePath, report.patchedSource, 'utf8');
-      appliedInPlace = true;
+    let currentStat = null;
+    try { currentStat = fs.lstatSync(filePath); } catch { currentStat = null; }
+    if (currentStat && !currentStat.isSymbolicLink() && currentStat.isFile()) {
+      guardReceipt = evaluateHashAnchoredEdit({ filePath, targetContent: sourceCode, expectedHash: computeChunkHash(sourceCode) });
+      if (guardReceipt.allowed) {
+        fs.writeFileSync(filePath, report.patchedSource, 'utf8');
+        appliedInPlace = true;
+      }
     }
   }
   return {

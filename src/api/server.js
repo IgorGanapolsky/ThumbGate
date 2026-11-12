@@ -5846,6 +5846,7 @@ function extractBearerToken(req) {
 }
 
 const PAID_AUTH_COOKIE_NAME = 'thumbgate_auth_session';
+const SSO_STATE_COOKIE_NAME = 'thumbgate_sso_state';
 const PAID_AUTH_SESSION_TTL_SECONDS = 30 * 24 * 60 * 60;
 const PAID_AUTH_MAX_SESSIONS = 4096;
 const paidAuthSessions = new Map();
@@ -5879,12 +5880,13 @@ function pruneSsoPendingStates(nowMs = Date.now()) {
   }
 }
 
-function issueSsoPendingState(provider, redirectUri, nowMs = Date.now()) {
+function issueSsoPendingState(provider, redirectUri, nowMs = Date.now(), oidcNonce = '') {
   pruneSsoPendingStates(nowMs);
   const stateNonce = `st_${crypto.randomBytes(24).toString('hex')}`;
   ssoPendingStates.set(stateNonce, {
     provider,
     redirectUri,
+    oidcNonce: String(oidcNonce || ''),
     createdAt: nowMs,
     expiresAt: nowMs + SSO_OAUTH_STATE_TTL_MS,
   });
@@ -5956,7 +5958,7 @@ function buildAppleClientSecret(env = process.env, nowMs = Date.now()) {
   return `${header}.${payload}.${sig}`;
 }
 
-async function verifyOidcIdToken(idToken, { expectedClientId, validIssuers, jwksUrl, jwksCache }, nowMs = Date.now()) {
+async function verifyOidcIdToken(idToken, { expectedClientId, validIssuers, jwksUrl, jwksCache, expectedNonce }, nowMs = Date.now()) {
   const parts = String(idToken || '').split('.');
   if (parts.length !== 3) throw ssoError('invalid_id_token', 'Malformed id_token');
   let header;
@@ -5985,6 +5987,9 @@ async function verifyOidcIdToken(idToken, { expectedClientId, validIssuers, jwks
   if (!validIssuers.has(String(payload.iss || ''))) throw ssoError('invalid_issuer', 'id_token issuer mismatch');
   const expSec = Number(payload.exp);
   if (!Number.isFinite(expSec) || expSec * 1000 <= nowMs) throw ssoError('expired_token', 'id_token expired');
+  if (expectedNonce && !safeKeyEqual(String(payload.nonce || ''), String(expectedNonce))) {
+    throw ssoError('invalid_nonce', 'id_token nonce mismatch');
+  }
   const email = String(payload.email || '').trim().toLowerCase();
   const sub = String(payload.sub || '').trim();
   const emailVerified = payload.email_verified === true || payload.email_verified === 'true';
@@ -7233,14 +7238,22 @@ async function addContext(){
           sendJson(res, 200, { ok: true, mode: 'oauth_redirect', provider, redirectUrl: googleAuthUrl }, { 'Cache-Control': 'no-store' });
           return;
         }
-        res.writeHead(302, { 'X-Content-Type-Options': 'nosniff', Location: googleAuthUrl, 'Cache-Control': 'no-store' });
+        const ssoStateCookie = serializeCookie(SSO_STATE_COOKIE_NAME, stateNonce, {
+          maxAge: Math.floor(SSO_OAUTH_STATE_TTL_MS / 1000),
+          path: '/v1/cloud/sso',
+          httpOnly: true,
+          sameSite: 'Lax',
+          secure: true,
+        });
+        res.writeHead(302, { 'X-Content-Type-Options': 'nosniff', Location: googleAuthUrl, 'Cache-Control': 'no-store', 'Set-Cookie': ssoStateCookie });
         res.end();
         return;
       }
       if (provider === 'apple' && appleClientId) {
         const callbackUrl = String(process.env.APPLE_REDIRECT_URI || '').trim() || `${appOrigin}/v1/cloud/sso/callback`;
-        const stateNonce = issueSsoPendingState('apple', callbackUrl);
-        const appleAuthUrl = `https://appleid.apple.com/auth/authorize?client_id=${encodeURIComponent(appleClientId)}&redirect_uri=${encodeURIComponent(callbackUrl)}&response_type=code&scope=name%20email&response_mode=form_post&state=${encodeURIComponent(stateNonce)}`;
+        const oidcNonce = `nc_${crypto.randomBytes(16).toString('hex')}`;
+        const stateNonce = issueSsoPendingState('apple', callbackUrl, Date.now(), oidcNonce);
+        const appleAuthUrl = `https://appleid.apple.com/auth/authorize?client_id=${encodeURIComponent(appleClientId)}&redirect_uri=${encodeURIComponent(callbackUrl)}&response_type=code&scope=name%20email&response_mode=form_post&state=${encodeURIComponent(stateNonce)}&nonce=${encodeURIComponent(oidcNonce)}`;
         if (parsed.searchParams.get('format') === 'json') {
           sendJson(res, 200, { ok: true, mode: 'oauth_redirect', provider, redirectUrl: appleAuthUrl }, { 'Cache-Control': 'no-store' });
           return;
@@ -7280,7 +7293,7 @@ async function addContext(){
             String(getPublicOrigin(req) || '').toLowerCase(),
             String((hostedConfig && hostedConfig.appOrigin) || '').toLowerCase(),
           ]);
-          if ((reqOrigin && !allowedPostOrigins.has(reqOrigin)) || (secFetchSite === 'cross-site' && reqOrigin !== 'https://appleid.apple.com')) {
+          if (!reqOrigin || !allowedPostOrigins.has(reqOrigin) || (secFetchSite === 'cross-site' && reqOrigin !== 'https://appleid.apple.com')) {
             consumeSsoPendingState(params.get('state'), rawProvider);
             redirectSsoError(res, 'invalid_origin');
             return;
@@ -7314,6 +7327,19 @@ async function addContext(){
           consumeSsoPendingState(stateVal, rawProvider);
           redirectSsoError(res, 'sso_not_configured');
           return;
+        }
+        if (isApple && req.method !== 'POST') {
+          consumeSsoPendingState(stateVal, rawProvider);
+          redirectSsoError(res, 'invalid_origin');
+          return;
+        }
+        if (!isApple) {
+          const reqCookies = parseCookies(req && req.headers ? req.headers.cookie : '');
+          if (!stateVal || !safeKeyEqual(String(reqCookies[SSO_STATE_COOKIE_NAME] || ''), String(stateVal))) {
+            consumeSsoPendingState(stateVal, rawProvider);
+            redirectSsoError(res, 'invalid_state');
+            return;
+          }
         }
         const stateEntry = consumeSsoPendingState(stateVal, rawProvider);
         if (!stateEntry) {
@@ -7351,6 +7377,7 @@ async function addContext(){
           validIssuers: isApple ? APPLE_VALID_ISSUERS : GOOGLE_VALID_ISSUERS,
           jwksUrl: isApple ? APPLE_OAUTH_JWKS_URL : GOOGLE_OAUTH_JWKS_URL,
           jwksCache: isApple ? appleJwksCache : googleJwksCache,
+          expectedNonce: isApple ? stateEntry.oidcNonce : '',
         });
         const entitlement = await resolvePaidEntitlementForEmail(claims.email);
         const hasPaidKey = Boolean(entitlement && entitlement.entitled && entitlement.apiKey);
@@ -7371,10 +7398,17 @@ async function addContext(){
           sameSite: 'Lax',
           secure: true,
         });
-        res.writeHead(302, {
+        const clearStateCookie = serializeCookie(SSO_STATE_COOKIE_NAME, '', {
+          maxAge: 0,
+          path: '/v1/cloud/sso',
+          httpOnly: true,
+          sameSite: 'Lax',
+          secure: true,
+        });
+        res.writeHead(isApple ? 303 : 302, {
           'X-Content-Type-Options': 'nosniff',
           'Cache-Control': 'no-store',
-          'Set-Cookie': setCookie,
+          'Set-Cookie': isApple ? setCookie : [setCookie, clearStateCookie],
           Location: '/dashboard',
         });
         res.end();

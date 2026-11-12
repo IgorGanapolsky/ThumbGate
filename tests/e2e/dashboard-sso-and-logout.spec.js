@@ -99,7 +99,14 @@ test.describe('/dashboard real-server login, redeploy persistence, Google SSO, a
         expect(upstream.status()).toBe(302);
         const loc = upstream.headers().location || '';
         expect(loc).toMatch(/^https:\/\/accounts\.google\.com\/o\/oauth2\/v2\/auth\?/);
-        await route.fulfill({ status: 302, headers: { Location: `${origin}/v1/cloud/sso/callback?provider=google&code=pw_google_code_1&state=${encodeURIComponent(new URL(loc).searchParams.get('state'))}` } });
+        const setCookieHdr = upstream.headers()['set-cookie'];
+        await route.fulfill({
+          status: 302,
+          headers: {
+            ...(setCookieHdr ? { 'Set-Cookie': setCookieHdr } : {}),
+            Location: `${origin}/v1/cloud/sso/callback?provider=google&code=pw_google_code_1&state=${encodeURIComponent(new URL(loc).searchParams.get('state'))}`,
+          },
+        });
       });
 
       await page.goto(`${origin}/dashboard?noauto`);
@@ -233,32 +240,37 @@ test.describe('/dashboard real-server login, redeploy persistence, Google SSO, a
       subscriptionId: 'sub_pw_apple_1',
       source: 'stripe_webhook_checkout_completed',
     });
-    const h = Buffer.from(JSON.stringify({ alg: 'RS256', typ: 'JWT', kid: 'pw-apple-kid' })).toString('base64url');
-    const p = Buffer.from(JSON.stringify({
-      iss: 'https://appleid.apple.com',
-      aud: 'com.iganapolsky.thumbgate.web',
-      exp: Math.floor(Date.now() / 1000) + 600,
-      email: 'apple-pro@thumbgate.ai',
-      email_verified: 'true',
-      sub: 'apple_pw_sub_1',
-    })).toString('base64url');
-    const appleIdToken = `${h}.${p}.${crypto.sign('RSA-SHA256', Buffer.from(`${h}.${p}`), appleRsaKeys.privateKey).toString('base64url')}`;
-    serverTestHooks.setGoogleOAuthFetchForTests(async (url) => (
-      String(url) === 'https://appleid.apple.com/auth/token'
-        ? { ok: true, status: 200, json: async () => ({ access_token: 'apple.pw', id_token: appleIdToken }) }
-        : { ok: true, status: 200, json: async () => ({ keys: [appleJwk] }) }
-    ));
+    let capturedAppleState = '';
+    let capturedAppleNonce = '';
+    serverTestHooks.setGoogleOAuthFetchForTests(async (url) => {
+      if (String(url) === 'https://appleid.apple.com/auth/token') {
+        const h = Buffer.from(JSON.stringify({ alg: 'RS256', typ: 'JWT', kid: 'pw-apple-kid' })).toString('base64url');
+        const p = Buffer.from(JSON.stringify({
+          iss: 'https://appleid.apple.com',
+          aud: 'com.iganapolsky.thumbgate.web',
+          exp: Math.floor(Date.now() / 1000) + 600,
+          nonce: capturedAppleNonce,
+          email: 'apple-pro@thumbgate.ai',
+          email_verified: 'true',
+          sub: 'apple_pw_sub_1',
+        })).toString('base64url');
+        const appleIdToken = `${h}.${p}.${crypto.sign('RSA-SHA256', Buffer.from(`${h}.${p}`), appleRsaKeys.privateKey).toString('base64url')}`;
+        return { ok: true, status: 200, json: async () => ({ access_token: 'apple.pw', id_token: appleIdToken }) };
+      }
+      return { ok: true, status: 200, json: async () => ({ keys: [appleJwk] }) };
+    });
 
     const context = await browser.newContext({ extraHTTPHeaders: { 'x-forwarded-for': '203.0.113.58' } });
     const page = await context.newPage();
     try {
-      let capturedAppleState = '';
       await page.route(/\/v1\/cloud\/sso\/authorize\?provider=apple\b/, async (route) => {
         const upstream = await route.fetch({ maxRedirects: 0 });
         expect(upstream.status()).toBe(302);
         const loc = upstream.headers().location || '';
         expect(loc).toMatch(/^https:\/\/appleid\.apple\.com\/auth\/authorize\?/);
-        capturedAppleState = new URL(loc).searchParams.get('state') || '';
+        const parsedLoc = new URL(loc);
+        capturedAppleState = parsedLoc.searchParams.get('state') || '';
+        capturedAppleNonce = parsedLoc.searchParams.get('nonce') || '';
         await route.fulfill({
           status: 200,
           contentType: 'text/html; charset=utf-8',
