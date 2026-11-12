@@ -174,6 +174,7 @@ test.describe('/dashboard real-server login, redeploy persistence, Google SSO, a
 
     let currentEmail = 'free-relay@privaterelay.appleid.com';
     let lastNonce = '';
+    let lastState = '';
     const signAppleRsaToken = (email, nonce) => {
       const h = Buffer.from(JSON.stringify({ alg: 'RS256', typ: 'JWT', kid: 'pw-apple-rsa-kid' })).toString('base64url');
       const p = Buffer.from(JSON.stringify({
@@ -194,14 +195,12 @@ test.describe('/dashboard real-server login, redeploy persistence, Google SSO, a
         : { ok: true, status: 200, json: async () => ({ keys: [applePublicJwk] }) }
     ));
 
-    const fakeAppleIdp = http.createServer((req, res) => {
-      const u = new URL(req.url || '/', 'http://localhost');
-      const state = u.searchParams.get('state') || '';
+    const fakeAppleIdp = http.createServer((_req, res) => {
       res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
       res.end(
         `<form id="applePost" method="POST" action="${origin}/v1/cloud/sso/apple/callback">`
         + `<input name="code" value="pw_apple_code_1" />`
-        + `<input name="state" value="${state}" />`
+        + `<input name="state" value="${lastState}" />`
         + `<input name="user" value='{&quot;name&quot;:{&quot;firstName&quot;:&quot;Grace&quot;,&quot;lastName&quot;:&quot;Hopper&quot;}}' />`
         + `</form><script>document.getElementById('applePost').submit();</script>`,
       );
@@ -218,9 +217,10 @@ test.describe('/dashboard real-server login, redeploy persistence, Google SSO, a
         expect(loc).toMatch(/^https:\/\/appleid\.apple\.com\/auth\/authorize\?/);
         const authUrl = new URL(loc);
         lastNonce = authUrl.searchParams.get('nonce') || '';
+        lastState = authUrl.searchParams.get('state') || '';
         await route.fulfill({
           status: 302,
-          headers: { Location: `http://localhost:${idpPort}/authorize?state=${encodeURIComponent(authUrl.searchParams.get('state') || '')}` },
+          headers: { Location: `http://localhost:${idpPort}/authorize` },
         });
       });
 
