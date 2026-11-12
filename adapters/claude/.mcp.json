@@ -9,6 +9,10 @@
     "preToolUse": {
       "command": "npx",
       "args": ["--yes", "--package", "thumbgate@1.39.1", "thumbgate", "gate-check"]
+    },
+    "userPromptSubmit": {
+      "command": "npx",
+      "args": ["--yes", "--package", "thumbgate@1.39.1", "thumbgate", "hook-auto-capture"]
     }
   }
 }

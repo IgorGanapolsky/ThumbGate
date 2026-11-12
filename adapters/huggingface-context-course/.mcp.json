@@ -15,6 +15,16 @@
         "thumbgate",
         "gate-check"
       ]
+    },
+    "userPromptSubmit": {
+      "command": "npx",
+      "args": [
+        "--yes",
+        "--package",
+        "thumbgate@1.39.1",
+        "thumbgate",
+        "hook-auto-capture"
+      ]
     }
   },
   "notes": "Claude Code MCP config with ThumbGate gates for Hugging Face Context Course exercises. PreToolUse hook gates all tool calls. All configs pin thumbgate@1.39.1. See HF_CONTEXT.md for unit-by-unit integration guide."

@@ -788,8 +788,9 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // Bumped 10.05 MB -> 10.065 MB (2026-11-12, PR #4965): SSO CSRF hardening, AST confinement, BoostMyAgents lane, and SubQ Snap 1.2 SystemOne client (measured 10,053,592 unpacked; file count stays 655).
   // Bumped 10.065 MB -> 10.08 MB (2026-11-12): SubQ Snap 1.2 (/v1/systemone) engine, order-invariance, context curation & passage grounding in mcp-writeguard.js + lesson-retrieval.js + server.js.
   // Bumped 10.08 MB -> 10.09 MB (2026-11-12, PR #4975): signed-in dashboard state + Today overview on top of main (measured 10,080,993 unpacked).
-  manifest.unpackedSize <= 10_090_000,
-  `npm package should stay <= 10.09 MB unpacked, got ${manifest.unpackedSize}`
+  // Bumped 10.09 MB -> 10.11 MB (2026-11-12, PR #4978): UserPromptSubmit secret guard in scripts/prompt-guard.js + adapter pre-hook configs on top of #4975 (measured 10,098,256 unpacked; file count stays 655).
+  manifest.unpackedSize <= 10_110_000,
+  `npm package should stay <= 10.11 MB unpacked, got ${manifest.unpackedSize}`
 );
 
   for (const file of requiredRuntimeFiles) {

@@ -158,6 +158,17 @@ async function main() {
     return;
   }
 
+  try {
+    const { extractPromptEnvelope } = require('./feedback-sanitizer');
+    const { detectPromptSecrets, isPromptSecretGuardEnabled } = require('./prompt-guard');
+    const unwrappedPrompt = extractPromptEnvelope(prompt)?.prompt || prompt;
+    if (isPromptSecretGuardEnabled() && detectPromptSecrets(unwrappedPrompt).detected) {
+      process.stdout.write(JSON.stringify({}));
+      return;
+    }
+  } catch {
+    // Best-effort check; primary blocking runs in hook-auto-capture / prompt-guard.
+  }
   const taskType = classifyTask(prompt);
   const guidance = getEgmGuidance(taskType, prompt);
   const prevention = getPreventionNote();

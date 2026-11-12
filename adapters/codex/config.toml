@@ -9,3 +9,8 @@ args = ["-lc", "[ -x \"$HOME/.thumbgate/runtime/node_modules/.bin/thumbgate\" ] 
 [hooks.pre_tool_use]
 command = "sh"
 args = ["-lc", "[ -x \"$HOME/.thumbgate/runtime/node_modules/.bin/thumbgate\" ] && exec \"$HOME/.thumbgate/runtime/node_modules/.bin/thumbgate\" \"gate-check\" || mkdir -p \"$HOME/.thumbgate/runtime\" && exec npm \"exec\" \"--prefix\" \"$HOME/.thumbgate/runtime\" \"--yes\" \"--package\" \"thumbgate@latest\" \"--\" \"thumbgate\" \"gate-check\""]
+
+# Hard UserPromptSubmit hook for Codex — blocks pasted passwords and API keys before model submission
+[hooks.user_prompt_submit]
+command = "sh"
+args = ["-lc", "[ -x \"$HOME/.thumbgate/runtime/node_modules/.bin/thumbgate\" ] && exec \"$HOME/.thumbgate/runtime/node_modules/.bin/thumbgate\" \"hook-auto-capture\" || mkdir -p \"$HOME/.thumbgate/runtime\" && exec npm \"exec\" \"--prefix\" \"$HOME/.thumbgate/runtime\" \"--yes\" \"--package\" \"thumbgate@latest\" \"--\" \"thumbgate\" \"hook-auto-capture\""]

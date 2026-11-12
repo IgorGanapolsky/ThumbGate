@@ -13,7 +13,7 @@ skills:
     trigger: pre_tool_use
 
   thumbgate-feedback:
-    description: "ThumbGate feedback capture — logs user prompt context"
+    description: "ThumbGate UserPromptSubmit guard & feedback capture — blocks pasted passwords/keys and logs safe prompt context"
     command: "npx --yes --package thumbgate@1.39.1 thumbgate hook-auto-capture"
     trigger: user_prompt
 

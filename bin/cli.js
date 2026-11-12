@@ -3614,11 +3614,6 @@ function hookAutoCapture() {
 
   const guardResult = evaluatePromptGuard(prompt);
   if (guardResult) {
-    recordConversationEntry({
-      author: 'user',
-      text: prompt,
-      source: 'claude_user_prompt',
-    });
     process.stdout.write(`${JSON.stringify(guardResult)}\n`);
     return;
   }

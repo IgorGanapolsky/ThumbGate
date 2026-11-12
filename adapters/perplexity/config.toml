@@ -16,6 +16,11 @@ PERPLEXITY_API_KEY = "${PERPLEXITY_API_KEY}"
 command = "npx"
 args = ["--yes", "--package", "thumbgate@1.39.1", "thumbgate", "gate-check"]
 
+# UserPromptSubmit secret guard — blocks pasted passwords and API keys before model submission
+[hooks.user_prompt_submit]
+command = "npx"
+args = ["--yes", "--package", "thumbgate@1.39.1", "thumbgate", "hook-auto-capture"]
+
 # For hybrid: when using Perplexity Personal Computer, add hybrid-routing gates
 # via custom rules in ThumbGate config/gates/ for "cloud-escalation" on sensitive paths.
 # See adapters/perplexity/HYBRID.md and model-candidates.json for perplexity/hybrid-* lanes.
