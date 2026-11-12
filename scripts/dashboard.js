@@ -405,19 +405,29 @@ function computeApprovalStats(entries) {
 
 
 function resolveScopedGateStatsPath(feedbackDir) {
-  const defaultStatsPath = path.join(process.env.HOME || '/tmp', '.thumbgate', 'gate-stats.json');
+  const stateDir = process.env.THUMBGATE_STATE_DIR
+    || path.join(process.env.HOME || '/tmp', '.thumbgate');
+  const defaultStatsPath = path.join(stateDir, 'gate-stats.json');
   if (!feedbackDir) return defaultStatsPath;
   const localStatsPath = path.join(feedbackDir, 'gate-stats.json');
   if (fs.existsSync(localStatsPath)) return localStatsPath;
   const resolved = path.resolve(feedbackDir);
-  const homeTg = path.resolve(path.join(process.env.HOME || '/tmp', '.thumbgate'));
+  const homeTg = path.resolve(stateDir);
   const projRoot = path.resolve(PROJECT_ROOT);
+  const tmpRoot = path.resolve(require('node:os').tmpdir());
+  const explicitFeedbackDir = Boolean(String(process.env.THUMBGATE_FEEDBACK_DIR || '').trim());
+  const isProjectFeedbackSubdir = !explicitFeedbackDir && (
+    resolved.endsWith(`${path.sep}.thumbgate`)
+    || resolved.endsWith(`${path.sep}.thumbgate-compat`)
+    || resolved.endsWith(`${path.sep}.claude${path.sep}memory${path.sep}feedback`)
+  );
   const inDefaultScope = (
     resolved === homeTg
     || resolved.startsWith(`${homeTg}${path.sep}`)
     || resolved === projRoot
     || resolved.startsWith(`${projRoot}${path.sep}`)
-  ) && !resolved.includes(`${path.sep}tenants${path.sep}`);
+    || isProjectFeedbackSubdir
+  ) && !resolved.includes(`${path.sep}tenants${path.sep}`) && !resolved.startsWith(`${tmpRoot}${path.sep}`);
   return inDefaultScope ? defaultStatsPath : localStatsPath;
 }
 
@@ -586,13 +596,13 @@ const FINISH_SETUP_DETAIL = 'Run npx thumbgate quickstart to fire your first Pre
 function countRecordedGateBlocks(auditEntries, gateAudit, gateStats) {
   let auditDenies = 0;
   for (const ev of auditEntries) {
-    if (ev && (ev.decision === 'deny' || ev.decision === 'block')) {
+    if (ev?.decision === 'deny' || ev?.decision === 'block') {
       auditDenies += 1;
     }
   }
-  const seriesDenies = Number(gateAudit && gateAudit.totals && gateAudit.totals.deny) || 0;
-  const statsBlocked = Number(gateStats && gateStats.blocked) || 0;
-  const topBlocked = Number(gateStats && gateStats.topBlockedCount) || 0;
+  const seriesDenies = Number(gateAudit?.totals?.deny) || 0;
+  const statsBlocked = Number(gateStats?.blocked) || 0;
+  const topBlocked = Number(gateStats?.topBlockedCount) || 0;
   return Math.max(auditDenies, seriesDenies, statsBlocked, topBlocked);
 }
 

@@ -946,10 +946,13 @@ function toggleLicenseKeyBox(forceOpen) {
 var DEFAULT_AUTH_HELP_HTML = 'Sign in to open your workspace, or launch locally with <code style="font-family:var(--mono);font-size:12px;background:var(--cyan-dim);color:var(--cyan);padding:2px 6px;border-radius:4px;">npx thumbgate pro</code>.';
 
 function syncAuthBarVisibility(state, options) {
-  var opts = options || {}, ssoBox = document.getElementById('dashboardSsoButtons'), helpEl = document.getElementById('authHelp'), keyToggle = document.getElementById('dashboardKeyToggle'), proBtn = document.getElementById('getProBtn'), demoBtn = document.getElementById('demoBtn'), discBtn = document.getElementById('disconnectBtn'), setupWrap = document.getElementById('finishSetupWrap');
+  var opts = options || {}, ssoBox = document.getElementById('dashboardSsoButtons'), helpEl = document.getElementById('authHelp'), keyToggle = document.getElementById('dashboardKeyToggle'), proBtn = document.getElementById('getProBtn'), demoBtn = document.getElementById('demoBtn'), discBtn = document.getElementById('disconnectBtn');
   var signedIn = state === 'signed_in' || state === 'signed_in_free';
-  if (ssoBox) ssoBox.style.display = signedIn ? 'none' : (ssoBox.children.length > 0 ? 'flex' : 'none');
-  if (!signedIn && setupWrap) setupWrap.style.display = 'none';
+  if (ssoBox) {
+    var showSso = !signedIn && ssoBox.children.length > 0;
+    ssoBox.style.display = showSso ? 'flex' : 'none';
+  }
+  if (!signedIn) renderUpNext(null, true);
   if (state === 'signed_in') {
     toggleLicenseKeyBox(false);
     if (helpEl) helpEl.style.display = opts.localPro ? '' : 'none';

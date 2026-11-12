@@ -6365,6 +6365,25 @@ async function handleAppleSsoCallback(req, res) {
   }
 }
 
+function resolveSessionSetupOverview(req, tier, sessionEntry, expectedApiKey) {
+  if (!tier) return { firstBlockRecorded: false, upNext: null };
+  try {
+    const { computeTodayOverview } = require('../../scripts/dashboard');
+    const basePaths = getFeedbackPaths();
+    const scopedDir = tier === 'Free' && sessionEntry?.ssoEmail
+      ? path.join(basePaths.FEEDBACK_DIR, 'tenants', hashDataIdentity('sso_free', sessionEntry.ssoEmail))
+      : partitionFeedbackPaths(basePaths, resolveRequestDataIdentity(req, expectedApiKey)).FEEDBACK_DIR;
+    const overview = computeTodayOverview(scopedDir);
+    return {
+      firstBlockRecorded: Boolean(overview.firstBlockRecorded),
+      upNext: overview.upNext,
+    };
+  } catch (error) {
+    debugApiFallback('session setup overview unavailable', error);
+    return { firstBlockRecorded: false, upNext: null };
+  }
+}
+
 async function handlePaidAuthSessionRoute(req, res, expectedApiKey, expectedOperatorKey) {
   const noStoreHeaders = { 'Cache-Control': 'no-store' };
   if (req.method === 'GET') {
@@ -6372,20 +6391,7 @@ async function handlePaidAuthSessionRoute(req, res, expectedApiKey, expectedOper
     const sessionEntry = getPaidAuthSessionEntry(cookies[PAID_AUTH_COOKIE_NAME], expectedApiKey, expectedOperatorKey);
     const tier = resolvePaidSessionTier(extractApiKey(req), expectedApiKey, expectedOperatorKey)
       || (sessionEntry && sessionEntry.subjectType === 'sso_free' ? 'Free' : null);
-    let firstBlockRecorded = false;
-    let upNext = null;
-    if (tier) {
-      try {
-        const { computeTodayOverview } = require('../../scripts/dashboard');
-        const basePaths = getFeedbackPaths();
-        const scopedDir = tier === 'Free' && sessionEntry?.ssoEmail
-          ? path.join(basePaths.FEEDBACK_DIR, 'tenants', hashDataIdentity('sso_free', sessionEntry.ssoEmail))
-          : partitionFeedbackPaths(basePaths, resolveRequestDataIdentity(req, expectedApiKey)).FEEDBACK_DIR;
-        const overview = computeTodayOverview(scopedDir);
-        firstBlockRecorded = Boolean(overview.firstBlockRecorded);
-        upNext = overview.upNext;
-      } catch (_) {}
-    }
+    const { firstBlockRecorded, upNext } = resolveSessionSetupOverview(req, tier, sessionEntry, expectedApiKey);
     sendJson(res, 200, {
       ok: true,
       authenticated: Boolean(tier),
