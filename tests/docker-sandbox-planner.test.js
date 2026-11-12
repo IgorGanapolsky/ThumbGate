@@ -69,3 +69,19 @@ test('buildDockerSandboxPlan forwards trust flags into networkPolicy findings', 
     (plan.networkPolicy.findings || []).some((f) => f.id === 'allowlist_treated_as_trust_boundary'),
   );
 });
+
+test('buildDockerSandboxPlan requires Docker Sandboxes for non-rm destructive delete variants', () => {
+  for (const command of [
+    'find $T -type f -delete',
+    'cmd /c rmdir /s /q "D:\\projects\\old"',
+    'Remove-Item -Recurse -Force D:\\projects\\old',
+  ]) {
+    const plan = buildDockerSandboxPlan({
+      toolName: 'Bash',
+      command,
+    });
+    assert.equal(plan.shouldSandbox, true, command);
+    assert.equal(plan.recommendation, 'required', command);
+    assert.ok(plan.why.some((line) => /Recursive delete commands/i.test(line)), command);
+  }
+});

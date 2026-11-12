@@ -4,6 +4,7 @@
 const fs = require('fs');
 const path = require('path');
 const { execFileSync, spawnSync } = require('child_process');
+const { normalizeCommandValue } = require('./harness-tool-names');
 
 const DEFAULT_BASE_BRANCH = 'main';
 const FIXED_GIT_BIN_CANDIDATES = [
@@ -653,10 +654,440 @@ function findOpenPrForBranch({ branchName, runner = runGh, env = process.env } =
   }
 }
 
+const WRAPPERS = new Set('sudo doas env command builtin exec nohup time nice ionice setsid stdbuf xargs'.split(' '));
+const WRAPPER_FLAGS = new Map([
+  ['sudo', new Set(['-u', '-g', '-h', '-p', '-r', '-t', '-C'])], ['doas', new Set(['-u'])],
+  ['env', new Set(['-u', '-C', '-S'])], ['nice', new Set(['-n'])], ['ionice', new Set(['-c', '-n', '-p'])],
+  ['xargs', new Set(['-n', '-P', '-I', '-L', '-s', '-d'])], ['stdbuf', new Set(['-i', '-o', '-e'])],
+]);
+const CTRL_KW = new Set('then else elif do while until if { ('.split(' '));
+const ASSIGN_KW = new Set(['export', 'local', 'declare', 'typeset']);
+const UNSET_KW = new Set(['unset', 'remove-variable', 'rv']);
+const READ_FLAGS = new Set(['-p', '-d', '-n', '-N', '-t', '-u']);
+const SH_BINS = new Set(['bash', 'sh', 'zsh', 'dash', 'ksh']);
+const PWSH_BINS = new Set(['powershell', 'pwsh']);
+const PWSH_FLAGS = new Set('-executionpolicy -ep -windowstyle -w -inputformat -if -outputformat -of -configurationname'.split(' '));
+const FIND_ARG_FLAGS = new Set('-name -iname -path -ipath -wholename -iwholename -regex -iregex -lname -ilname -samefile -type -xtype -maxdepth -mindepth -perm -links -user -group -uid -gid -size -inum -amin -atime -cmin -ctime -mmin -mtime -newer -anewer -cnewer -printf -fprintf -fprint -fls'.split(' '));
+const RI_VAL_FLAGS = new Set(['-include', '-exclude', '-filter', '-stream', '-credential']);
+const RI_PATH_FLAGS = new Set(['-path', '-literalpath', '-lp']);
+const GIT_ARG_FLAGS = new Set(['-c', '-C', '--git-dir', '--work-tree', '--namespace', '--exec-path', '--super-prefix']);
+const DEL_EXEC_BINS = new Set('rm unlink shred rmdir rd del erase remove-item ri'.split(' '));
+const DIR_DEL_BINS = new Set(['rmdir', 'rd', 'del', 'erase']);
+const WIN_SW_RE = /^(?:\/(?:s|q|f|p|a(?::?[a-z-]+)?))+$/i;
+const WIN_S_RE = /\/s(?:$|\/|:)/i;
+const PWSH_REC_RE = /^-(?:r|rec|recur|recurs|recurse)(?::\$?true)?$/i;
+const VAR_ONLY_RE = /^(?:\$\{([A-Za-z_]\w*)(?::-)?\}|\$(?:env:)?([A-Za-z_]\w*)|%([A-Za-z_]\w*)%)([/\\*]*)$/i;
+const VAR_HEAD_RE = /^(?:\$\{([A-Za-z_]\w*)\}|\$([A-Za-z_]\w*)|%([A-Za-z_]\w*)%)[/\\]/;
+
+function fmtInput(cmd, max = 20000) {
+  return (Array.isArray(cmd) ? String(normalizeCommandValue(cmd)) : String(cmd || '')).slice(0, max).trim();
+}
+
+function isEscSlash(s, i) { return s[i] === '\\' && s[i + 1] === '\\'; }
+function isWinQuotedSpan(s, qs) { return qs >= 0 && /^(?:[A-Za-z]:\\|\\\\)/.test(s.slice(qs + 1, qs + 5)); }
+function isEscQuote(s, i, qs) {
+  return s[i] === '\\' && s[i + 1] === '"' && !isWinQuotedSpan(s, qs) && s.indexOf('"', i + 2) !== -1;
+}
+function isWinPathBefore(s, i) {
+  let k = i - 1;
+  while (k >= 0 && !/[\s;|&"']/.test(s[k])) {
+    if (s[k] === '\\' || (s[k] === ':' && k > 0 && /[A-Za-z]/.test(s[k - 1]))) return true;
+    k -= 1;
+  }
+  return false;
+}
+
+function isEscUnquoted(s, i) {
+  return s[i] === '\\' && i + 1 < s.length && /[;&|"' ]/.test(s[i + 1]) && !isWinPathBefore(s, i);
+}
+
+function stepQuotedSeg(s, i, q, qs) {
+  if (q === '"' && (isEscSlash(s, i) || isEscQuote(s, i, qs))) return { n: i + 1, q, qs };
+  return s[i] === q ? { n: i, q: null, qs: -1 } : { n: i, q, qs };
+}
+
+function delimLen(s, i) {
+  const c = s[i];
+  if (c === '\r' || c === '\n' || c === ';') return 1;
+  if (c === '&' || c === '|') return s[i + 1] === c ? 2 : 1;
+  return 0;
+}
+
+function splitSegs(cmd) {
+  const s = String(cmd || '');
+  const out = [];
+  let start = 0;
+  let q = null;
+  let qs = -1;
+  for (let i = 0; i < s.length; i += 1) {
+    if (q) { const st = stepQuotedSeg(s, i, q, qs); i = st.n; q = st.q; qs = st.qs; continue; }
+    if (isEscUnquoted(s, i)) { i += 1; continue; }
+    if (s[i] === '"' || s[i] === '\'') { q = s[i]; qs = i; continue; }
+    const dl = delimLen(s, i);
+    if (dl > 0) { out.push(s.slice(start, i)); i += dl - 1; start = i + 1; }
+  }
+  out.push(s.slice(start));
+  return out.map((x) => x.trim()).filter(Boolean);
+}
+
+function stepQuotedTok(s, i, b) {
+  if (b.q === '"' && isEscSlash(s, i)) { b.v += '\\'; return i + 1; }
+  if (b.q === '"' && isEscQuote(s, i, b.qs)) { b.v += '"'; return i + 1; }
+  if (s[i] === b.q) { b.q = null; b.qs = -1; return i; }
+  b.v += s[i];
+  return i;
+}
+
+function stepUnquotedTok(s, i, b) {
+  const c = s[i];
+  if (c === '"' || c === '\'') { b.q = c; b.qs = i; b.hq = true; if (c !== '\'') b.sq = false; return i; }
+  b.sq = false;
+  if (isEscUnquoted(s, i)) { b.v += s[i + 1]; return i + 1; }
+  b.v += c;
+  return i;
+}
+
+function flushTok(s, end, b, out) {
+  if (b.rs === -1) return;
+  out.push({ raw: s.slice(b.rs, end), value: b.v, hasQuotes: b.hq, singleQuoted: b.hq && b.sq });
+  b.rs = -1; b.v = ''; b.hq = false; b.sq = true;
+}
+
+function tokenize(seg) {
+  const s = String(seg || '').trim();
+  const out = [];
+  const b = { rs: -1, v: '', q: null, qs: -1, hq: false, sq: true };
+  for (let i = 0; i < s.length; i += 1) {
+    if (b.q) { i = stepQuotedTok(s, i, b); continue; }
+    if (/\s/.test(s[i])) { flushTok(s, i, b, out); continue; }
+    if (b.rs === -1) b.rs = i;
+    i = stepUnquotedTok(s, i, b);
+  }
+  flushTok(s, s.length, b, out);
+  return out;
+}
+
+function readSubAt(s, i) {
+  if (s[i] === '$' && s[i + 1] === '(') {
+    let d = 1;
+    let c = i + 2;
+    while (c < s.length && d > 0) { if (s[c] === '(') d += 1; else if (s[c] === ')') d -= 1; c += 1; }
+    return d === 0 ? { inner: s.slice(i + 2, c - 1).trim(), n: i + 1 } : null;
+  }
+  if (s[i] === '`') {
+    const end = s.indexOf('`', i + 1);
+    if (end !== -1) return { inner: s.slice(i + 1, end).trim(), n: end };
+  }
+  return null;
+}
+
+function stepSubQuote(c, i, q, qs) {
+  if (q === '\'') return c === '\'' ? { q: null, qs: -1 } : { q, qs };
+  if (c === '\'' && !q) return { q: '\'', qs: i };
+  if (c === '"') return q === '"' ? { q: null, qs: -1 } : { q: '"', qs: i };
+  return { q, qs };
+}
+
+function extractSubs(cmd) {
+  const s = String(cmd || '');
+  const out = [];
+  let q = null;
+  let qs = -1;
+  for (let i = 0; i < s.length; i += 1) {
+    if (q === '"' && (isEscSlash(s, i) || isEscQuote(s, i, qs))) { i += 1; continue; }
+    const wasSq = q === '\'';
+    const nxt = stepSubQuote(s[i], i, q, qs);
+    q = nxt.q;
+    qs = nxt.qs;
+    if (wasSq || q === '\'') continue;
+    const sub = readSubAt(s, i);
+    if (sub) { if (sub.inner) out.push(sub.inner); i = sub.n; }
+  }
+  return out;
+}
+
+function normBin(v) {
+  return (String(v || '').replace(/^\\/, '').trim().split(/[/\\]/).pop() || '').toLowerCase().replace(/\.exe$/i, '');
+}
+
+function bindVar(name, rhs, st) {
+  const k = name.toLowerCase();
+  const t = String(rhs || '').trim().replace(/^(['"])(.*)\1$/, '$2');
+  if (!t || t.toLowerCase() === '$null') { st.empty.add(k); st.bound.delete(k); } else { st.bound.add(k); st.empty.delete(k); }
+}
+
+function recAssign(txt, st) {
+  const eq = txt.indexOf('=');
+  if (eq <= 0) return false;
+  const name = txt.slice(0, eq).trim().replace(/^\$(?:env:)?/i, '');
+  if (!/^[A-Za-z_]\w*$/.test(name)) return false;
+  bindVar(name, txt.slice(eq + 1), st);
+  return true;
+}
+
+function recPwshAssign(toks, st) {
+  if (toks.length < 2 || toks[1].value !== '=') return false;
+  const name = toks[0].value.replace(/^\$(?:env:)?/i, '');
+  if (!/^[A-Za-z_]\w*$/.test(name)) return false;
+  bindVar(name, toks[2]?.raw || '', st);
+  return true;
+}
+
+function bindRead(toks, st) {
+  let any = false;
+  for (let i = 1; i < toks.length; i += 1) {
+    const v = toks[i].value;
+    if (READ_FLAGS.has(v)) { i += 1; continue; }
+    let target = '';
+    if (v === '-a') target = toks[++i]?.value || '';
+    else if (!v.startsWith('-')) target = v;
+    if (target && /^[A-Za-z_]\w*$/.test(target)) { bindVar(target, '1', st); any = true; }
+  }
+  if (!any) bindVar('reply', '1', st);
+}
+
+function bindUnset(toks, st) {
+  for (const t of toks.slice(1)) {
+    if (!t.value.startsWith('-')) bindVar(t.value.replace(/^\$(?:env:)?/i, ''), '', st);
+  }
+}
+
+function updateBuiltinState(toks, st) {
+  if (toks.length === 0 || recPwshAssign(toks, st)) return true;
+  const h = toks[0].value.toLowerCase();
+  if (h === 'for' && toks[1] && /^[A-Za-z_]\w*$/.test(toks[1].value)) { bindVar(toks[1].value, '1', st); return true; }
+  if (h === 'read') { bindRead(toks, st); return true; }
+  if (ASSIGN_KW.has(h)) { for (const t of toks.slice(1)) recAssign(t.value, st); return true; }
+  if (h === 'set' && toks[1] && recAssign(toks[1].value, st)) return true;
+  if (UNSET_KW.has(h)) { bindUnset(toks, st); return true; }
+  return false;
+}
+
+function stepEnvOpt(toks, c, st) {
+  const cur = toks[c].value;
+  if (recAssign(cur, st)) return c + 1;
+  if (cur === '-u' && c + 1 < toks.length) { bindVar(toks[c + 1].value, '', st); return c + 2; }
+  return -1;
+}
+
+function skipWrapperOpts(bin, toks, start, st) {
+  const twoArg = WRAPPER_FLAGS.get(bin);
+  let c = start;
+  while (c < toks.length) {
+    const cur = toks[c].value;
+    if (cur === '--') return c + 1;
+    if (bin === 'env') { const nxt = stepEnvOpt(toks, c, st); if (nxt !== -1) { c = nxt; continue; } }
+    if (!cur.startsWith('-')) break;
+    c += twoArg?.has(cur) && c + 1 < toks.length ? 2 : 1;
+  }
+  return c;
+}
+
+function stripPrefixes(toks, st) {
+  let i = 0;
+  while (i < toks.length) {
+    const w = toks[i].value;
+    if (CTRL_KW.has(w.toLowerCase()) || (/^\$?(?:env:)?[A-Za-z_]\w*=/i.test(toks[i].raw) && recAssign(w, st))) { i += 1; continue; }
+    const bin = normBin(w);
+    if (!WRAPPERS.has(bin)) break;
+    i = skipWrapperOpts(bin, toks, i + 1, st);
+  }
+  return toks.slice(i);
+}
+
+function joinPayload(args) {
+  if (args.length === 0) return '';
+  return args.length === 1 ? args[0].value.trim() : args.map((t) => t.raw).join(' ').trim();
+}
+
+function unwrapCmd(args) {
+  for (let i = 0; i < args.length; i += 1) {
+    const raw = args[i].value;
+    const lo = raw.toLowerCase();
+    if (/^\/[abd-jl-z]*[ck]+$/i.test(lo)) return joinPayload(args.slice(i + 1));
+    const m = /^\/[abd-jl-z]*[ck]+:?([\s\S]+)$/i.exec(raw);
+    if (m && !/^[a-z]+$/i.test(m[1])) { const t = joinPayload(args.slice(i + 1)); return t ? `${m[1]} ${t}` : m[1].trim(); }
+    if (!lo.startsWith('/')) break;
+  }
+  return null;
+}
+
+function unwrapPwsh(args) {
+  for (let i = 0; i < args.length; i += 1) {
+    const lo = args[i].value.toLowerCase();
+    if (lo === '-command' || lo === '-c') return joinPayload(args.slice(i + 1));
+    if (lo === '-file' || lo === '-f' || lo.startsWith('-enc')) return null;
+    if (PWSH_FLAGS.has(lo)) { i += 1; continue; }
+    if (!lo.startsWith('-')) return joinPayload(args.slice(i));
+  }
+  return null;
+}
+
+function unwrapSh(args) {
+  for (let i = 0; i < args.length; i += 1) {
+    const v = args[i].value;
+    if ((v === '-o' || v === '+o') && i + 1 < args.length) { i += 1; continue; }
+    if (/^-[A-ABD-Za-bd-z]*c[A-Za-z]*$/.test(v) && i + 1 < args.length) return args[i + 1].value.trim();
+    if (!v.startsWith('-') && !v.startsWith('+')) break;
+  }
+  return null;
+}
+
+function unwrapShell(bin, args) {
+  if (bin === 'cmd') return unwrapCmd(args);
+  if (PWSH_BINS.has(bin)) return unwrapPwsh(args);
+  return SH_BINS.has(bin) ? unwrapSh(args) : null;
+}
+
+function isBadTarget(tok, st) {
+  if (!tok) return false;
+  if (tok.hasQuotes && /^[/\\]*$/.test(tok.value)) return true;
+  if (tok.singleQuoted) return false;
+  const m1 = VAR_ONLY_RE.exec(tok.value);
+  if (m1) { const k = (m1[1] || m1[2] || m1[3] || '').toLowerCase(); return Boolean(k) && (!st.bound.has(k) || st.empty.has(k)); }
+  const m2 = VAR_HEAD_RE.exec(tok.value);
+  if (m2) { const k = (m2[1] || m2[2] || m2[3] || '').toLowerCase(); return Boolean(k) && st.empty.has(k); }
+  return false;
+}
+
+function applyRmFlag(v, f) {
+  if (v === '--recursive') f.r = true;
+  else if (v === '--force') f.f = true;
+  else if (!v.startsWith('--')) { if (/[rR]/.test(v)) f.r = true; if (/f/.test(v)) f.f = true; }
+}
+
+function checkRm(args, st) {
+  const f = { r: false, f: false };
+  let dd = false;
+  for (const t of args) {
+    const v = t.value;
+    if (!dd && v === '--') { dd = true; continue; }
+    if (!dd && /^-(?:recurse)(?::\$?true)?$/i.test(v)) return true;
+    if (!dd && v.startsWith('-') && v.length > 1 && !v.startsWith('-$')) { applyRmFlag(v, f); continue; }
+    if (isBadTarget(t, st)) return true;
+  }
+  return f.r && f.f;
+}
+
+function checkFindExec(slice, depth, st) {
+  const s = stripPrefixes(slice, st);
+  if (s.length === 0) return false;
+  const bin = normBin(s[0].value);
+  if (DEL_EXEC_BINS.has(bin)) return true;
+  const nested = unwrapShell(bin, s.slice(1));
+  return Boolean(nested && depth < 4 && evalCmd(nested, depth + 1, st));
+}
+
+function findExecEnd(args, start) {
+  let end = start;
+  while (end < args.length && args[end].value !== ';' && args[end].value !== '+') end += 1;
+  return end;
+}
+
+function checkFind(args, depth, st) {
+  for (let i = 0; i < args.length; i += 1) {
+    const lo = args[i].value.toLowerCase();
+    if (FIND_ARG_FLAGS.has(lo)) { i += 1; continue; }
+    if (lo === '-delete') return true;
+    if (lo === '-exec' || lo === '-execdir' || lo === '-ok' || lo === '-okdir') {
+      const end = findExecEnd(args, i + 1);
+      if (checkFindExec(args.slice(i + 1, end), depth, st)) return true;
+      i = end;
+    }
+  }
+  return false;
+}
+
+function checkDirDel(args, st) {
+  for (const t of args) {
+    const v = t.value;
+    const sw = WIN_SW_RE.test(v);
+    if ((sw && WIN_S_RE.test(v)) || PWSH_REC_RE.test(v)) return true;
+    if (!v.startsWith('-') && !sw && isBadTarget(t, st)) return true;
+  }
+  return false;
+}
+
+function checkRemoveItem(args, st) {
+  for (let i = 0; i < args.length; i += 1) {
+    const v = args[i].value;
+    const lo = v.toLowerCase();
+    if (PWSH_REC_RE.test(v)) return true;
+    if (RI_VAL_FLAGS.has(lo)) { i += 1; continue; }
+    if (RI_PATH_FLAGS.has(lo)) { if (isBadTarget(args[++i], st)) return true; continue; }
+    if (!v.startsWith('-') && isBadTarget(args[i], st)) return true;
+  }
+  return false;
+}
+
+function applyGitFlag(v, f) {
+  if (v === '--force') f.f = true;
+  else if (v === '--dry-run') f.n = true;
+  else if (!v.startsWith('--')) { if (/f/.test(v)) f.f = true; if (/n/.test(v)) f.n = true; }
+}
+
+function checkGitClean(tail, st) {
+  const f = { f: false, n: false };
+  let dd = false;
+  for (let i = 0; i < tail.length; i += 1) {
+    const v = tail[i].value;
+    if (!dd && v === '--') { dd = true; continue; }
+    if (!dd && (v === '-e' || v === '--exclude')) { i += 1; continue; }
+    if (!dd && v.startsWith('-')) { applyGitFlag(v, f); continue; }
+    if (isBadTarget(tail[i], st)) return true;
+  }
+  return f.f && !f.n;
+}
+
+function checkGit(args, st) {
+  for (let i = 0; i < args.length; i += 1) {
+    if (GIT_ARG_FLAGS.has(args[i].value)) { i += 1; continue; }
+    if (!args[i].value.startsWith('-')) {
+      return args[i].value.toLowerCase() === 'clean' && checkGitClean(args.slice(i + 1), st);
+    }
+  }
+  return false;
+}
+
+function evalBin(bin, args, depth, st) {
+  if (bin === 'rm') return checkRm(args, st);
+  if (bin === 'find') return checkFind(args, depth, st);
+  if (DIR_DEL_BINS.has(bin)) return checkDirDel(args, st);
+  if (bin === 'remove-item' || bin === 'ri') return checkRemoveItem(args, st);
+  if (bin === 'git') return checkGit(args, st);
+  return (bin === 'unlink' || bin === 'shred') && args.some((t) => !t.value.startsWith('-') && isBadTarget(t, st));
+}
+
+function evalSeg(seg, depth, st) {
+  const raw = tokenize(seg);
+  if (raw.length === 0 || updateBuiltinState(raw, st)) return false;
+  const toks = stripPrefixes(raw, st);
+  if (toks.length === 0 || updateBuiltinState(toks, st)) return false;
+  const bin = normBin(toks[0].value);
+  const args = toks.slice(1);
+  const nested = unwrapShell(bin, args);
+  if (nested !== null && depth < 4) return evalCmd(nested, depth + 1, st);
+  return evalBin(bin, args, depth, st);
+}
+
+function evalCmd(cmd, depth, parent) {
+  const raw = fmtInput(cmd, 20000);
+  if (!raw) return false;
+  const st = { bound: new Set(parent?.bound || []), empty: new Set(parent?.empty || []) };
+  for (const seg of splitSegs(raw)) {
+    if (evalSeg(seg, depth, st)) return true;
+  }
+  return depth < 4 && extractSubs(raw).some((sub) => evalCmd(sub, depth + 1, st));
+}
+
+function isDestructiveDeleteCommand(command) {
+  return evalCmd(command, 0, null);
+}
+
 function classifyCommand(command) {
-  const text = String(command || '').trim();
-  const workflowRunMatch = text.match(/\bgh\s+workflow\s+run\s+([^\s]+)/i);
-  const refMatch = text.match(/(?:--ref|-r)\s+([^\s]+)/i);
+  const text = fmtInput(command, 100000);
+  const workflowRunMatch = /\bgh\s+workflow\s+run\s+([^\s]+)/i.exec(text);
+  const refMatch = /(?:--ref|-r)\s+([^\s]+)/i.exec(text);
   const fieldArgs = [...text.matchAll(/(?:--field|-f)\s+([A-Za-z0-9_.-]+)=([^\s]+)/gi)]
     .map((match) => ({ name: match[1], value: match[2] }));
   return {
@@ -670,6 +1101,7 @@ function classifyCommand(command) {
     isPublish: /\b(?:npm|yarn|pnpm)\s+publish\b/i.test(text),
     isReleaseCreate: /\bgh\s+release\s+create\b/i.test(text),
     isTagCreate: /\bgit\s+tag\b/i.test(text),
+    isDestructiveDelete: isDestructiveDeleteCommand(command),
   };
 }
 
@@ -991,6 +1423,7 @@ module.exports = {
   assertSafeGitObjectId,
   gitVerifyRef,
   isSafeBranchName,
+  isDestructiveDeleteCommand,
   isSafeGitObjectId,
   isSafeGitRevision,
   isHeadReachableFrom,

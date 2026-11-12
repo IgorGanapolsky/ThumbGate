@@ -1185,3 +1185,100 @@ test('toRepoRelativePath normalizes absolute affected files under repo root', ()
   assert.equal(toRepoRelativePath(abs, null), '');
   assert.equal(toRepoRelativePath('/etc/passwd', repoRoot), '');
 });
+
+test('workflow sentinel and gate_check warn on destructive-delete variants without blocking and allow safe commands', async (t) => {
+  const feedbackDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-sentinel-destructive-variants-'));
+  const previousFeedbackDir = process.env.THUMBGATE_FEEDBACK_DIR;
+  const previousStrict = process.env.THUMBGATE_STRICT_ENFORCEMENT;
+  process.env.THUMBGATE_FEEDBACK_DIR = feedbackDir;
+  delete process.env.THUMBGATE_STRICT_ENFORCEMENT;
+  cleanupGateState();
+  t.after(() => {
+    if (previousFeedbackDir === undefined) delete process.env.THUMBGATE_FEEDBACK_DIR;
+    else process.env.THUMBGATE_FEEDBACK_DIR = previousFeedbackDir;
+    if (previousStrict === undefined) delete process.env.THUMBGATE_STRICT_ENFORCEMENT;
+    else process.env.THUMBGATE_STRICT_ENFORCEMENT = previousStrict;
+    cleanupGateState();
+    fs.rmSync(feedbackDir, { recursive: true, force: true });
+  });
+
+  const flaggedCommands = [
+    'rm -rf ./build-output',
+    'find $T -type f -delete',
+    'find . -type f -exec rm {} +',
+    'cmd /c rmdir /s /q "D:\\projects\\old"',
+    'rmdir /s build',
+    'del /s build',
+    'rd /s build',
+    'Remove-Item -Recurse -Force D:\\projects\\old',
+    'git clean -fdx',
+    'rm $T',
+    'rm ${T}',
+    'rm "$T/"',
+  ];
+
+  for (const command of flaggedCommands) {
+    const sentinel = evaluateWorkflowSentinel('Bash', { command }, {
+      feedbackDir,
+      feedbackOptions: { feedbackDir },
+      memoryGuard: { mode: 'allow', reason: '' },
+    });
+    assert.equal(sentinel.decision, 'warn', `sentinel should warn on: ${command}`);
+    assert.equal(
+      sentinel.drivers.some((driver) => driver.key === 'destructive_delete'),
+      true,
+      `sentinel should record destructive_delete driver on: ${command}`
+    );
+    assert.equal(sentinel.decisionControl.reversibility, 'one_way_door', `reversibility on: ${command}`);
+    assert.equal(sentinel.executionSurface.recommendation, 'required', `sandbox recommendation on: ${command}`);
+
+    const mcpResult = await callTool('gate_check', {
+      tool_name: 'Bash',
+      tool_input: { command },
+    });
+    const verdict = JSON.parse(mcpResult.content[0].text);
+    assert.equal(verdict.decision, 'warn', `gate_check should warn (not allow or block) on: ${command}`);
+    assert.equal(verdict.flagged, true, `gate_check should set flagged=true on: ${command}`);
+  }
+  const harnessVariants = [
+    ['exec_command', { cmd: 'rmdir /s /q "D:\\projects\\old"' }],
+    ['pwsh', { command: 'Remove-Item -Recurse -Force D:\\projects\\old' }],
+    ['local_shell', { command: ['bash', '-lc', 'find $T -type f -delete'] }],
+    ['Bash', { command: ['cmd', '/c', 'del /s /q C:\\temp\\*'] }],
+  ];
+  for (const [hTool, hInput] of harnessVariants) {
+    const sentinel = evaluateWorkflowSentinel(hTool, hInput, {
+      feedbackDir,
+      feedbackOptions: { feedbackDir },
+      memoryGuard: { mode: 'allow', reason: '' },
+    });
+    assert.equal(sentinel.decision, 'warn', `sentinel should warn on harness call ${hTool}`);
+    assert.equal(sentinel.drivers.some((d) => d.key === 'destructive_delete'), true);
+  }
+
+  const safeCommands = [
+    "find . -name '*.log'",
+    'rmdir emptydir',
+  ];
+  for (const command of safeCommands) {
+    const sentinel = evaluateWorkflowSentinel('Bash', { command }, {
+      feedbackDir,
+      feedbackOptions: { feedbackDir },
+      memoryGuard: { mode: 'allow', reason: '' },
+    });
+    assert.equal(sentinel.decision, 'allow', `sentinel should allow: ${command}`);
+    assert.equal(
+      sentinel.drivers.some((driver) => driver.key === 'destructive_delete'),
+      false,
+      `sentinel should not add destructive_delete driver on: ${command}`
+    );
+
+    const mcpResult = await callTool('gate_check', {
+      tool_name: 'Bash',
+      tool_input: { command },
+    });
+    const verdict = JSON.parse(mcpResult.content[0].text);
+    assert.equal(verdict.decision, 'allow', `gate_check should allow: ${command}`);
+    assert.equal(verdict.flagged, false, `gate_check should set flagged=false on: ${command}`);
+  }
+});
