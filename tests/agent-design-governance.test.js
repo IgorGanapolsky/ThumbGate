@@ -315,6 +315,83 @@ test('ThumbGate pipeline outputs active AST inline edits, CSS overrides, and Tai
     const bigRes = runDesignSelfCorrectionPipeline({ filePath: bigFile, allowDiskRead: true });
     assert.equal(bigRes.ok, false);
     assert.equal(bigRes.error, 'source_too_large');
+
+    // BoostMyAgents + Breezy Assist steal: supporter compute-boost lane (95%/5%, capacity-only, hard zero-overspend, single-flight, metadata-only privacy, and answer-unit metering)
+    const { evaluateComputeBoostLane, buildSubQSnap12Payload, callSubQSnapSystemOneApi, scrubBoostTelemetryMetadata } = require('../src/openshell-lovable-engine');
+    const boostFailover = evaluateComputeBoostLane({
+      grossBoostUsd: 20, boostBalanceUsd: 0, primarySubscriptionStatus: 'window_paused', estimatedRequestUsd: 0.45,
+      chatReplies: 1, documentsUploaded: 1, pagesGenerated: 2, tasksExecuted: 1,
+      telemetry: { model: 'claude-opus-4-6', inputTokens: 1200, outputTokens: 400, prompt: 'TOP_SECRET_PROMPT', response: 'SECRET_OUT' },
+    });
+    assert.equal(boostFailover.allowed, true);
+    assert.equal(boostFailover.selectedLane, 'boost_lane');
+    assert.equal(boostFailover.economics.creditedCapacityUsd, 19);
+    assert.equal(boostFailover.economics.platformFeeUsd, 1);
+    assert.equal(boostFailover.economics.cashWithdrawalAllowed, false);
+    assert.equal(boostFailover.economics.outboundCashSpendUsd, 0);
+    assert.equal(boostFailover.metering.meteredUnits, 5);
+    assert.equal(boostFailover.balances.remainingBoostUsd, 18.55);
+    assert.equal(boostFailover.telemetry.storesPrompts, false);
+    assert.equal('prompt' in boostFailover.telemetry.metadata, false);
+    assert.equal(evaluateComputeBoostLane({ boostBalanceUsd: 0.10, primarySubscriptionStatus: 'window_paused', estimatedRequestUsd: 0.25 }).stopReason, 'boost_balance_exhausted');
+    assert.equal(evaluateComputeBoostLane({ boostBalanceUsd: 5.0, primarySubscriptionStatus: 'rate_limited', activeInFlightRequests: 1, estimatedRequestUsd: 0.05 }).stopReason, 'boost_single_flight_busy');
+    assert.equal(evaluateComputeBoostLane({ grossBoostUsd: Infinity, primarySubscriptionStatus: 'window_paused', estimatedRequestUsd: 0.2 }).allowed, false);
+    assert.equal(evaluateComputeBoostLane({ boostBalanceUsd: 5, primarySubscriptionStatus: 'window_paused', estimatedRequestUsd: -1 }).allowed, false);
+    assert.equal(evaluateComputeBoostLane(null).allowed, false);
+
+    const boostHttpRes = await fetch(`${origin}/v1/boost/evaluate`, {
+      method: 'POST', headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ operationKind: 'pre_tool_use_gate', blockedBeforeModel: true, estimatedRequestUsd: 1.25, boostBalanceUsd: 5 }),
+    });
+    const boostHttpJson = await boostHttpRes.json();
+    assert.equal(boostHttpJson.selectedLane, 'local_zero_burn');
+    assert.equal(boostHttpJson.balances.savedBoostUsd, 1.25);
+    const crlfTraceRes = await fetch(`${origin}/v1/boost/evaluate`, {
+      method: 'POST', headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ traceId: 'bad\r\nSet-Cookie: evil=1', operationKind: 'pre_tool_use_gate', boostBalanceUsd: 1 }),
+    });
+    assert.equal(crlfTraceRes.headers.get('set-cookie'), null);
+    assert.doesNotMatch(scrubBoostTelemetryMetadata({ timestamp: '2026-11-12T<SCRIPT>SECRET_TOKEN', inputTokens: 10 }).metadata.timestamp, /SCRIPT|SECRET/);
+
+    const pA = buildSubQSnap12Payload({
+      model: 'subq-snap-latest', state: { diff: 'rm -rf /', context: '[P1] destructive root delete' },
+      questions: { action: { type: 'choice', instructions: 'Pick gate action', criteria: { block: 'Deny', allow: 'Permit' } }, risk: { type: 'noul', instructions: 'Is destructive?' } },
+    });
+    const pB = buildSubQSnap12Payload({
+      model: 'subq-snap-latest', state: { diff: 'rm -rf /', context: '[P1] destructive root delete' },
+      questions: { action: { type: 'choice', instructions: 'Pick gate action', criteria: { allow: 'Permit', block: 'Deny' } }, risk: { type: 'noul', instructions: 'Is destructive?' } },
+    });
+    assert.deepEqual(Object.keys(pA.payload.questions.action.criteria), Object.keys(pB.payload.questions.action.criteria));
+    assert.equal(buildSubQSnap12Payload({ state: 'check', questions: JSON.parse('{"__proto__":{"type":"noul","instructions":"p"}}') }).error, 'invalid_question_key');
+
+    const mockedSubqLive = await callSubQSnapSystemOneApi(pA.payload, {
+      apiKey: 'sk-test-subq',
+      fetchImpl: async () => ({ ok: true, status: 200, json: async () => ({
+        model: 'subq-snap-1.2',
+        answers: { action: { type: 'choice', choice: 'block', probabilities: { allow: 0.01, block: 0.99 }, confidence: 0.99 }, risk: { type: 'noul', noul: 0.98 } },
+        usage: { input_tokens: 1000, output_tokens: 0 },
+      }) }),
+    });
+    assert.equal(mockedSubqLive.abstained, false);
+    assert.equal(mockedSubqLive.costUsd, 0.00004);
+    assert.equal((await callSubQSnapSystemOneApi(pA.payload, { apiKey: 'sk-test-subq', fetchImpl: async () => ({ ok: false, status: 402 }) })).mode, 'credit_exhausted_zero_overspend');
+    assert.equal((await callSubQSnapSystemOneApi(pA.payload, { apiKey: 'sk-test-subq', confidenceThreshold: 0, fetchImpl: async () => ({ ok: true, status: 200, json: async () => ({ answers: {} }) }) })).abstained, true);
+    assert.equal((await callSubQSnapSystemOneApi(pA.payload, { apiKey: 'sk-test-subq', fetchImpl: async () => ({ ok: true, status: 200, json: async () => ({ answers: { action: { type: 'choice', confidence: 0.99 }, risk: { type: 'noul', noul: null } } }) }) })).abstained, true);
+    assert.equal((await callSubQSnapSystemOneApi(pA.payload, { apiKey: 'sk-test-subq', fetchImpl: async () => { throw new Error('timeout'); } })).abstained, true);
+
+    const savedSubqKey = process.env.SUBQ_API_KEY;
+    const savedGoogleId = process.env.GOOGLE_CLIENT_ID;
+    process.env.SUBQ_API_KEY = 'sk-server-secret-not-for-anon';
+    process.env.GOOGLE_CLIENT_ID = 'google-client-test';
+    try {
+      const subqHttpJson = await (await fetch(`${origin}/v1/decisions/subq-snap`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(pA.payload) })).json();
+      assert.equal(subqHttpJson.mode, 'local_offline_no_api_key');
+      const ssoJsonRes = await fetch(`${origin}/v1/cloud/sso/authorize?provider=google&format=json`);
+      assert.match(String(ssoJsonRes.headers.get('set-cookie') || ''), /thumbgate_sso_state=/);
+    } finally {
+      if (savedSubqKey === undefined) delete process.env.SUBQ_API_KEY; else process.env.SUBQ_API_KEY = savedSubqKey;
+      if (savedGoogleId === undefined) delete process.env.GOOGLE_CLIENT_ID; else process.env.GOOGLE_CLIENT_ID = savedGoogleId;
+    }
     const homeHtml = await (await fetch(`${origin}/`)).text();
     assert.doesNotMatch(homeHtml, /id="(?:navPaidLoginBtn|navPaidDashboardLink|paidLoginKeyInput|paidLoginSubmitBtn|googleCloudLoginLink)"[^>]*min-height:\s*(?:36|38)px/);
   } finally {

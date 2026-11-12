@@ -1,5 +1,8 @@
 'use strict';
 
+/**
+ * NVIDIA OpenShell (v0.1.8) + Adobe MAX Nov-2026 + Lovable AST Self-Correcting Design Engine.
+ */
 const fs = require('node:fs');
 const path = require('node:path');
 const { computeChunkHash, evaluateHashAnchoredEdit } = require('./hash-anchored-edit');
@@ -34,6 +37,10 @@ function proverVerdict(result, exitCode, extra = {}) {
   return { result, exitCode, passed: result === 'within_boundary', coverage: { domains: [...PROVER_COVERAGE_DOMAINS] }, ...extra };
 }
 
+/**
+ * NVIDIA OpenShell Formal Policy Boundary Check (`openshell-prover check`).
+ * Only `within_boundary` (exitCode 0) passes; every other verdict fails closed.
+ */
 function provePolicyBoundary(candidate, boundary) {
   if (!candidate || typeof candidate !== 'object' || !boundary || typeof boundary !== 'object') {
     return proverVerdict('error', 2, { reason_code: 'invalid_policy_object', reason: 'Both candidate and boundary policies must be objects.' });
@@ -45,6 +52,7 @@ function provePolicyBoundary(candidate, boundary) {
     return proverVerdict('inconclusive', 3, { reason_code: 'resource_limit', reason: 'Policy exceeds 1,024 network rules or 4,096 endpoints.' });
   }
 
+  // 1. Landlock check (fails closed if boundary hard_requirement is downgraded or omitted)
   const cLandlock = candidate.landlock?.compatibility;
   if (boundary.landlock?.compatibility === 'hard_requirement' && cLandlock !== 'hard_requirement') {
     return proverVerdict('exceeds_boundary', 1, { reason_code: 'landlock_downgrade', counterexample: `landlock compatibility ${cLandlock || '(missing)'}` });
@@ -78,6 +86,7 @@ function provePolicyBoundary(candidate, boundary) {
     return proverVerdict('unsupported', 3, { reason_code: 'symlink_subpath_unverifiable', reason: `Unverifiable read subpath '${p}'.` });
   }
 
+  // 4 & 5. Network L4 + REST checks
   const bEndpoints = [];
   for (const rule of boundRules) {
     const bins = Array.isArray(rule?.binaries) ? rule.binaries.map((b) => b.path || b) : [];
@@ -505,7 +514,7 @@ function splitCssDeclarations(str) {
 }
 
 function extractSafeColorHex(val) {
-  const cleaned = String(val || '').replace(/(?:url|image-set)\s*\([^)]*\)/gi, ' ');
+  const cleaned = String(val || '').replace(/(?:url|image-set)\s*\([^()]*\)/gi, ' ');
   return /(#[0-9a-fA-F]{3,6})\b/.exec(cleaned);
 }
 
@@ -715,7 +724,7 @@ function parseDesignAst(source, defaultBgHex = '#0f172a') {
     const attrsRaw = text.slice(nameStart + tagName.length, selfClose ? cur - 1 : cur);
     const tagLower = tagName.toLowerCase();
     if ((tagLower === 'style' || tagLower === 'script') && !selfClose) {
-      const closeRe = tagLower === 'style' ? /<\/style\b[^>]*>/ig : /<\/script\b[^>]*>/ig;
+      const closeRe = tagLower === 'style' ? /<\/style\b[^<>]*>/ig : /<\/script\b[^<>]*>/ig;
       closeRe.lastIndex = tagEnd;
       const closeMatch = closeRe.exec(text);
       if (!closeMatch) break;
@@ -848,19 +857,7 @@ function inspectCssAstRules(source, ast, visualQueue, options = {}) {
     if (Object.keys(ruleProps).length > 0) {
       const body = Object.entries(decls).map(([k, v]) => `${k}: ${v};`).join(' ');
       const afterRule = `${rule.selector} { ${body} }`;
-      inlineEdits.push({
-        filePath: options.filePath || null,
-        nodeType: 'CssRule',
-        astPath: `css:${rule.selector}`,
-        selector: rule.selector,
-        startOffset: rule.startOffset,
-        endOffset: rule.endOffset,
-        startLine: rule.startLine,
-        endLine: rule.endLine,
-        expectedChunkHash: computeChunkHash(rule.rawRule),
-        before: rule.rawRule,
-        after: afterRule,
-      });
+      inlineEdits.push({ filePath: options.filePath || null, nodeType: 'CssRule', astPath: `css:${rule.selector}`, selector: rule.selector, startOffset: rule.startOffset, endOffset: rule.endOffset, startLine: rule.startLine, endLine: rule.endLine, expectedChunkHash: computeChunkHash(rule.rawRule), before: rule.rawRule, after: afterRule });
       cssOverrides.push({ selector: rule.selector, properties: ruleProps, cssRule: `${rule.selector} { ${Object.entries(ruleProps).map(([k, v]) => `${k}: ${v};`).join(' ')} }` });
     }
   }
@@ -1064,22 +1061,32 @@ function inspectAndPatchDesignSource(source, options = {}) {
     }
   }
 
+  // Synthesize standalone CSS/Tailwind overrides when visualFindings are provided without matching source elements
   if (ast.nodes.length === 0 && (ast.cssRules || []).length === 0 && visualQueue.length > 0) {
-    const emitOv = (sel, type, props, cssOverride, add, extra = {}) => {
-      const cssRule = `${sel} { ${cssOverride} }`;
-      cssOverrides.push({ selector: sel, properties: props, cssRule });
-      tailwindAdjustments.push({ selector: sel, astPath: null, remove: [], add });
-      inlineEdits.push({ filePath: options.filePath || null, nodeType: 'CssStyleSheetOverride', astPath: null, selector: sel, startOffset: null, endOffset: null, startLine: null, endLine: null, expectedChunkHash: null, before: '', after: cssRule });
-      patches.push({ type, element: null, selector: sel, astPath: null, ...extra, cssOverride, tailwindPatch: { remove: [], add } });
-    };
     for (const vf of visualQueue) {
       const sel = vf.selector || '.tg-surface';
-      if (/colorblind/i.test(vf.issue)) emitOv(sel, 'colorblind_unsafe_status', { 'text-decoration': 'underline 2px solid currentColor', 'font-weight': '600' }, 'text-decoration: underline 2px solid currentColor; font-weight: 600;', ['underline', 'decoration-2', 'underline-offset-2', 'font-semibold']);
-      else if (/tap|touch|target/i.test(vf.issue)) emitOv(sel, 'undersized_tap_target', { 'min-height': '44px', 'min-width': '44px', padding: '0.625rem 1rem' }, 'min-height: 44px; min-width: 44px; padding: 0.625rem 1rem;', ['min-h-11', 'min-w-11', 'px-4', 'py-2.5']);
-      else {
-        const startFg = vf.fgHex || '#64748b'; const bg = vf.bgHex || defaultBg; const tMin = Number(vf.minContrast || minContrast);
+      if (/colorblind/i.test(vf.issue)) {
+        const cssRule = `${sel} { text-decoration: underline 2px solid currentColor; font-weight: 600; }`;
+        cssOverrides.push({ selector: sel, properties: { 'text-decoration': 'underline 2px solid currentColor', 'font-weight': '600' }, cssRule });
+        tailwindAdjustments.push({ selector: sel, astPath: null, remove: [], add: ['underline', 'decoration-2', 'underline-offset-2', 'font-semibold'] });
+        inlineEdits.push({ filePath: options.filePath || null, nodeType: 'CssStyleSheetOverride', astPath: null, selector: sel, startOffset: null, endOffset: null, startLine: null, endLine: null, expectedChunkHash: null, before: '', after: cssRule });
+        patches.push({ type: 'colorblind_unsafe_status', element: null, selector: sel, astPath: null, cssOverride: 'text-decoration: underline 2px solid currentColor; font-weight: 600;', tailwindPatch: { remove: [], add: ['underline', 'decoration-2', 'underline-offset-2', 'font-semibold'] } });
+      } else if (/tap|touch|target/i.test(vf.issue)) {
+        const cssRule = `${sel} { min-height: 44px; min-width: 44px; padding: 0.625rem 1rem; }`;
+        cssOverrides.push({ selector: sel, properties: { 'min-height': '44px', 'min-width': '44px', padding: '0.625rem 1rem' }, cssRule });
+        tailwindAdjustments.push({ selector: sel, astPath: null, remove: [], add: ['min-h-11', 'min-w-11', 'px-4', 'py-2.5'] });
+        inlineEdits.push({ filePath: options.filePath || null, nodeType: 'CssStyleSheetOverride', astPath: null, selector: sel, startOffset: null, endOffset: null, startLine: null, endLine: null, expectedChunkHash: null, before: '', after: cssRule });
+        patches.push({ type: 'undersized_tap_target', element: null, selector: sel, astPath: null, cssOverride: 'min-height: 44px; min-width: 44px; padding: 0.625rem 1rem;', tailwindPatch: { remove: [], add: ['min-h-11', 'min-w-11', 'px-4', 'py-2.5'] } });
+      } else {
+        const startFg = vf.fgHex || '#64748b';
+        const bg = vf.bgHex || defaultBg;
+        const tMin = Number(vf.minContrast || minContrast);
         const solved = solveAccessibleForeground(startFg, bg, tMin);
-        emitOv(sel, 'low_contrast', { color: solved.hex }, `color: ${solved.hex};`, [solved.tailwindClass], { measuredRatio: computeContrastRatio(startFg, bg), targetRatio: tMin, fixedRatio: solved.ratio });
+        const cssRule = `${sel} { color: ${solved.hex}; }`;
+        cssOverrides.push({ selector: sel, properties: { color: solved.hex }, cssRule });
+        tailwindAdjustments.push({ selector: sel, astPath: null, remove: [], add: [solved.tailwindClass] });
+        inlineEdits.push({ filePath: options.filePath || null, nodeType: 'CssStyleSheetOverride', astPath: null, selector: sel, startOffset: null, endOffset: null, startLine: null, endLine: null, expectedChunkHash: null, before: '', after: cssRule });
+        patches.push({ type: 'low_contrast', element: null, selector: sel, astPath: null, measuredRatio: computeContrastRatio(startFg, bg), targetRatio: tMin, fixedRatio: solved.ratio, cssOverride: `color: ${solved.hex};`, tailwindPatch: { remove: [], add: [solved.tailwindClass] } });
       }
     }
   }
@@ -1199,6 +1206,253 @@ function runDesignSelfCorrectionPipeline(input = {}) {
   };
 }
 
+function parseFiniteNonNeg(v, fallback = 0) {
+  if (v === undefined || v === null || v === '') return { ok: true, value: fallback, provided: false };
+  if (typeof v === 'boolean' || typeof v === 'object') return { ok: false, value: 0, provided: true };
+  const n = Number(v);
+  if (!Number.isFinite(n) || n < 0) return { ok: false, value: 0, provided: true };
+  return { ok: true, value: n, provided: true };
+}
+
+function scrubBoostTelemetryMetadata(event = {}) {
+  const ev = event && typeof event === 'object' && !Array.isArray(event) ? event : {};
+  const safeModel = String(ev.model || 'unknown').replace(/[^a-zA-Z0-9._:-]/g, '').slice(0, 64) || 'unknown';
+  const safeGate = ev.gateRuleId ? String(ev.gateRuleId).replace(/[^a-zA-Z0-9._:-]/g, '').slice(0, 64) : null;
+  const inTok = parseFiniteNonNeg(ev.inputTokens, 0);
+  const outTok = parseFiniteNonNeg(ev.outputTokens, 0);
+  const cost = parseFiniteNonNeg(ev.costUsd, 0);
+  const rawTs = typeof ev.timestamp === 'string' ? ev.timestamp.trim() : '';
+  const safeTs = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,9})?(?:Z|[+-]\d{2}:\d{2})$/.test(rawTs) ? rawTs : new Date().toISOString();
+  return {
+    storesPrompts: false,
+    storesResponses: false,
+    storesRepoPromptContext: false,
+    metadata: {
+      timestamp: safeTs,
+      lane: ev.lane === 'boost_lane' ? 'boost_lane' : 'primary_subscription',
+      model: safeModel,
+      inputTokens: Math.trunc(inTok.value),
+      outputTokens: Math.trunc(outTok.value),
+      costUsd: Math.round(cost.value * 1e6) / 1e6,
+      gateRuleId: safeGate,
+    },
+  };
+}
+
+function evaluateComputeBoostLane(rawInput = {}) {
+  const input = rawInput && typeof rawInput === 'object' && !Array.isArray(rawInput) ? rawInput : null;
+  if (!input) {
+    return { ok: false, allowed: false, stopReason: 'invalid_boost_input', selectedLane: 'boost_lane', economics: { cashWithdrawalAllowed: false, canOverspend: false, outboundCashSpendUsd: 0 }, balances: { totalAvailableBoostUsd: 0, deductedBoostUsd: 0, remainingBoostUsd: 0, savedBoostUsd: 0 }, metering: { meteredUnits: 0 }, telemetry: scrubBoostTelemetryMetadata({}) };
+  }
+  const grossP = parseFiniteNonNeg(input.grossBoostUsd, 0);
+  const sharedP = parseFiniteNonNeg(input.sharedPoolReleaseUsd, 0);
+  const balP = parseFiniteNonNeg(input.boostBalanceUsd, 0);
+  const estP = parseFiniteNonNeg(input.estimatedRequestUsd, 0);
+  const inFlightP = parseFiniteNonNeg(input.activeInFlightRequests, 0);
+  const opKind = String(input.operationKind || 'cloud_chat_reply').trim().toLowerCase();
+  const isUnmeteredLocal = opKind === 'pre_tool_use_gate' || opKind === 'kb_setup_upload' || opKind === 'greeting_no_model' || input.blockedBeforeModel === true;
+  const chatP = parseFiniteNonNeg(input.chatReplies, isUnmeteredLocal ? 0 : 1);
+  const docsP = parseFiniteNonNeg(input.documentsUploaded, 0);
+  const pagesP = parseFiniteNonNeg(input.pagesGenerated, 0);
+  const tasksP = parseFiniteNonNeg(input.tasksExecuted, 0);
+  if (![grossP, sharedP, balP, estP, inFlightP, chatP, docsP, pagesP, tasksP].every((x) => x.ok)) {
+    return { ok: false, allowed: false, stopReason: 'invalid_boost_input', selectedLane: 'boost_lane', economics: { cashWithdrawalAllowed: false, canOverspend: false, outboundCashSpendUsd: 0 }, balances: { totalAvailableBoostUsd: 0, deductedBoostUsd: 0, remainingBoostUsd: 0, savedBoostUsd: 0 }, metering: { meteredUnits: 0 }, telemetry: scrubBoostTelemetryMetadata(input.telemetry) };
+  }
+  const grossBoostUsd = grossP.value;
+  const platformFeeUsd = Math.round(grossBoostUsd * 0.05 * 100) / 100;
+  const creditedCapacityUsd = Math.round((grossBoostUsd - platformFeeUsd) * 100) / 100;
+  const totalAvailableBoostUsd = Math.round((balP.value + creditedCapacityUsd + sharedP.value) * 1e6) / 1e6;
+  const chatReplies = Math.trunc(chatP.value);
+  const documentsUploaded = Math.trunc(docsP.value);
+  const pagesGenerated = Math.trunc(pagesP.value);
+  const tasksExecuted = Math.trunc(tasksP.value);
+  const meteredUnits = isUnmeteredLocal ? 0 : (chatReplies + documentsUploaded + pagesGenerated + tasksExecuted);
+  const effectiveCostUsd = isUnmeteredLocal ? 0 : estP.value;
+  const savedBoostUsd = input.blockedBeforeModel === true ? estP.value : 0;
+  const primaryStatus = String(input.primarySubscriptionStatus || 'active').trim().toLowerCase();
+  const primaryPaused = primaryStatus === 'window_paused' || primaryStatus === 'rate_limited' || primaryStatus === 'none';
+  const inFlight = Math.trunc(inFlightP.value);
+  const selectedLane = isUnmeteredLocal ? 'local_zero_burn' : (primaryPaused ? 'boost_lane' : 'primary_subscription');
+  let allowed = true;
+  let stopReason = null;
+  if (selectedLane === 'boost_lane') {
+    if (inFlight >= 1) { allowed = false; stopReason = 'boost_single_flight_busy'; }
+    else if (effectiveCostUsd <= 0) { allowed = false; stopReason = totalAvailableBoostUsd <= 0 ? 'boost_balance_exhausted' : 'invalid_boost_input'; }
+    else if (effectiveCostUsd > totalAvailableBoostUsd) { allowed = false; stopReason = 'boost_balance_exhausted'; }
+  }
+  const deductedBoostUsd = allowed && selectedLane === 'boost_lane' ? effectiveCostUsd : 0;
+  const remainingBoostUsd = Math.max(0, Math.round((totalAvailableBoostUsd - deductedBoostUsd) * 1e6) / 1e6);
+  return {
+    ok: true,
+    allowed,
+    stopReason,
+    selectedLane,
+    economics: { grossBoostUsd, creditedCapacityUsd, platformFeeUsd, developerCapacitySharePct: 95, platformFeePct: 5, cashWithdrawalAllowed: false, supporterAccountRequired: false, canOverspend: false, outboundCashSpendUsd: 0 },
+    balances: { totalAvailableBoostUsd, deductedBoostUsd, remainingBoostUsd, savedBoostUsd },
+    metering: {
+      operationKind: opKind,
+      isUnmeteredLocal,
+      meteredUnits,
+      regenerationsCountFresh: true,
+      breakdown: isUnmeteredLocal ? { chatReplies: 0, documentsUploaded: 0, pagesGenerated: 0, tasksExecuted: 0 } : { chatReplies, documentsUploaded, pagesGenerated, tasksExecuted },
+    },
+    telemetry: scrubBoostTelemetryMetadata({ ...(input.telemetry && typeof input.telemetry === 'object' ? input.telemetry : {}), lane: selectedLane === 'boost_lane' ? 'boost_lane' : 'primary_subscription', costUsd: deductedBoostUsd }),
+  };
+}
+
+const SUBQ_SNAP_MODELS = new Set(['subq-snap-1.2', 'subq-snap-latest', 'subq-snap']);
+const SUBQ_ALLOWED_IMAGE_MEDIA = new Set(['image/png', 'image/jpeg', 'image/webp']);
+const SUBQ_SAFE_KEY_RE = /^(?!__proto__$|constructor$|prototype$)[a-zA-Z0-9_.-]{1,100}$/;
+const SUBQ_MAX_WINDOW_TOKENS = 393216;
+const SUBQ_PRICE_PER_MILLION_INPUT_USD = 0.04;
+
+function buildSubQSnap12Payload(rawInput = {}) {
+  const input = rawInput && typeof rawInput === 'object' && !Array.isArray(rawInput) ? rawInput : null;
+  if (!input || input.state === undefined || input.state === null) return { ok: false, error: 'missing_state' };
+  const requestedModel = String(input.model || 'subq-snap-1.2').trim();
+  const model = SUBQ_SNAP_MODELS.has(requestedModel) ? requestedModel : 'subq-snap-1.2';
+  const rawQuestions = input.questions && typeof input.questions === 'object' && !Array.isArray(input.questions) ? input.questions : null;
+  const qEntries = rawQuestions ? Object.entries(rawQuestions) : [];
+  if (qEntries.length < 1 || qEntries.length > 128) return { ok: false, error: 'invalid_questions_count' };
+  const questionPairs = [];
+  for (const [qName, qDef] of qEntries) {
+    if (!SUBQ_SAFE_KEY_RE.test(qName) || !qDef || typeof qDef !== 'object' || Array.isArray(qDef)) return { ok: false, error: 'invalid_question_key' };
+    const qType = String(qDef.type || '').trim();
+    const instructions = String(qDef.instructions || '').trim();
+    if (!instructions || !['noul', 'choice', 'score'].includes(qType)) return { ok: false, error: `invalid_question_schema:${qName}` };
+    if (qType === 'choice') {
+      const cObj = qDef.criteria && typeof qDef.criteria === 'object' && !Array.isArray(qDef.criteria) ? qDef.criteria : null;
+      const keys = cObj ? Object.keys(cObj) : [];
+      if (keys.length < 2 || keys.length > 255 || !keys.every((k) => SUBQ_SAFE_KEY_RE.test(k))) return { ok: false, error: `invalid_choice_criteria:${qName}` };
+      const criteria = Object.fromEntries([...keys].sort((a, b) => (a < b ? -1 : a > b ? 1 : 0)).map((k) => [k, cObj[k] === null ? null : String(cObj[k])]));
+      questionPairs.push([qName, { type: 'choice', instructions, criteria }]);
+    } else if (qType === 'score') {
+      if (!Array.isArray(qDef.criteria) || qDef.criteria.length < 2 || qDef.criteria.length > 10) return { ok: false, error: `invalid_score_criteria:${qName}` };
+      questionPairs.push([qName, { type: 'score', instructions, criteria: qDef.criteria.map((x) => String(x)) }]);
+    } else {
+      const entry = { type: 'noul', instructions };
+      if (qDef.criteria && typeof qDef.criteria === 'object' && !Array.isArray(qDef.criteria)) {
+        const noulPairs = [];
+        if (Object.hasOwn(qDef.criteria, 'true')) noulPairs.push(['true', String(qDef.criteria.true)]);
+        if (Object.hasOwn(qDef.criteria, 'false')) noulPairs.push(['false', String(qDef.criteria.false)]);
+        if (noulPairs.length > 0) entry.criteria = Object.fromEntries(noulPairs);
+      }
+      questionPairs.push([qName, entry]);
+    }
+  }
+  const questions = Object.fromEntries(questionPairs);
+  let images;
+  let imageTokens = 0;
+  if (input.images !== undefined) {
+    if (!Array.isArray(input.images) || input.images.length > 4) return { ok: false, error: 'invalid_images_count' };
+    let totalDecodedBytes = 0;
+    images = [];
+    for (const img of input.images) {
+      if (!img || typeof img !== 'object') return { ok: false, error: 'invalid_image_entry' };
+      const mediaType = String(img.mediaType || '').trim().toLowerCase();
+      if (!SUBQ_ALLOWED_IMAGE_MEDIA.has(mediaType)) return { ok: false, error: 'unsupported_image_media_type' };
+      const cleanedB64 = String(img.base64 || '').replace(/^data:[^;]+;base64,/i, '').replace(/\s+/g, '');
+      if (!cleanedB64 || /^https?:\/\//i.test(cleanedB64)) return { ok: false, error: 'invalid_image_base64' };
+      const decodedLen = Buffer.from(cleanedB64, 'base64').length;
+      if (decodedLen <= 0 || decodedLen > 4 * 1024 * 1024) return { ok: false, error: 'image_over_4_mib' };
+      totalDecodedBytes += decodedLen;
+      if (totalDecodedBytes > 8 * 1024 * 1024) return { ok: false, error: 'images_over_8_mib_total' };
+      imageTokens += 800;
+      images.push({ mediaType, base64: cleanedB64 });
+    }
+  }
+  const stateSerialized = typeof input.state === 'string' ? input.state : String(JSON.stringify(input.state) ?? '');
+  const questionsSerialized = JSON.stringify(questions);
+  const estTokens = Math.ceil((Buffer.byteLength(stateSerialized, 'utf8') + Buffer.byteLength(questionsSerialized, 'utf8')) / 4) + imageTokens;
+  if (estTokens > SUBQ_MAX_WINDOW_TOKENS) return { ok: false, error: 'exceeds_384k_context_window', estimatedInputTokens: estTokens };
+  return {
+    ok: true,
+    payload: { model, state: input.state, questions, ...(images && images.length > 0 ? { images } : {}) },
+    estimatedInputTokens: estTokens,
+    estimatedInputCostUsd: Math.round((estTokens / 1e6) * SUBQ_PRICE_PER_MILLION_INPUT_USD * 1e8) / 1e8,
+    outputCostUsd: 0,
+  };
+}
+
+async function callSubQSnapSystemOneApi(rawInput = {}, options = {}) {
+  const built = buildSubQSnap12Payload(rawInput);
+  if (!built.ok) return { ok: false, mode: 'validation_rejected', error: built.error, abstained: true, action: 'UNCERTAIN_ESCALATE_TO_FRONTIER' };
+  const rawTau = typeof options.confidenceThreshold === 'number' && Number.isFinite(options.confidenceThreshold) ? options.confidenceThreshold : 0.65;
+  const tau = Math.min(1, Math.max(0.01, rawTau));
+  const apiKey = String(options.apiKey !== undefined ? options.apiKey : (process.env.SUBQ_API_KEY || '')).trim();
+  const fetchImpl = typeof options.fetchImpl === 'function' ? options.fetchImpl : fetch;
+  if (!apiKey) {
+    return {
+      ok: true,
+      mode: 'local_offline_no_api_key',
+      model: built.payload.model,
+      estimatedInputTokens: built.estimatedInputTokens,
+      estimatedInputCostUsd: built.estimatedInputCostUsd,
+      outputCostUsd: 0,
+      abstained: true,
+      action: 'UNCERTAIN_ESCALATE_TO_FRONTIER',
+      reason: 'subq_api_key_missing',
+    };
+  }
+  let res;
+  try {
+    res = await fetchImpl('https://api.subq.ai/v1/systemone', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify(built.payload),
+      signal: AbortSignal.timeout(Number(options.timeoutMs) > 0 ? Number(options.timeoutMs) : 8000),
+    });
+  } catch {
+    return { ok: false, mode: 'upstream_error', status: 502, error: 'subq_network_error', abstained: true, action: 'UNCERTAIN_ESCALATE_TO_FRONTIER' };
+  }
+  if (res.status === 402) {
+    return { ok: false, mode: 'credit_exhausted_zero_overspend', status: 402, error: 'subq_credits_exhausted', outboundCashSpendUsd: 0, abstained: true, action: 'UNCERTAIN_ESCALATE_TO_FRONTIER' };
+  }
+  if (!res.ok) {
+    return { ok: false, mode: 'upstream_error', status: res.status, error: `subq_http_${res.status}`, abstained: true, action: 'UNCERTAIN_ESCALATE_TO_FRONTIER' };
+  }
+  let data;
+  try {
+    data = await res.json();
+  } catch {
+    return { ok: false, mode: 'upstream_error', status: 502, error: 'subq_invalid_json', abstained: true, action: 'UNCERTAIN_ESCALATE_TO_FRONTIER' };
+  }
+  const answers = data && typeof data.answers === 'object' && !Array.isArray(data.answers) ? data.answers : {};
+  const expectedKeys = Object.keys(built.payload.questions);
+  let invalidAnswer = expectedKeys.length === 0;
+  let minConfidence = expectedKeys.length > 0 ? 1 : 0;
+  for (const qk of expectedKeys) {
+    const expectedType = built.payload.questions[qk].type;
+    const ans = Object.hasOwn(answers, qk) ? answers[qk] : null;
+    if (!ans || typeof ans !== 'object' || ans.type !== expectedType) { invalidAnswer = true; minConfidence = 0; break; }
+    let conf = NaN;
+    if (expectedType === 'noul') {
+      const nv = typeof ans.noul === 'number' ? ans.noul : NaN;
+      conf = Number.isFinite(nv) && nv >= 0 && nv <= 1 ? Math.max(nv, 1 - nv) : NaN;
+    } else {
+      const cv = typeof ans.confidence === 'number' ? ans.confidence : NaN;
+      conf = Number.isFinite(cv) && cv >= 0 && cv <= 1 ? cv : NaN;
+    }
+    if (!Number.isFinite(conf)) { invalidAnswer = true; minConfidence = 0; break; }
+    if (conf < minConfidence) minConfidence = conf;
+  }
+  const usageTok = parseFiniteNonNeg(data?.usage?.input_tokens, built.estimatedInputTokens);
+  const inputTokens = Math.trunc(usageTok.ok ? usageTok.value : built.estimatedInputTokens);
+  const abstained = invalidAnswer || minConfidence < tau;
+  return {
+    ok: true,
+    mode: 'live_subq_systemone',
+    model: data?.model || built.payload.model,
+    answers,
+    usage: { input_tokens: inputTokens, output_tokens: 0 },
+    costUsd: Math.round((inputTokens / 1e6) * SUBQ_PRICE_PER_MILLION_INPUT_USD * 1e8) / 1e8,
+    outboundCashSpendUsd: 0,
+    minConfidence: Math.round(minConfidence * 1e4) / 1e4,
+    abstained,
+    action: abstained ? 'UNCERTAIN_ESCALATE_TO_FRONTIER' : 'PROCEED_WITH_SUBQ_DECISION',
+  };
+}
+
 module.exports = {
   PROVER_COVERAGE_DOMAINS,
   TAILWIND_HEX_PALETTE,
@@ -1214,4 +1468,8 @@ module.exports = {
   inspectAndPatchDesignSource,
   remediateVisualFindings,
   runDesignSelfCorrectionPipeline,
+  scrubBoostTelemetryMetadata,
+  evaluateComputeBoostLane,
+  buildSubQSnap12Payload,
+  callSubQSnapSystemOneApi,
 };

@@ -3629,8 +3629,9 @@ function getPublicBillingHeaders(traceId = '') {
     'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-ThumbGate-Trace-Id',
     'Access-Control-Expose-Headers': 'X-ThumbGate-Trace-Id',
   };
-  if (traceId) {
-    headers['X-ThumbGate-Trace-Id'] = traceId;
+  const cleanTrace = typeof traceId === 'string' && /^[a-zA-Z0-9._:-]{1,128}$/.test(traceId.trim()) ? traceId.trim() : '';
+  if (cleanTrace) {
+    headers['X-ThumbGate-Trace-Id'] = cleanTrace;
   }
   return headers;
 }
@@ -4111,11 +4112,11 @@ function loadDashboardPageHtml(req, expectedApiKey) {
   const bootstrap = resolveLocalPageBootstrap(req, expectedApiKey);
   const template = readOptionalPublicTemplate(DASHBOARD_PAGE_PATH);
   if (!template) return renderPackagedDashboardHtml(bootstrap);
-  const ssoProviders = getConfiguredSsoProviders();
+
   return fillTemplate(template, {
     '__DASHBOARD_BOOTSTRAP_KEY__': bootstrap.serializedBootstrapKey,
     '__DASHBOARD_BOOTSTRAP_ENABLED__': bootstrap.bootstrapActive ? 'true' : 'false',
-    '<!-- __DASHBOARD_SSO_BUTTONS__ -->': buildDashboardSsoButtonsHtml(ssoProviders),
+    '<!-- __DASHBOARD_SSO_BUTTONS__ -->': buildDashboardSsoButtonsHtml(getConfiguredSsoProviders()),
   });
 }
 
@@ -5846,29 +5847,36 @@ function extractBearerToken(req) {
 }
 
 const PAID_AUTH_COOKIE_NAME = 'thumbgate_auth_session';
-const SSO_STATE_COOKIE_NAME = 'thumbgate_sso_state';
 const PAID_AUTH_SESSION_TTL_SECONDS = 30 * 24 * 60 * 60;
 const PAID_AUTH_MAX_SESSIONS = 4096;
+const SSO_STATE_COOKIE_NAME = 'thumbgate_sso_state';
 const paidAuthSessions = new Map();
 const GOOGLE_OAUTH_TOKEN_URL = 'https://oauth2.googleapis.com/token';
 const GOOGLE_OAUTH_JWKS_URL = 'https://www.googleapis.com/oauth2/v3/certs';
 const GOOGLE_VALID_ISSUERS = new Set(['accounts.google.com', 'https://accounts.google.com']);
 const APPLE_OAUTH_TOKEN_URL = 'https://appleid.apple.com/auth/token';
 const APPLE_OAUTH_JWKS_URL = 'https://appleid.apple.com/auth/keys';
-const APPLE_VALID_ISSUERS = new Set(['https://appleid.apple.com']);
+const APPLE_ISSUER = 'https://appleid.apple.com';
+const APPLE_CLIENT_SECRET_TTL_SECONDS = 3600;
 const SSO_OAUTH_STATE_TTL_MS = 10 * 60 * 1000;
 const SSO_OAUTH_MAX_PENDING_STATES = 2048;
-const GOOGLE_JWKS_CACHE_TTL_MS = 5 * 60 * 1000;
+const OIDC_JWKS_CACHE_TTL_MS = 5 * 60 * 1000;
 const ssoPendingStates = new Map();
 let googleOAuthFetch = (...args) => fetch(...args);
 let googleJwksCache = { keys: [], expiresAt: 0 };
+let appleOAuthFetch = (...args) => fetch(...args);
 let appleJwksCache = { keys: [], expiresAt: 0 };
 
 function setGoogleOAuthFetchForTests(fn) {
   googleOAuthFetch = typeof fn === 'function' ? fn : ((...args) => fetch(...args));
   googleJwksCache = { keys: [], expiresAt: 0 };
+}
+
+function setAppleOAuthFetchForTests(fn) {
+  appleOAuthFetch = typeof fn === 'function' ? fn : ((...args) => fetch(...args));
   appleJwksCache = { keys: [], expiresAt: 0 };
 }
+
 function pruneSsoPendingStates(nowMs = Date.now()) {
   for (const [token, entry] of ssoPendingStates.entries()) {
     if (!entry || entry.expiresAt <= nowMs) ssoPendingStates.delete(token);
@@ -5880,24 +5888,18 @@ function pruneSsoPendingStates(nowMs = Date.now()) {
   }
 }
 
-function issueSsoPendingState(provider, redirectUri, nowMs = Date.now(), oidcNonce = '') {
+function issueSsoPendingState(provider, redirectUri, nowMs = Date.now()) {
   pruneSsoPendingStates(nowMs);
   const stateNonce = `st_${crypto.randomBytes(24).toString('hex')}`;
+  const oidcNonce = `nc_${crypto.randomBytes(16).toString('hex')}`;
   ssoPendingStates.set(stateNonce, {
     provider,
     redirectUri,
-    oidcNonce: String(oidcNonce || ''),
+    nonce: oidcNonce,
     createdAt: nowMs,
     expiresAt: nowMs + SSO_OAUTH_STATE_TTL_MS,
   });
   return stateNonce;
-}
-
-function peekSsoPendingProvider(stateNonce, nowMs = Date.now()) {
-  pruneSsoPendingStates(nowMs);
-  const key = String(stateNonce || '').trim();
-  const entry = key ? ssoPendingStates.get(key) : null;
-  return entry && entry.expiresAt > nowMs ? entry.provider : '';
 }
 
 function consumeSsoPendingState(stateNonce, expectedProvider, nowMs = Date.now()) {
@@ -5915,86 +5917,177 @@ function ssoError(ssoReason, message) {
   return Object.assign(new Error(message), { ssoReason });
 }
 
-function redirectSsoError(res, reason) {
+function redirectSsoError(res, reason, statusCode = 302) {
   const raw = String(reason || '').trim().toLowerCase();
   const safeReason = /^[a-z0-9_]{1,48}$/.test(raw) ? raw : 'sso_failed';
-  res.writeHead(302, { 'X-Content-Type-Options': 'nosniff', 'Cache-Control': 'no-store', Location: `/dashboard?sso_error=${safeReason}` });
+  res.writeHead(statusCode, { 'X-Content-Type-Options': 'nosniff', 'Cache-Control': 'no-store', Location: `/dashboard?sso_error=${safeReason}` });
   res.end();
 }
 
-async function loadOidcJwks(url, cacheRef, nowMs = Date.now(), forceRefresh = false) {
+async function loadOidcJwks(fetchFn, jwksUrl, cacheRef, nowMs = Date.now(), forceRefresh = false) {
   if (!forceRefresh && cacheRef.expiresAt > nowMs && cacheRef.keys.length > 0) return cacheRef.keys;
-  const jwksRes = await googleOAuthFetch(url, {
+  const jwksRes = await fetchFn(jwksUrl, {
     method: 'GET',
     headers: { Accept: 'application/json' },
     signal: AbortSignal.timeout(8000),
   });
   if (!jwksRes || !jwksRes.ok) throw ssoError('jwks_unavailable', 'Failed to load OIDC JWKS');
   const body = await jwksRes.json();
-  const keys = Array.isArray(body && body.keys) ? body.keys : [];
-  cacheRef.keys = keys;
-  cacheRef.expiresAt = nowMs + GOOGLE_JWKS_CACHE_TTL_MS;
-  return keys;
+  cacheRef.keys = Array.isArray(body?.keys) ? body.keys : [];
+  cacheRef.expiresAt = nowMs + OIDC_JWKS_CACHE_TTL_MS;
+  return cacheRef.keys;
 }
 
-function buildAppleClientSecret(env = process.env, nowMs = Date.now()) {
-  const directSecret = String((env && env.APPLE_CLIENT_SECRET) || '').trim();
-  if (directSecret) return directSecret;
-  const clientId = String((env && env.APPLE_CLIENT_ID) || '').trim();
-  const teamId = String((env && env.APPLE_TEAM_ID) || '').trim();
-  const keyId = String((env && env.APPLE_KEY_ID) || '').trim();
-  const rawKey = String((env && env.APPLE_PRIVATE_KEY) || '').replace(/\\n/g, '\n').trim();
-  if (!clientId || !teamId || !keyId || !rawKey) return '';
-  const nowSec = Math.floor(nowMs / 1000);
-  const header = Buffer.from(JSON.stringify({ alg: 'ES256', kid: keyId, typ: 'JWT' })).toString('base64url');
-  const payload = Buffer.from(JSON.stringify({
-    iss: teamId,
-    iat: nowSec,
-    exp: nowSec + 300,
-    aud: 'https://appleid.apple.com',
-    sub: clientId,
-  })).toString('base64url');
-  const sig = crypto.sign('sha256', Buffer.from(`${header}.${payload}`), { key: rawKey, dsaEncoding: 'ieee-p1363' }).toString('base64url');
-  return `${header}.${payload}.${sig}`;
-}
-
-async function verifyOidcIdToken(idToken, { expectedClientId, validIssuers, jwksUrl, jwksCache, expectedNonce }, nowMs = Date.now()) {
+function parseJwtSegments(idToken) {
   const parts = String(idToken || '').split('.');
-  if (parts.length !== 3) throw ssoError('invalid_id_token', 'Malformed id_token');
-  let header;
-  let payload;
+  if (parts.length !== 3 || !parts[0] || !parts[1] || !parts[2]) {
+    throw ssoError('invalid_id_token', 'Malformed id_token');
+  }
   try {
-    header = JSON.parse(Buffer.from(parts[0], 'base64url').toString('utf8'));
-    payload = JSON.parse(Buffer.from(parts[1], 'base64url').toString('utf8'));
+    return {
+      parts,
+      header: JSON.parse(Buffer.from(parts[0], 'base64url').toString('utf8')),
+      payload: JSON.parse(Buffer.from(parts[1], 'base64url').toString('utf8')),
+    };
   } catch {
     throw ssoError('invalid_id_token', 'Unparseable id_token');
   }
+}
+
+function verifyJwsWithJwk(signingInput, signatureB64Url, alg, jwk) {
+  try {
+    const publicKey = crypto.createPublicKey({ key: jwk, format: 'jwk' });
+    const data = Buffer.from(signingInput);
+    const sig = Buffer.from(signatureB64Url, 'base64url');
+    if (alg === 'RS256' && jwk.kty === 'RSA') return crypto.verify('RSA-SHA256', data, publicKey, sig);
+    if (alg === 'ES256' && jwk.kty === 'EC') return crypto.verify('sha256', data, { key: publicKey, dsaEncoding: 'ieee-p1363' }, sig);
+    return false;
+  } catch {
+    return false;
+  }
+}
+
+async function findMatchingOidcJwk(fetchFn, jwksUrl, cacheRef, kid, expectedKty, nowMs) {
+  let keys = await loadOidcJwks(fetchFn, jwksUrl, cacheRef, nowMs, false);
+  let jwk = keys.find((k) => k && k.kid === kid && k.kty === expectedKty);
+  if (!jwk) {
+    keys = await loadOidcJwks(fetchFn, jwksUrl, cacheRef, nowMs, true);
+    jwk = keys.find((k) => k && k.kid === kid && k.kty === expectedKty);
+  }
+  if (!jwk) throw ssoError('unknown_signing_key', 'Signing key not found');
+  return jwk;
+}
+
+function assertCommonIdTokenClaims(payload, expectedClientId, nowMs) {
+  const aud = payload?.aud;
+  const audMatches = aud === expectedClientId || (Array.isArray(aud) && aud.includes(expectedClientId));
+  if (!audMatches) throw ssoError('wrong_audience', 'id_token audience mismatch');
+  const expSec = Number(payload?.exp);
+  if (!Number.isFinite(expSec) || expSec * 1000 <= nowMs) throw ssoError('expired_token', 'id_token expired');
+}
+
+async function verifyGoogleIdToken(idToken, expectedClientId, nowMs = Date.now()) {
+  const { parts, header, payload } = parseJwtSegments(idToken);
   if (!header || header.alg !== 'RS256' || typeof header.kid !== 'string' || !header.kid) {
     throw ssoError('invalid_id_token', 'Unsupported id_token header');
   }
-  let keys = await loadOidcJwks(jwksUrl, jwksCache, nowMs, false);
-  let jwk = keys.find((k) => k && k.kid === header.kid && k.kty === 'RSA');
-  if (!jwk) {
-    keys = await loadOidcJwks(jwksUrl, jwksCache, nowMs, true);
-    jwk = keys.find((k) => k && k.kid === header.kid && k.kty === 'RSA');
+  const jwk = await findMatchingOidcJwk(googleOAuthFetch, GOOGLE_OAUTH_JWKS_URL, googleJwksCache, header.kid, 'RSA', nowMs);
+  if (!verifyJwsWithJwk(`${parts[0]}.${parts[1]}`, parts[2], 'RS256', jwk)) {
+    throw ssoError('invalid_signature', 'Invalid id_token signature');
   }
-  if (!jwk) throw ssoError('unknown_signing_key', 'Signing key not found');
-  const publicKey = crypto.createPublicKey({ key: jwk, format: 'jwk' });
-  const sigValid = crypto.verify('RSA-SHA256', Buffer.from(`${parts[0]}.${parts[1]}`), publicKey, Buffer.from(parts[2], 'base64url'));
-  if (!sigValid) throw ssoError('invalid_signature', 'Invalid id_token signature');
-  const audMatches = payload && (payload.aud === expectedClientId || (Array.isArray(payload.aud) && payload.aud.includes(expectedClientId)));
-  if (!audMatches) throw ssoError('wrong_audience', 'id_token audience mismatch');
-  if (!validIssuers.has(String(payload.iss || ''))) throw ssoError('invalid_issuer', 'id_token issuer mismatch');
-  const expSec = Number(payload.exp);
-  if (!Number.isFinite(expSec) || expSec * 1000 <= nowMs) throw ssoError('expired_token', 'id_token expired');
-  if (expectedNonce && !safeKeyEqual(String(payload.nonce || ''), String(expectedNonce))) {
-    throw ssoError('invalid_nonce', 'id_token nonce mismatch');
-  }
+  assertCommonIdTokenClaims(payload, expectedClientId, nowMs);
+  if (!GOOGLE_VALID_ISSUERS.has(String(payload.iss || ''))) throw ssoError('invalid_issuer', 'id_token issuer mismatch');
   const email = String(payload.email || '').trim().toLowerCase();
   const sub = String(payload.sub || '').trim();
   const emailVerified = payload.email_verified === true || payload.email_verified === 'true';
   if (!emailVerified || !email || !sub) throw ssoError('unverified_email', 'Email not verified');
   return { sub, email };
+}
+
+function readAppleOAuthEnv(env = process.env) {
+  const clientId = String((env && env.APPLE_CLIENT_ID) || '').trim();
+  const teamId = String((env && env.APPLE_TEAM_ID) || '').trim();
+  const keyId = String((env && env.APPLE_KEY_ID) || '').trim();
+  const privateKeyPem = String((env && env.APPLE_PRIVATE_KEY) || '').trim();
+  if (!clientId || !teamId || !keyId || !privateKeyPem) return null;
+  return { clientId, teamId, keyId, privateKeyPem };
+}
+
+function normalizeApplePrivateKeyPem(privateKeyPem) {
+  let raw = String(privateKeyPem || '').trim();
+  if (raw.length >= 2 && ((raw.startsWith('"') && raw.endsWith('"')) || (raw.startsWith("'") && raw.endsWith("'")))) {
+    raw = raw.slice(1, -1);
+  }
+  return raw.replaceAll('\\n', '\n').trim();
+}
+
+function buildAppleClientSecret({ clientId, teamId, keyId, privateKeyPem }, nowMs = Date.now()) {
+  const pem = normalizeApplePrivateKeyPem(privateKeyPem);
+  let keyObj;
+  try {
+    keyObj = crypto.createPrivateKey({ key: pem, format: 'pem' });
+  } catch {
+    throw ssoError('sso_not_configured', 'Invalid Apple private key');
+  }
+  if (keyObj.asymmetricKeyType !== 'ec') throw ssoError('sso_not_configured', 'Apple private key must be EC');
+  const iat = Math.floor(nowMs / 1000);
+  const header = Buffer.from(JSON.stringify({ alg: 'ES256', kid: keyId, typ: 'JWT' })).toString('base64url');
+  const payload = Buffer.from(JSON.stringify({
+    iss: teamId,
+    iat,
+    exp: iat + APPLE_CLIENT_SECRET_TTL_SECONDS,
+    aud: APPLE_ISSUER,
+    sub: clientId,
+  })).toString('base64url');
+  const signingInput = `${header}.${payload}`;
+  const sig = crypto.sign('sha256', Buffer.from(signingInput), { key: keyObj, dsaEncoding: 'ieee-p1363' }).toString('base64url');
+  return `${signingInput}.${sig}`;
+}
+
+async function verifyAppleIdToken(idToken, expectedClientId, expectedNonce, nowMs = Date.now()) {
+  const { parts, header, payload } = parseJwtSegments(idToken);
+  const alg = header?.alg;
+  if ((alg !== 'RS256' && alg !== 'ES256') || typeof header?.kid !== 'string' || !header.kid) {
+    throw ssoError('invalid_id_token', 'Unsupported id_token header');
+  }
+  const expectedKty = alg === 'ES256' ? 'EC' : 'RSA';
+  const jwk = await findMatchingOidcJwk(appleOAuthFetch, APPLE_OAUTH_JWKS_URL, appleJwksCache, header.kid, expectedKty, nowMs);
+  if (!verifyJwsWithJwk(`${parts[0]}.${parts[1]}`, parts[2], alg, jwk)) {
+    throw ssoError('invalid_signature', 'Invalid id_token signature');
+  }
+  if (String(payload?.iss || '') !== APPLE_ISSUER) throw ssoError('invalid_issuer', 'id_token issuer mismatch');
+  assertCommonIdTokenClaims(payload, expectedClientId, nowMs);
+  if (!expectedNonce || String(payload?.nonce || '') !== expectedNonce) {
+    throw ssoError('invalid_nonce', 'id_token nonce mismatch');
+  }
+  const email = String(payload?.email || '').trim().toLowerCase();
+  const sub = String(payload?.sub || '').trim();
+  const explicitlyUnverified = payload?.email_verified === false || payload?.email_verified === 'false';
+  if (explicitlyUnverified || !email || !sub) throw ssoError('unverified_email', 'Email not verified');
+  return { sub, email };
+}
+
+function sanitizeAppleNamePart(value) {
+  let out = '';
+  for (const ch of String(value || '')) {
+    const code = ch.codePointAt(0) || 0;
+    if (code >= 32 && code !== 127 && ch !== '<' && ch !== '>') out += ch;
+    if (out.length >= 60) break;
+  }
+  return out.trim();
+}
+
+function parseAppleFirstSignInUser(rawUser) {
+  if (typeof rawUser !== 'string' || !rawUser.trim()) return null;
+  try {
+    const parsed = JSON.parse(rawUser);
+    const first = sanitizeAppleNamePart(parsed?.name?.firstName);
+    const last = sanitizeAppleNamePart(parsed?.name?.lastName);
+    const name = [first, last].filter(Boolean).join(' ');
+    return name ? { name } : null;
+  } catch {
+    return null;
+  }
 }
 
 function hashSessionToken(token) {
@@ -6038,6 +6131,7 @@ function persistPaidAuthSession(sessionToken, entry, nowMs = Date.now()) {
     customerId: entry.customerId || null,
     ssoProvider: entry.ssoProvider || null,
     ssoEmail: entry.ssoEmail || null,
+    ...(entry.ssoName ? { ssoName: entry.ssoName } : {}),
     createdAt: entry.createdAt,
     expiresAt: entry.expiresAt,
   };
@@ -6121,6 +6215,119 @@ function resolvePaidSessionTier(candidate, expectedApiKey, expectedOperatorKey) 
     return key.startsWith('tg_op_') || key.startsWith('tg_creator_') ? 'Enterprise' : 'Pro';
   }
   return null;
+}
+
+async function completeSsoSessionAndRedirect(res, { provider, email, ssoName = null, redirectStatus = 302 }) {
+  const entitlement = await resolvePaidEntitlementForEmail(email);
+  const hasPaidKey = Boolean(entitlement?.entitled && entitlement?.apiKey);
+  const nowMs = Date.now();
+  const sessionToken = crypto.randomBytes(32).toString('hex');
+  persistPaidAuthSession(sessionToken, {
+    apiKey: hasPaidKey ? entitlement.apiKey : '',
+    subjectType: hasPaidKey ? 'customer' : 'sso_free',
+    customerId: hasPaidKey ? entitlement.customerId : null,
+    ssoProvider: provider,
+    ssoEmail: email,
+    ...(ssoName ? { ssoName } : {}),
+    createdAt: nowMs,
+    expiresAt: nowMs + PAID_AUTH_SESSION_TTL_SECONDS * 1000,
+  }, nowMs);
+  const setCookie = serializeCookie(PAID_AUTH_COOKIE_NAME, sessionToken, {
+    maxAge: PAID_AUTH_SESSION_TTL_SECONDS,
+    httpOnly: true,
+    sameSite: 'Lax',
+    secure: true,
+  });
+  const clearStateCookie = serializeCookie(SSO_STATE_COOKIE_NAME, '', {
+    maxAge: 0,
+    path: '/v1/cloud/sso',
+    httpOnly: true,
+    sameSite: 'Lax',
+    secure: true,
+  });
+  res.writeHead(redirectStatus, {
+    'X-Content-Type-Options': 'nosniff',
+    'Cache-Control': 'no-store',
+    'Set-Cookie': provider === 'google' ? [setCookie, clearStateCookie] : setCookie,
+    Location: '/dashboard',
+  });
+  res.end();
+}
+
+async function handleAppleSsoCallback(req, res) {
+  try {
+    const form = await parseFormBody(req, 64 * 1024);
+    const reqOrigin = String(req.headers.origin || '').trim().toLowerCase();
+    const secFetchSite = String(req.headers['sec-fetch-site'] || '').trim().toLowerCase();
+    const publicOrigin = String(getPublicOrigin(req) || '').toLowerCase();
+    const isLoopbackServer = /^http:\/\/(?:127\.0\.0\.1|localhost)(?::\d+)?$/.test(publicOrigin);
+    const isLoopbackOrigin = isLoopbackServer && /^http:\/\/(?:127\.0\.0\.1|localhost)(?::\d+)?$/.test(reqOrigin);
+    const allowedPostOrigins = new Set([APPLE_ISSUER, publicOrigin]);
+    if (!reqOrigin || (!allowedPostOrigins.has(reqOrigin) && !isLoopbackOrigin) || (secFetchSite === 'cross-site' && reqOrigin !== APPLE_ISSUER && !isLoopbackOrigin)) {
+      consumeSsoPendingState(form.state, 'apple');
+      redirectSsoError(res, 'invalid_origin', 303);
+      return;
+    }
+    if (form.error) {
+      consumeSsoPendingState(form.state, 'apple');
+      redirectSsoError(res, 'oauth_denied', 303);
+      return;
+    }
+    const code = String(form.code || '').trim();
+    if (!code) {
+      consumeSsoPendingState(form.state, 'apple');
+      redirectSsoError(res, 'missing_code', 303);
+      return;
+    }
+    const stateEntry = consumeSsoPendingState(form.state, 'apple');
+    if (!stateEntry) {
+      redirectSsoError(res, 'invalid_state', 303);
+      return;
+    }
+    const appleEnv = readAppleOAuthEnv();
+    if (!appleEnv) {
+      redirectSsoError(res, 'sso_not_configured', 303);
+      return;
+    }
+    const clientSecret = buildAppleClientSecret(appleEnv);
+    const tokenParams = new URLSearchParams({
+      client_id: appleEnv.clientId,
+      client_secret: clientSecret,
+      code,
+      grant_type: 'authorization_code',
+      redirect_uri: stateEntry.redirectUri,
+    });
+    const tokenRes = await appleOAuthFetch(APPLE_OAUTH_TOKEN_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+        Accept: 'application/json',
+        'User-Agent': 'ThumbGate-SSO/1.0',
+      },
+      body: tokenParams.toString(),
+      signal: AbortSignal.timeout(8000),
+    });
+    if (!tokenRes?.ok) {
+      redirectSsoError(res, 'token_exchange_failed', 303);
+      return;
+    }
+    const tokenBody = await tokenRes.json();
+    const idToken = String(tokenBody?.id_token || '').trim();
+    if (!idToken) {
+      redirectSsoError(res, 'missing_id_token', 303);
+      return;
+    }
+    const claims = await verifyAppleIdToken(idToken, appleEnv.clientId, stateEntry.nonce);
+    const firstSignInUser = parseAppleFirstSignInUser(form.user);
+    await completeSsoSessionAndRedirect(res, {
+      provider: 'apple',
+      email: claims.email,
+      ssoName: firstSignInUser?.name || null,
+      redirectStatus: 303,
+    });
+  } catch (err) {
+    redirectSsoError(res, err?.ssoReason || 'callback_failed', 303);
+  }
 }
 
 async function handlePaidAuthSessionRoute(req, res, expectedApiKey, expectedOperatorKey) {
@@ -7228,16 +7435,12 @@ async function addContext(){
       const rawProvider = String(parsed.searchParams.get('provider') || 'google').trim().toLowerCase();
       const provider = ['google', 'apple'].includes(rawProvider) ? rawProvider : 'invalid';
       const appOrigin = hostedConfig.appOrigin || 'https://thumbgate.ai';
+      const callbackUrl = `${appOrigin}/v1/cloud/sso/callback?provider=${encodeURIComponent(provider)}`;
       const googleClientId = String(process.env.GOOGLE_CLIENT_ID || '').trim();
       const appleClientId = String(process.env.APPLE_CLIENT_ID || '').trim();
       if (provider === 'google' && googleClientId) {
-        const callbackUrl = `${appOrigin}/v1/cloud/sso/callback?provider=google`;
         const stateNonce = issueSsoPendingState('google', callbackUrl);
         const googleAuthUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${encodeURIComponent(googleClientId)}&redirect_uri=${encodeURIComponent(callbackUrl)}&response_type=code&scope=openid%20email%20profile&state=${encodeURIComponent(stateNonce)}`;
-        if (parsed.searchParams.get('format') === 'json') {
-          sendJson(res, 200, { ok: true, mode: 'oauth_redirect', provider, redirectUrl: googleAuthUrl }, { 'Cache-Control': 'no-store' });
-          return;
-        }
         const ssoStateCookie = serializeCookie(SSO_STATE_COOKIE_NAME, stateNonce, {
           maxAge: Math.floor(SSO_OAUTH_STATE_TTL_MS / 1000),
           path: '/v1/cloud/sso',
@@ -7245,15 +7448,19 @@ async function addContext(){
           sameSite: 'Lax',
           secure: true,
         });
+        if (parsed.searchParams.get('format') === 'json') {
+          sendJson(res, 200, { ok: true, mode: 'oauth_redirect', provider, redirectUrl: googleAuthUrl }, { 'Cache-Control': 'no-store', 'Set-Cookie': ssoStateCookie });
+          return;
+        }
         res.writeHead(302, { 'X-Content-Type-Options': 'nosniff', Location: googleAuthUrl, 'Cache-Control': 'no-store', 'Set-Cookie': ssoStateCookie });
         res.end();
         return;
       }
       if (provider === 'apple' && appleClientId) {
-        const callbackUrl = String(process.env.APPLE_REDIRECT_URI || '').trim() || `${appOrigin}/v1/cloud/sso/callback`;
-        const oidcNonce = `nc_${crypto.randomBytes(16).toString('hex')}`;
-        const stateNonce = issueSsoPendingState('apple', callbackUrl, Date.now(), oidcNonce);
-        const appleAuthUrl = `https://appleid.apple.com/auth/authorize?client_id=${encodeURIComponent(appleClientId)}&redirect_uri=${encodeURIComponent(callbackUrl)}&response_type=code&scope=name%20email&response_mode=form_post&state=${encodeURIComponent(stateNonce)}&nonce=${encodeURIComponent(oidcNonce)}`;
+        const appleCallbackUrl = `${appOrigin.replace(/^http:\/\//i, 'https://')}/v1/cloud/sso/apple/callback`;
+        const stateNonce = issueSsoPendingState('apple', appleCallbackUrl);
+        const pendingNonce = ssoPendingStates.get(stateNonce)?.nonce || stateNonce;
+        const appleAuthUrl = `https://appleid.apple.com/auth/authorize?client_id=${encodeURIComponent(appleClientId)}&redirect_uri=${encodeURIComponent(appleCallbackUrl)}&response_type=code&scope=name%20email&response_mode=form_post&state=${encodeURIComponent(stateNonce)}&nonce=${encodeURIComponent(pendingNonce)}`;
         if (parsed.searchParams.get('format') === 'json') {
           sendJson(res, 200, { ok: true, mode: 'oauth_redirect', provider, redirectUrl: appleAuthUrl }, { 'Cache-Control': 'no-store' });
           return;
@@ -7275,85 +7482,50 @@ async function addContext(){
       return;
     }
 
-    if ((isGetLikeRequest || req.method === 'POST') && pathname === '/v1/cloud/sso/callback') {
+    if (isGetLikeRequest && pathname === '/v1/cloud/sso/callback') {
       try {
-        let params = parsed.searchParams;
-        if (req.method === 'POST') {
-          const formObj = await parseFormBody(req, 64 * 1024);
-          params = new URLSearchParams();
-          for (const [k, v] of Object.entries(formObj || {})) params.set(k, String(v ?? ''));
-        }
-        const explicitProvider = String(parsed.searchParams.get('provider') || params.get('provider') || '').trim().toLowerCase();
-        const rawProvider = explicitProvider || peekSsoPendingProvider(params.get('state')) || (req.method === 'POST' ? 'apple' : 'google');
-        if (req.method === 'POST') {
-          const reqOrigin = String(req.headers.origin || '').trim().toLowerCase();
-          const secFetchSite = String(req.headers['sec-fetch-site'] || '').trim().toLowerCase();
-          const allowedPostOrigins = new Set([
-            'https://appleid.apple.com',
-            String(getPublicOrigin(req) || '').toLowerCase(),
-            String((hostedConfig && hostedConfig.appOrigin) || '').toLowerCase(),
-          ]);
-          if (!reqOrigin || !allowedPostOrigins.has(reqOrigin) || (secFetchSite === 'cross-site' && reqOrigin !== 'https://appleid.apple.com')) {
-            consumeSsoPendingState(params.get('state'), rawProvider);
-            redirectSsoError(res, 'invalid_origin');
-            return;
-          }
-        }
-        if (rawProvider !== 'google' && rawProvider !== 'apple') {
+        const rawProvider = String(parsed.searchParams.get('provider') || 'google').trim().toLowerCase();
+        if (rawProvider !== 'google') {
           redirectSsoError(res, 'unsupported_provider');
           return;
         }
-        const stateVal = params.get('state');
-        if (params.get('error')) {
-          consumeSsoPendingState(stateVal, rawProvider);
+        if (parsed.searchParams.get('error')) {
+          consumeSsoPendingState(parsed.searchParams.get('state'), 'google');
           redirectSsoError(res, 'oauth_denied');
           return;
         }
-        const code = String(params.get('code') || '').trim();
+        const code = String(parsed.searchParams.get('code') || '').trim();
         if (!code) {
-          consumeSsoPendingState(stateVal, rawProvider);
+          consumeSsoPendingState(parsed.searchParams.get('state'), 'google');
           redirectSsoError(res, 'missing_code');
           return;
         }
-        const isApple = rawProvider === 'apple';
-        const clientId = String((isApple ? process.env.APPLE_CLIENT_ID : process.env.GOOGLE_CLIENT_ID) || '').trim();
-        let clientSecret = '';
-        try {
-          clientSecret = isApple ? buildAppleClientSecret(process.env) : String(process.env.GOOGLE_CLIENT_SECRET || '').trim();
-        } catch {
-          clientSecret = '';
-        }
-        if (!clientId || !clientSecret) {
-          consumeSsoPendingState(stateVal, rawProvider);
-          redirectSsoError(res, 'sso_not_configured');
+        const stateParam = parsed.searchParams.get('state');
+        const reqCookies = parseCookies(req && req.headers ? req.headers.cookie : '');
+        if (!stateParam || !safeKeyEqual(String(reqCookies[SSO_STATE_COOKIE_NAME] || ''), String(stateParam))) {
+          consumeSsoPendingState(stateParam, 'google');
+          redirectSsoError(res, 'invalid_state');
           return;
         }
-        if (isApple && req.method !== 'POST') {
-          consumeSsoPendingState(stateVal, rawProvider);
-          redirectSsoError(res, 'invalid_origin');
-          return;
-        }
-        if (!isApple) {
-          const reqCookies = parseCookies(req && req.headers ? req.headers.cookie : '');
-          if (!stateVal || !safeKeyEqual(String(reqCookies[SSO_STATE_COOKIE_NAME] || ''), String(stateVal))) {
-            consumeSsoPendingState(stateVal, rawProvider);
-            redirectSsoError(res, 'invalid_state');
-            return;
-          }
-        }
-        const stateEntry = consumeSsoPendingState(stateVal, rawProvider);
+        const stateEntry = consumeSsoPendingState(parsed.searchParams.get('state'), 'google');
         if (!stateEntry) {
           redirectSsoError(res, 'invalid_state');
           return;
         }
+        const googleClientId = String(process.env.GOOGLE_CLIENT_ID || '').trim();
+        const googleClientSecret = String(process.env.GOOGLE_CLIENT_SECRET || '').trim();
+        if (!googleClientId || !googleClientSecret) {
+          redirectSsoError(res, 'sso_not_configured');
+          return;
+        }
         const tokenParams = new URLSearchParams({
           code,
-          client_id: clientId,
-          client_secret: clientSecret,
+          client_id: googleClientId,
+          client_secret: googleClientSecret,
           redirect_uri: stateEntry.redirectUri,
           grant_type: 'authorization_code',
         });
-        const tokenRes = await googleOAuthFetch(isApple ? APPLE_OAUTH_TOKEN_URL : GOOGLE_OAUTH_TOKEN_URL, {
+        const tokenRes = await googleOAuthFetch(GOOGLE_OAUTH_TOKEN_URL, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/x-www-form-urlencoded',
@@ -7372,49 +7544,24 @@ async function addContext(){
           redirectSsoError(res, 'missing_id_token');
           return;
         }
-        const claims = await verifyOidcIdToken(idToken, {
-          expectedClientId: clientId,
-          validIssuers: isApple ? APPLE_VALID_ISSUERS : GOOGLE_VALID_ISSUERS,
-          jwksUrl: isApple ? APPLE_OAUTH_JWKS_URL : GOOGLE_OAUTH_JWKS_URL,
-          jwksCache: isApple ? appleJwksCache : googleJwksCache,
-          expectedNonce: isApple ? stateEntry.oidcNonce : '',
+        const claims = await verifyGoogleIdToken(idToken, googleClientId);
+        await completeSsoSessionAndRedirect(res, {
+          provider: 'google',
+          email: claims.email,
+          redirectStatus: 302,
         });
-        const entitlement = await resolvePaidEntitlementForEmail(claims.email);
-        const hasPaidKey = Boolean(entitlement && entitlement.entitled && entitlement.apiKey);
-        const nowMs = Date.now();
-        const sessionToken = crypto.randomBytes(32).toString('hex');
-        persistPaidAuthSession(sessionToken, {
-          apiKey: hasPaidKey ? entitlement.apiKey : '',
-          subjectType: hasPaidKey ? 'customer' : 'sso_free',
-          customerId: hasPaidKey ? entitlement.customerId : null,
-          ssoProvider: rawProvider,
-          ssoEmail: claims.email,
-          createdAt: nowMs,
-          expiresAt: nowMs + PAID_AUTH_SESSION_TTL_SECONDS * 1000,
-        }, nowMs);
-        const setCookie = serializeCookie(PAID_AUTH_COOKIE_NAME, sessionToken, {
-          maxAge: PAID_AUTH_SESSION_TTL_SECONDS,
-          httpOnly: true,
-          sameSite: 'Lax',
-          secure: true,
-        });
-        const clearStateCookie = serializeCookie(SSO_STATE_COOKIE_NAME, '', {
-          maxAge: 0,
-          path: '/v1/cloud/sso',
-          httpOnly: true,
-          sameSite: 'Lax',
-          secure: true,
-        });
-        res.writeHead(isApple ? 303 : 302, {
-          'X-Content-Type-Options': 'nosniff',
-          'Cache-Control': 'no-store',
-          'Set-Cookie': isApple ? setCookie : [setCookie, clearStateCookie],
-          Location: '/dashboard',
-        });
-        res.end();
       } catch (err) {
-        redirectSsoError(res, err && err.ssoReason ? err.ssoReason : 'callback_failed');
+        redirectSsoError(res, err?.ssoReason || 'callback_failed');
       }
+      return;
+    }
+
+    if (pathname === '/v1/cloud/sso/apple/callback') {
+      if (req.method !== 'POST') {
+        sendJson(res, 405, { ok: false, error: 'Method Not Allowed' }, { Allow: 'POST', 'Cache-Control': 'no-store' });
+        return;
+      }
+      await handleAppleSsoCallback(req, res);
       return;
     }
 
@@ -10162,7 +10309,7 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
       return;
     }
 
-    if (req.method === 'OPTIONS' && (pathname === '/v1/billing/checkout' || pathname === '/v1/billing/session' || pathname === '/v1/billing/portal' || pathname === '/v1/billing/recommend-offer' || pathname === '/v1/design/self-correct')) {
+    if (req.method === 'OPTIONS' && (pathname === '/v1/billing/checkout' || pathname === '/v1/billing/session' || pathname === '/v1/billing/portal' || pathname === '/v1/billing/recommend-offer' || pathname === '/v1/design/self-correct' || pathname === '/v1/boost/evaluate' || pathname === '/v1/decisions/subq-snap')) {
       sendPublicBillingPreflight(res);
       return;
     }
@@ -10170,7 +10317,11 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
     if (req.method === 'POST' && pathname === '/v1/design/self-correct') {
       try {
         const body = await parseJsonBody(req);
-        const traceId = body.traceId || createTraceId('design');
+        if (!body || typeof body !== 'object' || Array.isArray(body)) {
+          throw createHttpError(400, 'JSON object body is required');
+        }
+        const rawTrace = typeof body.traceId === 'string' ? body.traceId.trim() : '';
+        const traceId = /^[a-zA-Z0-9._:-]{1,128}$/.test(rawTrace) ? rawTrace : createTraceId('design');
         const sourceCode = typeof body.sourceCode === 'string' ? body.sourceCode : '';
         if (!sourceCode && !Array.isArray(body.visualFindings)) {
           throw createHttpError(400, 'sourceCode (string) or visualFindings (array) is required');
@@ -10192,7 +10343,55 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
           type: PROBLEM_TYPES.BAD_REQUEST,
           title: 'Request Error',
           status: err.statusCode || 400,
-          detail: err.message || 'Unable to process design self-correction request.',
+          detail: err.statusCode ? err.message : 'Unable to process design self-correction request.',
+        }, getPublicBillingHeaders(''));
+      }
+      return;
+    }
+
+    if (req.method === 'POST' && pathname === '/v1/boost/evaluate') {
+      try {
+        const body = await parseJsonBody(req);
+        if (!body || typeof body !== 'object' || Array.isArray(body)) {
+          throw createHttpError(400, 'JSON object body is required');
+        }
+        const rawTrace = typeof body.traceId === 'string' ? body.traceId.trim() : '';
+        const traceId = /^[a-zA-Z0-9._:-]{1,128}$/.test(rawTrace) ? rawTrace : createTraceId('boost');
+        const { evaluateComputeBoostLane } = require('../openshell-lovable-engine');
+        const result = evaluateComputeBoostLane(body);
+        sendJson(res, 200, { ...result, traceId }, getPublicBillingHeaders(traceId));
+      } catch (err) {
+        sendProblem(res, {
+          type: PROBLEM_TYPES.BAD_REQUEST,
+          title: 'Request Error',
+          status: err.statusCode || 400,
+          detail: err.statusCode ? err.message : 'Unable to evaluate compute boost lane.',
+        }, getPublicBillingHeaders(''));
+      }
+      return;
+    }
+
+    if (req.method === 'POST' && pathname === '/v1/decisions/subq-snap') {
+      try {
+        const body = await parseJsonBody(req);
+        if (!body || typeof body !== 'object' || Array.isArray(body)) {
+          throw createHttpError(400, 'JSON object body is required');
+        }
+        const rawTrace = typeof body.traceId === 'string' ? body.traceId.trim() : '';
+        const traceId = /^[a-zA-Z0-9._:-]{1,128}$/.test(rawTrace) ? rawTrace : createTraceId('subq');
+        const isAuthedCaller = Boolean(resolvePaidSessionTier(extractApiKey(req), expectedApiKey, expectedOperatorKey));
+        const { callSubQSnapSystemOneApi } = require('../openshell-lovable-engine');
+        const result = await callSubQSnapSystemOneApi(body, {
+          confidenceThreshold: body.confidenceThreshold,
+          apiKey: isAuthedCaller ? undefined : '',
+        });
+        sendJson(res, result.ok ? 200 : 422, { ...result, traceId }, getPublicBillingHeaders(traceId));
+      } catch (err) {
+        sendProblem(res, {
+          type: PROBLEM_TYPES.BAD_REQUEST,
+          title: 'Request Error',
+          status: err.statusCode || 400,
+          detail: err.statusCode ? err.message : 'Unable to evaluate SubQ Snap decision.',
         }, getPublicBillingHeaders(''));
       }
       return;
@@ -10957,18 +11156,16 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
             ? body.confidenceFloor
             : 0.7,
         });
-        try {
-          const uiTarget = String((body.toolArgs && (body.toolArgs.file_path || body.toolArgs.filePath)) || '');
-          const uiSource = String((body.toolArgs && (body.toolArgs.content ?? body.toolArgs.new_string ?? body.toolArgs.sourceCode)) || '');
-          const hasVisual = Array.isArray(body.visualFindings) && body.visualFindings.length > 0;
-          if (uiSource.length <= 262144 && ((/\.(?:html?|jsx|tsx|css)$/i.test(uiTarget) && Boolean(uiSource)) || hasVisual)) {
-            const { runDesignSelfCorrectionPipeline } = require('../openshell-lovable-engine');
-            verdict.designSelfCorrection = runDesignSelfCorrectionPipeline({
-              sourceCode: uiSource,
-              visualFindings: body.visualFindings,
-            });
-          }
-        } catch { /* non-fatal */ }
+        const uiTarget = String((body.toolArgs && (body.toolArgs.file_path || body.toolArgs.filePath)) || '');
+        const uiSource = String((body.toolArgs && (body.toolArgs.content ?? body.toolArgs.new_string ?? body.toolArgs.sourceCode)) || '');
+        const hasVisual = Array.isArray(body.visualFindings) && body.visualFindings.length > 0;
+        if (uiSource.length <= 262144 && ((/\.(?:html?|jsx|tsx|css)$/i.test(uiTarget) && Boolean(uiSource)) || hasVisual)) {
+          const { runDesignSelfCorrectionPipeline } = require('../openshell-lovable-engine');
+          verdict.designSelfCorrection = runDesignSelfCorrectionPipeline({
+            sourceCode: uiSource,
+            visualFindings: body.visualFindings,
+          });
+        }
         sendJson(res, 200, verdict);
         return;
       }
@@ -12661,6 +12858,8 @@ module.exports = {
     buildLiveDashboardCacheKey,
     loadCachedLiveDashboardData,
     setGoogleOAuthFetchForTests,
+    setAppleOAuthFetchForTests,
+    buildAppleClientSecret,
     issueSsoPendingState,
     consumeSsoPendingState,
     clearInMemoryAuthSessionsForTests,
