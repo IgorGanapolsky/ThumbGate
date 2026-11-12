@@ -145,6 +145,8 @@ const {
   resolvePaidEntitlementForEmail,
   validateApiKey,
   recordUsage,
+  recordAccountFirstBlock,
+  loadKeyStore,
   rotateApiKey,
   handleWebhook,
   verifyWebhookSignature,
@@ -6303,7 +6305,11 @@ function resolvePaidSessionTier(candidate, expectedApiKey, expectedOperatorKey) 
   if (expectedOperatorKey && safeKeyEqual(key, expectedOperatorKey)) return 'Enterprise';
   const validation = validateApiKey(key);
   if (validation && validation.valid === true) {
-    return validation.plan === 'team' || validation.tier === 'Enterprise' ? 'Enterprise' : 'Pro';
+    const planLower = String(validation.plan || '').toLowerCase();
+    const tierLower = String(validation.tier || '').toLowerCase();
+    if (planLower === 'free' || tierLower === 'free') return 'Free';
+    if (planLower === 'team' || tierLower === 'team') return 'Team';
+    return tierLower === 'enterprise' ? 'Enterprise' : 'Pro';
   }
   if (!expectedApiKey && !expectedOperatorKey) {
     return key.startsWith('tg_op_') || key.startsWith('tg_creator_') ? 'Enterprise' : 'Pro';
@@ -6392,6 +6398,193 @@ async function completeSsoSessionAndRedirect(res, { provider, email, ssoName = n
   res.end();
 }
 
+const DEFAULT_HOSTED_OWNER_EMAILS = [
+  'iganapolsky@gmail.com',
+  'igor.ganapolsky@gmail.com',
+  'igor@thumbgate.ai',
+];
+
+function ensureHostedActivationsReady(baseFeedbackDir, extraOpts = {}) {
+  const { backfillHostedAccountActivations } = require('../../scripts/dashboard');
+  const { getOwnerEmails } = require('../../scripts/bot-detection');
+  const ownerEmails = Array.from(new Set([...DEFAULT_HOSTED_OWNER_EMAILS, ...getOwnerEmails()]));
+  return backfillHostedAccountActivations(baseFeedbackDir, {
+    keyStore: loadKeyStore(),
+    recordKeyFirstBlock: recordAccountFirstBlock,
+    hashEmail: (email) => hashDataIdentity('sso_free', email),
+    hashCustomerTenant: (cid) => hashDataIdentity('tenant', cid),
+    ownerEmails,
+    includeActivePaidKeys: true,
+    ...extraOpts,
+  });
+}
+
+function resolveAccountSetupOptions(req, { tier, sessionEntry, expectedApiKey, expectedOperatorKey, baseFeedbackDir }) {
+  const { loadAccountActivations } = require('../../scripts/dashboard');
+  ensureHostedActivationsReady(baseFeedbackDir);
+  const activations = loadAccountActivations(baseFeedbackDir);
+  const resolvedSession = sessionEntry
+    || getPaidAuthSessionEntry(parseCookies(req?.headers?.cookie || '')[PAID_AUTH_COOKIE_NAME], expectedApiKey, expectedOperatorKey);
+  const token = extractApiKey(req);
+  const isAdmin = Boolean(token && (
+    (expectedApiKey && safeKeyEqual(token, expectedApiKey))
+    || (expectedOperatorKey && safeKeyEqual(token, expectedOperatorKey))
+  ));
+  const validation = (!isAdmin && token) ? validateApiKey(token) : null;
+  const validKey = validation && validation.valid === true ? validation : null;
+  const email = String(resolvedSession?.ssoEmail || validKey?.customerEmail || '').trim().toLowerCase();
+  const emailHash = email ? hashDataIdentity('sso_free', email) : null;
+  const customerId = resolvedSession?.customerId || validKey?.customerId || null;
+  const installId = validKey?.installId || null;
+  const firstBlockAt = validKey?.firstBlockAt
+    || (customerId && activations.byCustomerId[customerId]?.firstBlockAt)
+    || (emailHash && activations.byEmailHash[emailHash]?.firstBlockAt)
+    || (installId && activations.byInstallId[installId]?.firstBlockAt)
+    || (isAdmin ? activations.adminFirstBlockAt : null)
+    || null;
+  const activationRecorded = Boolean(
+    firstBlockAt
+    || (customerId && activations.byCustomerId[customerId])
+    || (emailHash && activations.byEmailHash[emailHash]),
+  );
+  const cliHeartbeat = Boolean(installId && activations.byInstallId[installId]);
+  return {
+    tier: tier || null,
+    firstBlockAt,
+    activationRecorded,
+    cliHeartbeat,
+    setupSignalKnown: Boolean(tier),
+  };
+}
+
+function resolveSessionSetupOverview(req, tier, sessionEntry, expectedApiKey, expectedOperatorKey) {
+  if (!tier) return { firstBlockRecorded: null, firstBlockAt: null, upNext: null };
+  try {
+    const { computeTodayOverview } = require('../../scripts/dashboard');
+    const basePaths = getFeedbackPaths();
+    const scopedDir = tier === 'Free' && sessionEntry?.ssoEmail
+      ? path.join(basePaths.FEEDBACK_DIR, 'tenants', hashDataIdentity('sso_free', sessionEntry.ssoEmail))
+      : partitionFeedbackPaths(basePaths, resolveRequestDataIdentity(req, expectedApiKey)).FEEDBACK_DIR;
+    const setupOpts = resolveAccountSetupOptions(req, {
+      tier,
+      sessionEntry,
+      expectedApiKey,
+      expectedOperatorKey,
+      baseFeedbackDir: basePaths.FEEDBACK_DIR,
+    });
+    const overview = computeTodayOverview(scopedDir, setupOpts);
+    return {
+      firstBlockRecorded: Boolean(overview.firstBlockRecorded),
+      firstBlockAt: overview.firstBlockAt || null,
+      upNext: overview.upNext,
+    };
+  } catch (error) {
+    debugApiFallback('session setup overview unavailable', error);
+    return { firstBlockRecorded: null, firstBlockAt: null, upNext: null };
+  }
+}
+
+async function handleFirstBlockActivationRoute(req, res, expectedApiKey, expectedOperatorKey) {
+  const corsHeaders = {
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Methods': 'POST, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-API-Key',
+    'Cache-Control': 'no-store',
+  };
+  if (req.method === 'OPTIONS') {
+    res.writeHead(204, corsHeaders);
+    res.end();
+    return;
+  }
+  let body = {};
+  try {
+    body = await parseJsonBody(req, 8 * 1024);
+  } catch {
+    sendJson(res, 400, { ok: false, error: 'invalid_json' }, corsHeaders);
+    return;
+  }
+  const cookies = parseCookies(req.headers?.cookie || '');
+  const sessionEntry = getPaidAuthSessionEntry(cookies[PAID_AUTH_COOKIE_NAME], expectedApiKey, expectedOperatorKey);
+  const token = extractApiKey(req);
+  const isAdmin = Boolean(token && expectedApiKey && safeKeyEqual(token, expectedApiKey));
+  const isOperator = Boolean(!isAdmin && token && expectedOperatorKey && safeKeyEqual(token, expectedOperatorKey));
+  const validation = (!isAdmin && !isOperator && token) ? validateApiKey(token) : null;
+  const validKey = validation && validation.valid === true ? validation : null;
+  let signedClaims = null;
+  if (!isAdmin && !isOperator && !validKey && token && token.includes('.')) {
+    try {
+      const { verifyLicense: verifySignedEntitlement } = require('../../scripts/entitlement');
+      const verified = verifySignedEntitlement(token);
+      if (verified && verified.valid && verified.tier !== 'free') signedClaims = verified;
+    } catch { /* ignore invalid signed license */ }
+  }
+  if (!isAdmin && !isOperator && !validKey && !signedClaims && !sessionEntry) {
+    sendJson(res, 401, { ok: false, error: 'Unauthorized' }, corsHeaders);
+    return;
+  }
+  const { FEEDBACK_DIR } = getFeedbackPaths();
+  const { recordHostedFirstBlock } = require('../../scripts/dashboard');
+  const nowMs = Date.now();
+  const minValidMs = Date.parse('2025-01-01T00:00:00.000Z');
+  const parsedTs = typeof body?.firstBlockAt === 'string' ? Date.parse(body.firstBlockAt) : NaN;
+  const rawStamp = (Number.isFinite(parsedTs) && parsedTs >= minValidMs && parsedTs <= nowMs + 60_000)
+    ? new Date(parsedTs).toISOString()
+    : new Date(nowMs).toISOString();
+  const rawInstall = typeof body?.installId === 'string' ? body.installId.trim() : '';
+  const safeBodyInstallId = /^[A-Za-z0-9._:-]{1,128}$/.test(rawInstall) ? rawInstall : null;
+  const installId = validKey?.installId || safeBodyInstallId || null;
+  const targetEmail = String((isAdmin && body?.email) || sessionEntry?.ssoEmail || validKey?.customerEmail || '').trim().toLowerCase();
+  const targetCustomerId = (isAdmin && body?.customerId ? String(body.customerId).trim() : null)
+    || validKey?.customerId
+    || signedClaims?.customerId
+    || sessionEntry?.customerId
+    || null;
+  const emailHash = targetEmail ? hashDataIdentity('sso_free', targetEmail) : null;
+  const tenantDir = targetCustomerId
+    ? path.join(FEEDBACK_DIR, 'tenants', hashDataIdentity('tenant', targetCustomerId))
+    : (emailHash ? path.join(FEEDBACK_DIR, 'tenants', emailHash) : null);
+  const keyUpdate = recordAccountFirstBlock(
+    { apiKey: validKey ? token : null, customerId: targetCustomerId, email: targetEmail },
+    { firstBlockAt: rawStamp, installId: validKey ? installId : null },
+  );
+  const recorded = recordHostedFirstBlock(FEEDBACK_DIR, {
+    firstBlockAt: keyUpdate.updatedCount > 0 ? keyUpdate.firstBlockAt : rawStamp,
+    customerId: targetCustomerId,
+    emailHash,
+    installId: (isAdmin || isOperator || validKey) ? installId : null,
+    tenantDir,
+    isAdmin: (isAdmin || isOperator) && !body?.customerId && !body?.email,
+    source: 'cli_first_block',
+  });
+  let backfill = null;
+  if (isAdmin && body?.backfill === true) {
+    backfill = ensureHostedActivationsReady(FEEDBACK_DIR, {
+      force: true,
+      includeAdmin: true,
+      includeActivePaidKeys: Boolean(body?.includeActivePaidKeys),
+    });
+  }
+  if (installId) {
+    try {
+      appendTelemetryPing(FEEDBACK_DIR, {
+        eventType: 'first_block',
+        clientType: 'cli',
+        installId,
+        firstBlockAt: recorded.firstBlockAt,
+        ...(typeof body?.gateId === 'string' ? { gateId: body.gateId.slice(0, 120) } : {}),
+      }, req.headers);
+    } catch { /* telemetry best-effort */ }
+  }
+  liveDashboardCache.clear();
+  sendJson(res, 200, {
+    ok: true,
+    event: 'first_block',
+    firstBlockAt: recorded.firstBlockAt,
+    firstBlockRecorded: true,
+    ...(backfill ? { backfill } : {}),
+  }, corsHeaders);
+}
+
 async function handleAppleSsoCallback(req, res) {
   try {
     const form = await parseFormBody(req, 64 * 1024);
@@ -6468,24 +6661,6 @@ async function handleAppleSsoCallback(req, res) {
   }
 }
 
-function resolveSessionSetupOverview(req, tier, sessionEntry, expectedApiKey) {
-  if (!tier) return { firstBlockRecorded: false, upNext: null };
-  try {
-    const { computeTodayOverview } = require('../../scripts/dashboard');
-    const basePaths = getFeedbackPaths();
-    const scopedDir = tier === 'Free' && sessionEntry?.ssoEmail
-      ? path.join(basePaths.FEEDBACK_DIR, 'tenants', hashDataIdentity('sso_free', sessionEntry.ssoEmail))
-      : partitionFeedbackPaths(basePaths, resolveRequestDataIdentity(req, expectedApiKey)).FEEDBACK_DIR;
-    const overview = computeTodayOverview(scopedDir);
-    return {
-      firstBlockRecorded: Boolean(overview.firstBlockRecorded),
-      upNext: overview.upNext,
-    };
-  } catch (error) {
-    debugApiFallback('session setup overview unavailable', error);
-    return { firstBlockRecorded: false, upNext: null };
-  }
-}
 
 async function handlePaidAuthSessionRoute(req, res, expectedApiKey, expectedOperatorKey) {
   const noStoreHeaders = { 'Cache-Control': 'no-store' };
@@ -6494,12 +6669,13 @@ async function handlePaidAuthSessionRoute(req, res, expectedApiKey, expectedOper
     const sessionEntry = getPaidAuthSessionEntry(cookies[PAID_AUTH_COOKIE_NAME], expectedApiKey, expectedOperatorKey);
     const tier = resolvePaidSessionTier(extractApiKey(req), expectedApiKey, expectedOperatorKey)
       || (sessionEntry && sessionEntry.subjectType === 'sso_free' ? 'Free' : null);
-    const { firstBlockRecorded, upNext } = resolveSessionSetupOverview(req, tier, sessionEntry, expectedApiKey);
+    const { firstBlockRecorded, firstBlockAt, upNext } = resolveSessionSetupOverview(req, tier, sessionEntry, expectedApiKey, expectedOperatorKey);
     sendJson(res, 200, {
       ok: true,
       authenticated: Boolean(tier),
       tier: tier || null,
       firstBlockRecorded,
+      firstBlockAt,
       upNext,
       ssoProviders: getConfiguredSsoProviders(),
       ssoProvider: sessionEntry?.ssoProvider || null,
@@ -9548,6 +9724,10 @@ a{color:#8b9}</style></head><body><form class="card" method="post" action="/oaut
       res.end();
       return;
     }
+    if (pathname === '/v1/activation/first-block' && (req.method === 'POST' || req.method === 'OPTIONS')) {
+      await handleFirstBlockActivationRoute(req, res, expectedApiKey, expectedOperatorKey);
+      return;
+    }
     if (pathname === '/v1/onboarding/try-block' && (req.method === 'POST' || req.method === 'OPTIONS')) {
       await handleOnboardingTryBlock(req, res, expectedApiKey, expectedOperatorKey);
       return;
@@ -10902,23 +11082,32 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
         const stats = shouldAggregateFeedback()
           ? computeAggregateFeedbackStats({ feedbackDir: requestFeedbackPaths.FEEDBACK_DIR })
           : analyzeFeedback(requestFeedbackPaths.FEEDBACK_LOG_PATH, { humanOnly: true });
+        const requestToken = extractApiKey(req);
+        const authenticatedTier = requestToken
+          ? resolvePaidSessionTier(requestToken, expectedApiKey, expectedOperatorKey)
+          : null;
         try {
           const { getStatuslineMeta } = require('../../scripts/statusline-meta');
           const meta = getStatuslineMeta({ env: process.env });
-          stats.tier = meta.tier;
+          stats.tier = authenticatedTier || meta.tier;
         } catch (error) {
           debugApiFallback('statusline meta unavailable', error);
-          stats.tier = 'Pro';
+          stats.tier = authenticatedTier || 'Pro';
         }
 
-        // Active gates for the dashboard hero cards. Connect only fetches
-        // /v1/feedback/stats first; without these fields Active Gates stays
-        // stuck on the HTML placeholder "—" until a later /v1/dashboard call
-        // succeeds (and never updates if that call fails).
         try {
           const { computeGateStats, computeTodayOverview } = require('../../scripts/dashboard');
           const gateStats = computeGateStats(requestFeedbackPaths.FEEDBACK_DIR);
-          const todayOverview = computeTodayOverview(requestFeedbackPaths.FEEDBACK_DIR, { gateStats });
+          const setupOpts = resolveAccountSetupOptions(req, {
+            tier: stats.tier,
+            expectedApiKey,
+            expectedOperatorKey,
+            baseFeedbackDir: getFeedbackPaths().FEEDBACK_DIR,
+          });
+          const todayOverview = computeTodayOverview(requestFeedbackPaths.FEEDBACK_DIR, {
+            gateStats,
+            ...setupOpts,
+          });
           stats.activeGateCount = Number(gateStats.totalGates) || 0;
           stats.gateStats = {
             totalGates: Number(gateStats.totalGates) || 0,
@@ -12605,20 +12794,51 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
           return;
         }
         const { data } = dashboardResult;
-        if (!isProTier()) {
+        const reqToken = extractApiKey(req);
+        let dashTier = reqToken
+          ? resolvePaidSessionTier(reqToken, expectedApiKey, expectedOperatorKey)
+          : null;
+        if (!dashTier) {
           try {
-            const { getFeedbackPaths } = require('../../scripts/feedback-loop');
-            const { PREVENTION_RULES_PATH } = getFeedbackPaths({ feedbackDir: requestFeedbackDir });
+            const { getStatuslineMeta } = require('../../scripts/statusline-meta');
+            dashTier = getStatuslineMeta({ env: process.env }).tier;
+          } catch {
+            dashTier = 'Pro';
+          }
+        }
+        let proWouldHaveBlocked;
+        if (!isProTier() && (!reqToken || dashTier === 'Free')) {
+          try {
+            const { getFeedbackPaths: getScopedFeedbackPaths } = require('../../scripts/feedback-loop');
+            const { PREVENTION_RULES_PATH } = getScopedFeedbackPaths({ feedbackDir: requestFeedbackDir });
             if (PREVENTION_RULES_PATH && fs.existsSync(PREVENTION_RULES_PATH)) {
               const dropped = droppedRepeatFromRulesMarkdown(fs.readFileSync(PREVENTION_RULES_PATH, 'utf8'));
               const sentence = proWouldHaveBlockedSentence(dropped);
-              if (sentence) data.proWouldHaveBlocked = sentence;
+              if (sentence) proWouldHaveBlocked = sentence;
             }
           } catch (_) {}
         }
-
-
-        sendJson(res, 200, data);
+        let scopedDashboard = proWouldHaveBlocked ? { ...data, proWouldHaveBlocked } : data;
+        try {
+          const { computeTodayOverview } = require('../../scripts/dashboard');
+          const setupOpts = resolveAccountSetupOptions(req, {
+            tier: dashTier,
+            expectedApiKey,
+            expectedOperatorKey,
+            baseFeedbackDir: getFeedbackPaths().FEEDBACK_DIR,
+          });
+          scopedDashboard = {
+            ...data,
+            ...(proWouldHaveBlocked ? { proWouldHaveBlocked } : {}),
+            tier: dashTier,
+            todayOverview: computeTodayOverview(requestFeedbackDir, {
+              gateStats: data.gateStats,
+              gateAudit: data.gateAudit,
+              ...setupOpts,
+            }),
+          };
+        } catch { /* fallback to cached data */ }
+        sendJson(res, 200, scopedDashboard);
         return;
       }
 
