@@ -1055,6 +1055,7 @@ function extractEnvValue(content, names) {
 function readProjectChatSettings(req, parsed) {
   const settings = {
     geminiKey: '',
+    subqKey: '',
     perplexityKey: '',
     localEndpoint: '',
     localModel: '',
@@ -1067,6 +1068,7 @@ function readProjectChatSettings(req, parsed) {
       const content = fs.readFileSync(envPath, 'utf8');
       settings.geminiKey = extractEnvValue(content, ['GEMINI_API_KEY', 'GOOGLE_API_KEY', 'THUMBGATE_GEMINI_API_KEY']);
       settings.perplexityKey = extractEnvValue(content, ['PERPLEXITY_API_KEY', 'THUMBGATE_PERPLEXITY_API_KEY']);
+      settings.subqKey = extractEnvValue(content, ['SUBQ_API_KEY', 'THUMBGATE_SUBQ_API_KEY']);
       settings.localEndpoint = extractEnvValue(content, ['THUMBGATE_LOCAL_LLM_ENDPOINT']);
       settings.localModel = extractEnvValue(content, ['THUMBGATE_LOCAL_LLM_MODEL']);
     }
@@ -10415,6 +10417,7 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
           reasonText: body.reasonText,
           page: body.page,
           currentPlan: body.currentPlan,
+          provider: body.provider || undefined,
           clientIp,
         });
         sendJson(res, 200, { ...recommendation, traceId }, getPublicBillingHeaders(traceId));
@@ -11151,7 +11154,10 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
           toolArgs: body.toolArgs || {},
           contextText: body.contextText || '',
           rulesText: body.rulesText || '',
+          images: Array.isArray(body.images) ? body.images : undefined,
           apiKey: projectChatSettings.geminiKey || undefined,
+          subqApiKey: projectChatSettings.subqKey || undefined,
+          provider: body.provider || undefined,
           confidenceFloor: typeof body.confidenceFloor === 'number' && Number.isFinite(body.confidenceFloor)
             ? body.confidenceFloor
             : 0.7,

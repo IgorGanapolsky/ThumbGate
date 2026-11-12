@@ -1601,6 +1601,8 @@ function routeSmgKvCacheAwareBackend({
  *     flips the answer (`forwardChoice !== reversedChoice`).
  */
 const SYSTEM_ONE_DECISION_MODEL_BENCHMARKS = Object.freeze({
+  'subq-snap-1.2': { org: 'Subquadratic', openWeights: false, accuracy: 0.961, aaDecisionIndex: 73, hfDecisionIndex: 69.1, hfMultiDocScore: 68.4, pairedFlipRate: 0.002, injectionAsr: 0.028, ece: 0.025, contextWindowTokens: 393216, pricePerMillionInputUsd: 0.04, freeTokensIncluded: 100000000, modalities: ['text', 'image'] },
+  'subq-snap-latest': { org: 'Subquadratic', openWeights: false, accuracy: 0.961, aaDecisionIndex: 73, hfDecisionIndex: 69.1, hfMultiDocScore: 68.4, pairedFlipRate: 0.002, injectionAsr: 0.028, ece: 0.025, contextWindowTokens: 393216, pricePerMillionInputUsd: 0.04, freeTokensIncluded: 100000000, modalities: ['text', 'image'] },
   'jev-1.13': { org: 'TypeSafe', openWeights: false, accuracy: 0.932, pairedFlipRate: 0.021, injectionAsr: 0.063, ece: 0.045, modalities: ['text'] },
   'tev1-4b': { org: 'Together AI', openWeights: true, accuracy: 0.901, pairedFlipRate: 0.052, injectionAsr: 0.042, ece: 0.031, modalities: ['text'] },
   'clef-27b': { org: 'Cloudflare', openWeights: true, accuracy: 0.942, pairedFlipRate: 0.030, injectionAsr: 0.055, ece: 0.040, modalities: ['text', 'image'] },
@@ -2112,16 +2114,23 @@ function evaluateSubQSnapCoarseModuleRouter({
   modules = [],
   maxSnapWindowTokens = 384000,
   taskType = 'cross_module_bug_triage',
-  pricePerMillionInputUsd = 0.05,
+  modelVersion = '1.0',
+  pricePerMillionInputUsd,
+  imageCount = 0,
 } = {}) {
+  const isV12 = String(modelVersion) === '1.2' || String(modelVersion).toLowerCase() === 'subq-snap-latest';
+  const effectiveWindow = isV12 && maxSnapWindowTokens === 384000 ? 393216 : Number(maxSnapWindowTokens);
+  const unitPrice = pricePerMillionInputUsd !== undefined
+    ? Number(pricePerMillionInputUsd)
+    : (isV12 ? 0.04 : 0.05);
   const totalModuleTokens = (Array.isArray(modules) ? modules : []).reduce(
     (acc, m) => acc + Math.max(0, Number(m.tokens) || 0),
     0,
   );
-  const fitsCoarseWholeModules = totalModuleTokens <= Number(maxSnapWindowTokens);
-  const estimatedInputCostUsd = Number(((totalModuleTokens / 1e6) * Number(pricePerMillionInputUsd)).toFixed(6));
-
-  if (String(taskType).toLowerCase() === 'when2call') {
+  const fitsCoarseWholeModules = totalModuleTokens <= effectiveWindow;
+  const estimatedInputCostUsd = Number(((totalModuleTokens / 1e6) * unitPrice).toFixed(6));
+  const taskLower = String(taskType).toLowerCase();
+  if (taskLower === 'when2call') {
     return {
       selectedEngine: 'thumbgate_deterministic_pretooluse_plus_jev',
       retrievalStrategy: 'exact_tool_call_state',
@@ -2130,10 +2139,17 @@ function evaluateSubQSnapCoarseModuleRouter({
       estimatedInputCostUsd: 0,
     };
   }
+  const realWorkPillar = ['tool_calls', 'context_curation', 'unstructured_document_analysis'].includes(taskLower)
+    ? taskLower
+    : 'coarse_module_analysis';
   return {
-    selectedEngine: fitsCoarseWholeModules ? 'subq_snap_384k_ssa' : 'coarse_module_filter_then_subq_snap',
+    selectedEngine: fitsCoarseWholeModules
+      ? (isV12 ? 'subq_snap_1_2_384k_multimodal' : 'subq_snap_384k_ssa')
+      : 'coarse_module_filter_then_subq_snap',
     retrievalStrategy: fitsCoarseWholeModules ? 'whole_modules_no_snippet_chunking' : 'coarse_module_selection',
     fragileSnippetChunkingEliminated: fitsCoarseWholeModules,
+    multimodalSupported: isV12 && Number(imageCount) <= 4,
+    realWorkPillar,
     totalModuleTokens,
     estimatedInputCostUsd,
     outputCostUsd: 0,
@@ -2268,6 +2284,72 @@ function evaluateOuroborosContinuityAndRewardHackGate({
   };
 }
 
+function evaluateSaasBusinessMasteryEngine({
+  baselineActiveClients = 100,
+  baselineMonthlyArpuUsd = 49,
+  baselineAnnualTransactionsPerClient = 1,
+  onboardingActivationLiftPct = 10,
+  usageOutcomeArpuLiftPct = 10,
+  churnReductionRetentionLiftPct = 10,
+  currentOnboardingActivationRate = 0.32,
+  minActivationRateForScale = 0.25,
+  cacPaybackMonths = 3.5,
+  maxPaybackMonths = 6,
+  checkoutLeakRate = 0.08,
+  maxCheckoutLeakRate = 0.15,
+  wantsToScalePaidTraffic = false,
+  baselineOperatingMarginPct = 35,
+  automatedSopPlaybooks = ['tier1_support', 'code_review', 'lead_qualification'],
+  hostBeneficiaryPartnersCount = 2,
+  rpmWeeklyOutcomeDefined = true,
+  delegatedOrAutomatedExecutionShare = 0.85,
+} = {}) {
+  const leakReasons = [];
+  if (Number(currentOnboardingActivationRate) < Number(minActivationRateForScale)) {
+    leakReasons.push('onboarding_activation_below_5min_aha_floor');
+  }
+  if (Number(cacPaybackMonths) > Number(maxPaybackMonths)) {
+    leakReasons.push('cac_payback_exceeds_opt_and_max_ceiling');
+  }
+  if (Number(checkoutLeakRate) > Number(maxCheckoutLeakRate)) {
+    leakReasons.push('unplugged_checkout_value_chain_leak');
+  }
+  if (wantsToScalePaidTraffic && leakReasons.length > 0) {
+    return {
+      allowed: false,
+      decision: 'block',
+      reasonCode: 'opt_and_max_plug_value_chain_leaks_before_ad_spend',
+      leakReasons,
+    };
+  }
+  const cMult = 1 + Math.max(0, Number(onboardingActivationLiftPct) || 0) / 100;
+  const aMult = 1 + Math.max(0, Number(usageOutcomeArpuLiftPct) || 0) / 100;
+  const rMult = 1 + Math.max(0, Number(churnReductionRetentionLiftPct) || 0) / 100;
+  const geometricMultiplier = Number((cMult * aMult * rMult).toFixed(6));
+  const compoundGrowthPct = Number(((geometricMultiplier - 1) * 100).toFixed(2));
+  const baselineRevenueUsd = Number(
+    (Number(baselineActiveClients) * Number(baselineMonthlyArpuUsd) * Number(baselineAnnualTransactionsPerClient)).toFixed(2),
+  );
+  const projectedRevenueUsd = Number((baselineRevenueUsd * geometricMultiplier).toFixed(2));
+  const sopCount = Array.isArray(automatedSopPlaybooks) ? automatedSopPlaybooks.length : 0;
+  const sopMarginLiftPct = Math.min(50, sopCount * 12);
+  const projectedOperatingMarginPct = Math.min(90, Number(baselineOperatingMarginPct) + sopMarginLiftPct);
+  const rpmThresholdCleared = Boolean(rpmWeeklyOutcomeDefined) && Number(delegatedOrAutomatedExecutionShare) >= 0.8;
+  return {
+    allowed: true,
+    decision: 'allow',
+    reasonCode: 'saas_10_10_10_and_opt_max_verified',
+    geometricMultiplier,
+    compoundGrowthPct,
+    baselineRevenueUsd,
+    projectedRevenueUsd,
+    sopMarginLiftPct,
+    projectedOperatingMarginPct,
+    zeroCacHostBeneficiaryActive: Number(hostBeneficiaryPartnersCount) > 0,
+    rpmOperatorToOwnerReady: rpmThresholdCleared,
+  };
+}
+
 if (require.main === module) {
   const plugin = compileThumbGateToArmorPlugin();
   const rewritten = rewritePromptParanoidMode({
@@ -2331,4 +2413,5 @@ module.exports = {
   evaluateSanSiLoopedSystem15Gate,
   evaluateBrunoGitNativeCollectionDiode,
   evaluateOuroborosContinuityAndRewardHackGate,
+  evaluateSaasBusinessMasteryEngine,
 };

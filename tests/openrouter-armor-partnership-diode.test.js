@@ -49,6 +49,7 @@ const {
   evaluateSanSiLoopedSystem15Gate,
   evaluateBrunoGitNativeCollectionDiode,
   evaluateOuroborosContinuityAndRewardHackGate,
+  evaluateSaasBusinessMasteryEngine,
 } = require('../scripts/openrouter-armor-partnership-diode');
 
 test('compileThumbGateToArmorPlugin: emits OpenRouter Armor v1 classifier_context with 0.6 deny and 0.7 allow thresholds', () => {
@@ -874,6 +875,29 @@ test('Subquadratic SubQ Snap 384K router, SanSi (arXiv:2610.07730) System 1.5 lo
   assert.equal(snap.estimatedInputCostUsd, 0.005);
   assert.equal(snap.outputCostUsd, 0);
 
+
+  const snap12 = evaluateSubQSnapCoarseModuleRouter({
+    modules: [
+      { name: 'src/mcp-writeguard.js', tokens: 120000 },
+      { name: 'scripts/lesson-retrieval.js', tokens: 80000 },
+    ],
+    modelVersion: '1.2',
+    taskType: 'context_curation',
+    imageCount: 3,
+  });
+  assert.equal(snap12.selectedEngine, 'subq_snap_1_2_384k_multimodal');
+  assert.equal(snap12.estimatedInputCostUsd, 0.008);
+  assert.equal(snap12.multimodalSupported, true);
+  assert.equal(snap12.realWorkPillar, 'context_curation');
+
+  const snap12Guard = evaluateSystemOneDecisionModelGuard({
+    modelId: 'subq-snap-1.2',
+    options: ['bundle_49', 'pro_19'],
+    forwardWinner: 'bundle_49',
+    reversedOrderWinner: 'bundle_49',
+  });
+  assert.equal(snap12Guard.codeVerdict, 'pass');
+  assert.equal(snap12Guard.reasonCode, 'calibrated_and_order_invariant');
   const when2call = evaluateSubQSnapCoarseModuleRouter({
     modules: [{ name: 'tool.js', tokens: 2000 }],
     taskType: 'when2call',
@@ -963,4 +987,40 @@ test('097-personal-notes-worktrees & 129-agent-cli steals: refuses notes inside 
   assert.equal(previewOk.ok, true);
   assert.equal(previewOk.outcome, 'preview');
   assert.equal(previewOk.exit, 0);
+});
+
+test('SaaS Business Mastery 10-10-10 & Opt-and-Max Gate: blocks ad-spend scaling when value-chain leaks exist and compounds 10%x10%x10% to 33.1% lift with Vista SOP margin expansion', () => {
+  const blockedAdSpend = evaluateSaasBusinessMasteryEngine({
+    wantsToScalePaidTraffic: true,
+    currentOnboardingActivationRate: 0.12,
+    cacPaybackMonths: 9,
+    checkoutLeakRate: 0.22,
+  });
+  assert.equal(blockedAdSpend.allowed, false);
+  assert.equal(blockedAdSpend.decision, 'block');
+  assert.equal(blockedAdSpend.reasonCode, 'opt_and_max_plug_value_chain_leaks_before_ad_spend');
+  assert.equal(blockedAdSpend.leakReasons.length, 3);
+
+  const healthyCompound = evaluateSaasBusinessMasteryEngine({
+    baselineActiveClients: 100,
+    baselineMonthlyArpuUsd: 100,
+    baselineAnnualTransactionsPerClient: 12,
+    onboardingActivationLiftPct: 10,
+    usageOutcomeArpuLiftPct: 10,
+    churnReductionRetentionLiftPct: 10,
+    wantsToScalePaidTraffic: true,
+    baselineOperatingMarginPct: 40,
+    automatedSopPlaybooks: ['tier1_support', 'code_review', 'lead_qualification'],
+    hostBeneficiaryPartnersCount: 3,
+    rpmWeeklyOutcomeDefined: true,
+    delegatedOrAutomatedExecutionShare: 0.85,
+  });
+  assert.equal(healthyCompound.allowed, true);
+  assert.equal(healthyCompound.geometricMultiplier, 1.331);
+  assert.equal(healthyCompound.compoundGrowthPct, 33.1);
+  assert.equal(healthyCompound.baselineRevenueUsd, 120000);
+  assert.equal(healthyCompound.projectedRevenueUsd, 159720);
+  assert.equal(healthyCompound.projectedOperatingMarginPct, 76);
+  assert.equal(healthyCompound.zeroCacHostBeneficiaryActive, true);
+  assert.equal(healthyCompound.rpmOperatorToOwnerReady, true);
 });
