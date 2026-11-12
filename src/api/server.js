@@ -8582,13 +8582,9 @@ async function addContext(){
       const sessionIdParam = parsed.searchParams.get('session_id')
         || parsed.searchParams.get('sessionId')
         || '';
-      const customerIdParam = parsed.searchParams.get('customer')
-        || parsed.searchParams.get('customerId')
-        || parsed.searchParams.get('customer_id')
-        || '';
-      const emailParam = parsed.searchParams.get('email')
-        || parsed.searchParams.get('customerEmail')
-        || '';
+      // Only proof of ownership opens the portal: an API key or a Stripe checkout
+      // session id. A bare email or customer id is public/guessable and would let
+      // anyone manage someone else's subscription, so those params are ignored.
       const authHeader = req.headers['authorization'] || '';
       const bearerKey = authHeader.startsWith('Bearer ') ? authHeader.slice(7).trim() : '';
       const effectiveKey = apiKeyParam || bearerKey;
@@ -8596,13 +8592,11 @@ async function addContext(){
       const wantsJson = (req.headers['accept'] && req.headers['accept'].includes('application/json'))
         || parsed.searchParams.get('format') === 'json';
 
-      if (effectiveKey || sessionIdParam || customerIdParam || emailParam) {
+      if (effectiveKey || sessionIdParam) {
         try {
           const portalSession = await createBillingPortalSession({
             apiKey: effectiveKey,
             sessionId: sessionIdParam,
-            customerId: customerIdParam,
-            customerEmail: emailParam,
             returnUrl: hostedConfig.appOrigin ? `${hostedConfig.appOrigin}/` : undefined,
           });
 
@@ -10212,9 +10206,9 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
         const portalSession = await createBillingPortalSession({
           apiKey: body.apiKey || body.key || bearerKey,
           sessionId: body.sessionId || body.session_id,
-          customerId: body.customerId || body.customer_id,
-          customerEmail: body.customerEmail || body.email,
-          returnUrl: body.returnUrl || (hostedConfig.appOrigin ? `${hostedConfig.appOrigin}/` : undefined),
+          // customerId/email are not proof of ownership and returnUrl is caller-controlled:
+          // accept neither from an unauthenticated public route.
+          returnUrl: hostedConfig.appOrigin ? `${hostedConfig.appOrigin}/` : undefined,
         });
 
         sendJson(res, 200, {
