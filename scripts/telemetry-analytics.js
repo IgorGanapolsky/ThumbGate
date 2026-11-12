@@ -14,6 +14,7 @@ const {
   resolveFallbackArtifactPath,
 } = require('./feedback-paths');
 const { readTextTail } = require('./fs-utils');
+const { getOwnerEmails } = require('./bot-detection');
 
 const TELEMETRY_FILE_NAME = 'telemetry-pings.jsonl';
 const MARKETING_CLICK_EVENT_TYPES = new Set([
@@ -317,8 +318,32 @@ function addAudienceReason(reasons, code) {
   if (!reasons.includes(code)) reasons.push(code);
 }
 
-function classifyTelemetryAudience(entry = {}, raw = {}) {
+const VALID_PERSISTED_AUDIENCE_REASONS = new Set([
+  'bot_or_automation_user_agent',
+  'test_identity',
+  'test_or_audit_attribution',
+  'internal_host',
+  'internal_operator_or_ci',
+  'unknown_direct_no_identity',
+]);
+
+function canonicalizeTelemetryEmail(rawEmail = '') {
+  const email = String(rawEmail || '').trim().toLowerCase();
+  const atIdx = email.indexOf('@');
+  if (atIdx <= 0 || atIdx !== email.lastIndexOf('@') || atIdx === email.length - 1) return '';
+  const localPart = email.slice(0, atIdx).replace(/\+.*$/, '');
+  const domainPart = email.slice(atIdx + 1);
+  return localPart && domainPart ? `${localPart}@${domainPart}` : '';
+}
+
+function classifyTelemetryAudience(entry = {}, raw = {}, options = {}) {
   const reasons = [];
+  for (const persisted of Array.isArray(options.persistedAudienceReasons) ? options.persistedAudienceReasons : []) {
+    const code = normalizeText(persisted, 64);
+    if (code && VALID_PERSISTED_AUDIENCE_REASONS.has(code)) {
+      addAudienceReason(reasons, code);
+    }
+  }
   const identityValues = [
     raw.email,
     raw.customerEmail,
@@ -363,16 +388,37 @@ function classifyTelemetryAudience(entry = {}, raw = {}) {
     'curl/',
     'wget/',
     'lighthouse',
+    'money-v',
+    'protocolv1-gate',
+    'fuzz faster u fool',
+    'ffuf',
+    'firstpage/',
   ])) {
     addAudienceReason(reasons, 'bot_or_automation_user_agent');
   }
 
-  if (includesAnyToken(identityValues, [
+  const canonicalOwners = new Set(
+    getOwnerEmails().map((ownerEmail) => canonicalizeTelemetryEmail(ownerEmail)).filter(Boolean)
+  );
+  const emailCandidates = [raw.email, raw.customerEmail, raw.buyerEmail, raw.userEmail]
+    .map((candidate) => canonicalizeTelemetryEmail(candidate))
+    .filter(Boolean);
+  const matchesOwnerEmail = canonicalOwners.size > 0
+    && emailCandidates.some((candidate) => canonicalOwners.has(candidate));
+  if (matchesOwnerEmail || includesAnyToken(identityValues, [
     '@example.com',
+    '@example.org',
+    '@example.net',
     'buyer@example.com',
     'test@example.com',
+    'buyer@acme.io',
+    'buyer@acme.com',
+    'test@test.com',
     'codex-verification',
     'audit@thumbgate.ai',
+    'test-checkout-probe@thumbgate.ai',
+    'e2e-probe',
+    'checkout-probe',
   ])) {
     addAudienceReason(reasons, 'test_identity');
   }
@@ -493,7 +539,7 @@ function inferCampaignVariant(raw = {}, cookies = {}, eventType = '') {
   return isCheckoutStartEvent(eventType) ? 'direct_checkout' : null;
 }
 
-function sanitizeTelemetryPayload(payload = {}, headers = {}) {
+function sanitizeTelemetryPayload(payload = {}, headers = {}, options = {}) {
   const envelope = payload && typeof payload === 'object' ? payload : {};
   const nestedProps = envelope.props
     && typeof envelope.props === 'object'
@@ -620,7 +666,7 @@ function sanitizeTelemetryPayload(payload = {}, headers = {}) {
     ),
   };
 
-  const audience = classifyTelemetryAudience(entry, raw);
+  const audience = classifyTelemetryAudience(entry, raw, options);
   entry.audience = audience.audience;
   entry.trafficAudience = audience.audience;
   entry.audienceReasons = audience.reasons;
@@ -700,7 +746,9 @@ function parseTelemetryLines(raw) {
     .map((line) => {
       try {
         const parsed = JSON.parse(line);
-        const normalized = sanitizeTelemetryPayload(parsed);
+        const normalized = sanitizeTelemetryPayload(parsed, {}, {
+          persistedAudienceReasons: parsed?.audienceReasons,
+        });
         return {
           ...normalized,
           receivedAt: pickFirstText(parsed.receivedAt, parsed.timestamp) || normalized.receivedAt,
@@ -994,6 +1042,9 @@ function getTelemetrySummary(feedbackDir, options = {}) {
   let ctaClicks = 0;
   let ctaImpressions = 0;
   let checkoutStarts = 0;
+  let qualifiedCancelPageViews = 0;
+  const checkoutStartCandidates = [];
+  const visitorWebEventCounts = new Map();
   let diagnosticCheckoutStarts = 0;
   let checkoutInterstitialViews = 0;
   let checkoutBotDeflections = 0;
@@ -1046,6 +1097,9 @@ function getTelemetrySummary(feedbackDir, options = {}) {
       webEvents += 1;
       const visitorKey = pickFirstText(entry.visitorId, entry.installId, entry.sessionId);
       if (visitorKey) webVisitors.add(visitorKey);
+      if (visitorKey) {
+        visitorWebEventCounts.set(visitorKey, (visitorWebEventCounts.get(visitorKey) || 0) + 1);
+      }
       if (entry.sessionId) webSessions.add(entry.sessionId);
       if (entry.visitorId) webEventsWithVisitorId += 1;
       if (entry.sessionId) webEventsWithSessionId += 1;
@@ -1110,6 +1164,9 @@ function getTelemetrySummary(feedbackDir, options = {}) {
 
       if (isCheckoutStartEvent(entry.eventType || entry.event)) {
         checkoutStarts += 1;
+        if ((entry.audience || 'external') === 'external') {
+          checkoutStartCandidates.push(entry);
+        }
         if ((entry.eventType || entry.event) === 'diagnostic_checkout_confirmed') {
           diagnosticCheckoutStarts += 1;
         }
@@ -1147,6 +1204,9 @@ function getTelemetrySummary(feedbackDir, options = {}) {
 
       if ((entry.eventType || entry.event) === 'checkout_cancel_page_view') {
         checkoutCancelPageViews += 1;
+        if ((entry.audience || 'external') === 'external') {
+          qualifiedCancelPageViews += 1;
+        }
       }
 
       if ((entry.eventType || entry.event) === 'checkout_paid_confirmed') {
@@ -1335,6 +1395,7 @@ function getTelemetrySummary(feedbackDir, options = {}) {
       pageViews,
       ctaClicks,
       checkoutStarts,
+      qualifiedCheckoutStarts: countNonBurstCheckoutStarts(checkoutStartCandidates, visitorWebEventCounts),
       diagnosticCheckoutStarts,
       checkoutInterstitialViews,
       checkoutBotDeflections,
@@ -1349,6 +1410,7 @@ function getTelemetrySummary(feedbackDir, options = {}) {
       checkoutAbandoned,
       checkoutSuccessPageViews,
       checkoutCancelPageViews,
+      qualifiedCancelPageViews,
       checkoutPaidConfirmations,
       checkoutPending,
       checkoutLookupFailures,
@@ -1448,6 +1510,63 @@ function getTopCounterEntry(counter) {
     .sort((a, b) => b[1] - a[1])[0] || null;
 }
 
+function countNonBurstCheckoutStarts(entries = [], visitorWebEventCounts = new Map()) {
+  if (entries.length < 2) return entries.length;
+  const buckets = new Map();
+  const timedRows = [];
+  entries.forEach((entry, idx) => {
+    const ms = Date.parse(entry.receivedAt || entry.timestamp || '');
+    if (!Number.isFinite(ms)) return;
+    const identity = pickFirstText(
+      entry.visitorId,
+      entry.sessionId,
+      entry.acquisitionId,
+      entry.installId && entry.installId !== 'unknown' ? entry.installId : null
+    ) || '__anon__';
+    const ctaId = entry.ctaId || entry.linkSlug || entry.page || '';
+    const totalEvents = identity === '__anon__' ? 0 : (visitorWebEventCounts.get(identity) || 0);
+    const row = { idx, ms, identity, ctaId, totalEvents };
+    if (!buckets.has(identity)) buckets.set(identity, []);
+    buckets.get(identity).push(row);
+    timedRows.push(row);
+  });
+  const excluded = new Set();
+  for (const [identity, rows] of buckets.entries()) {
+    if (rows.length < 3) continue;
+    rows.sort((a, b) => a.ms - b.ms);
+    for (let i = 0; i < rows.length; i += 1) {
+      const cluster = [rows[i]];
+      for (let j = i + 1; j < rows.length; j += 1) {
+        if (rows[j].ms - rows[i].ms > 60 * 1000) break;
+        cluster.push(rows[j]);
+      }
+      const distinctTargets = new Set(cluster.map((row) => row.ctaId).filter(Boolean));
+      if (cluster.length >= 3 && (distinctTargets.size >= 2 || identity === '__anon__')) {
+        for (const row of cluster) excluded.add(row.idx);
+      }
+    }
+  }
+  const ephemeralRows = timedRows
+    .filter((row) => (
+      !excluded.has(row.idx) &&
+      row.totalEvents <= 1 &&
+      (buckets.get(row.identity)?.length || 0) <= 1
+    ))
+    .sort((a, b) => a.ms - b.ms);
+  for (let i = 0; i < ephemeralRows.length; i += 1) {
+    const sweep = [ephemeralRows[i]];
+    for (let j = i + 1; j < ephemeralRows.length; j += 1) {
+      if (ephemeralRows[j].ms - ephemeralRows[i].ms > 60 * 1000) break;
+      sweep.push(ephemeralRows[j]);
+    }
+    const distinctTargets = new Set(sweep.map((row) => row.ctaId).filter(Boolean));
+    if (sweep.length >= 3 && distinctTargets.size >= 3) {
+      for (const row of sweep) excluded.add(row.idx);
+    }
+  }
+  return entries.length - excluded.size;
+}
+
 function getTelemetryAnalytics(feedbackDir, options = {}) {
   const summary = getTelemetrySummary(feedbackDir, options);
   const topSource = getTopCounterEntry(summary.marketing.pageViewsBySource);
@@ -1520,6 +1639,7 @@ function getTelemetryAnalytics(feedbackDir, options = {}) {
     ctas: {
       totalClicks: summary.web.ctaClicks,
       checkoutStarts: summary.web.checkoutStarts,
+      qualifiedCheckoutStarts: summary.web.qualifiedCheckoutStarts,
       diagnosticCheckoutStarts: summary.web.diagnosticCheckoutStarts,
       checkoutInterstitialViews: summary.web.checkoutInterstitialViews,
       checkoutBotDeflections: summary.web.checkoutBotDeflections,
@@ -1536,6 +1656,7 @@ function getTelemetryAnalytics(feedbackDir, options = {}) {
       ctaImpressions: summary.web.ctaImpressions,
       successPageViews: summary.web.checkoutSuccessPageViews,
       cancelPageViews: summary.web.checkoutCancelPageViews,
+      qualifiedCancelPageViews: summary.web.qualifiedCancelPageViews,
       paidConfirmations: summary.web.checkoutPaidConfirmations,
       sessionPending: summary.web.checkoutPending,
       lookupFailures: summary.web.checkoutLookupFailures,

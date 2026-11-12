@@ -3464,11 +3464,13 @@ async function serveTrackedLinkRedirect({ req, res, parsed, hostedConfig, isHead
 
   const { FEEDBACK_DIR } = getFeedbackPaths();
   const journeyState = resolveJourneyState(req, parsed);
+  const isProbeQuery = isSyntheticProbeQuery(parsed);
   const requesterClassification = classifyRequester(req.headers);
-  let botClassification = requesterClassification.isBot
-    || isHumanCheckoutNavigation(req.headers, hostedConfig.appOrigin)
-    ? requesterClassification
-    : { isBot: true, reason: 'no_browser_navigation' };
+  let botClassification = isProbeQuery
+    ? { isBot: true, reason: 'synthetic_probe_query' }
+    : (requesterClassification.isBot || isHumanCheckoutNavigation(req.headers, hostedConfig.appOrigin)
+      ? requesterClassification
+      : { isBot: true, reason: 'no_browser_navigation' });
   if (
     target.botDeflectPath
     && !botClassification.isBot
@@ -3477,8 +3479,9 @@ async function serveTrackedLinkRedirect({ req, res, parsed, hostedConfig, isHead
   ) {
     botClassification = { isBot: true, reason: 'rapid_multi_checkout' };
   }
-  if (target.botDeflectPath && botClassification.isBot) {
-    const deflectUrl = new URL(target.botDeflectPath, hostedConfig.appOrigin);
+  const deflectPath = target.botDeflectPath || (isProbeQuery && target.external ? '/checkout/pro' : null);
+  if (deflectPath && botClassification.isBot) {
+    const deflectUrl = new URL(deflectPath, hostedConfig.appOrigin);
     appendTrackedLinkQueryParams(deflectUrl, parsed, target);
     if (!isHeadRequest) {
       appendBestEffortTelemetry(
@@ -3529,7 +3532,20 @@ async function serveTrackedLinkRedirect({ req, res, parsed, hostedConfig, isHead
         res.end();
         return;
       }
-    } catch {
+    } catch (err) {
+      if (err && err.code === 'AUTOMATED_CHECKOUT_BLOCKED') {
+        const deflectUrl = new URL(target.botDeflectPath || '/checkout/pro', hostedConfig.appOrigin);
+        appendTrackedLinkQueryParams(deflectUrl, parsed, target);
+        res.writeHead(302, {
+          ...(journeyState.setCookieHeaders.length ? { 'Set-Cookie': journeyState.setCookieHeaders } : {}),
+          'Cache-Control': 'no-store',
+          'X-Robots-Tag': 'noindex,nofollow',
+          'X-ThumbGate-Link-Slug': target.slug,
+          Location: deflectUrl.toString(),
+        });
+        res.end();
+        return;
+      }
       // Fall back cleanly to static Payment Link if dynamic session creation fails
     }
   }
