@@ -748,8 +748,8 @@
         <a href="#how-it-works">How it works</a>
         <a href="#offers">Pricing</a>
         <a href="#proof">Proof</a>
-        <button type="button" id="navPaidLoginBtn" data-cta-id="nav_paid_login" aria-expanded="false" aria-controls="paidLoginBar" onclick="window.tgTogglePaidLogin()" style="display:inline-flex;align-items:center;min-height:38px;padding:8px 13px;border-radius:8px;border:1px solid rgba(56,215,255,0.45);background:rgba(56,215,255,0.08);color:var(--cyan);font:800 13px/1 inherit;">Log in</button>
-        <a id="navPaidDashboardLink" href="/dashboard" data-cta-id="nav_paid_dashboard" style="display:none;align-items:center;min-height:38px;padding:8px 13px;border-radius:8px;border:1px solid rgba(86,227,159,0.45);background:rgba(86,227,159,0.12);color:var(--green);font:800 13px/1 inherit;text-decoration:none;">Dashboard →</a>
+        <button type="button" id="navPaidLoginBtn" data-cta-id="nav_paid_login" aria-expanded="false" aria-controls="paidLoginBar" onclick="window.tgTogglePaidLogin()" style="display:inline-flex;align-items:center;min-height:44px;min-width:44px;padding:8px 13px;border-radius:8px;border:1px solid rgba(56,215,255,0.45);background:rgba(56,215,255,0.08);color:var(--cyan);font:800 13px/1 inherit;">Log in</button>
+        <a id="navPaidDashboardLink" href="/dashboard" data-cta-id="nav_paid_dashboard" style="display:none;align-items:center;min-height:44px;min-width:44px;padding:8px 13px;border-radius:8px;border:1px solid rgba(86,227,159,0.45);background:rgba(86,227,159,0.12);color:var(--green);font:800 13px/1 inherit;text-decoration:none;">Dashboard →</a>
         <a class="nav-buy" href="#install" data-cta-id="nav_install_free">Install free</a>
       </div>
     </div>
@@ -761,10 +761,10 @@
           <span id="paidLoginStatus" style="font-size:12px;color:var(--muted);"></span>
         </div>
         <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
-          <input type="password" id="paidLoginKeyInput" placeholder="Paste Pro / API key (tg_...)" aria-label="ThumbGate Pro or API key" autocomplete="off" style="min-height:36px;padding:0 12px;border-radius:8px;border:1px solid var(--cyan);background:#080b10;color:var(--text);font-size:13px;width:240px;" onkeydown="if(event.key==='Enter'){event.preventDefault();window.tgSubmitPaidLogin();}" />
-          <button type="button" id="paidLoginSubmitBtn" onclick="window.tgSubmitPaidLogin()" style="min-height:36px;padding:0 14px;border-radius:8px;border:0;background:var(--cyan);color:#041016;font:800 12px/1 inherit;cursor:pointer;">Unlock</button>
-          <a href="/dashboard" style="font-size:12px;font-weight:700;color:var(--muted);text-decoration:none;padding:0 6px;">Dashboard</a>
-          <button type="button" onclick="window.tgTogglePaidLogin(false)" aria-label="Close login bar" style="min-height:36px;padding:0 10px;border-radius:8px;border:1px solid var(--line);background:transparent;color:var(--muted);font:700 12px/1 inherit;cursor:pointer;">✕</button>
+          <input type="password" id="paidLoginKeyInput" placeholder="Paste Pro / API key (tg_...)" aria-label="ThumbGate Pro or API key" autocomplete="off" style="min-height:44px;min-width:44px;padding:0 12px;border-radius:8px;border:1px solid var(--cyan);background:#080b10;color:var(--text);font-size:13px;width:240px;" onkeydown="if(event.key==='Enter'){event.preventDefault();window.tgSubmitPaidLogin();}" />
+          <button type="button" id="paidLoginSubmitBtn" onclick="window.tgSubmitPaidLogin()" style="min-height:44px;min-width:44px;padding:0 14px;border-radius:8px;border:0;background:var(--cyan);color:#041016;font:800 12px/1 inherit;cursor:pointer;">Unlock</button>
+          <a href="/dashboard" style="display:inline-flex;align-items:center;min-height:44px;min-width:44px;font-size:12px;font-weight:700;color:var(--muted);text-decoration:none;padding:0 8px;">Dashboard</a>
+          <button type="button" onclick="window.tgTogglePaidLogin(false)" aria-label="Close login bar" style="min-height:44px;min-width:44px;padding:0 12px;border-radius:8px;border:1px solid var(--line);background:transparent;color:var(--muted);font:700 12px/1 inherit;cursor:pointer;">✕</button>
         </div>
       </div>
     </div>

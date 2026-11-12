@@ -5423,6 +5423,31 @@ function mergeContextStrings(...ctxs) {
   return ctxs.filter((c) => typeof c === 'string' && c.length > 0).join('\n\n') || null;
 }
 
+function buildDesignSelfCorrectionContext(toolName, toolInput = {}) {
+  try {
+    const filePath = String(toolInput.file_path || toolInput.filePath || '').trim();
+    const hasVisual = Array.isArray(toolInput.visualFindings) && toolInput.visualFindings.length > 0;
+    const isUiFile = /\.(?:html?|jsx|tsx|css)$/i.test(filePath);
+    if (!hasVisual && (!EDIT_LIKE_TOOLS.has(toolName) || !isUiFile)) return null;
+    const source = String(toolInput.content ?? toolInput.new_string ?? toolInput.sourceCode ?? '');
+    if (!source && !hasVisual) return null;
+    if (source.length > 262144) return null;
+    const { inspectAndPatchDesignSource } = require('../src/openshell-lovable-engine');
+    const report = inspectAndPatchDesignSource(source, {
+      filePath: filePath || null,
+      visualFindings: toolInput.visualFindings,
+    });
+    if (!report || report.issueCount === 0) return null;
+    const lines = report.patches.slice(0, 5).map((p) => {
+      const tw = p.tailwindPatch?.add?.length ? ` | Tailwind +[${p.tailwindPatch.add.join(' ')}]` : '';
+      return `  • [${p.type}] ${p.selector || p.astPath}: CSS { ${p.cssOverride} }${tw}`;
+    });
+    return `[ThumbGate Active Design Engine] ${report.issueCount} layout/AST optimization(s) auto-synthesized:\n${lines.join('\n')}`;
+  } catch {
+    return null;
+  }
+}
+
 async function runAsync(input) {
   const { hardFloor, securityScan } = evaluateUnconditionalHardFloor(input);
   if (hardFloor) return formatOutput(hardFloor);
@@ -5465,7 +5490,8 @@ async function runAsync(input) {
   if (financialAuthorization) return formatOutput(financialAuthorization);
   
   const recentContext = buildRecentCorrectiveActionsContext();
-  const combinedContext = mergeContextStrings(lessonContext, recentContext, behavioralContext);
+  const designContext = safeSecretStorageWrite ? null : buildDesignSelfCorrectionContext(toolName, toolInput);
+  const combinedContext = mergeContextStrings(lessonContext, recentContext, behavioralContext, designContext);
   return formatOutput(posturedResult, combinedContext);
 
 }
@@ -5512,7 +5538,8 @@ function run(input) {
   if (financialAuthorization) return formatOutput(financialAuthorization);
   
   const recentContext = buildRecentCorrectiveActionsContext();
-  const combinedContext = mergeContextStrings(lessonContext, recentContext, behavioralContext);
+  const designContext = safeSecretStorageWrite ? null : buildDesignSelfCorrectionContext(toolName, toolInput);
+  const combinedContext = mergeContextStrings(lessonContext, recentContext, behavioralContext, designContext);
   return formatOutput(posturedResult, combinedContext);
 
 }
