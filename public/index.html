@@ -193,6 +193,7 @@
     .nav-links { display: flex; align-items: center; gap: 24px; }
     .nav-links > a { color: var(--muted); text-decoration: none; font-size: 14px; font-weight: 700; }
     .nav-links > a:hover { color: var(--text); }
+    #paidLoginSsoButtons:empty { display: none !important; }
     .nav-buy, .button-primary, .button-pro {
       display: inline-flex;
       align-items: center;
@@ -753,21 +754,18 @@
         <a class="nav-buy" href="#install" data-cta-id="nav_install_free">Install free</a>
       </div>
     </div>
-    <div id="paidLoginBar" hidden style="border-top:1px solid var(--line);background:rgba(12,17,26,0.98);padding:12px 0;">
-      <div class="shell" style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;">
-        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
-          <strong style="font-size:13px;color:var(--text);">Sign in</strong>
-          <!-- __LANDING_SSO_BUTTONS__ -->
+    <div id="paidLoginBar" hidden style="border-top:1px solid var(--line);background:rgba(12,17,26,0.98);padding:14px 0;">
+      <div class="shell" style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap;">
+        <div style="display:flex;flex-direction:column;align-items:flex-start;gap:8px;min-width:240px;">
+          <div id="paidLoginSsoButtons" style="display:flex;flex-direction:column;gap:8px;width:240px;max-width:100%;"><!-- __LANDING_SSO_BUTTONS__ --></div>
+          <a href="#paidLoginKeyPanel" id="paidLoginKeyToggle" aria-expanded="false" aria-controls="paidLoginKeyPanel" onclick="event.preventDefault();window.tgTogglePaidKeyBox()" style="font-size:12px;color:var(--muted);text-decoration:underline;cursor:pointer;">Have a Pro license key?</a>
+          <div id="paidLoginKeyPanel" hidden style="display:none;align-items:center;gap:8px;flex-wrap:wrap;">
+            <input type="password" id="paidLoginKeyInput" placeholder="Paste Pro / API key (tg_...)" aria-label="ThumbGate Pro or API key" autocomplete="off" style="min-height:44px;min-width:44px;padding:0 12px;border-radius:8px;border:1px solid var(--cyan);background:#080b10;color:var(--text);font-size:13px;width:240px;" onkeydown="if(event.key==='Enter'){event.preventDefault();window.tgSubmitPaidLogin();}" />
+            <button type="button" id="paidLoginSubmitBtn" onclick="window.tgSubmitPaidLogin()" style="min-height:44px;min-width:44px;padding:0 14px;border-radius:8px;border:0;background:var(--cyan);color:#041016;font:800 12px/1 inherit;cursor:pointer;">Unlock</button>
+          </div>
           <span id="paidLoginStatus" style="font-size:12px;color:var(--muted);"></span>
         </div>
-        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
-          <details id="paidLoginKeyDetails" open style="display:inline-block;">
-            <summary id="paidLoginKeySummary" style="display:inline-flex;align-items:center;min-height:44px;min-width:44px;padding:0 10px;border-radius:8px;border:1px solid var(--line);cursor:pointer;font-size:12px;font-weight:700;color:var(--muted);user-select:none;">CLI / CI API key</summary>
-            <div style="display:inline-flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:6px;">
-              <input type="password" id="paidLoginKeyInput" placeholder="Headless CLI / CI key (tg_...)" aria-label="ThumbGate CLI or CI API key" autocomplete="off" style="min-height:44px;min-width:44px;padding:0 12px;border-radius:8px;border:1px solid var(--cyan);background:#080b10;color:var(--text);font-size:13px;width:230px;" onkeydown="if(event.key==='Enter'){event.preventDefault();window.tgSubmitPaidLogin();}" />
-              <button type="button" id="paidLoginSubmitBtn" onclick="window.tgSubmitPaidLogin()" style="min-height:44px;min-width:44px;padding:0 14px;border-radius:8px;border:0;background:var(--cyan);color:#041016;font:800 12px/1 inherit;cursor:pointer;">Unlock</button>
-            </div>
-          </details>
+        <div style="display:flex;align-items:center;gap:8px;">
           <a href="/dashboard" style="display:inline-flex;align-items:center;min-height:44px;min-width:44px;font-size:12px;font-weight:700;color:var(--muted);text-decoration:none;padding:0 8px;">Dashboard</a>
           <button type="button" onclick="window.tgTogglePaidLogin(false)" aria-label="Close login bar" style="min-height:44px;min-width:44px;padding:0 12px;border-radius:8px;border:1px solid var(--line);background:transparent;color:var(--muted);font:700 12px/1 inherit;cursor:pointer;">✕</button>
         </div>
@@ -1515,6 +1513,8 @@ next      decision recorded before execution</pre>
     var loginBar = document.getElementById('paidLoginBar');
     var loginBtn = document.getElementById('navPaidLoginBtn');
     var dashLink = document.getElementById('navPaidDashboardLink');
+    var keyPanel = document.getElementById('paidLoginKeyPanel');
+    var keyToggle = document.getElementById('paidLoginKeyToggle');
     var keyInput = document.getElementById('paidLoginKeyInput');
     var statusEl = document.getElementById('paidLoginStatus');
     var loginSubmitting = false;
@@ -1529,23 +1529,41 @@ next      decision recorded before execution</pre>
         }
       } catch (e) {}
     }
+    window.tgTogglePaidKeyBox = function (forceOpen) {
+      if (!keyPanel) return;
+      var open = typeof forceOpen === 'boolean' ? forceOpen : keyPanel.hasAttribute('hidden');
+      if (open) {
+        keyPanel.removeAttribute('hidden');
+        keyPanel.style.display = 'flex';
+        if (keyToggle) keyToggle.setAttribute('aria-expanded', 'true');
+        if (keyInput) keyInput.focus();
+      } else {
+        keyPanel.setAttribute('hidden', '');
+        keyPanel.style.display = 'none';
+        if (keyToggle) keyToggle.setAttribute('aria-expanded', 'false');
+      }
+    };
     window.tgTogglePaidLogin = function (forceOpen) {
       if (!loginBar) return;
       var open = typeof forceOpen === 'boolean' ? forceOpen : loginBar.hasAttribute('hidden');
       if (open) {
         loginBar.removeAttribute('hidden');
         if (loginBtn) loginBtn.setAttribute('aria-expanded', 'true');
-        var keyDetails = document.getElementById('paidLoginKeyDetails');
-        if (keyInput && (!keyDetails || keyDetails.open)) keyInput.focus();
+        window.tgTogglePaidKeyBox(false);
+        var ssoWrap = document.getElementById('paidLoginSsoButtons');
+        var primarySso = (ssoWrap && ssoWrap.querySelector('a')) || keyToggle;
+        if (primarySso) primarySso.focus();
       } else {
         loginBar.setAttribute('hidden', '');
         if (loginBtn) loginBtn.setAttribute('aria-expanded', 'false');
+        window.tgTogglePaidKeyBox(false);
       }
     };
     window.tgSubmitPaidLogin = async function () {
       if (loginSubmitting) return;
       var key = keyInput ? String(keyInput.value || '').trim() : '';
       if (!key) {
+        window.tgTogglePaidKeyBox(true);
         if (statusEl) { statusEl.style.color = 'var(--red)'; statusEl.textContent = 'Paste your THUMBGATE_API_KEY or Pro key first.'; }
         if (keyInput) keyInput.focus();
         return;
