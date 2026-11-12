@@ -64,3 +64,90 @@ test('high traffic pages load buyer intent conversion assist', () => {
     assert.match(html, /<script src="\/js\/buyer-intent\.js"><\/script>/, relativePath);
   }
 });
+
+test('revenue assist popup checks /v1/auth/session (credentials: include) and stays hidden for Pro and Enterprise sessions', async () => {
+  const vm = require('node:vm');
+
+  async function runRevenueAssistWithSession(sessionResponse, { status = 200, throwErr = false } = {}) {
+    const appended = [];
+    const fetchCalls = [];
+    const tracked = [];
+    const makeEl = (tag) => ({
+      tagName: String(tag).toUpperCase(),
+      id: '',
+      textContent: '',
+      innerHTML: '',
+      attrs: {},
+      setAttribute(k, v) { this.attrs[k] = v; },
+      getAttribute(k) { return this.attrs[k]; },
+      querySelectorAll() { return []; },
+      querySelector() { return null; },
+      addEventListener() {},
+      remove() {
+        const idx = appended.indexOf(this);
+        if (idx >= 0) appended.splice(idx, 1);
+      },
+    });
+    const doc = {
+      readyState: 'loading',
+      head: { appendChild() {} },
+      body: { appendChild(el) { appended.push(el); } },
+      getElementById() { return null; },
+      createElement: makeEl,
+      querySelector(sel) {
+        if (sel === '[data-thumbgate-revenue-assist]') {
+          return appended.find((el) => el.attrs['data-thumbgate-revenue-assist']) || null;
+        }
+        return null;
+      },
+      querySelectorAll(sel) {
+        if (sel.includes('data-thumbgate-revenue-assist')) {
+          return appended.filter((el) => el.attrs['data-thumbgate-revenue-assist']);
+        }
+        return [];
+      },
+      addEventListener() {},
+    };
+    const sandbox = {
+      location: { origin: 'https://thumbgate.ai', pathname: '/lessons' },
+      document: doc,
+      plausible(eventName) { tracked.push(eventName); },
+      fetch: async (url, opts) => {
+        fetchCalls.push({ url, opts });
+        if (throwErr) throw new Error('network error');
+        return { ok: status >= 200 && status < 300, status, json: async () => sessionResponse };
+      },
+      URL,
+      URLSearchParams,
+      setTimeout: () => 1,
+      clearTimeout: () => {},
+      addEventListener() {},
+    };
+    sandbox.globalThis = sandbox;
+    vm.runInNewContext(BUYER_INTENT, sandbox);
+    const result = await sandbox.ThumbGateBuyerIntent.initializeRevenueAssist({ pathname: '/lessons' });
+    return { result, appended, fetchCalls, tracked };
+  }
+
+  const proRun = await runRevenueAssistWithSession({ ok: true, authenticated: true, tier: 'Pro' });
+  assert.equal(proRun.result, null);
+  assert.equal(proRun.appended.length, 0, 'Pro session must never render revenue assist popup');
+  assert.deepEqual(proRun.tracked, [], 'Pro session must not fire assist_cta_impression');
+  assert.equal(proRun.fetchCalls[0].url, '/v1/auth/session');
+  assert.equal(proRun.fetchCalls[0].opts.credentials, 'include');
+
+  const entRun = await runRevenueAssistWithSession({ ok: true, authenticated: true, tier: 'Enterprise' });
+  assert.equal(entRun.result, null);
+  assert.equal(entRun.appended.length, 0, 'Enterprise session must never render revenue assist popup');
+
+  const freeRun = await runRevenueAssistWithSession({ ok: true, authenticated: true, tier: 'Free' });
+  assert.ok(freeRun.result && freeRun.result.panel, 'Free session still renders revenue assist popup');
+  assert.equal(freeRun.appended.length, 1);
+
+  const anonRun = await runRevenueAssistWithSession({ ok: true, authenticated: false, tier: null });
+  assert.ok(anonRun.result && anonRun.result.panel, 'Anonymous visitor still renders revenue assist popup');
+  assert.equal(anonRun.appended.length, 1);
+
+  const offlineRun = await runRevenueAssistWithSession(null, { throwErr: true });
+  assert.ok(offlineRun.result && offlineRun.result.panel, 'Session fetch failure degrades gracefully for anonymous visitors');
+});

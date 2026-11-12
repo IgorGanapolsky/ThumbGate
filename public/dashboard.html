@@ -39,13 +39,16 @@
 html{scroll-behavior:smooth}
 body{font-family:var(--font);background:var(--bg);color:var(--text);line-height:1.6;-webkit-font-smoothing:antialiased}
 .container{max-width:1060px;margin:0 auto;padding:0 24px}
-nav{position:sticky;top:0;z-index:50;background:rgba(10,10,11,0.85);backdrop-filter:blur(12px);border-bottom:1px solid var(--border);padding:14px 0}
-nav .container{display:flex;justify-content:space-between;align-items:center}
-.nav-logo{font-weight:700;font-size:15px;color:var(--text);text-decoration:none;display:inline-flex;align-items:center;gap:8px}
-.nav-logo .logo-mark{width:28px;height:28px;display:block}
-.nav-links{display:flex;gap:16px;align-items:center}
-.nav-links a{color:var(--text-muted);text-decoration:none;font-size:13px}
+nav{position:sticky;top:0;z-index:50;background:rgba(8,11,16,0.88);backdrop-filter:blur(16px);border-bottom:1px solid rgba(39,50,70,0.75);padding:8px 0}
+nav .container{min-height:48px;display:flex;justify-content:space-between;align-items:center;gap:12px}
+.nav-logo{min-height:44px;font-weight:850;font-size:15px;letter-spacing:-0.02em;color:var(--text);text-decoration:none;display:inline-flex;align-items:center;gap:8px;white-space:nowrap;flex-shrink:0}
+.nav-logo .logo-mark{width:28px;height:28px;display:block;flex-shrink:0}
+.nav-links{display:flex;gap:6px;align-items:center;flex-wrap:nowrap}
+.nav-links a{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:0 12px;border-radius:999px;border:1px solid transparent;color:#9eb0c7;text-decoration:none;font-size:13px;font-weight:700;white-space:nowrap}
 .nav-links a:hover{color:var(--text)}
+.nav-links a.active{color:var(--text);background:rgba(34,211,238,0.12);border-color:rgba(34,211,238,0.32)}
+.nav-links a.nav-icon{width:44px;padding:0}
+@media(max-width:640px){nav .container{padding:0 14px;gap:8px}.nav-links{gap:4px}.nav-links a{padding:0 10px;font-size:13px}.nav-links a.nav-icon{width:44px;padding:0}}
 .auth-bar{padding:24px 0;border-bottom:1px solid var(--border);margin-bottom:32px}
 .auth-bar .container{display:flex;flex-direction:column;gap:12px;align-items:flex-start}
 #dashboardSsoButtons:empty{display:none!important}
@@ -187,14 +190,13 @@ h2{font-size:20px;font-weight:700;margin-bottom:16px;letter-spacing:-.02em}
 </head>
 <body data-revenue-assist="off">
 
-<nav>
+<nav aria-label="Primary navigation">
   <div class="container">
-    <a href="/" class="nav-logo"><img src="/assets/brand/thumbgate-mark-inline-v3.svg" alt="ThumbGate" class="logo-mark" width="28" height="28"><span class="logo-text">ThumbGate Dashboard</span></a>
+    <a href="/" class="nav-logo" aria-label="ThumbGate home"><img src="/assets/brand/thumbgate-mark-inline-v3.svg" alt="" class="logo-mark" width="28" height="28"><span class="logo-text">ThumbGate</span></a>
     <div class="nav-links">
-      <a href="/dashboard" class="active" style="color:var(--cyan);">Dashboard</a>
+      <a href="/dashboard" class="active" aria-current="page">Dashboard</a>
       <a href="/lessons">Lessons</a>
-      <a href="/">Landing Page</a>
-      <a href="https://github.com/IgorGanapolsky/ThumbGate" target="_blank" rel="noopener">GitHub</a>
+      <a href="https://github.com/IgorGanapolsky/ThumbGate" class="nav-icon" target="_blank" rel="noopener" aria-label="GitHub" title="GitHub"><svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8a8 8 0 0 0 5.47 7.59c.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82a7.5 7.5 0 0 1 4 0c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8Z"/></svg></a>
     </div>
   </div>
 </nav>
@@ -1034,6 +1036,11 @@ async function connect(options) {
   }
   var isEnterprise = opts.tier === 'Enterprise' || API_KEY.startsWith('tg_op_') || API_KEY.startsWith('tg_creator_');
   var tierName = isEnterprise ? 'Enterprise' : 'Pro';
+  if ((opts.cookieSession && (opts.tier === 'Pro' || opts.tier === 'Enterprise')) || opts.localPro) {
+    syncAuthBarVisibility('signed_in', { localPro: Boolean(opts.localPro) });
+    var earlyBanner = document.getElementById('demoBanner');
+    if (earlyBanner) earlyBanner.style.display = 'none';
+  }
 
   const status = document.getElementById('authStatus');
   const btn = document.getElementById('connectBtn');
@@ -1123,11 +1130,12 @@ async function connect(options) {
   } catch (e) {
     status.className = 'auth-status err';
     status.textContent = '✗ ' + e.message;
+    const isPaidCookie = Boolean(opts.cookieSession && (opts.tier === 'Pro' || opts.tier === 'Enterprise'));
     const titleEl = document.getElementById('authTitle');
-    if (titleEl) {
+    if (titleEl && !isPaidCookie) {
       titleEl.textContent = 'Sign in to ThumbGate';
     }
-    syncAuthBarVisibility('signed_out');
+    syncAuthBarVisibility(isPaidCookie ? 'signed_in' : 'signed_out', { localPro: Boolean(opts.localPro) });
     if (opts.localPro) {
       toggleLicenseKeyBox(true);
       document.getElementById('authHelp').textContent = `Local ${tierName} bootstrap failed. Paste your THUMBGATE_API_KEY manually or retry the local launcher.`;
@@ -1212,7 +1220,8 @@ function renderStats(data) {
     activeGates: gateCount != null ? gateCount : 0,
   });
   var firstBlocked = overview.firstBlockRecorded != null ? Boolean(overview.firstBlockRecorded) : (Number(gs.blocked) > 0 || Number(gs.blockedToday) > 0);
-  renderUpNext(overview.upNext || null, firstBlocked);
+  var paidUpNext = overview.upNext ? Object.assign({}, overview.upNext, { detail: String(overview.upNext.detail || '').replace(' on the Free tier (7-day local Pro trial included)', '') }) : { title: DEFAULT_FINISH_SETUP_BAR.title, detail: DEFAULT_FINISH_SETUP_BAR.detail.replace(' on the Free tier (7-day local Pro trial included)', ''), actionLabel: DEFAULT_FINISH_SETUP_BAR.actionLabel, actionHref: DEFAULT_FINISH_SETUP_BAR.actionHref };
+  renderUpNext(paidUpNext, firstBlocked);
   if (overview.lessonStorage) renderLessonStorageFooter(overview.lessonStorage);
 }
 
@@ -2595,7 +2604,7 @@ window.addEventListener('DOMContentLoaded', function() {
       errStatus.textContent = '✗ Sign-in failed (' + ssoErr + ')';
     }
   }
-  fetch('/v1/auth/session', { credentials: 'same-origin' })
+  fetch('/v1/auth/session', { credentials: 'include' })
     .then(function(res) { return res.ok ? res.json() : null; })
     .then(function(session) {
       if (session && session.authenticated) {

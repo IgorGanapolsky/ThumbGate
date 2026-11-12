@@ -4238,6 +4238,19 @@ function formatLessonTextValue(value) {
   return parsed ? JSON.stringify(parsed, null, 2) : value;
 }
 
+function renderSignedInAppNav({ activeTab = 'dashboard' } = {}) {
+  const dashActive = activeTab === 'dashboard' ? ' class="active" aria-current="page"' : '';
+  const lessonsActive = activeTab === 'lessons' ? ' class="active" aria-current="page"' : '';
+  return `<nav aria-label="Primary navigation"><div class="container">
+  <a href="/" class="nav-logo" aria-label="ThumbGate home"><img src="/assets/brand/thumbgate-mark-inline-v3.svg" alt="" class="logo-mark" width="28" height="28"><span class="logo-text">ThumbGate</span></a>
+  <div class="nav-links">
+    <a href="/dashboard"${dashActive}>Dashboard</a>
+    <a href="/lessons"${lessonsActive}>Lessons</a>
+    <a href="https://github.com/IgorGanapolsky/ThumbGate" class="nav-icon" target="_blank" rel="noopener" aria-label="GitHub" title="GitHub"><svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8a8 8 0 0 0 5.47 7.59c.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82a7.5 7.5 0 0 1 4 0c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8Z"/></svg></a>
+  </div>
+</div></nav>`;
+}
+
 function renderLessonDetailHtml(record, lessonId) {
   if (!record) {
     return `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Lesson Not Found</title>
@@ -4434,13 +4447,16 @@ a{color:#22d3ee;text-decoration:none}</style></head><body>
 }
 body { font-family: var(--font); background: var(--bg); color: var(--text); line-height: 1.6; -webkit-font-smoothing: antialiased; }
 .container { max-width: 860px; margin: 0 auto; padding: 0 24px; }
-nav { position: sticky; top: 0; z-index: 50; background: rgba(10,10,11,0.85); backdrop-filter: blur(12px); border-bottom: 1px solid var(--border); padding: 14px 0; }
-nav .container { display: flex; justify-content: space-between; align-items: center; }
-.nav-logo { font-weight: 700; font-size: 15px; color: var(--text); text-decoration: none; display: inline-flex; align-items: center; gap: 8px; }
-.nav-logo .logo-mark { width: 28px; height: 28px; display: block; }
-.nav-links { display: flex; gap: 16px; align-items: center; }
-.nav-links a { color: var(--text-muted); text-decoration: none; font-size: 13px; }
+nav { position: sticky; top: 0; z-index: 50; background: rgba(8,11,16,0.88); backdrop-filter: blur(16px); border-bottom: 1px solid rgba(39,50,70,0.75); padding: 8px 0; }
+nav .container { min-height: 48px; display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+.nav-logo { min-height: 44px; font-weight: 850; font-size: 15px; letter-spacing: -0.02em; color: var(--text); text-decoration: none; display: inline-flex; align-items: center; gap: 8px; white-space: nowrap; flex-shrink: 0; }
+.nav-logo .logo-mark { width: 28px; height: 28px; display: block; flex-shrink: 0; }
+.nav-links { display: flex; gap: 6px; align-items: center; flex-wrap: nowrap; }
+.nav-links a { display: inline-flex; align-items: center; justify-content: center; min-height: 44px; padding: 0 12px; border-radius: 999px; border: 1px solid transparent; color: #9eb0c7; text-decoration: none; font-size: 13px; font-weight: 700; white-space: nowrap; }
 .nav-links a:hover { color: var(--text); }
+.nav-links a.active { color: var(--text); background: rgba(34,211,238,0.12); border-color: rgba(34,211,238,0.32); }
+.nav-links a.nav-icon { width: 44px; padding: 0; }
+@media (max-width: 640px) { nav .container { padding: 0 14px; gap: 8px; } .nav-links { gap: 4px; } .nav-links a { padding: 0 10px; font-size: 13px; } .nav-links a.nav-icon { width: 44px; padding: 0; } }
 .header-card { margin: 32px 0 24px; padding: 28px; background: var(--bg-card); border: 1px solid var(--border); border-radius: 14px; }
 .header-top { display: flex; align-items: center; gap: 14px; margin-bottom: 12px; }
 .signal-badge { font-size: 40px; }
@@ -4481,14 +4497,7 @@ nav .container { display: flex; justify-content: space-between; align-items: cen
 <script defer data-domain="thumbgate-production.up.railway.app" src="https://plausible.io/js/script.js"></script>
 </head>
 <body>
-<nav><div class="container">
-  <a href="/dashboard" class="nav-logo"><img src="/assets/brand/thumbgate-mark-inline-v3.svg" alt="ThumbGate" class="logo-mark" width="28" height="28"><span class="logo-text">ThumbGate</span></a>
-  <div class="nav-links">
-    <a href="/dashboard">Dashboard</a>
-    <a href="/lessons">Lessons</a>
-    <a href="/">Landing Page</a>
-  </div>
-</div></nav>
+${renderSignedInAppNav({ activeTab: 'lessons' })}
 
 <div class="container">
   <div class="header-card">
@@ -6268,14 +6277,48 @@ function resolvePaidSessionTier(candidate, expectedApiKey, expectedOperatorKey) 
   return null;
 }
 
+function parseConfiguredOwnerEmails(raw = process.env.THUMBGATE_OWNER_EMAILS) {
+  return new Set(
+    String(raw || '')
+      .split(',')
+      .map((entry) => entry.trim().toLowerCase())
+      .filter(Boolean),
+  );
+}
+
+function isConfiguredOwnerEmail(email, env = process.env) {
+  const normalized = String(email || '').trim().toLowerCase();
+  if (!normalized) return false;
+  return parseConfiguredOwnerEmails(env?.THUMBGATE_OWNER_EMAILS).has(normalized);
+}
+
+function resolveOwnerEnterpriseSessionAuth() {
+  const adminKey = getExpectedApiKey();
+  if (adminKey) return { apiKey: adminKey, subjectType: 'admin' };
+  const operatorKey = getExpectedOperatorKey();
+  if (operatorKey) return { apiKey: operatorKey, subjectType: 'operator' };
+  return { apiKey: 'tg_op_dev_session', subjectType: 'dev_enterprise' };
+}
+
 async function completeSsoSessionAndRedirect(res, { provider, email, ssoName = null, redirectStatus = 302 }) {
-  const entitlement = await resolvePaidEntitlementForEmail(email);
-  const hasPaidKey = Boolean(entitlement?.entitled && entitlement?.apiKey);
+  const isOwner = isConfiguredOwnerEmail(email);
+  const entitlement = isOwner ? null : await resolvePaidEntitlementForEmail(email);
+  const hasPaidKey = !isOwner && Boolean(entitlement?.entitled && entitlement?.apiKey);
+  const ownerAuth = isOwner ? resolveOwnerEnterpriseSessionAuth() : null;
+  let sessionApiKey = '';
+  let sessionSubjectType = 'sso_free';
+  if (isOwner) {
+    sessionApiKey = ownerAuth.apiKey;
+    sessionSubjectType = ownerAuth.subjectType;
+  } else if (hasPaidKey) {
+    sessionApiKey = entitlement.apiKey;
+    sessionSubjectType = 'customer';
+  }
   const nowMs = Date.now();
   const sessionToken = crypto.randomBytes(32).toString('hex');
   persistPaidAuthSession(sessionToken, {
-    apiKey: hasPaidKey ? entitlement.apiKey : '',
-    subjectType: hasPaidKey ? 'customer' : 'sso_free',
+    apiKey: sessionApiKey,
+    subjectType: sessionSubjectType,
     customerId: hasPaidKey ? entitlement.customerId : null,
     ssoProvider: provider,
     ssoEmail: email,
