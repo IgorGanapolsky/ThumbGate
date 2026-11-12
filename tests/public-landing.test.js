@@ -76,11 +76,17 @@ test('homepage navbar exposes paid-user Log in drawer and exchanges keys for an 
   const dashboardPage = fs.readFileSync(path.join(__dirname, '..', 'public', 'dashboard.html'), 'utf8');
   assert.match(landingPage, /data-cta-id="nav_paid_login"[^>]*>Log in</);
   assert.match(landingPage, /id="paidLoginBar"/);
+  assert.doesNotMatch(landingPage, /ProKey/);
+  assert.doesNotMatch(dashboardPage, /ProKey/);
+  assert.match(landingPage, /id="paidLoginKeyToggle"[^>]*>Have a Pro license key\?</);
+  assert.match(landingPage, /id="paidLoginKeyPanel"\s+hidden\b/);
   assert.match(landingPage, /id="paidLoginKeyInput"/);
   assert.match(landingPage, /id="paidLoginSubmitBtn"/);
   assert.doesNotMatch(dashboardPage, /id="ssoGoogleBtn"/);
   assert.doesNotMatch(dashboardPage, /id="ssoAppleBtn"/);
   assert.doesNotMatch(dashboardPage, /Continue with Google SSO or Apple SSO/);
+  assert.match(dashboardPage, /id="dashboardKeyToggle"[^>]*>Have a Pro license key\?</);
+  assert.match(dashboardPage, /id="dashboardKeyPanel"\s+hidden\b/);
   assert.match(dashboardPage, /id="apiKey"/);
   assert.match(dashboardPage, /id="connectBtn"/);
   assert.match(dashboardPage, /id="getProBtn"[^>]*href="https:\/\/thumbgate\.ai\/pricing"/);
@@ -148,11 +154,21 @@ test('homepage navbar exposes paid-user Log in drawer and exchanges keys for an 
     // Configured Google + Apple OAuth providers: buttons shown only for configured IDs and redirect to real IdPs
     process.env.GOOGLE_CLIENT_ID = 'google-client-test.apps.googleusercontent.com';
     const googleOnlyDashHtml = await (await fetch(`${origin}/dashboard`)).text();
-    assert.match(googleOnlyDashHtml, /id="ssoGoogleBtn"/);
+    assert.match(googleOnlyDashHtml, /id="ssoGoogleBtn"[\s\S]*?Continue with Google/);
     assert.doesNotMatch(googleOnlyDashHtml, /id="ssoAppleBtn"/);
+    assert.ok(
+      googleOnlyDashHtml.indexOf('id="ssoGoogleBtn"') < googleOnlyDashHtml.indexOf('id="dashboardKeyToggle"')
+      && googleOnlyDashHtml.indexOf('id="dashboardKeyToggle"') < googleOnlyDashHtml.indexOf('id="apiKey"'),
+      'dashboard Log in view must lead with Continue with Google before Have a Pro license key? and key input'
+    );
     const googleOnlyHomeHtml = await (await fetch(`${origin}/`)).text();
-    assert.match(googleOnlyHomeHtml, /id="googleCloudLoginLink"/);
+    assert.match(googleOnlyHomeHtml, /id="googleCloudLoginLink"[\s\S]*?Continue with Google/);
     assert.doesNotMatch(googleOnlyHomeHtml, /id="appleSsoLoginLink"/);
+    assert.ok(
+      googleOnlyHomeHtml.indexOf('id="googleCloudLoginLink"') < googleOnlyHomeHtml.indexOf('id="paidLoginKeyToggle"')
+      && googleOnlyHomeHtml.indexOf('id="paidLoginKeyToggle"') < googleOnlyHomeHtml.indexOf('id="paidLoginKeyInput"'),
+      'home Log in bar must lead with Continue with Google before Have a Pro license key? and key input'
+    );
     const google302 = await fetch(`${origin}/v1/cloud/sso/authorize?provider=google`, { redirect: 'manual' });
     assert.equal(google302.status, 302);
     assert.match(google302.headers.get('location') || '', /^https:\/\/accounts\.google\.com\/o\/oauth2\/v2\/auth\?/);
@@ -162,11 +178,21 @@ test('homepage navbar exposes paid-user Log in drawer and exchanges keys for an 
 
     process.env.APPLE_CLIENT_ID = 'ai.thumbgate.web.test';
     const bothDashHtml = await (await fetch(`${origin}/dashboard`)).text();
-    assert.match(bothDashHtml, /id="ssoGoogleBtn"/);
-    assert.match(bothDashHtml, /id="ssoAppleBtn"/);
+    assert.match(bothDashHtml, /id="ssoGoogleBtn"[\s\S]*?Continue with Google/);
+    assert.match(bothDashHtml, /id="ssoAppleBtn"[\s\S]*?Continue with Apple/);
+    assert.ok(
+      bothDashHtml.indexOf('id="ssoGoogleBtn"') < bothDashHtml.indexOf('id="ssoAppleBtn"')
+      && bothDashHtml.indexOf('id="ssoAppleBtn"') < bothDashHtml.indexOf('id="dashboardKeyToggle"'),
+      'dashboard must render Continue with Google first and Continue with Apple right after it'
+    );
     const bothHomeHtml = await (await fetch(`${origin}/`)).text();
-    assert.match(bothHomeHtml, /id="googleCloudLoginLink"/);
-    assert.match(bothHomeHtml, /id="appleSsoLoginLink"/);
+    assert.match(bothHomeHtml, /id="googleCloudLoginLink"[\s\S]*?Continue with Google/);
+    assert.match(bothHomeHtml, /id="appleSsoLoginLink"[\s\S]*?Continue with Apple/);
+    assert.ok(
+      bothHomeHtml.indexOf('id="googleCloudLoginLink"') < bothHomeHtml.indexOf('id="appleSsoLoginLink"')
+      && bothHomeHtml.indexOf('id="appleSsoLoginLink"') < bothHomeHtml.indexOf('id="paidLoginKeyToggle"'),
+      'home Log in bar must render Continue with Google first and Continue with Apple right after it'
+    );
     for (const relHref of [...bothDashHtml.matchAll(/href="(\/[^"]*(?:auth|sso|oauth|login)[^"]*)"/gi)].map((m) => m[1])) {
       const linkProbe = await fetch(`${origin}${relHref}`, { redirect: 'manual' });
       const loc = linkProbe.headers.get('location') || '';

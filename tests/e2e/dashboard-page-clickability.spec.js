@@ -63,18 +63,24 @@ test.describe('/dashboard clickability — non-stat-card surfaces', () => {
     await expect(page.locator('#statGates')).toHaveText('14');
   });
 
-  test('clicking Connect with no API key is a no-op (button stays enabled, dashboard stays hidden)', async ({ page }) => {
+  test('clicking Unlock with no API key after opening key box is a no-op (button stays enabled, dashboard stays hidden)', async ({ page }) => {
     await disableDashboardBootstrap(page);
     await page.goto('/dashboard?noauto');
+    await expect(page.locator('#apiKey')).toBeHidden();
+    await expect(page.locator('#connectBtn')).toBeHidden();
+    await page.locator('#dashboardKeyToggle').click();
+    await expect(page.locator('#apiKey')).toBeVisible();
     await page.locator('#connectBtn').click();
     // connect() bails when input is empty — content stays hidden
     await expect(page.locator('#dashboardContent')).toBeHidden();
     await expect(page.locator('#connectBtn')).toBeEnabled();
   });
 
-  test('clicking Connect with a typed key shows the dashboard content + ok status', async ({ page }) => {
+  test('clicking Have a Pro license key? and Unlock with a typed key shows the dashboard content + ok status', async ({ page }) => {
     await disableDashboardBootstrap(page);
     await page.goto('/dashboard?noauto');
+    await expect(page.locator('#apiKey')).toBeHidden();
+    await page.locator('#dashboardKeyToggle').click();
     await page.locator('#apiKey').fill('test-key-123');
     await page.locator('#connectBtn').click();
     await expect(page.locator('#dashboardContent')).toBeVisible();
@@ -88,6 +94,7 @@ test.describe('/dashboard clickability — non-stat-card surfaces', () => {
       if (new URL(request.url()).pathname === '/v1/dashboard') dashboardRequests.push(request.url());
     });
     await page.goto('/dashboard?noauto');
+    await page.locator('#dashboardKeyToggle').click();
     await page.locator('#apiKey').fill('test-key-123');
     await page.locator('#connectBtn').click();
     await expect(page.locator('#dashboardContent')).toBeVisible();
@@ -98,8 +105,10 @@ test.describe('/dashboard clickability — non-stat-card surfaces', () => {
       page.locator('#disconnectBtn').click(),
     ]);
     await expect(page.locator('#authStatus')).toHaveText('Disconnected');
+    await expect(page.locator('#apiKey')).toBeHidden();
     expect(await page.evaluate(() => dashboardHydrationTimer === null && dashboardDataPromise === null)).toBe(true);
     expect(dashboardRequests).toHaveLength(0);
+    await page.locator('#dashboardKeyToggle').click();
     await page.locator('#apiKey').fill('test-key-456');
     await page.locator('#connectBtn').click();
     await page.locator('.tab', { hasText: 'Active Gates' }).click();
