@@ -263,10 +263,12 @@ test.describe('/dashboard clickability — non-stat-card surfaces', () => {
     await page.waitForURL(/\/lessons$/);
   });
 
-  test('nav: clicking brand logo navigates to /', async ({ page }) => {
-    await page.goto('/dashboard');
-    await page.locator('nav a.nav-logo').click();
-    await page.waitForURL(/\/$/);
+  test('nav: omits Landing Page link and clicking ThumbGate logo navigates cleanly to /', async ({ page }) => {
+    await page.goto('/dashboard?project=%2Ftmp%2Flocal-proj');
+    await expect(page.locator('nav a', { hasText: /Landing Page/i })).toHaveCount(0);
+    await expect(page.locator('nav .nav-logo')).toHaveAttribute('href', '/');
+    await page.locator('nav .nav-logo').click();
+    await page.waitForURL((url) => url.pathname === '/' && !url.searchParams.has('project'));
   });
 
   // --- Gemini API Key (save button) ---

@@ -4159,16 +4159,66 @@ window.THUMBGATE_LESSONS_BOOTSTRAP = { enabled: ${bootstrapActive ? 'true' : 'fa
 </html>`;
 }
 
+const SIGNED_IN_APP_NAV_MARKER_START = '<!-- __SIGNED_IN_APP_NAV_START__ -->';
+const SIGNED_IN_APP_NAV_MARKER_END = '<!-- __SIGNED_IN_APP_NAV_END__ -->';
+const GITHUB_MARK_SVG = '<svg viewBox="0 0 16 16" width="18" height="18" fill="currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8Z"/></svg>';
+const SIGNED_IN_APP_NAV_CSS = [
+  'nav.app-top-nav { position: sticky; top: 0; z-index: 50; background: rgba(8, 11, 16, 0.88); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border-bottom: 1px solid rgba(39, 50, 70, 0.75); padding: 8px 0; }',
+  'nav.app-top-nav .container { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: nowrap; }',
+  'nav.app-top-nav .nav-logo { font-weight: 700; font-size: 16px; letter-spacing: -0.02em; color: #f5f7fb; text-decoration: none; display: inline-flex; align-items: center; gap: 10px; min-height: 44px; flex-shrink: 0; white-space: nowrap; }',
+  'nav.app-top-nav .nav-logo:hover { color: #ffffff; }',
+  'nav.app-top-nav .nav-logo .logo-mark { width: 28px; height: 28px; display: block; flex-shrink: 0; }',
+  'nav.app-top-nav .nav-links { display: flex; gap: 6px; align-items: center; flex-wrap: nowrap; }',
+  'nav.app-top-nav .nav-tab { color: #9ca8ba; text-decoration: none; font-size: 14px; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; min-height: 44px; min-width: 44px; padding: 0 14px; border-radius: 999px; border: 1px solid transparent; transition: color 0.16s ease, background 0.16s ease, border-color 0.16s ease; white-space: nowrap; }',
+  'nav.app-top-nav .nav-tab:hover { color: #f5f7fb; background: rgba(255, 255, 255, 0.05); }',
+  'nav.app-top-nav .nav-tab.active { color: #f5f7fb; background: rgba(56, 215, 255, 0.12); border-color: rgba(56, 215, 255, 0.34); }',
+  'nav.app-top-nav .nav-github { color: #9ca8ba; text-decoration: none; display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 44px; min-width: 44px; min-height: 44px; border-radius: 999px; border: 1px solid rgba(39, 50, 70, 0.65); background: rgba(17, 22, 31, 0.55); transition: color 0.16s ease, border-color 0.16s ease, background 0.16s ease; flex-shrink: 0; }',
+  'nav.app-top-nav .nav-github:hover { color: #f5f7fb; border-color: rgba(56, 215, 255, 0.45); background: rgba(56, 215, 255, 0.1); }',
+  '@media (max-width: 640px) { nav.app-top-nav .container { padding-left: 14px; padding-right: 14px; gap: 8px; } nav.app-top-nav .nav-logo { font-size: 15px; gap: 8px; } nav.app-top-nav .nav-links { gap: 4px; } nav.app-top-nav .nav-tab { font-size: 13px; padding: 0 10px; } }',
+].join('\n');
+
+function renderSignedInAppNav({ activeTab = 'dashboard' } = {}) {
+  const dashboardActive = activeTab === 'dashboard';
+  const lessonsActive = activeTab === 'lessons';
+  return `<nav class="app-top-nav" aria-label="Primary navigation">
+  <div class="container">
+    <a href="/" class="nav-logo" aria-label="ThumbGate home"><img src="/assets/brand/thumbgate-mark-inline-v3.svg" alt="" class="logo-mark" width="28" height="28"><span class="logo-text">ThumbGate</span></a>
+    <div class="nav-links">
+      <a href="/dashboard" class="nav-tab${dashboardActive ? ' active' : ''}"${dashboardActive ? ' aria-current="page"' : ''}>Dashboard</a>
+      <a href="/lessons" class="nav-tab${lessonsActive ? ' active' : ''}"${lessonsActive ? ' aria-current="page"' : ''}>Lessons</a>
+      <a href="https://github.com/IgorGanapolsky/ThumbGate" class="nav-github" target="_blank" rel="noopener" aria-label="GitHub" title="GitHub">${GITHUB_MARK_SVG}</a>
+    </div>
+  </div>
+</nav>`;
+}
+
+function injectSignedInAppNav(html, { activeTab }) {
+  const start = html.indexOf(SIGNED_IN_APP_NAV_MARKER_START);
+  const end = html.indexOf(SIGNED_IN_APP_NAV_MARKER_END);
+  if (start === -1 || end === -1 || end < start) return html;
+  return (
+    html.slice(0, start) +
+    SIGNED_IN_APP_NAV_MARKER_START +
+    '\n' +
+    renderSignedInAppNav({ activeTab }) +
+    '\n' +
+    html.slice(end)
+  );
+}
+
 function loadDashboardPageHtml(req, expectedApiKey) {
   const bootstrap = resolveLocalPageBootstrap(req, expectedApiKey);
   const template = readOptionalPublicTemplate(DASHBOARD_PAGE_PATH);
   if (!template) return renderPackagedDashboardHtml(bootstrap);
 
-  return fillTemplate(template, {
-    '__DASHBOARD_BOOTSTRAP_KEY__': bootstrap.serializedBootstrapKey,
-    '__DASHBOARD_BOOTSTRAP_ENABLED__': bootstrap.bootstrapActive ? 'true' : 'false',
-    '<!-- __DASHBOARD_SSO_BUTTONS__ -->': buildDashboardSsoButtonsHtml(getConfiguredSsoProviders()),
-  });
+  return injectSignedInAppNav(
+    fillTemplate(template, {
+      '__DASHBOARD_BOOTSTRAP_KEY__': bootstrap.serializedBootstrapKey,
+      '__DASHBOARD_BOOTSTRAP_ENABLED__': bootstrap.bootstrapActive ? 'true' : 'false',
+      '<!-- __DASHBOARD_SSO_BUTTONS__ -->': buildDashboardSsoButtonsHtml(getConfiguredSsoProviders()),
+    }),
+    { activeTab: 'dashboard' },
+  );
 }
 
 function loadLessonsPageHtml(req, expectedApiKey) {
@@ -4176,10 +4226,13 @@ function loadLessonsPageHtml(req, expectedApiKey) {
   const template = readOptionalPublicTemplate(LESSONS_PAGE_PATH);
   if (!template) return renderPackagedLessonsHtml(bootstrap);
 
-  return fillTemplate(template, {
-    '__LESSONS_BOOTSTRAP_KEY__': bootstrap.serializedBootstrapKey,
-    '__LESSONS_BOOTSTRAP_ENABLED__': bootstrap.bootstrapActive ? 'true' : 'false',
-  });
+  return injectSignedInAppNav(
+    fillTemplate(template, {
+      '__LESSONS_BOOTSTRAP_KEY__': bootstrap.serializedBootstrapKey,
+      '__LESSONS_BOOTSTRAP_ENABLED__': bootstrap.bootstrapActive ? 'true' : 'false',
+    }),
+    { activeTab: 'lessons' },
+  );
 }
 
 function esc(s) { return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
@@ -4236,19 +4289,6 @@ function formatLessonTextValue(value) {
   if (!value) return '';
   const parsed = maybeParseJsonObject(value);
   return parsed ? JSON.stringify(parsed, null, 2) : value;
-}
-
-function renderSignedInAppNav({ activeTab = 'dashboard' } = {}) {
-  const dashActive = activeTab === 'dashboard' ? ' class="active" aria-current="page"' : '';
-  const lessonsActive = activeTab === 'lessons' ? ' class="active" aria-current="page"' : '';
-  return `<nav aria-label="Primary navigation"><div class="container">
-  <a href="/" class="nav-logo" aria-label="ThumbGate home"><img src="/assets/brand/thumbgate-mark-inline-v3.svg" alt="" class="logo-mark" width="28" height="28"><span class="logo-text">ThumbGate</span></a>
-  <div class="nav-links">
-    <a href="/dashboard"${dashActive}>Dashboard</a>
-    <a href="/lessons"${lessonsActive}>Lessons</a>
-    <a href="https://github.com/IgorGanapolsky/ThumbGate" class="nav-icon" target="_blank" rel="noopener" aria-label="GitHub" title="GitHub"><svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8a8 8 0 0 0 5.47 7.59c.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82a7.5 7.5 0 0 1 4 0c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8Z"/></svg></a>
-  </div>
-</div></nav>`;
 }
 
 function renderLessonDetailHtml(record, lessonId) {
@@ -4447,16 +4487,7 @@ a{color:#22d3ee;text-decoration:none}</style></head><body>
 }
 body { font-family: var(--font); background: var(--bg); color: var(--text); line-height: 1.6; -webkit-font-smoothing: antialiased; }
 .container { max-width: 860px; margin: 0 auto; padding: 0 24px; }
-nav { position: sticky; top: 0; z-index: 50; background: rgba(8,11,16,0.88); backdrop-filter: blur(16px); border-bottom: 1px solid rgba(39,50,70,0.75); padding: 8px 0; }
-nav .container { min-height: 48px; display: flex; justify-content: space-between; align-items: center; gap: 12px; }
-.nav-logo { min-height: 44px; font-weight: 850; font-size: 15px; letter-spacing: -0.02em; color: var(--text); text-decoration: none; display: inline-flex; align-items: center; gap: 8px; white-space: nowrap; flex-shrink: 0; }
-.nav-logo .logo-mark { width: 28px; height: 28px; display: block; flex-shrink: 0; }
-.nav-links { display: flex; gap: 6px; align-items: center; flex-wrap: nowrap; }
-.nav-links a { display: inline-flex; align-items: center; justify-content: center; min-height: 44px; padding: 0 12px; border-radius: 999px; border: 1px solid transparent; color: #9eb0c7; text-decoration: none; font-size: 13px; font-weight: 700; white-space: nowrap; }
-.nav-links a:hover { color: var(--text); }
-.nav-links a.active { color: var(--text); background: rgba(34,211,238,0.12); border-color: rgba(34,211,238,0.32); }
-.nav-links a.nav-icon { width: 44px; padding: 0; }
-@media (max-width: 640px) { nav .container { padding: 0 14px; gap: 8px; } .nav-links { gap: 4px; } .nav-links a { padding: 0 10px; font-size: 13px; } .nav-links a.nav-icon { width: 44px; padding: 0; } }
+${SIGNED_IN_APP_NAV_CSS}
 .header-card { margin: 32px 0 24px; padding: 28px; background: var(--bg-card); border: 1px solid var(--border); border-radius: 14px; }
 .header-top { display: flex; align-items: center; gap: 14px; margin-bottom: 12px; }
 .signal-badge { font-size: 40px; }
