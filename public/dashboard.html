@@ -329,6 +329,13 @@ h2{font-size:20px;font-weight:700;margin-bottom:16px;letter-spacing:-.02em}
       </div>
     </div>
   </div>
+  <div class="panel" id="agentRegisterCard" style="margin-bottom:20px;">
+    <div style="display:flex;justify-content:space-between;gap:12px;align-items:baseline;flex-wrap:wrap;margin-bottom:8px;">
+      <h3 style="margin:0;">🗂️ Agent Register (30-Day System of Record)</h3>
+      <span id="agentRegisterSummary" style="font-size:12px;color:var(--text-muted);font-family:var(--mono);">0 agents · 0 unregistered</span>
+    </div>
+    <div id="agentRegisterList" class="inventory-tools"><div class="empty" style="padding:12px 0;">No tool calls recorded in the last 30 days.</div></div>
+  </div>
 
   
   <div class="tabs">
@@ -1696,6 +1703,7 @@ function renderDashboardData(data) {
 
   renderTeam(data.team || {}, data.analytics || {});
   renderAgentInventory(data.agentSurfaceInventory || {});
+  renderAgentRegister(data.agentRegister || {});
   renderBackgroundAgents(data.backgroundAgents || {});
   renderReviewDelta(data.reviewDelta || {});
   renderPredictive(data.predictive || {});
@@ -2095,6 +2103,41 @@ function renderAgentInventory(inventory) {
     }).join('')
     : '<div class="empty" style="padding:20px 0;">No policy sources recorded yet.</div>';
 }
+function renderAgentRegister(reg) {
+  reg = reg || {};
+  var summaryEl = document.getElementById('agentRegisterSummary');
+  var listEl = document.getElementById('agentRegisterList');
+  if (!summaryEl || !listEl) return;
+  var s = reg.summary || {};
+  summaryEl.textContent = String(s.totalAgents || 0) + ' agents (' + String(s.unregisteredAgents || 0) + ' unregistered) · ' +
+    String(s.totalModels || 0) + ' models · ' + String(s.totalMcpServers || 0) + ' MCP servers · ' + String(s.totalHookSources || 0) + ' hook sources';
+  var unreg = (reg.unregistered || []).slice(0, 6);
+  var seenIds = {};
+  unreg.forEach(function(r) { seenIds[r.kind + ':' + r.id] = true; });
+  var pick = function(arr, n) { return (arr || []).filter(function(r) { return !seenIds[r.kind + ':' + r.id]; }).slice(0, n); };
+  var rows = unreg.concat(pick(reg.agents, 4), pick(reg.mcpServers, 3), pick(reg.models, 3), pick(reg.hookSources, 3)).slice(0, 14);
+  if (!rows.length) { listEl.innerHTML = '<div class="empty" style="padding:12px 0;">No tool calls recorded in the last 30 days.</div>'; return; }
+  listEl.innerHTML = rows.map(function(row) {
+    var isUnreg = row.status === 'unregistered agent' || row.registered === false;
+    var badgeStyle = isUnreg ? 'background:rgba(248,113,113,0.16);color:#fca5a5;border:1px solid rgba(248,113,113,0.35);' : '';
+    var badgeText = isUnreg ? 'unregistered agent' : escHtml(row.kind || 'registered');
+    var seen = 'first ' + escHtml((row.firstSeen || 'n/a').slice(0, 10)) + ' · last ' + escHtml((row.lastSeen || 'n/a').slice(0, 10));
+    return '<div class="inventory-row" style="gap:10px;flex-wrap:wrap;"><div style="flex:1;min-width:180px;"><div class="inventory-name">' +
+      escHtml(row.id || 'unknown') + ' <span class="generated-badge" style="' + badgeStyle + '">' + badgeText + '</span></div><div class="inventory-subtitle">' +
+      escHtml(String(row.callCount || 0) + ' calls · ') + seen + '</div></div><label style="font-size:11px;color:var(--text-muted);display:flex;align-items:center;gap:6px;">Owner ' +
+      '<input type="text" class="auth-input agent-owner-input" data-agent-id="' + escAttr(row.id || '') + '" value="' + escAttr(row.owner || reg.defaultOwner || '') + '" style="width:120px;padding:3px 6px;font-size:11px;" /></label></div>';
+  }).join('');
+  listEl.querySelectorAll('.agent-owner-input').forEach(function(inp) {
+    inp.addEventListener('change', function() { saveAgentOwner(inp.getAttribute('data-agent-id'), inp.value); });
+  });
+}
+async function saveAgentOwner(id, owner) {
+  if (!id || isDemo || !hasActiveAuth()) return;
+  try {
+    var res = await fetch('/v1/dashboard/agent-register', { method: 'POST', credentials: 'same-origin', headers: Object.assign({ 'Content-Type': 'application/json' }, getHeaders()), body: JSON.stringify({ id: id, owner: owner }) });
+    if (res.ok) { var body = await res.json(); if (body && body.agentRegister) renderAgentRegister(body.agentRegister); }
+  } catch (_) {}
+}
 
 function renderBackgroundAgents(backgroundAgents) {
   var cards = [
@@ -2467,6 +2510,7 @@ function loadDemo() {
       { source: 'conflict-sentinel', count: 4 }
     ]
   });
+  renderAgentRegister({defaultOwner:'local-operator',summary:{totalAgents:2,registeredAgents:1,unregisteredAgents:1,totalModels:1,totalMcpServers:1,totalHookSources:1},agents:[{id:'claude-code',kind:'agent',callCount:89,firstSeen:'2026-11-01T10:00:00Z',lastSeen:'2026-11-12T15:00:00Z',owner:'local-operator',registered:true,status:'registered'},{id:'shadow-script',kind:'agent',callCount:4,firstSeen:'2026-11-12T14:00:00Z',lastSeen:'2026-11-12T14:10:00Z',owner:'local-operator',registered:false,status:'unregistered agent'}],models:[{id:'claude-sonnet-4-5',kind:'model',callCount:89,firstSeen:'2026-11-01T10:00:00Z',lastSeen:'2026-11-12T15:00:00Z',owner:'local-operator',registered:true,status:'registered'}],mcpServers:[{id:'thumbgate',kind:'mcp_server',callCount:42,firstSeen:'2026-11-01T10:00:00Z',lastSeen:'2026-11-12T15:00:00Z',owner:'local-operator',registered:true,status:'registered'}],hookSources:[{id:'gates-engine',kind:'hook_source',callCount:93,firstSeen:'2026-11-01T10:00:00Z',lastSeen:'2026-11-12T15:00:00Z',owner:'local-operator',registered:true,status:'registered'}],unregistered:[{id:'shadow-script',kind:'agent',callCount:4,firstSeen:'2026-11-12T14:00:00Z',lastSeen:'2026-11-12T14:10:00Z',owner:'local-operator',registered:false,status:'unregistered agent'}]});
   renderActionableRemediations([
     {
       title: 'add practice-area-specific UPL rules · litigation-intake',

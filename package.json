@@ -945,7 +945,7 @@
     "prove:xmemory": "node scripts/prove-xmemory.js",
     "audit:stats": "node scripts/audit-trail.js --stats",
     "inventory:agents": "node scripts/agent-action-inventory.js",
-    "test:agent-action-inventory": "node --test tests/agent-action-inventory.test.js",
+    "test:agent-action-inventory": "node --test tests/agent-action-inventory.test.js tests/agent-register.test.js",
     "audit:conflicts": "node scripts/governance-conflict-audit.js",
     "test:governance-conflict-audit": "node --test tests/governance-conflict-audit.test.js",
     "profile:route": "node scripts/profile-router.js",

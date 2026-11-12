@@ -5,6 +5,7 @@ const fs = require('fs');
 const path = require('path');
 const { aggregateFailureDiagnostics } = require('./failure-diagnostics');
 const { AUDIT_LOG_FILENAME } = require('./audit-trail');
+const { buildAgentRegister } = require('./agent-action-inventory');
 const { getBillingSummary, loadFunnelLedger, loadResolvedRevenueEvents } = require('./billing');
 const {
   createUnavailableReport,
@@ -2079,6 +2080,11 @@ function generateDashboard(feedbackDir, options = {}) {
     gates,
     now: options.now,
   });
+  const agentRegister = buildAgentRegister({
+    dataDir: feedbackDir,
+    windowDays: 30,
+    now: options.now,
+  });
 
   const roiSummary = computeRoiSummary(gateStats, prevention, analytics, billingSummary);
   return {
@@ -2105,6 +2111,7 @@ function generateDashboard(feedbackDir, options = {}) {
     feedbackAnalysis,
     actionableRemediations,
     agentSurfaceInventory,
+    agentRegister,
     backgroundAgents,
     regulatedProof,
     interventionPolicy,

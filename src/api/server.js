@@ -6683,6 +6683,7 @@ const OPERATOR_READONLY_GET_PATHS = new Set([
   '/v1/dashboard/render-spec',
   '/v1/dashboard/ai-inventory',
   '/v1/dashboard/review-state',
+  '/v1/dashboard/agent-register',
   '/v1/feedback/stats',
   '/v1/intake/workflow-sprint/queue',
   '/v1/task-outcomes/monitor',
@@ -12568,6 +12569,37 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
         });
         return;
       }
+      // GET /v1/dashboard/agent-register -- 30-day AI governance system of record
+      if (req.method === 'GET' && pathname === '/v1/dashboard/agent-register') {
+        const { buildAgentRegister } = require('../../scripts/agent-action-inventory');
+        const windowDays = parsed.searchParams.get('days') || 30;
+        sendJson(res, 200, buildAgentRegister({ dataDir: requestFeedbackDir, windowDays }));
+        return;
+      }
+
+      // POST /v1/dashboard/agent-register -- edit agent owner or registration status
+      if (req.method === 'POST' && pathname === '/v1/dashboard/agent-register') {
+        const body = await parseJsonBody(req);
+        const { isSafeKey, updateAgentRegisterEntry, buildAgentRegister } = require('../../scripts/agent-action-inventory');
+        const id = typeof body?.id === 'string' ? body.id.trim() : '';
+        if (!isSafeKey(id)) {
+          sendJson(res, 400, { error: 'invalid_agent_id', message: 'Valid agent or surface id is required.' });
+          return;
+        }
+        if (body?.owner !== undefined && body.owner !== null && typeof body.owner !== 'string') {
+          sendJson(res, 400, { error: 'invalid_owner', message: 'Owner must be a string or null.' });
+          return;
+        }
+        updateAgentRegisterEntry({
+          dataDir: requestFeedbackDir,
+          id,
+          owner: body?.owner !== undefined ? body.owner : undefined,
+          registered: typeof body?.registered === 'boolean' ? body.registered : undefined,
+        });
+        sendJson(res, 200, { ok: true, agentRegister: buildAgentRegister({ dataDir: requestFeedbackDir }) });
+        return;
+      }
+
 
       // GET /v1/dashboard/render-spec -- Constrained hosted dashboard JSON spec
       if (req.method === 'GET' && pathname === '/v1/dashboard/render-spec') {
