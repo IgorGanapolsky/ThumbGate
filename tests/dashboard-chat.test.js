@@ -233,3 +233,77 @@ test('successful frontier calls charge the reusable session budget', async () =>
   assert.equal(result.envelope.budget.frontierSessionCharge.success, true);
   _resetFrontierDayCounts();
 });
+
+test('answerDataQuestion exposes model and privacyRoute for local vs BYO cloud and computeTodayOverview uses real disk/audit counts', async () => {
+  const fs = require('node:fs');
+  const os = require('node:os');
+  const { computeTodayOverview } = require('../scripts/dashboard');
+
+  const localRes = await answerDataQuestion('summarize lessons', {
+    localEndpoint: 'http://127.0.0.1:11434/v1',
+    localModel: 'qwen2.5-coder:14b',
+    feedbackDir: '/tmp/does-not-exist-xyz',
+    fetch: async () => ({
+      ok: true,
+      status: 200,
+      json: async () => ({ model: 'qwen2.5-coder:14b', choices: [{ message: { content: 'Local answer [1].' } }] }),
+    }),
+  });
+  assert.equal(localRes.ok, true);
+  assert.equal(localRes.model, 'qwen2.5-coder:14b');
+  assert.equal(localRes.privacyRoute, 'Local, no cloud');
+
+  const byoRes = await answerDataQuestion('summarize lessons', {
+    apiKey: 'test-gemini-key',
+    feedbackDir: '/tmp/does-not-exist-xyz',
+    fetch: async () => ({
+      ok: true,
+      status: 200,
+      json: async () => ({ modelVersion: 'gemini-2.5-flash', candidates: [{ content: { parts: [{ text: 'Cloud answer.' }] } }] }),
+    }),
+  });
+  assert.equal(byoRes.ok, true);
+  assert.equal(byoRes.model, 'gemini-2.5-flash');
+  assert.equal(byoRes.privacyRoute, 'BYO model (gemini)');
+
+  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'tg-today-overview-'));
+  try {
+    const emptyOverview = computeTodayOverview(tmpDir, {
+      entries: [],
+      memoryEntries: [],
+      auditEntries: [],
+      gateStats: { totalGates: 0, blocked: 0, warned: 0 },
+      gateAudit: { days: [{ dayKey: '2026-11-12', deny: 0, warn: 0, allow: 0 }] },
+      gates: [],
+    });
+    assert.equal(emptyOverview.upNext.kind, 'connect_agent');
+    assert.equal(emptyOverview.upNext.title, 'Connect your agent');
+    assert.deepEqual(emptyOverview.gateStatusChips, { blockedToday: 0, warnedToday: 0, activeGates: 0 });
+    assert.equal(emptyOverview.lessonStorage.lessonDbBytes, 0);
+    assert.equal(emptyOverview.lessonStorage.lessonDbSizeDisplay, '0 B');
+
+    const lessonLine = JSON.stringify({ id: 'mem_1', gateId: 'gate:force-push', title: 'Never force-push protected branches', tags: ['git'] }) + '\n';
+    fs.writeFileSync(path.join(tmpDir, 'memory-log.jsonl'), lessonLine);
+    const nowIso = new Date().toISOString();
+    const activeOverview = computeTodayOverview(tmpDir, {
+      entries: [{ signal: 'negative', timestamp: nowIso }],
+      memoryEntries: [JSON.parse(lessonLine)],
+      auditEntries: [
+        { decision: 'deny', gateId: 'gate:force-push', timestamp: nowIso },
+        { decision: 'deny', gateId: 'gate:force-push', timestamp: nowIso },
+        { decision: 'warn', gateId: 'gate:env-read', timestamp: nowIso },
+      ],
+      gateStats: { totalGates: 12, blocked: 2, warned: 1 },
+      gateAudit: { days: [{ dayKey: '2026-11-12', deny: 2, warn: 1, allow: 5 }] },
+      gates: [{ id: 'gate:force-push', pattern: 'git push --force' }],
+      now: nowIso,
+    });
+    assert.equal(activeOverview.upNext.kind, 'top_gate_24h');
+    assert.match(activeOverview.upNext.title, /gate:force-push \(2 intercepted in last 24h\)/);
+    assert.match(activeOverview.upNext.detail, /Never force-push protected branches/);
+    assert.deepEqual(activeOverview.gateStatusChips, { blockedToday: 2, warnedToday: 1, activeGates: 12 });
+    assert.equal(activeOverview.lessonStorage.lessonDbBytes, Buffer.byteLength(lessonLine));
+  } finally {
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+  }
+});

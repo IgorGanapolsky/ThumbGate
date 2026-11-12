@@ -168,3 +168,18 @@ test('dashboard demo keeps paid and revenue placeholders evidence-safe', () => {
   assert.doesNotMatch(dashboard, /opportunity \$49\.00/);
   assert.doesNotMatch(dashboard, /Live demo data below\./);
 });
+
+test('dashboard hides sign-in button and sign-in copy when signed in and includes Dayglass Today elements', () => {
+  const dashboard = readDashboard();
+
+  assert.match(dashboard, /function syncAuthBarVisibility\(state, options\)/);
+  assert.match(dashboard, /id="upNextCard"/);
+  assert.match(dashboard, /id="upNextActionBtn"/);
+  assert.match(dashboard, /id="gateStatusChips"/);
+  assert.match(dashboard, /data-chip-count="blocked-today"/);
+  assert.match(dashboard, /data-chip-count="warned-today"/);
+  assert.match(dashboard, /data-chip-count="active-gates"/);
+  assert.match(dashboard, /function chatRenderModelRoute\(data\)/);
+  assert.match(dashboard, /id="lessonStorageFooter"/);
+  assert.match(dashboard, /100% On-Device Private Memory/);
+});

@@ -10,7 +10,7 @@
 <link rel="apple-touch-icon" href="/assets/brand/thumbgate-mark.svg">
 <meta name="robots" content="noindex">
 <meta name="referrer" content="same-origin">
-<!-- Privacy-friendly analytics by Plausible -->
+
 <script defer data-domain="thumbgate.ai" src="https://plausible.io/js/script.js"></script>
 <script type="application/ld+json">
 {
@@ -46,7 +46,7 @@
   body { font-family: var(--font); background: var(--bg); color: var(--text); line-height: 1.6; -webkit-font-smoothing: antialiased; }
   .container { max-width: 1060px; margin: 0 auto; padding: 0 24px; }
 
-  /* NAV */
+  
   nav { position: sticky; top: 0; z-index: 50; background: rgba(10,10,11,0.85); backdrop-filter: blur(12px); border-bottom: 1px solid var(--border); padding: 14px 0; }
   nav .container { display: flex; justify-content: space-between; align-items: center; }
   .nav-logo { font-weight: 700; font-size: 15px; color: var(--text); text-decoration: none; display: inline-flex; align-items: center; gap: 8px; }
@@ -55,7 +55,7 @@
   .nav-links a { color: var(--text-muted); text-decoration: none; font-size: 13px; }
   .nav-links a:hover { color: var(--text); }
 
-  /* AUTH */
+  
   .auth-bar { padding: 24px 0; border-bottom: 1px solid var(--border); margin-bottom: 32px; }
   .auth-bar .container { display: flex; flex-direction: column; gap: 12px; align-items: flex-start; }
   #dashboardSsoButtons:empty { display: none !important; }
@@ -69,7 +69,7 @@
   .auth-status.ok { color: var(--green); }
   .auth-status.err { color: var(--red); }
 
-  /* STATS */
+  
   .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 32px; }
   .stat-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 20px; transition: border-color 0.15s, background 0.15s, transform 0.1s; }
   .stat-card:hover { border-color: rgba(34,211,238,0.4); transform: translateY(-2px); }
@@ -80,7 +80,7 @@
   .stat-value.red { color: var(--red); }
   .stat-value.cyan { color: var(--cyan); }
 
-  /* SEARCH */
+  
   .search-section { margin-bottom: 32px; }
   .search-bar { display: flex; gap: 12px; margin-bottom: 20px; }
   .search-input { flex: 1; background: var(--bg-raised); border: 1px solid var(--border); border-radius: 8px; padding: 12px 16px; color: var(--text); font-size: 15px; }
@@ -90,7 +90,7 @@
   .filter-btn { background: var(--bg-raised); border: 1px solid var(--border); border-radius: 6px; padding: 6px 14px; color: var(--text-muted); font-size: 12px; cursor: pointer; }
   .filter-btn:hover, .filter-btn.active { border-color: var(--cyan); color: var(--cyan); }
 
-  /* RESULTS */
+  
   .results { display: flex; flex-direction: column; gap: 12px; }
   .result-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px; padding: 20px; transition: border-color 0.15s; }
   .result-card:hover { border-color: rgba(34,211,238,0.3); }
@@ -106,7 +106,7 @@
   .tag:hover { background: rgba(34,211,238,0.25); transform: translateY(-1px); }
   mark { background: #fbbf24; color: #000000; font-weight: bold; border-radius: 2px; padding: 0 3px; }
 
-  /* GATES */
+  
   .gates-section { margin-bottom: 32px; }
   .gate-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px; padding: 16px 20px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; }
   .gate-name { font-size: 14px; font-weight: 600; }
@@ -115,7 +115,7 @@
   .gate-action.block { background: rgba(248,113,113,0.12); color: var(--red); }
   .gate-action.warn { background: rgba(251,191,36,0.12); color: #fbbf24; }
 
-  /* TEAM */
+  
   .team-section, .templates-section { margin-bottom: 40px; }
   .team-grid, .template-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; margin-bottom: 20px; }
   .team-card, .template-card, .panel { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 18px; }
@@ -160,12 +160,12 @@
   .generated-callout.danger { border-color: rgba(248,113,113,0.35); background: rgba(248,113,113,0.06); }
   .generated-callout.success { border-color: rgba(74,222,128,0.35); background: rgba(74,222,128,0.06); }
 
-  /* EXPORT */
+  
   .export-section { margin-bottom: 48px; }
   .export-btn { background: var(--bg-raised); border: 1px solid var(--border); border-radius: 8px; padding: 12px 20px; color: var(--text); font-size: 14px; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; transition: border-color 0.15s; }
   .export-btn:hover { border-color: var(--cyan); color: var(--cyan); }
 
-  /* TABS */
+  
   .tabs { display: flex; gap: 0; border-bottom: 1px solid var(--border); margin-bottom: 24px; }
   .tab { padding: 12px 20px; font-size: 14px; font-weight: 500; color: var(--text-muted); cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -1px; }
   .tab:hover { color: var(--text); }
@@ -180,7 +180,7 @@
   .demo-banner a { color: var(--cyan); text-decoration: none; font-weight: 600; }
   .demo-banner a:hover { text-decoration: underline; }
 
-  /* Tooltips styling */
+  
   .tooltip-trigger {
     display: inline-flex;
     align-items: center;
@@ -341,7 +341,22 @@
     <a href="/go/pro-direct?utm_source=dashboard_demo&amp;utm_medium=banner&amp;utm_campaign=pro_upgrade&amp;cta_id=dashboard_demo_pro" rel="noopener" style="background:#b85c2d;color:#fff;padding:6px 14px;border-radius:8px;text-decoration:none;font-weight:700;white-space:nowrap;">Start Pro now</a>
   </div>
 
-  <!-- STATS -->
+  <div class="panel" id="upNextCard" style="margin-bottom:16px;display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap;border-color:rgba(34,211,238,0.28);">
+    <div style="min-width:220px;flex:1;">
+      <div id="upNextKicker" style="font-size:11px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:var(--cyan);margin-bottom:4px;">Up next</div>
+      <div id="upNextTitle" style="font-size:16px;font-weight:700;color:var(--text);margin-bottom:4px;">Connect your agent</div>
+      <div id="upNextDetail" style="font-size:13px;color:var(--text-muted);line-height:1.5;">Total Feedback is 0. Wire ThumbGate into Claude Code, Cursor, or Codex to capture feedback and block repeat mistakes.</div>
+    </div>
+    <a class="btn" id="upNextActionBtn" href="/install" style="text-decoration:none;white-space:nowrap;">Connect Agent</a>
+  </div>
+
+  <div id="gateStatusChips" aria-label="Gate enforcement status" style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px;font-family:var(--mono);font-size:12px;">
+    <span id="chipBlockedToday" style="padding:5px 10px;border-radius:999px;background:rgba(248,113,113,0.12);border:1px solid rgba(248,113,113,0.32);color:#fca5a5;"><strong data-chip-count="blocked-today">0</strong> BLOCKED TODAY</span>
+    <span id="chipWarnedToday" style="padding:5px 10px;border-radius:999px;background:rgba(251,191,36,0.12);border:1px solid rgba(251,191,36,0.32);color:#fde68a;"><strong data-chip-count="warned-today">0</strong> WARNED TODAY</span>
+    <span id="chipActiveGates" style="padding:5px 10px;border-radius:999px;background:rgba(34,211,238,0.12);border:1px solid rgba(34,211,238,0.32);color:var(--cyan);"><strong data-chip-count="active-gates">0</strong> ACTIVE GATES</span>
+  </div>
+
+  
   <div class="stats-grid" id="statsGrid">
     <a class="stat-card" data-card-action="all" onclick="selectCard(this,'all')" href="/lessons?signal=all" style="cursor:pointer;text-decoration:none;color:inherit;display:block;" title="Click to view all feedback → Lessons page"><div class="stat-label">Total Feedback <span class="tooltip-trigger" onclick="event.stopPropagation(); event.preventDefault();">?<span class="tooltip-content">Total thumbs-up and thumbs-down signals captured from your AI agent interactions.</span></span></div><div class="stat-value cyan" id="statTotal">—</div></a>
     <a class="stat-card" data-card-action="up" onclick="selectCard(this,'up')" href="/lessons?signal=up" style="cursor:pointer;text-decoration:none;color:inherit;display:block;" title="Click to view positive feedback → Lessons page"><div class="stat-label">👍 Positive <span class="tooltip-trigger" onclick="event.stopPropagation(); event.preventDefault();">?<span class="tooltip-content">Successful outcomes where the agent's work met expectations (thumbs-up).</span></span></div><div class="stat-value green" id="statPositive">—</div></a>
@@ -352,7 +367,7 @@
   <div class="panel" id="chatPanel" style="margin-bottom:20px;">
     <div style="display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin-bottom:10px;">
       <h2 style="margin:0;">💬 Chat with your data</h2>
-      <span style="font-size:13px;color:var(--text-muted);">Ask about your gates, blocks, feedback, and lessons — answered <strong>locally from your own data</strong>, no cloud. (An optional BYO model only kicks in for open-ended questions.)</span>
+      <span style="font-size:13px;color:var(--text-muted);">Ask about your gates, blocks, feedback, and lessons — answered <strong>locally from your own data</strong>, no cloud. Each AI reply shows its exact model &amp; privacy route.</span>
     </div>
     <div id="chatMessages" style="max-height:360px;overflow-y:auto;margin-bottom:12px;display:none;padding-right:4px;"></div>
     <div style="display:flex;gap:8px;">
@@ -392,7 +407,7 @@
     </div>
   </div>
 
-  <!-- TABS -->
+  
   <div class="tabs">
     <div class="tab active" onclick="switchTab('search')">🔍 Search Memories</div>
     <div class="tab" onclick="switchTab('gates')">🛡️ Active Gates</div>
@@ -406,7 +421,7 @@
     <div class="tab" onclick="switchTab('export')">📦 Export</div>
   </div>
 
-  <!-- SEARCH TAB -->
+  
   <div class="tab-content active" id="tab-search">
     <div class="panel" style="margin-bottom:24px;">
       <h3 style="margin-top:0;">📈 Feedback Trend (Last 30 Days)</h3>
@@ -431,12 +446,17 @@
     </div>
   </div>
 
-  <!-- GATES TAB -->
+  
   <div class="tab-content" id="tab-gates">
     <div class="gates-section">
       <h2>Active Pre-Action Checks</h2>
+      <div id="gatesTabStatusChips" style="display:flex;gap:10px;flex-wrap:wrap;margin:10px 0 18px;font-family:var(--mono);font-size:12px;">
+        <span style="padding:5px 10px;border-radius:999px;background:rgba(248,113,113,0.12);border:1px solid rgba(248,113,113,0.32);color:#fca5a5;"><strong data-chip-count="blocked-today">0</strong> BLOCKED TODAY</span>
+        <span style="padding:5px 10px;border-radius:999px;background:rgba(251,191,36,0.12);border:1px solid rgba(251,191,36,0.32);color:#fde68a;"><strong data-chip-count="warned-today">0</strong> WARNED TODAY</span>
+        <span style="padding:5px 10px;border-radius:999px;background:rgba(34,211,238,0.12);border:1px solid rgba(34,211,238,0.32);color:var(--cyan);"><strong data-chip-count="active-gates">0</strong> ACTIVE GATES</span>
+      </div>
 
-      <!-- Interactive Gating Workflow Diagram -->
+      
       <details class="flow-details" style="margin-bottom: 24px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg-card); padding: 16px;" open>
         <summary style="font-weight: 600; cursor: pointer; color: var(--cyan); display: flex; align-items: center; gap: 8px; user-select: none;">
           <span>🛡️ How Pre-Action Gating Works (Interactive Flow Diagram)</span>
@@ -457,7 +477,7 @@
               </marker>
             </defs>
 
-            <!-- Step 1: Tool Call -->
+            
             <g>
               <rect x="10" y="80" width="130" height="60" class="flow-node" />
               <text x="75" y="105" text-anchor="middle" class="flow-text">1. Tool Call</text>
@@ -466,7 +486,7 @@
 
             <path d="M 140 110 L 190 110" class="flow-arrow" />
 
-            <!-- Step 2: Hook Intercept -->
+            
             <g>
               <rect x="200" y="80" width="140" height="60" class="flow-node" />
               <text x="270" y="105" text-anchor="middle" class="flow-text">2. PreToolUse Hook</text>
@@ -475,25 +495,25 @@
 
             <path d="M 340 110 L 390 110" class="flow-arrow" />
 
-            <!-- Step 3: Policy / DB Lookup -->
+            
             <g>
               <rect x="400" y="80" width="150" height="60" class="flow-node" />
               <text x="475" y="105" text-anchor="middle" class="flow-text">3. Gate Evaluation</text>
               <text x="475" y="125" text-anchor="middle" class="flow-subtext">Validates matching rules</text>
             </g>
 
-            <!-- Branch Arrows -->
+            
             <path d="M 550 100 L 640 55" class="flow-arrow" />
             <path d="M 550 120 L 640 165" class="flow-arrow" />
 
-            <!-- Step 4a: Block -->
+            
             <g>
               <rect x="650" y="20" width="130" height="60" class="flow-node" style="stroke:#ef4444;" />
               <text x="715" y="45" text-anchor="middle" class="flow-text" style="fill:#ef4444;">❌ BLOCK</text>
               <text x="715" y="65" text-anchor="middle" class="flow-subtext">Matches rule -> aborted</text>
             </g>
 
-            <!-- Step 4b: Allow -->
+            
             <g>
               <rect x="650" y="140" width="130" height="60" class="flow-node" style="stroke:#22c55e;" />
               <text x="715" y="165" text-anchor="middle" class="flow-text" style="fill:#22c55e;">✅ ALLOW</text>
@@ -507,7 +527,7 @@
     </div>
   </div>
 
-  <!-- TEAM TAB -->
+  
   <div class="tab-content" id="tab-team">
     <div class="team-section">
       <h2>Shared Team Reliability</h2>
@@ -576,7 +596,7 @@
     </div>
   </div>
 
-  <!-- ENTERPRISE CHAT TAB -->
+  
   <div class="tab-content" id="tab-enterprise">
     <div class="templates-section">
       <h2>Governed Data Chat</h2>
@@ -603,7 +623,7 @@
     </div>
   </div>
 
-  <!-- AI INVENTORY TAB -->
+  
   <div class="tab-content" id="tab-ai-inventory">
     <div class="templates-section">
       <h2>AI Component Inventory</h2>
@@ -626,7 +646,7 @@
     </div>
   </div>
 
-  <!-- GENERATED TAB -->
+  
   <div class="tab-content" id="tab-generated">
     <div class="templates-section">
       <h2>Generated Hosted Views</h2>
@@ -636,7 +656,7 @@
     </div>
   </div>
 
-  <!-- SETTINGS TAB -->
+  
   <div class="tab-content" id="tab-settings">
     <div class="templates-section">
       <h2>Policy Origins</h2>
@@ -659,7 +679,7 @@
     </div>
   </div>
 
-  <!-- TEMPLATES TAB -->
+  
   <div class="tab-content" id="tab-templates">
     <div class="templates-section">
       <h2>Curated Gate Templates</h2>
@@ -668,13 +688,13 @@
     </div>
   </div>
 
-  <!-- INSIGHTS TAB -->
+  
   <div class="tab-content" id="tab-insights">
     <div class="templates-section">
       <h2>📊 Feedback Insights &amp; Lesson Pipeline</h2>
       <p class="template-summary">How your thumbs-up/down signals turn into lessons that prevent repeat mistakes.</p>
 
-      <!-- Token Savings — computed from real gate-block counts -->
+      
       <div class="panel" id="tokenSavingsPanel" style="margin-bottom:24px;background:linear-gradient(135deg,rgba(74,222,128,0.04),rgba(34,211,238,0.03));border-color:rgba(74,222,128,0.25);">
         <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap;">
           <div style="flex:1;min-width:240px;">
@@ -689,7 +709,7 @@
         <div id="tokenSavingsSource" style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:11px;color:var(--text-muted);line-height:1.6;"></div>
       </div>
 
-      <!-- Pipeline Flow -->
+      
       <div class="panel" style="margin-bottom:24px;">
         <h3 style="margin-bottom:16px;">Feedback → Lesson Pipeline</h3>
         <div id="pipelineFlow" style="display:flex;align-items:center;justify-content:center;gap:0;flex-wrap:wrap;padding:12px 0;">
@@ -698,7 +718,7 @@
         <div id="pipelineRates" style="display:flex;gap:24px;justify-content:center;margin-top:16px;font-size:13px;color:var(--text-muted);"></div>
       </div>
 
-      <!-- Charts -->
+      
       <div style="margin-bottom:24px;">
         <div class="panel">
           <h3>Lessons Generated (30 days)</h3>
@@ -708,7 +728,7 @@
         </div>
       </div>
 
-      <!-- Gate Effectiveness -->
+      
       <div class="panel" style="margin-bottom:24px;">
         <h3>Gate Effectiveness (14-day audit)</h3>
         <div style="position:relative;height:280px;margin-top:12px;">
@@ -722,7 +742,7 @@
         <div class="remediation-list" id="actionableRemediations"><div class="loading">Loading next actions...</div></div>
       </div>
 
-      <!-- How It Works -->
+      
       <div class="panel">
         <h3 style="margin-bottom:12px;">How ThumbGate Learns</h3>
         <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:16px;text-align:center;">
@@ -751,7 +771,7 @@
     </div>
   </div>
 
-  <!-- EXPORT TAB -->
+  
   <div class="tab-content" id="tab-export">
     <div class="export-section">
       <h2>Export Training Data (DPO)</h2>
@@ -768,14 +788,13 @@
       <div id="exportStatus" style="margin-top:12px;font-size:13px;color:var(--text-muted);"></div>
     </div>
   </div>
+  <footer id="lessonStorageFooter" style="margin-top:32px;padding:16px 0 8px;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;font-size:12px;color:var(--text-muted);font-family:var(--mono);">
+    <span id="lessonStorageSummary">100% On-Device Private Memory · ~/.thumbgate/feedback/memory-log.jsonl · 0 B</span>
+  </footer>
 
 </div>
 
 <script>
-// TG_TOKEN_SAVINGS — browser shim that mirrors scripts/token-savings.js
-// so loadDemo()'s TG_TOKEN_SAVINGS.compute(blockedCalls, deflectedBots)
-// call resolves. Pre-2026-05-26 the dashboard referenced this global
-// without ever defining it, silently halting loadDemo() at line ~1452.
 var TG_TOKEN_SAVINGS = (function () {
   var DEFAULT_MODEL_MIX = { 'claude-sonnet-4-5': 0.80, 'claude-opus-4-6': 0.15, 'claude-haiku-4-5': 0.05 };
   var DEFAULT_MODEL_PRICES = {
@@ -838,11 +857,6 @@ var TG_TOKEN_SAVINGS = (function () {
   return { compute: compute, formatDollars: fmtDollars, formatTokens: fmtTokens };
 })();
 
-// renderTopBlockedGates — defensive stub for the loadDemo() legacy direct
-// call. The current dashboard layout surfaces top-blocked gates via the
-// team panel (renderTeam → team.topBlockedGates) and has no dedicated
-// #topBlockedGates element. Stub keeps loadDemo() from throwing while
-// also rendering into a target element if one is ever added.
 function renderTopBlockedGates(gates) {
   if (!Array.isArray(gates)) return;
   var target = document.getElementById('topBlockedGates')
@@ -899,7 +913,6 @@ function getHeaders() {
   return headers;
 }
 
-// --- Chat with your data ---------------------------------------------------
 function chatEscape(s) {
   return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
     return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
@@ -947,6 +960,16 @@ function chatRenderSources(sources, answerText) {
          items +
          '</div>';
 }
+function chatRenderModelRoute(data) {
+  if (!data || typeof data !== 'object') return '';
+  var isLocal = data.provider === 'local-data' || data.provider === 'local' || data.llm === 'none';
+  var routeLabel = data.privacyRoute ? String(data.privacyRoute) : (isLocal ? 'Local, no cloud' : 'BYO model');
+  var modelLabel = (data.model && data.model !== 'none')
+    ? String(data.model)
+    : (data.provider === 'local-data' || data.llm === 'none' ? 'Deterministic local data' : 'Local model');
+  return '<div class="chat-model-route" data-chat-route="' + chatEscape(routeLabel) + '" data-chat-model="' + chatEscape(modelLabel) + '" style="margin-top:8px;font-size:11px;color:var(--text-muted);font-family:var(--mono);">' +
+    'Model: <strong style="color:var(--cyan);">' + chatEscape(modelLabel) + '</strong> · Route: <strong style="color:var(--text);">' + chatEscape(routeLabel) + '</strong></div>';
+}
 async function sendChat() {
   var input = document.getElementById('chatInput');
   var q = (input.value || '').trim();
@@ -962,7 +985,7 @@ async function sendChat() {
     var res = await fetch('/v1/chat', { method: 'POST', headers: getHeaders(), body: JSON.stringify({ question: q }) });
     var data = await res.json();
     if (data && data.ok) {
-      pending.innerHTML = chatRenderAnswer(data.answer) + chatRenderSources(data.sources, data.answer);
+      pending.innerHTML = chatRenderAnswer(data.answer) + chatRenderModelRoute(data) + chatRenderSources(data.sources, data.answer);
     } else if (data && data.error === 'gemini_error') {
       pending.innerHTML = '<em style="color:#f87171;">Gemini rejected the key: ' + chatEscape(data.message || 'invalid') +
         '<br>Fix: paste a valid key in the "Set GEMINI_API_KEY..." box below (get one at <a href="https://aistudio.google.com/app/apikey" target="_blank" style="color:#67e8f9;">AI Studio</a>) and click Save.</em>';
@@ -1016,7 +1039,6 @@ async function checkLocalLlmReachable(url) {
   try {
     var controller = new AbortController();
     var timeout = setTimeout(function() { controller.abort(); }, 400);
-    // Use no-cors mode to bypass CORS block (only care if network request succeeds/fails)
     await fetch(url, { method: 'GET', signal: controller.signal, mode: 'no-cors' });
     clearTimeout(timeout);
     return true;
@@ -1043,6 +1065,42 @@ function toggleLicenseKeyBox(forceOpen) {
   }
 }
 
+var DEFAULT_AUTH_HELP_HTML = 'Sign in to open your workspace, or launch locally with <code style="font-family:var(--mono);font-size:12px;background:var(--cyan-dim);color:var(--cyan);padding:2px 6px;border-radius:4px;">npx thumbgate pro</code>.';
+
+function syncAuthBarVisibility(state, options) {
+  var opts = options || {};
+  var ssoBox = document.getElementById('dashboardSsoButtons');
+  var helpEl = document.getElementById('authHelp');
+  var keyToggle = document.getElementById('dashboardKeyToggle');
+  var proBtn = document.getElementById('getProBtn');
+  var demoBtn = document.getElementById('demoBtn');
+  var discBtn = document.getElementById('disconnectBtn');
+  var signedIn = state === 'signed_in' || state === 'signed_in_free';
+  if (ssoBox) {
+    ssoBox.style.display = signedIn ? 'none' : (ssoBox.children.length > 0 ? 'flex' : 'none');
+  }
+  if (state === 'signed_in') {
+    toggleLicenseKeyBox(false);
+    if (helpEl) helpEl.style.display = opts.localPro ? '' : 'none';
+    if (keyToggle) keyToggle.style.display = 'none';
+    if (proBtn) proBtn.style.display = 'none';
+    if (demoBtn) demoBtn.style.display = 'none';
+    if (discBtn) discBtn.style.display = 'inline-block';
+  } else if (state === 'signed_in_free') {
+    if (helpEl) helpEl.style.display = '';
+    if (keyToggle) keyToggle.style.display = '';
+    if (proBtn) { proBtn.style.display = 'inline-flex'; proBtn.textContent = 'Upgrade to Pro'; }
+    if (demoBtn) demoBtn.style.display = 'none';
+    if (discBtn) discBtn.style.display = 'inline-block';
+  } else {
+    if (helpEl) { helpEl.style.display = ''; helpEl.innerHTML = DEFAULT_AUTH_HELP_HTML; }
+    if (keyToggle) keyToggle.style.display = '';
+    if (proBtn) { proBtn.style.display = 'inline-flex'; proBtn.textContent = 'Get Pro'; }
+    if (demoBtn) demoBtn.style.display = 'inline-block';
+    if (discBtn) discBtn.style.display = 'none';
+  }
+}
+
 function disconnectKey() {
   pauseDashboardHydration();
   dashboardDataPromise = null;
@@ -1062,12 +1120,10 @@ function disconnectKey() {
   toggleLicenseKeyBox(false);
   var btn = document.getElementById('connectBtn');
   btn.disabled = false;
-  document.getElementById('demoBtn').style.display = 'inline-block';
-  document.getElementById('disconnectBtn').style.display = 'none';
+  syncAuthBarVisibility('signed_out');
   document.getElementById('authStatus').className = 'auth-status';
   document.getElementById('authStatus').textContent = 'Disconnected';
   document.getElementById('authTitle').textContent = 'Sign in to ThumbGate';
-  document.getElementById('authHelp').innerHTML = 'Sign in to open your workspace, or launch locally with <code style="font-family:var(--mono);font-size:12px;background:var(--cyan-dim);color:var(--cyan);padding:2px 6px;border-radius:4px;">npx thumbgate pro</code>.';
   document.getElementById('dashboardContent').style.display = 'none';
   return fetch('/v1/auth/session', { method: 'DELETE', credentials: 'same-origin' })
     .catch(function() {})
@@ -1089,9 +1145,7 @@ async function connect(options) {
     const freeStatus = document.getElementById('authStatus');
     freeStatus.className = 'auth-status ok';
     freeStatus.textContent = '✓ Free tier';
-    document.getElementById('disconnectBtn').style.display = 'inline-block';
-    const proBtn = document.getElementById('getProBtn');
-    if (proBtn) proBtn.textContent = 'Upgrade to Pro';
+    syncAuthBarVisibility('signed_in_free');
     const freeTitle = document.getElementById('authTitle');
     if (freeTitle) freeTitle.textContent = opts.ssoEmail ? `Signed in (${opts.ssoEmail}) · Free tier` : 'Signed in · Free tier';
     const freeHelp = document.getElementById('authHelp');
@@ -1154,7 +1208,7 @@ async function connect(options) {
       input.value = '';
       input.placeholder = 'Session active (HttpOnly cookie)';
     }
-    document.getElementById('disconnectBtn').style.display = 'inline-block';
+    syncAuthBarVisibility('signed_in', { localPro: Boolean(opts.localPro) });
     const titleEl = document.getElementById('authTitle');
     if (titleEl) {
       if (opts.localPro) {
@@ -1184,9 +1238,6 @@ async function connect(options) {
     } else {
       scheduleDashboardHydration(10000);
     }
-    // Open a live-events stream so feedback/rule-regen events surface
-    // without a manual refresh. Non-fatal: if the browser doesn't support
-    // ReadableStream over fetch (very old), we simply stay on the polled path.
     subscribeToLiveEvents();
   } catch (e) {
     status.className = 'auth-status err';
@@ -1195,6 +1246,7 @@ async function connect(options) {
     if (titleEl) {
       titleEl.textContent = 'Sign in to ThumbGate';
     }
+    syncAuthBarVisibility('signed_out');
     if (opts.localPro) {
       toggleLicenseKeyBox(true);
       document.getElementById('authHelp').textContent = `Local ${tierName} bootstrap failed. Paste your THUMBGATE_API_KEY manually or retry the local launcher.`;
@@ -1221,6 +1273,47 @@ function resolveActiveGateCount(data) {
   return null;
 }
 
+function renderGateStatusChips(chips) {
+  var c = chips || {};
+  var blockedToday = Number.isFinite(Number(c.blockedToday)) ? Math.max(0, Math.trunc(Number(c.blockedToday))) : 0;
+  var warnedToday = Number.isFinite(Number(c.warnedToday)) ? Math.max(0, Math.trunc(Number(c.warnedToday))) : 0;
+  var activeGates = Number.isFinite(Number(c.activeGates)) ? Math.max(0, Math.trunc(Number(c.activeGates))) : 0;
+  document.querySelectorAll('[data-chip-count="blocked-today"]').forEach(function(el) { el.textContent = String(blockedToday); });
+  document.querySelectorAll('[data-chip-count="warned-today"]').forEach(function(el) { el.textContent = String(warnedToday); });
+  document.querySelectorAll('[data-chip-count="active-gates"]').forEach(function(el) { el.textContent = String(activeGates); });
+}
+
+function renderUpNext(upNext, totalFeedbackFallback) {
+  var kickerEl = document.getElementById('upNextKicker');
+  var titleEl = document.getElementById('upNextTitle');
+  var detailEl = document.getElementById('upNextDetail');
+  var btnEl = document.getElementById('upNextActionBtn');
+  if (!titleEl || !detailEl || !btnEl) return;
+  var card = upNext && typeof upNext === 'object' ? upNext : (Number(totalFeedbackFallback) > 0
+    ? { kicker: 'Up next · Memory review', title: 'Review captured lessons', detail: String(Number(totalFeedbackFallback)) + ' feedback signal(s) recorded.', actionLabel: 'View Lessons', actionHref: '/lessons', actionTab: null }
+    : { kicker: 'Up next · First signal', title: 'Connect your agent', detail: 'Total Feedback is 0. Wire ThumbGate into Claude Code, Cursor, or Codex to capture feedback and block repeat mistakes.', actionLabel: 'Connect Agent', actionHref: '/install', actionTab: null });
+  if (kickerEl) kickerEl.textContent = card.kicker || 'Up next';
+  titleEl.textContent = card.title || 'Connect your agent';
+  detailEl.textContent = card.detail || '';
+  btnEl.textContent = card.actionLabel || 'Open';
+  btnEl.setAttribute('href', card.actionHref || '#');
+  if (card.actionTab) {
+    btnEl.onclick = function(ev) { ev.preventDefault(); switchTab(card.actionTab); };
+  } else {
+    btnEl.onclick = null;
+  }
+}
+
+function renderLessonStorageFooter(lessonStorage) {
+  var el = document.getElementById('lessonStorageSummary');
+  if (!el) return;
+  var s = lessonStorage && typeof lessonStorage === 'object' ? lessonStorage : {};
+  var label = s.label || '100% On-Device Private Memory';
+  var loc = s.location || '~/.thumbgate/feedback/memory-log.jsonl';
+  var size = s.lessonDbSizeDisplay || '0 B';
+  el.textContent = label + ' · ' + loc + ' · ' + size;
+}
+
 function renderStats(data) {
   const total = (data.totalFeedback || data.total || 0);
   const pos = (data.totalPositive || data.positive || data.thumbsUp || 0);
@@ -1228,13 +1321,20 @@ function renderStats(data) {
   document.getElementById('statTotal').textContent = total;
   document.getElementById('statPositive').textContent = pos;
   document.getElementById('statNegative').textContent = neg;
-  // Active Gates used to stay on the HTML placeholder "—" because only
-  // renderDashboardData(/v1/dashboard) set it. Connect + live refresh only call
-  // /v1/feedback/stats → renderStats. Prefer activeGateCount from stats; fall
-  // back to gateStats/gates when present.
   var gateCount = resolveActiveGateCount(data);
   if (gateCount != null) {
     document.getElementById('statGates').textContent = gateCount;
+  }
+  var gs = data.gateStats || {};
+  var overview = data.todayOverview || {};
+  renderGateStatusChips(overview.gateStatusChips || {
+    blockedToday: gs.blockedToday != null ? gs.blockedToday : 0,
+    warnedToday: gs.warnedToday != null ? gs.warnedToday : 0,
+    activeGates: gateCount != null ? gateCount : 0,
+  });
+  renderUpNext(overview.upNext || null, total);
+  if (overview.lessonStorage) {
+    renderLessonStorageFooter(overview.lessonStorage);
   }
 }
 
@@ -1251,7 +1351,6 @@ async function search() {
   const container = document.getElementById('searchResults');
   container.innerHTML = '<div class="loading">Searching...</div>';
 
-  // Demo mode: filter client-side
   if (isDemo) {
     var q = query.toLowerCase();
     var results = demoData.filter(function(r) {
@@ -1417,7 +1516,6 @@ function selectCard(el, action) {
     return;
   }
 
-  // Filter memories by signal
   switchTab('search');
   var container = document.getElementById('searchResults');
   if (isDemo && demoData.length) {
@@ -1425,7 +1523,6 @@ function selectCard(el, action) {
     container.innerHTML = results.length ? results.map(renderResult).join('') : '<div class="empty">No ' + action + ' feedback in demo</div>';
     return;
   }
-  // Live mode: search by signal filter
   var signalParam = action === 'all' ? '' : '&signal=' + action;
   container.innerHTML = '<div class="loading">Loading...</div>';
   fetch('/v1/search?q=*&limit=50' + signalParam, { method: 'GET', headers: getHeaders() })
@@ -1446,24 +1543,15 @@ function setSource(el, source) {
 function switchTab(name) {
   document.querySelectorAll('.tab').forEach(function(t) { t.classList.remove('active'); });
   document.querySelectorAll('.tab-content').forEach(function(c) { c.classList.remove('active'); });
-  // Scope the header lookup to .tab — the prior selector
-  // [onclick*="<name>"] also matched the stat-cards (which carry onclick
-  // attributes like selectCard(this,'gates')), and a stat-card appears
-  // before the tab header in DOM order, so for 'gates' the wrong element
-  // (the card) got the .active class and the tab header stayed dormant.
   var tabEl = document.querySelector('.tab[onclick*="' + name + '"]');
   var contentEl = document.getElementById('tab-' + name);
   if (tabEl) tabEl.classList.add('active');
   if (contentEl) {
     contentEl.classList.add('active');
-    // Stat-card clicks fire switchTab from above the fold; without this scroll
-    // the user sees "nothing happen" because the just-activated content sits
-    // below the viewport. Same class of bug as the /lessons tile fix in #2268.
     try {
       contentEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
     } catch (_e) { /* older browsers without smooth-scroll: no-op */ }
   }
-  // Sync URL hash so deep-links stay shareable without scroll jump
   try {
     if (('#' + name) !== window.location.hash) {
       history.replaceState(null, '', '#' + name);
@@ -1508,7 +1596,6 @@ function applyDeepLinkTab() {
   if (target) switchTab(target);
 }
 
-// Apply deep-link on initial load AND on hash change (so back/forward works)
 if (typeof window !== 'undefined') {
   window.addEventListener('DOMContentLoaded', applyDeepLinkTab);
   window.addEventListener('hashchange', applyDeepLinkTab);
@@ -1521,9 +1608,6 @@ async function loadGates() {
     const data = await res.json();
     renderDashboardData(data);
   } catch (e) {
-    // Do not leave Active Gates stuck on the HTML placeholder "—" when the
-    // full dashboard payload fails — feedback stats may already have painted a
-    // real count; only fall back to 0 if still unset.
     var gatesEl = document.getElementById('statGates');
     if (gatesEl && (gatesEl.textContent === '—' || gatesEl.textContent === '' || gatesEl.textContent == null)) {
       gatesEl.textContent = '0';
@@ -1572,10 +1656,6 @@ function scheduleDashboardHydration(delayMs) {
   }, delayMs);
 }
 
-// Live-events SSE subscription. We use fetch() + ReadableStream instead of
-// the native EventSource because EventSource can't attach our Bearer auth
-// header. On any event we re-fetch the stats/dashboard summary — cheap, and
-// avoids having to duplicate rendering logic per event type.
 var __liveEventsController = null;
 async function subscribeToLiveEvents() {
   if (__liveEventsController) {
@@ -1606,7 +1686,6 @@ async function subscribeToLiveEvents() {
       }
     }
   } catch (e) {
-    // AbortError fires on logout/reconnect — not worth surfacing to the user.
   }
 }
 
@@ -1627,8 +1706,6 @@ function handleLiveEventFrame(frame) {
 }
 
 function onLiveEvent(eventName, payload) {
-  // All events currently boil down to "something changed, re-pull summary".
-  // When we add richer partial updates we can branch on eventName here.
   if (eventName === 'connected') return;
   refreshStatsOnly();
 }
@@ -1713,11 +1790,22 @@ function renderDashboardData(data) {
   if (reviewButton) reviewButton.disabled = false;
   const gates = data.gates || data.activeGates || [];
   const gateStats = data.gateStats || {};
-  // Prefer explicit count; never leave the hero card on the "—" placeholder.
-  // Note: `gates.length || totalGates` is wrong when length is 0 but totalGates
-  // is also 0 — use resolveActiveGateCount so 0 still renders as "0".
   var gateCount = resolveActiveGateCount(data);
   document.getElementById('statGates').textContent = gateCount != null ? gateCount : 0;
+  var overview = data.todayOverview || {};
+  var auditDays = (data.gateAudit && Array.isArray(data.gateAudit.days)) ? data.gateAudit.days : [];
+  var todayBucket = auditDays.length ? auditDays[auditDays.length - 1] : {};
+  renderGateStatusChips(overview.gateStatusChips || {
+    blockedToday: todayBucket.deny != null ? todayBucket.deny : 0,
+    warnedToday: todayBucket.warn != null ? todayBucket.warn : 0,
+    activeGates: gateCount != null ? gateCount : 0,
+  });
+  if (overview.upNext) {
+    renderUpNext(overview.upNext, data.approval && data.approval.total);
+  }
+  if (overview.lessonStorage) {
+    renderLessonStorageFooter(overview.lessonStorage);
+  }
   if (!gates.length) {
     document.getElementById('gatesList').innerHTML = '<div class="empty">No active checks</div>';
   } else {
@@ -2349,17 +2437,18 @@ function loadDemo() {
   document.querySelector('.auth-bar').style.display = 'none';
   document.getElementById('dashboardContent').style.display = 'block';
   document.getElementById('demoBanner').style.display = 'flex';
-  // Demo badge in nav
   var logo = document.querySelector('.nav-logo');
   if (!document.getElementById('demoBadge')) {
     logo.insertAdjacentHTML('afterend', '<span class="demo-badge" id="demoBadge">Demo Mode — Jamie M., Partner · Litigation Intake</span>');
   }
-  // Stats
   document.getElementById('statTotal').textContent = '184';
   document.getElementById('statPositive').textContent = '91';
   document.getElementById('statNegative').textContent = '93';
   document.getElementById('statGates').textContent = '14';
   setSelectedCard('all');
+  renderGateStatusChips({ blockedToday: 0, warnedToday: 0, activeGates: 14 });
+  renderUpNext({ kicker: 'Up next · Demo preview', title: 'Connect your agent', detail: 'Sample preview active. Sign in or run npx thumbgate init to inspect your live agent memory.', actionLabel: 'Connect Agent', actionHref: '/install', actionTab: null }, 0);
+  renderLessonStorageFooter({ label: '100% On-Device Private Memory (Demo sample)', location: '~/.thumbgate/feedback/memory-log.jsonl', lessonDbSizeDisplay: '0 B' });
   var demoSavings = TG_TOKEN_SAVINGS.compute(93, 42);
   var tEl = document.getElementById('statTokensSaved');
   var dEl = document.getElementById('statDollarsSaved');
@@ -2395,7 +2484,6 @@ function loadDemo() {
   });
   document.getElementById('reviewCheckpointBtn').disabled = true;
   document.getElementById('reviewCheckpointBtn').textContent = 'Connect to save your own review checkpoint';
-  // Sample memories — legal AI intake scenarios for law firm pilot demo
   var demoResults = [
     { signal: 'down', title: 'Intake agent provided outcome prediction to prospect', context: 'Prospect asked about wrongful termination in Florida. Agent said "you likely have a strong case." ThumbGate blocked the advice-shaped response before delivery under ABA Rule 5.5.', tags: ['upl-risk', 'aba-rule-5.5', 'auto-blocked', 'critical'], timestamp: '2026-05-25T14:20:00Z' },
     { signal: 'up', title: 'Conflict pre-check stopped intake before facts collected', context: 'Adverse party matched the synthetic conflict list. ThumbGate halted intake before privileged facts were disclosed, preventing a Rule 1.7/1.9 conflict issue.', tags: ['conflict-check', 'aba-rule-1.7', 'aba-rule-1.9', 'prevention'], timestamp: '2026-05-25T11:45:00Z' },
@@ -2424,7 +2512,6 @@ function loadDemo() {
     'style="flex:none;background:#b85c2d;color:#fff;padding:8px 18px;border-radius:8px;text-decoration:none;font-weight:700;font-size:13px;white-space:nowrap;">Go Pro — $19/mo</a>' +
     '</div>';
   document.getElementById('searchResults').innerHTML = upgradeBanner + teaserHtml;
-  // Sample gates — legal AI intake enforcement
   var demoGates = [
     { name: 'block-unauthorized-practice', pattern: 'Block advice-shaped intake replies from non-attorney agents (ABA Rule 5.5)', action: 'block' },
     { name: 'require-conflict-clearance', pattern: 'Require adverse-party clearance before facts or scheduling (Rules 1.7/1.9/1.10)', action: 'block' },
@@ -2613,7 +2700,6 @@ function loadDemo() {
   });
 }
 
-// Auto-load demo on first visit so visitors see the product immediately
 window.addEventListener('DOMContentLoaded', function() {
   preserveProjectQueryParams();
   if (hasBootstrapKey()) {
@@ -2643,6 +2729,7 @@ window.addEventListener('DOMContentLoaded', function() {
           discStatus.className = 'auth-status';
           discStatus.textContent = 'Disconnected';
         }
+        syncAuthBarVisibility('signed_out');
       }
     })
     .catch(function() {
@@ -2681,9 +2768,6 @@ async function exportDpo() {
   }
 }
 
-// ---------------------------------------------------------------------------
-// Insights tab: charts + pipeline
-// ---------------------------------------------------------------------------
 var feedbackChart = null;
 var lessonChart = null;
 var gateAuditChart = null;
