@@ -263,9 +263,9 @@ test.describe('/dashboard clickability — non-stat-card surfaces', () => {
     await page.waitForURL(/\/lessons$/);
   });
 
-  test('nav: clicking Landing Page navigates to /', async ({ page }) => {
+  test('nav: clicking brand logo navigates to /', async ({ page }) => {
     await page.goto('/dashboard');
-    await page.locator('nav a', { hasText: /^Landing Page$/ }).click();
+    await page.locator('nav a.nav-logo').click();
     await page.waitForURL(/\/$/);
   });
 

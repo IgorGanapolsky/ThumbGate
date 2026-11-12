@@ -121,9 +121,9 @@ test.describe('/lessons clickability — comprehensive E2E coverage', () => {
     await page.waitForURL(/\/dashboard$/);
   });
 
-  test('nav: clicking Landing Page navigates to /', async ({ page }) => {
+  test('nav: clicking brand logo navigates to /', async ({ page }) => {
     await page.goto('/lessons');
-    await page.locator('nav a', { hasText: /^Landing Page$/ }).click();
+    await page.locator('nav a.nav-logo').click();
     await page.waitForURL(/\/$/);
   });
 });
