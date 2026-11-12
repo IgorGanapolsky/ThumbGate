@@ -341,6 +341,21 @@
     <a href="/go/pro-direct?utm_source=dashboard_demo&amp;utm_medium=banner&amp;utm_campaign=pro_upgrade&amp;cta_id=dashboard_demo_pro" rel="noopener" style="background:#b85c2d;color:#fff;padding:6px 14px;border-radius:8px;text-decoration:none;font-weight:700;white-space:nowrap;">Start Pro now</a>
   </div>
 
+  <div class="panel" id="upNextCard" style="margin-bottom:16px;display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap;border-color:rgba(34,211,238,0.28);">
+    <div style="min-width:220px;flex:1;">
+      <div id="upNextKicker" style="font-size:11px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:var(--cyan);margin-bottom:4px;">Up next</div>
+      <div id="upNextTitle" style="font-size:16px;font-weight:700;color:var(--text);margin-bottom:4px;">Connect your agent</div>
+      <div id="upNextDetail" style="font-size:13px;color:var(--text-muted);line-height:1.5;">Total Feedback is 0. Wire ThumbGate into Claude Code, Cursor, or Codex to capture feedback and block repeat mistakes.</div>
+    </div>
+    <a class="btn" id="upNextActionBtn" href="/install" style="text-decoration:none;white-space:nowrap;">Connect Agent</a>
+  </div>
+
+  <div id="gateStatusChips" aria-label="Gate enforcement status" style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px;font-family:var(--mono);font-size:12px;">
+    <span id="chipBlockedToday" style="padding:5px 10px;border-radius:999px;background:rgba(248,113,113,0.12);border:1px solid rgba(248,113,113,0.32);color:#fca5a5;"><strong data-chip-count="blocked-today">0</strong> BLOCKED TODAY</span>
+    <span id="chipWarnedToday" style="padding:5px 10px;border-radius:999px;background:rgba(251,191,36,0.12);border:1px solid rgba(251,191,36,0.32);color:#fde68a;"><strong data-chip-count="warned-today">0</strong> WARNED TODAY</span>
+    <span id="chipActiveGates" style="padding:5px 10px;border-radius:999px;background:rgba(34,211,238,0.12);border:1px solid rgba(34,211,238,0.32);color:var(--cyan);"><strong data-chip-count="active-gates">0</strong> ACTIVE GATES</span>
+  </div>
+
   <!-- STATS -->
   <div class="stats-grid" id="statsGrid">
     <a class="stat-card" data-card-action="all" onclick="selectCard(this,'all')" href="/lessons?signal=all" style="cursor:pointer;text-decoration:none;color:inherit;display:block;" title="Click to view all feedback → Lessons page"><div class="stat-label">Total Feedback <span class="tooltip-trigger" onclick="event.stopPropagation(); event.preventDefault();">?<span class="tooltip-content">Total thumbs-up and thumbs-down signals captured from your AI agent interactions.</span></span></div><div class="stat-value cyan" id="statTotal">—</div></a>
@@ -352,7 +367,7 @@
   <div class="panel" id="chatPanel" style="margin-bottom:20px;">
     <div style="display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin-bottom:10px;">
       <h2 style="margin:0;">💬 Chat with your data</h2>
-      <span style="font-size:13px;color:var(--text-muted);">Ask about your gates, blocks, feedback, and lessons — answered <strong>locally from your own data</strong>, no cloud. (An optional BYO model only kicks in for open-ended questions.)</span>
+      <span style="font-size:13px;color:var(--text-muted);">Ask about your gates, blocks, feedback, and lessons — answered <strong>locally from your own data</strong>, no cloud. Each AI reply shows its exact model &amp; privacy route.</span>
     </div>
     <div id="chatMessages" style="max-height:360px;overflow-y:auto;margin-bottom:12px;display:none;padding-right:4px;"></div>
     <div style="display:flex;gap:8px;">
@@ -435,6 +450,11 @@
   <div class="tab-content" id="tab-gates">
     <div class="gates-section">
       <h2>Active Pre-Action Checks</h2>
+      <div id="gatesTabStatusChips" style="display:flex;gap:10px;flex-wrap:wrap;margin:10px 0 18px;font-family:var(--mono);font-size:12px;">
+        <span style="padding:5px 10px;border-radius:999px;background:rgba(248,113,113,0.12);border:1px solid rgba(248,113,113,0.32);color:#fca5a5;"><strong data-chip-count="blocked-today">0</strong> BLOCKED TODAY</span>
+        <span style="padding:5px 10px;border-radius:999px;background:rgba(251,191,36,0.12);border:1px solid rgba(251,191,36,0.32);color:#fde68a;"><strong data-chip-count="warned-today">0</strong> WARNED TODAY</span>
+        <span style="padding:5px 10px;border-radius:999px;background:rgba(34,211,238,0.12);border:1px solid rgba(34,211,238,0.32);color:var(--cyan);"><strong data-chip-count="active-gates">0</strong> ACTIVE GATES</span>
+      </div>
 
       <!-- Interactive Gating Workflow Diagram -->
       <details class="flow-details" style="margin-bottom: 24px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg-card); padding: 16px;" open>
@@ -768,6 +788,9 @@
       <div id="exportStatus" style="margin-top:12px;font-size:13px;color:var(--text-muted);"></div>
     </div>
   </div>
+  <footer id="lessonStorageFooter" style="margin-top:32px;padding:16px 0 8px;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;font-size:12px;color:var(--text-muted);font-family:var(--mono);">
+    <span id="lessonStorageSummary">100% On-Device Private Memory · ~/.thumbgate/feedback/memory-log.jsonl · 0 B</span>
+  </footer>
 
 </div>
 
@@ -947,6 +970,16 @@ function chatRenderSources(sources, answerText) {
          items +
          '</div>';
 }
+function chatRenderModelRoute(data) {
+  if (!data || typeof data !== 'object') return '';
+  var isLocal = data.provider === 'local-data' || data.provider === 'local' || data.llm === 'none';
+  var routeLabel = data.privacyRoute ? String(data.privacyRoute) : (isLocal ? 'Local, no cloud' : 'BYO model');
+  var modelLabel = (data.model && data.model !== 'none')
+    ? String(data.model)
+    : (data.provider === 'local-data' || data.llm === 'none' ? 'Deterministic local data' : 'Local model');
+  return '<div class="chat-model-route" data-chat-route="' + chatEscape(routeLabel) + '" data-chat-model="' + chatEscape(modelLabel) + '" style="margin-top:8px;font-size:11px;color:var(--text-muted);font-family:var(--mono);">' +
+    'Model: <strong style="color:var(--cyan);">' + chatEscape(modelLabel) + '</strong> · Route: <strong style="color:var(--text);">' + chatEscape(routeLabel) + '</strong></div>';
+}
 async function sendChat() {
   var input = document.getElementById('chatInput');
   var q = (input.value || '').trim();
@@ -962,7 +995,7 @@ async function sendChat() {
     var res = await fetch('/v1/chat', { method: 'POST', headers: getHeaders(), body: JSON.stringify({ question: q }) });
     var data = await res.json();
     if (data && data.ok) {
-      pending.innerHTML = chatRenderAnswer(data.answer) + chatRenderSources(data.sources, data.answer);
+      pending.innerHTML = chatRenderAnswer(data.answer) + chatRenderModelRoute(data) + chatRenderSources(data.sources, data.answer);
     } else if (data && data.error === 'gemini_error') {
       pending.innerHTML = '<em style="color:#f87171;">Gemini rejected the key: ' + chatEscape(data.message || 'invalid') +
         '<br>Fix: paste a valid key in the "Set GEMINI_API_KEY..." box below (get one at <a href="https://aistudio.google.com/app/apikey" target="_blank" style="color:#67e8f9;">AI Studio</a>) and click Save.</em>';
@@ -1043,6 +1076,42 @@ function toggleLicenseKeyBox(forceOpen) {
   }
 }
 
+var DEFAULT_AUTH_HELP_HTML = 'Sign in to open your workspace, or launch locally with <code style="font-family:var(--mono);font-size:12px;background:var(--cyan-dim);color:var(--cyan);padding:2px 6px;border-radius:4px;">npx thumbgate pro</code>.';
+
+function syncAuthBarVisibility(state, options) {
+  var opts = options || {};
+  var ssoBox = document.getElementById('dashboardSsoButtons');
+  var helpEl = document.getElementById('authHelp');
+  var keyToggle = document.getElementById('dashboardKeyToggle');
+  var proBtn = document.getElementById('getProBtn');
+  var demoBtn = document.getElementById('demoBtn');
+  var discBtn = document.getElementById('disconnectBtn');
+  var signedIn = state === 'signed_in' || state === 'signed_in_free';
+  if (ssoBox) {
+    ssoBox.style.display = signedIn ? 'none' : (ssoBox.children.length > 0 ? 'flex' : 'none');
+  }
+  if (state === 'signed_in') {
+    toggleLicenseKeyBox(false);
+    if (helpEl) helpEl.style.display = opts.localPro ? '' : 'none';
+    if (keyToggle) keyToggle.style.display = 'none';
+    if (proBtn) proBtn.style.display = 'none';
+    if (demoBtn) demoBtn.style.display = 'none';
+    if (discBtn) discBtn.style.display = 'inline-block';
+  } else if (state === 'signed_in_free') {
+    if (helpEl) helpEl.style.display = '';
+    if (keyToggle) keyToggle.style.display = '';
+    if (proBtn) { proBtn.style.display = 'inline-flex'; proBtn.textContent = 'Upgrade to Pro'; }
+    if (demoBtn) demoBtn.style.display = 'none';
+    if (discBtn) discBtn.style.display = 'inline-block';
+  } else {
+    if (helpEl) { helpEl.style.display = ''; helpEl.innerHTML = DEFAULT_AUTH_HELP_HTML; }
+    if (keyToggle) keyToggle.style.display = '';
+    if (proBtn) { proBtn.style.display = 'inline-flex'; proBtn.textContent = 'Get Pro'; }
+    if (demoBtn) demoBtn.style.display = 'inline-block';
+    if (discBtn) discBtn.style.display = 'none';
+  }
+}
+
 function disconnectKey() {
   pauseDashboardHydration();
   dashboardDataPromise = null;
@@ -1062,12 +1131,10 @@ function disconnectKey() {
   toggleLicenseKeyBox(false);
   var btn = document.getElementById('connectBtn');
   btn.disabled = false;
-  document.getElementById('demoBtn').style.display = 'inline-block';
-  document.getElementById('disconnectBtn').style.display = 'none';
+  syncAuthBarVisibility('signed_out');
   document.getElementById('authStatus').className = 'auth-status';
   document.getElementById('authStatus').textContent = 'Disconnected';
   document.getElementById('authTitle').textContent = 'Sign in to ThumbGate';
-  document.getElementById('authHelp').innerHTML = 'Sign in to open your workspace, or launch locally with <code style="font-family:var(--mono);font-size:12px;background:var(--cyan-dim);color:var(--cyan);padding:2px 6px;border-radius:4px;">npx thumbgate pro</code>.';
   document.getElementById('dashboardContent').style.display = 'none';
   return fetch('/v1/auth/session', { method: 'DELETE', credentials: 'same-origin' })
     .catch(function() {})
@@ -1089,9 +1156,7 @@ async function connect(options) {
     const freeStatus = document.getElementById('authStatus');
     freeStatus.className = 'auth-status ok';
     freeStatus.textContent = '✓ Free tier';
-    document.getElementById('disconnectBtn').style.display = 'inline-block';
-    const proBtn = document.getElementById('getProBtn');
-    if (proBtn) proBtn.textContent = 'Upgrade to Pro';
+    syncAuthBarVisibility('signed_in_free');
     const freeTitle = document.getElementById('authTitle');
     if (freeTitle) freeTitle.textContent = opts.ssoEmail ? `Signed in (${opts.ssoEmail}) · Free tier` : 'Signed in · Free tier';
     const freeHelp = document.getElementById('authHelp');
@@ -1154,7 +1219,7 @@ async function connect(options) {
       input.value = '';
       input.placeholder = 'Session active (HttpOnly cookie)';
     }
-    document.getElementById('disconnectBtn').style.display = 'inline-block';
+    syncAuthBarVisibility('signed_in', { localPro: Boolean(opts.localPro) });
     const titleEl = document.getElementById('authTitle');
     if (titleEl) {
       if (opts.localPro) {
@@ -1195,6 +1260,7 @@ async function connect(options) {
     if (titleEl) {
       titleEl.textContent = 'Sign in to ThumbGate';
     }
+    syncAuthBarVisibility('signed_out');
     if (opts.localPro) {
       toggleLicenseKeyBox(true);
       document.getElementById('authHelp').textContent = `Local ${tierName} bootstrap failed. Paste your THUMBGATE_API_KEY manually or retry the local launcher.`;
@@ -1221,6 +1287,47 @@ function resolveActiveGateCount(data) {
   return null;
 }
 
+function renderGateStatusChips(chips) {
+  var c = chips || {};
+  var blockedToday = Number.isFinite(Number(c.blockedToday)) ? Math.max(0, Math.trunc(Number(c.blockedToday))) : 0;
+  var warnedToday = Number.isFinite(Number(c.warnedToday)) ? Math.max(0, Math.trunc(Number(c.warnedToday))) : 0;
+  var activeGates = Number.isFinite(Number(c.activeGates)) ? Math.max(0, Math.trunc(Number(c.activeGates))) : 0;
+  document.querySelectorAll('[data-chip-count="blocked-today"]').forEach(function(el) { el.textContent = String(blockedToday); });
+  document.querySelectorAll('[data-chip-count="warned-today"]').forEach(function(el) { el.textContent = String(warnedToday); });
+  document.querySelectorAll('[data-chip-count="active-gates"]').forEach(function(el) { el.textContent = String(activeGates); });
+}
+
+function renderUpNext(upNext, totalFeedbackFallback) {
+  var kickerEl = document.getElementById('upNextKicker');
+  var titleEl = document.getElementById('upNextTitle');
+  var detailEl = document.getElementById('upNextDetail');
+  var btnEl = document.getElementById('upNextActionBtn');
+  if (!titleEl || !detailEl || !btnEl) return;
+  var card = upNext && typeof upNext === 'object' ? upNext : (Number(totalFeedbackFallback) > 0
+    ? { kicker: 'Up next · Memory review', title: 'Review captured lessons', detail: String(Number(totalFeedbackFallback)) + ' feedback signal(s) recorded.', actionLabel: 'View Lessons', actionHref: '/lessons', actionTab: null }
+    : { kicker: 'Up next · First signal', title: 'Connect your agent', detail: 'Total Feedback is 0. Wire ThumbGate into Claude Code, Cursor, or Codex to capture feedback and block repeat mistakes.', actionLabel: 'Connect Agent', actionHref: '/install', actionTab: null });
+  if (kickerEl) kickerEl.textContent = card.kicker || 'Up next';
+  titleEl.textContent = card.title || 'Connect your agent';
+  detailEl.textContent = card.detail || '';
+  btnEl.textContent = card.actionLabel || 'Open';
+  btnEl.setAttribute('href', card.actionHref || '#');
+  if (card.actionTab) {
+    btnEl.onclick = function(ev) { ev.preventDefault(); switchTab(card.actionTab); };
+  } else {
+    btnEl.onclick = null;
+  }
+}
+
+function renderLessonStorageFooter(lessonStorage) {
+  var el = document.getElementById('lessonStorageSummary');
+  if (!el) return;
+  var s = lessonStorage && typeof lessonStorage === 'object' ? lessonStorage : {};
+  var label = s.label || '100% On-Device Private Memory';
+  var loc = s.location || '~/.thumbgate/feedback/memory-log.jsonl';
+  var size = s.lessonDbSizeDisplay || '0 B';
+  el.textContent = label + ' · ' + loc + ' · ' + size;
+}
+
 function renderStats(data) {
   const total = (data.totalFeedback || data.total || 0);
   const pos = (data.totalPositive || data.positive || data.thumbsUp || 0);
@@ -1235,6 +1342,17 @@ function renderStats(data) {
   var gateCount = resolveActiveGateCount(data);
   if (gateCount != null) {
     document.getElementById('statGates').textContent = gateCount;
+  }
+  var gs = data.gateStats || {};
+  var overview = data.todayOverview || {};
+  renderGateStatusChips(overview.gateStatusChips || {
+    blockedToday: gs.blockedToday != null ? gs.blockedToday : 0,
+    warnedToday: gs.warnedToday != null ? gs.warnedToday : 0,
+    activeGates: gateCount != null ? gateCount : 0,
+  });
+  renderUpNext(overview.upNext || null, total);
+  if (overview.lessonStorage) {
+    renderLessonStorageFooter(overview.lessonStorage);
   }
 }
 
@@ -1718,6 +1836,20 @@ function renderDashboardData(data) {
   // is also 0 — use resolveActiveGateCount so 0 still renders as "0".
   var gateCount = resolveActiveGateCount(data);
   document.getElementById('statGates').textContent = gateCount != null ? gateCount : 0;
+  var overview = data.todayOverview || {};
+  var auditDays = (data.gateAudit && Array.isArray(data.gateAudit.days)) ? data.gateAudit.days : [];
+  var todayBucket = auditDays.length ? auditDays[auditDays.length - 1] : {};
+  renderGateStatusChips(overview.gateStatusChips || {
+    blockedToday: todayBucket.deny != null ? todayBucket.deny : 0,
+    warnedToday: todayBucket.warn != null ? todayBucket.warn : 0,
+    activeGates: gateCount != null ? gateCount : 0,
+  });
+  if (overview.upNext) {
+    renderUpNext(overview.upNext, data.approval && data.approval.total);
+  }
+  if (overview.lessonStorage) {
+    renderLessonStorageFooter(overview.lessonStorage);
+  }
   if (!gates.length) {
     document.getElementById('gatesList').innerHTML = '<div class="empty">No active checks</div>';
   } else {
@@ -2360,6 +2492,9 @@ function loadDemo() {
   document.getElementById('statNegative').textContent = '93';
   document.getElementById('statGates').textContent = '14';
   setSelectedCard('all');
+  renderGateStatusChips({ blockedToday: 0, warnedToday: 0, activeGates: 14 });
+  renderUpNext({ kicker: 'Up next · Demo preview', title: 'Connect your agent', detail: 'Sample preview active. Sign in or run npx thumbgate init to inspect your live agent memory.', actionLabel: 'Connect Agent', actionHref: '/install', actionTab: null }, 0);
+  renderLessonStorageFooter({ label: '100% On-Device Private Memory (Demo sample)', location: '~/.thumbgate/feedback/memory-log.jsonl', lessonDbSizeDisplay: '0 B' });
   var demoSavings = TG_TOKEN_SAVINGS.compute(93, 42);
   var tEl = document.getElementById('statTokensSaved');
   var dEl = document.getElementById('statDollarsSaved');
@@ -2643,6 +2778,7 @@ window.addEventListener('DOMContentLoaded', function() {
           discStatus.className = 'auth-status';
           discStatus.textContent = 'Disconnected';
         }
+        syncAuthBarVisibility('signed_out');
       }
     })
     .catch(function() {
