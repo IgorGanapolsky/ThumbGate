@@ -246,16 +246,17 @@ describe('public/numbers.html generated artifact', () => {
     );
   });
 
-  it('stays synced to the current package version and snapshot wording', () => {
+  it('does not ship the retired zero snapshot', () => {
     const contents = fs.readFileSync(numbersPath, 'utf8');
-
+    assert.match(contents, /This snapshot was retired/);
+    assert.doesNotMatch(contents, /0 recorded hard-block event/);
+    assert.doesNotMatch(contents, /stat-value">0</);
+    assert.match(contents, /First-Party Data Snapshot/);
+    assert.doesNotMatch(contents, /Live First-Party Data/);
     assert.match(
       contents,
       new RegExp(`"softwareVersion": "${pkg.version.replaceAll('.', '\\.')}"`),
-      'expected public/numbers.html to match package.json version',
     );
-    assert.match(contents, /First-Party Data Snapshot/);
-    assert.doesNotMatch(contents, /Live First-Party Data/);
   });
 });
 

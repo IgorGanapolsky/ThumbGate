@@ -27,7 +27,7 @@
   "operatingSystem": "Cross-platform, Node.js >=18.18.0",
   "softwareVersion": "1.39.1",
   "url": "https://thumbgate-production.up.railway.app/numbers",
-  "dateModified": "2026-08-03",
+  "dateModified": "2026-11-12",
   "creator": {
     "@type": "Person",
     "name": "Igor Ganapolsky",
@@ -202,82 +202,12 @@
 <main class="container">
   <h1>The Numbers</h1>
   <p class="subtitle">Generated first-party operational snapshot from the ThumbGate runtime. This is not customer traction, install volume, revenue, or proof that a configured gate has fired.</p>
-  <div class="freshness">Updated: 2026-08-03 · Version 1.39.1</div>
-  <div class="truth-note"><strong>Read this first:</strong> configured checks are inventory. Recorded blocks and warnings are usage evidence. This snapshot currently reports 0 recorded hard-block event(s) and 0 recorded warning event(s).</div>
-
-  <h2>Gate enforcement</h2>
-  <div class="stats-grid">
-    <div class="stat-card">
-      <div class="stat-label">Configured checks</div>
-      <div class="stat-value">40</div>
-      <div class="stat-sub">40 shipped defaults · 0 auto-promoted; inventory, not usage</div>
-      <a class="stat-source" href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/scripts/gate-stats.js">source: gate-stats.js</a>
-    </div>
-    <div class="stat-card">
-      <div class="stat-label">Actions blocked</div>
-      <div class="stat-value">0</div>
-      <div class="stat-sub">no recorded hard-block events in this snapshot</div>
-      <a class="stat-source" href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/scripts/gate-stats.js">source: gate-stats.js</a>
-    </div>
-    <div class="stat-card">
-      <div class="stat-label">Actions warned</div>
-      <div class="stat-value">0</div>
-      <div class="stat-sub">no recorded soft-warning events in this snapshot</div>
-      <a class="stat-source" href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/scripts/gate-stats.js">source: gate-stats.js</a>
-    </div>
-    <div class="stat-card">
-      <div class="stat-label">Top recorded blocker</div>
-      <div class="stat-value" style="font-size:1.1rem;">No recorded blocker yet</div>
-      <div class="stat-sub">top blocker appears only after at least one recorded block</div>
-      <a class="stat-source" href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/scripts/gate-stats.js">source: gate-stats.js</a>
-    </div>
-  </div>
-
-  <h2>Token &amp; time savings</h2>
-  <div class="stats-grid">
-    <div class="stat-card">
-      <div class="stat-label">Estimated hours saved</div>
-      <div class="stat-value">0.0</div>
-      <div class="stat-sub">0 because no block/warn events are recorded</div>
-      <a class="stat-source" href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/scripts/gate-stats.js">source: gate-stats.js</a>
-    </div>
-    <div class="stat-card">
-      <div class="stat-label">Estimated LLM dollars saved</div>
-      <div class="stat-value">$0.00</div>
-      <div class="stat-sub">0 because no recorded block events feed this estimate</div>
-      <a class="stat-source" href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/scripts/token-savings.js">source: token-savings.js</a>
-    </div>
-    <div class="stat-card">
-      <div class="stat-label">Tokens not spent</div>
-      <div class="stat-value">0</div>
-      <div class="stat-sub">0 because no recorded block events feed this estimate</div>
-      <a class="stat-source" href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/scripts/token-savings.js">source: token-savings.js</a>
-    </div>
-    <div class="stat-card">
-      <div class="stat-label">Scorer Bayes error</div>
-      <div class="stat-value">n/a</div>
-      <div class="stat-sub">needs both safe and harmful feedback sequences</div>
-      <a class="stat-source" href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/scripts/bayes-optimal-gate.js">source: bayes-optimal-gate.js</a>
-    </div>
-  </div>
-
-  <h2>Methodology</h2>
-  <div class="method">
-    <p><strong>Where the numbers come from.</strong> This page is regenerated from local scripts — no survey data, no hand-edited figures, no third-party attribution. Every number on this page is produced by code in the public <a href="https://github.com/IgorGanapolsky/ThumbGate">ThumbGate repo</a>.</p>
-    <ul>
-      <li><strong>Configured checks</strong> — union of shipped default rules and the auto-promotion ledger. This is inventory, not proof that the check fired.</li>
-      <li><strong>Actions blocked/warned</strong> — recorded intervention counts from gate occurrence data. These are the evidence counters.</li>
-      <li><strong>Hours saved</strong> — conservative 15-minute/incident estimate, shown only as a function of recorded block/warn counts.</li>
-      <li><strong>Dollars saved</strong> — blended per-call token estimate (2k input + 600 output) × recorded blocks × 2026-04-15 Anthropic + OpenAI list prices. See <code>scripts/token-savings.js</code> for the full price snapshot.</li>
-      <li><strong>Bayes error rate</strong> — shown only when the feedback sample contains both safe and harmful outcomes. One-class samples are reported as n/a.</li>
-    </ul>
-    <p style="margin-top:12px;">Last auto-promotion: none. Regenerated on every release via <code>npm run numbers:generate</code> and on a weekly cadence.</p>
-  </div>
-
+  <div class="freshness">Updated: 2026-11-12 · Version 1.39.1</div>
+  <div class="truth-note"><strong>This snapshot was retired.</strong> The 2026-08-03 page showed zeros from an empty local generate. That is not audited proof, and it is not on this page anymore. The checked 30-day proof page is not published yet. Until it is, do not read a number here.</div>
+  <p class="subtitle">Public offers stay Free, Pro at $19/mo, and the $499 sprint. Install locally if you want the gate on your own machine.</p>
   <div class="cta">
     <a href="https://www.npmjs.com/package/thumbgate">Install ThumbGate — npx thumbgate init</a>
-    <div class="footer-note">Prefer the raw feed? See <a href="https://github.com/IgorGanapolsky/ThumbGate">GitHub</a> or run <code>npm run gate:stats</code> locally.</div>
-    <div class="footer-note">Generated at 2026-08-03T05:26:21.201Z UTC.</div>
+    <div class="footer-note">Audited proof will replace this page. Until then, this URL does not publish block, warning, savings, or revenue figures.</div>
   </div>
 </main>
 </body>

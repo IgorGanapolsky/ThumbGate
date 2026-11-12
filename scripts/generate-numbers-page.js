@@ -405,9 +405,14 @@ function generate(options = {}) {
   const nowDate = nowIso.slice(0, 10);
   const version = options.version || loadVersion();
   const { gate, savings } = options.data || collectStats();
+  const outPath = options.outPath || OUTPUT_PATH;
+  const blocked = Number(gate?.totalBlocked || 0);
+  const warned = Number(gate?.totalWarned || 0);
+  if (blocked === 0 && warned === 0 && !options.allowZeroSnapshot) {
+    return { outPath, bytes: 0, version, nowDate, skipped: 'zero-snapshot-retired' };
+  }
 
   const html = renderNumbersPage({ version, nowIso, nowDate, gate, savings });
-  const outPath = options.outPath || OUTPUT_PATH;
   fs.writeFileSync(outPath, html);
   return { outPath, bytes: Buffer.byteLength(html), version, nowDate };
 }
