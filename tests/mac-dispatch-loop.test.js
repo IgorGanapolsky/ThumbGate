@@ -41,7 +41,7 @@ function fakeWorld({ issues, claudeStdout, claudeStatus = 0, rivalClaimFirst = f
   const calls = [];
   const comments = [];
   let nextId = 100;
-  const labels = new Map(issues.map((i) => [i.number, new Set(['ready-for-agent'])]));
+  const labels = new Map(issues.map((i) => [i.number, new Set(['agent-signal-ready'])]));
   const run = (cmd, args, opts = {}) => {
     calls.push({ cmd, args, opts });
     const ok = (stdout = '') => ({ status: 0, stdout, stderr: '', error: null, timedOut: false });
@@ -51,7 +51,7 @@ function fakeWorld({ issues, claudeStdout, claudeStatus = 0, rivalClaimFirst = f
     const [a, b] = args;
     if (a === 'label') return ok();
     if (a === 'issue' && b === 'list') {
-      return ok(JSON.stringify(issues.filter((i) => labels.get(i.number).has('ready-for-agent'))));
+      return ok(JSON.stringify(issues.filter((i) => labels.get(i.number).has('agent-signal-ready'))));
     }
     if (a === 'issue' && b === 'edit') {
       const set = labels.get(Number(args[2]));
@@ -168,8 +168,8 @@ test('happy path: claims, runs claude without bypass flags, comments evidence, l
   for (const bad of d.FORBIDDEN_CLAUDE_ARGS) assert.ok(!claude.args.join(' ').includes(bad));
 
   const labels = world.labels.get(7);
-  assert.ok(labels.has('agent-done'));
-  assert.ok(!labels.has('ready-for-agent'));
+  assert.ok(labels.has('agent-signal-done'));
+  assert.ok(!labels.has('agent-signal-ready'));
   assert.ok(!labels.has('agent-claimed'));
 
   const evidence = world.comments.find((c) => c.body.includes(d.RESULT_MARKER));
@@ -203,7 +203,7 @@ test('ignores issues from authors outside the allow list', () => {
   const world = fakeWorld({ issues: [issue(10, { author: { login: 'stranger' } })], claudeStdout: '' });
   assert.equal(d.tick(ctxFor(config, world))[0].action, 'skipped-author');
   assert.ok(!world.calls.some((c) => c.cmd === 'claude'));
-  assert.ok(world.labels.get(10).has('ready-for-agent'));
+  assert.ok(world.labels.get(10).has('agent-signal-ready'));
 });
 
 test('blocks without running claude when the workdir is outside the allowed roots', () => {

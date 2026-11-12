@@ -2,7 +2,7 @@ name: Ready for Agent
 description: Queue a bounded, proof-ready implementation run for the ThumbGate.
 title: '[Agent] '
 labels:
-  - ready-for-agent
+  - agent-signal-ready
 body:
   - type: textarea
     id: business_outcome
@@ -29,7 +29,7 @@ body:
       description: List the exact files, modules, and behaviors the agent is allowed to change.
       placeholder: |
         - WORKFLOW.md
-        - .github/ISSUE_TEMPLATE/ready-for-agent.yml
+        - .github/ISSUE_TEMPLATE/agent-signal-ready.yml
         - scripts/validate-workflow-contract.js
         - tests/workflow-contract.test.js
     validations:
