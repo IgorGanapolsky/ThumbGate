@@ -219,17 +219,38 @@
     global.document.head.appendChild(style);
   }
 
-  function initializeRevenueAssist(options) {
-    var settings = options || {};
-    if (!global.document || typeof global.document.querySelector !== 'function') return null;
-    if (global.document.querySelector('[data-revenue-assist="off"]')) return null;
-    if (global.document.querySelector('[data-thumbgate-revenue-assist]')) return null;
+  function isPaidSessionPayload(session) {
+    return Boolean(
+      session
+      && session.authenticated === true
+      && (session.tier === 'Pro' || session.tier === 'Enterprise')
+    );
+  }
 
-    var pathname = settings.pathname || getCurrentPathname();
-    if (!isRevenueAssistEligible(pathname)) return null;
+  function removePaidSessionUpsells() {
+    if (!global.document || typeof global.document.querySelectorAll !== 'function') return;
+    Array.from(global.document.querySelectorAll('[data-thumbgate-revenue-assist],[data-thumbgate-abandon-survey]'))
+      .forEach(function(el) { el.remove(); });
+  }
 
+  function isRevenueAssistSuppressedInDom() {
+    if (!global.document || typeof global.document.querySelector !== 'function') return true;
+    return Boolean(
+      global.document.querySelector('[data-revenue-assist="off"]')
+      || global.document.querySelector('[data-thumbgate-revenue-assist]')
+    );
+  }
+
+  function handleRevenueAssistSessionResult(session, settings, pathname) {
+    if (isPaidSessionPayload(session)) {
+      removePaidSessionUpsells();
+      return null;
+    }
+    if (isRevenueAssistSuppressedInDom()) return null;
+    return mountRevenueAssistPanel(settings, pathname);
+  }
+  function mountRevenueAssistPanel(settings, pathname) {
     injectRevenueAssistStyles();
-
     var placement = settings.placement || normalizePlacement(pathname);
     var campaign = settings.campaign || 'high_traffic_pages';
     var proHref = appendCampaignParams(settings.proHref || '/checkout/pro', {
@@ -384,6 +405,25 @@
       showAbandonSurvey: showAbandonSurvey,
       placement: placement,
     };
+  }
+
+  function initializeRevenueAssist(options) {
+    var settings = options || {};
+    if (isRevenueAssistSuppressedInDom()) return null;
+
+    var pathname = settings.pathname || getCurrentPathname();
+    if (!isRevenueAssistEligible(pathname)) return null;
+
+    if (typeof global.fetch !== 'function' || settings.skipSessionCheck === true) {
+      return mountRevenueAssistPanel(settings, pathname);
+    }
+
+    return global.fetch('/v1/auth/session', { credentials: 'include' })
+      .then(function(res) { return res && res.ok ? res.json() : null; })
+      .catch(function() { return null; })
+      .then(function(session) {
+        return handleRevenueAssistSessionResult(session, settings, pathname);
+      });
   }
 
   function normalizeInteger(value) {
@@ -669,6 +709,7 @@
     initializeEmailCheckoutButtons: initializeEmailCheckoutButtons,
     initializeRevenueAssist: initializeRevenueAssist,
     isRevenueAssistEligible: isRevenueAssistEligible,
+    isPaidSessionPayload: isPaidSessionPayload,
     trackEvent: trackEvent,
     initializeBehaviorAnalytics: initializeBehaviorAnalytics,
     bucketDwellMs: bucketDwellMs,
