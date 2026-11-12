@@ -404,15 +404,27 @@ function computeApprovalStats(entries) {
 }
 
 
-function computeGateStats() {
-  const autoGatesPath = getAutoGatesPath();
-  const statsPath = path.join(
-    process.env.HOME || '/tmp',
-    '.thumbgate',
-    'gate-stats.json'
-  );
-  const stats = readJsonFile(statsPath) || { blocked: 0, warned: 0, passed: 0, byGate: {} };
+function resolveScopedGateStatsPath(feedbackDir) {
+  const defaultStatsPath = path.join(process.env.HOME || '/tmp', '.thumbgate', 'gate-stats.json');
+  if (!feedbackDir) return defaultStatsPath;
+  const localStatsPath = path.join(feedbackDir, 'gate-stats.json');
+  if (fs.existsSync(localStatsPath)) return localStatsPath;
+  const resolved = path.resolve(feedbackDir);
+  const homeTg = path.resolve(path.join(process.env.HOME || '/tmp', '.thumbgate'));
+  const projRoot = path.resolve(PROJECT_ROOT);
+  const inDefaultScope = (
+    resolved === homeTg
+    || resolved.startsWith(`${homeTg}${path.sep}`)
+    || resolved === projRoot
+    || resolved.startsWith(`${projRoot}${path.sep}`)
+  ) && !resolved.includes(`${path.sep}tenants${path.sep}`);
+  return inDefaultScope ? defaultStatsPath : localStatsPath;
+}
 
+function computeGateStats(feedbackDir) {
+  const autoGatesPath = getAutoGatesPath();
+  const statsPath = resolveScopedGateStatsPath(feedbackDir);
+  const stats = readJsonFile(statsPath) || { blocked: 0, warned: 0, passed: 0, byGate: {} };
   const defaultGates = readJsonFile(DEFAULT_GATES_PATH);
   const autoGates = readJsonFile(autoGatesPath);
   const manualCount = defaultGates && Array.isArray(defaultGates.gates) ? defaultGates.gates.length : 0;
@@ -567,29 +579,28 @@ function computeLessonStorageSummary(feedbackDir, memoryCount = 0) {
   };
 }
 
-function findMatchingLessonText(gateId, memoryEntries, gates) {
-  const needle = String(gateId || '').toLowerCase();
-  for (let i = memoryEntries.length - 1; i >= 0; i -= 1) {
-    const m = memoryEntries[i];
-    if (!m) continue;
-    const blob = `${m.gateId || ''} ${m.id || ''} ${(m.tags || []).join(' ')} ${m.title || ''}`.toLowerCase();
-    if (needle && blob.includes(needle)) {
-      return String(m.title || m.summary || m.content || m.context || '').trim().slice(0, 160);
+const FINISH_SETUP_COMMAND = 'npx thumbgate quickstart';
+const FINISH_SETUP_HREF = '/install#quickstart';
+const FINISH_SETUP_DETAIL = 'Run npx thumbgate quickstart to fire your first PreToolUse block and unlock the built-in safety rule pack + 3 custom block rules on the Free tier (7-day local Pro trial included).';
+
+function countRecordedGateBlocks(auditEntries, gateAudit, gateStats) {
+  let auditDenies = 0;
+  for (const ev of auditEntries) {
+    if (ev && (ev.decision === 'deny' || ev.decision === 'block')) {
+      auditDenies += 1;
     }
   }
-  const gateObj = (gates || []).find((g) => g && (g.id === gateId || g.name === gateId));
-  return gateObj && gateObj.pattern ? `Pattern: ${String(gateObj.pattern).slice(0, 140)}` : '';
+  const seriesDenies = Number(gateAudit && gateAudit.totals && gateAudit.totals.deny) || 0;
+  const statsBlocked = Number(gateStats && gateStats.blocked) || 0;
+  const topBlocked = Number(gateStats && gateStats.topBlockedCount) || 0;
+  return Math.max(auditDenies, seriesDenies, statsBlocked, topBlocked);
 }
 
 function computeTodayOverview(feedbackDir, options = {}) {
-  const entries = Array.isArray(options.entries) ? options.entries : collectAllFeedbackEntries(feedbackDir);
   const memoryEntries = Array.isArray(options.memoryEntries) ? options.memoryEntries : readJSONL(path.join(feedbackDir, 'memory-log.jsonl'));
   const auditEntries = Array.isArray(options.auditEntries) ? options.auditEntries : readJSONL(path.join(feedbackDir, AUDIT_LOG_FILENAME));
-  const gateStats = options.gateStats || computeGateStats();
+  const gateStats = options.gateStats || computeGateStats(feedbackDir);
   const gateAudit = options.gateAudit || computeGateAuditSeries(feedbackDir);
-  const gates = Array.isArray(options.gates) ? options.gates : listActiveGates();
-  const nowMs = options.now ? new Date(options.now).getTime() : Date.now();
-  const cutoff24h = nowMs - 24 * 60 * 60 * 1000;
 
   const todayBucket = Array.isArray(gateAudit.days) && gateAudit.days.length > 0
     ? gateAudit.days[gateAudit.days.length - 1]
@@ -600,67 +611,25 @@ function computeTodayOverview(feedbackDir, options = {}) {
     activeGates: Number(gateStats.totalGates) || 0,
   };
 
-  const fired24h = new Map();
-  for (const ev of auditEntries) {
-    if (!ev || !['deny', 'warn'].includes(ev.decision)) continue;
-    const ts = ev.timestamp ? new Date(ev.timestamp).getTime() : NaN;
-    if (!Number.isFinite(ts) || ts < cutoff24h) continue;
-    const gId = String(ev.gateId || ev.gate || ev.ruleId || '').trim();
-    if (!gId) continue;
-    const prev = fired24h.get(gId) || { total: 0, deny: 0, warn: 0 };
-    prev.total += 1;
-    if (ev.decision === 'deny') prev.deny += 1; else prev.warn += 1;
-    fired24h.set(gId, prev);
-  }
-  const ranked24h = Array.from(fired24h.entries()).sort((a, b) => (b[1].total - a[1].total) || a[0].localeCompare(b[0]));
-
-  let upNext;
-  if (ranked24h.length > 0) {
-    const [topGateId, counts] = ranked24h[0];
-    const lessonNote = findMatchingLessonText(topGateId, memoryEntries, gates);
-    upNext = {
-      kind: 'top_gate_24h',
-      kicker: 'Up next · Most active gate (24h)',
-      title: `${topGateId} (${counts.total} intercepted in last 24h)`,
-      detail: lessonNote || `${counts.deny} blocked, ${counts.warn} warned in the last 24 hours.`,
-      actionLabel: 'Inspect Gates',
-      actionTab: 'gates',
-      actionHref: '#tab-gates',
-    };
-  } else if (entries.length === 0) {
-    upNext = {
-      kind: 'connect_agent',
-      kicker: 'Up next · First signal',
-      title: 'Connect your agent',
-      detail: 'Total Feedback is 0. Wire ThumbGate into Claude Code, Cursor, or Codex to capture feedback and block repeat mistakes.',
-      actionLabel: 'Connect Agent',
+  const totalGateBlocks = countRecordedGateBlocks(auditEntries, gateAudit, gateStats);
+  const firstBlockRecorded = totalGateBlocks > 0;
+  const upNext = firstBlockRecorded
+    ? null
+    : {
+      kind: 'finish_setup',
+      kicker: 'Finish setup',
+      title: 'Finish setup to record your first gate block →',
+      detail: FINISH_SETUP_DETAIL,
+      command: FINISH_SETUP_COMMAND,
+      reward: 'Built-in safety rule pack + 3 custom block rules on Free tier (7-day local Pro trial included)',
+      actionLabel: 'Finish setup →',
       actionTab: null,
-      actionHref: '/install',
+      actionHref: FINISH_SETUP_HREF,
     };
-  } else if (gateStats.topBlocked && Number(gateStats.topBlockedCount) > 0) {
-    const lessonNote = findMatchingLessonText(gateStats.topBlocked, memoryEntries, gates);
-    upNext = {
-      kind: 'top_gate_all_time',
-      kicker: 'Up next · Top guardrail',
-      title: `${gateStats.topBlocked} (${gateStats.topBlockedCount} blocked)`,
-      detail: lessonNote || 'Highest-volume active PreToolUse block rule.',
-      actionLabel: 'Inspect Gates',
-      actionTab: 'gates',
-      actionHref: '#tab-gates',
-    };
-  } else {
-    upNext = {
-      kind: 'review_lessons',
-      kicker: 'Up next · Memory review',
-      title: `Review ${memoryEntries.length} captured lesson${memoryEntries.length === 1 ? '' : 's'}`,
-      detail: `${entries.length} feedback signal${entries.length === 1 ? '' : 's'} recorded with 0 gate blocks in the last 24h.`,
-      actionLabel: 'View Lessons',
-      actionTab: null,
-      actionHref: '/lessons',
-    };
-  }
 
   return {
+    firstBlockRecorded,
+    totalGateBlocks,
     upNext,
     gateStatusChips,
     lessonStorage: computeLessonStorageSummary(feedbackDir, memoryEntries.length),
@@ -1965,7 +1934,7 @@ function generateDashboard(feedbackDir, options = {}) {
   const billingSummary = options.billingSummary || getBillingSummary(analyticsWindow);
 
   const approval = computeApprovalStats(entries);
-  const gateStats = mergeRepeatMetricIntoGateStats(computeGateStats());
+  const gateStats = mergeRepeatMetricIntoGateStats(computeGateStats(feedbackDir));
   const prevention = computePreventionImpact(feedbackDir, gateStats);
   const trend = computeSessionTrend(entries, 10);
   const health = computeSystemHealth(feedbackDir, gateStats);

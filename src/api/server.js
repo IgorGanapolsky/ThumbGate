@@ -6372,10 +6372,26 @@ async function handlePaidAuthSessionRoute(req, res, expectedApiKey, expectedOper
     const sessionEntry = getPaidAuthSessionEntry(cookies[PAID_AUTH_COOKIE_NAME], expectedApiKey, expectedOperatorKey);
     const tier = resolvePaidSessionTier(extractApiKey(req), expectedApiKey, expectedOperatorKey)
       || (sessionEntry && sessionEntry.subjectType === 'sso_free' ? 'Free' : null);
+    let firstBlockRecorded = false;
+    let upNext = null;
+    if (tier) {
+      try {
+        const { computeTodayOverview } = require('../../scripts/dashboard');
+        const basePaths = getFeedbackPaths();
+        const scopedDir = tier === 'Free' && sessionEntry?.ssoEmail
+          ? path.join(basePaths.FEEDBACK_DIR, 'tenants', hashDataIdentity('sso_free', sessionEntry.ssoEmail))
+          : partitionFeedbackPaths(basePaths, resolveRequestDataIdentity(req, expectedApiKey)).FEEDBACK_DIR;
+        const overview = computeTodayOverview(scopedDir);
+        firstBlockRecorded = Boolean(overview.firstBlockRecorded);
+        upNext = overview.upNext;
+      } catch (_) {}
+    }
     sendJson(res, 200, {
       ok: true,
       authenticated: Boolean(tier),
       tier: tier || null,
+      firstBlockRecorded,
+      upNext,
       ssoProviders: getConfiguredSsoProviders(),
       ssoProvider: sessionEntry?.ssoProvider || null,
       ssoEmail: sessionEntry?.ssoEmail || null,
@@ -10770,7 +10786,7 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
         // succeeds (and never updates if that call fails).
         try {
           const { computeGateStats, computeTodayOverview } = require('../../scripts/dashboard');
-          const gateStats = computeGateStats();
+          const gateStats = computeGateStats(requestFeedbackPaths.FEEDBACK_DIR);
           const todayOverview = computeTodayOverview(requestFeedbackPaths.FEEDBACK_DIR, { gateStats });
           stats.activeGateCount = Number(gateStats.totalGates) || 0;
           stats.gateStats = {
