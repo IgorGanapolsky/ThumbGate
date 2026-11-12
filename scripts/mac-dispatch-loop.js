@@ -6,7 +6,7 @@
  * Polls open issues whose body contains `<!-- agent:ready -->` from allowed authors,
  * claims one (claim comment, earliest claim wins across Macs), runs `claude -p` in the
  * issue's folder under the Mac's own Claude Code permission settings (never adds bypass
- * flags), comments the evidence, and writes `<!-- agent:done -->` or the `agent-blocked` label.
+ * flags), comments the evidence, and writes `<!-- agent:done -->` or `<!-- agent:blocked -->`.
  * Usage: --once (launchd) | --watch (herdr pane) [--dry-run]. See docs/guides/mac-dispatch-loop.md.
  */
 
@@ -18,12 +18,9 @@ const path = require('node:path');
 const { redactSecrets } = require('./secret-redaction');
 
 const READY_MARKER = '<!-- agent:ready -->';
+const CLAIMED_MARKER = '<!-- agent:claimed -->';
 const DONE_MARKER = '<!-- agent:done -->';
-
-const LABELS = Object.freeze({
-  claimed: { name: 'agent-claimed', color: 'FBCA04', description: 'A Mac agent is working on this' },
-  blocked: { name: 'agent-blocked', color: 'D93F0B', description: 'Mac agent could not finish; see the evidence comment' },
-});
+const BLOCKED_MARKER = '<!-- agent:blocked -->';
 
 const CLAIM_MARKER = 'mac-dispatch-claim';
 const RESULT_MARKER = 'mac-dispatch-result';
@@ -252,7 +249,7 @@ function buildEvidenceComment(r) {
   if (r.stderr && r.stderr.trim()) {
     lines.push('', '<details><summary>stderr (tail)</summary>', '', fence(tail(r.stderr.trim())), '', '</details>');
   }
-  lines.push('', `Requeue: put \`${READY_MARKER}\` back in the issue body and remove \`${DONE_MARKER}\`.`);
+  lines.push('', `Requeue: put \`${READY_MARKER}\` back in the issue body and remove \`${DONE_MARKER}\`, \`${BLOCKED_MARKER}\`, and \`${CLAIMED_MARKER}\`.`);
   let body = redactSecrets(lines.join('\n'));
   if (body.length > MAX_COMMENT_CHARS) body = `${body.slice(0, MAX_COMMENT_CHARS)}\n\n…(comment cut to fit GitHub's limit)`;
   return body;
@@ -281,12 +278,6 @@ function gh(ctx, args, opts = {}) {
   return res.stdout;
 }
 
-function ensureLabels(ctx) {
-  for (const label of Object.values(LABELS)) {
-    gh(ctx, ['label', 'create', label.name, '--repo', ctx.config.repo, '--color', label.color, '--description', label.description, '--force']);
-  }
-}
-
 function listReadyIssues(ctx) {
   const out = gh(ctx, [
     'issue', 'list', '--repo', ctx.config.repo, '--state', 'open',
@@ -295,7 +286,10 @@ function listReadyIssues(ctx) {
   return JSON.parse(out || '[]')
     .filter((i) => {
       const body = String(i.body || '');
-      return body.includes(READY_MARKER) && !body.includes(DONE_MARKER);
+      return body.includes(READY_MARKER)
+        && !body.includes(CLAIMED_MARKER)
+        && !body.includes(DONE_MARKER)
+        && !body.includes(BLOCKED_MARKER);
     })
     .map((i) => ({ ...i, repo: ctx.config.repo }))
     .sort((a, b) => a.number - b.number);
@@ -306,12 +300,6 @@ function writeIssueBody(ctx, issue, body) {
     input: JSON.stringify({ body }),
   });
   issue.body = body;
-}
-
-function readyLabeledAt(ctx, issue) {
-  const events = JSON.parse(gh(ctx, ['api', '--paginate', '--slurp', `repos/${ctx.config.repo}/issues/${issue.number}/events`]) || '[]').flat();
-  const labeled = events.filter((e) => e.event === 'labeled' && e.label && e.label.name === LABELS.ready.name);
-  return labeled.length ? labeled[labeled.length - 1].created_at : issue.createdAt;
 }
 
 function listComments(ctx, issue) {
@@ -332,7 +320,7 @@ function pickWinningClaim(comments, sinceIso) {
 
 function claimIssue(ctx, issue) {
   const claimId = crypto.randomBytes(6).toString('hex');
-  const since = readyLabeledAt(ctx, issue);
+  const since = issue.createdAt;
   const body = `<!-- ${CLAIM_MARKER} id=${claimId} machine=${ctx.config.machineId} -->\nClaimed by Mac agent on \`${ctx.config.machineId}\` at ${new Date(ctx.now()).toISOString()}. Running now.`;
   const posted = JSON.parse(gh(ctx, ['api', '-X', 'POST', `repos/${ctx.config.repo}/issues/${issue.number}/comments`, '-f', `body=${body}`]));
   ctx.sleep(ctx.config.settleMs);
@@ -343,8 +331,9 @@ function claimIssue(ctx, issue) {
     } catch (_) { /* a leftover losing claim is harmless: it is never the earliest */ }
     return { won: false, winner };
   }
-  writeIssueBody(ctx, issue, String(issue.body || '').split(READY_MARKER).join(''));
-  gh(ctx, ['issue', 'edit', String(issue.number), '--repo', ctx.config.repo, '--add-label', LABELS.claimed.name]);
+  let nextBody = String(issue.body || '').split(READY_MARKER).join('');
+  if (!nextBody.includes(CLAIMED_MARKER)) nextBody = `${CLAIMED_MARKER}\n${nextBody}`;
+  writeIssueBody(ctx, issue, nextBody);
   return { won: true, claimId };
 }
 
@@ -436,14 +425,17 @@ function processIssue(ctx, issue) {
 function finish(ctx, issue, claimId, outcome, reason, record) {
   const body = record
     ? buildEvidenceComment(record)
-    : `<!-- ${RESULT_MARKER} claim=${claimId} outcome=${outcome} -->\n### Mac agent run: **${outcome.toUpperCase()}**\n\n- Reason: ${reason}\n- Machine: \`${ctx.config.machineId}\`\n- Claude was not started.\n\nRequeue: put \`${READY_MARKER}\` back in the issue body.`;
+    : `<!-- ${RESULT_MARKER} claim=${claimId} outcome=${outcome} -->\n### Mac agent run: **${outcome.toUpperCase()}**\n\n- Reason: ${reason}\n- Machine: \`${ctx.config.machineId}\`\n- Claude was not started.\n\nRequeue: put \`${READY_MARKER}\` back in the issue body and remove \`${BLOCKED_MARKER}\` and \`${CLAIMED_MARKER}\`.`;
   gh(ctx, ['issue', 'comment', String(issue.number), '--repo', ctx.config.repo, '--body-file', '-'], { input: body });
-  let nextBody = String(issue.body || '').split(READY_MARKER).join('');
-  if (outcome === 'done' && !nextBody.includes(DONE_MARKER)) nextBody = `${DONE_MARKER}\n${nextBody}`;
+  let nextBody = String(issue.body || '').split(READY_MARKER).join('').split(CLAIMED_MARKER).join('');
+  if (outcome === 'done') {
+    nextBody = nextBody.split(BLOCKED_MARKER).join('');
+    if (!nextBody.includes(DONE_MARKER)) nextBody = `${DONE_MARKER}\n${nextBody}`;
+  } else if (outcome === 'blocked') {
+    nextBody = nextBody.split(DONE_MARKER).join('');
+    if (!nextBody.includes(BLOCKED_MARKER)) nextBody = `${BLOCKED_MARKER}\n${nextBody}`;
+  }
   writeIssueBody(ctx, issue, nextBody);
-  const edit = ['issue', 'edit', String(issue.number), '--repo', ctx.config.repo, '--remove-label', LABELS.claimed.name];
-  if (outcome === 'blocked') edit.push('--add-label', LABELS.blocked.name);
-  gh(ctx, edit);
   appendReceipt(ctx, { issue: issue.number, url: issue.url, outcome, reason, claimId, at: new Date(ctx.now()).toISOString() });
 }
 
@@ -463,7 +455,6 @@ function tick(ctx) {
     return [];
   }
   try {
-    if (!ctx.config.dryRun) ensureLabels(ctx);
     const issues = listReadyIssues(ctx);
     const results = [];
     for (const issue of issues) {
@@ -542,7 +533,7 @@ if (require.main === module) {
 }
 
 module.exports = {
-  LABELS, READY_MARKER, DONE_MARKER, CLAIM_MARKER, RESULT_MARKER, FORBIDDEN_CLAUDE_ARGS, defaultConfig, parseArgs,
+  READY_MARKER, CLAIMED_MARKER, DONE_MARKER, BLOCKED_MARKER, CLAIM_MARKER, RESULT_MARKER, FORBIDDEN_CLAUDE_ARGS, defaultConfig, parseArgs,
   assertNoPermissionBypass, parseIssueForm, resolveWorkdir, isAuthorAllowed, buildPrompt,
   parseStatus, parseClaudeOutput, extractLinks, decideOutcome, buildEvidenceComment,
   pickWinningClaim, claimIssue, processIssue, tick, makeContext, makeRunner, acquireLock,
