@@ -904,7 +904,7 @@ test('root serves the landing page by default', async () => {
 
   const body = await res.text();
   assert.match(body, /ThumbGate/);
-  assert.match(body, /Stop AI agent mistakes before they cost you/i);
+  assert.match(body, /One repeated agent mistake\. One configured gate/i);
   assert.match(body, /Setup Sprint/i);
   assert.match(body, /action="\/go\/diagnostic-pay" method="POST"/);
   assert.match(body, /Book the \$499 setup/i);
@@ -5304,4 +5304,4 @@ test('/leash-beta returns 500 problem-json when static asset is missing', async 
   }
 });
 
-}
+               }
