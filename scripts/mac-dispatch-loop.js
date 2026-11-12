@@ -529,3 +529,5 @@ module.exports = {
   parseStatus, parseClaudeOutput, extractLinks, decideOutcome, buildEvidenceComment,
   pickWinningClaim, claimIssue, processIssue, tick, makeContext, makeRunner, acquireLock,
 };
+
+// marker update v5
