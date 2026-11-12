@@ -661,28 +661,16 @@ test('homepage stays human-scannable instead of becoming a product monorepo', ()
   }
 });
 
-test('hero shows the blocked mistake and one free install, with price below it', () => {
-  const hero = landingPage.slice(
-    landingPage.indexOf('<!-- HERO -->'),
-    landingPage.indexOf('</section>', landingPage.indexOf('<!-- HERO -->'))
-  );
-  const lede = normalizeHtmlText((hero.match(/<p class="hero-lede">([\s\S]*?)<\/p>/) || [])[1]);
-
-  assert.match(landingPage, /Stop AI agent mistakes before they cost you/i);
-  assert.match(landingPage, /ThumbGate — Stop AI agent mistakes before they cost you/i);
-  assert.match(hero, /<h1>Stop AI agent mistakes before they cost you\.<\/h1>/i);
-  assert.match(hero, /Not a prompt · Not a postmortem/i);
-  assert.match(hero, /learn from your thumbs/i);
-  assert.match(hero, /tool-call boundary/i);
+test('hero makes the approved supported-workflow offer primary without removing free evaluation', () => {
+  const hero = landingPage.slice(landingPage.indexOf('<!-- HERO -->'), landingPage.indexOf('</section>', landingPage.indexOf('<!-- HERO -->')));
+  assert.match(hero, /<h1>One repeated agent mistake\. One configured gate\.<\/h1>/);
+  assert.match(hero, /supported hook integrations/);
+  assert.match(hero, /\$499 Setup Sprint/);
+  assert.match(hero, /href="\/diagnostic#intake"[^>]*>Check my workflow fit</);
+  assert.match(hero, /Evaluate the free local runtime/);
   assert.match(hero, /npx thumbgate init/);
-  assert.doesNotMatch(hero, /id="offers"|Start Pro|Setup Sprint/);
-  assert.match(landingPage, /id="thumbgate-dashboard-command"/);
-  assert.match(landingPage, /thumbgate-dashboard/);
-  assert.match(landingPage, /\/thumbgate-dashboard/);
-  assert.match(landingPage, /npx thumbgate dashboard --open/);
-  assert.match(landingPage, /Static hook[\s\S]*Sandbox[\s\S]*ThumbGate/);
-  assert.match(landingPage, /Learns from thumbs/);
-  assert.ok(lede.split(/\s+/).length <= 40, `hero lede is ${lede.split(/\s+/).length} words`);
+  assert.doesNotMatch(hero, /Start Pro/);
+  assert.ok(landingPage.indexOf('id="pro"') > landingPage.indexOf('id="proof"'));
 });
 
 test('how-it-works sells the self-improving loop, not a static allowlist', () => {
