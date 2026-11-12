@@ -757,6 +757,7 @@
       <div class="shell" style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;">
         <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
           <strong style="font-size:13px;color:var(--text);">ProKey</strong>
+          <!-- __LANDING_SSO_BUTTONS__ -->
           <span id="paidLoginStatus" style="font-size:12px;color:var(--muted);"></span>
         </div>
         <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
@@ -786,7 +787,7 @@
             <button type="button" class="down" id="hero-thumb-down" aria-label="Record a thumbs-down for the selected command"><svg class="hero-thumb-down" viewBox="0 0 32 32" aria-hidden="true"><use href="#thumb-glyph"/></svg></button>
           </div>
           <h1>Stop AI agent mistakes before they cost you.</h1>
-          <p class="hero-lede">The rules learn from your thumbs and stay on your machine. A static hook does not. A detected secret is denied at the tool-call boundary.</p>
+          <p class="hero-lede">Rules learn from your thumbs locally; static hooks do not. Detected secrets are denied at the tool-call boundary.</p>
           <div class="hero-terminal" id="hero-gate-demo" aria-label="Live pre-action interception demo">
             <div class="terminal-chrome" aria-hidden="true">
               <div class="dots"><span></span><span></span><span></span></div>
@@ -1519,7 +1520,7 @@ next      decision recorded before execution</pre>
         var data = await res.json();
         if (data && data.authenticated && dashLink) {
           dashLink.style.display = 'inline-flex';
-          if (loginBtn) loginBtn.textContent = 'Switch key';
+          if (loginBtn) loginBtn.textContent = data.ssoProvider ? ('✓ ' + String(data.ssoProvider).toUpperCase() + ' SSO') : 'Switch key';
         }
       } catch (e) {}
     }

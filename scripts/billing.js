@@ -3104,10 +3104,12 @@ async function getCheckoutSessionStatus(sessionId) {
     const session = store.sessions[sessionId];
     if (!session) return { found: false };
     const diagnosticOrder = isDiagnosticCheckoutSession(session);
+    const customerEmail = session.customer_details?.email || session.customer_email || '';
     const provisioningGrant = resolveCheckoutProvisioningGrant(session);
     const provisioned = provisioningGrant.allowed
       ? provisionApiKey(session.customer, {
         installId: session.metadata?.installId,
+        customerEmail,
         credits: provisioningGrant.credits,
         orderId: session.id,
         subscriptionId: session.subscription,
@@ -3117,7 +3119,6 @@ async function getCheckoutSessionStatus(sessionId) {
         source: 'local_checkout_lookup'
       })
       : null;
-    const customerEmail = session.customer_details?.email || session.customer_email || '';
     const customerName = session.customer_details?.name || null;
     const trialEndAt = computeTrialEndAt(session);
     const trialEmail = !provisioned || !provisioned.key
@@ -3185,6 +3186,7 @@ async function getCheckoutSessionStatus(sessionId) {
     const provisioned = provisioningGrant.allowed
       ? provisionApiKey(customerId, {
         installId,
+        customerEmail,
         credits: provisioningGrant.credits,
         orderId: session.id,
         subscriptionId: session.subscription,
@@ -3324,10 +3326,12 @@ function provisionApiKey(customerId, opts = {}) {
     }
 
     const creditsToAdd = normalizeInteger(opts.credits);
+    const normalizedCustomerEmail = normalizeEmail(opts.customerEmail);
     if (activeCustomerKey) {
       const key = activeCustomerKey[0];
       const meta = activeCustomerKey[1];
       if (opts.installId && !meta.installId) meta.installId = opts.installId;
+      if (normalizedCustomerEmail && !meta.customerEmail) meta.customerEmail = normalizedCustomerEmail;
       if (opts.entitlementKind === 'subscription') {
         meta.remainingCredits = null;
         meta.entitlementKind = 'subscription';
@@ -3348,6 +3352,7 @@ function provisionApiKey(customerId, opts = {}) {
     const createdAt = new Date().toISOString();
     store.keys[key] = {
       customerId,
+      customerEmail: normalizedCustomerEmail || null,
       active: true,
       usageCount: 0,
       createdAt,
@@ -3377,6 +3382,7 @@ function rotateApiKey(oldKey) {
     const newKey = `tg_${crypto.randomBytes(16).toString('hex')}`;
     store.keys[newKey] = {
       customerId: meta.customerId,
+      customerEmail: meta.customerEmail || null,
       active: true,
       usageCount: 0,
       createdAt: new Date().toISOString(),
@@ -3391,6 +3397,56 @@ function rotateApiKey(oldKey) {
     saveKeyStore(store);
     return { rotated: true, key: newKey, oldKey };
   });
+}
+
+async function resolvePaidEntitlementForEmail(email) {
+  const normalizedEmail = normalizeEmail(email);
+  if (!normalizedEmail) return { entitled: false, apiKey: null, customerId: null };
+  const store = loadKeyStore();
+  const customerIds = new Set([normalizedEmail]);
+  const orderIds = new Set();
+  for (const ledgerPath of [CONFIG.TRIAL_EMAIL_LEDGER_PATH, CONFIG.ORDER_EMAIL_LEDGER_PATH]) {
+    for (const row of loadJsonlRecords(ledgerPath)) {
+      if (row && normalizeEmail(row.customerEmail) === normalizedEmail) {
+        if (row.customerId) customerIds.add(String(row.customerId).trim());
+        if (row.sessionId) orderIds.add(String(row.sessionId).trim());
+      }
+    }
+  }
+  for (const sess of Object.values(store.sessions || {})) {
+    if (normalizeEmail(sess && (sess.customer_details?.email || sess.customer_email)) === normalizedEmail) {
+      if (sess.customer) customerIds.add(String(sess.customer).trim());
+      if (sess.id) orderIds.add(String(sess.id).trim());
+    }
+  }
+  for (const [key, meta] of Object.entries(store.keys || {})) {
+    if (!meta || !meta.active || (meta.remainingCredits != null && meta.remainingCredits <= 0)) continue;
+    const match = normalizeEmail(meta.customerEmail) === normalizedEmail
+      || (meta.customerId && customerIds.has(String(meta.customerId).trim()))
+      || (Array.isArray(meta.fulfilledOrderIds) && meta.fulfilledOrderIds.some((id) => orderIds.has(String(id).trim())));
+    if (match) return { entitled: true, apiKey: key, customerId: meta.customerId };
+  }
+  try {
+    const stripe = getStripeClient();
+    if (stripe) {
+      const listed = await withTimeout(stripe.customers.list({ email: normalizedEmail, limit: 5 }), 3000);
+      for (const customer of listed?.data || []) {
+        if (!customer?.id) continue;
+        const subs = await withTimeout(stripe.subscriptions.list({ customer: customer.id, status: 'all', limit: 10 }), 3000);
+        const activeSub = (subs?.data || []).find((s) => s && (s.status === 'active' || s.status === 'trialing'));
+        if (activeSub) {
+          const p = provisionApiKey(customer.id, {
+            customerEmail: normalizedEmail,
+            entitlementKind: 'subscription',
+            subscriptionId: activeSub.id,
+            source: 'google_sso_stripe_entitlement',
+          });
+          if (p?.key) return { entitled: true, apiKey: p.key, customerId: customer.id };
+        }
+      }
+    }
+  } catch {}
+  return { entitled: false, apiKey: null, customerId: null };
 }
 
 function validateApiKey(key) {
@@ -3560,6 +3616,7 @@ async function handleWebhook(rawBody, signature) {
       const result = provisioningGrant.allowed
         ? provisionApiKey(customerId, {
           installId,
+          customerEmail,
           credits: provisioningGrant.credits,
           orderId: session.id,
           subscriptionId: session.subscription,
@@ -4300,7 +4357,7 @@ function handleGithubWebhook(event, provenance = {}) {
 }
 
 module.exports = {
-  CONFIG, createCheckoutSession, isAutomatedCheckoutRequest, getCheckoutSessionStatus, provisionApiKey, rotateApiKey, validateApiKey, recordUsage, disableCustomerKeys, handleWebhook, verifyWebhookSignature, verifyGithubWebhookSignature, verifyPayPalWebhookSignature, recordGithubMarketplaceWebhookDelivery, recordPayPalWebhookDelivery, handleGithubWebhook, loadKeyStore, appendFunnelEvent, appendRevenueEvent, loadFunnelLedger, loadRevenueLedger, loadGithubMarketplaceWebhookLedger, loadPayPalWebhookLedger, loadNewsletterSubscribers, loadResolvedRevenueEvents, getFunnelAnalytics, getBusinessAnalytics, getBillingSummary, getBillingSummaryLive, getBillingSummariesLive, listStripeReconciledRevenueEvents, repairGithubMarketplaceRevenueLedger,
+  CONFIG, createCheckoutSession, isAutomatedCheckoutRequest, getCheckoutSessionStatus, provisionApiKey, resolvePaidEntitlementForEmail, rotateApiKey, validateApiKey, recordUsage, disableCustomerKeys, handleWebhook, verifyWebhookSignature, verifyGithubWebhookSignature, verifyPayPalWebhookSignature, recordGithubMarketplaceWebhookDelivery, recordPayPalWebhookDelivery, handleGithubWebhook, loadKeyStore, appendFunnelEvent, appendRevenueEvent, loadFunnelLedger, loadRevenueLedger, loadGithubMarketplaceWebhookLedger, loadPayPalWebhookLedger, loadNewsletterSubscribers, loadResolvedRevenueEvents, getFunnelAnalytics, getBusinessAnalytics, getBillingSummary, getBillingSummaryLive, getBillingSummariesLive, listStripeReconciledRevenueEvents, repairGithubMarketplaceRevenueLedger,
   _buildCheckoutSessionPayload: buildCheckoutSessionPayload,
   _createSessionDroppingRejectedOptionals: createSessionDroppingRejectedOptionals,
   _buildTrialActivationEmail: buildTrialActivationEmail,
