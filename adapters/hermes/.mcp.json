@@ -15,6 +15,16 @@
         "thumbgate",
         "gate-check"
       ]
+    },
+    "userPromptSubmit": {
+      "command": "npx",
+      "args": [
+        "--yes",
+        "--package",
+        "thumbgate@1.39.1",
+        "thumbgate",
+        "hook-auto-capture"
+      ]
     }
   },
   "notes": "Claude Code config with ThumbGate. For Nous Research Hermes Agent: see HERMES.md. Add preToolUse gates for skill-synthesis validation and multi-channel post safety."

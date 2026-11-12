@@ -1294,8 +1294,25 @@ function computeSecretGuardStats(diagnosticEntries) {
   });
 
   const byConstraint = {};
+  const byType = {};
+  const byService = {};
+  let promptBlocks = 0;
+
   for (const entry of secretEntries) {
-    const violations = entry.diagnosis && Array.isArray(entry.diagnosis.violations)
+    if (entry.step === 'user_prompt_submit') {
+      promptBlocks += 1;
+    }
+    const metaType = entry.metadata?.type ? String(entry.metadata.type) : null;
+    const metaService = entry.metadata?.serviceGuess
+      ? String(entry.metadata.serviceGuess)
+      : null;
+    if (metaType) {
+      byType[metaType] = (byType[metaType] || 0) + 1;
+    }
+    if (metaService) {
+      byService[metaService] = (byService[metaService] || 0) + 1;
+    }
+    const violations = Array.isArray(entry.diagnosis?.violations)
       ? entry.diagnosis.violations
       : [];
     for (const violation of violations) {
@@ -1309,6 +1326,10 @@ function computeSecretGuardStats(diagnosticEntries) {
 
   return {
     blocked: secretEntries.length,
+    preventedLeaks: secretEntries.length,
+    promptBlocks,
+    byType,
+    byService,
     topConstraint: topConstraint ? { key: topConstraint[0], count: topConstraint[1] } : null,
     recent: secretEntries
       .slice(-5)
@@ -1316,6 +1337,8 @@ function computeSecretGuardStats(diagnosticEntries) {
       .map((entry) => ({
         step: entry.step || null,
         source: entry.source || null,
+        type: entry.metadata?.type || null,
+        serviceGuess: entry.metadata?.serviceGuess || null,
         timestamp: entry.timestamp || null,
       })),
   };

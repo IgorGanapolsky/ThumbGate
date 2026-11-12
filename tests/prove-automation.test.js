@@ -139,7 +139,7 @@ test('automation proof: secret guard blocks file reads', () => {
 test('automation proof: prompt guard blocks secret-bearing prompts', () => {
   const check = getCheck('secret_guard.prompt_block');
   assert.equal(check.details.continue, false);
-  assert.match(check.details.stopReason, /secret material/i);
+  assert.match(check.details.stopReason, /(?:secret material|contains a password or key)/i);
 });
 
 test('automation proof: MCP failure diagnostics compiles constraints', () => {
