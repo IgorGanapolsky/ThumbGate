@@ -456,15 +456,11 @@ test('the price sweep reaches the surfaces that carry a commercial call to actio
   }
   assert.ok(covered.size > 10, `the price sweep collapsed to ${covered.size} surfaces`);
 
-  // The sweep must see the pricing hero, which markup splits. If claimText()
-  // stopped rejoining it, this count would fall back to the plain-text-only
-  // occurrences and the most prominent price on the site would go unchecked.
-  const monthlyOnPricingPage = [...claimText('public/pricing.html').matchAll(MONTHLY_PRICE)];
-  assert.ok(
-    monthlyOnPricingPage.length >= 6,
-    `the pricing page yielded only ${monthlyOnPricingPage.length} monthly-price claims — `
-      + 'markup-split or word-cadence prices are being skipped again',
-  );
+  // Single-offer experiment: the pricing page states the $499 gate, not a monthly Pro price.
+  // The matcher itself is still exercised by the markup-split fixture above.
+  const pricingClaims = claimText('public/pricing.html');
+  assert.match(pricingClaims, /\$499/);
+  assert.doesNotMatch(pricingClaims, /\$19\s*\/\s*mo/);
 });
 
 test('every AI-discovery surface describes the promoted paid offer', () => {

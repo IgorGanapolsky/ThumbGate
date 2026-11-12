@@ -174,7 +174,6 @@ function renderScorecard(input) {
   <a href="/eval-scorecard">Scorecard</a>
   <a href="/evaluations">Evaluations</a>
   <a href="/case-studies">Case studies</a>
-  <a href="/numbers">Numbers</a>
   <a href="/pricing">Pricing</a>
 </nav>
 <main class="container">

@@ -16,7 +16,7 @@ test('pricing page emits first-party telemetry for views and buyer actions', () 
   assert.match(pricingHtml, /data-cta-id="pricing_nav_buy"/);
   assert.match(pricingHtml, /data-primary-checkout/);
   assert.match(pricingHtml, /experimentId: 'value_packaging_v1'/);
-  assert.match(pricingHtml, /data-plan-id="pro" data-value="19" data-segment="solo_operator"/);
+  assert.match(pricingHtml, /data-plan-id="free" data-value="0" data-segment="solo_operator"/);
   assert.match(pricingHtml, /data-plan-id="sprint_diagnostic" data-value="499" data-segment="workflow_team"/);
   assert.match(pricingHtml, /data-plan-id="enterprise_service" data-value="0" data-segment="regulated_team"/);
   assert.match(pricingHtml, /link\.dataset\.planId \|\| 'unknown'/);
@@ -32,22 +32,22 @@ test('pricing exposes Pro self-serve and direct $499 managed-gate checkout', () 
   assert.match(pricingHtml, /name="customer_email"[^>]*required/);
   assert.match(pricingHtml, /"name": "ThumbGate Managed Workflow Diagnostic"/);
   assert.match(pricingHtml, /"price": "499"/);
-  assert.match(pricingHtml, /"name": "ThumbGate Pro monthly"/);
-  assert.match(pricingHtml, /"price": "19"/);
-  assert.match(pricingHtml, /"name": "ThumbGate Pro annual"/);
-  assert.match(pricingHtml, /"price": "149"/);
+  // Pro JSON-LD removed
+  // Pro JSON-LD removed
+  // Pro JSON-LD removed
+  // Pro JSON-LD removed
   const jsonLdBlocks = [...pricingHtml.matchAll(/<script type="application\/ld\+json">\s*([\s\S]*?)\s*<\/script>/g)]
     .map((match) => JSON.parse(match[1]));
   const offerGraph = jsonLdBlocks.find((block) => Array.isArray(block['@graph']))['@graph'];
   const diagnostic = offerGraph.find((node) => node['@type'] === 'Service');
-  const pro = offerGraph.find((node) => node['@type'] === 'SoftwareApplication');
+  // Pro JSON-LD removed
   assert.equal(diagnostic.offers.price, '499');
   assert.equal(diagnostic.offers.name, 'Managed workflow diagnostic');
-  assert.deepEqual(pro.offers.map((offer) => offer.price), ['19', '149']);
-  assert.match(pricingHtml, /\/checkout\/pro/);
-  assert.match(pricingHtml, />Start Pro<\/a>/);
-  assert.match(pricingHtml, /\$19/);
-  assert.match(pricingHtml, /\$149/);
+  // Pro JSON-LD removed
+  // Pro removed from public buying path
+  // Pro removed from public buying path
+  // Pro removed from public buying path
+  // Pro removed from public buying path
   assert.doesNotMatch(pricingHtml, /\/go\/sprint|workflow-sprint-intake/);
   assert.doesNotMatch(pricingHtml, /\$1,500|\$3,000|\$10,000|\$15,000/);
 });
@@ -74,7 +74,7 @@ test('exposure calculator multiplies buyer inputs and does not invent a savings 
   assert.match(pricingHtml, /It is not a ThumbGate savings measurement/);
   assert.match(pricingHtml, /ThumbGate does not claim a universal savings number/);
   assert.match(pricingHtml, /data-cta-id="pricing_exposure_diagnostic"/);
-  assert.match(pricingHtml, /pricing_exposure_pro/);
+  assert.match(pricingHtml, /pricing_exposure_free/);
   assert.match(pricingHtml, /No check on the tool call/);
   assert.match(pricingHtml, /Prove it with one regression/);
   assert.doesNotMatch(pricingHtml, /80%|120\+|IrashTech|Most Popular|blank to growth/i);

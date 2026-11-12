@@ -14,9 +14,9 @@
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:image" content="https://thumbgate.ai/og.png">
   <title>ThumbGate — Stop AI agent mistakes before they cost you</title>
-  <meta name="description" content="Stop AI agent mistakes before they cost you. Install free. Pro is $19/mo. The $499 Setup Sprint installs one hard, test-backed safety gate for a supported AI-agent workflow in two business days.">
+  <meta name="description" content="Stop AI agent mistakes before they cost you. Install the free local CLI, or book the $499 one-time Setup Sprint: one hard, test-backed safety gate for a supported AI-agent workflow in two business days.">
   <meta property="og:title" content="ThumbGate — Stop AI agent mistakes before they cost you">
-  <meta property="og:description" content="Not a prompt. Not a postmortem. The rules learn from your thumbs and stay on your machine. Pro is $19/mo. The $499 one-time setup is one workflow.">
+  <meta property="og:description" content="Not a prompt. Not a postmortem. The rules learn from your thumbs and stay on your machine. The $499 one-time Setup Sprint installs one gate for one workflow.">
   <meta property="og:type" content="website">
   <meta property="og:url" content="__APP_ORIGIN__/">
   <script defer data-domain="thumbgate.ai" src="https://plausible.io/js/script.tagged-events.js"></script>
@@ -144,7 +144,7 @@
         "name": "Is the self-improving logic a black box I have to trust blindly?",
         "acceptedAnswer": {
           "@type": "Answer",
-          "text": "No. The promotion, demotion, and lesson-ranking logic ships in the public npm bundle under an MIT license — run npm pack thumbgate and read it yourself. Your lessons live in a local SQLite file you own, not a server you can't query. Paid tiers add hosted sync, the dashboard, and adapter coverage, not access to intelligence withheld from the free install."
+          "text": "No. The promotion, demotion, and lesson-ranking logic ships in the public npm bundle under an MIT license — run npm pack thumbgate and read it yourself. Your lessons live in a local SQLite file you own, not a server you can't query. The $499 Setup Sprint adds a done-with-you failure map, one configured gate, and its regression proof, not access to intelligence withheld from the free install."
         }
       }
     ]
@@ -751,7 +751,7 @@
         <a href="#proof">Proof</a>
         <button type="button" id="navPaidLoginBtn" data-cta-id="nav_paid_login" aria-expanded="false" aria-controls="paidLoginBar" onclick="window.tgTogglePaidLogin()" style="display:inline-flex;align-items:center;min-height:44px;min-width:44px;padding:8px 13px;border-radius:8px;border:1px solid rgba(56,215,255,0.45);background:rgba(56,215,255,0.08);color:var(--cyan);font:800 13px/1 inherit;">Log in</button>
         <a id="navPaidDashboardLink" href="/dashboard" data-cta-id="nav_paid_dashboard" style="display:none;align-items:center;min-height:44px;min-width:44px;padding:8px 13px;border-radius:8px;border:1px solid rgba(86,227,159,0.45);background:rgba(86,227,159,0.12);color:var(--green);font:800 13px/1 inherit;text-decoration:none;">Dashboard →</a>
-        <a class="nav-buy" href="#install" data-cta-id="nav_install_free">Install free</a>
+        <a class="nav-buy" href="#buy" data-cta-id="nav_setup_sprint">Setup Sprint · $499</a>
       </div>
     </div>
     <div id="paidLoginBar" hidden style="border-top:1px solid var(--line);background:rgba(12,17,26,0.98);padding:14px 0;">
@@ -827,19 +827,7 @@
         </div>
         <p class="install-hint">Claude Code, Cursor, Codex, or similar agents.</p>
         <p class="install-hint" id="thumbgate-dashboard-command" style="margin-top:10px;">Dashboard: <code>npx thumbgate dashboard --open</code> · <code>/thumbgate-dashboard</code> · <code>thumbgate-dashboard</code> · <a href="/dashboard#insights">demo</a> · <a class="proof-link" href="#proof">strict-mode deny example ↓</a></p>
-        <div class="offer-stack">
-          <aside class="pro-card" id="pro" aria-label="ThumbGate Pro subscription">
-            <div class="price"><strong>$19</strong><span>/mo · or $149/yr</span></div>
-            <h2>Pro</h2>
-            <p><strong>For one developer.</strong> Unlimited gates, a visual debugger, and the lessons from your thumbs.</p>
-            <a class="button-pro" href="/go/pro-direct?utm_source=website&amp;utm_medium=homepage_hero&amp;utm_campaign=rally_style_gtm&amp;cta_id=homepage_pro_buy&amp;cta_placement=offers&amp;plan_id=pro" data-offer-link data-cta-id="homepage_pro_buy" data-revenue-cta data-cta-placement="offers">Start Pro — $19/mo</a>
-            <p class="checkout-note">Instant key · cancel anytime · free local evaluate stays free</p>
-            <ul class="offer-points">
-              <li>Unlimited gates + rule packs (Claude, Cursor, Git, AWS)</li>
-              <li>See which check fired, and find the lesson that matches the next action</li>
-              <li>Export your thumbs as training data</li>
-            </ul>
-          </aside>
+        <div class="offer-stack" style="grid-template-columns: 1fr; max-width: 480px; margin: 0 auto;">
           <form id="buy" class="checkout-card" action="/go/diagnostic-pay" method="POST" data-primary-checkout style="border-color:rgba(0,110,82,.35);box-shadow:0 18px 50px rgba(0,110,82,.12);">
             <span id="workflow-sprint-intake" data-legacy-intake-alias aria-hidden="true"></span>
             <span id="enterprise-gate"></span>
@@ -988,20 +976,20 @@
             <p>The test, how to undo the gate, and the receipt.</p>
           </article>
         </div>
-        <div class="boundary"><strong>Boundary:</strong> the offer covers one supported local workflow. Multi-system implementation, legal or compliance certification, guaranteed savings, and hosted team features require separate scope. If the workflow cannot be reduced to one supported gate, the order is refunded instead of silently upsold.</div>
+        <div class="boundary"><strong>Boundary:</strong> the offer covers one supported local workflow. If the workflow cannot be reduced to one supported gate, the order is refunded instead of silently upsold.</div>
       </div>
     </section>
 
     <section id="proof">
       <div class="shell">
-        <div class="section-kicker">What “stop” honestly means</div>
+        <div class="section-kicker">What "stop" honestly means</div>
         <h2 class="section-title">Hard deny where configured. Honest warning everywhere else.</h2>
         <div class="proof-grid">
           <div class="terminal" aria-label="Illustrative strict-mode ThumbGate deny decision">
             <div class="terminal-chrome" aria-hidden="true">
               <div class="dots"><span></span><span></span><span></span></div>
-              <span class="title">thumbgate — pretooluse</span>
-              <span>local</span>
+              <span class="title">thumbgate — pretooluse (strict mode)</span>
+              <span>THUMBGATE_STRICT_ENFORCEMENT=1</span>
             </div>
             <pre><span class="green">proposed</span>  git push --force origin main
 mode      strict enforcement
@@ -1016,20 +1004,21 @@ next      decision recorded before execution</pre>
             </div>
           </div>
           <div class="proof-copy">
-            <p><strong>Why not a static hook?</strong> Prompts compact away; static bash hooks don’t learn from 👍/👎. Detected secret exfiltration and gate-process bypass attempts are denied by default. Matching destructive actions warn by default and deny in strict mode. This is a managed strict-mode example, not a claim that every free install blocks every risky command automatically.</p>
+            <p><strong>Why not a static hook?</strong> Prompts compact away; static bash hooks don't learn from 👍/👎. Detected secret exfiltration and gate-process bypass attempts are denied by default. Matching destructive actions warn by default and deny in strict mode. This is a managed strict-mode example, not a claim that every free install blocks every risky command automatically.</p>
             <a href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md" target="_blank" rel="noopener">Read the test-backed verification evidence →</a>
             <p style="margin-top:12px;"><a href="/whitepaper">White paper</a> · <a href="/eval-scorecard">Scorecard</a> · <a href="/architecture">Architecture</a> · <a href="/case-studies">Dogfood, not customer stories</a></p>
           </div>
         </div>
+        <h3 style="margin-top:38px;font-size:1.2rem;">Enforcement by agent and mode</h3>
         <table class="compare">
-          <caption>Static hooks, sandboxes, and ThumbGate</caption>
+          <caption>Per-agent enforcement and default block vs warn</caption>
           <thead>
-            <tr><th></th><th>Static hook</th><th>Sandbox</th><th>ThumbGate</th></tr>
+            <tr><th>Agent</th><th>Enforcement</th><th>Default (secrets)</th><th>Default (destructive)</th><th>Strict mode</th></tr>
           </thead>
           <tbody>
-            <tr><th>When it acts</th><td>Listed commands</td><td>After start</td><td>Before the tool call</td></tr>
-            <tr><th>Learns from thumbs</th><td>No</td><td>No</td><td>Yes, locally</td></tr>
-            <tr><th>Contains the blast</th><td>No</td><td>Yes</td><td>No</td></tr>
+            <tr><th>Claude Code, Codex, Gemini CLI</th><td>Blocks before tool runs</td><td>DENY</td><td>WARN</td><td>DENY</td></tr>
+            <tr><th>Cursor, Cline, OpenCode</th><td>Advisory</td><td>DENY</td><td>WARN</td><td>DENY</td></tr>
+            <tr><th>Amp</th><td>Feedback only</td><td>Logged</td><td>Logged</td><td>Logged</td></tr>
           </tbody>
         </table>
       </div>
@@ -1058,9 +1047,21 @@ next      decision recorded before execution</pre>
           </div>
           <div class="faq-item">
             <button class="faq-q" type="button" aria-expanded="false">Is the self-improving logic a black box I have to trust blindly?</button>
-            <div class="faq-a">No. The promotion, demotion, and lesson-ranking logic ships in the public npm bundle under an MIT license — run <code>npm pack thumbgate</code> and read it yourself. Your lessons live in a local SQLite file you own, not a server you can't query. Paid tiers add hosted sync, the dashboard, and adapter coverage, not access to intelligence withheld from the free install.</div>
+            <div class="faq-a">No. The promotion, demotion, and lesson-ranking logic ships in the public npm bundle under an MIT license — run <code>npm pack thumbgate</code> and read it yourself. Your lessons live in a local SQLite file you own, not a server you can't query. The $499 Setup Sprint adds a done-with-you failure map, one configured gate, and its regression proof, not access to intelligence withheld from the free install.</div>
           </div>
         </div>
+      </div>
+    </section>
+    <section id="limits">
+      <div class="shell">
+        <div class="section-kicker">Limits</div>
+        <h2 class="section-title">What this does not do.</h2>
+        <ul class="offer-points" style="max-width:640px;">
+          <li>Does not retrain model weights or silently rewrite production policy.</li>
+          <li>Does not contain the blast radius — that is a sandbox's job.</li>
+          <li>Default install warns on destructive actions; hard deny needs strict mode (<code>THUMBGATE_STRICT_ENFORCEMENT=1</code>).</li>
+          <li>The $499 Setup Sprint covers one supported local workflow. Multi-system implementation, SSO, a hosted audit log, and compliance packaging require separate scope and are not generally available.</li>
+        </ul>
       </div>
     </section>
 
@@ -1068,7 +1069,7 @@ next      decision recorded before execution</pre>
       <div class="shell">
         <div class="section-kicker">Start free today</div>
         <h2 class="section-title">Block the mistake your agent made last week.</h2>
-        <p class="section-lede">Run <code>npx thumbgate init</code> (MIT), upgrade to <strong style="color:var(--text)">Pro ($19/mo)</strong> for unlimited gates, or book a <strong style="color:var(--text)">$499 setup</strong>.</p>
+        <p class="section-lede">Run <code>npx thumbgate init</code> (MIT), or book a <strong style="color:var(--text)">$499 setup</strong>.</p>
         <div style="display:flex;flex-wrap:wrap;gap:12px;justify-content:center;margin-top:22px">
           <a class="nav-buy" href="#install" data-cta-id="final_install_free">Install free</a>
           <a class="nav-enterprise" href="#enterprise-gate" data-offer-link data-cta-id="final_diagnostic_buy">See the $499 setup</a>

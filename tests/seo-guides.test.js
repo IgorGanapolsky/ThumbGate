@@ -128,14 +128,13 @@ describe('SEO guide and comparison pages', () => {
 
       it('mentions a current commercial path', () => {
         html = html || fs.readFileSync(path.join(PUBLIC_DIR, file), 'utf-8');
-        const hasLegacyTierPath = html.includes('$19/mo')
-          && html.includes('$149/yr')
-          && html.includes('Enterprise');
+        const hasSingleOfferPath = html.includes('$499')
+          && (html.includes('Managed AI Agent Workflow Gate') || html.includes('Setup Sprint') || html.includes('managed'));
         const hasManagedGatePath = html.includes('$499')
           && html.includes('Managed AI Agent Workflow Gate')
           && html.includes('/diagnostic');
         assert.ok(
-          hasLegacyTierPath || hasManagedGatePath,
+          hasSingleOfferPath || hasManagedGatePath,
           `${file} missing a current commercial path`
         );
       });
@@ -214,7 +213,7 @@ describe('SEO guide and comparison pages', () => {
 
     assert.ok(html.includes('AI Agent Workflow Migration Checklist'));
     assert.ok(html.includes('$499 Agent Workflow Migration Diagnostic'));
-    assert.ok(html.includes('Review Pro — $19/mo'));
+    assert.ok(html.includes('Use the free CLI first'));
     assert.ok(html.includes('Use the free CLI first'));
     assert.ok(html.includes('Start $499 diagnostic'));
     assert.ok(html.includes('href="/checkout/pro?'));
@@ -222,7 +221,7 @@ describe('SEO guide and comparison pages', () => {
     assert.ok(html.includes('href="/diagnostic?'));
     assert.equal(htmlHasBuyStripeHost(html), false, 'migration checklist must not hard-link buy.stripe.com');
     assert.ok(html.includes('workflow-sprint-intake'));
-    assert.ok(html.includes('Pro $19/mo or $149/yr. Enterprise for org-wide enforcement.'));
+    assert.ok(html.includes('Free CLI + $499 one-time Managed AI Agent Workflow Gate'));
     assert.ok(html.includes('pre-action rule that stops the already-rejected mistake'));
   });
 
@@ -419,7 +418,7 @@ describe('SEO guide and comparison pages', () => {
     assert.ok(html.includes('compression saves tokens; ThumbGate prevents the repeated mistake from executing'));
     assert.ok(html.includes('Run compression before model context assembly. Run ThumbGate before execution.'));
     assert.ok(html.includes('utm_source=headroom_guide'));
-    assert.ok(html.includes('Pro $19/mo or $149/yr. Enterprise for org-wide enforcement.'));
+    assert.ok(html.includes('Free CLI + $499 one-time Managed AI Agent Workflow Gate'));
   });
 
   it('sovereign coding model guide routes Cohere North Mini Code demand into local gates', () => {
@@ -433,7 +432,7 @@ describe('SEO guide and comparison pages', () => {
     assert.ok(html.includes('Local coding models are cheaper to run. They are not safer by default.'));
     assert.ok(html.includes('Use North Mini Code, OpenCode, vLLM, or other self-hosted runtimes for generation. Use ThumbGate for deterministic pre-action enforcement.'));
     assert.ok(html.includes('utm_source=cohere_north_guide'));
-    assert.ok(html.includes('Pro $19/mo or $149/yr. Enterprise for org-wide enforcement.'));
+    assert.ok(html.includes('Free CLI + $499 one-time Managed AI Agent Workflow Gate'));
   });
 
   it('DeepSeek V4 runtime guide exposes sparse-attention guardrails', () => {
@@ -459,7 +458,7 @@ describe('SEO guide and comparison pages', () => {
     assert.ok(html.includes('prefix caching'));
     assert.ok(html.includes('npx thumbgate model-runtime-guardrails --runtime=vllm'));
     assert.ok(html.includes('cache-isolation proof'));
-    assert.ok(html.includes('Pro $19/mo or $149/yr. Enterprise for org-wide enforcement.'));
+    assert.ok(html.includes('Free CLI + $499 one-time Managed AI Agent Workflow Gate'));
   });
 
   it('Fallow comparison positions static analysis as complementary context', () => {

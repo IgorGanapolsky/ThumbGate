@@ -202,6 +202,7 @@ function renderNumbersPage(input) {
 <meta name="generator" content="ThumbGate">
 <meta name="author" content="Igor Ganapolsky">
 <title>ThumbGate — The Numbers | First-Party Data Snapshot</title>
+<meta name="robots" content="noindex, nofollow">
 <meta name="description" content="ThumbGate's generated first-party operational snapshot: configured pre-action checks, recorded block/warn events, estimated LLM token savings when events exist, and scorer calibration when the sample supports it.">
 <meta property="og:title" content="ThumbGate — The Numbers">
 <meta property="og:description" content="Generated first-party operational snapshot: configured gates, recorded interventions, and explicit zero-evidence caveats.">
@@ -308,9 +309,7 @@ ${JSON.stringify(datasetLd, null, 2)}
   <a class="brand" href="/">ThumbGate</a>
   <a href="/learn">Learn</a>
   <a href="/compare">Compare</a>
-  <a href="/numbers">Numbers</a>
   <a href="/dashboard">Dashboard</a>
-  <a href="/pro">Pro</a>
 </nav>
 
 <main class="container">
