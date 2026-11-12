@@ -79,10 +79,10 @@ test('GitHub About URL normalization removes trailing slashes without changing U
 test('GitHub About config keeps a focused cash-path description and a valid GitHub description', () => {
   const about = loadGitHubAboutConfig(ROOT);
   const packageJson = JSON.parse(readText('package.json'));
-  assert.match(about.metaDescription, /one hard, test-backed safety gate/i);
-  assert.match(about.metaDescription, /supported AI-agent workflow/i);
-  assert.match(about.metaDescription, /two business days/i);
-  assert.match(about.metaDescription, /\$19\/mo/);
+  assert.match(about.metaDescription, /configured gate, a regression test, and rollout and rollback evidence/i);
+  assert.match(about.metaDescription, /supported local workflow/i);
+  assert.match(about.metaDescription, /supported hook integrations/i);
+  assert.match(about.metaDescription, /before execution/i);
   assert.match(about.metaDescription, /\$499/);
   assert.doesNotMatch(about.metaDescription, /Thompson Sampling|LanceDB/i);
   assert.match(about.githubDescription, /ThumbGate Pre-Action Checks/i);
