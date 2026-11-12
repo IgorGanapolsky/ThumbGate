@@ -2417,6 +2417,36 @@ function evaluateModelRoutingParetoTrapGuard(options = {}) {
   };
 }
 
+function evaluateGoldfishReviewEvidence({
+  goldfishReviewReportPath,
+  goldfishReviewedSpecPath,
+} = {}) {
+  const missing = 'goldfish_review_evidence_required_fresh_context_report_newer_than_spec';
+  if (
+    typeof goldfishReviewReportPath !== 'string' ||
+    !goldfishReviewReportPath.trim() ||
+    typeof goldfishReviewedSpecPath !== 'string' ||
+    !goldfishReviewedSpecPath.trim()
+  ) {
+    return { ok: false, blockers: [missing] };
+  }
+  let reportStat;
+  let specStat;
+  try {
+    reportStat = fs.statSync(path.resolve(goldfishReviewReportPath));
+    specStat = fs.statSync(path.resolve(goldfishReviewedSpecPath));
+  } catch {
+    return { ok: false, blockers: [missing] };
+  }
+  if (!reportStat.isFile() || !specStat.isFile() || reportStat.size === 0) {
+    return { ok: false, blockers: [missing] };
+  }
+  if (reportStat.mtimeMs <= specStat.mtimeMs) {
+    return { ok: false, blockers: ['goldfish_review_report_not_newer_than_reviewed_spec'] };
+  }
+  return { ok: true, blockers: [] };
+}
+
 // Elephant spec + Goldfish review sanctuary loop, with the McKinsey operating model audit.
 const BANNED_SYCOPHANTIC_REGEX = /\b(?:brilliant|spot-on|you're a genius|you thought of everything|i apologize|forgive me)\b/i;
 
@@ -2432,7 +2462,9 @@ function evaluateElephantGoldfishAutonomousSanctuaryLoop({
     alternativesRejected: true,
     enumeratedFiles: ['scripts/rrsi-doctor.js'],
   },
-  goldfishHasZeroConversationHistory = true,
+  goldfishReviewReportPath = '',
+  goldfishReviewedSpecPath = '',
+  goldfishHasZeroConversationHistory = false,
   goldfishComprehensionPassed = true,
   goldfishCriticConvergedToNits = true,
   goldfishImplementationReadinessPassed = true,
@@ -2483,6 +2515,11 @@ function evaluateElephantGoldfishAutonomousSanctuaryLoop({
   ) {
     blockers.push('incomplete_4_section_elephant_spec_requires_problem_plan_alternatives_and_file_list');
   }
+  const goldfishEvidence = evaluateGoldfishReviewEvidence({
+    goldfishReviewReportPath,
+    goldfishReviewedSpecPath,
+  });
+  blockers.push(...goldfishEvidence.blockers);
   if (!goldfishHasZeroConversationHistory) {
     blockers.push('goldfish_review_in_same_session_invalid_requires_amnesiac_subagent_context');
   }

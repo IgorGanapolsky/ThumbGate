@@ -94,7 +94,7 @@ npx thumbgate serve
 # Codex (~/.codex/config.toml):
 # [hooks.pre_tool_use]
 # command = "npx"
-# args = ["--yes", "--package", "thumbgate@1.34.3", "thumbgate", "gate-check"]
+# args = ["--yes", "--package", "thumbgate@1.39.1", "thumbgate", "gate-check"]
 
 # OpenCode (~/.config/opencode.json):
 # Add the thumbgate MCP server with preToolUse gate-check hook
@@ -122,10 +122,10 @@ npx thumbgate capture \
 
 ## Proof & Verification
 
-Run the vlt proof harness:
+Run the vlt governance harness:
 
 ```bash
-npm run prove:vlt
+npm run prove:vlt-governance-harness
 ```
 
 This validates:
@@ -134,6 +134,8 @@ This validates:
 - Model candidates are registered and recommendable
 - Adapter files are valid and pin the shipped version
 - All templates satisfy the shared rollout metadata contract
+
+`npm run prove:vlt` is the local `vlt` client smoke (`scripts/prove-vlt-dogfood.js`), not this harness.
 
 ## References
 
