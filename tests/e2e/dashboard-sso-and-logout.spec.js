@@ -41,7 +41,11 @@ test.describe('/dashboard real-server login, redeploy persistence, Google SSO, a
       await page.goto(`${origin}/dashboard?noauto`);
       await expect(page.locator('#ssoAppleBtn')).toHaveCount(0);
       await expect(page.locator('#ssoGoogleBtn')).toHaveCount(0);
-
+      await expect(page.locator('#dashboardSsoButtons')).toBeHidden();
+      await expect(page.locator('#apiKey')).toBeHidden();
+      await expect(page.locator('#dashboardKeyToggle')).toHaveText('Have a Pro license key?');
+      await page.locator('#dashboardKeyToggle').click();
+      await expect(page.locator('#apiKey')).toBeVisible();
       await page.locator('#apiKey').fill('tg_admin_e2e_key_9001');
       await page.locator('#connectBtn').click();
       await expect(page.locator('#authStatus')).toHaveText('✓ Connected');
@@ -157,6 +161,60 @@ test.describe('/dashboard real-server login, redeploy persistence, Google SSO, a
       await page.reload();
       await expect(page.locator('#authStatus')).toHaveText('Disconnected');
       await expect(page.locator('#dashboardContent')).toBeHidden();
+    } finally {
+      await context.close();
+    }
+  });
+
+  test('Log in view on / and /dashboard leads with Google, hides key box behind Have a Pro license key?, and stacks Apple right below only when configured', async ({ browser }) => {
+    process.env.GOOGLE_CLIENT_ID = 'pw-google-client.apps.googleusercontent.com';
+    delete process.env.APPLE_CLIENT_ID;
+    const context = await browser.newContext({ extraHTTPHeaders: { 'x-forwarded-for': '203.0.113.57' } });
+    const page = await context.newPage();
+    try {
+      await page.goto(`${origin}/`);
+      await page.locator('#navPaidLoginBtn').click();
+      await expect(page.locator('#paidLoginBar')).toBeVisible();
+      await expect(page.locator('#paidLoginBar')).not.toContainText('ProKey');
+      await expect(page.locator('#googleCloudLoginLink')).toHaveText('Continue with Google');
+      await expect(page.locator('#appleSsoLoginLink')).toHaveCount(0);
+      await expect(page.locator('#paidLoginKeyInput')).toBeHidden();
+      await expect(page.locator('#paidLoginKeyToggle')).toHaveText('Have a Pro license key?');
+
+      const homeGoogleBox = await page.locator('#googleCloudLoginLink').boundingBox();
+      const homeKeyToggleBox = await page.locator('#paidLoginKeyToggle').boundingBox();
+      expect(homeGoogleBox.y).toBeLessThan(homeKeyToggleBox.y);
+
+      await page.locator('#paidLoginKeyToggle').click();
+      await expect(page.locator('#paidLoginKeyInput')).toBeVisible();
+      await page.locator('#paidLoginKeyInput').fill('tg_op_e2e_key_9002');
+      await Promise.all([
+        page.waitForURL(`${origin}/dashboard`),
+        page.locator('#paidLoginSubmitBtn').click(),
+      ]);
+      await expect(page.locator('#dashboardContent')).toBeVisible();
+
+      await Promise.all([
+        page.waitForURL(/\/dashboard\?noauto=1$/),
+        page.locator('#disconnectBtn').click(),
+      ]);
+
+      process.env.APPLE_CLIENT_ID = 'ai.thumbgate.web.e2e';
+      await page.goto(`${origin}/#login`);
+      await expect(page.locator('#googleCloudLoginLink')).toBeVisible();
+      await expect(page.locator('#appleSsoLoginLink')).toHaveText('Continue with Apple');
+      await expect(page.locator('#paidLoginKeyInput')).toBeHidden();
+      const bothHomeGoogle = await page.locator('#googleCloudLoginLink').boundingBox();
+      const bothHomeApple = await page.locator('#appleSsoLoginLink').boundingBox();
+      expect(bothHomeApple.y).toBeGreaterThanOrEqual(bothHomeGoogle.y + bothHomeGoogle.height);
+
+      await page.goto(`${origin}/dashboard?noauto`);
+      await expect(page.locator('#ssoGoogleBtn')).toHaveText('Continue with Google');
+      await expect(page.locator('#ssoAppleBtn')).toHaveText('Continue with Apple');
+      await expect(page.locator('#apiKey')).toBeHidden();
+      const bothDashGoogle = await page.locator('#ssoGoogleBtn').boundingBox();
+      const bothDashApple = await page.locator('#ssoAppleBtn').boundingBox();
+      expect(bothDashApple.y).toBeGreaterThanOrEqual(bothDashGoogle.y + bothDashGoogle.height);
     } finally {
       await context.close();
     }
