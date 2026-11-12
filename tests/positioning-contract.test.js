@@ -50,7 +50,7 @@ test('public surfaces lead with outcomes instead of infrastructure abstractions'
 
   assert.match(readme, /AI coding agents repeat mistakes/i);
   assert.match(readme, /evaluate the proposed tool call before execution/i);
-  assert.match(landingPage, /Stop AI agent mistakes before they cost you/i);
+  assert.match(landingPage, /One repeated agent mistake\. One configured gate\./i);
   assert.match(landingPage, /allowed, warned, or denied/i);
   assert.match(landingPage, /one configured local gate/i);
   assert.match(gptInstructions, /Sell outcomes before infrastructure/i);
@@ -229,16 +229,16 @@ test('continuity guide frames the gateway as downstream reliability, not a new o
 // part of the post-Reddit credibility cleanup (file admitted "$0 revenue"
 // publicly and read as launch-theater).
 
-test('public landing copy stays vendor-neutral while offering Pro and Enterprise cash paths', () => {
+test('public landing copy keeps supported-workflow setup primary and Pro secondary', () => {
   const congruence = readText(path.join('docs', 'MARKETING_COPY_CONGRUENCE.md'));
   const landingPage = readText(path.join('public', 'index.html'));
 
   assert.match(congruence, /Root landing page stays vendor-neutral/i);
   assert.match(congruence, /Do not claim a standalone VS Code extension/i);
-  assert.match(landingPage, /Claude Code/i);
-  assert.match(landingPage, /Cursor/i);
-  assert.match(landingPage, /Codex/i);
-  assert.match(landingPage, /or similar agents/i);
+  assert.match(landingPage, /supported hook integrations/i);
+  assert.match(landingPage, /supported local workflow/i);
+  assert.match(landingPage, /advisory integrations do not guarantee execution blocking/i);
+  assert.match(landingPage, /Check my workflow fit/i);
   assert.match(landingPage, /Setup Sprint/i);
   assert.match(landingPage, /\$499/);
   assert.match(landingPage, /Start Pro — \$19\/mo/);
