@@ -975,19 +975,33 @@ var demoTimeline = [
   { signal: 'down', context: 'Spent 45min on code when curl would have diagnosed in 30s', date: '3 days ago', learned: 'curl first, never edit .env' },
 ];
 
+async function submitLessonsTalkToUs(btn) {
+  var wrap = btn.closest('[data-talk-wrap]'), emailEl = wrap && wrap.querySelector('[data-talk-email]'), statusEl = wrap && wrap.querySelector('[data-talk-status]');
+  btn.disabled = true;
+  try {
+    var res = await fetch('/v1/intake/workflow-sprint', { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: (emailEl && emailEl.value.trim()) || undefined, workflow: 'Free-tier lessons limit (Talk to us)', urgency: 'Hit free-tier limit on /lessons', planId: 'diagnostic', ctaId: 'workflow_sprint_intake', ctaPlacement: 'free_tier_limit', page: '/lessons' }) });
+    if (res.status === 400 && emailEl && emailEl.style.display === 'none') {
+      emailEl.style.display = 'inline-block'; emailEl.focus();
+      if (statusEl) statusEl.textContent = 'Enter work email, then click Talk to us.';
+      btn.disabled = false; return;
+    }
+    var data = await res.json().catch(function() { return {}; });
+    if (res.ok && data.ok) {
+      if (statusEl) statusEl.textContent = '✓ Queued — Igor will follow up directly.';
+      if (emailEl) emailEl.style.display = 'none';
+      btn.textContent = 'Request sent'; return;
+    }
+    if (statusEl) statusEl.textContent = data.detail || data.error || 'Could not queue request.';
+  } catch (_e) { if (statusEl) statusEl.textContent = 'Network error. Try again.'; }
+  btn.disabled = false;
+}
+
 function renderUpgradeWall(containerId) {
   var el = document.getElementById(containerId);
   if (!el) return;
   var wall = document.createElement('div');
   wall.style.cssText = 'position:relative;margin-top:8px;';
-  wall.innerHTML = '<div style="position:absolute;top:0;left:0;right:0;bottom:0;display:flex;align-items:center;justify-content:center;z-index:2;">' +
-    '<div style="text-align:center;background:rgba(10,10,15,0.92);border:1px solid #333;border-radius:12px;padding:28px 36px;">' +
-    '<div style="font-size:20px;font-weight:700;color:#fff;margin-bottom:8px;">Unlock your full lessons</div>' +
-    '<div style="color:#aaa;margin-bottom:16px;">Pro shows your real prevention rules, timeline, and insights.</div>' +
-    '<a href="/go/pro-direct?utm_source=lessons&amp;utm_medium=wall&amp;utm_campaign=pro_upgrade&amp;cta_id=lessons_wall_pro" rel="noopener" ' +
-    'style="display:inline-block;background:#b85c2d;color:#fff;padding:10px 24px;border-radius:8px;text-decoration:none;font-weight:700;">Start Pro now</a>' +
-    '<div style="color:#666;font-size:12px;margin-top:10px;">npx thumbgate pro --activate --key=YOUR_KEY</div>' +
-    '</div></div>';
+  wall.innerHTML = '<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;z-index:2;"><div data-talk-wrap style="text-align:center;background:rgba(10,10,15,0.92);border:1px solid #333;border-radius:12px;padding:24px 32px;"><div style="font-size:20px;font-weight:700;color:#fff;margin-bottom:8px;">Free tier limit reached</div><div style="color:#aaa;margin-bottom:16px;">Pro shows your real prevention rules, timeline, and insights — or talk to us about wiring one workflow.</div><div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;align-items:center;"><a href="/go/pro-direct?utm_source=lessons&amp;utm_medium=wall&amp;utm_campaign=pro_upgrade&amp;cta_id=lessons_wall_pro" rel="noopener" style="display:inline-flex;align-items:center;min-height:44px;background:#b85c2d;color:#fff;padding:10px 22px;border-radius:8px;text-decoration:none;font-weight:700;">Start Pro now</a><input type="email" data-talk-email placeholder="you@company.com" aria-label="Work email" style="display:none;min-height:44px;padding:0 12px;border-radius:8px;border:1px solid #444;background:#0d1117;color:#fff;font-size:13px;"><button type="button" data-talk-to-us onclick="submitLessonsTalkToUs(this)" style="display:inline-flex;align-items:center;min-height:44px;background:transparent;border:1px solid #38bdf8;color:#38bdf8;padding:10px 18px;border-radius:8px;font-weight:700;cursor:pointer;">Talk to us</button></div><div data-talk-status style="color:#38bdf8;font-size:12px;margin-top:8px;min-height:16px;"></div><div style="color:#666;font-size:12px;margin-top:4px;">npx thumbgate pro --activate --key=YOUR_KEY</div></div></div>';
   el.appendChild(wall);
 }
 

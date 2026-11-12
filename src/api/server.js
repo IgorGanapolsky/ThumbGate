@@ -6283,6 +6283,16 @@ async function completeSsoSessionAndRedirect(res, { provider, email, ssoName = n
     createdAt: nowMs,
     expiresAt: nowMs + PAID_AUTH_SESSION_TTL_SECONDS * 1000,
   }, nowMs);
+  if (!hasPaidKey && email) {
+    Promise.resolve()
+      .then(() => resendMailer.dispatchSignupWelcomeEmail({
+        to: email,
+        customerName: ssoName,
+        source: `sso_${provider}`,
+        feedbackDir: getFeedbackPaths().FEEDBACK_DIR,
+      }))
+      .catch(() => { /* best-effort welcome dispatch */ });
+  }
   const setCookie = serializeCookie(PAID_AUTH_COOKIE_NAME, sessionToken, {
     maxAge: PAID_AUTH_SESSION_TTL_SECONDS,
     httpOnly: true,
@@ -7255,7 +7265,11 @@ function createApiServer() {
             // throws — the mailer returns a structured result even on failure, so
             // the signup still succeeds if Resend is down or RESEND_API_KEY is unset.
             Promise.resolve()
-              .then(() => resendMailer.sendNewsletterWelcomeEmail({ to: email }))
+              .then(() => resendMailer.dispatchSignupWelcomeEmail({
+                to: email,
+                source: attribution.source || 'newsletter',
+                feedbackDir: getFeedbackPaths().FEEDBACK_DIR,
+              }))
               .then((result) => {
                 if (!result || result.sent !== true) {
                   console.warn('[newsletter] welcome email not sent:', email, result && result.reason);
@@ -9893,8 +9907,14 @@ a{color:#8b9}</style></head><body><form class="card" method="post" action="/oaut
           ? await parseFormBody(req, 24 * 1024)
           : await parseJsonBody(req, 24 * 1024);
         const workflowSprintIntake = requirePrivateApiModule('workflowSprintIntake', 'Workflow sprint intake');
+        const reqCookies = parseCookies(req?.headers?.cookie || '');
+        const ssoEntry = getPaidAuthSessionEntry(reqCookies[PAID_AUTH_COOKIE_NAME], expectedApiKey, expectedOperatorKey);
+        const isFreeTierLimitLead = body.ctaPlacement === 'free_tier_limit' || body.freeTierLimit === true || body.freeTierLimit === '1';
         const leadPayload = {
           ...body,
+          email: body.email || ssoEntry?.ssoEmail || undefined,
+          name: body.name || ssoEntry?.ssoName || undefined,
+          workflow: body.workflow || (isFreeTierLimitLead ? 'Free-tier limit inquiry (Talk to us)' : undefined),
           traceId: body.traceId || traceId,
           acquisitionId: body.acquisitionId || journeyState.acquisitionId,
           visitorId: body.visitorId || journeyState.visitorId,
@@ -9903,7 +9923,7 @@ a{color:#8b9}</style></head><body><form class="card" method="post" action="/oaut
           landingPath: body.landingPath || referrerAttribution.landingPath || '/',
           ctaId: body.ctaId || 'workflow_sprint_intake',
           ctaPlacement: body.ctaPlacement || 'workflow_sprint',
-          planId: body.planId || 'sprint',
+          planId: body.planId || (isFreeTierLimitLead ? 'diagnostic' : 'sprint'),
           source: body.source || body.utmSource || referrerAttribution.source || 'website',
           utmSource: body.utmSource || body.source || referrerAttribution.utmSource || 'website',
           utmMedium: body.utmMedium || referrerAttribution.utmMedium || 'workflow_sprint_intake',
@@ -9919,6 +9939,15 @@ a{color:#8b9}</style></head><body><form class="card" method="post" action="/oaut
           referrerHost: body.referrerHost || referrerAttribution.referrerHost || null,
           referrer: body.referrer || referrerAttribution.referrer || null,
         };
+        if (isFreeTierLimitLead && !leadPayload.email) {
+          sendProblem(res, {
+            type: PROBLEM_TYPES.BAD_REQUEST,
+            title: 'Request Error',
+            status: 400,
+            detail: 'Work email is required to queue a request.',
+          }, getPublicBillingHeaders(traceId));
+          return;
+        }
         const intakeReservation = workflowSprintIntake.reserveWorkflowSprintIntake(leadPayload, {
           feedbackDir: FEEDBACK_DIR,
           rateLimitKey: buildIntakeAlertRateLimitKey(req),
@@ -9930,8 +9959,7 @@ a{color:#8b9}</style></head><body><form class="card" method="post" action="/oaut
         }
         const lead = workflowSprintIntake.appendWorkflowSprintLead(leadPayload, { feedbackDir: FEEDBACK_DIR });
 
-        appendBestEffortTelemetry(FEEDBACK_DIR, {
-          eventType: 'workflow_sprint_lead_submitted',
+        const leadTelemetryBase = {
           clientType: 'web',
           traceId: lead.attribution.traceId,
           acquisitionId: lead.attribution.acquisitionId,
@@ -9957,8 +9985,11 @@ a{color:#8b9}</style></head><body><form class="card" method="post" action="/oaut
           landingPath: lead.attribution.landingPath,
           referrerHost: lead.attribution.referrerHost,
           referrer: lead.attribution.referrer,
-        }, req.headers, 'workflow_sprint_lead_submitted');
-
+        };
+        appendBestEffortTelemetry(FEEDBACK_DIR, { eventType: 'workflow_sprint_lead_submitted', ...leadTelemetryBase }, req.headers, 'workflow_sprint_lead_submitted');
+        if (isFreeTierLimitLead && lead.attribution.ctaId === 'workflow_sprint_intake') {
+          appendBestEffortTelemetry(FEEDBACK_DIR, { eventType: 'checkout_interstitial_cta_clicked', ...leadTelemetryBase, ctaId: 'workflow_sprint_intake' }, req.headers, 'checkout_interstitial_cta_clicked');
+        }
         const leadNotification = await workflowSprintIntake.notifyWorkflowSprintLead(lead, {
           sendEmailImpl: resendMailer.sendEmail,
           rateLimitKey: buildIntakeAlertRateLimitKey(req),
