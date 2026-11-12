@@ -83,6 +83,14 @@ Works with **Claude Code, Cursor, Codex, Gemini CLI, Amp, Cline, OpenCode**, and
 
 Agentic development is becoming a loop: **Guide → Generate → Verify → Solve**. ThumbGate is the pre-action gate / pre-action boundary between generated intent and executed action.
 
+
+### Governance that runs on every tool call, not paperwork
+
+86% of CIOs say AI risk is growing faster than value, while only 21% of organizations have agentic governance in place today ([Gartner, as cited by Capital One Software](https://capitalonesoftware.com/blog/gartner-2026-ai-risk-business-value)). Static policy docs do not stop an autonomous loop mid-session. ThumbGate enforces three runtime controls in the tool-call path:
+
+- **Agent register.** `npx thumbgate agents --json` and the local dashboard list every agent, model, MCP server, and hook source seen in the last 30 days with an editable owner, and flag callers outside `config/mcp-allowlists.json` or the register as `unregistered agent`.
+- **Cost per task as a control.** ThumbGate records tool calls and reported tokens per task, reports cost per finished task on the dashboard, and warns before blocking when one task exceeds a configured call or token budget.
+- **Bypass rate.** ThumbGate counts weekly `--no-verify` attempts, break-glass unlocks, disabled gates, and `satisfy_gate` overrides next to block counts.
 ---
 
 ## Quick Start

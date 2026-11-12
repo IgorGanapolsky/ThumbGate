@@ -258,6 +258,17 @@
       <a id="exposure-cta" class="button" hidden href="#enterprise-gate" data-offer-link data-cta-id="pricing_exposure_diagnostic" data-plan-id="sprint_diagnostic" data-value="499" data-segment="workflow_team">Continue to the $499 diagnostic</a>
     </section>
 
+
+    <section id="runtime-governance">
+      <div class="eyebrow">Runtime controls</div>
+      <h2>Governance that runs on every tool call, not paperwork</h2>
+      <p class="section-lede">86% of CIOs say AI risk is growing faster than value, while only 21% of organizations have agentic governance in place today (<a href="https://capitalonesoftware.com/blog/gartner-2026-ai-risk-business-value" target="_blank" rel="noopener">Gartner, as cited by Capital One Software</a>). Policy binders fail when agents execute commands at machine speed. ThumbGate runs three controls inside the PreToolUse hook.</p>
+      <div class="outcome" style="margin-top:14px;">
+        <div class="outcome-row"><span class="tick">1</span><span><strong>Agent register.</strong> <code>npx thumbgate agents --json</code> and the dashboard list every agent, model, MCP server, and hook source seen in the last 30 days with an editable owner, and flag unlisted callers as <code>unregistered agent</code>.</span></div>
+        <div class="outcome-row"><span class="tick">2</span><span><strong>Cost per task as a control.</strong> ThumbGate records tool calls and reported tokens per task, shows cost per finished task on the dashboard, and warns before blocking when one task crosses a configured call or token budget.</span></div>
+        <div class="outcome-row"><span class="tick">3</span><span><strong>Bypass rate.</strong> Weekly counts of <code>--no-verify</code> attempts, break-glass unlocks, disabled gates, and <code>satisfy_gate</code> overrides appear next to block counts so skipped checks stay visible.</span></div>
+      </div>
+    </section>
     <section id="segments">
       <div class="eyebrow">Choose by buyer value</div>
       <h2>One product. Three buying decisions.</h2>
