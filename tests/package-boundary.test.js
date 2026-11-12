@@ -783,9 +783,10 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // in server.js + billing.js. CI measured 9,882,997 unpacked on 519f1c8a.
   // Bumped 9.89 MB -> 9.96 MB (2026-11-12): openshell-lovable-engine.js + CLI commands, on top of main.
   // Bumped 9.96 MB -> 9.99 MB (2026-11-12): scripts/brand-standards-gate.js + config/brand-standards.json for Adobe MAX Brand Intelligence and voice gating.
-  // Bumped 9.99 MB -> 10.02 MB (2026-11-12): Apple Sign-In OIDC + Login CSRF state binding (#4966/#4965), Goldfish AST hardening, and BoostMyAgents compute-boost lane in server.js + openshell-lovable-engine.js (~9.996 MB unpacked).
-  manifest.unpackedSize <= 10_020_000,
-  `npm package should stay <= 10.02 MB unpacked, got ${manifest.unpackedSize}`
+  // Bumped 9.99 MB -> 10.02 MB (2026-11-12, PR #4964): financial-control spend-surface URL & browser page state gating on top of #4960/#4963 (measured 9,999,857 unpacked; file count stays 655).
+  // Bumped 10.02 MB -> 10.045 MB (2026-11-12, PR #4965): SSO CSRF hardening, AST confinement, BoostMyAgents lane, and SubQ Snap 1.2 SystemOne client (measured 10,034,969 unpacked; file count stays 655).
+  manifest.unpackedSize <= 10_045_000,
+  `npm package should stay <= 10.045 MB unpacked, got ${manifest.unpackedSize}`
 );
 
   for (const file of requiredRuntimeFiles) {
