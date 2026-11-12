@@ -186,6 +186,49 @@ function isHumanCheckoutNavigation(headers = {}, appOrigin = '') {
   }
 }
 
+// --- Rapid multi-checkout guard ---------------------------------------------
+// A person opens one checkout, then reads the Stripe page. Headless agents and
+// link checkers walk every buy button in a few seconds, and each walk opens a
+// live Stripe session that later shows up as an abandoned checkout. When one
+// requester (first forwarded IP + user agent) reaches a second checkout link
+// within the window, the caller should send it to the no-session confirm page.
+const RAPID_CHECKOUT_WINDOW_MS = 20 * 1000;
+const RAPID_CHECKOUT_MAX_KEYS = 5000;
+
+// Production traffic always arrives through the edge proxy with
+// X-Forwarded-For set. Direct socket connections (local dev, tests) are not
+// tracked, so a missing header yields no key.
+function checkoutRequesterKey(headers = {}) {
+  const ip = normalizeHeader(headers['x-forwarded-for']).split(',')[0].trim();
+  if (!ip) return null;
+  return `${ip}|${normalizeHeader(headers['user-agent'])}`;
+}
+
+function createRapidCheckoutGuard({ windowMs = RAPID_CHECKOUT_WINDOW_MS, maxKeys = RAPID_CHECKOUT_MAX_KEYS } = {}) {
+  const lastSeen = new Map();
+  function prune(now) {
+    for (const [key, at] of lastSeen) {
+      if (now - at <= windowMs && lastSeen.size <= maxKeys) break;
+      lastSeen.delete(key);
+    }
+  }
+  return {
+    // Records this checkout hit and reports whether the same requester already
+    // reached a checkout link inside the window.
+    hit(key, now = Date.now()) {
+      if (!key) return false;
+      const previous = lastSeen.get(key);
+      lastSeen.delete(key);
+      lastSeen.set(key, now);
+      prune(now);
+      return previous !== undefined && now - previous <= windowMs;
+    },
+    size() {
+      return lastSeen.size;
+    },
+  };
+}
+
 // --- Visitor classification (analytics filtering) ---------------------------
 // Classifies telemetry/analytics traffic as bot / owner / real_user.
 // Owner traffic is identified via the THUMBGATE_OWNER_EMAILS env var
@@ -237,6 +280,9 @@ module.exports = {
   classifyRequester,
   isProbablyBot,
   isHumanCheckoutNavigation,
+  checkoutRequesterKey,
+  createRapidCheckoutGuard,
+  RAPID_CHECKOUT_WINDOW_MS,
   classifyVisitor,
   shouldExcludeFromAnalytics,
   botFilterMiddleware,
