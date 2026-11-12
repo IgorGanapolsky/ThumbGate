@@ -47,6 +47,7 @@ const {
 } = require('./failure-diagnostics');
 const { getEffectiveSetting } = require('./evolution-state');
 const { ensureDir, readTextTail } = require('./fs-utils');
+const { redactSecrets } = require('./secret-redaction');
 const {
   buildFeedbackPathsFromDir,
   getFeedbackPaths: resolveFeedbackPaths,
@@ -339,9 +340,112 @@ function getMemoryFirewallModule() {
 }
 
 
+const RECENT_THUMBS_CAP = 200;
+const THUMB_EMAIL_RE = /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b/g;
+const THUMB_PHONE_RE = /(?:\+\d{1,3}[\s.-]?)?(?:\(\d{3}\)|\b\d{3})[\s.-]\d{3}[\s.-]\d{4}\b/g;
+
+function recentThumbsOutputPath() {
+  const override = process.env.THUMBGATE_RECENT_THUMBS_PATH;
+  if (override) return override;
+  if (process.env.THUMBGATE_RECENT_THUMBS_DISABLE === '1') return null;
+  if (process.env.NODE_TEST_CONTEXT) return null;
+  const home = process.env.HOME || process.env.USERPROFILE || '';
+  if (!home) return null;
+  return path.join(home, '.thumbgate', 'RECENT-THUMBS.md');
+}
+
+function scrubThumbSentence(text) {
+  let out = redactSecrets(String(text || ''));
+  if (typeof out !== 'string') out = String(text || '');
+  out = out.replace(THUMB_EMAIL_RE, '[REDACTED:email]');
+  out = out.replace(THUMB_PHONE_RE, '[REDACTED:phone]');
+  out = out.replace(/\s+/g, ' ').trim();
+  if (!out) return '';
+  const match = out.match(/^.*?[.!?](?:\s|$)/);
+  const sentence = (match ? match[0] : out).trim();
+  return /[.!?]$/.test(sentence) ? sentence : `${sentence}.`;
+}
+
+function formatThumbWhen(timestamp) {
+  const date = new Date(timestamp || 0);
+  if (Number.isNaN(date.getTime())) return 'time unknown';
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone: 'America/New_York',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true,
+  }).formatToParts(date);
+  const get = (type) => parts.find((part) => part.type === type)?.value || '';
+  const hour = String(Number(get('hour')));
+  const period = get('dayPeriod').toUpperCase();
+  return `${get('year')}-${get('month')}-${get('day')} ${hour}:${get('minute')} ${period}`;
+}
+
+function thumbWord(signal) {
+  const normalized = normalizeSignal(signal);
+  if (normalized === 'negative') return 'down';
+  if (normalized === 'positive') return 'up';
+  return null;
+}
+
+function renderRecentThumbLine(record) {
+  if (!record || typeof record !== 'object') return null;
+  const word = thumbWord(record.signal);
+  if (!word) return null;
+  const wrong = scrubThumbSentence(record.whatWentWrong || record.context || record.whatWorked || '');
+  if (!wrong) return null;
+  const claim = scrubThumbSentence(record.whatToChange || '') || 'No corrected claim was recorded.';
+  return `- ${formatThumbWhen(record.timestamp)}, ${word}: ${wrong} Corrected claim: ${claim}`;
+}
+
+function renderRecentThumbs(records) {
+  const ranked = (Array.isArray(records) ? records : [])
+    .map((record, index) => ({ record, index, at: Date.parse(record && record.timestamp) || 0 }))
+    .sort((a, b) => (b.at - a.at) || (b.index - a.index));
+  const lines = [];
+  const seen = new Set();
+  for (const item of ranked) {
+    const line = renderRecentThumbLine(item.record);
+    if (!line) continue;
+    const id = item.record && item.record.id ? String(item.record.id) : '';
+    if ((id && seen.has(`id:${id}`)) || seen.has(line)) continue;
+    if (id) seen.add(`id:${id}`);
+    seen.add(line);
+    lines.push(line);
+    if (lines.length >= RECENT_THUMBS_CAP) break;
+  }
+  const header = '# Recent thumbs\n\nNewest first. One sentence each, with the claim it corrected.\n\n';
+  return `${header}${lines.join('\n') || '- No thumbs recorded.'}\n`;
+}
+
+function syncRecentThumbsFromLog(logPath) {
+  try {
+    const outPath = recentThumbsOutputPath();
+    if (!outPath || !logPath) return false;
+    const text = renderRecentThumbs(readJSONL(logPath));
+    ensureDir(path.dirname(outPath));
+    if (fs.existsSync(outPath) && fs.readFileSync(outPath, 'utf8') === text) return false;
+    fs.writeFileSync(outPath, text);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 function appendJSONL(filePath, record) {
   ensureDir(path.dirname(filePath));
   fs.appendFileSync(filePath, `${JSON.stringify(record)}\n`);
+  try {
+    const expected = getFeedbackPaths().FEEDBACK_LOG_PATH;
+    if (path.resolve(String(filePath)) === path.resolve(expected)) {
+      syncRecentThumbsFromLog(filePath);
+    }
+  } catch {
+    /* a thumb export must not fail the capture that just landed */
+  }
 }
 
 function normalizeAnalysisShape(analysis = {}) {
@@ -2886,6 +2990,8 @@ module.exports = {
   feedbackSummary,
   listEnforcementMatrix,
   readJSONL,
+  renderRecentThumbs,
+  syncRecentThumbsFromLog,
   appendDiagnosticRecord,
   readDiagnosticEntries,
   getFeedbackPaths,

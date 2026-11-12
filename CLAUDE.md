@@ -67,3 +67,4 @@ Everything merges through PRs under the configured branch protection and the `ma
 - **Hard-won lessons & audit lessons:** See `docs/agents/claude-reference-pack.md#10-hard-won-lessons--audit-lessons`.
 - **Analysis/Feedback command lists:** See `.claude/skills/thumbgate/SKILL.md` and `docs/agents/claude-reference-pack.md#feedback--analysis-commands`.
 - **Session Startup and Handoff:** See `docs/agents/claude-reference-pack.md#session-startup--handoff` and `.claude/skills/fleet-coordination/SKILL.md`.
+- **Recent thumbs:** Read RECENT-THUMBS.md first. The sentences live in private `IgorGanapolsky/ThumbGate-Core` as `RECENT-THUMBS.md`. This public tree does not store them.
