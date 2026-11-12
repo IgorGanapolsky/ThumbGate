@@ -70,12 +70,13 @@ Search open issues for `<!-- agent:ready -->` first, so the same task isn't queu
 
 - Record the issue URL (or sheet row) as the receipt for "queued".
 - Results come back as an evidence comment. A finished run has `<!-- agent:done -->`
-  in the body. A run that could not finish gets `agent-blocked`. Read the comment
-  before claiming anything; the marker alone is not proof.
-- `agent-blocked` on a permission denial: report it once as BLOCKED with the
+  in the body. A run that could not finish has `<!-- agent:blocked -->` in the body.
+  Read the comment before claiming anything; the marker alone is not proof.
+- `<!-- agent:blocked -->` on a permission denial: report it once as BLOCKED with the
   denied tool. Adding allow rules is the operator's call; don't add them
   yourself.
 - Requeue a failed run by putting `<!-- agent:ready -->` back in the body and
-  removing `<!-- agent:done -->`, at most once, after fixing the prompt.
+  removing `<!-- agent:done -->`, `<!-- agent:blocked -->`, and `<!-- agent:claimed -->`,
+  at most once, after fixing the prompt. Do not add a label.
 - Queued is not done. Report "queued on the Mac: <link>" until the evidence
   comment arrives.

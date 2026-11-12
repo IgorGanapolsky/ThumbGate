@@ -160,7 +160,7 @@ test('picks the earliest claim since the issue was last queued', () => {
   assert.equal(d.pickWinningClaim([], t(0)), null);
 });
 
-test('happy path: claims, runs claude without bypass flags, comments evidence, labels done', () => {
+test('happy path: claims, runs claude without bypass flags, comments evidence, marks done', () => {
   const config = baseConfig();
   const stdout = JSON.stringify({
     result: 'Opened https://github.com/IgorGanapolsky/ThumbGate/pull/1.\nnpm test: pass\nSTATUS: DONE',
@@ -178,14 +178,24 @@ test('happy path: claims, runs claude without bypass flags, comments evidence, l
 
   const labels = world.labels.get(7);
   const doneBody = world.issues.find((i) => i.number === 7).body;
+  const patches = world.calls.filter((c) => c.cmd === 'gh' && c.args.includes('PATCH')).map((c) => JSON.parse(c.opts.input).body);
+  assert.ok(patches.some((body) => body.includes(d.CLAIMED_MARKER)));
   assert.ok(doneBody.includes(d.DONE_MARKER));
   assert.ok(!doneBody.includes(d.READY_MARKER));
+  assert.ok(!doneBody.includes(d.CLAIMED_MARKER));
+  assert.ok(!doneBody.includes(d.BLOCKED_MARKER));
   assert.ok(!labels.has('agent-done'));
   assert.ok(!labels.has('ready-for-agent'));
   assert.ok(!labels.has('agent-claimed'));
+  assert.ok(!labels.has('agent-blocked'));
   const ghArgs = world.calls.filter((c) => c.cmd === 'gh').map((c) => c.args.join(' ')).join('\n');
+  assert.ok(!ghArgs.includes('--add-label'));
+  assert.ok(!ghArgs.includes('--remove-label'));
+  assert.ok(!ghArgs.includes('label create'));
   assert.ok(!ghArgs.includes('ready-for-agent'));
   assert.ok(!ghArgs.includes('agent-done'));
+  assert.ok(!ghArgs.includes('agent-claimed'));
+  assert.ok(!ghArgs.includes('agent-blocked'));
 
   const evidence = world.comments.find((c) => c.body.includes(d.RESULT_MARKER));
   assert.match(evidence.body, /\*\*DONE\*\*/);
@@ -197,11 +207,19 @@ test('happy path: claims, runs claude without bypass flags, comments evidence, l
   assert.equal(JSON.parse(receipts[0]).outcome, 'done');
 });
 
-test('missing STATUS line or non-zero exit labels the issue blocked', () => {
+test('missing STATUS line or non-zero exit marks the issue blocked in the body', () => {
   const config = baseConfig();
   const world = fakeWorld({ issues: [issue(8)], claudeStdout: JSON.stringify({ result: 'did stuff', is_error: false }) });
   assert.equal(d.tick(ctxFor(config, world))[0].action, 'blocked');
-  assert.ok(world.labels.get(8).has('agent-blocked'));
+  const body = world.issues.find((i) => i.number === 8).body;
+  assert.ok(body.includes(d.BLOCKED_MARKER));
+  assert.ok(!body.includes(d.CLAIMED_MARKER));
+  assert.ok(!body.includes(d.READY_MARKER));
+  assert.ok(!body.includes(d.DONE_MARKER));
+  assert.ok(!world.labels.get(8).has('agent-blocked'));
+  const ghArgs = world.calls.filter((c) => c.cmd === 'gh').map((c) => c.args.join(' ')).join('\n');
+  assert.ok(!ghArgs.includes('--add-label'));
+  assert.ok(!ghArgs.includes('agent-blocked'));
 });
 
 test('loses the race cleanly when another machine claimed first', () => {
@@ -210,6 +228,10 @@ test('loses the race cleanly when another machine claimed first', () => {
   assert.equal(d.tick(ctxFor(config, world))[0].action, 'lost-claim');
   assert.ok(!world.calls.some((c) => c.cmd === 'claude'));
   assert.ok(world.calls.some((c) => c.cmd === 'gh' && c.args.includes('DELETE')));
+  assert.ok(!world.calls.some((c) => c.cmd === 'gh' && c.args.includes('PATCH')));
+  const body = world.issues.find((i) => i.number === 9).body;
+  assert.ok(body.includes(d.READY_MARKER));
+  assert.ok(!body.includes(d.CLAIMED_MARKER));
   assert.ok(!world.labels.get(9).has('agent-claimed'));
 });
 
@@ -238,7 +260,23 @@ test('blocks without running claude when the workdir is outside the allowed root
   const [r] = d.tick(ctxFor(config, world));
   assert.equal(r.action, 'blocked');
   assert.ok(!world.calls.some((c) => c.cmd === 'claude'));
-  assert.ok(world.labels.get(11).has('agent-blocked'));
+  const body = world.issues.find((i) => i.number === 11).body;
+  assert.ok(body.includes(d.BLOCKED_MARKER));
+  assert.ok(!body.includes(d.CLAIMED_MARKER));
+  assert.ok(!world.labels.get(11).has('agent-blocked'));
+  const ghArgs = world.calls.filter((c) => c.cmd === 'gh').map((c) => c.args.join(' ')).join('\n');
+  assert.ok(!ghArgs.includes('--add-label'));
+});
+
+test('does not queue an issue that already carries claimed or blocked', () => {
+  const config = baseConfig({ dryRun: true });
+  const claimed = issue(15);
+  claimed.body = `${d.CLAIMED_MARKER}\n${d.READY_MARKER}\n${claimed.body}`;
+  const blocked = issue(16);
+  blocked.body = `${d.BLOCKED_MARKER}\n${d.READY_MARKER}\n${blocked.body}`;
+  const world = fakeWorld({ issues: [claimed, blocked, issue(17)], claudeStdout: '' });
+  const results = d.tick(ctxFor(config, world));
+  assert.deepEqual(results.map((r) => r.issue), [17]);
 });
 
 test('dry run touches nothing', () => {
