@@ -12,6 +12,7 @@
  *   Images API:  https://api.linkedin.com/rest/images?action=initializeUpload
  */
 
+const { assertAllowedOutboundTopic } = require('../../social-quality-gate');
 const LI_REST_BASE = 'https://api.linkedin.com/rest';
 const AUTH_FAILURE_MODE_ENV = 'LINKEDIN_AUTH_FAILURE_MODE';
 
@@ -70,6 +71,7 @@ async function publishTextPost(token, personUrn, text) {
   if (!token) throw new Error('publishTextPost: token is required');
   if (!personUrn) throw new Error('publishTextPost: personUrn is required');
   if (!text) throw new Error('publishTextPost: text is required');
+  assertAllowedOutboundTopic(text, 'publishTextPost');
 
   const url = `${LI_REST_BASE}/posts`;
   const body = {
@@ -124,6 +126,7 @@ async function publishImagePost(token, personUrn, text, imageUrls) {
   if (!token) throw new Error('publishImagePost: token is required');
   if (!personUrn) throw new Error('publishImagePost: personUrn is required');
   if (!text) throw new Error('publishImagePost: text is required');
+  assertAllowedOutboundTopic(text, 'publishImagePost');
 
   // Fall back to text-only post if no images supplied.
   if (!imageUrls || imageUrls.length === 0) {
@@ -236,6 +239,7 @@ async function publishArticlePost(token, personUrn, text, articleUrl, title) {
   if (!text) throw new Error('publishArticlePost: text is required');
   if (!articleUrl) throw new Error('publishArticlePost: articleUrl is required');
   if (!title) throw new Error('publishArticlePost: title is required');
+  assertAllowedOutboundTopic(`${text} ${title} ${articleUrl}`, 'publishArticlePost');
 
   const url = `${LI_REST_BASE}/posts`;
   const body = {
