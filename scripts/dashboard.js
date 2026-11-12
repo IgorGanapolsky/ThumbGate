@@ -2,6 +2,7 @@
 'use strict';
 
 const fs = require('fs');
+const os = require('os');
 const path = require('path');
 const { aggregateFailureDiagnostics } = require('./failure-diagnostics');
 const { AUDIT_LOG_FILENAME } = require('./audit-trail');
@@ -99,7 +100,6 @@ function buildUnavailableOrgDashboard(windowHours) {
   };
 }
 
-
 const DEFAULT_JSONL_MAX_BYTES = DEFAULT_JSONL_TAIL_BYTES;
 const DEFAULT_JSONL_MAX_ENTRIES = DEFAULT_JSONL_TAIL_ENTRIES;
 
@@ -125,7 +125,7 @@ function readJSONL(filePath, options = {}) {
     try {
       const parsed = JSON.parse(line);
       if (parsed) entries.push(parsed);
-    } catch { /* skip bad line */ }
+    } catch {  }
   }
   return entries;
 }
@@ -371,7 +371,6 @@ function summarizeReviewDelta(feedbackEntries, memoryEntries, auditEntries, base
   };
 }
 
-
 function computeApprovalStats(entries) {
   const total = entries.length;
   const positive = entries.filter((e) => e.signal === 'positive').length;
@@ -403,7 +402,6 @@ function computeApprovalStats(entries) {
     trendDirection,
   };
 }
-
 
 function resolveScopedGateStatsPath(feedbackDir) {
   const stateDir = process.env.THUMBGATE_STATE_DIR
@@ -593,6 +591,258 @@ function computeLessonStorageSummary(feedbackDir, memoryCount = 0) {
 const FINISH_SETUP_COMMAND = 'npx thumbgate quickstart';
 const FINISH_SETUP_HREF = '/install#quickstart';
 const FINISH_SETUP_DETAIL = 'Run npx thumbgate quickstart to fire your first PreToolUse block and unlock the built-in safety rule pack + 3 custom block rules on the Free tier (7-day local Pro trial included).';
+const ACCOUNT_ACTIVATIONS_FILENAME = 'account-activations.json';
+const PAID_SETUP_TIERS = new Set(['pro', 'team', 'enterprise']);
+const CLI_ACTIVATION_EVENTS = new Set([
+  'first_block',
+  'first_blocked_tool_call',
+  'activation_first_rule_promoted',
+  'cli_quickstart_activated',
+  'cli_heartbeat',
+  'cli_capture',
+  'cli_recall',
+  'cli_stats',
+  'cli_init',
+]);
+const _backfillMtimeCache = new Map();
+
+function isPaidSetupTier(tier) {
+  return PAID_SETUP_TIERS.has(String(tier || '').trim().toLowerCase());
+}
+
+function pickEarliestStamp(a, b) {
+  if (!a) return b || null;
+  if (!b) return a;
+  const ta = Date.parse(a);
+  const tb = Date.parse(b);
+  if (!Number.isFinite(ta)) return b;
+  if (!Number.isFinite(tb)) return a;
+  return ta <= tb ? a : b;
+}
+
+function isBlockActivationMarker(parsed) {
+  if (!parsed || typeof parsed !== 'object') return false;
+  return Boolean(parsed.firstBlockAt || parsed.blockedAt || parsed.event === 'first_block');
+}
+
+function readActivationMarker(feedbackDir) {
+  if (!feedbackDir) return null;
+  const candidates = [
+    path.join(feedbackDir, 'activation-recorded.json'),
+    path.join(feedbackDir, 'activation', 'first-blocked-call.json'),
+  ];
+  if (path.basename(feedbackDir) === 'feedback') {
+    const parentDir = path.dirname(feedbackDir);
+    if (path.resolve(parentDir) !== path.resolve(os.tmpdir())) {
+      candidates.push(
+        path.join(parentDir, 'activation-recorded.json'),
+        path.join(parentDir, 'activation', 'first-blocked-call.json'),
+      );
+    }
+  }
+  for (const candidate of candidates) {
+    const parsed = readJsonFile(candidate);
+    if (isBlockActivationMarker(parsed)) return parsed;
+  }
+  return null;
+}
+function writeActivationMarkerFile(targetDir, firstBlockAt, source = 'first_block') {
+  if (!targetDir) return;
+  try {
+    fs.mkdirSync(targetDir, { recursive: true });
+    const markerPath = path.join(targetDir, 'activation-recorded.json');
+    const existing = readJsonFile(markerPath) || {};
+    const stamp = pickEarliestStamp(existing.firstBlockAt || existing.at, firstBlockAt) || new Date().toISOString();
+    if (existing.firstBlockAt === stamp && existing.event) return;
+    fs.writeFileSync(markerPath, JSON.stringify({
+      ...existing,
+      at: existing.at || stamp,
+      firstBlockAt: stamp,
+      event: existing.event || 'first_block',
+      source: existing.source || source,
+    }), 'utf8');
+  } catch {  }
+}
+
+function loadAccountActivations(baseFeedbackDir) {
+  const empty = { version: 1, adminFirstBlockAt: null, byCustomerId: {}, byEmailHash: {}, byInstallId: {} };
+  if (!baseFeedbackDir) return empty;
+  const raw = readJsonFile(path.join(baseFeedbackDir, ACCOUNT_ACTIVATIONS_FILENAME));
+  if (!raw || typeof raw !== 'object') return empty;
+  return {
+    version: 1,
+    adminFirstBlockAt: raw.adminFirstBlockAt || null,
+    byCustomerId: raw.byCustomerId && typeof raw.byCustomerId === 'object' ? raw.byCustomerId : {},
+    byEmailHash: raw.byEmailHash && typeof raw.byEmailHash === 'object' ? raw.byEmailHash : {},
+    byInstallId: raw.byInstallId && typeof raw.byInstallId === 'object' ? raw.byInstallId : {},
+  };
+}
+
+function saveAccountActivations(baseFeedbackDir, store) {
+  if (!baseFeedbackDir) return;
+  try {
+    fs.mkdirSync(baseFeedbackDir, { recursive: true });
+    fs.writeFileSync(path.join(baseFeedbackDir, ACCOUNT_ACTIVATIONS_FILENAME), JSON.stringify(store), 'utf8');
+  } catch {  }
+}
+
+function upsertActivationEntry(map, key, firstBlockAt, source, maxKeys = 0) {
+  if (!key) return false;
+  const prev = map[key];
+  if (!prev && maxKeys > 0 && Object.keys(map).length >= maxKeys) return false;
+  const nextAt = pickEarliestStamp(prev && prev.firstBlockAt, firstBlockAt);
+  if (prev && prev.firstBlockAt === nextAt) return false;
+  map[key] = { firstBlockAt: nextAt, source: (prev && prev.source) || source || 'first_block' };
+  return true;
+}
+
+function recordHostedFirstBlock(baseFeedbackDir, params = {}) {
+  const stamp = params.firstBlockAt || new Date().toISOString();
+  const source = params.source || 'first_block';
+  const store = loadAccountActivations(baseFeedbackDir);
+  let changed = false;
+  if (params.isAdmin) {
+    const nextAdmin = pickEarliestStamp(store.adminFirstBlockAt, stamp);
+    if (store.adminFirstBlockAt !== nextAdmin) {
+      store.adminFirstBlockAt = nextAdmin;
+      changed = true;
+    }
+    writeActivationMarkerFile(baseFeedbackDir, nextAdmin, source);
+  }
+  if (upsertActivationEntry(store.byCustomerId, params.customerId, stamp, source)) changed = true;
+  if (upsertActivationEntry(store.byEmailHash, params.emailHash, stamp, source)) changed = true;
+  if (upsertActivationEntry(store.byInstallId, params.installId, stamp, source, 4096)) changed = true;
+  if (changed) saveAccountActivations(baseFeedbackDir, store);
+  if (params.tenantDir) writeActivationMarkerFile(params.tenantDir, stamp, source);
+  const resolved = (params.customerId && store.byCustomerId[params.customerId]?.firstBlockAt)
+    || (params.emailHash && store.byEmailHash[params.emailHash]?.firstBlockAt)
+    || (params.installId && store.byInstallId[params.installId]?.firstBlockAt)
+    || (params.isAdmin && store.adminFirstBlockAt)
+    || stamp;
+  return { firstBlockAt: resolved, store };
+}
+
+function statMtimeSafe(filePath) {
+  try { return fs.statSync(filePath).mtimeMs; } catch { return 0; }
+}
+
+function resolveFunnelPathForBackfill(baseFeedbackDir) {
+  return process.env._TEST_FUNNEL_LEDGER_PATH
+    || process.env.THUMBGATE_FUNNEL_LEDGER_PATH
+    || path.join(baseFeedbackDir, 'funnel-events.jsonl');
+}
+
+function collectTelemetryCliInstalls(baseFeedbackDir) {
+  const installs = new Map();
+  let earliestOwnerOrCli = null;
+  const telemetryRows = readJSONL(path.join(baseFeedbackDir, 'telemetry-pings.jsonl'), {
+    maxEntries: 100000,
+    maxBytes: 64 * 1024 * 1024,
+  });
+  for (const row of telemetryRows) {
+    if (!row || row.visitorType === 'bot' || row.visitorType === 'ci') continue;
+    const ev = String(row.eventType || row.event || '');
+    if (!CLI_ACTIVATION_EVENTS.has(ev) && row.clientType !== 'cli') continue;
+    const ts = row.firstBlockAt || row.timestamp || row.receivedAt || new Date().toISOString();
+    earliestOwnerOrCli = pickEarliestStamp(earliestOwnerOrCli, ts);
+    if (row.installId && installs.size < 4096) {
+      installs.set(row.installId, pickEarliestStamp(installs.get(row.installId), ts));
+    }
+  }
+  const funnelRows = readJSONL(resolveFunnelPathForBackfill(baseFeedbackDir), {
+    maxEntries: 50000,
+    maxBytes: 16 * 1024 * 1024,
+  });
+  const customerStamps = new Map();
+  for (const row of funnelRows) {
+    if (!row || row.stage !== 'activation' || row.event === 'api_key_first_usage') continue;
+    const ts = row.timestamp || row.createdAt || new Date().toISOString();
+    earliestOwnerOrCli = pickEarliestStamp(earliestOwnerOrCli, ts);
+    if (row.installId && installs.size < 4096) installs.set(row.installId, pickEarliestStamp(installs.get(row.installId), ts));
+    const cid = row.metadata && row.metadata.customerId;
+    if (cid) customerStamps.set(String(cid), pickEarliestStamp(customerStamps.get(String(cid)), ts));
+  }
+  return { installs, customerStamps, earliestOwnerOrCli };
+}
+
+function backfillHostedAccountActivations(baseFeedbackDir, opts = {}) {
+  if (!baseFeedbackDir) return { backfilled: 0 };
+  const sig = [
+    statMtimeSafe(path.join(baseFeedbackDir, 'telemetry-pings.jsonl')),
+    statMtimeSafe(resolveFunnelPathForBackfill(baseFeedbackDir)),
+    statMtimeSafe(path.join(baseFeedbackDir, 'marketing-install-emails.jsonl')),
+    Boolean(opts.includeAdmin),
+    Boolean(opts.includeActivePaidKeys),
+    (opts.ownerEmails || []).join(','),
+  ].join(':');
+  if (!opts.force && _backfillMtimeCache.get(baseFeedbackDir) === sig) {
+    return { backfilled: 0, cached: true };
+  }
+  const store = loadAccountActivations(baseFeedbackDir);
+  const { installs, customerStamps, earliestOwnerOrCli } = collectTelemetryCliInstalls(baseFeedbackDir);
+  let backfilled = 0;
+  for (const [installId, ts] of installs.entries()) {
+    if (upsertActivationEntry(store.byInstallId, installId, ts, 'telemetry_backfill')) backfilled += 1;
+  }
+  for (const [cid, ts] of customerStamps.entries()) {
+    if (upsertActivationEntry(store.byCustomerId, cid, ts, 'funnel_backfill')) backfilled += 1;
+  }
+  const hashEmail = typeof opts.hashEmail === 'function' ? opts.hashEmail : null;
+  const hashTenant = typeof opts.hashCustomerTenant === 'function' ? opts.hashCustomerTenant : null;
+  const emailRows = readJSONL(path.join(baseFeedbackDir, 'marketing-install-emails.jsonl'));
+  for (const row of emailRows) {
+    const email = String(row?.email || '').trim().toLowerCase();
+    const matchedAt = row?.installId && store.byInstallId[row.installId]?.firstBlockAt;
+    if (email && matchedAt && hashEmail) {
+      const emailHash = hashEmail(email);
+      if (upsertActivationEntry(store.byEmailHash, emailHash, matchedAt, 'install_email_backfill')) backfilled += 1;
+      writeActivationMarkerFile(path.join(baseFeedbackDir, 'tenants', emailHash), matchedAt, 'install_email_backfill');
+    }
+  }
+  const ownerStamp = earliestOwnerOrCli || new Date().toISOString();
+  for (const rawOwner of opts.ownerEmails || []) {
+    const ownerEmail = String(rawOwner || '').trim().toLowerCase();
+    if (ownerEmail && hashEmail) {
+      const emailHash = hashEmail(ownerEmail);
+      if (upsertActivationEntry(store.byEmailHash, emailHash, ownerStamp, 'owner_backfill')) backfilled += 1;
+      writeActivationMarkerFile(path.join(baseFeedbackDir, 'tenants', emailHash), ownerStamp, 'owner_backfill');
+    }
+  }
+  if (opts.includeAdmin || earliestOwnerOrCli) {
+    const nextAdmin = pickEarliestStamp(store.adminFirstBlockAt, ownerStamp);
+    if (store.adminFirstBlockAt !== nextAdmin) {
+      store.adminFirstBlockAt = nextAdmin;
+      backfilled += 1;
+    }
+    writeActivationMarkerFile(baseFeedbackDir, nextAdmin, 'owner_backfill');
+  }
+  const keys = (opts.keyStore && opts.keyStore.keys) || {};
+  for (const [key, meta] of Object.entries(keys)) {
+    if (!meta || !meta.active) continue;
+    const normEmail = String(meta.customerEmail || '').trim().toLowerCase();
+    const emailHash = normEmail && hashEmail ? hashEmail(normEmail) : null;
+    const isFree = String(meta.plan || '').toLowerCase() === 'free' || String(meta.tier || '').toLowerCase() === 'free';
+    const matchedStamp = meta.firstBlockAt
+      || (meta.installId && store.byInstallId[meta.installId]?.firstBlockAt)
+      || (meta.customerId && store.byCustomerId[meta.customerId]?.firstBlockAt)
+      || (emailHash && store.byEmailHash[emailHash]?.firstBlockAt)
+      || (!isFree && Number(meta.usageCount) > 0 ? (meta.createdAt || ownerStamp) : null)
+      || (opts.includeActivePaidKeys && !isFree ? (meta.createdAt || ownerStamp) : null);
+    if (!matchedStamp) continue;
+    if (meta.customerId && upsertActivationEntry(store.byCustomerId, meta.customerId, matchedStamp, 'account_backfill')) backfilled += 1;
+    if (emailHash && upsertActivationEntry(store.byEmailHash, emailHash, matchedStamp, 'account_backfill')) backfilled += 1;
+    if (!meta.firstBlockAt && typeof opts.recordKeyFirstBlock === 'function') {
+      opts.recordKeyFirstBlock({ apiKey: key }, { firstBlockAt: matchedStamp });
+      backfilled += 1;
+    }
+    if (meta.customerId && hashTenant) {
+      writeActivationMarkerFile(path.join(baseFeedbackDir, 'tenants', hashTenant(meta.customerId)), matchedStamp, 'account_backfill');
+    }
+  }
+  if (backfilled > 0) saveAccountActivations(baseFeedbackDir, store);
+  _backfillMtimeCache.set(baseFeedbackDir, sig);
+  return { backfilled, activatedInstalls: Object.keys(store.byInstallId).length };
+}
 
 function countRecordedGateBlocks(auditEntries, gateAudit, gateStats) {
   let auditDenies = 0;
@@ -623,8 +873,13 @@ function computeTodayOverview(feedbackDir, options = {}) {
   };
 
   const totalGateBlocks = countRecordedGateBlocks(auditEntries, gateAudit, gateStats);
-  const firstBlockRecorded = totalGateBlocks > 0;
-  const upNext = firstBlockRecorded
+  const marker = readActivationMarker(feedbackDir);
+  const firstBlockAt = options.firstBlockAt || marker?.firstBlockAt || marker?.blockedAt || null;
+  const paidAccount = isPaidSetupTier(options.tier);
+  const hasActivationOrHeartbeat = Boolean(firstBlockAt || marker || options.activationRecorded || options.cliHeartbeat);
+  const setupSignalKnown = options.setupSignalKnown !== false;
+  const firstBlockRecorded = totalGateBlocks > 0 || paidAccount || hasActivationOrHeartbeat;
+  const upNext = (!setupSignalKnown || firstBlockRecorded)
     ? null
     : {
       kind: 'finish_setup',
@@ -640,13 +895,13 @@ function computeTodayOverview(feedbackDir, options = {}) {
 
   return {
     firstBlockRecorded,
+    firstBlockAt,
     totalGateBlocks,
     upNext,
     gateStatusChips,
     lessonStorage: computeLessonStorageSummary(feedbackDir, memoryEntries.length),
   };
 }
-
 
 function computePreventionImpact(feedbackDir, gateStats) {
   const autoGatesPath = getAutoGatesPath();
@@ -661,7 +916,7 @@ function computePreventionImpact(feedbackDir, gateStats) {
   const estimatedMinutesSaved = gateStats.blocked * 16;
   const estimatedHoursSaved = Number((estimatedMinutesSaved / 60).toFixed(1));
 
-  const estimatedCostSavingsCents = gateStats.blocked * (16 / 60) * 1.5 * 100; // 16min * $1.50/hr -> cents
+  const estimatedCostSavingsCents = gateStats.blocked * (16 / 60) * 1.5 * 100; 
   const estimatedCostSavings = `$${(estimatedCostSavingsCents / 100).toFixed(2)}`;
 
   const autoGates = readJsonFile(autoGatesPath);
@@ -677,7 +932,7 @@ function computePreventionImpact(feedbackDir, gateStats) {
     }
   }
 
-  const feedbackCount = gateStats.blocked; // denominator: blocked actions
+  const feedbackCount = gateStats.blocked; 
   const conversionRate = feedbackCount > 0 ? Math.min(gateStats.totalGates / feedbackCount, 1) : 0;
 
   return {
@@ -723,13 +978,12 @@ function computeRoiSummary(gateStats, prevention, analytics, billing) {
     monthlyRevenue: Number(monthlyRevenue.toFixed(2)),
     paidOrders,
 
-    monthlyRevenueTarget: 3000, // $100/day after tax
+    monthlyRevenueTarget: 3000, 
     revenueProgress: monthlyRevenue > 0 ? (monthlyRevenue / 3000 * 100).toFixed(1) : 0,
 
     prMergeRate: Number((prMergeRate * 100).toFixed(1)),
   };
 }
-
 
 function computeFeedbackTimeSeries(entries, dayCount = 30) {
   const today = new Date();
@@ -761,7 +1015,6 @@ function computeFeedbackTimeSeries(entries, dayCount = 30) {
 function isAuditTrailEntry(entry) {
   return Array.isArray(entry.tags) && entry.tags.includes('audit-trail');
 }
-
 
 function computeLessonPipeline(feedbackDir, entries, gateStats) {
   const memoryLogPath = path.join(feedbackDir, 'memory-log.jsonl');
@@ -810,7 +1063,6 @@ function computeLessonPipeline(feedbackDir, entries, gateStats) {
   };
 }
 
-
 function computeSessionTrend(entries, windowCount) {
   if (entries.length < 10) return { bars: '', percentage: 0 };
   const windowSize = Math.max(1, Math.floor(entries.length / windowCount));
@@ -827,7 +1079,6 @@ function computeSessionTrend(entries, windowCount) {
   return { bars, percentage: avg };
 }
 
-
 function computeSystemHealth(feedbackDir, gateStats) {
   const feedbackLogPath = path.join(feedbackDir, 'feedback-log.jsonl');
   const memoryLogPath = path.join(feedbackDir, 'memory-log.jsonl');
@@ -840,7 +1091,7 @@ function computeSystemHealth(feedbackDir, gateStats) {
     memoryCount,
     gateConfigLoaded: gateStats.totalGates > 0,
     gateCount: gateStats.totalGates,
-    mcpServerRunning: true, // If dashboard is running, server is available
+    mcpServerRunning: true, 
   };
 }
 
@@ -1353,7 +1604,6 @@ function computeObservabilityStats(diagnosticEntries, diagnostics, secretGuard, 
   };
 }
 
-
 function computeAgentFileAudit(projectRoot = PROJECT_ROOT) {
   const auditResults = {
     totalAgentFiles: 0,
@@ -1460,7 +1710,6 @@ function computeAgentFileAudit(projectRoot = PROJECT_ROOT) {
 
   return auditResults;
 }
-
 
 function computeAgentFileAuditFromFeedback(feedbackDir, options = {}) {
   const readiness = options.readiness || generateAgentReadinessReport({ projectRoot: PROJECT_ROOT });
@@ -1873,7 +2122,6 @@ function resolveTeamWindowHours(analyticsWindow) {
   return 24;
 }
 
-
 function collectAllFeedbackEntries(feedbackDir) {
   if (shouldAggregateFeedback()) {
     return collectAggregateLogEntries('feedback-log.jsonl', {
@@ -1904,7 +2152,7 @@ function collectAllFeedbackEntries(feedbackDir) {
       for (const project of fs.readdirSync(projectsDir)) {
         mergeFrom(path.join(projectsDir, project, 'feedback-log.jsonl'));
       }
-    } catch { /* ignore read errors */ }
+    } catch {  }
   }
 
   const homeThumbgate = path.join(process.env.HOME || '/tmp', '.thumbgate');
@@ -2048,7 +2296,7 @@ function generateDashboard(feedbackDir, options = {}) {
     tokenSavings = computeTokenSavings({
       blockedCalls: Number(gateStats.blocked) || 0,
     });
-  } catch { /* module missing — skip */ }
+  } catch {  }
 
   for (const day of feedbackTimeSeries.days) {
     day.lessons = lessonPipeline.lessonsByDay.get(day.dayKey) || 0;
@@ -2079,6 +2327,12 @@ function generateDashboard(feedbackDir, options = {}) {
     gateAudit,
     gates,
     now: options.now,
+    tier: options.tier,
+    authContext: options.authContext,
+    firstBlockAt: options.firstBlockAt,
+    activationRecorded: options.activationRecorded,
+    cliHeartbeat: options.cliHeartbeat,
+    setupSignalKnown: options.setupSignalKnown,
   });
   const agentRegister = buildAgentRegister({
     dataDir: feedbackDir,
@@ -2131,7 +2385,6 @@ function generateDashboard(feedbackDir, options = {}) {
     },
   };
 }
-
 
 function printDashboard(data) {
   const {
@@ -2397,7 +2650,6 @@ function printDashboard(data) {
   console.log('');
 }
 
-
 module.exports = {
   generateDashboard,
   buildReviewSnapshot,
@@ -2408,8 +2660,12 @@ module.exports = {
   computeDecisionMetrics,
   computeGateStats,
   computeTodayOverview,
+  isPaidSetupTier,
+  CLI_ACTIVATION_EVENTS,
+  loadAccountActivations,
+  recordHostedFirstBlock,
+  backfillHostedAccountActivations,
   computeLessonStorageSummary,
-  formatStorageBytes,
   computePreventionImpact,
   computeRoiSummary,
   computeSessionTrend,

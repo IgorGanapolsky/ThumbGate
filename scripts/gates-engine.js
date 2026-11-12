@@ -1066,8 +1066,14 @@ function buildGateActionFingerprint(gateId, options = {}) {
 function recordStat(gateId, action, gate, options = {}) {
   if (process.env.THUMBGATE_SANDBOX_EVAL === '1') return;
   const stats = loadStats();
-  if (action === 'block') stats.blocked = (stats.blocked || 0) + 1;
-  else if (action === 'warn') stats.warned = (stats.warned || 0) + 1;
+  if (action === 'block') {
+    stats.blocked = (stats.blocked || 0) + 1;
+    try {
+      const { reportFirstBlockActivation } = require('./activation-tracker');
+      reportFirstBlockActivation({ gateId });
+    } catch { /* activation report is best-effort */ }
+  } else if (action === 'warn') stats.warned = (stats.warned || 0) + 1;
+
   else if (action === 'approve') stats.pendingApproval = (stats.pendingApproval || 0) + 1;
   else if (action === 'log') stats.logged = (stats.logged || 0) + 1;
   else stats.passed = (stats.passed || 0) + 1;

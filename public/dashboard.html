@@ -211,7 +211,7 @@ h2{font-size:20px;font-weight:700;margin-bottom:16px;letter-spacing:-.02em}
       <span id="authTitle" style="font-size:14px;font-weight:600;">Sign in to ThumbGate</span>
       <span id="authHelp" style="font-size:13px;color:var(--text-muted);margin-left:8px;">Sign in to open your workspace, or launch locally with <code style="font-family:var(--mono);font-size:12px;background:var(--cyan-dim);color:var(--cyan);padding:2px 6px;border-radius:4px;">npx thumbgate pro</code>.</span>
     </div>
-    <div id="dashboardSsoButtons" style="display:flex;flex-direction:column;gap:8px;width:240px;max-width:100%;"><!-- __DASHBOARD_SSO_BUTTONS__ --></div>
+    <div id="dashboardSsoButtons" style="display:flex;flex-direction:column;gap:8px;width:240px;max-width:100%;"></div>
     <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;">
       <a href="#dashboardKeyPanel" id="dashboardKeyToggle" aria-expanded="false" aria-controls="dashboardKeyPanel" onclick="event.preventDefault();toggleLicenseKeyBox()" style="font-size:12px;color:var(--text-muted);text-decoration:underline;cursor:pointer;">Have a Pro license key?</a>
       <a class="btn-outline" id="getProBtn" href="https://thumbgate.ai/pricing" style="text-decoration:none;display:inline-flex;align-items:center;">Get Pro</a>
@@ -1067,7 +1067,7 @@ async function connect(options) {
     document.getElementById('dashboardContent').style.display = 'none';
   var onboardingEl = document.getElementById('firstBlockOnboarding');
   if (onboardingEl) onboardingEl.style.display = 'none';
-    renderUpNext(opts.upNext || null, Boolean(opts.firstBlockRecorded));
+    renderUpNext(opts.upNext || null, opts.firstBlockRecorded);
     return;
   }
   var isEnterprise = opts.tier === 'Enterprise' || API_KEY.startsWith('tg_op_') || API_KEY.startsWith('tg_creator_');
@@ -1144,6 +1144,7 @@ async function connect(options) {
     var paidOnboardingEl = document.getElementById('firstBlockOnboarding');
     if (paidOnboardingEl && !isDemo) paidOnboardingEl.style.display = 'none';
     document.getElementById('dashboardContent').style.display = 'block';
+    renderUpNext(null, true);
     if (opts.localPro) {
       const localProActiveMessage = 'Local Pro is active on this machine. Your dashboard is using the saved license key automatically.';
       const localEnterpriseActiveMessage = 'Local Enterprise is active on this machine. Your dashboard is using the saved license key automatically. Click Disconnect to switch keys.';
@@ -1218,13 +1219,13 @@ var DEFAULT_FINISH_SETUP_BAR = {
 function renderUpNext(upNext, firstBlockRecorded) {
   var wrapEl = document.getElementById('finishSetupWrap'), cardEl = document.getElementById('upNextCard'), kickerEl = document.getElementById('upNextKicker'), titleEl = document.getElementById('upNextTitle'), detailEl = document.getElementById('upNextDetail'), btnEl = document.getElementById('upNextActionBtn');
   if (!cardEl || !titleEl || !detailEl || !btnEl) return;
-  if (firstBlockRecorded) {
+  if (firstBlockRecorded !== false || !upNext || typeof upNext !== 'object') {
     if (wrapEl) wrapEl.style.display = 'none';
     cardEl.style.display = 'none';
     cardEl.setAttribute('hidden', '');
     return;
   }
-  var card = (upNext && typeof upNext === 'object') ? upNext : DEFAULT_FINISH_SETUP_BAR;
+  var card = upNext;
   if (wrapEl) wrapEl.style.display = 'block';
   cardEl.removeAttribute('hidden');
   cardEl.style.display = 'flex';
@@ -1255,9 +1256,9 @@ function renderStats(data) {
     warnedToday: gs.warnedToday != null ? gs.warnedToday : 0,
     activeGates: gateCount != null ? gateCount : 0,
   });
-  var firstBlocked = overview.firstBlockRecorded != null ? Boolean(overview.firstBlockRecorded) : (Number(gs.blocked) > 0 || Number(gs.blockedToday) > 0);
-  var paidUpNext = overview.upNext ? Object.assign({}, overview.upNext, { detail: String(overview.upNext.detail || '').replace(' on the Free tier (7-day local Pro trial included)', '') }) : { title: DEFAULT_FINISH_SETUP_BAR.title, detail: DEFAULT_FINISH_SETUP_BAR.detail.replace(' on the Free tier (7-day local Pro trial included)', ''), actionLabel: DEFAULT_FINISH_SETUP_BAR.actionLabel, actionHref: DEFAULT_FINISH_SETUP_BAR.actionHref };
-  renderUpNext(paidUpNext, firstBlocked);
+  var isPaid = /^(pro|team|enterprise)$/i.test(String(data.tier || ''));
+  var firstBlocked = isPaid ? true : (overview.firstBlockRecorded === false ? false : null);
+  renderUpNext(overview.upNext || null, firstBlocked);
   if (overview.lessonStorage) renderLessonStorageFooter(overview.lessonStorage);
 }
 
@@ -1732,7 +1733,8 @@ function renderDashboardData(data) {
     warnedToday: todayBucket.warn != null ? todayBucket.warn : 0,
     activeGates: gateCount != null ? gateCount : 0,
   });
-  var firstBlockedDash = overview.firstBlockRecorded != null ? Boolean(overview.firstBlockRecorded) : (Number(gateStats.blocked) > 0 || Number(todayBucket.deny) > 0);
+  var isPaidDash = /^(pro|team|enterprise)$/i.test(String(data.tier || ''));
+  var firstBlockedDash = isPaidDash ? true : (overview.firstBlockRecorded === false ? false : null);
   renderUpNext(overview.upNext || null, firstBlockedDash);
   if (overview.lessonStorage) {
     renderLessonStorageFooter(overview.lessonStorage);
@@ -2690,7 +2692,7 @@ window.addEventListener('DOMContentLoaded', function() {
     .then(function(res) { return res.ok ? res.json() : null; })
     .then(function(session) {
       if (session && session.authenticated) {
-        connect({ cookieSession: true, tier: session.tier, ssoProvider: session.ssoProvider, ssoEmail: session.ssoEmail, firstBlockRecorded: Boolean(session.firstBlockRecorded), upNext: session.upNext || null });
+        connect({ cookieSession: true, tier: session.tier, ssoProvider: session.ssoProvider, ssoEmail: session.ssoEmail, firstBlockRecorded: session.firstBlockRecorded, upNext: session.upNext || null });
         return;
       }
       if (!window.location.search.includes('noauto') && !ssoErr) {

@@ -454,7 +454,6 @@ function resolveCheckoutBrandUrls(appOrigin) {
   };
 }
 
-// Resolve the per-tier product image used by Stripe Checkout.
 function resolveTierIconUrl(planId, appOrigin) {
   const brandUrls = resolveCheckoutBrandUrls(appOrigin);
   const normalized = typeof planId === 'string' ? planId.toLowerCase() : '';
@@ -3586,9 +3585,13 @@ function provisionApiKey(customerId, opts = {}) {
       const meta = activeCustomerKey[1];
       if (opts.installId && !meta.installId) meta.installId = opts.installId;
       if (normalizedCustomerEmail && !meta.customerEmail) meta.customerEmail = normalizedCustomerEmail;
+      if (opts.plan) meta.plan = normalizeText(opts.plan);
+      if (opts.tier) meta.tier = normalizeText(opts.tier);
       if (opts.entitlementKind === 'subscription') {
         meta.remainingCredits = null;
         meta.entitlementKind = 'subscription';
+        if (String(meta.plan || '').toLowerCase() === 'free') meta.plan = normalizeText(opts.plan) || 'pro';
+        if (String(meta.tier || '').toLowerCase() === 'free') meta.tier = normalizeText(opts.tier) || 'Pro';
         if (subscriptionId) meta.subscriptionId = subscriptionId;
       } else if (creditsToAdd !== null && meta.remainingCredits !== null) {
         meta.remainingCredits = (meta.remainingCredits || 0) + creditsToAdd;
@@ -3612,6 +3615,9 @@ function provisionApiKey(customerId, opts = {}) {
       createdAt,
       installId: opts.installId || null,
       source: opts.source || 'provision',
+      plan: normalizeText(opts.plan) || null,
+      tier: normalizeText(opts.tier) || null,
+      firstBlockAt: normalizeText(opts.firstBlockAt) || null,
       subscriptionId: subscriptionId || null,
       entitlementKind: opts.entitlementKind || null,
       remainingCredits: creditsToAdd, // null means unlimited (standard subscription)
@@ -3643,6 +3649,9 @@ function rotateApiKey(oldKey) {
       installId: meta.installId,
       source: 'rotation',
       replacedKey: oldKey,
+      plan: meta.plan || null,
+      tier: meta.tier || null,
+      firstBlockAt: meta.firstBlockAt || null,
       subscriptionId: meta.subscriptionId || null,
       entitlementKind: meta.entitlementKind || null,
       remainingCredits: meta.remainingCredits,
@@ -3716,13 +3725,68 @@ function validateApiKey(key) {
   return {
     valid: true,
     customerId: meta.customerId,
+    customerEmail: meta.customerEmail || null,
     usageCount: meta.usageCount || 0,
     installId: meta.installId || null,
+    plan: meta.plan || null,
+    tier: meta.tier || null,
+    firstBlockAt: meta.firstBlockAt || null,
     createdAt: meta.createdAt,
     metadata: meta,
   };
 }
 
+function pickEarlierIso(a, b) {
+  if (!a) return b || null;
+  if (!b) return a;
+  const ta = Date.parse(a);
+  const tb = Date.parse(b);
+  if (!Number.isFinite(ta)) return b;
+  if (!Number.isFinite(tb)) return a;
+  return ta <= tb ? a : b;
+}
+
+function recordAccountFirstBlock(selector = {}, options = {}) {
+  const stamp = normalizeText(options.firstBlockAt) || new Date().toISOString();
+  const targetEmail = normalizeEmail(selector.email);
+  const targetCustomerId = normalizeText(selector.customerId);
+  const targetInstallId = selector.allowInstallIdOnly === true ? normalizeText(selector.installId) : null;
+  const targetKey = normalizeText(selector.apiKey);
+  return withKeyStoreLock(() => {
+    const store = loadKeyStore();
+    let updatedCount = 0;
+    let resolvedFirstBlockAt = stamp;
+    const customerIds = [];
+    const customerEmails = [];
+    for (const [key, meta] of Object.entries(store.keys || {})) {
+      if (!meta) continue;
+      const planLower = String(meta.plan || '').toLowerCase();
+      const tierLower = String(meta.tier || '').toLowerCase();
+      const matches = (targetKey && key === targetKey)
+        || (targetCustomerId && meta.customerId === targetCustomerId)
+        || (targetEmail && normalizeEmail(meta.customerEmail) === targetEmail)
+        || (targetInstallId && meta.installId === targetInstallId)
+        || (selector.allActivePaid === true && meta.active && planLower !== 'free' && tierLower !== 'free');
+      if (!matches) continue;
+      const createdMs = meta.createdAt ? Date.parse(meta.createdAt) : NaN;
+      const stampMs = Date.parse(stamp);
+      const boundedStamp = (Number.isFinite(createdMs) && Number.isFinite(stampMs) && stampMs < createdMs)
+        ? meta.createdAt
+        : stamp;
+      const nextAt = pickEarlierIso(meta.firstBlockAt, boundedStamp);
+      if (meta.firstBlockAt !== nextAt || (options.installId && !meta.installId)) {
+        meta.firstBlockAt = nextAt;
+        if (options.installId && !meta.installId) meta.installId = normalizeText(options.installId);
+        updatedCount += 1;
+      }
+      resolvedFirstBlockAt = pickEarlierIso(resolvedFirstBlockAt, meta.firstBlockAt);
+      if (meta.customerId) customerIds.push(meta.customerId);
+      if (meta.customerEmail) customerEmails.push(normalizeEmail(meta.customerEmail));
+    }
+    if (updatedCount > 0) saveKeyStore(store);
+    return { updatedCount, firstBlockAt: resolvedFirstBlockAt, customerIds, customerEmails };
+  });
+}
 function recordUsage(key) {
   return withKeyStoreLock(() => {
     const store = loadKeyStore();
@@ -4611,7 +4675,7 @@ function handleGithubWebhook(event, provenance = {}) {
 }
 
 module.exports = {
-  CONFIG, createCheckoutSession, isAutomatedCheckoutRequest, createBillingPortalSession, getCheckoutSessionStatus, provisionApiKey, resolvePaidEntitlementForEmail, rotateApiKey, validateApiKey, recordUsage, disableCustomerKeys, handleWebhook, verifyWebhookSignature, verifyGithubWebhookSignature, verifyPayPalWebhookSignature, recordGithubMarketplaceWebhookDelivery, recordPayPalWebhookDelivery, handleGithubWebhook, loadKeyStore, appendFunnelEvent, appendRevenueEvent, loadFunnelLedger, loadRevenueLedger, loadGithubMarketplaceWebhookLedger, loadPayPalWebhookLedger, loadNewsletterSubscribers, loadResolvedRevenueEvents, getFunnelAnalytics, getBusinessAnalytics, getBillingSummary, getBillingSummaryLive, getBillingSummariesLive, listStripeReconciledRevenueEvents, repairGithubMarketplaceRevenueLedger,
+  CONFIG, createCheckoutSession, isAutomatedCheckoutRequest, createBillingPortalSession, getCheckoutSessionStatus, provisionApiKey, resolvePaidEntitlementForEmail, rotateApiKey, validateApiKey, recordUsage, recordAccountFirstBlock, disableCustomerKeys, handleWebhook, verifyWebhookSignature, verifyGithubWebhookSignature, verifyPayPalWebhookSignature, recordGithubMarketplaceWebhookDelivery, recordPayPalWebhookDelivery, handleGithubWebhook, loadKeyStore, appendFunnelEvent, appendRevenueEvent, loadFunnelLedger, loadRevenueLedger, loadGithubMarketplaceWebhookLedger, loadPayPalWebhookLedger, loadNewsletterSubscribers, loadResolvedRevenueEvents, getFunnelAnalytics, getBusinessAnalytics, getBillingSummary, getBillingSummaryLive, getBillingSummariesLive, listStripeReconciledRevenueEvents, repairGithubMarketplaceRevenueLedger,
   _buildCheckoutSessionPayload: buildCheckoutSessionPayload,
   _filterQualifiedCheckoutFunnelEvents: filterQualifiedCheckoutFunnelEvents,
   _createSessionDroppingRejectedOptionals: createSessionDroppingRejectedOptionals,
