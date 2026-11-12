@@ -377,14 +377,16 @@ function formatWindowBlock(label, summary = {}) {
   const sprintLeads = pipeline.workflowSprintLeads || {};
   const interstitialViews = Number(ctas.checkoutInterstitialViews || 0);
   const interstitialClicks = Number(ctas.checkoutInterstitialClicks || 0);
-  const proConfirms = Number(ctas.checkoutInterstitialProConfirms || 0);
+  const proHandoffClicks = Number(ctas.checkoutInterstitialProConfirms || 0);
+  const paidConfirms = Number(ctas.paidConfirmations ?? ctas.checkoutPaidConfirmations ?? traffic.checkoutPaidConfirmations ?? 0);
+  const paidConfirmSuffix = paidConfirms ? `, stripePaidConfirms ${paidConfirms}` : '';
   const workflowClicks = Number(ctas.checkoutInterstitialWorkflowIntakeClicks || 0);
   const teamPathClicks = Number(ctas.checkoutInterstitialTeamPathClicks || 0);
   const diagnosticClicks = Number(ctas.checkoutInterstitialDiagnosticCheckoutClicks || 0);
   const sprintCheckoutClicks = Number(ctas.checkoutInterstitialWorkflowSprintCheckoutClicks || 0);
   const botDeflections = Number(ctas.checkoutBotDeflections || 0);
-  const intentSuffix = interstitialViews || interstitialClicks || proConfirms || workflowClicks || teamPathClicks || diagnosticClicks || sprintCheckoutClicks || botDeflections
-    ? `, checkoutIntent views ${interstitialViews}, clicks ${interstitialClicks}, stripeConfirms ${proConfirms}, intakeClicks ${workflowClicks}, teamPathClicks ${teamPathClicks}, diagnosticClicks ${diagnosticClicks}, sprintCheckoutClicks ${sprintCheckoutClicks}, botDeflections ${botDeflections}`
+  const intentSuffix = interstitialViews || interstitialClicks || proHandoffClicks || workflowClicks || teamPathClicks || diagnosticClicks || sprintCheckoutClicks || botDeflections || paidConfirms
+    ? `, checkoutIntent views ${interstitialViews}, clicks ${interstitialClicks}, stripeHandoffClicks ${proHandoffClicks}${paidConfirmSuffix}, intakeClicks ${workflowClicks}, teamPathClicks ${teamPathClicks}, diagnosticClicks ${diagnosticClicks}, sprintCheckoutClicks ${sprintCheckoutClicks}, botDeflections ${botDeflections}`
     : '';
 
   return [
@@ -452,11 +454,11 @@ function formatReport(report) {
 
   lines.push(
     '',
-    `30d attribution coverage: ${formatRatio(report.hostedAudit.summaries['30d'].dataQuality.attributionCoverage)}`,
-    `30d telemetry coverage: ${formatRatio(report.hostedAudit.summaries['30d'].dataQuality.telemetryCoverage)}`,
+    `30d attribution coverage: ${formatRatio(report.hostedAudit?.summaries?.['30d']?.dataQuality?.attributionCoverage)}`,
+    `30d telemetry coverage: ${formatRatio(report.hostedAudit?.summaries?.['30d']?.dataQuality?.telemetryCoverage)}`,
   );
 
-  if (report.diagnosis.gaps.length) {
+  if (report.diagnosis?.gaps?.length) {
     lines.push('');
     lines.push('Gaps:');
     for (const gap of report.diagnosis.gaps) {
