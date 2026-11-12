@@ -139,6 +139,7 @@ const {
 const {
   appendFunnelEvent,
   createCheckoutSession,
+  createBillingPortalSession,
   getCheckoutSessionStatus,
   provisionApiKey,
   resolvePaidEntitlementForEmail,
@@ -5003,11 +5004,12 @@ function renderCheckoutSuccessPage(runtimeConfig) {
       <ol>
         <li>Copy the environment block below into your CI or server environment.</li>
         <li>Use the curl example to confirm the hosted API captures an event end-to-end.</li>
-        <li>Treat the key like any other API secret &mdash; rotate via your billing portal if it leaks.</li>
+        <li>Treat the key like any other API secret &mdash; rotate via your <a href="/portal" id="billing-portal-link" style="color:var(--accent,#22d3ee);text-decoration:underline;">billing portal</a> if it leaks.</li>
       </ol>
       <pre id="env-block">Waiting for provisioning...</pre>
       <pre id="curl-block">Waiting for provisioning...</pre>
       <div class="actions">
+        <a class="button secondary" id="manage-portal-btn" href="/portal">Manage subscription &rarr;</a>
         <a class="button" href="/">Back to landing page</a>
         <a class="button secondary" href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md" target="_blank" rel="noreferrer">Verification evidence</a>
       </div>
@@ -5164,6 +5166,15 @@ function renderCheckoutSuccessPage(runtimeConfig) {
           : 'Key not available yet — refresh this page.';
         envBlock.textContent = body.nextSteps && body.nextSteps.env ? body.nextSteps.env : 'Environment snippet unavailable.';
         curlBlock.textContent = body.nextSteps && body.nextSteps.curl ? body.nextSteps.curl : 'curl snippet unavailable.';
+        const portalUrl = '/portal?key=' + encodeURIComponent(body.apiKey || '') + (sessionId ? '&session_id=' + encodeURIComponent(sessionId) : '');
+        const manageBtn = document.getElementById('manage-portal-btn');
+        if (manageBtn) {
+          manageBtn.href = portalUrl;
+        }
+        const portalLink = document.getElementById('billing-portal-link');
+        if (portalLink) {
+          portalLink.href = portalUrl;
+        }
       } catch (err) {
         sendTelemetryOnce('checkout_session_lookup_failed', {
           failureCode: err?.message ? err.message : 'checkout_session_lookup_failed',
@@ -5458,6 +5469,165 @@ function renderCheckoutCancelledPage(runtimeConfig) {
         });
       }());
     </script>
+  </main>
+</body>
+</html>`;
+}
+
+function renderManageSubscriptionPage(runtimeConfig = {}, { error, enteredKey } = {}) {
+  const appOrigin = runtimeConfig.appOrigin || DEFAULT_PUBLIC_APP_ORIGIN;
+  const safeError = error ? escapeHtml(String(error)) : '';
+  const safeEnteredKey = enteredKey ? escapeHtmlAttribute(String(enteredKey)) : '';
+
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Manage Subscription — ThumbGate</title>
+  <meta name="robots" content="noindex,nofollow" />
+  <style>
+    :root {
+      --bg: #09090b;
+      --card: #18181b;
+      --ink: #f4f4f5;
+      --muted: #a1a1aa;
+      --line: #27272a;
+      --accent: #22d3ee;
+      --error-bg: #450a0a;
+      --error-border: #7f1d1d;
+      --error-text: #fca5a5;
+      --radius: 14px;
+    }
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      background: var(--bg);
+      color: var(--ink);
+      line-height: 1.5;
+    }
+    main {
+      max-width: 640px;
+      margin: 0 auto;
+      padding: 60px 20px 80px;
+    }
+    .brand-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 28px;
+      text-decoration: none;
+      color: var(--ink);
+      font-weight: 700;
+      font-size: 16px;
+    }
+    .brand-header .logo-mark { width: 32px; height: 32px; display: block; }
+    h1 {
+      font-size: clamp(28px, 5vw, 40px);
+      line-height: 1.15;
+      margin: 0 0 12px;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+    }
+    p.lead {
+      font-size: 17px;
+      color: var(--muted);
+      margin: 0 0 24px;
+    }
+    .card {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 24px;
+      margin-top: 20px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+    }
+    .error-notice {
+      background: var(--error-bg);
+      border: 1px solid var(--error-border);
+      color: var(--error-text);
+      padding: 12px 16px;
+      border-radius: 10px;
+      margin-bottom: 18px;
+      font-size: 14px;
+    }
+    label {
+      display: block;
+      font-weight: 600;
+      font-size: 14px;
+      margin-bottom: 8px;
+      color: var(--ink);
+    }
+    input[type="text"], input[type="email"] {
+      width: 100%;
+      box-sizing: border-box;
+      padding: 12px 14px;
+      background: #09090b;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      color: var(--ink);
+      font-family: 'SFMono-Regular', Consolas, monospace;
+      font-size: 14px;
+      margin-bottom: 16px;
+    }
+    input[type="text"]:focus, input[type="email"]:focus {
+      outline: none;
+      border-color: var(--accent);
+    }
+    .actions {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-top: 20px;
+    }
+    button.button, a.button {
+      display: inline-block;
+      text-decoration: none;
+      background: var(--accent);
+      color: #09090b;
+      padding: 12px 20px;
+      border-radius: 8px;
+      font-weight: 700;
+      font-size: 14px;
+      border: none;
+      cursor: pointer;
+    }
+    a.button.secondary {
+      background: transparent;
+      color: var(--ink);
+      border: 1px solid var(--line);
+    }
+    .muted {
+      color: var(--muted);
+      font-size: 13px;
+      margin-top: 14px;
+    }
+  </style>
+  <link rel="icon" type="image/png" href="/thumbgate-icon.png">
+</head>
+<body>
+  <main>
+    <a href="/" class="brand-header">
+      <img src="/assets/brand/thumbgate-mark-inline-v3.svg" alt="ThumbGate" class="logo-mark" width="32" height="32">
+      <span class="logo-text">ThumbGate</span>
+    </a>
+    <h1>Manage Your Subscription</h1>
+    <p class="lead">Open your Stripe customer portal to manage payment methods, download invoices, upgrade seats, or cancel your subscription.</p>
+
+    <div class="card">
+      ${safeError ? `<div class="error-notice">${safeError}</div>` : ''}
+      <form method="GET" action="/portal">
+        <label for="key">License Key or Checkout Session ID</label>
+        <input type="text" id="key" name="key" value="${safeEnteredKey}" placeholder="tg_live_... or cs_live_..." required autofocus />
+        <button type="submit" class="button">Open Stripe Customer Portal &rarr;</button>
+      </form>
+      <p class="muted">Need to look up your key? Check your activation email or <code>~/.thumbgate/license.json</code> on your machine.</p>
+    </div>
+
+    <div class="actions">
+      <a class="button secondary" href="/">Back to Home</a>
+      <a class="button secondary" href="mailto:support@thumbgate.ai">Contact Support</a>
+    </div>
   </main>
 </body>
 </html>`;
@@ -8404,6 +8574,80 @@ async function addContext(){
       return;
     }
 
+    if (isGetLikeRequest && (pathname === '/portal' || pathname === '/billing' || pathname === '/billing/portal')) {
+      const apiKeyParam = parsed.searchParams.get('key')
+        || parsed.searchParams.get('apiKey')
+        || parsed.searchParams.get('license_key')
+        || '';
+      const sessionIdParam = parsed.searchParams.get('session_id')
+        || parsed.searchParams.get('sessionId')
+        || '';
+      const customerIdParam = parsed.searchParams.get('customer')
+        || parsed.searchParams.get('customerId')
+        || parsed.searchParams.get('customer_id')
+        || '';
+      const emailParam = parsed.searchParams.get('email')
+        || parsed.searchParams.get('customerEmail')
+        || '';
+      const authHeader = req.headers['authorization'] || '';
+      const bearerKey = authHeader.startsWith('Bearer ') ? authHeader.slice(7).trim() : '';
+      const effectiveKey = apiKeyParam || bearerKey;
+
+      const wantsJson = (req.headers['accept'] && req.headers['accept'].includes('application/json'))
+        || parsed.searchParams.get('format') === 'json';
+
+      if (effectiveKey || sessionIdParam || customerIdParam || emailParam) {
+        try {
+          const portalSession = await createBillingPortalSession({
+            apiKey: effectiveKey,
+            sessionId: sessionIdParam,
+            customerId: customerIdParam,
+            customerEmail: emailParam,
+            returnUrl: hostedConfig.appOrigin ? `${hostedConfig.appOrigin}/` : undefined,
+          });
+
+          if (wantsJson) {
+            sendJson(res, 200, {
+              url: portalSession.url,
+              id: portalSession.id,
+              customerId: portalSession.customerId,
+            });
+            return;
+          }
+
+          res.writeHead(302, {
+            Location: portalSession.url,
+            'Cache-Control': 'no-cache, no-store, must-revalidate',
+          });
+          res.end();
+          return;
+        } catch (err) {
+          if (wantsJson) {
+            sendProblem(res, {
+              type: PROBLEM_TYPES.BAD_REQUEST,
+              title: 'Billing Portal Error',
+              status: err.statusCode || 400,
+              detail: err.message || 'Unable to open billing portal session.',
+            });
+            return;
+          }
+          sendHtml(res, 400, renderManageSubscriptionPage(hostedConfig, {
+            error: err.message || 'Unable to locate customer billing record for the provided license key.',
+            enteredKey: effectiveKey,
+          }));
+          return;
+        }
+      }
+
+      if (isHeadRequest) {
+        sendHtml(res, 200, renderManageSubscriptionPage(hostedConfig), {}, { headOnly: true });
+        return;
+      }
+
+      sendHtml(res, 200, renderManageSubscriptionPage(hostedConfig));
+      return;
+    }
+
     if (isGetLikeRequest && pathname === '/leash-beta') {
       // Hermes Mobile founding beta landing (mac-yolo-safeguards/hermes-mobile/docs/beta-page).
       try {
@@ -9819,7 +10063,7 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
       return;
     }
 
-    if (req.method === 'OPTIONS' && (pathname === '/v1/billing/checkout' || pathname === '/v1/billing/session' || pathname === '/v1/billing/recommend-offer')) {
+    if (req.method === 'OPTIONS' && (pathname === '/v1/billing/checkout' || pathname === '/v1/billing/session' || pathname === '/v1/billing/portal' || pathname === '/v1/billing/recommend-offer')) {
       sendPublicBillingPreflight(res);
       return;
     }
@@ -9953,6 +10197,40 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
           status: err.statusCode || 500,
           detail: err.message || 'An unexpected error occurred.',
         }, getPublicBillingHeaders(requestedTraceId));
+      }
+      return;
+    }
+
+    if (req.method === 'POST' && pathname === '/v1/billing/portal') {
+      try {
+        const body = await parseJsonBody(req);
+        const traceId = body.traceId || createTraceId('billing_portal');
+        const responseHeaders = getPublicBillingHeaders(traceId);
+        const authHeader = req.headers['authorization'] || '';
+        const bearerKey = authHeader.startsWith('Bearer ') ? authHeader.slice(7).trim() : '';
+
+        const portalSession = await createBillingPortalSession({
+          apiKey: body.apiKey || body.key || bearerKey,
+          sessionId: body.sessionId || body.session_id,
+          customerId: body.customerId || body.customer_id,
+          customerEmail: body.customerEmail || body.email,
+          returnUrl: body.returnUrl || (hostedConfig.appOrigin ? `${hostedConfig.appOrigin}/` : undefined),
+        });
+
+        sendJson(res, 200, {
+          url: portalSession.url,
+          id: portalSession.id,
+          customerId: portalSession.customerId,
+          traceId,
+        }, responseHeaders);
+      } catch (err) {
+        const fallbackTraceId = createTraceId('billing_portal_error');
+        sendProblem(res, {
+          type: PROBLEM_TYPES.BAD_REQUEST,
+          title: 'Billing Portal Error',
+          status: err.statusCode || 400,
+          detail: err.message || 'Unable to open billing portal session.',
+        }, getPublicBillingHeaders(fallbackTraceId));
       }
       return;
     }
