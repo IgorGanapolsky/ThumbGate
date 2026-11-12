@@ -1,18 +1,19 @@
 const crypto = require('node:crypto');
 const fs = require('node:fs');
+const http = require('node:http');
 const os = require('node:os');
 const path = require('node:path');
 const { test, expect } = require('@playwright/test');
 
 test.describe('/dashboard real-server login, redeploy persistence, Google SSO, and Log Out', () => {
-  const ENV_KEYS = ['THUMBGATE_API_KEY', 'THUMBGATE_OPERATOR_KEY', 'THUMBGATE_FEEDBACK_DIR', 'GOOGLE_CLIENT_ID', 'GOOGLE_CLIENT_SECRET', 'APPLE_CLIENT_ID'];
+  const ENV_KEYS = ['THUMBGATE_API_KEY', 'THUMBGATE_OPERATOR_KEY', 'THUMBGATE_FEEDBACK_DIR', 'GOOGLE_CLIENT_ID', 'GOOGLE_CLIENT_SECRET', 'APPLE_CLIENT_ID', 'APPLE_TEAM_ID', 'APPLE_KEY_ID', 'APPLE_PRIVATE_KEY'];
   let tmpDir, savedEnv, serverHandle, origin, serverTestHooks;
 
   test.beforeEach(async () => {
     tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'tg-e2e-sso-logout-'));
     savedEnv = Object.fromEntries(ENV_KEYS.map((k) => [k, process.env[k]]));
     Object.assign(process.env, { THUMBGATE_API_KEY: 'tg_admin_e2e_key_9001', THUMBGATE_OPERATOR_KEY: 'tg_op_e2e_key_9002', THUMBGATE_FEEDBACK_DIR: tmpDir });
-    ['GOOGLE_CLIENT_ID', 'GOOGLE_CLIENT_SECRET', 'APPLE_CLIENT_ID'].forEach((k) => delete process.env[k]);
+    ['GOOGLE_CLIENT_ID', 'GOOGLE_CLIENT_SECRET', 'APPLE_CLIENT_ID', 'APPLE_TEAM_ID', 'APPLE_KEY_ID', 'APPLE_PRIVATE_KEY'].forEach((k) => delete process.env[k]);
     const serverMod = require('../../src/api/server');
     serverTestHooks = serverMod.__test__;
     serverHandle = await serverMod.startServer({ port: 0, host: '127.0.0.1' });
@@ -20,7 +21,10 @@ test.describe('/dashboard real-server login, redeploy persistence, Google SSO, a
   });
 
   test.afterEach(async () => {
-    if (serverTestHooks) serverTestHooks.setGoogleOAuthFetchForTests(null);
+    if (serverTestHooks) {
+      serverTestHooks.setGoogleOAuthFetchForTests(null);
+      serverTestHooks.setAppleOAuthFetchForTests(null);
+    }
     if (serverHandle?.server) await new Promise((resolve) => serverHandle.server.close(resolve));
     if (tmpDir) fs.rmSync(tmpDir, { recursive: true, force: true });
     for (const [k, v] of Object.entries(savedEnv || {})) {
@@ -155,6 +159,107 @@ test.describe('/dashboard real-server login, redeploy persistence, Google SSO, a
       await expect(page.locator('#dashboardContent')).toBeHidden();
     } finally {
       await context.close();
+    }
+  });
+
+  test('Apple Sign-In survives cross-site form_post via 303 redirect for Free and Pro private-relay users', async ({ browser }) => {
+    const { provisionApiKey } = require('../../scripts/billing');
+    const ecClient = crypto.generateKeyPairSync('ec', { namedCurve: 'prime256v1' });
+    const rsaApple = crypto.generateKeyPairSync('rsa', { modulusLength: 2048 });
+    const applePublicJwk = { ...rsaApple.publicKey.export({ format: 'jwk' }), kid: 'pw-apple-rsa-kid', alg: 'RS256', use: 'sig' };
+    process.env.APPLE_CLIENT_ID = 'ai.thumbgate.web.pw';
+    process.env.APPLE_TEAM_ID = 'PWTEAM1234';
+    process.env.APPLE_KEY_ID = 'PWKEY12345';
+    process.env.APPLE_PRIVATE_KEY = ecClient.privateKey.export({ type: 'pkcs8', format: 'pem' }).replace(/\n/g, '\\n');
+
+    let currentEmail = 'free-relay@privaterelay.appleid.com';
+    let lastNonce = '';
+    const signAppleRsaToken = (email, nonce) => {
+      const h = Buffer.from(JSON.stringify({ alg: 'RS256', typ: 'JWT', kid: 'pw-apple-rsa-kid' })).toString('base64url');
+      const p = Buffer.from(JSON.stringify({
+        iss: 'https://appleid.apple.com',
+        aud: 'ai.thumbgate.web.pw',
+        exp: Math.floor(Date.now() / 1000) + 600,
+        nonce,
+        email,
+        email_verified: 'true',
+        is_private_email: 'true',
+        sub: `apple_pw_${email}`,
+      })).toString('base64url');
+      return `${h}.${p}.${crypto.sign('RSA-SHA256', Buffer.from(`${h}.${p}`), rsaApple.privateKey).toString('base64url')}`;
+    };
+    serverTestHooks.setAppleOAuthFetchForTests(async (url) => (
+      String(url) === 'https://appleid.apple.com/auth/token'
+        ? { ok: true, status: 200, json: async () => ({ access_token: 'apple_pw_at', id_token: signAppleRsaToken(currentEmail, lastNonce) }) }
+        : { ok: true, status: 200, json: async () => ({ keys: [applePublicJwk] }) }
+    ));
+
+    const fakeAppleIdp = http.createServer((req, res) => {
+      const u = new URL(req.url || '/', 'http://localhost');
+      const state = u.searchParams.get('state') || '';
+      res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+      res.end(
+        `<form id="applePost" method="POST" action="${origin}/v1/cloud/sso/apple/callback">`
+        + `<input name="code" value="pw_apple_code_1" />`
+        + `<input name="state" value="${state}" />`
+        + `<input name="user" value='{&quot;name&quot;:{&quot;firstName&quot;:&quot;Grace&quot;,&quot;lastName&quot;:&quot;Hopper&quot;}}' />`
+        + `</form><script>document.getElementById('applePost').submit();</script>`,
+      );
+    });
+    await new Promise((resolve) => fakeAppleIdp.listen(0, resolve));
+    const idpPort = fakeAppleIdp.address().port;
+    const context = await browser.newContext({ extraHTTPHeaders: { 'x-forwarded-for': '203.0.113.57' } });
+    const page = await context.newPage();
+    try {
+      await page.route(/\/v1\/cloud\/sso\/authorize\b/, async (route) => {
+        const upstream = await route.fetch({ maxRedirects: 0 });
+        expect(upstream.status()).toBe(302);
+        const loc = upstream.headers().location || '';
+        expect(loc).toMatch(/^https:\/\/appleid\.apple\.com\/auth\/authorize\?/);
+        const authUrl = new URL(loc);
+        lastNonce = authUrl.searchParams.get('nonce') || '';
+        await route.fulfill({
+          status: 302,
+          headers: { Location: `http://localhost:${idpPort}/authorize?state=${encodeURIComponent(authUrl.searchParams.get('state') || '')}` },
+        });
+      });
+
+      await page.goto(`${origin}/dashboard?noauto`);
+      await expect(page.locator('#ssoAppleBtn')).toBeVisible();
+      await expect(page.locator('#ssoGoogleBtn')).toHaveCount(0);
+
+      await Promise.all([
+        page.waitForURL(`${origin}/dashboard`),
+        page.locator('#ssoAppleBtn').click(),
+      ]);
+      await expect(page.locator('#authStatus')).toHaveText('✓ Free tier');
+      await expect(page.locator('#authTitle')).toHaveText('Signed in (free-relay@privaterelay.appleid.com) · Free tier');
+      await expect(page.locator('#dashboardContent')).toBeHidden();
+
+      await Promise.all([
+        page.waitForURL(/\/dashboard\?noauto=1$/),
+        page.locator('#disconnectBtn').click(),
+      ]);
+      await expect(page.locator('#authStatus')).toHaveText('Disconnected');
+
+      provisionApiKey('cus_pw_apple_paid_1', {
+        customerEmail: 'pro-relay@privaterelay.appleid.com',
+        entitlementKind: 'subscription',
+        subscriptionId: 'sub_pw_apple_1',
+        source: 'stripe_webhook_checkout_completed',
+      });
+      currentEmail = 'pro-relay@privaterelay.appleid.com';
+
+      await Promise.all([
+        page.waitForURL(`${origin}/dashboard`),
+        page.locator('#ssoAppleBtn').click(),
+      ]);
+      await expect(page.locator('#authStatus')).toHaveText('✓ Connected');
+      await expect(page.locator('#authTitle')).toHaveText('Signed in (pro-relay@privaterelay.appleid.com)');
+      await expect(page.locator('#dashboardContent')).toBeVisible();
+    } finally {
+      await context.close();
+      await new Promise((resolve) => fakeAppleIdp.close(resolve));
     }
   });
 });

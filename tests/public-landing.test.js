@@ -99,6 +99,9 @@ test('homepage navbar exposes paid-user Log in drawer and exchanges keys for an 
     GOOGLE_CLIENT_ID: process.env.GOOGLE_CLIENT_ID,
     GOOGLE_CLIENT_SECRET: process.env.GOOGLE_CLIENT_SECRET,
     APPLE_CLIENT_ID: process.env.APPLE_CLIENT_ID,
+    APPLE_TEAM_ID: process.env.APPLE_TEAM_ID,
+    APPLE_KEY_ID: process.env.APPLE_KEY_ID,
+    APPLE_PRIVATE_KEY: process.env.APPLE_PRIVATE_KEY,
   };
   process.env.THUMBGATE_API_KEY = 'tg_admin_test_secret_999';
   process.env.THUMBGATE_OPERATOR_KEY = 'tg_op_test_secret_888';
@@ -107,6 +110,9 @@ test('homepage navbar exposes paid-user Log in drawer and exchanges keys for an 
   delete process.env.GOOGLE_CLIENT_ID;
   delete process.env.GOOGLE_CLIENT_SECRET;
   delete process.env.APPLE_CLIENT_ID;
+  delete process.env.APPLE_TEAM_ID;
+  delete process.env.APPLE_KEY_ID;
+  delete process.env.APPLE_PRIVATE_KEY;
 
   const crypto = require('node:crypto');
   const { startServer, __test__: serverTestHooks } = require('../src/api/server');
@@ -174,7 +180,15 @@ test('homepage navbar exposes paid-user Log in drawer and exchanges keys for an 
     }
     const apple302 = await fetch(`${origin}/v1/cloud/sso/authorize?provider=apple`, { redirect: 'manual' });
     assert.equal(apple302.status, 302);
-    assert.match(apple302.headers.get('location') || '', /^https:\/\/appleid\.apple\.com\/auth\/authorize\?/);
+    const appleAuthUrl = new URL(apple302.headers.get('location') || '');
+    assert.equal(appleAuthUrl.origin, 'https://appleid.apple.com');
+    assert.equal(appleAuthUrl.pathname, '/auth/authorize');
+    assert.equal(appleAuthUrl.searchParams.get('response_mode'), 'form_post');
+    assert.match(appleAuthUrl.searchParams.get('nonce') || '', /^nc_[a-f0-9]{32}$/);
+    const appleRedirectUri = new URL(appleAuthUrl.searchParams.get('redirect_uri') || '');
+    assert.equal(appleRedirectUri.protocol, 'https:');
+    assert.equal(appleRedirectUri.pathname, '/v1/cloud/sso/apple/callback');
+    assert.equal(appleRedirectUri.search, '');
     const appleJson = await (await fetch(`${origin}/v1/cloud/sso/authorize?provider=apple&format=json`)).json();
     assert.equal(appleJson.mode, 'oauth_redirect');
     delete process.env.GOOGLE_CLIENT_ID;
@@ -308,6 +322,180 @@ test('homepage navbar exposes paid-user Log in drawer and exchanges keys for an 
     serverTestHooks.setGoogleOAuthFetchForTests(null);
     delete process.env.GOOGLE_CLIENT_ID;
     delete process.env.GOOGLE_CLIENT_SECRET;
+
+    // Apple Sign-In POST /v1/cloud/sso/apple/callback end-to-end verification (local EC key, ES256 client_secret, JWKS verify, 303 cookie, Free vs Pro, and error cases)
+    const appleClientKeyPair = crypto.generateKeyPairSync('ec', { namedCurve: 'prime256v1' });
+    const applePrivatePemEscaped = appleClientKeyPair.privateKey.export({ type: 'pkcs8', format: 'pem' }).replace(/\n/g, '\\n');
+    const appleIdpKeyPair = crypto.generateKeyPairSync('ec', { namedCurve: 'prime256v1' });
+    const wrongAppleIdpKeyPair = crypto.generateKeyPairSync('ec', { namedCurve: 'prime256v1' });
+    const appleIdpJwk = { ...appleIdpKeyPair.publicKey.export({ format: 'jwk' }), kid: 'apple-jwks-ec-1', alg: 'ES256', use: 'sig' };
+    const signAppleIdToken = (claims, key = appleIdpKeyPair.privateKey, kid = 'apple-jwks-ec-1') => {
+      const h = Buffer.from(JSON.stringify({ alg: 'ES256', typ: 'JWT', kid })).toString('base64url');
+      const p = Buffer.from(JSON.stringify(claims)).toString('base64url');
+      const s = crypto.sign('sha256', Buffer.from(`${h}.${p}`), { key, dsaEncoding: 'ieee-p1363' }).toString('base64url');
+      return `${h}.${p}.${s}`;
+    };
+    const postAppleForm = (fields) => fetch(`${origin}/v1/cloud/sso/apple/callback`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams(fields).toString(),
+      redirect: 'manual',
+    });
+    assert.equal((await fetch(`${origin}/v1/cloud/sso/apple/callback`, { redirect: 'manual' })).status, 405);
+
+    process.env.APPLE_CLIENT_ID = 'ai.thumbgate.web.test';
+    const issueAppleAuth = async () => {
+      const r = await fetch(`${origin}/v1/cloud/sso/authorize?provider=apple`, { redirect: 'manual' });
+      const u = new URL(r.headers.get('location'));
+      return { state: u.searchParams.get('state'), nonce: u.searchParams.get('nonce'), redirectUri: u.searchParams.get('redirect_uri') };
+    };
+
+    // A1. Missing env (APPLE_TEAM_ID / APPLE_KEY_ID / APPLE_PRIVATE_KEY absent) -> 303 sso_not_configured
+    const missingEnvAuth = await issueAppleAuth();
+    const missingEnvRes = await postAppleForm({ code: 'apple_code_env', state: missingEnvAuth.state });
+    assert.equal(missingEnvRes.status, 303);
+    assert.equal(missingEnvRes.headers.get('location'), '/dashboard?sso_error=sso_not_configured');
+    assert.equal(missingEnvRes.headers.get('set-cookie'), null);
+
+    process.env.APPLE_TEAM_ID = 'TEAM99TEST';
+    process.env.APPLE_KEY_ID = 'KEY88TEST1';
+    process.env.APPLE_PRIVATE_KEY = applePrivatePemEscaped;
+
+    // A2. Bad state, missing code, and oauth_denied -> 303 error redirects
+    const appleBadStateRes = await postAppleForm({ code: 'apple_code_1', state: 'st_wrong_apple' });
+    assert.equal(appleBadStateRes.status, 303);
+    assert.equal(appleBadStateRes.headers.get('location'), '/dashboard?sso_error=invalid_state');
+    const appleNoCode = await issueAppleAuth();
+    assert.equal((await postAppleForm({ state: appleNoCode.state })).headers.get('location'), '/dashboard?sso_error=missing_code');
+    const appleDenied = await issueAppleAuth();
+    assert.equal((await postAppleForm({ error: 'user_cancelled_authorize', state: appleDenied.state })).headers.get('location'), '/dashboard?sso_error=oauth_denied');
+
+    let nextAppleIdToken = '';
+    let verifiedClientSecretClaims = null;
+    let capturedAppleTokenParams = null;
+    serverTestHooks.setAppleOAuthFetchForTests(async (url, opts) => {
+      if (String(url) === 'https://appleid.apple.com/auth/token') {
+        capturedAppleTokenParams = new URLSearchParams(String(opts?.body || ''));
+        const csParts = (capturedAppleTokenParams.get('client_secret') || '').split('.');
+        assert.equal(csParts.length, 3);
+        const csHeader = JSON.parse(Buffer.from(csParts[0], 'base64url').toString('utf8'));
+        const csPayload = JSON.parse(Buffer.from(csParts[1], 'base64url').toString('utf8'));
+        assert.equal(csHeader.alg, 'ES256');
+        assert.equal(csHeader.kid, 'KEY88TEST1');
+        assert.equal(
+          crypto.verify('sha256', Buffer.from(`${csParts[0]}.${csParts[1]}`), { key: appleClientKeyPair.publicKey, dsaEncoding: 'ieee-p1363' }, Buffer.from(csParts[2], 'base64url')),
+          true,
+        );
+        verifiedClientSecretClaims = csPayload;
+        return { ok: true, status: 200, json: async () => ({ access_token: 'apple_at_1', id_token: nextAppleIdToken }) };
+      }
+      assert.equal(String(url), 'https://appleid.apple.com/auth/keys');
+      return { ok: true, status: 200, json: async () => ({ keys: [appleIdpJwk] }) };
+    });
+
+    // A3. Bad signature, wrong aud, expired token, invalid issuer, and mismatched nonce -> 303 error redirects, no cookie
+    const badSigAuth = await issueAppleAuth();
+    nextAppleIdToken = signAppleIdToken({
+      iss: 'https://appleid.apple.com',
+      aud: 'ai.thumbgate.web.test',
+      exp: nowSec + 600,
+      nonce: badSigAuth.nonce,
+      email: 'user@privaterelay.appleid.com',
+      email_verified: 'true',
+      sub: 'apple_sub_bad_sig',
+    }, wrongAppleIdpKeyPair.privateKey);
+    const badSigRes = await postAppleForm({ code: 'code_badsig', state: badSigAuth.state });
+    assert.equal(badSigRes.status, 303);
+    assert.equal(badSigRes.headers.get('location'), '/dashboard?sso_error=invalid_signature');
+    assert.equal(badSigRes.headers.get('set-cookie'), null);
+
+    const appleInvalidCases = [
+      [(n) => ({ iss: 'https://appleid.apple.com', aud: 'com.other.service', exp: nowSec + 600, nonce: n, email: 'u@icloud.com', email_verified: 'true', sub: 's1' }), 'wrong_audience'],
+      [(n) => ({ iss: 'https://appleid.apple.com', aud: 'ai.thumbgate.web.test', exp: nowSec - 30, nonce: n, email: 'u@icloud.com', email_verified: 'true', sub: 's1' }), 'expired_token'],
+      [(n) => ({ iss: 'https://evil.example.com', aud: 'ai.thumbgate.web.test', exp: nowSec + 600, nonce: n, email: 'u@icloud.com', email_verified: 'true', sub: 's1' }), 'invalid_issuer'],
+      [() => ({ iss: 'https://appleid.apple.com', aud: 'ai.thumbgate.web.test', exp: nowSec + 600, nonce: 'nc_tampered', email: 'u@icloud.com', email_verified: 'true', sub: 's1' }), 'invalid_nonce'],
+    ];
+    for (const [buildClaims, expectedErr] of appleInvalidCases) {
+      const a = await issueAppleAuth();
+      nextAppleIdToken = signAppleIdToken(buildClaims(a.nonce));
+      const r = await postAppleForm({ code: 'code_invalid_claim', state: a.state });
+      assert.equal(r.status, 303);
+      assert.equal(r.headers.get('location'), `/dashboard?sso_error=${expectedErr}`);
+      assert.equal(r.headers.get('set-cookie'), null);
+    }
+
+    // A4. Good sign-in: Free private-relay user on first sign-in (with `user` JSON) -> 303 + SameSite=Lax cookie + sso_free
+    const freeAppleAuth = await issueAppleAuth();
+    nextAppleIdToken = signAppleIdToken({
+      iss: 'https://appleid.apple.com',
+      aud: 'ai.thumbgate.web.test',
+      exp: nowSec + 600,
+      nonce: freeAppleAuth.nonce,
+      email: 'relay-free-1@privaterelay.appleid.com',
+      email_verified: 'true',
+      is_private_email: 'true',
+      sub: '001122.free_relay_user',
+    });
+    const freeAppleRes = await postAppleForm({
+      code: 'valid_apple_code_free',
+      state: freeAppleAuth.state,
+      id_token: nextAppleIdToken,
+      user: JSON.stringify({ name: { firstName: 'Ada', lastName: 'Lovelace' }, email: 'subscriber@thumbgate.ai' }),
+    });
+    assert.equal(freeAppleRes.status, 303);
+    assert.equal(freeAppleRes.headers.get('location'), '/dashboard');
+    assert.equal(verifiedClientSecretClaims.iss, 'TEAM99TEST');
+    assert.equal(verifiedClientSecretClaims.sub, 'ai.thumbgate.web.test');
+    assert.equal(verifiedClientSecretClaims.aud, 'https://appleid.apple.com');
+    assert.ok(verifiedClientSecretClaims.exp > verifiedClientSecretClaims.iat && (verifiedClientSecretClaims.exp - verifiedClientSecretClaims.iat) <= 180 * 86400);
+    assert.equal(capturedAppleTokenParams.get('redirect_uri'), freeAppleAuth.redirectUri);
+    const freeAppleCookieHeader = freeAppleRes.headers.get('set-cookie') || '';
+    assert.match(freeAppleCookieHeader, /^thumbgate_auth_session=[a-f0-9]{64};.*SameSite=Lax.*HttpOnly.*Secure/);
+    const freeAppleCookie = freeAppleCookieHeader.split(';')[0];
+    const freeAppleSession = await (await fetch(`${origin}/v1/auth/session`, { headers: { cookie: freeAppleCookie } })).json();
+    assert.equal(freeAppleSession.authenticated, true);
+    assert.equal(freeAppleSession.tier, 'Free');
+    assert.equal(freeAppleSession.ssoProvider, 'apple');
+    assert.equal(freeAppleSession.ssoEmail, 'relay-free-1@privaterelay.appleid.com');
+    assert.equal((await fetch(`${origin}/v1/feedback/stats`, { headers: { cookie: freeAppleCookie } })).status, 401);
+
+    // Replaying consumed Apple state must fail closed
+    assert.equal((await postAppleForm({ code: 'valid_apple_code_free', state: freeAppleAuth.state })).headers.get('location'), '/dashboard?sso_error=invalid_state');
+
+    // A5. Subscribed Apple private-relay user -> tier 'Pro' and survives redeploy
+    provisionApiKey('cus_paid_apple_relay_1', {
+      customerEmail: 'relay-pro@privaterelay.appleid.com',
+      entitlementKind: 'subscription',
+      subscriptionId: 'sub_apple_live_1',
+      source: 'stripe_webhook_checkout_completed',
+    });
+    const proAppleAuth = await issueAppleAuth();
+    nextAppleIdToken = signAppleIdToken({
+      iss: 'https://appleid.apple.com',
+      aud: 'ai.thumbgate.web.test',
+      exp: nowSec + 600,
+      nonce: proAppleAuth.nonce,
+      email: 'relay-pro@privaterelay.appleid.com',
+      email_verified: true,
+      is_private_email: true,
+      sub: '001122.pro_relay_user',
+    });
+    const proAppleRes = await postAppleForm({ code: 'valid_apple_code_pro', state: proAppleAuth.state });
+    assert.equal(proAppleRes.status, 303);
+    const proAppleCookie = (proAppleRes.headers.get('set-cookie') || '').split(';')[0];
+    serverTestHooks.clearInMemoryAuthSessionsForTests();
+    const proAppleSession = await (await fetch(`${origin}/v1/auth/session`, { headers: { cookie: proAppleCookie } })).json();
+    assert.equal(proAppleSession.authenticated, true);
+    assert.equal(proAppleSession.tier, 'Pro');
+    assert.equal(proAppleSession.ssoProvider, 'apple');
+    assert.equal(proAppleSession.ssoEmail, 'relay-pro@privaterelay.appleid.com');
+    assert.equal((await fetch(`${origin}/v1/feedback/stats`, { headers: { cookie: proAppleCookie } })).status, 200);
+
+    serverTestHooks.setAppleOAuthFetchForTests(null);
+    delete process.env.APPLE_CLIENT_ID;
+    delete process.env.APPLE_TEAM_ID;
+    delete process.env.APPLE_KEY_ID;
+    delete process.env.APPLE_PRIVATE_KEY;
     const badJsonRes = await fetch(`${origin}/v1/auth/session`, {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
