@@ -3,7 +3,7 @@ name: snapchat-abm-playbook-steal
 description: >
   Account-Based Marketing (ABM) Industry Playbook demand generation framework stolen from Snapchat for Business.
   Converts generic AI governance features into high-converting, vertical-specific playbooks (Gaming NPCs, Healthcare receptionists,
-  PropTech dispatch) with interactive diagnostic gates, sub-0.5ms proof, and multi-tier monetization rails ($19 Pro, $499 Audit, $1,500 Sprint).
+  FinTech API dispatch) with interactive diagnostic gates, sub-0.5ms proof, and multi-tier monetization rails ($19 Pro, $499 Audit, $1,500 Sprint).
 ---
 
 # Snapchat ABM Industry Playbook Steal — Vertical Demand Generation
@@ -26,14 +26,14 @@ They buy **vertical risk elimination and runaway loop prevention** for high-cons
 | :--- | :--- | :--- | :--- |
 | **Gaming & NPCs** (`/gaming-playbook`) | Runaway multi-turn tool loops ($4–$10/session), virtual economy weapon duplication. | Sub-0.5ms in-engine pre-action firewall (Unity/Unreal). Zero frame drops. | $499 Game Agent Audit / $19/mo Pro |
 | **Dental / Healthcare Receptionists** | Booking double-allocation, unauthorized medical advice, PII leak outside HIPAA. | In-country deterministic pre-tool diode. Zero plaintext egress. | $499 Clinic Workflow Audit |
-| **PropTech & Title Dispatch** | Unauthorized $1,500-$3,500 contractor dispatches, non-surviving municipal liens. | Pre-action dispatch diodes with statutory survivability gates (F.S. § 162.09). | $49 Pre-Bid Scorecard / $499 Audit |
+| **Cloud & FinTech Ops** | Unbounded production terraform destroy or duplicate payout retries. | Deterministic PreToolUse blast-radius and idempotency diodes. | $19/mo Pro / $499 Audit |
 
 ## The 4 Rules of a High-Converting ABM Industry Playbook
 
 ### 1. Speak the Native Engineering Dialect
 - Gaming: *frame budgets, 60/120 FPS desync, Unity C# WebSockets, Unreal scene graph, item rarity caps*.
 - Healthcare: *EHR integration, n8n webhook diodes, HIPAA/UAE data sovereignty, appointment lockouts*.
-- Real Estate: *escrow holdbacks, municipal lien survivability, automated maintenance dispatch*.
+- Cloud & FinTech Ops: *payout idempotency keys, production terraform blast radius, webhook replay locks*.
 
 ### 2. Never Make Claims Without an Empirical Proof Box
 Every playbook must show a real terminal command or code block:

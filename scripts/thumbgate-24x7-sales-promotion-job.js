@@ -32,11 +32,22 @@ const PARTNER_OFFERS_DIR = path.join(REPO_ROOT, 'marketing', 'partner-offers');
 const STATUS_RECEIPT_PATH = path.join(REPO_ROOT, '.thumbgate', 'sales-promotion-24x7-status.json');
 const BOARDY_DIRECTIVE_PATH = path.join(REPO_ROOT, 'marketing', 'boardy_partner_hunting_directive_2026-10-18.md');
 
+const PROHIBITED_REAL_ESTATE_RE =
+  /real.?estate|tax.?deed|197\.552|\bfolios?\b|miami-dade|broward|propstream|rexera|eliseai|biggerpockets|deals\.igorganapolsky/i;
+
+function filterAllowedChannels(rawByChannel = {}) {
+  return Object.fromEntries(
+    Object.entries(rawByChannel || {}).filter(([ch]) => !PROHIBITED_REAL_ESTATE_RE.test(ch)),
+  );
+}
+
 function writePartnerOfferMarkdownFiles(offers = [], outDir = PARTNER_OFFERS_DIR) {
   fs.mkdirSync(outDir, { recursive: true });
   const written = [];
   for (const offer of offers) {
     if (!offer?.id || !offer?.draft) continue;
+    const draftBlob = `${offer.company || ''} ${offer.domain || ''} ${offer.draft.subject || ''} ${offer.draft.body || ''}`;
+    if (PROHIBITED_REAL_ESTATE_RE.test(draftBlob)) continue;
     const filePath = path.join(outDir, `${offer.id}.md`);
     const content = [
       `To: ${offer.draft.recipientLabel} (${offer.company} — ${offer.domain})`,
@@ -99,10 +110,11 @@ async function runSalesPromotion24x7Cycle({
       const omni = require(omniDaemonPath);
       if (typeof omni.runLiveOmnichannelCycle === 'function') {
         const res = await omni.runLiveOmnichannelCycle();
+        const cleanByChannel = filterAllowedChannels(res.attestation?.byChannel);
         omnichannelSummary = {
           newlyRecordedCount: res.newlyRecordedCount,
           totalEntries: res.attestation?.totalEntries || 0,
-          byChannel: res.attestation?.byChannel || {},
+          byChannel: cleanByChannel,
           totalExpectedPipelineUsd: res.attestation?.totalExpectedPipelineUsd || 0,
         };
       }
@@ -153,5 +165,6 @@ if (require.main === module) {
 
 module.exports = {
   runSalesPromotion24x7Cycle,
+  filterAllowedChannels,
   writePartnerOfferMarkdownFiles,
 };

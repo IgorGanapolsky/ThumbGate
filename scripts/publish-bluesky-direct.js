@@ -4,6 +4,7 @@ const fs = require('fs');
 const path = require('path');
 const { createSession, atprotoRequest, DEFAULT_PDS_HOST } = require('./lib/bluesky-atproto');
 const { parsePostFile } = require('./post-everywhere');
+const { assertAllowedOutboundTopic } = require('./social-quality-gate');
 
 async function main() {
   const postPath = process.argv[2];
@@ -15,6 +16,7 @@ async function main() {
   const parsed = parsePostFile(postPath);
   
   const text = [parsed.title, parsed.body].filter(Boolean).join('\n\n').slice(0, 300);
+  assertAllowedOutboundTopic(text, 'publish-bluesky-direct');
   console.log(`[bluesky-direct] Text to post (${text.length} chars):\n---\n${text}\n---`);
   
   if (dryRun) {
@@ -53,7 +55,11 @@ async function main() {
   console.log(`[bluesky-direct] Successfully posted! URI: ${json.uri}, CID: ${json.cid}`);
 }
 
-main().catch(err => {
-  console.error('[bluesky-direct] ERROR:', err);
-  process.exit(1);
-});
+if (require.main === module) {
+  main().catch((err) => {
+    console.error('[bluesky-direct] ERROR:', err);
+    process.exit(1);
+  });
+}
+
+module.exports = { main };

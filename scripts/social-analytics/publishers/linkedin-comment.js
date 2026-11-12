@@ -18,6 +18,7 @@
  *       --text="your comment body here"
  */
 
+const { assertAllowedOutboundTopic } = require('../../social-quality-gate');
 const LI_REST_BASE = 'https://api.linkedin.com/rest';
 
 /* Strip CR/LF and other control chars from values before they hit console.log
@@ -50,6 +51,7 @@ async function publishComment(token, personUrn, activityUrn, text) {
   if (!personUrn) throw new Error('publishComment: personUrn is required');
   if (!activityUrn) throw new Error('publishComment: activityUrn is required');
   if (!text) throw new Error('publishComment: text is required');
+  assertAllowedOutboundTopic(text, 'publishComment');
 
   // LinkedIn's socialActions path segment must be URL-encoded because the URN
   // itself contains colons (`urn:li:activity:...`).
