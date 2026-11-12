@@ -8,15 +8,24 @@ const path = require('node:path');
 
 const {
   GEMINI_DECISIONS_URL,
+  SUBQ_DECISIONS_URL,
   STRIPE_OFFER_CATALOG,
   OFFER_CHOICE_DESCRIPTIONS,
   buildNoul,
   buildChoice,
   buildScore,
+  canonicalizeChoiceCriteria,
+  normalizeSubqImages,
+  getSubqBudgetState,
+  resetSubqBudgetState,
   evaluateGeminiDecisions,
+  evaluateSubqDecisions,
   evaluateToolCallDecision,
   recommendCheckoutOfferDecision,
+  curateContextWithSubqSnap,
+  groundDocumentWithSubqSnap,
 } = require('../src/mcp-writeguard');
+const { curateRetrievedLessonsWithSubqSnap } = require('../scripts/lesson-retrieval');
 describe('Gemini Decisions API (gemini-decision-1) engine & server integration', () => {
   it('sends v1beta/decisions wire format with noul, choice, and score and zero output tokens', async () => {
     let capturedUrl = null;
@@ -255,6 +264,8 @@ describe('Gemini Decisions API (gemini-decision-1) engine & server integration',
     const savedFb = process.env.THUMBGATE_FEEDBACK_DIR;
     const savedGemini = process.env.GEMINI_API_KEY;
     const savedGoogle = process.env.GOOGLE_API_KEY;
+    const savedSubq = process.env.SUBQ_API_KEY;
+    const savedTgSubq = process.env.THUMBGATE_SUBQ_API_KEY;
     let handle;
     let origin;
 
@@ -263,6 +274,8 @@ describe('Gemini Decisions API (gemini-decision-1) engine & server integration',
       process.env.THUMBGATE_FEEDBACK_DIR = tmpRoot;
       process.env.GEMINI_API_KEY = '';
       process.env.GOOGLE_API_KEY = '';
+      process.env.SUBQ_API_KEY = '';
+      process.env.THUMBGATE_SUBQ_API_KEY = '';
       const { startServer } = require('../src/api/server');
       handle = await startServer({ port: 0, host: '127.0.0.1' });
       const addr = handle.server.address();
@@ -282,6 +295,10 @@ describe('Gemini Decisions API (gemini-decision-1) engine & server integration',
       else process.env.GEMINI_API_KEY = savedGemini;
       if (savedGoogle === undefined) delete process.env.GOOGLE_API_KEY;
       else process.env.GOOGLE_API_KEY = savedGoogle;
+      if (savedSubq === undefined) delete process.env.SUBQ_API_KEY;
+      else process.env.SUBQ_API_KEY = savedSubq;
+      if (savedTgSubq === undefined) delete process.env.THUMBGATE_SUBQ_API_KEY;
+      else process.env.THUMBGATE_SUBQ_API_KEY = savedTgSubq;
       fs.rmSync(tmpRoot, { recursive: true, force: true });
     });
 
@@ -345,6 +362,203 @@ describe('Gemini Decisions API (gemini-decision-1) engine & server integration',
       const gateJson = await gateRes.json();
       assert.equal(gateJson.decision, 'block');
       assert.equal(gateJson.reasonCode, 'deterministic_destructive_command');
+    });
+  });
+
+  describe('SubQ Snap 1.2 (/v1/systemone) engine, order-invariance, context curation & passage grounding', () => {
+    it('sends /v1/systemone wire format, scrubs secrets, validates multimodal images, canonicalizes choice keys, and enforces zero-spend free-token cap', async () => {
+      resetSubqBudgetState();
+      let capturedUrl = null;
+      let capturedHeaders = null;
+      let capturedBody = null;
+      const tinyPngBase64 = Buffer.from('89504e470d0a1a0a', 'hex').toString('base64');
+      const res = await evaluateSubqDecisions({
+        apiKey: 'sk-subq-unit-key',
+        state: { command: 'git push', leak: 'sk_live_1234567890abcdefghij' },
+        images: [{ mediaType: 'image/png', data: tinyPngBase64 }],
+        verifyOrderInvariance: true,
+        questions: {
+          is_safe: buildNoul('Is this command safe?', { trueDescription: 'Safe', falseDescription: 'Unsafe' }),
+          route_choice: buildChoice('Pick route', { z_last: 'Last option', a_first: 'First option' }),
+          risk_level: buildScore('Risk score', ['Low', 'Medium', 'High']),
+        },
+        fetchImpl: async (url, opts) => {
+          capturedUrl = url;
+          capturedHeaders = opts.headers;
+          capturedBody = JSON.parse(opts.body);
+          return {
+            ok: true,
+            status: 200,
+            async json() {
+              return {
+                id: 'subq_test_1',
+                model: 'subq-snap-1.2',
+                answers: {
+                  is_safe: { type: 'noul', noul: 0.94 },
+                  route_choice: { type: 'choice', choice: 'a_first', confidence: 0.91, probabilities: { a_first: 0.91, z_last: 0.09 } },
+                  route_choice__rev: { type: 'choice', choice: 'a_first', confidence: 0.90, probabilities: { z_last: 0.10, a_first: 0.90 } },
+                  risk_level: { type: 'score', score: 0.2, confidence: 0.88, probabilities: [0.85, 0.10, 0.05] },
+                },
+                usage: { input_tokens: 312, output_tokens: 0 },
+              };
+            },
+          };
+        },
+      });
+
+      assert.equal(capturedUrl, SUBQ_DECISIONS_URL);
+      assert.equal(capturedHeaders.authorization, 'Bearer sk-subq-unit-key');
+      assert.doesNotMatch(JSON.stringify(capturedBody.state), /sk_live_1234567890abcdefghij/);
+      assert.deepEqual(Object.keys(capturedBody.questions.route_choice.criteria), ['a_first', 'z_last']);
+      assert.deepEqual(Object.keys(capturedBody.questions.route_choice__rev.criteria), ['z_last', 'a_first']);
+      assert.equal(capturedBody.questions.is_safe.criteria.true, 'Safe');
+      assert.equal(res.answers.is_safe.confidence, 0.94);
+      assert.equal(res.answers.route_choice.orderInvariant, true);
+      assert.equal(getSubqBudgetState().usedInputTokens, 312);
+
+      // Rejects data: URLs and >4 images before network call
+      assert.throws(() => normalizeSubqImages([{ mediaType: 'image/png', data: 'data:image/png;base64,AAAA' }]), /Invalid raw base64/);
+      assert.throws(() => normalizeSubqImages(new Array(5).fill({ mediaType: 'image/png', data: tinyPngBase64 })), /at most 4 images/);
+      assert.deepEqual(Object.keys(canonicalizeChoiceCriteria({ c: '3', a: '1', b: '2' })), ['a', 'b', 'c']);
+
+      // Enforces zero-outbound-spend cap + HTTP 402 circuit breaker
+      const prevCap = process.env.THUMBGATE_SUBQ_MAX_FREE_TOKENS;
+      process.env.THUMBGATE_SUBQ_MAX_FREE_TOKENS = '300';
+      await assert.rejects(
+        () => evaluateSubqDecisions({
+          apiKey: 'sk-subq-unit-key',
+          state: 'x',
+          questions: { q: buildNoul('ok?') },
+          fetchImpl: async () => { throw new Error('must not call network past free cap'); },
+        }),
+        (err) => err.code === 'subq_free_budget_cap_reached' && err.statusCode === 402,
+      );
+      if (prevCap === undefined) delete process.env.THUMBGATE_SUBQ_MAX_FREE_TOKENS;
+      else process.env.THUMBGATE_SUBQ_MAX_FREE_TOKENS = prevCap;
+      resetSubqBudgetState();
+    });
+
+    it('routes tool-call decisions and order-invariant offer recommendations via SubQ Snap 1.2 and abstains on option-order flip', async () => {
+      resetSubqBudgetState();
+      const toolVerdict = await evaluateToolCallDecision({
+        toolName: 'Bash',
+        toolArgs: { command: 'git status' },
+        subqApiKey: 'sk-subq-gate-key',
+        fetchImpl: async () => ({
+          ok: true,
+          status: 200,
+          async json() {
+            return {
+              answers: {
+                prompt_injection: { type: 'noul', noul: 0.01 },
+                secret_or_pii_leak: { type: 'noul', noul: 0.01 },
+                unapproved_external_mutation: { type: 'noul', noul: 0.02 },
+                blast_radius: { type: 'score', score: 0.1, confidence: 0.95 },
+              },
+              usage: { input_tokens: 180, output_tokens: 0 },
+            };
+          },
+        }),
+      });
+      assert.equal(toolVerdict.decision, 'allow');
+      assert.equal(toolVerdict.source, 'subq-snap-1.2');
+      assert.equal(toolVerdict.reasonCode, 'subq_decision_allow');
+
+      // When forward and reversed option order disagree, abstains to deterministic fallback
+      const flippedOffer = await recommendCheckoutOfferDecision({
+        reasonCode: 'need_team_plan',
+        reasonText: 'Enterprise 25-seat rollout',
+        subqApiKey: 'sk-subq-offer-key',
+        fetchImpl: async () => ({
+          ok: true,
+          status: 200,
+          async json() {
+            return {
+              answers: {
+                subscription_aversion: { type: 'noul', noul: 0.8 },
+                recommended_offer: { type: 'choice', choice: 'playbook_999', confidence: 0.91 },
+                recommended_offer__rev: { type: 'choice', choice: 'diagnostic_499', confidence: 0.89 },
+                buyer_intent: { type: 'score', score: 2.8, confidence: 0.9 },
+              },
+              usage: { input_tokens: 220, output_tokens: 0 },
+            };
+          },
+        }),
+      });
+      assert.equal(flippedOffer.orderFlipAbstained, true);
+      assert.equal(flippedOffer.offerId, 'diagnostic_499');
+      assert.equal(flippedOffer.source, 'deterministic_fallback');
+    });
+
+    it('curates retrieved lessons and grounds unstructured multi-passage documents with SubQ Snap 1.2', async () => {
+      resetSubqBudgetState();
+      const candidateLessons = [
+        { id: 'ui-1', content: 'Dayglass AI chat input box sits at the top while replies land at the bottom.' },
+        { id: 'git-2', content: 'Fix git credential.username IgorGanapolsky when git push fails on auth.' },
+        { id: 'stripe-3', content: 'Stripe checkout interstitial showed $19/mo before rescue.' },
+      ];
+      const curated = await curateRetrievedLessonsWithSubqSnap(
+        'Bash',
+        'git push origin feat/subq-snap-1-2',
+        candidateLessons,
+        {
+          subqCurate: true,
+          subqApiKey: 'sk-subq-curate-key',
+          fetchImpl: async () => ({
+            ok: true,
+            status: 200,
+            async json() {
+              return {
+                answers: {
+                  apply_L1: { type: 'noul', noul: 0.001 },
+                  apply_L2: { type: 'noul', noul: 0.965 },
+                  apply_L3: { type: 'noul', noul: 0.002 },
+                },
+                usage: { input_tokens: 340, output_tokens: 0 },
+              };
+            },
+          }),
+        },
+      );
+      assert.deepEqual(curated.map((x) => x.id), ['git-2']);
+
+      // Unstructured document passage grounding catches omitted caveats vs clean support
+      const noKeyFallback = await curateContextWithSubqSnap({
+        toolName: 'Bash',
+        actionContext: 'git status',
+        candidates: candidateLessons,
+        apiKey: '',
+      });
+      assert.equal(noKeyFallback.fallbackUsed, true);
+      assert.equal(noKeyFallback.curated.length, 3);
+      const grounded = await groundDocumentWithSubqSnap({
+        claim: 'SubQ Snap 1.2 supports 384K context at $0.04 per 1M input tokens and $0 output.',
+        passages: [
+          { id: 'P1', text: 'Billing errors return HTTP 402 insufficient credits.' },
+          { id: 'P2', text: 'SubQ Snap 1.2 supports 384K (393,216) input tokens at $0.04/1M input and $0 output.' },
+        ],
+        apiKey: 'sk-subq-doc-key',
+        fetchImpl: async () => ({
+          ok: true,
+          status: 200,
+          async json() {
+            return {
+              answers: {
+                best_passage: { type: 'choice', choice: 'P2', confidence: 0.97, probabilities: { P2: 0.97, P1: 0.02, not_found: 0.01 } },
+                best_passage__rev: { type: 'choice', choice: 'P2', confidence: 0.97 },
+                support: { type: 'score', score: 1.96, confidence: 0.95 },
+                omits_condition: { type: 'noul', noul: 0.03 },
+              },
+              usage: { input_tokens: 260, output_tokens: 0 },
+            };
+          },
+        }),
+      });
+      assert.equal(grounded.supported, true);
+      assert.equal(grounded.bestPassage, 'P2');
+      assert.equal(grounded.orderInvariant, true);
+      assert.equal(grounded.source, 'subq-snap-1.2');
+      resetSubqBudgetState();
     });
   });
 });

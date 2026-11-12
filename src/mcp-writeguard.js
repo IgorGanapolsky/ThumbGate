@@ -12,6 +12,10 @@
  */
 
 const crypto = require('node:crypto');
+const fs = require('node:fs');
+const os = require('node:os');
+const path = require('node:path');
+const { execFileSync } = require('node:child_process');
 
 const RISK_TIERS = {
   READ: 'read',
@@ -315,6 +319,15 @@ function exportCloudflareWriteGuardPolicy(toolNames = [], overrides = {}) {
 const GEMINI_DECISIONS_URL = 'https://generativelanguage.googleapis.com/v1beta/decisions';
 const DEFAULT_DECISION_MODEL = 'gemini-decision-1';
 const QUESTION_KEY_RE = /^[A-Za-z0-9_-]{1,64}$/;
+const SUBQ_DECISIONS_URL = 'https://api.subq.ai/v1/systemone';
+const SUBQ_MODELS_URL = 'https://api.subq.ai/v1/models';
+const DEFAULT_SUBQ_DECISION_MODEL = 'subq-snap-latest';
+const SUBQ_QUESTION_KEY_RE = /^[A-Za-z0-9_-]{1,100}$/;
+const SUBQ_ALLOWED_IMAGE_TYPES = new Set(['image/png', 'image/jpeg', 'image/webp']);
+const SUBQ_MAX_IMAGES = 4;
+const SUBQ_MAX_IMAGE_BYTES = 4 * 1024 * 1024;
+const SUBQ_MAX_TOTAL_IMAGE_BYTES = 8 * 1024 * 1024;
+const SUBQ_DEFAULT_FREE_TOKEN_CAP = 95_000_000;
 
 const STRIPE_OFFER_CATALOG = Object.freeze({
   playbook_999: Object.freeze({
@@ -413,6 +426,231 @@ function resolveGeminiApiKey(explicitKey) {
   return k || null;
 }
 
+let cachedKeychainSubqKey = null;
+let cachedKeychainSubqAt = 0;
+const KEYCHAIN_CACHE_TTL_MS = 5 * 60 * 1000;
+const subqBudgetTracker = { usedInputTokens: 0, exhaustedBy402: false };
+
+function readSubqSecretFallback() {
+  try {
+    const secretFile = path.join(os.homedir(), '.resume_secrets', 'subq-api-key');
+    if (fs.existsSync(secretFile)) {
+      const fromFile = fs.readFileSync(secretFile, 'utf8').trim();
+      if (fromFile) return fromFile;
+    }
+  } catch (_) { /* optional local vault */ }
+  if (process.platform !== 'darwin') return null;
+  const now = Date.now();
+  if (cachedKeychainSubqAt && now - cachedKeychainSubqAt < KEYCHAIN_CACHE_TTL_MS) return cachedKeychainSubqKey;
+  try {
+    const raw = execFileSync('/usr/bin/security', ['find-generic-password', '-s', 'SUBQ_API_KEY', '-w'], {
+      encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'], timeout: 1200,
+    }).trim();
+    cachedKeychainSubqKey = raw || null;
+  } catch (_) {
+    cachedKeychainSubqKey = null;
+  }
+  cachedKeychainSubqAt = now;
+  return cachedKeychainSubqKey;
+}
+
+function resolveSubqApiKey(explicitKey, { allowKeychain = false } = {}) {
+  const envKey = String(explicitKey || process.env.SUBQ_API_KEY || process.env.THUMBGATE_SUBQ_API_KEY || '').trim();
+  if (envKey) return envKey;
+  if (allowKeychain || process.env.THUMBGATE_SUBQ_KEYCHAIN === '1') return readSubqSecretFallback();
+  return null;
+}
+
+function getSubqBudgetState() {
+  const envCap = Number(process.env.THUMBGATE_SUBQ_MAX_FREE_TOKENS);
+  const maxFreeInputTokens = Number.isFinite(envCap) && envCap > 0 ? Math.floor(envCap) : SUBQ_DEFAULT_FREE_TOKEN_CAP;
+  return {
+    usedInputTokens: subqBudgetTracker.usedInputTokens,
+    maxFreeInputTokens,
+    remainingFreeInputTokens: Math.max(0, maxFreeInputTokens - subqBudgetTracker.usedInputTokens),
+    exhaustedBy402: subqBudgetTracker.exhaustedBy402,
+  };
+}
+
+function resetSubqBudgetState() {
+  subqBudgetTracker.usedInputTokens = 0;
+  subqBudgetTracker.exhaustedBy402 = false;
+}
+
+function canonicalizeChoiceCriteria(criteria) {
+  const entries = criteria && typeof criteria === 'object' ? Object.entries(criteria) : [];
+  const sorted = entries.slice().sort(([a], [b]) => String(a).localeCompare(String(b)));
+  return Object.fromEntries(sorted.map(([k, v]) => [String(k), v == null ? '' : String(v)]));
+}
+
+function reverseChoiceCriteria(criteria) {
+  const entries = Object.entries(canonicalizeChoiceCriteria(criteria)).reverse();
+  return Object.fromEntries(entries);
+}
+
+function normalizeSubqImages(images) {
+  if (images === undefined || images === null) return undefined;
+  if (!Array.isArray(images)) throw Object.assign(new Error('SubQ images must be an array'), { code: 'validation_error', statusCode: 422 });
+  if (images.length === 0) return undefined;
+  if (images.length > SUBQ_MAX_IMAGES) {
+    throw Object.assign(new Error(`SubQ accepts at most ${SUBQ_MAX_IMAGES} images per request`), { code: 'validation_error', statusCode: 422 });
+  }
+  let totalBytes = 0;
+  return images.map((img, idx) => {
+    const mediaType = String(img?.media_type || img?.mediaType || '').trim().toLowerCase();
+    if (!SUBQ_ALLOWED_IMAGE_TYPES.has(mediaType)) {
+      throw Object.assign(new Error(`Unsupported SubQ image media_type at index ${idx}: ${mediaType}`), { code: 'validation_error', statusCode: 422 });
+    }
+    const data = String(img?.data || '').trim();
+    if (!data || /^data:|^https?:/i.test(data) || !/^[A-Za-z0-9+/=\r\n]+$/.test(data)) {
+      throw Object.assign(new Error(`Invalid raw base64 image data at index ${idx}`), { code: 'invalid_image_data', statusCode: 422 });
+    }
+    const cleanData = data.replace(/\s+/g, '');
+    const byteLen = Buffer.byteLength(cleanData, 'base64');
+    if (byteLen <= 0 || byteLen > SUBQ_MAX_IMAGE_BYTES) {
+      throw Object.assign(new Error(`SubQ image at index ${idx} exceeds 4 MiB decoded limit`), { code: 'validation_error', statusCode: 422 });
+    }
+    totalBytes += byteLen;
+    if (totalBytes > SUBQ_MAX_TOTAL_IMAGE_BYTES) {
+      throw Object.assign(new Error('SubQ total decoded image bytes exceed 8 MiB limit'), { code: 'validation_error', statusCode: 422 });
+    }
+    return { media_type: mediaType, data: cleanData };
+  });
+}
+
+function toSubqWireQuestions(questions, { verifyOrderInvariance = false } = {}) {
+  const qEntries = questions && typeof questions === 'object' ? Object.entries(questions) : [];
+  if (qEntries.length < 1 || qEntries.length > 128) {
+    throw Object.assign(new Error('SubQ questions must contain between 1 and 128 entries'), { code: 'validation_error', statusCode: 422 });
+  }
+  const wire = {};
+  const revPairs = [];
+  for (const [qKey, qSpec] of qEntries) {
+    if (!SUBQ_QUESTION_KEY_RE.test(qKey) || qKey.endsWith('__rev')) {
+      throw Object.assign(new Error(`Invalid SubQ question key "${qKey}"`), { code: 'validation_error', statusCode: 422 });
+    }
+    if (!qSpec || typeof qSpec !== 'object' || !qSpec.instructions) {
+      throw Object.assign(new Error(`Missing instructions for question "${qKey}"`), { code: 'validation_error', statusCode: 422 });
+    }
+    if (qSpec.type === 'noul') {
+      const tDesc = qSpec.criteria?.true ?? qSpec.criteria?.true_description;
+      const fDesc = qSpec.criteria?.false ?? qSpec.criteria?.false_description;
+      wire[qKey] = {
+        type: 'noul',
+        instructions: String(qSpec.instructions),
+        ...((tDesc || fDesc) ? { criteria: { ...(tDesc ? { true: String(tDesc) } : {}), ...(fDesc ? { false: String(fDesc) } : {}) } } : {}),
+      };
+    } else if (qSpec.type === 'choice') {
+      const canonical = canonicalizeChoiceCriteria(qSpec.criteria);
+      const count = Object.keys(canonical).length;
+      if (count < 2 || count > 255) throw Object.assign(new Error(`Choice "${qKey}" requires 2..255 options`), { code: 'validation_error', statusCode: 422 });
+      wire[qKey] = { type: 'choice', instructions: String(qSpec.instructions), criteria: canonical };
+      if (verifyOrderInvariance && qKey.length <= 95) revPairs.push([qKey, reverseChoiceCriteria(canonical), String(qSpec.instructions)]);
+    } else if (qSpec.type === 'score') {
+      if (!Array.isArray(qSpec.criteria) || qSpec.criteria.length < 2 || qSpec.criteria.length > 10) {
+        throw Object.assign(new Error(`SubQ score "${qKey}" requires 2..10 ordered level criteria`), { code: 'validation_error', statusCode: 422 });
+      }
+      wire[qKey] = { type: 'score', instructions: String(qSpec.instructions), criteria: qSpec.criteria.map((x) => String(x)) };
+    } else {
+      throw Object.assign(new Error(`Unsupported question type "${qSpec.type}" for "${qKey}"`), { code: 'validation_error', statusCode: 422 });
+    }
+  }
+  for (const [origKey, revCriteria, instructions] of revPairs) {
+    if (Object.keys(wire).length >= 128) break;
+    wire[`${origKey}__rev`] = { type: 'choice', instructions, criteria: revCriteria };
+  }
+  return { wire, probedKeys: revPairs.map(([k]) => k).filter((k) => Boolean(wire[`${k}__rev`])) };
+}
+
+async function evaluateSubqDecisions({
+  state, input, questions, images, apiKey, model = DEFAULT_SUBQ_DECISION_MODEL,
+  verifyOrderInvariance = false, timeoutMs = 2500, fetchImpl = globalThis.fetch, allowKeychain = false,
+} = {}) {
+  const resolvedKey = resolveSubqApiKey(apiKey, { allowKeychain });
+  if (!resolvedKey) throw Object.assign(new Error('SUBQ_API_KEY is not configured'), { code: 'missing_api_key', statusCode: 503 });
+  const rawState = state !== undefined ? state : input;
+  if (isEmptyDecisionInput(rawState)) throw Object.assign(new Error('SubQ state cannot be empty'), { code: 'invalid_input', statusCode: 400 });
+  const budget = getSubqBudgetState();
+  if (budget.exhaustedBy402 || budget.usedInputTokens >= budget.maxFreeInputTokens) {
+    throw Object.assign(new Error('SubQ free-credit token cap reached; blocking paid egress'), { code: 'subq_free_budget_cap_reached', statusCode: 402 });
+  }
+  const { wire, probedKeys } = toSubqWireQuestions(questions, { verifyOrderInvariance });
+  const normalizedImages = normalizeSubqImages(images);
+  const safeState = typeof rawState === 'string' ? scrubSensitiveString(rawState) : scrubSensitiveData(rawState);
+  const payload = { model, state: safeState, questions: wire, ...(normalizedImages ? { images: normalizedImages } : {}) };
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  const startedAt = Date.now();
+  try {
+    const res = await fetchImpl(SUBQ_DECISIONS_URL, {
+      method: 'POST',
+      headers: { authorization: `Bearer ${resolvedKey}`, 'content-type': 'application/json' },
+      body: JSON.stringify(payload),
+      signal: controller.signal,
+    });
+    const latencyMs = Date.now() - startedAt;
+    const body = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      if (res.status === 402) subqBudgetTracker.exhaustedBy402 = true;
+      const rawCode = String(body?.error?.code || 'http_error').toLowerCase();
+      throw Object.assign(new Error(`SubQ SystemOne upstream HTTP ${res.status}`), { status: res.status, statusCode: res.status, code: rawCode });
+    }
+    const rawAnswers = body.answers && typeof body.answers === 'object' ? body.answers : {};
+    const answers = {};
+    for (const [k, ans] of Object.entries(rawAnswers)) {
+      if (k.endsWith('__rev')) continue;
+      if (ans && ans.type === 'noul' && typeof ans.noul === 'number' && typeof ans.confidence !== 'number') {
+        answers[k] = { ...ans, confidence: Number(Math.max(ans.noul, 1 - ans.noul).toFixed(6)) };
+      } else {
+        answers[k] = ans ? { ...ans } : ans;
+      }
+    }
+    for (const k of probedKeys) {
+      const fwd = answers[k]?.choice;
+      const rev = rawAnswers[`${k}__rev`]?.choice;
+      if (answers[k]) {
+        answers[k].reversedChoice = rev || null;
+        answers[k].orderInvariant = Boolean(fwd && rev && fwd === rev);
+      }
+    }
+    const inTok = Math.max(0, Number(body?.usage?.input_tokens ?? body?.usage?.total_input_tokens) || 0);
+    subqBudgetTracker.usedInputTokens += inTok;
+    return {
+      ok: true, blockedBySafetyFilter: false, answers,
+      usage: { input_tokens: inTok, output_tokens: 0, total_input_tokens: inTok, total_output_tokens: 0, total_tokens: inTok },
+      latencyMs, model: body.model || model, id: body.id || null,
+    };
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+function selectDecisionBackend({ provider, apiKey, subqApiKey, allowKeychain = false } = {}) {
+  const explicitProvider = String(provider || '').trim().toLowerCase();
+  if (explicitProvider === 'subq') {
+    const key = resolveSubqApiKey(subqApiKey || apiKey, { allowKeychain });
+    return key ? { backend: 'subq', key } : { backend: 'none', key: null };
+  }
+  if (explicitProvider === 'gemini') {
+    const key = resolveGeminiApiKey(apiKey);
+    return key ? { backend: 'gemini', key } : { backend: 'none', key: null };
+  }
+  if (subqApiKey) {
+    const key = resolveSubqApiKey(subqApiKey, { allowKeychain });
+    if (key) return { backend: 'subq', key };
+  }
+  if (apiKey) {
+    const trimmed = String(apiKey).trim();
+    if (trimmed.startsWith('sk-')) return { backend: 'subq', key: trimmed };
+    return { backend: 'gemini', key: trimmed };
+  }
+  const autoSubq = resolveSubqApiKey(undefined, { allowKeychain });
+  if (autoSubq) return { backend: 'subq', key: autoSubq };
+  const autoGemini = resolveGeminiApiKey(undefined);
+  if (autoGemini) return { backend: 'gemini', key: autoGemini };
+  return { backend: 'none', key: null };
+}
+
 function isEmptyDecisionInput(input) {
   if (input === undefined || input === null) return true;
   if (typeof input === 'string') return input.trim().length === 0;
@@ -478,7 +716,10 @@ function normalizeConfidenceFloor(value, defaultFloor = 0.7) {
   return Math.min(0.99, Math.max(0.5, value));
 }
 
-async function evaluateToolCallDecision({ toolName, toolArgs = {}, contextText = '', rulesText = '', apiKey, confidenceFloor = 0.7, timeoutMs = 2500, fetchImpl = globalThis.fetch } = {}) {
+async function evaluateToolCallDecision({
+  toolName, toolArgs = {}, contextText = '', rulesText = '', images,
+  apiKey, subqApiKey, provider, allowKeychain = false, confidenceFloor = 0.7, timeoutMs = 2500, fetchImpl = globalThis.fetch,
+} = {}) {
   const effectiveFloor = normalizeConfidenceFloor(confidenceFloor, 0.7);
   const safeName = String(toolName || 'unknown_tool').slice(0, 128);
   const fullArgsText = typeof toolArgs === 'string' ? toolArgs : JSON.stringify(toolArgs || {});
@@ -486,8 +727,10 @@ async function evaluateToolCallDecision({ toolName, toolArgs = {}, contextText =
   const floor = runDeterministicToolFloor(safeName, `${fullArgsText}\n${fullContextText}`);
   const zeroUsage = { total_input_tokens: 0, total_output_tokens: 0, total_tokens: 0 };
   if (floor.matched) return { decision: floor.decision, reasonCode: floor.reasonCode, reason: floor.reason, confidence: 1, source: 'deterministic_floor', latencyMs: 0, usage: zeroUsage };
-  const resolvedKey = resolveGeminiApiKey(apiKey);
-  if (!resolvedKey) return { decision: 'allow', reasonCode: 'deterministic_floor_clean', reason: 'Passed deterministic pre-action floor (GEMINI_API_KEY not set).', confidence: 1, source: 'deterministic_floor', latencyMs: 0, usage: zeroUsage };
+  const selected = selectDecisionBackend({ provider, apiKey, subqApiKey, allowKeychain });
+  if (selected.backend === 'none') {
+    return { decision: 'allow', reasonCode: 'deterministic_floor_clean', reason: 'Passed deterministic pre-action floor (decision API key not set).', confidence: 1, source: 'deterministic_floor', latencyMs: 0, usage: zeroUsage };
+  }
   const scrubbedArgsObj = typeof toolArgs === 'string' ? scrubSensitiveString(toolArgs) : scrubSensitiveData(toolArgs || {});
   const scrubbedArgsText = (typeof scrubbedArgsObj === 'string' ? scrubbedArgsObj : JSON.stringify(scrubbedArgsObj)).slice(0, 8192);
   const scrubbedContextText = scrubSensitiveString(fullContextText).slice(0, 4000);
@@ -517,27 +760,33 @@ async function evaluateToolCallDecision({ toolName, toolArgs = {}, contextText =
     ]),
   };
 
+  const isSubq = selected.backend === 'subq';
+  const sourceTag = isSubq ? 'subq-snap-1.2' : 'gemini-decision-1';
+  const prefix = isSubq ? 'subq' : 'gemini';
   let evalRes;
   try {
-    evalRes = await evaluateGeminiDecisions({ input: statePayload, questions, apiKey: resolvedKey, timeoutMs, fetchImpl });
+    evalRes = isSubq
+      ? await evaluateSubqDecisions({ state: JSON.parse(statePayload), questions, images, apiKey: selected.key, timeoutMs, fetchImpl, allowKeychain })
+      : await evaluateGeminiDecisions({ input: statePayload, questions, apiKey: selected.key, timeoutMs, fetchImpl });
   } catch (err) {
     return {
-      decision: 'block', reasonCode: err?.name === 'AbortError' ? 'gemini_timeout_fail_closed' : 'gemini_upstream_fail_closed',
-      reason: 'Gemini Decisions check failed or timed out; failing closed.', confidence: 0, source: 'gemini-decision-1', latencyMs: 0, usage: zeroUsage,
+      decision: 'block', reasonCode: err?.name === 'AbortError' ? `${prefix}_timeout_fail_closed` : `${prefix}_upstream_fail_closed`,
+      reason: `${isSubq ? 'SubQ Snap 1.2' : 'Gemini Decisions'} check failed or timed out; failing closed.`,
+      confidence: 0, source: sourceTag, latencyMs: 0, usage: zeroUsage,
     };
   }
   if (evalRes.blockedBySafetyFilter) {
-    return { decision: 'block', reasonCode: `gemini_safety_${evalRes.safetyCode}`, reason: evalRes.message, confidence: 1, source: 'gemini-decision-1', latencyMs: evalRes.latencyMs, usage: evalRes.usage };
+    return { decision: 'block', reasonCode: `gemini_safety_${evalRes.safetyCode}`, reason: evalRes.message, confidence: 1, source: sourceTag, latencyMs: evalRes.latencyMs, usage: evalRes.usage };
   }
   const a = evalRes.answers || {};
   const [pInjection, pLeak, pMutation, blastScore] = [Number(a.prompt_injection?.noul), Number(a.secret_or_pii_leak?.noul), Number(a.unapproved_external_mutation?.noul), Number(a.blast_radius?.score)];
   const [cInj, cLeak, cMut, cBlast] = [Number(a.prompt_injection?.confidence), Number(a.secret_or_pii_leak?.confidence), Number(a.unapproved_external_mutation?.confidence), Number(a.blast_radius?.confidence)];
   if (![pInjection, pLeak, pMutation, blastScore, cInj, cLeak, cMut, cBlast].every(Number.isFinite)) {
-    return { decision: 'block', reasonCode: 'gemini_malformed_answers', reason: 'Gemini Decisions returned incomplete or non-finite safety scores; failing closed.', confidence: 0, source: 'gemini-decision-1', latencyMs: evalRes.latencyMs, usage: evalRes.usage };
+    return { decision: 'block', reasonCode: `${prefix}_malformed_answers`, reason: `${isSubq ? 'SubQ Snap 1.2' : 'Gemini Decisions'} returned incomplete or non-finite safety scores; failing closed.`, confidence: 0, source: sourceTag, latencyMs: evalRes.latencyMs, usage: evalRes.usage };
   }
   const minConf = Math.min(cInj, cLeak, cMut, cBlast);
   let decision = 'allow';
-  let reasonCode = 'gemini_decision_allow';
+  let reasonCode = `${prefix}_decision_allow`;
   let reason = 'Calibrated single-pass safety checks passed.';
 
   if (pInjection >= 0.65) {
@@ -554,7 +803,7 @@ async function evaluateToolCallDecision({ toolName, toolArgs = {}, contextText =
   return {
     decision, reasonCode, reason, confidence: Number(minConf.toFixed(4)),
     probabilities: { promptInjection: pInjection, secretOrPiiLeak: pLeak, unapprovedExternalMutation: pMutation, blastRadiusScore: blastScore },
-    source: 'gemini-decision-1', latencyMs: evalRes.latencyMs, usage: evalRes.usage,
+    source: sourceTag, latencyMs: evalRes.latencyMs, usage: evalRes.usage,
   };
 }
 
@@ -601,40 +850,44 @@ function allowPublicOfferGeminiCall(clientIp) {
 
 async function recommendCheckoutOfferDecision({
   reasonCode = '', reasonText = '', page = '/checkout/pro', currentPlan = 'pro',
-  clientIp = '', apiKey, confidenceFloor = 0.55, timeoutMs = 1800, fetchImpl = globalThis.fetch,
+  clientIp = '', apiKey, subqApiKey, provider, allowKeychain = false, confidenceFloor = 0.55, timeoutMs = 1800, fetchImpl = globalThis.fetch,
 } = {}) {
   const fallback = deterministicOfferFallback(reasonCode, reasonText);
-  const resolvedKey = resolveGeminiApiKey(apiKey);
-  if (!resolvedKey) return fallback;
+  const selected = selectDecisionBackend({ provider, apiKey, subqApiKey, allowKeychain });
+  if (selected.backend === 'none') return fallback;
+  const isSubq = selected.backend === 'subq';
   const normPage = String(page || '/checkout/pro').slice(0, 120);
   const normPlan = String(currentPlan || 'pro').slice(0, 60);
   const normCode = String(reasonCode || 'unspecified').slice(0, 80);
   const normNote = scrubSensitiveString(String(reasonText || '').trim()).slice(0, 600);
-  const cacheKey = `${normPage}|${normPlan}|${normCode.toLowerCase()}|${normNote.toLowerCase()}`;
+  const cacheKey = `${selected.backend}|${normPage}|${normPlan}|${normCode.toLowerCase()}|${normNote.toLowerCase()}`;
   const cached = OFFER_DECISION_CACHE.get(cacheKey);
   if (cached && Date.now() - cached.ts < OFFER_CACHE_TTL_MS && fetchImpl === globalThis.fetch) return cached.value;
   if (!allowPublicOfferGeminiCall(clientIp)) return { ...fallback, rateLimitedFallback: true };
 
   try {
-    const input = JSON.stringify({ page: normPage, current_plan: normPlan, objection_code: normCode, buyer_note: normNote });
-    const evalRes = await evaluateGeminiDecisions({
-      input, apiKey: resolvedKey, timeoutMs, fetchImpl,
-      questions: {
-        subscription_aversion: buildNoul('Does `objection_code` or `buyer_note` indicate reluctance to start a recurring monthly subscription?', {
-          trueDescription: 'Buyer prefers a one-time purchase, corporate expense receipt, lower commitment, or proof before subscribing.',
-          falseDescription: 'Buyer is comfortable with a monthly subscription.',
-        }),
-        recommended_offer: buildChoice('Which Stripe offer is most likely to convert this hesitant visitor right now given `objection_code` and `buyer_note`?', OFFER_CHOICE_DESCRIPTIONS),
-        buyer_intent: buildScore('Rate the near-term buying intent in `objection_code` and `buyer_note`.', [
-          'Browsing with no immediate workflow pain.',
-          'Interested in agent guardrails but wants proof or lower commitment first.',
-          'Active builder evaluating pricing or procurement options.',
-          'Urgent team or production reliability requirement.',
-        ]),
-      },
-    });
+    const stateObj = { page: normPage, current_plan: normPlan, objection_code: normCode, buyer_note: normNote };
+    const offerQuestions = {
+      subscription_aversion: buildNoul('Does `objection_code` or `buyer_note` indicate reluctance to start a recurring monthly subscription?', {
+        trueDescription: 'Buyer prefers a one-time purchase, corporate expense receipt, lower commitment, or proof before subscribing.',
+        falseDescription: 'Buyer is comfortable with a monthly subscription.',
+      }),
+      recommended_offer: buildChoice('Which Stripe offer is most likely to convert this hesitant visitor right now given `objection_code` and `buyer_note`?', OFFER_CHOICE_DESCRIPTIONS),
+      buyer_intent: buildScore('Rate the near-term buying intent in `objection_code` and `buyer_note`.', [
+        'Browsing with no immediate workflow pain.',
+        'Interested in agent guardrails but wants proof or lower commitment first.',
+        'Active builder evaluating pricing or procurement options.',
+        'Urgent team or production reliability requirement.',
+      ]),
+    };
+    const evalRes = isSubq
+      ? await evaluateSubqDecisions({ state: stateObj, questions: offerQuestions, apiKey: selected.key, verifyOrderInvariance: true, timeoutMs, fetchImpl, allowKeychain })
+      : await evaluateGeminiDecisions({ input: JSON.stringify(stateObj), questions: offerQuestions, apiKey: selected.key, timeoutMs, fetchImpl });
     if (!evalRes.ok) return fallback;
     const choiceAns = evalRes.answers?.recommended_offer;
+    if (isSubq && choiceAns?.orderInvariant === false) {
+      return { ...fallback, orderFlipAbstained: true, latencyMs: evalRes.latencyMs, usage: evalRes.usage };
+    }
     const chosenKey = choiceAns?.choice && STRIPE_OFFER_CATALOG[choiceAns.choice] ? choiceAns.choice : null;
     const conf = Number(choiceAns?.confidence);
     const effectiveFloor = normalizeConfidenceFloor(confidenceFloor, 0.55);
@@ -646,7 +899,8 @@ async function recommendCheckoutOfferDecision({
     const result = {
       ...STRIPE_OFFER_CATALOG[chosenKey], confidence: Number(conf.toFixed(4)),
       subscriptionAversion: Number.isFinite(subAv) ? subAv : 0, buyerIntentScore: Number.isFinite(intentSc) ? intentSc : 0,
-      probabilities: choiceAns.probabilities || {}, source: 'gemini-decision-1', latencyMs: evalRes.latencyMs, usage: evalRes.usage,
+      ...(isSubq ? { orderInvariant: choiceAns.orderInvariant === true } : {}),
+      probabilities: choiceAns.probabilities || {}, source: isSubq ? 'subq-snap-1.2' : 'gemini-decision-1', latencyMs: evalRes.latencyMs, usage: evalRes.usage,
     };
     if (fetchImpl === globalThis.fetch) {
       if (OFFER_DECISION_CACHE.size >= OFFER_CACHE_MAX) {
@@ -661,9 +915,118 @@ async function recommendCheckoutOfferDecision({
   }
 }
 
+async function curateContextWithSubqSnap({
+  toolName = '', actionContext = '', candidates = [], apiKey, threshold = 0.5,
+  minKeep = 0, timeoutMs = 1500, fetchImpl = globalThis.fetch, allowKeychain = false,
+} = {}) {
+  const items = Array.isArray(candidates) ? candidates : [];
+  if (items.length === 0) return { curated: [], dropped: [], probabilities: {}, fallbackUsed: false, latencyMs: 0 };
+  const resolvedKey = resolveSubqApiKey(apiKey, { allowKeychain });
+  if (!resolvedKey) return { curated: items.slice(), dropped: [], probabilities: {}, fallbackUsed: true, latencyMs: 0 };
+  const batch = items.slice(0, 128);
+  const candidateMap = {};
+  const questions = {};
+  batch.forEach((item, idx) => {
+    const key = `L${idx + 1}`;
+    const text = typeof item === 'string'
+      ? item
+      : `${item?.title || ''} ${item?.content || item?.lesson || item?.summary || ''}`.trim();
+    candidateMap[key] = scrubSensitiveString(text).slice(0, 1200);
+    questions[`apply_${key}`] = buildNoul(`Should candidate ${key} be surfaced in context before running tool_name and action_context?`, {
+      trueDescription: 'The candidate directly guides or warns about this tool, command family, file surface, or policy check.',
+      falseDescription: 'The candidate is about an unrelated product, UI layout, billing flow, or different domain.',
+    });
+  });
+  try {
+    const evalRes = await evaluateSubqDecisions({
+      state: {
+        tool_name: String(toolName || 'unknown').slice(0, 128),
+        action_context: scrubSensitiveString(String(actionContext || '')).slice(0, 2000),
+        candidates: candidateMap,
+      },
+      questions, apiKey: resolvedKey, timeoutMs, fetchImpl, allowKeychain,
+    });
+    const cutoff = Math.min(0.99, Math.max(0.05, Number(threshold) || 0.5));
+    const probabilities = {};
+    const scored = batch.map((item, idx) => {
+      const key = `L${idx + 1}`;
+      const p = Number(evalRes.answers?.[`apply_${key}`]?.noul);
+      const prob = Number.isFinite(p) ? p : 0;
+      probabilities[item?.id || key] = Number(prob.toFixed(4));
+      return { item, prob };
+    });
+    const kept = scored.filter((x) => x.prob >= cutoff).map((x) => x.item);
+    const dropped = scored.filter((x) => x.prob < cutoff).map((x) => x.item);
+    if (kept.length < minKeep) {
+      const topFallback = scored.slice().sort((a, b) => b.prob - a.prob).slice(0, minKeep).map((x) => x.item);
+      return { curated: topFallback, dropped: batch.filter((x) => !topFallback.includes(x)), probabilities, fallbackUsed: false, latencyMs: evalRes.latencyMs, usage: evalRes.usage };
+    }
+    return { curated: kept, dropped, probabilities, fallbackUsed: false, latencyMs: evalRes.latencyMs, usage: evalRes.usage };
+  } catch (_) {
+    return { curated: items.slice(), dropped: [], probabilities: {}, fallbackUsed: true, latencyMs: 0 };
+  }
+}
+
+async function groundDocumentWithSubqSnap({
+  claim, passages = [], images, apiKey, confidenceFloor = 0.6,
+  timeoutMs = 2500, fetchImpl = globalThis.fetch, allowKeychain = false,
+} = {}) {
+  const safeClaim = scrubSensitiveString(String(claim || '').trim());
+  const rows = Array.isArray(passages) ? passages.slice(0, 250) : [];
+  if (!safeClaim || (rows.length === 0 && (!Array.isArray(images) || images.length === 0))) {
+    throw Object.assign(new Error('claim and at least one passage or image are required'), { code: 'invalid_input', statusCode: 400 });
+  }
+  const labeledPassages = {};
+  const choiceCriteria = { not_found: 'No passage or image directly addresses the claim' };
+  rows.forEach((p, idx) => {
+    const id = typeof p === 'object' && p?.id && /^[A-Za-z0-9_-]{1,64}$/.test(String(p.id)) ? String(p.id) : `P${idx + 1}`;
+    const text = typeof p === 'string' ? p : String(p?.text || p?.content || '');
+    labeledPassages[id] = scrubSensitiveString(text).slice(0, 8000);
+    choiceCriteria[id] = typeof p === 'object' && p?.label ? String(p.label).slice(0, 200) : `Passage ${id}`;
+  });
+  if (Object.keys(choiceCriteria).length < 2) choiceCriteria.image_evidence = 'Supported directly by attached visual evidence';
+  const evalRes = await evaluateSubqDecisions({
+    state: { claim: safeClaim, passages: labeledPassages },
+    images,
+    verifyOrderInvariance: true,
+    apiKey, timeoutMs, fetchImpl, allowKeychain,
+    questions: {
+      best_passage: buildChoice('Which labeled passage most directly addresses `claim`?', choiceCriteria),
+      support: buildScore('How well do `passages` (and any attached images) support `claim`?', [
+        'Not supported or contradicted by the source material',
+        'Partly supported or requires unstated assumptions',
+        'Fully and directly supported by the source material',
+      ]),
+      omits_condition: buildNoul('Does `claim` omit a material condition, caveat, cap, or exception stated in `passages`?', {
+        trueDescription: 'Claim drops a material limit, exception, prerequisite, or scope boundary present in the source.',
+        falseDescription: 'Claim accurately reflects applicable conditions or no qualifying caveat is omitted.',
+      }),
+    },
+  });
+  const bestAns = evalRes.answers?.best_passage || {};
+  const supportAns = evalRes.answers?.support || {};
+  const omitsAns = evalRes.answers?.omits_condition || {};
+  const bestPassage = bestAns.choice || 'not_found';
+  const supportScore = Number(supportAns.score);
+  const omitsProb = Number(omitsAns.noul);
+  const orderInvariant = bestAns.orderInvariant !== false;
+  const floor = normalizeConfidenceFloor(confidenceFloor, 0.6);
+  const minConf = Math.min(Number(bestAns.confidence) || 0, Number(supportAns.confidence) || 0);
+  const supported = orderInvariant && bestPassage !== 'not_found' && supportScore >= 1.5 && omitsProb < 0.5 && minConf >= floor;
+  return {
+    supported, bestPassage, supportScore: Number.isFinite(supportScore) ? Number(supportScore.toFixed(4)) : 0,
+    omitsConditionProbability: Number.isFinite(omitsProb) ? Number(omitsProb.toFixed(4)) : 0,
+    orderInvariant, confidence: Number(minConf.toFixed(4)), probabilities: bestAns.probabilities || {},
+    source: 'subq-snap-1.2', latencyMs: evalRes.latencyMs, usage: evalRes.usage,
+  };
+}
+
 module.exports = {
   RISK_TIERS, classifyMcpTool, scrubSensitiveData, scanForDestructivePatterns, evaluateMcpCall, exportCloudflareWriteGuardPolicy,
-  GEMINI_DECISIONS_URL, DEFAULT_DECISION_MODEL, STRIPE_OFFER_CATALOG, OFFER_CHOICE_DESCRIPTIONS,
-  buildNoul, buildChoice, buildScore, evaluateGeminiDecisions, evaluateToolCallDecision, recommendCheckoutOfferDecision, deterministicOfferFallback,
+  GEMINI_DECISIONS_URL, DEFAULT_DECISION_MODEL, SUBQ_DECISIONS_URL, SUBQ_MODELS_URL, DEFAULT_SUBQ_DECISION_MODEL,
+  STRIPE_OFFER_CATALOG, OFFER_CHOICE_DESCRIPTIONS,
+  buildNoul, buildChoice, buildScore, canonicalizeChoiceCriteria, normalizeSubqImages,
+  resolveSubqApiKey, getSubqBudgetState, resetSubqBudgetState,
+  evaluateGeminiDecisions, evaluateSubqDecisions, evaluateToolCallDecision, recommendCheckoutOfferDecision,
+  curateContextWithSubqSnap, groundDocumentWithSubqSnap, deterministicOfferFallback,
 };
-

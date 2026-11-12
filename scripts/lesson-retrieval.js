@@ -549,9 +549,10 @@ async function retrieveRelevantLessonsAsync(toolName, actionContext, options = {
     // Short-circuit: skip embedding/dense search completely
     const { rerankLessons } = require('./lesson-reranker');
     const reranked = rerankLessons(actionContext, dedupeCandidatePool(lexicalScored), { topK: Math.max(maxResults * 2, maxResults), toolName });
-    return filterTopP(applyGraphResolution(dedupeSupersededLessons(reranked), options, memories), resolveTopP(options), { minKeep: options.minKeep })
+    const shaped = filterTopP(applyGraphResolution(dedupeSupersededLessons(reranked), options, memories), resolveTopP(options), { minKeep: options.minKeep })
       .slice(0, maxResults)
       .map((x) => shapeLesson(x));
+    return curateRetrievedLessonsWithSubqSnap(toolName, actionContext, shaped, options);
   }
 
   const queryPlan = lexicalScored[0]?.relevanceScore >= (options.rewriteBelowScore ?? 0.6)
@@ -661,7 +662,7 @@ async function retrieveRelevantLessonsAsync(toolName, actionContext, options = {
       queryTransformation: queryPlan,
       semanticProvider: options.embedderId || 'configured',
     } : null;
-    return cut.map((lesson) => shapeLesson(lesson, retrieval));
+    return curateRetrievedLessonsWithSubqSnap(toolName, actionContext, cut.map((lesson) => shapeLesson(lesson, retrieval)), options);
   } catch {
     // Legacy fuse path below
   }
@@ -696,7 +697,8 @@ async function retrieveRelevantLessonsAsync(toolName, actionContext, options = {
   const rows = filterTopP(applyGraphResolution(dedupeSupersededLessons(reranked), options, memories), resolveTopP(options), { minKeep: options.minKeep })
     .slice(0, maxResults)
     .map((x) => shapeLesson(x));
-  return attachArrayRetrievalMeta(rows, {
+  const curatedRows = await curateRetrievedLessonsWithSubqSnap(toolName, actionContext, rows, options);
+  return attachArrayRetrievalMeta(curatedRows, {
     strategy: 'hybrid-rrf+bm25',
     indexUpdatedAtMs: options.indexUpdatedAtMs ?? null,
   });
@@ -956,6 +958,29 @@ function calculateRetrievalEntropy(lessons) {
   return Number(entropy.toFixed(4));
 }
 
+async function curateRetrievedLessonsWithSubqSnap(toolName, actionContext, lessons, options = {}) {
+  if (!Array.isArray(lessons) || lessons.length === 0) return [];
+  const enabled = options.subqCurate === true || process.env.THUMBGATE_SUBQ_CONTEXT_CURATION === '1';
+  if (!enabled) return lessons;
+  try {
+    const { curateContextWithSubqSnap } = require('../src/mcp-writeguard');
+    const res = await curateContextWithSubqSnap({
+      toolName,
+      actionContext,
+      candidates: lessons,
+      apiKey: options.subqApiKey,
+      threshold: options.subqThreshold ?? 0.5,
+      minKeep: options.minKeep ?? 0,
+      timeoutMs: options.subqTimeoutMs ?? 450,
+      fetchImpl: options.fetchImpl,
+      allowKeychain: Boolean(options.allowKeychain),
+    });
+    return res.curated;
+  } catch {
+    return lessons;
+  }
+}
+
 module.exports = {
   applyGraphResolution,
   retrieveRelevantLessons,
@@ -977,6 +1002,7 @@ module.exports = {
   buildQueryVariants,
   buildQueryPlan,
   attachArrayRetrievalMeta,
+  curateRetrievedLessonsWithSubqSnap,
   MAX_RETRIEVAL_MEMORY_CHARS,
   MAX_RETRIEVAL_MEMORY_LINES,
 };
