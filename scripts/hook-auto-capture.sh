@@ -15,8 +15,15 @@ fi
 FEEDBACK_LOG="$FEEDBACK_DIR/feedback-log.jsonl"
 MEMORY_LOG="$FEEDBACK_DIR/memory-log.jsonl"
 
-# Record the latest user prompt so statusline thumbs can distill lessons
-# from recent conversation even when the click itself has no body payload.
+if [ -f "$PROMPT_GUARD" ]; then
+  GUARD_RESULT=$(CLAUDE_USER_PROMPT="$PROMPT" node "$PROMPT_GUARD" 2>/dev/null || true)
+  if [ -n "$GUARD_RESULT" ]; then
+    echo "$GUARD_RESULT"
+    exit 0
+  fi
+fi
+
+# Record the latest user prompt only after prompt-guard passes so secrets never land in conversation logs.
 THUMBGATE_CONVERSATION_TEXT="$PROMPT" node -e "
   const { recordConversationEntry } = require(process.argv[1]);
   recordConversationEntry({
@@ -28,14 +35,6 @@ THUMBGATE_CONVERSATION_TEXT="$PROMPT" node -e "
 
 # Normalize to lowercase for matching
 LOWER=$(echo "$PROMPT" | tr '[:upper:]' '[:lower:]')
-
-if [ -f "$PROMPT_GUARD" ]; then
-  GUARD_RESULT=$(node "$PROMPT_GUARD" 2>/dev/null || true)
-  if [ -n "$GUARD_RESULT" ]; then
-    echo "$GUARD_RESULT"
-    exit 0
-  fi
-fi
 
 capture_and_report() {
   local SIGNAL="$1"
