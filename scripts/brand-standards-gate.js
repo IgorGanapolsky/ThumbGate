@@ -7,7 +7,8 @@ const path = require('node:path');
 const DEFAULT_BRAND_STANDARDS_PATH = path.join(__dirname, '..', 'config', 'brand-standards.json');
 const CREATIVE_EXT_RE = /\.(?:psd|psb|ai|indd|prproj|aep)$/i;
 const CREATIVE_BACKUP_STEM_RE = /(?:[_.-](?:copy|backup|bak|draft|working)|\.copy)\.[a-z0-9]+$/i;
-const LINE_LABEL_RE = /(?:^|\n)\s*(?:Problem|Solution|Fix|Note|TL;DR|Hook|CTA|Why it matters)\s*:/;
+// [ \t]* (not \s*) after a line start keeps this linear on long runs of newlines (CodeQL js/polynomial-redos).
+const LINE_LABEL_RE = /^[ \t]*(?:Problem|Solution|Fix|Note|TL;DR|Hook|CTA|Why it matters)[ \t]*:/m;
 const PRICE_TOKEN_RE = /\$\d[\d,]*(?:\.\d{1,2})?(?:\s*\/\s*(?:mo|month|yr|year|seat))?/gi;
 const URL_TOKEN_RE = /https?:\/\/[^\s<>()"'\]]+/gi;
 
@@ -103,7 +104,7 @@ function rewriteInIgorVoice(rawText, options = {}) {
 
   // Split into candidate sentences while protecting decimal numbers (e.g. 0.5ms, 197.552, $9.99)
   const normalized = String(rawText || '')
-    .replace(/(?:^|\n)\s*(?:Problem|Solution|Fix|Note|TL;DR|Hook|CTA|Why it matters)\s*:\s*/gi, '\n')
+    .replace(/^[ \t]*(?:Problem|Solution|Fix|Note|TL;DR|Hook|CTA|Why it matters)[ \t]*:[ \t]*/gim, '')
     .replace(/[\u2014\u2013]/g, ', ')
     .replace(/\r\n/g, '\n');
 
