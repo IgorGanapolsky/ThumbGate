@@ -134,6 +134,21 @@ test.describe('/dashboard real-server login, redeploy persistence, Google SSO, a
       await expect(page.locator('#upNextTitle')).toHaveText('Finish setup to record your first gate block →');
       await expect(page.locator('#upNextActionBtn')).toHaveAttribute('href', '/install#quickstart');
       await expect(page.locator('#demoBanner')).toBeHidden();
+      // Once the Free account records a first_block activation event, reloading hides the Finish setup bar
+      const activationRes = await page.evaluate(async () => {
+        const resp = await fetch('/v1/activation/first-block', {
+          method: 'POST',
+          credentials: 'same-origin',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ firstBlockAt: '2026-11-12T20:00:00.000Z', installId: 'inst_pw_free_1', gateId: 'gate:force-push' }),
+        });
+        return { status: resp.status, body: await resp.json() };
+      });
+      expect(activationRes.status).toBe(200);
+      expect(activationRes.body.firstBlockRecorded).toBe(true);
+      await page.reload();
+      await expect(page.locator('#authStatus')).toHaveText('✓ Free tier');
+      await expect(page.locator('#upNextCard')).toBeHidden();
 
       await Promise.all([
         page.waitForURL(/\/dashboard\?noauto=1$/),
@@ -165,12 +180,8 @@ test.describe('/dashboard real-server login, redeploy persistence, Google SSO, a
       await expect(page.locator('#authHelp')).toBeHidden();
       await expect(page.locator('#dashboardContent')).toBeVisible();
 
-      // State 1 (0 gate blocks recorded): single Finish setup bar is visible, links to /install#quickstart, and no second banner
-      await expect(page.locator('#upNextCard')).toBeVisible();
-      await expect(page.locator('#upNextTitle')).toHaveText('Finish setup to record your first gate block →');
-      await expect(page.locator('#upNextDetail')).toContainText('npx thumbgate quickstart');
-      await expect(page.locator('#upNextActionBtn')).toHaveAttribute('href', '/install#quickstart');
-      await expect(page.locator('#upNextCard a, #upNextCard button')).toHaveCount(1);
+      // State 1 (Pro account with 0 hosted gate blocks): Finish setup bar is NEVER shown to paid Pro accounts
+      await expect(page.locator('#upNextCard')).toBeHidden();
       await expect(page.locator('#demoBanner')).toBeHidden();
       await expect(page.locator('#chipBlockedToday')).toContainText('0 BLOCKED TODAY');
       await expect(page.locator('#chipWarnedToday')).toContainText('0 WARNED TODAY');
