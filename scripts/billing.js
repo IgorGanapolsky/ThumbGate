@@ -3032,7 +3032,7 @@ const AUTOMATED_CHECKOUT_SOURCES = new Set([
   'internal_audit', 'probe', 'health_check', 'smoke_test', 'codex_audit', 'synthetic', 'e2e_probe',
 ]);
 const AUTOMATED_CHECKOUT_MARKER_PATTERN = /(?:^|[^a-z0-9])(?:internal[-_]audit|smoke[-_]test|health[-_]check|codex[-_]verification|codex[-_]audit|e2e[-_]probe|checkout[-_]probe|money-v\d+-audit)(?:$|[^a-z0-9])/i;
-const SYNTHETIC_CHECKOUT_EMAIL_PATTERN = /^(?:[^@\s]+@(?:example\.(?:com|org|net)|invalid)|test@test\.com|buyer@acme\.(?:io|com)|audit@thumbgate\.ai|(?:e2e[-_]?probe|test[-_]?checkout[-_]?probe|probe|smoke[-_]?test)@[^@\s]+)$/i;
+const SYNTHETIC_CHECKOUT_EMAIL_PATTERN = /^(?:[^@\s]+@(?:example\.(?:com|org|net)|formtests\.info|mailinator\.com|invalid)|test@test\.com|buyer@acme\.(?:io|com)|founder@agent-startup\.io|audit@thumbgate\.ai|(?:e2e[-_]?probe|test[-_]?checkout[-_]?probe|probe|smoke[-_]?test)@[^@\s]+)$/i;
 
 function canonicalizeEmailAddress(rawEmail = '') {
   const email = String(rawEmail || '').trim().toLowerCase();

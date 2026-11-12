@@ -9003,6 +9003,15 @@ async function addContext(){
         });
         res.end();
       } catch (err) {
+        if (err && err.code === 'AUTOMATED_CHECKOUT_BLOCKED') {
+          sendProblem(res, {
+            type: PROBLEM_TYPES.BAD_REQUEST,
+            title: 'Checkout blocked',
+            status: 403,
+            detail: err.message,
+          }, responseHeaders);
+          return;
+        }
         appendBestEffortTelemetry(FEEDBACK_DIR, {
           eventType: 'checkout_api_failed',
           clientType: 'web',

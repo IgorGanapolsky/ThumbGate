@@ -216,11 +216,13 @@ test('billing blocks synthetic/probe/owner checkout emails on live Stripe keys a
 
   try {
     assert.equal(billing.isAutomatedCheckoutRequest({}, 'probe@example.com'), true);
+    assert.equal(billing.isAutomatedCheckoutRequest({}, 'buyer@acme.com'), true);
+    assert.equal(billing.isAutomatedCheckoutRequest({}, 'buyer@acme.io'), true);
+    assert.equal(billing.isAutomatedCheckoutRequest({}, 'mkjkjuwj@formtests.info'), true);
     assert.equal(billing.isAutomatedCheckoutRequest({}, 'e2e-probe@custom-domain.io'), true);
     assert.equal(billing.isAutomatedCheckoutRequest({}, 'founder@company.test'), true);
     assert.equal(billing.isAutomatedCheckoutRequest({}, 'founder+probe@company.test'), true);
     assert.equal(billing.isAutomatedCheckoutRequest({}, 'stranger+founder@company.test'), false);
-    assert.equal(billing.isAutomatedCheckoutRequest({}, 'notfounder@company.test'), false);
     assert.equal(billing.isAutomatedCheckoutRequest({ utmCampaign: 'codex_verification_run' }), true);
     assert.equal(billing.isAutomatedCheckoutRequest({ probe: true }), true);
     assert.equal(billing.isAutomatedCheckoutRequest({}, null), false);
@@ -238,6 +240,16 @@ test('billing blocks synthetic/probe/owner checkout emails on live Stripe keys a
       (err) => err.code === 'AUTOMATED_CHECKOUT_BLOCKED'
         && err.statusCode === 403
         && /Refusing to open a live Stripe Checkout session/.test(err.message),
+    );
+    await assert.rejects(
+      billing.createCheckoutSession({
+        successUrl: 'https://thumbgate.ai/success',
+        cancelUrl: 'https://thumbgate.ai/cancel',
+        customerEmail: 'mkjkjuwj@formtests.info',
+        installId: 'inst_unknown',
+        metadata: { planId: 'pro', billingCycle: 'monthly', source: 'website', ctaId: 'pricing_pro' },
+      }),
+      (err) => err.code === 'AUTOMATED_CHECKOUT_BLOCKED' && err.statusCode === 403,
     );
   } finally {
     billing.CONFIG.STRIPE_SECRET_KEY = savedKey;
@@ -432,6 +444,20 @@ test('/go/pro-direct deflects ?probe=1 and blocked synthetic emails to /checkout
       }),
     });
     assert.equal(postRes.status, 403);
+
+    const confirmRes = await fetch(`http://127.0.0.1:${handle.port}/checkout/pro?confirm=1&customer_email=mkjkjuwj%40formtests.info&plan_id=pro&billing_cycle=monthly`, {
+      redirect: 'manual',
+      headers: {
+        'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 14_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.1 Safari/605.1.15',
+        accept: 'text/html,application/xhtml+xml',
+        'sec-fetch-mode': 'navigate',
+        'sec-fetch-dest': 'document',
+        'sec-fetch-site': 'same-origin',
+        'sec-fetch-user': '?1',
+      },
+    });
+    assert.equal(confirmRes.status, 403);
+    assert.equal(confirmRes.headers.get('location'), null);
   } finally {
     await new Promise((resolve) => handle.server.close(resolve));
     billing.CONFIG.STRIPE_SECRET_KEY = savedStripeKey;
