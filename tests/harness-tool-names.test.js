@@ -117,3 +117,75 @@ test('every tool name .clinerules tells the agent to check is mapped or canonica
     `.clinerules tells the agent to gate-check ${unmapped.join(', ')}, but those do not map to a `
     + 'name any gate matches, so the check silently passes');
 });
+
+test('Codex and PowerShell tool names and argv arrays canonicalize to Bash strings', () => {
+  assert.equal(canonicalizeToolCall('exec_command', { cmd: 'ls' }).toolName, 'Bash');
+  assert.equal(canonicalizeToolCall('powershell', { command: 'Get-ChildItem' }).toolName, 'Bash');
+  const cmdCall = canonicalizeToolCall('local_shell', {
+    command: ['cmd', '/c', 'rmdir /s /q "D:\\projects\\old"'],
+  });
+  assert.equal(cmdCall.toolName, 'Bash');
+  assert.equal(cmdCall.toolInput.command, 'cmd /c "rmdir /s /q \\"D:\\\\projects\\\\old\\""');
+
+  const pwshCall = canonicalizeToolCall('shell', {
+    command: ['powershell', '-Command', '"Remove-Item" -Recurse "D:\\projects\\old"'],
+  });
+  assert.equal(pwshCall.toolInput.command, 'powershell -Command "\\"Remove-Item\\" -Recurse \\"D:\\\\projects\\\\old\\""');
+
+  const trailingSlashCall = canonicalizeToolCall('shell', {
+    command: ['Remove-Item', 'D:\\My Projects\\old\\', '-Recurse', '-Filter', 'my *.tmp'],
+  });
+  assert.equal(trailingSlashCall.toolInput.command, 'Remove-Item "D:\\\\My Projects\\\\old\\\\" -Recurse -Filter "my *.tmp"');
+
+  const spacedArgCall = canonicalizeToolCall('shell', {
+    command: ['rmdir', '/s', '/q', 'D:\\projects\\old\\', ''],
+  });
+  assert.equal(spacedArgCall.toolInput.command, 'rmdir /s /q "D:\\\\projects\\\\old\\\\" ""');
+  const breakout = canonicalizeToolCall('shell', { command: ['rm', 'bad\\" name'] });
+  assert.equal(breakout.toolInput.command, 'rm "bad\\\\\\" name"');
+  const undefAlias = canonicalizeToolCall('Write', { path: undefined, file_path: 'src/a.js' });
+  assert.equal(undefAlias.toolInput.file_path, 'src/a.js');
+  const aliasBeforeCanonical = canonicalizeToolCall('shell', { cmd: 'echo safe', command: 'rm -rf /' });
+  assert.equal(aliasBeforeCanonical.toolInput.command, 'rm -rf /');
+});
+
+test('gate_check and gatesEngine.runAsync warn on Codex Windows and argv destructive deletes', async () => {
+  const gatesEngine = require(path.join(ROOT, 'scripts', 'gates-engine'));
+  const v = await gateCheck('exec_command', { cmd: 'Remove-Item -Recurse -Force D:\\projects\\old' });
+  assert.equal(v.decision, 'warn');
+  assert.equal(v.flagged, true);
+
+  const quotedScriptVerdict = await gateCheck('local_shell', {
+    command: ['bash', '-lc', '"/bin/rm" -rf "./build-output"'],
+  });
+  assert.equal(quotedScriptVerdict.decision, 'warn');
+  assert.equal(quotedScriptVerdict.flagged, true);
+
+  const trailingBackslashVerdict = await gateCheck('shell', {
+    command: ['Remove-Item', 'D:\\My Projects\\old\\', '-Recurse', '-Filter', 'my *.tmp'],
+  });
+  assert.equal(trailingBackslashVerdict.decision, 'warn');
+  assert.equal(trailingBackslashVerdict.flagged, true);
+
+  const hookRaw = await gatesEngine.runAsync({
+    tool_name: 'pwsh',
+    tool_input: { command: ['Remove-Item', 'D:\\projects\\old\\', '-Recurse'] },
+  });
+  const hookParsed = JSON.parse(hookRaw);
+  assert.ok(hookParsed.hookSpecificOutput?.additionalContext?.includes('destructive_delete'));
+  assert.notEqual(hookParsed.hookSpecificOutput?.permissionDecision, 'deny');
+
+  const camelRaw = await gatesEngine.runAsync({
+    toolName: 'pwsh',
+    toolInput: { command: ['Remove-Item', 'D:\\projects\\old\\', '-Recurse'] },
+  });
+  const camelParsed = JSON.parse(camelRaw);
+  assert.ok(camelParsed.hookSpecificOutput?.additionalContext?.includes('destructive_delete'));
+
+  const hardFloorCamel = gatesEngine.runHardFloor({
+    toolName: 'pwsh',
+    toolInput: { command: ['sh', '-c', "printf '%s' '{}' >config/gates/default.json"] },
+  });
+  assert.ok(hardFloorCamel);
+  assert.equal(JSON.parse(hardFloorCamel).hookSpecificOutput?.permissionDecision, 'deny');
+});

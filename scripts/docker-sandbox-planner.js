@@ -3,7 +3,7 @@
 
 const path = require('node:path');
 
-const { classifyCommand } = require('./operational-integrity');
+const { classifyCommand, isDestructiveDeleteCommand } = require('./operational-integrity');
 const { classifyHostRole } = require('./agent-egress-policy');
 
 const HIGH_RISK_ACTION_TYPES = new Set([
@@ -109,7 +109,7 @@ function buildWhy({
     lines.push('The current action does not need a dedicated Docker sandbox boundary.');
   }
 
-  if (command && /\brm\s+-rf\b/i.test(command)) {
+  if (command && isDestructiveDeleteCommand(command)) {
     lines.push('Recursive delete commands are safer when the filesystem boundary lives inside a disposable microVM.');
   }
   if (command && /\bgit\s+push\b.*(?:--force|-f)\b/i.test(command)) {
@@ -143,7 +143,7 @@ function buildDockerSandboxPlan(input = {}) {
     ? Number(Number(input.riskScore).toFixed(4))
     : null;
   const commandInfo = classifyCommand(command);
-  const destructiveCommand = /\brm\s+-rf\b/i.test(command)
+  const destructiveCommand = commandInfo.isDestructiveDelete
     || /\bgit\s+push\b.*(?:--force|-f)\b/i.test(command)
     || /\bgh\s+pr\s+merge\b.*--admin\b/i.test(command);
   const governedCommand = Boolean(

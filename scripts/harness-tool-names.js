@@ -21,9 +21,16 @@ const TOOL_NAME_MAP = new Map(Object.entries({
   apply_diff: 'Edit',
   insert_content: 'Edit',
   search_and_replace: 'Edit',
-  // OpenCode / generic MCP
+  // OpenCode / Codex / Windows / generic MCP
   bash: 'Bash',
   shell: 'Bash',
+  shell_command: 'Bash',
+  exec_command: 'Bash',
+  local_shell: 'Bash',
+  'container.exec': 'Bash',
+  powershell: 'Bash',
+  pwsh: 'Bash',
+  terminal: 'Bash',
   run_command: 'Bash',
   edit_file: 'Edit',
   write_file: 'Write',
@@ -48,14 +55,26 @@ function canonicalizeToolName(toolName) {
   return TOOL_NAME_MAP.get(raw) || TOOL_NAME_MAP.get(raw.toLowerCase()) || raw;
 }
 
+function formatCommandArgvToken(item) {
+  const text = String(item ?? '');
+  if (!text) return '""';
+  if (!/[\s"'|&;<>()`\\]/.test(text)) return text;
+  return `"${text.replaceAll('\\', '\\\\').replaceAll('"', '\\"')}"`;
+}
+
+function normalizeCommandValue(value) {
+  if (!Array.isArray(value)) return value;
+  return value.map((item) => formatCommandArgvToken(item)).join(' ');
+}
+
 function canonicalizeToolInput(toolInput) {
   if (!toolInput || typeof toolInput !== 'object' || Array.isArray(toolInput)) return toolInput || {};
   const out = {};
   for (const [key, value] of Object.entries(toolInput)) {
     const canonicalKey = ARG_KEY_MAP.get(key) || key;
-    // Never let a mapped key clobber one the caller already supplied canonically.
-    if (canonicalKey in out) continue;
-    out[canonicalKey] = value;
+    if (key !== canonicalKey && (value === undefined || toolInput[canonicalKey] !== undefined)) continue;
+    if (out[canonicalKey] !== undefined) continue;
+    out[canonicalKey] = canonicalKey === 'command' ? normalizeCommandValue(value) : value;
   }
   return out;
 }
@@ -67,4 +86,11 @@ function canonicalizeToolCall(toolName, toolInput) {
   };
 }
 
-module.exports = { canonicalizeToolCall, canonicalizeToolName, canonicalizeToolInput, TOOL_NAME_MAP, ARG_KEY_MAP };
+module.exports = {
+  canonicalizeToolCall,
+  canonicalizeToolName,
+  canonicalizeToolInput,
+  normalizeCommandValue,
+  TOOL_NAME_MAP,
+  ARG_KEY_MAP,
+};

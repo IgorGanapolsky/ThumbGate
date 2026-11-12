@@ -12,7 +12,9 @@ const { isProTier, isInTrialPeriod, FREE_TIER_MAX_GATES, FREE_TIER_DAILY_BLOCKS,
 const {
   DEFAULT_BASE_BRANCH,
   evaluateOperationalIntegrity,
+  isDestructiveDeleteCommand,
 } = require('./operational-integrity');
+const { canonicalizeToolCall } = require('./harness-tool-names');
 const {
   evaluateWorkflowSentinel,
 } = require('./workflow-sentinel');
@@ -1806,7 +1808,7 @@ function isHighRiskAction(toolName, toolInput = {}, affectedFiles = []) {
   if (toolName !== 'Bash') return false;
   const command = String(toolInput.command || '');
   // Original high-risk pattern (git writes, publishes, destructive ops)
-  if (HIGH_RISK_BASH_PATTERN.test(command)) return true;
+  if (HIGH_RISK_BASH_PATTERN.test(command) || isDestructiveDeleteCommand(command)) return true;
   if (isGhApiPrCreateCommand(command)) return true;
   // Broadened: any Bash command that modifies files or has side effects.
   // Excludes pure read/analysis commands (node --test, cat, ls, echo, etc.)
@@ -4946,7 +4948,22 @@ function evaluateRepeatedMistakeGates(input = {}) {
     || evaluateMablFailureHonestyGate(view);
 }
 
-function evaluateUnconditionalHardFloor(input = {}, options = {}) {
+function canonicalizeHookInput(input = {}) {
+  if (!input || typeof input !== 'object') return {};
+  const rawName = input.tool_name ?? input.toolName ?? '';
+  const rawToolInput = input.tool_input ?? input.toolInput ?? {};
+  const { toolName, toolInput } = canonicalizeToolCall(rawName, rawToolInput);
+  return {
+    ...input,
+    tool_name: toolName,
+    tool_input: toolInput,
+    ...('toolName' in input ? { toolName } : {}),
+    ...('toolInput' in input ? { toolInput } : {}),
+  };
+}
+
+function evaluateUnconditionalHardFloor(rawInput = {}, options = {}) {
+  const input = canonicalizeHookInput(rawInput);
   const secretGuard = evaluateSecretGuard(input);
   if (secretGuard) return { hardFloor: secretGuard, securityScan: null };
 
@@ -5448,7 +5465,8 @@ function buildDesignSelfCorrectionContext(toolName, toolInput = {}) {
   }
 }
 
-async function runAsync(input) {
+async function runAsync(rawInput) {
+  const input = canonicalizeHookInput(rawInput);
   const { hardFloor, securityScan } = evaluateUnconditionalHardFloor(input);
   if (hardFloor) return formatOutput(hardFloor);
 
@@ -5496,7 +5514,8 @@ async function runAsync(input) {
 
 }
 
-function run(input) {
+function run(rawInput) {
+  const input = canonicalizeHookInput(rawInput);
   const { hardFloor, securityScan } = evaluateUnconditionalHardFloor(input);
   if (hardFloor) return formatOutput(hardFloor);
 
