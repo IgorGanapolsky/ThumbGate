@@ -269,11 +269,11 @@ h2{font-size:20px;font-weight:700;margin-bottom:16px;letter-spacing:-.02em}
   <div style="margin:0 0 24px;padding:24px;background:linear-gradient(135deg,rgba(34,211,238,0.08),rgba(74,222,128,0.05));border:1px solid rgba(34,211,238,0.2);border-radius:12px;">
     <h1 style="font-size:22px;font-weight:700;margin-bottom:8px;letter-spacing:-0.02em;">🔍 Operations Dashboard</h1>
     <p style="font-size:12px;color:var(--text-muted);margin-bottom:8px;">Updated: <time datetime="2026-04-20">2026-04-20</time> · by <a href="https://github.com/IgorGanapolsky" style="color:inherit;">Igor Ganapolsky</a></p>
-    <p style="font-size:14px;color:var(--text-muted);line-height:1.6;max-width:700px;">What's happening right now? Search memories, inspect active checks, manage your team, and export training data. <span style="color:var(--cyan);font-weight:600;">This is your control plane for AI agent behavior.</span></p>
+    <p style="font-size:14px;color:var(--text-muted);line-height:1.6;max-width:700px;">What's happening right now? Search memories, inspect active checks, and export training data. <span style="color:var(--cyan);font-weight:600;">This is your control plane for AI agent behavior.</span></p>
     <div style="display:flex;gap:16px;margin-top:12px;font-size:12px;color:var(--text-muted);">
       <span class="quick-nav-link" onclick="switchTab('search')">🔍 <strong style="color:var(--text);">Search</strong> — find any memory</span>
       <span class="quick-nav-link" onclick="switchTab('gates')">🛡️ <strong style="color:var(--text);">Gates</strong> — what's blocking</span>
-      <span class="quick-nav-link" onclick="switchTab('team')">👥 <strong style="color:var(--text);">Team</strong> — org metrics</span>
+      <span class="quick-nav-link" hidden style="display:none" onclick="switchTab('team')">👥 <strong style="color:var(--text);">Team</strong> — org metrics</span>
       <span class="quick-nav-link" onclick="switchTab('export')">📤 <strong style="color:var(--text);">Export</strong> — DPO training data</span>
     </div>
   </div>
@@ -348,7 +348,7 @@ h2{font-size:20px;font-weight:700;margin-bottom:16px;letter-spacing:-.02em}
   <div class="tabs">
     <div class="tab active" onclick="switchTab('search')">🔍 Search Memories</div>
     <div class="tab" onclick="switchTab('gates')">🛡️ Active Gates</div>
-    <div class="tab" onclick="switchTab('team')">👥 Team</div>
+    <div class="tab" hidden style="display:none" onclick="switchTab('team')">👥 Team</div>
     <div class="tab" onclick="switchTab('enterprise')">🏢 Governed Data Chat</div>
     <div class="tab" onclick="switchTab('ai-inventory')">🧬 AI Inventory</div>
     <div class="tab" onclick="switchTab('generated')">🧩 Generated Views</div>
@@ -420,7 +420,7 @@ h2{font-size:20px;font-weight:700;margin-bottom:16px;letter-spacing:-.02em}
   </div>
 
   
-  <div class="tab-content" id="tab-team">
+  <div class="tab-content" id="tab-team" hidden style="display:none !important">
     <div class="team-section">
       <h2>Shared Team Reliability</h2>
       <p class="template-summary">See which agents drift, which gates save the team the most time, and whether the shared workflow is getting safer.</p>
@@ -1475,6 +1475,7 @@ function setSource(el, source) {
 }
 
 function switchTab(name) {
+  if (name === 'team') name = 'search';
   document.querySelectorAll('.tab').forEach(function(t) { t.classList.remove('active'); });
   document.querySelectorAll('.tab-content').forEach(function(c) { c.classList.remove('active'); });
   var tabEl = document.querySelector('.tab[onclick*="' + name + '"]');

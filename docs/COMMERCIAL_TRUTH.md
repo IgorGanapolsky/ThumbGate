@@ -1,7 +1,7 @@
 # Commercial Truth
 
 Status: current for packaging and runtime capabilities; live traction requires authenticated telemetry
-Updated: July 22, 2026
+Updated: November 13, 2026 (public team setup sprint scope)
 
 This document is the source of truth for product, pricing, traction, and proof claims in this repository.
 
@@ -9,9 +9,9 @@ This document is the source of truth for product, pricing, traction, and proof c
 
 - The open-source `thumbgate` package is free and MIT licensed.
 - The local CLI is the adoption wedge; it is not the primary monetization story.
-- For the current 30-day conversion experiment, the only promoted public offer is the **Managed AI Agent Workflow Gate** at **$499 one-time** via the email-backed `/go/diagnostic-pay` POST on `/`, `/pricing`, and `/diagnostic`. It covers one 60-minute review for one supported local workflow, one configured gate, one regression test, and written rollout and rollback proof within two business days after access and agreed materials are available. If the failure cannot be reduced to a supported gate, the order is refunded instead of silently upsold.
+- For the current sales sprint, the only promoted public offer is the **Team setup sprint** at **$499 one-time** via the existing email-backed `/go/diagnostic-pay` POST. The homepage and `/pricing` lead with this offer. We review two weeks of the team's own agent sessions, build 3–5 gates from real repeated mistakes, add a regression test, and show a before/after count. Refund if no gate fires. The Stripe product identity remains `Managed AI Agent Workflow Gate`; the public packaging change does not rename or replace that product.
 - **Pro at $19/mo or $149/yr** remains a supported legacy self-serve subscription and the `$1,500` Workflow Hardening Sprint remains an internal catalog/scoping rail, but neither is promoted on the homepage or pricing page during the single-offer experiment. Enterprise remains proposal-only after qualification.
-- The `$499` managed workflow gate is the only currently promoted public one-time service offer. Legacy Stripe Payment Links must remain deactivated or undistributed; they are not current public acquisition offers.
+- The `$499` Team setup sprint is the only currently promoted public one-time service offer. Legacy Stripe Payment Links must remain deactivated or undistributed; they are not current public acquisition offers.
 - Stripe revenue attribution never relies on a product name. `scripts/stripe-revenue-catalog.js` binds each reviewed offer to its exact price ID, product ID, integer amount, currency, cadence, and interval. The public `$499` checkout now uses the Stripe product name `Managed AI Agent Workflow Gate`; that product still has a separate active `$999` price, but its Payment Link is deactivated and it is not a current ThumbGate offer. `npm run stripe:catalog-audit` verifies the live prices, product/price active states, mode, and the exact Pro-monthly and managed-gate Payment Links without mutating Stripe. Catalog configuration is not payment evidence.
 - Active CLI receipts, paywall messages, SEO generators, email drafts, and social launch drafts must use first-party `thumbgate.ai` buyer paths. Raw Stripe or PayPal links are provider plumbing, not buyer-facing distribution assets. Retired kit catalogs are archived and cannot advertise their historical Payment Links as current offers.
 - Zernio is retired for ThumbGate publishing. Its historical adapter is read-only; every publish, schedule, upload, or delete mutation fails closed before a network request. Active publishing requires a direct platform adapter or an explicitly approved manual platform session.
@@ -58,14 +58,16 @@ This document is the source of truth for product, pricing, traction, and proof c
 
 ## Service Offer Ladder
 
-### Managed AI Agent Workflow Gate ($499 one-time)
+### Team setup sprint ($499 one-time)
 
-- Buyer: one workflow owner with one repeated AI-agent failure and enough workflow evidence to review it
-- Buyer inputs: short intake, a 60-minute working review, and non-secret examples or logs needed to understand the failure
-- Deliverables: one workflow/failure map, one configured local gate, one regression test, and written rollout, rollback, and verification proof
-- Delivery window: within two business days after access and the agreed workflow materials are available
-- Risk reducer: submit the workflow before checkout when fit is unclear; if a paid workflow cannot be reduced to one supported gate, refund the order instead of expanding the scope
+- Buyer: engineering leads and CTOs of 5–30 engineer teams already paying for Claude Code or Codex seats
+- Buyer inputs: two weeks of the team's own agent sessions, with secrets removed before sharing
+- Deliverables: 3–5 gates built from real repeated mistakes, a regression test, and a before/after count
+- Delivery: schedule the review and implementation after the agreed session materials are available; the prior one-gate, two-business-day package is superseded
+- Risk reducer: refund if no gate fires
+- Enforcement boundary: gates run in supported local workflows through supported hook integrations
 - Exclusions: multi-system implementation, legal or compliance certification, guaranteed savings, guaranteed incident prevention, and uncontracted hosted-team features
+- Billing identity: the existing `Managed AI Agent Workflow Gate` Stripe product and reviewed $499 price remain unchanged
 
 ### Workflow Hardening Sprint ($1,500 one-time, not a promoted public offer)
 

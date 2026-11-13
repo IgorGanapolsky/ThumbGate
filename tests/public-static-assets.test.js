@@ -132,9 +132,9 @@ test('landing page presents Pro self-serve and fixed-price managed offer clearly
   const html = await res.text();
 
   assert.match(html, /Setup Sprint/);
-  assert.match(html, /One configured local gate and its regression test/);
-  assert.match(html, /Delivery within two business days after access and agreed materials are available, subject to confirmed scheduling/);
-  assert.match(html, /one supported local workflow/i);
+  assert.match(html, /3–5 local gates from your real repeated mistakes/);
+  assert.match(html, /Refund if no gate fires/);
+  assert.match(html, /two weeks of your team's own agent sessions/i);
   assert.match(html, /\$499/);
   assert.doesNotMatch(html, /\$19\/mo|\$149\/yr/);
   // Pro removed from public buying path

@@ -14,7 +14,7 @@
 > Pre-action checks that flag repeated risky actions before execution and block matching actions when strict policy is enabled. Accepted feedback becomes local lessons; repeated failures can become prevention rules.
 
 ### Public Landing Page (thumbgate-production.up.railway.app)
-> ThumbGate checks proposed tool calls before execution in supported hook integrations. The $499 Setup Sprint turns one recurring failure in a supported local workflow into a configured gate, a regression test, and rollout and rollback evidence.
+> Team setup sprint, $499 one-time: we review two weeks of your team's own agent sessions, build 3–5 gates from real repeated mistakes, add a regression test, and show a before/after count. Refund if no gate fires.
 
 ### NPM package.json
 > ThumbGate Pre-Action Checks self-improve from ranked lessons and repeated failures, hard-block detected secret leaks, and block matches in strict mode.

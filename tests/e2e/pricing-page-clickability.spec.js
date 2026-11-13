@@ -1,9 +1,9 @@
 const { test, expect } = require('@playwright/test');
 
-test.describe('/pricing dual-offer cash path', () => {
-  test('shows Pro self-serve and fixed-price managed gate', async ({ page }) => {
+test.describe('/pricing team setup sprint', () => {
+  test('shows the fixed-price team setup sprint', async ({ page }) => {
     await page.goto('/pricing');
-    await expect(page.getByRole('heading', { level: 1 })).toContainText('Stop paying for the same AI mistake twice');
+    await expect(page.getByRole('heading', { level: 1 })).toContainText('Team setup sprint. $499 one-time');
     // Pro removed from public buying path
     // Pro removed from public buying path
     await expect(page.locator('#enterprise-gate .price')).toHaveText('$499');
@@ -11,7 +11,7 @@ test.describe('/pricing dual-offer cash path', () => {
     await expect(page.getByText('$1,500', { exact: true })).toHaveCount(0);
   });
 
-  test('nav Enterprise CTA moves to the managed checkout form', async ({ page }) => {
+  test('nav setup CTA moves to the managed checkout form', async ({ page }) => {
     await page.goto('/pricing');
     await page.locator('[data-cta-id="pricing_nav_buy"]').click();
     await expect(page).toHaveURL(/\/pricing#enterprise-gate$/);
@@ -24,7 +24,6 @@ test.describe('/pricing dual-offer cash path', () => {
       links.forEach((link) => link.addEventListener('click', (event) => event.preventDefault(), { capture: true }));
     });
 
-    await page.locator('[data-cta-id="pricing_pro_buy"]').click();
     await page.locator('[data-cta-id="pricing_segment_diagnostic"]').click();
     await page.locator('[data-cta-id="pricing_segment_enterprise"]').click();
 
@@ -32,7 +31,6 @@ test.describe('/pricing dual-offer cash path', () => {
       .filter((entry) => entry[0] === 'pricing_cta_click')
       .map((entry) => entry[1].props));
     expect(events).toEqual(expect.arrayContaining([
-      expect.objectContaining({ planId: 'pro', value: 19, segment: 'solo_operator' }),
       expect.objectContaining({ planId: 'sprint_diagnostic', value: 499, segment: 'workflow_team' }),
       expect.objectContaining({ planId: 'enterprise_service', value: 0, segment: 'regulated_team' })
     ]));
@@ -80,7 +78,7 @@ test.describe('/pricing dual-offer cash path', () => {
 
   test('FAQ controls expose the same delivery and refund boundaries', async ({ page }) => {
     await page.goto('/pricing');
-    const question = page.getByRole('button', { name: 'What does the $499 managed gate include?' });
+    const question = page.getByRole('button', { name: 'What does the $499 Team setup sprint include?' });
     await question.click();
     await expect(question).toHaveAttribute('aria-expanded', 'true');
     await expect(question.locator('..').locator('.faq-a')).toContainText('regression test');

@@ -30,7 +30,7 @@ test('pricing exposes Pro self-serve and direct $499 managed-gate checkout', () 
   assert.match(pricingHtml, /action="\/go\/diagnostic-pay" method="POST"/);
   assert.match(pricingHtml, /Book the \$499 setup/);
   assert.match(pricingHtml, /name="customer_email"[^>]*required/);
-  assert.match(pricingHtml, /"name": "Managed AI Agent Workflow Gate"/);
+  assert.match(pricingHtml, /"name": "Team setup sprint"/);
   assert.match(pricingHtml, /"price": "499"/);
   // Pro JSON-LD removed
   // Pro JSON-LD removed
@@ -42,7 +42,7 @@ test('pricing exposes Pro self-serve and direct $499 managed-gate checkout', () 
   const diagnostic = offerGraph.find((node) => node['@type'] === 'Service');
   // Pro JSON-LD removed
   assert.equal(diagnostic.offers.price, '499');
-  assert.equal(diagnostic.offers.name, 'Managed workflow diagnostic');
+  assert.equal(diagnostic.offers.name, 'Team setup sprint');
   // Pro JSON-LD removed
   // Pro removed from public buying path
   // Pro removed from public buying path

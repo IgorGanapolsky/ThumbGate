@@ -42,10 +42,12 @@ test('dashboard routes exception text through escaped message rendering', () => 
   assert.doesNotMatch(dashboard, /<div class="empty">' \+ e\.message \+ '<\/div>'/);
 });
 
-test('dashboard includes team metrics and gate-template tabs powered by dashboard API data', () => {
+test('dashboard hides unavailable team controls and retains gate-template tabs', () => {
   const dashboard = readDashboard();
 
-  assert.match(dashboard, /switchTab\('team'\)/);
+  assert.match(dashboard, /class="quick-nav-link" hidden style="display:none" onclick="switchTab\('team'\)"/);
+  assert.match(dashboard, /class="tab" hidden style="display:none" onclick="switchTab\('team'\)"/);
+  assert.match(dashboard, /id="tab-team" hidden style="display:none !important"/);
   assert.match(dashboard, /switchTab\('generated'\)/);
   assert.match(dashboard, /switchTab\('settings'\)/);
   assert.match(dashboard, /switchTab\('templates'\)/);
@@ -187,4 +189,35 @@ test('dashboard hides sign-in button and sign-in copy when signed in and renders
   assert.match(dashboard, /function chatRenderModelRoute\(data\)/);
   assert.match(dashboard, /id="lessonStorageFooter"/);
   assert.match(dashboard, /100% On-Device Private Memory/);
+});
+
+
+test('unavailable team selection falls back to the visible search pane', () => {
+  const script = readDashboard();
+  const start = script.indexOf('function switchTab(name) {');
+  const end = script.indexOf('\nfunction ', start + 1);
+  const switchTabSource = script.slice(start, end);
+  const active = new Set();
+  const pane = {
+    classList: { add: (name) => active.add(name) },
+    scrollIntoView() {},
+  };
+  let selectedPane;
+  let selectedTab;
+  let selectedHash;
+  const context = {
+    document: {
+      querySelectorAll: () => [{ classList: { remove: (name) => active.delete(name) } }],
+      querySelector: (selector) => { selectedTab = selector; return pane; },
+      getElementById: (id) => { selectedPane = id; return pane; },
+    },
+    window: { location: { hash: '#team' } },
+    history: { replaceState: (_state, _title, hash) => { selectedHash = hash; } },
+    hasActiveAuth: () => false,
+  };
+  vm.runInNewContext(switchTabSource + "\nswitchTab('team');", context);
+  assert.equal(selectedPane, 'tab-search');
+  assert.equal(selectedTab, '.tab[onclick*="search"]');
+  assert.equal(selectedHash, '#search');
+  assert.equal(active.has('active'), true);
 });
