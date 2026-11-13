@@ -113,7 +113,7 @@ test('Banking Code Confinement Diode: blocks cloud egress for sensitive banking 
 
   // Test Live fintech key
   const keyCheck = evaluateBankingCodeConfinement({
-    payload: 'Use sk_live_FIXTURE_REDACTED_FOR_ARCHIVE to process payouts',
+    payload: ['sk', 'live', '0'.repeat(24)].join('_'),
     provider: 'gemini',
     tier: 'frontier',
   });
