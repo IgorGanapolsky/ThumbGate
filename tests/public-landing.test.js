@@ -783,9 +783,9 @@ test('homepage features thumbs branding and self-improving diagrams above the fo
   assert.match(landingPage, /id="thumb-glyph"/);
   assert.match(landingPage, /class="hero-thumb-up"/);
   assert.match(landingPage, /id="hero-thumb-down"/);
-  assert.match(landingPage, /Already denied on every install/);
-  assert.match(landingPage, /This stays a warning\. Deny needs strict mode/);
-  assert.match(landingPage, /3 negatives, then strict mode/);
+  assert.match(landingPage, /Illustrative example, not a recorded result/);
+  assert.match(landingPage, /Matching destructive actions warn by default/);
+  assert.match(landingPage, /deny only in strict mode/);
   assert.match(landingPage, /data-cta-placement="offers"/);
   assert.match(landingPage, /name="cta_placement" value="offers"/);
   assert.match(landingPage, /scroll-margin-top: 92px/);
