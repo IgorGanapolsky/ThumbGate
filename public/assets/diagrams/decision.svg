@@ -11,13 +11,6 @@
     <text x="133" y="160" text-anchor="middle" fill="#9ca3af" font-size="13">npx thumbgate init</text>
     <text x="133" y="190" text-anchor="middle" fill="#e5e7eb" font-size="13">Catch one repeat</text>
     <text x="133" y="230" text-anchor="middle" fill="#4ade80" font-size="12" font-weight="700">prove it works</text>
-    <!-- Pro -->
-    <rect x="258" y="58" width="210" height="210" rx="16" fill="#07151a" stroke="#22d3ee" stroke-width="2"/>
-    <text x="363" y="95" text-anchor="middle" fill="#22d3ee" font-size="12" font-weight="700">SELF-SERVE</text>
-    <text x="363" y="130" text-anchor="middle" fill="#f5f5f7" font-size="22" font-weight="900">Free CLI</text>
-    <text x="363" y="160" text-anchor="middle" fill="#9ca3af" font-size="13">Unlimited solo</text>
-    <text x="363" y="190" text-anchor="middle" fill="#e5e7eb" font-size="13">Dashboard · exports</text>
-    <text x="363" y="230" text-anchor="middle" fill="#22d3ee" font-size="12" font-weight="700">checkout today</text>
     <!-- Diagnostic $499 - HIGHLIGHT -->
     <rect x="488" y="58" width="220" height="210" rx="16" fill="#0d1b14" stroke="#4ade80" stroke-width="2.5"/>
     <text x="598" y="95" text-anchor="middle" fill="#4ade80" font-size="12" font-weight="700">ONE WORKFLOW · PAY TODAY</text>
