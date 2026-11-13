@@ -1254,6 +1254,101 @@ function resolveAcquisitionLeadKey(entry = {}) {
   );
 }
 
+const EMAIL_ACCOUNT_FIXTURE_DOMAINS = new Set([
+  'example.com',
+  'example.org',
+  'example.net',
+  'test.com',
+  'acmedev.io',
+  'mailinator.com',
+  'invalid',
+  'localhost',
+]);
+
+function ownerEmailSet() {
+  return new Set([
+    ...getOwnerEmails(),
+    'iganapolsky@gmail.com',
+    'igor.ganapolsky@gmail.com',
+    'igor@igorganapolsky.com',
+    'igor@thumbgate.ai',
+  ].map((entry) => String(entry || '').trim().toLowerCase()).filter(Boolean));
+}
+
+function isFixtureEmailAccount(email) {
+  const at = email.lastIndexOf('@');
+  const local = email.slice(0, at);
+  const domain = email.slice(at + 1);
+  if (EMAIL_ACCOUNT_FIXTURE_DOMAINS.has(domain) || domain.endsWith('.test') || domain.endsWith('.local') || domain.endsWith('.example.com')) {
+    return true;
+  }
+  return /^(?:test|testing|qa|bot|agent|demo|admin|noreply|no-reply)(?:[+._-]|$)/i.test(local);
+}
+
+function readJsonObject(filePath) {
+  try {
+    if (!filePath || !fs.existsSync(filePath)) return null;
+    const parsed = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+    return parsed && typeof parsed === 'object' ? parsed : null;
+  } catch {
+    return null;
+  }
+}
+
+function accountStampInWindow(stamp, analyticsWindow) {
+  if (!stamp) return true;
+  const iso = Number.isFinite(Number(stamp)) ? new Date(Number(stamp)).toISOString() : stamp;
+  return eventOccursInWindow(iso, analyticsWindow);
+}
+
+function collectEmailAccountSignups(analyticsWindow) {
+  const { FEEDBACK_DIR } = getFeedbackPaths();
+  const owners = ownerEmailSet();
+  const emails = new Set();
+  let rawRecords = 0;
+
+  function consider(rawEmail, stamp) {
+    const email = normalizeEmail(rawEmail);
+    if (!email) return;
+    rawRecords += 1;
+    if (!accountStampInWindow(stamp, analyticsWindow)) return;
+    if (owners.has(email) || email.endsWith('@igorganapolsky.com') || email.endsWith('@thumbgate.ai') || isFixtureEmailAccount(email)) return;
+    emails.add(email);
+  }
+
+  for (const row of loadNewsletterSubscribers()) {
+    consider(row && row.email, row && row.subscribedAt);
+  }
+  for (const row of loadJsonlRecords(CONFIG.TRIAL_EMAIL_LEDGER_PATH, resolveLegacyBillingPath('trial-emails.jsonl'))) {
+    if (row && row.status && row.status !== 'sent' && row.status !== 'already_sent') continue;
+    consider(row && (row.customerEmail || row.email), row && row.timestamp);
+  }
+  const authSessions = readJsonObject(path.join(FEEDBACK_DIR, 'auth-sessions.json')) || {};
+  for (const entry of Object.values(authSessions)) {
+    if (!entry || typeof entry !== 'object') continue;
+    if (entry.subjectType === 'admin' || entry.subjectType === 'operator' || entry.ssoProvider === 'admin' || entry.ssoProvider === 'admin_created') continue;
+    consider(entry.ssoEmail || entry.email, entry.createdAt);
+  }
+  const legacySso = readJsonObject(path.join(FEEDBACK_DIR, 'cloud-sso-sessions.json'));
+  const legacyRows = Array.isArray(legacySso)
+    ? legacySso
+    : Object.values((legacySso && (legacySso.sessions || legacySso)) || {});
+  for (const entry of legacyRows) {
+    if (!entry || typeof entry !== 'object' || Array.isArray(entry)) continue;
+    if (entry.provider === 'admin' || entry.provider === 'admin_created' || entry.subjectType === 'admin') continue;
+    consider(entry.email || entry.ssoEmail, entry.createdAt);
+  }
+  const keys = loadKeyStore();
+  for (const meta of Object.values((keys && keys.keys) || {})) {
+    consider(meta && meta.customerEmail, meta && meta.createdAt);
+  }
+
+  return {
+    emailSignups: emails.size,
+    emailRecords: rawRecords,
+  };
+}
+
 function buildProviderEventFallbackKey(entry = {}, metadata = {}, attribution = {}) {
   const provider = normalizeText(metadata.provider || entry.provider || attribution.source || entry.source) || 'unknown';
   const customerId = normalizeText(metadata.customerId || entry.customerId);
@@ -2201,6 +2296,7 @@ function getBusinessAnalytics(options = {}) {
     _filteredFunnel: filteredFunnel,
   });
   const acquisitionEvents = events.filter((entry) => entry && entry.stage === 'acquisition');
+  const emailAccountSignups = collectEmailAccountSignups(analyticsWindow);
   const paidEvents = events.filter((entry) => entry && entry.stage === 'paid');
   const paidOrders = revenueEvents.filter((entry) => entry && entry.status === 'paid');
   const firstPaid = paidEvents[0] || null;
@@ -2600,6 +2696,10 @@ function getBusinessAnalytics(options = {}) {
     signups: {
       total: acquisitionEvents.length,
       uniqueLeads: acquisitionLeadKeys.size,
+      checkoutSessionsCreated: acquisitionEvents.length,
+      emailSignups: emailAccountSignups.emailSignups,
+      emailRecords: emailAccountSignups.emailRecords,
+      metricKind: 'checkout_sessions_are_not_email_accounts',
       bySource: signupsBySource,
       byCampaign: signupsByCampaign,
       byCreator: signupsByCreator,

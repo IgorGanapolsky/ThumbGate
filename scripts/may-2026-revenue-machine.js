@@ -132,7 +132,9 @@ function buildRevenueMetrics(report) {
     bookedRevenueCents,
     checkoutToPaidRate,
     visitorToSprintLeadRate,
-    uniqueLeads: number(signups30.uniqueLeads),
+    uniqueLeads: number(signups30.emailSignups ?? signups30.uniqueLeads),
+    emailSignups: number(signups30.emailSignups ?? 0),
+    checkoutSessions: number(signups30.checkoutSessionsCreated ?? signups30.uniqueLeads),
     leakingSource,
     leakingCampaign,
   };
@@ -225,12 +227,13 @@ function buildCheckoutRecoveryAction({
   return null;
 }
 
-function buildOutboundAction({ uniqueLeads, bookedRevenueCents }) {
-  if (uniqueLeads >= 25 && bookedRevenueCents < 50000) {
+function buildOutboundAction({ emailSignups, uniqueLeads, bookedRevenueCents }) {
+  const reachable = Number.isFinite(Number(emailSignups)) ? Number(emailSignups) : Number(uniqueLeads || 0);
+  if (reachable >= 25 && bookedRevenueCents < 50000) {
     return humanBlockedAction(
       'blocked_on_outbound_authority',
       'Authorize compliant follow-up to captured buyer emails',
-      `${uniqueLeads} 30d signups exist, but booked revenue is ${centsToDollars(bookedRevenueCents)}. Follow-up needs explicit permission because it leaves the machine.`,
+      `${reachable} 30d email signups exist, but booked revenue is ${centsToDollars(bookedRevenueCents)}. Follow-up needs explicit permission because it leaves the machine.`,
       'Written approval to send ThumbGate sales follow-up, sender identity, postal footer, and daily send limit.',
       [
         'Generate segmented follow-up sequence',

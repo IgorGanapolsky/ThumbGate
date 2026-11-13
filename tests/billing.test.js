@@ -1464,6 +1464,43 @@ describe('billing.js — funnel ledger', () => {
     assert.equal(summary.trafficMetrics.newsletterSignups, 2);
   });
 
+  test('getBillingSummary counts email accounts separately from checkout sessions', () => {
+    const billing = requireFreshBilling('');
+    fs.mkdirSync(testFeedbackDir, { recursive: true });
+    writeNewsletterSubscribers([
+      {
+        email: 'buyer@client.dev',
+        subscribedAt: new Date().toISOString(),
+        source: 'site',
+      },
+    ]);
+    fs.writeFileSync(path.join(testFeedbackDir, 'auth-sessions.json'), JSON.stringify({
+      owner: {
+        subjectType: 'admin',
+        ssoEmail: 'iganapolsky@gmail.com',
+        createdAt: Date.now(),
+      },
+      real: {
+        subjectType: 'sso_free',
+        ssoProvider: 'google',
+        ssoEmail: 'founder@agency.dev',
+        createdAt: Date.now(),
+      },
+    }));
+    fs.writeFileSync(testFunnelLedgerPath, `${JSON.stringify({
+      timestamp: new Date().toISOString(),
+      stage: 'acquisition',
+      event: 'checkout_session_created',
+      evidence: 'cs_anon',
+    })}\n`);
+
+    const summary = billing.getBillingSummary();
+    assert.equal(summary.signups.checkoutSessionsCreated, 1);
+    assert.equal(summary.signups.uniqueLeads, 1);
+    assert.equal(summary.signups.emailSignups, 2);
+    assert.equal(summary.signups.metricKind, 'checkout_sessions_are_not_email_accounts');
+  });
+
   test('handleGithubWebhook records paid order with unknown amount when plan pricing is not configured', () => {
     const billing = require('../scripts/billing');
     billing.handleGithubWebhook({
