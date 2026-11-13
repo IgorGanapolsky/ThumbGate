@@ -108,7 +108,11 @@ function normalizeProjectName(name) {
 function isTranscriptShaped(input) {
   if (!input) return false;
   if (typeof input === 'string') {
-    const lower = input.toLowerCase();
+    const trimmed = input.trim().toLowerCase();
+    if (trimmed.startsWith('<pasted_content') || trimmed.startsWith('it ignored a prior instruction: <')) {
+      return true;
+    }
+    const lower = trimmed;
     for (const tag of TRANSCRIPT_XML_TAGS) {
       if (lower.includes(tag.toLowerCase())) return true;
     }

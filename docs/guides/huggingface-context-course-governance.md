@@ -69,7 +69,7 @@ The course covers hooks for "observing, blocking, and automating the agent lifec
 or warns on every tool call before execution.
 
 **Recommended**: For context-engineering students, add ThumbGate's `hook-thumbgate-cache-updater.js`
-and `hook-auto-capture.js` to automatically capture feedback from every blocked action,
+and the `hook-auto-capture` CLI subcommand (`scripts/hook-auto-capture.sh`) to automatically capture feedback from every blocked action,
 turning mistakes into prevention rules.
 
 ### Unit 6: Nano Harness → Proof Harness
@@ -86,7 +86,7 @@ layer. See `scripts/prove-hf-context.js` for a context-engineering-specific proo
 3. **Use `validate-synthesized-skills-against-rules`** when generating new skills
 4. **Add context-engineering subagent profiles** with read-only + no-egress constraints
 5. **Capture feedback** from every blocked action using `npx thumbgate capture`
-6. **Run the proof harness** (`npm run prove:hf-context`) to validate governance
+6. **Run the proof harness** (`npm run prove:hf-context-course-harness`) to validate governance
 
 ## Context-Quality Gates (from `config/gate-templates.json`)
 
