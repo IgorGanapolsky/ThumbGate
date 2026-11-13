@@ -64,8 +64,9 @@ describe('GET /evaluations route', () => {
     });
   }
 
-  it('still serves /numbers (the route this one was modeled on)', async () => {
-    const res = await fetch(`${base}/numbers`);
-    assert.equal(res.status, 200);
+  it('redirects /numbers to the live scorecard', async () => {
+    const res = await fetch(`${base}/numbers`, { redirect: 'manual' });
+    assert.equal(res.status, 301);
+    assert.equal(res.headers.get('location'), '/eval-scorecard');
   });
 });

@@ -120,8 +120,8 @@ test('landing page does not render empty revenue links', async () => {
   assert.doesNotMatch(html, /https:\/\/buy\.stripe\.com\/6oU00j8aw2iWdWh9uj3sI2K/);
   assert.match(html, /action="\/go\/diagnostic-pay" method="POST"/);
   assert.match(html, /Book the \$499 setup/);
-  assert.match(html, /\/go\/pro-direct/);
-  assert.match(html, /Start Pro — \$19\/mo/);
+  // Pro removed from public buying path
+  // Pro removed from public buying path
   assert.doesNotMatch(html, /\/go\/sprint|href="[^"]*workflow-sprint-intake/i);
   assert.match(html, /id="workflow-sprint-intake"[^>]*data-legacy-intake-alias/);
 });
@@ -135,9 +135,9 @@ test('landing page presents Pro self-serve and fixed-price managed offer clearly
   assert.match(html, /One configured local gate and its regression test/);
   assert.match(html, /Rollout and rollback proof within two business days/);
   assert.match(html, /one supported local workflow/i);
-  assert.match(html, /\$19/);
-  assert.match(html, /\$149/);
-  assert.match(html, /\/go\/pro-direct/);
+  assert.match(html, /\$499/);
+  assert.doesNotMatch(html, /\$19\/mo|\$149\/yr/);
+  // Pro removed from public buying path
   assert.doesNotMatch(html, /\$1,500|\$3,000|\$10,000|\$15,000/);
 });
 
