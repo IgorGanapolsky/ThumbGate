@@ -520,8 +520,9 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
     // 621 -> 641 (2026-10-15): operator framework landing, blog posts, policy packs, and continuity pages (+20).
     // 641 -> 650 (2026-11-05): HotData DB integration adapters, Google Universal Cart spend firewall, and scripts/verified-lessons.js (+9).
     // 650 -> 652 (2026-11-11): scripts/project-scope.js (required by the PreToolUse hook and lesson retrieval) and scripts/backfill-lesson-scopes.js (tags existing lessons with their repo) (+2).
-    manifest.fileCount <= 652,
-    `npm package should stay <= 652 files, got ${manifest.fileCount}`
+    // 652 -> 653 (2026-11-11): src/design-self-correction-engine.js (exported from src/index.js, CLI design-fix, and /v1/design/self-correct) (+1).
+    manifest.fileCount <= 653,
+    `npm package should stay <= 653 files, got ${manifest.fileCount}`
   );
   // Ceiling bumped from 2.75 MB → 2.85 MB (2026-04-16) to accommodate the
   // incremental review-delta demo content in public/dashboard.html landing
@@ -775,8 +776,9 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // Bumped 9.25 MB -> 9.35 MB (2026-10-15): Autotomy Dual-Lock doctor, skills, and docs. Local pack 9,293,036; CI slack.
   // Bumped 9.35 MB -> 9.40 MB (2026-10-15): HotData DB integration & Google Universal Cart firewall. Local pack 9,340,830; CI slack.
   // Bumped 9.40 MB -> 9.85 MB (2026-10-26): email-triage MCP server, Poolside/OpenUI/ICM/ARC-AGI-3 gates, and 4-tier checkout routes.
-  manifest.unpackedSize <= 9_850_000,
-  `npm package should stay <= 9.85 MB unpacked, got ${manifest.unpackedSize}`
+  // Bumped 9.85 MB -> 9.90 MB (2026-11-11): src/design-self-correction-engine.js AST layout self-correction engine + CLI/API wiring. Local pack 9,882,155; narrow CI slack.
+  manifest.unpackedSize <= 9_900_000,
+  `npm package should stay <= 9.90 MB unpacked, got ${manifest.unpackedSize}`
 );
 
   for (const file of requiredRuntimeFiles) {

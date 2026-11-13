@@ -11038,6 +11038,24 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
         return;
       }
 
+      if (req.method === 'POST' && pathname === '/v1/design/self-correct') {
+        const body = await parseJsonBody(req);
+        if (typeof body.sourceCode !== 'string' && !Array.isArray(body.visualFindings)) {
+          throw createHttpError(400, 'sourceCode (string) or visualFindings (array) is required');
+        }
+        const { runDesignSelfCorrectionPipeline } = require('../design-self-correction-engine');
+        const result = runDesignSelfCorrectionPipeline({
+          sourceCode: typeof body.sourceCode === 'string' ? body.sourceCode : '',
+          language: typeof body.language === 'string' ? body.language : undefined,
+          visualFindings: Array.isArray(body.visualFindings) ? body.visualFindings : [],
+          allowTailwind: body.allowTailwind !== false,
+          preferTailwind: body.preferTailwind === true,
+          defaultBgHex: typeof body.defaultBgHex === 'string' ? body.defaultBgHex : '#0f172a',
+          autoDetect: body.autoDetect !== false,
+        });
+        sendJson(res, 200, result);
+        return;
+      }
 
       // ----------------------------------------------------------------
       // Quality / ACO routes

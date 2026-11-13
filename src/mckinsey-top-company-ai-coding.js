@@ -13,6 +13,11 @@
  *   5. AIOps Token ROI & Business Impact Scoring (value-per-token gate before scaling)
  */
 
+const {
+  runDesignSelfCorrectionPipeline,
+  synthesizeIssueRemediation,
+} = require('./design-self-correction-engine');
+
 const MAX_KANBAN_CYCLE_HOURS = 48;
 const MIN_POD_SIZE = 2;
 const MAX_POD_SIZE = 4;
@@ -328,19 +333,70 @@ function evaluateSidewaysEnterpriseGuardrails({
   const minContrast = uiPalette.isLargeText ? WCAG_AA_LARGE_CONTRAST : WCAG_AA_NORMAL_CONTRAST;
   const contrastRatio = computeContrastRatio(fg, bg);
 
+  const visualIssuesForCorrection = [];
+
   if (contrastRatio === null || contrastRatio < minContrast) {
+    const contrastIssue = {
+      type: 'contrast_too_low',
+      selector: uiPalette.selector || '.tg-surface',
+      foregroundHex: fg,
+      backgroundHex: bg,
+      minContrast,
+      isLargeText: Boolean(uiPalette.isLargeText),
+    };
+    visualIssuesForCorrection.push(contrastIssue);
+    const contrastRemediation = synthesizeIssueRemediation(contrastIssue, {
+      source: String(uiPalette.layoutSource || ''),
+      allowTailwind: uiPalette.allowTailwind !== false,
+      defaultBgHex: bg,
+    });
     findings.push({
       code: 'accessibility_contrast_violation',
       message: `UI contrast ratio (${contrastRatio ?? 'invalid'}) between ${fg} and ${bg} is below WCAG AA minimum (${minContrast}:1).`,
+      remediation: {
+        cssOverrides: contrastRemediation.cssOverrides,
+        tailwindAdjustments: contrastRemediation.tailwindAdjustments,
+        inlineCodeEdit: contrastRemediation.inlineCodeEdit,
+        resolvedMetrics: contrastRemediation.resolvedMetrics,
+      },
     });
   }
 
   if (uiPalette.reliesOnRedGreenOnly === true && uiPalette.hasNonColorShapeOrLabel !== true) {
+    const cbIssue = {
+      type: 'colorblind_unsafe_status',
+      selector: uiPalette.statusSelector || uiPalette.selector || '.tg-status',
+    };
+    visualIssuesForCorrection.push(cbIssue);
+    const cbRemediation = synthesizeIssueRemediation(cbIssue, {
+      source: String(uiPalette.layoutSource || ''),
+      allowTailwind: uiPalette.allowTailwind !== false,
+      defaultBgHex: bg,
+    });
     findings.push({
       code: 'colorblind_accessibility_violation',
       message: 'Colorblind accessibility guardrail: status indicators cannot rely on red/green hue alone without an icon/text label.',
+      remediation: {
+        cssOverrides: cbRemediation.cssOverrides,
+        tailwindAdjustments: cbRemediation.tailwindAdjustments,
+        inlineCodeEdit: cbRemediation.inlineCodeEdit,
+        resolvedMetrics: cbRemediation.resolvedMetrics,
+      },
     });
   }
+
+  const extraVisualFindings = Array.isArray(uiPalette.visualFindings) ? uiPalette.visualFindings : [];
+  const designSelfCorrection =
+    uiPalette.layoutSource || visualIssuesForCorrection.length > 0 || extraVisualFindings.length > 0
+      ? runDesignSelfCorrectionPipeline({
+          sourceCode: String(uiPalette.layoutSource || ''),
+          language: uiPalette.language,
+          visualFindings: [...visualIssuesForCorrection, ...extraVisualFindings],
+          allowTailwind: uiPalette.allowTailwind !== false,
+          preferTailwind: uiPalette.preferTailwind === true,
+          defaultBgHex: bg,
+        })
+      : null;
 
   const snippet = String(codeSnippet || '');
   if (toAirgapRegexes(airgapPatterns).some((re) => re.test(snippet))) {
@@ -361,6 +417,7 @@ function evaluateSidewaysEnterpriseGuardrails({
     ok: findings.length === 0,
     contrastRatio,
     findings,
+    designSelfCorrection,
   };
 }
 

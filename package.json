@@ -1173,6 +1173,7 @@
     "test:self-protect-enforcement": "node --test tests/self-protect-enforcement.test.js",
     "test:pack-runtime-integrity": "node --test tests/pack-runtime-integrity.test.js",
     "test:entitlement": "node --test tests/entitlement.test.js",
+    "test:design-self-correction": "node --test tests/design-self-correction-engine.test.js",
     "test:xss-checkout-escape": "node --test tests/xss-checkout-escape.test.js",
     "observability:setup": "node scripts/observability-setup.js",
     "observability:doctor": "node scripts/revenue-observability-doctor.js",

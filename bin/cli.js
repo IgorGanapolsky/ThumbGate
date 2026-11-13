@@ -5643,6 +5643,42 @@ switch (COMMAND) {
     }
     break;
   }
+  case 'design-fix': {
+    const args = process.argv.slice(3);
+    const writeInPlace = args.includes('--write');
+    const asJson = args.includes('--json');
+    const allowTailwind = !args.includes('--no-tailwind');
+    const preferTailwind = args.includes('--tailwind');
+    const targetArg = args.find((a) => !a.startsWith('-'));
+    if (!targetArg) {
+      console.error('Usage: thumbgate design-fix <file.html|file.jsx|file.css> [--write] [--json] [--tailwind|--no-tailwind]');
+      process.exit(1);
+    }
+    const targetPath = path.resolve(CWD, targetArg);
+    if (!fs.existsSync(targetPath)) {
+      console.error(`File not found: ${targetPath}`);
+      process.exit(1);
+    }
+    const { runDesignSelfCorrectionPipeline } = require(path.join(PKG_ROOT, 'src', 'design-self-correction-engine'));
+    const report = runDesignSelfCorrectionPipeline({
+      filePath: targetPath,
+      allowTailwind,
+      preferTailwind,
+      applyInPlace: writeInPlace,
+    });
+    if (asJson) {
+      console.log(JSON.stringify(report, null, 2));
+    } else {
+      console.log(`Design Self-Correction (${report.mode}): ${report.issueCount} issue(s) analyzed`);
+      for (const rem of report.remediations) {
+        console.log(`  - [${rem.issueType}] ${rem.selector}: ${rem.summary}`);
+      }
+      if (writeInPlace && report.appliedInPlace) {
+        console.log(`Applied inline AST edits to ${targetPath}`);
+      }
+    }
+    break;
+  }
   default:
     if (COMMAND) {
       console.error(`Unknown command: ${COMMAND}`);

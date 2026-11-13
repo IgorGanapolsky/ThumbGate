@@ -18,6 +18,12 @@ const {
   DEFAULT_READ_ONLY_TOOLS,
   DEFAULT_MUTATING_TOOLS,
 } = require('./integrations/ideabrowser-connector');
+const {
+  runDesignSelfCorrectionPipeline,
+  parseLayoutAst,
+  solveAccessibleForegroundHex,
+  synthesizeIssueRemediation,
+} = require('./design-self-correction-engine');
 
 // The package entry point is the production surface for `thumbgate`.
 // The hosted-Hermes identity/lifecycle/approval gates are exported here so
@@ -39,4 +45,8 @@ module.exports = Object.assign({}, feedbackLoop, {
   ToolTier,
   DEFAULT_READ_ONLY_TOOLS,
   DEFAULT_MUTATING_TOOLS,
+  runDesignSelfCorrectionPipeline,
+  parseLayoutAst,
+  solveAccessibleForegroundHex,
+  synthesizeIssueRemediation,
 });
