@@ -96,7 +96,11 @@ nav.app-top-nav .nav-github:hover{color:#f5f7fb;border-color:rgba(56,215,255,0.4
 .tag:hover{background:rgba(34,211,238,0.25);transform:translateY(-1px)}
 mark{background:#fbbf24;color:#000;font-weight:700;border-radius:2px;padding:0 3px}
 .gates-section{margin-bottom:32px}
-.gate-card{background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:16px 20px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center}
+.gate-card{background:var(--bg-card);border:1px solid var(--border);border-radius:10px;margin-bottom:8px;overflow:hidden}
+.gate-toggle{display:flex;justify-content:space-between;align-items:center;gap:12px;width:100%;padding:16px 20px;background:transparent;border:0;color:var(--text);text-align:left;cursor:pointer;font:inherit}
+.gate-toggle:focus-visible,.flow-details [role=button]:focus-visible{outline:2px solid var(--cyan);outline-offset:-3px}
+.gate-detail{padding:0 20px 16px;line-height:1.6;font-size:13px;color:var(--text-muted)}
+.gate-detail p{margin:8px 0}.gate-pattern{overflow-wrap:anywhere;white-space:pre-wrap}
 .gate-name{font-size:14px;font-weight:600}
 .gate-pattern{font-size:12px;color:var(--text-muted);font-family:var(--mono);margin-top:4px}
 .gate-action{font-size:12px;font-weight:600;padding:2px 8px;border-radius:4px}
@@ -344,9 +348,9 @@ h2{font-size:20px;font-weight:700;margin-bottom:16px;letter-spacing:-.02em}
   <div class="panel" id="agentRegisterCard" style="margin-bottom:20px;">
     <div style="display:flex;justify-content:space-between;gap:12px;align-items:baseline;flex-wrap:wrap;margin-bottom:8px;">
       <h3 style="margin:0;">🗂️ Agent Register (30-Day System of Record)</h3>
-      <span id="agentRegisterSummary" style="font-size:12px;color:var(--text-muted);font-family:var(--mono);">0 agents · 0 unregistered</span>
+      <span id="agentRegisterSummary" style="font-size:12px;color:var(--text-muted);font-family:var(--mono);">Activity not loaded</span>
     </div>
-    <div id="agentRegisterList" class="inventory-tools"><div class="empty" style="padding:12px 0;">No tool calls recorded in the last 30 days.</div></div>
+    <div id="agentRegisterList" class="inventory-tools"><div class="empty" style="padding:12px 0;">Agent activity has not loaded yet.</div></div>
   </div>
 
   
@@ -408,19 +412,21 @@ h2{font-size:20px;font-weight:700;margin-bottom:16px;letter-spacing:-.02em}
   .ob-btn code { font-family:var(--mono); font-size:11px; color:var(--text-muted); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 </style>
             <defs><marker id="arrow-head" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M 0 1 L 10 5 L 0 9 z" fill="#8b8b96"/></marker></defs>
-            <g><rect x="10" y="80" width="130" height="60" class="flow-node"/><text x="75" y="105" text-anchor="middle" class="flow-text">1. Tool Call</text><text x="75" y="125" text-anchor="middle" class="flow-subtext">Agent requests action</text></g>
+            <g role="button" tabindex="0" aria-label="Tool Call" aria-expanded="false" aria-controls="flowExplanation" data-flow-step="tool"><rect x="10" y="80" width="130" height="60" class="flow-node"/><text x="75" y="105" text-anchor="middle" class="flow-text">1. Tool Call</text><text x="75" y="125" text-anchor="middle" class="flow-subtext">Agent requests action</text></g>
             <path d="M 140 110 L 190 110" class="flow-arrow"/>
-            <g><rect x="200" y="80" width="140" height="60" class="flow-node"/><text x="270" y="105" text-anchor="middle" class="flow-text">2. PreToolUse Hook</text><text x="270" y="125" text-anchor="middle" class="flow-subtext">Intercepts tool execution</text></g>
+            <g role="button" tabindex="0" aria-label="PreToolUse Hook" aria-expanded="false" aria-controls="flowExplanation" data-flow-step="hook"><rect x="200" y="80" width="140" height="60" class="flow-node"/><text x="270" y="105" text-anchor="middle" class="flow-text">2. PreToolUse Hook</text><text x="270" y="125" text-anchor="middle" class="flow-subtext">Intercepts tool execution</text></g>
             <path d="M 340 110 L 390 110" class="flow-arrow"/>
-            <g><rect x="400" y="80" width="150" height="60" class="flow-node"/><text x="475" y="105" text-anchor="middle" class="flow-text">3. Gate Evaluation</text><text x="475" y="125" text-anchor="middle" class="flow-subtext">Validates matching rules</text></g>
+            <g role="button" tabindex="0" aria-label="Gate Evaluation" aria-expanded="false" aria-controls="flowExplanation" data-flow-step="gates"><rect x="400" y="80" width="150" height="60" class="flow-node"/><text x="475" y="105" text-anchor="middle" class="flow-text">3. Gate Evaluation</text><text x="475" y="125" text-anchor="middle" class="flow-subtext">Validates matching rules</text></g>
             <path d="M 550 100 L 640 55" class="flow-arrow"/><path d="M 550 120 L 640 165" class="flow-arrow"/>
-            <g><rect x="650" y="20" width="130" height="60" class="flow-node" style="stroke:#ef4444"/><text x="715" y="45" text-anchor="middle" class="flow-text" style="fill:#ef4444">❌ BLOCK</text><text x="715" y="65" text-anchor="middle" class="flow-subtext">Matches rule -> aborted</text></g>
-            <g><rect x="650" y="140" width="130" height="60" class="flow-node" style="stroke:#22c55e"/><text x="715" y="165" text-anchor="middle" class="flow-text" style="fill:#22c55e">✅ ALLOW</text><text x="715" y="185" text-anchor="middle" class="flow-subtext">Runs safely & logs</text></g>
+            <g role="button" tabindex="0" aria-label="BLOCK" aria-expanded="false" aria-controls="flowExplanation" data-flow-step="block"><rect x="650" y="20" width="130" height="60" class="flow-node" style="stroke:#ef4444"/><text x="715" y="45" text-anchor="middle" class="flow-text" style="fill:#ef4444">❌ BLOCK</text><text x="715" y="65" text-anchor="middle" class="flow-subtext">Matches rule -> aborted</text></g>
+            <g role="button" tabindex="0" aria-label="ALLOW" aria-expanded="false" aria-controls="flowExplanation" data-flow-step="allow"><rect x="650" y="140" width="130" height="60" class="flow-node" style="stroke:#22c55e"/><text x="715" y="165" text-anchor="middle" class="flow-text" style="fill:#22c55e">✅ ALLOW</text><text x="715" y="185" text-anchor="middle" class="flow-subtext">Runs safely & logs</text></g>
           </svg>
         </div>
+        <div id="flowExplanation" class="template-summary" role="region" aria-live="polite" hidden></div>
+        <details id="gateBlockedEntries" hidden><summary>Recorded blocked entries (latest 20 in 30 days)</summary><div id="gateBlockedEntriesList"></div></details>
       </details>
 
-      <div id="gatesList"><div class="loading">Loading gates...</div></div>
+      <div id="gatesList" tabindex="-1"><div class="loading">Loading gates...</div></div>
     </div>
   </div>
 
@@ -524,6 +530,7 @@ h2{font-size:20px;font-weight:700;margin-bottom:16px;letter-spacing:-.02em}
   <div class="tab-content" id="tab-ai-inventory">
     <div class="templates-section">
       <h2>AI Component Inventory</h2>
+      <p class="template-summary">This API scans the dashboard server’s working directory. On the hosted dashboard it describes the server checkout, not projects on your machine. Run the CLI export below from your project for its inventory.</p>
       <p class="template-summary">Enterprise evidence for AI/ML usage: provider SDKs, agent frameworks, vector databases, Vertex/Gemini/Dialogflow CX references, and local model artifacts. Export this as ML-BOM proof before claiming an AI system is production-ready.</p>
       <div class="inventory-grid" id="aiInventorySummaryCards"><div class="loading">Scanning AI inventory...</div></div>
       <div class="team-columns" style="margin-top:16px;">
@@ -557,6 +564,7 @@ h2{font-size:20px;font-weight:700;margin-bottom:16px;letter-spacing:-.02em}
   <div class="tab-content" id="tab-settings">
     <div class="templates-section">
       <h2>Policy Origins</h2>
+      <p class="template-summary">These are the dashboard server’s resolved settings. To inspect your project’s local setup, run <code>npx thumbgate doctor</code> in that project.</p>
       <div class="template-summary" id="settingsSummary">Loading settings hierarchy...</div>
       <div class="settings-grid" id="settingsSummaryCards"><div class="loading">Loading settings summary...</div></div>
       <div class="team-columns">
@@ -1322,7 +1330,7 @@ async function search() {
     const data = await res.json();
     const results = data.results || data.memories || [];
     if (!results.length) {
-      container.innerHTML = '<div class="empty">No results found</div>';
+      container.innerHTML = '<div class="empty">No results found in this dashboard. Local memories are not automatically uploaded. Search locally with <code>npx thumbgate search-lessons --query="Your search terms"</code>, or open your local data with <code>npx thumbgate dashboard --open</code>.</div>';
       return;
     }
     container.innerHTML = results.map(renderResult).join('');
@@ -1561,7 +1569,7 @@ async function loadGates() {
   } catch (e) {
     var gatesEl = document.getElementById('statGates');
     if (gatesEl && (gatesEl.textContent === '—' || gatesEl.textContent === '' || gatesEl.textContent == null)) {
-      gatesEl.textContent = '0';
+      gatesEl.textContent = 'Unavailable';
     }
     setMessageState(document.getElementById('gatesList'), 'empty', e && e.message ? e.message : 'Failed to load gates');
     setMessageState(document.getElementById('teamSummaryCards'), 'empty', e && e.message ? e.message : 'Failed to load team metrics');
@@ -1735,6 +1743,51 @@ async function markReviewed() {
   }
 }
 
+function renderGateCards(gates) {
+  document.getElementById('gatesList').innerHTML = gates.length ? gates.map(function(g, index) {
+    var action = g.action || 'block';
+    var source = [g.source, g.sourceLessonId, g.sourceFeedbackId].filter(Boolean).join(' · ');
+    var date = g.createdAt || g.promotedAt;
+    return '<div class="gate-card"><button type="button" class="gate-toggle" aria-expanded="false" aria-controls="gate-detail-' + index + '"><span class="gate-name">' + escHtml(g.name || g.id || 'Gate') + '</span><span class="gate-action ' + escAttr(action) + '">' + escHtml(action.toUpperCase()) + '</span></button>' +
+      '<div class="gate-detail" id="gate-detail-' + index + '" hidden><p><strong>What it does:</strong> ' + escHtml(g.message || 'This rule applies the ' + action + ' action to matching tool calls. No plain-English description was recorded.') + '</p>' +
+      '<p>Source lesson/feedback: ' + escHtml(source || 'not recorded') + '<br>Date: ' + escHtml(date || 'not recorded') + '</p>' +
+      '<p>Times fired. Today: not tracked yet · 30 days: not tracked yet. Lifetime totals are not period counts.</p>' +
+      '<p>To edit or disable this rule, edit or remove its entry in the loaded configuration’s <code>gates</code> array. The primary file is <code>THUMBGATE_GATES_CONFIG</code>, or <code>config/gates/default.json</code> by default. Auto-promoted rules are in <code>auto-promoted-gates.json</code> beside the feedback log; harness rules use <code>THUMBGATE_HARNESS_CONFIG</code>. There is no dashboard disable switch.</p>' +
+      '<div class="gate-pattern"><strong>Pattern:</strong> ' + escHtml(g.pattern || g.match || 'not recorded') + '</div></div></div>';
+  }).join('') : '<div class="empty">No active checks. Run <code>npx thumbgate doctor</code> in your project to check the hook and gate configuration.</div>';
+  document.querySelectorAll('.gate-toggle').forEach(function(button) {
+    button.addEventListener('click', function() {
+      var expanded = button.getAttribute('aria-expanded') !== 'true';
+      button.setAttribute('aria-expanded', String(expanded));
+      document.getElementById(button.getAttribute('aria-controls')).hidden = !expanded;
+    });
+  });
+}
+
+function showFlowStep(button) {
+  var data = dashboardSnapshot || {};
+  var stats = isDemo ? {} : (data.gateFlowStats || {});
+  var count = function(value) { return stats.incomplete ? 'not available (audit history is incomplete)' : stats.tracked && Number.isFinite(value) ? String(value) : 'not tracked yet'; };
+  var panels = {
+    tool: 'The agent asks to run a tool, such as reading a file or executing a shell command, and supplies its arguments. ThumbGate checks that request before the tool runs. This diagram does not display a live pending request.',
+    hook: 'ThumbGate’s PreToolUse hook intercepts the requested action and invokes the gate check before execution. Run <code>npx thumbgate doctor</code> in the project to see which hooks are installed and whether they are wired correctly.',
+    gates: 'The gate check compares the request with the configured rules. Active gates: ' + escHtml(String(resolveActiveGateCount(data) ?? 'not loaded')) + '. <a href="#gatesList" onclick="document.getElementById(\'gatesList\').focus();return false;">Inspect the Active Gates list</a> for each rule’s explanation and pattern.',
+    block: 'A blocking rule stops the requested action before it runs. Recorded blocks today: ' + count(stats.blockedToday) + '. Recorded blocks over 30 days: ' + count(stats.blocked30Days) + '. <a href="#gateBlockedEntries" onclick="document.getElementById(\'gateBlockedEntries\').open=true;document.getElementById(\'gateBlockedEntries\').scrollIntoView();return false;">View recorded blocked entries</a>. Counts describe this dashboard’s audit log.',
+    allow: 'An allowed request proceeds to the tool. Recorded allows over 30 days: ' + count(stats.allowed30Days) + '. A missing audit log is not evidence that no tools ran.'
+  };
+  document.querySelectorAll('[data-flow-step]').forEach(function(step) { step.setAttribute('aria-expanded', String(step === button)); });
+  var panel = document.getElementById('flowExplanation');
+  panel.hidden = false;
+  panel.innerHTML = panels[button.dataset.flowStep];
+  var entries = stats.blockedEntries || [];
+  document.getElementById('gateBlockedEntries').hidden = button.dataset.flowStep !== 'block';
+  document.getElementById('gateBlockedEntriesList').innerHTML = entries.length ? entries.map(function(entry) { return '<p>' + escHtml(entry.timestamp) + ' · ' + escHtml(entry.gateId || 'unattributed gate') + ' · ' + escHtml(entry.toolName || 'unknown tool') + '</p>'; }).join('') : '<p>' + (stats.incomplete ? 'Audit history is incomplete; complete period counts and entries are unavailable.' : stats.tracked ? 'No blocked entries recorded in this period.' : 'Blocked entries are not tracked yet in this dashboard.') + '</p>';
+}
+document.querySelectorAll('[data-flow-step]').forEach(function(button) {
+  button.addEventListener('click', function() { showFlowStep(button); });
+  button.addEventListener('keydown', function(event) { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); showFlowStep(button); } });
+});
+
 function renderDashboardData(data) {
   var proLimitNotice = document.getElementById('proLimitNotice');
   if (proLimitNotice) {
@@ -1768,16 +1821,7 @@ function renderDashboardData(data) {
   if (overview.lessonStorage) {
     renderLessonStorageFooter(overview.lessonStorage);
   }
-  if (!gates.length) {
-    document.getElementById('gatesList').innerHTML = '<div class="empty">No active checks</div>';
-  } else {
-    document.getElementById('gatesList').innerHTML = gates.map(function(g) {
-      const action = g.action || 'block';
-      return '<div class="gate-card"><div><div class="gate-name">' + escHtml(g.name || g.id || 'Gate') + '</div>' +
-        '<div class="gate-pattern">' + escHtml(g.pattern || g.match || '') + '</div></div>' +
-        '<span class="gate-action ' + action + '">' + action.toUpperCase() + '</span></div>';
-    }).join('');
-  }
+  renderGateCards(gates);
 
   renderTeam(data.team || {}, data.analytics || {});
   renderAgentInventory(data.agentSurfaceInventory || {});
@@ -1830,7 +1874,7 @@ function renderAiInventory(inventory) {
   ].join('');
 
   if (!components.length) {
-    componentsEl.innerHTML = '<div class="empty">No AI/ML components detected in this project root.</div>';
+    componentsEl.innerHTML = '<div class="empty">No AI/ML components detected in the server’s working directory. Scan your project locally with <code>npx thumbgate ai-inventory --format=cyclonedx --output=.thumbgate/ai-mlbom.json</code>.</div>';
   } else {
     componentsEl.innerHTML = components.map(function(item) {
       var evidence = Array.isArray(item.evidence) ? item.evidence.slice(0, 4) : [];
@@ -1901,7 +1945,7 @@ function renderGeneratedView(spec) {
   var components = spec && Array.isArray(spec.components) ? spec.components : [];
   document.getElementById('generatedViewCanvas').innerHTML = components.length
     ? components.map(renderGeneratedComponent).join('')
-    : '<div class="empty">No generated view available.</div>';
+    : '<div class="empty">No generated view available in this dashboard. Open your local data with <code>npx thumbgate dashboard --open</code>. Views need recorded feedback and agent activity; local files are not automatically uploaded.</div>';
 }
 
 function buildDemoGeneratedViewSpec(viewName) {
@@ -2194,7 +2238,10 @@ function renderAgentRegister(reg) {
   unreg.forEach(function(r) { seenIds[r.kind + ':' + r.id] = true; });
   var pick = function(arr, n) { return (arr || []).filter(function(r) { return !seenIds[r.kind + ':' + r.id]; }).slice(0, n); };
   var rows = unreg.concat(pick(reg.agents, 4), pick(reg.mcpServers, 3), pick(reg.models, 3), pick(reg.hookSources, 3)).slice(0, 14);
-  if (!rows.length) { listEl.innerHTML = '<div class="empty" style="padding:12px 0;">No tool calls recorded in the last 30 days.</div>'; return; }
+  if (!rows.length) {
+    listEl.innerHTML = '<div class="empty" style="padding:12px 0;">No tool calls recorded in this dashboard in the last 30 days. Local hook events are not automatically uploaded when you sign in here. Inspect your project’s local activity with <code>npx thumbgate inventory --days=30 --json</code>, and view it with <code>npx thumbgate dashboard --open</code>. Run <code>npx thumbgate doctor</code> to check hook wiring. There is no supported hosted hook-event upload command yet.</div>';
+    return;
+  }
   listEl.innerHTML = rows.map(function(row) {
     var isUnreg = row.status === 'unregistered agent' || row.registered === false;
     var badgeStyle = isUnreg ? 'background:rgba(248,113,113,0.16);color:#fca5a5;border:1px solid rgba(248,113,113,0.35);' : '';
@@ -2526,11 +2573,8 @@ function loadDemo() {
     { name: 'restrict-model-endpoint', pattern: 'Allow only enterprise-approved model endpoints (ABA Opinion 512)', action: 'block' },
     { name: 'require-attorney-review', pattern: 'Route case assignment and scheduling through attorney review', action: 'warn' }
   ];
-  document.getElementById('gatesList').innerHTML = demoGates.map(function(g) {
-    return '<div class="gate-card"><div><div class="gate-name">' + escHtml(g.name) + '</div>' +
-      '<div class="gate-pattern">' + escHtml(g.pattern) + '</div></div>' +
-      '<span class="gate-action ' + g.action + '">' + g.action.toUpperCase() + '</span></div>';
-  }).join('');
+  dashboardSnapshot = { gates: demoGates };
+  renderGateCards(demoGates);
   renderTeam({
     totalAgents: 4,
     activeAgents: 3,
@@ -2764,6 +2808,11 @@ async function exportDpo() {
     if (!res.ok) throw new Error(data.detail || data.error || 'Export failed');
     if (!Array.isArray(data.records)) throw new Error('Export response did not include DPO pairs');
     const records = data.records;
+    if (!records.length) {
+      status.textContent = 'No preference pairs recorded in this dashboard. Capture real feedback locally with npx thumbgate feedback --feedback=up --context="Describe what worked", then use npx thumbgate dashboard --open to export local pairs. Local feedback is not automatically uploaded.';
+      status.style.color = 'var(--text-muted)';
+      return;
+    }
     const blob = new Blob([JSON.stringify(records, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -2860,7 +2909,7 @@ function renderPipeline(pipeline) {
   var rates = pipeline.rates || {};
   var container = document.getElementById('pipelineFlow');
   if (!stages.length) {
-    container.innerHTML = '<div class="empty">No pipeline data yet. Give some thumbs-up/down feedback to get started.</div>';
+    container.innerHTML = '<div class="empty">No pipeline data recorded in this dashboard. Capture real project feedback with <code>npx thumbgate feedback --feedback=up --context="Describe what worked"</code>, then view local lessons with <code>npx thumbgate dashboard --open</code>. Local feedback is not automatically uploaded.</div>';
     return;
   }
   var stageLinks = {
