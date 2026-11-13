@@ -339,6 +339,79 @@ function release(repoRoot, options = {}) {
   };
 }
 
+/**
+ * Verifies that a human approval granted out-of-band (e.g. in a browser review card)
+ * matches the current active lease generation at the execution boundary.
+ *
+ * Implements Tim Urista's insight (Medium, Oct 2026):
+ * "Lease ownership needs an execution check when the reviewer's decision crosses
+ * a disconnect. Bind each approval to the ownership generation and reject an
+ * older generation at the execution boundary."
+ *
+ * @param {string} repoRoot
+ * @param {object} approvalPayload
+ * @param {number} approvalPayload.generationToken - the fencingToken when approval was requested
+ * @param {string} [approvalPayload.workerSessionId] - the agent identity holding lease at approval time
+ * @param {string} [approvalPayload.commandHash] - sha256 or digest of approved command
+ * @returns {{ allowed: boolean, code?: string, reason?: string, currentGeneration?: number }}
+ */
+function verifyApprovalExecutionBoundary(repoRoot, approvalPayload = {}) {
+  const currentLease = readLease(repoRoot);
+  if (!currentLease || currentLease.invalid) {
+    return {
+      allowed: false,
+      code: 'NO_ACTIVE_LEASE',
+      reason: 'Execution check failed: no active lease found for this checkout.',
+    };
+  }
+
+  if (!isLeaseLive(currentLease)) {
+    return {
+      allowed: false,
+      code: 'EXPIRED_LEASE',
+      reason: 'Execution check failed: lease has expired or owning process died.',
+      currentGeneration: currentLease.fencingToken || 1,
+    };
+  }
+
+  const approvalGen = Number(approvalPayload.generationToken || approvalPayload.fencingToken);
+  const currentGen = Number(currentLease.fencingToken || 1);
+
+  if (!Number.isFinite(approvalGen) || approvalGen < 1) {
+    return {
+      allowed: false,
+      code: 'MISSING_GENERATION_TOKEN',
+      reason: 'Execution check failed: approval payload lacks a valid fencing generation token.',
+      currentGeneration: currentGen,
+    };
+  }
+
+  if (approvalGen < currentGen) {
+    return {
+      allowed: false,
+      code: 'STALE_APPROVAL_GENERATION',
+      reason: `Stale approval rejected: approval generation ${approvalGen} < active lease generation ${currentGen}. Worker lost lease during review disconnect; re-request approval under active generation.`,
+      currentGeneration: currentGen,
+      approvalGeneration: approvalGen,
+    };
+  }
+
+  if (approvalPayload.workerSessionId && currentLease.agent !== approvalPayload.workerSessionId) {
+    return {
+      allowed: false,
+      code: 'WORKER_MISMATCH',
+      reason: `Worker mismatch rejected: approval was granted to worker ${approvalPayload.workerSessionId}, but active lease holder is ${currentLease.agent}.`,
+      currentGeneration: currentGen,
+    };
+  }
+
+  return {
+    allowed: true,
+    code: 'APPROVAL_GENERATION_VALID',
+    currentGeneration: currentGen,
+  };
+}
+
 function guard(repoRoot, commandArgs, options = {}) {
   const leaseCheck = check(repoRoot);
   if (!leaseCheck.ok) {
@@ -452,6 +525,7 @@ module.exports = {
   release,
   removeLease,
   resolveLeasePid,
+  verifyApprovalExecutionBoundary,
   writeLease,
 };
 

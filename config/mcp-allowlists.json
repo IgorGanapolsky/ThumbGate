@@ -1,6 +1,17 @@
 {
   "version": 3,
   "profiles": {
+    "lean": [
+      "capture_feedback",
+      "gate_check",
+      "prevention_rules",
+      "recall",
+      "record_task_outcome",
+      "retrieve_lessons",
+      "satisfy_gate",
+      "search_lessons",
+      "verify_claim"
+    ],
     "default": [
       "append_feedback_context",
       "approve_protected_action",

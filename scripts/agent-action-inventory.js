@@ -732,7 +732,7 @@ function renderInventoryText(inv) {
   if (inv.sources.auditTrail !== SOURCE_STATUS.OK) {
     lines.push(`  not measured — audit trail is ${inv.sources.auditTrail}`);
   } else {
-    lines.push(`  allow ${inv.allowCount}   deny ${inv.denyCount}   warn ${inv.warnCount}   other ${inv.otherDecisionCount}`);
+    lines.push(`  allow ${inv.allowCount === 0 ? 'not recorded' : inv.allowCount}   deny ${inv.denyCount}   warn ${inv.warnCount}   other ${inv.otherDecisionCount}`);
     lines.push(`  approval-required ${inv.approvalRequiredCount} (also blocks; excluded from the false-deny denominator)`);
     lines.push(`  reversals (override / consumed admin override): ${inv.overrideCount}`);
     const corroborating = inv.gateEventDenies === null

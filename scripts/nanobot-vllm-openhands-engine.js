@@ -45,13 +45,6 @@ const STRIPE_DIRECT_LADDER = {
     billing: 'monthly',
     checkoutUrl: 'https://thumbgate.ai/go/team',
   },
-  diligence_100: {
-    sku: 'diligence_100',
-    label: '$100 Florida 5-Folio Pre-Bid Statutory Diligence Packet',
-    priceUsd: 100.0,
-    billing: 'one_time',
-    checkoutUrl: 'https://thumbgate.ai/go/florida-diligence-100',
-  },
   diagnostic_499: {
     sku: 'diagnostic_499',
     label: '$499 Enterprise Agentic CTO Diagnostic & Guardrail Audit',
@@ -469,14 +462,6 @@ function evaluateCollectiveiTelliRevenueLoop(options = {}) {
       trueOddsDeltaPct: 14.2,
       warmIntroSource: 'Collective[i] Connector Graph',
     },
-    {
-      organization: 'Florida Distressed Real Estate Desk',
-      dealType: 'New business',
-      offer: STRIPE_DIRECT_LADDER.diligence_100,
-      virtualDealRoomActive: true,
-      trueOddsDeltaPct: 22.0,
-      warmIntroSource: 'Collective[i] Connector Graph',
-    },
   ];
 
   const reachableWarmIntroContacts = acceptedConnectors.reduce(
@@ -732,11 +717,6 @@ function evaluateReflectionOpenWeightBusinessModel(options = {}) {
           offerSku: STRIPE_DIRECT_LADDER.team_79.sku,
         },
         {
-          domain: 'legal_statutory',
-          environment: 'Florida Chapter 197 Tax-Deed & Municipal Lien 5-Folio Verifier',
-          offerSku: STRIPE_DIRECT_LADDER.diligence_100.sku,
-        },
-        {
           domain: 'finance_finops',
           environment: 'Freebutter Walk-Away Economics Gate + $40 Expired-Cache Router',
           offerSku: STRIPE_DIRECT_LADDER.bundle_49.sku,
@@ -774,7 +754,6 @@ function evaluateReflectionOpenWeightBusinessModel(options = {}) {
       highVolumeWorkloadsUnlocked: [
         '24/7 Local Mistral Large 4 (Le Chonk) Defensive Vulnerability Red-Teaming',
         'Multi-Candidate pstack-arena Parallel Verification',
-        'Continuous Florida 5-Folio Statutory Parcel Sweeps',
       ],
     },
     feynmanMotivationAndTruthAudit: {
@@ -885,15 +864,13 @@ function evaluateProactiveMemoryAndSalesCoach(options = {}) {
     productValidation: {
       thumbgateNorthStarOneLiner:
         'Sub-5ms deterministic PreToolUse security diodes and Ed25519 signed execution receipts for enterprise CTOs running autonomous coding fleets.',
-      realEstateNorthStarOneLiner:
-        'Statutory Florida Chapter 197 5-Folio Pre-Bid Diligence Packets for institutional tax-deed auction buyers.',
       threeLineWeeklyCadence: {
         whatShipped:
           'vLLM v0.33.0rc3 + Inkling/Tinker + Collective[i] Stripe Virtual DealRoom 5d7ce225-6069-4c16-b42b-5d107b5f506f + 65/65 unit tests',
         theNumber:
           '7 verified @stripe.com buyer paths + 244 Jeremy Kang Connector contacts + 6 live Stripe direct SKUs',
         whatsNext:
-          'Convert Matthew Duffy (mduffy@stripe.com, 9 mutual connectors) on $499 CTO Diagnostic and close $100 5-Folio Pre-Bid Packet',
+          'Convert Matthew Duffy (mduffy@stripe.com, 9 mutual connectors) on the $499 CTO Diagnostic',
       },
       waitlistBeforeHeavyBuild: true,
     },
@@ -1115,7 +1092,7 @@ function evaluateWestMonroeSpeedAndSlownessTax(options = {}) {
       },
       {
         shift: '3. Compress Lead-Time-to-Value in Revenue & Diligence',
-        implementation: 'Bypass checkout interstitials (/go/pro-direct) and compress 14-hour Florida 5-Folio statutory title/lien diligence into <90 seconds ($100 packet).',
+        implementation: 'Bypass checkout interstitials (/go/pro-direct) so a ThumbGate Pro start is one step.',
       },
       {
         shift: '4. Commercialize the Slowness Tax Audit',
@@ -1278,7 +1255,7 @@ function evaluateGooseGdkRuntimeAndAdversary(options = {}) {
  * - 5-step editable Systematic Review pipeline ("Living Reviews"): Clarify Question -> Gather Hybrid Sources -> Screen (96.4% recall) -> Extract Columns (94-99.4% accuracy) -> Synthesize Report + Table
  * - Verbatim passage-level quote grounding + Source-Quality Firewall (rejects SEO content farms, blogs, and secondary news links)
  * - Dual-Grounded LLM Verification (Gold Standard + Full Source Text = 89% agreement with human experts)
- * - Fine-Tuned Screening Relevance Score Alerts (Elicit Alerts pattern for zero-noise arXiv/CVE/5-Folio monitoring)
+ * - Fine-Tuned Screening Relevance Score Alerts (Elicit Alerts pattern for zero-noise arXiv/CVE monitoring)
  */
 function evaluateElicitSystematicResearchEngine(options = {}) {
   const initialCandidateSources = Number(options.initialCandidateSources ?? 550);
@@ -1342,7 +1319,7 @@ function evaluateElicitSystematicResearchEngine(options = {}) {
     relevanceScoredAlerts: {
       engine: 'Fine-Tuned Screening Model Relevance Scorer (0.00 - 1.00)',
       minimumRelevanceThreshold: 0.85,
-      domainsMonitored: ['arXiv Agentic Security', 'GitHub/NVD CVEs', 'Florida 5-Folio Tax-Deed & Foreclosure Dockets'],
+      domainsMonitored: ['arXiv Agentic Security', 'GitHub/NVD CVEs'],
     },
     verdict:
       validPrimarySources.length > 0 && screeningRecallPct >= 96.0

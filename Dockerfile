@@ -44,6 +44,7 @@ COPY config/ ./config/
 COPY adapters/ ./adapters/
 COPY specs/ ./specs/
 COPY public/ ./public/
+COPY openapi/ ./openapi/
 COPY .well-known/ ./.well-known/
 
 # Data directory for runtime feedback logs

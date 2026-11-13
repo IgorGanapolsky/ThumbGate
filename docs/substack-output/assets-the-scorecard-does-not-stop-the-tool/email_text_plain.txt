@@ -1,0 +1,11 @@
+View this post on the web at https://saasgrowthdispatch.substack.com/p/the-scorecard-does-not-stop-the-tool
+
+The last note here was a scorecard. Pick one workflow, write down what finished means, and count the cleanup. That still stands.
+What the scorecard does not catch is the tool call itself. An agent can look finished and still open a pull request, call a paid API, or send a message, because the key was already on the machine. A convincing writeup does not stop that. Something has to refuse the call before it runs.
+ThumbGate is that refusal. You mark one bad action. The next time an agent tries the same thing, the hook blocks it. The record stays on your machine. You do not retrain a model to get that behavior.
+Pro is $19 a month, or $149 for the year. If you want it wired into one workflow with you, the Setup Sprint is $499.
+Checkout is here: https://thumbgate.ai/go/pro-direct
+The product page is https://thumbgate.ai.
+If you run agents against a real repo, reply with the one action you do not want them to take. Leave out private code, credentials, and customer data.
+
+Unsubscribe https://substack.com/redirect/2/eyJlIjoiaHR0cHM6Ly9zYWFzZ3Jvd3RoZGlzcGF0Y2guc3Vic3RhY2suY29tL2FjdGlvbi9kaXNhYmxlX2VtYWlsP3Rva2VuPWV5SjFjMlZ5WDJsa0lqbzVNakUyT0RNd0xDSndiM04wWDJsa0lqb3lNak16TkRRMk16QXNJbWxoZENJNk1UYzVNemN5TVRFME1pd2laWGh3SWpveE9ESTFNalUzTVRReUxDSnBjM01pT2lKd2RXSXROVEl5TmpZeE1DSXNJbk4xWWlJNkltUnBjMkZpYkdWZlpXMWhhV3dpZlEuNmxNQXpvUll5N1dNc2dhYlBINzBueEFpcThKNHZnTlJQQUhPNkM4THNPUSIsInAiOjIyMzM0NDYzMCwicyI6NTIyNjYxMCwiZiI6dHJ1ZSwidSI6OTIxNjgzMCwiaWF0IjoxNzkzNzIxMTQyLCJleHAiOjIxMDkyOTcxNDIsImlzcyI6InB1Yi0wIiwic3ViIjoibGluay1yZWRpcmVjdCJ9.UPMxMw8MwXBQrldbhwVqcBmkzMM-jSey5umdzfCqj4U?

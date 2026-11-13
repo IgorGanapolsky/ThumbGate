@@ -1,8 +1,8 @@
-# Revenue Acceleration Specification v1 (Elephant SDD — $100/Day North Star)
+# Revenue Acceleration Specification v1 (Elephant SDD — Make $300/Day, 24/7 North Star)
 
-> **Status:** Active (`2026-10-26`)
+> **Status:** Active (`2026-11-04`)
 > **Owner:** Igor Ganapolsky (CEO) & Autonomous CTO Agent
-> **North Star Metric:** `$100/day` net after-tax profit at `$0.00` outbound cash spend (`outboundCashSpendUsd === 0`).
+> **North Star Metric:** Make `$300/day, 24/7` (`$9,000/mo`) net after-tax profit at `$0.00` outbound cash spend (`outboundCashSpendUsd === 0`).
 
 ---
 
@@ -24,7 +24,7 @@ Live production telemetry (`node scripts/revenue-status.js --json` & `node scrip
 
 ### 2.1 The 4-Tier Value Ladder (`$0` Outbound Spend)
 
-To reach **`$100/day`** with minimum friction, every outbound post, partner reply, and landing surface routes buyers into a 4-tier self-liquidating ladder:
+To reach **`$300/day, 24/7`** (`$9,000/mo`) with minimum friction, every outbound post, partner reply, and landing surface routes buyers into a self-liquidating ladder:
 
 1. **Tier 1 — Impulse Entry (`$9.99` on Gumroad):**
    - URL: `https://iganapolsky.gumroad.com/l/odrkon`

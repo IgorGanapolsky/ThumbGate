@@ -190,7 +190,8 @@ test('inferTrafficChannel prefers explicit source and deterministic referrer heu
   assert.equal(inferTrafficChannel({}, 'www.reddit.com'), 'reddit');
   assert.equal(inferTrafficChannel({}, 'www.google.com'), 'organic_search');
   assert.equal(inferTrafficChannel({}, null), 'direct');
-  assert.equal(inferTrafficChannel({}, 'news.ycombinator.com'), 'referral');
+  assert.equal(inferTrafficChannel({}, 'news.ycombinator.com'), 'hackernews');
+  assert.equal(inferTrafficChannel({}, 'blog.example.com'), 'referral');
 });
 
 test('sanitizeTelemetryPayload preserves reddit campaign metadata', () => {
@@ -1024,4 +1025,148 @@ test('getTelemetryAnalytics applies daily windows and summarizes checkout succes
   assert.equal(analytics.ctas.lookupFailuresByStatus['504'], 1);
   assert.equal(analytics.ctas.paidConfirmationRate, 1);
   assert.equal(analytics.ctas.successPageViewRate, 1);
+});
+
+test('getTelemetryAnalytics sanitizes &amp; query strings, classifies linkedin/tiktok/hackernews, and computes viralLoop K-factor + abExperiments significance', () => {
+  const {
+    repairEmbeddedQueryToken,
+  } = require('../scripts/telemetry-analytics');
+
+  assert.equal(
+    repairEmbeddedQueryToken('/?utm_source=linkedin&amp;utm_medium=carousel&amp;campaign_variant=hook_a'),
+    '/?utm_source=linkedin&utm_medium=carousel&campaign_variant=hook_a',
+  );
+
+  fs.writeFileSync(path.join(tmpDir, 'telemetry-pings.jsonl'), [
+    JSON.stringify({
+      receivedAt: '2026-11-02T12:00:00.000Z',
+      eventType: 'landing_page_view',
+      clientType: 'web',
+      visitorId: 'vis_li_1',
+      sessionId: 'sess_li_1',
+      path: '/?utm_source=linkedin&amp;utm_medium=carousel&amp;utm_campaign=nov2026_viral&amp;creator=iganapolsky&amp;campaign_variant=hook_a',
+      referrer: 'https://www.linkedin.com/feed/',
+    }),
+    JSON.stringify({
+      receivedAt: '2026-11-02T12:00:30.000Z',
+      eventType: 'viral_share',
+      clientType: 'web',
+      visitorId: 'vis_li_1',
+      sessionId: 'sess_li_1',
+      shareChannel: 'linkedin',
+    }),
+    JSON.stringify({
+      receivedAt: '2026-11-02T12:01:00.000Z',
+      eventType: 'landing_page_view',
+      clientType: 'web',
+      visitorId: 'vis_tt_1',
+      sessionId: 'sess_tt_1',
+      path: '/?utm_source=tiktok&utm_medium=short_video&utm_campaign=nov2026_viral&creator=iganapolsky&campaign_variant=hook_b',
+      referredByVisitorId: 'vis_li_1',
+      referrer: 'https://www.tiktok.com/@iganapolsky',
+    }),
+    JSON.stringify({
+      receivedAt: '2026-11-02T12:02:00.000Z',
+      eventType: 'landing_page_view',
+      clientType: 'web',
+      visitorId: 'vis_hn_1',
+      sessionId: 'sess_hn_1',
+      path: '/?utm_source=hackernews&utm_medium=show_hn&utm_campaign=nov2026_viral&post_id=hn_47584540&campaign_variant=show_hn_041ms',
+      referrer: 'https://news.ycombinator.com/item?id=47584540',
+    }),
+    JSON.stringify({
+      receivedAt: '2026-11-02T12:03:00.000Z',
+      eventType: 'checkout_started',
+      clientType: 'web',
+      visitorId: 'vis_hn_1',
+      sessionId: 'sess_hn_1',
+      ctaId: 'pro_direct_checkout',
+      ctaPlacement: 'go_redirect',
+      source: 'hackernews',
+      utmSource: 'hackernews',
+      utmMedium: 'show_hn',
+      utmCampaign: 'nov2026_viral',
+      campaignVariant: 'show_hn_041ms',
+      postId: 'hn_47584540',
+    }),
+    '',
+  ].join('\n'));
+
+  const analytics = getTelemetryAnalytics(tmpDir, {
+    window: 'today',
+    timeZone: 'UTC',
+    now: '2026-11-02T18:00:00.000Z',
+  });
+
+  assert.equal(analytics.visitors.byTrafficChannel.linkedin, 1);
+  assert.equal(analytics.visitors.byTrafficChannel.tiktok, 1);
+  assert.equal(analytics.visitors.byTrafficChannel.hackernews, 1);
+  assert.ok(analytics.viralLoop);
+  assert.equal(analytics.viralLoop.viralShares, 1);
+  assert.equal(analytics.viralLoop.referredVisitors, 1);
+  assert.ok(analytics.viralLoop.kFactor > 0);
+  assert.ok(analytics.abExperiments);
+  assert.equal(analytics.abExperiments.recommendedWinner, 'show_hn_041ms');
+  assert.ok(analytics.abExperiments.variants.show_hn_041ms.wilsonUpper95 > 0);
+
+  const targetRaw = {};
+  assert.equal(
+    repairEmbeddedQueryToken('github\\u0026utm_medium=readme\\u0026utm_campaign=readme_gpt', targetRaw),
+    'github',
+  );
+  assert.equal(targetRaw.utmMedium, 'readme');
+  assert.equal(targetRaw.utmCampaign, 'readme_gpt');
+
+  const analytics90d = getTelemetryAnalytics(tmpDir, {
+    window: '90d',
+    timeZone: 'UTC',
+    now: '2026-11-02T18:00:00.000Z',
+  });
+  assert.equal(analytics90d.window.window, '90d');
+  assert.equal(analytics90d.window.startLocalDate, '2026-08-05');
+  assert.equal(analytics90d.window.endLocalDate, '2026-11-02');
+});
+
+test('classifyRequester catches compound bot UAs and getTelemetryAnalytics excludes bot /cancel probes from checkoutCancelPageViews', () => {
+  const { classifyRequester } = require('../scripts/bot-detection');
+  assert.equal(classifyRequester({ 'user-agent': 'ElevenlabsCrawler/1.0', accept: 'text/html' }).isBot, true);
+  assert.equal(classifyRequester({ 'user-agent': 'SolvedEarthPriceBot/2.0', accept: 'text/html' }).isBot, true);
+  assert.equal(classifyRequester({ 'user-agent': 'ProtocolV1-Gate/1.0', accept: 'text/html' }).isBot, true);
+  assert.equal(classifyRequester({ 'user-agent': 'Mozilla/5.0 RevenueAuditor/1.0', accept: 'text/html' }).isBot, true);
+
+  appendTelemetryEvent(tmpDir, {
+    eventType: 'checkout_cancel_page_view',
+    clientType: 'web',
+    page: '/cancel',
+    visitorId: 'vis_probe_1',
+    sessionId: 'sess_probe_1',
+  }, {
+    'user-agent': 'ProtocolV1-Gate/1.0',
+  });
+  appendTelemetryEvent(tmpDir, {
+    eventType: 'checkout_cancel_page_view',
+    clientType: 'web',
+    page: '/cancel',
+    visitorId: 'vis_human_cancel_1',
+    sessionId: 'sess_human_cancel_1',
+    traceId: 'checkout_real_123',
+  }, {
+    'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 Chrome/130.0.0.0 Safari/537.36',
+  });
+
+  appendTelemetryEvent(tmpDir, {
+    eventType: 'cta_click',
+    clientType: 'web',
+    page: '/go/bundle-49',
+    destinationSlug: 'bundle-49',
+    visitorId: 'vis_human_bundle_1',
+    sessionId: 'sess_human_bundle_1',
+  }, {
+    'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 Chrome/130.0.0.0 Safari/537.36',
+  });
+
+  const analytics = getTelemetryAnalytics(tmpDir);
+  assert.equal(analytics.ctas.cancelPageViews, 1);
+  assert.equal(analytics.ctas.byId.pro_checkout_bundle_49, 1);
+  assert.equal(analytics.ctas.byId.unknown, undefined);
 });

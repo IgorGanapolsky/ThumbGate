@@ -195,6 +195,28 @@ function classifyStrategyAndAction({ subject = '', body = '' }) {
       entities: Array.from(new Set([...entities, 'Tailworm-v1.104.4', 'MagicRoute', 'Meta-Muse', 'swe-mux', 'scurgery'])),
     };
   }
+  if (/is it better, or does it just feel better|confidence\.spotify\.com\/experiments|confidence\.spotify\.com\/workflows\/abtest|sequential testing.*peeking won'?t mislead/i.test(combined)) {
+    return {
+      category: 'sequential_ab_experimentation_and_revenue_conversion_steal',
+      domainTag: 'spotify-confidence-sequential-ab-experiments',
+      summary: 'Spotify Confidence Experiments (Johan Söderholm — "Is it better, or does it just feel better?" + https://app.confidence.spotify.com/experiments): Pre-registered "If we ___, then ___ will increase, because ___" hypothesis, exactly ONE primary success metric + upfront guardrails, mSPRT sequential testing (peeking-safe), and answering two questions: did it improve things, and did it break anything?',
+      stolenStrategy: 'Enforce pre-registered If/Then/Because hypotheses, lock 1 primary revenue metric (net_new_external_paid_orders_usd) + upfront guardrails, evaluate continuous traffic via peeking-safe mSPRT sequential testing, and run the live ThumbGate Direct Checkout A/B experiment (t4cd4ntvf9ppbxzutjso) in Spotify Confidence.',
+      gateOrModule: 'src/cloud-token-firewall.js#evaluateSpotifyConfidenceSequentialAbExperimentSteal',
+      urls: Array.from(new Set([...urls, 'https://app.confidence.spotify.com/experiments', 'https://app.confidence.spotify.com/workflows/abtest/instances/t4cd4ntvf9ppbxzutjso/design'])),
+      entities: Array.from(new Set([...entities, 'Spotify-Confidence-Experiments', 'Johan-Soderholm', 'mSPRT-Sequential-Testing', 'Pre-Registered-Hypothesis', 'Guardrail-Metrics'])),
+    };
+  }
+  if (/define a metric once|trust it everywhere|fact tables point to the events|single.*purchases.*table gives you revenue|choose metrics that track real outcomes|easy proxies can mislead you/i.test(combined)) {
+    return {
+      category: 'spotify_confidence_metrics_and_fact_tables_steal',
+      domainTag: 'spotify-confidence-fact-tables-and-metrics',
+      summary: 'Spotify Confidence (Johan Söderholm — "Define a metric once, trust it everywhere"): 2 building blocks (Fact tables pointing to warehouse events + Reused metrics), user ID alignment between fact table and flag assignment, 3–5 core metrics (1 north star, 2 drivers, 2 guardrails), and tracking real outcomes instead of misleading easy proxies.',
+      stolenStrategy: 'Ground every metric in a canonical warehouse fact table, match user IDs with assignment IDs, lock 3–5 core metrics (1 north star, 2 drivers, 2 guardrails), and reject vanity proxy metrics in favor of verified business outcomes.',
+      gateOrModule: 'src/cloud-token-firewall.js#evaluateSpotifyConfidenceMetricsAndFactTablesSteal',
+      urls: Array.from(new Set([...urls, 'https://app.confidence.spotify.com/metrics', 'https://confidence.spotify.com/docs/metrics/fact-tables'])),
+      entities: Array.from(new Set([...entities, 'Spotify-Confidence', 'Johan-Soderholm', 'Fact-Tables', 'North-Star-Metric', 'Guardrail-Metrics', 'Outcome-Not-Proxy'])),
+    };
+  }
   if (/ship code without shipping the change|johan s.derholm|confidence\.spotify\.com|name flags after the behaviour/i.test(combined)) {
     return {
       category: 'feature_flag_and_offline_shadow_experiment_steal',
@@ -483,6 +505,160 @@ function classifyStrategyAndAction({ subject = '', body = '' }) {
     };
   }
 
+  if (/how fast do you reply to your team|responsive\s*=\s*responsible|riandoris@flowstate\.com|three-hour window.*100%\s*offline/i.test(combined)) {
+    return {
+      category: 'flow_methodology_and_monetization_steal',
+      domainTag: 'rian-doris-responsive-vs-responsible-flow',
+      summary: 'Rían Doris (FlowState.com — "How fast do you reply to your team?", Nov 3, 2026): Responsive != Responsible; protect the 15-30m struggle phase and a daily 3-hour (180m) 100%-offline block for high-leverage business growth.',
+      stolenStrategy: 'Replace compulsive 60-second reactive inbox/agent ping-pong with batched decision slots (07:30, 12:05, 15:05 ET) around a protected 3-hour (180-minute, 09:00-12:00 ET) 100%-unreachable deep-work block dedicated strictly to proactive revenue growth, and position ThumbGate as the Flow-State Firewall that prevents agent loops from breaking the 15-30m struggle-to-flow ramp.',
+      gateOrModule: 'src/cloud-token-firewall.js#evaluateRianDorisResponsiveVsResponsibleFlowBlockSteal',
+      urls: Array.from(new Set([...urls, 'https://flowstate.com'])),
+      entities: Array.from(new Set([...entities, 'Rian-Doris', 'FlowState', '180m-Offline-Block', '15-30m-Struggle-Phase', 'Responsive-Not-Responsible'])),
+    };
+  }
+  if (/three new products.*multiple accounts per pipes provider|airlock.*atlas.*passport|pipes connection sharing|updates@workos\.com/i.test(combined)) {
+    return {
+      category: 'enterprise_agent_governance_and_auth_steal',
+      domainTag: 'workos-airlock-atlas-passport-pipes-siem',
+      summary: 'WorkOS ("New this month: Three New Products (Airlock, Atlas, Passport), Multiple Accounts per Pipes Provider, Custom Branding per Application, Pipes Connection Sharing, SIEM Audit Logs & Scoped Agent Handoff Tokens", Nov 2, 2026).',
+      stolenStrategy: 'Enforce WorkOS Airlock 3-way policy decisions (allow | block | route_to_human_approval), Atlas internal app permissions, Passport device-bound identity with Cyber60 scoped agent-to-agent handoff tokens (<=4 tools), Pipes multi-account provider isolation + admin connection sharing, per-application custom branding inheritance, and SIEM audit log streaming.',
+      gateOrModule: 'src/cloud-token-firewall.js#evaluateWorkOsAirlockAtlasPassportPipesSteal',
+      urls: Array.from(new Set([...urls, 'https://workos.com'])),
+      entities: Array.from(new Set([...entities, 'WorkOS', 'Airlock', 'Atlas', 'Passport', 'Pipes-Multi-Account', 'Cyber60-Scoped-Tokens', 'SIEM-Audit-Logs'])),
+    };
+  }
+  if (/103419784|super-agent\s*设计探索|deepseek.*super-agent|dsh-superagent|双层架构.*事件驱动.*watchdog/i.test(combined)) {
+    return {
+      category: 'autonomous_super_agent_architecture_steal',
+      domainTag: 'deepseek-super-agent-router-worker-watchdog',
+      summary: 'DeepSeek Harness Team ("Super-agent 设计探索：迈向更自主的 Agent 系统" — Yicai 103419784 / deepseek-ai/dsh-superagent-prototype, Oct 31, 2026): Dual-layer Router/Worker split, 2-stage Fast/Slow event filter, Subscription Pass-Through (-30% Router decisions), Inline & Spill context cache, Storage-Compute separation + External Semantic Watchdog, and off/observe/auto autonomy gate.',
+      stolenStrategy: 'Separate lightweight tool-less Router coordination from isolated Worker ticket execution (<=4 tools), route claimed PR/thread events directly via Subscription Pass-Through to save 26.9% cached tokens, inline next-hop IDs while spilling long tool outputs, run an external semantic Watchdog to heal unproductive Worker loops, and default proactive unmentioned bug fixes to observe mode.',
+      gateOrModule: 'src/cloud-token-firewall.js#evaluateDeepSeekSuperAgentArchitectureSteal',
+      urls: Array.from(new Set([...urls, 'https://www.yicai.com/news/103419784.html', 'https://github.com/deepseek-ai/dsh-superagent-prototype'])),
+      entities: Array.from(new Set([...entities, 'DeepSeek-Harness', 'Super-agent', 'Router-Worker-Split', 'Subscription-PassThrough', 'Semantic-Watchdog', 'Observe-Mode-Default'])),
+    };
+  }
+  if (/emDutDLIiow|enterprise knowledge graph rag|8-step hybrid retrieval|text-to-cypher|ontology.*10-40/i.test(combined)) {
+    return {
+      category: 'enterprise_graph_rag_architecture_steal',
+      domainTag: 'enterprise-knowledge-graph-rag-8step-hybrid',
+      summary: 'Enterprise Knowledge Graph RAG (YouTube emDutDLIiow, Nov 3, 2026): 8-Step Hybrid Vector+Graph Retrieval, Bounded Ontology (10-40 classes, 10-30 relations), Read-Only Text-to-Cypher/SPARQL + Data-Layer ACLs, CDC + Temporal valid_from/valid_to edges, and 3 Production Metrics (Faithfulness, Citation Accuracy, Constraint Violation Rate).',
+      stolenStrategy: 'Combine vector candidate retrieval with bounded 1-3 hop subgraph expansion and RRF reranking across a 10-40 class ontology, enforce read-only Cypher/SPARQL with data-layer permissions and temporal edges, and gate releases on Faithfulness >= 0.95, Citation Accuracy >= 0.95, and Constraint Violation Rate <= 0.01.',
+      gateOrModule: 'src/cloud-token-firewall.js#evaluateEnterpriseKnowledgeGraphRag8StepHybridSteal',
+      urls: Array.from(new Set([...urls, 'https://music.youtube.com/watch?v=emDutDLIiow'])),
+      entities: Array.from(new Set([...entities, 'Enterprise-GraphRAG', '8-Step-Hybrid-Retrieval', 'Bounded-Ontology', 'Temporal-Edges', 'Read-Only-Cypher'])),
+    };
+  }
+  if (/67BmkptgTms|nick'?s bops|\$25,000.*ai agent|50 warm calls.*3 referrals|paper mcp.*orgo.*agentmail/i.test(combined)) {
+    return {
+      category: 'b2b_agent_system_monetization_steal',
+      domainTag: 'nicks-bops-25k-custom-smb-ai-agent-system',
+      summary: 'Nick\'s Bops ($25,000 Custom SMB AI Agent System — YouTube 67BmkptgTms, Nov 3, 2026): 50 warm calls/day -> free pilot gated on 3 warm business-owner referrals, Paper MCP 3-4 layout convergence, Orgo VM + AgentMail + AgentPhone + Composio 4-tool stack, and $25k 2-payment 15-bot ownership + $3k/mo retainer.',
+      stolenStrategy: 'Require 3 warm referrals for any free pilot, generate 3-4 Paper MCP layout variations before frontend code, isolate each customer worker on Orgo VM + AgentMail + AgentPhone + <=4 Composio tools, and monetize via our $19/mo -> $49 -> $499 -> $25k (2x $12.5k milestone + $3k/mo retainer) B2B ladder.',
+      gateOrModule: 'src/cloud-token-firewall.js#evaluateNicksBops25kCustomAiAgentSystemSteal',
+      urls: Array.from(new Set([...urls, 'https://music.youtube.com/watch?v=67BmkptgTms'])),
+      entities: Array.from(new Set([...entities, 'Nicks-Bops', '25k-Custom-Agent-System', 'Paper-MCP', 'Orgo-VM', 'AgentMail', 'AgentPhone', '3-Warm-Referrals'])),
+    };
+  }
+  if (/drex-max-v1|nace-ai|nace ai.*system-one|\/v1\/systemone|48 gated deltanet/i.test(combined)) {
+    return {
+      category: 'system_one_decision_model_steal',
+      domainTag: 'nace-ai-drex-max-v1-27b-system-one',
+      summary: 'Nace AI Drex Max v1 27B System-One Decision Model (MarkTechPost & HuggingFace nace-ai/drex-max-v1, Nov 1, 2026): 48 Gated DeltaNet + 16 non-causal full-attention layers, 255-way readout head, POST /v1/systemone (choice | noul | score), Apple Silicon 24GB Q4 / 48GB Q8_0 GGUF, Decision Index 0.4 67.52, JevBench 92.2%, Decision Bench v4 94.30%.',
+      stolenStrategy: 'Route sub-100ms PreToolUse gates, 255-way tool/SKU selection, and abstention checks (noul) through local System-One Drex Max v1 (/v1/systemone on 48GB Apple Silicon Q8_0 / 24GB MLX 4-bit), escalating to frontier System-Two LLMs strictly when noul abstains.',
+      gateOrModule: 'src/cloud-token-firewall.js#evaluateNaceAiDrexMaxV1SystemOneDecisionSteal',
+      urls: Array.from(new Set([...urls, 'https://www.marktechpost.com/2026/11/01/nace-ai-open-sources-drex-max-v1-local-inference/', 'https://huggingface.co/nace-ai/drex-max-v1'])),
+      entities: Array.from(new Set([...entities, 'Nace-AI', 'Drex-Max-v1', 'System-One-Decision-Model', 'Gated-DeltaNet', 'Noul-Abstention', 'JevBench-92.2'])),
+    };
+  }
+  if (/openai-pando-git-backend|pando.*git backend|packfile-uri.*express|explicit haves/i.test(combined)) {
+    return {
+      category: 'agent_scale_git_infrastructure_steal',
+      domainTag: 'openai-pando-distributed-git-backend',
+      summary: 'OpenAI Pando Distributed Git Backend (The New Stack, Nov 2, 2026): 5x faster push latency & ~1 PB/day via per-branch lock-free CAS ref coordination, streaming packfile validation to blob storage without unpacking, trunk-only ref advertisement + explicit-haves (<20 KiB median packs), packfile-uri + Express regional cache (>99% hit rate), and GC-free LSM pack compaction.',
+      stolenStrategy: 'Eliminate repo-wide ref locks across multi-agent swarms by coordinating branch refs independently, advertising only trunk (main) with explicit-haves to keep agent feature packs <20 KiB, streaming packs directly to immutable storage, and compacting packs in background LSM tiers for O(log N) lookup.',
+      gateOrModule: 'src/cloud-token-firewall.js#evaluateOpenAiPandoDistributedGitBackendSteal',
+      urls: Array.from(new Set([...urls, 'https://thenewstack.io/openai-pando-git-backend/'])),
+      entities: Array.from(new Set([...entities, 'OpenAI-Pando', 'Per-Branch-CAS', 'Packfile-URI', 'Express-Cache-99pct', 'LSM-Pack-Compaction', 'Explicit-Haves'])),
+    };
+  }
+  if (/autoresearch\.sfcompute\.com|givemeanode|sandbox.*parks itself|1\.5s idle|330x cheaper/i.test(combined)) {
+    return {
+      category: 'agent_compute_and_monetization_steal',
+      domainTag: 'sfcompute-autoresearch-rl-sandbox-autopark',
+      summary: 'SF Compute Autoresearch (https://autoresearch.sfcompute.com/, Nov 3, 2026): Streamable HTTP MCP (mcp.autoresearch.sfcompute.com), 50ms free RL sandbox forks, 1.5s idle auto-parking (330x cheaper thinking: $0.13 vs $0.98 for 64x2GiB 10m rollout), fair queue (first-node priority + 85% batch cap), Friday 33% / Weekend 20% dynamic discounts, and Accept: text/markdown + /llms.txt agent discovery.',
+      stolenStrategy: 'Auto-park idle agent sandboxes after 1.5s to cut rollout memory cost by 86.7% (330x cheaper thinking), serve Accept: text/markdown + /llms.txt with direct Stripe checkout links, prioritize every customer\'s first diagnostic node ahead of batch queues (<=85% batch cap), and block unfunded external billing top-ups ($0 outbound spend).',
+      gateOrModule: 'src/cloud-token-firewall.js#evaluateSfComputeAutoresearchAndMakeMoneySteal',
+      urls: Array.from(new Set([...urls, 'https://autoresearch.sfcompute.com/', 'https://mcp.autoresearch.sfcompute.com'])),
+      entities: Array.from(new Set([...entities, 'SF-Compute', 'Autoresearch', '1.5s-Sandbox-AutoPark', '330x-Cheaper-Thinking', 'Fair-Queue-First-Node', 'Accept-Text-Markdown'])),
+    };
+  }
+  if (/console\.typesafe\.ai\/hook|jev-1\.14|meet jev|rlcd.*calibrated decisions|sde-cascade|skill-suggestion.*194/i.test(combined)) {
+    return {
+      category: 'system_one_calibrated_decision_and_skill_cascade_steal',
+      domainTag: 'typesafe-jev-1-14-console-hook-skill-sde-cascade',
+      summary: 'TypeSafe Jev Console Hook & v1.14.0 (https://console.typesafe.ai/hook + https://typesafe.ai/blog/jev-1-14): RLCD-trained System-One decision model (20-200x faster, 40-1000x cheaper, $0.042/Mtok input, $0 output, 262k long-context + box vision primitive), 2-call 194-skill suggestion cascade (cutting wrong loads 15.7%->7.9% & needless loads 14.0%->5.2%), SDE per-field Noul cascade (92.7% accuracy at 41% lower cost), 4-verdict citation check, and 4-Noul RAG passage filter.',
+      stolenStrategy: 'Keep code in ownership of routing decisions (never model-emitted verdicts), run 2-call progressive skill disclosure capped at <=4 skills/turn, verify structured extractions per-field with Noul before escalating to frontier models, and enforce 4-verdict citation + 4-Noul RAG filtering at $0 outbound spend.',
+      gateOrModule: 'src/cloud-token-firewall.js#evaluateTypesafeJevConsoleHookAndSkillCascadeSteal',
+      urls: Array.from(new Set([...urls, 'https://console.typesafe.ai/hook', 'https://console.typesafe.ai/playground', 'https://typesafe.ai/blog/jev-1-14'])),
+      entities: Array.from(new Set([...entities, 'TypeSafe-Jev-1.14.0', 'RLCD', 'Two-Call-Skill-Cascade', 'SDE-Cascade', 'Four-Verdict-Citation-Gate', 'Box-Primitive'])),
+    };
+  }
+  if (/oak\s*&\s*sparrow|oakandsparrow\.io|gatekeeper\.pdf|gatekeeper v2|signal audit|oasse november 2026|nick@oakandsparrow\.io/i.test(combined)) {
+    return {
+      category: 'pre_execution_authorization_and_tamper_evident_audit_steal',
+      domainTag: 'oasse-gatekeeper-v2-signal-audit-policy-packs',
+      summary: 'Oak & Sparrow Systems Enterprise (Nick Silva <nick@oakandsparrow.io>, /Users/iganapolsky/Downloads/gatekeeper.pdf + OASSE November 2026 Newsletter PDF): Gatekeeper V2 pre-execution authorization (ALLOW | TRANSFORM | HOLD | DENY kept distinct from pilot ALLOW | ABSTAIN | DENY), traffic-light GREEN/YELLOW/RED verdicts, SHA-256 hash-chained receipts (1,000/1,000 restart recovery, cross-tenant NOT_FOUND, 0 webhook dead letters), and standalone MIT state Policy Packs (15%/25%/50% rule-count discounts).',
+      stolenStrategy: 'Enforce 4-outcome pre-execution authorization (ALLOW/TRANSFORM/HOLD/DENY) with SHA-256 hash-chained receipts, return NOT_FOUND on cross-tenant receipt reads, package standalone MIT Policy Packs with tiered rule-count pricing, and forbid Reply-All on exposed newsletter recipient lists.',
+      gateOrModule: 'src/cloud-token-firewall.js#evaluateOakAndSparrowGatekeeperV2SignalAuditSteal',
+      urls: Array.from(new Set([...urls, 'https://oakandsparrow.io/#/case-studies/signal-audit', 'https://oakandsparrow.io/policypacks', 'https://www.oakandsparrowsystemsenterprise.com/#onboarding'])),
+      entities: Array.from(new Set([...entities, 'Oak-And-Sparrow', 'Gatekeeper-V2', 'Signal-Audit', 'SHA256-Hash-Chain', 'MIT-Policy-Packs', 'Nick-Silva'])),
+    };
+  }
+  if (/velodb\.cloud\/personalize|build real-time analytics on aws|datascience\.pdf|towards data science.*velodb|sql, vector, and full-text search for ai/i.test(combined)) {
+    return {
+      category: 'real_time_ai_analytics_and_personalize_onboarding_steal',
+      domainTag: 'velodb-personalize-identity-guard-and-unified-ai-search',
+      summary: 'VeloDB Cloud (/personalize + Towards Data Science datascience.pdf, Nov 3, 2026): Crafted-URL PostHog identity-graph poisoning defense (isVelodbTrustedReferrer + returning-visitor alias merge), >3,500B cookie self-healing across parent domains, Google Translate DOM removeChild/insertBefore crash guard, 2-step /personalize flow with first-class AI referral attribution & PoC sales fast-lane, unified SQL + Vector + Full-Text AI search, and active-feature downgrade lock.',
+      stolenStrategy: 'Gate URL identity params (ph_distinct_id/ph_session_id) behind trusted referrers to block identity-graph poisoning, auto-evict >3,500B cookies across parent domains, patch Node.prototype.removeChild/insertBefore against browser translation plugins, track AI as a first-class referral source in 2-step onboarding, unify SQL + Vector + Full-Text search, and block plan downgrades while enterprise features are active.',
+      gateOrModule: 'src/cloud-token-firewall.js#evaluateVeloDbPersonalizeAndRealTimeAiAnalyticsSteal',
+      urls: Array.from(new Set([...urls, 'https://www.velodb.cloud/personalize'])),
+      entities: Array.from(new Set([...entities, 'VeloDB-Cloud', 'Trusted-Referrer-Identity-Guard', 'Cookie-Self-Healing-3500B', 'React-Translate-DOM-Guard', 'Unified-SQL-Vector-FullText', 'AI-Referral-Attribution'])),
+    };
+  }
+  if (/europarl\.europa\.eu|20230601sto93804|eu-ai-act-first-regulation-on-artificial-intelligence|eu ai act: first regulation on artificial intelligence/i.test(combined)) {
+    return {
+      category: 'regulatory_compliance_and_monetization_steal',
+      domainTag: 'eu-ai-act-20230601sto93804-article14-human-oversight-gate',
+      summary: 'European Parliament EU AI Act (20230601STO93804): 4-tier risk framework — Article 5 Unacceptable-Risk bans (cognitive manipulation, social scoring, untargeted biometric categorisation, real-time remote biometric ID), Article 6/14/Annex III High-Risk human-over-automation oversight & EU database registration, Article 50/53 GPAI transparency/copyright/incident reporting, and Article 57 SME Regulatory Sandboxes.',
+      stolenStrategy: 'Monetize EU AI Act conformity across a 5-step ladder ($9.99 Article 14/50 Checklist -> $49 Standalone EU AI Act PreToolUse Policy Pack -> $19/mo Pro Debugger -> $199/mo Cloud Startup EU Audit Sink & SME Sandbox -> $499 48hr High-Risk Conformity Sprint) while hard-blocking Article 5 banned practices and enforcing Article 14 human oversight before tool execution.',
+      gateOrModule: 'src/cloud-token-firewall.js#evaluateEuAiActComplianceAndMonetizationGate',
+      urls: Array.from(new Set([...urls, 'https://www.europarl.europa.eu/topics/en/article/20230601STO93804/eu-ai-act-first-regulation-on-artificial-intelligence'])),
+      entities: Array.from(new Set([...entities, 'EU-AI-Act', '20230601STO93804', 'Article-5-Unacceptable-Risk', 'Article-14-Human-Oversight', 'Annex-III-High-Risk', 'Article-50-GPAI-Transparency', 'Article-57-SME-Sandbox'])),
+    };
+  }
+  if (/hyperagent\.com|rubrics:\s*set the standard|autowiki|onboarding-four-paths|victoria\.plummer@hyperagent\.com|support@hyperagent\.com|bounticlaw now connects to your mls|45 minutes to help shape intelligence\.com/i.test(combined)) {
+    return {
+      category: 'hyperagent_rubrics_autowiki_four_paths_and_b2b_email_steal',
+      domainTag: 'hyperagent-rubrics-autowiki-four-paths-b2b-email',
+      summary: 'Hyperagent (Vic Plummer & Fin — Rubrics, Autowiki, Marketplace, Four-Paths Skill Onboarding cmql52i8o0dd606adahnyadrt & GitHub Skill Import cmw17nqo401t006adhav5frrw) + Mandatory B2B Email Execution across Hyperagent, Intelligence.com, Bounti.ai, WorkOS, and Boardy.',
+      stolenStrategy: 'Support Four-Paths skill onboarding (build_from_scratch, upload_file, link_documentation, import_from_github), compile failed Rubric criteria into deterministic PreToolUse gates, sync verified lessons via Autowiki into Obsidian/SKILL.md, and enforce explicit B2B email dispositions (REPLIED / DRAFTED_FOR_APPROVAL) while protecting replied threads from Trash.',
+      gateOrModule: 'src/cloud-token-firewall.js#evaluateHyperagentRubricsAutowikiFourPathsAndB2bEmailSteal',
+      urls: Array.from(new Set([...urls, 'https://hyperagent.com/thread/cmql52i8o0dd606adahnyadrt?autostart=onboarding-four-paths', 'https://hyperagent.com/thread/cmw17nqo401t006adhav5frrw'])),
+      entities: Array.from(new Set([...entities, 'Hyperagent', 'Rubrics', 'Autowiki', 'Four-Paths-Onboarding', 'Mandatory-B2B-Email-Execution'])),
+    };
+  }
+  if (/nvidia releases auto ontology|grounds ai\s+agent sql|mrgGg1DjHzUChMYPm|remote accelerator & fellowship links for thumbgate|nvidia inception program|rohanpaul_ai|D4eCWOvAxiTi7DEeI/i.test(combined)) {
+    return {
+      category: 'nvidia_auto_ontology_and_remote_accelerator_steal',
+      domainTag: 'nvidia-auto-ontology-agent-sql-and-inception',
+      summary: 'NVIDIA Auto Ontology Open Semantic Layer for Grounded AI Agent SQL + Remote Accelerator Shortlist (NVIDIA Inception rolling $0-fee 0%-equity fit for dual OSS + paid ThumbGate.ai model) + @rohanpaul_ai synthesis.',
+      stolenStrategy: 'Ground every AI Agent SQL query against an explicit open semantic ontology view (blocking mutating SQL and ungrounded raw-table hallucination) and prioritize 100%-remote, $0-fee, 0%-equity startup programs (NVIDIA Inception) for ThumbGate.',
+      gateOrModule: 'src/cloud-token-firewall.js#evaluateNvidiaAutoOntologyAndInceptionAcceleratorSteal',
+      urls: Array.from(new Set([...urls, 'https://www.nvidia.com/en-us/startups/'])),
+      entities: Array.from(new Set([...entities, 'NVIDIA-Auto-Ontology', 'Grounded-Agent-SQL', 'NVIDIA-Inception', 'Rohan-Paul'])),
+    };
+  }
   const cleanTopic = String(subject || '').replace(/^(?:thumbgate|dayglass|work)\s*(?:marketing\s*)?[-—:]+\s*/i, '').trim() || 'Inbound Strategy Note';
   return {
     category: /marketing/i.test(lower) ? 'marketing_strategy_steal' : 'product_architecture_steal',

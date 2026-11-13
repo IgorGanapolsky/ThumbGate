@@ -11,11 +11,13 @@ const {
   parseHtmlSignals,
   resolveHostedAuditApiKey,
   fetchWithTimeout,
+  probePublicRuntime,
   normalizeExternalCustomerAudit,
   normalizeWindowSummary,
   normalizeWorkflowIntakeQueue,
   buildDiagnosis,
   formatReport,
+  getExternalCustomerAuditViaStripeCli,
   resolveExternalCustomerAudit,
   getHostedAuditViaHttp,
   generateRevenueStatusReport,
@@ -176,6 +178,8 @@ test('normalizeExternalCustomerAudit exposes only reconciled ThumbGate attributi
   assert.equal(normalized.externalTrailing30DayNetRevenueCents, 149800);
   assert.equal(normalized.activeExternalSubscriptions, 0);
   assert.equal(normalized.externalMrrCents, 0);
+  assert.equal(normalized.productAttributionGap, null);
+  assert.equal(normalized.windowAttributionGap, null);
 });
 
 test('buildDiagnosis does not treat account-wide non-owner Stripe activity as ThumbGate revenue without product attribution', () => {
@@ -907,4 +911,65 @@ test('generateRevenueStatusReport degrades when public runtime probe fails', asy
   assert.ok(
     report.diagnosis.gaps.includes('Public runtime probe failed: Timed out fetching https://example.com/health after 5ms')
   );
+});
+
+test('probePublicRuntime sends DNT and Sec-GPC privacy opt-out headers so status checks never self-pollute live visitor counts', async () => {
+  const calls = [];
+  const result = await probePublicRuntime('https://thumbgate.ai', {
+    fetchImpl: async (url, options = {}) => {
+      calls.push({ url: String(url), options });
+      if (String(url).endsWith('/health')) {
+        return {
+          status: 200,
+          json: async () => ({ version: '1.39.0', deployment: { appOrigin: 'https://thumbgate.ai' } }),
+        };
+      }
+      if (String(url).endsWith('/v1/telemetry/ping')) {
+        return { status: 204 };
+      }
+      return {
+        status: 200,
+        text: async () => '<script>const gaMeasurementId = \'G-TEST1234\'; fetch("/v1/telemetry/ping")</script>',
+      };
+    },
+  });
+
+  assert.equal(result.health.status, 200);
+  assert.equal(result.telemetryPing.status, 204);
+  assert.equal(result.root.signals.gaLoaderScript, true);
+  assert.equal(calls.length, 3);
+  for (const call of calls) {
+    assert.equal(call.options.headers.dnt, '1');
+    assert.equal(call.options.headers['sec-gpc'], '1');
+  }
+});
+
+test('getExternalCustomerAuditViaStripeCli marks productAttribution unverified when unknown-email succeeded charges exist', () => {
+  const audit = getExternalCustomerAuditViaStripeCli({
+    runCommandFn(_bin, args) {
+      if (args[0] === 'charges') {
+        return {
+          status: 0,
+          stdout: JSON.stringify({
+            data: [
+              { id: 'ch_owner', amount: 14900, amount_refunded: 0, paid: true, status: 'succeeded', receipt_email: 'iganapolsky@gmail.com' },
+              { id: 'ch_unknown', amount: 1000, amount_refunded: 0, paid: true, status: 'succeeded' },
+            ],
+          }),
+          stderr: '',
+          error: null,
+        };
+      }
+      return {
+        status: 0,
+        stdout: JSON.stringify({ data: [] }),
+        stderr: '',
+        error: null,
+      };
+    },
+  });
+
+  assert.equal(audit.configured, true);
+  assert.equal(audit.productAttributionVerified, false);
+  assert.match(audit.productAttributionGap, /unknown-payer/);
 });

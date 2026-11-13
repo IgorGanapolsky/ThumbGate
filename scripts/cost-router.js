@@ -913,7 +913,7 @@ function routeCopilotFusionStyleTask({
     executionPlan.push({ dimension: 'reasoning', tier: 'capable', model: 'gemini-4-argon' });
   }
   if (executionPlan.length === 0) {
-    executionPlan.push({ dimension: 'code_generation', tier: 'fastCloud', model: 'gemini-2.5-flash' });
+    executionPlan.push({ dimension: 'code_generation', tier: 'fastCloud', model: 'gemini-4-hydrogen' });
   }
 
   const reviewTier = touchesSecurityOrBilling || Number(diffLines) > 400 || inferredDims.reasoning
@@ -932,6 +932,75 @@ function routeCopilotFusionStyleTask({
       timeReductionPerTaskPct: 40,
       aaCodingAgentIndexDeltaVsOpusMax: -2,
     },
+  };
+}
+
+// ============================================================================
+// Gartner 90/10 Open-Weight Agentic Harness Router & Perimeter Sovereignty
+// "Open models can do 90% of agentic work at a twentieth of the cost of a frontier LLM: Gartner"
+// (The Register / Gartner, Nov 3, 2026 - Mark Petty & Raymond Paquet)
+// ============================================================================
+
+const GARTNER_ROUTINE_STEP_TYPES = [
+  'classification',
+  'tool_calling',
+  'passing_data',
+  'validating_data',
+  'reconciling_data',
+  'schema_lookup',
+  'lint_verification',
+  'policy_gate_check',
+];
+
+function routeGartnerHarnessStep(stepInput = {}) {
+  const stepType = String(stepInput.type || stepInput.task || 'tool_calling').toLowerCase();
+  const description = String(stepInput.description || stepInput.task || '').toLowerCase();
+  const frontierBaselineCostUsd = Number(stepInput.frontierBaselineCostUsd || 0.02);
+  const thumbgateGuardrailsEnabled = stepInput.thumbgateGuardrailsEnabled !== false;
+
+  const isRoutine = GARTNER_ROUTINE_STEP_TYPES.some((t) => stepType.includes(t)) ||
+    /\b(?:classify|tool|pass|validate|reconcile|schema|lint|gate|check|format|parse)\b/i.test(stepType + ' ' + description);
+
+  // If routine, route to local open-weight model at 1/20th raw cost (5%)
+  // Without ThumbGate harness, open models suffer 3.5x verbosity/retry multiplier (5.5x net savings).
+  // With ThumbGate PreToolUse schema clamping, multiplier drops to 1.0 (20x full savings).
+  const openModelVerbosityRetryMultiplier = thumbgateGuardrailsEnabled ? 1.0 : 3.5;
+  const openWeightCostUsd = (frontierBaselineCostUsd * 0.05) * openModelVerbosityRetryMultiplier;
+  const cheapestClosedCostUsd = frontierBaselineCostUsd * 0.25;
+
+  const assignedTier = isRoutine ? 'local' : 'capable';
+  const assignedModel = isRoutine
+    ? (stepInput.openModel || 'poolside/laguna-xs-2.1-mlx')
+    : (stepInput.frontierModel || 'gemini-4-argon');
+
+  const costUsd = isRoutine ? Number(openWeightCostUsd.toFixed(6)) : frontierBaselineCostUsd;
+  const costSavingsMultiple = Number((frontierBaselineCostUsd / Math.max(0.000001, costUsd)).toFixed(1));
+
+  const containsProprietaryWorkflowHistory = /\b(?:customer|billing|user|tenant|secret|token|credential|db|schema|ledger|pii)\b/i.test(description);
+  const perimeterRisk = containsProprietaryWorkflowHistory && !isRoutine
+    ? 'HIGH_FRONTIER_EGRESS_RISK'
+    : 'SAFE_IN_PERIMETER';
+
+  return {
+    ok: true,
+    stepType,
+    classification: isRoutine ? 'ROUTINE_OPEX_OPEN_WEIGHT' : 'FRONTIER_CAPEX_RND',
+    tier: assignedTier,
+    assignedModel,
+    executedInsidePerimeter: isRoutine,
+    perimeterRisk,
+    costUsd,
+    frontierBaselineCostUsd,
+    cheapestClosedCostUsd,
+    costSavingsMultiple,
+    thumbgateGuardrailsActive: thumbgateGuardrailsEnabled,
+    harnessMoat: {
+      preventedVerbosityRetries: thumbgateGuardrailsEnabled,
+      rawSavingMultiple: 20,
+      realizedSavingMultiple: costSavingsMultiple,
+      maWorkflowHistoryPreserved: isRoutine,
+    },
+    reference: 'Gartner (Nov 3, 2026): "Open models can do 90% of agentic work at a twentieth of the cost of a frontier LLM"',
   };
 }
 

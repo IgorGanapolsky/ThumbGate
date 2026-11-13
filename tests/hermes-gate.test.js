@@ -79,12 +79,12 @@ for (const [label, payload] of [
     tool_name: 'terminal',
     tool_input: { command: 'export THUMBGATE_HOTFIX_BYPASS=1' },
   }],
-  ['patch hook disable', {
+  ['patch config tampering', {
     tool_name: 'patch',
     tool_input: {
-      file_path: '.claude/settings.json',
-      old_string: '"PreToolUse": []',
-      new_string: '"PreToolUse": [{"hooks": []}]',
+      file_path: 'config/gates/default.json',
+      old_string: '"gates": []',
+      new_string: '"gates": []',
     },
   }],
 ]) {

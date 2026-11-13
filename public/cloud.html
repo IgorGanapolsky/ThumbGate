@@ -890,7 +890,7 @@ npx skills add https://thumbgate.ai</pre>
           <div style="display:flex;gap:10px;flex-wrap:wrap;">
             <button type="button" class="btn-outline" onclick="switchTierInPortal('cloud_indie')">Switch to Cloud Indie ($49/mo)</button>
             <button type="button" class="btn" onclick="switchTierInPortal('cloud_startup')">Upgrade to Cloud Startup ($199/mo)</button>
-            <a class="btn-outline" href="/checkout/pro?manage=1">Stripe Billing Portal</a>
+            <a class="btn-outline" href="/go/pro-direct">Stripe Billing Portal</a>
           </div>
         </div>
       </div>
@@ -1134,21 +1134,30 @@ npx skills add https://thumbgate.ai</pre>
       }
     }
 
-    function showSsoToast(provider, email, token) {
+    function showSsoToast(provider, email, token, authVerification) {
       var banner = document.getElementById('sso-toast-banner');
       var titleEl = document.getElementById('sso-toast-title');
       var detailEl = document.getElementById('sso-toast-detail');
       if (!banner || !titleEl || !detailEl) return;
+      var isPreview = authVerification === 'email_workspace_preview';
       var pLabel = String(provider || 'SSO').toUpperCase();
       if (pLabel === 'APPLE') pLabel = 'Apple ID';
       else if (pLabel === 'GOOGLE') pLabel = 'Google Workspace';
       else if (pLabel === 'GITHUB') pLabel = 'GitHub';
-      titleEl.textContent = '✓ Signed in with ' + pLabel + ' SSO (' + email + ')';
-      detailEl.innerHTML = 'Provisioned token: <code>' + escapeHtml((token || '').slice(0, 22)) + '…</code>';
+      else if (pLabel === 'STRIPE') pLabel = 'Stripe Paid';
+      if (isPreview) {
+        titleEl.textContent = '🟡 Workspace Preview (No OAuth) — ' + email;
+        detailEl.innerHTML = 'Preview token: <code>' + escapeHtml((token || '').slice(0, 22)) + '…</code> · Complete checkout or configure OAuth to verify.';
+      } else {
+        titleEl.textContent = '✓ Signed in with ' + pLabel + ' (' + email + ')';
+        detailEl.innerHTML = 'Provisioned token: <code>' + escapeHtml((token || '').slice(0, 22)) + '…</code>';
+      }
       banner.classList.add('visible');
       var statusEl = document.getElementById('portal-status-msg');
       if (statusEl) {
-        statusEl.textContent = '✓ ' + pLabel + ' SSO active (' + email + ')';
+        statusEl.textContent = isPreview
+          ? '🟡 Workspace Preview (No OAuth) active (' + email + ')'
+          : '✓ ' + pLabel + ' active (' + email + ')';
       }
     }
 
@@ -1202,14 +1211,14 @@ npx skills add https://thumbgate.ai</pre>
           document.getElementById('portal-api-key').value = data.ssoToken;
           document.getElementById('portal-email').value = data.email;
           try {
-            localStorage.setItem('tg_cloud_sso_token', data.ssoToken);
             localStorage.setItem('tg_cloud_sso_email', data.email);
             localStorage.setItem('tg_cloud_sso_provider', data.provider);
+            localStorage.setItem('tg_cloud_auth_verification', data.authVerification || 'email_workspace_preview');
           } catch (e) {}
           if (data.session) renderPortalSession(data.session);
           else loadPortalSession();
           toggleAuthDrawer(false);
-          showSsoToast(data.provider, data.email, data.ssoToken);
+          showSsoToast(data.provider, data.email, data.ssoToken, data.authVerification);
           try {
             window.history.replaceState(null, '', '/cloud?sso_provider=' + encodeURIComponent(data.provider) + '&email=' + encodeURIComponent(data.email));
           } catch (e) {}
@@ -1235,7 +1244,6 @@ npx skills add https://thumbgate.ai</pre>
         if (ssoToken) {
           PORTAL_API_KEY = ssoToken;
           document.getElementById('portal-api-key').value = ssoToken;
-          try { localStorage.setItem('tg_cloud_sso_token', ssoToken); } catch (e) {}
         }
         if (emailParam) {
           PORTAL_EMAIL = emailParam;

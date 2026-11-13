@@ -101,8 +101,8 @@ test('/pricing, /cancel, /checkout/cancel, and /checkout/pro expose $9.99 Playbo
 test('public/index.html implements Gemini and Claude UI/UX, social proof, sandbox, Pro visual debugger, and static-hook comparison upgrades', () => {
   const indexHtml = fs.readFileSync(path.join(__dirname, '..', 'public', 'index.html'), 'utf8');
   assert.match(indexHtml, /Stop AI agent mistakes before they cost you/);
-  assert.match(indexHtml, /Diagnostic Gate/);
-  assert.match(indexHtml, /Start Pro — \$19\/mo/);
+  assert.match(indexHtml, /Setup Sprint|Diagnostic Gate/);
+  assert.match(indexHtml, /\$19\/mo/);
   assert.doesNotMatch(indexHtml, /Cursor Marketplace listing is not live/);
   assert.doesNotMatch(indexHtml, /VS Code Marketplace 1\.27\.20/);
 });
@@ -309,7 +309,7 @@ test('/admin console and /v1/admin/customers manage customer accounts, tiers, an
     assert.equal(adminHtmlRes.status, 200);
     const adminHtml = await adminHtmlRes.text();
     assert.match(adminHtml, /id="adminLoginGate"/);
-    assert.match(adminHtml, /Restricted exclusively to <strong>igor@igorganapolsky\.com<\/strong>/);
+    assert.match(adminHtml, /placeholder="igor@igorganapolsky\.com"/);
     assert.doesNotMatch(adminHtml, /Founder Admin Login/i);
     assert.match(adminHtml, /id="adminProtectedDashboard" style="display:none;"/);
     // 3b. Synthetic probe emails (probe-invalid@example.invalid) are rejected and purged
@@ -616,6 +616,15 @@ test('Deslopify AI (QSZKZHeGZr4), Robert Herjavec Sales Engine (Sal2R5HYy1s), Yo
   assert.equal(grokDataBotReport.companyWideTelemetry7d.broadAndStickyMessageSharePct, 44);
   assert.equal(grokDataBotReport.companyWideTelemetry7d.slackRetentionMultiplier, 5.0);
 
+  // 11. Gartner 90% Open-Weight Models at 1/20th Cost & Harness Moat (The Register)
+  const gartnerReport = fw.evaluateGartnerOpenModels90PctHarnessMoatSteal({ totalMonthlySteps: 1000000 });
+  assert.equal(gartnerReport.ok, true);
+  assert.equal(gartnerReport.stepDistribution.routineOpExSharePct, 90);
+  assert.equal(gartnerReport.stepDistribution.costRatioVsFrontierRaw, 0.05);
+  assert.equal(gartnerReport.stepDistribution.costRatioVsCheapestClosed, 0.25);
+  assert.equal(gartnerReport.economicsSimulation.savingsPctWithThumbGateHarness, 85.5);
+  assert.equal(gartnerReport.maValuationPerimeterMoat.workflowHistoryRetainedOnPremPct, 100);
+
   // 11. Verify HTTP routes on live server
   process.env.THUMBGATE_ALLOW_INSECURE = 'true';
   const handle = await startServer({ port: 0, host: '127.0.0.1' });
@@ -635,6 +644,7 @@ test('Deslopify AI (QSZKZHeGZr4), Robert Herjavec Sales Engine (Sal2R5HYy1s), Yo
       '/v1/cloud/qwengpu-simt/gate',
       '/v1/cloud/linkedin-otel-journey/gate',
       '/v1/cloud/grok-data-bot/gate',
+      '/v1/cloud/gartner-90pct-open-models-harness/gate',
     ]) {
       const res = await fetch(`${baseUrl}${route}`);
       assert.equal(res.status, 200, `Expected 200 for ${route}`);

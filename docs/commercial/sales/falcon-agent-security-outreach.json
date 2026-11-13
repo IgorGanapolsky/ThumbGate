@@ -1,0 +1,27 @@
+{
+  "campaign": "CrowdStrike Fiddler/Dreadnode AI Agent Security Counterpositioning",
+  "targetRoles": [
+    "Chief Information Security Officer",
+    "VP of AI Security",
+    "Head of Information Security",
+    "Lead AI Architect",
+    "Principal SecOps Engineer"
+  ],
+  "targetCompanies": [
+    "CrowdStrike Falcon Enterprise Customers",
+    "Fintech & Healthtech Deploying Autonomous Coding Agents",
+    "Enterprises Adopting Claude Code, Cursor, and LangGraph"
+  ],
+  "coldEmailTemplates": [
+    {
+      "id": "ciso_killswitch_prompt",
+      "subject": "The Falcon Guardian kill switch for your dev agents (without waiting for 2027)",
+      "body": "Hi {{firstName}},\n\nWith CrowdStrike acquiring Fiddler ($400M) and Dreadnode ($95M) to build their AI agent kill switch, George Kurtz confirmed what security teams are seeing on the ground: prompt instructions in CLAUDE.md fail, and AI agents need runtime guardrails that live *outside* the model.\n\nWhile Falcon Observe won't ship until fiscal 2027, enterprise dev teams are deploying coding and workflow agents into production today.\n\nWe built ThumbGate (open-source + enterprise tier) to solve this right now:\n1. External AI Kill Switch: Halts destructive commands, runaway wallet spend, and credential leaks at the OS/MCP level before execution.\n2. Deterministic Flight Recorder: Cryptographic JSONL black box recording every agent intent, tool call, and state diff.\n3. Dreadnode-Grade Red-Teaming: Automated testing against OWASP LLM Top 10 built directly into your CI pipeline.\n\nAre you open to a 10-minute demo on how you can enforce runtime agent guardrails across your engineering team today?\n\nBest,\nIgor Ganapolsky\nFounder, ThumbGate\nhttps://github.com/IgorGanapolsky/ThumbGate"
+    }
+  ],
+  "linkedInMessage": "Saw CrowdStrike's $495M acquisitions of Fiddler and Dreadnode for AI agent observability and red teaming. We built ThumbGate to give enterprise teams an external runtime AI kill switch and flight recorder today—before Falcon Observe ships in 2027. Open to seeing the 2-minute developer walkthrough?",
+  "pricing": {
+    "developerTeam": "$499/mo",
+    "enterpriseArchitecture": "$2,500 one-time / annual"
+  }
+}

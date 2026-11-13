@@ -132,7 +132,7 @@ function buildThreeAltitudeGraph(input = {}) {
   const project = {
     id: normalizeText(input.project?.id) || 'proj_thumbgate',
     title: normalizeText(input.project?.title) || 'ThumbGate Reliability Gateway',
-    intent: normalizeText(input.project?.intent) || 'Earn $100/day after-tax profit via sub-5ms PreToolUse governance',
+    intent: normalizeText(input.project?.intent) || 'Make $300/day, 24/7 after-tax profit via sub-5ms PreToolUse governance',
   };
 
   const missions = (Array.isArray(input.missions) ? input.missions : []).map((m, idx) => {

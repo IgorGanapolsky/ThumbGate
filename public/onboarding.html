@@ -124,6 +124,66 @@
   .quick-text p { margin: 0; color: var(--muted); font-size: 14px; }
   .quick-actions { display: flex; gap: 12px; flex-wrap: wrap; }
 
+  /* Four Paths Onboarding Strip (HyperAgent Proven Funnel) */
+  .four-paths-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    margin: 28px 0 36px;
+  }
+  .path-card {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 20px;
+    text-align: left;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    transition: all 0.2s ease;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+  }
+  .path-card:hover {
+    border-color: var(--cyan);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(34, 211, 238, 0.12);
+  }
+  .path-badge {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    font-size: 10px;
+    font-weight: 800;
+    text-transform: uppercase;
+    padding: 2px 8px;
+    border-radius: 999px;
+  }
+  .badge-free { background: rgba(74, 222, 128, 0.15); color: var(--green); border: 1px solid var(--green); }
+  .badge-pro { background: rgba(34, 211, 238, 0.15); color: var(--cyan); border: 1px solid var(--cyan); }
+  .badge-kit { background: rgba(251, 191, 36, 0.15); color: var(--amber); border: 1px solid var(--amber); }
+  .badge-done { background: rgba(192, 132, 252, 0.15); color: var(--purple); border: 1px solid var(--purple); }
+  .path-icon { font-size: 24px; margin-bottom: 12px; }
+  .path-card h4 { margin: 0 0 6px; font-size: 16px; font-weight: 800; color: var(--text); }
+  .path-card p { margin: 0 0 16px; font-size: 13px; color: var(--muted); line-height: 1.4; }
+  .path-btn {
+    margin-top: auto;
+    font-size: 13px;
+    font-weight: 700;
+    padding: 8px 12px;
+    border-radius: 6px;
+    text-align: center;
+    text-decoration: none;
+    display: block;
+  }
+  @media (max-width: 900px) {
+    .four-paths-grid { grid-template-columns: 1fr 1fr; }
+  }
+  @media (max-width: 600px) {
+    .four-paths-grid { grid-template-columns: 1fr; }
+  }
+
   /* Section Styling */
   section { border-top: 1px solid var(--line); padding: 50px 0; }
   h2 { margin: 0 0 10px; font-size: 28px; letter-spacing: -0.02em; }
@@ -360,6 +420,46 @@
 </header>
 
 <main class="container">
+  <!-- Section 0: Four Onboarding Paths (HyperAgent Proven Steal) -->
+  <section id="four-paths" style="border-top:none;padding-top:0;">
+    <h2>Choose Your Operating Path</h2>
+    <p class="section-lede">Whether you are building your personal coding agent, deploying a multi-agent team across your organization, or need one chronic workflow failure fixed immediately.</p>
+    
+    <div class="four-paths-grid">
+      <div class="path-card" onclick="location.href='#agents'">
+        <span class="path-badge badge-free">Free OSS</span>
+        <div class="path-icon">🛡️</div>
+        <h4>1. Guard My Personal Agent</h4>
+        <p>Set up ThumbGate once in Cursor, Claude Code, Windsurf, or VS Code. Zero runtime latency, local SQLite, automatic PreToolUse blocking.</p>
+        <a href="#agents" class="path-btn btn-secondary">Select Agent Harness →</a>
+      </div>
+
+      <div class="path-card" onclick="location.href='/go/bundle-49?utm_source=onboarding_4paths&utm_medium=card&utm_campaign=production_bundle_49'">
+        <span class="path-badge badge-kit">$49 Once</span>
+        <div class="path-icon">📦</div>
+        <h4>2. Production Rule Bundle</h4>
+        <p>Drop-in production rule-pack for teams: 18 locked rubrics, secret leakage interceptors, SQL drop blockers, and automated git branch guards.</p>
+        <a href="/go/bundle-49?utm_source=onboarding_4paths&utm_medium=card&utm_campaign=production_bundle_49" class="path-btn btn-primary" style="background:var(--amber);color:#000;">Get Production Kit ($49) →</a>
+      </div>
+
+      <div class="path-card" onclick="location.href='/go/pro-direct?utm_source=onboarding_4paths&utm_medium=card&utm_campaign=pro_direct_19'">
+        <span class="path-badge badge-pro">$19 / Mo</span>
+        <div class="path-icon">⚡</div>
+        <h4>3. Hire Multi-Agent Team</h4>
+        <p>Cloud token sync, shared organization telemetry, dynamic cost router, and multi-agent coordination with real-time rubric evaluation.</p>
+        <a href="/go/pro-direct?utm_source=onboarding_4paths&utm_medium=card&utm_campaign=pro_direct_19" class="path-btn btn-primary">Start Pro ($19/mo) →</a>
+      </div>
+
+      <div class="path-card" onclick="location.href='/pricing#enterprise-gate'">
+        <span class="path-badge badge-done">$499 Once</span>
+        <div class="path-icon">🎯</div>
+        <h4>4. Done-With-You Diagnostic</h4>
+        <p>We review your chronic agent failure, wire custom pre-action gates and regression tests, and deliver verification proof in 2 business days.</p>
+        <a href="/pricing#enterprise-gate" class="path-btn btn-secondary" style="border-color:var(--purple);color:var(--purple);">Book Setup Sprint ($499) →</a>
+      </div>
+    </div>
+  </section>
+
   <!-- Section 1: Interactive Agent Setup -->
   <section id="agents">
     <h2>1. Select Your Agent Harness (16 Supported)</h2>

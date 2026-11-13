@@ -21,19 +21,20 @@ const {
 
 const GEMINI_ENDPOINT = 'https://generativelanguage.googleapis.com/v1beta/models';
 const PERPLEXITY_ENDPOINT = 'https://api.perplexity.ai/chat/completions';
-const DEFAULT_MODEL = 'gemini-2.5-flash';
+const DEFAULT_MODEL = 'gemini-4-hydrogen';
 const MAX_QUESTION_CHARS = 2000;
 const MAX_CONTEXT_LESSONS = 8;
 const GEMINI_MODEL_BY_TIER = Object.freeze({
   nano: 'gemini-2.5-flash-lite',
-  mini: 'gemini-2.5-flash',
-  frontier: 'gemini-2.5-pro',
+  mini: 'gemini-4-hydrogen',
+  frontier: 'gemini-4-argon',
 });
 
 // Allowlist the model so a user-supplied `model` cannot route the call to an
 // arbitrary / unexpected (or more expensive) endpoint. Anything not on the list
 // falls back to the default.
 const ALLOWED_MODELS = new Set([
+  'gemini-4-hydrogen', 'gemini-4-argon',
   'gemini-2.5-flash', 'gemini-2.5-flash-lite', 'gemini-2.5-pro',
   'gemini-2.0-flash', 'gemini-2.0-flash-lite',
   'gemini-flash-latest', 'gemini-flash-lite-latest', 'gemini-pro-latest',

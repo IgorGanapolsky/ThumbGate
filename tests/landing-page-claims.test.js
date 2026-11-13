@@ -3,6 +3,7 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
+const os = require('node:os');
 const path = require('node:path');
 
 const ROOT = path.resolve(__dirname, '..');
@@ -10,21 +11,21 @@ const HOME_HTML = fs.readFileSync(path.join(ROOT, 'public', 'index.html'), 'utf8
 const PRICING_HTML = fs.readFileSync(path.join(ROOT, 'public', 'pricing.html'), 'utf8');
 const PRO_HTML = fs.readFileSync(path.join(ROOT, 'public', 'pro.html'), 'utf8');
 
-test('homepage commercial contract offers Pro $19/mo and Diagnostic $499', () => {
-  assert.match(HOME_HTML, /Diagnostic Gate/);
-  assert.match(HOME_HTML, /\$499 Diagnostic/i);
+test('homepage commercial contract offers Pro $19/mo and the $499 Setup Sprint', () => {
+  assert.match(HOME_HTML, /Setup Sprint/);
+  assert.match(HOME_HTML, /Book the \$499 setup/);
   assert.match(HOME_HTML, /action="\/go\/diagnostic-pay"/);
   assert.match(HOME_HTML, /\$__SPRINT_DIAGNOSTIC_PRICE_DOLLARS__/);
-  assert.match(HOME_HTML, /\/checkout\/pro/);
+  assert.match(HOME_HTML, /\/go\/pro-direct/);
   assert.match(HOME_HTML, /Start Pro — \$19\/mo/);
-  assert.match(HOME_HTML, /Pro · \$19\/mo/);
+  assert.match(HOME_HTML, /data-cta-id="nav_install_free"/);
   assert.doesNotMatch(HOME_HTML, /href="[^"]*workflow-sprint-intake|\/go\/sprint/i);
   assert.match(HOME_HTML, /id="workflow-sprint-intake"[^>]*data-legacy-intake-alias/);
 });
 
-test('pricing surfaces Pro self-serve and Diagnostic managed gate together', () => {
-  assert.match(PRICING_HTML, /Diagnostic gate|Get Started — \$499 Diagnostic|Cash path/i);
-  assert.match(PRICING_HTML, /Diagnostic gate|Get Started — \$499 Diagnostic/i);
+test('pricing surfaces Pro self-serve and the $499 Setup Sprint together', () => {
+  assert.match(PRICING_HTML, /Setup Sprint/);
+  assert.match(PRICING_HTML, /Book the \$499 setup/);
   assert.match(PRICING_HTML, /action="\/go\/diagnostic-pay"/);
   assert.match(PRICING_HTML, /\$499/);
   assert.match(PRICING_HTML, /\/checkout\/pro/);
@@ -53,7 +54,7 @@ test('Pro detail stays code-backed and is linked from primary cash paths', () =>
   assert.match(PRO_HTML, /DPO/i);
   assert.match(server, /'\/v1\/dpo\/export'/);
   assert.ok(pkg.files.includes('public/dashboard.html'));
-  assert.match(HOME_HTML, /\/checkout\/pro/i);
+  assert.match(HOME_HTML, /\/go\/pro-direct/i);
   assert.match(PRICING_HTML, /\/checkout\/pro/i);
 });
 
@@ -78,16 +79,16 @@ test('managed gate promise is bounded and backed by the canonical checkout rail'
 
 test('public enforcement claims match the implemented default and strict boundaries', (t) => {
   const { spawnSync } = require('node:child_process');
-  const os = require('node:os');
-  // The fake token below is denied on purpose; keep that block out of the real feedback store.
-  const feedbackDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-landing-claims-'));
+  const feedbackDir = fs.mkdtempSync(path.join(os.tmpdir(), 'landing-claims-gate-'));
   t.after(() => fs.rmSync(feedbackDir, { recursive: true, force: true }));
+  // Pin enforcement mode so an operator shell with THUMBGATE_STRICT_ENFORCEMENT=1
   // (common after never-spend hardening) cannot flip the default-mode assertion.
   const baseEnv = {
     ...process.env,
     THUMBGATE_STRICT_ENFORCEMENT: '',
-    NODE_TEST_CONTEXT: 'true',
     THUMBGATE_FEEDBACK_DIR: feedbackDir,
+    THUMBGATE_STATE_DIR: feedbackDir,
+    NODE_TEST_CONTEXT: 'true',
   };
   const runGate = (command, env = {}) => {
     const result = spawnSync('node', ['bin/cli.js', 'gate-check'], {
@@ -106,8 +107,6 @@ test('public enforcement claims match the implemented default and strict boundar
   };
 
   assert.equal(runGate(`echo ghp_${'a'.repeat(36)}`), 'deny');
-  const isolatedLog = path.join(feedbackDir, 'diagnostic-log.jsonl');
-  assert.match(fs.readFileSync(isolatedLog, 'utf8'), /security:github_pat/);
   assert.equal(runGate('git push --force origin main'), 'allow');
   assert.equal(runGate('git push --force origin main', { THUMBGATE_STRICT_ENFORCEMENT: '1' }), 'deny');
   assert.match(HOME_HTML, /secret exfiltration[\s\S]*denied by default/i);

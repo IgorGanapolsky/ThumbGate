@@ -12,6 +12,7 @@ const {
   evaluateJulianGoldieGrokBotJarvisCommandCenter,
   evaluateQwenGpuCompiledSimtAndDeltaNetStateSteal,
   evaluateLinkedInOpenTelemetryJourneySteal,
+  evaluateGartnerOpenModels90PctHarnessMoatSteal,
   evaluateGrokDataBotAndBroadStickyTeamBotsSteal,
 } = require('../src/cloud-token-firewall');
 
@@ -27,6 +28,7 @@ function main() {
     julianGoldieSkool: evaluateJulianGoldieAiMoneyLabSkoolMonetizer(),
     jarvisCommandCenter: evaluateJulianGoldieGrokBotJarvisCommandCenter(),
     qwenGpuSimt: evaluateQwenGpuCompiledSimtAndDeltaNetStateSteal(),
+    gartner90PctHarnessMoat: evaluateGartnerOpenModels90PctHarnessMoatSteal(),
     linkedInOtelJourney: evaluateLinkedInOpenTelemetryJourneySteal(),
     grokDataBot: evaluateGrokDataBotAndBroadStickyTeamBotsSteal(),
   };

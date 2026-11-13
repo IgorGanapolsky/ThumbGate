@@ -260,6 +260,193 @@ function dumpGraph(graph) {
   );
 }
 
+/* ------------------------------------------------------------------ *
+ * Pattern C: Graph-R1 Hypergraphs & Agentic Rethink Search Loop
+ * (Dual-Model Mixture-of-Agents & Agentic GraphRAG Playbook)
+ * ------------------------------------------------------------------ */
+
+const EXTRACTION_PATTERNS = Object.freeze({
+  pattern_a_open: {
+    id: 'pattern_a_open',
+    label: 'Pattern A: LLM Open Extraction',
+    productionAllowedForGovernance: false,
+    methodology: 'Zero predefined constraints; LLM determines entities and relationships dynamically on read.',
+    tradeoff: 'Maximum descriptive richness, but rejected for governance due to lexical drift and expensive entity resolution.',
+  },
+  pattern_b_schema_constrained: {
+    id: 'pattern_b_schema_constrained',
+    label: 'Pattern B: Schema-Constrained Extraction',
+    productionAllowedForGovernance: true,
+    methodology: 'Strict predefined ontology up front (tool, guard, incident, vendor, policy, receipt).',
+    tradeoff: 'Cuts ingestion cost, eliminates syntactical variance, and ensures deterministic consistency.',
+  },
+  pattern_c_graph_r1_hypergraph: {
+    id: 'pattern_c_graph_r1_hypergraph',
+    label: 'Pattern C: Graph-R1 Hypergraphs',
+    productionAllowedForGovernance: true,
+    methodology: 'Lightweight n-ary knowledge hypergraphs with RL reward scoring (format + F1) and multi-turn rethink traversal.',
+    tradeoff: 'Enables cross-repository multi-hop reasoning and step-by-step rethink states under strict safety guardrails.',
+  },
+});
+
+/**
+ * Compute Graph-R1 style deterministic reward combining structural format
+ * compliance and entity-level F1 overlap against canonical schema/gold entities.
+ */
+function scoreGraphR1HypergraphReward({ extractedEntities = [], goldEntities = [], validFormat = true } = {}) {
+  const normExtracted = [...new Set((extractedEntities || []).map(normalizeEntity).filter(Boolean))];
+  const normGold = [...new Set((goldEntities || []).map(normalizeEntity).filter(Boolean))];
+  const formatReward = validFormat && normExtracted.length > 0 ? 1.0 : 0.0;
+
+  if (normGold.length === 0) {
+    const f1Reward = normExtracted.length > 0 ? 1.0 : 0.0;
+    return {
+      formatReward,
+      precision: f1Reward,
+      recall: f1Reward,
+      f1Reward,
+      combinedReward: Number((0.3 * formatReward + 0.7 * f1Reward).toFixed(4)),
+    };
+  }
+
+  const goldSet = new Set(normGold);
+  const truePositives = normExtracted.filter((e) => goldSet.has(e)).length;
+  const precision = normExtracted.length > 0 ? truePositives / normExtracted.length : 0;
+  const recall = normGold.length > 0 ? truePositives / normGold.length : 0;
+  const f1Reward = (precision + recall) > 0
+    ? Number(((2 * precision * recall) / (precision + recall)).toFixed(4))
+    : 0;
+  const combinedReward = Number((0.3 * formatReward + 0.7 * f1Reward).toFixed(4));
+
+  return {
+    formatReward,
+    precision: Number(precision.toFixed(4)),
+    recall: Number(recall.toFixed(4)),
+    f1Reward,
+    combinedReward,
+  };
+}
+
+/**
+ * Build a Graph-R1 hypergraph where each lesson also produces an n-ary
+ * hyperedge connecting all canonical entities participating in that incident.
+ */
+function buildHypergraph(lessons) {
+  const baseGraph = buildGraph(lessons);
+  const hyperedges = [];
+
+  for (const lesson of lessons || []) {
+    if (!lesson || !lesson.id) continue;
+    const memberNodes = baseGraph.nodes.filter((n) => Array.isArray(n.sources) && n.sources.includes(lesson.id));
+    if (memberNodes.length === 0) continue;
+    const lessonEdges = baseGraph.edges.filter((e) => e.source === lesson.id);
+    const memberIds = memberNodes.map((n) => n.id);
+    const reward = scoreGraphR1HypergraphReward({
+      extractedEntities: memberIds,
+      goldEntities: memberIds,
+      validFormat: true,
+    });
+    hyperedges.push({
+      hyperedgeId: `he:${lesson.id}`,
+      lessonId: lesson.id,
+      members: memberIds,
+      memberTypes: [...new Set(memberNodes.map((n) => n.type))],
+      relations: [...new Set(lessonEdges.map((e) => e.rel))],
+      rewardScore: reward.combinedReward,
+    });
+  }
+
+  return {
+    ...baseGraph,
+    patternId: EXTRACTION_PATTERNS.pattern_c_graph_r1_hypergraph.id,
+    hyperedges,
+  };
+}
+
+/**
+ * Autonomous Search Tier with step-by-step "rethink" state when initial 1-hop
+ * sub-graph lacks receipt/guard evidence or multi-hop relational closure.
+ */
+function runAgenticGraphRagSearch(graphInput, queryText, opts = {}) {
+  const maxDepth = Math.min(Math.max(Number(opts.maxDepth) || 2, 1), 3);
+  const topK = Math.max(Number(opts.topK) || 3, 1);
+  const graph = graphInput && Array.isArray(graphInput.nodes) ? graphInput : buildHypergraph([]);
+
+  const hop1 = traverseOneHop(graph, queryText, topK);
+  const hasEvidenceOrGuard = hop1.some(
+    (h) => h.relation === 'evidenced_by' || (h.relation === 'governed_by' && h.neighborType === 'guard'),
+  );
+  const rethinkSteps = [];
+  const multiHopPaths = [...hop1];
+
+  if ((!hasEvidenceOrGuard || hop1.length === 0) && maxDepth >= 2) {
+    // Rethink state: relax to all node types (including tool/vendor/guard) and expand 2nd hop
+    const qTokens = new Set(
+      String(queryText || '').toLowerCase().split(/[^a-z0-9]+/).filter((t) => t.length > 2),
+    );
+    const fallbackSeeds = graph.nodes
+      .map((n) => ({
+        node: n,
+        score: n.id.split(/[^a-z0-9]+/).filter((t) => qTokens.has(t)).length,
+      }))
+      .filter((s) => s.score > 0)
+      .sort((a, b) => b.score - a.score)
+      .slice(0, topK);
+
+    rethinkSteps.push({
+      step: 1,
+      state: 'rethink_subgraph_expansion',
+      reason: hop1.length === 0 ? 'zero_incident_entry_hits' : 'missing_guard_or_receipt_closure',
+      candidateSeeds: fallbackSeeds.map((s) => s.node.id),
+    });
+
+    const nodeById = new Map(graph.nodes.map((n) => [n.id, n]));
+    const frontierIds = new Set([
+      ...hop1.map((h) => h.neighbor),
+      ...fallbackSeeds.map((s) => s.node.id),
+    ]);
+
+    for (const seedId of frontierIds) {
+      for (const edge of graph.edges) {
+        if (edge.from !== seedId && edge.to !== seedId) continue;
+        const neighborId = edge.from === seedId ? edge.to : edge.from;
+        const seedNode = nodeById.get(seedId);
+        const neighborNode = nodeById.get(neighborId);
+        const candidate = {
+          entity: seedId,
+          entityType: seedNode ? seedNode.type : 'unknown',
+          relation: edge.rel,
+          neighbor: neighborId,
+          neighborType: neighborNode ? neighborNode.type : 'unknown',
+          entryScore: 1,
+          hopDepth: 2,
+          source: edge.source,
+        };
+        const dup = multiHopPaths.some(
+          (p) => p.entity === candidate.entity && p.relation === candidate.relation && p.neighbor === candidate.neighbor,
+        );
+        if (!dup) multiHopPaths.push(candidate);
+      }
+    }
+  }
+
+  const citations = [...new Set(multiHopPaths.map((p) => p.source).filter(Boolean))];
+  const citedContextLines = multiHopPaths.map(
+    (p) => `[source:${p.source || 'graph'}] (${p.entity}:${p.entityType}) -[${p.relation}]-> (${p.neighbor}:${p.neighborType})`,
+  );
+
+  return {
+    query: String(queryText || ''),
+    traversalDepthUsed: rethinkSteps.length > 0 ? Math.min(2, maxDepth) : 1,
+    rethinkTriggered: rethinkSteps.length > 0,
+    rethinkSteps,
+    pathCount: multiHopPaths.length,
+    paths: multiHopPaths,
+    citations,
+    citedContextBlock: citedContextLines.join('\n'),
+  };
+}
+
 function isCliEntrypoint() {
   return require.main === module;
 }
@@ -282,11 +469,13 @@ function main() {
       tags: ['vendor'],
     },
   ];
-  const graph = buildGraph(lessons);
+  const graph = buildHypergraph(lessons);
   const hops = traverseOneHop(graph, 'acme rate limit outage');
+  const agenticSearch = runAgenticGraphRagSearch(graph, 'stripe retry storm');
   process.stdout.write(JSON.stringify({
     honesty: 'deterministic graph; ingestion costs modeled only',
     hops,
+    agenticSearch,
     budget: ingestionBudget(lessons.length),
     dump: JSON.parse(dumpGraph(graph)),
   }, null, 2) + '\n');
@@ -297,12 +486,17 @@ if (isCliEntrypoint()) main();
 module.exports = {
   ENTITY_TYPES,
   RELATION_TYPES,
+  EXTRACTION_PATTERNS,
   canonicalSchema,
   normalizeEntity,
   classifyEntity,
   buildGraph,
+  buildHypergraph,
+  scoreGraphR1HypergraphReward,
   traverseOneHop,
+  runAgenticGraphRagSearch,
   ingestionBudget,
   dumpGraph,
   isCliEntrypoint,
 };
+

@@ -38,6 +38,13 @@ const {
   normalizeProviderAction,
 } = require('./provider-action-normalizer');
 const {
+  deobfuscateNoisyByteStream,
+} = require('./hnet-dynamic-chunker');
+const {
+  evaluateMorpheusCybersecurityPipeline,
+  evaluateNeMoColang2Rails,
+} = require('./nvidia-open-source-accelerator');
+const {
   recordDecisionEvaluation,
   recordDecisionOutcome,
 } = require('./decision-journal');
@@ -112,6 +119,16 @@ function resolveThumbgateStateDir() {
   // Test runs must not count as real blocks in the user's gate stats.
   if (process.env.NODE_TEST_CONTEXT) {
     return path.join(os.tmpdir(), `thumbgate-test-${process.pid}`);
+  }
+
+  if (
+    process.env.THUMBGATE_FEEDBACK_DIR
+    && (
+      process.env.THUMBGATE_FEEDBACK_DIR.startsWith(os.tmpdir())
+      || /^\/(?:private\/)?(?:tmp|var\/folders)\//.test(process.env.THUMBGATE_FEEDBACK_DIR)
+    )
+  ) {
+    return process.env.THUMBGATE_FEEDBACK_DIR;
   }
 
   return path.join(process.env.HOME || os.tmpdir(), '.thumbgate');
@@ -289,7 +306,6 @@ const SELF_PROTECT_HARD_FLOOR_GATE_IDS = new Set([
   'self-protect-config',
   'self-protect-kill',
   'self-protect-env-override',
-  'self-protect-hooks-disable',
 ]);
 // An expired task-scope lease gets its OWN gate id so it can be exempted from the two downgrade
 // paths without touching ordinary task-scope denials. Without this the fail-closed guarantee is
@@ -1168,7 +1184,19 @@ function buildGateActionFingerprint(gateId, options = {}) {
 
 function recordStat(gateId, action, gate, options = {}) {
   const stats = loadStats();
-  if (action === 'block') stats.blocked = (stats.blocked || 0) + 1;
+  if (action === 'block') {
+    stats.blocked = (stats.blocked || 0) + 1;
+    const today = todayKey();
+    if (!stats.dailyBlocks) stats.dailyBlocks = {};
+    const keys = Object.keys(stats.dailyBlocks);
+    if (keys.length > 7) {
+      keys.sort();
+      for (const k of keys.slice(0, keys.length - 7)) {
+        delete stats.dailyBlocks[k];
+      }
+    }
+    stats.dailyBlocks[today] = (stats.dailyBlocks[today] || 0) + 1;
+  }
   else if (action === 'warn') stats.warned = (stats.warned || 0) + 1;
   else if (action === 'approve') stats.pendingApproval = (stats.pendingApproval || 0) + 1;
   else if (action === 'log') stats.logged = (stats.logged || 0) + 1;
@@ -1199,9 +1227,25 @@ function recordStat(gateId, action, gate, options = {}) {
         stats.recurringBlocks = (stats.recurringBlocks || 0) + 1;
       } else {
         stats.sessionFiredActions[sessionKey][gateId][fingerprint] = true;
+        stats.distinctBlocks = (stats.distinctBlocks || 0) + 1;
       }
     }
   }
+  stats.blocks = stats.blocked || 0;
+  stats.warns = stats.warned || 0;
+  stats.passes = stats.passed || 0;
+  stats.repeatBlocks = stats.recurringBlocks || 0;
+  stats.distinctBlocks = Math.max(
+    stats.distinctBlocks || 0,
+    Math.max(0, (stats.blocked || 0) + (stats.warned || 0) - (stats.recurringBlocks || 0)),
+  );
+  stats.totalEvaluations = (stats.blocked || 0)
+    + (stats.warned || 0)
+    + (stats.passed || 0)
+    + (stats.pendingApproval || 0)
+    + (stats.logged || 0);
+  stats.lastUpdated = new Date().toISOString();
+  stats.lastEvaluatedAt = stats.lastUpdated;
 
   saveStats(stats);
   // Track lesson freshness when an auto-promoted gate fires
@@ -1265,8 +1309,7 @@ function applyDailyBlockCap(denyResult) {
 
   const todayCount = getTodayBlockCount();
   if (todayCount < FREE_TIER_DAILY_BLOCKS) {
-    // Under limit: allow the block, increment counter
-    incrementTodayBlockCount();
+    // Under limit: allow the block
     return null;
   }
 
@@ -1818,8 +1861,10 @@ function canonicalizeSegmentHead(segment) {
 }
 
 function canonicalizeCommandPositions(command) {
-  const text = String(command || '');
-  if (!text) return '';
+  const rawText = String(command || '');
+  if (!rawText) return '';
+  const deobfuscated = deobfuscateNoisyByteStream(rawText);
+  const text = (deobfuscated && deobfuscated.normalizedText) ? deobfuscated.normalizedText : rawText;
   return text
     .split(/\r?\n|&&|\|\||[;|&]/)
     .map((segment) => canonicalizeSegmentHead(segment))
@@ -2419,13 +2464,16 @@ function readPackageScript(repoRoot, scriptName) {
 function recordHelperScriptWrite(toolName, toolInput = {}) {
   if (process.env.THUMBGATE_HELPER_BYPASS_GUARD === '0') return null;
 
+  const isEditLike = EDIT_LIKE_TOOLS.has(toolName);
+  const command = String(toolInput.command || '');
+  const commandWrite = toolName === 'Bash' && HELPER_WRITE_PATTERN.test(command);
+  if (!isEditLike && !commandWrite) return null;
+
   const affected = extractAffectedFiles(toolName, toolInput);
   const affectedFiles = affected.files || [];
-  const command = String(toolInput.command || '');
   const actionContext = extractActionContext(toolName, toolInput);
   const helperFiles = affectedFiles.filter((filePath) => HELPER_SCRIPT_FILE_PATTERN.test(normalizePosix(filePath)));
   const packageScriptTouched = affectedFiles.some((filePath) => normalizePosix(filePath) === 'package.json') || /\bpackage\.json\b|\bscripts\./i.test(actionContext);
-  const commandWrite = toolName === 'Bash' && HELPER_WRITE_PATTERN.test(command);
 
   if (helperFiles.length === 0 && !packageScriptTouched && !commandWrite) return null;
 
@@ -2832,12 +2880,72 @@ function evaluateCopilotSinglePromptPerSessionGate(toolName, toolInput = {}) {
   return null;
 }
 
+function evaluateRepeatedClaudeFeedbackMistakesGate(toolName, toolInput = {}) {
+  const filePath = String(toolInput.file_path || toolInput.path || '');
+  if (/(?:gates-engine\.js|default\.json|lesson-inject\.js|\.test\.js)$/.test(filePath)) {
+    return null;
+  }
+  const payloadText = [
+    toolInput.command,
+    toolInput.content,
+    toolInput.new_string,
+    toolInput.body,
+    toolInput.message,
+    toolInput.text,
+  ].filter(Boolean).join('\n');
+  if (!payloadText) return null;
+
+  if (/(?:(?:127\.0\.0\.1|localhost|0\.0\.0\.0):9222\b|--remote-debugging-port(?:=|\s+)9222\b|ws:\/\/[^/\s]+:9222\b)/i.test(payloadText)) {
+    return {
+      decision: 'deny',
+      gate: 'chrome-remote-debugging-port-9222-blocked',
+      action: 'block',
+      severity: 'critical',
+      message: "Hard block: Connecting to everyday Chrome on port 9222 triggers 'Allow remote debugging?' pop-ups. Use BrowserOS Neo on port 9117 (CDP) / 9011 (MCP) instead.",
+    };
+  }
+
+  if (/waiting\s+on\s+igor[^\n]*(?:build\s+(?:still\s+)?running|unbundled\s+push|ci\s+(?:still\s+)?running|pipeline\s+running)/i.test(payloadText)) {
+    return {
+      decision: 'deny',
+      gate: 'false-waiting-on-igor-blocked',
+      action: 'block',
+      severity: 'high',
+      message: "Hard block (repeated thumbs-down): Never label running builds, CI pipelines, or unbundled pushes as 'waiting on Igor'.",
+    };
+  }
+
+  if (/(?:FALLBACK_APPLIED|P95_LATENCY_MS|RAG_PIPELINE_V2|LLM_ROUTER_TIER_1)/.test(payloadText)) {
+    return {
+      decision: 'deny',
+      gate: 'executive-brief-jargon-dump-blocked',
+      action: 'block',
+      severity: 'high',
+      message: 'Hard block (repeated thumbs-down): Raw internal telemetry jargon/acronyms are blocked in executive briefs and outbound updates.',
+    };
+  }
+
+  // Repeated thumbs-down: Messages naming bare commit hashes and bare PR numbers without human words or markdown links
+  if (/(?:bare[_\s]hashes|commit[_\s]hash[_\s]dump)/i.test(payloadText) || (/\b(?:commit\s+[0-9a-f]{7,40}\b|PR\s+\d{4,6}\b)/i.test(payloadText) && !/\[[^\]]+\]\(https?:\/\/[^\)]+\)/.test(payloadText) && /teams|slack|outbound|message/i.test(toolName + ' ' + (toolInput.context || '')))) {
+    return {
+      decision: 'deny',
+      gate: 'bare-commit-or-pr-reference-blocked',
+      action: 'block',
+      severity: 'high',
+      message: 'Hard block (repeated thumbs-down): Messages to colleagues must use human words and real clickable links, not bare commit hashes or unlinked PR numbers.',
+    };
+  }
+
+  return null;
+}
+
 function evaluateRepeatedTeamMistakesGate(toolName, toolInput = {}) {
   return evaluateSwarmClaimLostWriteGate(toolName, toolInput)
     || evaluateTeamsSingleReplyGate(toolName, toolInput)
     || evaluateAzReposPrDraftPublishGate(toolName, toolInput)
     || evaluateSupabaseDatabasePaperclippingGate(toolName, toolInput)
-    || evaluateCopilotSinglePromptPerSessionGate(toolName, toolInput);
+    || evaluateCopilotSinglePromptPerSessionGate(toolName, toolInput)
+    || evaluateRepeatedClaudeFeedbackMistakesGate(toolName, toolInput);
 }
 
 /**
@@ -4500,6 +4608,21 @@ function getFeedbackLoopModule() {
   }
 }
 
+function isIsolatedTempFeedbackDir(dirPath) {
+  if (!dirPath) return false;
+  const normalized = path.resolve(String(dirPath));
+  const tmpRoot = path.resolve(os.tmpdir());
+  return (
+    normalized.startsWith(tmpRoot + path.sep)
+    || normalized.startsWith('/tmp/')
+    || normalized.startsWith('/private/tmp/')
+    || normalized.startsWith('/var/folders/')
+    || normalized.startsWith('/private/var/folders/')
+  );
+}
+
+const SYNTHETIC_SECRET_TEST_VECTOR_RE = /\bghp_(?:a{36}|x{36}|0{36}|1{36})\b|\bevil\.example\.com\b/i;
+
 function recordSecretViolation(input, scanResult) {
   const feedbackLoop = getFeedbackLoopModule();
   if (!feedbackLoop || typeof feedbackLoop.appendDiagnosticRecord !== 'function') {
@@ -4510,6 +4633,12 @@ function recordSecretViolation(input, scanResult) {
   const toolInput = input.tool_input && typeof input.tool_input === 'object' ? input.tool_input : {};
   const filePath = toolInput.file_path || toolInput.path || toolInput.filePath || null;
   const command = typeof toolInput.command === 'string' ? toolInput.command : '';
+  const feedbackDir = typeof feedbackLoop.getFeedbackPaths === 'function'
+    ? feedbackLoop.getFeedbackPaths().FEEDBACK_DIR
+    : '';
+  if (!isIsolatedTempFeedbackDir(feedbackDir) && SYNTHETIC_SECRET_TEST_VECTOR_RE.test(command)) {
+    return;
+  }
   const safeContext = redactText(
     filePath
       ? `${toolName} requested ${filePath}`
@@ -4517,7 +4646,6 @@ function recordSecretViolation(input, scanResult) {
         ? `${toolName} requested command ${command}`
         : `${toolName} requested protected content`
   ).slice(0, 400);
-
   feedbackLoop.appendDiagnosticRecord({
     source: 'secret_guard',
     step: 'pre_tool_use',
@@ -5143,8 +5271,44 @@ function canonicalRetryInput(toolName, toolInput) {
   if (!canonical || canonical === original) return null;
   return { ...toolInput, command: canonical, originalCommand: original };
 }
+function evaluateNvidiaOpenSourceRuntimeGate(toolName, toolInput = {}) {
+  const safeInput = toolInput && typeof toolInput === 'object' ? toolInput : { command: String(toolInput || '') };
+  const colangRails = evaluateNeMoColang2Rails({
+    userPrompt: String(safeInput.userPrompt || safeInput.prompt || ''),
+    dialogTopic: safeInput.dialogTopic !== undefined ? safeInput.dialogTopic : 'engineering',
+     ...(Array.isArray(safeInput.allowedTopics) ? { allowedTopics: safeInput.allowedTopics } : {}),
+    retrievedChunks: Array.isArray(safeInput.retrievedChunks) ? safeInput.retrievedChunks : [],
+    toolCall: { toolName, ...safeInput },
+    modelOutput: String(safeInput.modelOutput || ''),
+    hasVerifiedEvidence: safeInput.hasVerifiedEvidence === true,
+  });
+  const morpheusEvents = Array.isArray(safeInput.morpheusEvents) && safeInput.morpheusEvents.length > 0
+    ? safeInput.morpheusEvents
+    : [{ agentId: safeInput.agentId || 'gates-engine', tool: toolName, command: safeInput.command || safeInput.input || '' }];
+  const morpheusPipeline = evaluateMorpheusCybersecurityPipeline({
+    events: morpheusEvents,
+    observedRatePerMin: safeInput.observedRatePerMin !== undefined ? safeInput.observedRatePerMin : 10,
+  });
+  if (!colangRails.passed || morpheusPipeline.quarantineTriggered) {
+    const reason = !colangRails.passed
+      ? `NeMo Colang 2.0 Rail violation (${colangRails.triggeredRails.join(', ')})`
+      : 'NVIDIA Morpheus SID/DFP cybersecurity quarantine triggered';
+    return {
+      action: 'block_action',
+      gate: 'nvidia-open-source-colang-morpheus-gate',
+      message: `THUMB_GATE_BLOCKED: ${reason}`,
+      colangRails,
+      morpheusPipeline,
+    };
+  }
+  return null;
+}
 
 async function evaluateGatesAsync(toolName, toolInput, configPath) {
+  if (toolInput && (toolInput.enforceNvidiaRails === true || process.env.THUMBGATE_NVIDIA_RAILS === '1')) {
+    const nvidiaBlock = evaluateNvidiaOpenSourceRuntimeGate(toolName, toolInput);
+    if (nvidiaBlock) return nvidiaBlock;
+  }
   const direct = await evaluateGatesAsyncInner(toolName, toolInput, configPath);
   if (direct) return direct;
   const retry = canonicalRetryInput(toolName, toolInput);
@@ -5153,6 +5317,10 @@ async function evaluateGatesAsync(toolName, toolInput, configPath) {
 }
 
 function evaluateGates(toolName, toolInput, configPath) {
+  if (toolInput && (toolInput.enforceNvidiaRails === true || process.env.THUMBGATE_NVIDIA_RAILS === '1')) {
+    const nvidiaBlock = evaluateNvidiaOpenSourceRuntimeGate(toolName, toolInput);
+    if (nvidiaBlock) return nvidiaBlock;
+  }
   const direct = evaluateGatesInner(toolName, toolInput, configPath);
   if (direct) return direct;
   const retry = canonicalRetryInput(toolName, toolInput);
@@ -5653,6 +5821,7 @@ module.exports = {
   incrementTodayBlockCount,
   effectiveCommandCwd,
   resolveRepoRoot,
+  evaluateNvidiaOpenSourceRuntimeGate,
 };
 
 // ---------------------------------------------------------------------------

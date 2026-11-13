@@ -6,7 +6,7 @@ description: Execute the end-to-end 6-stage autonomous revenue loop whenever the
 # Make Money — Master Autonomous Revenue Skill (`/make-money`)
 
 > **Spec:** [`docs/specs/make-money-autonomous-loop.md`](../../../docs/specs/make-money-autonomous-loop.md)
-> **Hard Invariants:** `$100/day` North Star · `$0.00` Outbound Spend (`outboundCashSpendUsd === 0`) · ECI Domain Isolation (`@ecisolutions.com` / `@ecinexus.com` blocked) · Zero Babysitting (`humanInterruptionsCount === 0`).
+> **Hard Invariants:** `Make $300/day, 24/7` (`$9,000/mo`) North Star · `$0.00` Outbound Spend (`outboundCashSpendUsd === 0`) · ECI Domain Isolation (`@ecisolutions.com` / `@ecinexus.com` blocked) · Zero Babysitting (`humanInterruptionsCount === 0`).
 
 ## Immediate Action When Igor Says `"make money"`
 

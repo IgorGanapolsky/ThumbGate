@@ -1,31 +1,5 @@
 #!/usr/bin/env node
-/**
- * thumbgate CLI
- *
- * Usage:
- *   npx thumbgate init          # scaffold .thumbgate/ config + .mcp.json
- *   npx thumbgate init --wire-hooks          # wire hooks only (auto-detect agent)
- *   npx thumbgate init --agent claude-code   # scaffold + wire hooks for specific agent
- *   npx thumbgate gate-check    # PreToolUse hook: pipe tool JSON via stdin, get verdict
- *   npx thumbgate capture       # capture feedback
- *   npx thumbgate import-doc    # import a local policy/runbook document and propose gates
- *   npx thumbgate export-dpo    # export DPO training pairs
- *   npx thumbgate export-databricks   # export Databricks-ready analytics bundle
- *   npx thumbgate eval --from-feedback # turn feedback into reusable prompt evals
- *   npx thumbgate code-graph-guardrails # map code-graph signals to pre-action checks
- *   npx thumbgate proxy-pointer-rag-guardrails # map visual document RAG signals to gates
- *   npx thumbgate rag-precision-guardrails # map retrieval tuning regressions to gates
- *   npx thumbgate long-running-agent-context-guardrails # map structured-memory gaps to gates
- *   npx thumbgate reasoning-efficiency-guardrails # map reasoning compression signals to gates
- *   npx thumbgate deepseek-v4-runtime-guardrails # map sparse-attention runtime signals to gates
- *   npx thumbgate upstream-contributions # rank upstream repo issues for trust-building PRs
- *   npx thumbgate stats         # feedback analytics + Revenue-at-Risk
- *   npx thumbgate background-governance  # background-agent run report + risk check
- *   npx thumbgate cfo           # local operational billing summary
- *   npx thumbgate pro           # solo dashboard + exports side lane
- *   npx thumbgate diagnostic    # team workflow diagnostic intake + checkout path
- *   npx thumbgate audit <file>  # audit an agent transcript for repeat-mistake token waste
- */
+// thumbgate CLI entrypoint
 
 'use strict';
 
@@ -198,16 +172,38 @@ function syncActiveProjectContext(options = {}) {
   }
 }
 
-function telemetryPing(installId) {
+function detectGitUserEmail() {
+  if ((process.env.CI || process.env.NODE_ENV === 'test') && !process.env.THUMBGATE_CLI_REGISTER_URL) {
+    return null;
+  }
+  try {
+    const out = execFileSync('git', ['config', 'user.email'], {
+      cwd: CWD,
+      stdio: ['ignore', 'pipe', 'ignore'],
+      timeout: 1500,
+    }).toString().trim().toLowerCase();
+    if (out && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(out) && !out.endsWith('@users.noreply.github.com')) {
+      return out;
+    }
+  } catch (_) {}
+  return null;
+}
+
+function telemetryPing(installId, explicitEmail) {
   if (process.env.THUMBGATE_NO_TELEMETRY === '1') return;
+  const resolvedEmail = (explicitEmail && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(explicitEmail))
+    ? explicitEmail.trim().toLowerCase()
+    : detectGitUserEmail();
   const payloadObject = {
     installId,
     eventType: 'cli_init',
     clientType: 'cli',
     source: 'cli',
+    visitorType: 'real_user',
     version: pkgVersion(),
     platform: process.platform,
     nodeVersion: process.version,
+    ...(resolvedEmail ? { email: resolvedEmail } : {}),
     timestamp: new Date().toISOString(),
   };
   appendLocalTelemetry(payloadObject);
@@ -216,7 +212,16 @@ function telemetryPing(installId) {
   try {
     const url = new URL('/v1/telemetry/ping', apiUrl);
     const mod = url.protocol === 'https:' ? require('https') : require('http');
-    const req = mod.request(url, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(payload) }, timeout: 3000 }, () => {});
+    const req = mod.request(url, {
+      method: 'POST',
+      family: 4,
+      headers: {
+        'Content-Type': 'application/json',
+        'Content-Length': Buffer.byteLength(payload),
+        'User-Agent': `ThumbGate-CLI/${pkgVersion()} (${process.platform}; ${process.arch})`,
+      },
+      timeout: 3000,
+    }, () => {});
     req.on('error', () => {});
     req.on('timeout', () => { req.destroy(); });
     req.on('socket', (s) => s.unref()); // fire-and-forget: never block process exit
@@ -1277,7 +1282,7 @@ function init(cliArgs = parseArgs(process.argv.slice(3))) {
   } catch (_) {
     // Avoid failing init if telemetry write cannot be performed.
   }
-  telemetryPing(config.installId);
+  telemetryPing(config.installId, onboardingEmail);
 }
 
 function capture() {
@@ -2653,6 +2658,25 @@ function nvidiaSpecDecodeAlDoctor() {
   if (report.status === 'fail') process.exitCode = 1;
 }
 
+function nvidiaOpenSourceAccelerator() {
+  const args = parseArgs(process.argv.slice(3));
+  const {
+    buildNvidiaOpenSourceSummaryReport,
+  } = require(path.join(PKG_ROOT, 'scripts', 'nvidia-open-source-accelerator'));
+  const report = buildNvidiaOpenSourceSummaryReport(args);
+  console.log(JSON.stringify(report, null, 2));
+}
+
+function autonomousBusinessOsV4() {
+  const args = parseArgs(process.argv.slice(3));
+  const {
+    executeAutonomousBusinessOsV4Run,
+  } = require(path.join(PKG_ROOT, 'scripts', 'autonomous-business-os-v4'));
+  const report = executeAutonomousBusinessOsV4Run({
+    businessId: args.business || 'thumbgate',
+  });
+  console.log(JSON.stringify(report, null, 2));
+}
 
 
 function intentGovernedExecution() {
@@ -2889,6 +2913,26 @@ function infoqArchitectHonesty() {
     process.exitCode = 1;
     return;
   }
+  if (report.status === 'fail') process.exitCode = 1;
+}
+
+function qwenworkPolicyGroup() {
+  const args = parseArgs(process.argv.slice(3));
+  const {
+    buildQwenWorkPolicyGroupReport,
+    formatQwenWorkPolicyGroupReport,
+  } = require(path.join(PKG_ROOT, 'scripts', 'qwenwork-policy-group'));
+  const truthy = (value) => value === true || /^(1|true|yes|on)$/i.test(String(value || '').trim());
+  const report = buildQwenWorkPolicyGroupReport({
+    mapOnly: truthy(args['map-only']),
+    claim: args.claim || '',
+    policyJson: args['policy-json'] || '',
+    actionJson: args['action-json'] || '',
+    policyPath: args.policy || '',
+    actionPath: args.action || '',
+  });
+  if (truthy(args.json)) console.log(JSON.stringify(report, null, 2));
+  else process.stdout.write(formatQwenWorkPolicyGroupReport(report));
   if (report.status === 'fail') process.exitCode = 1;
 }
 
@@ -3444,21 +3488,22 @@ function cleanup() {
 
 function serve() {
   try {
-    const { repairCodexHooks, repairProjectMcpConfigs } = require(path.join(PKG_ROOT, 'scripts', 'codex-self-heal'));
+    const { hydrateMcpEnvFromUserConfig } = require(path.join(PKG_ROOT, 'scripts', 'mcp-policy'));
+    hydrateMcpEnvFromUserConfig();
+  } catch (_) { /* best-effort profile hydration */ }
+  try {
+    const { repairCodexHooks } = require(path.join(PKG_ROOT, 'scripts', 'codex-self-heal'));
     repairCodexHooks();
-    repairProjectMcpConfigs();
   } catch (_) { /* self-heal is best-effort */ }
   // Start MCP server over stdio
   const mcpServer = path.join(PKG_ROOT, 'adapters', 'mcp', 'server-stdio.js');
   const { startStdioServer } = require(mcpServer);
-  const lockInfo = startStdioServer();
-  // Start watcher only in the primary session to avoid N concurrent pollers fighting over .watcher-offset
-  if (!lockInfo || !lockInfo.isConcurrentSession) {
-    try {
-      const { watch } = require(path.join(PKG_ROOT, 'scripts', 'jsonl-watcher'));
-      watch();
-    } catch (_) { /* watcher is non-critical */ }
-  }
+  startStdioServer();
+  // Start watcher as a background daemon alongside MCP server
+  try {
+    const { watch } = require(path.join(PKG_ROOT, 'scripts', 'jsonl-watcher'));
+    watch();
+  } catch (_) { /* watcher is non-critical */ }
 }
 
 function install() {
@@ -3560,6 +3605,24 @@ function cacheUpdate() {
   const payload = readStdinText();
   const { updateCacheFromEvent } = require(path.join(PKG_ROOT, 'scripts', 'hook-thumbgate-cache-updater'));
   updateCacheFromEvent(payload ? JSON.parse(payload) : {});
+}
+
+function observeToolResult() {
+  try {
+    const payload = readStdinText();
+    const input = payload ? JSON.parse(payload) : {};
+    const gatesEngine = require(path.join(PKG_ROOT, 'scripts', 'gates-engine'));
+    gatesEngine.observeTeamsSendResult(input);
+    const result = gatesEngine.observeSwarmClaimResult(input);
+    if (!result) {
+      process.stdout.write('{}\n');
+      return;
+    }
+    process.stdout.write(`${gatesEngine.formatObserveStop(result)}\n`);
+  } catch (err) {
+    process.stderr.write(`observe-tool-result error: ${err.message}\n`);
+    process.stdout.write('{}\n');
+  }
 }
 
 function statuslineRender() {
@@ -4048,6 +4111,7 @@ function help() {
   console.log('  statusline-render     Render ThumbGate Claude status line');
   console.log('  hook-auto-capture     Process Claude UserPromptSubmit inline feedback');
   console.log('  claim-stop-check      Recheck configured factual claims before Claude stops');
+  console.log('  observe-tool-result   Record swarm-claim.py exit 3, including a failed shell, and a Teams send that succeeded');
   console.log('  session-start         Refresh local ThumbGate session cache');
   console.log('');
 
@@ -4088,6 +4152,7 @@ function help() {
   console.log('  reasoning-efficiency-guardrails Map reasoning compression signals to efficiency gates');
   console.log('  deepseek-v4-runtime-guardrails Map sparse-attention runtime signals to safety gates');
   console.log('  nvidia-specdecode-al-doctor Check speculative AL/D evidence vs AL/(1+ρD) speedup math');
+  console.log('  nvidia-open-source-accelerator Run 6-pillar NVIDIA open-source guardrails, Dynamo router, Morpheus SID/DFP & cuOpt');
   console.log('  package-manager-honesty-doctor Audit lockfile/CI parity; fail-closed manager switches');
   console.log('  openui-catalog-compose-honesty Catalog-compose-only + repair-before-claim (OpenUI FORMAT)');
   console.log('  allowlist-bridge-honesty Audit allowlisted registries/proxies as hops, not trust boundaries');
@@ -4106,6 +4171,7 @@ function help() {
   console.log('  deeppattern-discipline-honesty Layer-check + evidence-closeout (DeepPattern FORMAT; not AQG/DE)');
   console.log('  salt-code-policy-honesty 40-policy taxonomy + context vs PreToolUse diode (Salt Code FORMAT)');
   console.log('  infoq-architect-honesty Code-as-truth, typed host, lease, time-in-queue (InfoQ FORMAT)');
+  console.log('  qwenwork-policy-group Org policy group at the action (QwenWork FORMAT; not seats or DingTalk)');
   console.log('  colab-compute-honesty   Compute-unit honesty from Colab /signup (not a GPU SKU)');
   console.log('  omp-coordination-honesty   Named-model session handoff on the checkout lease (omp FORMAT; does not install omp)');
   console.log('  saas-moat-honesty     8-moat diagnostic, Ed25519 entitlement audit, and cross-customer signature loop (Walling FORMAT)');
@@ -4240,6 +4306,7 @@ const SUBCOMMAND_HELP = {
   'deeppattern-discipline-honesty': 'Usage: npx thumbgate deeppattern-discipline-honesty [--claim="..."] [--closeout=path.md] [--json] [--map-only]\n\nDeepPattern FORMAT steal: layer-check + evidence-closeout. Does not install AQG/Decision Engine.',
   'salt-code-policy-honesty': 'Usage: npx thumbgate salt-code-policy-honesty [--inspect-code=...] [--inspect-api=...] [--inspect-mcp=...] [--strict] [--json] [--map-only]\n\nSalt Code FORMAT steal: 40-policy taxonomy, active PreToolUse vs context injection, OpenAPI query secret diode. Does not connect to mcp.getsaltcode.com.',
   'infoq-architect-honesty': 'Usage: npx thumbgate infoq-architect-honesty [--claim="..."] [--host=javascript] [--queue=path.json] [--max-age-ms=N] [--json] [--map-only]\n\nInfoQ September 2026 FORMAT: code-as-truth, typed host, existing lease, time-in-queue. Does not register for InfoQ or install Vortex.',
+  'qwenwork-policy-group': 'Usage: npx thumbgate qwenwork-policy-group [--claim="..."] [--policy=path.json] [--action=path.json] [--json] [--map-only]\n\nQwenWork Enterprise Premium FORMAT: one org policy group at the action. Does not buy seats, call Alibaba Cloud, or install DingTalk, WeCom, or Feishu.',
   'board-loop': 'Usage: npx thumbgate board-loop [--apply] [--json] [--max-update-branch=1] [--max-pr-manage=1] [--max-comments=4] [--skip-pr=N]\n\nClassify Issues+PR wall: update-branch BEHIND green Dependabot, pr:manage READY, comment DIRTY/ECI. Never approve.',
   'colab-compute-honesty': 'Usage: npx thumbgate colab-compute-honesty [--claim="..."] [--plan-proof=proplus] [--json] [--map-only]\n\nColab /signup FORMAT steal: Compute Units ≠ dedicated GPU; Subscribe ≠ receipt. Does not buy Pro/Pro+.',
   'omp-coordination-honesty': 'Usage: npx thumbgate omp-coordination-honesty [--claim="..."] [--handoff=path] [--json] [--map-only] [--strict]\n\nMap omp session/subagent/collab FORMAT onto the checkout lease. Does not install omp.',
@@ -4482,7 +4549,77 @@ async function teamSync() {
   console.log('\n🚀 Team rules synchronization complete! Your agents now share team-wide learning.');
 }
 
+async function agentRunCommand() {
+  const { UnifiedCodingAgentAdapter, VerifyAndRepairRunner } = require(path.join(PKG_ROOT, 'src', 'unified-agent-adapter'));
+
+  const args = process.argv.slice(3);
+  let agentType = 'claude';
+  let prompt = '';
+  let verifyCmd = '';
+  let maxAttempts = 3;
+  let jsonOutput = false;
+
+  for (let i = 0; i < args.length; i++) {
+    const arg = args[i];
+    if (arg.startsWith('--agent=')) {
+      agentType = arg.slice(8);
+    } else if (arg === '--agent' && args[i + 1]) {
+      agentType = args[++i];
+    } else if (arg.startsWith('--prompt=')) {
+      prompt = arg.slice(9);
+    } else if (arg === '--prompt' && args[i + 1]) {
+      prompt = args[++i];
+    } else if (arg.startsWith('--verify=')) {
+      verifyCmd = arg.slice(9);
+    } else if (arg === '--verify' && args[i + 1]) {
+      verifyCmd = args[++i];
+    } else if (arg.startsWith('--attempts=')) {
+      maxAttempts = parseInt(arg.slice(11), 10) || 3;
+    } else if (arg === '--json') {
+      jsonOutput = true;
+    } else if (!prompt && !arg.startsWith('--')) {
+      prompt = arg;
+    }
+  }
+
+  if (!prompt) {
+    console.error('Usage: thumbgate agent-run --agent=[claude|codex|copilot|cursor|gemini|poolside] --prompt="<task>" [--verify="<cmd>"] [--attempts=3]');
+    process.exit(1);
+  }
+
+  const adapter = new UnifiedCodingAgentAdapter({ agentType, workDir: CWD });
+  const runner = new VerifyAndRepairRunner(adapter, { maxRepairAttempts: maxAttempts });
+
+  console.log(`🤖 Invoking ${agentType} with Verify-and-Repair Engine...`);
+  const result = await runner.executeWithVerifyAndRepair({
+    taskPrompt: prompt,
+    verifier: { command: verifyCmd },
+    options: { workDir: CWD },
+  });
+
+  if (jsonOutput) {
+    console.log(JSON.stringify(result, null, 2));
+  } else {
+    if (result.ok) {
+      console.log(`✅ Task completed in ${result.attempts} attempt(s) with ${result.tokenSavingsPct}% token savings.`);
+    } else {
+      console.error(`❌ Task failed after ${result.attempts} attempt(s): ${result.error}`);
+      if (result.lastVerifyOutput) {
+        console.error(result.lastVerifyOutput);
+      }
+      process.exit(1);
+    }
+  }
+}
+
 switch (COMMAND) {
+  case 'agent-run':
+  case 'verify-repair':
+    agentRunCommand().catch((err) => {
+      console.error(err && err.message ? err.message : err);
+      process.exit(1);
+    });
+    break;
   case 'team-sync':
   case 'git-sync':
     teamSync().catch((err) => {
@@ -4539,6 +4676,9 @@ switch (COMMAND) {
     break;
   case 'claim-stop-check':
     claimStopCheckCmd();
+    break;
+  case 'observe-tool-result':
+    observeToolResult();
     break;
   case 'session-start':
     sessionStart();
@@ -4913,6 +5053,16 @@ switch (COMMAND) {
   case 'nvidia-speculative-decoding-doctor':
     nvidiaSpecDecodeAlDoctor();
     break;
+  case 'nvidia-open-source-accelerator':
+  case 'nvidia-open-source':
+  case 'nvidia-accelerator':
+    nvidiaOpenSourceAccelerator();
+    break;
+  case 'autonomous-os-v4':
+  case 'business-os-v4':
+  case 'autonomous-business-os-v4':
+    autonomousBusinessOsV4();
+    break;
   case 'package-manager-honesty-doctor':
   case 'pm-honesty-doctor':
   case 'pnpm12-honesty-doctor':
@@ -5105,6 +5255,9 @@ switch (COMMAND) {
   case 'infoq-architects':
   case 'architect-honesty':
     infoqArchitectHonesty();
+    break;
+  case 'qwenwork-policy-group':
+    qwenworkPolicyGroup();
     break;
   case 'workspace-search-route':
   case 'zg-search-route':
@@ -5501,6 +5654,20 @@ switch (COMMAND) {
     }
     break;
   }
+  case 'dream':
+  case 'dream-mode': {
+    // ThumbGate Dream Mode (Anthropic REM memory consolidation, read-only on source code)
+    const { dreamCmd } = require(path.join(PKG_ROOT, 'scripts', 'thumbgate-dream'));
+    dreamCmd();
+    break;
+  }
+  case 'cuda-gate':
+  case 'cuda-gate-batch': {
+    // CUDA-inspired parallel PreToolUse gate evaluation
+    const { cudaGateBatchCmd } = require(path.join(PKG_ROOT, 'scripts', 'cuda-gate-batch'));
+    cudaGateBatchCmd();
+    break;
+  }
   case 'start-api':
     startApi();
     break;
@@ -5513,18 +5680,7 @@ switch (COMMAND) {
     compact();
     break;
   case 'subscribe': {
-    // Capture an installer's email so we can send the 5-minute setup
-    // guide + weekly tips. Drops to /v1/marketing/install-email on the
-    // hosted endpoint; the server fires sendNewsletterWelcomeEmail via
-    // Resend and persists the address for follow-up.
-    //
-    // Usage:
-    //   npx thumbgate subscribe you@company.com
-    //   npx thumbgate subscribe --email=you@company.com
-    //
-    // Never prompts interactively — postinstall must stay non-interactive
-    // for CI safety. This is the deliberate opt-in path the banner points
-    // at; if the operator runs it, they want the email.
+    // Non-interactive installer email subscription (/v1/marketing/install-email)
     const args = process.argv.slice(3);
     let email = '';
     for (const arg of args) {
@@ -5592,23 +5748,241 @@ switch (COMMAND) {
     req.end();
     break;
   }
-  case 'login':
-  case 'sso': {
-    const args = parseArgs(process.argv.slice(3));
-    const provider = args.provider || 'github';
-    const apiBaseUrl = process.env.THUMBGATE_PUBLIC_APP_ORIGIN || 'https://thumbgate.ai';
-    const ssoUrl = `${apiBaseUrl}/v1/cloud/sso/authorize?provider=${encodeURIComponent(provider)}`;
-    console.log(`\n🔐 ThumbGate 1-Click Cloud SSO (${provider.toUpperCase()})`);
-    console.log(`  Open in browser: ${ssoUrl}`);
-    console.log(`  Or visit:        ${apiBaseUrl}/cloud\n`);
-    if (!args['no-open'] && process.env.NODE_ENV !== 'test') {
-      try {
-        const openCmd = process.platform === 'darwin'
-          ? 'open'
-          : (process.platform === 'win32' ? 'start' : 'xdg-open');
-        require('node:child_process').spawn(openCmd, [ssoUrl], { detached: true, stdio: 'ignore' }).unref();
-      } catch { /* ignore headless browser launch errors */ }
+  case 'login': {
+    const args = process.argv.slice(3);
+    let email = '';
+    for (const arg of args) {
+      if (arg.startsWith('--email=')) email = arg.slice('--email='.length).trim();
+      else if (!arg.startsWith('--')) email = arg.trim();
     }
+    if (!email) email = detectGitUserEmail() || '';
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      console.error('Usage: npx thumbgate login <email>');
+      console.error('       npx thumbgate login --email=you@company.com');
+      process.exit(1);
+    }
+    const endpoint = process.env.THUMBGATE_CLI_REGISTER_URL || 'https://thumbgate.ai/v1/cloud/cli/register';
+    const payload = JSON.stringify({
+      email,
+      source: 'cli_login',
+      cliVersion: pkgVersion(),
+    });
+    const url = new URL(endpoint);
+    const transport = url.protocol === 'https:' ? require('node:https') : require('node:http');
+    const req = transport.request({
+      method: 'POST',
+      family: 4,
+      hostname: url.hostname,
+      port: url.port || (url.protocol === 'https:' ? 443 : 80),
+      path: url.pathname + url.search,
+      headers: {
+        'Content-Type': 'application/json',
+        'Content-Length': Buffer.byteLength(payload),
+        'User-Agent': `ThumbGate-CLI/${pkgVersion()} (${process.platform}; ${process.arch})`,
+      },
+      timeout: 8000,
+    }, (res) => {
+      let body = '';
+      res.on('data', (chunk) => { body += chunk; });
+      res.on('end', () => {
+        if (res.statusCode >= 200 && res.statusCode < 300) {
+          console.log(`✓ Registered & logged in as ${email}`);
+          console.log('  Cloud quota: 250 free Cloud Firewall evaluations/day.');
+          console.log(`  Upgrade to Pro ($19/mo): https://thumbgate.ai/go/pro-direct?prefilled_email=${encodeURIComponent(email)}`);
+          process.exit(0);
+        } else {
+          console.error(`✗ Login failed: HTTP ${res.statusCode}`);
+          process.exit(2);
+        }
+      });
+    });
+    req.on('error', (err) => {
+      console.error(`✗ Login failed: ${err.message}`);
+      process.exit(3);
+    });
+    req.write(payload);
+    req.end();
+    break;
+  }
+  case 'agents': {
+    const { detectAgents } = require(path.join(PKG_ROOT, 'scripts', 'universal-agent-driver'));
+    const detected = detectAgents();
+    console.log('\nDetected Coding Agent CLIs on Host:');
+    console.log('─'.repeat(60));
+    for (const a of detected) {
+      const statusIcon = a.available ? '✅' : '❌';
+      const versionStr = a.version ? `(v${a.version})` : '';
+      const pathStr = a.available ? a.path : 'not installed';
+      console.log(`  ${statusIcon} ${a.name.padEnd(24)} ${versionStr.padEnd(12)} ${pathStr}`);
+    }
+    console.log('─'.repeat(60));
+    console.log('Run any agent with: npx thumbgate run -a <agent> [--verify "<cmd>"] "<prompt>"\n');
+    break;
+  }
+  case 'run': {
+    const rawArgs = process.argv.slice(3);
+    const parsed = parseArgs(rawArgs);
+    const agentName = parsed.agent || parsed.a || 'claude';
+    const fallbackAgent = parsed.fallback || null;
+    const verifyCmd = parsed.verify || null;
+    const maxRepairs = parsed['max-repairs'] ? parseInt(parsed['max-repairs'], 10) : 3;
+    const permissions = parsed.yolo ? 'yolo' : (parsed.permissions || 'yolo');
+    const prompt = rawArgs.find((arg) => !arg.startsWith('-') && arg !== parsed.agent && arg !== parsed.verify && arg !== parsed.fallback && arg !== parsed.a);
+
+    if (!prompt) {
+      console.error('Usage: npx thumbgate run [-a <agent>] [--verify "<cmd>"] [--fallback <agent>] "<prompt>"');
+      console.error('Example: npx thumbgate run -a claude --verify "npm test" "fix date parsing"');
+      process.exit(1);
+    }
+
+    const { runAgent, runWithVerify } = require(path.join(PKG_ROOT, 'scripts', 'universal-agent-driver'));
+
+    (async () => {
+      try {
+        if (verifyCmd) {
+          console.log(`\n🛡️  ThumbGate Verify-and-Repair: Running ${agentName} with verify check '${verifyCmd}'...`);
+          const result = await runWithVerify({
+            agent: agentName,
+            fallbackAgent,
+            prompt,
+            verifyCmd,
+            maxRepairs,
+            permissions,
+          }, (evt) => {
+            if (evt.type === 'repair-attempt-start') {
+              console.log(`\n🔄 Attempt ${evt.attempt}/${evt.maxRepairs} using ${evt.agent}...`);
+            } else if (evt.type === 'verify-failed') {
+              console.log('⚠️  Verification failed. Feeding error back to agent for repair...');
+            } else if (evt.type === 'agent-fallback') {
+              console.log(`🔀 Swarm Fallback: ${evt.fromAgent} -> ${evt.toAgent} (${evt.reason})`);
+            } else if (evt.type === 'verify-passed') {
+              console.log(`✅ Verification PASSED in ${evt.durationMs}ms!`);
+            }
+          });
+          process.exit(result.ok ? 0 : 1);
+        } else {
+          console.log(`\n🚀 ThumbGate Universal Driver: Running ${agentName}...`);
+          const result = await runAgent({
+            agent: agentName,
+            prompt,
+            permissions,
+          }, (evt) => {
+            if (evt.type === 'message') process.stdout.write(evt.text);
+            else if (evt.type === 'stderr') process.stderr.write(evt.text);
+          });
+          process.exit(result.ok ? 0 : 1);
+        }
+      } catch (err) {
+        console.error(`✗ Run error: ${err.message}`);
+        process.exit(1);
+      }
+    })();
+    break;
+  }
+  case 'scan': {
+    const rawArgs = process.argv.slice(3);
+    const parsed = parseArgs(rawArgs);
+    const { scanAgentSafetyIndex } = require(path.join(PKG_ROOT, 'scripts', 'agent-safety-index'));
+    const { getMarkdownBadgeCode } = require(path.join(PKG_ROOT, 'scripts', 'fandom-gamification-badges'));
+
+    const result = scanAgentSafetyIndex(CWD, {
+      sampleSql: parsed.sql || null,
+    });
+
+    if (parsed.json) {
+      console.log(JSON.stringify(result, null, 2));
+      process.exit(0);
+    }
+
+    console.log('\n🛡️  ThumbGate Agent Reliability & Safety Index');
+    console.log('─'.repeat(60));
+    console.log(`  Directory:     ${result.rootDir}`);
+    console.log(`  Safety Score:  ${result.safetyScore}/100`);
+    console.log(`  Maturity:      ${result.maturityLevel}`);
+    console.log(`  Status:        ${result.isHardened ? '✅ Hardened Fleet' : '⚠️  Action Recommended'}`);
+    console.log('─'.repeat(60));
+
+    if (result.findings.length > 0) {
+      console.log('Findings:');
+      for (const f of result.findings) {
+        console.log(`  • [${f.severity}] ${f.title}`);
+        console.log(`    Detail:      ${f.detail}`);
+        console.log(`    Fix:         ${f.remediation}\n`);
+      }
+    } else {
+      console.log('  ✨ Zero agentic vulnerabilities discovered in current scope!\n');
+    }
+
+    if (result.isHardened) {
+      console.log('🏆 Your repository qualifies for the Level 3 Hardened Badge:');
+      console.log(`  ${getMarkdownBadgeCode()}\n`);
+    }
+
+    console.log('Need deep diagnostic audit with 48h turnaround?');
+    console.log('👉 https://thumbgate.ai/diagnostic ($499 one-time)\n');
+    break;
+  }
+  case 'badge': {
+    const rawArgs = process.argv.slice(3);
+    const parsed = parseArgs(rawArgs);
+    const {
+      evaluateFleetRank,
+      generateSvgBadge,
+      getMarkdownBadgeCode,
+      MILESTONES,
+    } = require(path.join(PKG_ROOT, 'scripts', 'fandom-gamification-badges'));
+
+    // Check milestones
+    const completed = [];
+    // 1. credential confinement
+    if (!fs.existsSync(path.join(CWD, '.env')) || process.env.THUMBGATE_CONFINEMENT_ACTIVE === '1') {
+      completed.push('credential_confinement');
+    }
+    // 2. mechanical verifier
+    if (fs.existsSync(path.join(CWD, 'tests')) || fs.existsSync(path.join(CWD, 'test'))) {
+      completed.push('mechanical_verifier');
+    }
+    // 3. mutation hardening
+    if (fs.existsSync(path.join(CWD, 'scripts', 'mutation-test-diode.js'))) {
+      completed.push('mutation_hardening');
+    }
+    // 4. scatter query
+    if (fs.existsSync(path.join(CWD, 'scripts', 'load-shedding-diode.js'))) {
+      completed.push('scatter_query_protection');
+    }
+    // 5. immutable spending gate
+    if (fs.existsSync(path.join(CWD, 'scripts', 'tsunami-sdlc-guardrails.js'))) {
+      completed.push('immutable_spending_gate');
+    }
+
+    const rank = evaluateFleetRank(completed);
+
+    if (parsed.svg) {
+      const svg = generateSvgBadge(rank);
+      if (parsed.out) {
+        fs.writeFileSync(path.resolve(CWD, parsed.out), svg, 'utf8');
+        console.log(`Wrote SVG badge to ${parsed.out}`);
+      } else {
+        process.stdout.write(svg);
+      }
+      process.exit(0);
+    }
+
+    console.log('\n🌟 ThumbGate Fandom & Fleet Hardening Milestones');
+    console.log('─'.repeat(60));
+    console.log(`  Rank Tier:     ${rank.rank}`);
+    console.log(`  Score:         ${rank.score}/100 points (${rank.completedCount}/${rank.totalMilestones} milestones)`);
+    console.log(`  Badge Text:    ${rank.badgeText}`);
+    console.log('─'.repeat(60));
+
+    for (const m of rank.milestones) {
+      const icon = m.completed ? '✅' : '⚪';
+      console.log(`  ${icon} [${m.points} pts] ${m.title}`);
+      console.log(`     ${m.description}`);
+    }
+    console.log('─'.repeat(60));
+    console.log('Markdown Badge:');
+    console.log(`  ${getMarkdownBadgeCode()}\n`);
     break;
   }
   case 'checkin': {

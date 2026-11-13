@@ -125,7 +125,7 @@ function buildTenPlatformCampaigns() {
       skool: {
         format: 'Skool Classroom Resource Drop & Vibe-Coder Hardening Kit (AI Lab / AI Automation Society)',
         hook15s: 'Free MIT CLI + $9.99 Gumroad Playbook for Skool builders: Stop Claude Code & Cursor from breaking your Supabase RLS or force-pushing main.',
-        targetCommunities: ['skool.com/ailabpro', 'skool.com/ai-automation-society', 'skool.com/ailab'],
+        targetCommunities: ['skool.com/ai-seo-with-julian-goldie-1553', 'skool.com/ailabpro', 'skool.com/ai-automation-society', 'skool.com/ailab'],
       },
     };
 

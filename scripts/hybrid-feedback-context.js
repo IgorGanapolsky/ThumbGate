@@ -23,6 +23,7 @@ const {
   sanitizeFeedbackText,
   transportWordsOnly,
 } = require('./feedback-sanitizer');
+const { deobfuscateNoisyByteStream } = require('./hnet-dynamic-chunker');
 
 // ---------------------------------------------------------------------------
 // Paths
@@ -268,11 +269,15 @@ const ENVELOPE_TOKENS = new Set([
 
 function keywords(text) {
   if (!text) return [];
-  const tokens = normalize(text)
+  const hnet = deobfuscateNoisyByteStream(String(text));
+  const hnetSubtokens = (hnet.reconstructedTokens || [])
+    .map((t) => normalize(t).replace(/[^a-z0-9_-]/g, ''))
+    .filter((t) => t.length >= 4 && !STOPWORDS.has(t) && !ENVELOPE_TOKENS.has(t));
+  const tokens = normalize(hnet.normalizedText || text)
     .replace(/[^a-z0-9\s_-]/g, ' ')
     .split(/\s+/)
     .filter((t) => t.length >= 4 && !STOPWORDS.has(t) && !ENVELOPE_TOKENS.has(t));
-  return [...new Set(tokens)].slice(0, 8);
+  return [...new Set([...tokens, ...hnetSubtokens])].slice(0, 8);
 }
 
 /**

@@ -155,7 +155,7 @@ test('POST /v1/feedback/capture fans out a feedback event to subscribers', async
       body: JSON.stringify({
         signal: 'up',
         context: 'SSE broadcast smoke test',
-        whatWorked: 'live events',
+        whatWorked: 'Verified test output and confirmed live events stream correctly across SSE connections',
         tags: ['sse', 'dashboard'],
       }),
     });

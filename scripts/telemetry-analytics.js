@@ -45,6 +45,13 @@ const CHECKOUT_START_EVENT_TYPES = new Set([
   // click and is the service equivalent of the Pro checkout bootstrap.
   'diagnostic_checkout_confirmed',
 ]);
+const VIRAL_SHARE_EVENT_TYPES = new Set([
+  'viral_share',
+  'referral_invite',
+  'share_click',
+  'repost_click',
+  'copy_referral_link',
+]);
 
 function shouldIncludeLegacyTelemetry() {
   if (
@@ -107,6 +114,38 @@ function isMarketingClickEvent(eventType) {
 
 function isCheckoutStartEvent(eventType) {
   return CHECKOUT_START_EVENT_TYPES.has(String(eventType || '').toLowerCase());
+}
+
+function isViralShareEvent(eventType) {
+  return VIRAL_SHARE_EVENT_TYPES.has(String(eventType || '').toLowerCase());
+}
+
+function wilsonInterval95(successes, trials) {
+  const n = Number(trials) || 0;
+  const k = Math.max(0, Math.min(n, Number(successes) || 0));
+  if (n <= 0) return { lower: 0, upper: 0 };
+  const z = 1.959963984540054;
+  const z2 = z * z;
+  const phat = k / n;
+  const denom = 1 + z2 / n;
+  const center = (phat + z2 / (2 * n)) / denom;
+  const halfWidth = (z * Math.sqrt((phat * (1 - phat) + z2 / (4 * n)) / n)) / denom;
+  return {
+    lower: Number(Math.max(0, center - halfWidth).toFixed(4)),
+    upper: Number(Math.min(1, center + halfWidth).toFixed(4)),
+  };
+}
+
+function twoProportionZScore(succA, trialsA, succB, trialsB) {
+  const nA = Number(trialsA) || 0;
+  const nB = Number(trialsB) || 0;
+  if (nA <= 0 || nB <= 0) return 0;
+  const pA = (Number(succA) || 0) / nA;
+  const pB = (Number(succB) || 0) / nB;
+  const pooled = ((Number(succA) || 0) + (Number(succB) || 0)) / (nA + nB);
+  const se = Math.sqrt(pooled * (1 - pooled) * (1 / nA + 1 / nB));
+  if (se <= 0) return 0;
+  return Number(((pA - pB) / se).toFixed(4));
 }
 
 function getTelemetryPath(feedbackDir) {
@@ -193,7 +232,7 @@ function inferEventType(payload, clientType) {
   const explicit = pickFirstText(payload.eventType, payload.event, payload.kind);
   if (explicit) {
     const normalized = explicit.toLowerCase();
-    if (normalized === 'checkout_cta_clicked') return 'checkout_start';
+    if (normalized === 'checkout_cta_clicked' || normalized === 'checkout_started') return 'checkout_start';
     if (normalized === 'cli_ping') return 'cli_init';
     return normalized;
   }
@@ -225,6 +264,13 @@ function inferTrafficChannel(raw = {}, referrerHost = null) {
 
   if (source === 'producthunt') return 'producthunt';
   if (source === 'reddit') return 'reddit';
+  if (source === 'linkedin' || (host && (host === 'linkedin.com' || host.endsWith('.linkedin.com') || host === 'lnkd.in'))) return 'linkedin';
+  if (source === 'tiktok' || (host && (host === 'tiktok.com' || host.endsWith('.tiktok.com')))) return 'tiktok';
+  if (source === 'hackernews' || source === 'hn' || (host && (host === 'news.ycombinator.com' || host.endsWith('.ycombinator.com')))) return 'hackernews';
+  if (source === 'x' || source === 'twitter' || (host && (host === 'x.com' || host.endsWith('.x.com') || host === 'twitter.com' || host === 't.co'))) return 'x';
+  if (source === 'youtube' || (host && (host === 'youtube.com' || host.endsWith('.youtube.com') || host === 'youtu.be'))) return 'youtube';
+  if (source === 'devto' || source === 'dev.to' || (host && (host === 'dev.to' || host.endsWith('.dev.to')))) return 'devto';
+  if (source === 'lobsters' || (host && (host === 'lobste.rs' || host.endsWith('.lobste.rs')))) return 'lobsters';
   if (medium === 'creator_partnership') return 'creator';
   if (source === 'ai_search' || seoSurface === 'ai_search') return 'ai_search';
   if (source === 'organic_search' || seoSurface === 'organic_search') return 'organic_search';
@@ -232,7 +278,6 @@ function inferTrafficChannel(raw = {}, referrerHost = null) {
   if (source === 'website' && !host) return 'direct';
   if (medium === 'listing' && source === 'producthunt') return 'producthunt';
   if (medium === 'organic') return 'organic_search';
-
   const aiHosts = [
     'perplexity.ai',
     'chatgpt.com',
@@ -278,6 +323,102 @@ function inferTrafficChannel(raw = {}, referrerHost = null) {
 
   if (!host) return 'direct';
   return 'referral';
+}
+
+function repairEmbeddedQueryToken(value, targetRaw = {}) {
+  const text = normalizeText(value, 512);
+  if (!text) return null;
+  const decoded = text
+    .replace(/&amp;|\\u0026|%26/gi, '&')
+    .replace(/%3d/gi, '=')
+    .replace(/\\+$/g, '');
+  if (!decoded.includes('&') && !decoded.includes('=')) {
+    return normalizeText(decoded);
+  }
+  const parts = decoded.split('&');
+  const firstPart = parts[0] && !parts[0].includes('=') ? normalizeText(parts[0]) : null;
+  const paramMap = {
+    utm_source: 'utmSource',
+    utm_medium: 'utmMedium',
+    utm_campaign: 'utmCampaign',
+    utm_content: 'utmContent',
+    utm_term: 'utmTerm',
+    creator: 'creator',
+    community: 'community',
+    subreddit: 'community',
+    post_id: 'postId',
+    comment_id: 'commentId',
+    campaign_variant: 'campaignVariant',
+    variant: 'campaignVariant',
+    offer_code: 'offerCode',
+    experiment_id: 'experimentId',
+    ref: 'referredByVisitorId',
+    referred_by: 'referredByVisitorId',
+    inviter_id: 'referredByVisitorId',
+    inviterid: 'referredByVisitorId',
+  };
+  for (let i = firstPart ? 1 : 0; i < parts.length; i += 1) {
+    const segment = parts[i];
+    const eqIdx = segment.indexOf('=');
+    if (eqIdx <= 0) continue;
+    const rawKey = segment.slice(0, eqIdx).trim().toLowerCase();
+    const rawVal = normalizeText(segment.slice(eqIdx + 1).replace(/\\+$/g, ''));
+    const mapped = paramMap[rawKey];
+    if (mapped && rawVal && !targetRaw[mapped]) {
+      targetRaw[mapped] = rawVal;
+    }
+  }
+  return firstPart || normalizeText(decoded);
+}
+
+function inferSocialPlatform(raw = {}, referrerHost = null) {
+  const source = normalizeHostToken(raw.source || raw.utmSource);
+  const host = normalizeHostToken(referrerHost);
+  const token = source || '';
+
+  if (token === 'x' || token === 'twitter' || (host && ['x.com', 'twitter.com', 't.co'].some((h) => host === h || host.endsWith(`.${h}`)))) {
+    return 'x';
+  }
+  if (token === 'reddit' || (host && ['reddit.com', 'www.reddit.com', 'old.reddit.com', 'redd.it', 'out.reddit.com'].some((h) => host === h || host.endsWith(`.${h}`)))) {
+    return 'reddit';
+  }
+  if (token === 'linkedin' || (host && ['linkedin.com', 'lnkd.in'].some((h) => host === h || host.endsWith(`.${h}`)))) {
+    return 'linkedin';
+  }
+  if (token === 'hackernews' || token === 'hn' || (host && (host === 'news.ycombinator.com' || host.endsWith('.ycombinator.com')))) {
+    return 'hackernews';
+  }
+  if (token === 'github' || (host && (host === 'github.com' || host.endsWith('.github.com')))) {
+    return 'github';
+  }
+  if (token === 'producthunt' || (host && (host === 'producthunt.com' || host.endsWith('.producthunt.com')))) {
+    return 'producthunt';
+  }
+  if (token === 'bluesky' || (host && (host === 'bsky.app' || host.endsWith('.bsky.app')))) {
+    return 'bluesky';
+  }
+  if (token === 'threads' || (host && (host === 'threads.net' || host.endsWith('.threads.net')))) {
+    return 'threads';
+  }
+  if (token === 'youtube' || (host && ['youtube.com', 'youtu.be'].some((h) => host === h || host.endsWith(`.${h}`)))) {
+    return 'youtube';
+  }
+  if (token === 'tiktok' || (host && (host === 'tiktok.com' || host.endsWith('.tiktok.com')))) {
+    return 'tiktok';
+  }
+  if (token === 'instagram' || (host && (host === 'instagram.com' || host.endsWith('.instagram.com')))) {
+    return 'instagram';
+  }
+  if (token === 'devto' || token === 'dev.to' || (host && (host === 'dev.to' || host.endsWith('.dev.to')))) {
+    return 'devto';
+  }
+  if (token === 'substack' || (host && (host === 'substack.com' || host.endsWith('.substack.com')))) {
+    return 'substack';
+  }
+  if (token === 'medium' || (host && (host === 'medium.com' || host.endsWith('.medium.com')))) {
+    return 'medium';
+  }
+  return 'none';
 }
 
 function normalizeBoolean(value) {
@@ -363,6 +504,12 @@ function classifyTelemetryAudience(entry = {}, raw = {}) {
     'observer/',
     'uptimerobot',
     'pingdom',
+    'protocolv1-gate',
+    'revenueauditor',
+    'shap-user',
+    'thumbgate-check',
+    'thumbgate-cash-check',
+    'thumbgate-reflection',
   ])) {
     addAudienceReason(reasons, 'bot_or_automation_user_agent');
   }
@@ -459,6 +606,15 @@ function sanitizeTelemetryPayload(payload = {}, headers = {}) {
   const raw = { ...nestedProps, ...envelope };
   const clientType = inferClientType(raw);
   const eventType = inferEventType(raw, clientType);
+  const pathCandidate = raw.path || raw.page || raw.landingPath;
+  if (pathCandidate && String(pathCandidate).includes('?')) {
+    const qIdx = String(pathCandidate).indexOf('?');
+    repairEmbeddedQueryToken(String(pathCandidate).slice(qIdx + 1), raw);
+  }
+  if (raw.source) raw.source = repairEmbeddedQueryToken(raw.source, raw);
+  if (raw.utmSource) raw.utmSource = repairEmbeddedQueryToken(raw.utmSource, raw);
+  if (raw.utmMedium || raw.medium) raw.utmMedium = repairEmbeddedQueryToken(raw.utmMedium || raw.medium, raw);
+  if (raw.utmCampaign || raw.campaign) raw.utmCampaign = repairEmbeddedQueryToken(raw.utmCampaign || raw.campaign, raw);
   const source = pickFirstText(raw.source, raw.utmSource, clientType === 'cli' ? 'cli' : 'direct');
   const utmSource = pickFirstText(raw.utmSource, raw.source, clientType === 'web' ? source : null);
   const utmMedium = pickFirstText(raw.utmMedium, clientType === 'web' ? 'landing_page' : clientType);
@@ -478,12 +634,14 @@ function sanitizeTelemetryPayload(payload = {}, headers = {}) {
     clientType,
     event: eventType,
     eventType,
+    visitorType: pickFirstText(raw.visitorType),
+    userAgent: pickFirstText(raw.userAgent, headers['user-agent'], headers['User-Agent']),
     installId: pickFirstText(raw.installId),
     visitorId: pickFirstText(raw.visitorId),
     sessionId: pickFirstText(raw.sessionId),
     traceId: pickFirstText(raw.traceId),
     acquisitionId: pickFirstText(raw.acquisitionId),
-    version: pickFirstText(raw.version, raw.appVersion),
+    version: pickFirstText(raw.version, raw.appVersion, raw.pkgVersion),
     platform: pickFirstText(raw.platform),
     nodeVersion: pickFirstText(raw.nodeVersion),
     page: pickFirstText(raw.page, raw.landingPath, raw.path),
@@ -505,7 +663,31 @@ function sanitizeTelemetryPayload(payload = {}, headers = {}) {
     community: pickFirstText(raw.community, raw.subreddit),
     postId: pickFirstText(raw.postId, raw.post_id),
     commentId: pickFirstText(raw.commentId, raw.comment_id),
-    ctaId: pickFirstText(raw.ctaId),
+    ctaId: pickFirstText(raw.ctaId, (() => {
+      const slug = pickFirstText(
+        raw.linkSlug,
+        raw.destinationSlug,
+        String(raw.page || raw.landingPath || '').startsWith('/go/')
+          ? String(raw.page || raw.landingPath || '').slice(4).split(/[/?#]/)[0]
+          : null
+      );
+      if (!slug) return null;
+      const slugToCta = {
+        'pro-direct': 'pro_checkout_direct_stripe',
+        'pro-annual': 'pro_checkout_annual_149',
+        'bundle-49': 'pro_checkout_bundle_49',
+        'playbook-999': 'pro_checkout_playbook_999',
+        'playbook-10': 'pro_checkout_playbook_10',
+        'diagnostic-direct': 'sprint_diagnostic_checkout',
+        'diagnostic-pay': 'go_diagnostic_pay',
+        'cloud-indie': 'cloud_indie_49',
+        'cloud-startup': 'cloud_startup_199',
+        pro: 'go_pro',
+        gpt: 'go_gpt',
+        install: 'go_install',
+      };
+      return slugToCta[String(slug).toLowerCase()] || null;
+    })()),
     ctaPlacement: pickFirstText(raw.ctaPlacement),
     planId: pickFirstText(raw.planId),
     segment: pickFirstText(raw.segment, raw.buyerSegment, raw.campaignVariant, raw.variant),
@@ -537,6 +719,10 @@ function sanitizeTelemetryPayload(payload = {}, headers = {}) {
     buyerEmailCaptured: Boolean(raw.buyerEmailCaptured),
     checkoutIntentClassification: pickFirstText(raw.checkoutIntentClassification),
     trafficChannel: inferTrafficChannel(raw, referrerHost),
+    socialPlatform: inferSocialPlatform(raw, referrerHost),
+    viralShareId: pickFirstText(raw.viralShareId, raw.shareId, raw.share_id),
+    referredByVisitorId: pickFirstText(raw.referredByVisitorId, raw.referredBy, raw.referred_by, raw.ref),
+    shareChannel: pickFirstText(raw.shareChannel, raw.share_channel),
     failureCode: pickFirstText(raw.failureCode),
     httpStatus: normalizeInteger(raw.httpStatus),
     userAgent: pickFirstText(raw.userAgent, headers['user-agent']),
@@ -545,6 +731,24 @@ function sanitizeTelemetryPayload(payload = {}, headers = {}) {
     interstitialSampleRate: normalizeRate(raw.interstitialSampleRate),
     attributionTagged: Boolean(
       pickFirstText(raw.utmSource, raw.utmMedium, raw.utmCampaign, raw.utmContent, raw.utmTerm)
+    ),
+    deepAttributionTagged: Boolean(
+      pickFirstText(
+        raw.creator,
+        raw.creatorHandle,
+        raw.creator_handle,
+        raw.community,
+        raw.subreddit,
+        raw.postId,
+        raw.post_id,
+        raw.commentId,
+        raw.comment_id,
+        raw.campaignVariant,
+        raw.variant,
+        raw.offerCode,
+        raw.offer,
+        raw.coupon
+      )
     ),
   };
 
@@ -883,6 +1087,16 @@ function getTelemetrySummary(feedbackDir, options = {}) {
   const checkoutStartsByCommunity = {};
   const checkoutStartsByOfferCode = {};
   const checkoutStartsByCampaignVariant = {};
+  const pageViewsBySocialPlatform = {};
+  const ctaClicksBySocialPlatform = {};
+  const checkoutStartsBySocialPlatform = {};
+  const viralSharesByChannel = {};
+  const viralSharers = new Set();
+  const referredVisitors = new Set();
+  const referredCheckoutStarters = new Set();
+  let viralShares = 0;
+  let deepAttributedPageViews = 0;
+  let deepAttributedCheckoutStarts = 0;
   const byCtaId = {};
   const byReferrerHost = {};
   const checkoutFailuresByCode = {};
@@ -967,6 +1181,14 @@ function getTelemetrySummary(feedbackDir, options = {}) {
       if (entry.acquisitionId) webEventsWithAcquisitionId += 1;
       if (entry.referrerHost) incrementCounter(byReferrerHost, entry.referrerHost);
 
+      if (entry.referredByVisitorId || entry.utmMedium === 'viral_share' || entry.utmMedium === 'referral_link') {
+        if (visitorKey) referredVisitors.add(visitorKey);
+      }
+      if (isViralShareEvent(entry.eventType || entry.event)) {
+        viralShares += 1;
+        if (visitorKey) viralSharers.add(visitorKey);
+        incrementCounter(viralSharesByChannel, entry.shareChannel || entry.socialPlatform || entry.source || 'unknown');
+      }
       if ((entry.eventType || entry.event) === 'landing_page_view') {
         pageViews += 1;
         incrementCounter(pageViewsBySource, entry.source);
@@ -978,6 +1200,10 @@ function getTelemetrySummary(feedbackDir, options = {}) {
         incrementCounter(pageViewsByOfferCode, entry.offerCode);
         incrementCounter(pageViewsByCampaignVariant, entry.campaignVariant);
         if (entry.attributionTagged) attributedPageViews += 1;
+        if (entry.socialPlatform && entry.socialPlatform !== 'none') {
+          incrementCounter(pageViewsBySocialPlatform, entry.socialPlatform);
+        }
+        if (entry.deepAttributionTagged) deepAttributedPageViews += 1;
       }
 
       if (isMarketingClickEvent(entry.eventType || entry.event)) {
@@ -989,7 +1215,11 @@ function getTelemetrySummary(feedbackDir, options = {}) {
         incrementCounter(ctaClicksByCommunity, entry.community);
         incrementCounter(ctaClicksByOfferCode, entry.offerCode);
         incrementCounter(ctaClicksByCampaignVariant, entry.campaignVariant);
-        incrementCounter(byCtaId, entry.ctaId);
+        const resolvedCtaId = entry.ctaId || entry.cta_id || entry.linkSlug || entry.id || entry.buttonId;
+        incrementCounter(byCtaId, resolvedCtaId);
+        if (entry.socialPlatform && entry.socialPlatform !== 'none') {
+          incrementCounter(ctaClicksBySocialPlatform, entry.socialPlatform);
+        }
         if (entry.linkSlug && (entry.eventType || entry.event) === 'cta_click') {
           incrementCounter(trackedLinkHitsBySlug, entry.linkSlug);
         }
@@ -1018,6 +1248,9 @@ function getTelemetrySummary(feedbackDir, options = {}) {
         }
       } else if ((entry.eventType || entry.event) === 'pro_checkout_direct_stripe') {
         checkoutInterstitialProConfirms += 1;
+        if (entry.ctaPlacement === 'checkout_interstitial' || entry.utmMedium === 'checkout_interstitial') {
+          checkoutInterstitialClicks += 1;
+        }
       }
 
       if (isCheckoutStartEvent(entry.eventType || entry.event)) {
@@ -1032,6 +1265,13 @@ function getTelemetrySummary(feedbackDir, options = {}) {
         incrementCounter(checkoutStartsByCommunity, entry.community);
         incrementCounter(checkoutStartsByOfferCode, entry.offerCode);
         incrementCounter(checkoutStartsByCampaignVariant, entry.campaignVariant);
+        if (entry.socialPlatform && entry.socialPlatform !== 'none') {
+          incrementCounter(checkoutStartsBySocialPlatform, entry.socialPlatform);
+        }
+        if (entry.deepAttributionTagged) deepAttributedCheckoutStarts += 1;
+        if (entry.referredByVisitorId || entry.utmMedium === 'viral_share' || entry.utmMedium === 'referral_link') {
+          if (visitorKey) referredCheckoutStarters.add(visitorKey);
+        }
         if (entry.linkSlug) incrementCounter(trackedLinkCheckoutStartsBySlug, entry.linkSlug);
         const starterKey = pickFirstText(
           entry.acquisitionId,
@@ -1058,7 +1298,9 @@ function getTelemetrySummary(feedbackDir, options = {}) {
       }
 
       if ((entry.eventType || entry.event) === 'checkout_cancel_page_view') {
-        checkoutCancelPageViews += 1;
+        if (!entry.isBotTraffic && entry.audience !== 'bot') {
+          checkoutCancelPageViews += 1;
+        }
       }
 
       if ((entry.eventType || entry.event) === 'checkout_paid_confirmed') {
@@ -1185,6 +1427,88 @@ function getTelemetrySummary(feedbackDir, options = {}) {
     );
   }
 
+  const checkoutConversionBySocialPlatform = {};
+  for (const platformKey of new Set([...Object.keys(pageViewsBySocialPlatform), ...Object.keys(checkoutStartsBySocialPlatform)])) {
+    checkoutConversionBySocialPlatform[platformKey] = safeRate(
+      checkoutStartsBySocialPlatform[platformKey] || 0,
+      pageViewsBySocialPlatform[platformKey] || 0
+    );
+  }
+
+  const invitesPerVisitor = safeRate(viralShares, webVisitors.size);
+  const referralConversionRate = safeRate(referredVisitors.size, viralShares);
+  const kFactor = Number((invitesPerVisitor * referralConversionRate).toFixed(4));
+  const viralAmplificationFactor = Number((1 / (1 - Math.min(kFactor, 0.99))).toFixed(4));
+  const viralLoop = {
+    viralShares,
+    uniqueSharers: viralSharers.size,
+    referredVisitors: referredVisitors.size,
+    referredCheckoutStarters: referredCheckoutStarters.size,
+    invitesPerVisitor,
+    referralConversionRate,
+    referredCheckoutRate: safeRate(referredCheckoutStarters.size, referredVisitors.size),
+    kFactor,
+    viralAmplificationFactor,
+    isViralSupercritical: kFactor >= 1,
+    sharesByChannel: viralSharesByChannel,
+    bySocialPlatform: {
+      pageViews: pageViewsBySocialPlatform,
+      ctaClicks: ctaClicksBySocialPlatform,
+      checkoutStarts: checkoutStartsBySocialPlatform,
+      checkoutConversion: checkoutConversionBySocialPlatform,
+    },
+  };
+
+  const variantKeys = [...new Set([
+    ...Object.keys(pageViewsByCampaignVariant),
+    ...Object.keys(ctaClicksByCampaignVariant),
+    ...Object.keys(checkoutStartsByCampaignVariant),
+  ])].filter((key) => key && key !== 'unknown');
+  const baselineVariantKey = variantKeys[0] || null;
+  const abVariants = {};
+  let recommendedWinner = null;
+  for (const variantKey of variantKeys) {
+    const vViews = pageViewsByCampaignVariant[variantKey] || 0;
+    const vClicks = ctaClicksByCampaignVariant[variantKey] || 0;
+    const vCheckouts = checkoutStartsByCampaignVariant[variantKey] || 0;
+    const trials = Math.max(vViews, vClicks, vCheckouts);
+    const ci = wilsonInterval95(vCheckouts, trials);
+    const baseViews = baselineVariantKey ? Math.max(
+      pageViewsByCampaignVariant[baselineVariantKey] || 0,
+      ctaClicksByCampaignVariant[baselineVariantKey] || 0,
+      checkoutStartsByCampaignVariant[baselineVariantKey] || 0
+    ) : 0;
+    const baseCheckouts = baselineVariantKey ? (checkoutStartsByCampaignVariant[baselineVariantKey] || 0) : 0;
+    const zScore = variantKey === baselineVariantKey ? 0 : twoProportionZScore(vCheckouts, trials, baseCheckouts, baseViews);
+    const rate = safeRate(vCheckouts, trials);
+    const baseRate = safeRate(baseCheckouts, baseViews);
+    const liftVsBaseline = baseRate > 0 ? Number(((rate - baseRate) / baseRate).toFixed(4)) : 0;
+    abVariants[variantKey] = {
+      pageViews: vViews,
+      ctaClicks: vClicks,
+      checkoutStarts: vCheckouts,
+      conversionRate: rate,
+      clickToCheckoutRate: safeRate(vCheckouts, vClicks),
+      wilsonLower95: ci.lower,
+      wilsonUpper95: ci.upper,
+      zScore,
+      liftVsBaseline,
+      statisticallySignificant: Math.abs(zScore) >= 1.96,
+    };
+    if (!recommendedWinner || ci.lower > abVariants[recommendedWinner].wilsonLower95) {
+      recommendedWinner = variantKey;
+    }
+  }
+  const abExperiments = {
+    activeVariantsCount: variantKeys.length,
+    baselineVariant: baselineVariantKey,
+    recommendedWinner,
+    unassignedPageViews: pageViewsByCampaignVariant.unknown || 0,
+    unassignedCtaClicks: ctaClicksByCampaignVariant.unknown || 0,
+    unassignedCheckoutStarts: checkoutStartsByCampaignVariant.unknown || 0,
+    variants: abVariants,
+  };
+
   const trackedLinkConversionBySlug = {};
   for (const slugKey of new Set([
     ...Object.keys(trackedLinkHitsBySlug),
@@ -1279,6 +1603,9 @@ function getTelemetrySummary(feedbackDir, options = {}) {
       attributedPageViews,
       attributedCheckoutStarts,
       attributionCoverageRate: safeRate(attributedPageViews, pageViews),
+      deepAttributedPageViews,
+      deepAttributedCheckoutStarts,
+      deepAttributionCoverageRate: safeRate(deepAttributedPageViews, pageViews),
       averageExitEngagementMs: exitEngagementMsCount > 0
         ? Math.round(exitEngagementMsTotal / exitEngagementMsCount)
         : 0,
@@ -1350,7 +1677,13 @@ function getTelemetrySummary(feedbackDir, options = {}) {
       trackedLinkHitsBySlug,
       trackedLinkCheckoutStartsBySlug,
       trackedLinkConversionBySlug,
+      pageViewsBySocialPlatform,
+      ctaClicksBySocialPlatform,
+      checkoutStartsBySocialPlatform,
+      checkoutConversionBySocialPlatform,
     },
+    viralLoop,
+    abExperiments,
     recent: summarizeRecentEvents(events),
   };
 }
@@ -1566,6 +1899,8 @@ function getTelemetryAnalytics(feedbackDir, options = {}) {
         topSlug: top ? { key: top[0], count: top[1] } : null,
       };
     })(),
+    viralLoop: summary.viralLoop,
+    abExperiments: summary.abExperiments,
     cli: summary.cli,
     recent: summary.recent,
   };
@@ -1586,4 +1921,6 @@ module.exports = {
   getTelemetryAnalytics,
   getTelemetrySummary,
   inferTrafficChannel,
+  inferSocialPlatform,
+  repairEmbeddedQueryToken,
 };

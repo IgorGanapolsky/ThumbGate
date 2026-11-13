@@ -24,7 +24,12 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const crypto = require('node:crypto');
-
+const {
+  NVIDIA_OPEN_SOURCE_CATALOG,
+  evaluateMorpheusCybersecurityPipeline,
+  evaluateNeMoColang2Rails,
+  profileNeMoAgentWorkflow,
+} = require('./nvidia-open-source-accelerator');
 const FIDDLER_COMPARISON_MATRIX = {
   name: 'thumbgate-fiddler-control-plane-honesty',
   format_steal_source: 'https://www.fiddler.ai/ (The Control Plane for Enterprise AI Agents)',
@@ -189,6 +194,32 @@ function evaluateCentorDiode(invocation = {}) {
     }
   }
 
+  // Fast-Gate Stage 3: NVIDIA NeMo Colang 2.0 5-Rail & Morpheus SID/DFP Diode (<0.4ms)
+  const colangRails = evaluateNeMoColang2Rails({
+    userPrompt: String(invocation.prompt || ''),
+    dialogTopic: invocation.dialogTopic || 'engineering',
+    retrievedChunks: Array.isArray(invocation.retrievedChunks) ? invocation.retrievedChunks : [],
+    toolCall: { toolName, command, args: invocation.args },
+    modelOutput: String(invocation.modelOutput || ''),
+    hasVerifiedEvidence: invocation.hasVerifiedEvidence !== false,
+  });
+  const morpheusTelemetry = evaluateMorpheusCybersecurityPipeline({
+    events: [{ agentId: invocation.agentId || 'centor-agent', tool: toolName, command }],
+    observedRatePerMin: Number.isFinite(Number(invocation.observedRatePerMin)) ? Number(invocation.observedRatePerMin) : 10,
+  });
+
+  if (decision === 'ALLOW' && !colangRails.passed) {
+    decision = 'DENY';
+    matchedRule = colangRails.triggeredRails.join(',') || 'COLANG_RAIL_VIOLATION';
+    severity = 'CRITICAL';
+    rationale = `Centor-Diode Stage 3 (NeMo Colang 2.0): blocked by ${matchedRule}`;
+  } else if (decision === 'ALLOW' && morpheusTelemetry.quarantineTriggered) {
+    decision = 'DENY';
+    matchedRule = 'MORPHEUS_CYBER_QUARANTINE';
+    severity = 'CRITICAL';
+    rationale = 'Centor-Diode Stage 3 (NVIDIA Morpheus SID/DFP): quarantined credential or burst anomaly';
+  }
+
   const endHr = process.hrtime.bigint();
   const latencyMicros = Number(endHr - startHr) / 1000;
 
@@ -208,12 +239,133 @@ function evaluateCentorDiode(invocation = {}) {
     latency_ms: Number((latencyMicros / 1000).toFixed(4)),
     zero_token_cost: true,
     data_egress: false,
+    nemo_colang_rails: colangRails,
+    morpheus_cyber_pipeline: morpheusTelemetry,
     audit_receipt: {
       receipt_id: receiptHash.slice(0, 16),
       sha256: receiptHash,
       timestamp: new Date().toISOString(),
       evaluator: 'ThumbGate Centor-Diode v1 (Local CPU)',
     },
+  };
+}
+
+/**
+ * CrowdStrike $495M Acquisition Steal (Nov 3, 2026 — Fal.Con Europe):
+ *   - Fiddler AI ($400M -> Falcon Observe): "The flight recorder for every agent"
+ *   - Dreadnode ($95M): Pre-deployment offensive AI security testing mapped to OWASP LLM Top 10 & NIST AI RMF
+ *   - Falcon Guardian AI Kill Switch: Out-of-model runtime switch where an agent "can't argue with it, rewrite it, or wait it out"
+ *   - Monetization Campaign Generator: Captures enterprise demand now (CrowdStrike GA is not until Q4 FY2027)
+ */
+const DREADNODE_ATTACK_PROBES = Object.freeze([
+  {
+    id: 'dreadnode_prompt_injection',
+    owaspLlm: 'LLM01:2025 Prompt Injection',
+    nistAiRmf: 'MAP 3.5 / MEASURE 2.6',
+    severity: 'CRITICAL',
+    regex: /(?:ignore\s+(?:all\s+)?(?:previous|prior)\s+instructions|system\s+override|jailbreak|developer\s+mode\s+enabled)/i,
+  },
+  {
+    id: 'dreadnode_unverified_completion_claim',
+    owaspLlm: 'LLM09:2025 Misinformation & Unverified Agent Claims',
+    nistAiRmf: 'MEASURE 2.6 / GOVERN 1.2',
+    severity: 'HIGH',
+    regex: /\b(?:all\s+tests\s+passed|pr\s+is\s+merged|deployed\s+to\s+production)\b/i,
+    requiresEvidence: true,
+  },
+  {
+    id: 'dreadnode_excessive_agency',
+    owaspLlm: 'LLM06:2025 Excessive Agency',
+    nistAiRmf: 'MANAGE 4.1',
+    severity: 'CRITICAL',
+    regex: /\b(?:rm\s+-rf|git\s+push\s+--force|DROP\s+TABLE|chmod\s+777)\b/i,
+  },
+  {
+    id: 'dreadnode_credential_exfiltration',
+    owaspLlm: 'LLM02:2025 Sensitive Information Disclosure',
+    nistAiRmf: 'MANAGE 2.4',
+    severity: 'CRITICAL',
+    regex: /(?:ghp_[a-zA-Z0-9]{36}|sk_live_[a-zA-Z0-9]{24}|AKIA[0-9A-Z]{16})/,
+  },
+]);
+
+function evaluateDreadnodeOffensiveMatrix(payload = {}) {
+  const text = String(payload.command || payload.prompt || payload.output || '');
+  const hasVerifiedEvidence = payload.hasVerifiedEvidence === true;
+  const findings = [];
+
+  for (const probe of DREADNODE_ATTACK_PROBES) {
+    if (probe.regex.test(text)) {
+      if (probe.requiresEvidence && hasVerifiedEvidence) continue;
+      findings.push({
+        probeId: probe.id,
+        severity: probe.severity,
+        owaspLlm: probe.owaspLlm,
+        nistAiRmf: probe.nistAiRmf,
+      });
+    }
+  }
+
+  return {
+    passed: findings.length === 0,
+    findingCount: findings.length,
+    findings,
+    standardsCovered: ['OWASP LLM Top 10 (2025)', 'NIST AI RMF 1.0'],
+  };
+}
+
+function evaluateFalconGuardianKillSwitch(invocation = {}) {
+  const envTripped = process.env.THUMBGATE_KILL_SWITCH === '1' || process.env.THUMBGATE_KILL_SWITCH === 'true';
+  const explicitTripped = invocation.killSwitchActive === true;
+  const halted = envTripped || explicitTripped;
+  const agentFramework = invocation.framework || 'claude-code';
+
+  const receiptHash = crypto
+    .createHash('sha256')
+    .update(JSON.stringify({ halted, agentFramework, toolName: invocation.toolName || 'Bash', command: invocation.command || '' }))
+    .digest('hex');
+
+  if (halted) {
+    return {
+      decision: 'KILL_SWITCH_HALT',
+      outOfModelRuntime: true,
+      canAgentOverride: false,
+      agentFramework,
+      reason: 'Out-of-model runtime AI Kill Switch engaged: execution halted outside the model layer where the agent cannot argue with it, rewrite it, or wait it out.',
+      flightRecorderReceipt: receiptHash,
+    };
+  }
+
+  return {
+    decision: 'ALLOW',
+    outOfModelRuntime: true,
+    canAgentOverride: false,
+    agentFramework,
+    flightRecorderReceipt: receiptHash,
+  };
+}
+
+function generateCrowdStrikeMonetizationCampaign(options = {}) {
+  const baseUrl = options.baseUrl || 'https://thumbgate.ai';
+  return {
+    headline: 'CrowdStrike Just Paid $495M for Fiddler ($400M) + Dreadnode ($95M) (GA: Q4 FY2027). Ship All 3 Locally Today for $19/mo.',
+    hook: 'George Kurtz nailed the exact enterprise agent crisis at Fal.Con Europe: "software can hold valid credentials and approved tools yet still make bad decisions, ignore instructions or claim work it never completed."',
+    valueProposition: [
+      '1. Flight Recorder for Every Agent (Fiddler $400M equivalent): SHA-256 cryptographic receipts + claim verification before an agent can say "all tests passed" or "PR merged".',
+      '2. Pre-Deployment & Pre-Action Offensive Testing (Dreadnode $95M equivalent): Sub-0.5ms Centor-Diode + H-Net raw byte de-obfuscation mapped to OWASP LLM Top 10 & NIST AI RMF.',
+      '3. Out-of-Model Runtime AI Kill Switch (Falcon Guardian equivalent): Deterministic OS-level PreToolUse hook across Claude Code, Cursor, Codex, LangGraph, Bedrock, and Google ADK.',
+    ],
+    checkoutLinks: {
+      proMonthly: `${baseUrl}/go/pro-direct`,
+      teamMonthly: `${baseUrl}/go/team-direct`,
+      lifetime: `${baseUrl}/go/lifetime-direct`,
+      cliInstall: 'npx thumbgate init',
+    },
+    targetPersonas: [
+      'CrowdStrike Falcon SecOps & CISO buyers who cannot wait until Q4 FY2027 GA',
+      'Fiddler AI & Dreadnode prospects looking for zero-egress, $0/trace local enforcement',
+      'VP Engineering / Platform teams running Claude Code, Cursor, Copilot, LangGraph, Bedrock, or Google ADK',
+    ],
   };
 }
 
@@ -296,8 +448,16 @@ if (require.main === module) {
 }
 
 module.exports = {
+  DREADNODE_ATTACK_PROBES,
   FIDDLER_COMPARISON_MATRIX,
   calculateEvaluationTrustTax,
   evaluateCentorDiode,
+  evaluateDreadnodeOffensiveMatrix,
+  evaluateFalconGuardianKillSwitch,
+  generateCrowdStrikeMonetizationCampaign,
   runCli,
+  NVIDIA_OPEN_SOURCE_CATALOG,
+  evaluateMorpheusCybersecurityPipeline,
+  evaluateNeMoColang2Rails,
+  profileNeMoAgentWorkflow,
 };

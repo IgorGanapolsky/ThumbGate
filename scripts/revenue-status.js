@@ -113,7 +113,7 @@ function parseHtmlSignals(html = '') {
   const body = String(html);
   return {
     plausibleScript: /plausible\.io\/js\/script\.js|\/js\/analytics\.js/.test(body),
-    gaLoaderScript: body.includes('googletagmanager.com/gtag/js'),
+    gaLoaderScript: body.includes('googletagmanager.com/gtag/js') || /const\s+gaMeasurementId\s*=\s*['"]G-[A-Z0-9]+['"]/i.test(body),
     gaEventHook: body.includes('window.gtag('),
     gaPlaceholderPresent: body.includes('__GA_MEASUREMENT_ID__'),
     telemetryEndpoint: body.includes('/v1/telemetry/ping'),
@@ -208,9 +208,13 @@ function normalizeExternalCustomerAudit(payload = null) {
     generatedAt: payload.generatedAt || null,
     ownerEmails: Array.isArray(payload.ownerEmails) ? payload.ownerEmails : [],
     productAttributionVerified,
-    productAttributionGap: productAttribution.gap || 'ThumbGate product attribution was not verified',
+    productAttributionGap: productAttributionVerified
+      ? (productAttribution.gap || null)
+      : (productAttribution.gap || 'ThumbGate product attribution was not verified'),
     windowAttributionVerified,
-    windowAttributionGap: revenueWindows.gap || 'ThumbGate time-window attribution was not verified',
+    windowAttributionGap: windowAttributionVerified
+      ? (revenueWindows.gap || null)
+      : (revenueWindows.gap || 'ThumbGate time-window attribution was not verified'),
     revenueWindowBasis: revenueWindows.basis || null,
     revenueWindowTimeZone: revenueWindows.timeZone || null,
     charges: {
@@ -531,15 +535,20 @@ async function probePublicRuntime(appOrigin, { fetchImpl = fetch, timeoutMs = DE
   const rootUrl = new URL('/', appOrigin);
   const telemetryUrl = new URL('/v1/telemetry/ping', appOrigin);
 
-  const healthRes = await fetchWithTimeout(fetchImpl, healthUrl, {}, timeoutMs);
+  const probeHeaders = {
+    dnt: '1',
+    'sec-gpc': '1',
+  };
+  const healthRes = await fetchWithTimeout(fetchImpl, healthUrl, { headers: probeHeaders }, timeoutMs);
   const healthJson = await healthRes.json();
-  const rootRes = await fetchWithTimeout(fetchImpl, rootUrl, {}, timeoutMs);
+  const rootRes = await fetchWithTimeout(fetchImpl, rootUrl, { headers: probeHeaders }, timeoutMs);
   const rootHtml = await rootRes.text();
 
   const probeId = crypto.randomUUID();
   const telemetryRes = await fetchWithTimeout(fetchImpl, telemetryUrl, {
     method: 'POST',
     headers: {
+      ...probeHeaders,
       'content-type': 'application/json',
     },
     body: JSON.stringify({
@@ -730,6 +739,7 @@ function getExternalCustomerAuditViaStripeCli({
       || '';
     return String(raw).trim().toLowerCase();
   };
+  const unknownCharges = charges.filter((c) => !emailOf(c));
   const ownerCharges = charges.filter((c) => ownerEmails.includes(emailOf(c)));
   const externalCharges = charges.filter((c) => {
     const em = emailOf(c);
@@ -776,15 +786,17 @@ function getExternalCustomerAuditViaStripeCli({
       mrrExternalCents: 0,
     },
     productAttribution: {
-      verified: externalSummary.netCents === 0,
-      gap: externalSummary.netCents === 0 ? null : 'Stripe CLI fallback requires session line-item reconciliation for non-zero external charges',
+      verified: externalSummary.netCents === 0 && unknownCharges.length === 0,
+      gap: externalSummary.netCents === 0 && unknownCharges.length === 0
+        ? null
+        : 'Stripe CLI fallback requires session line-item reconciliation for non-zero external or unknown-payer charges',
       thumbgate: {
         uniquePayingCustomerCount: 0,
         netRevenueCents: 0,
         activeSubscriptionCount: 0,
         mrrCents: 0,
         revenueWindows: {
-          verified: externalSummary.netCents === 0,
+          verified: externalSummary.netCents === 0 && unknownCharges.length === 0,
           basis: 'stripe_charge_created_timestamp',
           timeZone: 'America/New_York',
           todayGrossRevenueCents: 0,
@@ -1152,10 +1164,12 @@ module.exports = {
   normalizeWindowSummary,
   normalizeWorkflowIntakeQueue,
   fetchWithTimeout,
+  probePublicRuntime,
   buildDiagnosis,
   formatReport,
   buildRailwayAuditSnippet,
   getExternalCustomerAuditViaRailway,
+  getExternalCustomerAuditViaStripeCli,
   resolveExternalCustomerAudit,
   getHostedAuditViaHttp,
   generateRevenueStatusReport,

@@ -520,8 +520,10 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
     // 621 -> 641 (2026-10-15): operator framework landing, blog posts, policy packs, and continuity pages (+20).
     // 641 -> 648 (2026-10-15): HotData DB integration adapters, Google Universal Cart spend firewall blog & landing page (+7).
     // 648 -> 658 (2026-10-27): Cloud Token Firewall, AWS Lambda handler, Cloud Customer Portal (public/cloud.html), Homebrew formula (Formula/thumbgate.rb), and audit-privileges (+10).
-    manifest.fileCount <= 658,
-    `npm package should stay <= 658 files, got ${manifest.fileCount}`
+    // 658 -> 670 (2026-11-04): NVIDIA open-source accelerator, H-Net dynamic chunker, RSI economics governor, confusion-detector, release-ops-control-plane, revenue-ds-ml-graphrag-engine, and associated skills.
+    // 670 -> 700 (2026-11-11): Autonomous Business OS v4.0 (scripts/autonomous-business-os-v4.js), Spotify confidence diode, EU AI Act & Cloud/Admin portals, and Nov 11 autonomy skills (PR #4900). None belong in ThumbGate-Core; all are public CLI, marketing, or agent boundary surfaces.
+    manifest.fileCount <= 700,
+    `npm package should stay <= 700 files, got ${manifest.fileCount}`
   );
   // Ceiling bumped from 2.75 MB → 2.85 MB (2026-04-16) to accommodate the
   // incremental review-delta demo content in public/dashboard.html landing
@@ -776,8 +778,10 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // Bumped 9.35 MB -> 9.40 MB (2026-10-15): HotData DB integration & Google Universal Cart firewall. Local pack 9,340,830; CI slack.
   // Bumped 9.40 MB -> 9.85 MB (2026-10-26): email-triage MCP server, Poolside/OpenUI/ICM/ARC-AGI-3 gates, and 4-tier checkout routes.
   // Bumped 9.85 MB -> 10.25 MB (2026-10-29): src/cloud-token-firewall.js + public/cloud.html required by server.js runtime routes. Local pack 10,088,790; narrow headroom retained.
-  manifest.unpackedSize <= 10_250_000,
-  `npm package should stay <= 10.25 MB unpacked, got ${manifest.unpackedSize}`
+  // Bumped 10.25 MB -> 11.05 MB (2026-11-04): scripts/nvidia-open-source-accelerator.js, scripts/hnet-dynamic-chunker.js, scripts/rsi-economics-governor.js, scripts/confusion-detector.js, scripts/release-ops-control-plane.js, scripts/revenue-ds-ml-graphrag-engine.js, scripts/checkout-recovery.js + cloud-token-firewall & server.js runtime routes.
+  // Bumped 11.05 MB -> 11.50 MB (2026-11-11): scripts/autonomous-business-os-v4.js, scripts/spotify-confidence-diode.js, EU AI Act & Cloud/Admin portals, and Nov 11 autonomy skills (PR #4900). Local pack measured 11,355,746 bytes; narrow headroom retained.
+  manifest.unpackedSize <= 11_500_000,
+  `npm package should stay <= 11.50 MB unpacked, got ${manifest.unpackedSize}`
 );
 
   for (const file of requiredRuntimeFiles) {

@@ -539,7 +539,7 @@ async function main() {
     } else if (totalRevenue < 1000) {
       console.log('\n💡 Revenue is from early adopters. Focus on Gumroad product launch to accelerate.');
     } else {
-      console.log('\n🎯 On track for $100/day target');
+      console.log('\n🎯 On track for make $300/day, 24/7 target');
     }
     console.log('══════════════════════════════════════════════════════════════');
   }

@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Autonomous Coding Agent Risk Scorecard (Free Evaluation) | ThumbGate</title>
+  <meta name="description" content="Free engineering risk scorecard for teams running Claude Code, Cursor, Codex, and agent swarms in production.">
+  <style>
+    :root {
+      --bg: #090a0f;
+      --card: #12141c;
+      --border: #232736;
+      --text: #f0f3f8;
+      --text-muted: #9ba3b4;
+      --accent: #3b82f6;
+      --danger: #ef4444;
+      --warning: #f59e0b;
+      --success: #10b981;
+      --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font);
+      line-height: 1.6;
+      padding: 40px 20px;
+      display: flex;
+      justify-content: center;
+    }
+    .container {
+      max-width: 800px;
+      width: 100%;
+    }
+    .badge {
+      display: inline-block;
+      background: rgba(59, 130, 246, 0.15);
+      color: #60a5fa;
+      border: 1px solid rgba(59, 130, 246, 0.3);
+      padding: 6px 14px;
+      border-radius: 999px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      margin-bottom: 20px;
+    }
+    h1 {
+      font-size: 2.2rem;
+      font-weight: 800;
+      margin-bottom: 12px;
+      letter-spacing: -0.02em;
+    }
+    .subtitle {
+      color: var(--text-muted);
+      font-size: 1.1rem;
+      margin-bottom: 30px;
+    }
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      padding: 24px;
+      border-radius: 12px;
+      margin-bottom: 24px;
+    }
+    .form-group {
+      margin-bottom: 16px;
+    }
+    label {
+      display: block;
+      font-size: 0.9rem;
+      font-weight: 600;
+      margin-bottom: 6px;
+    }
+    select, input[type="number"] {
+      width: 100%;
+      background: #0d0e14;
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 10px 14px;
+      border-radius: 6px;
+      font-size: 1rem;
+    }
+    .checkbox-group {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-top: 8px;
+    }
+    .checkbox-group input {
+      width: 18px;
+      height: 18px;
+      cursor: pointer;
+    }
+    .btn-calc {
+      width: 100%;
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      padding: 14px;
+      font-size: 1.1rem;
+      font-weight: 700;
+      border-radius: 6px;
+      cursor: pointer;
+      margin-top: 10px;
+    }
+    .result-box {
+      display: none;
+      background: #141724;
+      border: 2px solid var(--border);
+      border-radius: 12px;
+      padding: 24px;
+      margin-top: 30px;
+    }
+    .score-banner {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-bottom: 20px;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 20px;
+    }
+    .score-value {
+      font-size: 2.8rem;
+      font-weight: 800;
+    }
+    .vuln-item {
+      background: rgba(239, 68, 68, 0.08);
+      border-left: 4px solid var(--danger);
+      padding: 12px 16px;
+      border-radius: 4px;
+      margin-bottom: 12px;
+    }
+    .vuln-title {
+      font-weight: 700;
+      color: #fca5a5;
+    }
+    .checklist-item {
+      display: flex;
+      gap: 10px;
+      align-items: flex-start;
+      margin-bottom: 10px;
+    }
+    .checklist-check {
+      color: var(--success);
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="badge">100% Free • No Sign-Up Required</div>
+    <h1>Autonomous Coding Agent Risk Scorecard</h1>
+    <div class="subtitle">Evaluate your team's vulnerability to runaway agent PR storms, unindexed SQL migrations, and sycophantic test suites.</div>
+
+    <div class="card">
+      <div class="form-group">
+        <label for="agentCount">How many autonomous coding agents / seats are running?</label>
+        <input type="number" id="agentCount" value="3" min="1" max="100">
+      </div>
+      <div class="form-group">
+        <label for="ciSpend">Estimated Monthly CI/CD Spend ($)</label>
+        <input type="number" id="ciSpend" value="1200" min="0" step="100">
+      </div>
+      <div class="form-group">
+        <label for="database">Primary Production Database</label>
+        <select id="database">
+          <option value="postgresql">PostgreSQL</option>
+          <option value="mysql">MySQL</option>
+          <option value="mongodb">MongoDB</option>
+          <option value="sqlite">SQLite</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label>Current Active Guardrails</label>
+        <div class="checkbox-group">
+          <input type="checkbox" id="gateCheck">
+          <span>We have deterministic pre-action tool gate diodes installed</span>
+        </div>
+        <div class="checkbox-group">
+          <input type="checkbox" id="lazyCiCheck">
+          <span>We automatically cancel obsolete CI builds when newer agent commits push</span>
+        </div>
+        <div class="checkbox-group">
+          <input type="checkbox" id="mutationCheck">
+          <span>We run mutation testing to verify agent-generated test sensitivity</span>
+        </div>
+      </div>
+
+      <button type="button" class="btn-calc" onclick="runScorecard()">Calculate Risk Score & Incident Exposure</button>
+    </div>
+
+    <div id="results" class="result-box">
+      <div class="score-banner">
+        <div>
+          <div style="font-size:0.9rem; color:var(--text-muted); text-transform:uppercase;">Overall Agent Risk Score</div>
+          <div id="riskTier" style="font-size:1.2rem; font-weight:700;">CRITICAL RISK</div>
+        </div>
+        <div id="scoreDisplay" class="score-value" style="color:var(--danger);">85/100</div>
+      </div>
+
+      <div style="margin-bottom:20px;">
+        <span style="color:var(--text-muted);">Estimated Annual Incident Exposure:</span>
+        <strong id="exposureDisplay" style="font-size:1.3rem; color:#f87171; margin-left:8px;">$28,400 / yr</strong>
+      </div>
+
+      <h3 style="margin-bottom:12px;">Identified Production Vulnerabilities</h3>
+      <div id="vulnList"></div>
+
+      <h3 style="margin-top:24px; margin-bottom:12px;">Zero-Cost Remediation Actions</h3>
+      <div id="remediationList"></div>
+    </div>
+  </div>
+
+  <script>
+    function runScorecard() {
+      const agents = parseInt(document.getElementById('agentCount').value) || 1;
+      const ciSpend = parseFloat(document.getElementById('ciSpend').value) || 0;
+      const db = document.getElementById('database').value;
+      const hasGate = document.getElementById('gateCheck').checked;
+      const hasLazyCi = document.getElementById('lazyCiCheck').checked;
+      const hasMutation = document.getElementById('mutationCheck').checked;
+
+      let score = 40;
+      let exposure = 0;
+      const vulns = [];
+      const remediations = [];
+
+      if (!hasLazyCi) {
+        const surge = (ciSpend * 0.45 * (agents > 2 ? 1.8 : 1.2)) * 12;
+        exposure += surge;
+        score += 20;
+        vulns.push({
+          title: 'Runaway CI Runner Tsunami',
+          desc: 'Without superseding PR build cancellation, ' + agents + ' agent(s) will trigger redundant build queues.'
+        });
+        remediations.push('Implement a Lazy PR CI Manager to automatically halt obsolete agent test builds.');
+      }
+
+      if (!hasGate) {
+        exposure += 18400;
+        score += 25;
+        vulns.push({
+          title: 'Unindexed Migration Scatter Query',
+          desc: 'Agent SQL migrations on ' + db + ' lack PreToolUse AST verification, risking table-level locks.'
+        });
+        remediations.push('Enforce deterministic pre-action MCP binary gate diodes before SQL queries reach execution.');
+      }
+
+      if (!hasMutation) {
+        exposure += 8500;
+        score += 15;
+        vulns.push({
+          title: 'Sycophantic Agent Test False-Positives',
+          desc: 'Agent tests pass based on model assumptions rather than mutating code to verify test sensitivity.'
+        });
+        remediations.push('Deploy mutation testing to catch sycophantic test suites that pass broken logic.');
+      }
+
+      score = Math.min(Math.max(score, 10), 100);
+
+      document.getElementById('results').style.display = 'block';
+      document.getElementById('scoreDisplay').innerText = score + '/100';
+      document.getElementById('exposureDisplay').innerText = '$' + Math.round(exposure).toLocaleString() + ' / yr';
+
+      const tierEl = document.getElementById('riskTier');
+      const scoreEl = document.getElementById('scoreDisplay');
+      if (score >= 70) {
+        tierEl.innerText = 'CRITICAL RISK';
+        tierEl.style.color = '#ef4444';
+        scoreEl.style.color = '#ef4444';
+      } else if (score >= 45) {
+        tierEl.innerText = 'ELEVATED RISK';
+        tierEl.style.color = '#f59e0b';
+        scoreEl.style.color = '#f59e0b';
+      } else {
+        tierEl.innerText = 'LOW / HARDENED RISK';
+        tierEl.style.color = '#10b981';
+        scoreEl.style.color = '#10b981';
+      }
+
+      const vulnContainer = document.getElementById('vulnList');
+      vulnContainer.innerHTML = '';
+      vulns.forEach(v => {
+        const div = document.createElement('div');
+        div.className = 'vuln-item';
+        div.innerHTML = '<div class="vuln-title">' + v.title + '</div><div style="font-size:0.9rem; color:#fca5a5;">' + v.desc + '</div>';
+        vulnContainer.appendChild(div);
+      });
+
+      const remContainer = document.getElementById('remediationList');
+      remContainer.innerHTML = '';
+      remediations.forEach(r => {
+        const div = document.createElement('div');
+        div.className = 'checklist-item';
+        div.innerHTML = '<span class="checklist-check">✓</span><span>' + r + '</span>';
+        remContainer.appendChild(div);
+      });
+    }
+  </script>
+</body>
+</html>

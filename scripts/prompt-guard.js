@@ -2,6 +2,7 @@
 'use strict';
 
 const { scanText, buildSafeSummary, redactText } = require('./secret-scanner');
+const { deobfuscateNoisyByteStream } = require('./hnet-dynamic-chunker');
 
 function getFeedbackLoopModule() {
   try {
@@ -28,7 +29,16 @@ function evaluatePromptGuard(prompt, options = {}) {
     return null;
   }
 
-  const scanResult = scanText(text, { provider: options.provider, source: 'prompt' });
+  let scanResult = scanText(text, { provider: options.provider, source: 'prompt' });
+  if (!scanResult.detected) {
+    const deobfuscated = deobfuscateNoisyByteStream(text);
+    if (deobfuscated.normalizedText && deobfuscated.normalizedText !== text) {
+      scanResult = scanText(deobfuscated.normalizedText, {
+        provider: options.provider,
+        source: 'prompt_hnet_deobfuscated',
+      });
+    }
+  }
   if (!scanResult.detected) {
     return null;
   }

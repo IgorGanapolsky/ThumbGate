@@ -187,7 +187,7 @@ test('dashboard and thumbgate.ai homepage provide SSO Login/Logout buttons and i
   const firewall = require('../src/cloud-token-firewall');
 
   assert.match(dashboard, /id="navSsoLoginBtn"/);
-  assert.match(dashboard, /id="navSsoLogoutBtn"/);
+  assert.match(dashboard, /id="navSsoLogoutBtn"[^>]*style="display:none;/);
   assert.match(dashboard, /id="customerProjectsBar"/);
   assert.match(dashboard, /id="customerProjectSelect"/);
   assert.match(dashboard, /function signInWithSso\(provider\)/);
@@ -197,7 +197,8 @@ test('dashboard and thumbgate.ai homepage provide SSO Login/Logout buttons and i
   assert.match(dashboard, /never auto-load demo/);
 
   assert.match(indexHtml, /id="homeSsoSignInBtn"/);
-  assert.match(indexHtml, /id="homeSsoLogoutBtn"/);
+  assert.match(indexHtml, /id="homeSsoLogoutBtn"[^>]*style="display:none;/);
+  assert.doesNotMatch(indexHtml, /Customer SSO Log In \/ Log Out/);
   assert.match(indexHtml, /id="homeProjectSelect"/);
   assert.match(indexHtml, /window\.tgHomeSsoLogin = async function/);
   assert.match(indexHtml, /window\.tgCreateHomeProject = async function/);
@@ -225,4 +226,542 @@ test('dashboard and thumbgate.ai homepage provide SSO Login/Logout buttons and i
   const projects = firewall.listCustomerProjects(valid.email);
   assert.ok(projects.some((p) => p.slug === 'checkout-service-api'));
 });
+
+test('verified customer Sign Up, Log In credential checks, Checkout auto-account, OAuth enforcement, and /admin console work end-to-end', () => {
+  const adminHtml = fs.readFileSync(path.join(__dirname, '..', 'public', 'admin.html'), 'utf8');
+  const indexHtml = fs.readFileSync(path.join(__dirname, '..', 'public', 'index.html'), 'utf8');
+  const firewall = require('../src/cloud-token-firewall');
+
+  assert.match(indexHtml, /button-pro/);
+  assert.doesNotMatch(indexHtml, /href="\/admin"/);
+  assert.match(adminHtml, /v2_verified_accounts/);
+  assert.match(adminHtml, /ThumbGate.*Admin/);
+  assert.match(adminHtml, /id="adminLoginGate"/);
+  assert.match(adminHtml, /id="adminProtectedDashboard" style="display:none;"/);
+  assert.match(adminHtml, /\/v1\/admin\/login/);
+  assert.match(adminHtml, /\/v1\/admin\/customers/);
+
+  // 1. Unconfigured OAuth with requireVerifiedOauth must refuse instead of minting fake GOOGLE SSO
+  const unconfiguredOauth = firewall.startSsoAuthorizationFlow({
+    provider: 'google',
+    email: 'unregistered@igorganapolsky.com',
+    requireVerifiedOauth: true,
+  });
+  assert.equal(unconfiguredOauth.ok, false);
+  assert.equal(unconfiguredOauth.error, 'oauth_provider_not_configured');
+
+  // 2. Logging in with an email that has no registered account must return 404 account_not_found
+  const missingLogin = firewall.authenticateCustomerAccount({
+    email: `never-registered-${Date.now()}@example.com`,
+    password: 'Password123!',
+  });
+  assert.equal(missingLogin.ok, false);
+  assert.equal(missingLogin.statusCode, 404);
+  assert.equal(missingLogin.error, 'account_not_found');
+
+  // 3. Explicit Sign Up creates a password-protected account and returns session token
+  const testEmail = `signup-${Date.now()}@example.com`;
+  const signupRes = firewall.registerCustomerAccount({
+    email: testEmail,
+    password: 'StrongPassword99!',
+    name: 'Test Customer',
+    workspaceName: 'Acme Corp Prod',
+  });
+  assert.equal(signupRes.ok, true);
+  assert.equal(signupRes.account.email, testEmail);
+  assert.ok(signupRes.ssoToken.startsWith('tg_sso_'));
+
+  // 4. Wrong password fails with 401 invalid_credentials; right password succeeds
+  const badLogin = firewall.authenticateCustomerAccount({
+    email: testEmail,
+    password: 'WrongPassword!',
+  });
+  assert.equal(badLogin.ok, false);
+  assert.equal(badLogin.statusCode, 401);
+
+  const goodLogin = firewall.authenticateCustomerAccount({
+    email: testEmail,
+    password: 'StrongPassword99!',
+  });
+  assert.equal(goodLogin.ok, true);
+  assert.equal(goodLogin.account.email, testEmail);
+
+  // 5. Stripe Checkout auto-creates customer account and attaches license key
+  const buyerEmail = `buyer-${Date.now()}@example.com`;
+  const checkoutAcc = firewall.upsertCustomerAccountFromCheckout({
+    email: buyerEmail,
+    apiKey: 'tg_live_test_checkout_key_123456',
+    tierId: 'pro',
+    stripeSessionId: 'cs_test_123',
+    stripeCustomerId: 'cus_test_123',
+  });
+  assert.equal(checkoutAcc.ok, true);
+  assert.equal(checkoutAcc.account.tierId, 'pro');
+  assert.ok(checkoutAcc.ssoToken.startsWith('tg_sso_'));
+
+  // 6. Admin console lists all customers, clickable KPI drill-downs, and supports account management
+  assert.match(adminHtml, /window\.tgAdminSelectKpiView\('all'\)/);
+  assert.match(adminHtml, /window\.tgAdminSelectKpiView\('registered'\)/);
+  assert.match(adminHtml, /window\.tgAdminSelectKpiView\('sessions'\)/);
+  assert.match(adminHtml, /window\.tgAdminSelectKpiView\('keys'\)/);
+  assert.match(adminHtml, /window\.tgAdminSelectKpiView\('mrr'\)/);
+  assert.match(adminHtml, /id="kpiDrilldownPanel"/);
+
+  const adminOverview = firewall.listAllCustomersAndAccounts({
+    keysByValue: {
+      tg_test_key_customerid_only: {
+        customerId: buyerEmail,
+        active: true,
+        tier: 'pro',
+      },
+    },
+  });
+  assert.equal(adminOverview.ok, true);
+  assert.ok(adminOverview.summary.totalCustomers >= 2);
+  assert.equal(adminOverview.summary.totalAccounts, adminOverview.summary.totalCustomers);
+  assert.ok(adminOverview.summary.activeApiKeys >= 1);
+  assert.ok(Array.isArray(adminOverview.sessions));
+  assert.ok(adminOverview.customers.some((c) => c.email === testEmail));
+  const buyerRow = adminOverview.customers.find((c) => c.email === buyerEmail);
+  assert.ok(buyerRow);
+  assert.ok(Array.isArray(buyerRow.apiKeys) && buyerRow.apiKeys.length >= 1);
+
+  const tierUpdated = firewall.manageCustomerAccountAdmin({
+    action: 'update_account',
+    email: buyerEmail,
+    tierId: 'cloud_indie',
+    status: 'active',
+  });
+  assert.equal(tierUpdated.ok, true);
+  assert.equal(tierUpdated.account.tierId, 'cloud_indie');
+});
+
+test('Procedural Graph Engineering (Zachary Blumenfeld) 6-pillar workflow executes deterministically end-to-end', () => {
+  const os = require('node:os');
+  const { execFileSync } = require('node:child_process');
+  const {
+    NODE_TYPES,
+    ingestUnifiedContextNode,
+    discoverCanonicalPath,
+    compileSkillToGraphYaml,
+    executeProceduralGraph,
+    recommendModelDowngrade,
+    auditGraphGovernance,
+  } = require('../src/procedural-graph-engine');
+
+  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'tg-proc-graph-'));
+  const graphFile = path.join(tmpDir, 'context-graph.json');
+
+  const ingest1 = ingestUnifiedContextNode(
+    {
+      shortTermTurn: {
+        sessionId: 'sess_loan_1',
+        role: 'user',
+        content: 'Evaluate policy compliance and checkout recovery for enterprise buyer',
+      },
+      longTermEntity: {
+        id: 'ent_policy_soc2',
+        entityType: 'compliance_policy',
+        name: 'SOC2 Pre-Tool Verification Policy',
+        systemOfRecord: 'snowflake',
+        attributes: { maxRiskScore: 0.7, requireIsolatedVerifier: true },
+      },
+      decisionTrace: {
+        id: 'trace_run_1_noisy',
+        taskType: 'policy_compliance',
+        outcome: 'PASS',
+        entityIds: ['ent_policy_soc2'],
+        steps: [
+          { action: 'query_snowflake_policy', tool: 'execute_sql_readonly' },
+          { action: 'query_snowflake_policy', tool: 'execute_sql_readonly' },
+          { action: 'validate_isolated_verifier', tool: 'run_verifier' },
+          { action: 'validate_isolated_verifier', tool: 'run_verifier' },
+          { action: 'route_approval_gate', tool: 'gate_router' },
+        ],
+      },
+    },
+    graphFile
+  );
+  assert.equal(ingest1.ok, true);
+
+  ingestUnifiedContextNode(
+    {
+      decisionTrace: {
+        id: 'trace_run_2_clean',
+        taskType: 'policy_compliance',
+        outcome: 'PASS',
+        entityIds: ['ent_policy_soc2'],
+        steps: [
+          { action: 'query_snowflake_policy', tool: 'execute_sql_readonly' },
+          { action: 'validate_isolated_verifier', tool: 'run_verifier' },
+          { action: 'route_approval_gate', tool: 'gate_router' },
+        ],
+      },
+    },
+    graphFile
+  );
+
+  const discovery = discoverCanonicalPath('policy_compliance', graphFile);
+  assert.equal(discovery.ok, true);
+  assert.equal(discovery.canonicalPath.stepCount, 3);
+
+  const sampleSkillMd = [
+    '---',
+    'name: enterprise-policy-gate',
+    'description: Deterministic compliance & risk gate',
+    '---',
+    '# Enterprise Policy Gate',
+    '1. Run hard-rule preflight script `bin/agent-loop --health --json` before any mutation.',
+    '2. Validate schema and test suite with `npm run verify:isolated`.',
+    '3. If risk score >= 0.7 or policy check fails, refuse and escalate to human reviewer.',
+    '4. Classify residual edge-case intent using calibrated rubric model.',
+  ].join('\n');
+
+  const compiled = compileSkillToGraphYaml(
+    {
+      skillMarkdown: sampleSkillMd,
+      skillPath: 'skills/enterprise-policy-gate/SKILL.md',
+      taskType: 'policy_compliance',
+    },
+    graphFile
+  );
+  assert.equal(compiled.ok, true);
+  assert.match(compiled.yaml, /schema_version: "1\.0"/);
+  assert.match(compiled.yaml, /recommended_execution_model: "claude-haiku-4-5"/);
+
+  const nodeTypes = compiled.compiledGraph.nodes.map((n) => n.type);
+  assert.ok(nodeTypes.includes(NODE_TYPES.HARD_RULE_SCRIPT));
+  assert.ok(nodeTypes.includes(NODE_TYPES.VALIDATION_LINT_LOOP));
+  assert.ok(nodeTypes.includes(NODE_TYPES.ESCALATION_ROUTER));
+
+  const downgrade = recommendModelDowngrade(compiled.compiledGraph.nodes);
+  assert.equal(downgrade.canDowngradeToSlm, true);
+  assert.equal(downgrade.recommendedExecutionModel, 'claude-haiku-4-5');
+
+  const passRun = executeProceduralGraph(
+    {
+      graphId: compiled.graphId,
+      context: { policyCompliant: true, riskScore: 0.15, validationPassed: true },
+      entityIds: ['ent_policy_soc2'],
+    },
+    graphFile
+  );
+  assert.equal(passRun.ok, true);
+  assert.equal(passRun.run.verdict, 'ALLOW');
+
+  const blockRun = executeProceduralGraph(
+    {
+      graphId: compiled.graphId,
+      context: { policyCompliant: false, riskScore: 0.92 },
+      entityIds: ['ent_policy_soc2'],
+    },
+    graphFile
+  );
+  assert.equal(blockRun.ok, true);
+  assert.equal(blockRun.run.verdict, 'BLOCK');
+
+  const audit = auditGraphGovernance({ graphId: compiled.graphId }, graphFile);
+  assert.equal(audit.ok, true);
+  assert.equal(audit.totalPersistedRuns, 2);
+
+  const cliOut = execFileSync(
+    process.execPath,
+    [
+      path.join(__dirname, '..', 'scripts', 'procedural-graph-cli.js'),
+      'audit',
+      '--graph-id',
+      compiled.graphId,
+      '--graph-store',
+      graphFile,
+      '--json',
+    ],
+    { encoding: 'utf8' }
+  );
+  assert.equal(JSON.parse(cliOut).ok, true);
+});
+
+test('Deslopify 9 Habits, Herjavec Closer, YouSpot Pro, HarnessSQL, Zou Group Shelf-Life, Soft-MTP, Skool/Jarvis HUD, qwenGPU, LinkedIn OTel, and Grok Data Bot execute deterministically', () => {
+  const deslopify = require('../src/deslopify-engine');
+  const herjavec = require('../src/herjavec-closer-engine');
+
+  // 1. Deslopify Pre-Execution POV Gate blocks empty prompt and passes voice brain-dump + confidence pushback
+  const blockedPov = deslopify.evaluatePreExecutionPovGate({ whatYouThink: 'short' });
+  assert.equal(blockedPov.ok, false);
+  assert.equal(blockedPov.verdict, 'BLOCK_MISSING_POV');
+
+  const allowedPov = deslopify.evaluatePreExecutionPovGate({
+    voiceTranscript:
+      'I think our onboarding drops off when technical buyers see 4 clicks before Stripe checkout, and I worry they bounce on pricing complexity.',
+    confidencePct: 60,
+  });
+  assert.equal(allowedPov.ok, true);
+  assert.equal(allowedPov.verdict, 'ALLOW_WITH_POV');
+  assert.equal(allowedPov.requiresPushback, true);
+  assert.ok(allowedPov.opposingSteelman.length >= 3);
+
+  // 2. Deslopify 6 Divergent Angles & 4-Persona Review Board & 5-Sentence Read Budget
+  const angles = deslopify.generateSixDivergentAngles('Enterprise PreToolUse Governance');
+  assert.equal(angles.angles.length, 6);
+  assert.ok(angles.angles.some((a) => a.id === 'angle_1_game_designer'));
+
+  const reviewBoard = deslopify.runFourPersonaReviewBoard(
+    'We shipped a 1ms PreToolUse firewall that cut repeat CI failures by 68% ($49 bundle).',
+    { maxSentences: 5 }
+  );
+  assert.equal(reviewBoard.personas.length, 4);
+  assert.equal(reviewBoard.verdict, 'SHIP_APPROVED');
+
+  const budgetPass = deslopify.enforceReadBudgetAndLabelGate(
+    'Sentence one sets context. Sentence two proves the metric. Sentence three shows the fix. Sentence four gives the link. Sentence five closes.',
+    { maxSentences: 5 }
+  );
+  assert.equal(budgetPass.ok, true);
+  assert.equal(budgetPass.verdict, 'PASS_READ_BUDGET');
+
+  const rawDump = deslopify.enforceReadBudgetAndLabelGate('Unedited dump. '.repeat(12), {
+    maxSentences: 5,
+    isRawAiResearchDump: true,
+  });
+  assert.equal(rawDump.verdict, 'LABELED_RAW_AI_DUMP');
+  assert.match(rawDump.outputText, /^\[AI-GENERATED RESEARCH DUMP — UNEDITED\]/);
+
+  // 3. Robert Herjavec Chase-the-No CTO/CISO Objection Closer & 4-Clicks-to-1-Click Audit
+  const procurementObj = herjavec.resolveTechnicalBuyerObjection({
+    buyerStatement: 'We cannot put a recurring monthly subscription on a corporate card without procurement review.',
+  });
+  assert.equal(procurementObj.ok, true);
+  assert.equal(procurementObj.matchedObjection.id, 'procurement_subscription_blocker');
+  assert.equal(procurementObj.matchedObjection.priceDollars, 49);
+
+  const clickAudit = herjavec.auditFourClicksToOneClick();
+  assert.equal(clickAudit.ok, true);
+  assert.equal(clickAudit.totalClicksEliminated, 12);
+
+  // 4. YouSpot Pro Solo-Builder Conversion & Promo Unlocks
+  const youspotPromo = herjavec.evaluateYouSpotProConversionPack({ promoCode: 'FOUNDER49' });
+  assert.equal(youspotPromo.ok, true);
+  assert.equal(youspotPromo.promoApplied, true);
+  assert.equal(youspotPromo.promoDetails.priceDollars, 49);
+
+  // 5. HKUST + DeepSeek HarnessSQL 4-Tool Read-Only Sandbox & Tool-Observation Loss Masking
+  const mutatingBlocked = herjavec.executeHarnessSqlFourToolStep({
+    tool: 'execute_query',
+    sql: 'DROP TABLE customer_accounts;',
+  });
+  assert.equal(mutatingBlocked.ok, false);
+  assert.equal(mutatingBlocked.verdict, 'BLOCK_MUTATING_SQL');
+
+  const selectAllowed = herjavec.executeHarnessSqlFourToolStep({
+    tool: 'execute_query',
+    sql: 'SELECT tier_id, COUNT(*) FROM customer_accounts GROUP BY tier_id;',
+  });
+  assert.equal(selectAllowed.ok, true);
+  assert.equal(selectAllowed.lossMaskForObservation, 0);
+
+  const exportedTrajectory = herjavec.exportHarnessTrajectoryWithObservationMasking([
+    { role: 'assistant', content: 'Let us inspect customer_accounts schema.' },
+    { role: 'tool', content: 'columns: email, role, tier_id' },
+    { role: 'assistant', content: 'SELECT COUNT(*) FROM customer_accounts;' },
+  ]);
+  assert.equal(exportedTrajectory.ok, true);
+  assert.equal(exportedTrajectory.trajectoryStats.trainedActionTurns, 2);
+  assert.equal(exportedTrajectory.trajectoryStats.maskedObservationTurns, 1);
+
+  // 6. Stanford Zou Group LLM Claims Shelf-Life & Prevention-Rule Pruner
+  const shelfLife = herjavec.evaluateLlmClaimShelfLife();
+  assert.equal(shelfLife.ok, true);
+  assert.equal(shelfLife.empiricalBaseline.totalDecayedPct, 78);
+  assert.ok(shelfLife.auditSummary.prunableRuleIds.includes('rule_cot_json_workaround_2024'));
+  assert.ok(shelfLife.auditSummary.hardGatePromotions.includes('rule_observation_loss_masking_rl'));
+
+  // 7. MIT Jayden Teoh Soft-MTP (arXiv:2610.38331) Exact KL Gradient Recovery
+  const softMtp = herjavec.evaluateSoftMtpGradientRouting({
+    sequenceLengthT: 2048,
+    numMtpHeadsK: 2,
+    lambdaMtp: 0.3,
+    modelScaleParamsM: 1200,
+  });
+  assert.equal(softMtp.ok, true);
+  assert.equal(softMtp.exactDecompositionVerification.exactRecoveryVerified, true);
+  assert.equal(softMtp.headRescalingFactors.length, 2);
+
+  // 8. Skool Julian Goldie AI Money Lab (94,392 members) Monetizer & Jarvis HUD (31 Bots, 1 Screen)
+  const skoolPack = herjavec.evaluateSkoolJulianGoldieMonetizer();
+  assert.equal(skoolPack.ok, true);
+  assert.equal(skoolPack.community.totalMembers, 94392);
+  assert.equal(skoolPack.readyToPostAssets.length, 3);
+
+  const jarvisHud = herjavec.evaluateJarvisHudDecisionQueue({
+    decisionId: 'dec_magnet_checkout_49',
+    action: 'APPROVE',
+  });
+  assert.equal(jarvisHud.ok, true);
+  assert.equal(jarvisHud.fleetSummary.totalBotsMonitored, 31);
+  assert.ok(jarvisHud.waitingOnYouQueue.some((d) => d.status === 'APPROVED_AND_DISPATCHED'));
+
+  // 9. qwenGPU 4-Lane SIMT Compiled Weight Circuit ([1, 2, 3] @ [4, 5, 6] === 32)
+  const qwenGpu = herjavec.evaluateQwenGpuSimtCompiledCircuit({
+    vectorA: [1, 2, 3, 0],
+    vectorB: [4, 5, 6, 0],
+  });
+  assert.equal(qwenGpu.ok, true);
+  assert.equal(qwenGpu.executionTrace.exactResult, 32);
+  assert.equal(qwenGpu.textTokenMutingGuard.teslaT4KernelParity, '49/49 exact');
+
+  // 10. LinkedIn OpenTelemetry pageForestId Tap-to-Backend Journey & Grok Team Data Bot
+  const otelForest = herjavec.evaluateLinkedInOtelJourneyForest({ appMovedToBackground: true });
+  assert.equal(otelForest.ok, true);
+  assert.equal(otelForest.coordinatedHeadSampling.debugVolumeShedPct, 90);
+  assert.equal(otelForest.coordinatedHeadSampling.redactedSensitiveAttributesCount, 1);
+  assert.equal(otelForest.revenueJourneyDiagnosis.dropOffDetected, true);
+
+  const dataBot = herjavec.evaluateGrokTeamDataBot({ persona: 'marketer' });
+  assert.equal(dataBot.ok, true);
+  assert.equal(dataBot.botHealthAudit.archetypeClassification, 'BROAD_AND_STICKY');
+  assert.equal(dataBot.botHealthAudit.meets60PctEmbeddedRule, true);
+
+  // 11. Gartner 90/10 Open-Weight Agentic Harness Router (20x guarded vs ~5.7x unguarded savings + 90% M&A perimeter retention)
+  const gartnerGuarded = herjavec.evaluateGartnerOpenModelHarnessRouter({ thumbgateGuardrailsEnabled: true });
+  assert.equal(gartnerGuarded.ok, true);
+  assert.equal(gartnerGuarded.workflowRoutingSummary.routineSharePct, 90);
+  assert.equal(gartnerGuarded.workflowRoutingSummary.routineStepCostReductionMultiple, 20);
+  assert.equal(gartnerGuarded.maValuationPerimeterMoat.workflowHistoryRetainedInPerimeterPct, 90);
+
+  const gartnerUnguarded = herjavec.evaluateGartnerOpenModelHarnessRouter({ thumbgateGuardrailsEnabled: false });
+  assert.equal(gartnerUnguarded.workflowRoutingSummary.routineStepCostReductionMultiple, 5.71);
+
+  // 12. Kanzo AI-Agent Kanban Process & Human-Only Guardrail Engine (backlog agent-safe zone, humanOnly lock, ~900 token tool spec)
+  const kanzoAllowed = herjavec.evaluateKanzoAgentBoardProcess({
+    actor: 'agent',
+    action: 'take_next_task',
+  });
+  assert.equal(kanzoAllowed.ok, true);
+  assert.equal(kanzoAllowed.verdict, 'KANZO_PROCESS_APPLIED');
+  assert.equal(kanzoAllowed.tokenEfficiencySpec.sessionToolListTokens, 900);
+
+  const kanzoBacklogBlocked = herjavec.evaluateKanzoAgentBoardProcess({
+    actor: 'agent',
+    cardId: 'card_101',
+  });
+  assert.equal(kanzoBacklogBlocked.ok, false);
+  assert.equal(kanzoBacklogBlocked.verdict, 'BLOCK_AGENT_BACKLOG_ACCESS');
+
+  const kanzoHumanOnlyBlocked = herjavec.evaluateKanzoAgentBoardProcess({
+    actor: 'agent',
+    cardId: 'card_102',
+  });
+  assert.equal(kanzoHumanOnlyBlocked.ok, false);
+  assert.equal(kanzoHumanOnlyBlocked.verdict, 'BLOCK_HUMAN_ONLY_TASK');
+
+  const firewall = require('../src/cloud-token-firewall');
+  const kanzoGate = firewall.evaluateDanKornasKanzoAgentKanbanSteal({
+    actor: 'agent',
+    action: 'take_next_task',
+    gitRemoteUrl: 'https://github.com/IgorGanapolsky/ThumbGate.git',
+  });
+  assert.equal(kanzoGate.ok, true);
+  assert.equal(kanzoGate.projectDetection.detectedProjectSlug, 'ThumbGate');
+  assert.equal(kanzoGate.activeTask.column, 'doing');
+  assert.equal(
+    firewall.evaluateDanKornasKanzoAgentKanbanSteal({ actor: 'agent', taskId: 'task_backlog_1' }).ok,
+    false
+  );
+  assert.equal(
+    firewall.evaluateDanKornasKanzoAgentKanbanSteal({ actor: 'agent', taskId: 'task_todo_human_1' }).ok,
+    false
+  );
+  assert.equal(
+    firewall.evaluateDanKornasKanzoAgentKanbanSteal({ actor: 'agent', vendorAgplCode: true }).ok,
+    false
+  );
+});
+
+test('FinOps Phase 4 Intervention: Direct Cloud Indie/Startup alias slugs and Cancel-page buyer-email recovery capture work end-to-end', async () => {
+  const prevInsecure = process.env.THUMBGATE_ALLOW_INSECURE;
+  process.env.THUMBGATE_ALLOW_INSECURE = 'true';
+  const serverMod = require('../src/api/server');
+  assert.equal(serverMod.__test__.CHECKOUT_FEATURE_FLAGS.directCloudTierCheckoutEnabled, true);
+  const srv = serverMod.createApiServer();
+  await new Promise((resolve) => srv.listen(0, '127.0.0.1', resolve));
+  const port = srv.address().port;
+  try {
+    const indieRes = await fetch(`http://127.0.0.1:${port}/go/cloud-indie-49`, {
+      redirect: 'manual',
+      headers: { 'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 14_0) AppleWebKit/537.36 Chrome/130.0' },
+    });
+    assert.equal(indieRes.status, 302);
+    assert.match(indieRes.headers.get('location') || '', /plan_id=cloud_indie/);
+
+    const startupRes = await fetch(`http://127.0.0.1:${port}/go/cloud-startup-199`, {
+      redirect: 'manual',
+      headers: { 'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 14_0) AppleWebKit/537.36 Chrome/130.0' },
+    });
+    assert.equal(startupRes.status, 302);
+    assert.match(startupRes.headers.get('location') || '', /plan_id=cloud_startup/);
+
+    const cancelRes = await fetch(`http://127.0.0.1:${port}/checkout/cancel?customer_email=cto%40acme.io`);
+    assert.equal(cancelRes.status, 200);
+    const cancelHtml = await cancelRes.text();
+    assert.match(cancelHtml, /id="buyer-email"/);
+    assert.match(cancelHtml, /customerEmail:\s*buyerEmail/);
+    assert.match(cancelHtml, /Start 7-Day Free Pro Trial/);
+
+    // Gap 1 & 2: POST /v1/cloud/cli/register and POST /v1/billing/capture-lead register leads in /admin
+    const cliRegRes = await fetch(`http://127.0.0.1:${port}/v1/cloud/cli/register`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        email: 'cli-builder@acme.dev',
+        installId: 'inst_test_999',
+        cliVersion: '2.10.2',
+        source: 'cli_init',
+      }),
+    });
+    assert.equal(cliRegRes.status, 200);
+    const cliRegJson = await cliRegRes.json();
+    assert.equal(cliRegJson.ok, true);
+    assert.equal(cliRegJson.account.email, 'cli-builder@acme.dev');
+
+    const leadRes = await fetch(`http://127.0.0.1:${port}/v1/billing/capture-lead`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        email: 'buyer-intent@enterprise.io',
+        tierId: 'pro_monthly',
+        source: 'homepage_checkout_click',
+      }),
+    });
+    assert.equal(leadRes.status, 200);
+    const leadJson = await leadRes.json();
+    assert.equal(leadJson.ok, true);
+    assert.equal(leadJson.lead.email, 'buyer-intent@enterprise.io');
+    assert.equal(leadJson.lead.passwordHash, undefined);
+    assert.equal(leadJson.lead.apiKey, undefined);
+
+    // Gap 3b: /go/diagnostic-499 redirects 302 directly to Stripe checkout
+    const diag499Res = await fetch(`http://127.0.0.1:${port}/go/diagnostic-499`, {
+      redirect: 'manual',
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 14_0) AppleWebKit/537.36 Chrome/130.0',
+        Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+      },
+    });
+    assert.equal(diag499Res.status, 302);
+    assert.match(diag499Res.headers.get('location') || '', /buy\.stripe\.com|checkout\.stripe\.com/);
+
+    // Gap 3: Admin HTML and /v1/admin/customers surface OSS & CLI installs + 22 verified GitHub stargazers/forkers
+    const firewall = require('../src/cloud-token-firewall');
+    assert.ok(Array.isArray(firewall.VERIFIED_OSS_ECOSYSTEM_LEADS));
+    assert.ok(firewall.VERIFIED_OSS_ECOSYSTEM_LEADS.length >= 22);
+    const adminHtml = fs.readFileSync(path.join(__dirname, '..', 'public', 'admin.html'), 'utf8');
+    assert.match(adminHtml, /id="kpiCardOss"/);
+    assert.match(adminHtml, /id="tabBtnOss"/);
+    assert.match(adminHtml, /Copy Outreach DM/);
+  } finally {
+    if (prevInsecure === undefined) delete process.env.THUMBGATE_ALLOW_INSECURE;
+    else process.env.THUMBGATE_ALLOW_INSECURE = prevInsecure;
+    await new Promise((resolve) => srv.close(resolve));
+  }
+});
+
 

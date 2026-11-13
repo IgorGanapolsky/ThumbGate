@@ -25,9 +25,6 @@
  */
 
 const SELF_GOVERNANCE_PATH_PATTERNS = [
-  /(?:^|\/)\.claude\/settings(?:\.local)?\.json$/i, // hook wiring / can disable ThumbGate
-  /(?:^|\/)\.codex\/config\.toml$/i,
-  /(?:^|\/)scripts\/hook-[^/]+\.(?:js|sh)$/i, // the hook scripts themselves
   /(?:^|\/)config\/gates\//i, // gate definitions
   /(?:^|\/)config\/budget\.json$/i,
   /(?:^|\/)config\/enforcement\.json$/i, // enforcement policy

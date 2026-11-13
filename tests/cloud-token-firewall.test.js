@@ -43,7 +43,6 @@ const {
   evaluateNanbeigeAgenticCodingSteal,
   resetCloudFirewallStateForTests,
 } = require('../src/cloud-token-firewall');
-const { parseJulesEmailSuggestions } = require('../scripts/jules-cloud-fleet-dispatcher');
 const { searchThumbgate } = require('../scripts/thumbgate-search');
 const { PPLPipeline } = require('../src/ppl-alert-pipeline');
 const { handler: lambdaHandler } = require('../src/aws-lambda-handler');
@@ -564,13 +563,6 @@ test('syncTeamPolicyAndThreatPacks and evaluateRachelWoodsCraftAndPlaybookMiddle
   });
   assert.equal(gcpBad.ok, false);
   assert.equal(gcpBad.blockers.length, 2);
-
-  const parsedJules = parseJulesEmailSuggestions(
-    'IgorGanapolsky/ThumbGate\nComplex function: buildEnterpriseChatAnswer\nsrc/api/server.js:2,454\nReview code\nIgorGanapolsky/trading\nternary evaluated division first\nsrc/execution/alpaca_executor.py:306\nReview code'
-  );
-  assert.equal(parsedJules.length, 2);
-  assert.equal(parsedJules[0].repoName, 'ThumbGate');
-  assert.equal(parsedJules[1].repoName, 'trading');
 
   // Verify newest-first ordering in searchThumbgate wildcard queries within the same 24h bucket
   const tmpSearchDir = fs.mkdtempSync(path.join(os.tmpdir(), 'tg-signal-order-'));
@@ -2004,6 +1996,638 @@ test('Customer SSO Login/Logout, Multi-Tenant Individual Projects, and SaaS Depl
     if (prevKey === undefined) delete process.env.THUMBGATE_API_KEY;
     else process.env.THUMBGATE_API_KEY = prevKey;
     await new Promise((resolve) => server.close(resolve));
+  }
+});
+
+test('Rían Doris FlowState (Nov 3, 2026) & WorkOS Airlock/Atlas/Passport/Pipes (Nov 2, 2026) steals: 180m offline flow block, anti-ping-pong gate, Airlock 3-way policy tri-diode, and Cyber60 scoped handoff tokens', async () => {
+  const fw = require('../src/cloud-token-firewall');
+  const { classifyStrategyAndAction } = require('../scripts/thumbgate-email-steal-engine');
+
+  // 1. Rían Doris: Responsive != Responsible + 180-minute offline block + 15-30m struggle ramp
+  const rianPass = fw.evaluateRianDorisResponsiveVsResponsibleFlowBlockSteal({
+    dailyUnreachableFlowMinutes: 180,
+    strugglePhaseMinutes: 25,
+    reactivePollingIntervalSeconds: 1800,
+    interruptionsDuringFlowBlock: 0,
+    proactiveGrowthActionCompletedBeforeInboxSweep: true,
+    duplicateReactiveAutoRepliesSent: 0,
+    outboundCashSpendUsd: 0,
+  });
+  assert.equal(rianPass.ok, true);
+  assert.equal(rianPass.flowShareOfWakingDayPct, 18.75);
+  assert.equal(rianPass.blockers.length, 0);
+
+  const rianFail = fw.evaluateRianDorisResponsiveVsResponsibleFlowBlockSteal({
+    dailyUnreachableFlowMinutes: 60,
+    strugglePhaseMinutes: 5,
+    reactivePollingIntervalSeconds: 60,
+    interruptionsDuringFlowBlock: 3,
+    proactiveGrowthActionCompletedBeforeInboxSweep: false,
+    duplicateReactiveAutoRepliesSent: 2,
+    outboundCashSpendUsd: 10,
+  });
+  assert.equal(rianFail.ok, false);
+  assert.ok(rianFail.blockers.includes('rian_doris_daily_unreachable_flow_block_below_180_minutes'));
+  assert.ok(rianFail.blockers.includes('rian_doris_compulsive_sub15m_reactive_polling_blocks_flow'));
+  assert.ok(rianFail.blockers.includes('rian_doris_duplicate_reactive_ping_pong_detected'));
+
+  // 2. WorkOS: Airlock (allow | block | route_to_human_approval), Atlas, Passport, Pipes multi-account & sharing, SIEM logs
+  const workosAllow = fw.evaluateWorkOsAirlockAtlasPassportPipesSteal({
+    actionRiskLevel: 'low',
+    policyCompliant: true,
+    requiresHumanApproval: false,
+    handoffAllowedToolsCount: 4,
+  });
+  assert.equal(workosAllow.ok, true);
+  assert.equal(workosAllow.airlockDecision, 'allow');
+
+  const workosRouteHuman = fw.evaluateWorkOsAirlockAtlasPassportPipesSteal({
+    actionRiskLevel: 'high_irreversible',
+    policyCompliant: true,
+    requiresHumanApproval: true,
+    handoffAllowedToolsCount: 3,
+  });
+  assert.equal(workosRouteHuman.ok, true);
+  assert.equal(workosRouteHuman.airlockDecision, 'route_to_human_approval');
+
+  const workosBlock = fw.evaluateWorkOsAirlockAtlasPassportPipesSteal({
+    policyCompliant: false,
+    handoffAllowedToolsCount: 12,
+    targetDomain: 'iganapolsky@ecisolutions.com',
+  });
+  assert.equal(workosBlock.ok, false);
+  assert.equal(workosBlock.airlockDecision, 'block');
+  assert.ok(workosBlock.blockers.includes('workos_airlock_policy_violation_blocked'));
+  assert.ok(workosBlock.blockers.includes('workos_cyber60_unscoped_agent_to_agent_handoff_token'));
+
+  // 3. Email Steal Engine classification verification
+  const rianClassified = classifyStrategyAndAction({
+    subject: 'How fast do you reply to your team?',
+    body: 'Responsive = responsible. Pick a three-hour window each day where you commit to being 100% offline and unreachable.',
+  });
+  assert.equal(
+    rianClassified.gateOrModule,
+    'src/cloud-token-firewall.js#evaluateRianDorisResponsiveVsResponsibleFlowBlockSteal',
+  );
+
+  const workosClassified = classifyStrategyAndAction({
+    subject: 'New this month: Three New Products, Multiple Accounts per Pipes Provider, Custom Branding per Application, Pipes Connection Sharing, & more',
+    body: 'New from init(): Airlock, Atlas, & Passport. Secure agent-to-agent handoffs with scoped tokens.',
+  });
+  assert.equal(
+    workosClassified.gateOrModule,
+    'src/cloud-token-firewall.js#evaluateWorkOsAirlockAtlasPassportPipesSteal',
+  );
+
+  // 4. DeepSeek Super-agent (Yicai 103419784 / Oct 31, 2026) steal verification
+  const dsPass = fw.evaluateDeepSeekSuperAgentArchitectureSteal({
+    routerHasBashOrExecTools: false,
+    workerSpeaksDirectlyToExternalChannel: false,
+    workerScopedToolsCount: 4,
+    subscriptionPassThroughEnabled: true,
+    twoStageFastPathFilterEnabled: true,
+    inlineAndSpillContextCacheEnabled: true,
+    storageComputeSeparated: true,
+    externalSemanticWatchdogEnabled: true,
+    acceptMode: 'observe',
+    eventsPerMinute: 40,
+  });
+  assert.equal(dsPass.ok, true);
+  assert.equal(dsPass.benchmarks.superAgentP95Minutes, 15.7);
+  assert.equal(dsPass.benchmarks.singleSessionBaselineP95Minutes, 29.5);
+  assert.equal(dsPass.benchmarks.amortizedDecisionSeconds, 1.6);
+
+  const dsFail = fw.evaluateDeepSeekSuperAgentArchitectureSteal({
+    routerHasBashOrExecTools: true,
+    workerSpeaksDirectlyToExternalChannel: true,
+    workerScopedToolsCount: 9,
+    subscriptionPassThroughEnabled: false,
+    workerStuckInUnproductiveLoop: true,
+    watchdogIntervenedOnLoop: false,
+    acceptMode: 'observe',
+    proactiveUnmentionedActionAttempted: true,
+    autoMergeEnabledWithoutTrackRecord: true,
+  });
+  assert.equal(dsFail.ok, false);
+  assert.ok(dsFail.blockers.includes('deepseek_superagent_router_must_not_mount_bash_or_execution_tools'));
+  assert.ok(dsFail.blockers.includes('deepseek_superagent_missing_subscription_passthrough_wastes_37pct_cache_tokens'));
+  assert.ok(dsFail.blockers.includes('deepseek_superagent_unproductive_worker_loop_unhealed_by_watchdog'));
+  assert.ok(dsFail.blockers.includes('deepseek_superagent_proactive_unmentioned_mutation_held_in_observe_mode'));
+
+  const dsClassified = classifyStrategyAndAction({
+    subject: 'DeepSeek发布全新Agent架构 https://www.yicai.com/news/103419784.html',
+    body: 'Super-agent 设计探索：迈向更自主的Agent 系统 双层架构 事件驱动 Watchdog dsh-superagent',
+  });
+  assert.equal(
+    dsClassified.gateOrModule,
+    'src/cloud-token-firewall.js#evaluateDeepSeekSuperAgentArchitectureSteal',
+  );
+});
+
+test('Steals #4-#8 (Nov 3, 2026): Enterprise KG RAG, Nicks Bops $25k SMB Agent System, Nace AI Drex Max v1 System-One, OpenAI Pando Git Backend, and SF Compute Autoresearch', async () => {
+  const fw = require('../src/cloud-token-firewall');
+  const { classifyStrategyAndAction } = require('../scripts/thumbgate-email-steal-engine');
+
+  // Steal #4: Enterprise Knowledge Graph RAG (emDutDLIiow)
+  const kgPass = fw.evaluateEnterpriseKnowledgeGraphRag8StepHybridSteal({
+    ontologyClassCount: 24,
+    ontologyRelationshipCount: 18,
+    hybridEightStepPipelineEnabled: true,
+    readOnlyGraphQueryEnforced: true,
+    queryAttemptsWriteMutation: false,
+    dataLayerPermissionsEnforced: true,
+    temporalValidityEdgesEnabled: true,
+    cdcIncrementalSyncEnabled: true,
+    faithfulnessScore: 0.98,
+    citationAccuracyScore: 0.99,
+    constraintViolationRate: 0.0,
+  });
+  assert.equal(kgPass.ok, true);
+  assert.equal(kgPass.eightStepHybridPipeline.length, 8);
+
+  const kgFail = fw.evaluateEnterpriseKnowledgeGraphRag8StepHybridSteal({
+    ontologyClassCount: 75,
+    queryAttemptsWriteMutation: true,
+    faithfulnessScore: 0.8,
+  });
+  assert.equal(kgFail.ok, false);
+  assert.ok(kgFail.blockers.includes('enterprise_kgrag_ontology_class_count_must_stay_within_10_to_40_bounds'));
+  assert.ok(kgFail.blockers.includes('enterprise_kgrag_text_to_cypher_sparql_write_mutation_blocked'));
+
+  // Steal #5: Nick's Bops $25k Custom SMB AI Agent System (67BmkptgTms)
+  const bopsPass = fw.evaluateNicksBops25kCustomAiAgentSystemSteal({
+    warmOutreachCallsPerDay: 50,
+    freePilotRequiresThreeWarmReferrals: true,
+    paperMcpLayoutVariationsCount: 4,
+    customSystemPriceUsd: 25000,
+    upfrontPaymentSplitCount: 2,
+    customBotCount: 15,
+    monthlyMaintenanceRetainerUsd: 3000,
+  });
+  assert.equal(bopsPass.ok, true);
+  assert.equal(bopsPass.monetizationLadder.milestonePaymentUsd, 12500);
+  assert.equal(bopsPass.monetizationLadder.firstYearContractValueUsd, 61000);
+
+  // Steal #6: Nace AI Drex Max v1 27B System-One Decision Model (nace-ai/drex-max-v1)
+  const drexPass = fw.evaluateNaceAiDrexMaxV1SystemOneDecisionSteal({
+    unifiedMemoryGb: 48,
+    systemOneEndpoint: '/v1/systemone',
+    operationMode: 'noul',
+    optionsCount: 12,
+    noulThreshold: 0.6,
+    topCandidateProb: 0.42,
+  });
+  assert.equal(drexPass.ok, true);
+  assert.equal(drexPass.appleSiliconDeployment.selectedQuantizationProfile, 'drex-max-v1-q8_0-gguf-28.7gb');
+  assert.equal(drexPass.decisionRouting.abstainedViaNoul, true);
+  assert.equal(drexPass.decisionRouting.escalateToSystemTwoFrontier, true);
+  assert.equal(drexPass.benchmarks.decisionBenchV4AccuracyPct, 94.3);
+
+  // Steal #7: OpenAI Pando Distributed Git Backend (thenewstack.io/openai-pando-git-backend)
+  const pandoPass = fw.evaluateOpenAiPandoDistributedGitBackendSteal({
+    perBranchIndependentCoordination: true,
+    repoWideGlobalRefLock: false,
+    streamPackfileToBlobWithoutUnpacking: true,
+    trunkOnlyRefAdvertisement: true,
+    explicitHavesExtensionEnabled: true,
+    packfileUriOffloadEnabled: true,
+    expressRegionalCacheHitRatePct: 99.4,
+    lsmMultiTierPackCompactionEnabled: true,
+    destructiveGitGcRepackEnabled: false,
+  });
+  assert.equal(pandoPass.ok, true);
+  assert.equal(pandoPass.benchmarks.pushLatencySpeedupFactor, 5.0);
+  assert.equal(pandoPass.architecture.packLookupComplexity, 'O(log N)');
+
+  const pandoFail = fw.evaluateOpenAiPandoDistributedGitBackendSteal({
+    repoWideGlobalRefLock: true,
+    expressRegionalCacheHitRatePct: 85.0,
+    destructiveGitGcRepackEnabled: true,
+  });
+  assert.equal(pandoFail.ok, false);
+  assert.ok(pandoFail.blockers.includes('openai_pando_forbids_repo_wide_ref_lock_require_per_branch_cas_coordination'));
+
+  // Steal #8: SF Compute Autoresearch (autoresearch.sfcompute.com)
+  const sfPass = fw.evaluateSfComputeAutoresearchAndMakeMoneySteal({
+    sandboxAutoParkIdleSeconds: 1.5,
+    sandboxForkCount: 64,
+    sandboxMemoryGibPerFork: 2,
+    rolloutDurationMinutes: 10,
+    activeToolUseFraction: 0.13,
+    firstNodeFrontOfQueuePriority: true,
+    leastServedGoesNext: true,
+    batchFleetUtilizationPct: 80,
+    calendarDayUtcOrPt: 'Friday',
+  });
+  assert.equal(sfPass.ok, true);
+  assert.equal(sfPass.sandboxEconomics.unparkedRolloutCostUsd, 0.98);
+  assert.equal(sfPass.sandboxEconomics.autoParkedRolloutCostUsd, 0.13);
+  assert.equal(sfPass.sandboxEconomics.costSavingsPct, 86.7);
+  assert.equal(sfPass.fairQueueGovernance.calendarDiscountPct, 33);
+
+  const sfFail = fw.evaluateSfComputeAutoresearchAndMakeMoneySteal({
+    unfundedExternalBillingTopupAttempted: true,
+    outboundCashSpendUsd: 25,
+  });
+  assert.equal(sfFail.ok, false);
+  assert.ok(sfFail.blockers.includes('sfcompute_autoresearch_block_unfunded_billing_topup_enforce_zero_outbound_spend'));
+
+  // Email Steal Engine classification checks for Steals #4-#8
+  assert.equal(
+    classifyStrategyAndAction({ subject: 'https://music.youtube.com/watch?v=emDutDLIiow', body: 'Enterprise Knowledge Graph RAG 8-step hybrid retrieval' }).gateOrModule,
+    'src/cloud-token-firewall.js#evaluateEnterpriseKnowledgeGraphRag8StepHybridSteal'
+  );
+  assert.equal(
+    classifyStrategyAndAction({ subject: 'https://music.youtube.com/watch?v=67BmkptgTms', body: "Nick's Bops $25,000 AI agent system" }).gateOrModule,
+    'src/cloud-token-firewall.js#evaluateNicksBops25kCustomAiAgentSystemSteal'
+  );
+  assert.equal(
+    classifyStrategyAndAction({ subject: 'https://huggingface.co/nace-ai/drex-max-v1', body: 'Nace AI Drex Max v1 /v1/systemone' }).gateOrModule,
+    'src/cloud-token-firewall.js#evaluateNaceAiDrexMaxV1SystemOneDecisionSteal'
+  );
+  assert.equal(
+    classifyStrategyAndAction({ subject: 'https://thenewstack.io/openai-pando-git-backend/', body: 'OpenAI Pando git backend packfile-uri express' }).gateOrModule,
+    'src/cloud-token-firewall.js#evaluateOpenAiPandoDistributedGitBackendSteal'
+  );
+  assert.equal(
+    classifyStrategyAndAction({ subject: 'https://autoresearch.sfcompute.com/', body: 'givemeanode 1.5s idle 330x cheaper' }).gateOrModule,
+    'src/cloud-token-firewall.js#evaluateSfComputeAutoresearchAndMakeMoneySteal'
+  );
+});
+
+test('Steals #9-#11 (Nov 3, 2026): TypeSafe Jev 1.14.0 Console Hook & 2-Call Skill Cascade, Oak & Sparrow Gatekeeper V2 + Signal Audit, and Spotify Confidence Sequential A/B Experiments', async () => {
+  const fw = require('../src/cloud-token-firewall');
+  const { classifyStrategyAndAction } = require('../scripts/thumbgate-email-steal-engine');
+  const {
+    evaluateJevSkillSuggestionCascade,
+    evaluateJevSdeCascadeAndCitationCheck,
+  } = require('../scripts/typesafe-typed-questions');
+
+  // Steal #9: TypeSafe Jev Console Hook (https://console.typesafe.ai/hook + jev-1.14.0)
+  const jevPass = fw.evaluateTypesafeJevConsoleHookAndSkillCascadeSteal({
+    model: 'jev-1.14.0',
+    codeOwnsRoute: true,
+    modelEmitsFinalVerdict: false,
+    twoCallSkillCascadeEnabled: true,
+    maxSkillsLoadedPerTurn: 4,
+    sdePerFieldCascadeEnabled: true,
+    citationFourVerdictGateEnabled: true,
+    ragFourNoulFilterEnabled: true,
+  });
+  assert.equal(jevPass.ok, true);
+  assert.equal(jevPass.model, 'jev-1.14.0');
+  assert.equal(jevPass.benchmarks.sdeCascadePeakAccuracyPct, 92.7);
+
+  const jevFail = fw.evaluateTypesafeJevConsoleHookAndSkillCascadeSteal({
+    codeOwnsRoute: false,
+    modelEmitsFinalVerdict: true,
+    maxSkillsLoadedPerTurn: 12,
+    outboundCashSpendUsd: 25,
+  });
+  assert.equal(jevFail.ok, false);
+  assert.ok(jevFail.blockers.includes('typesafe_jev_code_must_own_route_never_model_emitted_verdict'));
+  assert.ok(jevFail.blockers.includes('typesafe_jev_requires_2call_skill_cascade_capped_at_4_skills'));
+
+  const skillCascade = evaluateJevSkillSuggestionCascade({
+    query: 'Deploy ThumbGate Stripe checkout and run sequential A/B experiment',
+  });
+  assert.equal(skillCascade.ok, true);
+  assert.equal(skillCascade.callsExecuted, 2);
+  assert.ok(skillCascade.selectedSkills.length >= 1 && skillCascade.selectedSkills.length <= 4);
+  const sdeCascade = evaluateJevSdeCascadeAndCitationCheck({
+    extractedFields: {
+      buyerEmail: { value: 'nick@oakandsparrow.io', noul: 0.96 },
+      contractValueUsd: { value: 25000, noul: 0.41 },
+    },
+    citations: [
+      { claimId: 'c1', supportsClaim: 1, contradictsClaim: 0, sourceExists: 1 },
+      { claimId: 'c2', supportsClaim: 0, contradictsClaim: 0, sourceExists: 0 },
+    ],
+  });
+  assert.equal(sdeCascade.ok, true);
+  assert.equal(sdeCascade.sdeCascade.escalatedFields[0].field, 'contractValueUsd');
+  assert.equal(sdeCascade.citationVerdicts[1].verdict, 'fabricated');
+  // Steal #10: Oak & Sparrow Systems Enterprise (OASSE) Gatekeeper V2 + Signal Audit + Standalone Policy Packs
+  const oassePass = fw.evaluateOakAndSparrowGatekeeperV2SignalAuditSteal({
+    proposedOutcome: 'HOLD',
+    pilotNativeOutcome: 'ABSTAIN',
+    crossTenantReceiptLookupAttempted: true,
+    policyPackRuleCount: 139,
+    replyAllToExposedToListAttempted: false,
+  });
+  assert.equal(oassePass.ok, true);
+  assert.equal(oassePass.preExecutionAuthorization.trafficLightVerdict, 'YELLOW');
+  assert.equal(oassePass.preExecutionAuthorization.authorizationHoldEnforced, true);
+  assert.equal(oassePass.tamperEvidentHashChain.crossTenantReadOutcome, 'NOT_FOUND');
+  assert.equal(oassePass.standalonePolicyPackOffer.ruleCountDiscountPct, 50);
+  assert.equal(oassePass.partnerFlipReplyReceipt.sentMailUid, '40146');
+
+  const oasseFail = fw.evaluateOakAndSparrowGatekeeperV2SignalAuditSteal({
+    proposedOutcome: 'INVALID_OUTCOME',
+    signalAuditRewritesDecision: true,
+    replyAllToExposedToListAttempted: true,
+  });
+  assert.equal(oasseFail.ok, false);
+  assert.ok(oasseFail.blockers.includes('oasse_signal_audit_must_never_rewrite_gatekeeper_authorization_decision'));
+  assert.ok(oasseFail.blockers.includes('oasse_privacy_guard_forbids_reply_all_to_exposed_newsletter_recipient_list'));
+
+  // Steal #11: Spotify Confidence Sequential A/B Experiment (https://app.confidence.spotify.com/experiments)
+  const confPass = fw.evaluateSpotifyConfidenceSequentialAbExperimentSteal({
+    controlVisitors: 400,
+    controlConversions: 8,
+    treatmentVisitors: 400,
+    treatmentConversions: 28,
+  });
+  assert.equal(confPass.ok, true);
+  assert.equal(confPass.liveWorkspaceInstance.experimentId, 't4cd4ntvf9ppbxzutjso');
+  assert.equal(confPass.sequentialStatisticalAnalysis.peekingSafe, true);
+  assert.equal(confPass.twoCoreQuestions.didItImproveThings, true);
+  assert.equal(confPass.twoCoreQuestions.didItBreakAnything, false);
+  assert.equal(confPass.twoCoreQuestions.recommendedDecision, 'SHIP_TREATMENT_TO_100_PCT');
+
+  const confFail = fw.evaluateSpotifyConfidenceSequentialAbExperimentSteal({
+    hypothesis: 'Let us try a new button color',
+    primarySuccessMetrics: ['clicks', 'scrolls'],
+    metricChosenAfterTheFact: true,
+    guardrailMetrics: [{ name: 'false_positive_gate_block_rate', observed: 0.09, maxAllowed: 0.02 }],
+  });
+  assert.equal(confFail.ok, false);
+  assert.ok(confFail.blockers.includes('spotify_confidence_missing_structured_if_then_because_hypothesis'));
+  assert.ok(confFail.blockers.includes('spotify_confidence_post_hoc_metric_selection_forbidden'));
+  assert.ok(confFail.blockers.includes('spotify_confidence_requires_exactly_one_primary_success_metric'));
+  assert.ok(confFail.blockers.includes('spotify_confidence_guardrail_metric_breached_auto_rollback_triggered'));
+  assert.equal(confFail.twoCoreQuestions.recommendedDecision, 'ROLLBACK_IMMEDIATELY');
+
+  // Spotify Confidence: Define a metric once, trust it everywhere (Johan Söderholm, confidence.pdf)
+  const factMetricPass = fw.evaluateSpotifyConfidenceMetricsAndFactTablesSteal();
+  assert.equal(factMetricPass.ok, true);
+  assert.equal(factMetricPass.emailAuthor, 'Johan Söderholm (Spotify Confidence)');
+  assert.equal(factMetricPass.bestPractices.userIdAlignment.aligned, true);
+  assert.equal(factMetricPass.bestPractices.coreMetricsStructure.validStructure, true);
+  assert.equal(factMetricPass.twoBuildingBlocks.factTables.canonicalFactTable, 'fact_purchases');
+
+  const factMetricMismatch = fw.evaluateSpotifyConfidenceMetricsAndFactTablesSteal({
+    factTableEntityId: 'userId',
+    flagAssignmentEntityId: 'visitorDeviceId',
+  });
+  assert.equal(factMetricMismatch.ok, false);
+  assert.ok(factMetricMismatch.blockers.includes('confidence_user_id_flag_assignment_mismatch'));
+
+  const factMetricProxyFail = fw.evaluateSpotifyConfidenceMetricsAndFactTablesSteal({
+    coreMetrics: [
+      { name: 'github_stars_growth', type: 'north_star', factTable: 'fact_purchases' },
+      { name: 'checkout_start_rate', type: 'driver', factTable: 'fact_purchases' },
+      { name: 'p95_latency', type: 'guardrail', factTable: 'fact_purchases' },
+    ],
+  });
+  assert.equal(factMetricProxyFail.ok, false);
+  assert.ok(factMetricProxyFail.blockers.includes('confidence_misleading_proxy_metric_blocked'));
+
+  // Email Steal Engine classification checks for Steals #9-#11
+  assert.equal(
+    classifyStrategyAndAction({
+      subject: 'Define a metric once, trust it everywhere',
+      body: 'Every number in Confidence comes from two building blocks: Fact tables and Metrics. Choose metrics that track real outcomes.',
+    }).gateOrModule,
+    'src/cloud-token-firewall.js#evaluateSpotifyConfidenceMetricsAndFactTablesSteal'
+  );
+  assert.equal(
+    classifyStrategyAndAction({
+      subject: 'use Jev to improve our system: https://console.typesafe.ai/hook',
+      body: 'Meet Jev jev-1.14.0 RLCD calibrated decisions sde-cascade',
+    }).gateOrModule,
+    'src/cloud-token-firewall.js#evaluateTypesafeJevConsoleHookAndSkillCascadeSteal'
+  );
+  assert.equal(
+    classifyStrategyAndAction({
+      subject: 'Oak & Sparrow - November 2026 Newsletter',
+      body: 'Gatekeeper V2 and Signal Audit case study nick@oakandsparrow.io',
+    }).gateOrModule,
+    'src/cloud-token-firewall.js#evaluateOakAndSparrowGatekeeperV2SignalAuditSteal'
+  );
+  assert.equal(
+    classifyStrategyAndAction({
+      subject: 'Is it better, or does it just feel better?',
+      body: 'https://app.confidence.spotify.com/experiments sequential testing so peeking won\'t mislead you',
+    }).gateOrModule,
+    'src/cloud-token-firewall.js#evaluateSpotifyConfidenceSequentialAbExperimentSteal'
+  );
+
+  // Steal #12: VeloDB Cloud /personalize (https://www.velodb.cloud/personalize) + Towards Data Science (datascience.pdf)
+  const veloPass = fw.evaluateVeloDbPersonalizeAndRealTimeAiAnalyticsSteal({
+    documentReferrer: 'https://www.velodb.io/pricing',
+    urlDistinctId: 'anon_marketing_visitor_1',
+    existingBrowserDistinctId: 'returning_cloud_user_2',
+    posthogCookieBytes: 4100,
+    selectedUseCases: ['RAGAndGenAI', 'RealTimeAnalytics'],
+    signupReason: 'CompanyConsideringVeloDB',
+    role: 'StartupFounder',
+    referralSource: 'AI',
+  });
+  assert.equal(veloPass.ok, true);
+  assert.equal(veloPass.identityGraphSecurity.referrerTrusted, true);
+  assert.equal(veloPass.identityGraphSecurity.serverSideAliasMerged, true);
+  assert.equal(veloPass.identityGraphSecurity.cookieEvictedAcrossParentDomains, true);
+  assert.equal(veloPass.personalizeTwoStepFlow.step1Personalize.tracksAiAsFirstClassReferralChannel, true);
+  assert.equal(veloPass.personalizeTwoStepFlow.step1Personalize.pocFastLaneRecommended, true);
+
+  const veloUntrustedRef = fw.evaluateVeloDbPersonalizeAndRealTimeAiAnalyticsSteal({
+    documentReferrer: 'https://evil-attacker.example.com/phish',
+    urlDistinctId: 'victim_distinct_id_poison',
+    urlSessionId: 'victim_session_id_poison',
+  });
+  assert.equal(veloUntrustedRef.ok, true);
+  assert.equal(veloUntrustedRef.identityGraphSecurity.referrerTrusted, false);
+  assert.equal(veloUntrustedRef.identityGraphSecurity.bootstrapDistinctId, null);
+  assert.equal(veloUntrustedRef.identityGraphSecurity.untrustedIdentityParamRejected, true);
+
+  const veloFail = fw.evaluateVeloDbPersonalizeAndRealTimeAiAnalyticsSteal({
+    translationDomPatchEnabled: false,
+    selectedUseCases: [],
+    currentPlan: 'Premium',
+    targetPlan: 'Standard',
+    activeEnterpriseFeaturesInUse: ['SAML_SSO', 'TDE_CMEK'],
+    activeSubscriptionClustersCount: 2,
+  });
+  assert.equal(veloFail.ok, false);
+  assert.ok(veloFail.blockers.includes('velodb_missing_browser_translation_dom_removechild_insertbefore_patch'));
+  assert.ok(veloFail.blockers.includes('velodb_personalize_choose_at_least_one_use_case'));
+  assert.ok(veloFail.blockers.includes('velodb_cannot_downgrade_to_standard_while_enterprise_features_in_use'));
+  assert.ok(veloFail.blockers.includes('velodb_cannot_downgrade_to_standard_while_active_subscription_clusters_exist'));
+
+  assert.equal(
+    classifyStrategyAndAction({
+      subject: 'Build real-time analytics on AWS https://www.velodb.cloud/personalize',
+      body: 'SQL, vector, and full-text search for AI datascience.pdf',
+    }).gateOrModule,
+    'src/cloud-token-firewall.js#evaluateVeloDbPersonalizeAndRealTimeAiAnalyticsSteal'
+  );
+
+  // Steal #13: EU AI Act (20230601STO93804) Conformity & Monetization Gate
+  const euPass = fw.evaluateEuAiActComplianceAndMonetizationGate({
+    systemName: 'ThumbGate Enterprise HR Screening Agent',
+    annex3Domain: 'employment_worker_management',
+    humanOversightPreToolUseGateEnabled: true,
+    euDatabaseRegistered: true,
+    lifecycleConformityAssessmentActive: true,
+    citizenComplaintMechanismEnabled: true,
+  });
+  assert.equal(euPass.ok, true);
+  assert.equal(euPass.riskTier, 'high_risk');
+  assert.equal(euPass.verdict, 'ALLOW');
+  assert.equal(euPass.monetizationLadder.length, 5);
+
+  const euBanned = fw.evaluateEuAiActComplianceAndMonetizationGate({
+    proposedPractice: 'social_scoring',
+  });
+  assert.equal(euBanned.ok, false);
+  assert.equal(euBanned.riskTier, 'unacceptable_risk');
+  assert.equal(euBanned.verdict, 'DENY');
+  assert.ok(euBanned.blockers.includes('eu_ai_act_article5_unacceptable_risk_banned_application_blocked'));
+
+  const euHighRiskNoHumanGate = fw.evaluateEuAiActComplianceAndMonetizationGate({
+    annex3Domain: 'critical_infrastructure',
+    humanOversightPreToolUseGateEnabled: false,
+    euDatabaseRegistered: false,
+  });
+  assert.equal(euHighRiskNoHumanGate.ok, false);
+  assert.equal(euHighRiskNoHumanGate.verdict, 'HOLD');
+  assert.ok(euHighRiskNoHumanGate.blockers.includes('eu_ai_act_article14_human_oversight_pretooluse_gate_required'));
+  assert.ok(euHighRiskNoHumanGate.blockers.includes('eu_ai_act_annex3_high_risk_requires_eu_database_registration'));
+
+  assert.equal(
+    classifyStrategyAndAction({
+      subject: 'monetize this: https://www.europarl.europa.eu/topics/en/article/20230601STO93804/eu-ai-act-first-regulation-on-artificial-intelligence',
+      body: 'EU AI Act: first regulation on artificial intelligence',
+    }).gateOrModule,
+    'src/cloud-token-firewall.js#evaluateEuAiActComplianceAndMonetizationGate'
+  );
+
+  // Steal #14: Hyperagent Rubrics, Autowiki, Four-Paths Onboarding & Mandatory B2B Email Execution
+  const hyperPass = fw.evaluateHyperagentRubricsAutowikiFourPathsAndB2bEmailSteal({
+    onboardingPath: 'import_from_github',
+    rubricCriteria: [
+      { id: 'accuracy', passed: true, weight: 0.4 },
+      { id: 'completeness', passed: false, weight: 0.3 },
+    ],
+    autowikiSynced: true,
+    emailDisposition: 'REPLIED',
+  });
+  assert.equal(hyperPass.ok, true);
+  assert.equal(hyperPass.onboardingFourPaths.selectedPath, 'import_from_github');
+  assert.deepEqual(hyperPass.rubricsToPreToolUseGates.compiledPreActionGates, ['pretooluse_rubric_gate_completeness']);
+  assert.equal(hyperPass.mandatoryB2bEmailExecution.verifiedPartnerThreads.length, 5);
+
+  const hyperFail = fw.evaluateHyperagentRubricsAutowikiFourPathsAndB2bEmailSteal({
+    onboardingPath: 'unknown_path',
+    emailDisposition: 'REPLIED',
+    involvesBindingContract: true,
+    attemptedTrashRepliedThread: true,
+  });
+  assert.equal(hyperFail.ok, false);
+  assert.ok(hyperFail.blockers.includes('hyperagent_invalid_onboarding_four_paths_selection'));
+  assert.ok(hyperFail.blockers.includes('b2b_email_mandatory_exception_requires_drafted_for_approval'));
+  assert.ok(hyperFail.blockers.includes('b2b_email_never_trash_replied_sent_thread'));
+
+  assert.equal(
+    classifyStrategyAndAction({
+      subject: 'Re: Rubrics: Set the standard for your agents and watch them get better',
+      body: 'https://hyperagent.com/thread/cmql52i8o0dd606adahnyadrt?autostart=onboarding-four-paths Fin from Hyperagent support@hyperagent.com',
+    }).gateOrModule,
+    'src/cloud-token-firewall.js#evaluateHyperagentRubricsAutowikiFourPathsAndB2bEmailSteal'
+  );
+
+  // Steal #15: NVIDIA Auto Ontology Grounded Agent SQL & Remote Accelerator Shortlist
+  const nvidiaPass = fw.evaluateNvidiaAutoOntologyAndInceptionAcceleratorSteal({
+    sqlQuery: 'SELECT booked_revenue_cents FROM gold_commercial_funnel_v1 WHERE window = \'30d\'',
+    acceleratorRemoteOnly: true,
+  });
+  assert.equal(nvidiaPass.ok, true);
+  assert.equal(nvidiaPass.autoOntologySqlGrounding.usesSemanticOntologyView, true);
+
+  const nvidiaFail = fw.evaluateNvidiaAutoOntologyAndInceptionAcceleratorSteal({
+    sqlQuery: 'DROP TABLE raw_unverified_orders;',
+    acceleratorRemoteOnly: false,
+  });
+  assert.equal(nvidiaFail.ok, false);
+  assert.ok(nvidiaFail.blockers.includes('nvidia_auto_ontology_agent_sql_mutation_blocked'));
+  assert.ok(nvidiaFail.blockers.includes('nvidia_auto_ontology_requires_grounded_semantic_layer_table'));
+
+  assert.equal(
+    classifyStrategyAndAction({
+      subject: 'NVIDIA Releases Auto Ontology: An Open Semantic Layer That Grounds AI Agent SQL',
+      body: 'https://share.google/mrgGg1DjHzUChMYPm',
+    }).gateOrModule,
+    'src/cloud-token-firewall.js#evaluateNvidiaAutoOntologyAndInceptionAcceleratorSteal'
+  );
+});
+
+test('North Star $300/day 24/7 admin telemetry, /v1/cloud/cli/register, /go/diagnostic-499, and synthetic checkout probe deflection', async () => {
+  resetCloudFirewallStateForTests();
+  process.env.THUMBGATE_API_KEY = 'tg_live_admin_test_key';
+  const started = await startServer({ port: 0, host: '127.0.0.1' });
+  const baseUrl = `http://127.0.0.1:${started.port}`;
+  try {
+    // 1. Register a real CLI install lead via /v1/cloud/cli/register
+    const cliRes = await fetch(`${baseUrl}/v1/cloud/cli/register`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        email: 'cto@enterprise-agent.io',
+        name: 'Elena Vance',
+        company: 'Enterprise Agent Corp',
+        installId: 'cli_ent_001',
+        version: '1.39.0',
+        platform: 'darwin-arm64',
+        agentClient: 'claude-code',
+      }),
+    });
+    assert.equal(cliRes.status, 200);
+    const cliBody = await cliRes.json();
+    assert.equal(cliBody.ok, true);
+    assert.equal(cliBody.registered, true);
+
+    // 2. Deflect synthetic email probe on /v1/billing/capture-lead with 422
+    const synthLeadRes = await fetch(`${baseUrl}/v1/billing/capture-lead`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: 'test@example.com', plan: 'pro' }),
+    });
+    assert.equal(synthLeadRes.status, 422);
+    const synthLeadBody = await synthLeadRes.json();
+    assert.equal(synthLeadBody.code, 'SYNTHETIC_PROBE_BLOCKED');
+
+    // 3. Deflect synthetic checkout probe on GET /go/cloud-indie?email=test@example.com
+    const deflectRes = await fetch(`${baseUrl}/go/cloud-indie?email=test@example.com`, {
+      redirect: 'manual',
+    });
+    assert.equal(deflectRes.status, 302);
+    assert.match(deflectRes.headers.get('location') || '', /\/checkout\/pro\?plan_id=cloud_indie/);
+    // 4. Verify /go/diagnostic-499 routes to 1-click Stripe diagnostic link for real user
+    const diagRes = await fetch(`${baseUrl}/go/diagnostic-499`, {
+      redirect: 'manual',
+      headers: { 'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 14_7) AppleWebKit/605.1.15' },
+    });
+    assert.equal(diagRes.status, 302);
+    assert.match(diagRes.headers.get('location') || '', /buy\.stripe\.com/);
+
+    // 5. Verify /v1/admin/customers returns northStar24x7 ($300/day, $9,000/mo), ossAndCliStats, and ecosystemLeads
+    const adminRes = await fetch(`${baseUrl}/v1/admin/customers`, {
+      headers: { 'x-admin-token': 'tg_live_admin_test_key' },
+    });
+    assert.equal(adminRes.status, 200);
+    const adminBody = await adminRes.json();
+    assert.equal(adminBody.ok, true);
+    assert.equal(adminBody.northStar24x7.mandate, 'make $300/day, 24/7');
+    assert.equal(adminBody.northStar24x7.dailyTargetUsd, 300);
+    assert.equal(adminBody.northStar24x7.monthlyTargetUsd, 9000);
+    assert.equal(adminBody.northStar24x7.outboundCashSpendUsd, 0);
+    assert.ok(adminBody.ossAndCliStats.ecosystemLeadsTotal >= 9);
+    assert.ok(adminBody.ossAndCliStats.cliInstallsTotal >= 1);
+    assert.ok(Array.isArray(adminBody.ecosystemLeads));
+  } finally {
+    started.server.close();
+    started.server.closeAllConnections?.();
   }
 });
 

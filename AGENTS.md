@@ -100,3 +100,44 @@ Every prompt from Igor is broadcast simultaneously across Herdr (`2x2` grid pane
 2. **Mesh Surface Leases (`mesh_claim_surface` / `mesh_send_peer`)**:
    - Claim files/surfaces before editing and broadcast completion receipts to `to_agent: "all"` so sibling agents reuse verified outputs immediately.
 
+## Evidence-Backed Engineering & Shelf-Life Invariance
+
+Adopted from Stanford Zou Group (LLM Claims Shelf Life), HKUST HarnessSQL, and MIT Soft-MTP:
+
+1. **LLM Capability Shelf-Life vs. Behavioral Invariance**:
+   - Capability failures (retrieval in long contexts, reference hallucinations, math steps) expire rapidly (~16 months). Do not write brittle prompt workarounds for expired model bugs.
+   - Evaluation biases (self-preference as judge, sycophancy, verbosity-as-proof) **persist and strengthen** in frontier models. Therefore, NEVER use LLMs to self-evaluate without external, objective ground truth. Every "done" claim requires empirical receipts (tests passed, exit code 0, HTTP 200, schema validation).
+2. **Atomic Tool Harness Architecture (HarnessSQL Principle)**:
+   - Tool harness structure beats model parameter scale (8B with an atomic 4-tool harness outperforms 32B models). Design tools to be minimal, deterministic, and sandboxed (e.g. `list_surfaces`, `inspect_schema`, `execute_sandboxed`, `submit_proof`).
+3. **Speculative Execution with Straight-Through Verification (Soft-MTP Principle)**:
+   - When agents generate speculative code or draft actions, intermediate noise must be discarded; only the verified delta that aligns with the environment contract is committed.
+4. **Exact In-Memory State vs Hallucinated Arithmetic (qwenGPU Principle)**:
+   - For all policy boundaries, path matching, token budgets, and integer arithmetic, enforce exact deterministic compilation/validation rather than relying on probabilistic LLM token generation.
+5. **End-to-End User Journey Tracing (LinkedIn OpenTelemetry pageForestId Principle)**:
+   - Link client-side UX friction, prompt triggers, subagent tool calls, and backend verification via a shared `journeyForestId`. Coordinated head sampling ensures failures are captured with zero missing spans.
+6. **Viral Distribution & Versioned Skills (xAI Grok Bot Team Bot Principle)**:
+   - Package specialized agent capabilities into modular, versioned skill files maintained by subject-matter experts. Distribute capabilities through zero-friction triggers (e.g. mentions, single-click installs) that route work to background specialists without human re-entry.
+
+## Post-Loop Architecture: Outcome Goals, Builder-Reviewer-Verifier & Subagent Topology
+
+Adopted from OpenAI and Anthropic consensus on post-loop agent engineering (`scripts/builder-reviewer-verifier.js`):
+
+1. **Outcome Goals, Not Step-by-Step Instructions:**
+   - Define verifiable outcome metrics (e.g. latency under 200ms, zero unhandled errors, passing test matrix) alongside tools. Do not cap the model's solution space with micro-step procedural micromanagement.
+2. **No Spec Decomposition into Micro-Tickets:**
+   - Frontier models (Laguna S 2.1, Claude 3.7) handle long contexts natively. Set compaction threshold to 400k tokens; let a single builder agent implement the entire specification across compactions.
+3. **Subagent Fan-Out Only for Truly Independent Tasks:**
+   - Parallel subagents are restricted to isolated workloads with zero shared state (independent library research, parallel Playwright test flows, bug hunting in separate directories). NEVER fan out interconnected feature slices in parallel.
+4. **Effort Scaling Across Model Tiers:**
+   - Primary builder escalates dynamically to a frontier advisor when stuck on complex problems (race conditions, async deadlocks). Routine self-contained tasks (docs, translations, static assets) route to cheaper `nano`/`mini` tiers.
+5. **Builder–Reviewer–Verifier (BRV) Pipeline:**
+   - Spec -> **Builder** -> **Reviewer** (max 3 rounds) -> **Verifier** (max 2 rounds).
+   - **Route Fixes Back to the Original Builder:** ALWAYS route reviewer and verifier findings back to the same builder instance. Preserves context, prevents point-fix churn, and saves ~38% tokens.
+   - **Verify Only at Capability Edge:** Skip verification for mastered routine tasks (basic CRUD/forms). Reserve verifiers for edge-of-capability features (sync merges, race conditions, auth boundaries).
+   - **Continuous Harness Pruning:** Strip out obsolete scaffolding and prompt crutches absorbed natively by newer base models.
+6. **Chief of Staff & Anti-Bureaucracy Swarm Principle:**
+   - Single "Chief of Staff" coordinator thread delegating to sandboxed worker containers instead of multi-tab context-switching.
+   - Ban peer-to-peer persona swarms for feature building (no 10-20 peer paralysis). Subagents are strict tool calls with typed inputs and outputs. Reserve swarms exclusively for parallel vulnerability hunting and bug bashing.
+
+
+

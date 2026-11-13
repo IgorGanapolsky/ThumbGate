@@ -1,0 +1,87 @@
+{
+  "draftId": "agent-mistakes_1793648378011",
+  "topic": "agent-mistakes",
+  "platforms": [
+    "linkedin"
+  ],
+  "createdAt": "2026-11-02T19:39:38.011Z",
+  "status": "awaiting_approval",
+  "variations": {
+    "linkedin": {
+      "topic": "agent-mistakes",
+      "slides": [
+        {
+          "slideNum": 1,
+          "headline": "The Problem",
+          "body": "Generic AI agent harnesses waste compute on redundant verification and routing.",
+          "stat1": {
+            "label": "Files scanned",
+            "value": "978"
+          },
+          "stat2": {
+            "label": "Cost reduction",
+            "value": "64%"
+          },
+          "screenshot": "/assets/diagrams/hero-thumbs.svg"
+        },
+        {
+          "slideNum": 2,
+          "headline": "The Steal",
+          "body": "Move model routing into the harness where it knows what the agent is doing.",
+          "stat1": {
+            "label": "Model tiers",
+            "value": "2"
+          },
+          "stat2": {
+            "label": "Local checks",
+            "value": "80%"
+          },
+          "screenshot": "/assets/diagrams/hero-thumbs.svg"
+        },
+        {
+          "slideNum": 3,
+          "headline": "Implementation",
+          "body": "Each verifier check carries a modelHint (local/cloud) in the criteria JSON.",
+          "stat1": {
+            "label": "Tests",
+            "value": "1.40.0 (61 tests)"
+          },
+          "stat2": {
+            "label": "Health",
+            "value": "HEALTHY"
+          },
+          "screenshot": "/assets/diagrams/hero-thumbs.svg"
+        },
+        {
+          "slideNum": 4,
+          "headline": "Pro Upgrade",
+          "body": "Get 127 additional gates, real-time canary alerting, and cross-session cache reuse.\n\nKeyword: agent-mistakes\nFree guide: https://thumbgate.ai/blog/2026-10-26-stolen-infra-patterns",
+          "stat1": {
+            "label": "Pro gates",
+            "value": "+127"
+          },
+          "stat2": {
+            "label": "Pro price",
+            "value": "$19/mo"
+          },
+          "screenshot": "https://buy.stripe.com/8x2dR91M84r4cSd9uj3sI3f"
+        }
+      ],
+      "caption": "🔥 The Problem 👉\n\nGeneric AI agent harnesses waste compute on redundant verification and routing.\n\n#AI #MachineLearning #ThumbGate",
+      "colorScheme": "blue-dark",
+      "finalSlide": "modified_with_link",
+      "keywords": [
+        "agent-mistakes"
+      ],
+      "leadMagnetUrl": "https://thumbgate.ai/blog/2026-10-26-stolen-infra-patterns",
+      "hookSlide": {
+        "title": "How Ramp cut AI inference costs by 64% with harness-level model routing 👉",
+        "subtitle": "64% reduction | FREE pattern steal",
+        "keyword": "agent-mistakes",
+        "logo": "ThumbGate",
+        "mascot": "/assets/diagrams/hero-thumbs.svg"
+      }
+    }
+  },
+  "approvalInstructions": "Review all variations before publishing. Run: node scripts/social-carousel-generator.js --topic \"agent-mistakes\" --publish agent-mistakes_1793648378011"
+}

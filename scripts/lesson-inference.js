@@ -150,6 +150,37 @@ function createLesson({ feedbackId, signal, inferredLesson, triggerMessage, prio
   const recentPath = getRecentLessonPath(feedbackDir);
   fs.writeFileSync(recentPath, JSON.stringify(redactedLesson, null, 2) + '\n');
 
+  // Sync inferred lesson into lessons.sqlite so MCP search_lessons/retrieve_lessons
+  // immediately reflects lessons created during capture or session finalization.
+  try {
+    const resolvedDir = feedbackDir || getFeedbackDir();
+    const dbPath = process.env.LESSON_DB_PATH || path.join(resolvedDir, 'lessons.sqlite');
+    const { initDB, upsertLesson } = require('./lesson-db');
+    const db = initDB(dbPath);
+    try {
+      const existingByFeedback = redactedLesson.feedbackId
+        ? db.prepare('SELECT id FROM lessons WHERE sourceFeedbackId = ? LIMIT 1').get(redactedLesson.feedbackId)
+        : null;
+      if (!existingByFeedback) {
+        upsertLesson(db, {
+          id: redactedLesson.feedbackId || redactedLesson.id,
+          signal: redactedLesson.signal === 'positive' || redactedLesson.signal === 'up' ? 'positive' : 'negative',
+          context: redactedLesson.lesson || '',
+          tags: Array.isArray(redactedLesson.tags) ? redactedLesson.tags : [],
+          timestamp: redactedLesson.createdAt,
+        }, {
+          id: redactedLesson.id,
+          content: redactedLesson.lesson || '',
+          tags: Array.isArray(redactedLesson.tags) ? redactedLesson.tags : [],
+          importance: 'medium',
+          timestamp: redactedLesson.createdAt,
+        });
+      }
+    } finally {
+      db.close();
+    }
+  } catch { /* non-critical SQLite sync */ }
+
   return redactedLesson;
 }
 

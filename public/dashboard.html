@@ -62,13 +62,13 @@
 
   /* NAV */
   nav { position: sticky; top: 0; z-index: 50; background: rgba(10,10,11,0.92); backdrop-filter: blur(14px); border-bottom: 1px solid var(--border); padding: 12px 0; }
-  nav .container { display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: nowrap; }
+  nav .container { display: flex; justify-content: space-between; align-items: center; gap: 12px 16px; flex-wrap: wrap; }
   .nav-brand-group { display: inline-flex; align-items: center; gap: 10px; min-width: 0; white-space: nowrap; }
   .nav-logo { font-weight: 700; font-size: 15px; color: var(--text); text-decoration: none; display: inline-flex; align-items: center; gap: 8px; white-space: nowrap; }
   .nav-logo .logo-mark { width: 26px; height: 26px; display: block; flex: none; }
   .canonical-url-pill { font-family: var(--mono); font-size: 11px; color: var(--cyan); background: rgba(34,211,238,0.1); border: 1px solid rgba(34,211,238,0.28); padding: 2px 8px; border-radius: 999px; text-decoration: none; white-space: nowrap; }
   .canonical-url-pill:hover { background: rgba(34,211,238,0.18); }
-  .nav-links { display: flex; gap: 14px; align-items: center; white-space: nowrap; flex-shrink: 0; }
+  .nav-links { display: flex; gap: 12px; align-items: center; white-space: nowrap; flex-wrap: wrap; }
   .nav-links a { color: var(--text-muted); text-decoration: none; font-size: 13px; font-weight: 500; transition: color 0.15s; white-space: nowrap; }
   .nav-links a:hover { color: var(--text); }
   /* AUTH */
@@ -315,7 +315,7 @@
   <div class="container">
     <div class="nav-brand-group">
       <a href="/" class="nav-logo"><img src="/assets/brand/thumbgate-mark-inline-v3.svg" alt="ThumbGate" class="logo-mark" width="26" height="26"><span class="logo-text">ThumbGate</span></a>
-      <a href="https://thumbgate.ai/dashboard" class="canonical-url-pill" title="Canonical human-friendly URL">thumbgate.ai/dashboard</a>
+      <a href="https://thumbgate.ai/dashboard" class="canonical-url-pill" style="display:none;" title="Canonical human-friendly URL">thumbgate.ai/dashboard</a>
       <span id="activeProjectBadge" class="scope-pill" style="display:none;text-transform:none;font-family:var(--mono);font-size:11px;" title="Dedicated project dashboard scope"></span>
     </div>
     <div class="nav-links">
@@ -328,7 +328,7 @@
       <a href="/">Landing Page</a>
       <span id="navSsoStatusPill" style="display:none;font-size:11px;color:var(--green);font-family:var(--mono);padding:3px 8px;border:1px solid rgba(74,222,128,0.3);border-radius:999px;background:rgba(74,222,128,0.08);"></span>
       <button type="button" class="btn-outline" id="navSsoLoginBtn" onclick="focusSsoSignIn()" style="padding:5px 12px;font-size:12px;border-color:var(--cyan);color:var(--cyan);">🔐 Sign In (SSO)</button>
-      <button type="button" class="btn-outline" id="navSsoLogoutBtn" onclick="disconnectKey()" style="display:inline-flex;padding:5px 12px;font-size:12px;border-color:#f87171;color:#f87171;">Log Out</button>
+      <button type="button" class="btn-outline" id="navSsoLogoutBtn" onclick="disconnectKey()" style="display:none;padding:5px 12px;font-size:12px;border-color:#f87171;color:#f87171;">Log Out</button>
     </div>
   </div>
 </nav>
@@ -338,7 +338,7 @@
     <div style="display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap;">
       <div>
         <span id="authTitle" style="font-size:14px;font-weight:700;">Sign in with SSO to access your live projects</span>
-        <span id="authHelp" style="font-size:12px;color:var(--text-muted);margin-left:8px;">Enter your work email and choose your SSO provider, or connect with <code style="font-family:var(--mono);font-size:11px;background:var(--cyan-dim);color:var(--cyan);padding:2px 6px;border-radius:4px;">THUMBGATE_API_KEY</code>.</span>
+        <span id="authHelp" style="font-size:12px;color:var(--text-muted);margin-left:8px;">Enter your work email and choose your SSO provider to open your workspace.</span>
       </div>
       <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
         <input type="email" class="auth-input" id="ssoEmailInput" placeholder="work@company.com" style="max-width:210px;" onkeydown="if(event.key==='Enter'){event.preventDefault();signInWithSso('google');}" />
@@ -348,16 +348,19 @@
         <button type="button" class="btn-outline" id="ssoOktaBtn" onclick="signInWithSso('okta')" style="padding:7px 12px;font-size:12px;">Enterprise SSO</button>
       </div>
     </div>
-    <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;padding-top:8px;border-top:1px solid rgba(255,255,255,0.06);">
-      <span style="font-size:12px;color:var(--text-muted);">Have a CLI / Pro API key?</span>
-      <div style="display:flex;gap:8px;align-items:center;flex:1;max-width:560px;justify-content:flex-end;">
-        <input type="password" class="auth-input" id="apiKey" placeholder="Paste THUMBGATE_API_KEY, THUMBGATE_PRO_KEY, or tg_sso_ token..." />
-        <button class="btn" id="connectBtn" onclick="connect()">Connect Key</button>
-        <button class="btn-outline" id="demoBtn" onclick="loadDemo()" style="display:none;" aria-hidden="true">Try Demo</button>
-        <button class="btn-outline" id="disconnectBtn" onclick="disconnectKey()" style="display:none; border-color:#f87171; color:#f87171;">Log Out</button>
-        <span class="auth-status" id="authStatus"></span>
+    <details style="padding-top:6px;border-top:1px solid rgba(255,255,255,0.06);">
+      <summary style="font-size:12px;color:var(--text-muted);cursor:pointer;user-select:none;">Using the CLI or self-hosted? Connect with an API key instead</summary>
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;padding-top:10px;">
+        <span style="font-size:12px;color:var(--text-muted);">CLI / Pro API key:</span>
+        <div style="display:flex;gap:8px;align-items:center;flex:1;max-width:560px;justify-content:flex-end;">
+          <input type="password" class="auth-input" id="apiKey" placeholder="Paste THUMBGATE_API_KEY, THUMBGATE_PRO_KEY, or tg_sso_ token..." />
+          <button class="btn" id="connectBtn" onclick="connect()">Connect Key</button>
+          <button class="btn-outline" id="demoBtn" onclick="loadDemo()" style="display:none;" aria-hidden="true">Try Demo</button>
+          <button class="btn-outline" id="disconnectBtn" onclick="disconnectKey()" style="display:none; border-color:#f87171; color:#f87171;">Log Out</button>
+          <span class="auth-status" id="authStatus"></span>
+        </div>
       </div>
-    </div>
+    </details>
   </div>
 </div>
 
@@ -376,8 +379,8 @@
     <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
       <input type="text" id="newProjectNameInput" placeholder="New project name (e.g. api-prod)..." style="background:var(--bg-raised);border:1px solid var(--border);border-radius:8px;padding:6px 10px;color:var(--text);font-family:var(--mono);font-size:12px;width:210px;" onkeydown="if(event.key==='Enter'){event.preventDefault();createCustomerProject();}" />
       <button type="button" class="btn-outline" id="createProjectBtn" onclick="createCustomerProject()" style="padding:6px 12px;font-size:12px;border-color:var(--cyan);color:var(--cyan);">+ Add Project</button>
-      <button type="button" class="btn-outline" onclick="disconnectKey()" style="padding:6px 12px;font-size:12px;border-color:#f87171;color:#f87171;">Log Out</button>
     </div>
+    <div id="projectDirsStrip" style="display:none;gap:8px;flex-wrap:wrap;width:100%;padding-top:10px;margin-top:4px;border-top:1px solid rgba(255,255,255,0.06);"></div>
   </div>
   <div style="margin:0 0 12px;padding:12px 18px;background:linear-gradient(135deg,rgba(34,211,238,0.09),rgba(74,222,128,0.04));border:1px solid rgba(34,211,238,0.22);border-radius:12px;display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap;">
     <div>
@@ -418,7 +421,7 @@
           <h2 style="margin:0;font-size:14px;">💬 Ask Your Telemetry</h2>
           <span style="font-size:11px;color:var(--text-muted);">Local RAG</span>
         </div>
-        <div id="chatHint" style="display:flex;align-items:center;gap:6px;">
+        <div id="chatHint" style="display:none;align-items:center;gap:6px;">
           <input type="password" id="geminiKeyInput" placeholder="GEMINI_API_KEY (optional)..." style="background:var(--bg-raised); border:1px solid var(--border); border-radius:6px; padding:4px 8px; color:var(--text); font-family:var(--mono); font-size:11px; width:175px;" onkeydown="if(event.key==='Enter'){event.preventDefault();saveGeminiKey();}" />
           <button class="btn-outline" style="padding:4px 10px;font-size:11px;border-radius:6px;" onclick="saveGeminiKey()">Save</button>
         </div>
@@ -947,7 +950,7 @@ function updateProjectBadge(projectDir, projectName) {
     var name = projectName || dir.split('/').filter(Boolean).pop() || dir;
     badge.textContent = '📁 Project: ' + name;
     badge.title = 'Dedicated dashboard for ' + dir;
-    badge.style.display = 'inline-flex';
+    badge.style.display = API_KEY ? 'none' : 'inline-flex';
   }
   preserveProjectQueryParams();
 }
@@ -972,7 +975,7 @@ if (typeof window !== 'undefined') {
 function getHeaders() {
   var headers = { 'Authorization': 'Bearer ' + API_KEY, 'Content-Type': 'application/json' };
   if (ACTIVE_PROJECT_DIR) {
-    headers['x-thumbgate-project-dir'] = ACTIVE_PROJECT_DIR;
+    headers['x-thumbgate-project'] = ACTIVE_PROJECT_DIR; headers['x-thumbgate-project-dir'] = ACTIVE_PROJECT_DIR;
   }
   return headers;
 }
@@ -1176,13 +1179,31 @@ async function loadCustomerProjects() {
     if (!res.ok) return;
     var data = await res.json();
     if (!data || !Array.isArray(data.projects)) return;
+    var activeSlug = ACTIVE_PROJECT_DIR || data.activeProjectSlug || 'default';
     var sel = document.getElementById('customerProjectSelect');
     if (sel) {
-      var activeSlug = ACTIVE_PROJECT_DIR || data.activeProjectSlug || 'default';
       sel.innerHTML = data.projects.map(function(p) {
         var selected = (p.slug === activeSlug) ? ' selected' : '';
+        var dirLabel = (p.projectDir && p.projectDir !== p.name && p.projectDir.indexOf('http') !== 0) ? (' · ' + p.projectDir) : '';
         var countSuffix = (typeof p.totalFeedback === 'number') ? ' (' + p.totalFeedback + ' signals)' : '';
-        return '<option value="' + escHtml(p.slug) + '"' + selected + '>' + escHtml(p.name || p.slug) + countSuffix + '</option>';
+        return '<option value="' + escAttr(p.slug) + '"' + selected + '>' + escHtml((p.name || p.slug) + dirLabel) + countSuffix + '</option>';
+      }).join('');
+    }
+    var strip = document.getElementById('projectDirsStrip');
+    if (strip && data.projects.length > 0) {
+      strip.style.display = 'flex';
+      strip.innerHTML = data.projects.map(function(p) {
+        var isCurrent = (p.slug === activeSlug);
+        var borderCol = isCurrent ? 'var(--cyan)' : 'var(--border)';
+        var bgCol = isCurrent ? 'rgba(34,211,238,0.14)' : 'var(--bg-raised)';
+        var textCol = isCurrent ? 'var(--cyan)' : 'var(--text)';
+        var dirHint = p.projectDir ? (' title="' + escAttr(p.projectDir) + '"') : '';
+        var countBadge = (typeof p.totalFeedback === 'number') ? (' <span style="opacity:0.75;">(' + p.totalFeedback + ')</span>') : '';
+        return '<button type="button" onclick="switchCustomerProject(\'' + escAttr(p.slug) + '\')"' + dirHint + ' style="background:' + bgCol + ';color:' + textCol + ';border:1px solid ' + borderCol + ';border-radius:999px;padding:4px 10px;font-family:var(--mono);font-size:11px;cursor:pointer;font-weight:' + (isCurrent ? '700' : '500') + ';">'
+          + (p.slug === 'igor-workspace' || p.slug === 'all-projects' ? '🌐 ' : '📁 ')
+          + escHtml(p.name || p.slug)
+          + countBadge
+          + '</button>';
       }).join('');
     }
     if (data.email) {
@@ -1203,6 +1224,7 @@ async function loadCustomerProjects() {
 async function switchCustomerProject(projectSlug) {
   var cleanSlug = String(projectSlug || '').trim() || 'default';
   ACTIVE_PROJECT_DIR = cleanSlug;
+  dashboardDataPromise = null;
   updateProjectBadge(cleanSlug, cleanSlug);
   try {
     var u = new URL(window.location.href);
@@ -1270,7 +1292,9 @@ function disconnectKey() {
   document.getElementById('authStatus').className = 'auth-status';
   document.getElementById('authStatus').textContent = 'Signed out';
   document.getElementById('authTitle').textContent = 'Sign in with SSO to access your live projects';
-  document.getElementById('authHelp').innerHTML = 'Enter your work email and choose your SSO provider, or paste your <code style="font-family:var(--mono);font-size:12px;background:var(--cyan-dim);color:var(--cyan);padding:2px 6px;border-radius:4px;">THUMBGATE_API_KEY</code> manually.';
+  document.getElementById('authHelp').textContent = 'Enter your work email and choose your SSO provider to open your workspace.';
+  var authBarOut = document.getElementById('authBar');
+  if (authBarOut) authBarOut.style.display = 'block';
   document.getElementById('dashboardContent').style.display = 'none';
 }
 
@@ -1347,6 +1371,8 @@ async function connect(options) {
         ? ('Signed in via ' + String(resolvedProvider || 'SSO').toUpperCase() + ' SSO (' + resolvedEmail + ')')
         : (opts.localPro ? `${tierName} License Active` : 'Live Workspace Connected');
     }
+    var authBarIn = document.getElementById('authBar');
+    if (authBarIn) authBarIn.style.display = 'none';
     document.getElementById('dashboardContent').style.display = 'block';
     document.getElementById('demoBanner').style.display = 'none';
     if (opts.localPro) {
@@ -1369,12 +1395,15 @@ async function connect(options) {
       switchTab(deepLinkedTab);
     } else {
       scheduleDashboardHydration(10000);
+      ensureDashboardDataLoaded();
     }
     // Open a live-events stream + fast background sync so feedback/rule-regen
     // events surface in real time without a manual refresh.
     subscribeToLiveEvents();
     startRealtimeDashboardLoop();
   } catch (e) {
+    var authBarErr = document.getElementById('authBar');
+    if (authBarErr) authBarErr.style.display = 'block';
     status.className = 'auth-status err';
     status.textContent = '✗ ' + e.message;
     const titleEl = document.getElementById('authTitle');
@@ -2871,12 +2900,14 @@ window.addEventListener('DOMContentLoaded', function() {
         if (urlSsoProvider) localStorage.setItem('tg_cloud_sso_provider', urlSsoProvider);
       } catch (e) {}
     }
-    var savedSsoToken = urlSsoToken || localStorage.getItem('tg_cloud_sso_token') || '';
-    var savedSsoEmail = urlSsoEmail || localStorage.getItem('tg_cloud_sso_email') || '';
+    var savedSsoToken = urlSsoToken || localStorage.getItem('tg_cloud_sso_token') || localStorage.getItem('tg_enterprise_sso_token') || localStorage.getItem('tg_admin_session_token') || '';
+    var savedSsoEmail = urlSsoEmail || localStorage.getItem('tg_cloud_sso_email') || localStorage.getItem('tg_enterprise_sso_email') || '';
     var savedSsoProvider = urlSsoProvider || localStorage.getItem('tg_cloud_sso_provider') || '';
     var emailInput = document.getElementById('ssoEmailInput');
     if (emailInput && savedSsoEmail) emailInput.value = savedSsoEmail;
     if (savedSsoToken && !window.location.search.includes('noauto')) {
+      var authBarInit = document.getElementById('authBar');
+      if (authBarInit) authBarInit.style.display = 'none';
       var keyInput = document.getElementById('apiKey');
       if (keyInput) keyInput.value = savedSsoToken;
       connect({ key: savedSsoToken, ssoEmail: savedSsoEmail, ssoProvider: savedSsoProvider });
@@ -2884,6 +2915,8 @@ window.addEventListener('DOMContentLoaded', function() {
     }
   } catch (e) {}
   if (hasBootstrapKey() && !window.location.search.includes('noauto')) {
+    var authBarBoot = document.getElementById('authBar');
+    if (authBarBoot) authBarBoot.style.display = 'none';
     connect({ key: BOOTSTRAP_API_KEY, localPro: true });
   }
 });

@@ -134,11 +134,12 @@ async function backfillLessonEmbeddings(options = {}) {
 }
 
 function parseArgs(argv) {
-  const args = { json: false, backfill: false, requireSemantic: false };
+  const args = { json: false, backfill: false, requireSemantic: false, checkOnly: false };
   for (let index = 0; index < argv.length; index += 1) {
     const arg = argv[index];
     if (arg === '--json') args.json = true;
     else if (arg === '--backfill') args.backfill = true;
+    else if (arg === '--check-only' || arg === '--no-auto-heal') args.checkOnly = true;
     else if (arg === '--require-semantic') args.requireSemantic = true;
     else if (arg === '--feedback-dir') args.feedbackDir = argv[++index];
     else if (arg === '--min-coverage') args.minCoverage = Number(argv[++index]);
@@ -150,9 +151,15 @@ async function runCli() {
   const options = parseArgs(process.argv.slice(2));
   let report;
   try {
-    report = options.backfill
-      ? await backfillLessonEmbeddings(options)
-      : evaluateEmbeddingIndexDrift(options);
+    if (options.backfill) {
+      report = await backfillLessonEmbeddings(options);
+    } else {
+      report = evaluateEmbeddingIndexDrift(options);
+      if (!report.ok && report.semanticProviderAvailable && !options.checkOnly) {
+        report = await backfillLessonEmbeddings(options);
+        report.autoHealed = true;
+      }
+    }
   } catch (error) {
     report = { ok: false, status: 'error', error: error.message, code: error.code || 'ERROR' };
   }

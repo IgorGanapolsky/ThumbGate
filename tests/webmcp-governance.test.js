@@ -157,18 +157,23 @@ test('the server exposes a route for /js/webmcp.js', () => {
 });
 
 // Chrome origin trial: WebMCP only activates on origins carrying a valid trial
-// token. The CEO registered https://thumbgate.app (subdomains + third-party,
-// expires 2026-11-17); the base64 payload below is that token's readable JSON
-// tail. thumbgate.ai needs its own token — when issued it lands as a second
-// origin-trial meta on the same pages and this test's floor of one still holds.
-test('wired pages embed the WebMCP origin-trial meta token', () => {
+// token. Renewed 2026-11-11 for https://thumbgate.app:443 and
+// https://www.thumbgate.app:443 (subdomains + third-party, expires 2027-03-29,
+// expiry: 1806364800).
+test('wired pages and server embed the renewed 2027-03-29 WebMCP origin-trial tokens', () => {
   for (const page of ['index.html', 'pricing.html']) {
     const body = fs.readFileSync(path.join(root, 'public', page), 'utf8');
     const metaCount = body.split('http-equiv="origin-trial"').length - 1;
-    assert.ok(metaCount >= 1, `${page} must carry at least one origin-trial meta tag`);
+    assert.ok(metaCount >= 2, `${page} must carry both renewed origin-trial meta tags`);
     assert.ok(
-      body.includes('eyJvcmlnaW4iOiJodHRwczovL3RodW1iZ2F0ZS5hcHA6NDQzIiwiZmVhdHVyZSI6IldlYk1DUCIs'),
-      `${page} must embed the registered thumbgate.app WebMCP token`
+      body.includes('eyJvcmlnaW4iOiJodHRwczovL3RodW1iZ2F0ZS5hcHA6NDQzIiwiZmVhdHVyZSI6IldlYk1DUCIsImV4cGlyeSI6MTgwNjM2NDgwMCw'),
+      `${page} must embed the renewed 2027-03-29 thumbgate.app WebMCP token`
+    );
+    assert.ok(
+      body.includes('eyJvcmlnaW4iOiJodHRwczovL3d3dy50aHVtYmdhdGUuYXBwOjQ0MyIsImZlYXR1cmUiOiJXZWJNQ1AiLCJleHBpcnkiOjE4MDYzNjQ4MDAs'),
+      `${page} must embed the renewed 2027-03-29 www.thumbgate.app WebMCP token`
     );
   }
+  const serverSource = fs.readFileSync(path.join(root, 'src', 'api', 'server.js'), 'utf8');
+  assert.ok(serverSource.includes('WEBMCP_ORIGIN_TRIAL_TOKENS'), 'server.js must emit Origin-Trial HTTP headers');
 });

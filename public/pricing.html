@@ -63,6 +63,14 @@
     .value-factor span { color:var(--muted); font-size:.83rem; }
     .value-operator { display:grid; place-items:center; color:var(--green); font-size:1.7rem; font-weight:900; }
     .value-result { border-color:var(--green); background:#e9f3ee; }
+    .value-factor input { width:100%; margin-top:10px; border:1px solid #aaa89f; border-radius:9px; background:#fff; padding:10px 12px; font:inherit; }
+    .chapter-rail { display:grid; grid-template-columns:repeat(6,minmax(0,1fr)); gap:10px; margin:22px 0 0; padding:0; list-style:none; }
+    .chapter-rail li { border:1px solid var(--line); border-radius:12px; background:var(--card); padding:12px; font-size:.84rem; }
+    .chapter-rail span { display:block; color:var(--green); font-weight:900; }
+    .exposure-result { margin:18px 0 0; font-size:1.15rem; font-weight:800; }
+    .exposure-note { margin:8px 0 0; color:var(--muted); font-size:.86rem; }
+    #exposure-cta { width:auto; margin-top:14px; }
+    #exposure-cta[hidden] { display:none; }
     .segment-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:14px; margin-top:28px; }
     .segment-card { display:flex; flex-direction:column; border:1px solid var(--line); border-radius:14px; background:var(--card); padding:22px; }
     .segment-card.recommended { border:2px solid var(--green); }
@@ -78,7 +86,7 @@
     footer { border-top:1px solid var(--line); padding:28px 0; color:var(--muted); font-size:.85rem; }
     .footer-inner { display:flex; justify-content:space-between; gap:24px; }
     .footer-links { display:flex; gap:18px; }
-    @media (max-width:820px) { .hero,.steps,.fit,.segment-grid { grid-template-columns:1fr; } .value-equation { grid-template-columns:1fr; } .value-operator { min-height:24px; } .hero { gap:34px; } .nav-links a:not(.nav-buy) { display:none; } }
+    @media (max-width:820px) { .hero,.steps,.fit,.segment-grid,.chapter-rail { grid-template-columns:1fr; } .value-equation { grid-template-columns:1fr; } .value-operator { min-height:24px; } .hero { gap:34px; } .nav-links a:not(.nav-buy) { display:none; } }
   </style>
   <script type="application/ld+json">
   {
@@ -133,22 +141,27 @@
     "mainEntity": [
       {
         "@type": "Question",
-        "name": "What does the $499 White-Glove Setup include?",
+        "name": "What does the $499 managed gate include?",
         "acceptedAnswer": { "@type": "Answer", "text": "A 60-minute workflow review, one configured local pre-action gate, one regression test, and rollout and rollback proof within two business days for one supported workflow." }
       },
       {
         "@type": "Question",
         "name": "What happens if the workflow is not a fit?",
         "acceptedAnswer": { "@type": "Answer", "text": "If the failure cannot be reduced to a supported ThumbGate gate, the payment is refunded instead of turning into an open-ended consulting upsell." }
+      },
+      {
+        "@type": "Question",
+        "name": "How is the exposure number calculated?",
+        "acceptedAnswer": { "@type": "Answer", "text": "It multiplies the repeat incidents, recovery hours, and loaded hourly cost you type. Downstream impact is not included. ThumbGate does not claim a universal savings number." }
       }
     ]
   }
   </script>
   <!-- WebMCP-ready: read-only agent tools via document.modelContext -->
-  <!-- WebMCP origin trial: token below covers https://thumbgate.app (subdomains, third-party), expires 2026-11-17.
-       Registered by the CEO 2026-08-27. thumbgate.ai needs its own token from
-       developer.chrome.com/origintrials (feature: WebMCP) — add it as a second meta tag here when issued. -->
-  <meta http-equiv="origin-trial" content="A3633z8xsnM5ZtIb7be9VOquiUXGhKl9jO/0f62+bmai51dkFVOmQrhXRrq0VF2f8S4uUkfl0PWi/iQZvh56oQMAAAB0eyJvcmlnaW4iOiJodHRwczovL3RodW1iZ2F0ZS5hcHA6NDQzIiwiZmVhdHVyZSI6IldlYk1DUCIsImV4cGlyeSI6MTc5NDg3MzYwMCwiaXNTdWJkb21haW4iOnRydWUsImlzVGhpcmRQYXJ0eSI6dHJ1ZX0=" />
+  <!-- WebMCP origin trial: tokens below cover https://thumbgate.app:443 and https://www.thumbgate.app:443
+       (subdomains, third-party), renewed 2026-11-11, expire 2027-03-29 (expiry: 1806364800). -->
+  <meta http-equiv="origin-trial" content="AzcKU1rE0e4sfmh97XzN75yRFS+xFzZJrUJWswxGr6RahQWDNupKLhkVvdQZQayA/s4FLwcKpPntqUZgclhDjgoAAAB0eyJvcmlnaW4iOiJodHRwczovL3RodW1iZ2F0ZS5hcHA6NDQzIiwiZmVhdHVyZSI6IldlYk1DUCIsImV4cGlyeSI6MTgwNjM2NDgwMCwiaXNTdWJkb21haW4iOnRydWUsImlzVGhpcmRQYXJ0eSI6dHJ1ZX0=" />
+  <meta http-equiv="origin-trial" content="A06wj3yXAwOhT5Cd5WYdVQotlYa/OID3SW099ZQB+cs9eHeJmtH1yHudLwqDKZ7y43tQvLB4TfM/pjmUa7aJNQsAAAB4eyJvcmlnaW4iOiJodHRwczovL3d3dy50aHVtYmdhdGUuYXBwOjQ0MyIsImZlYXR1cmUiOiJXZWJNQ1AiLCJleHBpcnkiOjE4MDYzNjQ4MDAsImlzU3ViZG9tYWluIjp0cnVlLCJpc1RoaXJkUGFydHkiOnRydWV9" />
   <script src="/js/webmcp.js" defer></script>
   <script src="/js/buyer-intent.js" defer></script>
 </head>
@@ -163,9 +176,8 @@
         <a href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md" target="_blank" rel="noopener">Proof</a>
         <a href="/founders">Founders</a>
         <a href="/operator-framework">Done-for-you</a>
-        <a href="#value" class="nav-pro">Compare</a>
+        <a class="nav-pro nav-buy" href="/#install">Install free</a>
         <a href="#enterprise-gate" data-offer-link data-cta-id="pricing_nav_buy" data-plan-id="sprint_diagnostic" data-value="499" data-segment="workflow_team">Setup sprint</a>
-        <a class="nav-pro" href="/go/pro-direct?utm_source=pricing&amp;utm_medium=nav&amp;utm_campaign=stack_v2&amp;cta_id=pricing_nav_pro&amp;plan_id=pro" data-offer-link data-cta-id="pricing_nav_pro" data-plan-id="pro" data-value="19" data-segment="solo_operator">Pro — $19/mo</a>
       </div>
     </div>
   </nav>
@@ -175,26 +187,32 @@
       <div>
         <div class="eyebrow">Enforcement that pays for itself</div>
         <h1>Stop paying for the same AI mistake twice.</h1>
-        <p class="lede"><strong>Start Free</strong> with ThumbGate (MIT locally), self-serve <strong>Pro at $19/mo</strong>, or add a <strong>$499 White-Glove Setup</strong> to harden one workflow for your whole team. Free local evaluate stays free. Countable units — not vibes.</p>
+        <p class="lede">Install free with <code>npx thumbgate init</code>. <strong>Pro is $19/mo</strong> ($149/yr) when you want production infrastructure rule packs, repo-committed policy lock, and the visual debugger. The <strong>$499 one-time Setup Sprint</strong> hardens one team workflow + CI gate with you. It is not an enterprise contract.</p>
         <div class="outcome">
-          <div class="outcome-row"><span class="tick">✓</span><span><strong>Diagnostic ($499 one-time):</strong> one failure mapped, gate configured, regression + rollout proof.</span></div>
-          <div class="outcome-row"><span class="tick">✓</span><span><strong>Pro ($19/mo or $149/yr):</strong> self-serve dashboard, recall, adapter coverage, DPO export.</span></div>
+          <div class="outcome-row"><span class="tick">✓</span><span><strong>Setup Sprint ($499 one-time):</strong> one failure mapped, local + GitHub Action CI gate configured, regression + rollout proof.</span></div>
+          <div class="outcome-row"><span class="tick">✓</span><span><strong>Pro ($19/mo or $149/yr):</strong> 6 production rule packs (AWS, Terraform, K8s, Stripe, Supabase, Git), <code>.thumbgate/policy.lock</code>, visual debugger, recall, and DPO export.</span></div>
           <div class="outcome-row"><span class="tick">✓</span><span>Free local evaluate: <code>npx thumbgate init</code> — first hard gate usually minutes after install.</span></div>
+          <div class="outcome-row"><span class="tick" style="color:#76b900">✓</span><span><strong>NVIDIA Inception Program Member &amp; Lambda Superintelligence Cloud:</strong> GPU-accelerated NeMo Guardrails, TensorRT-LLM, Morpheus &amp; DPO policy distillation ready.</span></div>
         </div>
       </div>
 
       <div class="offer-grid" id="buy">
         <aside class="pro-card" id="pro" aria-label="ThumbGate Pro">
-          <div class="eyebrow">Self-serve · Individual developers</div>
+          <div class="eyebrow">Self-serve · Individual developers &amp; repos</div>
           <div class="price">$19<span style="font-size:1rem;font-weight:700">/mo</span></div>
-          <p class="price-note">Or $149/yr. You earned a clean repo without babysitting repeat agent mistakes: includes hosted state sync, multi-agent adapter coverage (Claude Code, Cursor, Codex, Gemini, Git, AWS), priority support, visual gate debugger, and DPO exports. Cancel anytime.</p>
-          <a class="button" href="/go/pro-direct?utm_source=pricing&amp;utm_medium=card&amp;utm_campaign=value_packaging_v1&amp;cta_id=pricing_pro_buy&amp;plan_id=pro" data-offer-link data-cta-id="pricing_pro_buy" data-plan-id="pro" data-value="19" data-segment="solo_operator" style="width:100%;box-sizing:border-box">Start Pro</a>
-          <p class="fine"><a href="/checkout/pro?utm_source=pricing&amp;utm_medium=card&amp;utm_campaign=value_packaging_v1&amp;cta_id=pricing_pro_invoice&amp;plan_id=pro" style="color:var(--green);font-weight:750;">Need an invoice form first? →</a> · Or one-time (no subscription): <a href="/go/bundle-49?utm_source=pricing&amp;utm_medium=card&amp;utm_campaign=bundle_49" rel="nofollow" style="color:var(--green);font-weight:750;">$49 Production Kit</a> · <a href="/go/playbook-999?utm_source=pricing&amp;utm_medium=card&amp;utm_campaign=playbook_999" rel="nofollow" style="color:var(--green);font-weight:750;">$9.99 Playbook</a></p>
+          <p class="price-note">Or $149/yr. You install the local gate yourself. Pro adds 6 production infrastructure rule packs (AWS, Terraform, Kubernetes, Stripe, Supabase, Git), repo-committed <code>.thumbgate/policy.lock</code>, hosted recall, the visual gate debugger, priority support, and an export of your thumbs as training data. Cancel anytime.</p>
+          <a class="button" href="/checkout/pro?utm_source=pricing&amp;utm_medium=card&amp;utm_campaign=value_packaging_v1&amp;cta_id=pricing_pro_buy&amp;plan_id=pro" data-offer-link data-cta-id="pricing_pro_buy" data-plan-id="pro" data-value="19" data-segment="solo_operator" style="width:100%;box-sizing:border-box">Start Pro</a>
+          <div style="margin-top:12px;display:flex;flex-direction:column;gap:6px;font-size:13px;">
+            <a href="/go/pro-direct" style="color:var(--text);text-decoration:underline;">Direct 1-Click Pro Checkout (Stripe →)</a>
+            <a href="/go/bundle-49" style="color:#b85c2d;font-weight:700;">Buy $49 Production Rule-Pack Bundle (One-Time Expense) →</a>
+            <a href="/go/playbook-999" style="color:var(--muted);">Buy $9.99 FinOps Playbook (One-Time, No Subscription) →</a>
+          </div>
+          <p class="fine">Hosted checkout. Free local evaluate remains free after you subscribe.</p>
         </aside>
         <aside class="card" id="enterprise-gate" style="border-color:var(--green);box-shadow:0 18px 50px rgba(0,110,82,.12);">
           <div class="eyebrow">Done-with-you setup · 1 workflow</div>
           <div class="price">$499</div>
-          <p class="price-note">White-Glove Setup for the chronic agent failure you meant to lock down last sprint. Fixed price. One supported local workflow wired with regression proof in 2 business days after access and agreed materials are available. No subscription.</p>
+          <p class="price-note">We take one repeated miss from review through a configured local + CI gate and one regression test. Fixed price. One supported local workflow, with proof in 2 business days after access and agreed materials are available. No subscription.</p>
           <form action="/go/diagnostic-pay" method="POST" data-primary-checkout>
             <label for="pricing-email">Work email for the receipt and scheduling</label>
             <input id="pricing-email" name="customer_email" type="email" autocomplete="email" placeholder="you@company.com" required>
@@ -206,76 +224,74 @@
             <input type="hidden" name="cta_id" value="pricing_managed_gate_buy">
             <input type="hidden" name="cta_placement" value="pricing">
             <input type="hidden" name="landing_path" value="/pricing">
-            <button class="button" type="submit">Get Started — $499 Diagnostic</button>
+            <button class="button" type="submit">Book the $499 setup</button>
           </form>
           <p class="fine">Prefer to talk before paying? <a href="/support" style="color:var(--green);font-weight:750;">Book a 15-min triage call first →</a></p>
           <div class="boundary">Detected secret exfiltration denies by default: literal secrets, secret-file paths in uploads/pipes/redirections/command-substitution, secret env vars to network tools, scp/rsync/cloud CLI uploads of credential files, and common interpreter one-liners. Not a full network sandbox. Other destructive actions warn by default and deny when strict enforcement is enabled.</div>
         </aside>
       </div>
-    </div>
-    <section id="comparison">
-      <div class="eyebrow">How ThumbGate compares</div>
-      <h2>Stop asking "why not just write a hook?"</h2>
-      <p class="section-lede">ThumbGate is the only tool that learns from your 👍/👎 feedback and enforces at the tool-call boundary — locally, before any damage is done.</p>
-      <div style="overflow-x:auto;margin-top:22px;border:1px solid var(--line);border-radius:14px;background:var(--card);">
-        <table style="width:100%;border-collapse:collapse;font-size:.9rem;min-width:640px;">
+
+      <div id="feature-comparison" style="margin-top:28px;padding:24px;border:1px solid var(--line);border-radius:16px;background:var(--card);overflow-x:auto;">
+        <div class="eyebrow">Plan comparison</div>
+        <h2 style="margin:6px 0 14px;font-size:1.5rem;">Feature comparison: Free (MIT) vs. Pro ($19/mo · $149/yr) vs. Setup Sprint ($499) &amp; Enterprise</h2>
+        <table style="width:100%;border-collapse:collapse;font-size:.92rem;min-width:660px;" aria-label="Feature comparison table: Free vs Pro vs Setup Sprint and Enterprise">
           <thead>
-            <tr style="text-align:left;background:#efece3;">
-              <th style="padding:12px 14px;border-bottom:1px solid var(--line);"></th>
-              <th style="padding:12px 14px;border-bottom:1px solid var(--line);">Static hooks<br><small style="opacity:.6;font-size:.78rem">(Claude Code rules, Cursor rules)</small></th>
-              <th style="padding:12px 14px;border-bottom:1px solid var(--line);">Sandboxes<br><small style="opacity:.6;font-size:.78rem">(E2B, Daytona, Docker)</small></th>
-              <th style="padding:12px 14px;border-bottom:1px solid var(--line);color:var(--green);">ThumbGate<br><small style="opacity:.6;font-size:.78rem">(this product)</small></th>
+            <tr style="text-align:left;background:#efece3;border-bottom:2px solid var(--line);">
+              <th style="padding:12px 14px;width:32%;">Feature / Capability</th>
+              <th style="padding:12px 14px;width:21%;">Free (MIT)<br><span style="font-weight:500;font-size:.8rem;color:var(--muted);">npx thumbgate init</span></th>
+              <th style="padding:12px 14px;width:23%;color:var(--green);">Pro — $19/mo<br><span style="font-weight:500;font-size:.8rem;color:var(--muted);">or $149/yr · 1 developer</span></th>
+              <th style="padding:12px 14px;width:24%;color:var(--green);">Setup Sprint — $499<br><span style="font-weight:500;font-size:.8rem;color:var(--muted);">one-time · 1 team workflow</span></th>
             </tr>
           </thead>
           <tbody>
-            <tr>
-              <td style="padding:12px 14px;border-bottom:1px solid var(--line);color:var(--muted);">Latency</td>
-              <td style="padding:12px 14px;border-bottom:1px solid var(--line);">Varies</td>
-              <td style="padding:12px 14px;border-bottom:1px solid var(--line);">Seconds to boot</td>
-              <td style="padding:12px 14px;border-bottom:1px solid var(--line);font-weight:800;color:var(--green);">&lt;0.5ms local gate</td>
-            </tr>
-            <tr>
-              <td style="padding:12px 14px;border-bottom:1px solid var(--line);color:var(--muted);">Learns from feedback</td>
-              <td style="padding:12px 14px;border-bottom:1px solid var(--line);">No</td>
-              <td style="padding:12px 14px;border-bottom:1px solid var(--line);">No</td>
-              <td style="padding:12px 14px;border-bottom:1px solid var(--line);font-weight:800;">Yes — 👍/👎 → gate</td>
-            </tr>
-            <tr>
-              <td style="padding:12px 14px;border-bottom:1px solid var(--line);color:var(--muted);">Data locality</td>
-              <td style="padding:12px 14px;border-bottom:1px solid var(--line);">Local rules</td>
-              <td style="padding:12px 14px;border-bottom:1px solid var(--line);">Remote container</td>
-              <td style="padding:12px 14px;border-bottom:1px solid var(--line);font-weight:800;">Local SQLite + optional cloud sync</td>
-            </tr>
-            <tr>
-              <td style="padding:12px 14px;border-bottom:1px solid var(--line);color:var(--muted);">Blocks before execution</td>
-              <td style="padding:12px 14px;border-bottom:1px solid var(--line);">Partial (string match)</td>
-              <td style="padding:12px 14px;border-bottom:1px solid var(--line);">Only after container starts</td>
-              <td style="padding:12px 14px;border-bottom:1px solid var(--line);font-weight:800;">PreToolUse — before the call runs</td>
-            </tr>
-            <tr>
-              <td style="padding:12px 14px;color:var(--muted);">Cost</td>
-              <td style="padding:12px 14px;">Free (manual upkeep)</td>
-              <td style="padding:12px 14px;">$0.10–$0.50/container-sec</td>
-              <td style="padding:12px 14px;font-weight:800;">$0 free · $19/mo Pro · $499 setup</td>
-            </tr>
+            <tr><td style="padding:11px 14px;border-bottom:1px solid var(--line);font-weight:700;">Local &lt;0.5ms PreToolUse hook (Claude, Cursor, Codex, Grok, Hermes)</td><td style="padding:11px 14px;border-bottom:1px solid var(--line);font-weight:700;color:var(--green);">✓ Included</td><td style="padding:11px 14px;border-bottom:1px solid var(--line);font-weight:700;color:var(--green);">✓ Included</td><td style="padding:11px 14px;border-bottom:1px solid var(--line);font-weight:700;color:var(--green);">✓ Included + custom wired</td></tr>
+            <tr><td style="padding:11px 14px;border-bottom:1px solid var(--line);font-weight:700;">Default secret exfiltration &amp; gate-bypass hard deny</td><td style="padding:11px 14px;border-bottom:1px solid var(--line);font-weight:700;color:var(--green);">✓ Included</td><td style="padding:11px 14px;border-bottom:1px solid var(--line);font-weight:700;color:var(--green);">✓ Included</td><td style="padding:11px 14px;border-bottom:1px solid var(--line);font-weight:700;color:var(--green);">✓ Included</td></tr>
+            <tr><td style="padding:11px 14px;border-bottom:1px solid var(--line);font-weight:700;">Local SQLite lesson store &amp; thumbs feedback ranker</td><td style="padding:11px 14px;border-bottom:1px solid var(--line);">✓ Starter limits</td><td style="padding:11px 14px;border-bottom:1px solid var(--line);font-weight:700;color:var(--green);">✓ Unlimited</td><td style="padding:11px 14px;border-bottom:1px solid var(--line);font-weight:700;color:var(--green);">✓ Configured for workflow</td></tr>
+            <tr><td style="padding:11px 14px;border-bottom:1px solid var(--line);font-weight:700;">Active prevention gates &amp; custom rules</td><td style="padding:11px 14px;border-bottom:1px solid var(--line);">Starter local rules</td><td style="padding:11px 14px;border-bottom:1px solid var(--line);font-weight:700;color:var(--green);">✓ Unlimited active gates</td><td style="padding:11px 14px;border-bottom:1px solid var(--line);font-weight:700;color:var(--green);">✓ 1 managed workflow gate</td></tr>
+            <tr><td style="padding:11px 14px;border-bottom:1px solid var(--line);font-weight:700;">Production infra rule packs (AWS, Terraform, K8s, Stripe, Supabase, Git)</td><td style="padding:11px 14px;border-bottom:1px solid var(--line);color:var(--muted);">—</td><td style="padding:11px 14px;border-bottom:1px solid var(--line);font-weight:700;color:var(--green);">✓ All 6 packs included</td><td style="padding:11px 14px;border-bottom:1px solid var(--line);font-weight:700;color:var(--green);">✓ Tailored to 1 workflow</td></tr>
+            <tr><td style="padding:11px 14px;border-bottom:1px solid var(--line);font-weight:700;">Repo-committed policy lock (<code>.thumbgate/policy.lock</code>) &amp; CI check</td><td style="padding:11px 14px;border-bottom:1px solid var(--line);">Local machine only</td><td style="padding:11px 14px;border-bottom:1px solid var(--line);font-weight:700;color:var(--green);">✓ Repo policy lock</td><td style="padding:11px 14px;border-bottom:1px solid var(--line);font-weight:700;color:var(--green);">✓ Wired in repo + GitHub Action</td></tr>
+            <tr><td style="padding:11px 14px;border-bottom:1px solid var(--line);font-weight:700;">Visual gate debugger (<code>npx thumbgate dashboard --open</code>)</td><td style="padding:11px 14px;border-bottom:1px solid var(--line);">CLI output</td><td style="padding:11px 14px;border-bottom:1px solid var(--line);font-weight:700;color:var(--green);">✓ Full visual debugger</td><td style="padding:11px 14px;border-bottom:1px solid var(--line);font-weight:700;color:var(--green);">✓ Included</td></tr>
+            <tr><td style="padding:11px 14px;border-bottom:1px solid var(--line);font-weight:700;">Cross-session hosted recall &amp; lesson match trace</td><td style="padding:11px 14px;border-bottom:1px solid var(--line);">Local only</td><td style="padding:11px 14px;border-bottom:1px solid var(--line);font-weight:700;color:var(--green);">✓ Included</td><td style="padding:11px 14px;border-bottom:1px solid var(--line);">Local workflow scope</td></tr>
+            <tr><td style="padding:11px 14px;border-bottom:1px solid var(--line);font-weight:700;">Export thumbs as training data (JSONL / DPO)</td><td style="padding:11px 14px;border-bottom:1px solid var(--line);color:var(--muted);">—</td><td style="padding:11px 14px;border-bottom:1px solid var(--line);font-weight:700;color:var(--green);">✓ Included</td><td style="padding:11px 14px;border-bottom:1px solid var(--line);color:var(--muted);">—</td></tr>
+            <tr><td style="padding:11px 14px;border-bottom:1px solid var(--line);font-weight:700;">60-minute live working review + failure map</td><td style="padding:11px 14px;border-bottom:1px solid var(--line);color:var(--muted);">—</td><td style="padding:11px 14px;border-bottom:1px solid var(--line);color:var(--muted);">—</td><td style="padding:11px 14px;border-bottom:1px solid var(--line);font-weight:700;color:var(--green);">✓ Included</td></tr>
+            <tr><td style="padding:11px 14px;border-bottom:1px solid var(--line);font-weight:700;">Custom regression test + 2-day rollout &amp; rollback proof</td><td style="padding:11px 14px;border-bottom:1px solid var(--line);color:var(--muted);">—</td><td style="padding:11px 14px;border-bottom:1px solid var(--line);color:var(--muted);">—</td><td style="padding:11px 14px;border-bottom:1px solid var(--line);font-weight:700;color:var(--green);">✓ Included (or refunded)</td></tr>
+            <tr><td style="padding:11px 14px;border-bottom:1px solid var(--line);font-weight:700;">Support &amp; onboarding</td><td style="padding:11px 14px;border-bottom:1px solid var(--line);">Community / GitHub</td><td style="padding:11px 14px;border-bottom:1px solid var(--line);">Priority email support</td><td style="padding:11px 14px;border-bottom:1px solid var(--line);font-weight:700;color:var(--green);">Done-with-you engineer</td></tr>
+            <tr><td style="padding:11px 14px;font-weight:700;">Enterprise org-wide hosted sync, SSO/SAML &amp; SIEM audit log</td><td style="padding:11px 14px;color:var(--muted);">—</td><td style="padding:11px 14px;color:var(--muted);">—</td><td style="padding:11px 14px;">Not generally available (custom scope after 1 workflow sprint)</td></tr>
           </tbody>
         </table>
       </div>
-    </section>
+    </div>
 
     <section id="value">
       <div class="eyebrow">Price from your exposure</div>
       <h2>Value is the recovery work the next repeat does not create.</h2>
       <p class="section-lede">Use your own incident history. ThumbGate does not claim a universal savings number.</p>
-      <div class="value-equation" role="img" aria-label="Repeat incidents multiplied by recovery hours and loaded hourly cost, plus downstream impact, equals avoidable recovery exposure">
-        <div class="value-factor"><strong>Repeat incidents</strong><span>per quarter</span></div>
-        <div class="value-operator">×</div>
-        <div class="value-factor"><strong>Recovery hours</strong><span>diagnosis, repair, review</span></div>
-        <div class="value-operator">×</div>
-        <div class="value-factor"><strong>Loaded hourly cost</strong><span>the people pulled into recovery</span></div>
-        <div class="value-operator">+</div>
-        <div class="value-factor value-result"><strong>Downstream impact</strong><span>delay, incident response, audit evidence</span></div>
-      </div>
+      <ol class="chapter-rail" aria-label="From an unchecked tool call to one regression">
+        <li><span>00</span>No check on the tool call</li>
+        <li><span>01</span>Capture the miss</li>
+        <li><span>02</span>Keep the lesson locally</li>
+        <li><span>03</span>Write the prevention rule</li>
+        <li><span>04</span>Block or warn at the tool call</li>
+        <li><span>05</span>Prove it with one regression</li>
+      </ol>
+      <form id="exposure-calculator" class="value-equation" aria-label="Repeat incidents multiplied by recovery hours and loaded hourly cost. Downstream impact stays outside the multiplication.">
+        <label class="value-factor" for="exposure-incidents"><strong>Repeat incidents</strong><span>per quarter</span>
+          <input id="exposure-incidents" name="incidents" type="number" inputmode="numeric" min="0" max="10000" step="1" placeholder="0">
+        </label>
+        <div class="value-operator" aria-hidden="true">×</div>
+        <label class="value-factor" for="exposure-hours"><strong>Recovery hours</strong><span>diagnosis, repair, review</span>
+          <input id="exposure-hours" name="hours" type="number" inputmode="decimal" min="0" max="1000" step="0.5" placeholder="0">
+        </label>
+        <div class="value-operator" aria-hidden="true">×</div>
+        <label class="value-factor" for="exposure-rate"><strong>Loaded hourly cost</strong><span>the people pulled into recovery</span>
+          <input id="exposure-rate" name="rate" type="number" inputmode="decimal" min="0" max="2000" step="1" placeholder="0">
+        </label>
+        <div class="value-operator" aria-hidden="true">+</div>
+        <div class="value-factor value-result"><strong>Downstream impact</strong><span>delay, incident response, audit evidence. Not in the number.</span></div>
+      </form>
+      <p id="exposure-result" class="exposure-result" aria-live="polite">Enter last quarter. This multiplies those three numbers. It is not a ThumbGate savings measurement.</p>
+      <p id="exposure-note" class="exposure-note">Free local install covers the gate on your machine. Pro adds hosted recall. The $499 diagnostic is us doing the review, the gate, and the regression for one workflow.</p>
+      <a id="exposure-cta" class="button" hidden href="#enterprise-gate" data-offer-link data-cta-id="pricing_exposure_diagnostic" data-plan-id="sprint_diagnostic" data-value="499" data-segment="workflow_team">Continue to the $499 diagnostic</a>
     </section>
 
     <section id="segments">
@@ -288,8 +304,7 @@
           <h3>Evaluate free, then Pro</h3>
           <p>Pro removes rule limits and adds personal recall, review, dashboard, and export workflows.</p>
           <div class="fence"><strong>Fence:</strong> one operator, local-first, self-serve support. $19 monthly or $149 annual.</div>
-          <a class="button" href="/go/pro-direct?utm_source=pricing&amp;utm_medium=segment_card&amp;utm_campaign=value_packaging_v1&amp;cta_id=pricing_segment_pro&amp;plan_id=pro" data-offer-link data-cta-id="pricing_segment_pro" data-plan-id="pro" data-value="19" data-segment="solo_operator">Choose Pro</a>
-          <p class="fine">Or one-time: <a href="/go/bundle-49?utm_source=pricing&amp;utm_medium=segment_card&amp;utm_campaign=bundle_49" rel="nofollow" style="color:var(--green);font-weight:750;">$49 Kit</a> · <a href="/go/playbook-999?utm_source=pricing&amp;utm_medium=segment_card&amp;utm_campaign=playbook_999" rel="nofollow" style="color:var(--green);font-weight:750;">$9.99 Playbook</a></p>
+          <a class="button" href="/checkout/pro?utm_source=pricing&amp;utm_medium=segment_card&amp;utm_campaign=value_packaging_v1&amp;cta_id=pricing_segment_pro&amp;plan_id=pro" data-offer-link data-cta-id="pricing_segment_pro" data-plan-id="pro" data-value="19" data-segment="solo_operator">Choose Pro</a>
         </article>
         <article class="segment-card recommended">
           <div class="eyebrow">Engineering or platform team</div>
@@ -376,6 +391,7 @@
       <div class="faq">
         <div class="faq-item"><button class="faq-q" type="button" aria-expanded="false">What does the $499 managed gate include?</button><div class="faq-a">A 60-minute workflow review, one configured local pre-action gate, one regression test, and rollout and rollback proof within two business days for one supported workflow.</div></div>
         <div class="faq-item"><button class="faq-q" type="button" aria-expanded="false">What happens if the workflow is not a fit?</button><div class="faq-a">If the failure cannot be reduced to a supported ThumbGate gate, the payment is refunded instead of turning into an open-ended consulting upsell.</div></div>
+        <div class="faq-item"><button class="faq-q" type="button" aria-expanded="false">How is the exposure number calculated?</button><div class="faq-a">It multiplies the repeat incidents, recovery hours, and loaded hourly cost you type. Downstream impact is not included. ThumbGate does not claim a universal savings number.</div></div>
       </div>
     </section>
   </main>
@@ -385,6 +401,10 @@
       <span>ThumbGate · Managed AI-agent enforcement</span>
       <div class="footer-links"><a href="/support">Support</a><a href="/terms">Terms</a><a href="/privacy">Privacy</a><a href="/third-party-notices">Third-Party Notices</a><a href="/llm-context.md">LLM context</a></div>
     </div>
+    <div class="shell" id="railway-affiliate-banner" style="margin-top:12px;padding-top:12px;border-top:1px solid rgba(255,255,255,0.07);display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px;font-size:12px;color:var(--muted);">
+      <span>⚡ Cloud API &amp; dashboard hosted on <strong style="color:var(--text)">Railway</strong> — deploy your own AI agent services in seconds.</span>
+      <a href="https://railway.com?referralCode=qQ_5cO" target="_blank" rel="sponsored noopener" data-cta-id="footer_railway_affiliate" style="display:inline-flex;align-items:center;gap:6px;padding:4px 11px;border-radius:999px;border:1px solid rgba(139,92,246,0.4);background:rgba(139,92,246,0.12);color:#ddd6fe;text-decoration:none;font-weight:600;">Deploy on Railway (20 USD starter credit · Partner link) →</a>
+    </div>
     <div class="shell" style="margin-top:12px;font-size:12px;color:#6b7280;text-align:center;">
       Anthropic, Claude, OpenAI, ChatGPT, Cursor, Codex, Perplexity, Hermes, MCP, GitHub, Google, Nvidia, Railway, Stripe, Supabase, PostHog, and Plausible are trademarks of their respective owners. ThumbGate is an independent product.
     </div>
@@ -392,9 +412,26 @@
 
   <script>
     'use strict';
+    const posthogApiKey = '__POSTHOG_API_KEY__';
+    const serverVisitorId = '__SERVER_VISITOR_ID__';
+    const serverSessionId = '__SERVER_SESSION_ID__';
+
     window.plausible = window.plausible || function () {
       (window.plausible.q = window.plausible.q || []).push(arguments);
     };
+
+    function isSyntheticTraffic() {
+      try {
+        const ua = String(navigator.userAgent || '');
+        const host = String(location.hostname || '');
+        return navigator.webdriver === true
+          || /HeadlessChrome|Playwright|Puppeteer|PhantomJS|Cypress|bot|crawler|spider/i.test(ua)
+          || host === 'localhost'
+          || host === '127.0.0.1';
+      } catch (_) {
+        return false;
+      }
+    }
 
     function privacySignalOptOut() {
       try {
@@ -406,9 +443,45 @@
       }
     }
 
+    window.posthog = window.posthog || {
+      capture: function (eventName, props) {
+        if (privacySignalOptOut() || isSyntheticTraffic()) return;
+        if (!posthogApiKey || posthogApiKey.indexOf('__POSTHOG_') === 0) return;
+        const body = JSON.stringify({
+          api_key: posthogApiKey,
+          event: eventName,
+          distinct_id: serverVisitorId || 'anon_' + String(Date.now()),
+          properties: Object.assign({
+            $session_id: serverSessionId || undefined,
+            $current_url: location.href,
+            $pathname: location.pathname,
+            environment: 'production',
+            is_synthetic_test: false,
+          }, props || {}),
+        });
+        try {
+          fetch('/ingest/capture/', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: body,
+            keepalive: true,
+          }).catch(function () {});
+        } catch (_) {}
+      }
+    };
+    window.posthog.capture('$pageview', { page: '/pricing' });
+
     function sendFirstPartyTelemetry(eventName, props) {
       if (privacySignalOptOut()) return;
-      const payload = JSON.stringify({ event: eventName, page: '/pricing', source: 'pricing', props: props || {} });
+      const payload = JSON.stringify({
+        event: eventName,
+        page: '/pricing',
+        source: 'pricing',
+        visitorId: serverVisitorId || undefined,
+        sessionId: serverSessionId || undefined,
+        isSyntheticTest: isSyntheticTraffic(),
+        props: props || {},
+      });
       try {
         if (navigator.sendBeacon) {
           navigator.sendBeacon('/v1/telemetry/ping', new Blob([payload], { type: 'application/json' }));
@@ -436,11 +509,10 @@
           const buyerSegment = document.querySelector('#pricing-buyer-segment');
           if (buyerSegment) buyerSegment.value = link.dataset.segment || 'workflow_team';
         }
-        const planId = link.dataset.planId || 'unknown';
         const props = offerProps(
           link.dataset.ctaId || 'pricing_anchor',
           'pricing_anchor',
-          planId,
+          link.dataset.planId || 'unknown',
           link.dataset.value || '0',
           link.dataset.segment || 'unknown'
         );
@@ -474,6 +546,56 @@
     });
 
     const exposureForm = document.querySelector('#exposure-calculator');
+    const exposureResult = document.querySelector('#exposure-result');
+    const exposureCta = document.querySelector('#exposure-cta');
+    const proCheckout = '/checkout/pro?utm_source=pricing&utm_medium=exposure&utm_campaign=value_packaging_v1&cta_id=pricing_exposure_pro&plan_id=pro';
+
+    function typedExposure() {
+      if (!exposureForm) return null;
+      const incidents = Number(exposureForm.elements.incidents.value);
+      const hours = Number(exposureForm.elements.hours.value);
+      const rate = Number(exposureForm.elements.rate.value);
+      const values = [incidents, hours, rate];
+      if (values.some(function (n) { return !Number.isFinite(n) || n < 0; })) return null;
+      if (values.some(function (n) { return n === 0; })) return 0;
+      const total = incidents * hours * rate;
+      return Number.isFinite(total) ? total : null;
+    }
+
+    function renderExposure() {
+      if (!exposureResult || !exposureCta) return;
+      const total = typedExposure();
+      if (total === null || total === 0) {
+        exposureResult.textContent = 'Enter last quarter. This multiplies those three numbers. It is not a ThumbGate savings measurement.';
+        exposureCta.hidden = true;
+        return;
+      }
+      const shown = total.toLocaleString('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 });
+      if (total >= 499) {
+        exposureResult.textContent = shown + ' of recovery work in the numbers you typed. The diagnostic is $499 once, for one workflow.';
+        exposureCta.hidden = false;
+        exposureCta.href = '#enterprise-gate';
+        exposureCta.textContent = 'Continue to the $499 diagnostic';
+        exposureCta.dataset.ctaId = 'pricing_exposure_diagnostic';
+        exposureCta.dataset.planId = 'sprint_diagnostic';
+        exposureCta.dataset.value = '499';
+        exposureCta.dataset.segment = 'workflow_team';
+        return;
+      }
+      exposureResult.textContent = shown + ' of recovery work in the numbers you typed. That is under the $499 diagnostic. Pro is $19 a month for hosted recall on the local gate.';
+      exposureCta.hidden = false;
+      exposureCta.href = proCheckout;
+      exposureCta.textContent = 'Start Pro — $19/mo';
+      exposureCta.dataset.ctaId = 'pricing_exposure_pro';
+      exposureCta.dataset.planId = 'pro';
+      exposureCta.dataset.value = '19';
+      exposureCta.dataset.segment = 'solo_operator';
+    }
+
+    if (exposureForm) {
+      exposureForm.addEventListener('input', renderExposure);
+    }
+
     sendFirstPartyTelemetry('pricing_page_view', { landingPath: '/pricing', experimentId: 'value_packaging_v1' });
   </script>
 </body>

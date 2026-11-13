@@ -907,9 +907,9 @@ test('root serves the landing page by default', async () => {
   assert.match(body, /Stop AI agent mistakes before they cost you/i);
   assert.match(body, /Enterprise Workflow Gate/i);
   assert.match(body, /action="\/go\/diagnostic-pay" method="POST"/);
-  assert.match(body, /Buy the \$499 enterprise gate/i);
+  assert.match(body, /Get Started — \$499 Diagnostic/i);
   assert.match(body, /Start Pro — \$19\/mo/i);
-  assert.match(body, /\/checkout\/pro/);
+  assert.match(body, /\/go\/pro/);
   assert.match(body, /One configured local gate and its regression test/i);
   assert.match(body, /warn by default/i);
   assert.match(body, /strict mode/i);
@@ -1144,7 +1144,7 @@ test('pricing page is the single source of truth for what ThumbGate sells', asyn
   assert.match(body, /\$19/);
   assert.match(body, /\$149/);
   assert.match(body, />Start Pro<\/a>/);
-  assert.match(body, /\/checkout\/pro/);
+  assert.match(body, /\/go\/pro/);
   assert.match(body, /action="\/go\/diagnostic-pay" method="POST"/);
   assert.match(body, /name="customer_email"[^>]*required/);
   assert.match(body, /one configured local pre-action gate/i);
@@ -2127,6 +2127,11 @@ test('cancel page serves retry message and records first-party telemetry', async
   assert.match(body, /data-recovery-offer="pro_pay_now_retry"/);
   assert.match(body, /data-recovery-offer="sprint_diagnostic"/);
   assert.match(body, /data-recovery-offer="workflow_sprint"/);
+  assert.match(body, /data-recovery-offer="pro_trial_7d"/);
+  assert.ok(
+    body.indexOf('data-recovery-offer="pro_trial_7d"') < body.indexOf('What stopped you?'),
+    'recovery offer card ($0 7-day trial + one-time options) should appear above the survey card',
+  );
   assert.doesNotMatch(body, /https:\/\/buy\.stripe\.com\//);
   assert.doesNotMatch(body, /https:\/\/www\.paypal\.com\/ncp\/payment\//);
   assert.doesNotMatch(body, /Pay \$(?:1|19|99) (?:first rule|quick read|teardown)/);

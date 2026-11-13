@@ -167,6 +167,23 @@ describe('classifyVisitor (analytics filtering)', () => {
     assert.ok(BOT_PATTERNS.length >= 20);
   });
 
+  it('flags camelCase crawlers, synthetic iOS 13.2.3 emulator, and audit probes', () => {
+    const syntheticBots = [
+      'ElevenlabsCrawler/1.0',
+      'SolvedEarthPriceBot/2.0',
+      'SkillsRep-Scanner/1.4',
+      'ProtocolV1-Gate/1.0',
+      'thumbgate-revenue-audit',
+      'dayglass-money-probe/1.0',
+      'AHC/2.1',
+      'Mozilla/5.0 (iPhone; CPU iPhone OS 13_2_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/13.0.3 Mobile/15E148 Safari/604.1',
+    ];
+    for (const ua of syntheticBots) {
+      const res = classifyRequester({ 'user-agent': ua, accept: BROWSER_ACCEPT });
+      assert.equal(res.isBot, true, `expected ${ua} to be flagged as bot`);
+    }
+  });
+
   it('shipped module source contains no email address literals', () => {
     const source = fs.readFileSync(require.resolve('../scripts/bot-detection'), 'utf8');
     assert.ok(

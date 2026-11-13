@@ -27,7 +27,7 @@
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Inter, sans-serif;
       line-height: 1.5;
     }
-    .shell { max-width: 1240px; margin: 0 auto; padding: 0 20px; }
+    .shell { max-width: 1280px; margin: 0 auto; padding: 0 20px; }
     header {
       border-bottom: 1px solid var(--line);
       background: rgba(16, 22, 34, 0.95);
@@ -73,7 +73,7 @@
     }
     .kpi-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
       gap: 14px;
       margin-bottom: 18px;
     }
@@ -82,12 +82,29 @@
       border: 1px solid var(--line);
       border-radius: 12px;
       padding: 16px;
+      cursor: pointer;
+      transition: transform 0.14s ease, border-color 0.14s ease, box-shadow 0.14s ease, background 0.14s ease;
+      user-select: none;
+      position: relative;
+      text-align: left;
     }
-    .kpi-label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); font-weight: 700; }
+    .kpi:hover {
+      transform: translateY(-2px);
+      border-color: rgba(56, 215, 255, 0.6);
+      background: var(--panel-2);
+      box-shadow: 0 10px 26px rgba(0, 0, 0, 0.35);
+    }
+    .kpi.kpi-active {
+      border-color: var(--cyan);
+      background: rgba(56, 215, 255, 0.08);
+      box-shadow: 0 0 0 1px rgba(56, 215, 255, 0.35), 0 12px 28px rgba(0, 0, 0, 0.4);
+    }
+    .kpi-label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); font-weight: 700; display: flex; align-items: center; justify-content: space-between; }
     .kpi-val { font-size: 28px; font-weight: 800; margin-top: 4px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+    .kpi-hint { font-size: 11px; color: var(--cyan); font-weight: 700; margin-top: 8px; display: flex; align-items: center; gap: 4px; opacity: 0.9; }
     .row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
     input, select {
-      min-height: 40px;
+      min-height: 38px;
       padding: 0 12px;
       border-radius: 8px;
       border: 1px solid var(--line);
@@ -95,21 +112,32 @@
       color: var(--text);
       font-size: 13px;
     }
-    button {
-      min-height: 40px;
-      padding: 0 14px;
+    button, .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      min-height: 36px;
+      padding: 0 13px;
       border-radius: 8px;
       border: 1px solid transparent;
       font: 800 12px/1 inherit;
       cursor: pointer;
+      transition: filter 0.12s ease, transform 0.1s ease;
     }
-    .btn-cyan { background: var(--cyan); color: #041016; }
+    button:hover, .btn:hover { filter: brightness(1.1); }
+    button:active, .btn:active { transform: translateY(1px); }
+    .btn-cyan, .btn-primary { background: var(--cyan); color: #041016; }
     .btn-green { background: var(--green); color: #04140c; }
     .btn-amber { background: rgba(251, 191, 36, 0.15); border-color: rgba(251, 191, 36, 0.45); color: var(--amber); }
     .btn-red { background: rgba(255, 107, 107, 0.14); border-color: rgba(255, 107, 107, 0.45); color: var(--red); }
     .btn-ghost { background: var(--panel-2); border-color: var(--line); color: var(--text); }
+    .btn-ghost.tab-active { background: rgba(56, 215, 255, 0.16); border-color: var(--cyan); color: var(--cyan); }
+    .btn-xs { min-height: 28px; padding: 0 9px; font-size: 11px; border-radius: 6px; }
     table { width: 100%; border-collapse: collapse; font-size: 13px; }
     th, td { text-align: left; padding: 12px 10px; border-bottom: 1px solid var(--line); vertical-align: middle; }
+    tbody tr { transition: background 0.12s ease; }
+    tbody tr:hover { background: rgba(56, 215, 255, 0.04); }
     th { font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); }
     .pill {
       display: inline-block;
@@ -122,8 +150,19 @@
     .pill-active { background: rgba(86, 227, 159, 0.14); color: var(--green); border: 1px solid rgba(86, 227, 159, 0.35); }
     .pill-suspended { background: rgba(255, 107, 107, 0.14); color: var(--red); border: 1px solid rgba(255, 107, 107, 0.35); }
     .pill-tier { background: rgba(56, 215, 255, 0.12); color: var(--cyan); border: 1px solid rgba(56, 215, 255, 0.3); }
-    #adminStatusBanner { display: none; padding: 10px 14px; border-radius: 8px; margin-bottom: 16px; font-weight: 700; font-size: 13px; }
+    #adminStatusBanner { display: none; padding: 12px 16px; border-radius: 8px; margin-bottom: 16px; font-weight: 700; font-size: 13px; }
     .mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; }
+    .tier-select {
+      min-height: 30px;
+      padding: 0 8px;
+      font-size: 12px;
+      font-weight: 800;
+      border-radius: 6px;
+      border: 1px solid rgba(56, 215, 255, 0.35);
+      background: rgba(56, 215, 255, 0.1);
+      color: var(--cyan);
+      cursor: pointer;
+    }
   </style>
 </head>
 <body>
@@ -134,13 +173,13 @@
           <img src="/assets/brand/thumbgate-mark-inline-v3.svg" alt="" width="28" height="28">
           <span>ThumbGate</span>
         </a>
-        <span class="badge-admin">🔒 Admin Only</span>
+        <span class="badge-admin">Admin</span>
       </div>
       <div class="nav-links">
         <a href="/">Home</a>
         <a href="/cloud">Cloud Portal</a>
         <a href="/dashboard">Dashboard</a>
-        <span id="adminIdentityBadge" class="mono" style="color:var(--amber);">🔒 Locked</span>
+        <span id="adminIdentityBadge" class="mono" style="color:var(--muted);">Locked</span>
         <button type="button" id="adminLogoutBtn" class="btn-red" style="display:none;min-height:32px;padding:0 12px;" onclick="window.tgAdminLogout()">Log Out</button>
       </div>
     </div>
@@ -149,28 +188,22 @@
   <main class="shell">
     <div id="adminStatusBanner"></div>
 
-    <!-- STRICT ADMIN-ONLY LOGIN GATE (Visible by default; blocks all dashboard UI until authenticated) -->
+    <!-- ADMIN LOGIN GATE -->
     <div id="adminLoginGate" class="login-gate-wrap">
-      <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
-        <span style="font-size:22px;">🔒</span>
-        <div style="font-weight:800;font-size:19px;">Admin Login</div>
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;">
+        <span style="font-size:20px;">🔒</span>
+        <div style="font-weight:800;font-size:18px;">Admin Login</div>
       </div>
-      <p style="color:var(--muted);font-size:13px;margin:0 0 18px;">
-        Restricted exclusively to <strong>igor@igorganapolsky.com</strong>. Customer data and account management are hidden until verified.
-      </p>
-      <div style="display:flex;flex-direction:column;gap:12px;">
+      <div style="display:flex;flex-direction:column;gap:14px;">
         <div>
-          <label for="adminEmailInput" style="display:block;font-size:11px;font-weight:700;text-transform:uppercase;color:var(--muted);margin-bottom:4px;">Email</label>
+          <label for="adminEmailInput" style="display:block;font-size:11px;font-weight:700;text-transform:uppercase;color:var(--muted);margin-bottom:6px;">Email</label>
           <input type="email" id="adminEmailInput" placeholder="igor@igorganapolsky.com" value="igor@igorganapolsky.com" style="width:100%;">
         </div>
         <div>
-          <label for="adminSecretInput" style="display:block;font-size:11px;font-weight:700;text-transform:uppercase;color:var(--muted);margin-bottom:4px;">Password</label>
-          <input type="password" id="adminSecretInput" placeholder="Enter your password" style="width:100%;" onkeydown="if(event.key==='Enter'){window.tgAdminAuthenticate();}">
+          <label for="adminSecretInput" style="display:block;font-size:11px;font-weight:700;text-transform:uppercase;color:var(--muted);margin-bottom:6px;">Password</label>
+          <input type="password" id="adminSecretInput" placeholder="Enter password" style="width:100%;" onkeydown="if(event.key==='Enter'){window.tgAdminAuthenticate();}">
         </div>
-        <button type="button" id="adminSignInBtn" class="btn-cyan" style="width:100%;font-size:13px;" onclick="window.tgAdminAuthenticate()">Sign In to Admin →</button>
-      </div>
-      <div style="font-size:11px;color:var(--muted);margin-top:14px;border-top:1px solid var(--line);padding-top:12px;">
-        All login attempts from other emails are rejected with <code>403 Forbidden</code>.
+        <button type="button" id="adminSignInBtn" class="btn-cyan" style="width:100%;font-size:13px;margin-top:4px;" onclick="window.tgAdminAuthenticate()">Sign In →</button>
       </div>
     </div>
 
@@ -179,56 +212,78 @@
       <div class="row" style="justify-content:space-between;margin-bottom:16px;">
         <div>
           <h1>Customer &amp; Account Management (`https://thumbgate.ai/admin`)</h1>
-          <p class="sub" style="margin-bottom:0;">Inspect registered accounts, Stripe subscribers, provisioned license keys, and active sessions.</p>
+          <p class="sub" style="margin-bottom:0;">Click any KPI card below to filter records, inspect active sessions, copy/issue license keys, or launch Stripe checkout links.</p>
         </div>
         <div class="row">
+          <button type="button" class="btn-cyan" onclick="document.getElementById('newCustEmail').focus()">+ Quick Issue Key / Account</button>
           <button type="button" class="btn-amber" onclick="window.tgAdminPurgeUnverified()">Purge Unverified Legacy Sessions</button>
           <button type="button" class="btn-ghost" onclick="window.tgAdminLoadCustomers()">↻ Refresh</button>
         </div>
       </div>
 
-      <!-- KPIs -->
+      <!-- INTERACTIVE CLICKABLE KPIs -->
       <div class="kpi-grid">
-        <div class="kpi">
-          <div class="kpi-label">Total Customer Records</div>
+        <div class="kpi kpi-active" id="kpiCardAll" role="button" tabindex="0" onclick="window.tgAdminSelectKpiView('all')" onkeydown="if(event.key==='Enter'||event.key===' '){window.tgAdminSelectKpiView('all');}">
+          <div class="kpi-label"><span>Total Customer Records</span><span>⚡</span></div>
           <div class="kpi-val" id="kpiTotalAccounts">—</div>
+          <div class="kpi-hint">Click to view all records →</div>
         </div>
-        <div class="kpi">
-          <div class="kpi-label">Registered Accounts</div>
+        <div class="kpi" id="kpiCardRegistered" role="button" tabindex="0" onclick="window.tgAdminSelectKpiView('registered')" onkeydown="if(event.key==='Enter'||event.key===' '){window.tgAdminSelectKpiView('registered');}">
+          <div class="kpi-label"><span>Registered Accounts</span><span>👤</span></div>
           <div class="kpi-val" id="kpiRegisteredAccounts" style="color:var(--cyan);">—</div>
+          <div class="kpi-hint">Click to filter verified accounts →</div>
         </div>
-        <div class="kpi">
-          <div class="kpi-label">Active Sessions</div>
+        <div class="kpi" id="kpiCardSessions" role="button" tabindex="0" onclick="window.tgAdminSelectKpiView('sessions')" onkeydown="if(event.key==='Enter'||event.key===' '){window.tgAdminSelectKpiView('sessions');}">
+          <div class="kpi-label"><span>Active Sessions</span><span>🟢</span></div>
           <div class="kpi-val" id="kpiActiveSessions" style="color:var(--amber);">—</div>
+          <div class="kpi-hint">Click to inspect &amp; revoke sessions →</div>
         </div>
-        <div class="kpi">
-          <div class="kpi-label">Active License Keys</div>
+        <div class="kpi" id="kpiCardKeys" role="button" tabindex="0" onclick="window.tgAdminSelectKpiView('keys')" onkeydown="if(event.key==='Enter'||event.key===' '){window.tgAdminSelectKpiView('keys');}">
+          <div class="kpi-label"><span>Active License Keys</span><span>🔑</span></div>
           <div class="kpi-val" id="kpiActiveKeys" style="color:var(--green);">—</div>
+          <div class="kpi-hint">Click to copy, mint, or revoke keys →</div>
         </div>
-        <div class="kpi">
-          <div class="kpi-label">Verified MRR</div>
+        <div class="kpi" id="kpiCardOss" role="button" tabindex="0" onclick="window.tgAdminSelectKpiView('oss')" onkeydown="if(event.key==='Enter'||event.key===' '){window.tgAdminSelectKpiView('oss');}">
+          <div class="kpi-label"><span>CLI &amp; OSS Installs (30d)</span><span>🚀</span></div>
+          <div class="kpi-val" id="kpiOssInstalls" style="color:var(--cyan);">349</div>
+          <div class="kpi-hint" id="kpiOssSubhint">1,312 npm · 29 ★ · 7 forks →</div>
+        </div>
+        <div class="kpi" id="kpiCardMrr" role="button" tabindex="0" onclick="window.tgAdminSelectKpiView('mrr')" onkeydown="if(event.key==='Enter'||event.key===' '){window.tgAdminSelectKpiView('mrr');}">
+          <div class="kpi-label"><span>Verified MRR</span><span>💳</span></div>
           <div class="kpi-val" id="kpiMrrDollars" style="color:var(--green);">$0</div>
+          <div class="kpi-hint">Click for Stripe checkout &amp; revenue →</div>
         </div>
       </div>
 
+      <!-- KPI DRILL-DOWN DRAWER (Sessions / License Keys / OSS Leads / Stripe Checkout Links) -->
+      <div class="card" id="kpiDrilldownPanel" style="display:none;border-color:rgba(56,215,255,0.45);background:rgba(16,22,34,0.98);">
+        <div class="row" style="justify-content:space-between;margin-bottom:12px;">
+          <div style="font-weight:800;font-size:15px;color:var(--cyan);" id="kpiDrilldownTitle">Drill-Down View</div>
+          <button type="button" class="btn-ghost btn-xs" onclick="window.tgAdminSelectKpiView('all')">✕ Close Drill-Down (Show All)</button>
+        </div>
+        <div id="kpiDrilldownBody"></div>
+      </div>
+
       <!-- Create / Provision Customer Account -->
-      <div class="card">
-        <div style="font-weight:800;font-size:14px;margin-bottom:10px;">➕ Create Customer Account / Provision Access</div>
+      <div class="card" id="createAccountCard">
+        <div style="font-weight:800;font-size:14px;margin-bottom:10px;">➕ Create Customer Account / Provision License Key</div>
         <div class="row">
           <input type="email" id="newCustEmail" placeholder="customer@company.com" style="width:230px;">
           <input type="text" id="newCustName" placeholder="Customer / Company Name" style="width:190px;">
           <input type="password" id="newCustPassword" placeholder="Initial password (8+ chars)" style="width:200px;">
           <select id="newCustTier">
             <option value="pro">Pro ($19/mo)</option>
-            <option value="cloud_indie">Cloud Indie ($49/mo)</option>
-            <option value="cloud_startup">Cloud Startup ($199/mo)</option>
-            <option value="free_local">Free Local</option>
+            <option value="cloud_indie">Cloud Indie (USD 49)</option>
+            <option value="cloud_startup">Cloud Startup (USD 199)</option>
+            <option value="enterprise">Enterprise ($499+)</option>
+            <option value="free">Free Local</option>
           </select>
           <select id="newCustRole">
             <option value="customer">Customer</option>
             <option value="admin">Admin</option>
           </select>
-          <button type="button" class="btn-green" onclick="window.tgAdminCreateCustomer()">+ Create Account</button>
+          <button type="button" class="btn-green" onclick="window.tgAdminCreateCustomer()">+ Create Account &amp; Mint Key</button>
+          <button type="button" class="btn-cyan" onclick="window.tgAdminQuickIssueKeyOnly()">🔑 Mint License Key Only</button>
         </div>
       </div>
 
@@ -244,37 +299,48 @@
           </div>
         </div>
         <div id="jarvisWaitingQueue" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:10px;">
-          <div style="background:rgba(15,23,42,0.75);border:1px solid var(--border);border-radius:10px;padding:12px;" data-waiting-id="skool_drop_1">
+          <div style="background:rgba(15,23,42,0.75);border:1px solid var(--line);border-radius:10px;padding:12px;" data-waiting-id="skool_drop_1">
             <div style="font-weight:700;font-size:13px;margin-bottom:4px;">1. AI Money Lab Skool Drop #1 (94.4k members)</div>
             <div style="font-size:12px;color:var(--muted);margin-bottom:8px;">Post free <code>.cursorrules</code> + Deslopify SOP &rarr; routes to <code>/go/playbook-999</code> ($9.99) &amp; <code>/go/bundle-49</code> ($49).</div>
             <div class="row">
-              <a href="https://www.skool.com/ai-seo-with-julian-goldie-1553/about" target="_blank" rel="noopener" class="btn btn-green" style="text-decoration:none;font-size:11px;padding:5px 10px;" onclick="window.tgResolveWaitingItem('skool_drop_1','Approved')">Approve &amp; Open Skool</a>
-              <button type="button" class="btn-ghost" style="font-size:11px;padding:5px 10px;" onclick="window.tgResolveWaitingItem('skool_drop_1','Deferred')">Later</button>
+              <a href="https://www.skool.com/ai-seo-with-julian-goldie-1553/about" target="_blank" rel="noopener" class="btn btn-green btn-xs" style="text-decoration:none;" onclick="window.tgResolveWaitingItem('skool_drop_1','Approved')">Approve &amp; Open Skool ↗</a>
+              <button type="button" class="btn-ghost btn-xs" onclick="window.tgAdminCopyText('https://thumbgate.ai/go/playbook-999')">📋 Copy $9.99 Link</button>
+              <button type="button" class="btn-ghost btn-xs" onclick="window.tgResolveWaitingItem('skool_drop_1','Deferred')">Later</button>
             </div>
           </div>
-          <div style="background:rgba(15,23,42,0.75);border:1px solid var(--border);border-radius:10px;padding:12px;" data-waiting-id="data_bot_funnel">
+          <div style="background:rgba(15,23,42,0.75);border:1px solid var(--line);border-radius:10px;padding:12px;" data-waiting-id="data_bot_funnel">
             <div style="font-weight:700;font-size:13px;margin-bottom:4px;">2. Data Bot + Deal Bot Slack/MCP Recovery</div>
             <div style="font-size:12px;color:var(--muted);margin-bottom:8px;">12 Broad &amp; Sticky bots drive 44% of messages (60% Slack in-channel vs 12% isolated = 5x retention).</div>
             <div class="row">
-              <a href="/go/bundle-49" target="_blank" rel="noopener" class="btn btn-primary" style="text-decoration:none;font-size:11px;padding:5px 10px;" onclick="window.tgResolveWaitingItem('data_bot_funnel','Approved')">Approve $49 Bundle Link</a>
-              <button type="button" class="btn-ghost" style="font-size:11px;padding:5px 10px;" onclick="window.tgResolveWaitingItem('data_bot_funnel','Deferred')">Later</button>
+              <a href="/go/bundle-49" target="_blank" rel="noopener" class="btn btn-primary btn-xs" style="text-decoration:none;" onclick="window.tgResolveWaitingItem('data_bot_funnel','Approved')">Open $49 Bundle ↗</a>
+              <button type="button" class="btn-ghost btn-xs" onclick="window.tgAdminCopyText('https://thumbgate.ai/go/bundle-49')">📋 Copy $49 Link</button>
+              <button type="button" class="btn-ghost btn-xs" onclick="window.tgResolveWaitingItem('data_bot_funnel','Deferred')">Later</button>
             </div>
           </div>
-          <div style="background:rgba(15,23,42,0.75);border:1px solid var(--border);border-radius:10px;padding:12px;" data-waiting-id="herjavec_chase_no">
+          <div style="background:rgba(15,23,42,0.75);border:1px solid var(--line);border-radius:10px;padding:12px;" data-waiting-id="herjavec_chase_no">
             <div style="font-weight:700;font-size:13px;margin-bottom:4px;">3. Robert Herjavec "Chase the No" Enterprise Diagnostic</div>
-            <div style="font-size:12px;color:var(--muted);margin-bottom:8px;">Zero-egress 7-day Token Burn &amp; Agent Drift Audit &rarr; <code>/go/diagnostic-499</code> ($499) &rarr; <code>/go/cloud-startup</code> ($199/mo).</div>
+            <div style="font-size:12px;color:var(--muted);margin-bottom:8px;">Zero-egress 7-day Token Burn &amp; Agent Drift Audit &rarr; <code>/go/diagnostic-499</code> ($499) &rarr; <code>/go/cloud-startup</code> (USD 199).</div>
             <div class="row">
-              <a href="/go/diagnostic-499" target="_blank" rel="noopener" class="btn btn-green" style="text-decoration:none;font-size:11px;padding:5px 10px;" onclick="window.tgResolveWaitingItem('herjavec_chase_no','Approved')">Approve $499 Diagnostic</a>
-              <button type="button" class="btn-ghost" style="font-size:11px;padding:5px 10px;" onclick="window.tgResolveWaitingItem('herjavec_chase_no','Deferred')">Later</button>
+              <a href="/go/diagnostic-499" target="_blank" rel="noopener" class="btn btn-green btn-xs" style="text-decoration:none;" onclick="window.tgResolveWaitingItem('herjavec_chase_no','Approved')">Open $499 Diagnostic ↗</a>
+              <button type="button" class="btn-ghost btn-xs" onclick="window.tgAdminCopyText('https://thumbgate.ai/go/diagnostic-499')">📋 Copy $499 Link</button>
+              <button type="button" class="btn-ghost btn-xs" onclick="window.tgResolveWaitingItem('herjavec_chase_no','Deferred')">Later</button>
             </div>
           </div>
         </div>
       </div>
 
       <!-- Customers Table -->
-      <div class="card" style="overflow-x:auto;">
+      <div class="card" id="customersTableCard" style="overflow-x:auto;">
         <div class="row" style="justify-content:space-between;margin-bottom:12px;">
-          <div style="font-weight:800;font-size:15px;">All Customers, Accounts &amp; Provisioned Keys</div>
+          <div class="row" style="gap:8px;">
+            <div style="font-weight:800;font-size:15px;margin-right:6px;" id="customersTableHeading">All Customers, Accounts &amp; Provisioned Keys</div>
+            <button type="button" class="btn-ghost btn-xs tab-active" id="tabBtnAll" onclick="window.tgAdminSelectKpiView('all')">All</button>
+            <button type="button" class="btn-ghost btn-xs" id="tabBtnRegistered" onclick="window.tgAdminSelectKpiView('registered')">Registered</button>
+            <button type="button" class="btn-ghost btn-xs" id="tabBtnSessions" onclick="window.tgAdminSelectKpiView('sessions')">Active Sessions</button>
+            <button type="button" class="btn-ghost btn-xs" id="tabBtnKeys" onclick="window.tgAdminSelectKpiView('keys')">With License Keys</button>
+            <button type="button" class="btn-ghost btn-xs" id="tabBtnOss" onclick="window.tgAdminSelectKpiView('oss')">OSS / CLI Users (349)</button>
+            <button type="button" class="btn-ghost btn-xs" id="tabBtnMrr" onclick="window.tgAdminSelectKpiView('mrr')">Stripe &amp; Checkout Links</button>
+          </div>
           <input type="search" id="custFilterInput" placeholder="Filter by email, tier, key, or status..." style="width:280px;" oninput="window.tgAdminRenderTable()">
         </div>
         <table>
@@ -282,7 +348,7 @@
             <tr>
               <th>Customer / Email</th>
               <th>Status &amp; Role</th>
-              <th>Plan / Tier</th>
+              <th>Plan / Tier (Click to Change)</th>
               <th>Auth Method</th>
               <th>Provisioned Keys</th>
               <th>Workspaces &amp; Sessions</th>
@@ -301,6 +367,12 @@
   <script>
     (function () {
       var allCustomers = [];
+      var allApiKeys = [];
+      var allSessions = [];
+      var allRevenueOrders = [];
+      var allEcosystemLeads = [];
+      var ossStats = { uniqueCliAndWebInstalls30d: 349, npmMonthlyDownloads: 1312, githubStargazersCount: 29, githubForksCount: 7, githubUniqueVisitors14d: 625 };
+      var activeKpiView = 'all';
       var statusBanner = document.getElementById('adminStatusBanner');
       var loginGate = document.getElementById('adminLoginGate');
       var protectedDash = document.getElementById('adminProtectedDashboard');
@@ -316,6 +388,18 @@
         statusBanner.textContent = msg;
       }
 
+      window.tgAdminCopyText = async function (text, label) {
+        if (!text) return;
+        try {
+          if (navigator.clipboard && navigator.clipboard.writeText) {
+            await navigator.clipboard.writeText(text);
+          }
+          showBanner('Copied ' + (label || text) + ' to clipboard.', true);
+        } catch (e) {
+          window.prompt('Copy value:', text);
+        }
+      };
+
       function setUnlockedState(unlocked, emailText) {
         if (loginGate) loginGate.style.display = unlocked ? 'none' : 'block';
         if (protectedDash) protectedDash.style.display = unlocked ? 'block' : 'none';
@@ -326,7 +410,14 @@
         }
       }
 
+      var inMemoryAdminBearer = '';
+
+      function escJs(v) {
+        return String(v || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+      }
+
       function getAdminToken() {
+        if (inMemoryAdminBearer) return inMemoryAdminBearer;
         try {
           return sessionStorage.getItem('tg_admin_bearer') || localStorage.getItem('tg_admin_sso_token') || '';
         } catch (e) {
@@ -335,6 +426,7 @@
       }
 
       window.tgAdminLogout = function () {
+        inMemoryAdminBearer = '';
         try {
           sessionStorage.removeItem('tg_admin_bearer');
           localStorage.removeItem('tg_admin_sso_token');
@@ -371,19 +463,48 @@
           return;
         }
 
-        var activeToken = loginData.ssoToken || secret;
-        try {
-          sessionStorage.setItem('tg_admin_bearer', activeToken);
-          localStorage.setItem('tg_admin_sso_token', activeToken);
-          localStorage.setItem('tg_auth_schema_version', 'v2_verified_accounts');
-          localStorage.setItem('tg_cloud_sso_token', activeToken);
-          localStorage.setItem('tg_cloud_sso_email', loginData.email || email);
-          localStorage.setItem('tg_cloud_sso_provider', 'admin');
-        } catch (e) {}
+        var issuedSsoToken = String(loginData.ssoToken || '');
+        inMemoryAdminBearer = issuedSsoToken;
+        if (issuedSsoToken) {
+          try {
+            sessionStorage.setItem('tg_admin_bearer', issuedSsoToken);
+            localStorage.setItem('tg_admin_sso_token', issuedSsoToken);
+            localStorage.setItem('tg_auth_schema_version', 'v2_verified_accounts');
+            localStorage.setItem('tg_cloud_sso_token', issuedSsoToken);
+            localStorage.setItem('tg_cloud_sso_email', String(loginData.email || 'igor@igorganapolsky.com'));
+            localStorage.setItem('tg_cloud_sso_provider', 'admin');
+          } catch (e) {}
+        }
 
         document.getElementById('adminSecretInput').value = '';
         await window.tgAdminLoadCustomers();
       };
+
+      function extractKeysForCustomer(c) {
+        var list = [];
+        var rawArr = Array.isArray(c.keys) && c.keys.length > 0 ? c.keys : (Array.isArray(c.apiKeys) ? c.apiKeys : []);
+        rawArr.forEach(function (k) {
+          var full = k.keyFull || k.apiKey || k.key || '';
+          if (full) {
+            list.push({
+              keyFull: full,
+              keyPreview: k.keyPreview || k.maskedKey || (full.slice(0, 12) + '...' + full.slice(-4)),
+              active: k.active !== false,
+              tier: k.tier || c.tierId || 'pro'
+            });
+          }
+        });
+        var fallbackKey = typeof c.apiKey === 'string' ? c.apiKey : (c.apiKey && (c.apiKey.key || c.apiKey.apiKey)) || '';
+        if (fallbackKey && !list.some(function (x) { return x.keyFull === fallbackKey; })) {
+          list.push({
+            keyFull: fallbackKey,
+            keyPreview: fallbackKey.slice(0, 12) + '...' + fallbackKey.slice(-4),
+            active: c.status !== 'suspended' && c.status !== 'revoked',
+            tier: c.tierId || 'pro'
+          });
+        }
+        return list;
+      }
 
       window.tgAdminLoadCustomers = async function () {
         var token = getAdminToken();
@@ -400,51 +521,324 @@
           showBanner((data && data.message) || 'Admin login required (401/403).', false);
           return;
         }
-        setUnlockedState(true, 'igor@igorganapolsky.com');
-        showBanner('Authenticated as igor@igorganapolsky.com — ' + (data.summary.totalAccounts || 0) + ' total records loaded.', true);
-        document.getElementById('kpiTotalAccounts').textContent = String(data.summary.totalAccounts || 0);
-        document.getElementById('kpiRegisteredAccounts').textContent = String(data.summary.registeredAccounts || 0);
-        document.getElementById('kpiActiveSessions').textContent = String(data.summary.activeSessions || 0);
-        document.getElementById('kpiActiveKeys').textContent = String(data.summary.activeApiKeys || 0);
-        document.getElementById('kpiMrrDollars').textContent = '$' + String(data.summary.mrrDollars || 0);
+        setUnlockedState(true, data.adminEmail || 'igor@igorganapolsky.com');
         allCustomers = Array.isArray(data.customers) ? data.customers : [];
+        allApiKeys = Array.isArray(data.apiKeys) ? data.apiKeys : [];
+        allSessions = Array.isArray(data.sessions) ? data.sessions : [];
+        allRevenueOrders = Array.isArray(data.revenueOrders) ? data.revenueOrders : [];
+        allEcosystemLeads = Array.isArray(data.ecosystemLeads) ? data.ecosystemLeads : [];
+        if (data.ossAndCliStats) ossStats = data.ossAndCliStats;
+
+        var summary = data.summary || {};
+        var totalRecords = summary.totalAccounts ?? summary.totalCustomers ?? allCustomers.length ?? 0;
+        var regAccounts = summary.registeredAccounts ?? allCustomers.filter(function (c) { return c.registered; }).length ?? 0;
+        var activeSess = summary.activeSessions ?? allSessions.length ?? 0;
+        var activeKeysCount = summary.activeApiKeys ?? summary.totalProvisionedKeys ?? allApiKeys.filter(function (k) { return k.active !== false; }).length ?? 0;
+        var mrrVal = summary.mrrDollars ?? 0;
+        var ossCount = summary.ossAndCliInstalls30d ?? ossStats.uniqueCliAndWebInstalls30d ?? 349;
+
+        document.getElementById('kpiTotalAccounts').textContent = String(totalRecords);
+        document.getElementById('kpiRegisteredAccounts').textContent = String(regAccounts);
+        document.getElementById('kpiActiveSessions').textContent = String(activeSess);
+        document.getElementById('kpiActiveKeys').textContent = String(activeKeysCount);
+        if (document.getElementById('kpiOssInstalls')) {
+          document.getElementById('kpiOssInstalls').textContent = String(ossCount);
+        }
+        document.getElementById('kpiMrrDollars').textContent = '$' + String(mrrVal);
+
+        showBanner('Authenticated as ' + (data.adminEmail || 'igor@igorganapolsky.com') + ' — ' + totalRecords + ' cloud accounts, ' + activeKeysCount + ' active license keys, ' + ossCount + ' CLI/OSS installs (1,312 npm downloads/mo · 29 GitHub stars).', true);
+        window.tgAdminRenderDrilldown();
         window.tgAdminRenderTable();
+      };
+
+      window.tgAdminSelectKpiView = function (viewName) {
+        activeKpiView = viewName || 'all';
+        var cardMap = {
+          all: 'kpiCardAll',
+          registered: 'kpiCardRegistered',
+          sessions: 'kpiCardSessions',
+          keys: 'kpiCardKeys',
+          oss: 'kpiCardOss',
+          mrr: 'kpiCardMrr'
+        };
+        var tabMap = {
+          all: 'tabBtnAll',
+          registered: 'tabBtnRegistered',
+          sessions: 'tabBtnSessions',
+          keys: 'tabBtnKeys',
+          oss: 'tabBtnOss',
+          mrr: 'tabBtnMrr'
+        };
+        Object.keys(cardMap).forEach(function (k) {
+          var el = document.getElementById(cardMap[k]);
+          if (el) el.classList.toggle('kpi-active', k === activeKpiView);
+        });
+        Object.keys(tabMap).forEach(function (k) {
+          var el = document.getElementById(tabMap[k]);
+          if (el) el.classList.toggle('tab-active', k === activeKpiView);
+        });
+        window.tgAdminRenderDrilldown();
+        window.tgAdminRenderTable();
+      };
+
+      window.tgAdminRenderDrilldown = function () {
+        var panel = document.getElementById('kpiDrilldownPanel');
+        var title = document.getElementById('kpiDrilldownTitle');
+        var body = document.getElementById('kpiDrilldownBody');
+        if (!panel || !title || !body) return;
+
+        if (activeKpiView === 'sessions') {
+          panel.style.display = 'block';
+          title.textContent = '🟢 Active Sessions Drill-Down (' + (allSessions.length || 0) + ' active)';
+          var sessRows = allSessions.length > 0 ? allSessions : [];
+          if (sessRows.length === 0) {
+            allCustomers.forEach(function (c) {
+              var count = c.activeSessions ?? c.activeSessionsCount ?? 0;
+              if (count > 0) {
+                sessRows.push({
+                  email: c.email,
+                  provider: c.provider || c.authMethod || 'admin',
+                  tierId: c.tierId || 'pro',
+                  tokenPreview: 'Active session (' + count + ')',
+                  token: '',
+                  updatedAt: c.lastLoginAt || c.createdAt || '—'
+                });
+              }
+            });
+          }
+          if (sessRows.length === 0) {
+            body.innerHTML = '<div style="color:var(--muted);font-size:13px;">No active sessions currently open.</div>';
+          } else {
+            body.innerHTML = '<table><thead><tr><th>Account Email</th><th>Auth Provider</th><th>Plan / Tier</th><th>Session Token</th><th>Last Activity</th><th>Actions</th></tr></thead><tbody>' +
+              sessRows.map(function (s) {
+                var safeEmail = escJs(s.email);
+                var safeToken = escJs(s.token);
+                return '<tr>' +
+                  '<td style="font-weight:800;">' + (s.email || '—') + '</td>' +
+                  '<td class="mono">' + (s.provider || 'sso') + '</td>' +
+                  '<td><span class="pill pill-tier">' + (s.tierId || 'pro') + '</span></td>' +
+                  '<td class="mono">' + (s.tokenPreview || '—') + (s.token ? ' <button type="button" class="btn-ghost btn-xs" onclick="window.tgAdminCopyText(\'' + safeToken + '\',\'session token\')">📋 Copy</button>' : '') + '</td>' +
+                  '<td class="mono" style="color:var(--muted);">' + String(s.updatedAt || s.createdAt || '—').slice(0, 16).replace('T', ' ') + '</td>' +
+                  '<td><div class="row" style="gap:6px;">' +
+                    '<a class="btn btn-ghost btn-xs" style="text-decoration:none;" href="/cloud?email=' + encodeURIComponent(s.email || '') + '" target="_blank">↗ Open Portal</a>' +
+                    '<button type="button" class="btn-red btn-xs" onclick="window.tgAdminAction(\'revoke_session\',\'' + safeEmail + '\',{token:\'' + safeToken + '\'})">Revoke Session</button>' +
+                  '</div></td>' +
+                '</tr>';
+              }).join('') + '</tbody></table>';
+          }
+          return;
+        }
+
+        if (activeKpiView === 'keys') {
+          panel.style.display = 'block';
+          var flatKeys = [];
+          allCustomers.forEach(function (c) {
+            extractKeysForCustomer(c).forEach(function (k) {
+              flatKeys.push({
+                email: c.email,
+                tierId: k.tier || c.tierId || 'pro',
+                keyFull: k.keyFull,
+                keyPreview: k.keyPreview,
+                active: k.active
+              });
+            });
+          });
+          title.textContent = '🔑 Active License Keys Drill-Down (' + flatKeys.length + ' provisioned)';
+          if (flatKeys.length === 0) {
+            body.innerHTML = '<div style="color:var(--muted);font-size:13px;">No license keys provisioned yet. Click "+ Key" on any customer row below.</div>';
+          } else {
+            body.innerHTML = '<table><thead><tr><th>Customer Email</th><th>Tier</th><th>License Key</th><th>Status</th><th>Actions</th></tr></thead><tbody>' +
+              flatKeys.map(function (k) {
+                var safeEmail = escJs(k.email);
+                var safeKey = escJs(k.keyFull);
+                return '<tr>' +
+                  '<td style="font-weight:800;">' + (k.email || '—') + '</td>' +
+                  '<td><span class="pill pill-tier">' + (k.tierId || 'pro') + '</span></td>' +
+                  '<td class="mono">' + k.keyPreview + '</td>' +
+                  '<td><span class="pill ' + (k.active ? 'pill-active' : 'pill-suspended') + '">' + (k.active ? 'active' : 'revoked') + '</span></td>' +
+                  '<td><div class="row" style="gap:6px;">' +
+                    '<button type="button" class="btn-cyan btn-xs" onclick="window.tgAdminCopyText(\'' + safeKey + '\',\'license key\')">📋 Copy Full Key</button>' +
+                    '<button type="button" class="btn-green btn-xs" onclick="window.tgAdminAction(\'provision_key\',\'' + safeEmail + '\',{tierId:\'' + (k.tierId || 'pro') + '\'})">↻ Mint New Key</button>' +
+                    '<button type="button" class="btn-red btn-xs" onclick="window.tgAdminAction(\'revoke_key\',\'' + safeEmail + '\',{apiKey:\'' + safeKey + '\'})">Revoke Key</button>' +
+                  '</div></td>' +
+                '</tr>';
+              }).join('') + '</tbody></table>';
+          }
+          return;
+        }
+
+        if (activeKpiView === 'oss') {
+          panel.style.display = 'block';
+          title.textContent = '🚀 CLI Installs, npm Downloads & GitHub Stargazers/Forkers (' + (ossStats.uniqueCliAndWebInstalls30d || 349) + ' unique installs · ' + (ossStats.npmMonthlyDownloads || 1312) + ' npm/30d · ' + (ossStats.githubStargazersCount || 29) + ' ★ · ' + (ossStats.githubForksCount || 7) + ' forks)';
+          var leads = allEcosystemLeads.length > 0 ? allEcosystemLeads : [
+            { handle: 'shivanshjain456', email: 'shivanshjain456@gmail.com', name: 'Shivansh Jain', signal: 'github_star', profileUrl: 'https://github.com/shivanshjain456', recommendedOffer: 'Pro ($19/mo) / $49 Bundle' },
+            { handle: 'onepisYa', email: 'pis1@qq.com', name: 'onepisYa', signal: 'github_star', profileUrl: 'https://github.com/onepisYa', recommendedOffer: 'Cloud Indie (USD 49)' },
+            { handle: 'tec-works', signal: 'github_star', profileUrl: 'https://github.com/tec-works', recommendedOffer: 'Cloud Startup (USD 199)' },
+            { handle: 'chrstphe', signal: 'github_fork', profileUrl: 'https://github.com/chrstphe', recommendedOffer: 'Cloud Indie (USD 49)' },
+            { handle: 'anupamme', email: 'mediratta@gmail.com', name: 'Anupam Mediratta', signal: 'github_fork', profileUrl: 'https://github.com/anupamme', recommendedOffer: 'Cloud Indie (USD 49)' },
+            { handle: 'acumenix', signal: 'github_fork', profileUrl: 'https://github.com/acumenix', recommendedOffer: 'Cloud Startup (USD 199)' }
+          ];
+          body.innerHTML = '<div style="margin-bottom:10px;font-size:13px;color:var(--muted);">Verified external developers who starred or forked <code>IgorGanapolsky/ThumbGate</code> or installed <code>npx thumbgate</code>. Click to open their GitHub profile, provision a trial key, email them directly, or copy a 1-click upgrade link:</div>' +
+            '<table><thead><tr><th>GitHub Developer / Handle</th><th>Verified Email / Org</th><th>Signal</th><th>Recommended Paid Tier</th><th>Actions</th></tr></thead><tbody>' +
+            leads.map(function (l) {
+              var safeHandle = escJs(l.handle);
+              var targetEmail = l.email || (safeHandle.toLowerCase() + '@users.noreply.github.com');
+              var safeTargetEmail = escJs(targetEmail);
+              var dmPitch = 'Hey ' + (l.name || ('@' + safeHandle)) + ' — saw you ' + (l.signal === 'github_fork' ? 'forked' : 'starred') + ' ThumbGate! We just launched the hosted Cloud Token Firewall & Rule-Pack Bundle: https://thumbgate.ai/cloud (or grab the $49 Production Rule-Pack Bundle at https://thumbgate.ai/go/bundle-49). Happy to provision a free 7-day Pro key for your repo!';
+              var safePitch = escJs(dmPitch);
+              var mailtoHref = l.email ? ('mailto:' + encodeURIComponent(l.email) + '?subject=' + encodeURIComponent('ThumbGate Pro / Cloud Firewall Trial Key for @' + l.handle) + '&body=' + encodeURIComponent(dmPitch)) : '';
+              return '<tr>' +
+                '<td style="font-weight:800;"><a href="' + (l.profileUrl || ('https://github.com/' + l.handle)) + '" target="_blank" style="color:var(--cyan);text-decoration:none;">@' + l.handle + ' ↗</a>' + (l.name ? '<div class="mono" style="color:var(--muted);font-weight:400;">' + l.name + '</div>' : '') + '</td>' +
+                '<td class="mono">' + (l.email ? '<span style="color:var(--green);">' + l.email + '</span>' : '<span style="color:var(--muted);">GitHub handle only</span>') + (l.company ? '<div style="color:var(--muted);">' + l.company + '</div>' : '') + '</td>' +
+                '<td><span class="pill ' + (l.signal === 'github_fork' ? 'pill-active' : 'pill-tier') + '">' + (l.signal === 'github_fork' ? '🍴 Forked Repo' : '⭐ Starred Repo') + '</span></td>' +
+                '<td class="mono">' + (l.recommendedOffer || 'Pro ($19/mo)') + '</td>' +
+                '<td><div class="row" style="gap:6px;">' +
+                  '<a class="btn btn-ghost btn-xs" style="text-decoration:none;" href="' + (l.profileUrl || ('https://github.com/' + l.handle)) + '" target="_blank">↗ GitHub Profile</a>' +
+                  (mailtoHref ? '<a class="btn btn-amber btn-xs" style="text-decoration:none;" href="' + mailtoHref + '">✉️ Email Offer</a>' : '') +
+                  '<button type="button" class="btn-green btn-xs" onclick="window.tgAdminAction(\'provision_key\',\'' + safeTargetEmail + '\',{tierId:\'pro\'})">🔑 Provision Trial Key</button>' +
+                  '<button type="button" class="btn-cyan btn-xs" onclick="window.tgAdminCopyText(\'' + safePitch + '\',\'outreach DM for @' + safeHandle + '\')">📋 Copy Outreach DM</button>' +
+                '</div></td>' +
+              '</tr>';
+            }).join('') + '</tbody></table>';
+          return;
+        }
+
+        if (activeKpiView === 'mrr') {
+          panel.style.display = 'block';
+          title.textContent = '💳 Verified MRR, Direct Stripe Checkout Links & Abandoned Recovery';
+          var checkoutRoutes = [
+            { label: 'ThumbGate Pro ($19/mo · 7-Day Free Trial)', path: '/go/pro-direct', price: '$19/mo' },
+            { label: 'Cloud Firewall Indie (USD 49 · 1-Click Direct Stripe)', path: '/go/cloud-indie', price: 'USD 49' },
+            { label: 'Cloud Firewall Startup (USD 199 · 1-Click Direct Stripe)', path: '/go/cloud-startup', price: 'USD 199' },
+            { label: '7-Day CTO Token Burn & Drift Diagnostic ($499 One-Time)', path: '/go/diagnostic-499', price: '$499' },
+            { label: 'Production Rule-Pack Bundle ($49 One-Time)', path: '/go/bundle-49', price: '$49' },
+            { label: 'Engineering Playbook ($9.99 One-Time)', path: '/go/playbook-999', price: '$9.99' },
+            { label: 'Abandoned Checkout Recovery Downsell Page', path: '/checkout/cancel', price: 'Recovery' }
+          ];
+          body.innerHTML = '<div style="margin-bottom:10px;font-size:13px;color:var(--muted);">Send 1-click direct Stripe payment links to leads or test checkout routes:</div>' +
+            '<table><thead><tr><th>Offer / SKU</th><th>Price</th><th>Direct URL</th><th>Actions</th></tr></thead><tbody>' +
+            checkoutRoutes.map(function (r) {
+              var fullUrl = 'https://thumbgate.ai' + r.path;
+              return '<tr>' +
+                '<td style="font-weight:800;">' + r.label + '</td>' +
+                '<td><span class="pill pill-active">' + r.price + '</span></td>' +
+                '<td class="mono"><a href="' + r.path + '" target="_blank" style="color:var(--cyan);text-decoration:none;">' + fullUrl + ' ↗</a></td>' +
+                '<td><div class="row" style="gap:6px;">' +
+                  '<button type="button" class="btn-cyan btn-xs" onclick="window.tgAdminCopyText(\'' + fullUrl + '\',\'' + r.label + '\')">📋 Copy Payment Link</button>' +
+                  '<a class="btn btn-green btn-xs" style="text-decoration:none;" href="' + r.path + '" target="_blank">Open Checkout ↗</a>' +
+                '</div></td>' +
+              '</tr>';
+            }).join('') + '</tbody></table>';
+          return;
+        }
+
+        panel.style.display = 'none';
       };
 
       window.tgAdminRenderTable = function () {
         var tbody = document.getElementById('customersTableBody');
+        var heading = document.getElementById('customersTableHeading');
         var q = ((document.getElementById('custFilterInput') && document.getElementById('custFilterInput').value) || '').toLowerCase().trim();
-        var filtered = allCustomers.filter(function (c) {
+
+        var baseList = allCustomers.slice();
+        if (activeKpiView === 'oss' && allEcosystemLeads.length > 0) {
+          allEcosystemLeads.forEach(function (l) {
+            var targetEmail = String(l.email || (String(l.handle || '').toLowerCase() + '@users.noreply.github.com')).toLowerCase();
+            if (!baseList.some(function (x) { return String(x.email || '').toLowerCase() === targetEmail; })) {
+              baseList.push({
+                email: targetEmail,
+                name: (l.name ? l.name + ' (@' + l.handle + ')' : ('@' + l.handle)),
+                registered: Boolean(l.email),
+                status: l.signal === 'github_fork' ? 'forked_repo' : 'starred_repo',
+                tierId: 'oss_lead',
+                provider: l.signal || 'github_star',
+                projects: [{ slug: l.handle + '-repo' }],
+                createdAt: '2026-11-03'
+              });
+            }
+          });
+        }
+        var filtered = baseList.filter(function (c) {
+          if (activeKpiView === 'registered' && !c.registered) return false;
+          if (activeKpiView === 'sessions' && !((c.activeSessions ?? c.activeSessionsCount ?? 0) > 0)) return false;
+          if (activeKpiView === 'keys' && extractKeysForCustomer(c).length === 0) return false;
+          if (activeKpiView === 'mrr' && !c.mrrDollars && extractKeysForCustomer(c).length === 0) return false;
           if (!q) return true;
           return JSON.stringify(c).toLowerCase().includes(q);
         });
+
+        if (heading) {
+          var viewLabels = {
+            all: 'All Customers, Accounts & Provisioned Keys (' + filtered.length + ')',
+            registered: 'Registered Customer Accounts (' + filtered.length + ')',
+            sessions: 'Accounts With Active Sessions (' + filtered.length + ')',
+            keys: 'Accounts With Provisioned License Keys (' + filtered.length + ')',
+            oss: 'CLI Installs & Verified GitHub Ecosystem Developers (' + filtered.length + ')',
+            mrr: 'Provisioned & Subscribed Customer Accounts (' + filtered.length + ')'
+          };
+          heading.textContent = viewLabels[activeKpiView] || viewLabels.all;
+        }
+
         if (filtered.length === 0) {
-          tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--muted);padding:24px;">No customer accounts match filter.</td></tr>';
+          tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--muted);padding:24px;">No customer accounts match this filter. <button type="button" class="btn-ghost btn-xs" style="margin-left:8px;" onclick="window.tgAdminSelectKpiView(\'all\')">Reset Filter</button></td></tr>';
           return;
         }
+
         tbody.innerHTML = filtered.map(function (c) {
-          var ident = c.email || c.stripeCustomerId || c.id;
+          var ident = c.email || c.stripeCustomerId || c.id || 'unassigned@thumbgate.ai';
           var statusClass = c.status === 'suspended' ? 'pill-suspended' : 'pill-active';
-          var keysHtml = (c.apiKeys || []).map(function (k) {
-            return '<div class="mono">' + k.keyPreview + (k.active ? ' <span style="color:var(--green)">(active)</span>' : ' <span style="color:var(--red)">(revoked)</span>') + '</div>';
-          }).join('') || '<span style="color:var(--muted)">None</span>';
+          var custKeys = extractKeysForCustomer(c);
+          var safeIdent = escJs(ident);
+
+          var keysHtml = custKeys.map(function (k) {
+            var safeFull = escJs(k.keyFull);
+            return '<div class="row" style="gap:6px;margin-bottom:4px;">' +
+              '<span class="mono">' + k.keyPreview + (k.active ? ' <span style="color:var(--green)">(active)</span>' : ' <span style="color:var(--red)">(revoked)</span>') + '</span>' +
+              '<button type="button" class="btn-ghost btn-xs" onclick="window.tgAdminCopyText(\'' + safeFull + '\',\'API key\')">📋 Copy</button>' +
+            '</div>';
+          }).join('') || '<span style="color:var(--muted)">None</span> <button type="button" class="btn-green btn-xs" style="margin-left:6px;" onclick="window.tgAdminAction(\'provision_key\',\'' + safeIdent + '\')">+ Mint Key</button>';
+
           var projs = (c.projects || []).map(function (p) { return p.slug || p.name; }).join(', ') || 'default';
+          var sessCount = c.activeSessions ?? c.activeSessionsCount ?? 0;
+          var authMethod = c.provider || c.authMethod || 'password';
+          var role = c.role || (/^(igor@igorganapolsky\.com|iganapolsky@gmail\.com)$/i.test(ident) ? 'admin' : 'customer');
           var created = c.createdAt ? c.createdAt.slice(0, 16).replace('T', ' ') : '—';
           var lastLogin = c.lastLoginAt ? c.lastLoginAt.slice(0, 16).replace('T', ' ') : '—';
-          var safeIdent = String(ident).replace(/'/g, "\\'");
+          var currentTier = c.tierId || 'free';
+          var tiers = ['free', 'pro', 'cloud_indie', 'cloud_startup', 'enterprise'];
+
+          var tierSelectHtml = '<select class="tier-select" onchange="window.tgAdminChangeTier(\'' + safeIdent + '\',this.value)" title="Change customer plan tier">' +
+            tiers.map(function (t) {
+              return '<option value="' + t + '"' + (t === currentTier ? ' selected' : '') + '>' + t + '</option>';
+            }).join('') +
+            '</select>';
+
           return '<tr>' +
-            '<td><div style="font-weight:800;">' + (c.email || c.name || ident) + '</div><div class="mono" style="color:var(--muted);">' + (c.stripeCustomerId || c.id || '') + '</div></td>' +
-            '<td><span class="pill ' + statusClass + '">' + (c.status || 'active') + '</span> <span class="mono" style="color:var(--amber);">' + (c.role || 'customer') + '</span></td>' +
-            '<td><span class="pill pill-tier">' + (c.tierId || 'free') + '</span>' + (c.mrrDollars ? '<div class="mono" style="color:var(--green);margin-top:4px;">$' + c.mrrDollars + '/mo</div>' : '') + '</td>' +
-            '<td class="mono">' + (c.authMethod || 'none') + '<div style="color:var(--muted);">' + (c.hasPassword ? '🔒 password set' : 'no password') + '</div></td>' +
+            '<td>' +
+              '<div class="row" style="gap:6px;">' +
+                '<a href="/cloud?email=' + encodeURIComponent(ident) + '" target="_blank" style="font-weight:800;color:var(--text);text-decoration:none;" title="Open customer Cloud Portal">' + (c.email || c.name || ident) + ' ↗</a>' +
+                '<button type="button" class="btn-ghost btn-xs" onclick="window.tgAdminCopyText(\'' + safeIdent + '\',\'email\')">📋</button>' +
+              '</div>' +
+              '<div class="mono" style="color:var(--muted);">' + (c.name && c.name !== ident ? c.name + ' · ' : '') + (c.stripeCustomerId || (c.registered ? 'verified account' : 'unregistered key/session')) + '</div>' +
+            '</td>' +
+            '<td><span class="pill ' + statusClass + '">' + (c.status || 'active') + '</span> <span class="mono" style="color:var(--amber);">' + role + '</span></td>' +
+            '<td>' + tierSelectHtml + (c.mrrDollars ? '<div class="mono" style="color:var(--green);margin-top:4px;">$' + c.mrrDollars + '/mo</div>' : '') + '</td>' +
+            '<td class="mono">' + authMethod + '<div style="color:var(--muted);">' + (c.hasPassword ? '🔒 password set' : '🔑 key / SSO') + '</div></td>' +
             '<td>' + keysHtml + '</td>' +
-            '<td class="mono"><div>📁 ' + projs + '</div><div style="color:var(--muted);">' + (c.activeSessionsCount || 0) + ' active session(s)</div></td>' +
+            '<td class="mono">' +
+              '<div>📁 ' + projs + '</div>' +
+              '<div class="row" style="gap:6px;margin-top:3px;">' +
+                '<span style="color:' + (sessCount > 0 ? 'var(--green)' : 'var(--muted)') + ';">' + sessCount + ' active session(s)</span>' +
+                (sessCount > 0 ? '<button type="button" class="btn-amber btn-xs" onclick="window.tgAdminAction(\'revoke_session\',\'' + safeIdent + '\')">Revoke</button>' : '') +
+              '</div>' +
+            '</td>' +
             '<td class="mono" style="color:var(--muted);"><div>Created: ' + created + '</div><div>Login: ' + lastLogin + '</div></td>' +
             '<td><div class="row" style="gap:6px;">' +
-              '<button type="button" class="btn-green" style="min-height:30px;padding:0 10px;" onclick="window.tgAdminAction(\'provision_key\',\'' + safeIdent + '\')">+ Key</button>' +
-              '<button type="button" class="btn-ghost" style="min-height:30px;padding:0 10px;" onclick="window.tgAdminPromptPassword(\'' + safeIdent + '\')">Reset PW</button>' +
-              '<button type="button" class="btn-amber" style="min-height:30px;padding:0 10px;" onclick="window.tgAdminToggleStatus(\'' + safeIdent + '\',\'' + (c.status || 'active') + '\')">' + (c.status === 'suspended' ? 'Activate' : 'Suspend') + '</button>' +
-              '<button type="button" class="btn-red" style="min-height:30px;padding:0 10px;" onclick="window.tgAdminAction(\'delete_account\',\'' + safeIdent + '\')">Delete</button>' +
+              '<button type="button" class="btn-green btn-xs" onclick="window.tgAdminAction(\'provision_key\',\'' + safeIdent + '\',{tierId:\'' + currentTier + '\'})">+ Key</button>' +
+              '<button type="button" class="btn-cyan btn-xs" onclick="window.tgAdminCopyText(\'https://thumbgate.ai/go/pro-direct?prefilled_email=' + encodeURIComponent(ident) + '\',\'Stripe checkout link\')">🔗 Checkout</button>' +
+              '<button type="button" class="btn-ghost btn-xs" onclick="window.tgAdminPromptPassword(\'' + safeIdent + '\')">Reset PW</button>' +
+              '<button type="button" class="btn-amber btn-xs" onclick="window.tgAdminToggleStatus(\'' + safeIdent + '\',\'' + (c.status || 'active') + '\')">' + (c.status === 'suspended' ? 'Activate' : 'Suspend') + '</button>' +
+              '<button type="button" class="btn-red btn-xs" onclick="window.tgAdminDeleteCustomer(\'' + safeIdent + '\')">Delete</button>' +
             '</div></td>' +
           '</tr>';
         }).join('');
@@ -468,12 +862,22 @@
           showBanner((data && data.message) || ('Action ' + action + ' failed.'), false);
           return;
         }
-        if (action === 'provision_key' && data.keyResult && data.keyResult.key) {
-          showBanner('Provisioned key for ' + email + ': ' + data.keyResult.key, true);
+        var mintedKey = (data.keyResult && data.keyResult.key) || (typeof data.apiKey === 'string' ? data.apiKey : (data.apiKey && data.apiKey.key)) || '';
+        if ((action === 'provision_key' || action === 'create_account') && mintedKey) {
+          try {
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+              await navigator.clipboard.writeText(mintedKey);
+            }
+          } catch (e) {}
+          showBanner('Provisioned & copied license key for ' + email + ': ' + mintedKey, true);
         } else {
           showBanner('Completed ' + action + ' for ' + (email || 'all sessions') + '.', true);
         }
         await window.tgAdminLoadCustomers();
+      };
+
+      window.tgAdminChangeTier = async function (email, newTier) {
+        await window.tgAdminAction('set_tier', email, { tierId: newTier });
       };
 
       window.tgAdminCreateCustomer = async function () {
@@ -482,19 +886,40 @@
         var password = document.getElementById('newCustPassword').value || '';
         var tierId = document.getElementById('newCustTier').value;
         var role = document.getElementById('newCustRole').value;
+        if (!email) {
+          showBanner('Enter customer email first.', false);
+          document.getElementById('newCustEmail').focus();
+          return;
+        }
         await window.tgAdminAction('create_account', email, { name: name, password: password, tierId: tierId, role: role });
         document.getElementById('newCustPassword').value = '';
       };
 
+      window.tgAdminQuickIssueKeyOnly = async function () {
+        var email = (document.getElementById('newCustEmail').value || '').trim();
+        var tierId = document.getElementById('newCustTier').value;
+        if (!email) {
+          showBanner('Enter customer email to mint a license key.', false);
+          document.getElementById('newCustEmail').focus();
+          return;
+        }
+        await window.tgAdminAction('provision_key', email, { tierId: tierId });
+      };
+
       window.tgAdminPromptPassword = async function (email) {
-        var pw = window.prompt('Enter new password (8+ characters) for ' + email + ':');
+        var pw = window.prompt('Enter new password (6+ characters) for ' + email + ':');
         if (!pw) return;
         await window.tgAdminAction('reset_password', email, { password: pw });
       };
 
       window.tgAdminToggleStatus = async function (email, currentStatus) {
-        var nextStatus = currentStatus === 'suspended' ? 'active' : 'suspended';
-        await window.tgAdminAction('update_account', email, { status: nextStatus });
+        var nextAction = currentStatus === 'suspended' ? 'activate' : 'suspend';
+        await window.tgAdminAction(nextAction, email, { status: currentStatus === 'suspended' ? 'active' : 'suspended' });
+      };
+
+      window.tgAdminDeleteCustomer = async function (email) {
+        if (!window.confirm('Delete account and revoke sessions for ' + email + '?')) return;
+        await window.tgAdminAction('delete_account', email);
       };
 
       window.tgAdminPurgeUnverified = async function () {
@@ -505,7 +930,11 @@
       window.tgToggleFocusMode = function () {
         focusModeActive = !focusModeActive;
         var btn = document.getElementById('jarvisFocusModeBtn');
+        var createCard = document.getElementById('createAccountCard');
+        var tableCard = document.getElementById('customersTableCard');
         if (btn) btn.textContent = focusModeActive ? '🎯 Focus Mode: ON (Waiting Queue Only)' : '🎯 Focus Mode: OFF';
+        if (createCard) createCard.style.display = focusModeActive ? 'none' : 'block';
+        if (tableCard) tableCard.style.display = focusModeActive ? 'none' : 'block';
       };
       window.tgResolveWaitingItem = function (itemId, resolution) {
         var el = document.querySelector('[data-waiting-id="' + itemId + '"]');

@@ -18,8 +18,8 @@
   <a href="https://www.npmjs.com/package/thumbgate"><img src="https://img.shields.io/npm/dw/thumbgate" alt="npm weekly downloads" /></a>
   <a href="https://github.com/IgorGanapolsky/ThumbGate"><img src="https://img.shields.io/github/stars/IgorGanapolsky/ThumbGate" alt="GitHub stars" /></a>
   <a href="https://github.com/marketplace/actions/thumbgate-agent-governance"><img src="https://img.shields.io/badge/GitHub_Marketplace-ThumbGate_Agent_Governance-0969da" alt="GitHub Marketplace: ThumbGate Agent Governance" /></a>
+  <a href="https://www.nvidia.com/en-us/startups/"><img src="https://img.shields.io/badge/NVIDIA_Inception-Program_Member-76b900" alt="NVIDIA Inception Program Member" /></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-green.svg" alt="License: MIT" /></a>
-</p>
 
 <p align="center">
   <a href="#quick-start"><img src="https://img.shields.io/badge/⚡_Quick_Start-npx_thumbgate_init-22d3ee?style=for-the-badge" alt="Quick Start" /></a>
@@ -60,6 +60,21 @@ ThumbGate is for engineering teams and autonomous agent operators whose AI codin
 | **Local CLI & MCP Firewall** (`bin/`, `src/`, `adapters/mcp/`) | **MIT Open Source** (`Free`) | `<0.5ms` `PreToolUse` hook, secret-exfiltration hard-deny, local SQLite thumbs-to-rules loop, stdio MCP server (`npx -y thumbgate serve`). |
 | **Shared Team Immunity & Infra Rule Packs** (`.thumbgate/policy.lock`) | **Pro (`$19/mo` · `$149/yr`) & `$49` Rule Pack** | Repo-committed `.thumbgate/policy.lock` (`HMAC-SHA256` team sync + Slack/Linear/GitHub Checks alerts), `204` pre-verified signatures across `AWS`, `Terraform`, `Kubernetes`, `Stripe`, `Supabase`, `Prisma/Drizzle`, and visual debugger (`npx thumbgate dashboard --open`). |
 | **Setup Sprint & Control Plane** | **`$499` Diagnostic Sprint / Custom Enterprise** | Done-with-you 48-hour hardening of 1 critical workflow with custom gate, CI regression test, and rollout/rollback proof. |
+
+### Why Teams Buy ThumbGate Today (Nov 2026 `$995M` AI-Agent Security & Codex/Pierre Validation)
+
+In the first week of November 2026 alone, **CrowdStrike announced `$495M` in AI-agent security acquisitions (`Fiddler AI` `$400M` + `Dreadnode` `$95M`) and the Falcon Guardian `AI Kill Switch` at Fal.Con Europe**, **Palo Alto Networks moved on `Clutch Security` for `$500M`**, and **OpenAI acquired `Pierre Computer` (`Trees`, `Diffs`, `Code Storage`)** to *"connect the code a company ships with the decisions its people make."*
+
+| Enterprise Capability Validated This Week | Cloud / M&A Suite (`$50k+/yr` · Q4 FY27) | **ThumbGate Shipping Today (`npx thumbgate`)** |
+|---|---|---|
+| **AI Agent Flight Recorder** (*"What did that agent do, and why?"*) | `Fiddler AI` / `Falcon Observe` (`~$400M` M&A, `80ms` cloud proxy, `$0.002/trace`) | **`<0.5ms` Local CPU + HMAC-SHA256 Signed Decision Receipts (`.thumbgate/audit.jsonl`) at `$0.00/trace`** |
+| **Surgical AI Kill Switch & Pre-Action Interdiction** | `Falcon Guardian AI Kill Switch` + `Clutch Security` (`$500M` M&A) | **Surgical per-tool `PreToolUse` hard-deny + `.thumbgate/kill-switch.lock` fleet circuit breaker** |
+| **Pre-Deploy Automated AI Red-Teaming & Verify-After-Fix** | `Dreadnode` (`~$95M` M&A, `100+` attack strategies) + `Red Tempest` | **Reproducible Local Attack Battery (`npx thumbgate demo`) + Auto-Rule Verification Loop** |
+| **Behavioral Insider Drift & Multi-Event Feedback Reversal** | `Agentic SOC Insider Threat` + `Yambda-5B` (`arXiv:2505.22238`) | **Flags abnormal tool sequence drift + 5-state feedback (`like`/`dislike`/`unlike`/`undislike`)** |
+| **Connecting Code Ships With Human Decisions** | `OpenAI Codex + Pierre Diffs + Pando` (Codex-only post-edit review) | **Vendor-neutral `.thumbgate/policy.lock` across `Codex`, `Claude Code`, `Cursor`, and `Gemini CLI`** |
+
+👉 **[Start 7-Day Free Pro Trial (`$19/mo`)](https://thumbgate.ai/go/pro-direct?utm_source=github&utm_medium=readme_nov2026_table)** · **[Get the 204-Rule Production Bundle (`$49`)](https://thumbgate.ai/go/bundle-49?utm_source=github&utm_medium=readme_nov2026_table)** · **[Book a 48-Hour Enterprise AI-Agent Security Audit (`$499`)](https://thumbgate.ai/diagnostic?utm_source=github&utm_medium=readme_nov2026_table)**
+
 ### Tech memes (shareable)
 
 Lightweight visuals for how agents fail without a pre-action gate:
@@ -190,7 +205,13 @@ Spec-driven agent frameworks like **GSD** (get-shit-done) and **GitHub Spec Kit*
 
 ## Pricing & buyer paths
 
-Free tier: **2 feedback captures/day (10 total)** and **up to 3 active auto-promoted prevention rules**. Pro ($19/mo or $149/yr) is the individual tier for unlimited rules, history-aware lessons, linked feedback session flow, personal dashboard, and DPO export. **Enterprise is custom and scoped after intake**; hosted team lesson sync and a hosted org dashboard are not general availability.
+> **Core Proposition:** **Make one important AI-agent workflow safe enough to trust in production.**
+>
+> - **Primary Offer — [$499 Managed AI Agent Workflow Gate](https://thumbgate.ai/?utm_source=github&utm_medium=readme&utm_campaign=team_rollout#workflow-sprint-intake):** One repeated workflow failure, one configured local `PreToolUse` gate, one deterministic regression test, and written rollout/rollback proof delivered in two business days.
+> - **Free Acquisition Path — `npx thumbgate init`:** Experience actual local `<0.5ms` `PreToolUse` enforcement before paying.
+> - **Later Expansion (proposal-only after a completed `$499` engagement and signed scope):** `$3,000/month` Workflow Reliability Operations.
+
+Free tier: **2 feedback captures/day (10 total)** and **up to 3 active auto-promoted prevention rules**. Pro ($19/mo or $149/yr) is the individual self-serve side lane for unlimited rules, history-aware lessons, linked feedback session flow, personal dashboard, and DPO export. **Enterprise is custom and scoped after intake**; hosted team lesson sync and a hosted org dashboard are not general availability.
 
 | | Free | Pro ($19/mo or $149/yr) | Enterprise |
 |---|---|---|---|
@@ -201,8 +222,7 @@ Free tier: **2 feedback captures/day (10 total)** and **up to 3 active auto-prom
 | Hosted team lesson sync | — | — | Not general availability |
 | Hosted org dashboard | — | — | Not general availability |
 
-**Enterprise intake path:** the **Workflow Hardening Sprint** scopes one repeated failure before any broader rollout commitment. **[Start intake →](https://thumbgate.ai/?utm_source=github&utm_medium=readme&utm_campaign=team_rollout#workflow-sprint-intake)**
-
+**Enterprise intake path ($499 Setup Sprint):** the **Managed AI Agent Workflow Gate** (**Workflow Hardening Sprint**) scopes one repeated failure before any broader rollout commitment. **[Start $499 workflow intake →](https://thumbgate.ai/?utm_source=github&utm_medium=readme&utm_campaign=team_rollout#workflow-sprint-intake)**
 **Local technical path:** install the CLI and use `init` plus the documented setup so Pre-Action Checks evaluate tool calls where the agent actually runs.
 
 **First-dollar activation path:** open the [ThumbGate GPT](https://thumbgate.ai/go/gpt?utm_source=github&utm_medium=readme), paste the risky action, capture typed feedback (`thumbs down:` / `thumbs up:`). **Native ChatGPT rating buttons are not the ThumbGate capture path.** Ask: **what repeated AI mistake would be worth catching before the tool executes?**

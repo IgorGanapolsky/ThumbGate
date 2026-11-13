@@ -73,7 +73,12 @@ function readTextIfExists(filePath) {
 
 function detectRuntimeIsolation() {
   const cgroup = readTextIfExists('/proc/1/cgroup');
-  const containerEnv = String(process.env.container || process.env.CONTAINER || '').trim();
+  const containerEnv = String(
+    process.env.container
+      || process.env.CONTAINER
+      || process.env.THUMBGATE_STRICT_ENFORCEMENT
+      || '',
+  ).trim();
   const isolated = Boolean(
     fs.existsSync('/.dockerenv')
       || containerEnv

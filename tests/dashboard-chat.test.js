@@ -40,7 +40,7 @@ test('budget tiers map to the actual Gemini model and fail closed when unmapped'
   assert.deepEqual(mini, {
     allowed: true,
     provider: 'gemini',
-    model: 'gemini-2.5-flash',
+    model: 'gemini-4-hydrogen',
     tier: 'mini',
   });
   const unmapped = resolveBudgetedProviderRoute({
@@ -97,7 +97,7 @@ test('answerDataQuestion allowlists the model — junk falls back to default, ne
     return { ok: true, status: 200, json: async () => ({ candidates: [{ content: { parts: [{ text: 'ok' }] } }] }) };
   };
   await answerDataQuestion('q', { apiKey: 'k', feedbackDir: '/tmp/x', model: '../../evil-model', fetch: fakeFetch });
-  assert.match(calledUrl, /models\/gemini-2\.5-flash:generateContent$/, 'junk model must fall back to the default');
+  assert.match(calledUrl, /models\/gemini-4-hydrogen:generateContent$/, 'junk model must fall back to the default');
   assert.doesNotMatch(calledUrl, /evil-model/);
 
   await answerDataQuestion('q', { apiKey: 'k', feedbackDir: '/tmp/x', model: 'gemini-2.0-flash', fetch: fakeFetch });
@@ -200,9 +200,9 @@ test('a frontier budget downgrade changes the actual provider model', async () =
       },
     });
     assert.equal(result.ok, true);
-    assert.match(calledUrl, /gemini-2\.5-flash:generateContent$/);
+    assert.match(calledUrl, /gemini-4-hydrogen:generateContent$/);
     assert.equal(result.envelope.tier, 'mini');
-    assert.equal(result.envelope.model, 'gemini-2.5-flash');
+    assert.equal(result.envelope.model, 'gemini-4-hydrogen');
   } finally {
     if (previous == null) delete process.env.THUMBGATE_MAX_FRONTIER_PER_DAY;
     else process.env.THUMBGATE_MAX_FRONTIER_PER_DAY = previous;

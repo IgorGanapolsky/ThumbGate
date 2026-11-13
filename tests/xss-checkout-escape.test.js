@@ -52,3 +52,34 @@ test('checkout page Pro copy stays truthful about personal vs Enterprise feature
   assert.doesNotMatch(html, /Lessons synced across all your machines/i);
   assert.doesNotMatch(html, /Hosted dashboard: gate stats, DPO export, org-wide rule library/i);
 });
+
+test('renderCheckoutIntentPage embeds server-resolved identity defaults and dwell telemetry safely', () => {
+  const html = renderCheckoutIntentPage('buyer@example.com', null, {
+    traceId: 'trace_checkout_42',
+    analyticsMetadata: {
+      visitorId: 'visitor_checkout_42',
+      sessionId: 'session_checkout_42',
+      acquisitionId: 'acq_checkout_42',
+    },
+  });
+  assert.match(html, /"traceId":"trace_checkout_42"/);
+  assert.match(html, /"visitorId":"visitor_checkout_42"/);
+  assert.match(html, /"sessionId":"session_checkout_42"/);
+  assert.match(html, /"acquisitionId":"acq_checkout_42"/);
+  assert.match(html, /engagementMs:\s*engagementMs/);
+  assert.match(html, /dwellBucket:\s*resolveDwellBucket\(engagementMs\)/);
+});
+
+test('renderCheckoutIntentPage preserves incoming LinkedIn carousel UTM, creator, and campaign_variant on direct Stripe and Annual CTAs', () => {
+  const parsed = new URL(
+    'https://thumbgate.ai/checkout/pro?utm_source=linkedin&utm_medium=carousel&utm_campaign=viral_agent_firewall&creator=iganapolsky&campaign_variant=ab_direct_stripe_19',
+  );
+  const html = renderCheckoutIntentPage('', parsed, { includeHiddenAttribution: true });
+  assert.match(html, /href="\/go\/pro-direct\?[^"]*utm_source=linkedin/);
+  assert.match(html, /href="\/go\/pro-direct\?[^"]*utm_medium=carousel/);
+  assert.match(html, /href="\/go\/pro-direct\?[^"]*utm_campaign=viral_agent_firewall/);
+  assert.match(html, /href="\/go\/pro-direct\?[^"]*creator=iganapolsky/);
+  assert.match(html, /href="\/go\/pro-direct\?[^"]*campaign_variant=ab_direct_stripe_19/);
+  assert.match(html, /href="\/go\/pro-annual\?[^"]*creator=iganapolsky/);
+  assert.match(html, /href="\/go\/pro-annual\?[^"]*campaign_variant=ab_direct_stripe_19/);
+});

@@ -251,8 +251,8 @@ test('a genuinely matching destructive pattern still blocks', () => {
 });
 
 test('two corroborating generic words still block', () => {
-  const guard = artifactFor('deleting runtime files broke the build');
-  const verdict = evaluateCompiledGuards(guard, 'Bash', envelope('rm runtime files'));
+  const guard = artifactFor('deleting production caches broke the server');
+  const verdict = evaluateCompiledGuards(guard, 'Bash', envelope('rm production caches'));
   assert.equal(verdict.mode, 'block');
 });
 

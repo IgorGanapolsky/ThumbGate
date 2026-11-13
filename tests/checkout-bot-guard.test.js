@@ -584,6 +584,40 @@ describe('/checkout/pro bot guard', () => {
     );
   });
 
+  it('synthetic probe (?probe=1 or bare Accept: */* without browser headers) deflects /go/pro-direct without inflating checkoutStarts', async () => {
+    try { fs.unlinkSync(path.join(ENV.THUMBGATE_FEEDBACK_DIR, 'telemetry-pings.jsonl')); } catch {}
+    const resWildcard = await fetch(`${origin}/go/pro-direct`, {
+      redirect: 'manual',
+      headers: {
+        'user-agent': BROWSER_UA,
+        accept: '*/*',
+      },
+    });
+    assert.equal(resWildcard.status, 302);
+    assert.match(resWildcard.headers.get('location') || '', /\/checkout\/pro/);
+
+    const resProbeParam = await fetch(`${origin}/go/pro-direct?probe=1`, {
+      redirect: 'manual',
+      headers: {
+        'user-agent': BROWSER_UA,
+        accept: BROWSER_ACCEPT,
+      },
+    });
+    assert.equal(resProbeParam.status, 302);
+    assert.match(resProbeParam.headers.get('location') || '', /\/checkout\/pro/);
+
+    const events = readFunnelEvents();
+    assert.equal(
+      events.filter((e) => e.eventType === 'pro_checkout_direct_stripe').length,
+      0,
+      'synthetic probes must not log pro_checkout_direct_stripe checkout starts',
+    );
+    assert.ok(
+      events.filter((e) => e.eventType === 'checkout_bot_deflected').length >= 2,
+      'synthetic probes must log checkout_bot_deflected',
+    );
+  });
+
   it('human /go/pro-direct redirects to live Stripe Payment Link', async () => {
     const res = await fetch(`${origin}/go/pro-direct?utm_content=skip_form`, {
       redirect: 'manual',

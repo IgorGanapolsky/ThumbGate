@@ -74,6 +74,7 @@ function getActiveProjectStatePath(options = {}) {
 }
 
 function isTransientProjectDir(dirPath, options = {}) {
+  const env = options.env || process.env;
   const normalizedDir = normalizeDir(dirPath);
   if (!normalizedDir) return true;
   if (!dirExists(normalizedDir)) return true;
@@ -85,8 +86,14 @@ function isTransientProjectDir(dirPath, options = {}) {
   // process. A durable active-project state is a better signal.
   if (normalizedDir === path.parse(normalizedDir).root) return true;
   const homeDir = normalizeDir(getHomeDir(options));
-  if (homeDir && normalizedDir === homeDir) return true;
-
+  if (homeDir) {
+    if (normalizedDir === homeDir) return true;
+    const homeTmp = path.join(homeDir, 'tmp');
+    if (normalizedDir === homeTmp || isWithinDir(normalizedDir, homeTmp)) return true;
+  }
+  const systemTmp = normalizeDir(os.tmpdir());
+  if (systemTmp && normalizedDir === systemTmp) return true;
+  if (normalizedDir === '/tmp' || normalizedDir === '/private/tmp') return true;
   const runtimeDir = getRuntimeDir(options);
   if (isWithinDir(normalizedDir, runtimeDir)) return true;
 
@@ -222,15 +229,19 @@ function resolveFeedbackDir(options = {}) {
   const explicit = getExplicitFeedbackDir(options);
   if (explicit) return explicit;
 
-  const localThumbgate = getThumbgateFeedbackDir(options);
-  if (dirExists(localThumbgate)) return localThumbgate;
+  const projectDir = resolveProjectDir(options);
+  const isTransient = isTransientProjectDir(projectDir, options);
 
-  const localFallback = getFallbackFeedbackDir(options);
-  if (dirExists(localFallback)) return localFallback;
+  if (!isTransient) {
+    const localThumbgate = getThumbgateFeedbackDir(options);
+    if (dirExists(localThumbgate)) return localThumbgate;
 
-  const localLegacy = getLegacyFeedbackDir(options);
-  if (dirExists(localLegacy)) return localLegacy;
+    const localFallback = getFallbackFeedbackDir(options);
+    if (dirExists(localFallback)) return localFallback;
 
+    const localLegacy = getLegacyFeedbackDir(options);
+    if (dirExists(localLegacy)) return localLegacy;
+  }
   // Existing installations may only have the pre-1.31 basename-scoped store.
   // Preserve that corpus instead of silently switching to an empty directory.
   // New projects never create this legacy global shape, so same-basename
@@ -238,11 +249,9 @@ function resolveFeedbackDir(options = {}) {
   const globalLegacy = getGlobalFeedbackDir(options);
   if (dirExists(globalLegacy)) return globalLegacy;
 
-  const projectDir = resolveProjectDir(options);
   // New real projects select their collision-free local store before it is
   // created, preventing the old first-write flip from global to local.
-  if (!isTransientProjectDir(projectDir, options)) return localThumbgate;
-
+  if (!isTransient) return getThumbgateFeedbackDir(options);
   return globalLegacy;
 }
 
@@ -284,6 +293,7 @@ module.exports = {
   getGlobalFeedbackDir,
   getHomeDir,
   getLegacyFeedbackDir,
+  isTransientProjectDir,
   getFallbackFeedbackDir,
   getRuntimeDir,
   getThumbgateFeedbackDir,

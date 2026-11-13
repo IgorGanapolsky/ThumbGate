@@ -32,7 +32,7 @@ test.after(() => { fs.rmSync(HOME, { recursive: true, force: true }); });
 function decide(command) {
   const out = execFileSync(process.execPath, [CLI, 'gate-check'], {
     input: JSON.stringify({ tool_name: 'Bash', tool_input: { command } }),
-    env: { ...process.env, HOME, THUMBGATE_STRICT_ENFORCEMENT: '1' },
+    env: { ...process.env, HOME, THUMBGATE_FEEDBACK_DIR: path.join(HOME, '.thumbgate'), THUMBGATE_STRICT_ENFORCEMENT: '1' },
     encoding: 'utf8',
   });
   const parsed = JSON.parse(out);

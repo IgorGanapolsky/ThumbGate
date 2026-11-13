@@ -231,17 +231,37 @@ function extractExecutableAction(entry) {
   // Weak path: require a flag or path-like token so "Agent wrote a bad summary" fails.
   const hasCliShape = /(?:\s-{1,2}[A-Za-z][\w-]*|\/[A-Za-z0-9._-]{2,}|\.(?:js|ts|py|sh|json|yml|yaml)\b)/.test(ctx);
   if (looksExecutable && hasCliShape && ctx.length <= 200) {
-    return ctx;
+    if (!isInertProsePattern(contextToPattern(ctx))) {
+      return ctx;
+    }
   }
   return null;
 }
 
+function deriveSurfaceKey(context) {
+  const text = String(context || '');
+  if (!text.trim()) return null;
+  const emailish = /\b(gmail|e-?mail|smtp|sendmail|msmtp|mailx|nodemailer|smtplib|messages\/send|send_message|send_draft|send-mail|outbound\s+email|cold\s+outreach)\b/i.test(text);
+  const sendish = /\b(send|sent|sending|emailed|mail(ed)?)\b/i.test(text);
+  if (emailish && sendish) return 'surface:outbound-email-send';
+  if (/\bforce[- ]?push\b|git\s+push\s+(?:-f|--force)\b/i.test(text)) return 'surface:force-push';
+  if (/\b(rm\s+-rf\s+\/|sudo\s+rm\s+-rf)\b/i.test(text)) return 'surface:rm-rf-root';
+  if (/\bfind-screenshot\.sh\b|\bosascript\b[^\n]{0,80}\b(?:activate|System\s+Events)\b/i.test(text)) return 'surface:macos-desktop-focus-or-tcc';
+  return null;
+}
+
 function extractPatternKey(entry) {
-  // Enforcement groups by executable action only. Tags remain diagnostic metadata
-  // and must not create hard-block thresholds for a single unrelated latest command.
+  // Enforcement groups by executable action or known deterministic tool surface.
+  // Tags remain diagnostic metadata and must not create hard-block thresholds for
+  // a single unrelated latest command.
   const action = extractExecutableAction(entry);
-  if (!action) return null;
-  return normalizeCommandSignature(action).slice(0, 100);
+  if (action) {
+    return normalizeCommandSignature(action).slice(0, 100);
+  }
+  const ctx = String((entry && (entry.context || entry.whatWentWrong)) || '').trim();
+  const surfaceKey = deriveSurfaceKey(ctx);
+  if (surfaceKey) return surfaceKey;
+  return null;
 }
 
 function extractDiagnosticKeys(entry) {
@@ -351,6 +371,10 @@ function deriveSurfacePattern(context) {
     return '(?:sudo\\s+)?rm\\s+-rf\\s+/';
   }
 
+  if (/\bfind-screenshot\.sh\b|\bosascript\b[^\n]{0,80}\b(?:activate|System\s+Events)\b/i.test(text)) {
+    return '(?:\\bfind-screenshot\\.sh\\b|\\bosascript\\b[^\\n]{0,80}\\b(?:activate|System\\s+Events)\\b)';
+  }
+
   return null;
 }
 
@@ -402,9 +426,12 @@ function buildGateRule(group, actionOverride) {
   const g = group && typeof group === 'object' ? group : {};
   const action = actionOverride || (g.count === 'MANUAL' ? g.manualAction || 'block' : (g.count >= BLOCK_THRESHOLD ? 'block' : 'warn'));
   const severity = action === 'block' ? 'critical' : action === 'approve' ? 'high' : 'medium';
-  const fromExecutable = (g.latestExecutable
+  let fromExecutable = (g.latestExecutable
     || extractExecutableAction({ context: g.latestContext })
     || '').slice(0, 120);
+  if (fromExecutable && isInertProsePattern(contextToPattern(fromExecutable))) {
+    fromExecutable = '';
+  }
   // Prefer real executable text; else a derived surface regex (email send, force-push).
   // NEVER fall back to free-form English prose — that produced permanently inert gates.
   const surfacePattern = g.surfacePattern || deriveSurfacePattern(g.latestContext || g.key || '');

@@ -16,7 +16,7 @@ const crypto = require('node:crypto');
 const { spawnSync } = require('node:child_process');
 const fs = require('node:fs');
 const path = require('node:path');
-const { getFeedbackPaths } = require('./feedback-paths');
+const { getFeedbackPaths, getRuntimeDir } = require('./feedback-paths');
 const { withFileLedgerLock } = require('./file-ledger-lock');
 const {
   consumeVerifiedApproval,
@@ -83,6 +83,10 @@ const ECONOMIC_ACTION_PATTERNS = [
   /\badd\s+(?:a\s+)?payment\s+method\b/i,
   /\b(?:buy|purchase|subscribe|top-?up)\b/i,
   /\bcharge\s+(?:me\s+)?(?:\$|usd\s*)\d/i,
+  /\bpay\s+now\b/i,
+  /\bpay\s+(?:\$|usd\s*)\d/i,
+  /\b(?:complete|confirm|place|submit|authorize)\s+(?:your\s+|the\s+|my\s+)?(?:purchase|order|payment|checkout|transaction)\b/i,
+  /\b(?:proceed|continue)\s+to\s+checkout\b/i,
   /\bupgrade\b.{0,40}\b(?:pro|premium|business|enterprise)\b/i,
   /\b(?:activate|cancel|change|create|update|upgrade)\s+(?:a\s+)?(?:\w+\s+){0,3}(?:plan|subscription|tier|seat)\b/i,
   /\b(?:activate|cancel|change|create|update|upgrade)\s+(?:a\s+)?(?:\w+\s+){0,3}(?:checkout|payment\s+method)\b/i,
@@ -106,29 +110,79 @@ const ECONOMIC_ACTION_PATTERNS = [
   /\bsubscriptions?\s+(?:attach|cancel|capture|confirm|create|detach|finalize|pay|refund|send|update)\b/i,
   /\btop[\s_-]*ups?\s+(?:attach|cancel|capture|confirm|create|detach|finalize|pay|refund|send|update)\b/i,
   /\btransfers?\s+(?:attach|cancel|capture|confirm|create|detach|finalize|pay|refund|send|update)\b/i,
-  /\boutbound[\s_-]*(?:payments?|transfers?)\s+(?:attach|cancel|capture|confirm|create|detach|finalize|pay|refund|send|update)\b/i,
-  /\btreasury\s+(?:outbound[\s_-]*(?:payments?|transfers?)|financial[\s_-]*accounts?|credit[\s_-]*reversals?|debit[\s_-]*reversals?)\b/i,
   /\b(?:attach|cancel|capture|confirm|create|detach)\s+(?:a\s+)?(?:charge|invoice|payment|payment\s+method)\b/i,
   /\b(?:finalize|pay|refund|send|update)\s+(?:a\s+)?(?:charge|invoice|payment|payment\s+method)\b/i,
   /\b(?:attach|cancel|capture|confirm|create|detach)\s+(?:a\s+)?(?:payout|refund|subscription|top-?up|transfer)\b/i,
   /\b(?:finalize|pay|refund|send|update)\s+(?:a\s+)?(?:payout|refund|subscription|top-?up|transfer)\b/i,
 ];
 
-// Host/path URL surfaces that open paid checkout or plan-upgrade flows.
-// These are NOT covered by prose patterns alone (e.g. `open https://app.apollo.io/#/settings/plans/upgrade`
-// or WebFetch { url: 'https://checkout.stripe.com/...' }) — Apollo $588 incident class.
+// Exported linear URL patterns for external callers; runtime URL classification
+// runs normalized URL parsing in containsEconomicUrl.
 const ECONOMIC_URL_PATTERNS = [
-  /(?:https?:\/\/)?(?:www\.)?checkout\.stripe\.com\b/i,
-  /(?:https?:\/\/)?(?:www\.)?buy\.stripe\.com\b/i,
-  /(?:https?:\/\/)?(?:www\.)?billing\.stripe\.com\b/i,
-  /(?:https?:\/\/)?(?:www\.)?dashboard\.stripe\.com\/[^\s"'`]*?(?:treasury|balances\?action=top-up|settlement)/i,
-  /(?:https?:\/\/)?(?:www\.)?app\.apollo\.io\b[^\s"'`]*?(?:plans|upgrade|billing|checkout|subscription)/i,
-  /(?:https?:\/\/)?(?:www\.)?apollo\.io\b[^\s"'`]*?(?:plans|upgrade|billing|checkout|subscription)/i,
+  /\b(?:checkout|buy|billing)\.stripe\.com\b/i,
+  /\bapi\.stripe\.com\/v\d+\/(?:charges|payment_intents|payment_methods|subscriptions|checkout\/sessions|invoices|refunds|payouts|transfers|topups|treasury)\b/i,
+  /\bapi(?:-m)?\.(?:sandbox\.)?paypal\.com\/v\d+\/(?:checkout\/orders|payments|billing\/subscriptions|invoicing)\b/i,
+  /\bconnect\.squareup(?:staging|sandbox)?\.com\/v\d+\/(?:payments|orders|subscriptions|invoices|refunds)\b/i,
+  /\b(?:console\.cloud\.google\.com\/billing|console\.aws\.amazon\.com\/(?:billing|cost-management))\b/i,
+  /\b(?:ads\.google\.com|adsmanager\.facebook\.com|business\.facebook\.com\/adsmanager|ads\.linkedin\.com|ads\.(?:x|twitter|reddit|tiktok)\.com)\b/i,
 ];
 
-const SCREEN_TOOL_PATTERN = /(?:browser|computer|playwright|puppeteer|selenium|click|tap|press)/i;
+const NON_SPEND_HOST_PREFIXES = [
+  'docs.', 'developer.', 'developers.', 'help.', 'support.', 'learn.', 'blog.', 'status.',
+];
+const STRIPE_CHECKOUT_HOSTS = new Set([
+  'checkout.stripe.com', 'buy.stripe.com', 'billing.stripe.com',
+]);
+const STRIPE_API_SPEND_SEGMENTS = new Set([
+  'charges', 'payment_intents', 'payment_methods', 'payment_links', 'subscriptions',
+  'invoices', 'refunds', 'payouts', 'transfers', 'topups', 'treasury', 'billing', 'issuing',
+]);
+const PAYPAL_API_HOSTS = new Set([
+  'api.paypal.com', 'api-m.paypal.com', 'api.sandbox.paypal.com', 'api-m.sandbox.paypal.com',
+]);
+const PAYPAL_API_SPEND_PREFIXES = [
+  '/v1/payments', '/v2/payments', '/v2/checkout/orders', '/v1/billing/subscriptions', '/v1/invoicing', '/v2/invoicing',
+];
+const SQUARE_API_HOSTS = new Set([
+  'connect.squareup.com', 'connect.squareupstaging.com', 'connect.squareupsandbox.com',
+]);
+const SQUARE_API_SPEND_SEGMENTS = new Set([
+  'payments', 'orders', 'subscriptions', 'invoices', 'refunds',
+]);
+const AD_SPEND_HOSTS = new Set([
+  'ads.google.com', 'adsmanager.facebook.com', 'ads.linkedin.com',
+  'ads.x.com', 'ads.twitter.com', 'ads.reddit.com', 'ads.tiktok.com',
+]);
+const STRIPE_CLI_RESOURCES = new Set([
+  'charges', 'charge', 'subscriptions', 'subscription', 'payment_intents', 'payment-intents',
+  'payment_methods', 'payment-methods', 'payment_links', 'payment-links', 'checkout',
+  'invoices', 'invoice', 'refunds', 'refund', 'payouts', 'payout', 'transfers', 'transfer',
+  'topups', 'top-ups', 'top_ups', 'treasury', 'billing', 'billing_portal', 'billing-portal',
+  'issuing', 'post', 'delete', 'trigger',
+]);
+const AWS_DOMAIN_SPEND_ACTIONS = new Set([
+  'register-domain', 'renew-domain', 'transfer-domain',
+]);
+const GENERIC_SPEND_ROUTE_PATTERN = /(?:^|[\/#])(?:checkout|billing|subscriptions?|subscribe|upgrade|payments?|(?:settings|account)\/plans)(?:$|[\/#?])/i;
+const GITHUB_SPEND_ROUTE_PATTERN = /^\/(?:settings\/(?:billing|plans)|organizations\/[^/]+\/settings\/(?:billing|plans)|sponsors\b|marketplace\/[^/]+\/order\b)/i;
+const STRIPE_DASHBOARD_SPEND_PATTERN = /(?:^|\/)(?:payments|billing|subscriptions|invoices|payouts|topups|treasury|balances|checkout|settlement)(?:$|[\/?#])/i;
+const APOLLO_SPEND_ROUTE_PATTERN = /(?:^|[\/#?&=_-])(?:plans|upgrade|billing|checkout|subscription)(?:$|[\/#?&=_-])/i;
+const APP_STORE_BUY_PATTERN = /(?:^|[\/#?&=_-])(?:buy|purchase|checkout|subscribe)(?:$|[\/#?&=_-])/i;
+const ASC_BILLING_PATTERN = /(?:^|[\/#?&=_-])(?:billing|agreements|tax-and-banking)(?:$|[\/#?&=_-])/i;
+
+const SHELL_TOOL_PATTERN = /^(?:bash|shell|terminal|execute_command|exec_command)$/i;
+const SCREEN_FORM_ACTION_PATTERN = /(?:fill|type|input|enter|submit|select|check)/i;
+const SCREEN_TOOL_PATTERN = /(?:browser|chrome|computer|playwright|puppeteer|selenium|form[_-]?input|click|tap|press)/i;
 const SCREEN_MUTATION_PATTERN = /(?:click|double[_ -]?click|tap|press|select|submit|confirm|activate)/i;
 const SCREEN_OBSERVATION_PATTERN = /(?:screenshot|snapshot)/i;
+const BROWSER_PAGE_STATE_FILE = 'browser-page-urls.json';
+const MAX_TRACKED_BROWSER_PAGES = 256;
+const DISALLOWED_PAGE_KEYS = new Set(['__proto__', 'constructor', 'prototype']);
+const BROWSER_ACT_TOOL_PATTERN = /(?:^|[_.:-])act$/i;
+const BROWSER_NAVIGATE_TOOL_PATTERN = /(?:^|[_.:-])(?:navigate(?:[_-]page)?|goto|tabs?[_-](?:new|create)|new[_-](?:page|tab))(?:[_-]mcp)?$/i;
+const BROWSER_TABS_TOOL_PATTERN = /(?:^|[_.:-])tabs$/i;
+const BROWSER_NAVIGATE_ACTION_SET = new Set(['navigate', 'goto', 'new_tab', 'tabs-new']);
+const BROWSER_TABS_NEW_ACTION_SET = new Set(['new', 'open', 'create', 'new_tab', 'tabs-new']);
 
 // A process principal cannot be selected through a tool call. Operators that
 // need an approved purchase to survive separate MCP/hook processes must set a
@@ -374,58 +428,533 @@ function advanceFinancialLedgerAnchor(previousHead, event, options = {}) {
   return next;
 }
 
-function detectEconomicAction(toolName, toolInput = {}) {
-  const normalizedToolName = String(toolName || '').trim();
-  if (isRemedyControlTool(normalizedToolName)) return false;
-  if ([...CONTROL_PLANE_TOOLS].some((name) => (
-    normalizedToolName === name || normalizedToolName.endsWith(`__${name}`)
-  ))) return false;
-  const metadata = objectValue(toolInput.metadata);
+function safeDecodeUri(value) {
+  try {
+    return decodeURIComponent(value);
+  } catch {
+    return value;
+  }
+}
+
+function trimUrlDelimiters(rawToken) {
+  const trimChars = '"\'`<>()[]{},;';
+  let start = 0;
+  let end = rawToken.length;
+  while (start < end && trimChars.includes(rawToken[start])) start += 1;
+  while (end > start && trimChars.includes(rawToken[end - 1])) end -= 1;
+  const sliced = rawToken.slice(start, end);
+  for (const scheme of ['https://', 'http://']) {
+    const idx = sliced.toLowerCase().indexOf(scheme);
+    if (idx > 0 && '=:"\'([<'.includes(sliced[idx - 1])) {
+      return trimUrlDelimiters(sliced.slice(idx));
+    }
+  }
+  return sliced;
+}
+
+function looksLikeBareHostUrl(token) {
+  const slashIdx = token.indexOf('/');
+  const hostPart = (slashIdx === -1 ? token : token.slice(0, slashIdx)).replace(/\.$/, '');
+  if (!hostPart || !hostPart.includes('.')) return false;
+  const firstCode = hostPart.charCodeAt(0);
+  const isAlnum = (firstCode >= 48 && firstCode <= 57)
+    || (firstCode >= 65 && firstCode <= 90)
+    || (firstCode >= 97 && firstCode <= 122);
+  return isAlnum && !hostPart.includes(':');
+}
+
+function parseEconomicCandidateUrl(rawToken) {
+  const cleaned = trimUrlDelimiters(String(rawToken || ''));
+  if (!cleaned) return null;
+  const lower = cleaned.toLowerCase();
+  const hasExplicitScheme = lower.startsWith('http://') || lower.startsWith('https://');
+  if (!hasExplicitScheme && !looksLikeBareHostUrl(lower)) return null;
+  try {
+    const parsed = new URL(hasExplicitScheme ? cleaned : `https://${cleaned}`);
+    const host = parsed.hostname.toLowerCase().replace(/\.$/, '').replace(/^www\./, '');
+    const decodedPath = path.posix.normalize(safeDecodeUri(parsed.pathname).toLowerCase());
+    const decodedSearch = safeDecodeUri(parsed.search).toLowerCase();
+    const decodedHash = safeDecodeUri(parsed.hash).toLowerCase();
+    return {
+      host,
+      pathname: decodedPath,
+      route: `${decodedPath}${decodedSearch}${decodedHash}`,
+      spaRoute: `${decodedPath}${decodedHash}`,
+      hasExplicitScheme,
+    };
+  } catch {
+    return null;
+  }
+}
+
+function isPaymentGatewayApiUrl(host, pathname) {
+  const parts = pathname.split('/').filter(Boolean);
+  if (host === 'api.stripe.com' && /^v\d+$/.test(parts[0] || '')) {
+    if (parts[1] === 'checkout' && parts[2] === 'sessions') return true;
+    return STRIPE_API_SPEND_SEGMENTS.has(parts[1] || '');
+  }
+  if (PAYPAL_API_HOSTS.has(host)) {
+    return PAYPAL_API_SPEND_PREFIXES.some((prefix) => pathname.startsWith(prefix));
+  }
+  if (SQUARE_API_HOSTS.has(host) && /^v\d+$/.test(parts[0] || '')) {
+    return SQUARE_API_SPEND_SEGMENTS.has(parts[1] || '');
+  }
+  return false;
+}
+
+function isStripeOrApolloSpendUrl(host, pathname, route) {
+  if (STRIPE_CHECKOUT_HOSTS.has(host)) return true;
+  if (host === 'dashboard.stripe.com' && STRIPE_DASHBOARD_SPEND_PATTERN.test(route)) return true;
+  if (host === 'stripe.com' && !pathname.startsWith('/docs')
+    && /^\/(?:checkout|billing|payments)(?:\/|$)/.test(pathname)) {
+    return true;
+  }
+  return (host === 'apollo.io' || host === 'app.apollo.io') && APOLLO_SPEND_ROUTE_PATTERN.test(route);
+}
+
+function isAdsSpendUrl(host, route) {
+  if (AD_SPEND_HOSTS.has(host)) return true;
+  if (host === 'business.facebook.com' && route.startsWith('/adsmanager')) return true;
+  return host === 'linkedin.com' && route.startsWith('/campaignmanager');
+}
+
+function isCloudConsoleSpendUrl(host, route) {
+  if (host === 'console.cloud.google.com' && route.startsWith('/billing')) return true;
+  if ((host === 'console.aws.amazon.com' || host.endsWith('.console.aws.amazon.com'))
+    && (route.startsWith('/billing') || route.startsWith('/cost-management'))) {
+    return true;
+  }
+  if (host === 'portal.azure.com' && route.includes('billing')) return true;
+  return host === 'dash.cloudflare.com' && route.includes('/billing');
+}
+
+function isAppStoreSpendUrl(host, route) {
+  if (host === 'apps.apple.com' && APP_STORE_BUY_PATTERN.test(route)) return true;
+  if (host === 'play.google.com' && route.startsWith('/store') && APP_STORE_BUY_PATTERN.test(route)) return true;
+  return host === 'appstoreconnect.apple.com' && ASC_BILLING_PATTERN.test(route);
+}
+
+function isProviderSpendUrl({ host, pathname, route }) {
+  return isPaymentGatewayApiUrl(host, pathname)
+    || isStripeOrApolloSpendUrl(host, pathname, route)
+    || isAdsSpendUrl(host, route)
+    || isCloudConsoleSpendUrl(host, route)
+    || isAppStoreSpendUrl(host, route);
+}
+
+function isEconomicUrlCandidate(candidate) {
+  if (!candidate) return false;
+  if (NON_SPEND_HOST_PREFIXES.some((prefix) => candidate.host.startsWith(prefix))) return false;
+  if (isProviderSpendUrl(candidate)) return true;
+  if (!candidate.hasExplicitScheme) return false;
+  if (candidate.host === 'github.com' || candidate.host === 'gitlab.com') {
+    return GITHUB_SPEND_ROUTE_PATTERN.test(candidate.pathname);
+  }
+  return GENERIC_SPEND_ROUTE_PATTERN.test(candidate.spaRoute);
+}
+
+function containsEconomicUrl(text) {
+  const input = String(text || '');
+  if (!input) return false;
+  for (const token of input.split(/\s+/)) {
+    if (token && isEconomicUrlCandidate(parseEconomicCandidateUrl(token))) return true;
+  }
+  for (const match of input.matchAll(/https?:\/\/[^\s"'`<>()[\]{},;]+/gi)) {
+    if (isEconomicUrlCandidate(parseEconomicCandidateUrl(match[0]))) return true;
+  }
+  return false;
+}
+
+function isAwsEconomicCli(positional) {
+  const service = positional[0] || '';
+  const action = positional[1] || '';
+  if (service === 'billing' || service === 'billingconductor' || service === 'ce') return true;
+  if (service === 'budgets') {
+    return action.startsWith('create') || action.startsWith('update') || action.startsWith('delete');
+  }
+  if (service === 'ec2' || service === 'rds') return action.startsWith('purchase-');
+  if (service === 'savingsplans') return action.startsWith('create-');
+  return service === 'route53domains' && AWS_DOMAIN_SPEND_ACTIONS.has(action);
+}
+
+function isHerokuEconomicCli(pos) {
+  return Boolean(pos[0] && (pos[0].startsWith('addons:create') || pos[0].startsWith('addons:upgrade')));
+}
+
+function isFlyEconomicCli(pos) {
+  return pos[0] === 'scale' || (pos[0] === 'volumes' && pos[1] === 'create');
+}
+
+function isVercelEconomicCli(pos) {
+  return pos[0] === 'billing' || (pos[0] === 'domains' && pos[1] === 'buy');
+}
+
+function isPlatformEconomicCli(executable, positional) {
+  switch (executable) {
+    case 'stripe':
+      return positional.some((tok) => STRIPE_CLI_RESOURCES.has(tok));
+    case 'gcloud':
+      return positional.includes('billing');
+    case 'aws':
+      return isAwsEconomicCli(positional);
+    case 'az':
+      return positional[0] === 'billing' || positional[0] === 'consumption';
+    case 'heroku':
+      return isHerokuEconomicCli(positional);
+    case 'fly':
+    case 'flyctl':
+      return isFlyEconomicCli(positional);
+    case 'wrangler':
+      return positional[0] === 'billing';
+    case 'vercel':
+      return isVercelEconomicCli(positional);
+    default:
+      return false;
+  }
+}
+
+const PACKAGE_RUNNERS = new Set(['npx', 'bunx']);
+const GLOBAL_VALUE_FLAGS = new Set([
+  '--profile', '--region', '--project', '--api-key', '--config', '--account', '--subscription', '--scope',
+]);
+
+function isShellPrefixToken(tok) {
+  return tok === 'sudo' || tok === 'env' || /^[a-z_]\w*=/.test(tok);
+}
+
+function resolveSegmentCommand(tokens) {
+  let idx = 0;
+  while (idx < tokens.length && isShellPrefixToken(tokens[idx])) idx += 1;
+  let executable = (tokens[idx] || '').split('/').at(-1);
+  idx += 1;
+  if (executable && PACKAGE_RUNNERS.has(executable)) {
+    while (idx < tokens.length && tokens[idx].startsWith('-')) idx += 1;
+    executable = (tokens[idx] || '').split('/').at(-1).split('@')[0];
+    idx += 1;
+  }
+  return { executable: executable || '', startIdx: idx };
+}
+
+function collectPositionalCliArgs(tokens, startIdx) {
+  const positional = [];
+  let idx = startIdx;
+  while (idx < tokens.length) {
+    const tok = tokens[idx];
+    if (GLOBAL_VALUE_FLAGS.has(tok)) {
+      idx += 2;
+    } else if (tok.startsWith('-')) {
+      idx += 1;
+    } else {
+      positional.push(tok);
+      idx += 1;
+    }
+  }
+  return positional;
+}
+
+function isEconomicCliSegment(rawSegment) {
+  const tokens = stripNonEconomicQuotedStrings(rawSegment)
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean)
+    .map((tok) => tok.toLowerCase());
+  const { executable, startIdx } = resolveSegmentCommand(tokens);
+  if (!executable || NON_ECONOMIC_SHELL_EXECUTABLES.has(executable)) return false;
+  return isPlatformEconomicCli(executable, collectPositionalCliArgs(tokens, startIdx));
+}
+
+const SUBSHELL_EXECUTABLES = new Set(['bash', 'sh', 'zsh']);
+
+function stripLeadingShellPrefixes(segment) {
+  let rest = segment.trimStart();
+  while (rest) {
+    const firstSpace = rest.search(/\s/);
+    if (firstSpace < 0) break;
+    if (!isShellPrefixToken(rest.slice(0, firstSpace).toLowerCase())) break;
+    rest = rest.slice(firstSpace).trimStart();
+  }
+  return rest;
+}
+
+function hasShellEconomicCliCommand(rawCommand) {
+  for (const segment of splitShellSegmentsOutsideQuotes(String(rawCommand || ''))) {
+    const stripped = stripLeadingShellPrefixes(segment.trim());
+    if (!stripped) continue;
+    const firstExec = /^([\w./-]+)/.exec(stripped)?.[1]?.split('/').at(-1)?.toLowerCase();
+    if (SUBSHELL_EXECUTABLES.has(firstExec || '')) {
+      const subshell = extractSubshellCommand(stripped);
+      if (subshell !== null && hasShellEconomicCliCommand(subshell)) return true;
+    }
+    if (isEconomicCliSegment(stripped)) return true;
+  }
+  return false;
+}
+
+function hasExplicitEconomicSignal(toolInput, metadata) {
   const financialControl = objectValue(toolInput.financialControl || toolInput.financial_control);
   if (toolInput.economicAction === true || metadata.economicAction === true) return true;
-  if (financialControl.requisitionId || financialControl.reservationId) return true;
-  // Native browser/computer-use locators do not reveal what a click will do.
-  // Treat them as economic until the exact screen mutation is independently
-  // approved; caller-supplied prose must never downgrade a blind click.
-  if (detectOpaqueScreenMutation(normalizedToolName, toolInput)) return true;
-  const command = shellEconomicText(normalizedToolName, toolInput.command || toolInput.cmd);
-  const screenMutationProse = isDeclaredScreenMutation(normalizedToolName, toolInput)
-    ? [toolInput.goal, toolInput.description, toolInput.prompt, metadata.context]
-    : [];
-  // WebFetch / browser navigate often put the spend surface only in url/uri/href.
-  const navigationTargets = [
+  return Boolean(financialControl.requisitionId || financialControl.reservationId);
+}
+
+function detectShellEconomicAction(normalizedToolName, toolInput, metadata) {
+  const rawCommand = toolInput.command || toolInput.cmd;
+  const shellText = shellEconomicText(normalizedToolName, rawCommand);
+  if (!String(shellText || '').trim()) return false;
+  if (containsEconomicUrl(shellText)) return true;
+  if (hasShellEconomicCliCommand(rawCommand)) return true;
+  const metadataContext = String(metadata.context || '');
+  if (!metadataContext) return false;
+  return containsEconomicUrl(metadataContext)
+    || ECONOMIC_ACTION_PATTERNS.some((pattern) => pattern.test(metadataContext));
+}
+
+function collectFieldEntryTargets(fieldsInput) {
+  if (!Array.isArray(fieldsInput)) return [];
+  const out = [];
+  for (const entry of fieldsInput) {
+    const item = objectValue(entry);
+    const entryOp = [item.action, item.operation, item.type, item.kind].map((v) => String(v || '')).join(' ');
+    out.push(item.element, item.label, item.name, item.title, item.placeholder, item.ariaLabel, item.aria_label);
+    if (SCREEN_MUTATION_PATTERN.test(entryOp)) out.push(item.text, item.value);
+  }
+  return out;
+}
+
+function collectScreenMutationTargets(normalizedToolName, toolInput, metadata) {
+  if (!isDeclaredScreenMutation(normalizedToolName, toolInput)) return [];
+  const declaredOperation = [toolInput.action, toolInput.operation, toolInput.type, toolInput.kind]
+    .map((value) => String(value || ''))
+    .join(' ');
+  const isClickOrSubmit = SCREEN_MUTATION_PATTERN.test(normalizedToolName)
+    || SCREEN_MUTATION_PATTERN.test(declaredOperation);
+  const nonUrlTarget = parseEconomicCandidateUrl(toolInput.target) ? '' : toolInput.target;
+  const fields = [
+    toolInput.element,
+    toolInput.label,
+    toolInput.name,
+    toolInput.title,
+    toolInput.button,
+    toolInput.control,
+    toolInput.selector,
+    toolInput.ariaLabel,
+    toolInput.aria_label,
+    toolInput.placeholder,
+    toolInput.goal,
+    toolInput.description,
+    toolInput.prompt,
+    nonUrlTarget,
+    metadata.context,
+    ...collectFieldEntryTargets(toolInput.fields),
+  ];
+  if (isClickOrSubmit) {
+    fields.push(toolInput.text, toolInput.value);
+  }
+  return fields.map((value) => String(value || '').replace(/[_-]+/g, ' '));
+}
+
+function collectNavigationTargets(toolInput, metadata) {
+  return [
     toolInput.url,
     toolInput.uri,
     toolInput.href,
     toolInput.link,
     toolInput.navigate,
     toolInput.target,
+    toolInput.pageUrl,
+    toolInput.page_url,
+    toolInput.tabUrl,
+    toolInput.tab_url,
+    toolInput.currentUrl,
+    toolInput.current_url,
+    toolInput.origin,
+    toolInput.code,
+    toolInput.script,
+    toolInput.expression,
+    metadata.url,
+    metadata.pageUrl,
+    metadata.tabUrl,
   ].map((value) => String(value || '')).join(' ');
+}
+
+function getBrowserPageStatePath(options = {}) {
+  const explicitDir = optionalString(options.runtimeDir)
+    || optionalString(process.env.THUMBGATE_RUNTIME_DIR);
+  const runtimeDir = explicitDir ? path.resolve(explicitDir) : getRuntimeDir(options);
+  return path.join(runtimeDir, BROWSER_PAGE_STATE_FILE);
+}
+
+function normalizeBrowserPageId(value) {
+  if (typeof value === 'number' && Number.isFinite(value)) return String(value);
+  if (typeof value !== 'string') return '';
+  const trimmed = value.trim();
+  if (!trimmed || trimmed.length > 128 || DISALLOWED_PAGE_KEYS.has(trimmed)) return '';
+  return trimmed;
+}
+
+function extractBrowserPageIds(toolInput = {}) {
+  const input = objectValue(toolInput);
+  const ids = [];
+  for (const candidate of [input.page, input.pageId, input.page_id, input.tabId, input.tab_id, input.tab]) {
+    const normalized = normalizeBrowserPageId(candidate);
+    if (normalized && !ids.includes(normalized)) ids.push(normalized);
+  }
+  return ids;
+}
+
+function extractExplicitPageUrl(toolInput = {}, metadata = {}) {
+  for (const candidate of [
+    toolInput.url,
+    toolInput.uri,
+    toolInput.href,
+    toolInput.navigate,
+    toolInput.pageUrl,
+    toolInput.page_url,
+    toolInput.tabUrl,
+    toolInput.tab_url,
+    toolInput.currentUrl,
+    toolInput.current_url,
+    metadata.url,
+    metadata.pageUrl,
+    metadata.tabUrl,
+  ]) {
+    const text = optionalString(candidate);
+    if (text && parseEconomicCandidateUrl(text)) return text;
+  }
+  return '';
+}
+
+function readBrowserPageStateMap(options = {}) {
+  try {
+    const parsed = JSON.parse(fs.readFileSync(getBrowserPageStatePath(options), 'utf8'));
+    const pages = objectValue(parsed?.pages);
+    const map = new Map();
+    for (const [key, value] of Object.entries(pages)) {
+      if (!DISALLOWED_PAGE_KEYS.has(key) && typeof value === 'string' && value) {
+        map.set(key, value);
+      }
+    }
+    return map;
+  } catch {
+    return new Map();
+  }
+}
+
+function writeBrowserPageStateMap(map, options = {}) {
+  const statePath = getBrowserPageStatePath(options);
+  const pages = Object.fromEntries(Array.from(map.entries()).slice(-MAX_TRACKED_BROWSER_PAGES));
+  fs.mkdirSync(path.dirname(statePath), { recursive: true });
+  const tempPath = `${statePath}.${process.pid}.${crypto.randomUUID()}.tmp`;
+  fs.writeFileSync(tempPath, `${JSON.stringify({ pages }, null, 2)}\n`, 'utf8');
+  fs.renameSync(tempPath, statePath);
+}
+
+function isBrowserNavigateOrTabsNewCall(normalizedToolName, toolInput) {
+  if (!SCREEN_TOOL_PATTERN.test(normalizedToolName)) return false;
+  if (BROWSER_NAVIGATE_TOOL_PATTERN.test(normalizedToolName)) return true;
+  const action = String(toolInput.action || toolInput.kind || toolInput.operation || toolInput.mode || '')
+    .trim()
+    .toLowerCase();
+  if (BROWSER_TABS_TOOL_PATTERN.test(normalizedToolName)) {
+    return BROWSER_TABS_NEW_ACTION_SET.has(action);
+  }
+  return toolInput.new_tab === true || BROWSER_NAVIGATE_ACTION_SET.has(action);
+}
+
+function recordBrowserPageNavigation(toolName, toolInput = {}, options = {}) {
+  try {
+    const normalizedToolName = String(toolName || '').trim();
+    const input = objectValue(toolInput);
+    if (!isBrowserNavigateOrTabsNewCall(normalizedToolName, input)) return false;
+    const pageIds = extractBrowserPageIds(input);
+    const url = extractExplicitPageUrl(input, objectValue(input.metadata));
+    if (pageIds.length === 0 || !url) return false;
+    const map = readBrowserPageStateMap(options);
+    for (const pageId of pageIds) {
+      map.delete(pageId);
+      map.set(pageId, url);
+    }
+    writeBrowserPageStateMap(map, options);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function lookupRecordedBrowserPageUrl(pageId, options = {}) {
+  const normalizedPageId = normalizeBrowserPageId(pageId);
+  if (!normalizedPageId) return '';
+  return readBrowserPageStateMap(options).get(normalizedPageId) || '';
+}
+
+function hasRecordedEconomicPageUrl(normalizedToolName, toolInput, metadata, options) {
+  if (!isDeclaredScreenMutation(normalizedToolName, toolInput)) return false;
+  if (extractExplicitPageUrl(toolInput, metadata)) return false;
+  const pageIds = extractBrowserPageIds(toolInput);
+  if (pageIds.length === 0) return false;
+  const stateMap = readBrowserPageStateMap(options);
+  return pageIds.some((id) => containsEconomicUrl(stateMap.get(id) || ''));
+}
+
+function detectEconomicAction(toolName, toolInput = {}, options = {}) {
+  const normalizedToolName = String(toolName || '').trim();
+  if (isRemedyControlTool(normalizedToolName)) return false;
+  const metadata = objectValue(toolInput.metadata);
+  if (hasExplicitEconomicSignal(toolInput, metadata)) return true;
+  if (isScreenObservationOnly(normalizedToolName, toolInput)) return false;
+  if (SHELL_TOOL_PATTERN.test(normalizedToolName)) {
+    return detectShellEconomicAction(normalizedToolName, toolInput, metadata);
+  }
+  const navigationTargets = collectNavigationTargets(toolInput, metadata);
+  if (containsEconomicUrl(navigationTargets)) return true;
+  if (hasRecordedEconomicPageUrl(normalizedToolName, toolInput, metadata, options)) return true;
+  const command = shellEconomicText(normalizedToolName, toolInput.command || toolInput.cmd);
+  if (containsEconomicUrl(command)) return true;
+  const screenMutationTargets = collectScreenMutationTargets(normalizedToolName, toolInput, metadata);
   const combined = [
     normalizedToolName.replace(/[_-]+/g, ' '),
     command,
     toolInput.action,
     toolInput.operation,
-    navigationTargets,
-    ...screenMutationProse,
+    toolInput.kind,
+    ...screenMutationTargets,
   ].map((value) => String(value || '')).join(' ');
-  if (ECONOMIC_URL_PATTERNS.some((pattern) => pattern.test(combined))) return true;
   return ECONOMIC_ACTION_PATTERNS.some((pattern) => pattern.test(combined));
 }
 
-function isDeclaredScreenMutation(toolName, toolInput = {}) {
-  if (!SCREEN_TOOL_PATTERN.test(String(toolName || ''))) return false;
+function isScreenObservationOnly(toolName, toolInput = {}) {
+  const normalizedToolName = String(toolName || '').trim();
+  if (!SCREEN_TOOL_PATTERN.test(normalizedToolName)) return false;
   const input = objectValue(toolInput);
-  const declaredOperation = [input.action, input.operation, input.type]
+  const declaredOperation = [input.action, input.operation, input.type, input.kind]
     .map((value) => String(value || ''))
     .join(' ');
-  return SCREEN_MUTATION_PATTERN.test(toolName) || SCREEN_MUTATION_PATTERN.test(declaredOperation);
+  const toolDeclaresMutation = SCREEN_MUTATION_PATTERN.test(normalizedToolName);
+  const declaredMutation = SCREEN_MUTATION_PATTERN.test(declaredOperation);
+  const toolDeclaresObservation = SCREEN_OBSERVATION_PATTERN.test(normalizedToolName);
+  const declaredObservation = SCREEN_OBSERVATION_PATTERN.test(declaredOperation);
+  return toolDeclaresObservation || (!toolDeclaresMutation && !declaredMutation && declaredObservation);
+}
+
+function isDeclaredScreenMutation(toolName, toolInput = {}) {
+  const normalizedToolName = String(toolName || '').trim();
+  if (!SCREEN_TOOL_PATTERN.test(normalizedToolName)) return false;
+  if (isScreenObservationOnly(normalizedToolName, toolInput)) return false;
+  const input = objectValue(toolInput);
+  if (Array.isArray(input.fields) && input.fields.length > 0) return true;
+  const declaredOperation = [input.action, input.operation, input.type, input.kind]
+    .map((value) => String(value || ''))
+    .join(' ');
+  return BROWSER_ACT_TOOL_PATTERN.test(normalizedToolName)
+    || SCREEN_MUTATION_PATTERN.test(normalizedToolName)
+    || SCREEN_MUTATION_PATTERN.test(declaredOperation)
+    || SCREEN_FORM_ACTION_PATTERN.test(normalizedToolName)
+    || SCREEN_FORM_ACTION_PATTERN.test(declaredOperation);
 }
 
 function detectOpaqueScreenMutation(toolName, toolInput = {}) {
   const normalizedToolName = String(toolName || '').trim();
   const input = objectValue(toolInput);
-  const declaredOperation = [input.action, input.operation, input.type]
+  const declaredOperation = [input.action, input.operation, input.type, input.kind]
     .map((value) => String(value || ''))
     .join(' ');
   const toolDeclaresMutation = SCREEN_MUTATION_PATTERN.test(normalizedToolName);
@@ -451,23 +980,128 @@ function detectOpaqueScreenMutation(toolName, toolInput = {}) {
     || /(?:browser|computer|playwright|puppeteer|selenium)/i.test(normalizedToolName);
 }
 
+const NON_ECONOMIC_SHELL_EXECUTABLES = new Set([
+  'rg', 'grep', 'egrep', 'fgrep', 'git', 'cat', 'head', 'tail', 'less', 'more',
+  'echo', 'printf', 'herdr', 'sed', 'awk', 'jq', 'ls', 'find', 'wc', 'diff',
+  'stat', 'mdfind', 'true', 'false', 'cd', 'pwd',
+]);
+
+function splitShellSegmentsOutsideQuotes(command) {
+  const segments = [];
+  let current = '';
+  let quote = null;
+  for (let i = 0; i < command.length; i += 1) {
+    const ch = command[i];
+    if (quote) {
+      current += ch;
+      if (ch === '\\' && quote === '"' && i + 1 < command.length) {
+        i += 1;
+        current += command[i];
+      } else if (ch === quote) {
+        quote = null;
+      }
+      continue;
+    }
+    if (ch === '\'' || ch === '"') {
+      quote = ch;
+      current += ch;
+      continue;
+    }
+    if (ch === '\\' && i + 1 < command.length) {
+      current += ch + command[i + 1];
+      i += 1;
+      continue;
+    }
+    if ((ch === '&' && command[i + 1] === '&') || (ch === '|' && command[i + 1] === '|')) {
+      segments.push(current);
+      current = '';
+      i += 1;
+      continue;
+    }
+    if (ch === ';' || ch === '\n' || ch === '|') {
+      segments.push(current);
+      current = '';
+      continue;
+    }
+    current += ch;
+  }
+  if (current) segments.push(current);
+  return segments;
+}
+
+function stripNonEconomicQuotedStrings(segment) {
+  let out = '';
+  let i = 0;
+  while (i < segment.length) {
+    const ch = segment[i];
+    if (ch !== '\'' && ch !== '"') {
+      if (ch === '\\' && i + 1 < segment.length) {
+        out += ch + segment[i + 1];
+        i += 2;
+      } else {
+        out += ch;
+        i += 1;
+      }
+      continue;
+    }
+    const quote = ch;
+    let j = i + 1;
+    while (j < segment.length) {
+      if (segment[j] === '\\' && quote === '"' && j + 1 < segment.length) {
+        j += 2;
+        continue;
+      }
+      if (segment[j] === quote) break;
+      j += 1;
+    }
+    if (j >= segment.length) {
+      out += segment.slice(i);
+      break;
+    }
+    const full = segment.slice(i, j + 1);
+    const inner = segment.slice(i + 1, j);
+    out += containsEconomicUrl(inner) ? full : ' ';
+    i = j + 1;
+  }
+  return out;
+}
+
+function extractSubshellCommand(clean) {
+  const flagMatch = /^[\w./-]+\s+-[a-z]*c\s+/i.exec(clean);
+  if (!flagMatch) return null;
+  const rest = clean.slice(flagMatch[0].length).trim();
+  if (rest.length >= 2 && (rest[0] === '\'' || rest[0] === '"') && rest.at(-1) === rest[0]) {
+    return rest.slice(1, -1);
+  }
+  return null;
+}
+
 function shellEconomicText(toolName, rawCommand) {
   if (!/^(?:bash|shell|terminal|execute_command|exec_command)$/i.test(toolName)) {
     return rawCommand;
   }
   const command = String(rawCommand || '');
-  return command
-    .split(/(?:&&|\|\||[;\n]|(?<!\|)\|(?!\|))/)
+  return splitShellSegmentsOutsideQuotes(command)
     .map((segment) => {
-      const clean = segment.trim().replace(/^(?:sudo\s+)?(?:env\s+)?(?:[A-Za-z_]\w*=[^\s]+\s+)*/, '');
+      let clean = segment.trim();
+      while (/^(?:sudo|env)\s+/.test(clean) || /^[A-Za-z_]\w*=[^\s]+\s+/.test(clean)) {
+        clean = clean.replace(/^(?:sudo|env)\s+/, '').replace(/^[A-Za-z_]\w*=[^\s]+\s+/, '');
+      }
+      if (!clean) return '';
       const executable = /^([\w./-]+)/.exec(clean)?.[1]?.split('/').at(-1)?.toLowerCase();
-      if (['rg', 'grep', 'git', 'cat', 'head', 'tail', 'less', 'more', 'echo', 'printf'].includes(executable)) {
+      if (!executable || NON_ECONOMIC_SHELL_EXECUTABLES.has(executable)) {
         return '';
       }
-      if (executable === 'gh' && /\b(?:issue|pr)\s+(?:create|view|list|status|edit|comment)\b/i.test(clean)) {
+      if (['bash', 'sh', 'zsh'].includes(executable)) {
+        const subshellCmd = extractSubshellCommand(clean);
+        if (subshellCmd !== null) {
+          return shellEconomicText('Bash', subshellCmd);
+        }
+      }
+      if (executable === 'gh' && /\b(?:issue|pr|release|run|workflow|repo|status|search)\b/i.test(clean)) {
         return '';
       }
-      return clean;
+      return stripNonEconomicQuotedStrings(clean);
     })
     .join(' ');
 }
@@ -482,7 +1116,7 @@ function createPurchaseRequisition(input = {}, options = {}) {
   const sourceMessageId = requiredString(input.sourceMessageId, 'sourceMessageId');
   const amountUsd = positiveMoney(input.amountUsd, 'amountUsd');
   const approvedAction = buildActionAuthorization(input.toolName, input.toolInput, amountUsd);
-  if (!detectEconomicAction(approvedAction.toolName, objectValue(input.toolInput))) {
+  if (!detectEconomicAction(approvedAction.toolName, objectValue(input.toolInput), options)) {
     throw financialError('purchase requisitions must bind an exact economic tool action');
   }
   const evidence = stringArray(input.evidence);
@@ -806,11 +1440,19 @@ function reconcilePurchaseLedgerUnlocked(options = {}) {
   };
 }
 
+function maybeRecordAllowedBrowserPage(input, options, allowed) {
+  if (!allowed || options.consumeReservation !== true) return;
+  recordBrowserPageNavigation(input.toolName, input.toolInput, options);
+}
+
 function evaluateFinancialControl(input = {}, options = {}) {
   const actionProfile = objectValue(input.actionProfile);
   const economicAction = actionProfile.economicAction === true
-    || detectEconomicAction(input.toolName, input.toolInput);
-  if (!economicAction) return allowNonEconomicAction();
+    || detectEconomicAction(input.toolName, input.toolInput, options);
+  if (!economicAction) {
+    maybeRecordAllowedBrowserPage(input, options, true);
+    return allowNonEconomicAction();
+  }
 
   const result = financialEvaluationContext(input, options);
   validateBudget(result);
@@ -818,7 +1460,9 @@ function evaluateFinancialControl(input = {}, options = {}) {
   validateRequisition(result, options);
   validateCostControl(result);
   consumeReservationIfAuthorized(result, input, options);
-  return buildFinancialDecision(result);
+  const decision = buildFinancialDecision(result);
+  maybeRecordAllowedBrowserPage(input, options, decision.mode === 'allow');
+  return decision;
 }
 
 function allowNonEconomicAction() {
@@ -1660,14 +2304,17 @@ module.exports = {
   isRemedyControlTool,
   detectOpaqueScreenMutation,
   evaluateFinancialControl,
+  getBrowserPageStatePath,
   getLedgerHeadPath,
   getLedgerJournalPath,
   getLedgerPath,
   getFinancialControlRuntimeOptions,
   getRuntimePrincipal,
   listPurchaseRequisitions,
+  lookupRecordedBrowserPageUrl,
   projectRequisition,
   readEvents,
+  recordBrowserPageNavigation,
   reconcilePurchaseLedger,
   reservePurchaseRequisition,
   settlePurchaseRequisition,

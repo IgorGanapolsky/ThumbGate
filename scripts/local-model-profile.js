@@ -5,6 +5,14 @@ const fs = require('fs');
 const os = require('os');
 const path = require('path');
 const { resolveFeedbackDir: resolveSharedFeedbackDir } = require('./feedback-paths');
+const {
+  NEMOTRON_AGENT_MODEL_ROLES,
+  NEMOTRON_NIM_DATACENTER_ROLES,
+  auditTensorRtLlmSpecDecodeAndTiles,
+  planDynamoKvAwareDisaggregatedRouting,
+  routeDynamoKvSmartWorker,
+  solveCuOptBudgetConstrainedRouting,
+} = require('./nvidia-open-source-accelerator');
 
 const PROJECT_ROOT = path.join(__dirname, '..');
 const DEFAULT_FEEDBACK_DIR = resolveSharedFeedbackDir();
@@ -20,6 +28,11 @@ const MODEL_ROLES = {
   critique: 'gemini-2.5-flash',
   compaction: 'gemini-2.5-flash-lite',
   vlm: 'gemini-2.5-flash',
+  coding: 'gemini-2.5-flash',
+  planning: 'gemini-2.5-pro',
+  review: 'gemini-2.5-flash',
+  fast_guardrail: 'gemini-2.5-flash-lite',
+  safety_judge: 'gemini-2.5-flash',
 };
 
 // GLM 5.1 open-source model IDs for self-hosted local inference.
@@ -31,7 +44,29 @@ const GLM_MODEL_ROLES = {
   critique: 'glm-z1-9b',
   compaction: 'glm-4-9b',
   vlm: 'glm-4v-9b',
+  coding: 'glm-z1-32b',
+  planning: 'glm-z1-32b',
+  review: 'glm-z1-9b',
+  fast_guardrail: 'glm-4-9b',
+  safety_judge: 'glm-4-9b',
 };
+
+// Revolut GTC Berlin / TechRadar (Nov 4, 2026) Self-Hosted Z.ai GLM-5.1 Profile:
+// - Cuts inference cost by 90% ($0.30/1M input/output tokens vs commercial Claude)
+// - 380GB base model memory + 6-26GB per user context retention across 56x Nvidia B200 GPUs
+// - Flat derestricted billing ("frontier is the exception", zero end-of-month bill shock)
+const GLM_5_1_REVOLUT_ROLES = Object.freeze({
+  normal: 'z-ai/glm-5.1-flash-self-hosted',
+  thinking: 'z-ai/glm-5.1-self-hosted',
+  critique: 'z-ai/glm-5.1-self-hosted',
+  compaction: 'z-ai/glm-4-9b-self-hosted',
+  vlm: 'z-ai/glm-4v-9b-self-hosted',
+  coding: 'z-ai/glm-5.1-self-hosted',
+  planning: 'z-ai/glm-5.1-self-hosted',
+  review: 'z-ai/glm-5.1-self-hosted',
+  fast_guardrail: 'z-ai/glm-4-9b-self-hosted',
+  safety_judge: 'z-ai/glm-5.1-flash-self-hosted',
+});
 
 // vLLM / vllm.ai high-throughput model IDs for self-hosted local inference serving.
 // Activate by setting THUMBGATE_LOCAL_MODEL_FAMILY=vllm or THUMBGATE_LOCAL_LLM_ENDPOINT.
@@ -41,6 +76,11 @@ const VLLM_MODEL_ROLES = {
   critique: 'Qwen/Qwen2.5-Coder-32B-Instruct',
   compaction: 'Qwen/Qwen2.5-Coder-7B-Instruct',
   vlm: 'Qwen/Qwen2-VL-7B-Instruct',
+  coding: 'Qwen/Qwen2.5-Coder-32B-Instruct',
+  planning: 'deepseek-ai/DeepSeek-R1-Distill-Qwen-32B',
+  review: 'Qwen/Qwen2.5-Coder-32B-Instruct',
+  fast_guardrail: 'Qwen/Qwen2.5-Coder-7B-Instruct',
+  safety_judge: 'Qwen/Qwen2.5-Coder-7B-Instruct',
 };
 
 const VALID_MODEL_ROLES = Object.keys(MODEL_ROLES);
@@ -129,7 +169,9 @@ function isSparseAttentionFamily(modelFamily) {
   return modelFamily.startsWith('deepseek')
     || modelFamily.startsWith('glm')
     || modelFamily.startsWith('mistral')
-    || modelFamily.startsWith('inkling');
+    || modelFamily.startsWith('inkling')
+    || modelFamily.startsWith('nemotron')
+    || modelFamily.startsWith('nvidia');
 }
 
 const VLLM_V033_PROFILES = {
@@ -656,6 +698,9 @@ function buildBackendLabel(providerMode, modelFamily) {
   if (modelFamily.startsWith('deepseek')) return 'Local DeepSeek sparse backend';
   if (modelFamily.startsWith('glm')) return 'Local GLM sparse backend';
   if (modelFamily.startsWith('mistral')) return 'Local Mistral Sparse MLA backend';
+  if (modelFamily.startsWith('nemotron') || modelFamily.startsWith('nvidia')) {
+    return 'Local NVIDIA Nemotron hybrid Mamba-Transformer backend';
+  }
   return 'Local dense backend';
 }
 
@@ -715,6 +760,24 @@ function recommendInferenceBackend(task = {}, env = process.env) {
   const backend = detectInferenceBackend(env);
   const privacyRoute = task.privacyRoute || 'frontier';
   const workloadClass = isLongContextTask(task) ? 'long_context' : 'baseline';
+  const nvidiaAccelerations = {};
+  if (task.dynamoRouting || Array.isArray(task.dynamoWorkers)) {
+    nvidiaAccelerations.dynamoRouting = routeDynamoKvSmartWorker({
+      ...(task.dynamoRouting || {}),
+      ...(Array.isArray(task.dynamoWorkers) ? { workers: task.dynamoWorkers } : {}),
+      promptTokens: task.contextTokens || (task.dynamoRouting && task.dynamoRouting.promptTokens) || 4096,
+    });
+  }
+  if (task.cuOptBudget || Array.isArray(task.cuOptTasks)) {
+    nvidiaAccelerations.cuOptSchedule = solveCuOptBudgetConstrainedRouting({
+      ...(task.cuOptBudget || {}),
+      ...(Array.isArray(task.cuOptTasks) ? { tasks: task.cuOptTasks } : {}),
+    });
+  }
+  if (task.specDecode && typeof task.specDecode === 'object') {
+    nvidiaAccelerations.tensorRtSpecDecode = auditTensorRtLlmSpecDecodeAndTiles(task.specDecode);
+  }
+  const hasNvidiaAccelerations = Object.keys(nvidiaAccelerations).length > 0;
 
   if (privacyRoute === 'local' && backend.providerMode !== 'local') {
     return {
@@ -764,6 +827,7 @@ function recommendInferenceBackend(task = {}, env = process.env) {
     recommendationClass: 'baseline',
     route: privacyRoute === 'local' ? 'local' : backend.providerMode,
     reason: 'baseline workload does not need sparse-attention optimization.',
+    ...(hasNvidiaAccelerations ? { nvidiaAccelerations } : {}),
   };
 }
 
@@ -854,17 +918,138 @@ function resolveModelRole(role, env) {
   const envKey = `THUMBGATE_MODEL_ROLE_${normalized.toUpperCase()}`;
   const modelFamily = resolveModelFamily(e);
   const isLocalGlm = modelFamily.startsWith('glm');
+  const isLocalNemotron = modelFamily.startsWith('nemotron') || modelFamily.startsWith('nvidia');
   // Only explicit vLLM family/server selects VLLM_MODEL_ROLES. A generic
   // THUMBGATE_LOCAL_LLM_ENDPOINT (Ollama, LM Studio, etc.) must keep its own model id.
   const serverEngine = normalizeSlug(e.THUMBGATE_LOCAL_MODEL_SERVER || e.THUMBGATE_MODEL_SERVER || '');
   const isLocalVllm = modelFamily.startsWith('vllm') || serverEngine === 'vllm';
   const providerMode = resolveProviderMode(e);
-  const provider = (isLocalGlm || isLocalVllm) ? 'local' : (providerMode === 'vertex' ? 'vertex' : 'gemini');
-  const defaultModel = isLocalVllm
-    ? (VLLM_MODEL_ROLES[normalized] || MODEL_ROLES[normalized])
-    : (isLocalGlm ? (GLM_MODEL_ROLES[normalized] || MODEL_ROLES[normalized]) : MODEL_ROLES[normalized]);
+  const provider = (isLocalGlm || isLocalVllm || isLocalNemotron) ? 'local' : (providerMode === 'vertex' ? 'vertex' : 'gemini');
+  const defaultModel = isLocalNemotron
+    ? (NEMOTRON_AGENT_MODEL_ROLES[normalized] || MODEL_ROLES[normalized])
+    : (isLocalVllm
+      ? (VLLM_MODEL_ROLES[normalized] || MODEL_ROLES[normalized])
+      : (isLocalGlm ? (GLM_MODEL_ROLES[normalized] || MODEL_ROLES[normalized]) : MODEL_ROLES[normalized]));
   const model = (e[envKey] && String(e[envKey]).trim()) || defaultModel;
   return { role: normalized, model, provider, envKey };
+}
+
+const NACE_DREX_MAX_V1_PROFILES = Object.freeze({
+  'drex-max-v1-mlx-4bit-affine': Object.freeze({
+    id: 'drex-max-v1-mlx-4bit-affine',
+    model: 'nace-ai/drex-max-v1',
+    minUnifiedMemoryGb: 24,
+    footprintGb: 16.0,
+    quantization: '4-bit affine MLX',
+    runtimes: ['kapitsa', 'mlx-lm'],
+    systemOneEndpoint: '/v1/systemone',
+    supportedModes: ['choice', 'noul', 'score'],
+    maxCandidateOptions: 255,
+  }),
+  'drex-max-v1-q8_0-gguf': Object.freeze({
+    id: 'drex-max-v1-q8_0-gguf',
+    model: 'nace-ai/drex-max-v1',
+    minUnifiedMemoryGb: 48,
+    footprintGb: 28.7,
+    quantization: 'Q8_0 GGUF',
+    runtimes: ['kapitsa', 'llama.cpp', 'ollama'],
+    systemOneEndpoint: '/v1/systemone',
+    supportedModes: ['choice', 'noul', 'score'],
+    maxCandidateOptions: 255,
+  }),
+});
+
+function planNaceDrexMaxV1SystemOneServing(options = {}) {
+  const unifiedMemoryGb = Number(options.unifiedMemoryGb ?? 48);
+  const operationMode = String(options.operationMode || 'choice');
+  const optionsCount = Number(options.optionsCount ?? 8);
+  const noulThreshold = Number(options.noulThreshold ?? 0.55);
+  const topCandidateProb = Number(options.topCandidateProb ?? 0.92);
+  const profile = unifiedMemoryGb >= 48
+    ? NACE_DREX_MAX_V1_PROFILES['drex-max-v1-q8_0-gguf']
+    : NACE_DREX_MAX_V1_PROFILES['drex-max-v1-mlx-4bit-affine'];
+  const eligible = unifiedMemoryGb >= 24 && optionsCount >= 1 && optionsCount <= 255;
+  const abstainedViaNoul = operationMode === 'noul' && topCandidateProb < noulThreshold;
+  return {
+    ok: eligible,
+    selectedProfile: profile,
+    architecture: {
+      totalLayers: 64,
+      gatedDeltaNetLinearLayers: 48,
+      nonCausalFullAttentionLayers: 16,
+      readoutHeadWay: 255,
+      hiddenDimension: 5120,
+    },
+    routing: {
+      endpoint: '/v1/systemone',
+      operationMode,
+      optionsCount,
+      abstainedViaNoul,
+      escalateToSystemTwoFrontier: abstainedViaNoul,
+    },
+    benchmarks: {
+      decisionIndexV04: 67.52,
+      jevBenchAccuracyPct: 92.2,
+      decisionBenchV4AccuracyPct: 94.3,
+    },
+  };
+}
+
+function planRevolutGlm51SelfHostedServing(options = {}) {
+  const monthlyTokensMillions = Math.max(1, Number(options.monthlyTokensMillions ?? 500));
+  const concurrentUsers = Math.max(1, Number(options.concurrentUsers ?? 25));
+  const perUserContextGb = Math.min(26, Math.max(6, Number(options.perUserContextGb ?? 12)));
+  const commercialClaudePer1MUsd = Math.max(0.5, Number(options.commercialClaudePer1MUsd ?? 3.0));
+  const glm51SelfHostedPer1MUsd = Math.max(0.05, Number(options.glm51SelfHostedPer1MUsd ?? 0.3));
+  const frontierExceptionShare = Math.min(0.5, Math.max(0, Number(options.frontierExceptionShare ?? 0.05)));
+
+  const baseModelVramGb = 380;
+  const contextRetentionVramGb = concurrentUsers * perUserContextGb;
+  const totalRequiredVramGb = baseModelVramGb + contextRetentionVramGb;
+  const b200SingleGpuVramGb = 192;
+  const minB200GpusRequired = Math.ceil(totalRequiredVramGb / b200SingleGpuVramGb);
+  const revolutReferenceClusterB200Gpus = 56;
+
+  const commercialMonthlyUsd = Number((monthlyTokensMillions * commercialClaudePer1MUsd).toFixed(2));
+  const blendedPer1MUsd =
+    glm51SelfHostedPer1MUsd * (1 - frontierExceptionShare) +
+    commercialClaudePer1MUsd * frontierExceptionShare;
+  const selfHostedMonthlyUsd = Number((monthlyTokensMillions * blendedPer1MUsd).toFixed(2));
+  const inferenceCostCutPct = Number(
+    (((commercialClaudePer1MUsd - glm51SelfHostedPer1MUsd) / commercialClaudePer1MUsd) * 100).toFixed(1)
+  );
+
+  return {
+    ok: true,
+    modelFamily: 'z-ai/glm-5.1-self-hosted',
+    roles: GLM_5_1_REVOLUT_ROLES,
+    economics: {
+      glm51SelfHostedPer1MUsd,
+      commercialClaudePer1MUsd,
+      inferenceCostCutPct,
+      commercialMonthlyUsd,
+      selfHostedMonthlyUsd,
+      monthlySavingsUsd: Number((commercialMonthlyUsd - selfHostedMonthlyUsd).toFixed(2)),
+      billingMode: 'flat_derestricted',
+      endOfMonthBillShock: false,
+      frontierIsException: true,
+    },
+    hardware: {
+      baseModelVramGb,
+      concurrentUsers,
+      perUserContextGb,
+      contextRetentionVramGb,
+      totalRequiredVramGb,
+      minB200GpusRequired,
+      revolutReferenceClusterB200Gpus,
+      fitsRevolutCluster: minB200GpusRequired <= revolutReferenceClusterB200Gpus,
+    },
+    productivityGains: {
+      leadTimeImprovementPct: 70,
+      codingTimeImprovementPct: 60,
+      dataPrivacyAndAuditability: 'self_hosted_full_audit',
+    },
+  };
 }
 
 function buildModelFitReport(options = {}) {
@@ -896,12 +1081,126 @@ function writeModelFitReport(feedbackDir, options = {}) {
   fs.writeFileSync(reportPath, `${JSON.stringify(report, null, 2)}\n`);
   return { reportPath, report };
 }
+const POST_LOOP_COMPACTION_AND_BRV_POLICY = Object.freeze({
+  compactionThresholdTokens: 400000,
+  deleted150kTicketDecomposition: true,
+  maxBuilderCompactions: 2,
+  maxReviewerRounds: 3,
+  maxVerifierRounds: 2,
+  routeFixesToOriginalBuilder: true,
+  originalBuilderTokenSavingsRatio: 0.38,
+  verifyAtCapabilityEdgeOnly: true,
+  chiefOfStaffSingleCoordinator: true,
+  blockPeerPersonaSwarms: true,
+});
+/**
+ * MakeUseOf (Nov 4, 2026 — "Local LLMs have a problem that no amount of free software can fix"):
+ * - Memory (VRAM + KV attention cache) is the real paywall: Llama 3.3 70B Q4_K_M is 43GB,
+ *   exceeding even a $1,999 RTX 5090 (32GB VRAM, 1,000W PSU) before KV cache growth.
+ * - MoE active params (e.g. gpt-oss-120b activating 5.1B/token) reduce compute but still
+ *   require an 80GB GPU to hold resident weights; gpt-oss-20b fits in 16GB and Ornith-9B fits 8-16GB.
+ * - Avoid CPU offload slow lane: when model weights + KV cache exceed VRAM even after Flash Attention
+ *   and KV cache quantization, block CPU offload and route either to a task-fitted smaller local model
+ *   (<0.5ms deterministic PreToolUse gate + 8-16GB model) or zero-spend NVIDIA Inception cloud credits
+ *   (DeepInfra 10B Nemotron / Crusoe $10k).
+ */
+const LOCAL_LLM_HARDWARE_PAYWALL_CATALOG = Object.freeze({
+  'llama3.3:70b-q4_k_m': Object.freeze({
+    weightsGb: 43,
+    kvCachePer32kContextGb: 6.5,
+    fitsRtx509032GbVram: false,
+    rtx5090MsrpUsd: 1999,
+    rtx5090SystemPowerWatts: 1000,
+  }),
+  'gpt-oss-120b': Object.freeze({
+    weightsGb: 72,
+    activeParamsBillions: 5.1,
+    requiredGpuVramGb: 80,
+    fitsRtx509032GbVram: false,
+  }),
+  'gpt-oss-20b': Object.freeze({
+    weightsGb: 13.5,
+    requiredGpuVramGb: 16,
+    benchmarkParity: 'o3-mini',
+    fits16GbLaptop: true,
+  }),
+  'ornith-9b': Object.freeze({
+    weightsGb: 6.2,
+    requiredGpuVramGb: 8,
+    fits16GbLaptop: true,
+  }),
+});
+
+function evaluateLocalLlmHardwarePaywallAndRouting(options = {}) {
+  const requestedModel = String(options.requestedModel || 'llama3.3:70b-q4_k_m');
+  const availableVramGb = Number(options.availableVramGb ?? 32);
+  const contextTokens = Number(options.contextTokens ?? 65536);
+  const flashAttentionEnabled = Boolean(options.flashAttentionEnabled ?? true);
+  const kvCacheQuantized = Boolean(options.kvCacheQuantized ?? true);
+
+  const spec = LOCAL_LLM_HARDWARE_PAYWALL_CATALOG[requestedModel] || {
+    weightsGb: Number(options.weightsGb ?? 43),
+    kvCachePer32kContextGb: 6.5,
+  };
+
+  const baseKvGb =
+    ((contextTokens / 32768) * (spec.kvCachePer32kContextGb || 3.0));
+  const kvOptimizationFactor =
+    (flashAttentionEnabled ? 0.65 : 1.0) * (kvCacheQuantized ? 0.55 : 1.0);
+  const estimatedKvCacheGb = Number(
+    (baseKvGb * kvOptimizationFactor).toFixed(2)
+  );
+  const totalRequiredVramGb = Number(
+    (spec.weightsGb + estimatedKvCacheGb).toFixed(2)
+  );
+
+  const fitsEntirelyInVram = totalRequiredVramGb <= availableVramGb;
+  const wouldRequireCpuOffload = !fitsEntirelyInVram;
+
+  const routingDecision = fitsEntirelyInVram
+    ? {
+        route: 'run_local_gpu_zero_cpu_offload',
+        selectedModel: requestedModel,
+        cpuOffloadBlocked: true,
+      }
+    : {
+        route:
+          'block_cpu_offload_use_task_fitted_small_local_or_inception_cloud_credits',
+        selectedLocalFallbackModel:
+          availableVramGb >= 16 ? 'gpt-oss-20b' : 'ornith-9b',
+        selectedPreToolGate: 'thumbgate_deterministic_sub_0_5ms_gate',
+        selectedZeroSpendCloudBurst:
+          'DeepInfra_10B_Nemotron_or_Crusoe_10k_Inception_Credits',
+        cpuOffloadBlocked: true,
+      };
+
+  return {
+    ok: true,
+    source:
+      'https://www.makeuseof.com/local-llms-problem-no-free-software-fix/',
+    requestedModel,
+    hardwareAudit: {
+      availableVramGb,
+      modelWeightsGb: spec.weightsGb,
+      contextTokens,
+      estimatedKvCacheGb,
+      totalRequiredVramGb,
+      fitsEntirelyInVram,
+      wouldRequireCpuOffload,
+      rtx5090Reference32GbExceeded: totalRequiredVramGb > 32,
+    },
+    routingDecision,
+  };
+}
 
 module.exports = {
   DEFAULT_EMBED_MODEL,
   DEFAULT_FEEDBACK_DIR,
   EMBEDDING_PROFILES,
   GLM_MODEL_ROLES,
+  GLM_5_1_REVOLUT_ROLES,
+  POST_LOOP_COMPACTION_AND_BRV_POLICY,
+  LOCAL_LLM_HARDWARE_PAYWALL_CATALOG,
   VLLM_MODEL_ROLES,
   VLLM_V032_PROFILES,
   VLLM_V033_PROFILES,
@@ -918,6 +1217,16 @@ module.exports = {
   planDsparkSpeculativeDecoding,
   planBatchInvariantDeterministicInference,
   planVllmDisaggregatedServing,
+  NACE_DREX_MAX_V1_PROFILES,
+  planNaceDrexMaxV1SystemOneServing,
+  planRevolutGlm51SelfHostedServing,
+  evaluateLocalLlmHardwarePaywallAndRouting,
+  NEMOTRON_AGENT_MODEL_ROLES,
+  NEMOTRON_NIM_DATACENTER_ROLES,
+  auditTensorRtLlmSpecDecodeAndTiles,
+  planDynamoKvAwareDisaggregatedRouting,
+  routeDynamoKvSmartWorker,
+  solveCuOptBudgetConstrainedRouting,
   detectHardware,
   detectInferenceBackend,
   resolveEmbeddingProfile,

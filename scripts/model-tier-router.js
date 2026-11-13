@@ -45,6 +45,29 @@ const TIERS = {
 const TIER_ROUTING_ORDER = ['nano', 'mini', 'bulkCloud', 'frontier'];
 
 // ---------------------------------------------------------------------------
+// Revolut "Frontier is the Exception" Routing Strategy
+// ---------------------------------------------------------------------------
+
+function isRevolutRoutingActive(task = {}, env = process.env) {
+  const flag = String(env.THUMBGATE_ROUTING_STRATEGY || env.THUMBGATE_REVOLUT_ROUTING || env.THUMBGATE_ROUTING_PROFILE || '').trim().toLowerCase();
+  if (flag === 'revolut' || flag === '1' || flag === 'true') return true;
+  if (task.strategy === 'revolut' || task.routingProfile === 'revolut') return true;
+  if (task.enterprisePolicy === 'frontier_is_exception') return true;
+  const tags = Array.isArray(task.tags) ? task.tags.map((t) => String(t).toLowerCase()) : [];
+  return tags.includes('revolut') || tags.includes('frontier-is-exception') || tags.includes('self-hosted-first') || (tags.includes('banking') && tags.includes('revolut'));
+}
+
+function requiresVisionCapability(task = {}) {
+  if (task.requiresVision === true) return true;
+  const prompt = String(task.prompt || '').toLowerCase();
+  if (/\b(?:screenshot|vision|multimodal|ui-diff|image|visual|camera|png|jpg|jpeg)\b/i.test(prompt)) {
+    return true;
+  }
+  const tags = Array.isArray(task.tags) ? task.tags.map((t) => String(t).toLowerCase()) : [];
+  return tags.some((t) => ['vision', 'multimodal', 'screenshot', 'ui-diff', 'image', 'visual'].includes(t));
+}
+
+// ---------------------------------------------------------------------------
 // Task classification → tier mapping
 // ---------------------------------------------------------------------------
 
@@ -57,13 +80,56 @@ const TIER_ROUTING_ORDER = ['nano', 'mini', 'bulkCloud', 'frontier'];
  * @param {string}   [task.riskLevel]   — 'low' | 'medium' | 'high'
  * @param {number}   [task.retryCount]  — how many times this task has been retried
  * @param {string[]} [task.tags]        — freeform tags for classification
- * @returns {{ tier: string, reason: string, escalated: boolean }}
+ * @param {object}   [env]              — environment overrides
+ * @returns {{ tier: string, reason: string, escalated: boolean, tokenBudgetExempt?: boolean }}
  */
-function classifyTask(task = {}) {
+function classifyTask(task = {}, env = process.env) {
   const { type, contextTokens = 0, riskLevel, retryCount = 0, tags = [] } = task;
   const config = loadConfig();
   const escalation = config.escalationRules;
   const archTags = escalation.architectureTags || [];
+
+  // --- Revolut "The Frontier is the Exception" Mode ---
+  // When active (THUMBGATE_ROUTING_STRATEGY=revolut, task.strategy='revolut', or tags include 'revolut'):
+  // Commercial frontier is the exception (reserved for vision queries or exhausted retries).
+  // Coding, debugging, tests, tickets, and reviews route to self-hosted localFrontier ($0.30/M tokens).
+  if (isRevolutRoutingActive(task, env)) {
+    if (requiresVisionCapability(task)) {
+      return {
+        tier: 'frontier',
+        reason: 'Revolut exception: multimodal/vision query routed to commercial frontier',
+        escalated: true,
+        frontierException: 'vision',
+        tokenBudgetExempt: false,
+      };
+    }
+    if (contextTokens > escalation.contextThreshold) {
+      return {
+        tier: 'frontier',
+        reason: `Revolut exception: context size ${contextTokens} exceeds threshold ${escalation.contextThreshold}`,
+        escalated: true,
+        frontierException: 'context_limit',
+        tokenBudgetExempt: false,
+      };
+    }
+    if (riskLevel === 'high' && retryCount >= escalation.failureRetryThreshold) {
+      return {
+        tier: 'frontier',
+        reason: `Revolut exception: high risk with ${retryCount} retries (threshold: ${escalation.failureRetryThreshold})`,
+        escalated: true,
+        frontierException: 'high_risk_retry_exhaustion',
+        tokenBudgetExempt: false,
+      };
+    }
+    return {
+      tier: 'localFrontier',
+      reason: `Revolut default: self-hosted open-weight model at $0.30/M tokens for "${type || 'general-task'}" (frontier is the exception)`,
+      escalated: false,
+      frontierIsException: true,
+      tokenBudgetExempt: true,
+      estimatedCostPerMillion: 0.3,
+    };
+  }
 
   // --- Escalation checks (override normal routing) ---
 
@@ -92,6 +158,27 @@ function classifyTask(task = {}) {
       tier: 'frontier',
       reason: `tag "${matchedTag}" matches architecture escalation`,
       escalated: true,
+    };
+  }
+
+  // 4. Primary agent stuck / advisor escalation (What Comes After Loops principle)
+  // When primary agent is stuck on hard problems like race conditions, escalate to stronger advisor (frontier)
+  if (task.isStuck === true || task.primaryAgentStuck === true || (task.failureReason && /race[-_ ]condition|deadlock|concurrency/i.test(task.failureReason))) {
+    return {
+      tier: 'frontier',
+      reason: `advisor escalation: primary agent stuck on hard problem (${task.failureReason || 'complex concurrency/knot'})`,
+      escalated: true,
+      advisorEscalation: true,
+    };
+  }
+
+  // 5. Offload routine self-contained tasks (docs, translations, static updates) to cheaper, faster subagents
+  if (task.isRoutine === true || (task.type && ['docs-update', 'translation', 'changelog-update', 'static-copy'].includes(task.type))) {
+    return {
+      tier: 'nano',
+      reason: `routine self-contained task "${task.type}" offloaded to cost-efficient tier`,
+      escalated: false,
+      offloadedRoutine: true,
     };
   }
 
@@ -292,7 +379,7 @@ function isSwitchyardEnabled(task = {}, env = process.env) {
 }
 
 function recommendExecutionPlan(task = {}, env = process.env) {
-  const classification = classifyTask(task);
+  const classification = classifyTask(task, env);
   const inference = recommendInferenceBackend(task, env);
 
   // When a local GLM backend is active, frontier tasks run at zero cost.
@@ -317,6 +404,27 @@ function recommendExecutionPlan(task = {}, env = process.env) {
     indexCacheEnabled: inference.backend.indexCacheEnabled,
     reason: `${classification.reason}; ${inference.reason}`,
   };
+
+  // Optional Revolut "Frontier is the Exception" economics and unrationed token telemetry.
+  if (isRevolutRoutingActive(task, env)) {
+    plan.revolutEconomics = {
+      frontierIsException: true,
+      selfHostedCostPerMTok: 0.30,
+      commercialCostPerMTok: 3.00,
+      costCutPct: 90,
+      costReductionPct: 90.0,
+      leadTimeProductivityGainPct: 70,
+      codingProductivityGainPct: 60,
+      productivityBoost: {
+        leadTimePct: 70,
+        codingTimePct: 60,
+      },
+      unlimitedTokensEnabled: true,
+      strategy: 'revolut-self-hosted-first',
+    };
+    plan.tokenBudgetExempt = classification.tokenBudgetExempt || effectiveTier === 'localFrontier';
+    plan.reason = `${plan.reason}; revolut-economics=90%-cost-cut`;
+  }
 
   // Optional NeMo Switchyard–style multi-model step plan (opt-in).
   if (isSwitchyardEnabled(task, env)) {
@@ -714,6 +822,8 @@ function getSystemPromptForTier(tier) {
 
 module.exports = {
   isCostRouteQwenEnabled,
+  isRevolutRoutingActive,
+  requiresVisionCapability,
   TIERS,
   TIER_ROUTING_ORDER,
   classifyTask,

@@ -1,0 +1,781 @@
+{
+  "draftId": "ramp_1793653193624",
+  "topic": "ramp",
+  "platforms": [
+    "linkedin",
+    "tiktok",
+    "x",
+    "bluesky",
+    "threads",
+    "reddit",
+    "hackernews",
+    "skool",
+    "biggerpockets",
+    "zyvop"
+  ],
+  "createdAt": "2026-11-02T20:59:53.624Z",
+  "status": "awaiting_approval",
+  "variations": {
+    "linkedin": {
+      "topic": "ramp",
+      "slides": [
+        {
+          "slideNum": 1,
+          "headline": "The Problem",
+          "body": "Generic LLM gateways route based on prompt size or token count. They don't know what the agent is actually doing — so they can't make optimal model choices.",
+          "stat1": {
+            "label": "Files scanned",
+            "value": "978"
+          },
+          "stat2": {
+            "label": "Cost reduction",
+            "value": "64%"
+          },
+          "screenshot": "/assets/diagrams/hero-thumbs.svg"
+        },
+        {
+          "slideNum": 2,
+          "headline": "The Steal",
+          "body": "Ramp's Laminar places model routing **inside the agent harness** because the harness already knows which prompts, tools, and domain context are involved. Across 973 agent threads, this cut median LLM ",
+          "stat1": {
+            "label": "Model tiers",
+            "value": "2"
+          },
+          "stat2": {
+            "label": "Local checks",
+            "value": "80%"
+          },
+          "screenshot": "/assets/diagrams/hero-thumbs.svg"
+        },
+        {
+          "slideNum": 3,
+          "headline": "Implementation",
+          "body": "Each verifier check carries a `modelHint` (`local` or `cloud`):\n\n- **Local tier**: `unit_tests`, `coverage_threshold`, `perf_budgets`, `self_heal`, `proof_pack_integrity` — all run on-device with zero",
+          "stat1": {
+            "label": "Tests",
+            "value": "1.40.0 (61 tests)"
+          },
+          "stat2": {
+            "label": "Health",
+            "value": "HEALTHY"
+          },
+          "screenshot": "/assets/diagrams/hero-thumbs.svg"
+        },
+        {
+          "slideNum": 4,
+          "headline": "Pro Upgrade",
+          "body": "Get 127 additional gates, real-time canary alerting, and cross-session cache reuse.\n\nKeyword: ramp\nFree guide: https://thumbgate.ai/blog/2026-10-26-stolen-infra-patterns",
+          "stat1": {
+            "label": "Pro gates",
+            "value": "+127"
+          },
+          "stat2": {
+            "label": "Pro price",
+            "value": "$19/mo"
+          },
+          "screenshot": "/assets/diagrams/hero-thumbs.svg",
+          "checkoutUrl": "https://thumbgate.ai/go/pro-direct?utm_source=social_carousel&utm_medium=carousel&utm_campaign=pro_upgrade"
+        }
+      ],
+      "caption": "🔥 The Problem 👉\n\nGeneric LLM gateways route based on prompt size or token count. They don't know what the agent is actually doing — so they can't make optimal model choices.\n\n• Free MIT CLI: npx thumbgate@latest init\n• $49 1-Time Production Rule-Pack: https://thumbgate.ai/go/bundle-49?utm_source=linkedin&utm_medium=carousel&utm_campaign=viral_carousel&creator=iganapolsky&campaign_variant=linkedin_hook_a\n• $19/mo Pro Direct: https://thumbgate.ai/go/pro-direct?utm_source=linkedin&utm_medium=carousel&utm_campaign=viral_carousel&creator=iganapolsky&campaign_variant=linkedin_hook_a\n\n#ClaudeCode #CursorAI #AIAgents #DevSecOps #ThumbGate",
+      "colorScheme": "blue-dark",
+      "finalSlide": "modified_with_link",
+      "keywords": [
+        "ramp"
+      ],
+      "leadMagnetUrl": "https://thumbgate.ai/blog/2026-10-26-stolen-infra-patterns",
+      "hookSlide": {
+        "title": "How Ramp cut AI inference costs by 64% with harness-level model routing 👉",
+        "subtitle": "64% reduction | FREE pattern steal",
+        "keyword": "ramp",
+        "logo": "ThumbGate",
+        "mascot": "/assets/diagrams/hero-thumbs.svg"
+      }
+    },
+    "tiktok": {
+      "topic": "ramp",
+      "slides": [
+        {
+          "slideNum": 1,
+          "headline": "The Problem",
+          "body": "Generic LLM gateways route based on prompt size or token count. They don't know what the agent is actually doing — so they can't make optimal model choices.",
+          "stat1": {
+            "label": "Files scanned",
+            "value": "978"
+          },
+          "stat2": {
+            "label": "Cost reduction",
+            "value": "64%"
+          },
+          "screenshot": "/assets/diagrams/hero-thumbs.svg"
+        },
+        {
+          "slideNum": 2,
+          "headline": "The Steal",
+          "body": "Ramp's Laminar places model routing **inside the agent harness** because the harness already knows which prompts, tools, and domain context are involved. Across 973 agent threads, this cut median LLM ",
+          "stat1": {
+            "label": "Model tiers",
+            "value": "2"
+          },
+          "stat2": {
+            "label": "Local checks",
+            "value": "80%"
+          },
+          "screenshot": "/assets/diagrams/hero-thumbs.svg"
+        },
+        {
+          "slideNum": 3,
+          "headline": "Implementation",
+          "body": "Each verifier check carries a `modelHint` (`local` or `cloud`):\n\n- **Local tier**: `unit_tests`, `coverage_threshold`, `perf_budgets`, `self_heal`, `proof_pack_integrity` — all run on-device with zero",
+          "stat1": {
+            "label": "Tests",
+            "value": "1.40.0 (61 tests)"
+          },
+          "stat2": {
+            "label": "Health",
+            "value": "HEALTHY"
+          },
+          "screenshot": "/assets/diagrams/hero-thumbs.svg"
+        },
+        {
+          "slideNum": 4,
+          "headline": "Pro Upgrade",
+          "body": "Get 127 additional gates, real-time canary alerting, and cross-session cache reuse.\n\nKeyword: ramp\nFree guide: https://thumbgate.ai/blog/2026-10-26-stolen-infra-patterns",
+          "stat1": {
+            "label": "Pro gates",
+            "value": "+127"
+          },
+          "stat2": {
+            "label": "Pro price",
+            "value": "$19/mo"
+          },
+          "screenshot": "/assets/diagrams/hero-thumbs.svg",
+          "checkoutUrl": "https://thumbgate.ai/go/pro-direct?utm_source=social_carousel&utm_medium=carousel&utm_campaign=pro_upgrade"
+        }
+      ],
+      "caption": "⚡ The Problem 👉 👉\n\nGeneric LLM gateways route based on prompt size or token count. They don't know what the agent is actually doing — so they can't make optimal model choices.\n\n[0-3s Hook] Stop letting coding agents run unguarded bash commands.\n[3-15s Proof] 0.041ms PreToolUse gate blocks retry loops & cuts token burn 64%.\n[15-30s CTA] Run `npx thumbgate@latest init` free or grab the $49 Rule-Pack in bio: https://thumbgate.ai/go/bundle-49?utm_source=tiktok&utm_medium=photo_carousel&utm_campaign=viral_tiktok&creator=iganapolsky&campaign_variant=tiktok_hook_a\n\n#ClaudeCode #CursorAI #CodingTok #AIAgents #TechTok",
+      "colorScheme": "cyan",
+      "finalSlide": "standard",
+      "keywords": [
+        "ramp"
+      ],
+      "leadMagnetUrl": "https://thumbgate.ai/blog/2026-10-26-stolen-infra-patterns",
+      "hookSlide": {
+        "title": "How Ramp cut AI inference costs by 64% with harness-level model routing 👉",
+        "subtitle": "64% reduction | FREE pattern steal",
+        "keyword": "ramp",
+        "logo": "ThumbGate",
+        "mascot": "/assets/diagrams/hero-thumbs.svg"
+      }
+    },
+    "x": {
+      "topic": "ramp",
+      "slides": [
+        {
+          "slideNum": 1,
+          "headline": "The Problem",
+          "body": "Generic LLM gateways route based on prompt size or token count. They don't know what the agent is actually doing — so they can't make optimal model choices.",
+          "stat1": {
+            "label": "Files scanned",
+            "value": "978"
+          },
+          "stat2": {
+            "label": "Cost reduction",
+            "value": "64%"
+          },
+          "screenshot": "/assets/diagrams/hero-thumbs.svg"
+        },
+        {
+          "slideNum": 2,
+          "headline": "The Steal",
+          "body": "Ramp's Laminar places model routing **inside the agent harness** because the harness already knows which prompts, tools, and domain context are involved. Across 973 agent threads, this cut median LLM ",
+          "stat1": {
+            "label": "Model tiers",
+            "value": "2"
+          },
+          "stat2": {
+            "label": "Local checks",
+            "value": "80%"
+          },
+          "screenshot": "/assets/diagrams/hero-thumbs.svg"
+        },
+        {
+          "slideNum": 3,
+          "headline": "Implementation",
+          "body": "Each verifier check carries a `modelHint` (`local` or `cloud`):\n\n- **Local tier**: `unit_tests`, `coverage_threshold`, `perf_budgets`, `self_heal`, `proof_pack_integrity` — all run on-device with zero",
+          "stat1": {
+            "label": "Tests",
+            "value": "1.40.0 (61 tests)"
+          },
+          "stat2": {
+            "label": "Health",
+            "value": "HEALTHY"
+          },
+          "screenshot": "/assets/diagrams/hero-thumbs.svg"
+        },
+        {
+          "slideNum": 4,
+          "headline": "Pro Upgrade",
+          "body": "Get 127 additional gates, real-time canary alerting, and cross-session cache reuse.\n\nKeyword: ramp\nFree guide: https://thumbgate.ai/blog/2026-10-26-stolen-infra-patterns",
+          "stat1": {
+            "label": "Pro gates",
+            "value": "+127"
+          },
+          "stat2": {
+            "label": "Pro price",
+            "value": "$19/mo"
+          },
+          "screenshot": "/assets/diagrams/hero-thumbs.svg",
+          "checkoutUrl": "https://thumbgate.ai/go/pro-direct?utm_source=social_carousel&utm_medium=carousel&utm_campaign=pro_upgrade"
+        }
+      ],
+      "caption": "The Problem 👉 ramp https://thumbgate.ai/blog/2026-10-26-stolen-infra-patterns\n\n#AI #DevOps",
+      "colorScheme": "black",
+      "finalSlide": "standard",
+      "keywords": [
+        "ramp"
+      ],
+      "leadMagnetUrl": "https://thumbgate.ai/blog/2026-10-26-stolen-infra-patterns",
+      "hookSlide": {
+        "title": "How Ramp cut AI inference costs by 64% with harness-level model routing 👉",
+        "subtitle": "64% reduction | FREE pattern steal",
+        "keyword": "ramp",
+        "logo": "ThumbGate",
+        "mascot": "/assets/diagrams/hero-thumbs.svg"
+      }
+    },
+    "bluesky": {
+      "topic": "ramp",
+      "slides": [
+        {
+          "slideNum": 1,
+          "headline": "The Problem",
+          "body": "Generic LLM gateways route based on prompt size or token count. They don't know what the agent is actually doing — so they can't make optimal model choices.",
+          "stat1": {
+            "label": "Files scanned",
+            "value": "978"
+          },
+          "stat2": {
+            "label": "Cost reduction",
+            "value": "64%"
+          },
+          "screenshot": "/assets/diagrams/hero-thumbs.svg"
+        },
+        {
+          "slideNum": 2,
+          "headline": "The Steal",
+          "body": "Ramp's Laminar places model routing **inside the agent harness** because the harness already knows which prompts, tools, and domain context are involved. Across 973 agent threads, this cut median LLM ",
+          "stat1": {
+            "label": "Model tiers",
+            "value": "2"
+          },
+          "stat2": {
+            "label": "Local checks",
+            "value": "80%"
+          },
+          "screenshot": "/assets/diagrams/hero-thumbs.svg"
+        },
+        {
+          "slideNum": 3,
+          "headline": "Implementation",
+          "body": "Each verifier check carries a `modelHint` (`local` or `cloud`):\n\n- **Local tier**: `unit_tests`, `coverage_threshold`, `perf_budgets`, `self_heal`, `proof_pack_integrity` — all run on-device with zero",
+          "stat1": {
+            "label": "Tests",
+            "value": "1.40.0 (61 tests)"
+          },
+          "stat2": {
+            "label": "Health",
+            "value": "HEALTHY"
+          },
+          "screenshot": "/assets/diagrams/hero-thumbs.svg"
+        },
+        {
+          "slideNum": 4,
+          "headline": "Pro Upgrade",
+          "body": "Get 127 additional gates, real-time canary alerting, and cross-session cache reuse.\n\nKeyword: ramp\nFree guide: https://thumbgate.ai/blog/2026-10-26-stolen-infra-patterns",
+          "stat1": {
+            "label": "Pro gates",
+            "value": "+127"
+          },
+          "stat2": {
+            "label": "Pro price",
+            "value": "$19/mo"
+          },
+          "screenshot": "/assets/diagrams/hero-thumbs.svg",
+          "checkoutUrl": "https://thumbgate.ai/go/pro-direct?utm_source=social_carousel&utm_medium=carousel&utm_campaign=pro_upgrade"
+        }
+      ],
+      "caption": "The Problem 👉\n\nGeneric LLM gateways route based on prompt size or token count. They don't know what the agent is actually doing — so they can't make optimal model choices.\n\n#AI #MachineLearning #ThumbGate",
+      "colorScheme": "cyan",
+      "finalSlide": "standard",
+      "keywords": [
+        "ramp"
+      ],
+      "leadMagnetUrl": "https://thumbgate.ai/blog/2026-10-26-stolen-infra-patterns",
+      "hookSlide": {
+        "title": "How Ramp cut AI inference costs by 64% with harness-level model routing 👉",
+        "subtitle": "64% reduction | FREE pattern steal",
+        "keyword": "ramp",
+        "logo": "ThumbGate",
+        "mascot": "/assets/diagrams/hero-thumbs.svg"
+      }
+    },
+    "threads": {
+      "topic": "ramp",
+      "slides": [
+        {
+          "slideNum": 1,
+          "headline": "The Problem",
+          "body": "Generic LLM gateways route based on prompt size or token count. They don't know what the agent is actually doing — so they can't make optimal model choices.",
+          "stat1": {
+            "label": "Files scanned",
+            "value": "978"
+          },
+          "stat2": {
+            "label": "Cost reduction",
+            "value": "64%"
+          },
+          "screenshot": "/assets/diagrams/hero-thumbs.svg"
+        },
+        {
+          "slideNum": 2,
+          "headline": "The Steal",
+          "body": "Ramp's Laminar places model routing **inside the agent harness** because the harness already knows which prompts, tools, and domain context are involved. Across 973 agent threads, this cut median LLM ",
+          "stat1": {
+            "label": "Model tiers",
+            "value": "2"
+          },
+          "stat2": {
+            "label": "Local checks",
+            "value": "80%"
+          },
+          "screenshot": "/assets/diagrams/hero-thumbs.svg"
+        },
+        {
+          "slideNum": 3,
+          "headline": "Implementation",
+          "body": "Each verifier check carries a `modelHint` (`local` or `cloud`):\n\n- **Local tier**: `unit_tests`, `coverage_threshold`, `perf_budgets`, `self_heal`, `proof_pack_integrity` — all run on-device with zero",
+          "stat1": {
+            "label": "Tests",
+            "value": "1.40.0 (61 tests)"
+          },
+          "stat2": {
+            "label": "Health",
+            "value": "HEALTHY"
+          },
+          "screenshot": "/assets/diagrams/hero-thumbs.svg"
+        },
+        {
+          "slideNum": 4,
+          "headline": "Pro Upgrade",
+          "body": "Get 127 additional gates, real-time canary alerting, and cross-session cache reuse.\n\nKeyword: ramp\nFree guide: https://thumbgate.ai/blog/2026-10-26-stolen-infra-patterns",
+          "stat1": {
+            "label": "Pro gates",
+            "value": "+127"
+          },
+          "stat2": {
+            "label": "Pro price",
+            "value": "$19/mo"
+          },
+          "screenshot": "/assets/diagrams/hero-thumbs.svg",
+          "checkoutUrl": "https://thumbgate.ai/go/pro-direct?utm_source=social_carousel&utm_medium=carousel&utm_campaign=pro_upgrade"
+        }
+      ],
+      "caption": "The Problem 👉 👉\n\nGeneric LLM gateways route based on prompt size or token count. They don't know what the agent is actually doing — so they can't make optimal model choices.\n\n#AI #ThumbGate",
+      "colorScheme": "cyan",
+      "finalSlide": "standard",
+      "keywords": [
+        "ramp"
+      ],
+      "leadMagnetUrl": "https://thumbgate.ai/blog/2026-10-26-stolen-infra-patterns",
+      "hookSlide": {
+        "title": "How Ramp cut AI inference costs by 64% with harness-level model routing 👉",
+        "subtitle": "64% reduction | FREE pattern steal",
+        "keyword": "ramp",
+        "logo": "ThumbGate",
+        "mascot": "/assets/diagrams/hero-thumbs.svg"
+      }
+    },
+    "reddit": {
+      "topic": "ramp",
+      "slides": [
+        {
+          "slideNum": 1,
+          "headline": "The Problem",
+          "body": "Generic LLM gateways route based on prompt size or token count. They don't know what the agent is actually doing — so they can't make optimal model choices.",
+          "stat1": {
+            "label": "Files scanned",
+            "value": "978"
+          },
+          "stat2": {
+            "label": "Cost reduction",
+            "value": "64%"
+          },
+          "screenshot": "/assets/diagrams/hero-thumbs.svg"
+        },
+        {
+          "slideNum": 2,
+          "headline": "The Steal",
+          "body": "Ramp's Laminar places model routing **inside the agent harness** because the harness already knows which prompts, tools, and domain context are involved. Across 973 agent threads, this cut median LLM ",
+          "stat1": {
+            "label": "Model tiers",
+            "value": "2"
+          },
+          "stat2": {
+            "label": "Local checks",
+            "value": "80%"
+          },
+          "screenshot": "/assets/diagrams/hero-thumbs.svg"
+        },
+        {
+          "slideNum": 3,
+          "headline": "Implementation",
+          "body": "Each verifier check carries a `modelHint` (`local` or `cloud`):\n\n- **Local tier**: `unit_tests`, `coverage_threshold`, `perf_budgets`, `self_heal`, `proof_pack_integrity` — all run on-device with zero",
+          "stat1": {
+            "label": "Tests",
+            "value": "1.40.0 (61 tests)"
+          },
+          "stat2": {
+            "label": "Health",
+            "value": "HEALTHY"
+          },
+          "screenshot": "/assets/diagrams/hero-thumbs.svg"
+        },
+        {
+          "slideNum": 4,
+          "headline": "Pro Upgrade",
+          "body": "Get 127 additional gates, real-time canary alerting, and cross-session cache reuse.\n\nKeyword: ramp\nFree guide: https://thumbgate.ai/blog/2026-10-26-stolen-infra-patterns",
+          "stat1": {
+            "label": "Pro gates",
+            "value": "+127"
+          },
+          "stat2": {
+            "label": "Pro price",
+            "value": "$19/mo"
+          },
+          "screenshot": "/assets/diagrams/hero-thumbs.svg",
+          "checkoutUrl": "https://thumbgate.ai/go/pro-direct?utm_source=social_carousel&utm_medium=carousel&utm_campaign=pro_upgrade"
+        }
+      ],
+      "caption": "[Show HN] The Problem 👉\n\nGeneric LLM gateways route based on prompt size or token count. They don't know what the agent is actually doing — so they can't make optimal model choices.\n\nOpen source: https://thumbgate.ai/blog/2026-10-26-stolen-infra-patterns",
+      "colorScheme": "cyan",
+      "finalSlide": "standard",
+      "keywords": [
+        "ramp"
+      ],
+      "leadMagnetUrl": "https://thumbgate.ai/blog/2026-10-26-stolen-infra-patterns",
+      "hookSlide": {
+        "title": "How Ramp cut AI inference costs by 64% with harness-level model routing 👉",
+        "subtitle": "64% reduction | FREE pattern steal",
+        "keyword": "ramp",
+        "logo": "ThumbGate",
+        "mascot": "/assets/diagrams/hero-thumbs.svg"
+      }
+    },
+    "hackernews": {
+      "topic": "ramp",
+      "slides": [
+        {
+          "slideNum": 1,
+          "headline": "The Problem",
+          "body": "Generic LLM gateways route based on prompt size or token count. They don't know what the agent is actually doing — so they can't make optimal model choices.",
+          "stat1": {
+            "label": "Files scanned",
+            "value": "978"
+          },
+          "stat2": {
+            "label": "Cost reduction",
+            "value": "64%"
+          },
+          "screenshot": "/assets/diagrams/hero-thumbs.svg"
+        },
+        {
+          "slideNum": 2,
+          "headline": "The Steal",
+          "body": "Ramp's Laminar places model routing **inside the agent harness** because the harness already knows which prompts, tools, and domain context are involved. Across 973 agent threads, this cut median LLM ",
+          "stat1": {
+            "label": "Model tiers",
+            "value": "2"
+          },
+          "stat2": {
+            "label": "Local checks",
+            "value": "80%"
+          },
+          "screenshot": "/assets/diagrams/hero-thumbs.svg"
+        },
+        {
+          "slideNum": 3,
+          "headline": "Implementation",
+          "body": "Each verifier check carries a `modelHint` (`local` or `cloud`):\n\n- **Local tier**: `unit_tests`, `coverage_threshold`, `perf_budgets`, `self_heal`, `proof_pack_integrity` — all run on-device with zero",
+          "stat1": {
+            "label": "Tests",
+            "value": "1.40.0 (61 tests)"
+          },
+          "stat2": {
+            "label": "Health",
+            "value": "HEALTHY"
+          },
+          "screenshot": "/assets/diagrams/hero-thumbs.svg"
+        },
+        {
+          "slideNum": 4,
+          "headline": "Pro Upgrade",
+          "body": "Get 127 additional gates, real-time canary alerting, and cross-session cache reuse.\n\nKeyword: ramp\nFree guide: https://thumbgate.ai/blog/2026-10-26-stolen-infra-patterns",
+          "stat1": {
+            "label": "Pro gates",
+            "value": "+127"
+          },
+          "stat2": {
+            "label": "Pro price",
+            "value": "$19/mo"
+          },
+          "screenshot": "/assets/diagrams/hero-thumbs.svg",
+          "checkoutUrl": "https://thumbgate.ai/go/pro-direct?utm_source=social_carousel&utm_medium=carousel&utm_campaign=pro_upgrade"
+        }
+      ],
+      "caption": "Show HN: The Problem 👉\n\nhttps://thumbgate.ai/blog/2026-10-26-stolen-infra-patterns",
+      "colorScheme": "cyan",
+      "finalSlide": "standard",
+      "keywords": [
+        "ramp"
+      ],
+      "leadMagnetUrl": "https://thumbgate.ai/blog/2026-10-26-stolen-infra-patterns",
+      "hookSlide": {
+        "title": "How Ramp cut AI inference costs by 64% with harness-level model routing 👉",
+        "subtitle": "64% reduction | FREE pattern steal",
+        "keyword": "ramp",
+        "logo": "ThumbGate",
+        "mascot": "/assets/diagrams/hero-thumbs.svg"
+      }
+    },
+    "skool": {
+      "topic": "ramp",
+      "slides": [
+        {
+          "slideNum": 1,
+          "headline": "The Problem",
+          "body": "Generic LLM gateways route based on prompt size or token count. They don't know what the agent is actually doing — so they can't make optimal model choices.",
+          "stat1": {
+            "label": "Files scanned",
+            "value": "978"
+          },
+          "stat2": {
+            "label": "Cost reduction",
+            "value": "64%"
+          },
+          "screenshot": "/assets/diagrams/hero-thumbs.svg"
+        },
+        {
+          "slideNum": 2,
+          "headline": "The Steal",
+          "body": "Ramp's Laminar places model routing **inside the agent harness** because the harness already knows which prompts, tools, and domain context are involved. Across 973 agent threads, this cut median LLM ",
+          "stat1": {
+            "label": "Model tiers",
+            "value": "2"
+          },
+          "stat2": {
+            "label": "Local checks",
+            "value": "80%"
+          },
+          "screenshot": "/assets/diagrams/hero-thumbs.svg"
+        },
+        {
+          "slideNum": 3,
+          "headline": "Implementation",
+          "body": "Each verifier check carries a `modelHint` (`local` or `cloud`):\n\n- **Local tier**: `unit_tests`, `coverage_threshold`, `perf_budgets`, `self_heal`, `proof_pack_integrity` — all run on-device with zero",
+          "stat1": {
+            "label": "Tests",
+            "value": "1.40.0 (61 tests)"
+          },
+          "stat2": {
+            "label": "Health",
+            "value": "HEALTHY"
+          },
+          "screenshot": "/assets/diagrams/hero-thumbs.svg"
+        },
+        {
+          "slideNum": 4,
+          "headline": "Pro Upgrade",
+          "body": "Get 127 additional gates, real-time canary alerting, and cross-session cache reuse.\n\nKeyword: ramp\nFree guide: https://thumbgate.ai/blog/2026-10-26-stolen-infra-patterns",
+          "stat1": {
+            "label": "Pro gates",
+            "value": "+127"
+          },
+          "stat2": {
+            "label": "Pro price",
+            "value": "$19/mo"
+          },
+          "screenshot": "/assets/diagrams/hero-thumbs.svg",
+          "checkoutUrl": "https://thumbgate.ai/go/pro-direct?utm_source=social_carousel&utm_medium=carousel&utm_campaign=pro_upgrade"
+        }
+      ],
+      "caption": "🧠 WEEKLY PATTERN DROP: The Problem 👉\n\nGeneric LLM gateways route based on prompt size or token count. They don't know what the agent is actually doing — so they can't make optimal model choices.\n\nPro: https://thumbgate.ai/blog/2026-10-26-stolen-infra-patterns",
+      "colorScheme": "cyan",
+      "finalSlide": "standard",
+      "keywords": [
+        "ramp"
+      ],
+      "leadMagnetUrl": "https://thumbgate.ai/blog/2026-10-26-stolen-infra-patterns",
+      "hookSlide": {
+        "title": "How Ramp cut AI inference costs by 64% with harness-level model routing 👉",
+        "subtitle": "64% reduction | FREE pattern steal",
+        "keyword": "ramp",
+        "logo": "ThumbGate",
+        "mascot": "/assets/diagrams/hero-thumbs.svg"
+      }
+    },
+    "biggerpockets": {
+      "topic": "ramp",
+      "slides": [
+        {
+          "slideNum": 1,
+          "headline": "The Problem",
+          "body": "Generic LLM gateways route based on prompt size or token count. They don't know what the agent is actually doing — so they can't make optimal model choices.",
+          "stat1": {
+            "label": "Files scanned",
+            "value": "978"
+          },
+          "stat2": {
+            "label": "Cost reduction",
+            "value": "64%"
+          },
+          "screenshot": "/assets/diagrams/hero-thumbs.svg"
+        },
+        {
+          "slideNum": 2,
+          "headline": "The Steal",
+          "body": "Ramp's Laminar places model routing **inside the agent harness** because the harness already knows which prompts, tools, and domain context are involved. Across 973 agent threads, this cut median LLM ",
+          "stat1": {
+            "label": "Model tiers",
+            "value": "2"
+          },
+          "stat2": {
+            "label": "Local checks",
+            "value": "80%"
+          },
+          "screenshot": "/assets/diagrams/hero-thumbs.svg"
+        },
+        {
+          "slideNum": 3,
+          "headline": "Implementation",
+          "body": "Each verifier check carries a `modelHint` (`local` or `cloud`):\n\n- **Local tier**: `unit_tests`, `coverage_threshold`, `perf_budgets`, `self_heal`, `proof_pack_integrity` — all run on-device with zero",
+          "stat1": {
+            "label": "Tests",
+            "value": "1.40.0 (61 tests)"
+          },
+          "stat2": {
+            "label": "Health",
+            "value": "HEALTHY"
+          },
+          "screenshot": "/assets/diagrams/hero-thumbs.svg"
+        },
+        {
+          "slideNum": 4,
+          "headline": "Pro Upgrade",
+          "body": "Get 127 additional gates, real-time canary alerting, and cross-session cache reuse.\n\nKeyword: ramp\nFree guide: https://thumbgate.ai/blog/2026-10-26-stolen-infra-patterns",
+          "stat1": {
+            "label": "Pro gates",
+            "value": "+127"
+          },
+          "stat2": {
+            "label": "Pro price",
+            "value": "$19/mo"
+          },
+          "screenshot": "/assets/diagrams/hero-thumbs.svg",
+          "checkoutUrl": "https://thumbgate.ai/go/pro-direct?utm_source=social_carousel&utm_medium=carousel&utm_campaign=pro_upgrade"
+        }
+      ],
+      "caption": "REI teams: The Problem 👉\n\nGeneric LLM gateways route based on prompt size or token count. They don't know what the agent is actually doing — so they can't make optimal model choices.\n\n#RealEstate #AI #ThumbGate",
+      "colorScheme": "cyan",
+      "finalSlide": "standard",
+      "keywords": [
+        "ramp"
+      ],
+      "leadMagnetUrl": "https://thumbgate.ai/blog/2026-10-26-stolen-infra-patterns",
+      "hookSlide": {
+        "title": "How Ramp cut AI inference costs by 64% with harness-level model routing 👉",
+        "subtitle": "64% reduction | FREE pattern steal",
+        "keyword": "ramp",
+        "logo": "ThumbGate",
+        "mascot": "/assets/diagrams/hero-thumbs.svg"
+      }
+    },
+    "zyvop": {
+      "topic": "ramp",
+      "slides": [
+        {
+          "slideNum": 1,
+          "headline": "The Problem",
+          "body": "Generic LLM gateways route based on prompt size or token count. They don't know what the agent is actually doing — so they can't make optimal model choices.",
+          "stat1": {
+            "label": "Files scanned",
+            "value": "978"
+          },
+          "stat2": {
+            "label": "Cost reduction",
+            "value": "64%"
+          },
+          "screenshot": "/assets/diagrams/hero-thumbs.svg"
+        },
+        {
+          "slideNum": 2,
+          "headline": "The Steal",
+          "body": "Ramp's Laminar places model routing **inside the agent harness** because the harness already knows which prompts, tools, and domain context are involved. Across 973 agent threads, this cut median LLM ",
+          "stat1": {
+            "label": "Model tiers",
+            "value": "2"
+          },
+          "stat2": {
+            "label": "Local checks",
+            "value": "80%"
+          },
+          "screenshot": "/assets/diagrams/hero-thumbs.svg"
+        },
+        {
+          "slideNum": 3,
+          "headline": "Implementation",
+          "body": "Each verifier check carries a `modelHint` (`local` or `cloud`):\n\n- **Local tier**: `unit_tests`, `coverage_threshold`, `perf_budgets`, `self_heal`, `proof_pack_integrity` — all run on-device with zero",
+          "stat1": {
+            "label": "Tests",
+            "value": "1.40.0 (61 tests)"
+          },
+          "stat2": {
+            "label": "Health",
+            "value": "HEALTHY"
+          },
+          "screenshot": "/assets/diagrams/hero-thumbs.svg"
+        },
+        {
+          "slideNum": 4,
+          "headline": "Pro Upgrade",
+          "body": "Get 127 additional gates, real-time canary alerting, and cross-session cache reuse.\n\nKeyword: ramp\nFree guide: https://thumbgate.ai/blog/2026-10-26-stolen-infra-patterns",
+          "stat1": {
+            "label": "Pro gates",
+            "value": "+127"
+          },
+          "stat2": {
+            "label": "Pro price",
+            "value": "$19/mo"
+          },
+          "screenshot": "/assets/diagrams/hero-thumbs.svg",
+          "checkoutUrl": "https://thumbgate.ai/go/pro-direct?utm_source=social_carousel&utm_medium=carousel&utm_campaign=pro_upgrade"
+        }
+      ],
+      "caption": "The Problem 👉 ramp https://thumbgate.ai/blog/2026-10-26-stolen-infra-patterns\n\n#AI",
+      "colorScheme": "cyan",
+      "finalSlide": "standard",
+      "keywords": [
+        "ramp"
+      ],
+      "leadMagnetUrl": "https://thumbgate.ai/blog/2026-10-26-stolen-infra-patterns",
+      "hookSlide": {
+        "title": "How Ramp cut AI inference costs by 64% with harness-level model routing 👉",
+        "subtitle": "64% reduction | FREE pattern steal",
+        "keyword": "ramp",
+        "logo": "ThumbGate",
+        "mascot": "/assets/diagrams/hero-thumbs.svg"
+      }
+    }
+  },
+  "approvalInstructions": "Review all variations before publishing. Run: node scripts/social-carousel-generator.js --topic \"ramp\" --publish ramp_1793653193624"
+}

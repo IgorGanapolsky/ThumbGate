@@ -128,6 +128,14 @@ const PLATFORMS = [
     style: 'canonical-self-answered-qa',
     cta: '*(Disclosure: I maintain [ThumbGate](https://github.com/IgorGanapolsky/ThumbGate), an MIT-licensed PreToolUse firewall (`npx thumbgate@latest init`); see the [architecture & rule reference](https://thumbgate.ai/guide?utm_source=stackoverflow&utm_medium=answer&utm_campaign=so_aeo_71611).)*',
   },
+  {
+    id: 'tiktok',
+    name: 'TikTok',
+    format: 'tiktok-short-video',
+    length: 'short',
+    style: 'viral-terminal-pov-hook',
+    cta: '• Link in Bio ($49 1-Time Rule-Pack Kit): https://thumbgate.ai/go/bundle-49?utm_source=tiktok&utm_medium=short_video&utm_campaign=nov2026_viral\n• $19/mo Pro Direct: https://thumbgate.ai/go/pro-direct?utm_source=tiktok&utm_medium=bio_link&utm_campaign=nov2026_viral\n• Free MIT CLI: npx thumbgate@latest init',
+  },
 ];
 
 // Content banks for each theme
@@ -370,7 +378,10 @@ function generateContent(themeId, platform, pieceIndex) {
   // Platform-specific formatting
   switch (platform.format) {
     case 'professional-post': // LinkedIn
-      content = `#ThumbGate\n\n${hook}\n\n**Key insight**: ${fact}\n\n**Pattern**: ${pattern}\n\n**Data point**: ${dataPoint}\n\n${platform.cta}\n`;
+      content = `#ThumbGate #ClaudeCode #Cursor #AIInfrastructure #DevSecOps\n\n${hook}\n\n**Key insight**: ${fact}\n\n**Pattern**: ${pattern}\n\n**Measured Production Benchmark**: ${dataPoint}\n\n**4-Tier Self-Serve & Enterprise Ladder (Zero Procurement Delay under $50)**:\n• Free CLI (MIT): \`npx thumbgate@latest init\`\n• $9.99 Playbook: https://thumbgate.ai/go/playbook-999?utm_source=linkedin&utm_medium=social&utm_campaign=nov2026_viral\n• $49 Complete Production Rule-Pack & DPO/AKV Kit (1-Time Corporate Card Expense): https://thumbgate.ai/go/bundle-49?utm_source=linkedin&utm_medium=social&utm_campaign=nov2026_viral\n• $19/mo ThumbGate Pro Direct: https://thumbgate.ai/go/pro-direct?utm_source=linkedin&utm_medium=social&utm_campaign=nov2026_viral\n• $499 48-Hour CTO Workflow Gate Diagnostic: https://thumbgate.ai/diagnostic?utm_source=linkedin&utm_medium=social&utm_campaign=nov2026_viral\n`;
+      break;
+    case 'tiktok-short-video': // TikTok (15s-45s vertical terminal POV + green-screen hook)
+      content = `## TikTok Vertical Video Script (30s · 9:16 Terminal Split-Screen)\n\n**[0:00–0:03 HOOK — Text Overlay on Terminal Crash]**\n"${hook}"\n\n**[0:03–0:12 THE PROBLEM — Show Runaway Agent Loop / Force-Push]**\n"Watch what happens when Claude Code or Cursor hits a flaky tool call without a PreToolUse gate: it loops 30 times, burns your prompt cache, or tries a destructive command."\n• Benchmark: ${dataPoint}\n\n**[0:12–0:22 THE 0.04ms FIX — Run \`npx thumbgate@latest init\`]**\n"Drop in one local PreToolUse firewall. Zero cloud latency, 0.041ms p95 on local CPU:"\n• ${fact}\n• ${pattern}\n\n**[0:22–0:30 CTA — Point to Bio & Pinned Comment]**\n"Run \`npx thumbgate@latest init\` free (MIT), or grab the $49 1-Time Production Rule-Pack in my bio so you can expense it on your corporate card without manager approval."\n\n**Caption & Pinned Comment:**\n${platform.cta}\n#coding #aiagents #claudecode #cursor #softwareengineering #devsecops #techtt\n`;
       break;
     case 'thread-starter': // X
       content = `#ThumbGate\n\n${hook}\n\n${fact}\n\n${platform.cta}\n`;

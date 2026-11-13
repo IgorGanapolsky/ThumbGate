@@ -68,11 +68,9 @@ const BOT_PATTERNS = [
   /\bredditbot\b/i,
   /\bembedly\b/i,
   /\biframely\b/i,
-  // Generic bot/crawler/spider markers
-  /\bbot\b/i,
-  /\bcrawler\b/i,
+  // Generic bot/crawler/spider markers (including compound names like ElevenlabsCrawler, SolvedEarthPriceBot)
+  /(?:bot|crawler|spider)\b/i,
   /\bcrawl\b/i,
-  /\bspider\b/i,
   /\brobot\b/i,
   /\bheadless(?:chrome|browser)?\b/i,
   /\bphantomjs\b/i,
@@ -94,10 +92,15 @@ const BOT_PATTERNS = [
   /scrapy/i,
   /httpclient/i,
   /\bruby\b/i,
-  // API/test tools
+  // API/test tools & synthetic probes
   /\bpostman(?:runtime)?\b/i,
   /\binsomnia\b/i,
   /\bhttpie\b/i,
+  /protocolv1-gate/i,
+  /revenueauditor/i,
+  /shap-user/i,
+  /thumbgate-(?:check|cash-check|reflection|verification|analytics)/i,
+  /13_2_3/i,
   // Uptime/monitoring/security scanners
   /\buptimerobot\b/i,
   /\bbetteruptime\b/i,
@@ -116,6 +119,10 @@ const BOT_PATTERNS = [
   /\blighthouse\b/i,
   /\bspeedcurve\b/i,
   /\bpagespeed\b/i,
+  /skillsrep-scanner/i,
+  /thumbgate-revenue-audit/i,
+  /dayglass-money-probe/i,
+  /ahc\b/i,
 ];
 
 function normalizeHeader(value) {
@@ -128,6 +135,10 @@ function normalizeHeader(value) {
  * @returns {{ isBot: boolean, reason: string | null }}
  */
 function classifyRequester(headers = {}) {
+  const probeHeader = normalizeHeader(headers['x-thumbgate-probe'] || headers['x-probe']);
+  if (probeHeader) {
+    return { isBot: true, reason: 'synthetic_probe_header' };
+  }
   const ua = normalizeHeader(headers['user-agent'] || headers['User-Agent']).trim();
   if (!ua) {
     return { isBot: true, reason: 'missing_user_agent' };

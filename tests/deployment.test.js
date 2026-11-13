@@ -263,6 +263,55 @@ test('web telemetry persists acquisition and attribution fields', async () => {
   assert.equal(entry.ctaId, 'pricing_pro');
 });
 
+test('web telemetry ping and roast hydrate missing visitorId, sessionId, and acquisitionId from first-party journey cookies', async () => {
+  const cookieHeader = 'thumbgate_visitor_id=visitor_cookie_99; thumbgate_session_id=session_cookie_99; thumbgate_acquisition_id=acq_cookie_99';
+  const pingRes = await fetch(deployUrl('/v1/telemetry/ping'), {
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json',
+      cookie: cookieHeader,
+    },
+    body: JSON.stringify({
+      eventType: 'checkout_interstitial_abandoned',
+      clientType: 'web',
+      page: '/checkout/pro',
+      reasonCode: 'left_without_confirming',
+      engagementMs: 4200,
+      dwellBucket: 'lt_5s',
+    }),
+  });
+  assert.equal(pingRes.status, 204);
+
+  const telemetryPath = path.join(tmpFeedbackDir, 'telemetry-pings.jsonl');
+  let lines = fs.readFileSync(telemetryPath, 'utf8').trim().split('\n').filter(Boolean);
+  const abandonEntry = JSON.parse(lines[lines.length - 1]);
+  assert.equal(abandonEntry.eventType, 'checkout_interstitial_abandoned');
+  assert.equal(abandonEntry.visitorId, 'visitor_cookie_99');
+  assert.equal(abandonEntry.sessionId, 'session_cookie_99');
+  assert.equal(abandonEntry.acquisitionId, 'acq_cookie_99');
+  assert.equal(abandonEntry.engagementMs, 4200);
+  assert.equal(abandonEntry.dwellBucket, 'lt_5s');
+
+  const roastRes = await fetch(deployUrl('/v1/feedback/roast'), {
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json',
+      cookie: cookieHeader,
+    },
+    body: JSON.stringify({
+      reasonCode: 'subscription_fatigue_want_one_time',
+      reasonDetail: 'Prefer a one-time license over recurring billing',
+    }),
+  });
+  assert.equal(roastRes.status, 200);
+  lines = fs.readFileSync(telemetryPath, 'utf8').trim().split('\n').filter(Boolean);
+  const roastEntry = JSON.parse(lines[lines.length - 1]);
+  assert.equal(roastEntry.eventType, 'buyer_critique');
+  assert.equal(roastEntry.visitorId, 'visitor_cookie_99');
+  assert.equal(roastEntry.sessionId, 'session_cookie_99');
+  assert.equal(roastEntry.acquisitionId, 'acq_cookie_99');
+});
+
 test('PORT env var controls listen port (server started on custom port)', async () => {
   // Already running on the assigned port — this test confirms it responded there.
   const res = await fetch(deployUrl('/health'));

@@ -616,7 +616,24 @@ const TOOLS = [
     description: 'Get feedback stats and recommendations',
     inputSchema: {
       type: 'object',
-      properties: {},
+      properties: {
+        verbose: {
+          type: 'boolean',
+          description: 'Return the full uncompacted feedback analysis dump (default: false returns compact <2k summary).',
+        },
+        humanOnly: {
+          type: 'boolean',
+          description: 'Filter to explicit human feedback entries only.',
+        },
+        projectScope: {
+          type: 'string',
+          description: 'Optional project scope filter (eci | personal | all).',
+        },
+        includeArchivedSkills: {
+          type: 'boolean',
+          description: 'Include archived historical skill buckets when verbose=true.',
+        },
+      },
     },
   }),
   readOnlyTool({

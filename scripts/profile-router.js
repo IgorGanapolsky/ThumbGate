@@ -17,6 +17,7 @@ const {
   getSettingOrigin,
 } = require('./settings-hierarchy');
 const { recommendInferenceBackend } = require('./local-model-profile');
+const { routeByGdpxEfficiency } = require('./rsi-economics-governor');
 
 // ---------------------------------------------------------------------------
 // Context classifiers
@@ -36,7 +37,7 @@ const { recommendInferenceBackend } = require('./local-model-profile');
  */
 function routeProfile(params = {}) {
   const { toolName, sessionType, hasWriteIntent, settingsOptions } = params;
-  const explicitProfile = process.env.THUMBGATE_MCP_PROFILE;
+  const explicitProfile = (process.env.THUMBGATE_MCP_PROFILE || '').trim() || null;
   const defaultProfile = getSetting('mcp.defaultProfile', settingsOptions) || 'essential';
   const readonlyProfile = getSetting('mcp.readonlySessionProfile', settingsOptions) || 'readonly';
   const defaultOrigin = getSettingOrigin('mcp.defaultProfile', settingsOptions);
@@ -110,6 +111,7 @@ function loadProfilesLazy() {
 const PROFILE_RESTRICTIVENESS_ORDER = Object.freeze([
   'locked',
   'readonly',
+  'lean',
   'essential',
   'commerce',
   'dispatch',
@@ -226,6 +228,13 @@ function routeInference(params = {}) {
     tags: params.tags,
     privacyRoute: privacy.route,
   }, params.env || process.env);
+  const gdpxEconomics = routeByGdpxEfficiency({
+    baselineModelId: params.baselineModelId,
+    minGdpxScore: params.minGdpxScore,
+    maxCostPerTaskUsd: privacy.route === 'local' ? 0.05 : params.maxCostPerTaskUsd,
+    rateLimitedProvider: params.rateLimitedProvider,
+    requiredConnector: params.requiredConnector,
+  });
 
   return {
     route: privacy.route === 'local' ? 'local' : inference.route,
@@ -234,6 +243,7 @@ function routeInference(params = {}) {
     recommendationClass: inference.recommendationClass,
     privacy,
     backend: inference.backend,
+    gdpxEconomics,
   };
 }
 

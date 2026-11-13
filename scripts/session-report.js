@@ -73,6 +73,8 @@ function buildSessionReport({ windowHours } = {}) {
     report.feedback = {
       totalPositive: feedback.totalPositive || 0,
       totalNegative: feedback.totalNegative || 0,
+      approvalRate: feedback.approvalRate || 0,
+      qualityMetrics: feedback.qualityMetrics || null,
       topNegativeTags: topNegativeTags(feedback.tags || {}),
     };
   } catch (err) {
@@ -82,11 +84,23 @@ function buildSessionReport({ windowHours } = {}) {
   try {
     const { loadStats } = require('./gates-engine');
     const stats = loadStats() || {};
+    const blocked = stats.blocked || 0;
+    const warned = stats.warned || 0;
+    const passed = stats.passed || 0;
+    const pendingApproval = stats.pendingApproval || 0;
+    const logged = stats.logged || 0;
+    const repeatBlocks = Number(stats.recurringBlocks || stats.repeatBlocks || 0);
+    const distinctBlocks = Number.isFinite(stats.distinctBlocks)
+      ? stats.distinctBlocks
+      : Math.max(0, blocked + warned - repeatBlocks);
     report.gates = {
-      blocked: stats.blocked || 0,
-      warned: stats.warned || 0,
-      passed: stats.passed || 0,
-      pendingApproval: stats.pendingApproval || 0,
+      totalEvaluations: stats.totalEvaluations || (blocked + warned + passed + pendingApproval + logged),
+      blocked,
+      distinctBlocks,
+      repeatBlocks,
+      warned,
+      passed,
+      pendingApproval,
       topGates: topGates(stats.byGate || {}),
     };
   } catch (err) {

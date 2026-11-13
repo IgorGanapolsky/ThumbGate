@@ -595,7 +595,7 @@ function computePreventionImpact(feedbackDir, gateStats) {
 }
 
 function computeRoiSummary(gateStats, prevention, analytics, billing) {
-  // North Star: Earn $100/day after-tax profit
+  // North Star: make $300/day, 24/7 ($9,000/mo) after-tax profit
   // ROI metrics that drive acquisition and retention
 
   const blockedActions = gateStats.blocked || 0;
@@ -638,8 +638,8 @@ function computeRoiSummary(gateStats, prevention, analytics, billing) {
     paidOrders,
 
     // North Star tracking
-    monthlyRevenueTarget: 3000, // $100/day after tax
-    revenueProgress: monthlyRevenue > 0 ? (monthlyRevenue / 3000 * 100).toFixed(1) : 0,
+    monthlyRevenueTarget: 9000, // make $300/day, 24/7
+    revenueProgress: monthlyRevenue > 0 ? (monthlyRevenue / 9000 * 100).toFixed(1) : 0,
 
     // Process efficiency (GitHub Label Archiving benefits)
     prMergeRate: Number((prMergeRate * 100).toFixed(1)),
@@ -2019,7 +2019,7 @@ function generateDashboard(feedbackDir, options = {}) {
   });
   const reviewDelta = summarizeReviewDelta(entries, memoryEntries, auditEntries, reviewBaseline, reviewSnapshot);
 
-  // High-ROI metrics for North Star: $100/day after-tax profit
+  // High-ROI metrics for North Star: make $300/day, 24/7
   const roiSummary = computeRoiSummary(gateStats, prevention, analytics, billingSummary);
 
   return {

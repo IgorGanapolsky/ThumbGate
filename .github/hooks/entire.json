@@ -21,6 +21,13 @@
         "comment": "Entire CLI"
       }
     ],
+    "preToolUse": [
+      {
+        "type": "command",
+        "bash": "sh -c 'if ! command -v entire >/dev/null 2>&1; then exit 0; fi; exec entire hooks copilot-cli pre-tool-use'",
+        "comment": "Entire CLI"
+      }
+    ],
     "sessionEnd": [
       {
         "type": "command",

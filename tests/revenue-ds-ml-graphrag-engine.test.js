@@ -140,3 +140,24 @@ test('vLLM Oct/Nov 2026 Serving Steal: HiSparse MNNVL crash guard, +43.9% cached
   assert.equal(lowLatencyPlan.disaggregatedServing.lowLatencySpecializedDecode.singleUserP90TokensPerSec, 826);
   assert.equal(lowLatencyPlan.disaggregatedServing.lowLatencySpecializedDecode.stickyFaultTimeoutSec, 10);
 });
+
+test('Nov 3 2026 Steals (#4 KG RAG, #5 Nicks Bops $25k, #6 Nace Drex Max v1 System-One, #7 OpenAI Pando Git, #8 SF Compute Autoresearch)', () => {
+  const {
+    evaluateEnterpriseKnowledgeGraphRag8StepHybridSteal,
+    evaluateNicksBops25kCustomAiAgentSystemSteal,
+    evaluateNaceAiDrexMaxV1SystemOneDecisionSteal,
+    evaluateOpenAiPandoDistributedGitBackendSteal,
+    evaluateSfComputeAutoresearchAndMakeMoneySteal,
+  } = require('../scripts/revenue-ds-ml-graphrag-engine');
+  const { planNaceDrexMaxV1SystemOneServing } = require('../scripts/local-model-profile');
+
+  assert.equal(evaluateEnterpriseKnowledgeGraphRag8StepHybridSteal().ok, true);
+  assert.equal(evaluateNicksBops25kCustomAiAgentSystemSteal().monetizationLadder.firstYearContractValueUsd, 61000);
+  assert.equal(evaluateNaceAiDrexMaxV1SystemOneDecisionSteal({ unifiedMemoryGb: 48 }).benchmarks.jevBenchAccuracyPct, 92.2);
+  assert.equal(planNaceDrexMaxV1SystemOneServing({ unifiedMemoryGb: 48 }).selectedProfile.id, 'drex-max-v1-q8_0-gguf');
+  assert.equal(evaluateOpenAiPandoDistributedGitBackendSteal().benchmarks.pushLatencySpeedupFactor, 5.0);
+  const sf = evaluateSfComputeAutoresearchAndMakeMoneySteal();
+  assert.equal(sf.ok, true);
+  assert.equal(sf.sandboxEconomics.unparkedRolloutCostUsd, 0.98);
+  assert.equal(sf.sandboxEconomics.autoParkedRolloutCostUsd, 0.13);
+});

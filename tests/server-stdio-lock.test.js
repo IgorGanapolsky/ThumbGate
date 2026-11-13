@@ -227,7 +227,9 @@ test('project resolution prefers active project over unscoped launcher roots', (
   const homeDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-home-'));
   const projectDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-project-'));
   const runtimeDir = path.join(homeDir, '.thumbgate', 'runtime');
+  const homeTmp = path.join(homeDir, 'tmp');
   fs.mkdirSync(runtimeDir, { recursive: true });
+  fs.mkdirSync(homeTmp, { recursive: true });
 
   const {
     resolveProjectDir,
@@ -237,7 +239,7 @@ test('project resolution prefers active project over unscoped launcher roots', (
   try {
     writeActiveProjectState(projectDir, { env });
 
-    for (const cwd of [path.parse(homeDir).root, homeDir, runtimeDir]) {
+    for (const cwd of [path.parse(homeDir).root, homeDir, homeTmp, runtimeDir]) {
       assert.equal(
         resolveProjectDir({ cwd, env: { ...env, PWD: cwd } }),
         projectDir,

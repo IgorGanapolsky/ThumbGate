@@ -55,6 +55,23 @@ From Paper Instruments' Ultramarine 1 Flash — applied at drafting time, not as
 recommendation is influenced by another agent's prior analysis, cite the source
 agent explicitly. Do not present borrowed arguments as independent judgment.
 
+## Post-Loop Architecture: Outcome Goals, Builder-Reviewer-Verifier & Subagent Topology
+
+Adopted from OpenAI and Anthropic post-loop engineering consensus (`src/builder-reviewer-verifier-engine.js`):
+1. **Outcome Goals, Not Step-by-Step Instructions**: Define verifiable outcome metrics (latency under 200ms, passing test matrix, zero regressions) alongside tools. Do not cap the model's solution space with micro-step procedural micromanagement.
+2. **No Spec Decomposition into Micro-Tickets**: Set compaction threshold to >=400k tokens. Let a single builder agent implement the entire specification across 1-2 compactions without artificial 150k ticket splitting.
+3. **Subagent Fan-Out Only for Truly Independent Tasks**: Parallel subagents are strictly restricted to isolated workloads with zero shared state (independent library research, parallel Playwright test flows, bug hunting in separate directories). NEVER fan out interconnected feature slices in parallel.
+4. **Effort Scaling Across Model Tiers**: Primary builder escalates dynamically to a frontier advisor when stuck on complex problems (race conditions, async deadlocks). Routine self-contained tasks (docs, translations, static assets) route to cheaper fast workers.
+5. **Builder–Reviewer–Verifier (BRV) Pipeline**:
+   - Spec -> **Builder** -> **Reviewer** (max 3 rounds) -> **Verifier** (max 2 rounds).
+   - **Route Fixes Back to the Original Builder**: ALWAYS route reviewer and verifier findings back to the same builder instance. Preserves context, prevents point-fix churn, and saves ~38% tokens.
+   - **Verify Only at Capability Edge**: Skip verification for mastered routine tasks (basic CRUD/forms). Reserve verifiers for edge-of-capability features (sync merges, race conditions, auth boundaries).
+   - **Continuous Harness Pruning**: Strip out obsolete scaffolding and prompt crutches absorbed natively by newer base models.
+6. **Chief of Staff & Anti-Bureaucracy Swarm Principle**:
+   - Single "Chief of Staff" coordinator thread delegating to sandboxed worker containers instead of multi-tab context-switching.
+   - Ban peer-to-peer persona swarms for feature building (no 10-20 peer paralysis). Subagents are strict tool calls with typed inputs and outputs. Reserve swarms exclusively for parallel vulnerability hunting and bug bashing.
+
+
 ## Claw-Style + Hybrid Enterprise Agents (Autonomous High-ROI Continuation)
 
 From recent analysis (Automation Anywhere EnterpriseClaw + Perplexity hybrid local-cloud at Computex 2026):

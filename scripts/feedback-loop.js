@@ -1292,6 +1292,11 @@ function captureFeedback(params) {
   const { FEEDBACK_LOG_PATH, MEMORY_LOG_PATH, FEEDBACK_DIR } = getFeedbackPaths();
   const signal = normalizeSignal(params.signal);
   if (!signal) {
+    return {
+      accepted: false,
+      reason: `Invalid signal "${params.signal}". Use up/down or positive/negative.`,
+    };
+  }
 
   // Record vote on lesson if lessonId or lessonKey is provided
   const targetLessonId = params.lessonId || params.lessonKey;
@@ -1303,11 +1308,6 @@ function captureFeedback(params) {
     } catch (_voteErr) {
       /* lesson voting is non-blocking */
     }
-  }
-    return {
-      accepted: false,
-      reason: `Invalid signal "${params.signal}". Use up/down or positive/negative.`,
-    };
   }
 
   const submittedContext = params.context || '';

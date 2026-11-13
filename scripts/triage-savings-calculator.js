@@ -16,6 +16,7 @@ const {
   GENERAL_INTERDICTION_HOURS_SAVED,
   DEFAULT_BLENDED_HOURLY_RATE,
 } = require('./vulnerability-pre-action-diode');
+const { calculateRevolutInferenceSavings } = require('./token-tco');
 
 const PRICING_TIERS = Object.freeze({
   free: { name: 'Community', monthlyCost: 0, annualCost: 0 },
@@ -81,6 +82,36 @@ function runCli() {
   const args = process.argv.slice(2);
   const isJson = args.includes('--json');
   const isWhoopModel = args.includes('--model-whoop');
+  const isRevolutModel = args.includes('--model-revolut');
+
+  if (isRevolutModel) {
+    // Model Revolut's real-world deployment: 2,000 developers, 90% inference cost reduction,
+    // self-hosted GLM on 56 B200 GPUs ($0.30/M vs $3.00/M), +70% lead time, +60% coding productivity.
+    const devCountArg = args.find((a) => a.startsWith('--devs='));
+    const devs = devCountArg ? parseInt(devCountArg.slice('--devs='.length), 10) : 2000;
+    const revolutCase = calculateRevolutInferenceSavings({ developerCount: devs });
+
+    if (isJson) {
+      console.log(JSON.stringify(revolutCase, null, 2));
+    } else {
+      console.log('=== Revolut Enterprise AI Inference Model (1 Year) ===');
+      console.log(`Organization: ${revolutCase.organization}`);
+      console.log(`Developers: ${revolutCase.developerCount.toLocaleString()}`);
+      console.log(`Total Monthly Tokens: ${revolutCase.totalMonthlyTokensM.toLocaleString()}M`);
+      console.log(`Commercial Cost (Claude/GPT): $${revolutCase.economics.monthlyCommercialCost.toLocaleString()}/mo`);
+      console.log(`Self-Hosted Cost (GLM on B200s): $${revolutCase.economics.monthlySelfHostedCost.toLocaleString()}/mo`);
+      console.log(`Raw Inference Slashed: ${revolutCase.economics.rawInferenceReductionPct}% (10x cost cut)`);
+      console.log(`Net Cost Reduction: ${revolutCase.economics.netCostReductionPct}% (after GPU capex)`);
+      console.log(`Annual Token Savings: $${revolutCase.economics.annualCostSavings.toLocaleString()}/yr`);
+      console.log(`GPU Cluster Payback: ${revolutCase.economics.paybackMonths} months`);
+      console.log(`Coding Productivity Boost: +${revolutCase.productivity.codingTimeImprovementPct}%`);
+      console.log(`Lead Time Acceleration: +${revolutCase.productivity.leadTimeImprovementPct}%`);
+      console.log(`Annual Productive Value: $${revolutCase.productivity.annualProductivityValue.toLocaleString()}/yr`);
+      console.log(`Total Annual Value: $${revolutCase.totalAnnualValue.toLocaleString()}/yr`);
+      console.log(`Summary: ${revolutCase.summary}`);
+    }
+    return;
+  }
 
   if (isWhoopModel) {
     // Model WHOOP's exact case study: 1 vulnerability every quarter (4/year), plus 24 agent PR bug interdictions
@@ -174,6 +205,7 @@ function runCli() {
 module.exports = {
   PRICING_TIERS,
   calculateEnterpriseRoi,
+  calculateRevolutInferenceSavings,
 };
 
 if (require.main === module) {

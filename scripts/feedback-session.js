@@ -67,7 +67,14 @@ function openSession(feedbackEventId, signal, initialContext) {
   resetSessionTimer(sessionId, session);
 
   activeSessions.set(sessionId, session);
-
+  try {
+    syncSessionToLessonDb({
+      id: sessionId,
+      summary: `Feedback session (${signal}): ${(initialContext || '').slice(0, 120)}`,
+      content: initialContext || '',
+      created_at: session.openedAt,
+    });
+  } catch { /* non-critical */ }
   return {
     sessionId,
     status: 'open',
@@ -312,11 +319,39 @@ function autoInferLesson(finalizedResult) {
 /**
  * Persist finalized session to disk
  */
+function syncSessionToLessonDb(sessionRow) {
+  const { getFeedbackPaths } = require('./feedback-loop');
+  const { initDB, upsertSession } = require('./lesson-db');
+  const feedbackDir = getFeedbackPaths().FEEDBACK_DIR;
+  const dbPath = process.env.LESSON_DB_PATH || path.join(feedbackDir, 'lessons.sqlite');
+  const db = initDB(dbPath);
+  try {
+    upsertSession(db, {
+      id: sessionRow.id || sessionRow.sessionId,
+      project: sessionRow.project || path.basename(process.cwd()),
+      branch: sessionRow.branch || null,
+      summary: sessionRow.summary || `Finalized feedback session (${sessionRow.signal || 'unknown'})`,
+      content: sessionRow.content || sessionRow.enrichedContext || '',
+      created_at: sessionRow.created_at || sessionRow.openedAt || sessionRow.finalizedAt || new Date().toISOString(),
+    });
+  } finally {
+    db.close();
+  }
+}
+
 function persistSession(result) {
   const { getFeedbackPaths, appendJSONL } = require('./feedback-loop');
   const paths = getFeedbackPaths();
   const sessionLogPath = path.join(path.dirname(paths.FEEDBACK_LOG_PATH), 'feedback-sessions.jsonl');
   appendJSONL(sessionLogPath, result);
+  try {
+    syncSessionToLessonDb({
+      id: result.sessionId,
+      summary: `Finalized feedback session (${result.signal}): ${(result.enrichedContext || '').slice(0, 160)}`,
+      content: result.enrichedContext || '',
+      created_at: result.finalizedAt || result.openedAt,
+    });
+  } catch { /* non-critical */ }
 }
 
 module.exports = {

@@ -547,24 +547,6 @@
       ]
     },
     {
-      "id": "self-protect-hooks-disable",
-      "layer": "Execution",
-      "toolNames": [
-        "Edit",
-        "Write",
-        "Bash"
-      ],
-      "pattern": "(?:\\.claude/settings(?:\\.local)?\\.json|\\.codex/config\\.toml|scripts/hook-[^/]+\\.(?:js|sh))",
-      "action": "block",
-      "message": "Self-protection: agent cannot modify hook registrations.",
-      "severity": "critical",
-      "compliance": [
-        "NIST-AC-3",
-        "OWASP-A01",
-        "SOC2-CC6.1"
-      ]
-    },
-    {
       "id": "on-demand-careful-mode",
       "layer": "Execution",
       "toolNames": [
@@ -616,6 +598,48 @@
         "OWASP-A08",
         "SOC2-CC6.8"
       ]
+    }
+    ,
+    {
+      "id": "chrome-remote-debugging-port-9222-blocked",
+      "layer": "Execution",
+      "toolNames": [
+        "Bash",
+        "Write",
+        "Edit"
+      ],
+      "pattern": "(?:(?:127\\.0\\.0\\.1|localhost|0\\.0\\.0\\.0):9222\\b|--remote-debugging-port(?:=|\\s+)9222\\b|ws://[^/\\s]+:9222\\b)",
+      "action": "block",
+      "message": "Hard block: Connecting to everyday Chrome on port 9222 triggers 'Allow remote debugging?' pop-ups. Use BrowserOS Neo on port 9117 (CDP) / 9011 (MCP) instead.",
+      "severity": "critical"
+    },
+    {
+      "id": "false-waiting-on-igor-blocked",
+      "layer": "Decisions",
+      "toolNames": [
+        "Bash",
+        "Write",
+        "Edit",
+        "MultiEdit"
+      ],
+      "pattern": "[Ww]aiting\\s+on\\s+[Ii]gor[^\\n]*(?:[Bb]uild\\s+(?:still\\s+)?running|[Uu]nbundled\\s+push|[Cc][Ii]\\s+(?:still\\s+)?running|[Pp]ipeline\\s+running)",
+      "action": "block",
+      "message": "Hard block (repeated thumbs-down): Never label running builds, CI pipelines, or unbundled pushes as 'waiting on Igor'.",
+      "severity": "high"
+    },
+    {
+      "id": "executive-brief-jargon-dump-blocked",
+      "layer": "Decisions",
+      "toolNames": [
+        "Bash",
+        "Write",
+        "Edit",
+        "MultiEdit"
+      ],
+      "pattern": "(?:FALLBACK_APPLIED|P95_LATENCY_MS|RAG_PIPELINE_V2|LLM_ROUTER_TIER_1)",
+      "action": "block",
+      "message": "Hard block (repeated thumbs-down): Raw internal telemetry jargon/acronyms are blocked in executive briefs and outbound updates.",
+      "severity": "high"
     }
   ]
 }

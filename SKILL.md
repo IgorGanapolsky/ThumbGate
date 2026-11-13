@@ -39,7 +39,7 @@ Add to your agent's MCP config (e.g., `claude_desktop_config.json` or `.cursor/m
   "mcpServers": {
     "thumbgate": {
       "command": "npx",
-      "args": ["-y", "thumbgate"]
+      "args": ["-y", "thumbgate", "serve"]
     }
   }
 }

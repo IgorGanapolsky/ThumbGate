@@ -3,7 +3,7 @@
 > **Trigger Phrase:** `"make money"` / `"make money faster"` / `/make-money`
 > **Canonical Skill:** `.agents/skills/make-money/SKILL.md` (mirrored to `~/.agents/skills/make-money/SKILL.md` & `.claude/skills/make-money/SKILL.md`)
 > **Canonical Command:** `npm run make:money` (`node scripts/fast-money-engine.js --make-money`)
-> **North Star Mandate:** Earn **`$100/day`** after-tax profit at **`$0.00` outbound cash spend** (`outboundCashSpendUsd === 0`).
+> **North Star Mandate:** **Make `$300/day, 24/7`** (`$9,000/mo`) after-tax profit at **`$0.00` outbound cash spend** (`outboundCashSpendUsd === 0`).
 
 ---
 
@@ -31,7 +31,7 @@ Whenever triggered by `"make money"`, the agent executes all 6 stages in sequenc
 ## 3. Alternatives Considered & Rejected
 
 - **Manual Multi-Step Agent Improvisation (Rejected):** Forces the agent to rediscover scripts every session and wastes tokens.
-- **Single-Tier `$0.99` Promotion Only (Rejected):** Requires 102 sales/day; our 4-tier ladder (`$9.99` Playbook, `$49` One-Time Expense Bundle, `$100` One-Time Pass, `$499` Diagnostic) hits `$100/day` on 1–2 conversions.
+- **Single-Tier `$0.99` Promotion Only (Rejected):** Requires 304 sales/day; our 4-tier + Cloud Token Firewall ladder (`$9.99` Playbook, `$29/mo` Cloud Indie, `$49` One-Time Expense Bundle, `$99/mo` Cloud Startup, `$100` One-Time Pass, `$499` Diagnostic) hits `$300/day, 24/7` across 1–6 conversions/day.
 - **Outbound Paid Ads or Upfront Partner Fees (Rejected):** Violates `$0` outbound spend (`outboundCashSpendUsd === 0`).
 
 ---

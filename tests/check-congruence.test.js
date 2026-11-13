@@ -1,6 +1,7 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
+const os = require('node:os');
 const { execSync, spawnSync } = require('node:child_process');
 const path = require('path');
 const {
@@ -21,6 +22,11 @@ function readText(relativePath) {
   return fs.readFileSync(path.join(ROOT, relativePath), 'utf8');
 }
 
+const TEST_FEEDBACK_DIR = fs.mkdtempSync(path.join(os.tmpdir(), 'tg-congruence-'));
+process.on('exit', () => {
+  try { fs.rmSync(TEST_FEEDBACK_DIR, { recursive: true, force: true }); } catch {}
+});
+
 function gateCheck(command, env = {}) {
   const result = spawnSync('node', ['bin/cli.js', 'gate-check'], {
     cwd: ROOT,
@@ -29,7 +35,7 @@ function gateCheck(command, env = {}) {
       tool_input: { command },
       cwd: ROOT,
     }),
-    env: { ...process.env, ...env },
+    env: { ...process.env, THUMBGATE_FEEDBACK_DIR: TEST_FEEDBACK_DIR, ...env },
     encoding: 'utf8',
   });
   assert.equal(result.status, 0, result.stderr || result.stdout);

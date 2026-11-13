@@ -1,6 +1,8 @@
 #!/usr/bin/env node
 'use strict';
 
+const path = require('node:path');
+
 const REQUIRED_SCOPE_FIELDS = ['entityId', 'projectId', 'processId', 'sessionId'];
 const MEMORY_OS_LAYERS = Object.freeze([
   {
@@ -153,6 +155,60 @@ function normalizeScope(input = {}) {
     scope[field] = resolved;
   }
   return scope;
+}
+
+function autoEnrichScope(scope = {}, fallbackContext = {}) {
+  const enriched = { ...scope };
+  if (!enriched.projectId) {
+    let detectedProject = null;
+    try {
+      detectedProject = process.env.THUMBGATE_PROJECT_ID
+        || process.env.PROJECT_ID
+        || fallbackContext.projectId
+        || fallbackContext.project
+        || (process.cwd && path.basename(process.cwd()))
+        || null;
+    } catch { /* ignore */ }
+    enriched.projectId = normalizeId(detectedProject) || 'default-project';
+  }
+  if (!enriched.entityId) {
+    let detectedEntity = null;
+    try {
+      detectedEntity = process.env.THUMBGATE_ENTITY_ID
+        || process.env.USER
+        || process.env.USERNAME
+        || fallbackContext.entityId
+        || fallbackContext.userId
+        || 'operator';
+    } catch { /* ignore */ }
+    enriched.entityId = normalizeId(detectedEntity) || 'operator';
+  }
+  if (!enriched.processId) {
+    let detectedProcess = null;
+    try {
+      detectedProcess = process.env.THUMBGATE_PROCESS_ID
+        || fallbackContext.processId
+        || fallbackContext.skill
+        || (fallbackContext.lastAction && fallbackContext.lastAction.tool)
+        || process.env.AGENT_NAME
+        || 'agent';
+    } catch { /* ignore */ }
+    enriched.processId = normalizeId(detectedProcess) || 'agent';
+  }
+  if (!enriched.sessionId) {
+    let detectedSession = null;
+    try {
+      detectedSession = process.env.THUMBGATE_SESSION_ID
+        || process.env.SESSION_ID
+        || fallbackContext.sessionId
+        || fallbackContext.session_id
+        || (fallbackContext.relatedFeedbackId ? `session_${fallbackContext.relatedFeedbackId}` : null)
+        || (fallbackContext.feedbackId ? `session_${fallbackContext.feedbackId}` : null)
+        || null;
+    } catch { /* ignore */ }
+    enriched.sessionId = normalizeId(detectedSession) || `session_${Date.now()}`;
+  }
+  return enriched;
 }
 
 function missingScopeFields(scope) {
@@ -757,6 +813,7 @@ module.exports = {
   REQUIRED_SCOPE_FIELDS,
   DREAMING_MODES,
   CONTAINER_TAG_PATTERN,
+  autoEnrichScope,
   buildLessonProfile,
   buildMemoriStyleBenchmarkRecords,
   buildMemoryOsLayerReport,

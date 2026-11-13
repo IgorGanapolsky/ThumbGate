@@ -348,6 +348,9 @@ const {
   authenticateCustomerAccount,
   upsertCustomerAccountFromCheckout,
   listAllCustomersAndAccounts,
+  registerCliOrFunnelLead,
+  buildNorthStarAdminTelemetry,
+  isSyntheticLeadEmail,
   manageCustomerAccountAdmin,
   normalizeProjectSlug,
   validateSsoToken,
@@ -409,6 +412,7 @@ const {
   evaluateQwenGpuCompiledSimtAndDeltaNetStateSteal,
   evaluateLinkedInOpenTelemetryJourneySteal,
   evaluateGrokDataBotAndBroadStickyTeamBotsSteal,
+  evaluateGartnerOpenModels90PctHarnessMoatSteal,
 } = require('../cloud-token-firewall');
 
 const CLOUD_PORTAL_PAGE_PATH = path.resolve(__dirname, '../../public/cloud.html');
@@ -501,6 +505,7 @@ function parseCheckoutFeatureFlags() {
     return {
       checkoutInterstitialVariant: String(parsed.checkout_interstitial_variant || 'default'),
       cancelPageDownsellEnabled: Boolean(parsed.cancel_page_downsell_enabled),
+      directCloudTierCheckoutEnabled: parsed.direct_cloud_tier_checkout_enabled !== undefined ? Boolean(parsed.direct_cloud_tier_checkout_enabled) : true,
       stripePriceOverride: parsed.stripe_price_override ? String(parsed.stripe_price_override) : null,
       gumroadBundleOverride: parsed.gumroad_bundle_override ? String(parsed.gumroad_bundle_override) : null,
       gumroadPlaybookOverride: parsed.gumroad_playbook_override ? String(parsed.gumroad_playbook_override) : null,
@@ -510,6 +515,7 @@ function parseCheckoutFeatureFlags() {
     return {
       checkoutInterstitialVariant: 'default',
       cancelPageDownsellEnabled: false,
+      directCloudTierCheckoutEnabled: true,
       stripePriceOverride: null,
       gumroadBundleOverride: null,
       gumroadPlaybookOverride: null,
@@ -690,6 +696,7 @@ const TRACKED_LINK_TARGETS = Object.freeze({
   'pro-direct': {
     fallbackHref: PRO_CHECKOUT_URL,
     external: true,
+    strictProbeDeflect: true,
     botDeflectPath: '/checkout/pro',
     ctaId: 'pro_checkout_direct_stripe',
     ctaPlacement: 'checkout_interstitial',
@@ -766,6 +773,20 @@ const TRACKED_LINK_TARGETS = Object.freeze({
       billing_cycle: 'one_time',
     },
   },
+  'diagnostic-499': {
+    fallbackHref: 'https://buy.stripe.com/9B69ATbmI4r4aK5eOD3sI3k',
+    external: true,
+    botDeflectPath: '/diagnostic',
+    ctaId: 'diagnostic_499',
+    ctaPlacement: 'enterprise_diagnostic',
+    eventType: 'diagnostic_checkout_started',
+    defaults: {
+      utm_source: 'website',
+      utm_medium: 'diagnostic_checkout',
+      utm_campaign: 'diagnostic_499',
+    },
+    allowCustomerEmail: true,
+  },
   'founding-100': {
     fallbackHref: PRO_CHECKOUT_URL,
     external: true,
@@ -795,7 +816,35 @@ const TRACKED_LINK_TARGETS = Object.freeze({
     },
     allowCustomerEmail: true,
   },
+  'cloud-indie-49': {
+    path: '/checkout/pro?plan_id=cloud_indie&billing_cycle=monthly',
+    ctaId: 'cloud_indie_49',
+    ctaPlacement: 'cloud_saas',
+    eventType: 'checkout_started',
+    defaults: {
+      utm_source: 'website',
+      utm_medium: 'cloud_saas',
+      utm_campaign: 'cloud_indie_49',
+      plan_id: 'cloud_indie',
+      billing_cycle: 'monthly',
+    },
+    allowCustomerEmail: true,
+  },
   'cloud-startup': {
+    path: '/checkout/pro?plan_id=cloud_startup&billing_cycle=monthly',
+    ctaId: 'cloud_startup_199',
+    ctaPlacement: 'cloud_saas',
+    eventType: 'checkout_started',
+    defaults: {
+      utm_source: 'website',
+      utm_medium: 'cloud_saas',
+      utm_campaign: 'cloud_startup_199',
+      plan_id: 'cloud_startup',
+      billing_cycle: 'monthly',
+    },
+    allowCustomerEmail: true,
+  },
+  'cloud-startup-199': {
     path: '/checkout/pro?plan_id=cloud_startup&billing_cycle=monthly',
     ctaId: 'cloud_startup_199',
     ctaPlacement: 'cloud_saas',
@@ -3109,6 +3158,31 @@ function renderCheckoutIntentPage(prefilledEmail = '', parsed = null, options = 
     : '';
   const requestedPlanId = String(parsed?.searchParams?.get('plan_id') || 'pro').toLowerCase();
   const requestedCycle = String(parsed?.searchParams?.get('billing_cycle') || 'monthly').toLowerCase();
+  // Carry inbound campaign attribution (LinkedIn carousel UTMs, creator, A/B variant) onto direct-pay CTAs.
+  const withInboundAttribution = (href) => {
+    if (!parsed?.searchParams) return href;
+    const [hrefPath, hrefQuery = ''] = String(href).replace(/&amp;/g, '&').split('?');
+    const params = new URLSearchParams(hrefQuery);
+    for (const key of ['utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term', 'creator', 'campaign_variant', 'offer_code', 'community', 'post_id']) {
+      const value = normalizeHiddenAttributionValue(parsed.searchParams.get(key));
+      if (value) params.set(key, value);
+    }
+    const qs = params.toString();
+    return escapeHtmlAttribute(qs ? `${hrefPath}?${qs}` : hrefPath);
+  };
+  const serverIdentityDefaults = {
+    traceId: options.traceId || null,
+    visitorId: options.analyticsMetadata?.visitorId || null,
+    sessionId: options.analyticsMetadata?.sessionId || null,
+    acquisitionId: options.analyticsMetadata?.acquisitionId || null,
+  };
+  const serverIdentityJson = JSON.stringify(serverIdentityDefaults)
+    .replace(/</g, '\\u003c')
+    .replace(/>/g, '\\u003e')
+    .replace(/&/g, '\\u0026')
+    .replace(/\u2028/g, '\\u2028')
+    .replace(/\u2029/g, '\\u2029');
+  const annualHref = withInboundAttribution('/go/pro-annual?utm_source=website&utm_medium=checkout_interstitial&utm_campaign=pro_annual_149&cta_id=pro_checkout_annual_149&cta_placement=checkout_interstitial');
   const planDisplay = requestedPlanId === 'cloud_indie'
     ? { title: 'Start ThumbGate Cloud Indie', price: '$49', unit: '/mo', directHref: '/go/pro-direct?plan_id=cloud_indie&billing_cycle=monthly', ctaLabel: 'Pay $49/mo with Stripe →' }
     : requestedPlanId === 'cloud_startup'
@@ -3151,7 +3225,7 @@ a{display:block;text-decoration:none}a.secondary{border:1px solid #374151;color:
 <h1>${planDisplay.title}</h1>
 <div class="price">${planDisplay.price}<small>${planDisplay.unit}</small></div>
 <p>The npm package runs your gates locally. <strong>Pro</strong> removes solo caps and adds personal recall, proof, exports, and adapter maintenance. Enterprise service work is qualified after intake; hosted team sync and a hosted org dashboard are not generally available.</p>
-<a class="primary" data-i="pro_checkout_direct_stripe" rel="nofollow" href="${planDisplay.directHref}">${planDisplay.ctaLabel}</a>
+<a class="primary" data-i="pro_checkout_direct_stripe" rel="nofollow" href="${withInboundAttribution(planDisplay.directHref)}">${planDisplay.ctaLabel}</a>
 <form action="/checkout/pro" method="POST" data-i="pro_checkout_confirmed">
 ${hiddenInputs}
 <input type="hidden" name="confirm" value="1">
@@ -3163,7 +3237,7 @@ ${hiddenInputs}
 <a class="secondary" data-i="cloud_startup_199" rel="nofollow" href="/go/cloud-startup?utm_source=website&amp;utm_medium=checkout_interstitial&amp;utm_campaign=cloud_startup_199&amp;cta_id=cloud_startup_199&amp;cta_placement=checkout_interstitial">Cloud Startup (10M tokens/mo + Loop-Kill Webhooks) — $199/mo →</a>
 <a class="secondary" data-i="pro_checkout_bundle_49" rel="nofollow" href="/go/bundle-49?utm_source=website&amp;utm_medium=checkout_interstitial&amp;utm_campaign=bundle_49&amp;cta_id=pro_checkout_bundle_49&amp;cta_placement=checkout_interstitial">Prefer one-time (no subscription)? Production Rule-Pack Kit — $49 →</a>
 <a class="secondary" data-i="pro_checkout_playbook_999" rel="nofollow" href="/go/playbook-999?utm_source=website&amp;utm_medium=checkout_interstitial&amp;utm_campaign=playbook_999&amp;cta_id=pro_checkout_playbook_999&amp;cta_placement=checkout_interstitial">Just want the 2026 Agent FinOps &amp; Cost Playbook (One-Time)? — $9.99 →</a>
-<a class="secondary" data-i="pro_checkout_annual_149" rel="nofollow" href="/go/pro-annual?utm_source=website&amp;utm_medium=checkout_interstitial&amp;utm_campaign=pro_annual_149&amp;cta_id=pro_checkout_annual_149&amp;cta_placement=checkout_interstitial">Annual billing (save 35%)? ThumbGate Pro — $149/yr →</a>
+<a class="secondary" data-i="pro_checkout_annual_149" rel="nofollow" href="${annualHref}">Annual billing (save 35%)? ThumbGate Pro — $149/yr →</a>
 <a class="secondary" data-i="workflow_sprint_intake" href="/#workflow-sprint-intake">Not sure yet? Send the workflow first</a>
 <p class="choice-note">Cancel anytime. 7-day refund, no questions.</p>
 <div class="objection-box" aria-label="Checkout feedback">
@@ -3183,18 +3257,29 @@ ${hiddenInputs}
 <script>
 (function(){
   var params = new URLSearchParams(window.location.search);
+  var serverDefaults = ${serverIdentityJson};
+  var pageOpenedAt = Date.now();
   var submitted = false;
   var feedbackSent = false;
+  function resolveDwellBucket(ms) {
+    if (ms < 5000) return 'lt_5s';
+    if (ms < 15000) return '5_15s';
+    if (ms < 60000) return '15_60s';
+    return 'gt_60s';
+  }
   function pick(key, fallback) { return params.get(key) || fallback || null; }
   function sendTelemetry(eventType, extra) {
+    var engagementMs = Date.now() - pageOpenedAt;
     var payload = Object.assign({
       eventType: eventType,
       clientType: 'web',
       page: '/checkout/pro',
-      traceId: pick('trace_id'),
-      acquisitionId: pick('acquisition_id'),
-      visitorId: pick('visitor_id'),
-      sessionId: pick('visitor_session_id') || pick('session_id'),
+      engagementMs: engagementMs,
+      dwellBucket: resolveDwellBucket(engagementMs),
+      traceId: pick('trace_id', serverDefaults.traceId),
+      acquisitionId: pick('acquisition_id', serverDefaults.acquisitionId),
+      visitorId: pick('visitor_id', serverDefaults.visitorId),
+      sessionId: pick('visitor_session_id') || pick('session_id', serverDefaults.sessionId),
       installId: pick('install_id'),
       source: pick('utm_source') || pick('source') || 'website',
       utmSource: pick('utm_source') || pick('source') || 'website',
@@ -3539,6 +3624,25 @@ async function serveTrackedLinkRedirect({ req, res, parsed, hostedConfig, isHead
   const { FEEDBACK_DIR } = getFeedbackPaths();
   const journeyState = resolveJourneyState(req, parsed);
   const botClassification = classifyRequester(req.headers);
+  if (target.botDeflectPath && !botClassification.isBot) {
+    // Synthetic probes inflate checkoutStarts: explicit ?probe=1, a synthetic buyer email,
+    // or (for strict targets) a bare Accept: */* with no browser fetch-metadata headers.
+    const acceptHeader = String(req.headers.accept || '').trim();
+    const fetchMode = String(req.headers['sec-fetch-mode'] || '').trim().toLowerCase();
+    const looksLikeNavigation = /text\/html/i.test(acceptHeader) || fetchMode === 'navigate';
+    const probeParam = String(parsed.searchParams.get('probe') || '').trim();
+    const suppliedEmail = parsed.searchParams.get('customer_email') || parsed.searchParams.get('email') || '';
+    if (probeParam && probeParam !== '0') {
+      botClassification.isBot = true;
+      botClassification.reason = 'synthetic_probe_param';
+    } else if (suppliedEmail && isSyntheticLeadEmail(suppliedEmail)) {
+      botClassification.isBot = true;
+      botClassification.reason = 'synthetic_probe_email';
+    } else if (target.strictProbeDeflect && !looksLikeNavigation) {
+      botClassification.isBot = true;
+      botClassification.reason = 'synthetic_probe_wildcard_accept';
+    }
+  }
   if (target.botDeflectPath && botClassification.isBot) {
     const deflectUrl = new URL(target.botDeflectPath, hostedConfig.appOrigin);
     appendTrackedLinkQueryParams(deflectUrl, parsed, target);
@@ -5433,12 +5537,17 @@ function renderCheckoutCancelledPage(runtimeConfig) {
         <button type="button" data-reason="integration_unclear">Integration is unclear</button>
       </div>
       <div style="margin-top:16px;">
+        <label for="buyer-email">Work Email (for receipt or trial recovery):</label>
+        <input type="email" id="buyer-email" placeholder="you@company.com" style="width:100%;box-sizing:border-box;min-height:38px;padding:8px 12px;border-radius:8px;border:1px solid var(--line);font:inherit;" />
+      </div>
+      <div style="margin-top:16px;">
         <label for="buyer-note">Anything specific?</label>
         <textarea id="buyer-note" placeholder="Optional detail: team size, workflow, blocker, competitor, or missing feature."></textarea>
       </div>
       <div class="actions">
         <button type="button" id="submit-reason">Send feedback</button>
         <a id="retry-checkout" href="/go/pro-direct" class="secondary" data-recovery-offer="pro_pay_now_retry" data-offer-price="19">Restart $19 Pro checkout (Direct Stripe →)</a>
+        <a id="start-trial" href="/go/pro-direct" class="secondary" data-recovery-offer="pro_free_trial" data-offer-price="0">Start 7-Day Free Pro Trial</a>
         <a href="${runtimeConfig.appOrigin}" class="secondary">Return to Context Gateway</a>
       </div>
       <p class="note" id="status">No feedback sent yet.</p>
@@ -5449,9 +5558,17 @@ function renderCheckoutCancelledPage(runtimeConfig) {
         const params = new URLSearchParams(window.location.search);
         const statusEl = document.getElementById('status');
         const noteEl = document.getElementById('buyer-note');
+        const emailEl = document.getElementById('buyer-email');
+        if (params.get('customer_email') && emailEl) {
+          emailEl.value = params.get('customer_email');
+        }
         const retryLink = document.getElementById('retry-checkout');
         const workflowIntakeLink = document.getElementById('send-workflow-first');
         let selectedReason = null;
+
+        function getBuyerEmail() {
+          return (emailEl && emailEl.value.trim()) || params.get('customer_email') || null;
+        }
 
         function sendTelemetry(eventType, extra) {
           const payload = Object.assign({
@@ -5521,7 +5638,9 @@ function renderCheckoutCancelledPage(runtimeConfig) {
         document.querySelectorAll('[data-reason]').forEach(function (button) {
           button.addEventListener('click', function () {
             selectedReason = button.getAttribute('data-reason');
+            const buyerEmail = getBuyerEmail();
             sendTelemetry('reason_not_buying', {
+              customerEmail: buyerEmail,
               reasonCode: selectedReason || 'unspecified',
               reasonText: noteEl ? noteEl.value || null : null
             });
@@ -5530,7 +5649,9 @@ function renderCheckoutCancelledPage(runtimeConfig) {
         });
 
         document.getElementById('submit-reason').addEventListener('click', function () {
+          const buyerEmail = getBuyerEmail();
           sendTelemetry('reason_not_buying', {
+            customerEmail: buyerEmail,
             reasonCode: selectedReason || 'unspecified',
             reasonText: noteEl.value || null
           });
@@ -7977,6 +8098,8 @@ async function addContext(){
         const prefilledEmail = parsed?.searchParams?.get('customer_email') || '';
         const html = renderCheckoutIntentPage(prefilledEmail, parsed, {
           includeHiddenAttribution: !botClassification.isBot,
+          traceId,
+          analyticsMetadata,
         });
         sendHtml(res, 200, html, responseHeaders);
         return;
@@ -10299,6 +10422,7 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
           {
             ...legacyReport,
             ...overview,
+            ...buildNorthStarAdminTelemetry(),
             summary: { ...(overview.summary || {}), ...(legacyReport.summary || {}) },
             adminEmail: ssoValidation?.email || 'igor@igorganapolsky.com',
           },
@@ -10389,6 +10513,48 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
         'Cache-Control': 'no-store',
       });
       res.end();
+      return;
+    }
+
+    if (req.method === 'POST' && pathname === '/v1/cloud/cli/register') {
+      const body = await parseJsonBody(req);
+      const result = registerCliOrFunnelLead({
+        email: body.email || '',
+        source: body.source || 'cli_init',
+        tierId: 'free',
+        installId: body.installId || body.install_id || '',
+        name: body.name || '',
+        company: body.company || '',
+        cliVersion: body.cliVersion || body.version || '',
+        platform: body.platform || '',
+        agentClient: body.agentClient || '',
+      });
+      sendJson(res, result.ok ? 200 : (result.statusCode || 422), result);
+      return;
+    }
+
+    if (req.method === 'POST' && pathname === '/v1/billing/capture-lead') {
+      const body = await parseJsonBody(req);
+      const result = registerCliOrFunnelLead({
+        email: body.email || '',
+        source: body.source || 'checkout_lead_capture',
+        tierId: body.tierId || body.plan || 'pro_monthly',
+        name: body.name || '',
+        company: body.company || '',
+      });
+      if (!result.ok) {
+        sendJson(res, result.statusCode || 422, result);
+        return;
+      }
+      sendJson(res, 200, {
+        ok: true,
+        lead: {
+          email: result.account.email,
+          tierId: result.account.tierId,
+          source: result.account.leadSource,
+          status: result.account.status,
+        },
+      });
       return;
     }
 
@@ -10750,6 +10916,7 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
       '/v1/cloud/qwengpu-simt/gate': evaluateQwenGpuCompiledSimtAndDeltaNetStateSteal,
       '/v1/cloud/linkedin-otel-journey/gate': evaluateLinkedInOpenTelemetryJourneySteal,
       '/v1/cloud/grok-data-bot/gate': evaluateGrokDataBotAndBroadStickyTeamBotsSteal,
+      '/v1/cloud/gartner-90pct-open-models-harness/gate': evaluateGartnerOpenModels90PctHarnessMoatSteal,
     };
     if (cloudEvalRoutes[pathname] && (isGetLikeRequest || req.method === 'POST')) {
       const body = req.method === 'POST' ? await parseJsonBody(req) : Object.fromEntries(parsed.searchParams.entries());

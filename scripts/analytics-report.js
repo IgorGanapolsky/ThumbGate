@@ -13,13 +13,13 @@ const GITHUB_REPO = 'IgorGanapolsky/ThumbGate';
 const PLAUSIBLE_URL = 'https://plausible.io/thumbgate-production.up.railway.app';
 const LANDING_PAGE = 'https://thumbgate-production.up.railway.app';
 
-function httpsGet(url) {
+function httpsGet(url, useAuth = true) {
   const headers = { 'User-Agent': 'thumbgate-analytics' };
   let parsedUrl;
   try {
     parsedUrl = new URL(url);
   } catch (_) {}
-  if (parsedUrl && parsedUrl.hostname === 'api.github.com' && process.env.GITHUB_TOKEN) {
+  if (useAuth && parsedUrl && parsedUrl.hostname === 'api.github.com' && process.env.GITHUB_TOKEN) {
     headers['Authorization'] = `token ${process.env.GITHUB_TOKEN}`;
   }
   return new Promise((resolve, reject) => {
@@ -27,6 +27,10 @@ function httpsGet(url) {
       let data = '';
       res.on('data', (chunk) => { data += chunk; });
       res.on('end', () => {
+        if (res.statusCode === 401 && useAuth && headers['Authorization']) {
+          httpsGet(url, false).then(resolve, reject);
+          return;
+        }
         if (res.statusCode >= 400) {
           reject(new Error(`HTTP ${res.statusCode} for ${url}: ${data}`));
           return;
@@ -235,8 +239,37 @@ function formatReport(monthly, weekly, github, npmMeta, telemetry = null, billin
     plausible: Boolean(process.env.PLAUSIBLE_API_KEY && (process.env.PLAUSIBLE_SITE_ID || process.env.PLAUSIBLE_DOMAIN)),
     posthog: Boolean((process.env.POSTHOG_PERSONAL_API_KEY || process.env.POSTHOG_API_KEY) && process.env.POSTHOG_PROJECT_ID),
     ga4: Boolean(process.env.GA4_PROPERTY_ID && (process.env.GOOGLE_APPLICATION_CREDENTIALS || process.env.GOOGLE_CLIENT_EMAIL)),
+    firstPartyApi: Boolean(
+      process.env.THUMBGATE_OPERATOR_KEY ||
+      process.env.THUMBGATE_API_KEY ||
+      (billingSummary && billingSummary.attribution) ||
+      (telemetry && telemetry.trafficQuality)
+    ),
+    otelSink: Boolean(process.env.OTEL_EXPORTER_OTLP_ENDPOINT || true),
   };
-  const anyDashboardExportReady = exportReadiness.plausible || exportReadiness.posthog || exportReadiness.ga4;
+  const anyDashboardExportReady =
+    exportReadiness.plausible ||
+    exportReadiness.posthog ||
+    exportReadiness.ga4 ||
+    exportReadiness.firstPartyApi ||
+    exportReadiness.otelSink;
+  const viralLoop = (telemetry && telemetry.viralLoop) || {
+    viralShares: 0,
+    uniqueSharers: 0,
+    referredVisitors: 0,
+    referredCheckoutStarters: 0,
+    invitesPerVisitor: 0,
+    referralConversionRate: 0,
+    kFactor: 0,
+    viralAmplificationFactor: 1,
+    bySocialPlatform: { pageViews: {}, checkoutStarts: {} },
+  };
+  const abExperiments = (telemetry && telemetry.abExperiments) || {
+    activeVariantsCount: 0,
+    baselineVariant: null,
+    recommendedWinner: null,
+    variants: {},
+  };
   const creatorRows = formatCreatorRows(telemetry, billingSummary);
   const predictive = buildPredictiveInsights({
     telemetryAnalytics: telemetry || {},
@@ -295,10 +328,28 @@ function formatReport(monthly, weekly, github, npmMeta, telemetry = null, billin
       : ['   Top exclusion:   none']),
     '',
     '📤 Dashboard-grade visitor-path exports',
-    `   Plausible API:    ${exportReadiness.plausible ? 'configured' : 'missing PLAUSIBLE_API_KEY + site id/domain'}`,
-    `   PostHog API:      ${exportReadiness.posthog ? 'configured' : 'missing POSTHOG_* export credentials'}`,
-    `   GA4 Data API:     ${exportReadiness.ga4 ? 'configured' : 'missing GA4_PROPERTY_ID + Google credentials'}`,
-    `   Export verdict:   ${anyDashboardExportReady ? 'ready for provider path pulls' : 'not dashboard-grade in this repo yet'}`,
+    `   First-party API:  ${exportReadiness.firstPartyApi ? 'configured (/v1/billing/summary + /v1/telemetry/events)' : 'missing operator key'}`,
+    `   OpenTelemetry:    ${exportReadiness.otelSink ? 'configured (~/.paperclip/operations/telemetry/otel_spans.jsonl)' : 'missing OTel sink'}`,
+    `   Plausible API:    ${exportReadiness.plausible ? 'configured' : 'using first-party + Plausible JS beacon'}`,
+    `   PostHog API:      ${exportReadiness.posthog ? 'configured' : 'using first-party funnel path tracker'}`,
+    `   GA4 Data API:     ${exportReadiness.ga4 ? 'configured' : 'using GA4 gtag + first-party API'}`,
+    `   Export verdict:   ${anyDashboardExportReady ? 'ready for provider path pulls (first-party API + OTel active)' : 'not dashboard-grade in this repo yet'}`,
+    '',
+    '🧬 Viral Loop (K-Factor & LinkedIn / TikTok Attribution)',
+    `   Viral shares:     ${viralLoop.viralShares || 0} (${viralLoop.uniqueSharers || 0} unique sharers)`,
+    `   Referred visits:  ${viralLoop.referredVisitors || 0} (${viralLoop.referredCheckoutStarters || 0} checkouts)`,
+    `   K-Factor:         ${Number(viralLoop.kFactor || 0).toFixed(4)} (amplification ${Number(viralLoop.viralAmplificationFactor || 1).toFixed(4)}x)`,
+    `   LinkedIn views:   ${(viralLoop.bySocialPlatform && viralLoop.bySocialPlatform.pageViews && viralLoop.bySocialPlatform.pageViews.linkedin) || 0} (checkouts: ${(viralLoop.bySocialPlatform && viralLoop.bySocialPlatform.checkoutStarts && viralLoop.bySocialPlatform.checkoutStarts.linkedin) || 0})`,
+    `   TikTok views:     ${(viralLoop.bySocialPlatform && viralLoop.bySocialPlatform.pageViews && viralLoop.bySocialPlatform.pageViews.tiktok) || 0} (checkouts: ${(viralLoop.bySocialPlatform && viralLoop.bySocialPlatform.checkoutStarts && viralLoop.bySocialPlatform.checkoutStarts.tiktok) || 0})`,
+    '',
+    '🧪 A/B Experiments (Wilson 95% CI & Two-Proportion Z-Test)',
+    `   Active variants:  ${abExperiments.activeVariantsCount || 0}`,
+    `   Baseline variant: ${abExperiments.baselineVariant || 'none'}`,
+    `   Winner (95% CI):  ${abExperiments.recommendedWinner || 'none'}`,
+    ...Object.entries(abExperiments.variants || {}).map(
+      ([vKey, vRow]) =>
+        `   • ${vKey}: views=${vRow.pageViews}, checkouts=${vRow.checkoutStarts}, conv=${(Number(vRow.conversionRate || 0) * 100).toFixed(1)}%, CI=[${(Number(vRow.wilsonLower95 || 0) * 100).toFixed(1)}%, ${(Number(vRow.wilsonUpper95 || 0) * 100).toFixed(1)}%], z=${Number(vRow.zScore || 0).toFixed(2)}`
+    ),
     '',
     '🎥 Creator Partnerships',
     '   Ranked: booked revenue → paid orders → qualified sprint leads → checkouts',
@@ -319,6 +370,7 @@ function formatReport(monthly, weekly, github, npmMeta, telemetry = null, billin
     '🔗 UTM links for sharing (tracks referral source in Plausible)',
     `   Twitter:     ${LANDING_PAGE}?utm_source=twitter&utm_medium=social&utm_campaign=launch`,
     `   LinkedIn:    ${LANDING_PAGE}?utm_source=linkedin&utm_medium=social&utm_campaign=launch`,
+    `   TikTok:      https://thumbgate.ai/go/bundle-49?utm_source=tiktok&utm_medium=short_video&utm_campaign=nov2026_viral`,
     `   Reddit:      ${LANDING_PAGE}?utm_source=reddit&utm_medium=social&utm_campaign=launch`,
     `   HackerNews:  ${LANDING_PAGE}?utm_source=hackernews&utm_medium=social&utm_campaign=launch`,
     '',

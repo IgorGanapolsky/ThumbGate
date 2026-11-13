@@ -19,3 +19,16 @@ npm-debug.log*
 .DS_Store
 coverage/
 .nyc_output/
+.agent
+.graphify-venv
+.claude
+workers
+.thumbgate
+.entire
+graphify-out
+test-results
+.aider.tags.cache.v4
+data
+*.tgz
+.cursor
+.gemini

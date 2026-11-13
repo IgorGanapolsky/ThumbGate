@@ -5,7 +5,7 @@ const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
 
-const _DEFAULT_TELEMETRY_HOST = 'https://thumbgate-production.up.railway.app';
+const _DEFAULT_TELEMETRY_HOST = 'https://thumbgate.ai';
 // Respect THUMBGATE_API_URL so test environments can point to a local stub
 const TELEMETRY_ENDPOINT = `${process.env.THUMBGATE_API_URL || _DEFAULT_TELEMETRY_HOST}/v1/telemetry/ping`;
 const INSTALL_ID_PATH = path.join(process.env.HOME || process.env.USERPROFILE || '.', '.thumbgate', 'install-id');
@@ -61,6 +61,7 @@ function classifyInstall() {
 function trackEvent(eventType, metadata = {}) {
   if (process.env.THUMBGATE_NO_TELEMETRY === '1' || process.env.DO_NOT_TRACK === '1') return;
 
+  const pkgVersion = (() => { try { return require('../package.json').version; } catch(_) { return 'unknown'; } })();
   const payload = JSON.stringify({
     eventType,
     installId: getInstallId(),
@@ -70,7 +71,7 @@ function trackEvent(eventType, metadata = {}) {
     platform: os.platform(),
     arch: os.arch(),
     nodeVersion: process.version,
-    pkgVersion: (() => { try { return require('../package.json').version; } catch(_) { return 'unknown'; } })(),
+    pkgVersion,
     timestamp: new Date().toISOString(),
     ...metadata,
   });
@@ -79,10 +80,15 @@ function trackEvent(eventType, metadata = {}) {
     const url = new URL(TELEMETRY_ENDPOINT);
     const req = https.request({
       hostname: url.hostname,
-      port: 443,
+      port: url.port || 443,
       path: url.pathname,
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(payload) },
+      family: 4,
+      headers: {
+        'Content-Type': 'application/json',
+        'Content-Length': Buffer.byteLength(payload),
+        'User-Agent': `ThumbGate-CLI/${pkgVersion} (${os.platform()}; ${os.arch()})`,
+      },
       timeout: 3000,
     });
     req.on('error', () => {}); // silently ignore

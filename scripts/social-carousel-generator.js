@@ -36,7 +36,14 @@ const PLATFORM_RULES = {
     hashtagMax: 5,
     needsLinkInComments: true,
     finalSlide: 'modified_with_link',
-    captionTemplate: '🔥 {headline}\n\n{body}\n\n#AI #MachineLearning #ThumbGate',
+    captionTemplate: '🔥 {headline}\n\n{body}\n\n• Free MIT CLI: npx thumbgate@latest init\n• $49 1-Time Production Rule-Pack: https://thumbgate.ai/go/bundle-49?utm_source=linkedin&utm_medium=carousel&utm_campaign=viral_carousel&creator=iganapolsky&campaign_variant=linkedin_hook_a\n• $19/mo Pro Direct: https://thumbgate.ai/go/pro-direct?utm_source=linkedin&utm_medium=carousel&utm_campaign=viral_carousel&creator=iganapolsky&campaign_variant=linkedin_hook_a\n\n#ClaudeCode #CursorAI #AIAgents #DevSecOps #ThumbGate',
+  },
+  tiktok: {
+    captionLimit: 2200,
+    hashtagMax: 5,
+    needsLinkInComments: false,
+    finalSlide: 'tiktok_bio_and_pinned_comment',
+    captionTemplate: '⚡ {headline} 👉\n\n{body}\n\n[0-3s Hook] Stop letting coding agents run unguarded bash commands.\n[3-15s Proof] 0.041ms PreToolUse gate blocks retry loops & cuts token burn 64%.\n[15-30s CTA] Run `npx thumbgate@latest init` free or grab the $49 Rule-Pack in bio: https://thumbgate.ai/go/bundle-49?utm_source=tiktok&utm_medium=photo_carousel&utm_campaign=viral_tiktok&creator=iganapolsky&campaign_variant=tiktok_hook_a\n\n#ClaudeCode #CursorAI #CodingTok #AIAgents #TechTok',
   },
   x: {
     captionLimit: 280,
@@ -250,7 +257,8 @@ function generateBodySlides(topic) {
       body: `Get 127 additional gates, real-time canary alerting, and cross-session cache reuse.\n\nKeyword: ${topic}\nFree guide: ${setupKeywordLeadMagnet(topic).leadMagnetUrl}`,
       stat1: { label: 'Pro gates', value: '+127' },
       stat2: { label: 'Pro price', value: '$19/mo' },
-      screenshot: 'https://buy.stripe.com/8x2dR91M84r4cSd9uj3sI3f',
+      screenshot: '/assets/diagrams/hero-thumbs.svg',
+      checkoutUrl: 'https://thumbgate.ai/go/pro-direct?utm_source=social_carousel&utm_medium=carousel&utm_campaign=pro_upgrade',
     },
   ];
 
@@ -307,11 +315,12 @@ function generateVariations(slides, topics, platform) {
   const variations = {};
   const rule = PLATFORM_RULES[platform];
 
+  const slideList = Array.isArray(slides) ? slides : (slides && Array.isArray(slides.slides) ? slides.slides : []);
   for (const platformKey of Object.keys(PLATFORM_RULES)) {
     const platformRule = PLATFORM_RULES[platformKey];
     variations[platformKey] = {
-      ...slides,
-      slides: slides.slides.map((s) => ({
+      ...(Array.isArray(slides) ? {} : slides),
+      slides: slideList.map((s) => ({
         ...s,
         // Per-platform variation: different color scheme
         colorScheme: platformKey === 'linkedin' ? 'blue-dark' :
@@ -330,7 +339,7 @@ function generateVariations(slides, topics, platform) {
           ? 'discussion_prompt'
           : 'standard',
       })),
-      caption: generateCaption(slides, platformRule, topics),
+      caption: generateCaption(slideList, platformRule, topics),
     };
   }
 

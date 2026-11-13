@@ -180,6 +180,7 @@ function recoverCheckout(session, opts = {}) {
 // Re-export for testability (mirrors billing.js export surface).
 module.exports = {
   recoverCheckout,
+  evaluateCheckoutRecovery: recoverCheckout,
   economicsGate,
   recoveryDraft,
   appendSignedReceipt,
