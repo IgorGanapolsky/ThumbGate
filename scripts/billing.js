@@ -1605,9 +1605,13 @@ function loadResolvedRevenueEvents(options = {}) {
   for (const entry of paidProviderEvents) {
     const derived = deriveRevenueEventFromPaidProviderEvent(entry);
     if (!derived) continue;
-    if (hasRevenueEventMatch(resolved, derived)) continue;
+    const index = resolved.findIndex((existing) => hasRevenueEventMatch([existing], derived));
+    if (index >= 0) {
+      resolved[index] = retainRevenueEvidence({ ...resolved[index] }, resolved[index], derived, entry);
+      continue;
+    }
     const priced = resolveGithubMarketplaceRevenueEntry(derived, { annotate: false }).entry;
-    resolved.push(priced);
+    resolved.push(retainRevenueEvidence(priced, priced, derived, entry));
   }
 
   return mergeRevenueEvents(resolved, extraRevenueEvents);
@@ -2013,6 +2017,19 @@ function parseTestStripeReconciledRevenueEvents() {
   }
 }
 
+// Duplicate rows still carry identity and payment aliases. Keep that evidence in
+// memory without adding fields to the ledger or changing its existing counts.
+const revenueEvidence = new WeakMap();
+
+function revenueEvidenceFor(entry) {
+  return revenueEvidence.get(entry) || [entry];
+}
+
+function retainRevenueEvidence(result, ...entries) {
+  revenueEvidence.set(result, [...new Set(entries.flatMap(revenueEvidenceFor))]);
+  return result;
+}
+
 function mergeRevenueEvents(entries = [], extraEntries = []) {
   const merged = [...entries];
 
@@ -2022,6 +2039,7 @@ function mergeRevenueEvents(entries = [], extraEntries = []) {
       || (entry.metadata?.paymentIntentId && existing.metadata?.paymentIntentId === entry.metadata.paymentIntentId)
       || (entry.metadata?.chargeId && (existing.orderId === entry.metadata.chargeId || existing.metadata?.chargeId === entry.metadata.chargeId)));
     if (index >= 0) {
+      const existing = merged[index];
       if (entry.metadata?.stripeReconciled) {
         merged[index] = {
           ...merged[index], ...entry,
@@ -2031,7 +2049,10 @@ function mergeRevenueEvents(entries = [], extraEntries = []) {
           identityEmails: [...new Set([...revenueIdentityEmails(merged[index]), ...revenueIdentityEmails(entry)])],
           metadata: { ...merged[index].metadata, ...entry.metadata },
         };
+      } else {
+        merged[index] = { ...existing };
       }
+      merged[index] = retainRevenueEvidence(merged[index], existing, entry);
       continue;
     }
     merged.push(entry);
@@ -2150,7 +2171,7 @@ function revenueIdentityEmails(record = {}) {
 function classifyRevenueRecord(record = {}, env = process.env) {
   const scopes = [record, record.customer, record.charge, record.charge?.customer].filter((value) => value && typeof value === 'object');
   const emails = revenueIdentityEmails(record);
-  const owners = String(env.THUMBGATE_OWNER_EMAILS || '').split(',').map(canonicalizeEmailAddress).filter(Boolean);
+  const owners = String(env.THUMBGATE_OWNER_EMAILS || '').split(',').map((email) => canonicalizeEmailAddress(email)).filter(Boolean);
   if (record.identityClassification === 'internal' || emails.some((email) => owners.includes(canonicalizeEmailAddress(email)))) return 'internal';
   if (scopes.some((value) => [true, 'true'].includes(value.metadata?.internal) || [true, 'true'].includes(value.metadata?.owner))) return 'internal';
   if (record.identityClassification === 'test' || scopes.some((value) => value.livemode === false || [false, 'false'].includes(value.metadata?.livemode)
@@ -2168,22 +2189,66 @@ async function withStripeReadSlot(request, { signal } = {}) {
   finally { activeStripeReads -= 1; }
 }
 
+function groupRevenuePayments(entries) {
+  const paid = entries.filter((entry) => entry && entry.status === 'paid');
+  const parents = paid.map((_, index) => index);
+  const aliases = new Map();
+  const root = (index) => {
+    while (parents[index] !== index) {
+      parents[index] = parents[parents[index]];
+      index = parents[index];
+    }
+    return index;
+  };
+  paid.forEach((entry, index) => {
+    for (const evidence of revenueEvidenceFor(entry)) {
+      const metadata = evidence.metadata || {};
+      const identities = [evidence.orderId, metadata.chargeId, metadata.paymentIntentId, metadata.orderId,
+        metadata.sessionId, metadata.marketplaceOrderId, resolveRevenueEventKey(evidence)].filter(Boolean);
+      for (const alias of identities) {
+        if (aliases.has(alias)) parents[root(index)] = root(aliases.get(alias));
+        else aliases.set(alias, index);
+      }
+    }
+  });
+  const groups = new Map();
+  paid.forEach((entry, index) => {
+    const key = root(index);
+    if (!groups.has(key)) groups.set(key, { records: 0, evidence: new Set() });
+    const group = groups.get(key);
+    group.records += 1;
+    for (const evidence of revenueEvidenceFor(entry)) group.evidence.add(evidence);
+  });
+  return [...groups.values()];
+}
+
+function hasKnownRevenueAmount(entry) {
+  return entry.amountKnown && Number.isSafeInteger(entry.amountCents) && /^[A-Z]{3}$/.test(String(entry.currency || '').toUpperCase());
+}
+
+function comparePaymentAmountEvidence(a, b) {
+  // Prefer provider reconciliation and explicit refund state, then the newest
+  // snapshot. Stable tie-breaks make the total independent of input order.
+  return Number(Boolean(b.metadata?.stripeReconciled)) - Number(Boolean(a.metadata?.stripeReconciled))
+    || Number(Number.isSafeInteger(b.amountRefundedCents)) - Number(Number.isSafeInteger(a.amountRefundedCents))
+    || (Date.parse(b.timestamp) || 0) - (Date.parse(a.timestamp) || 0)
+    || (b.amountRefundedCents || 0) - (a.amountRefundedCents || 0)
+    || String(a.currency).localeCompare(String(b.currency))
+    || a.amountCents - b.amountCents;
+}
+
 function summarizeExternalRevenue(entries = [], env = process.env) {
   const totals = { paidOrders: 0, bookedRevenueByCurrency: {}, refundedByCurrency: {}, excluded: { internal: 0, test: 0, unknown: 0 }, duplicates: 0, amountUnknownOrders: 0 };
-  const seen = new Set();
-  for (const entry of entries) {
-    if (!entry || entry.status !== 'paid') continue;
-    const metadata = entry.metadata || {};
-    const identities = [entry.orderId, metadata.chargeId, metadata.paymentIntentId, metadata.orderId,
-      metadata.sessionId, metadata.marketplaceOrderId, resolveRevenueEventKey(entry)].filter(Boolean);
-    const duplicate = identities.some((id) => seen.has(id));
-    identities.forEach((id) => seen.add(id));
-    if (duplicate) { totals.duplicates += 1; continue; }
-    const classification = classifyRevenueRecord(entry, env);
+  for (const group of groupRevenuePayments(entries)) {
+    totals.duplicates += group.records - 1;
+    const evidence = [...group.evidence];
+    const classifications = new Set(evidence.map((entry) => classifyRevenueRecord(entry, env)));
+    const classification = ['internal', 'test', 'external', 'unknown'].find((value) => classifications.has(value));
     if (classification !== 'external') { totals.excluded[classification] += 1; continue; }
     totals.paidOrders += 1;
-    const currency = String(entry.currency || '').toUpperCase();
-    if (entry.amountKnown && Number.isSafeInteger(entry.amountCents) && /^[A-Z]{3}$/.test(currency)) {
+    const entry = evidence.filter(hasKnownRevenueAmount).sort(comparePaymentAmountEvidence)[0];
+    if (entry) {
+      const currency = String(entry.currency).toUpperCase();
       totals.bookedRevenueByCurrency[currency] = (totals.bookedRevenueByCurrency[currency] || 0) + entry.amountCents;
       if (Number.isSafeInteger(entry.amountRefundedCents)) {
         totals.refundedByCurrency[currency] = (totals.refundedByCurrency[currency] || 0) + entry.amountRefundedCents;

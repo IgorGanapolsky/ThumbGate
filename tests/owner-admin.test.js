@@ -156,6 +156,86 @@ test('shared batch distinguishes successful empty, unconfigured, rejection, time
   await new Promise((r) => setTimeout(r, 40)); assert.equal(futureCalls, 0);
 });
 
+function paymentFixture(orderId, fields = {}) {
+  return { timestamp: new Date().toISOString(), provider: 'stripe', status: 'paid', orderId,
+    customerEmail: 'buyer@example.invalid', customerId: 'cus_groupfixture', amountKnown: true,
+    amountCents: 10000, currency: 'USD', ...fields };
+}
+
+for (const classification of ['internal', 'test']) {
+  for (const restrictedFirst of [false, true]) {
+    test(`payment alias groups exclude ${classification} evidence in ${restrictedFirst ? 'restricted' : 'buyer'}-first order`, () => {
+      const buyer = paymentFixture('cs_groupfixture', { metadata: { paymentIntentId: 'pi_groupfixture' } });
+      const restricted = paymentFixture('ch_groupfixture', {
+        ...(classification === 'internal' ? { customerEmail: 'owner@example.invalid' } : { livemode: false }),
+        metadata: { paymentIntentId: 'pi_groupfixture' },
+      });
+      const entries = restrictedFirst ? [restricted, buyer] : [buyer, restricted];
+      for (const report of [billing.summarizeExternalRevenue(entries),
+        billing.getBillingSummary({ window: 'lifetime', extraRevenueEvents: entries }).revenue.external]) {
+        assert.deepEqual(report.bookedRevenueByCurrency, {});
+        assert.equal(report.paidOrders, 0);
+        assert.equal(report.excluded[classification], 1);
+      }
+    });
+  }
+}
+
+test('payment alias groups connect bridge records transitively with internal then test precedence', () => {
+  const entries = [paymentFixture('cs_bridge', { metadata: { paymentIntentId: 'pi_bridge' } }),
+    paymentFixture('ch_bridge', { customerEmail: 'owner@example.invalid' }),
+    paymentFixture('cs_link', { livemode: false, metadata: { paymentIntentId: 'pi_bridge', chargeId: 'ch_bridge' } })];
+  for (const order of [[0, 1, 2], [0, 2, 1], [1, 0, 2], [1, 2, 0], [2, 0, 1], [2, 1, 0]]) {
+    const report = billing.summarizeExternalRevenue(order.map((i) => entries[i]));
+    assert.deepEqual(report.bookedRevenueByCurrency, {});
+    assert.deepEqual(report.excluded, { internal: 1, test: 0, unknown: 0 });
+    assert.equal(report.duplicates, 2);
+  }
+});
+
+test('payment alias groups count an external payment once and preserve authoritative partial and full refunds in either order', () => {
+  for (const refund of [2500, 10000]) {
+    const buyer = paymentFixture('cs_refundgroup', { metadata: { paymentIntentId: 'pi_refundgroup' } });
+    const charge = paymentFixture('ch_refundgroup', { amountRefundedCents: refund,
+      metadata: { paymentIntentId: 'pi_refundgroup', stripeReconciled: true } });
+    for (const entries of [[buyer, charge], [charge, buyer]]) {
+      const report = billing.summarizeExternalRevenue(entries);
+      assert.equal(report.paidOrders, 1);
+      assert.equal(report.duplicates, 1);
+      assert.deepEqual(report.bookedRevenueByCurrency, { USD: 10000 });
+      assert.deepEqual(report.refundedByCurrency, { USD: refund });
+    }
+  }
+});
+
+test('payment alias groups preserve evidence discarded by duplicate extras, reconciliation and paid funnel loading', () => {
+  const revenuePath = billing.CONFIG.REVENUE_LEDGER_PATH;
+  const funnelPath = billing.CONFIG.FUNNEL_LEDGER_PATH;
+  const saved = [revenuePath, funnelPath].map((file) => fs.existsSync(file) ? fs.readFileSync(file) : null);
+  const buyer = paymentFixture('cs_persisted', { metadata: { paymentIntentId: 'pi_persisted' } });
+  try {
+    fs.writeFileSync(revenuePath, JSON.stringify(buyer) + '\n');
+    fs.writeFileSync(funnelPath, '');
+    for (const evidence of [{ customerEmail: 'owner@example.invalid' }, { livemode: false }]) {
+      const restricted = paymentFixture('cs_persisted', evidence);
+      const report = billing.getBillingSummary({ window: 'lifetime', extraRevenueEvents: [restricted] });
+      assert.deepEqual(report.revenue.external.bookedRevenueByCurrency, {});
+      assert.equal(report.revenue.external.paidOrders, 0);
+      // The existing broad ledger view still retains its single booked payment.
+      assert.equal(report.revenue.paidOrders, 1);
+    }
+    // Reconciliation changes the visible order ID; its original checkout alias must survive.
+    const reconciled = paymentFixture('ch_persisted', { metadata: { paymentIntentId: 'pi_persisted', stripeReconciled: true } });
+    const owner = paymentFixture('cs_persisted', { customerEmail: 'owner@example.invalid' });
+    assert.equal(billing.getBillingSummary({ window: 'lifetime', extraRevenueEvents: [reconciled, owner] }).revenue.external.paidOrders, 0);
+    fs.writeFileSync(funnelPath, JSON.stringify({ timestamp: buyer.timestamp, stage: 'paid', event: 'checkout_completed',
+      metadata: { provider: 'stripe', customerId: buyer.customerId, sessionId: buyer.orderId, email: 'owner@example.invalid' } }) + '\n');
+    assert.equal(billing.getBillingSummary({ window: 'lifetime' }).revenue.external.paidOrders, 0);
+  } finally {
+    [revenuePath, funnelPath].forEach((file, i) => saved[i] === null ? fs.rmSync(file, { force: true }) : fs.writeFileSync(file, saved[i]));
+  }
+});
+
 test('analytics finite projection excludes record identity and dynamic arbitrary keys', () => {
   const value = admin.projectAnalytics({ revenue: { external: { bookedRevenueByCurrency: { USD: 20, 'private@example.invalid': 40 } }, latestPaidOrder: { customerId: 'private' } }, funnel: { lastPaidEvent: { secret: 'private' } }, attribution: { 'private@example.invalid': 12 } });
   assert.ok(!JSON.stringify(value).includes('private'));
