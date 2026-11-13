@@ -35,7 +35,7 @@ const root = path.join(__dirname, '..');
 //
 // May fall freely; raising it means a capability shipped with no caller — wire it,
 // delete it, or bump with a note saying why it ships uncalled.
-const MAX_ORPHANS = 42;
+const MAX_ORPHANS = 24;
 
 function trackedTextFiles() {
   const out = execFileSync('git', ['ls-files'], { cwd: root, encoding: 'utf8' });
