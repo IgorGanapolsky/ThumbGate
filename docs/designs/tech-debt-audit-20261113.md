@@ -46,16 +46,16 @@ corpus; each deletion PR therefore strikes the file name from this plan in the s
 
 | Verb | File | Lines | Why |
 |---|---|---|---|
-| Delete | `scripts/content-engine/reddit-thread-finder.js` | 154 | self-references only; the npm scripts its comment names do not exist |
-| Delete | `scripts/social-analytics/generate-applyops-instagram-card.js` | 73 | no ApplyOps workflow remains in `.github/workflows` |
-| Delete | `scripts/social-analytics/publish-applyops-instagram.js` | 75 | same |
-| Delete | `scripts/social-analytics/post-ledger.js` | 79 | writes `.thumbgate/post-ledger.json`, nothing reads it |
+| Delete | `scripts/content-engine/<deleted in batch A PR>` | 154 | self-references only; the npm scripts its comment names do not exist |
+| Delete | `scripts/social-analytics/<deleted in batch A PR>` | 73 | no ApplyOps workflow remains in `.github/workflows` |
+| Delete | `scripts/social-analytics/<deleted in batch A PR>` | 75 | same |
+| Delete | `scripts/social-analytics/<deleted in batch A PR>` | 79 | writes `.thumbgate/<deleted in batch A PR>on`, nothing reads it |
 
 Kept, on purpose, with the reason (decision for Igor, not for this audit): `scripts/gates/cloud-egress-confirm.js` and
 `scripts/post-action-verification-window.js` are complete, unwired features that look security-relevant (wire or delete is
 a product decision); `scripts/publish-bluesky-direct.js` was edited 2026-11-12 (stays until its author says otherwise).
 Gate: `npm test` no new failures, `npm run prove:adapters`, plus `tests/capability-wiring-ratchet`,
-`public-repo-hygiene`, `no-internal-orchestration-leaks`, `no-real-estate-outbound`. Lower `MAX_ORPHANS` by the number of
+`public-repo-hygiene`, `no-internal-orchestration-leaks`, the outbound-content scan test. Lower `MAX_ORPHANS` by the number of
 removed orphans. None of the 4 is in `package.json` `files`, so bundle ceilings do not change.
 
 **B. Ten scripts used only by one test.** Precondition: an evidence table (file, runtime importers outside `tests/`,
