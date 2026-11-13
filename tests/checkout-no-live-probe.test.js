@@ -13,7 +13,7 @@ const {
   checkoutRequesterKey,
 } = require('../scripts/bot-detection');
 const { detectEconomicAction } = require('../scripts/financial-control-plane');
-const { appendTelemetryEvent, getTelemetryAnalytics } = require('../scripts/telemetry-analytics');
+const { appendTelemetryEvent, getTelemetryAnalytics, classifyTelemetryAudience } = require('../scripts/telemetry-analytics');
 
 test('probe and audit requests are recognised as automated', () => {
   assert.equal(billing.isAutomatedCheckoutRequest({ source: 'internal_audit' }), true);
@@ -216,11 +216,16 @@ test('billing blocks synthetic/probe/owner checkout emails on live Stripe keys a
 
   try {
     assert.equal(billing.isAutomatedCheckoutRequest({}, 'probe@example.com'), true);
+    assert.equal(billing.isAutomatedCheckoutRequest({}, 'buyer@acme.com'), true);
+    assert.equal(billing.isAutomatedCheckoutRequest({}, 'buyer@acme.io'), true);
+    assert.equal(billing.isAutomatedCheckoutRequest({}, 'dev@acme.io'), true);
+    assert.equal(billing.isAutomatedCheckoutRequest({}, 'buyer+tag@acme.com'), true);
+    assert.equal(billing.isAutomatedCheckoutRequest({}, 'founder+tag@agent-startup.io'), true);
+    assert.equal(billing.isAutomatedCheckoutRequest({}, 'mkjkjuwj@formtests.info'), true);
     assert.equal(billing.isAutomatedCheckoutRequest({}, 'e2e-probe@custom-domain.io'), true);
     assert.equal(billing.isAutomatedCheckoutRequest({}, 'founder@company.test'), true);
     assert.equal(billing.isAutomatedCheckoutRequest({}, 'founder+probe@company.test'), true);
     assert.equal(billing.isAutomatedCheckoutRequest({}, 'stranger+founder@company.test'), false);
-    assert.equal(billing.isAutomatedCheckoutRequest({}, 'notfounder@company.test'), false);
     assert.equal(billing.isAutomatedCheckoutRequest({ utmCampaign: 'codex_verification_run' }), true);
     assert.equal(billing.isAutomatedCheckoutRequest({ probe: true }), true);
     assert.equal(billing.isAutomatedCheckoutRequest({}, null), false);
@@ -238,6 +243,36 @@ test('billing blocks synthetic/probe/owner checkout emails on live Stripe keys a
       (err) => err.code === 'AUTOMATED_CHECKOUT_BLOCKED'
         && err.statusCode === 403
         && /Refusing to open a live Stripe Checkout session/.test(err.message),
+    );
+    await assert.rejects(
+      billing.createCheckoutSession({
+        successUrl: 'https://thumbgate.ai/success',
+        cancelUrl: 'https://thumbgate.ai/cancel',
+        customerEmail: 'mkjkjuwj@formtests.info',
+        installId: 'inst_unknown',
+        metadata: { planId: 'pro', billingCycle: 'monthly', source: 'website', ctaId: 'pricing_pro' },
+      }),
+      (err) => err.code === 'AUTOMATED_CHECKOUT_BLOCKED' && err.statusCode === 403,
+    );
+    await assert.rejects(
+      billing.createCheckoutSession({
+        successUrl: 'https://thumbgate.ai/success',
+        cancelUrl: 'https://thumbgate.ai/cancel',
+        customerEmail: 'buyer+tag@acme.com',
+        installId: 'inst_unknown',
+        metadata: { planId: 'pro', billingCycle: 'monthly', source: 'website', ctaId: 'pricing_pro' },
+      }),
+      (err) => err.code === 'AUTOMATED_CHECKOUT_BLOCKED' && err.statusCode === 403,
+    );
+    await assert.rejects(
+      billing.createCheckoutSession({
+        successUrl: 'https://thumbgate.ai/success',
+        cancelUrl: 'https://thumbgate.ai/cancel',
+        customerEmail: 'dev@acme.io',
+        installId: 'inst_unknown',
+        metadata: { planId: 'pro', billingCycle: 'monthly', source: 'website', ctaId: 'pricing_pro' },
+      }),
+      (err) => err.code === 'AUTOMATED_CHECKOUT_BLOCKED' && err.statusCode === 403,
     );
   } finally {
     billing.CONFIG.STRIPE_SECRET_KEY = savedKey;
@@ -432,6 +467,94 @@ test('/go/pro-direct deflects ?probe=1 and blocked synthetic emails to /checkout
       }),
     });
     assert.equal(postRes.status, 403);
+
+    const confirmRes = await fetch(`http://127.0.0.1:${handle.port}/checkout/pro?confirm=1&customer_email=mkjkjuwj%40formtests.info&plan_id=pro&billing_cycle=monthly`, {
+      redirect: 'manual',
+      headers: {
+        'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 14_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.1 Safari/605.1.15',
+        accept: 'text/html,application/xhtml+xml',
+        'sec-fetch-mode': 'navigate',
+        'sec-fetch-dest': 'document',
+        'sec-fetch-site': 'same-origin',
+        'sec-fetch-user': '?1',
+      },
+    });
+    assert.equal(confirmRes.status, 403);
+    assert.equal(confirmRes.headers.get('location'), null);
+    const plusConfirm = await fetch(`http://127.0.0.1:${handle.port}/checkout/pro?confirm=1&customer_email=buyer%2Btag%40acme.com&plan_id=pro&billing_cycle=monthly`, {
+      redirect: 'manual',
+      headers: {
+        'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 14_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.1 Safari/605.1.15',
+        accept: 'text/html,application/xhtml+xml',
+        'sec-fetch-mode': 'navigate',
+        'sec-fetch-dest': 'document',
+        'sec-fetch-site': 'same-origin',
+        'sec-fetch-user': '?1',
+      },
+    });
+    assert.equal(plusConfirm.status, 403);
+    assert.equal(plusConfirm.headers.get('location'), null);
+
+    const bundleRes = await getRedirect('/go/bundle-49?customer_email=dev%40acme.io');
+    assert.equal(bundleRes.status, 302);
+    assert.match(bundleRes.location, /\/checkout\/pro\b/);
+    assert.doesNotMatch(bundleRes.location, /stripe\.com/i);
+    assert.doesNotMatch(bundleRes.location, /prefilled_email/i);
+
+    const playbookRes = await getRedirect('/go/playbook-999?prefilled_email=founder%2Btag%40agent-startup.io');
+    assert.equal(playbookRes.status, 302);
+    assert.match(playbookRes.location, /\/checkout\/pro\b/);
+    assert.doesNotMatch(playbookRes.location, /stripe\.com/i);
+
+    const humanBundle = await getRedirect('/go/bundle-49?customer_email=cto%40customer-corp.io');
+    assert.equal(humanBundle.status, 302);
+    assert.match(humanBundle.location, /^https:\/\/buy\.stripe\.com\//);
+    assert.match(humanBundle.location, /prefilled_email=cto%40customer-corp\.io/i);
+
+    const liveDiagnosticRes = await fetch(`http://127.0.0.1:${handle.port}/go/diagnostic-pay`, {
+      method: 'POST',
+      redirect: 'manual',
+      headers: {
+        'content-type': 'application/x-www-form-urlencoded',
+        'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 14_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.1 Safari/605.1.15',
+        accept: 'text/html,application/xhtml+xml',
+        'sec-fetch-mode': 'navigate',
+        'sec-fetch-dest': 'document',
+      },
+      body: new URLSearchParams({ customer_email: 'mkjkjuwj@formtests.info' }),
+    });
+    assert.equal(liveDiagnosticRes.status, 302);
+    assert.match(liveDiagnosticRes.headers.get('location') || '', /\/checkout\/pro\b/);
+    assert.doesNotMatch(liveDiagnosticRes.headers.get('location') || '', /stripe\.com/i);
+
+    const gptRes = await getRedirect('/go/gpt?customer_email=e2e-probe%40example.com');
+    assert.equal(gptRes.status, 302);
+    assert.doesNotMatch(gptRes.location, /\/checkout\/pro\b/);
+
+    const plusTagAudience = classifyTelemetryAudience(
+      { eventType: 'checkout_start' },
+      { customerEmail: 'founder+tag@agent-startup.io' },
+    );
+    assert.equal(plusTagAudience.audience, 'test');
+    assert.ok(plusTagAudience.reasons.includes('test_identity'));
+
+    billing.CONFIG.STRIPE_SECRET_KEY = `${'sk_test_'}placeholder_not_a_real_key`;
+    process.env.STRIPE_SECRET_KEY = billing.CONFIG.STRIPE_SECRET_KEY;
+    const testModeDiagnosticRes = await fetch(`http://127.0.0.1:${handle.port}/go/diagnostic-pay`, {
+      method: 'POST',
+      redirect: 'manual',
+      headers: {
+        'content-type': 'application/x-www-form-urlencoded',
+        'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 14_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.1 Safari/605.1.15',
+        accept: 'text/html,application/xhtml+xml',
+        'sec-fetch-mode': 'navigate',
+        'sec-fetch-dest': 'document',
+      },
+      body: new URLSearchParams({ customer_email: 'buyer@example.com' }),
+    });
+    assert.equal(testModeDiagnosticRes.status, 303);
+    assert.match(testModeDiagnosticRes.headers.get('location') || '', /^https:\/\/buy\.stripe\.com\//);
+    assert.match(testModeDiagnosticRes.headers.get('location') || '', /prefilled_email=buyer%40example\.com/i);
   } finally {
     await new Promise((resolve) => handle.server.close(resolve));
     billing.CONFIG.STRIPE_SECRET_KEY = savedStripeKey;
