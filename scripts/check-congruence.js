@@ -280,16 +280,16 @@ async function main() {
     'docs/COMMERCIAL_TRUTH.md must record the Enterprise tier'
   );
   check(
-    /one hard, test-backed safety gate/i.test(githubAbout.metaDescription),
+    /configured gate, a regression test, and rollout and rollback evidence/i.test(githubAbout.metaDescription),
     'config/github-about.json metaDescription must describe the one test-backed gate'
   );
   check(
-    /supported AI-agent workflow/i.test(githubAbout.metaDescription),
+    /supported local workflow/i.test(githubAbout.metaDescription),
     'config/github-about.json metaDescription must keep the supported-workflow boundary'
   );
   check(
-    /two business days/i.test(githubAbout.metaDescription),
-    'config/github-about.json metaDescription must state the managed delivery window'
+    /supported hook integrations/i.test(githubAbout.metaDescription),
+    'config/github-about.json metaDescription must keep the supported-hook boundary'
   );
   check(
     /\$19\/mo or \$149\/yr/i.test(readmeMd),
