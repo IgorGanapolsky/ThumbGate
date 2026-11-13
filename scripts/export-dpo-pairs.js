@@ -6,6 +6,7 @@
  */
 
 const fs = require('fs');
+const { projectForRecord, matchesProject } = require('./project-identity');
 const path = require('path');
 const { traceForDpoPair, aggregateTraces } = require('./code-reasoning');
 const { resolveFeedbackDir } = require('./feedback-paths');
@@ -102,7 +103,7 @@ function buildRubricDelta(error, learning) {
 function findDistractors(learning, errorKeys, usedErrorId, maxDistractors) {
   const learningKeys = extractDomainKeys(learning);
   return errorKeys
-    .filter((err) => err.memory.id !== usedErrorId)
+    .filter((err) => err.memory.id !== usedErrorId && matchesProject(err.memory, projectForRecord(learning).projectKey))
     .map((err) => {
       const overlap = domainOverlap(err.keys, learningKeys);
       return { memory: err.memory, overlap };
@@ -119,6 +120,7 @@ function findDistractors(learning, errorKeys, usedErrorId, maxDistractors) {
 }
 
 function buildDpoPairs(errors, learnings, { maxDistractors = 2 } = {}) {
+  const identity = (row) => projectForRecord(row).projectKey + ':' + row.id;
   const pairs = [];
   const usedErrors = new Set();
   const usedLearnings = new Set();
@@ -132,7 +134,8 @@ function buildDpoPairs(errors, learnings, { maxDistractors = 2 } = {}) {
     let bestOverlap = 0;
 
     for (const learn of learningKeys) {
-      if (usedLearnings.has(learn.memory.id)) continue;
+      if (!matchesProject(learn.memory, projectForRecord(err.memory).projectKey)) continue;
+      if (usedLearnings.has(identity(learn.memory))) continue;
       const overlap = domainOverlap(err.keys, learn.keys);
       const rubric = buildRubricDelta(err.memory, learn.memory);
       const rubricDelta = rubric && rubric.weightedDelta != null ? rubric.weightedDelta : 0;
@@ -147,6 +150,7 @@ function buildDpoPairs(errors, learnings, { maxDistractors = 2 } = {}) {
     if (best && bestScore > 0 && bestOverlap > 0) {
       const distractors = findDistractors(best.memory, errorKeys, err.memory.id, maxDistractors);
       pairs.push({
+        ...projectForRecord(err.memory),
         prompt: inferPrompt(err.memory, best.memory),
         chosen: best.memory.content,
         rejected: err.memory.content,
@@ -163,15 +167,15 @@ function buildDpoPairs(errors, learnings, { maxDistractors = 2 } = {}) {
           distractorCount: distractors.length,
         },
       });
-      usedErrors.add(err.memory.id);
-      usedLearnings.add(best.memory.id);
+      usedErrors.add(identity(err.memory));
+      usedLearnings.add(identity(best.memory));
     }
   }
 
   return {
     pairs,
-    unpairedErrors: errors.filter((e) => !usedErrors.has(e.id)),
-    unpairedLearnings: learnings.filter((l) => !usedLearnings.has(l.id)),
+    unpairedErrors: errors.filter((e) => !usedErrors.has(identity(e))),
+    unpairedLearnings: learnings.filter((l) => !usedLearnings.has(identity(l))),
   };
 }
 
@@ -179,7 +183,8 @@ function toJSONL(pairs) {
   return `${pairs.map((p) => JSON.stringify(p)).join('\n')}\n`;
 }
 
-function exportDpoFromMemories(memories) {
+function exportDpoFromMemories(memories, options = {}) {
+  memories = memories.filter((row) => matchesProject(row, options.projectKey));
   // Paid-feature gate: DPO export is a commercial (Pro+) capability. Advisory by
   // default; enforced when THUMBGATE_ENFORCE_ENTITLEMENTS=1 (then this throws).
   const _ent = require('./entitlement').requireEntitlement('data-export');

@@ -13,6 +13,7 @@ const crypto = require('node:crypto');
 const fs = require('node:fs');
 const path = require('node:path');
 const { getFeedbackPaths } = require('./feedback-paths');
+const { projectForCapture, projectForRecord, matchesProject } = require('./project-identity');
 const { validateToolContract } = require('./tool-contract-validator');
 
 const OUTCOMES_FILE = 'task-outcome-receipts.jsonl';
@@ -145,8 +146,9 @@ function recordTaskOutcome(input = {}, options = {}) {
     throw error;
   }
 
+  Object.assign(receipt, projectForCapture({ ...input, ...options }, { hosted: Boolean(options.projectKey || options.hosted) }));
   const outcomesPath = getTaskOutcomesPath(options);
-  const existing = readTaskOutcomes(options);
+  const existing = readTaskOutcomes({ ...options, projectKey: receipt.projectKey });
   const duplicate = existing.find((entry) => entry.idempotencyKey === receipt.idempotencyKey);
   if (duplicate) {
     if (duplicate.receiptHash !== receipt.receiptHash) {
@@ -202,7 +204,8 @@ function readTaskOutcomes(options = {}) {
     .filter(Boolean)
     .flatMap((line) => {
       try {
-        return [JSON.parse(line)];
+        const row = JSON.parse(line);
+        return matchesProject(projectForRecord(row), options.projectKey) ? [row] : [];
       } catch {
         return [];
       }

@@ -219,6 +219,7 @@
   }
 
 </style>
+<script src="/project-switcher.js"></script>
 </head>
 <body>
 
@@ -385,6 +386,8 @@
 </div>
 
 <script>
+function projectFetch(input, init) { return fetch(window.ThumbGateProjects.url(input), init); }
+
 var allRules = [];
 var allTimeline = [];
 var isDemo = true;
@@ -399,19 +402,19 @@ const LOCAL_PRO_BOOTSTRAP = __LESSONS_BOOTSTRAP_ENABLED__;
 function escHtml(s) { var d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
 function escAttr(s) { return escHtml(String(s || '')).replace(/"/g, '&quot;'); }
 
-let ACTIVE_PROJECT_DIR = '';
+let ACTIVE_PROJECT_KEY = '';
 try {
   var urlParams = new URLSearchParams(window.location.search);
-  ACTIVE_PROJECT_DIR = urlParams.get('project') || '';
+  ACTIVE_PROJECT_KEY = urlParams.get('project') || '';
 } catch (e) {}
 
 function preserveProjectQueryParams() {
-  if (!ACTIVE_PROJECT_DIR) return;
+  if (!ACTIVE_PROJECT_KEY) return;
   var links = document.querySelectorAll('a[href^="/dashboard"], a[href^="/lessons"], a[href="/"]');
   links.forEach(function(link) {
     try {
       var url = new URL(link.href, window.location.origin);
-      url.searchParams.set('project', ACTIVE_PROJECT_DIR);
+      url.searchParams.set('project', ACTIVE_PROJECT_KEY);
       link.href = url.pathname + url.search + url.hash;
     } catch (e) {}
   });
@@ -424,8 +427,8 @@ function getHeaders() {
   if (API_KEY) {
     headers['Authorization'] = 'Bearer ' + API_KEY;
   }
-  if (ACTIVE_PROJECT_DIR) {
-    headers['x-thumbgate-project-dir'] = ACTIVE_PROJECT_DIR;
+  if (ACTIVE_PROJECT_KEY) {
+    headers['x-thumbgate-project'] = ACTIVE_PROJECT_KEY;
   }
   return headers;
 }
@@ -743,6 +746,10 @@ function renderImprovementMetrics(stats, data) {
   var blocked = gateStats.blocked || 0;
   var resolvedCount = decisionLoop.resolvedCount || 0;
 
+  if (window.ThumbGateProjects.selected && data.decisions === null) {
+    summary.textContent = 'Decision metrics are unavailable for this project. The chart shows recorded project feedback and gate decisions.';
+    grid.textContent = 'Unavailable for this project';
+  } else {
   summary.textContent = 'ThumbGate is auto-routing ' + fastPathRate + '% of tracked decisions while holding override rate at ' + overrideRate + '% and rollback rate at ' + rollbackRate + '% across '
     + resolvedCount + ' resolved decision' + (resolvedCount === 1 ? '' : 's') + '. Feedback approval is ' + approvalRate + '%, and gates still recorded ' + blocked + ' deny decision' + (blocked === 1 ? '' : 's') + '.';
 
@@ -754,6 +761,8 @@ function renderImprovementMetrics(stats, data) {
   ].map(function(tile) {
     return '<div class="metric-tile"><div class="metric-kicker">' + escHtml(tile.label) + '</div><div class="metric-number ' + escHtml(tile.tone) + '">' + escHtml(tile.value) + '</div><div class="metric-note">' + escHtml(tile.note) + '</div></div>';
   }).join('');
+
+  }
 
   var gateDays = {};
   ((gateAudit.days) || []).forEach(function(day) {
@@ -986,7 +995,7 @@ async function submitLessonsTalkToUs(btn) {
   var wrap = btn.closest('[data-talk-wrap]'), emailEl = wrap && wrap.querySelector('[data-talk-email]'), statusEl = wrap && wrap.querySelector('[data-talk-status]');
   btn.disabled = true;
   try {
-    var res = await fetch('/v1/intake/workflow-sprint', { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: (emailEl && emailEl.value.trim()) || undefined, workflow: 'Free-tier lessons limit (Talk to us)', urgency: 'Hit free-tier limit on /lessons', planId: 'diagnostic', ctaId: 'workflow_sprint_intake', ctaPlacement: 'free_tier_limit', page: '/lessons' }) });
+    var res = await projectFetch('/v1/intake/workflow-sprint', { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: (emailEl && emailEl.value.trim()) || undefined, workflow: 'Free-tier lessons limit (Talk to us)', urgency: 'Hit free-tier limit on /lessons', planId: 'diagnostic', ctaId: 'workflow_sprint_intake', ctaPlacement: 'free_tier_limit', page: '/lessons' }) });
     if (res.status === 400 && emailEl && emailEl.style.display === 'none') {
       emailEl.style.display = 'inline-block'; emailEl.focus();
       if (statusEl) statusEl.textContent = 'Enter work email, then click Talk to us.';
@@ -1037,7 +1046,7 @@ function loadDemo() {
 
 async function resolvePaidCookieSession() {
   try {
-    var res = await fetch('/v1/auth/session', { credentials: 'include' });
+    var res = await projectFetch('/v1/auth/session', { credentials: 'include' });
     if (!res.ok) return null;
     var session = await res.json();
     if (session && session.authenticated === true && (session.tier === 'Pro' || session.tier === 'Team' || session.tier === 'Enterprise')) {
@@ -1070,10 +1079,10 @@ async function loadLive() {
   try {
     var reqInit = { credentials: 'include', headers: getHeaders() };
     const responses = await Promise.all([
-      fetch('/v1/feedback/stats', reqInit),
-      fetch('/v1/lessons/search?limit=50', reqInit),
-      fetch('/v1/search?q=*&limit=40&source=feedback', reqInit),
-      fetch('/v1/dashboard', reqInit)
+      projectFetch('/v1/feedback/stats', reqInit),
+      projectFetch('/v1/lessons/search?limit=50', reqInit),
+      projectFetch('/v1/search?q=*&limit=40&source=feedback', reqInit),
+      projectFetch('/v1/dashboard', reqInit)
     ]);
     if (responses.some(function(res) { return !res.ok; })) {
       throw new Error('Live lessons session unavailable');
@@ -1083,6 +1092,7 @@ async function loadLive() {
     const lessonsPayload = await responses[1].json();
     const feedbackPayload = await responses[2].json();
     dashboardSnapshot = await responses[3].json();
+    window.ThumbGateProjects.refresh(getHeaders());
 
     allRules = mapLiveRules(lessonsPayload);
     var lessonMap = new Map(allRules
@@ -1297,7 +1307,7 @@ async function submitFeedback() {
   btn.textContent = 'Submitting...';
   var result = document.getElementById('feedbackResult');
   try {
-    var res = await fetch('/api/feedback/submit', {
+    var res = await projectFetch('/api/feedback/submit', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ reasons: reasons, details: details })

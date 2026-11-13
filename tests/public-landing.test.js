@@ -964,7 +964,7 @@ test('THUMBGATE_OWNER_EMAILS grants Enterprise tier on Google and Apple SSO whil
     assert.equal((await fetch(`${origin}/v1/feedback/stats`, { headers: { cookie: relayCookie } })).status, 401);
 
     const lessonsHtml = await (await fetch(`${origin}/lessons`)).text();
-    assert.match(lessonsHtml, /fetch\('\/v1\/auth\/session',\s*\{\s*credentials:\s*'include'\s*\}\)/);
+    assert.match(lessonsHtml, /projectFetch\('\/v1\/auth\/session',\s*\{\s*credentials:\s*'include'\s*\}\)/);
     assert.match(lessonsHtml, /resolveLessonsTierName/);
     assert.doesNotMatch(lessonsHtml, />Landing Page</);
     assert.match(lessonsHtml, /<a href="\/" class="nav-logo"/);

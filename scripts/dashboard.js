@@ -241,6 +241,13 @@ function findLatestTimestamp(entries) {
   }, null);
 }
 
+function normalizeDashboardFeedback(entries) {
+  return entries.map((entry) => {
+    const signal = String(entry.signal || entry.feedback || '').toLowerCase();
+    return { ...entry, signal: ['up', 'positive', 'thumbs_up'].includes(signal) ? 'positive' : ['down', 'negative', 'thumbs_down'].includes(signal) ? 'negative' : entry.signal };
+  });
+}
+
 function selectDashboardFeedback(entries, humanOnly) {
   return humanOnly
     ? entries.filter((entry) => entry.reviewOrigin === 'human' && ['positive', 'negative'].includes(entry.signal))
@@ -250,7 +257,7 @@ function selectDashboardFeedback(entries, humanOnly) {
 function buildReviewSnapshot(feedbackDir, options = {}) {
   const feedbackEntries = selectDashboardFeedback(
     Array.isArray(options.feedbackEntries)
-      ? options.feedbackEntries
+      ? (options.humanOnly && shouldAggregateFeedback() ? normalizeDashboardFeedback(options.feedbackEntries) : options.feedbackEntries)
       : (options.humanOnly ? collectAllFeedbackEntries(feedbackDir) : readJSONL(path.join(feedbackDir, 'feedback-log.jsonl'))),
     options.humanOnly,
   );
@@ -278,13 +285,17 @@ function buildReviewSnapshot(feedbackDir, options = {}) {
   };
 }
 
-function readDashboardReviewState(feedbackDir) {
-  return readJsonFile(getDashboardReviewStatePath(feedbackDir));
+function readDashboardReviewState(feedbackDir, options = {}) {
+  const state = readJsonFile(getDashboardReviewStatePath(feedbackDir));
+  return state?.version === 2 ? state.byProject?.[options.projectKey || 'all'] || null : options.projectKey ? null : state;
 }
 
-function writeDashboardReviewState(feedbackDir, snapshot) {
+function writeDashboardReviewState(feedbackDir, snapshot, options = {}) {
+  const old = readJsonFile(getDashboardReviewStatePath(feedbackDir));
+  const state = old?.version === 2 ? old : { version: 2, byProject: old ? { all: old } : {} };
+  state.byProject[options.projectKey || 'all'] = snapshot;
   fs.mkdirSync(feedbackDir, { recursive: true });
-  fs.writeFileSync(getDashboardReviewStatePath(feedbackDir), `${JSON.stringify(snapshot, null, 2)}\n`);
+  fs.writeFileSync(getDashboardReviewStatePath(feedbackDir), `${JSON.stringify(state, null, 2)}\n`);
   return snapshot;
 }
 
@@ -441,8 +452,9 @@ function resolveScopedGateStatsPath(feedbackDir) {
   return inDefaultScope ? defaultStatsPath : localStatsPath;
 }
 
-function computeGateStats(feedbackDir) {
-  const autoGatesPath = getAutoGatesPath();
+function computeGateStats(feedbackDir, options = {}) {
+  if (options.projectKey != null) return require('./project-dashboard').generateProjectDashboard(feedbackDir, options).gateStats;
+  const autoGatesPath = getAutoGatesPath({ feedbackDir });
   const statsPath = resolveScopedGateStatsPath(feedbackDir);
   const stats = readJsonFile(statsPath) || { blocked: 0, warned: 0, passed: 0, byGate: {} };
   const defaultGates = readJsonFile(DEFAULT_GATES_PATH);
@@ -925,7 +937,7 @@ function computeTodayOverview(feedbackDir, options = {}) {
 }
 
 function computePreventionImpact(feedbackDir, gateStats) {
-  const autoGatesPath = getAutoGatesPath();
+  const autoGatesPath = getAutoGatesPath({ feedbackDir });
   const preventionRulesPath = path.join(feedbackDir, 'prevention-rules.md');
   let ruleCount = 0;
   if (fs.existsSync(preventionRulesPath)) {
@@ -1052,7 +1064,7 @@ function computeLessonPipeline(feedbackDir, entries, gateStats) {
   const errorLessons = memories.filter((m) => m.category === 'error').length;
   const learningLessons = memories.filter((m) => m.category === 'learning').length;
 
-  const autoGatesPath = getAutoGatesPath();
+  const autoGatesPath = getAutoGatesPath({ feedbackDir });
   const autoGates = readJsonFile(autoGatesPath);
   const promotedGates = autoGates && Array.isArray(autoGates.gates) ? autoGates.gates.length : 0;
 
@@ -2143,59 +2155,13 @@ function resolveTeamWindowHours(analyticsWindow) {
   return 24;
 }
 
-function collectAllFeedbackEntries(feedbackDir) {
-  if (shouldAggregateFeedback()) {
-    return collectAggregateLogEntries('feedback-log.jsonl', {
-      feedbackDir,
-      maxLines: DEFAULT_JSONL_MAX_ENTRIES,
-      maxBytes: DEFAULT_JSONL_MAX_BYTES,
-    }).entries;
-  }
-
-  const entries = [];
-  const seen = new Set();
-
-  function mergeFrom(logPath) {
-    if (!fs.existsSync(logPath)) return;
-    for (const entry of readJSONL(logPath)) {
-      const id = entry.id || entry.feedbackId;
-      if (id && seen.has(id)) continue;
-      if (id) seen.add(id);
-      entries.push(entry);
-    }
-  }
-
-  mergeFrom(path.join(feedbackDir, 'feedback-log.jsonl'));
-
-  const projectsDir = path.join(feedbackDir, 'projects');
-  if (fs.existsSync(projectsDir)) {
-    try {
-      for (const project of fs.readdirSync(projectsDir)) {
-        mergeFrom(path.join(projectsDir, project, 'feedback-log.jsonl'));
-      }
-    } catch {  }
-  }
-
-  const homeThumbgate = path.join(process.env.HOME || '/tmp', '.thumbgate');
-  const projectLocalDir = path.join(PROJECT_ROOT, '.thumbgate');
-  if (
-    path.resolve(feedbackDir) === path.resolve(homeThumbgate) &&
-    projectLocalDir !== feedbackDir &&
-    fs.existsSync(projectLocalDir)
-  ) {
-    mergeFrom(path.join(projectLocalDir, 'feedback-log.jsonl'));
-  }
-
-  entries.sort((a, b) => {
-    const ta = a.timestamp ? new Date(a.timestamp).getTime() : 0;
-    const tb = b.timestamp ? new Date(b.timestamp).getTime() : 0;
-    return ta - tb;
-  });
-
-  return entries;
+function collectAllFeedbackEntries(feedbackDir, options = {}) {
+  const rows = require('./project-catalog').readProjectRows(feedbackDir, 'feedback-log.jsonl', options);
+  return shouldAggregateFeedback() ? normalizeDashboardFeedback(rows) : rows;
 }
 
 function generateDashboard(feedbackDir, options = {}) {
+  if (options.projectKey != null) return require('./project-dashboard').generateProjectDashboard(feedbackDir, options);
   const analyticsWindow = resolveAnalyticsWindow(options.analyticsWindow || options);
   const diagnosticLogPath = path.join(feedbackDir, 'diagnostic-log.jsonl');
   const entries = selectDashboardFeedback(collectAllFeedbackEntries(feedbackDir), options.humanOnly);
@@ -2261,7 +2227,7 @@ function generateDashboard(feedbackDir, options = {}) {
   };
   const diagnostics = aggregateFailureDiagnostics([...entries, ...diagnosticEntries]);
   const secretGuard = computeSecretGuardStats(diagnosticEntries);
-  const gates = listActiveGates();
+  const gates = require('./project-catalog').readProjectGates(feedbackDir).filter((gate) => gate.active !== false).map((gate) => ({ ...gate, scopeLabel: gate.scope === 'global' ? 'Global' : 'Project' }));
   const analytics = computeAnalyticsSummary(feedbackDir, {
     analyticsWindow,
     billingSummary,
@@ -2330,7 +2296,7 @@ function generateDashboard(feedbackDir, options = {}) {
   const negRecent = recentEntries.filter((e) => ['down', 'negative', 'thumbs_down'].includes(String(e.signal || e.feedback || '').toLowerCase()));
   const posRecent = recentEntries.filter((e) => ['up', 'positive', 'thumbs_up'].includes(String(e.signal || e.feedback || '').toLowerCase()));
   const timestamps = entries.filter((e) => e.timestamp).map((e) => new Date(e.timestamp).getTime());
-  const daysActive = timestamps.length > 0 ? Math.max(1, Math.ceil((now - Math.min(...timestamps)) / day)) : 1;
+  const daysActive = timestamps.length > 0 ? Math.max(1, Math.ceil((now - timestamps.reduce((oldest, stamp) => Math.min(oldest, stamp), Infinity)) / day)) : 1;
   const totalNeg = entries.filter((e) => ['down', 'negative', 'thumbs_down'].includes(String(e.signal || e.feedback || '').toLowerCase())).length;
   const autoGates = gateStats.autoCount || 0;
   const twoWeeksAgo = now - 14 * day;
@@ -2720,6 +2686,7 @@ module.exports = {
   writeDashboardReviewState,
   printDashboard,
   computeApprovalStats,
+  summarizeReviewDelta,
   computeDecisionMetrics,
   computeGateStats,
   computeTodayOverview,

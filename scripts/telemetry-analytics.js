@@ -695,7 +695,7 @@ function appendTelemetryEvent(feedbackDir, payload = {}, headers = {}) {
   if (headerHasPrivacyOptOut(headers)) {
     return null;
   }
-  const entry = sanitizeTelemetryPayload(payload, headers);
+  const entry = { ...sanitizeTelemetryPayload(payload, headers), ...require('./project-identity').projectForRecord(payload) };
   const telemetryPath = getTelemetryPath(feedbackDir);
   fs.mkdirSync(path.dirname(telemetryPath), { recursive: true });
   fs.appendFileSync(telemetryPath, `${JSON.stringify(entry)}\n`, 'utf-8');

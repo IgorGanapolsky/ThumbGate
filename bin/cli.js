@@ -1363,6 +1363,7 @@ function capture() {
   }
 
   const result = captureFeedback({
+    cwd: CWD,
     signal: normalized,
     context: context,
     whatWentWrong: whatWentWrong,
@@ -1474,6 +1475,7 @@ function feedbackSelfTest() {
     const { captureFeedback, getFeedbackPaths } = require(path.join(PKG_ROOT, 'scripts', 'feedback-loop'));
     const context = args.context || `feedback self-test: typed thumbs ${normalized} reaches ThumbGate capture`;
     const result = captureFeedback({
+      cwd: CWD,
       signal: normalized,
       context,
       whatWentWrong: normalized === 'down'

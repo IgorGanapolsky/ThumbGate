@@ -303,6 +303,15 @@
       "items": {
         "type": "string"
       }
+    },
+    "projectKey": {
+      "type": "string"
+    },
+    "projectName": {
+      "type": "string"
+    },
+    "identitySource": {
+      "type": "string"
     }
   }
 }

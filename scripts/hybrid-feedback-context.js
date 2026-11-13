@@ -328,7 +328,9 @@ function buildHybridState(opts) {
   const { selectRecordsForScope } = require('./memory-scope-readiness');
   if (o.requireScope && !o.scope) throw new Error('Scoped hybrid state requires scope');
   const readEntries = file => {
-    const rows = readJsonl(file, HYBRID_JSONL_READ_LIMIT);
+    const rows = o.projectKey != null
+      ? require('./project-catalog').readProjectRows(paths.feedbackDir, path.basename(file), { projectKey: o.projectKey }).slice(-HYBRID_JSONL_READ_LIMIT)
+      : readJsonl(file, HYBRID_JSONL_READ_LIMIT);
     return o.scope ? selectRecordsForScope(rows, o.scope, { includeShared: o.includeShared !== false }).allowed : rows;
   };
   const feedbackEntries = readEntries(feedbackLogPath);
@@ -927,7 +929,7 @@ function evaluatePretool(toolName, toolInput, opts) {
   if ((o.requireScope && !o.scope) || (o.scope && !graph.scopeKey(o.scope))) throw new Error('Scoped hybrid evaluation requires complete scope');
   const graphScope = o.scope ? JSON.stringify([graph.scopeKey(o.scope), o.includeShared !== false]) : null;
   const provenance = graph.graphProvenance({ feedbackDir: getHybridPaths(o).graphFeedbackDir });
-  if (artifact && provenance !== 'unavailable' && (artifact.graphProvenance || null) === provenance && (artifact.graphScope || null) === graphScope) {
+  if (o.projectKey == null && artifact && provenance !== 'unavailable' && (artifact.graphProvenance || null) === provenance && (artifact.graphScope || null) === graphScope) {
     const result = evaluateCompiledGuards(artifact, toolName, toolInput);
     if (result.mode !== 'allow') return result;
 
@@ -943,6 +945,7 @@ function evaluatePretool(toolName, toolInput, opts) {
 
   // Slow path: build live state (also used when compiled guards are stale)
   const state = buildHybridState({
+    projectKey: o.projectKey,
     scope: o.scope,
     requireScope: o.requireScope,
     includeShared: o.includeShared,

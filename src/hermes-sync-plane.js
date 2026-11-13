@@ -134,9 +134,10 @@ class HermesSyncPlane {
     return this.readStatus(args);
   }
 
-  appendEvent({ threadId, recordId, type, txnId, payload } = {}) {
+  appendEvent({ threadId, recordId, type, txnId, payload, projectKey, projectName, identitySource } = {}) {
     this._offset += 1;
     const event = {
+      ...require('../scripts/project-identity').projectForRecord({ ...payload, projectKey: projectKey || payload?.projectKey, projectName: projectName || payload?.projectName, identitySource: identitySource || payload?.identitySource }),
       offset: this._offset,
       threadId: threadId || null,
       recordId: recordId || null,

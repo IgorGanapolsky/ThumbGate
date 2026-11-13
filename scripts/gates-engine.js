@@ -1,5 +1,11 @@
 #!/usr/bin/env node
 'use strict';
+const { resolveLocalProject, projectForRecord, gateAppliesToProject, validProjectKey } = require('./project-identity');
+function gateExecution(toolInput = {}, options = {}) {
+  const descriptor = options.projectKey ? projectForRecord(options) : resolveLocalProject(toolInput?.cwd || options.cwd || process.cwd());
+  return { ...options, ...descriptor };
+}
+function accountStatePath(name, fallback, options = {}) { return options.feedbackDir ? path.join(options.feedbackDir, name) : fallback; }
 
 const { tenantDataScope, scopedStatePath } = require('./feedback-scope');
 
@@ -428,7 +434,7 @@ function isRecursiveChmodCommand(command) {
 // Config loading
 // ---------------------------------------------------------------------------
 
-function loadGatesConfig(configPath, harnessPath) {
+function loadGatesConfig(configPath, harnessPath, options = {}) {
   if (tenantDataScope()) { configPath = undefined; harnessPath = undefined; }
   const primaryPath = tenantDataScope() ? DEFAULT_CONFIG_PATH : (configPath || process.env.THUMBGATE_GATES_CONFIG || DEFAULT_CONFIG_PATH);
 
@@ -459,9 +465,9 @@ function loadGatesConfig(configPath, harnessPath) {
 
   // Always preserve the full primary/default safety policy. Free tier limits apply
   // only to auto-promoted add-on gates so core protections never disappear.
-  const autoConfigPath = getAutoGatesPath();
+  const autoConfigPath = getAutoGatesPath(options);
   if (!configPath && fs.existsSync(autoConfigPath)) {
-    const autoGates = loadOne(autoConfigPath, false).map(g => ({ ...g, layer: g.layer || 'Execution' }));
+    const autoGates = loadOne(autoConfigPath, false).map(g => ({ ...g, scope: 'project', projectKey: g.projectKey || 'unassigned', active: g.projectKey && g.projectKey !== 'unassigned' ? g.active : false, layer: g.layer || 'Execution' }));
     const limitedAutoGates = isProTier()
       ? autoGates
       : autoGates.slice(0, FREE_TIER_MAX_GATES);
@@ -499,8 +505,8 @@ function saveJSON(filePath, data) {
   fs.writeFileSync(filePath, JSON.stringify(data, null, 2) + '\n');
 }
 
-function loadState() { return loadJSON(module.exports.STATE_PATH); }
-function saveState(state) { saveJSON(module.exports.STATE_PATH, state); }
+function loadState(options = {}) { return loadJSON(accountStatePath('gate-state.json', module.exports.STATE_PATH, options)); }
+function saveState(state, options = {}) { saveJSON(accountStatePath('gate-state.json', module.exports.STATE_PATH, options), state); }
 
 function loadConstraints() { return loadJSON(module.exports.CONSTRAINTS_PATH); }
 function saveConstraints(constraints) { saveJSON(module.exports.CONSTRAINTS_PATH, constraints); }
@@ -684,10 +690,11 @@ function stableCanonicalStringify(value) {
   )).join(',')}}`;
 }
 
-function actionApprovalDigest(toolName, toolInput) {
+function actionApprovalDigest(toolName, toolInput, options = {}) {
   return crypto.createHash('sha256').update(stableCanonicalStringify({
     toolInput: toolInput && typeof toolInput === 'object' ? toolInput : {},
     toolName: String(toolName || ''),
+    projectKey: gateExecution(toolInput, options).projectKey,
   })).digest('hex');
 }
 
@@ -695,8 +702,8 @@ function adminOverrideTaskId(gateId, digest) {
   return `admin-override:${gateId}:${digest}`;
 }
 
-function selectAdminOverrideAttempt(baseTaskId) {
-  const attempts = listEscalations().filter((entry) => (
+function selectAdminOverrideAttempt(baseTaskId, options = {}) {
+  const attempts = listEscalations(options).filter((entry) => (
     entry.taskId === baseTaskId || String(entry.taskId || '').startsWith(`${baseTaskId}:attempt:`)
   ));
   const latest = attempts[0] || null;
@@ -712,15 +719,15 @@ function selectAdminOverrideAttempt(baseTaskId) {
   return `${baseTaskId}:attempt:${highestAttempt + 1}`;
 }
 
-function evaluateAdminOverride(gate, toolName, toolInput) {
+function evaluateAdminOverride(gate, toolName, toolInput, options = {}) {
   const policy = gate && gate.adminOverride;
   if (!policy || policy.required !== true) return null;
 
-  const approvalContextDigest = actionApprovalDigest(toolName, toolInput);
+  const approvalContextDigest = actionApprovalDigest(toolName, toolInput, options);
   const baseTaskId = adminOverrideTaskId(gate.id, approvalContextDigest);
   let taskId;
   try {
-    taskId = selectAdminOverrideAttempt(baseTaskId);
+    taskId = selectAdminOverrideAttempt(baseTaskId, options);
   } catch {
     return {
       authorized: false,
@@ -746,7 +753,7 @@ function evaluateAdminOverride(gate, toolName, toolInput) {
       idempotencyKey: taskId,
       approvalContextDigest,
       requiredReviewerRole: 'admin',
-    });
+    }, options);
   } catch {
     return {
       authorized: false,
@@ -760,6 +767,7 @@ function evaluateAdminOverride(gate, toolName, toolInput) {
   let consumption = null;
   try {
     consumption = consumeVerifiedApproval(escalationId, {
+      ...options,
       consumer: { id: 'thumbgate-gates-engine', kind: 'service' },
     });
   } catch {
@@ -983,16 +991,19 @@ function refreshLocalOnlyConstraint(governanceState = loadGovernanceState()) {
   }
 }
 
-function isConditionSatisfied(conditionId) {
-  const state = loadState();
-  const entry = state[conditionId];
+function isConditionSatisfied(conditionId, options = {}) {
+  options = gateExecution({}, options);
+  const state = loadState(options);
+  const projectKey = options.projectKey || 'unassigned';
+  const entry = state.satisfiedByProject?.[projectKey]?.[conditionId] || (projectKey === 'unassigned' ? state[conditionId] : null);
   if (!entry) return false;
   const age = Date.now() - entry.timestamp;
   return age < TTL_MS;
 }
 
 function satisfyCondition(conditionId, evidence, structuredReasoning, options = {}) {
-  const state = loadState();
+  options = gateExecution({}, options);
+  const state = loadState(options);
   const entry = {
     timestamp: Date.now(),
     evidence: evidence || '',
@@ -1005,8 +1016,12 @@ function satisfyCondition(conditionId, evidence, structuredReasoning, options = 
       conclusion: structuredReasoning.conclusion || null,
     };
   }
-  state[conditionId] = entry;
-  saveState(state);
+  const projectKey = options.projectKey || 'unassigned';
+  if (!validProjectKey(projectKey)) throw new Error('Invalid project key');
+  state.satisfiedByProject ||= {};
+  state.satisfiedByProject[projectKey] ||= {};
+  state.satisfiedByProject[projectKey][conditionId] = entry;
+  saveState(state, options);
 
   // Satisfying a gate condition IS an override: it unlocks an action the gate
   // had blocked. Previously this wrote only to the state store, so an override
@@ -1018,6 +1033,7 @@ function satisfyCondition(conditionId, evidence, structuredReasoning, options = 
     // already loads; requiring at call time avoids any circular-init surprise.
     const { recordOverride } = require('./override-audit');
     recordOverride({
+      ...options,
       gateId: conditionId,
       source: options.source || 'cli',
       actor: options.actor,
@@ -1036,13 +1052,13 @@ function satisfyCondition(conditionId, evidence, structuredReasoning, options = 
 // Stats tracking
 // ---------------------------------------------------------------------------
 
-function loadStats() {
-  const stats = loadJSON(module.exports.STATS_PATH);
+function loadStats(options = {}) {
+  const stats = loadJSON(accountStatePath('gate-stats.json', module.exports.STATS_PATH, options));
   if (Object.keys(stats).length === 0) return { blocked: 0, warned: 0, passed: 0, byGate: {} };
   return stats;
 }
 
-function saveStats(stats) { saveJSON(module.exports.STATS_PATH, stats); }
+function saveStats(stats, options = {}) { saveJSON(accountStatePath('gate-stats.json', module.exports.STATS_PATH, options), stats); }
 
 function buildGateActionFingerprint(gateId, options = {}) {
   if (options.actionFingerprint) return String(options.actionFingerprint);
@@ -1063,12 +1079,20 @@ function buildGateActionFingerprint(gateId, options = {}) {
     );
     if (Array.isArray(toolInput.affectedFiles)) parts.push(...toolInput.affectedFiles);
   }
-  return actionFingerprint(parts);
+  const fingerprint = actionFingerprint(parts);
+  return fingerprint ? `${options.projectKey || 'unassigned'}:${fingerprint}` : null;
 }
 
 function recordStat(gateId, action, gate, options = {}) {
   if (process.env.THUMBGATE_SANDBOX_EVAL === '1') return;
-  const stats = loadStats();
+  options = gateExecution(options.toolInput, options);
+  const stats = loadStats(options);
+  stats.byProject ||= {};
+  const bucket = stats.byProject[options.projectKey] ||= { blocked: 0, warned: 0, passed: 0, byGate: {} };
+  const metric = action === 'block' ? 'blocked' : action === 'warn' ? 'warned' : 'passed';
+  bucket[metric]++;
+  const gateBucket = bucket.byGate[gateId] ||= { blocked: 0, warned: 0, passed: 0 };
+  gateBucket[metric]++;
   if (action === 'block') {
     stats.blocked = (stats.blocked || 0) + 1;
     try {
@@ -1093,7 +1117,7 @@ function recordStat(gateId, action, gate, options = {}) {
   if (action === 'block' || action === 'warn') {
     if (!stats.sessionFiredGates) stats.sessionFiredGates = {};
     if (!stats.sessionFiredActions) stats.sessionFiredActions = {};
-    const sessionKey = `session_${Math.floor(Date.now() / SESSION_ACTION_TTL_MS)}`;
+    const sessionKey = `session_${options.projectKey}_${Math.floor(Date.now() / SESSION_ACTION_TTL_MS)}`;
     if (!stats.sessionFiredGates[sessionKey]) stats.sessionFiredGates[sessionKey] = {};
     stats.sessionFiredGates[sessionKey][gateId] = true;
 
@@ -1109,13 +1133,13 @@ function recordStat(gateId, action, gate, options = {}) {
     }
   }
 
-  saveStats(stats);
+  saveStats(stats, options);
   // Track lesson freshness when an auto-promoted gate fires
   if (gate && gate.sourceLessonId) {
     try {
       const { recordTrigger } = require('./lesson-rotation');
       const { initDB } = require('./lesson-db');
-      const db = initDB();
+      const db = initDB(options.feedbackDir ? path.join(options.feedbackDir, 'lessons.sqlite') : undefined);
       recordTrigger(db, gate.sourceLessonId);
       db.close();
     } catch (_) { /* lesson DB may not be available */ }
@@ -2113,9 +2137,9 @@ function registerPrThreadResolutionClaimGate(toolName, toolInput = {}, execOverr
   return claimGate;
 }
 
-function isThreadResolutionSatisfied() {
+function isThreadResolutionSatisfied(options = {}) {
   return PR_THREAD_RESOLUTION_REQUIRED_ACTIONS.some((actionId) => (
-    hasAction(actionId) || isConditionSatisfied(actionId)
+    hasAction(actionId) || isConditionSatisfied(actionId, options)
   ));
 }
 
@@ -2208,7 +2232,7 @@ function isReadOnlyObservabilityTool(toolName) {
   return names.has(toolName) || names.has(bareToolName(toolName));
 }
 
-function evaluatePendingPrThreadResolutionGate(toolName, toolInput = {}) {
+function evaluatePendingPrThreadResolutionGate(toolName, toolInput = {}, options = {}) {
   const pendingEntry = loadSessionActions()[PR_THREAD_RESOLUTION_ACTION];
   if (!pendingEntry) return null;
 
@@ -2224,7 +2248,7 @@ function evaluatePendingPrThreadResolutionGate(toolName, toolInput = {}) {
     if (currentRepoRoot && currentRepoRoot !== trackedRepoRoot) return null;
   }
 
-  if (isThreadResolutionSatisfied()) return null;
+  if (isThreadResolutionSatisfied(options)) return null;
   if (isReadOnlyObservabilityTool(toolName)) return null;
   // Evidence actions (gh pr view/checks/status, gh api .../reviewThreads, git
   // status/diff/show, the satisfy_gate/track_action tools themselves) are exempt
@@ -2417,9 +2441,9 @@ function evaluateStatefulHelperBypassGate(toolName, toolInput = {}) {
   return null;
 }
 
-function recordStructuralGateBlock(toolName, toolInput, result) {
-  recordStat(result.gate, 'block', null, { toolName, toolInput });
-  const auditRecord = recordAuditEvent({
+function recordStructuralGateBlock(toolName, toolInput, result, options = {}) {
+  recordStat(result.gate, 'block', null, { ...options, toolName, toolInput });
+  const auditRecord = recordAuditEvent({ ...options,
     toolName,
     toolInput,
     decision: 'deny',
@@ -2428,7 +2452,7 @@ function recordStructuralGateBlock(toolName, toolInput, result) {
     severity: result.severity,
     source: 'gates-engine',
   });
-  auditToFeedback(auditRecord);
+  auditToFeedback(auditRecord, options);
   return result;
 }
 
@@ -2445,7 +2469,7 @@ function recordStructuralGateBlock(toolName, toolInput, result) {
  * Metric-backed gates are excluded because their condition is asynchronous and
  * none of the catastrophic command boundaries may depend on a remote metric.
  */
-function evaluateCatastrophicDeclarativeGate(config, constraints, toolName, toolInput) {
+function evaluateCatastrophicDeclarativeGate(config, constraints, toolName, toolInput, options = {}) {
   if (!config || !Array.isArray(config.gates)) return null;
 
   for (const gate of config.gates) {
@@ -2456,10 +2480,10 @@ function evaluateCatastrophicDeclarativeGate(config, constraints, toolName, tool
     // still unconditional hard floors and cannot be posture/cap downgraded.
     if (gate.adminOverride && gate.adminOverride.required === true) continue;
 
-    const matchDetails = matchGate(gate, toolName, toolInput);
+    const matchDetails = matchGate(gate, toolName, toolInput, options);
     if (!matchDetails.matched) continue;
     if (gate.when && !checkWhenClause(gate.when, constraints)) continue;
-    if (gate.unless && isConditionSatisfied(gate.unless)) continue;
+    if (gate.unless && isConditionSatisfied(gate.unless, options)) continue;
 
     return {
       decision: 'deny',
@@ -2494,17 +2518,17 @@ function isAgentHookSettingsFile(filePath) {
   return matchesAnyGlob(filePath, BREAK_GLASS_SETTINGS_GLOBS);
 }
 
-function isBreakGlassSettingsBypass(gate, affectedFiles) {
+function isBreakGlassSettingsBypass(gate, affectedFiles, options = {}) {
   if (!gate || !['task-scope-edit-boundary', 'protected-file-approval-required'].includes(gate.id)) {
     return false;
   }
-  if (!isConditionSatisfied(BREAK_GLASS_CONDITION)) return false;
+  if (!isConditionSatisfied(BREAK_GLASS_CONDITION, options)) return false;
   return Array.isArray(affectedFiles) && affectedFiles.length > 0 && affectedFiles.every(isAgentHookSettingsFile);
 }
 
-function isBreakGlassSettingsRecoveryAction(toolName, toolInput = {}) {
+function isBreakGlassSettingsRecoveryAction(toolName, toolInput = {}, options = {}) {
   if (!EDIT_LIKE_TOOLS.has(toolName)) return false;
-  if (!isConditionSatisfied(BREAK_GLASS_CONDITION)) return false;
+  if (!isConditionSatisfied(BREAK_GLASS_CONDITION, options)) return false;
   const affectedFiles = extractAffectedFiles(toolName, toolInput).files;
   return affectedFiles.length > 0 && affectedFiles.every(isAgentHookSettingsFile);
 }
@@ -2811,6 +2835,7 @@ function buildMatchSurfaces(toolName, toolInput = {}) {
 }
 
 function matchGate(gate, toolName, toolInput = {}, options = {}) {
+  if (!gateAppliesToProject(gate, gateExecution(toolInput, options).projectKey)) return { matched: false };
   // Primary text for audit/reasoning: prefer command, then tool name (MCP).
   const matchSurfaces = buildMatchSurfaces(toolName, toolInput);
   let matchText = matchSurfaces[0] || String(toolName || '');
@@ -2936,7 +2961,7 @@ function matchGate(gate, toolName, toolInput = {}, options = {}) {
           return { matched: false, matchText, affectedFiles };
         }
       }
-      if (isBreakGlassSettingsBypass(gate, affectedFiles)) {
+      if (isBreakGlassSettingsBypass(gate, affectedFiles, options)) {
         return { matched: false, matchText, affectedFiles };
       }
     } catch {
@@ -2956,7 +2981,7 @@ function matchGate(gate, toolName, toolInput = {}, options = {}) {
 
   let taskScopeViolation = null;
   if (gate.requireTaskScope) {
-    if (isBreakGlassSettingsBypass(gate, affectedFiles)) {
+    if (isBreakGlassSettingsBypass(gate, affectedFiles, options)) {
       return { matched: false, matchText, affectedFiles };
     }
     if (!shouldEnforceTaskScope(gate, governanceState, toolName, toolInput, affectedFiles)) {
@@ -2968,7 +2993,7 @@ function matchGate(gate, toolName, toolInput = {}, options = {}) {
 
   let protectedApprovalViolation = null;
   if (gate.requireProtectedApproval) {
-    if (isBreakGlassSettingsBypass(gate, affectedFiles)) {
+    if (isBreakGlassSettingsBypass(gate, affectedFiles, options)) {
       return { matched: false, matchText, affectedFiles };
     }
     const protectedGlobs = sanitizeGlobList(
@@ -3005,8 +3030,8 @@ function matchGate(gate, toolName, toolInput = {}, options = {}) {
   };
 }
 
-function matchesGate(gate, toolName, toolInput) {
-  return matchGate(gate, toolName, toolInput).matched;
+function matchesGate(gate, toolName, toolInput, options = {}) {
+  return matchGate(gate, toolName, toolInput, options).matched;
 }
 
 function hasActiveProtectedApproval(governanceState, affectedFiles) {
@@ -3401,7 +3426,7 @@ function isSafeLocalCredentialHardeningCommand(toolName, toolInput = {}) {
   return looksLikeCredentialPath;
 }
 
-function evaluateMemoryGuard(toolName, toolInput = {}) {
+function evaluateMemoryGuard(toolName, toolInput = {}, options = {}) {
   const affected = extractAffectedFiles(toolName, toolInput);
   const affectedFiles = affected.files;
   if (isSafeSecretStorageWrite(toolName, toolInput, process.cwd())) {
@@ -3430,7 +3455,7 @@ function evaluateMemoryGuard(toolName, toolInput = {}) {
   const isPrCreateCommand = toolName === 'Bash' && (
     /\bgh\s+pr\s+create\b/i.test(command) || isGhApiPrCreateCommand(command)
   );
-  if (isPrCreateCommand && isConditionSatisfied('pr_create_allowed')) {
+  if (isPrCreateCommand && isConditionSatisfied('pr_create_allowed', options)) {
     const branchGovernanceViolation = buildBranchGovernanceViolation(
       governanceState,
       toolInput,
@@ -3494,9 +3519,9 @@ function evaluateMemoryGuard(toolName, toolInput = {}) {
   let guard;
   if (toolInput && (toolInput.clawContext || toolInput._claw || toolInput.hybridRoute || toolInput.agentId)) {
     const clawCtx = toolInput.clawContext || toolInput._claw || { actionType: toolInput.actionType || 'unknown', agentId: toolInput.agentId || 'unknown', hybridRoute: toolInput.hybridRoute || 'unknown' };
-    guard = hybrid.evaluateClawPretool ? hybrid.evaluateClawPretool(toolName, serializedInput, clawCtx) : hybrid.evaluatePretool(toolName, serializedInput);
+    guard = hybrid.evaluateClawPretool ? hybrid.evaluateClawPretool(toolName, serializedInput, clawCtx, options) : hybrid.evaluatePretool(toolName, serializedInput, options);
   } else {
-    guard = hybrid.evaluatePretool(toolName, serializedInput);
+    guard = hybrid.evaluatePretool(toolName, serializedInput, options);
   }
   if (!guard || guard.mode !== 'block') {
     return null;
@@ -3538,7 +3563,7 @@ function buildSentinelGateResult(report) {
   };
 }
 
-function recordSentinelDecision(report, toolName, toolInput) {
+function recordSentinelDecision(report, toolName, toolInput, options = {}) {
   if (!report || process.env.THUMBGATE_SANDBOX_EVAL === '1') return null;
   const entry = recordDecisionEvaluation(report, {
     source: 'gates-engine',
@@ -3547,7 +3572,7 @@ function recordSentinelDecision(report, toolName, toolInput) {
     changedFiles: report && report.blastRadius && Array.isArray(report.blastRadius.affectedFiles)
       ? report.blastRadius.affectedFiles
       : [],
-  });
+  }, options);
   report.actionId = entry.actionId;
   if (report.decisionControl && !report.decisionControl.actionId) {
     report.decisionControl.actionId = entry.actionId;
@@ -3555,7 +3580,7 @@ function recordSentinelDecision(report, toolName, toolInput) {
   return entry;
 }
 
-function recordMemoryGuardDecision(sentinelDecision, enrichedMemoryGuard) {
+function recordMemoryGuardDecision(sentinelDecision, enrichedMemoryGuard, options = {}) {
   if (!sentinelDecision) return;
   recordDecisionOutcome({
     actionId: sentinelDecision.actionId,
@@ -3564,10 +3589,10 @@ function recordMemoryGuardDecision(sentinelDecision, enrichedMemoryGuard) {
     actor: 'system',
     source: 'gates-engine',
     notes: enrichedMemoryGuard.message,
-  });
+  }, options);
 }
 
-function recordSentinelBlockDecision(sentinelDecision, sentinelResult) {
+function recordSentinelBlockDecision(sentinelDecision, sentinelResult, options = {}) {
   if (!sentinelDecision) return;
   recordDecisionOutcome({
     actionId: sentinelDecision.actionId,
@@ -3576,7 +3601,7 @@ function recordSentinelBlockDecision(sentinelDecision, sentinelResult) {
     actor: 'system',
     source: 'workflow-sentinel',
     notes: sentinelResult.message,
-  });
+  }, options);
 }
 
 function enrichResultWithSentinel(result, report) {
@@ -3628,7 +3653,8 @@ function isAutonomousRun() {
   return raw === '1' || raw === 'true';
 }
 
-async function evaluateGatesAsyncInner(toolName, toolInput, configPath) {
+async function evaluateGatesAsyncInner(toolName, toolInput, configPath, options = {}) {
+  const execution = gateExecution(toolInput, options);
   let config;
   try {
     let harnessPath;
@@ -3651,13 +3677,13 @@ async function evaluateGatesAsyncInner(toolName, toolInput, configPath) {
                 severity: 'high',
                 message: burst.message,
                 receipt: 'threat_defense_interdicted=true:type=RateBurst:action=block',
-              });
+              }, execution);
             }
           }
         }
       } catch { /* optional */ }
     } catch { /* harness-selector is optional */ }
-    config = loadGatesConfig(configPath, harnessPath);
+    config = loadGatesConfig(configPath, harnessPath, execution);
   } catch {
     return null;
   }
@@ -3672,18 +3698,18 @@ async function evaluateGatesAsyncInner(toolName, toolInput, configPath) {
     constraints,
   );
   if (localOnlyRemoteSideEffectGate) {
-    return recordStructuralGateBlock(toolName, toolInput, localOnlyRemoteSideEffectGate);
+    return recordStructuralGateBlock(toolName, toolInput, localOnlyRemoteSideEffectGate, execution);
   }
   const statefulHelperBypassGate = evaluateStatefulHelperBypassGate(toolName, toolInput);
   if (statefulHelperBypassGate) {
-    return recordStructuralGateBlock(toolName, toolInput, statefulHelperBypassGate);
+    return recordStructuralGateBlock(toolName, toolInput, statefulHelperBypassGate, execution);
   }
   const stealthMemoryInjectionGate = evaluateStealthMemoryInjection(toolName, toolInput);
   if (stealthMemoryInjectionGate) {
-    return recordStructuralGateBlock(toolName, toolInput, stealthMemoryInjectionGate);
+    return recordStructuralGateBlock(toolName, toolInput, stealthMemoryInjectionGate, execution);
   }
-  if (isBreakGlassSettingsRecoveryAction(toolName, toolInput)) {
-    recordAuditEvent({
+  if (isBreakGlassSettingsRecoveryAction(toolName, toolInput, execution)) {
+    recordAuditEvent({ ...execution,
       toolName,
       toolInput,
       decision: 'allow',
@@ -3697,8 +3723,8 @@ async function evaluateGatesAsyncInner(toolName, toolInput, configPath) {
 
   const agentIdentityLifecycleGate = evaluateAgentIdentityLifecycleGate(toolName, toolInput);
   if (agentIdentityLifecycleGate) {
-    recordStat(agentIdentityLifecycleGate.gate, 'block', null, { toolName, toolInput });
-    const identityAuditRecord = recordAuditEvent({
+    recordStat(agentIdentityLifecycleGate.gate, 'block', null, { ...execution, toolName, toolInput });
+    const identityAuditRecord = recordAuditEvent({ ...execution,
       toolName,
       toolInput,
       decision: 'deny',
@@ -3711,10 +3737,10 @@ async function evaluateGatesAsyncInner(toolName, toolInput, configPath) {
     return agentIdentityLifecycleGate;
   }
 
-  const pendingThreadResolutionGate = evaluatePendingPrThreadResolutionGate(toolName, toolInput);
+  const pendingThreadResolutionGate = evaluatePendingPrThreadResolutionGate(toolName, toolInput, execution);
   if (pendingThreadResolutionGate) {
-    recordStat(pendingThreadResolutionGate.gate, 'block', null, { toolName, toolInput });
-    const auditRecord = recordAuditEvent({
+    recordStat(pendingThreadResolutionGate.gate, 'block', null, { ...execution, toolName, toolInput });
+    const auditRecord = recordAuditEvent({ ...execution,
       toolName,
       toolInput,
       decision: 'deny',
@@ -3723,14 +3749,14 @@ async function evaluateGatesAsyncInner(toolName, toolInput, configPath) {
       severity: pendingThreadResolutionGate.severity,
       source: 'gates-engine',
     });
-    auditToFeedback(auditRecord);
+    auditToFeedback(auditRecord, execution);
     return pendingThreadResolutionGate;
   }
 
   const boostedRiskGuard = evaluateBoostedRiskTagGuard(toolName, toolInput);
   if (boostedRiskGuard) {
-    recordStat(boostedRiskGuard.gate, 'block', null, { toolName, toolInput });
-    const auditRecord = recordAuditEvent({
+    recordStat(boostedRiskGuard.gate, 'block', null, { ...execution, toolName, toolInput });
+    const auditRecord = recordAuditEvent({ ...execution,
       toolName,
       toolInput,
       decision: 'deny',
@@ -3739,7 +3765,7 @@ async function evaluateGatesAsyncInner(toolName, toolInput, configPath) {
       severity: boostedRiskGuard.severity,
       source: 'gates-engine',
     });
-    auditToFeedback(auditRecord);
+    auditToFeedback(auditRecord, execution);
     return boostedRiskGuard;
   }
 
@@ -3748,9 +3774,10 @@ async function evaluateGatesAsyncInner(toolName, toolInput, configPath) {
     constraints,
     toolName,
     toolInput,
+    execution,
   );
   if (catastrophicDeclarativeGate) {
-    return recordStructuralGateBlock(toolName, toolInput, catastrophicDeclarativeGate);
+    return recordStructuralGateBlock(toolName, toolInput, catastrophicDeclarativeGate, execution);
   }
 
   // Tier 1b: Planning and Trajectory (v1.26.0 - CodeRabbit Pattern).
@@ -3759,13 +3786,13 @@ async function evaluateGatesAsyncInner(toolName, toolInput, configPath) {
   if (isRuntimePlanGateEnabled()) {
     const planGate = evaluatePlanGate(toolName, toolInput);
     if (planGate) {
-      recordStat(planGate.gate, planGate.decision === 'deny' ? 'block' : 'warn', null, { toolName, toolInput });
+      recordStat(planGate.gate, planGate.decision === 'deny' ? 'block' : 'warn', null, { ...execution, toolName, toolInput });
       return planGate;
     }
 
     const trajectory = getTrajectoryScore();
     if (trajectory.isDrifting) {
-      recordStat('strategic-drift', 'block', null, { toolName, toolInput });
+      recordStat('strategic-drift', 'block', null, { ...execution, toolName, toolInput });
       return { decision: 'deny', gate: 'strategic-drift', message: trajectory.message, severity: 'high' };
     }
   }
@@ -3776,7 +3803,8 @@ async function evaluateGatesAsyncInner(toolName, toolInput, configPath) {
 
   const sharedAffectedAsync = extractAffectedFiles(toolName, toolInput);
   for (const gate of config.gates) {
-    const matchDetails = matchGate(gate, toolName, toolInput, { affected: sharedAffectedAsync, governanceState, constraints });
+    if (!gateAppliesToProject(gate, execution.projectKey)) continue;
+    const matchDetails = matchGate(gate, toolName, toolInput, { ...execution, affected: sharedAffectedAsync, governanceState, constraints });
     if (!matchDetails.matched) continue;
 
     // EvoSkill Hardening: check contextual 'when' clause
@@ -3805,7 +3833,7 @@ async function evaluateGatesAsyncInner(toolName, toolInput, configPath) {
     }
 
     // Check unless condition
-    if (gate.unless && isConditionSatisfied(gate.unless)) {
+    if (gate.unless && isConditionSatisfied(gate.unless, execution)) {
       continue;
     }
 
@@ -3816,10 +3844,10 @@ async function evaluateGatesAsyncInner(toolName, toolInput, configPath) {
     });
 
     if (gate.action === 'block') {
-      const adminOverride = evaluateAdminOverride(gate, toolName, toolInput);
+      const adminOverride = evaluateAdminOverride(gate, toolName, toolInput, execution);
       if (adminOverride && adminOverride.authorized) {
-        recordStat(gate.id, 'approve', gate, { toolName, toolInput });
-        const auditRecord = recordAuditEvent({
+        recordStat(gate.id, 'approve', gate, { ...execution, toolName, toolInput });
+        const auditRecord = recordAuditEvent({ ...execution,
           toolName,
           toolInput,
           decision: 'allow',
@@ -3828,7 +3856,7 @@ async function evaluateGatesAsyncInner(toolName, toolInput, configPath) {
           severity: gate.severity,
           source: 'gates-engine-admin-override',
         });
-        auditToFeedback(auditRecord);
+        auditToFeedback(auditRecord, execution);
         return {
           decision: 'allow',
           gate: gate.id,
@@ -3858,14 +3886,14 @@ async function evaluateGatesAsyncInner(toolName, toolInput, configPath) {
       // Free-tier daily block cap: after N blocks/day, deny → warn + upgrade CTA
       const cappedResult = applyDailyBlockCap(denyResult);
       if (cappedResult) {
-        recordStat(gate.id, 'warn', gate, { toolName, toolInput });
-        const auditRecord = recordAuditEvent({ toolName, toolInput, decision: 'warn', gateId: gate.id, message: cappedResult.message, severity: gate.severity, source: 'gates-engine', dailyBlockCapApplied: true });
-        auditToFeedback(auditRecord);
+        recordStat(gate.id, 'warn', gate, { ...execution, toolName, toolInput });
+        const auditRecord = recordAuditEvent({ ...execution, toolName, toolInput, decision: 'warn', gateId: gate.id, message: cappedResult.message, severity: gate.severity, source: 'gates-engine', dailyBlockCapApplied: true });
+        auditToFeedback(auditRecord, execution);
         return cappedResult;
       }
-      recordStat(gate.id, 'block', gate, { toolName, toolInput });
-      const auditRecord = recordAuditEvent({ toolName, toolInput, decision: 'deny', gateId: gate.id, message: overrideMessage, severity: gate.severity, source: 'gates-engine' });
-      auditToFeedback(auditRecord);
+      recordStat(gate.id, 'block', gate, { ...execution, toolName, toolInput });
+      const auditRecord = recordAuditEvent({ ...execution, toolName, toolInput, decision: 'deny', gateId: gate.id, message: overrideMessage, severity: gate.severity, source: 'gates-engine' });
+      auditToFeedback(auditRecord, execution);
       return denyResult;
     }
 
@@ -3876,38 +3904,38 @@ async function evaluateGatesAsyncInner(toolName, toolInput, configPath) {
           // Autonomous run: no human to approve. Fail CLOSED so the actions that
           // most need sign-off cannot slip through unattended.
           const failClosedMessage = `[autonomous run — no approver present, failing closed] ${message}`;
-          recordStat(gate.id, 'block', gate, { toolName, toolInput });
-          const failClosedAudit = recordAuditEvent({ toolName, toolInput, decision: 'deny', gateId: gate.id, message: failClosedMessage, severity: gate.severity, source: 'gates-engine', autonomousFailClosed: true });
+          recordStat(gate.id, 'block', gate, { ...execution, toolName, toolInput });
+          const failClosedAudit = recordAuditEvent({ ...execution, toolName, toolInput, decision: 'deny', gateId: gate.id, message: failClosedMessage, severity: gate.severity, source: 'gates-engine', autonomousFailClosed: true });
           auditToFeedback(failClosedAudit);
           return { decision: 'deny', gate: gate.id, message: failClosedMessage, severity: gate.severity, reasoning, requiresApproval: true, failedClosed: true };
         }
-        recordStat(gate.id, 'approve', gate, { toolName, toolInput });
+        recordStat(gate.id, 'approve', gate, { ...execution, toolName, toolInput });
         const result = { decision: 'approve', gate: gate.id, message, severity: gate.severity, reasoning, requiresApproval: true };
-        const auditRecord = recordAuditEvent({ toolName, toolInput, decision: 'approve', gateId: gate.id, message, severity: gate.severity, source: 'gates-engine' });
-        auditToFeedback(auditRecord);
+        const auditRecord = recordAuditEvent({ ...execution, toolName, toolInput, decision: 'approve', gateId: gate.id, message, severity: gate.severity, source: 'gates-engine' });
+        auditToFeedback(auditRecord, execution);
         return result;
       }
-      recordStat(gate.id, 'warn', gate, { toolName, toolInput });
+      recordStat(gate.id, 'warn', gate, { ...execution, toolName, toolInput });
       const result = { decision: 'warn', gate: gate.id, message: `[approval gate disabled] ${message}`, severity: gate.severity, reasoning };
-      const auditRecord = recordAuditEvent({ toolName, toolInput, decision: 'warn', gateId: gate.id, message, severity: gate.severity, source: 'gates-engine' });
-      auditToFeedback(auditRecord);
+      const auditRecord = recordAuditEvent({ ...execution, toolName, toolInput, decision: 'warn', gateId: gate.id, message, severity: gate.severity, source: 'gates-engine' });
+      auditToFeedback(auditRecord, execution);
       return result;
     }
 
     if (gate.action === 'log') {
-      recordStat(gate.id, 'log', gate, { toolName, toolInput });
+      recordStat(gate.id, 'log', gate, { ...execution, toolName, toolInput });
       const result = { decision: 'log', gate: gate.id, message, severity: gate.severity, reasoning, logged: true };
-      const auditRecord = recordAuditEvent({ toolName, toolInput, decision: 'log', gateId: gate.id, message, severity: gate.severity, source: 'gates-engine' });
-      auditToFeedback(auditRecord);
+      const auditRecord = recordAuditEvent({ ...execution, toolName, toolInput, decision: 'log', gateId: gate.id, message, severity: gate.severity, source: 'gates-engine' });
+      auditToFeedback(auditRecord, execution);
       // 'log' action allows the tool call to proceed — do not return early, continue to next gate
       continue;
     }
 
     if (gate.action === 'warn') {
-      recordStat(gate.id, 'warn', gate, { toolName, toolInput });
+      recordStat(gate.id, 'warn', gate, { ...execution, toolName, toolInput });
       const result = { decision: 'warn', gate: gate.id, message, severity: gate.severity, reasoning };
-      const auditRecord = recordAuditEvent({ toolName, toolInput, decision: 'warn', gateId: gate.id, message, severity: gate.severity, source: 'gates-engine' });
-      auditToFeedback(auditRecord);
+      const auditRecord = recordAuditEvent({ ...execution, toolName, toolInput, decision: 'warn', gateId: gate.id, message, severity: gate.severity, source: 'gates-engine' });
+      auditToFeedback(auditRecord, execution);
       return result;
     }
   }
@@ -3916,13 +3944,13 @@ async function evaluateGatesAsyncInner(toolName, toolInput, configPath) {
   const sentinelReport = skipAdvisoryGuards ? null : evaluateWorkflowSentinel(toolName, toolInput, {
     governanceState,
   });
-  const sentinelDecision = recordSentinelDecision(sentinelReport, toolName, toolInput);
-  const memoryGuard = evaluateMemoryGuard(toolName, toolInput);
+  const sentinelDecision = recordSentinelDecision(sentinelReport, toolName, toolInput, execution);
+  const memoryGuard = evaluateMemoryGuard(toolName, toolInput, execution);
   if (memoryGuard) {
     const enrichedMemoryGuard = enrichResultWithSentinel(memoryGuard, sentinelReport);
-    recordStat(enrichedMemoryGuard.gate, 'block', null, { toolName, toolInput });
-    recordMemoryGuardDecision(sentinelDecision, enrichedMemoryGuard);
-    const auditRecord = recordAuditEvent({
+    recordStat(enrichedMemoryGuard.gate, 'block', null, { ...execution, toolName, toolInput });
+    recordMemoryGuardDecision(sentinelDecision, enrichedMemoryGuard, execution);
+    const auditRecord = recordAuditEvent({ ...execution,
       toolName,
       toolInput,
       decision: 'deny',
@@ -3931,15 +3959,15 @@ async function evaluateGatesAsyncInner(toolName, toolInput, configPath) {
       severity: enrichedMemoryGuard.severity,
       source: 'gates-engine',
     });
-    auditToFeedback(auditRecord);
+    auditToFeedback(auditRecord, execution);
     return enrichedMemoryGuard;
   }
 
   if (sentinelReport && sentinelReport.decision !== 'allow') {
     const sentinelResult = buildSentinelGateResult(sentinelReport);
-    recordStat(sentinelResult.gate, sentinelResult.decision === 'deny' ? 'block' : 'warn', null, { toolName, toolInput });
-    recordSentinelBlockDecision(sentinelDecision, sentinelResult);
-    const auditRecord = recordAuditEvent({
+    recordStat(sentinelResult.gate, sentinelResult.decision === 'deny' ? 'block' : 'warn', null, { ...execution, toolName, toolInput });
+    recordSentinelBlockDecision(sentinelDecision, sentinelResult, execution);
+    const auditRecord = recordAuditEvent({ ...execution,
       toolName,
       toolInput,
       decision: sentinelResult.decision,
@@ -3948,14 +3976,14 @@ async function evaluateGatesAsyncInner(toolName, toolInput, configPath) {
       severity: sentinelResult.severity,
       source: 'workflow-sentinel',
     });
-    auditToFeedback(auditRecord);
+    auditToFeedback(auditRecord, execution);
     return sentinelResult;
   }
 
   const brokerReceiptResultAsync = evaluateBrokerReceiptGate(toolName, toolInput);
   if (brokerReceiptResultAsync && brokerReceiptResultAsync.decision === 'deny') {
-    recordStat(brokerReceiptResultAsync.gate, 'block', null, { toolName, toolInput });
-    const auditRecord = recordAuditEvent({
+    recordStat(brokerReceiptResultAsync.gate, 'block', null, { ...execution, toolName, toolInput });
+    const auditRecord = recordAuditEvent({ ...execution,
       toolName,
       toolInput,
       decision: 'deny',
@@ -3964,16 +3992,17 @@ async function evaluateGatesAsyncInner(toolName, toolInput, configPath) {
       severity: brokerReceiptResultAsync.severity,
       source: 'broker-execution-receipts',
     });
-    auditToFeedback(auditRecord);
+    auditToFeedback(auditRecord, execution);
     return brokerReceiptResultAsync;
   }
 
   // Audit trail: record allow (no gate matched)
-  recordAuditEvent({ toolName, toolInput, decision: 'allow', source: 'gates-engine' });
+  recordAuditEvent({ ...execution, toolName, toolInput, decision: 'allow', source: 'gates-engine' });
   return null;
 }
 
-function evaluateGatesInner(toolName, toolInput, configPath) {
+function evaluateGatesInner(toolName, toolInput, configPath, options = {}) {
+  const execution = gateExecution(toolInput, options);
   let config;
   try {
     let harnessPath;
@@ -3996,13 +4025,13 @@ function evaluateGatesInner(toolName, toolInput, configPath) {
                 severity: 'high',
                 message: burst.message,
                 receipt: 'threat_defense_interdicted=true:type=RateBurst:action=block',
-              });
+              }, execution);
             }
           }
         }
       } catch { /* optional */ }
     } catch { /* harness-selector is optional */ }
-    config = loadGatesConfig(configPath, harnessPath);
+    config = loadGatesConfig(configPath, harnessPath, execution);
   } catch {
     // If config can't be loaded, pass through
     return null;
@@ -4018,18 +4047,18 @@ function evaluateGatesInner(toolName, toolInput, configPath) {
     constraints,
   );
   if (localOnlyRemoteSideEffectGate) {
-    return recordStructuralGateBlock(toolName, toolInput, localOnlyRemoteSideEffectGate);
+    return recordStructuralGateBlock(toolName, toolInput, localOnlyRemoteSideEffectGate, execution);
   }
   const statefulHelperBypassGate = evaluateStatefulHelperBypassGate(toolName, toolInput);
   if (statefulHelperBypassGate) {
-    return recordStructuralGateBlock(toolName, toolInput, statefulHelperBypassGate);
+    return recordStructuralGateBlock(toolName, toolInput, statefulHelperBypassGate, execution);
   }
   const stealthMemoryInjectionGate = evaluateStealthMemoryInjection(toolName, toolInput);
   if (stealthMemoryInjectionGate) {
-    return recordStructuralGateBlock(toolName, toolInput, stealthMemoryInjectionGate);
+    return recordStructuralGateBlock(toolName, toolInput, stealthMemoryInjectionGate, execution);
   }
-  if (isBreakGlassSettingsRecoveryAction(toolName, toolInput)) {
-    recordAuditEvent({
+  if (isBreakGlassSettingsRecoveryAction(toolName, toolInput, execution)) {
+    recordAuditEvent({ ...execution,
       toolName,
       toolInput,
       decision: 'allow',
@@ -4043,8 +4072,8 @@ function evaluateGatesInner(toolName, toolInput, configPath) {
 
   const agentIdentityLifecycleGate = evaluateAgentIdentityLifecycleGate(toolName, toolInput);
   if (agentIdentityLifecycleGate) {
-    recordStat(agentIdentityLifecycleGate.gate, 'block', null, { toolName, toolInput });
-    const identityAuditRecord = recordAuditEvent({
+    recordStat(agentIdentityLifecycleGate.gate, 'block', null, { ...execution, toolName, toolInput });
+    const identityAuditRecord = recordAuditEvent({ ...execution,
       toolName,
       toolInput,
       decision: 'deny',
@@ -4057,10 +4086,10 @@ function evaluateGatesInner(toolName, toolInput, configPath) {
     return agentIdentityLifecycleGate;
   }
 
-  const pendingThreadResolutionGate = evaluatePendingPrThreadResolutionGate(toolName, toolInput);
+  const pendingThreadResolutionGate = evaluatePendingPrThreadResolutionGate(toolName, toolInput, execution);
   if (pendingThreadResolutionGate) {
-    recordStat(pendingThreadResolutionGate.gate, 'block', null, { toolName, toolInput });
-    const auditRecord = recordAuditEvent({
+    recordStat(pendingThreadResolutionGate.gate, 'block', null, { ...execution, toolName, toolInput });
+    const auditRecord = recordAuditEvent({ ...execution,
       toolName,
       toolInput,
       decision: 'deny',
@@ -4069,14 +4098,14 @@ function evaluateGatesInner(toolName, toolInput, configPath) {
       severity: pendingThreadResolutionGate.severity,
       source: 'gates-engine',
     });
-    auditToFeedback(auditRecord);
+    auditToFeedback(auditRecord, execution);
     return pendingThreadResolutionGate;
   }
 
   const boostedRiskGuard = process.env.THUMBGATE_SANDBOX_EVAL === '1' ? null : evaluateBoostedRiskTagGuard(toolName, toolInput);
   if (boostedRiskGuard) {
-    recordStat(boostedRiskGuard.gate, 'block', null, { toolName, toolInput });
-    const auditRecord = recordAuditEvent({
+    recordStat(boostedRiskGuard.gate, 'block', null, { ...execution, toolName, toolInput });
+    const auditRecord = recordAuditEvent({ ...execution,
       toolName,
       toolInput,
       decision: 'deny',
@@ -4085,7 +4114,7 @@ function evaluateGatesInner(toolName, toolInput, configPath) {
       severity: boostedRiskGuard.severity,
       source: 'gates-engine',
     });
-    auditToFeedback(auditRecord);
+    auditToFeedback(auditRecord, execution);
     return boostedRiskGuard;
   }
 
@@ -4094,9 +4123,10 @@ function evaluateGatesInner(toolName, toolInput, configPath) {
     constraints,
     toolName,
     toolInput,
+    execution,
   );
   if (catastrophicDeclarativeGate) {
-    return recordStructuralGateBlock(toolName, toolInput, catastrophicDeclarativeGate);
+    return recordStructuralGateBlock(toolName, toolInput, catastrophicDeclarativeGate, execution);
   }
 
   // Tier 1b: Planning and Trajectory (v1.26.0 - CodeRabbit Pattern).
@@ -4105,19 +4135,20 @@ function evaluateGatesInner(toolName, toolInput, configPath) {
   if (isRuntimePlanGateEnabled()) {
     const planGate = evaluatePlanGate(toolName, toolInput);
     if (planGate) {
-      recordStat(planGate.gate, planGate.decision === 'deny' ? 'block' : 'warn', null, { toolName, toolInput });
+      recordStat(planGate.gate, planGate.decision === 'deny' ? 'block' : 'warn', null, { ...execution, toolName, toolInput });
       return planGate;
     }
 
     const trajectory = getTrajectoryScore();
     if (trajectory.isDrifting) {
-      recordStat('strategic-drift', 'block', null, { toolName, toolInput });
+      recordStat('strategic-drift', 'block', null, { ...execution, toolName, toolInput });
       return { decision: 'deny', gate: 'strategic-drift', message: trajectory.message, severity: 'high' };
     }
   }
   const sharedAffected = extractAffectedFiles(toolName, toolInput);
   for (const gate of config.gates) {
-    const matchDetails = matchGate(gate, toolName, toolInput, { affected: sharedAffected, governanceState, constraints });
+    if (!gateAppliesToProject(gate, execution.projectKey)) continue;
+    const matchDetails = matchGate(gate, toolName, toolInput, { ...execution, affected: sharedAffected, governanceState, constraints });
     if (!matchDetails.matched) continue;
 
     // EvoSkill Hardening: check contextual 'when' clause
@@ -4126,7 +4157,7 @@ function evaluateGatesInner(toolName, toolInput, configPath) {
     }
 
     // Check unless condition
-    if (gate.unless && isConditionSatisfied(gate.unless)) {
+    if (gate.unless && isConditionSatisfied(gate.unless, execution)) {
       continue;
     }
 
@@ -4134,10 +4165,10 @@ function evaluateGatesInner(toolName, toolInput, configPath) {
     const reasoning = buildReasoning(gate, toolName, toolInput, matchDetails);
 
     if (gate.action === 'block') {
-      const adminOverride = evaluateAdminOverride(gate, toolName, toolInput);
+      const adminOverride = evaluateAdminOverride(gate, toolName, toolInput, execution);
       if (adminOverride && adminOverride.authorized) {
-        recordStat(gate.id, 'approve', gate, { toolName, toolInput });
-        const auditRecord = recordAuditEvent({
+        recordStat(gate.id, 'approve', gate, { ...execution, toolName, toolInput });
+        const auditRecord = recordAuditEvent({ ...execution,
           toolName,
           toolInput,
           decision: 'allow',
@@ -4146,7 +4177,7 @@ function evaluateGatesInner(toolName, toolInput, configPath) {
           severity: gate.severity,
           source: 'gates-engine-admin-override',
         });
-        auditToFeedback(auditRecord);
+        auditToFeedback(auditRecord, execution);
         return {
           decision: 'allow',
           gate: gate.id,
@@ -4176,14 +4207,14 @@ function evaluateGatesInner(toolName, toolInput, configPath) {
       // Free-tier daily block cap: after N blocks/day, deny → warn + upgrade CTA
       const cappedResult = applyDailyBlockCap(denyResult);
       if (cappedResult) {
-        recordStat(gate.id, 'warn', gate, { toolName, toolInput });
-        const auditRecord = recordAuditEvent({ toolName, toolInput, decision: 'warn', gateId: gate.id, message: cappedResult.message, severity: gate.severity, source: 'gates-engine', dailyBlockCapApplied: true });
-        auditToFeedback(auditRecord);
+        recordStat(gate.id, 'warn', gate, { ...execution, toolName, toolInput });
+        const auditRecord = recordAuditEvent({ ...execution, toolName, toolInput, decision: 'warn', gateId: gate.id, message: cappedResult.message, severity: gate.severity, source: 'gates-engine', dailyBlockCapApplied: true });
+        auditToFeedback(auditRecord, execution);
         return cappedResult;
       }
-      recordStat(gate.id, 'block', gate, { toolName, toolInput });
-      const auditRecord = recordAuditEvent({ toolName, toolInput, decision: 'deny', gateId: gate.id, message: overrideMessage, severity: gate.severity, source: 'gates-engine' });
-      auditToFeedback(auditRecord);
+      recordStat(gate.id, 'block', gate, { ...execution, toolName, toolInput });
+      const auditRecord = recordAuditEvent({ ...execution, toolName, toolInput, decision: 'deny', gateId: gate.id, message: overrideMessage, severity: gate.severity, source: 'gates-engine' });
+      auditToFeedback(auditRecord, execution);
       return denyResult;
     }
 
@@ -4194,37 +4225,37 @@ function evaluateGatesInner(toolName, toolInput, configPath) {
           // Autonomous run: no human to approve. Fail CLOSED so the actions that
           // most need sign-off cannot slip through unattended.
           const failClosedMessage = `[autonomous run — no approver present, failing closed] ${message}`;
-          recordStat(gate.id, 'block', gate, { toolName, toolInput });
-          const failClosedAudit = recordAuditEvent({ toolName, toolInput, decision: 'deny', gateId: gate.id, message: failClosedMessage, severity: gate.severity, source: 'gates-engine', autonomousFailClosed: true });
+          recordStat(gate.id, 'block', gate, { ...execution, toolName, toolInput });
+          const failClosedAudit = recordAuditEvent({ ...execution, toolName, toolInput, decision: 'deny', gateId: gate.id, message: failClosedMessage, severity: gate.severity, source: 'gates-engine', autonomousFailClosed: true });
           auditToFeedback(failClosedAudit);
           return { decision: 'deny', gate: gate.id, message: failClosedMessage, severity: gate.severity, reasoning, requiresApproval: true, failedClosed: true };
         }
-        recordStat(gate.id, 'approve', gate, { toolName, toolInput });
+        recordStat(gate.id, 'approve', gate, { ...execution, toolName, toolInput });
         const result = { decision: 'approve', gate: gate.id, message, severity: gate.severity, reasoning, requiresApproval: true };
-        const auditRecord = recordAuditEvent({ toolName, toolInput, decision: 'approve', gateId: gate.id, message, severity: gate.severity, source: 'gates-engine' });
-        auditToFeedback(auditRecord);
+        const auditRecord = recordAuditEvent({ ...execution, toolName, toolInput, decision: 'approve', gateId: gate.id, message, severity: gate.severity, source: 'gates-engine' });
+        auditToFeedback(auditRecord, execution);
         return result;
       }
-      recordStat(gate.id, 'warn', gate, { toolName, toolInput });
+      recordStat(gate.id, 'warn', gate, { ...execution, toolName, toolInput });
       const result = { decision: 'warn', gate: gate.id, message: `[approval gate disabled] ${message}`, severity: gate.severity, reasoning };
-      const auditRecord = recordAuditEvent({ toolName, toolInput, decision: 'warn', gateId: gate.id, message, severity: gate.severity, source: 'gates-engine' });
-      auditToFeedback(auditRecord);
+      const auditRecord = recordAuditEvent({ ...execution, toolName, toolInput, decision: 'warn', gateId: gate.id, message, severity: gate.severity, source: 'gates-engine' });
+      auditToFeedback(auditRecord, execution);
       return result;
     }
 
     if (gate.action === 'log') {
-      recordStat(gate.id, 'log', gate, { toolName, toolInput });
-      const auditRecord = recordAuditEvent({ toolName, toolInput, decision: 'log', gateId: gate.id, message, severity: gate.severity, source: 'gates-engine' });
-      auditToFeedback(auditRecord);
+      recordStat(gate.id, 'log', gate, { ...execution, toolName, toolInput });
+      const auditRecord = recordAuditEvent({ ...execution, toolName, toolInput, decision: 'log', gateId: gate.id, message, severity: gate.severity, source: 'gates-engine' });
+      auditToFeedback(auditRecord, execution);
       // 'log' action allows the tool call to proceed — continue to next gate
       continue;
     }
 
     if (gate.action === 'warn') {
-      recordStat(gate.id, 'warn', gate, { toolName, toolInput });
+      recordStat(gate.id, 'warn', gate, { ...execution, toolName, toolInput });
       const result = { decision: 'warn', gate: gate.id, message, severity: gate.severity, reasoning };
-      const auditRecord = recordAuditEvent({ toolName, toolInput, decision: 'warn', gateId: gate.id, message, severity: gate.severity, source: 'gates-engine' });
-      auditToFeedback(auditRecord);
+      const auditRecord = recordAuditEvent({ ...execution, toolName, toolInput, decision: 'warn', gateId: gate.id, message, severity: gate.severity, source: 'gates-engine' });
+      auditToFeedback(auditRecord, execution);
       return result;
     }
   }
@@ -4234,13 +4265,13 @@ function evaluateGatesInner(toolName, toolInput, configPath) {
   const sentinelReport = skipAdvisoryGuards ? null : evaluateWorkflowSentinel(toolName, toolInput, {
     governanceState,
   });
-  const sentinelDecision = recordSentinelDecision(sentinelReport, toolName, toolInput);
-  const memoryGuard = evaluateMemoryGuard(toolName, toolInput);
+  const sentinelDecision = recordSentinelDecision(sentinelReport, toolName, toolInput, execution);
+  const memoryGuard = evaluateMemoryGuard(toolName, toolInput, execution);
   if (memoryGuard) {
     const enrichedMemoryGuard = enrichResultWithSentinel(memoryGuard, sentinelReport);
-    recordStat(enrichedMemoryGuard.gate, 'block', null, { toolName, toolInput });
-    recordMemoryGuardDecision(sentinelDecision, enrichedMemoryGuard);
-    const auditRecord = recordAuditEvent({
+    recordStat(enrichedMemoryGuard.gate, 'block', null, { ...execution, toolName, toolInput });
+    recordMemoryGuardDecision(sentinelDecision, enrichedMemoryGuard, execution);
+    const auditRecord = recordAuditEvent({ ...execution,
       toolName,
       toolInput,
       decision: 'deny',
@@ -4249,15 +4280,15 @@ function evaluateGatesInner(toolName, toolInput, configPath) {
       severity: enrichedMemoryGuard.severity,
       source: 'gates-engine',
     });
-    auditToFeedback(auditRecord);
+    auditToFeedback(auditRecord, execution);
     return enrichedMemoryGuard;
   }
 
   if (sentinelReport && sentinelReport.decision !== 'allow') {
     const sentinelResult = buildSentinelGateResult(sentinelReport);
-    recordStat(sentinelResult.gate, sentinelResult.decision === 'deny' ? 'block' : 'warn', null, { toolName, toolInput });
-    recordSentinelBlockDecision(sentinelDecision, sentinelResult);
-    const auditRecord = recordAuditEvent({
+    recordStat(sentinelResult.gate, sentinelResult.decision === 'deny' ? 'block' : 'warn', null, { ...execution, toolName, toolInput });
+    recordSentinelBlockDecision(sentinelDecision, sentinelResult, execution);
+    const auditRecord = recordAuditEvent({ ...execution,
       toolName,
       toolInput,
       decision: sentinelResult.decision,
@@ -4266,7 +4297,7 @@ function evaluateGatesInner(toolName, toolInput, configPath) {
       severity: sentinelResult.severity,
       source: 'workflow-sentinel',
     });
-    auditToFeedback(auditRecord);
+    auditToFeedback(auditRecord, execution);
     return sentinelResult;
   }
 
@@ -4274,8 +4305,8 @@ function evaluateGatesInner(toolName, toolInput, configPath) {
   // for high-risk provider side effects (THUMBGATE_BROKER_RECEIPT_MODE=enforce).
   const brokerReceiptResult = evaluateBrokerReceiptGate(toolName, toolInput);
   if (brokerReceiptResult && brokerReceiptResult.decision === 'deny') {
-    recordStat(brokerReceiptResult.gate, 'block', null, { toolName, toolInput });
-    const auditRecord = recordAuditEvent({
+    recordStat(brokerReceiptResult.gate, 'block', null, { ...execution, toolName, toolInput });
+    const auditRecord = recordAuditEvent({ ...execution,
       toolName,
       toolInput,
       decision: 'deny',
@@ -4284,12 +4315,12 @@ function evaluateGatesInner(toolName, toolInput, configPath) {
       severity: brokerReceiptResult.severity,
       source: 'broker-execution-receipts',
     });
-    auditToFeedback(auditRecord);
+    auditToFeedback(auditRecord, execution);
     return brokerReceiptResult;
   }
 
   // Audit trail: record allow
-  recordAuditEvent({ toolName, toolInput, decision: 'allow', source: 'gates-engine' });
+  recordAuditEvent({ ...execution, toolName, toolInput, decision: 'allow', source: 'gates-engine' });
   return null;
 }
 
@@ -5652,28 +5683,28 @@ function applyBrandStandardsHook(toolName, toolInput) {
   }
 }
 
-async function evaluateGatesAsync(toolName, toolInput, configPath) {
+async function evaluateGatesAsync(toolName, toolInput, configPath, options = {}) {
   const oneshot = applyOneShotPretool(toolName, toolInput);
   if (oneshot) return oneshot;
-  const direct = await evaluateGatesAsyncInner(toolName, toolInput, configPath);
+  const direct = await evaluateGatesAsyncInner(toolName, toolInput, configPath, options);
   if (direct) return direct;
   const brandStandards = applyBrandStandardsHook(toolName, toolInput);
   if (brandStandards) return brandStandards;
   const retry = canonicalRetryInput(toolName, toolInput);
   if (!retry) return null;
-  return evaluateGatesAsyncInner(toolName, retry, configPath);
+  return evaluateGatesAsyncInner(toolName, retry, configPath, options);
 }
 
-function evaluateGates(toolName, toolInput, configPath) {
+function evaluateGates(toolName, toolInput, configPath, options = {}) {
   const oneshot = applyOneShotPretool(toolName, toolInput);
   if (oneshot) return oneshot;
-  const direct = evaluateGatesInner(toolName, toolInput, configPath);
+  const direct = evaluateGatesInner(toolName, toolInput, configPath, options);
   if (direct) return direct;
   const brandStandards = applyBrandStandardsHook(toolName, toolInput);
   if (brandStandards) return brandStandards;
   const retry = canonicalRetryInput(toolName, toolInput);
   if (!retry) return null;
-  return evaluateGatesInner(toolName, retry, configPath);
+  return evaluateGatesInner(toolName, retry, configPath, options);
 }
 
 // ---------------------------------------------------------------------------
