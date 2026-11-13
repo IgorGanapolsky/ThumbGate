@@ -6398,11 +6398,7 @@ async function completeSsoSessionAndRedirect(res, { provider, email, ssoName = n
   res.end();
 }
 
-const DEFAULT_HOSTED_OWNER_EMAILS = [
-  'iganapolsky@gmail.com',
-  'igor.ganapolsky@gmail.com',
-  'igor@thumbgate.ai',
-];
+const DEFAULT_HOSTED_OWNER_EMAILS = ['iganapolsky@gmail.com', 'igor.ganapolsky@gmail.com', 'igor@thumbgate.ai'];
 
 function ensureHostedActivationsReady(baseFeedbackDir, extraOpts = {}) {
   const { backfillHostedAccountActivations } = require('../../scripts/dashboard');
@@ -6448,13 +6444,7 @@ function resolveAccountSetupOptions(req, { tier, sessionEntry, expectedApiKey, e
     || (emailHash && activations.byEmailHash[emailHash]),
   );
   const cliHeartbeat = Boolean(installId && activations.byInstallId[installId]);
-  return {
-    tier: tier || null,
-    firstBlockAt,
-    activationRecorded,
-    cliHeartbeat,
-    setupSignalKnown: Boolean(tier),
-  };
+  return { tier: tier || null, firstBlockAt, activationRecorded, cliHeartbeat, setupSignalKnown: Boolean(tier) };
 }
 
 function resolveSessionSetupOverview(req, tier, sessionEntry, expectedApiKey, expectedOperatorKey) {
@@ -6465,19 +6455,9 @@ function resolveSessionSetupOverview(req, tier, sessionEntry, expectedApiKey, ex
     const scopedDir = tier === 'Free' && sessionEntry?.ssoEmail
       ? path.join(basePaths.FEEDBACK_DIR, 'tenants', hashDataIdentity('sso_free', sessionEntry.ssoEmail))
       : partitionFeedbackPaths(basePaths, resolveRequestDataIdentity(req, expectedApiKey)).FEEDBACK_DIR;
-    const setupOpts = resolveAccountSetupOptions(req, {
-      tier,
-      sessionEntry,
-      expectedApiKey,
-      expectedOperatorKey,
-      baseFeedbackDir: basePaths.FEEDBACK_DIR,
-    });
+    const setupOpts = resolveAccountSetupOptions(req, { tier, sessionEntry, expectedApiKey, expectedOperatorKey, baseFeedbackDir: basePaths.FEEDBACK_DIR });
     const overview = computeTodayOverview(scopedDir, setupOpts);
-    return {
-      firstBlockRecorded: Boolean(overview.firstBlockRecorded),
-      firstBlockAt: overview.firstBlockAt || null,
-      upNext: overview.upNext,
-    };
+    return { firstBlockRecorded: Boolean(overview.firstBlockRecorded), firstBlockAt: overview.firstBlockAt || null, upNext: overview.upNext };
   } catch (error) {
     debugApiFallback('session setup overview unavailable', error);
     return { firstBlockRecorded: null, firstBlockAt: null, upNext: null };
@@ -12795,9 +12775,7 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
         }
         const { data } = dashboardResult;
         const reqToken = extractApiKey(req);
-        let dashTier = reqToken
-          ? resolvePaidSessionTier(reqToken, expectedApiKey, expectedOperatorKey)
-          : null;
+        let dashTier = reqToken ? resolvePaidSessionTier(reqToken, expectedApiKey, expectedOperatorKey) : null;
         if (!dashTier) {
           try {
             const { getStatuslineMeta } = require('../../scripts/statusline-meta');
@@ -12821,12 +12799,7 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
         let scopedDashboard = proWouldHaveBlocked ? { ...data, proWouldHaveBlocked } : data;
         try {
           const { computeTodayOverview } = require('../../scripts/dashboard');
-          const setupOpts = resolveAccountSetupOptions(req, {
-            tier: dashTier,
-            expectedApiKey,
-            expectedOperatorKey,
-            baseFeedbackDir: getFeedbackPaths().FEEDBACK_DIR,
-          });
+          const setupOpts = resolveAccountSetupOptions(req, { tier: dashTier, expectedApiKey, expectedOperatorKey, baseFeedbackDir: getFeedbackPaths().FEEDBACK_DIR });
           scopedDashboard = {
             ...data,
             ...(proWouldHaveBlocked ? { proWouldHaveBlocked } : {}),
