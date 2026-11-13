@@ -35,15 +35,11 @@ const otherRepoLesson = {
   scope: { projectId: 'Eci.Psn.StockService' },
 };
 
-test('a lesson is injected only when the tool, path term, and repo match', () => {
-  const call = {
-    toolName: 'Bash',
-    actionContext: 'node --test tests/checkout-no-live-probe.test.js',
-    project: 'thumbgate',
-  };
+test('a lesson matches on repo scope and either the tool name or a command term', () => {
   assert.equal(lessonMatchesToolCall(thumbgateLesson, {
-    ...call,
+    toolName: 'Bash',
     actionContext: 'node scripts/billing.js --check',
+    project: 'thumbgate',
   }), true);
   assert.equal(lessonMatchesToolCall(otherRepoLesson, {
     toolName: 'Bash',
@@ -54,9 +50,19 @@ test('a lesson is injected only when the tool, path term, and repo match', () =>
     toolName: 'Read',
     actionContext: 'scripts/billing.js',
     project: 'thumbgate',
-  }), false);
+  }), true);
   assert.equal(lessonMatchesToolCall(thumbgateLesson, {
     toolName: 'Bash',
+    actionContext: 'echo hello',
+    project: 'thumbgate',
+  }), true);
+  assert.equal(lessonMatchesToolCall({
+    id: 'no-tool',
+    whatToChange: 'Return 403 from scripts/billing.js when createCheckoutSession sees a fixture email.',
+    tags: ['billing'],
+    scope: { projectId: 'thumbgate' },
+  }, {
+    toolName: 'Read',
     actionContext: 'echo hello',
     project: 'thumbgate',
   }), false);
@@ -145,4 +151,112 @@ test('injection is capped at two lessons and 150 tokens, and a lesson repeats on
     now: 1_000 + LESSON_REPEAT_MS,
   });
   assert.equal(later.length, MAX_INJECTED_LESSONS);
+});
+
+test('labeled ThumbGate calls recall the matching lesson and stay quiet otherwise', () => {
+  const branchProtection = {
+    id: 'mem_1791213888562_5s6xkd',
+    whatToChange: 'When Igor says push, publish the pack on a public branch. Do not approve PRs, bypass branch protection, or force-push.',
+    tags: ['feedback', 'negative', 'autonomy', 'push'],
+  };
+  const trunkMerge = {
+    id: 'mem_1791827698393_8eyuwk',
+    whatToChange: 'Rigorous adherence to zero-bypass branch protection, waiting for terminal green CI before a Trunk merge request.',
+    tags: ['feedback', 'positive', 'pr-management', 'rulesets', 'trunk-merge'],
+  };
+  const ruleset = {
+    id: 'mem_1791473268729_xfc0rs',
+    whatToChange: 'Ruleset requires thread resolution before Trunk merges. Diagnosed the blocker without bypassing branch protection.',
+    tags: ['feedback', 'positive', 'ui-components'],
+  };
+  const healthClaim = {
+    id: 'mem_1793117232257_ek7dn4',
+    whatToChange: 'Keep production host claims tied to a fresh /health curl after checking Railway.',
+    tags: ['feedback', 'negative', 'aws', 'console', 'decision'],
+  };
+  const railwayDeploy = {
+    id: 'mem_1791740937919_yyv5js',
+    whatToChange: 'The failed Deploy to Railway check stayed in place. Use the existing Railway login and CLI to repair the live lesson store and recheck the export.',
+    tags: ['feedback', 'negative', 'railway', 'dpo', 'autonomy'],
+  };
+  const marketingAside = {
+    id: 'mem_1793217824434_f2b1gh',
+    whatToChange: 'Keep the PreToolUse blocks for secret egress and force-push to main. Stop presenting a token percent as the reason a cache-heavy week got cheaper.',
+    tags: ['feedback', 'negative', 'token-claim', 'marketing-honesty'],
+  };
+  const heroAside = {
+    id: 'mem_1793126088335_dz84k1',
+    whatToChange: 'The live thumbgate.ai hero shows force-push as denied. Keep Pro at $19/mo and the $499 diagnostic.',
+    tags: ['feedback', 'negative', 'homepage', 'pricing'],
+  };
+  const dayglassForce = {
+    id: 'mem_1791308735484_fqv4d5',
+    whatToChange: 'Never propose force-push or a history rewrite.',
+    tags: ['feedback', 'negative', 'git-flow', 'force-push', 'dayglass'],
+  };
+  const corpus = [
+    marketingAside,
+    heroAside,
+    dayglassForce,
+    otherRepoLesson,
+    healthClaim,
+    railwayDeploy,
+    ruleset,
+    trunkMerge,
+    branchProtection,
+  ];
+  const branchIds = [branchProtection.id, trunkMerge.id, ruleset.id];
+  const relevant = [
+    ['git push --force origin main', branchIds],
+    ['git push origin main', branchIds],
+    ['ls && sudo git push origin main', branchIds],
+    ['git -C /var/folders/66/fkp57h8x6b5flyn92lzry7nm0000gp/T/tg-bypass-pEt5Lt push --force origin main', branchIds],
+    ['echo git push --force', branchIds],
+    ['gh pr merge 123 --auto --squash', branchIds],
+    ['curl -s https://thumbgate-production.up.railway.app/health', [healthClaim.id]],
+    ['railway deploy', [railwayDeploy.id]],
+    ["sed -i '' 's#https://thumbgate-production.up.railway.app#https://thumbgate.ai#g' CLAUDE.md .github/workflows/deploy-verify.yml", [railwayDeploy.id, healthClaim.id]],
+    ['RAILWAY_TOKEN=fixture railway deploy', [railwayDeploy.id]],
+  ];
+  const irrelevant = [
+    'echo hello',
+    'ls -la',
+    'git status',
+    'git diff',
+    'git log --oneline -5',
+    'command -v node',
+    'echo hi && ls',
+    'sudo ls /var/log',
+    'echo only-check-receipt',
+    'grep -r "git add" docs/',
+  ];
+  let recall = 0;
+  let falseHits = 0;
+  let tokens = 0;
+  for (const [command, expectIds] of relevant) {
+    const selected = selectInjectableLessons(corpus, {
+      toolName: 'Bash',
+      actionContext: command,
+      project: 'thumbgate',
+      record: false,
+    });
+    tokens += estimateTokens(formatInjectableReminder(selected));
+    const ids = selected.map((lesson) => lesson.id);
+    if (expectIds.some((id) => ids.includes(id))) recall += 1;
+  }
+  for (const command of irrelevant) {
+    const selected = selectInjectableLessons(corpus, {
+      toolName: 'Bash',
+      actionContext: command,
+      project: 'thumbgate',
+      record: false,
+    });
+    tokens += estimateTokens(formatInjectableReminder(selected));
+    if (selected.length > 0) falseHits += 1;
+  }
+  const tokensPerCall = Math.round((tokens / (relevant.length + irrelevant.length)) * 10) / 10;
+  assert.equal(recall, 10, `recall ${recall}/10 tokens/call ${tokensPerCall}`);
+  assert.equal(falseHits, 0, `false ${falseHits}/10 tokens/call ${tokensPerCall}`);
+  assert.equal(tokensPerCall, 41.8);
+  assert.ok(tokensPerCall <= MAX_INJECTED_TOKENS);
 });
