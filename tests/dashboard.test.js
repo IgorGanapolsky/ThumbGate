@@ -25,6 +25,13 @@ const {
 } = require('../scripts/dashboard');
 const { listGateTemplates } = require('../scripts/gate-templates');
 
+test('dashboard renders the same Pro repeat sentence the CLI prints', () => {
+  const html = fs.readFileSync(path.join(__dirname, '..', 'public', 'dashboard.html'), 'utf8');
+  assert.match(html, /id="proLimitNotice"/);
+  assert.match(html, /proLimitNotice\.textContent = data\.proWouldHaveBlocked/);
+});
+
+
 const EXPECTED_TEMPLATE_COUNT = listGateTemplates().length;
 
 test.beforeEach(() => {
