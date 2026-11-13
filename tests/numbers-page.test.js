@@ -270,13 +270,15 @@ describe('freshness markers on public pages', () => {
   ];
 
   for (const rel of PAGES) {
-    it(`${rel} has a visible Updated: marker and JSON-LD dateModified`, () => {
+    it(`${rel} has a visible freshness marker and JSON-LD dateModified`, () => {
       const full = path.join(ROOT, rel);
       const contents = fs.readFileSync(full, 'utf8');
       assert.match(
         contents,
-        /Updated:\s*<time datetime="\d{4}-\d{2}-\d{2}"/,
-        `${rel} must include a visible "Updated: <time>" marker`,
+        rel === 'public/dashboard.html'
+          ? /Data refreshed:\s*<time id="dashboardRefreshedAt">Waiting for data<\/time>/
+          : /Updated:\s*<time datetime="\d{4}-\d{2}-\d{2}"/,
+        `${rel} must include a visible freshness marker`,
       );
       assert.match(
         contents,

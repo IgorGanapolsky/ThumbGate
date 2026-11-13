@@ -2163,6 +2163,7 @@ async function buildLiveDashboardData(parsed, feedbackDir) {
     analyticsWindow: summaryOptions,
     billingSummary,
     billingSource,
+    humanOnly: true,
     authContext: { tier: 'pro' },
   });
   return { summaryOptions, data };
@@ -12887,6 +12888,7 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
         const reviewState = readDashboardReviewState(requestFeedbackDir);
         const data = generateDashboard(requestFeedbackDir, {
           reviewBaseline: reviewState,
+          humanOnly: true,
           authContext: { tier: 'pro' },
         });
         sendJson(res, 200, {
@@ -12899,7 +12901,7 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
       // POST /v1/dashboard/review-state -- mark current dashboard state as reviewed
       if (req.method === 'POST' && pathname === '/v1/dashboard/review-state') {
         const body = await parseJsonBody(req);
-        const snapshot = buildReviewSnapshot(requestFeedbackDir);
+        const snapshot = buildReviewSnapshot(requestFeedbackDir, { humanOnly: true });
         // Override snapshot timestamp with client-provided one if available
         if (body?.reviewedAt) {
           snapshot.reviewedAt = body.reviewedAt;
@@ -12907,6 +12909,7 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
         writeDashboardReviewState(requestFeedbackDir, snapshot);
         const data = generateDashboard(requestFeedbackDir, {
           reviewBaseline: snapshot,
+          humanOnly: true,
           authContext: { tier: 'pro' },
         });
         sendJson(res, 200, {
