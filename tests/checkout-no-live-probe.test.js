@@ -13,7 +13,7 @@ const {
   checkoutRequesterKey,
 } = require('../scripts/bot-detection');
 const { detectEconomicAction } = require('../scripts/financial-control-plane');
-const { appendTelemetryEvent, getTelemetryAnalytics } = require('../scripts/telemetry-analytics');
+const { appendTelemetryEvent, getTelemetryAnalytics, classifyTelemetryAudience } = require('../scripts/telemetry-analytics');
 
 test('probe and audit requests are recognised as automated', () => {
   assert.equal(billing.isAutomatedCheckoutRequest({ source: 'internal_audit' }), true);
@@ -526,6 +526,17 @@ test('/go/pro-direct deflects ?probe=1 and blocked synthetic emails to /checkout
     assert.equal(liveDiagnosticRes.status, 302);
     assert.match(liveDiagnosticRes.headers.get('location') || '', /\/checkout\/pro\b/);
     assert.doesNotMatch(liveDiagnosticRes.headers.get('location') || '', /stripe\.com/i);
+
+    const gptRes = await getRedirect('/go/gpt?customer_email=e2e-probe%40example.com');
+    assert.equal(gptRes.status, 302);
+    assert.doesNotMatch(gptRes.location, /\/checkout\/pro\b/);
+
+    const plusTagAudience = classifyTelemetryAudience(
+      { eventType: 'checkout_start' },
+      { customerEmail: 'founder+tag@agent-startup.io' },
+    );
+    assert.equal(plusTagAudience.audience, 'test');
+    assert.ok(plusTagAudience.reasons.includes('test_identity'));
 
     billing.CONFIG.STRIPE_SECRET_KEY = `${'sk_test_'}placeholder_not_a_real_key`;
     process.env.STRIPE_SECRET_KEY = billing.CONFIG.STRIPE_SECRET_KEY;

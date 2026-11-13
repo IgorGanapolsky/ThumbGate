@@ -3273,14 +3273,13 @@ function trackedLinkQueryEmail(params) {
 }
 
 function isLiveTrackedPaymentLink(destinationUrl) {
-  const configuredStripeKey = String(process.env.STRIPE_SECRET_KEY || billingConfig.STRIPE_SECRET_KEY || '').trim();
-  if (/^(?:sk|rk)_test_/i.test(configuredStripeKey)) return false;
-  if (!destinationUrl) return /^(?:sk|rk)_live_/i.test(configuredStripeKey);
+  if (!destinationUrl) return false;
   const host = String(destinationUrl.hostname || '').toLowerCase();
+  if (host !== 'buy.stripe.com' && host !== 'checkout.stripe.com') return false;
   const urlPath = String(destinationUrl.pathname || '').toLowerCase();
   if (urlPath.startsWith('/test_') || urlPath.endsWith('-test')) return false;
-  if (/^(?:sk|rk)_live_/i.test(configuredStripeKey)) return true;
-  return host === 'buy.stripe.com' || host === 'checkout.stripe.com';
+  const configuredStripeKey = String(process.env.STRIPE_SECRET_KEY || billingConfig.STRIPE_SECRET_KEY || '').trim();
+  return /^(?:sk|rk)_live_/i.test(configuredStripeKey);
 }
 
 function applyTrackedLinkCustomerEmail(destinationUrl, params, target) {
