@@ -1040,7 +1040,7 @@ async function resolvePaidCookieSession() {
     var res = await fetch('/v1/auth/session', { credentials: 'include' });
     if (!res.ok) return null;
     var session = await res.json();
-    if (session && session.authenticated === true && (session.tier === 'Pro' || session.tier === 'Enterprise')) {
+    if (session && session.authenticated === true && (session.tier === 'Pro' || session.tier === 'Team' || session.tier === 'Enterprise')) {
       return session;
     }
   } catch (_err) {}
@@ -1048,8 +1048,8 @@ async function resolvePaidCookieSession() {
 }
 
 function resolveLessonsTierName(paidSession, stats) {
-  if (paidSession && paidSession.tier === 'Enterprise') return 'Enterprise';
-  if (stats && stats.tier === 'Enterprise') return 'Enterprise';
+  if (paidSession && (paidSession.tier === 'Enterprise' || paidSession.tier === 'Team')) return paidSession.tier;
+  if (stats && (stats.tier === 'Enterprise' || stats.tier === 'Team')) return stats.tier;
   if (API_KEY.startsWith('tg_op_') || API_KEY.startsWith('tg_creator_')) return 'Enterprise';
   return 'Pro';
 }

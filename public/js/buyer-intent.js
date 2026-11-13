@@ -223,7 +223,7 @@
     return Boolean(
       session
       && session.authenticated === true
-      && (session.tier === 'Pro' || session.tier === 'Enterprise')
+      && (session.tier === 'Pro' || session.tier === 'Team' || session.tier === 'Enterprise')
     );
   }
 
