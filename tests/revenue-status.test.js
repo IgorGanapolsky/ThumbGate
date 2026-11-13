@@ -908,3 +908,39 @@ test('generateRevenueStatusReport degrades when public runtime probe fails', asy
     report.diagnosis.gaps.includes('Public runtime probe failed: Timed out fetching https://example.com/health after 5ms')
   );
 });
+
+test('formatReport names checkout sessions and email signups instead of one signup count', () => {
+  const report = {
+    generatedAt: '2026-11-12T12:00:00.000Z',
+    source: 'hosted-http-api',
+    diagnosis: {
+      primaryIssue: 'conversion_or_pricing_gap',
+      trackingImplemented: true,
+      telemetryIngressWorking: true,
+      hostedSummaryWorking: true,
+      hostedTrafficObserved: true,
+      hostedRevenueObserved: false,
+      externalCustomerRevenueObserved: false,
+      hostedAuditMethod: 'hosted-http-api',
+      runtimePresenceKnown: false,
+      gaps: [],
+    },
+    publicProbe: {
+      health: { status: 200, version: '1.39.1' },
+      telemetryPing: { status: 204 },
+    },
+    hostedAudit: {
+      runtimePresence: {},
+      summaries: {
+        today: { trafficMetrics: {}, ctas: {}, revenue: {}, signups: { uniqueLeads: 10, emailSignups: 0 }, pipeline: {} },
+        '30d': { trafficMetrics: {}, ctas: {}, revenue: {}, signups: { uniqueLeads: 178, checkoutSessionsCreated: 179, emailSignups: 1 }, pipeline: {} },
+        lifetime: { trafficMetrics: {}, ctas: {}, revenue: {}, signups: {}, pipeline: {} },
+      },
+    },
+  };
+
+  const formatted = formatReport(report);
+  assert.match(formatted, /30d: .*checkoutSessions 179, emailSignups 1/);
+  assert.match(formatted, /Today: .*checkoutSessions 10, emailSignups 0/);
+  assert.doesNotMatch(formatted, /signups 178/);
+});
