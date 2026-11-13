@@ -899,7 +899,7 @@
     "windbg:doctor": "node scripts/windbg-evidence-diagnostics.js",
     "strands-box:doctor": "node scripts/strands-box-doctor.js",
     "test:strands-box": "node --test tests/strands-box-diode.test.js tests/multi-harness-invariants.test.js",
-    "test:enterprise-intelligence": "node --test tests/activesaddler-curriculum-doctor.test.js tests/agent-reliability-client.test.js tests/enterprise-governance-page.test.js tests/gaming-playbook.test.js tests/multi-harness-invariants.test.js tests/strands-box-diode.test.js tests/strands-decider-adapter.test.js tests/windbg-evidence-diagnostics.test.js",
+    "test:enterprise-intelligence": "node --test tests/activesaddler-curriculum-doctor.test.js tests/agent-data-reach-check.test.js tests/agent-reliability-client.test.js tests/enterprise-governance-page.test.js tests/gaming-playbook.test.js tests/multi-harness-invariants.test.js tests/strands-box-diode.test.js tests/strands-decider-adapter.test.js tests/windbg-evidence-diagnostics.test.js",
     "test:filesystem-search": "node --test tests/filesystem-search.test.js",
     "test:obsidian-export": "node --test tests/obsidian-export.test.js",
     "test:coverage": "node scripts/test-coverage.js",
