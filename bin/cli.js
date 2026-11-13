@@ -1659,12 +1659,12 @@ function cfo() {
         fallbackReason,
         summary,
       }, null, 2));
-      process.exit(0);
+      process.exitCode = 0;
     })
     .catch((err) => {
       progress.fail('CFO billing summary failed');
       console.error(err && err.message ? err.message : err);
-      process.exit(1);
+      process.exitCode = 1;
     });
 }
 
