@@ -222,21 +222,36 @@ function appendJsonlRecord(filePath, payload) {
   }
 }
 
+function resolveJsonlReadPaths(filePath, legacyPath = null) {
+  const primaryExists = Boolean(filePath && fs.existsSync(filePath));
+  const legacyExists = Boolean(legacyPath && legacyPath !== filePath && fs.existsSync(legacyPath));
+  if (primaryExists) return [filePath, ...(legacyExists && shouldMergeLegacyBillingData() ? [legacyPath] : [])];
+  return legacyExists ? [legacyPath] : [];
+}
+
+function resolveKeyStoreReadPath() {
+  return IS_TEST || fs.existsSync(CONFIG.API_KEYS_PATH) ? CONFIG.API_KEYS_PATH : resolveLegacyBillingPath('api-keys.json');
+}
+
+function getBillingAnalyticsReadPaths() {
+  const root = getFeedbackPaths().FEEDBACK_DIR;
+  const ledgers = [
+    [CONFIG.FUNNEL_LEDGER_PATH, 'funnel-events.jsonl'],
+    [CONFIG.REVENUE_LEDGER_PATH, 'revenue-events.jsonl'],
+    [CONFIG.NEWSLETTER_SUBSCRIBERS_PATH, 'newsletter-subscribers.jsonl'],
+    [CONFIG.TRIAL_EMAIL_LEDGER_PATH, 'trial-emails.jsonl'],
+  ];
+  return [...new Set([
+    ...ledgers.flatMap(([primary, file]) => resolveJsonlReadPaths(primary, resolveLegacyBillingPath(file))),
+    resolveKeyStoreReadPath(),
+    ...getTelemetrySourceDiagnostics(root).activePaths,
+    ...['auth-sessions.json', 'cloud-sso-sessions.json', 'workflow-sprint-leads.jsonl'].map((file) => path.join(root, file)),
+  ])];
+}
+
 function loadJsonlRecords(filePath, legacyPath = null) {
   try {
-    const paths = [];
-    const primaryExists = Boolean(filePath && fs.existsSync(filePath));
-    const legacyExists = Boolean(legacyPath && legacyPath !== filePath && fs.existsSync(legacyPath));
-
-    if (primaryExists) {
-      paths.push(filePath);
-      if (legacyExists && shouldMergeLegacyBillingData()) {
-        paths.push(legacyPath);
-      }
-    } else if (legacyExists) {
-      paths.push(legacyPath);
-    }
-
+    const paths = resolveJsonlReadPaths(filePath, legacyPath);
     const merged = [];
     const seen = new Set();
 
@@ -2003,7 +2018,22 @@ function mergeRevenueEvents(entries = [], extraEntries = []) {
 
   for (const entry of extraEntries) {
     if (!entry || typeof entry !== 'object') continue;
-    if (hasRevenueEventMatch(merged, entry)) continue;
+    const index = merged.findIndex((existing) => hasRevenueEventMatch([existing], entry)
+      || (entry.metadata?.paymentIntentId && existing.metadata?.paymentIntentId === entry.metadata.paymentIntentId)
+      || (entry.metadata?.chargeId && (existing.orderId === entry.metadata.chargeId || existing.metadata?.chargeId === entry.metadata.chargeId)));
+    if (index >= 0) {
+      if (entry.metadata?.stripeReconciled) {
+        merged[index] = {
+          ...merged[index], ...entry,
+          customerEmail: normalizeText(entry.customerEmail) || merged[index].customerEmail || null,
+          identityClassification: [classifyRevenueRecord(merged[index]), classifyRevenueRecord(entry)].includes('internal') ? 'internal'
+            : [classifyRevenueRecord(merged[index]), classifyRevenueRecord(entry)].includes('test') ? 'test' : null,
+          identityEmails: [...new Set([...revenueIdentityEmails(merged[index]), ...revenueIdentityEmails(entry)])],
+          metadata: { ...merged[index].metadata, ...entry.metadata },
+        };
+      }
+      continue;
+    }
     merged.push(entry);
   }
 
@@ -2108,6 +2138,61 @@ function matchStripeChargeFromSubscriptions(priceCatalog, charge, subscriptions 
   return description.toLowerCase().startsWith('subscription') ? matches[0] : null;
 }
 
+function revenueIdentityEmails(record = {}) {
+  const scopes = [record, record.customer, record.charge, record.charge?.customer].filter((value) => value && typeof value === 'object');
+  return [...new Set(scopes.flatMap((value) => [value.customerEmail, value.email, value.receipt_email,
+    value.billing_details?.email, value.metadata?.customerEmail, value.metadata?.email,
+    ...(Array.isArray(value.identityEmails) ? value.identityEmails : [])])
+    .filter((value) => typeof value === 'string' && canonicalizeEmailAddress(value))
+    .map((value) => value.trim().toLowerCase()))];
+}
+
+function classifyRevenueRecord(record = {}, env = process.env) {
+  const scopes = [record, record.customer, record.charge, record.charge?.customer].filter((value) => value && typeof value === 'object');
+  const emails = revenueIdentityEmails(record);
+  const owners = String(env.THUMBGATE_OWNER_EMAILS || '').split(',').map(canonicalizeEmailAddress).filter(Boolean);
+  if (record.identityClassification === 'internal' || emails.some((email) => owners.includes(canonicalizeEmailAddress(email)))) return 'internal';
+  if (scopes.some((value) => [true, 'true'].includes(value.metadata?.internal) || [true, 'true'].includes(value.metadata?.owner))) return 'internal';
+  if (record.identityClassification === 'test' || scopes.some((value) => value.livemode === false || [false, 'false'].includes(value.metadata?.livemode)
+    || [true, 'true'].includes(value.metadata?.test) || isAutomatedCheckoutRequest(value.metadata || {}))
+    || emails.some(isSyntheticOrOwnerCheckoutEmail)) return 'test';
+  return emails.length ? 'external' : 'unknown';
+}
+
+let activeStripeReads = 0;
+async function withStripeReadSlot(request, { signal } = {}) {
+  if (signal?.aborted) throw Object.assign(new Error('Stripe reconciliation timeout'), { code: 'reconciliation_timeout' });
+  if (activeStripeReads >= 2) throw Object.assign(new Error('Stripe read capacity unavailable'), { code: 'provider_busy' });
+  activeStripeReads += 1;
+  try { return await request(); }
+  finally { activeStripeReads -= 1; }
+}
+
+function summarizeExternalRevenue(entries = [], env = process.env) {
+  const totals = { paidOrders: 0, bookedRevenueByCurrency: {}, refundedByCurrency: {}, excluded: { internal: 0, test: 0, unknown: 0 }, duplicates: 0, amountUnknownOrders: 0 };
+  const seen = new Set();
+  for (const entry of entries) {
+    if (!entry || entry.status !== 'paid') continue;
+    const metadata = entry.metadata || {};
+    const identities = [entry.orderId, metadata.chargeId, metadata.paymentIntentId, metadata.orderId,
+      metadata.sessionId, metadata.marketplaceOrderId, resolveRevenueEventKey(entry)].filter(Boolean);
+    const duplicate = identities.some((id) => seen.has(id));
+    identities.forEach((id) => seen.add(id));
+    if (duplicate) { totals.duplicates += 1; continue; }
+    const classification = classifyRevenueRecord(entry, env);
+    if (classification !== 'external') { totals.excluded[classification] += 1; continue; }
+    totals.paidOrders += 1;
+    const currency = String(entry.currency || '').toUpperCase();
+    if (entry.amountKnown && Number.isSafeInteger(entry.amountCents) && /^[A-Z]{3}$/.test(currency)) {
+      totals.bookedRevenueByCurrency[currency] = (totals.bookedRevenueByCurrency[currency] || 0) + entry.amountCents;
+      if (Number.isSafeInteger(entry.amountRefundedCents)) {
+        totals.refundedByCurrency[currency] = (totals.refundedByCurrency[currency] || 0) + entry.amountRefundedCents;
+      }
+    } else totals.amountUnknownOrders += 1;
+  }
+  return totals;
+}
+
 function buildStripeReconciledRevenueEvent(charge, match = {}) {
   const timestampMs = Number(charge.created) * 1000;
   const timestamp = Number.isFinite(timestampMs)
@@ -2119,10 +2204,15 @@ function buildStripeReconciledRevenueEvent(charge, match = {}) {
     timestamp,
     provider: 'stripe',
     event: 'stripe_charge_reconciled',
+    livemode: charge.livemode,
+    customerEmail: charge.customer?.email || charge.billing_details?.email || charge.receipt_email || null,
+    identityEmails: revenueIdentityEmails(charge),
+    identityClassification: classifyRevenueRecord(charge),
+    amountRefundedCents: normalizeInteger(charge.amount_refunded),
     status: 'paid',
     orderId: normalizeText(charge.id),
     evidence: normalizeText(charge.id) || 'stripe_charge_reconciled',
-    customerId: normalizeText(charge.customer) || `stripe_charge_${normalizeText(charge.id) || 'unknown'}`,
+    customerId: normalizeText(typeof charge.customer === 'object' ? charge.customer?.id : charge.customer) || `stripe_charge_${normalizeText(charge.id) || 'unknown'}`,
     installId: null,
     traceId: null,
     amountCents,
@@ -2133,6 +2223,7 @@ function buildStripeReconciledRevenueEvent(charge, match = {}) {
       source: 'stripe_reconciled',
     },
     metadata: {
+      ...sanitizeMetadata(charge.metadata),
       stripeReconciled: true,
       chargeId: normalizeText(charge.id),
       paymentIntentId: normalizeText(charge.payment_intent),
@@ -2145,43 +2236,57 @@ function buildStripeReconciledRevenueEvent(charge, match = {}) {
   };
 }
 
-async function listStripeReconciledRevenueEvents() {
+async function listStripeReconciledRevenueEvents({ signal, deadline = Infinity } = {}) {
+  const diagnostics = { status: 'ok', complete: true };
+  const result = (events, status = diagnostics.status) => Object.defineProperty(events, 'reconciliation', { value: { ...diagnostics, status }, enumerable: false });
+  const checkDeadline = () => {
+    if (signal?.aborted || Date.now() >= deadline) throw Object.assign(new Error('Stripe reconciliation timeout'), { code: 'reconciliation_timeout' });
+  };
+  const request = async (fn) => {
+    checkDeadline();
+    const timeout = Math.max(1, Math.min(8000, deadline - Date.now()));
+    const value = await withTimeout(withStripeReadSlot(() => fn({ timeout, maxNetworkRetries: 0 }), { signal }), timeout);
+    checkDeadline();
+    if (value?.has_more || value?.lines?.has_more) diagnostics.complete = false;
+    return value;
+  };
   const testEvents = parseTestStripeReconciledRevenueEvents();
   if (testEvents.length > 0) {
-    return testEvents;
+    return result(testEvents);
   }
 
   if (!CONFIG.STRIPE_SECRET_KEY || !CONFIG.STRIPE_PRICE_ID) {
-    return [];
+    return result([], 'unconfigured');
   }
 
   let stripe;
   try {
     stripe = getStripeClient();
   } catch {
-    return [];
+    return result([], 'unavailable');
   }
 
-  const currentPrice = await withTimeout(stripe.prices.retrieve(CONFIG.STRIPE_PRICE_ID));
-  const relatedPrices = await withTimeout(stripe.prices.list({
+  const currentPrice = await request((options) => stripe.prices.retrieve(CONFIG.STRIPE_PRICE_ID, options));
+  const relatedPrices = await request((options) => stripe.prices.list({
     product: CONFIG.STRIPE_PRODUCT_ID || currentPrice.product,
     limit: 100,
-  }));
+  }, options));
   const priceCatalog = buildStripePriceCatalog(
     currentPrice,
     relatedPrices && Array.isArray(relatedPrices.data) ? relatedPrices.data : []
   );
   if (!priceCatalog.productId) {
-    return [];
+    return result([], 'unavailable');
   }
 
-  const charges = await withTimeout(stripe.charges.list({ limit: 100 }));
+  const charges = await request((options) => stripe.charges.list({ limit: 100, expand: ['data.customer'] }, options));
   const reconciled = [];
   const invoiceCache = new Map();
   const subscriptionCache = new Map();
 
   for (const charge of charges.data || []) {
-    if (!charge || !charge.paid || charge.status !== 'succeeded' || charge.refunded) {
+    checkDeadline();
+    if (!charge || !charge.paid || charge.status !== 'succeeded') {
       continue;
     }
 
@@ -2192,7 +2297,7 @@ async function listStripeReconciledRevenueEvents() {
       if (invoiceId) {
         let invoice = invoiceCache.get(invoiceId);
         if (!invoice) {
-          invoice = await withTimeout(stripe.invoices.retrieve(invoiceId, { expand: ['lines.data.price'] }));
+          invoice = await request((options) => stripe.invoices.retrieve(invoiceId, { expand: ['lines.data.price'] }, options));
           invoiceCache.set(invoiceId, invoice);
         }
         const lines = invoice && invoice.lines && Array.isArray(invoice.lines.data) ? invoice.lines.data : [];
@@ -2201,15 +2306,15 @@ async function listStripeReconciledRevenueEvents() {
     }
 
     if (!match && charge.customer) {
-      const customerId = normalizeText(charge.customer);
+      const customerId = normalizeText(typeof charge.customer === 'object' ? charge.customer?.id : charge.customer);
       if (customerId) {
         let subscriptions = subscriptionCache.get(customerId);
         if (!subscriptions) {
-          const listed = await withTimeout(stripe.subscriptions.list({
+          const listed = await request((options) => stripe.subscriptions.list({
             customer: customerId,
             status: 'all',
             limit: 100,
-          }));
+          }, options));
           subscriptions = listed && Array.isArray(listed.data) ? listed.data : [];
           subscriptionCache.set(customerId, subscriptions);
         }
@@ -2224,7 +2329,7 @@ async function listStripeReconciledRevenueEvents() {
     reconciled.push(buildStripeReconciledRevenueEvent(charge, match));
   }
 
-  return reconciled;
+  return result(reconciled, diagnostics.complete ? 'ok' : 'partial');
 }
 
 function getFunnelAnalytics(options = {}) {
@@ -2710,6 +2815,7 @@ function getBusinessAnalytics(options = {}) {
       byOfferCode: signupsByOfferCode,
     },
     revenue: {
+      external: summarizeExternalRevenue(paidOrders),
       paidProviderEvents: paidEvents.length,
       paidOrders: paidOrders.length,
       paidCustomers: paidCustomerIds.size,
@@ -2923,28 +3029,36 @@ function buildBillingSummaryFailure(error) {
 
 async function getBillingSummariesLive(optionsByWindow = {}, {
   listStripeReconciledRevenueEventsFn = listStripeReconciledRevenueEvents,
+  signal,
 } = {}) {
   const entries = Object.entries(optionsByWindow || {});
-  if (entries.length === 0) return {};
-
+  if (!entries.length) return {};
+  const reconciliationTimeoutMs = entries.map(([, options]) => normalizeInteger(options?.stripeReconciliationTimeoutMs))
+    .find((value) => value !== null) || STRIPE_RECONCILIATION_SUMMARY_TIMEOUT_MS;
+  const controller = new AbortController();
+  const abort = () => controller.abort();
+  signal?.addEventListener('abort', abort, { once: true });
+  if (signal?.aborted) abort();
+  let extraRevenueEvents = [];
+  let reconciliation = { status: 'ok', complete: true };
   try {
-    const reconciliationTimeoutMs = entries
-      .map(([, options]) => normalizeInteger(options?.stripeReconciliationTimeoutMs))
-      .find((value) => value !== null)
-      || STRIPE_RECONCILIATION_SUMMARY_TIMEOUT_MS;
-    const extraRevenueEvents = await withTimeout(
-      listStripeReconciledRevenueEventsFn(),
-      reconciliationTimeoutMs
-    ).catch(() => []);
-    return Object.fromEntries(entries.map(([key, options]) => [
-      key,
-      getBillingSummary({
-        ...options,
-        extraRevenueEvents,
-      }),
-    ]));
-  } catch (err) {
-    return Object.fromEntries(entries.map(([key]) => [key, buildBillingSummaryFailure(err)]));
+    extraRevenueEvents = await withTimeout(listStripeReconciledRevenueEventsFn({
+      signal: controller.signal, deadline: Date.now() + reconciliationTimeoutMs,
+    }), reconciliationTimeoutMs);
+    reconciliation = extraRevenueEvents.reconciliation || reconciliation;
+  } catch (error) {
+    reconciliation = { status: /timeout/i.test(error?.message || '') ? 'timeout' : 'unavailable', complete: false };
+  } finally {
+    controller.abort();
+    signal?.removeEventListener('abort', abort);
+  }
+  if (signal?.aborted) throw Object.assign(new Error('Collection stopped'), { code: 'collection_timeout' });
+  try {
+    return Object.fromEntries(entries.map(([key, options]) => [key, {
+      ...getBillingSummary({ ...options, extraRevenueEvents }), reconciliation,
+    }]));
+  } catch (error) {
+    return Object.fromEntries(entries.map(([key]) => [key, { ...buildBillingSummaryFailure(error), reconciliation }]));
   }
 }
 
@@ -2955,9 +3069,7 @@ async function getBillingSummaryLive(options = {}, runtime = {}) {
 
 function loadKeyStore() {
   try {
-    const primary = CONFIG.API_KEYS_PATH;
-    const legacy = resolveLegacyBillingPath('api-keys.json');
-    const target = (IS_TEST || fs.existsSync(primary)) ? primary : legacy;
+    const target = resolveKeyStoreReadPath();
     if (!fs.existsSync(target)) return { keys: {}, canceledSubscriptions: {}, customerRevocations: {} };
     const parsed = JSON.parse(fs.readFileSync(target, 'utf-8'));
     if (!parsed || typeof parsed.keys !== 'object') {
@@ -4777,6 +4889,10 @@ function handleGithubWebhook(event, provenance = {}) {
 }
 
 module.exports = {
+  getStripeClient, classifyRevenueRecord, summarizeExternalRevenue, buildBillingSourceDiagnostics,
+  withStripeReadSlot, getBillingAnalyticsReadPaths,
+  _mergeRevenueEvents: mergeRevenueEvents,
+  _buildStripeReconciledRevenueEvent: buildStripeReconciledRevenueEvent,
   CONFIG, createCheckoutSession, isAutomatedCheckoutRequest, isSyntheticOrOwnerCheckoutEmail, createBillingPortalSession, getCheckoutSessionStatus, provisionApiKey, resolvePaidEntitlementForEmail, rotateApiKey, validateApiKey, recordUsage, recordAccountFirstBlock, disableCustomerKeys, handleWebhook, verifyWebhookSignature, verifyGithubWebhookSignature, verifyPayPalWebhookSignature, recordGithubMarketplaceWebhookDelivery, recordPayPalWebhookDelivery, handleGithubWebhook, loadKeyStore, appendFunnelEvent, appendRevenueEvent, loadFunnelLedger, loadRevenueLedger, loadGithubMarketplaceWebhookLedger, loadPayPalWebhookLedger, loadNewsletterSubscribers, loadResolvedRevenueEvents, getFunnelAnalytics, getBusinessAnalytics, getBillingSummary, getBillingSummaryLive, getBillingSummariesLive, listStripeReconciledRevenueEvents, repairGithubMarketplaceRevenueLedger,
   _buildCheckoutSessionPayload: buildCheckoutSessionPayload,
   _filterQualifiedCheckoutFunnelEvents: filterQualifiedCheckoutFunnelEvents,
