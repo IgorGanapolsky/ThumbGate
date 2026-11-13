@@ -589,10 +589,17 @@ function main() {
   const actionContext = extractActionContext(toolName, effectiveInput);
   const hookCwd = input.cwd || process.cwd();
   const { resolveProjectFromCwd } = require('./project-scope');
+  const { selectInjectableLessons, formatInjectableReminder } = require('./lesson-hook-relevance');
   const hookProject = resolveProjectFromCwd(hookCwd);
-  const lessons = retrieveLessons(toolName, actionContext, {
+  const retrieved = retrieveLessons(toolName, actionContext, {
     cwd: hookCwd,
     project: hookProject,
+  });
+  const lessons = selectInjectableLessons(retrieved, {
+    toolName,
+    actionContext,
+    project: hookProject && hookProject.projectId ? hookProject.projectId : hookProject,
+    sessionId: input.session_id || input.sessionId || '',
   });
 
   try {
@@ -675,12 +682,16 @@ function main() {
 
   const autogate = maybeRegisterPrCommitGate(toolName, effectiveInput);
 
-  if (lessons.length > 0 || autogate) {
-    return allowWithContext(formatLessonsAsReminder(lessons, {
-      autogate,
-      toolName,
-      toolInput: effectiveInput,
-    }));
+  if (lessons.length > 0) {
+    return allowWithContext(formatInjectableReminder(lessons));
+  }
+  if (autogate) {
+    return allowWithContext([
+      '<system-reminder>',
+      `ThumbGate auto-registered claim gate "${autogate.gate}" on branch ${autogate.branch}.`,
+      'You MUST satisfy this gate (show gh pr view output with 0 unresolved threads) before merging.',
+      '</system-reminder>',
+    ].join('\n'));
   }
 
   return allow();
