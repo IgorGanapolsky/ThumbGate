@@ -2443,6 +2443,7 @@ function evaluateElephantGoldfishAutonomousSanctuaryLoop({
   astSpecDriftCount = 0,
   syncedToRepoObsidianAndVault = true,
   promotedMistakesToPreventionRules = true,
+  goldfishPacket = null,
   mckinsey = {},
 } = {}) {
   const blockers = [];
@@ -2485,6 +2486,10 @@ function evaluateElephantGoldfishAutonomousSanctuaryLoop({
   }
   if (!goldfishHasZeroConversationHistory) {
     blockers.push('goldfish_review_in_same_session_invalid_requires_amnesiac_subagent_context');
+  }
+  const goldfishReview = require('./egm-goldfish-packet').buildGoldfishReviewPacket(goldfishPacket || {});
+  if (!goldfishReview.goldfish) {
+    blockers.push('goldfish_self_grade_is_not_a_review');
   }
   if (!goldfishComprehensionPassed) {
     blockers.push('goldfish_comprehension_serialization_test_failed_patch_the_doc_not_the_chat');

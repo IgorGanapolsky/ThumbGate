@@ -1282,6 +1282,12 @@ function sanctuaryPassArgs(mckinsey = mckinseyPassInput()) {
     astSpecDriftCount: 0,
     syncedToRepoObsidianAndVault: true,
     promotedMistakesToPreventionRules: true,
+    goldfishPacket: {
+      targetFile: 'docs/designs/obsidian-sync.md',
+      authorSessionId: 'elephant-1',
+      reviewerSessionId: 'goldfish-1',
+      linkedFiles: ['scripts/rrsi-doctor.js'],
+    },
     mckinsey,
   };
 }
