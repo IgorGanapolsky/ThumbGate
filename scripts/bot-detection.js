@@ -116,6 +116,15 @@ const BOT_PATTERNS = [
   /\blighthouse\b/i,
   /\bspeedcurve\b/i,
   /\bpagespeed\b/i,
+  // Bare Mozilla/5.0, internal audit probes, and fuzzers observed on /go/* and /cancel
+  /^mozilla\/5\.0\s*$/i,
+  /\bfirstpage\//i,
+  /\bmoney-v\d+-audit\b/i,
+  /\bprotocolv\d+-gate\b/i,
+  /\bfuzz faster u fool\b/i,
+  /\bffuf\b/i,
+  /\bbrowseros\b/i,
+  /\bclaude-user\b/i,
 ];
 
 function normalizeHeader(value) {
@@ -172,11 +181,7 @@ function isProbablyBot(headers) {
  * expired sessions nobody saw. Browsers send Sec-Fetch-Mode: navigate on a link
  * click; older browsers without Sec-Fetch pass when the Referer is our own site.
  */
-function isHumanCheckoutNavigation(headers = {}, appOrigin = '') {
-  const mode = normalizeHeader(headers['sec-fetch-mode']).toLowerCase();
-  const dest = normalizeHeader(headers['sec-fetch-dest']).toLowerCase();
-  if (mode === 'navigate' && (!dest || dest === 'document')) return true;
-  if (mode) return false;
+function isSameOriginReferer(headers = {}, appOrigin = '') {
   const referer = normalizeHeader(headers.referer || headers.referrer);
   if (!referer || !appOrigin) return false;
   try {
@@ -184,6 +189,19 @@ function isHumanCheckoutNavigation(headers = {}, appOrigin = '') {
   } catch {
     return false;
   }
+}
+
+function isHumanCheckoutNavigation(headers = {}, appOrigin = '') {
+  const mode = normalizeHeader(headers['sec-fetch-mode']).toLowerCase();
+  const dest = normalizeHeader(headers['sec-fetch-dest']).toLowerCase();
+  if (mode === 'navigate' && (!dest || dest === 'document')) {
+    const site = normalizeHeader(headers['sec-fetch-site']).toLowerCase();
+    if (!site || site === 'same-origin' || site === 'same-site') return true;
+    const user = normalizeHeader(headers['sec-fetch-user']).toLowerCase();
+    return user === '?1' || isSameOriginReferer(headers, appOrigin);
+  }
+  if (mode) return false;
+  return isSameOriginReferer(headers, appOrigin);
 }
 
 // --- Rapid multi-checkout guard ---------------------------------------------

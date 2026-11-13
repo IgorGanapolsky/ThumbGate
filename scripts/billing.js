@@ -31,6 +31,7 @@ const {
 } = require('./feedback-paths');
 const { getTelemetryAnalytics, getTelemetrySourceDiagnostics } = require('./telemetry-analytics');
 const { normalizeCampaignId } = require('./growth-campaigns');
+const { getOwnerEmails, isProbablyBot } = require('./bot-detection');
 const {
   PRO_MONTHLY_PRICE_ID,
   PRO_ANNUAL_PRICE_ID,
@@ -1345,6 +1346,28 @@ function isQualifiedWorkflowSprintLead(entry = {}, workflowSprintIntake = null) 
     && QUALIFIED_WORKFLOW_SPRINT_STATUSES.has(normalizeText(entry.status));
 }
 
+const SYNTHETIC_ACQUISITION_SOURCE_RE = /^(?:cli|internal_audit|consent_probe|synthetic_probe|ci|smoke_test)$/i;
+const SYNTHETIC_ACQUISITION_INSTALL_RE = /^(?:consent_probe|synthetic_probe|smoke_test|internal_audit)$/i;
+const SYNTHETIC_CHECKOUT_EMAIL_RE = /(?:^iganapolsky@|^igor\.ganapolsky@|@thumbgate\.ai$|@formtests\.info$|^test-checkout-probe@|^buyer@acme\.|^test@test\.com$)/i;
+const INTERNAL_CHECKOUT_HOST_RE = /(?:^localhost(?::\d+)?$|^127\.0\.0\.1(?::\d+)?$|^\[?::1\]?(?::\d+)?$|\.up\.railway\.app$)/i;
+const RAPID_SWEEP_WINDOW_MS = 30 * 1000;
+
+function isSyntheticOrOwnerCheckoutEmail(rawEmail) {
+  const email = normalizeText(rawEmail).toLowerCase();
+  if (!email) return false;
+  if (SYNTHETIC_CHECKOUT_EMAIL_RE.test(email)) return true;
+  return getOwnerEmails().some((ownerEmail) => email === ownerEmail || email.includes(ownerEmail));
+}
+
+function extractHostFromUrlOrHost(rawValue) {
+  const text = normalizeText(rawValue).toLowerCase();
+  if (!text) return '';
+  try {
+    if (text.includes('://')) return new URL(text).host.toLowerCase();
+  } catch {}
+  return text;
+}
+
 function isOperatorGeneratedAcquisitionEntry(entry = {}) {
   const metadata = sanitizeMetadata(entry.metadata);
   const attribution = extractAttribution({
@@ -1355,12 +1378,71 @@ function isOperatorGeneratedAcquisitionEntry(entry = {}) {
   const source = normalizeText(attribution.source || metadata.source || entry.source);
   const medium = normalizeText(attribution.medium || metadata.medium || entry.utmMedium);
   const eventName = normalizeText(entry.event);
+  if (
+    SYNTHETIC_ACQUISITION_SOURCE_RE.test(source)
+    || medium === 'operator_outreach'
+    || eventName === 'outreach_target_generated'
+    || eventName === 'outreach_sequence_started'
+    || eventName === 'lead_list_generated'
+  ) {
+    return true;
+  }
+  const installId = normalizeText(entry.installId || metadata.installId);
+  if (SYNTHETIC_ACQUISITION_INSTALL_RE.test(installId)) return true;
+  const email = metadata.customerEmail || metadata.email || entry.customerEmail || entry.email;
+  if (isSyntheticOrOwnerCheckoutEmail(email)) return true;
+  const refHost = extractHostFromUrlOrHost(
+    metadata.referrerHost || entry.referrerHost || metadata.referrer || entry.referrer
+  );
+  if (refHost && INTERNAL_CHECKOUT_HOST_RE.test(refHost)) return true;
+  const userAgent = normalizeText(metadata.userAgent || entry.userAgent);
+  return Boolean(userAgent && isProbablyBot({ 'user-agent': userAgent, accept: 'text/html' }));
+}
 
-  return source === 'cli' ||
-    medium === 'operator_outreach' ||
-    eventName === 'outreach_target_generated' ||
-    eventName === 'outreach_sequence_started' ||
-    eventName === 'lead_list_generated';
+function buildAcquisitionOfferSignature(entry = {}) {
+  const metadata = sanitizeMetadata(entry.metadata);
+  const plan = normalizeText(metadata.planId || entry.planId || 'pro').toLowerCase();
+  const pack = normalizeText(metadata.packId || entry.packId).toLowerCase();
+  const cycle = normalizeText(metadata.billingCycle || entry.billingCycle || 'monthly').toLowerCase();
+  const cta = normalizeText(metadata.ctaId || entry.ctaId).toLowerCase();
+  return `${plan}|${pack}|${cycle}|${cta}`;
+}
+
+function flushSweepCluster(cluster, flagged) {
+  if (cluster.length < 2) return;
+  if (cluster.length >= 3) {
+    for (const item of cluster) flagged.add(item.entry);
+    return;
+  }
+  const offers = new Set(cluster.map((item) => item.sig));
+  if (offers.size >= 2) {
+    for (const item of cluster) flagged.add(item.entry);
+  }
+}
+
+function findRapidSweepAcquisitionEntries(events = []) {
+  const flagged = new WeakSet();
+  const timed = [];
+  for (const entry of events) {
+    if (!entry || entry.stage !== 'acquisition' || entry.event !== 'checkout_session_created') continue;
+    const ts = Date.parse(entry.timestamp || '');
+    if (Number.isFinite(ts)) {
+      timed.push({ entry, ts, sig: buildAcquisitionOfferSignature(entry) });
+    }
+  }
+  timed.sort((a, b) => a.ts - b.ts);
+  let cluster = [];
+  for (const item of timed) {
+    const prev = cluster[cluster.length - 1];
+    if (prev && item.ts - prev.ts <= RAPID_SWEEP_WINDOW_MS) {
+      cluster.push(item);
+    } else {
+      flushSweepCluster(cluster, flagged);
+      cluster = [item];
+    }
+  }
+  flushSweepCluster(cluster, flagged);
+  return flagged;
 }
 
 function hasRevenueEventMatch(entries, target) {
@@ -2140,20 +2222,31 @@ function getFunnelAnalytics(options = {}) {
     (entry) => entry && entry.timestamp
   );
   const paidOrders = loadResolvedRevenueEvents({ ...analyticsWindow, extraRevenueEvents }).filter((entry) => entry && entry.status === 'paid');
+  const sweepAcquisitionSet = findRapidSweepAcquisitionEntries(events);
   const stageCounts = { acquisition: 0, activation: 0, paid: 0 };
   const eventCounts = {};
+  let excludedOperatorAcquisitionEvents = 0;
+  let countedEvents = 0;
   for (const entry of events) {
-    if (entry && stageCounts.hasOwnProperty(entry.stage)) {
-      stageCounts[entry.stage]++;
-      const key = `${entry.stage}:${entry.event || 'unknown'}`;
-      eventCounts[key] = (eventCounts[key] || 0) + 1;
+    if (!entry || !stageCounts.hasOwnProperty(entry.stage)) continue;
+    if (
+      entry.stage === 'acquisition'
+      && (isOperatorGeneratedAcquisitionEntry(entry) || sweepAcquisitionSet.has(entry))
+    ) {
+      excludedOperatorAcquisitionEvents += 1;
+      continue;
     }
+    countedEvents += 1;
+    stageCounts[entry.stage] += 1;
+    const key = `${entry.stage}:${entry.event || 'unknown'}`;
+    eventCounts[key] = (eventCounts[key] || 0) + 1;
   }
   return {
     window: serializeAnalyticsWindow(analyticsWindow),
-    totalEvents: events.length,
+    totalEvents: countedEvents,
     stageCounts,
     eventCounts,
+    excludedOperatorAcquisitionEvents,
     conversionRates: {
       acquisitionToActivation: safeRate(stageCounts.activation, stageCounts.acquisition),
       activationToPaid: safeRate(paidOrders.length, stageCounts.activation),
@@ -2201,15 +2294,26 @@ function getBusinessAnalytics(options = {}) {
   const signupsByCommentId = {};
   const signupsByCampaignVariant = {};
   const signupsByOfferCode = {};
+  const sweepAcquisitionSet = findRapidSweepAcquisitionEntries(acquisitionEvents);
   const acquisitionLeadKeys = new Set();
   const operatorGeneratedAcquisitionBySource = {};
   const operatorGeneratedAcquisitionLeadKeys = new Set();
+  let externalAcquisitionCount = 0;
+  let excludedAcquisitionCount = 0;
   for (const entry of acquisitionEvents) {
     const attribution = extractAttribution({
       ...sanitizeMetadata(entry.metadata),
       ...sanitizeMetadata(entry),
     });
     const sourceKey = resolveAttributionSource(attribution);
+    const leadKey = resolveAcquisitionLeadKey(entry) || `${entry.timestamp}:${entry.event}`;
+    if (isOperatorGeneratedAcquisitionEntry(entry) || sweepAcquisitionSet.has(entry)) {
+      excludedAcquisitionCount += 1;
+      incrementCounter(operatorGeneratedAcquisitionBySource, sourceKey);
+      operatorGeneratedAcquisitionLeadKeys.add(leadKey);
+      continue;
+    }
+    externalAcquisitionCount += 1;
     const campaignKey = resolveAttributionCampaign(attribution);
     incrementCounter(signupsBySource, sourceKey);
     incrementCounter(signupsByCampaign, campaignKey);
@@ -2219,11 +2323,7 @@ function getBusinessAnalytics(options = {}) {
     incrementCounter(signupsByCommentId, attribution.commentId);
     incrementCounter(signupsByCampaignVariant, attribution.campaignVariant);
     incrementCounter(signupsByOfferCode, attribution.offerCode);
-    acquisitionLeadKeys.add(resolveAcquisitionLeadKey(entry) || `${entry.timestamp}:${entry.event}`);
-    if (isOperatorGeneratedAcquisitionEntry(entry)) {
-      incrementCounter(operatorGeneratedAcquisitionBySource, sourceKey);
-      operatorGeneratedAcquisitionLeadKeys.add(resolveAcquisitionLeadKey(entry) || `${entry.timestamp}:${entry.event}`);
-    }
+    acquisitionLeadKeys.add(leadKey);
   }
 
   const paidBySource = {};
@@ -2524,7 +2624,7 @@ function getBusinessAnalytics(options = {}) {
   };
 
   const operatorGeneratedAcquisition = {
-    totalEvents: acquisitionEvents.filter(isOperatorGeneratedAcquisitionEntry).length,
+    totalEvents: excludedAcquisitionCount,
     uniqueLeads: operatorGeneratedAcquisitionLeadKeys.size,
     bySource: operatorGeneratedAcquisitionBySource,
   };
@@ -2585,7 +2685,7 @@ function getBusinessAnalytics(options = {}) {
       } : null,
     },
     signups: {
-      total: acquisitionEvents.length,
+      total: externalAcquisitionCount,
       uniqueLeads: acquisitionLeadKeys.size,
       bySource: signupsBySource,
       byCampaign: signupsByCampaign,

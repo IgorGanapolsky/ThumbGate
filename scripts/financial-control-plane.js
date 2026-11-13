@@ -542,10 +542,24 @@ function isProviderSpendUrl({ host, pathname, route }) {
     || isAppStoreSpendUrl(host, route);
 }
 
+const THUMBGATE_LIVE_CHECKOUT_GO_PATTERN = /^\/go\/(?:pro-direct|pro-annual|founding-100|cloud-indie|cloud-startup|bundle-49|playbook-999|playbook-10|diagnostic-direct|diagnostic-499|diagnostic-pay|sprint|team-direct|lifetime-direct)(?:\/|$)/i;
+const SYNTHETIC_PROBE_QUERY_PATTERN = /(?:^|[?&])probe=(?:1|true)(?:$|[&#])/i;
+
+function isThumbGateLiveCheckoutRedirectUrl(candidate) {
+  const host = candidate.host;
+  const isHostedThumbGate = host === 'thumbgate.ai'
+    || host.endsWith('.thumbgate.ai')
+    || host.endsWith('.up.railway.app');
+  if (!isHostedThumbGate) return false;
+  if (!THUMBGATE_LIVE_CHECKOUT_GO_PATTERN.test(candidate.pathname)) return false;
+  return !SYNTHETIC_PROBE_QUERY_PATTERN.test(candidate.route);
+}
+
 function isEconomicUrlCandidate(candidate) {
   if (!candidate) return false;
   if (NON_SPEND_HOST_PREFIXES.some((prefix) => candidate.host.startsWith(prefix))) return false;
   if (isProviderSpendUrl(candidate)) return true;
+  if (isThumbGateLiveCheckoutRedirectUrl(candidate)) return true;
   if (!candidate.hasExplicitScheme) return false;
   if (candidate.host === 'github.com' || candidate.host === 'gitlab.com') {
     return GITHUB_SPEND_ROUTE_PATTERN.test(candidate.pathname);
