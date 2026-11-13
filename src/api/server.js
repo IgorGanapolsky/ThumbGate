@@ -5882,6 +5882,7 @@ const OPERATOR_READONLY_GET_PATHS = new Set([
   '/v1/feedback/stats',
   '/v1/intake/workflow-sprint/queue',
   '/v1/task-outcomes/monitor',
+  '/v1/gates/rule-changes',
 ]);
 
 function isOperatorReadonlyGet(req, expectedOperatorKey, pathname) {
@@ -11720,6 +11721,59 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
           actor: body.actor || 'api-client',
         });
         sendJson(res, 200, { satisfied: true, gateId: body.gateId, ...entry });
+        return;
+      }
+
+      // GET /v1/gates/rule-changes -- Rule change preview summary & held items
+      if (req.method === 'GET' && pathname === '/v1/gates/rule-changes') {
+        const { getRuleChangePreviewSummary } = require('../../scripts/audit-trail');
+        sendJson(res, 200, getRuleChangePreviewSummary({ feedbackDir: requestFeedbackDir }));
+        return;
+      }
+
+      // POST /v1/gates/rule-changes/preview -- Replay audit calls against old vs new rules
+      if (req.method === 'POST' && pathname === '/v1/gates/rule-changes/preview') {
+        const body = await parseJsonBody(req);
+        const { previewRuleChange, applyRuleChange } = require('../../scripts/audit-trail');
+        const opOptions = {
+          changeType: body.changeType || 'update',
+          ruleId: body.ruleId || null,
+          oldGates: body.oldGates,
+          newGates: body.newGates,
+          oldLessons: body.oldLessons,
+          newLessons: body.newLessons,
+          auditEntries: Array.isArray(body.auditEntries) ? body.auditEntries : undefined,
+          feedbackDir: requestFeedbackDir,
+        };
+        const outcome = body.apply === true ? applyRuleChange(opOptions) : previewRuleChange(opOptions);
+        liveDashboardCache.clear();
+        sendJson(res, 200, outcome);
+        return;
+      }
+
+      // POST /v1/gates/rule-changes/approve -- Human approval for a held widening rule change
+      if (req.method === 'POST' && pathname === '/v1/gates/rule-changes/approve') {
+        const body = await parseJsonBody(req);
+        const { approveRuleChange, getRuleChangePreviewSummary } = require('../../scripts/audit-trail');
+        try {
+          const outcome = approveRuleChange({
+            changeId: body.changeId || body.id,
+            approvedBy: body.approvedBy || body.by,
+            approvedAt: body.approvedAt,
+            note: body.note,
+            feedbackDir: requestFeedbackDir,
+          });
+          const ruleChangePreview = getRuleChangePreviewSummary({ feedbackDir: requestFeedbackDir });
+          liveDashboardCache.clear();
+          sendJson(res, 200, { ...outcome, ruleChangePreview });
+        } catch (err) {
+          sendProblem(res, {
+            type: PROBLEM_TYPES.BAD_REQUEST,
+            title: 'Bad Request',
+            status: 400,
+            detail: err.message || 'Unable to approve rule change.',
+          });
+        }
         return;
       }
 

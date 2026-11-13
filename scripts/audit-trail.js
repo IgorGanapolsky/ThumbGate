@@ -18,6 +18,7 @@ const { ensureDir } = require('./fs-utils');
 
 const AUDIT_LOG_FILENAME = 'audit-trail.jsonl';
 const GATE_EVENTS_LOG_FILENAME = 'gate-events-log.jsonl';
+const PENDING_RULE_CHANGES_FILENAME = 'pending-rule-changes.json';
 
 // ---------------------------------------------------------------------------
 // Paths
@@ -548,6 +549,426 @@ function tuneCacheThreshold(logPath) {
 }
 
 // ---------------------------------------------------------------------------
+// Rule change preview (OpenShell Policy Prover steal)
+//
+// Replays recorded audit-trail tool calls against old and new rule/lesson sets,
+// reports which calls flip from block -> allow in plain words, holds any
+// widening or newly-allowed credential host until a human approves (recording
+// who and when), and applies tightening changes immediately.
+// ---------------------------------------------------------------------------
+
+function getPendingRuleChangesPath(feedbackDir) {
+  const dir = feedbackDir || resolveFeedbackDir();
+  return path.join(dir, PENDING_RULE_CHANGES_FILENAME);
+}
+
+function loadPendingRuleChanges(feedbackDir) {
+  const filePath = getPendingRuleChangesPath(feedbackDir);
+  if (!fs.existsSync(filePath)) {
+    return { version: 1, changes: [] };
+  }
+  try {
+    const parsed = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+    if (parsed && Array.isArray(parsed.changes)) return parsed;
+  } catch {
+    // Corrupted file falls back to empty state rather than wedging preview.
+  }
+  return { version: 1, changes: [] };
+}
+
+function savePendingRuleChanges(data, feedbackDir) {
+  const filePath = getPendingRuleChangesPath(feedbackDir);
+  ensureDir(path.dirname(filePath));
+  const payload = {
+    version: 1,
+    changes: Array.isArray(data && data.changes) ? data.changes : [],
+  };
+  fs.writeFileSync(filePath, `${JSON.stringify(payload, null, 2)}\n`, 'utf8');
+  return filePath;
+}
+
+function resolveGatesArrayInput(gatesOrConfig, configPath) {
+  if (Array.isArray(gatesOrConfig)) return gatesOrConfig;
+  if (gatesOrConfig && Array.isArray(gatesOrConfig.gates)) return gatesOrConfig.gates;
+  if (configPath && fs.existsSync(configPath)) {
+    const raw = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+    return Array.isArray(raw && raw.gates) ? raw.gates : [];
+  }
+  return [];
+}
+
+function diffCredentialHostBindings(oldGates, newGates, gatesEngine) {
+  const { normalizeSecretBindings, hostMatchesAllowedPattern } = gatesEngine;
+  const collectMap = (gates) => {
+    const bySecret = new Map();
+    for (const gate of gates) {
+      if (!gate || (gate.action && gate.action !== 'block' && gate.action !== 'approve')) continue;
+      for (const b of normalizeSecretBindings(gate)) {
+        if (!bySecret.has(b.secret)) bySecret.set(b.secret, []);
+        bySecret.get(b.secret).push(...b.allowedHosts);
+      }
+    }
+    return bySecret;
+  };
+
+  const oldMap = collectMap(oldGates);
+  const newMap = collectMap(newGates);
+  const expansions = [];
+
+  for (const [secret, oldHosts] of oldMap.entries()) {
+    if (!newMap.has(secret)) {
+      expansions.push({
+        secret,
+        host: `* (all hosts unlocked for ${secret})`,
+        reason: 'secret-binding-removed',
+      });
+      continue;
+    }
+    const nextHosts = newMap.get(secret) || [];
+    for (const candidateHost of nextHosts) {
+      const alreadyAllowed = oldHosts.some((prev) => hostMatchesAllowedPattern(candidateHost, prev) || prev === candidateHost);
+      if (!alreadyAllowed) {
+        expansions.push({
+          secret,
+          host: candidateHost,
+          reason: 'secret-binding-host-added',
+        });
+      }
+    }
+  }
+  return expansions;
+}
+
+function buildPlainWordsRulePreview(widening, hosts, commands, paths) {
+  if (!widening) {
+    return 'After this change, these become allowed: none';
+  }
+  const clauses = [
+    ...hosts.map((h) => `host ${h}`),
+    ...commands.map((c) => `command ${c}`),
+    ...paths.map((p) => `path ${p}`),
+  ];
+  return `After this change, these become allowed: ${clauses.join(', ') || 'previously blocked tool call'}`;
+}
+
+function evaluateSingleAuditEntryDelta(entry, oldSet, newSet, gatesEngine) {
+  const toolName = entry.toolName || entry.tool_name || 'Bash';
+  const toolInput = entry.toolInput || entry.tool_input || {};
+  const oldStrict = gatesEngine.evaluateRuleSetForPreview(oldSet, toolName, toolInput, { unlessSatisfied: false });
+  const oldUncond = gatesEngine.evaluateRuleSetForPreview(oldSet, toolName, toolInput, { unlessSatisfied: true });
+  const newStrict = gatesEngine.evaluateRuleSetForPreview(newSet, toolName, toolInput, { unlessSatisfied: false });
+  const newUncond = gatesEngine.evaluateRuleSetForPreview(newSet, toolName, toolInput, { unlessSatisfied: true });
+
+  const widenedStrict = oldStrict.blocked && !newStrict.blocked;
+  const widenedUncond = oldUncond.blocked && !newUncond.blocked;
+  const tightenedStrict = !oldStrict.blocked && newStrict.blocked;
+  const tightenedUncond = !oldUncond.blocked && newUncond.blocked;
+
+  if (widenedStrict || widenedUncond) {
+    const facets = gatesEngine.extractCallPreviewFacets(toolName, toolInput);
+    const previousGateId = widenedStrict ? oldStrict.gateId : oldUncond.gateId;
+    const carriesCredential = Boolean(
+      facets.carriesCredential || oldStrict.credentialRelated || oldUncond.credentialRelated,
+    );
+    return {
+      kind: 'widened',
+      record: {
+        auditId: entry.id || null,
+        timestamp: entry.timestamp || null,
+        toolName,
+        toolInput: sanitizeToolInput(toolInput),
+        previousGateId,
+        previousDecision: 'block',
+        nextDecision: 'allow',
+        hosts: facets.hosts,
+        commands: facets.commands,
+        paths: facets.paths,
+        carriesCredential,
+      },
+    };
+  }
+  if (tightenedStrict || tightenedUncond) {
+    const nextGateId = tightenedStrict ? newStrict.gateId : newUncond.gateId;
+    return {
+      kind: 'tightened',
+      record: {
+        auditId: entry.id || null,
+        timestamp: entry.timestamp || null,
+        toolName,
+        toolInput: sanitizeToolInput(toolInput),
+        previousDecision: 'allow',
+        nextDecision: 'block',
+        nextGateId,
+      },
+    };
+  }
+  return null;
+}
+
+function previewRuleChange(options = {}) {
+  const gatesEngine = require('./gates-engine');
+  const oldGates = resolveGatesArrayInput(options.oldGates, options.oldConfigPath);
+  const newGates = resolveGatesArrayInput(options.newGates, options.newConfigPath);
+  const oldLessons = Array.isArray(options.oldLessons) ? options.oldLessons : [];
+  const newLessons = Array.isArray(options.newLessons) ? options.newLessons : [];
+  const auditEntries = Array.isArray(options.auditEntries)
+    ? options.auditEntries
+    : readAuditLog(options.auditLogPath);
+
+  const oldSet = { gates: oldGates, lessons: oldLessons };
+  const newSet = { gates: newGates, lessons: newLessons };
+  const widenedCalls = [];
+  const tightenedCalls = [];
+
+  for (const entry of auditEntries) {
+    if (!entry || typeof entry !== 'object') continue;
+    const delta = evaluateSingleAuditEntryDelta(entry, oldSet, newSet, gatesEngine);
+    if (!delta) continue;
+    if (delta.kind === 'widened') widenedCalls.push(delta.record);
+    else if (delta.kind === 'tightened') tightenedCalls.push(delta.record);
+  }
+
+  const bindingExpansions = diffCredentialHostBindings(oldGates, newGates, gatesEngine);
+  const credentialHostItems = [...bindingExpansions];
+  for (const call of widenedCalls) {
+    if (!call.carriesCredential) continue;
+    if (call.hosts.length > 0) {
+      for (const h of call.hosts) {
+        credentialHostItems.push({
+          secret: call.previousGateId || 'credential-call',
+          host: h,
+          reason: 'credential-call-widened',
+        });
+      }
+    } else {
+      credentialHostItems.push({
+        secret: call.previousGateId || 'credential-call',
+        host: '<credential-bearing-call>',
+        reason: 'credential-call-widened',
+      });
+    }
+  }
+
+  const allowedHosts = [...new Set([
+    ...bindingExpansions.map((b) => b.host),
+    ...widenedCalls.flatMap((c) => c.hosts),
+  ])];
+  const allowedCommands = [...new Set(widenedCalls.flatMap((c) => c.commands))];
+  const allowedPaths = [...new Set(widenedCalls.flatMap((c) => c.paths))];
+
+  const widening = widenedCalls.length > 0 || credentialHostItems.length > 0;
+  const requiresCredentialApproval = credentialHostItems.length > 0;
+  const plainPreview = buildPlainWordsRulePreview(widening, allowedHosts, allowedCommands, allowedPaths);
+
+  return {
+    title: 'Rule change preview',
+    widening,
+    tightening: !widening && tightenedCalls.length > 0,
+    requiresApproval: widening,
+    requiresCredentialApproval,
+    replayedCallCount: auditEntries.length,
+    widenedCalls,
+    tightenedCalls,
+    newlyAllowedHosts: allowedHosts,
+    newlyAllowedCommands: allowedCommands,
+    newlyAllowedPaths: allowedPaths,
+    newlyAllowedCredentialHosts: credentialHostItems,
+    plainPreview,
+  };
+}
+
+function persistRuleTargetPayload(record) {
+  if (record.targetConfigPath && record.proposedGatesConfig) {
+    ensureDir(path.dirname(record.targetConfigPath));
+    fs.writeFileSync(record.targetConfigPath, `${JSON.stringify(record.proposedGatesConfig, null, 2)}\n`, 'utf8');
+  }
+  if (record.targetMemoryLogPath && Array.isArray(record.proposedLessons)) {
+    ensureDir(path.dirname(record.targetMemoryLogPath));
+    const lines = record.proposedLessons.map((item) => JSON.stringify(item));
+    fs.writeFileSync(record.targetMemoryLogPath, lines.length ? `${lines.join('\n')}\n` : '', 'utf8');
+  }
+}
+
+function applyRuleChange(options = {}) {
+  const nowIso = options.now ? new Date(options.now).toISOString() : new Date().toISOString();
+  const preview = previewRuleChange(options);
+  const newGatesArray = resolveGatesArrayInput(options.newGates, options.newConfigPath);
+  const proposedGatesConfig = options.newGates && !Array.isArray(options.newGates) && typeof options.newGates === 'object'
+    ? options.newGates
+    : (options.targetConfigPath ? { version: 1, gates: newGatesArray } : null);
+
+  const store = loadPendingRuleChanges(options.feedbackDir);
+  const changeId = `rcp_${Date.now()}_${crypto.randomBytes(3).toString('hex')}`;
+  const record = {
+    id: changeId,
+    changeType: options.changeType || 'update',
+    ruleId: options.ruleId || null,
+    summary: options.summary || preview.plainPreview,
+    status: preview.widening ? 'held' : 'applied',
+    widening: preview.widening,
+    tightening: preview.tightening,
+    requiresApproval: preview.requiresApproval,
+    requiresCredentialApproval: preview.requiresCredentialApproval,
+    plainPreview: preview.plainPreview,
+    replayedCallCount: preview.replayedCallCount,
+    widenedCalls: preview.widenedCalls,
+    tightenedCalls: preview.tightenedCalls,
+    newlyAllowedHosts: preview.newlyAllowedHosts,
+    newlyAllowedCommands: preview.newlyAllowedCommands,
+    newlyAllowedPaths: preview.newlyAllowedPaths,
+    newlyAllowedCredentialHosts: preview.newlyAllowedCredentialHosts,
+    targetConfigPath: options.targetConfigPath || null,
+    proposedGatesConfig,
+    targetMemoryLogPath: options.targetMemoryLogPath || null,
+    proposedLessons: Array.isArray(options.newLessons) ? options.newLessons : null,
+    createdAt: nowIso,
+    approvedBy: null,
+    approvedAt: null,
+    appliedAt: preview.widening ? null : nowIso,
+  };
+
+  if (!preview.widening) {
+    persistRuleTargetPayload(record);
+  }
+  store.changes.unshift(record);
+  if (store.changes.length > 100) {
+    store.changes = store.changes.slice(0, 100);
+  }
+  savePendingRuleChanges(store, options.feedbackDir);
+
+  return {
+    applied: !preview.widening,
+    held: preview.widening,
+    status: record.status,
+    changeId,
+    preview,
+    record,
+  };
+}
+
+function approveRuleChange(options = {}) {
+  const changeId = String(options.changeId || options.id || '').trim();
+  const approvedBy = String(options.approvedBy || options.by || '').trim();
+  if (!changeId) {
+    throw new Error('changeId is required to approve a held rule change.');
+  }
+  if (!approvedBy || /^(?:auto|agent|bot|system|none|unknown)$/i.test(approvedBy)) {
+    throw new Error('Human approver identity (approvedBy) is required to approve a widening rule change.');
+  }
+  const store = loadPendingRuleChanges(options.feedbackDir);
+  const record = store.changes.find((item) => item && item.id === changeId);
+  if (!record) {
+    throw new Error(`Rule change not found: ${changeId}`);
+  }
+  if (record.status !== 'held') {
+    throw new Error(`Rule change ${changeId} is already ${record.status}.`);
+  }
+
+  const approvedAt = options.approvedAt ? new Date(options.approvedAt).toISOString() : new Date().toISOString();
+  persistRuleTargetPayload(record);
+  record.status = 'approved';
+  record.approvedBy = approvedBy;
+  record.approvedAt = approvedAt;
+  record.appliedAt = approvedAt;
+  record.approvalNote = options.note ? String(options.note).trim() : null;
+  savePendingRuleChanges(store, options.feedbackDir);
+
+  recordAuditEvent({
+    toolName: 'rule_change_approve',
+    toolInput: { changeId, ruleId: record.ruleId, approvedBy },
+    decision: 'override',
+    gateId: record.ruleId || 'rule-change-preview',
+    message: `Approved widening rule change ${changeId} by ${approvedBy} at ${approvedAt}. ${record.plainPreview}`,
+    severity: record.requiresCredentialApproval ? 'critical' : 'high',
+    source: 'rule-change-preview',
+    override: {
+      changeId,
+      approvedBy,
+      approvedAt,
+      requiresCredentialApproval: record.requiresCredentialApproval,
+      plainPreview: record.plainPreview,
+    },
+  });
+
+  return { approved: true, applied: true, record };
+}
+
+function rejectRuleChange(options = {}) {
+  const changeId = String(options.changeId || options.id || '').trim();
+  const rejectedBy = String(options.rejectedBy || options.by || 'operator').trim();
+  if (!changeId) {
+    throw new Error('changeId is required to reject a held rule change.');
+  }
+  const store = loadPendingRuleChanges(options.feedbackDir);
+  const record = store.changes.find((item) => item && item.id === changeId);
+  if (!record) {
+    throw new Error(`Rule change not found: ${changeId}`);
+  }
+  if (record.status !== 'held') {
+    throw new Error(`Rule change ${changeId} is already ${record.status}.`);
+  }
+  record.status = 'rejected';
+  record.rejectedBy = rejectedBy;
+  record.rejectedAt = options.rejectedAt ? new Date(options.rejectedAt).toISOString() : new Date().toISOString();
+  record.rejectionReason = options.reason ? String(options.reason).trim() : null;
+  savePendingRuleChanges(store, options.feedbackDir);
+  return { rejected: true, applied: false, record };
+}
+
+function getRuleChangePreviewSummary(options = {}) {
+  const store = loadPendingRuleChanges(options.feedbackDir);
+  const changes = Array.isArray(store.changes) ? store.changes : [];
+  const summarizeRecord = (c) => ({
+    id: c.id,
+    changeId: c.id,
+    changeType: c.changeType,
+    ruleId: c.ruleId,
+    status: c.status,
+    widening: Boolean(c.widening),
+    tightening: Boolean(c.tightening),
+    requiresApproval: Boolean(c.requiresApproval),
+    requiresCredentialApproval: Boolean(c.requiresCredentialApproval),
+    plainPreview: c.plainPreview,
+    widenedCallCount: Array.isArray(c.widenedCalls) ? c.widenedCalls.length : 0,
+    widenedCalls: Array.isArray(c.widenedCalls) ? c.widenedCalls : [],
+    newlyAllowedHosts: c.newlyAllowedHosts || [],
+    newlyAllowedCommands: c.newlyAllowedCommands || [],
+    newlyAllowedPaths: c.newlyAllowedPaths || [],
+    createdAt: c.createdAt,
+    approvedBy: c.approvedBy || null,
+    approvedAt: c.approvedAt || null,
+    appliedAt: c.appliedAt || null,
+  });
+  const heldChanges = changes.filter((c) => c && c.status === 'held').map(summarizeRecord);
+  const approvedChanges = changes.filter((c) => c && c.status === 'approved').map(summarizeRecord);
+  return {
+    title: 'Rule change preview',
+    heldCount: heldChanges.length,
+    approvedCount: approvedChanges.length,
+    heldChanges,
+    recentChanges: changes.slice(0, 10).map(summarizeRecord),
+  };
+}
+
+function formatRuleChangePreviewText(previewOrRecord = {}) {
+  const lines = ['Rule change preview'];
+  const plain = previewOrRecord.plainPreview || 'After this change, these become allowed: none';
+  lines.push(`  ${plain}`);
+  if (previewOrRecord.status === 'held' || (previewOrRecord.widening && !previewOrRecord.approvedBy)) {
+    const credTag = previewOrRecord.requiresCredentialApproval
+      ? ' (credential host approval required)'
+      : '';
+    const idTag = previewOrRecord.id ? ` [id: ${previewOrRecord.id}]` : '';
+    lines.push(`  Status: HELD FOR HUMAN APPROVAL${credTag}${idTag}`);
+  } else if (previewOrRecord.status === 'approved' && previewOrRecord.approvedBy) {
+    lines.push(`  Status: APPROVED by ${previewOrRecord.approvedBy} at ${previewOrRecord.approvedAt}`);
+  } else {
+    lines.push('  Status: APPLIED AT ONCE (tightening / no newly allowed calls)');
+  }
+  return lines.join('\n');
+}
+
+// ---------------------------------------------------------------------------
 // Exports
 // ---------------------------------------------------------------------------
 
@@ -575,6 +996,16 @@ module.exports = {
   AUDIT_LOG_FILENAME,
   GATE_EVENTS_LOG_FILENAME,
   CACHE_TUNE_STATE_FILENAME,
+  PENDING_RULE_CHANGES_FILENAME,
+  getPendingRuleChangesPath,
+  loadPendingRuleChanges,
+  savePendingRuleChanges,
+  previewRuleChange,
+  applyRuleChange,
+  approveRuleChange,
+  rejectRuleChange,
+  getRuleChangePreviewSummary,
+  formatRuleChangePreviewText,
 };
 
 // ---------------------------------------------------------------------------

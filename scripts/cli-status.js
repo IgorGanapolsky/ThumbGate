@@ -90,6 +90,12 @@ function generateAgentStatus(options = {}) {
     version = JSON.parse(fs.readFileSync(path.join(PKG_ROOT, 'package.json'), 'utf8')).version;
   } catch { /* ignore */ }
 
+  let ruleChangePreview = { title: 'Rule change preview', heldCount: 0, approvedCount: 0, heldChanges: [], recentChanges: [] };
+  try {
+    const { getRuleChangePreviewSummary } = require(path.join(PKG_ROOT, 'scripts', 'audit-trail'));
+    ruleChangePreview = getRuleChangePreviewSummary({ feedbackDir: paths.FEEDBACK_DIR });
+  } catch { /* ignore */ }
+
   return {
     version,
     agent,
@@ -108,6 +114,7 @@ function generateAgentStatus(options = {}) {
       negative: feedbackEntries.filter(e => e.signal === 'negative').length,
     },
     preventionRules: preventionRuleCount,
+    ruleChangePreview,
     lastFeedbackTimestamp,
     feedbackDir: paths.FEEDBACK_DIR,
     initialized: Boolean(config),
@@ -142,6 +149,13 @@ function formatStatus(data) {
   lines.push(`  Gates           : ${data.gates.total} (${data.gates.blocking} block, ${data.gates.warning} warn)`);
   lines.push(`  Lessons         : ${data.lessons}`);
   lines.push(`  Prevention Rules: ${data.preventionRules}`);
+  const heldCount = (data.ruleChangePreview && data.ruleChangePreview.heldCount) || 0;
+  lines.push(`  Rule Preview    : ${heldCount > 0 ? `${Y}${heldCount} held for approval${RST}` : `${G}0 held${RST}`}`);
+  if (heldCount > 0 && Array.isArray(data.ruleChangePreview.heldChanges)) {
+    for (const item of data.ruleChangePreview.heldChanges.slice(0, 3)) {
+      lines.push(`    • ${item.plainPreview} ${D}[${item.id}]${RST}`);
+    }
+  }
   lines.push('');
   lines.push(`  Feedback        : ${data.feedback.total} total (${G}${data.feedback.positive} up${RST}, ${R}${data.feedback.negative} down${RST})`);
   if (data.lastFeedbackTimestamp) {

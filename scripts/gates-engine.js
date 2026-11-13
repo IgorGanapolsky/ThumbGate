@@ -278,7 +278,7 @@ function applyEnforcementPosture(result) {
   const mode = resolveGovernanceMode();
   const alignmentLayer = alignmentLayerForResult(result);
   // Defensive backstop: hard-floor results must never be posture-downgraded.
-  if (UNCONDITIONAL_HARD_FLOOR_GATE_IDS.has(result.gate)) {
+  if (UNCONDITIONAL_HARD_FLOOR_GATE_IDS.has(result.gate) || result.secretHostBinding) {
     return { ...result, governanceMode: mode, alignmentLayer };
   }
   // Simulation/batch shadow live traffic: record, do not block (except floors).
@@ -1149,7 +1149,7 @@ function applyDailyBlockCap(denyResult) {
   // clean -f, rm -rf on home/root) never get the free-tier daily-cap
   // discount — see issue #2782. Checked first, before any tier/CI shortcut,
   // so nothing can accidentally exempt a catastrophic gate from this floor.
-  if (denyResult && CATASTROPHIC_DECLARATIVE_GATE_IDS.has(denyResult.gate)) return null;
+  if (denyResult && (CATASTROPHIC_DECLARATIVE_GATE_IDS.has(denyResult.gate) || denyResult.secretHostBinding)) return null;
   // Pro, trial, CI, and THUMBGATE_NO_RATE_LIMIT users are uncapped
   if (isProTier()) return null;
   if (process.env.CI || process.env.GITHUB_ACTIONS) return null;
@@ -2611,6 +2611,14 @@ function buildGateMessage(gate, matchDetails) {
     }
   }
 
+  if (matchDetails && matchDetails.secretBindingViolation) {
+    const violation = matchDetails.secretBindingViolation;
+    const allowedText = violation.allowedHosts.join(', ') || 'none';
+    const disallowedText = violation.disallowedHosts.join(', ') || 'unverified host';
+    const prefix = gate.message ? `${gate.message} ` : '';
+    return `${prefix}Secret ${violation.secret} may only be sent to approved host(s) [${allowedText}]; denied send to ${disallowedText}.`;
+  }
+
   return gate.message;
 }
 
@@ -2874,6 +2882,16 @@ function matchGate(gate, toolName, toolInput = {}) {
   if (Array.isArray(gate.toolNames) && gate.toolNames.length > 0 && !gate.toolNames.includes(toolName)) {
     return { matched: false, matchText, affectedFiles };
   }
+  let secretBindingViolation = null;
+  const secretBindings = normalizeSecretBindings(gate);
+  if (secretBindings.length > 0) {
+    const bindingCheck = evaluateSecretHostBindingForGate(gate, toolName, toolInput, secretBindings);
+    if (!bindingCheck.violated) {
+      return { matched: false, matchText, affectedFiles };
+    }
+    secretBindingViolation = bindingCheck;
+  }
+
 
   if (gate.pattern) {
     try {
@@ -2965,6 +2983,7 @@ function matchGate(gate, toolName, toolInput = {}) {
     affectedFiles,
     taskScopeViolation,
     branchGovernanceViolation,
+    secretBindingViolation,
   };
 }
 
@@ -3737,7 +3756,9 @@ async function evaluateGatesAsyncInner(toolName, toolInput, configPath) {
   const METRIC_SKIP_TOOLS = ['capture_feedback', 'feedback_stats', 'recall', 'feedback_summary', 'prevention_rules'];
   const skipMetrics = METRIC_SKIP_TOOLS.includes(toolName);
 
+  const boundSecretAllowedAsync = isBoundSecretAllowedForAllTargets(toolName, toolInput, config);
   for (const gate of config.gates) {
+    if ((gate.id === 'secret-egress' || gate.id === 'deny-network-egress') && boundSecretAllowedAsync) continue;
     const matchDetails = matchGate(gate, toolName, toolInput);
     if (!matchDetails.matched) continue;
 
@@ -3816,6 +3837,7 @@ async function evaluateGatesAsyncInner(toolName, toolInput, configPath) {
         severity: gate.severity,
         reasoning,
         ...(adminOverride ? { requiresAdminOverride: true, adminOverride } : {}),
+        ...(matchDetails.secretBindingViolation ? { secretHostBinding: true } : {}),
       };
       // Free-tier daily block cap: after N blocks/day, deny → warn + upgrade CTA
       const cappedResult = applyDailyBlockCap(denyResult);
@@ -4078,7 +4100,9 @@ function evaluateGatesInner(toolName, toolInput, configPath) {
     }
   }
 
+  const boundSecretAllowed = isBoundSecretAllowedForAllTargets(toolName, toolInput, config);
   for (const gate of config.gates) {
+    if ((gate.id === 'secret-egress' || gate.id === 'deny-network-egress') && boundSecretAllowed) continue;
     const matchDetails = matchGate(gate, toolName, toolInput);
     if (!matchDetails.matched) continue;
 
@@ -4134,6 +4158,7 @@ function evaluateGatesInner(toolName, toolInput, configPath) {
         severity: gate.severity,
         reasoning,
         ...(adminOverride ? { requiresAdminOverride: true, adminOverride } : {}),
+        ...(matchDetails.secretBindingViolation ? { secretHostBinding: true } : {}),
       };
       // Free-tier daily block cap: after N blocks/day, deny → warn + upgrade CTA
       const cappedResult = applyDailyBlockCap(denyResult);
@@ -4364,8 +4389,19 @@ function recordSecretViolation(input, scanResult) {
   });
 }
 
-function evaluateSecretGuard(input = {}) {
+function evaluateSecretGuard(input = {}, options = {}) {
   const scanResult = scanHookInput(input);
+  const bindingResult = evaluateActiveSecretHostBindingInput(input, scanResult, options);
+  if (bindingResult && bindingResult.allowedByBinding) {
+    return null;
+  }
+  if (bindingResult && bindingResult.denyResult) {
+    return withNarrowestAllowSuggestion(
+      bindingResult.denyResult,
+      input.tool_name || input.toolName || 'unknown',
+      input.tool_input || input.toolInput || {},
+    );
+  }
   if (!scanResult.detected) {
     return null;
   }
@@ -4389,7 +4425,11 @@ function evaluateSecretGuard(input = {}) {
     source: 'secret-guard',
   });
   auditToFeedback(auditRecord);
-  return result;
+  return withNarrowestAllowSuggestion(
+    result,
+    input.tool_name || input.toolName || 'unknown',
+    input.tool_input || input.toolInput || {},
+  );
 }
 
 const SWARM_CLAIM_LOST_ACTION = 'swarm_claim_lost_exit_3';
@@ -4925,32 +4965,35 @@ function evaluateRepeatedMistakeGates(input = {}) {
 }
 
 function evaluateUnconditionalHardFloor(input = {}, options = {}) {
-  const secretGuard = evaluateSecretGuard(input);
-  if (secretGuard) return { hardFloor: secretGuard, securityScan: null };
+  const toolName = input.tool_name || input.toolName || '';
+  const toolInput = input.tool_input || input.toolInput || {};
+  const wrapFloor = (res) => withNarrowestAllowSuggestion(res, toolName, toolInput);
+  const secretGuard = evaluateSecretGuard(input, options);
+  if (secretGuard) return { hardFloor: wrapFloor(secretGuard), securityScan: null };
 
   const securityScan = evaluateSecurityScan(input);
   if (securityScan && securityScan.decision === 'deny') {
-    return { hardFloor: securityScan, securityScan };
+    return { hardFloor: wrapFloor(securityScan), securityScan };
   }
 
   const financialHardFloor = evaluateFinancialHardFloor(input, false, options);
-  if (financialHardFloor) return { hardFloor: financialHardFloor, securityScan };
+  if (financialHardFloor) return { hardFloor: wrapFloor(financialHardFloor), securityScan };
 
   const selfProtect = evaluateSelfProtectHardFloor(input);
-  if (selfProtect) return { hardFloor: selfProtect, securityScan };
+  if (selfProtect) return { hardFloor: wrapFloor(selfProtect), securityScan };
 
   const repeated = evaluateRepeatedMistakeGates(input);
-  if (repeated) return { hardFloor: repeated, securityScan };
+  if (repeated) return { hardFloor: wrapFloor(repeated), securityScan };
 
   const view = repeatedMistakeView(input);
   const { evaluateTailscaleOctoberAccess } = require('./tailscale-october-access');
   const october = evaluateTailscaleOctoberAccess(view);
-  if (october) return { hardFloor: denyRepeatedMistake(view, october), securityScan };
+  if (october) return { hardFloor: wrapFloor(denyRepeatedMistake(view, october)), securityScan };
 
   const { evaluateGitLabSdlcPrompts } = require('./gitlab-sdlc-prompts');
   const sdlc = evaluateGitLabSdlcPrompts(view);
   return {
-    hardFloor: sdlc ? denyRepeatedMistake(view, sdlc) : null,
+    hardFloor: sdlc ? wrapFloor(denyRepeatedMistake(view, sdlc)) : null,
     securityScan,
   };
 }
@@ -5102,6 +5145,8 @@ function formatOutput(result, behavioralContext) {
       ...reminder,
       permissionDecision: 'deny',
       permissionDecisionReason: `[GATE:${result.gate}] ${result.message}${reasoningSuffix}${reminderSuffix}${proCta}`,
+      suggestedCall: result.suggestedCall ?? null,
+      ...(result.narrowestAllowSuggestion ? { narrowestAllowSuggestion: result.narrowestAllowSuggestion } : {}),
     };
     const payload = { hookSpecificOutput };
     if (result.endTurn) {
@@ -5121,6 +5166,8 @@ function formatOutput(result, behavioralContext) {
         ...reminder,
         permissionDecision: 'deny',
         permissionDecisionReason: `[GATE:${result.gate}] APPROVAL REQUIRED: ${result.message} — Ask the human to confirm this action before proceeding.${reasoningSuffix}${reminderSuffix}`,
+        suggestedCall: result.suggestedCall ?? null,
+        ...(result.narrowestAllowSuggestion ? { narrowestAllowSuggestion: result.narrowestAllowSuggestion } : {}),
       },
     });
   }
@@ -5563,22 +5610,24 @@ function applyOneShotPretool(toolName, toolInput) {
 
 async function evaluateGatesAsync(toolName, toolInput, configPath) {
   const oneshot = applyOneShotPretool(toolName, toolInput);
-  if (oneshot) return oneshot;
+  if (oneshot) return withNarrowestAllowSuggestion(oneshot, toolName, toolInput);
   const direct = await evaluateGatesAsyncInner(toolName, toolInput, configPath);
-  if (direct) return direct;
+  if (direct) return withNarrowestAllowSuggestion(direct, toolName, toolInput);
   const retry = canonicalRetryInput(toolName, toolInput);
   if (!retry) return null;
-  return evaluateGatesAsyncInner(toolName, retry, configPath);
+  const retried = await evaluateGatesAsyncInner(toolName, retry, configPath);
+  return withNarrowestAllowSuggestion(retried, toolName, toolInput);
 }
 
 function evaluateGates(toolName, toolInput, configPath) {
   const oneshot = applyOneShotPretool(toolName, toolInput);
-  if (oneshot) return oneshot;
+  if (oneshot) return withNarrowestAllowSuggestion(oneshot, toolName, toolInput);
   const direct = evaluateGatesInner(toolName, toolInput, configPath);
-  if (direct) return direct;
+  if (direct) return withNarrowestAllowSuggestion(direct, toolName, toolInput);
   const retry = canonicalRetryInput(toolName, toolInput);
   if (!retry) return null;
-  return evaluateGatesInner(toolName, retry, configPath);
+  const retried = evaluateGatesInner(toolName, retry, configPath);
+  return withNarrowestAllowSuggestion(retried, toolName, toolInput);
 }
 
 // ---------------------------------------------------------------------------
@@ -5949,6 +5998,888 @@ function evaluateAgentIdentityLifecycleGate(toolName, toolInput) {
   }
 }
 
+// ---------------------------------------------------------------------------
+// OpenShell-inspired PreToolUse governance primitives:
+//   1. Secret-to-host binding (credentials restricted to approved endpoints)
+//   2. Narrowest-allow suggestion (single command / host / path, never blanket)
+//   3. Pure rule-set replay evaluator for Rule change preview
+// ---------------------------------------------------------------------------
+
+const NETWORK_SINK_BINARIES = new Set([
+  'curl', 'wget', 'http', 'https', 'httpie', 'nc', 'ncat', 'netcat',
+  'scp', 'sftp', 'ssh', 'rsync', 'ftp', 'lftp', 'socat',
+]);
+const CREDENTIAL_KEY_HINT_RE = /(?:TOKEN|SECRET|API_KEY|APIKEY|PASSWORD|PASSWD|PRIVATE_KEY|ACCESS_KEY|AUTH_KEY|CLIENT_SECRET|BEARER)/i;
+
+function normalizeHostPattern(rawHost) {
+  const trimmed = String(rawHost || '').trim().toLowerCase();
+  if (!trimmed) return '';
+  const withoutPort = trimmed.startsWith('[')
+    ? trimmed.replace(/\]:\d+$/, ']')
+    : trimmed.replace(/:\d+$/, '');
+  const cleaned = stripTrailingSlashes(withoutPort).replace(/\.+$/, '');
+  if (!cleaned || /[\s/?#@\\]/.test(cleaned)) return '';
+  return cleaned;
+}
+
+function hostMatchesAllowedPattern(host, pattern) {
+  const normalizedHost = normalizeHostPattern(host);
+  const normalizedPattern = normalizeHostPattern(pattern);
+  if (!normalizedHost || !normalizedPattern) return false;
+  if (normalizedPattern === '*') return false;
+  if (normalizedPattern.startsWith('*.')) {
+    const suffix = normalizedPattern.slice(1);
+    return normalizedHost.length > suffix.length && normalizedHost.endsWith(suffix);
+  }
+  return normalizedHost === normalizedPattern;
+}
+
+function parseAllowedHostsList(rawHosts) {
+  if (Array.isArray(rawHosts)) {
+    return rawHosts.map(normalizeHostPattern).filter(Boolean);
+  }
+  if (typeof rawHosts === 'string') {
+    return rawHosts.split(',').map(normalizeHostPattern).filter(Boolean);
+  }
+  return [];
+}
+
+function sanitizeSecretIdentifier(rawSecret) {
+  const clean = String(rawSecret || '').trim().replace(/^\$\{?|\}$/g, '');
+  return /^[A-Za-z_]\w{0,79}$/.test(clean) ? clean.toUpperCase() : '';
+}
+
+function normalizeSecretBindings(gate) {
+  if (!gate || typeof gate !== 'object') return [];
+  const bindings = [];
+  const gateId = gate.id || 'secret-host-binding';
+  const sharedHosts = parseAllowedHostsList(gate.allowedHosts || gate.hosts || gate.allowed_hosts);
+  const singleSecrets = [
+    ...(gate.secret ? [gate.secret] : []),
+    ...(gate.secretEnv ? [gate.secretEnv] : []),
+    ...(Array.isArray(gate.secrets) ? gate.secrets : []),
+  ];
+  for (const rawName of singleSecrets) {
+    const secret = sanitizeSecretIdentifier(rawName);
+    if (secret) bindings.push({ gateId, secret, allowedHosts: sharedHosts });
+  }
+  if (Array.isArray(gate.secretBindings)) {
+    for (const entry of gate.secretBindings) {
+      const secret = sanitizeSecretIdentifier(entry && (entry.secret || entry.name || entry.env));
+      const allowedHosts = parseAllowedHostsList(entry && (entry.allowedHosts || entry.hosts));
+      if (secret) bindings.push({ gateId, secret, allowedHosts });
+    }
+  } else if (gate.secretBindings && typeof gate.secretBindings === 'object') {
+    for (const [rawKey, rawVal] of Object.entries(gate.secretBindings)) {
+      const secret = sanitizeSecretIdentifier(rawKey);
+      if (secret) bindings.push({ gateId, secret, allowedHosts: parseAllowedHostsList(rawVal) });
+    }
+  }
+  return bindings;
+}
+
+function collectSecretEnvRefsInText(text, outSet) {
+  const src = String(text || '').slice(0, MAX_COMMAND_SCAN_CHARS);
+  const patterns = [
+    /\$\{?([A-Za-z_]\w{1,79})\}?/g,
+    /\bprintenv\s+([A-Za-z_]\w{1,79})\b/g,
+    /\bprocess\.env\.([A-Za-z_]\w{1,79})\b/g,
+    /\bprocess\.env\[['"]([A-Za-z_]\w{1,79})['"]\]/g,
+    /\bos\.(?:environ\[|getenv\()['"]([A-Za-z_]\w{1,79})['"]/g,
+  ];
+  for (const regex of patterns) {
+    let match = regex.exec(src);
+    while (match) {
+      const clean = sanitizeSecretIdentifier(match[1]);
+      if (clean) outSet.add(clean);
+      match = regex.exec(src);
+    }
+  }
+}
+
+function extractReferencedSecretNames(toolName, toolInput = {}) {
+  const found = new Set();
+  if (!toolInput || typeof toolInput !== 'object') return [];
+  const directKeys = ['secret', 'secretName', 'secretEnv'];
+  for (const key of directKeys) {
+    const clean = sanitizeSecretIdentifier(toolInput[key]);
+    if (clean) found.add(clean);
+  }
+  for (const listKey of ['secrets', 'secretRefs']) {
+    if (Array.isArray(toolInput[listKey])) {
+      for (const item of toolInput[listKey]) {
+        const clean = sanitizeSecretIdentifier(item);
+        if (clean) found.add(clean);
+      }
+    }
+  }
+  const textFields = ['command', 'url', 'endpoint', 'body', 'data'];
+  for (const field of textFields) {
+    if (typeof toolInput[field] === 'string') {
+      collectSecretEnvRefsInText(toolInput[field], found);
+    }
+  }
+  if (toolInput.headers && typeof toolInput.headers === 'object') {
+    for (const val of Object.values(toolInput.headers)) {
+      if (typeof val === 'string') collectSecretEnvRefsInText(val, found);
+    }
+  }
+  return [...found];
+}
+
+function isLikelyCredentialName(varName) {
+  const upper = sanitizeSecretIdentifier(varName);
+  if (!upper) return false;
+  return CREDENTIAL_KEY_HINT_RE.test(upper);
+}
+
+function tryParseHostFromUrl(rawUrl) {
+  const cleaned = String(rawUrl || '').trim().replace(/^['"(<]+|['")>,;]+$/g, '');
+  if (!/^[a-z][a-z0-9+.-]*:\/\//i.test(cleaned)) return '';
+  try {
+    const parsed = new URL(cleaned);
+    return normalizeHostPattern(parsed.hostname);
+  } catch {
+    return '';
+  }
+}
+
+function extractHostOverrideFromArgs(tokens, index, hostsOut) {
+  const tok = tokens[index];
+  const next = tokens[index + 1] || '';
+  if (tok === '--connect-to' && next) {
+    const parts = next.split(':');
+    const target = normalizeHostPattern(parts[2] || '');
+    if (target) hostsOut.add(target);
+    else return true;
+  } else if (tok === '--resolve' && next) {
+    const parts = next.split(':');
+    const addr = normalizeHostPattern(parts.slice(2).join(':'));
+    if (addr) hostsOut.add(addr);
+    else return true;
+  } else if ((tok === '-x' || tok === '--proxy') && next) {
+    const proxyHost = tryParseHostFromUrl(next) || normalizeHostPattern(next.split(':')[0]);
+    if (proxyHost) hostsOut.add(proxyHost);
+    else return true;
+  } else if ((tok === '-H' || tok === '--header') && /^host\s*:/i.test(next)) {
+    const headerHost = normalizeHostPattern(next.replace(/^host\s*:\s*/i, ''));
+    if (headerHost) hostsOut.add(headerHost);
+    else return true;
+  }
+  return false;
+}
+
+function extractBareNetworkTokenHost(token, hasNetworkSink) {
+  if (!hasNetworkSink || !token || token.startsWith('-') || token.includes('=')) return '';
+  if (token.startsWith('$') || token.startsWith('`')) return '<unresolved-host>';
+  if (token.includes('@') && token.includes(':')) {
+    const afterAt = token.split('@')[1] || '';
+    return normalizeHostPattern(afterAt.split(':')[0]);
+  }
+  const candidate = token.split('/')[0];
+  if (!/^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?(?:\.[a-z0-9-]{1,63})+(?::\d+)?$/i.test(candidate)) {
+    return '';
+  }
+  if (/\.(?:env|json|js|cjs|mjs|ts|tsx|md|txt|sh|py|pem|p12|key|crt|ya?ml|toml|lock|sql|csv)$/i.test(candidate)) {
+    return '';
+  }
+  return normalizeHostPattern(candidate);
+}
+
+function extractCommandTargetHosts(command, hostsOut) {
+  const tokens = tokenizeShellWords(String(command || '').slice(0, MAX_COMMAND_SCAN_CHARS));
+  let hasNetworkSink = false;
+  let hasUnresolvedHost = false;
+  for (let i = 0; i < tokens.length; i += 1) {
+    const tok = tokens[i];
+    const baseBin = tok.includes('/') ? tok.split('/').pop().toLowerCase() : tok.toLowerCase();
+    if (NETWORK_SINK_BINARIES.has(baseBin)) hasNetworkSink = true;
+    if (extractHostOverrideFromArgs(tokens, i, hostsOut)) hasUnresolvedHost = true;
+    const urlHost = tryParseHostFromUrl(tok);
+    if (urlHost) {
+      hostsOut.add(urlHost);
+      continue;
+    }
+    const bareHost = extractBareNetworkTokenHost(tok, hasNetworkSink);
+    if (bareHost === '<unresolved-host>') hasUnresolvedHost = true;
+    else if (bareHost) hostsOut.add(bareHost);
+  }
+  if (/\/dev\/tcp\/([^\s/]+)/i.test(String(command || ''))) {
+    hasNetworkSink = true;
+    const m = /\/dev\/tcp\/([^\s/]+)/i.exec(String(command || ''));
+    const tcpHost = m ? normalizeHostPattern(m[1]) : '';
+    if (tcpHost) hostsOut.add(tcpHost);
+    else hasUnresolvedHost = true;
+  }
+  return { hasNetworkSink, hasUnresolvedHost };
+}
+
+function extractTargetHosts(toolName, toolInput = {}) {
+  const hostsOut = new Set();
+  if (!toolInput || typeof toolInput !== 'object') {
+    return { hosts: [], hasNetworkSink: false, hasUnresolvedHost: false };
+  }
+  for (const urlField of ['url', 'endpoint', 'uri', 'href']) {
+    if (typeof toolInput[urlField] === 'string') {
+      const parsedHost = tryParseHostFromUrl(toolInput[urlField]) || normalizeHostPattern(toolInput[urlField]);
+      if (parsedHost) hostsOut.add(parsedHost);
+    }
+  }
+  for (const hostField of ['host', 'hostname', 'targetHost']) {
+    if (typeof toolInput[hostField] === 'string') {
+      const cleanHost = normalizeHostPattern(toolInput[hostField]);
+      if (cleanHost) hostsOut.add(cleanHost);
+    }
+  }
+  const cmdInfo = typeof toolInput.command === 'string'
+    ? extractCommandTargetHosts(toolInput.command, hostsOut)
+    : { hasNetworkSink: hostsOut.size > 0, hasUnresolvedHost: false };
+  return {
+    hosts: [...hostsOut],
+    hasNetworkSink: cmdInfo.hasNetworkSink || hostsOut.size > 0,
+    hasUnresolvedHost: cmdInfo.hasUnresolvedHost,
+  };
+}
+
+function evaluateSecretHostBindingForGate(gate, toolName, toolInput = {}, precomputedBindings = null) {
+  const bindings = precomputedBindings || normalizeSecretBindings(gate);
+  if (!bindings.length) return { applicable: false, violated: false };
+  const referenced = new Set(extractReferencedSecretNames(toolName, toolInput));
+  const matchingBindings = bindings.filter((b) => referenced.has(b.secret));
+  if (!matchingBindings.length) return { applicable: false, violated: false };
+
+  const targetInfo = extractTargetHosts(toolName, toolInput);
+  if (!targetInfo.hasNetworkSink && targetInfo.hosts.length === 0) {
+    return { applicable: false, violated: false };
+  }
+
+  for (const binding of matchingBindings) {
+    const disallowedHosts = [];
+    if (targetInfo.hosts.length === 0 || targetInfo.hasUnresolvedHost) {
+      disallowedHosts.push('<unresolved-host>');
+    }
+    for (const host of targetInfo.hosts) {
+      const allowed = binding.allowedHosts.some((pattern) => hostMatchesAllowedPattern(host, pattern));
+      if (!allowed) disallowedHosts.push(host);
+    }
+    if (disallowedHosts.length > 0) {
+      return {
+        applicable: true,
+        violated: true,
+        gateId: binding.gateId,
+        secret: binding.secret,
+        allowedHosts: binding.allowedHosts,
+        disallowedHosts: [...new Set(disallowedHosts)],
+      };
+    }
+  }
+  return {
+    applicable: true,
+    violated: false,
+    secret: matchingBindings[0].secret,
+    allowedHosts: matchingBindings[0].allowedHosts,
+    matchedHosts: targetInfo.hosts,
+  };
+}
+
+function collectActiveSecretBindingMap(config) {
+  const map = new Map();
+  if (!config || !Array.isArray(config.gates)) return map;
+  for (const gate of config.gates) {
+    if (!gate || (gate.action && gate.action !== 'block' && gate.action !== 'approve')) continue;
+    for (const binding of normalizeSecretBindings(gate)) {
+      if (!map.has(binding.secret)) map.set(binding.secret, []);
+      map.get(binding.secret).push({ gate, binding });
+    }
+  }
+  return map;
+}
+
+function isBoundSecretAllowedForAllTargets(toolName, toolInput = {}, config = null) {
+  const bindingMap = collectActiveSecretBindingMap(config);
+  if (bindingMap.size === 0) return false;
+  const referenced = extractReferencedSecretNames(toolName, toolInput);
+  const credentialRefs = referenced.filter((name) => bindingMap.has(name) || isLikelyCredentialName(name));
+  if (credentialRefs.length === 0) return false;
+  const targetInfo = extractTargetHosts(toolName, toolInput);
+  if (targetInfo.hosts.length === 0 || targetInfo.hasUnresolvedHost) return false;
+
+  for (const secretName of credentialRefs) {
+    const entries = bindingMap.get(secretName);
+    if (!entries || entries.length === 0) return false;
+    for (const { gate, binding } of entries) {
+      const check = evaluateSecretHostBindingForGate(gate, toolName, toolInput, [binding]);
+      if (!check.applicable || check.violated) return false;
+    }
+  }
+  return true;
+}
+
+function evaluateActiveSecretHostBindingInput(input = {}, scanResult = null, options = {}) {
+  const toolName = input.tool_name || input.toolName || 'unknown';
+  const toolInput = input.tool_input || input.toolInput || {};
+  let config;
+  try {
+    config = loadGatesConfig(options.configPath);
+  } catch {
+    return null;
+  }
+  const bindingMap = collectActiveSecretBindingMap(config);
+  if (bindingMap.size === 0) return null;
+
+  const hasInlineLiteralFinding = Boolean(
+    scanResult
+    && scanResult.detected
+    && Array.isArray(scanResult.findings)
+    && scanResult.findings.some((f) => f && f.id !== 'secret_env_exfil'),
+  );
+  if (hasInlineLiteralFinding) return null;
+
+  for (const entries of bindingMap.values()) {
+    for (const { gate, binding } of entries) {
+      const check = evaluateSecretHostBindingForGate(gate, toolName, toolInput, [binding]);
+      if (check.applicable && check.violated) {
+        const message = buildGateMessage(gate, { secretBindingViolation: check });
+        const reasoning = buildReasoning(gate, toolName, toolInput, { secretBindingViolation: check });
+        recordStat(gate.id, 'block', gate, { toolName, toolInput });
+        const auditRecord = recordAuditEvent({
+          toolName,
+          toolInput,
+          decision: 'deny',
+          gateId: gate.id,
+          message,
+          severity: gate.severity || 'critical',
+          source: 'secret-host-binding',
+        });
+        auditToFeedback(auditRecord);
+        return {
+          allowedByBinding: false,
+          denyResult: {
+            decision: 'deny',
+            gate: gate.id,
+            message,
+            severity: gate.severity || 'critical',
+            reasoning,
+            secretHostBinding: true,
+          },
+        };
+      }
+    }
+  }
+
+  if (isBoundSecretAllowedForAllTargets(toolName, toolInput, config)) {
+    return { allowedByBinding: true, denyResult: null };
+  }
+  return null;
+}
+
+function escapeLiteralRegex(value) {
+  return String(value || '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function extractSingleConcretePath(toolName, toolInput = {}, result = null) {
+  const rawDirect = toolInput.file_path || toolInput.path || toolInput.filePath || toolInput.target_path;
+  if (typeof rawDirect === 'string' && rawDirect.trim()) {
+    const clean = normalizePosix(redactText(rawDirect.trim()));
+    if (clean && clean !== '/' && !clean.includes('*')) return clean;
+  }
+  const affected = collectInlineAffectedFiles(toolInput, process.cwd());
+  const candidate = affected.find((f) => f && f !== '/' && !f.includes('*'));
+  if (candidate) return candidate;
+  if (result && typeof result.message === 'string') {
+    const fileMatch = /(?:Missing approval for:|outside the declared task scope:)\s*([^\s,.)]+)/i.exec(result.message);
+    if (fileMatch && fileMatch[1] && !fileMatch[1].includes('*')) return fileMatch[1];
+  }
+  return null;
+}
+
+function extractSingleConcreteCommand(toolName, toolInput = {}) {
+  if (typeof toolInput.command === 'string' && toolInput.command.trim()) {
+    const redacted = redactText(toolInput.command.trim()).replace(/\s+/g, ' ').slice(0, 140);
+    const nonWildcard = redacted.replace(/\*+/g, '<arg>');
+    return nonWildcard || null;
+  }
+  if (toolName && !EDIT_LIKE_TOOLS.has(toolName)) {
+    return String(toolName).trim() || null;
+  }
+  return null;
+}
+
+function buildNarrowestAllowSuggestion(result, toolName, toolInput = {}) {
+  const gateId = (result && result.gate) || 'unknown-gate';
+  const hostInfo = extractTargetHosts(toolName, toolInput);
+  const singleHost = hostInfo.hosts.find((h) => h && h !== '*' && !h.startsWith('*.') && h !== '0.0.0.0') || null;
+  const singlePath = extractSingleConcretePath(toolName, toolInput, result);
+  const singleCommand = extractSingleConcreteCommand(toolName, toolInput);
+  const secretRefs = extractReferencedSecretNames(toolName, toolInput);
+
+  let targetClause;
+  let ruleChange;
+  if (result && result.secretHostBinding && singleHost && secretRefs[0]) {
+    targetClause = `allow host "${singleHost}" for secret ${secretRefs[0]} in gate "${gateId}"`;
+    ruleChange = {
+      type: 'add-secret-allowed-host',
+      gateId,
+      secret: secretRefs[0],
+      host: singleHost,
+    };
+  } else if (singleHost) {
+    const cmdPart = singleCommand ? ` on command "${singleCommand}"` : '';
+    targetClause = `allow host "${singleHost}"${cmdPart}`;
+    ruleChange = {
+      type: 'allow-single-host',
+      gateId,
+      host: singleHost,
+      ...(singleCommand ? { command: singleCommand } : {}),
+    };
+  } else if (singlePath && (!singleCommand || EDIT_LIKE_TOOLS.has(toolName))) {
+    targetClause = `allow path "${singlePath}" on tool "${toolName || 'Edit'}"`;
+    ruleChange = {
+      type: 'allow-single-path',
+      gateId,
+      toolName: toolName || 'Edit',
+      path: singlePath,
+    };
+  } else {
+    const exactCmd = singleCommand || String(toolName || 'tool-call');
+    const pathPart = singlePath ? ` on path "${singlePath}"` : '';
+    targetClause = `allow command "${exactCmd}"${pathPart}`;
+    ruleChange = {
+      type: 'allow-single-command',
+      gateId,
+      toolName: toolName || 'Bash',
+      command: exactCmd,
+      exactPattern: `^${escapeLiteralRegex(exactCmd)}$`,
+      ...(singlePath ? { path: singlePath } : {}),
+    };
+  }
+
+  const summary = `Narrowest allow suggestion (suggestion only; requires approval): ${targetClause} — never a blanket allow.`;
+  return {
+    applied: false,
+    requiresApproval: true,
+    blanketAllow: false,
+    gateId,
+    scope: {
+      command: singleCommand,
+      host: singleHost,
+      path: singlePath,
+    },
+    ruleChange,
+    summary,
+  };
+}
+
+const NO_SAFE_REWRITE_GATE_IDS = new Set([
+  'rm-rf-home-or-root',
+  'git-reset-hard',
+  'git-clean-force',
+  'self-protect-kill',
+  'self-protect-config',
+  'self-protect-env-override',
+  'self-protect-hooks-disable',
+  'admin-merge-bypass-blocked',
+  'eci-corporate-email-isolation',
+]);
+
+const INLINE_SECRET_REWRITE_SPECS = [
+  { env: 'ANTHROPIC_API_KEY', regex: /(["']?)\bsk-ant-[a-z0-9_-]{20,}\b\1/gi },
+  { env: 'STRIPE_SECRET_KEY', regex: /(["']?)\bsk_live_[A-Za-z0-9]{16,}\b\1/g },
+  { env: 'OPENAI_API_KEY', regex: /(["']?)\bsk-[A-Za-z0-9_-]{20,}\b\1/g },
+  { env: 'GITHUB_TOKEN', regex: /(["']?)\b(?:ghp|gho|ghu|ghs|ghr)_[A-Za-z0-9]{20,}\b\1/g },
+  { env: 'GITHUB_TOKEN', regex: /(["']?)\bgithub_pat_[A-Za-z0-9_]{20,}\b\1/g },
+  { env: 'SLACK_BOT_TOKEN', regex: /(["']?)\bxox[abprs]-[A-Za-z0-9-]{10,}\b\1/g },
+  { env: 'AWS_ACCESS_KEY_ID', regex: /(["']?)\bAKIA[0-9A-Z]{16}\b\1/g },
+  { env: 'JWT_TOKEN', regex: /(["']?)\beyJ[\w-]{8,}\.[\w-]{8,}\.[\w-]{8,}\b\1/g },
+  { env: 'PRIVATE_KEY', regex: /(["'`]?)-----BEGIN (?:RSA |EC |OPENSSH |DSA |PGP )?PRIVATE KEY-----[\s\S]+?-----END (?:RSA |EC |OPENSSH |DSA |PGP )?PRIVATE KEY-----\1/g },
+];
+
+function toScreamingSnakeEnvName(rawIdentifier, fallback = 'API_KEY') {
+  const clean = String(rawIdentifier || '').trim().replace(/[^A-Za-z0-9_]/g, '');
+  if (!clean) return fallback;
+  const snake = clean
+    .replace(/([a-z0-9])([A-Z])/g, '$1_$2')
+    .replace(/_+/g, '_')
+    .toUpperCase();
+  return /^[A-Z][A-Z0-9_]{1,63}$/.test(snake) ? snake : fallback;
+}
+
+function inferEnvNameFromText(text, findings = []) {
+  const assignMatch = /\b([A-Za-z_][A-Za-z0-9_]*(?:token|secret|key|password|passwd|auth)[A-Za-z0-9_]*)\s*[:=]/i.exec(String(text || ''));
+  if (assignMatch && assignMatch[1]) {
+    return toScreamingSnakeEnvName(assignMatch[1], 'SECRET_TOKEN');
+  }
+  for (const spec of INLINE_SECRET_REWRITE_SPECS) {
+    spec.regex.lastIndex = 0;
+    if (spec.regex.test(String(text || ''))) return spec.env;
+  }
+  const firstId = findings[0] && findings[0].id;
+  const idMap = {
+    anthropic_api_key: 'ANTHROPIC_API_KEY',
+    openai_api_key: 'OPENAI_API_KEY',
+    github_pat: 'GITHUB_TOKEN',
+    github_fine_grained_pat: 'GITHUB_TOKEN',
+    stripe_live_secret: 'STRIPE_SECRET_KEY',
+    slack_token: 'SLACK_BOT_TOKEN',
+    aws_access_key: 'AWS_ACCESS_KEY_ID',
+    jwt_token: 'JWT_TOKEN',
+    pem_private_key: 'PRIVATE_KEY',
+  };
+  return idMap[firstId] || 'SECRET_TOKEN';
+}
+
+function rewriteTextSecretsToEnvVar(text, envName) {
+  let next = String(text || '');
+  let changed = false;
+  for (const spec of INLINE_SECRET_REWRITE_SPECS) {
+    spec.regex.lastIndex = 0;
+    if (spec.regex.test(next)) {
+      spec.regex.lastIndex = 0;
+      next = next.replace(spec.regex, `process.env.${envName}`);
+      changed = true;
+    }
+  }
+  const genericAssignRe = /(\b(?:api[_-]?key|secret|token|access[_-]?token|password|passwd|client[_-]?secret)\b\s*[:=]\s*)["'][A-Za-z0-9_./+=-]{16,}["']/gi;
+  if (genericAssignRe.test(next)) {
+    genericAssignRe.lastIndex = 0;
+    next = next.replace(genericAssignRe, `$1process.env.${envName}`);
+    changed = true;
+  }
+  const finalRedacted = redactText(next);
+  if (finalRedacted !== next) {
+    next = finalRedacted.replaceAll('[REDACTED]', `process.env.${envName}`);
+    changed = true;
+  }
+  return { text: next, changed };
+}
+
+function resolveSafeFeatureBranch(toolInput = {}) {
+  const repoRoot = resolveRepoRoot(toolInput);
+  const detected = detectBranchName(toolInput, repoRoot)
+    || (repoRoot ? safeExecFileLines('git', ['symbolic-ref', '--short', 'HEAD'], repoRoot)[0] || '' : '');
+  if (detected && detected !== 'HEAD' && !isProtectedBranchName(detected)) {
+    return detected;
+  }
+  const tokens = tokenizeShellWords(String(toolInput.command || ''));
+  const pushIdx = tokens.indexOf('push');
+  if (pushIdx !== -1) {
+    const positional = tokens.slice(pushIdx + 1).filter((t) => t && !t.startsWith('-'));
+    const branchToken = positional[1] || positional[0] || '';
+    const cleanBranch = branchToken.includes(':') ? branchToken.split(':').pop() : branchToken;
+    if (cleanBranch && !['origin', 'upstream'].includes(cleanBranch) && !isProtectedBranchName(cleanBranch)) {
+      return cleanBranch;
+    }
+  }
+  return 'feat/current-branch';
+}
+
+function buildForcePushSuggestedCall(toolInput = {}, gateId = '') {
+  const command = String(toolInput.command || '').trim();
+  if (!/\bgit\b[\s\S]*\bpush\b/i.test(command)) return null;
+  const tokens = tokenizeShellWords(command);
+  const pushIdx = tokens.indexOf('push');
+  const positional = pushIdx >= 0 ? tokens.slice(pushIdx + 1).filter((t) => t && !t.startsWith('-')) : [];
+  const remote = (positional[0] && !isProtectedBranchName(positional[0]) && positional.length >= 2)
+    ? positional[0]
+    : (positional[0] === 'origin' || positional[0] === 'upstream' ? positional[0] : 'origin');
+  const featureBranch = resolveSafeFeatureBranch(toolInput);
+  const hasForce = /(?:^|\s)(?:--force(?!-with-lease)|-f)(?:\s|$)/.test(command)
+    || gateId === 'force-push'
+    || gateId === 'deploy-force-push-main';
+  const nextCmd = hasForce
+    ? `git push --force-with-lease ${remote} ${featureBranch}`
+    : `git push -u ${remote} ${featureBranch}`;
+  if (nextCmd === command) return null;
+  return {
+    toolName: 'Bash',
+    toolInput: { ...toolInput, command: nextCmd },
+    command: nextCmd,
+    display: nextCmd,
+    autoExecuted: false,
+  };
+}
+
+function buildSecretSuggestedCall(result, toolName, toolInput = {}) {
+  const findings = (result && result.secretScan && result.secretScan.findings) || [];
+  if (EDIT_LIKE_TOOLS.has(toolName)) {
+    const targetFile = toolInput.file_path || toolInput.path || 'file.js';
+    const sourceText = toolInput.new_string || toolInput.content || '';
+    const envName = inferEnvNameFromText(sourceText, findings);
+    if (typeof toolInput.new_string === 'string') {
+      const rewritten = rewriteTextSecretsToEnvVar(toolInput.new_string, envName);
+      if (!rewritten.changed) return null;
+      const nextInput = { ...toolInput, new_string: rewritten.text };
+      return {
+        toolName,
+        toolInput: nextInput,
+        envVar: envName,
+        display: `${toolName} ${targetFile}: ${rewritten.text}`,
+        autoExecuted: false,
+      };
+    }
+    if (typeof toolInput.content === 'string') {
+      const rewritten = rewriteTextSecretsToEnvVar(toolInput.content, envName);
+      if (!rewritten.changed) return null;
+      const nextInput = { ...toolInput, content: rewritten.text };
+      return {
+        toolName,
+        toolInput: nextInput,
+        envVar: envName,
+        display: `${toolName} ${targetFile}: ${rewritten.text}`,
+        autoExecuted: false,
+      };
+    }
+    if (Array.isArray(toolInput.edits)) {
+      let anyChanged = false;
+      const nextEdits = toolInput.edits.map((item) => {
+        if (!item || typeof item.new_string !== 'string') return item;
+        const r = rewriteTextSecretsToEnvVar(item.new_string, envName);
+        if (r.changed) anyChanged = true;
+        return { ...item, new_string: r.text };
+      });
+      if (!anyChanged) return null;
+      return {
+        toolName,
+        toolInput: { ...toolInput, edits: nextEdits },
+        envVar: envName,
+        display: `${toolName} ${targetFile} with process.env.${envName}`,
+        autoExecuted: false,
+      };
+    }
+  }
+  if (toolName === 'Bash' && (result.gate === 'secret-egress' || result.gate === 'secret-exfiltration') && !result.secretHostBinding) {
+    const refs = extractReferencedSecretNames(toolName, toolInput).filter(isLikelyCredentialName);
+    const envName = refs[0] || inferEnvNameFromText(toolInput.command || '', findings);
+    const snippet = `const secretValue = process.env.${envName};`;
+    return {
+      toolName: 'Edit',
+      toolInput: {
+        file_path: toolInput.file_path || 'src/config.js',
+        new_string: snippet,
+      },
+      envVar: envName,
+      display: `Edit code to read process.env.${envName} (${snippet})`,
+      autoExecuted: false,
+    };
+  }
+  return null;
+}
+
+function buildSuggestedCall(result, toolName, toolInput = {}) {
+  if (!result) return null;
+  const gateId = String(result.gate || '');
+  const cmd = String(toolInput.command || '').trim();
+  if (result.secretHostBinding || NO_SAFE_REWRITE_GATE_IDS.has(gateId)) {
+    return null;
+  }
+  if (/\brm\s+-[^\s]*r[^\s]*f|\brm\s+-[^\s]*f[^\s]*r|\brm\s+--recursive\b/i.test(cmd)) {
+    return null;
+  }
+  if (gateId === 'force-push' || gateId === 'deploy-force-push-main' || gateId === 'protected-branch-push') {
+    return buildForcePushSuggestedCall(toolInput, gateId);
+  }
+  if (gateId === 'secret-egress' || gateId === 'secret-exfiltration') {
+    return buildSecretSuggestedCall(result, toolName, toolInput);
+  }
+  if (gateId === 'raw-gh-auto-merge-blocked') {
+    const nextCmd = 'npm run pr:manage';
+    return {
+      toolName: 'Bash',
+      toolInput: { ...toolInput, command: nextCmd },
+      command: nextCmd,
+      display: nextCmd,
+      autoExecuted: false,
+    };
+  }
+  if (gateId === 'package-lock-reset') {
+    const nextCmd = 'npm install';
+    return {
+      toolName: 'Bash',
+      toolInput: { ...toolInput, command: nextCmd },
+      command: nextCmd,
+      display: nextCmd,
+      autoExecuted: false,
+    };
+  }
+  if (gateId === 'deploy-skip-ci' && cmd) {
+    const nextCmd = cmd
+      .replace(/\s+(?:--no-verify|--no-gpg-sign)\b/g, '')
+      .replace(/\s+-c\s+commit\.gpgsign=false\b/g, '')
+      .trim();
+    if (nextCmd && nextCmd !== cmd) {
+      return {
+        toolName: 'Bash',
+        toolInput: { ...toolInput, command: nextCmd },
+        command: nextCmd,
+        display: nextCmd,
+        autoExecuted: false,
+      };
+    }
+  }
+  return null;
+}
+
+function formatPlainBlockHeadline(rawReason, suggestedCall) {
+  const trimmed = String(rawReason || 'Action denied by gate').trim();
+  if (trimmed.includes('Run this instead:') || trimmed.includes('No safe replacement call exists')) {
+    return trimmed;
+  }
+  const withoutPrefix = trimmed.replace(/^Blocked:\s*/i, '').trim();
+  const punctuated = /[.!?]$/.test(withoutPrefix) ? withoutPrefix : `${withoutPrefix}.`;
+  if (suggestedCall && suggestedCall.display) {
+    return `Blocked: ${punctuated} Run this instead: ${suggestedCall.display}`;
+  }
+  return `Blocked: ${punctuated} No safe replacement call exists for this action.`;
+}
+
+function withNarrowestAllowSuggestion(result, toolName, toolInput = {}) {
+  if (!result || (result.decision !== 'deny' && result.decision !== 'approve')) return result;
+  if (result.narrowestAllowSuggestion && result.suggestedCall !== undefined) return result;
+  const suggestion = result.narrowestAllowSuggestion || buildNarrowestAllowSuggestion(result, toolName, toolInput);
+  const suggestedCall = result.suggestedCall !== undefined
+    ? result.suggestedCall
+    : buildSuggestedCall(result, toolName, toolInput);
+  const baseMessage = String(result.message || '').trim();
+  const headline = formatPlainBlockHeadline(baseMessage, suggestedCall);
+  const nextMessage = headline.includes('Narrowest allow suggestion')
+    ? headline
+    : `${headline}\n${suggestion.summary}`;
+  return {
+    ...result,
+    message: nextMessage,
+    suggestedCall,
+    narrowestAllowSuggestion: suggestion,
+  };
+}
+
+function extractCallPreviewFacets(toolName, toolInput = {}) {
+  const hostInfo = extractTargetHosts(toolName, toolInput);
+  const hosts = hostInfo.hosts.filter((h) => h && h !== '<unresolved-host>');
+  const commands = [];
+  if (typeof toolInput.command === 'string' && toolInput.command.trim()) {
+    commands.push(redactText(toolInput.command.trim()).replace(/\s+/g, ' ').slice(0, 140));
+  } else if (toolName && !EDIT_LIKE_TOOLS.has(toolName)) {
+    commands.push(String(toolName).trim());
+  }
+  const paths = new Set();
+  const directPath = toolInput.file_path || toolInput.path || toolInput.filePath;
+  if (typeof directPath === 'string' && directPath.trim()) {
+    paths.add(normalizePosix(redactText(directPath.trim())));
+  }
+  for (const p of collectInlineAffectedFiles(toolInput, process.cwd())) {
+    if (p) paths.add(p);
+  }
+  if (typeof toolInput.command === 'string') {
+    const cmdTokens = tokenizeShellWords(toolInput.command);
+    for (const rawTok of cmdTokens.slice(1)) {
+      const cleaned = rawTok.replace(/^[@<]+/, '');
+      if (/^(?:\.env(?:\.[a-z]+)?|[\w./-]+\.(?:env|pem|p12|key|json|ya?ml|sh|js|ts|md)|\/[\w./-]+|~\/[\w./-]+)$/i.test(cleaned)) {
+        paths.add(cleaned);
+      }
+    }
+  }
+  const secretRefs = extractReferencedSecretNames(toolName, toolInput);
+  const hasCredRef = secretRefs.some((s) => isLikelyCredentialName(s));
+  const cmdText = String(toolInput.command || '');
+  const hasCredHeaderOrFile = /(?:authorization\s*:\s*(?:bearer|token)|\.env\b|id_rsa|id_ed25519|\.aws\/credentials|\.npmrc)/i.test(cmdText);
+  const scan = scanHookInput({ tool_name: toolName, tool_input: toolInput });
+  return {
+    hosts,
+    commands,
+    paths: [...paths],
+    secretRefs,
+    carriesCredential: Boolean(hasCredRef || hasCredHeaderOrFile || scan.detected),
+  };
+}
+
+function matchLessonForPreview(lesson, toolName, toolInput = {}) {
+  if (!lesson || lesson.demoted === true) return false;
+  const sig = String(lesson.signal || '').toLowerCase();
+  if (sig && !['negative', 'down', 'thumbs_down', 'negative_strong'].includes(sig)) return false;
+  const patternText = lesson.gatePattern || lesson.preventPattern || lesson.commandPattern || lesson.errorPattern || '';
+  if (!patternText) return false;
+  const surfaces = buildMatchSurfaces(toolName, toolInput);
+  try {
+    const regex = new RegExp(patternText, 'i');
+    return surfaces.some((s) => patternMatchesCommand(regex, s));
+  } catch {
+    const needle = String(patternText).toLowerCase();
+    return needle.length >= 4 && surfaces.some((s) => s.toLowerCase().includes(needle));
+  }
+}
+
+function matchSingleGateForPreview(gate, toolName, toolInput = {}, constraints = {}, boundSecretAllowed = false) {
+  if (!gate) return { matched: false };
+  if ((gate.id === 'secret-egress' || gate.id === 'deny-network-egress') && boundSecretAllowed) {
+    return { matched: false };
+  }
+  if (gate.when && !checkWhenClause(gate.when, constraints)) {
+    return { matched: false };
+  }
+  const secretBindings = normalizeSecretBindings(gate);
+  if (secretBindings.length > 0) {
+    const check = evaluateSecretHostBindingForGate(gate, toolName, toolInput, secretBindings);
+    if (!check.violated) return { matched: false };
+    return { matched: true, credentialRelated: true };
+  }
+  const matchDetails = matchGate(gate, toolName, toolInput);
+  if (!matchDetails.matched) return { matched: false };
+  const credentialRelated = gate.id === 'secret-egress'
+    || gate.id === 'secret-exfiltration'
+    || Boolean(matchDetails.secretBindingViolation);
+  return { matched: true, credentialRelated };
+}
+
+function evaluateRuleSetForPreview(ruleSet = {}, toolName = 'Bash', toolInput = {}, options = {}) {
+  const gates = Array.isArray(ruleSet) ? ruleSet : (Array.isArray(ruleSet.gates) ? ruleSet.gates : []);
+  const lessons = Array.isArray(ruleSet.lessons) ? ruleSet.lessons : [];
+  const constraints = options.constraints || {};
+  const unlessSatisfied = Boolean(options.unlessSatisfied);
+  const configObj = { gates };
+  const boundSecretAllowed = isBoundSecretAllowedForAllTargets(toolName, toolInput, configObj);
+
+  for (const gate of gates) {
+    if (!CATASTROPHIC_DECLARATIVE_GATE_IDS.has(gate.id) || gate.action !== 'block' || gate.metrics) continue;
+    if (gate.adminOverride && gate.adminOverride.required === true) continue;
+    if (gate.unless && unlessSatisfied) continue;
+    const m = matchSingleGateForPreview(gate, toolName, toolInput, constraints, boundSecretAllowed);
+    if (m.matched) {
+      return { blocked: true, decision: 'deny', gateId: gate.id, credentialRelated: m.credentialRelated };
+    }
+  }
+
+  for (const gate of gates) {
+    if (gate.unless && unlessSatisfied) continue;
+    const m = matchSingleGateForPreview(gate, toolName, toolInput, constraints, boundSecretAllowed);
+    if (!m.matched) continue;
+    if (gate.action === 'log') continue;
+    if (gate.action === 'warn') {
+      return { blocked: false, decision: 'warn', gateId: gate.id, credentialRelated: m.credentialRelated };
+    }
+    if (gate.action === 'block' || gate.action === 'approve') {
+      return {
+        blocked: true,
+        decision: gate.action === 'block' ? 'deny' : 'approve',
+        gateId: gate.id,
+        credentialRelated: m.credentialRelated,
+      };
+    }
+  }
+
+  for (const lesson of lessons) {
+    if (matchLessonForPreview(lesson, toolName, toolInput)) {
+      return {
+        blocked: true,
+        decision: 'deny',
+        gateId: `lesson:${lesson.id || lesson.title || 'learned'}`,
+        credentialRelated: false,
+      };
+    }
+  }
+
+  return { blocked: false, decision: 'allow', gateId: null, credentialRelated: false };
+}
+
 module.exports = {
   evaluateAgentIdentityLifecycleGate,
   loadGatesConfig,
@@ -6067,6 +6998,24 @@ module.exports = {
   incrementTodayBlockCount,
   effectiveCommandCwd,
   resolveRepoRoot,
+  normalizeHostPattern,
+  hostMatchesAllowedPattern,
+  normalizeSecretBindings,
+  extractReferencedSecretNames,
+  extractTargetHosts,
+  evaluateSecretHostBindingForGate,
+  isBoundSecretAllowedForAllTargets,
+  buildNarrowestAllowSuggestion,
+  buildSuggestedCall,
+  withNarrowestAllowSuggestion,
+  extractCallPreviewFacets,
+  evaluateRuleSetForPreview,
+  previewRuleChange: (...args) => require('./audit-trail').previewRuleChange(...args),
+  applyRuleChange: (...args) => require('./audit-trail').applyRuleChange(...args),
+  approveRuleChange: (...args) => require('./audit-trail').approveRuleChange(...args),
+  rejectRuleChange: (...args) => require('./audit-trail').rejectRuleChange(...args),
+  getRuleChangePreviewSummary: (...args) => require('./audit-trail').getRuleChangePreviewSummary(...args),
+  formatRuleChangePreviewText: (...args) => require('./audit-trail').formatRuleChangePreviewText(...args),
 };
 
 // ---------------------------------------------------------------------------

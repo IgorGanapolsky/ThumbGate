@@ -720,6 +720,58 @@ function promote(feedbackLogPath, options) {
   return { promotions, totalGates: data.gates.length, data };
 }
 
+/**
+ * Update or relax an auto-promoted gate via Rule change preview.
+ * Tightening applies immediately; any widening (block -> allow) is held until human approval.
+ */
+function updateAutoGate(gateId, patch = {}, options = {}) {
+  const { applyRuleChange } = require('./audit-trail');
+  const autoGatesPath = options.autoGatesPath || getAutoGatesPath();
+  const current = loadAutoGates();
+  const existingGates = Array.isArray(current.gates) ? current.gates : [];
+  const idx = existingGates.findIndex((g) => g && g.id === gateId);
+  if (idx === -1) {
+    throw new Error(`Auto-promoted gate not found: ${gateId}`);
+  }
+  const updatedGate = { ...existingGates[idx], ...patch, id: gateId };
+  const nextGates = existingGates.map((g, i) => (i === idx ? updatedGate : g));
+  return applyRuleChange({
+    changeType: patch.action && patch.action !== 'block' ? 'relax' : 'edit',
+    ruleId: gateId,
+    oldGates: existingGates,
+    newGates: { ...current, gates: nextGates },
+    targetConfigPath: autoGatesPath,
+    auditEntries: options.auditEntries,
+    auditLogPath: options.auditTrailPath || getAuditTrailPath(),
+    feedbackDir: options.feedbackDir || path.dirname(autoGatesPath),
+  });
+}
+
+/**
+ * Delete an auto-promoted gate via Rule change preview.
+ * Held for human approval if any recorded blocked call would become allowed.
+ */
+function deleteAutoGate(gateId, options = {}) {
+  const { applyRuleChange } = require('./audit-trail');
+  const autoGatesPath = options.autoGatesPath || getAutoGatesPath();
+  const current = loadAutoGates();
+  const existingGates = Array.isArray(current.gates) ? current.gates : [];
+  const nextGates = existingGates.filter((g) => g && g.id !== gateId);
+  if (nextGates.length === existingGates.length) {
+    throw new Error(`Auto-promoted gate not found: ${gateId}`);
+  }
+  return applyRuleChange({
+    changeType: 'delete',
+    ruleId: gateId,
+    oldGates: existingGates,
+    newGates: { ...current, gates: nextGates },
+    targetConfigPath: autoGatesPath,
+    auditEntries: options.auditEntries,
+    auditLogPath: options.auditTrailPath || getAuditTrailPath(),
+    feedbackDir: options.feedbackDir || path.dirname(autoGatesPath),
+  });
+}
+
 function runCli(argv = process.argv.slice(2)) {
   const forceContext = argv.find((arg) => arg.startsWith('--force-block='))?.split('=')[1];
   if (forceContext) {
@@ -760,6 +812,8 @@ if (require.main === module) {
 module.exports = {
   promote,
   forcePromote,
+  updateAutoGate,
+  deleteAutoGate,
   runCli,
   loadAutoGates,
   saveAutoGates,

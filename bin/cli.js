@@ -4008,6 +4008,7 @@ function help() {
     console.log('  dashboard                                         Open the local ThumbGate dashboard');
     console.log('  ai-inventory                                      Scan AI/ML components and export ML-BOM evidence');
     console.log('  verify-claims --claim="..."                     Recheck factual claims against configured sources');
+    console.log('  rule-change-preview                               Replay audit calls before widening rules or credentials');
     console.log('  doctor                                            Audit runtime isolation + bootstrap context');
     console.log('  compass                                           6-axis pipeline: wire, lessons, rules, eval');
     console.log('  security-central                                  Free Agent Security Central posture report');
@@ -4022,6 +4023,18 @@ function help() {
     console.log('  thumbgate <cmd> --help Per-command flags (where supported)');
     console.log('');
     console.log('Docs: https://github.com/IgorGanapolsky/ThumbGate');
+    try {
+      const { getFeedbackPaths } = require(path.join(PKG_ROOT, 'scripts', 'feedback-loop'));
+      const { getRuleChangePreviewSummary } = require(path.join(PKG_ROOT, 'scripts', 'audit-trail'));
+      const rcp = getRuleChangePreviewSummary({ feedbackDir: getFeedbackPaths().FEEDBACK_DIR });
+      if (rcp.heldCount > 0) {
+        console.log('');
+        console.log(`Rule change preview (${rcp.heldCount} held for human approval):`);
+        for (const held of rcp.heldChanges.slice(0, 3)) {
+          console.log(`  [${held.id}] ${held.plainPreview}`);
+        }
+      }
+    } catch { /* ignore */ }
     proNudge();
     return;
   }
@@ -4289,6 +4302,7 @@ const SUBCOMMAND_HELP = {
   'ai-inventory': 'Usage: npx thumbgate ai-inventory [--root <dir>] [--format=summary|json|cyclonedx] [--output <path>] [--max-files=N]\n\nScan source/manifests/model artifacts for AI, ML, agent-framework, vector DB, Vertex, Gemini, and Dialogflow CX components. Use --format=cyclonedx to produce exportable ML-BOM evidence for enterprise reviews.',
   brain: 'Usage: npx thumbgate brain [--write] [--json] [--limit=N]\n\nBuild the agent-readable "context brain" — a single artifact consolidating this\nrepo\'s lessons, prevention rules, active gates, and project context for a coding\nagent to read BEFORE acting. --write saves it to .thumbgate/BRAIN.md (versioned,\ndeterministic). --json emits the structured model. --limit caps lessons (default 15).',
   'team-sync': 'Usage: npx thumbgate team-sync\n\nSynchronize prevention rules and context brain with your team\'s git repository (git pull --rebase & git push), then auto-rebuild the local brain.',
+  'rule-change-preview': 'Usage: npx thumbgate rule-change-preview [--before=<old.json> --after=<new.json>] [--delete-gate=<id>] [--audit=<audit.jsonl>] [--apply] [--json]\n       npx thumbgate rule-change-preview approve <change-id> --by="<human>" [--note="..."] [--json]\n       npx thumbgate rule-change-preview reject <change-id> --by="<human>" [--reason="..."] [--json]\n\nReplay recorded audit-trail tool calls against old and new gate/lesson sets. Reports widening in plain words ("After this change, these become allowed: host X, command Y, path Z"), holds any widening or newly-allowed credential host until a human approves (recording who and when), and applies tightening changes at once.',
 };
 
 if (_wantsHelp && COMMAND && SUBCOMMAND_HELP[COMMAND]) {
@@ -5640,6 +5654,101 @@ switch (COMMAND) {
     if (fs.existsSync(thumbgateDir)) {
       const event = { event: 'checkin_shown', at: new Date().toISOString(), installAge };
       fs.appendFileSync(checkinLog, JSON.stringify(event) + '\n');
+    }
+    break;
+  }
+  case 'rule-change-preview':
+  case 'rule-preview':
+  case 'prover': {
+    const subArgs = process.argv.slice(3);
+    const parsedArgs = parseArgs(subArgs);
+    const actionArg = subArgs.find((a) => !a.startsWith('-'));
+    const idArg = subArgs.filter((a) => !a.startsWith('-'))[1];
+    const { getFeedbackPaths } = require(path.join(PKG_ROOT, 'scripts', 'feedback-loop'));
+    const {
+      previewRuleChange,
+      applyRuleChange,
+      approveRuleChange,
+      rejectRuleChange,
+      getRuleChangePreviewSummary,
+      formatRuleChangePreviewText,
+    } = require(path.join(PKG_ROOT, 'scripts', 'audit-trail'));
+    const feedbackDir = parsedArgs['feedback-dir'] || getFeedbackPaths().FEEDBACK_DIR;
+
+    try {
+      if (actionArg === 'approve') {
+        const changeId = idArg || parsedArgs.id;
+        const result = approveRuleChange({
+          changeId,
+          approvedBy: parsedArgs.by || parsedArgs['approved-by'],
+          note: parsedArgs.note,
+          feedbackDir,
+        });
+        if (parsedArgs.json) {
+          console.log(JSON.stringify(result, null, 2));
+        } else {
+          console.log(formatRuleChangePreviewText(result.record));
+        }
+        break;
+      }
+      if (actionArg === 'reject') {
+        const changeId = idArg || parsedArgs.id;
+        const result = rejectRuleChange({
+          changeId,
+          rejectedBy: parsedArgs.by || parsedArgs['rejected-by'],
+          reason: parsedArgs.reason,
+          feedbackDir,
+        });
+        if (parsedArgs.json) {
+          console.log(JSON.stringify(result, null, 2));
+        } else {
+          console.log(`Rejected rule change ${result.record.id} (${result.record.rejectedBy}).`);
+        }
+        break;
+      }
+      if (parsedArgs.before || parsedArgs.after || parsedArgs['delete-gate']) {
+        const baseConfigPath = parsedArgs.before || parsedArgs.config || path.join(PKG_ROOT, 'config', 'gates', 'default.json');
+        const oldParsed = JSON.parse(fs.readFileSync(baseConfigPath, 'utf8'));
+        const newParsed = parsedArgs.after
+          ? JSON.parse(fs.readFileSync(parsedArgs.after, 'utf8'))
+          : {
+            ...oldParsed,
+            gates: (oldParsed.gates || []).filter((g) => g && g.id !== parsedArgs['delete-gate']),
+          };
+        const opInput = {
+          changeType: parsedArgs['delete-gate'] ? 'delete' : 'update',
+          ruleId: parsedArgs['delete-gate'] || null,
+          oldGates: oldParsed.gates || [],
+          newGates: newParsed,
+          targetConfigPath: parsedArgs.apply ? (parsedArgs.after || baseConfigPath) : null,
+          auditLogPath: parsedArgs.audit,
+          feedbackDir,
+        };
+        const out = parsedArgs.apply ? applyRuleChange(opInput) : previewRuleChange(opInput);
+        if (parsedArgs.json) {
+          console.log(JSON.stringify(out, null, 2));
+        } else {
+          console.log(formatRuleChangePreviewText(out.record || out));
+        }
+        break;
+      }
+      const summaryData = getRuleChangePreviewSummary({ feedbackDir });
+      if (parsedArgs.json) {
+        console.log(JSON.stringify(summaryData, null, 2));
+      } else {
+        console.log(`Rule change preview (${summaryData.heldCount} held for approval, ${summaryData.approvedCount} approved)`);
+        if (summaryData.recentChanges.length === 0) {
+          console.log('  After this change, these become allowed: none (no pending rule changes)');
+        } else {
+          for (const rec of summaryData.recentChanges) {
+            console.log('');
+            console.log(formatRuleChangePreviewText(rec));
+          }
+        }
+      }
+    } catch (err) {
+      console.error(`rule-change-preview error: ${err.message}`);
+      process.exit(1);
     }
     break;
   }

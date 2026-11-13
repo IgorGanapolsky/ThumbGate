@@ -4,7 +4,7 @@
 const fs = require('fs');
 const path = require('path');
 const { aggregateFailureDiagnostics } = require('./failure-diagnostics');
-const { AUDIT_LOG_FILENAME } = require('./audit-trail');
+const { AUDIT_LOG_FILENAME, getRuleChangePreviewSummary } = require('./audit-trail');
 const { getBillingSummary, loadFunnelLedger, loadResolvedRevenueEvents } = require('./billing');
 const {
   createUnavailableReport,
@@ -1891,6 +1891,7 @@ function generateDashboard(feedbackDir, options = {}) {
   const diagnostics = aggregateFailureDiagnostics([...entries, ...diagnosticEntries]);
   const secretGuard = computeSecretGuardStats(diagnosticEntries);
   const gates = listActiveGates();
+  const ruleChangePreview = getRuleChangePreviewSummary({ feedbackDir });
   const analytics = computeAnalyticsSummary(feedbackDir, {
     analyticsWindow,
     billingSummary,
@@ -2028,6 +2029,7 @@ function generateDashboard(feedbackDir, options = {}) {
     approval,
     gateStats,
     gates,
+    ruleChangePreview,
     prevention,
     trend,
     health,
@@ -2109,6 +2111,19 @@ function printDashboard(data) {
     console.log(`  Top Blocked      : ${gateStats.topBlocked} (${gateStats.topBlockedCount}\u00D7)`);
   }
 
+
+  if (data.ruleChangePreview) {
+    const rcp = data.ruleChangePreview;
+    console.log('');
+    console.log('🔍 Rule change preview');
+    console.log(`  Held Changes     : ${rcp.heldCount} held for human approval (${rcp.approvedCount || 0} approved)`);
+    for (const item of (rcp.heldChanges || []).slice(0, 3)) {
+      console.log(`  • [${item.id}] ${item.plainPreview}`);
+    }
+    for (const item of (rcp.recentChanges || []).filter((c) => c.status === 'approved').slice(0, 2)) {
+      console.log(`  ✓ [${item.id}] Approved by ${item.approvedBy} at ${item.approvedAt} — ${item.plainPreview}`);
+    }
+  }
   console.log('');
   console.log('\u26A1 Prevention Impact');
   console.log(`  Estimated Saves  : ${prevention.estimatedHoursSaved} hours`);

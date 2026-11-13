@@ -150,6 +150,47 @@ Per the podcast "The RAG Mistake Almost Every Team Is Making" (episode #1017), e
 - Gate templates: `require-matryoshka-embedding-dimension`, `block-embedding-recall-below-threshold`.
 - Tags for feedback: `matryoshka-embedding`, `embedding-quality`, `recall-regression`.
 
+
+## ThumbGate vs OpenShell
+
+[NVIDIA OpenShell](https://github.com/NVIDIA/OpenShell) and ThumbGate work at different layers and can run together in the same agent deployment:
+
+- **OpenShell (sandbox & kernel boundary):** Runs on Linux, macOS on Apple Silicon, or Windows with WSL 2 (experimental), and requires Docker, Podman, or host virtualization. Policies are declarative YAML files (for example `examples/sandbox-policy-quickstart/policy.yaml`), installed via a `curl` install script followed by `openshell sandbox create`. OpenShell enforces filesystem paths, Landlock/process restrictions, network endpoints, and proxy-injected credentials at the sandbox/kernel boundary.
+- **ThumbGate (agent `PreToolUse` & MCP boundary):** Node.js hook and MCP server that evaluates each agent tool call before execution and learns prevention rules from thumbs-up/down feedback. Running `npx thumbgate init` in a clean Git repository today writes local hook and MCP wiring without containers or kernel setup:
+
+```text
+Created .thumbgate/
+Wrote .thumbgate/config.json
+  MCP: wrote .mcp.json
+Scaffolded custom slash commands directories (.claude, .gemini, .antigravitycli)
+
+Detecting platforms...
+  Claude Code: wired PreToolUse hook
+  Claude Code: wired UserPromptSubmit hook
+  Claude Code: wired PostToolUse hook
+  Claude Code: wired PostToolUse hook
+  Claude Code: wired PostToolUseFailure hook
+  Claude Code: wired SessionStart hook
+  Claude Code: wired Stop hook
+  Claude Code: wired statusLine hook
+  Claude Code settings: ~/.claude/settings.local.json
+  Codex: created ~/.codex/config.toml
+  Codex: updated ~/.codex/config.json with hooks and status line
+  Gemini: wrote .gemini/settings.json
+  ChatGPT: import .thumbgate/chatgpt-openapi.yaml in GPT Builder > Actions
+
+✅ thumbgate v1.39.1 initialized.
+```
+
+### Running ThumbGate with OpenShell (and OpenShell ideas shipped in ThumbGate)
+
+When used together, ThumbGate evaluates tool arguments and learned workflow rules per tool call (`PreToolUse`), while OpenShell enforces container, process, filesystem, and socket boundaries underneath the agent. ThumbGate also ships four OpenShell-inspired capabilities directly in its `PreToolUse` and audit layer:
+
+1. **Rule change preview (`npx thumbgate rule-change-preview` and Dashboard Gates tab):** Before a gate rule or lesson change takes effect, ThumbGate replays recorded audit-trail tool calls against the old and new rule sets and prints `"After this change, these become allowed: host X, command Y, path Z"`. Tightening changes apply at once; any widening change or newly allowed credential host is held until a human approves it (recording `approvedBy` and `approvedAt`).
+2. **Secret-to-host binding:** Gates can declare `secret` + `allowedHosts` (for example `GITHUB_TOKEN` -> `["api.github.com"]`) so tool calls referencing that secret are denied if sent to any other host, while unbound secrets keep existing secret-guard behavior.
+3. **Narrowest-allow suggestion:** Blocked tool calls include a suggestion-only narrowest rule change (`one command`, `one host`, or `one path` — never a wildcard blanket allow), requiring human approval before anything changes.
+4. **Ready-to-run `suggestedCall` rewrite:** When a blocked call has a deterministic safe replacement (such as `git push --force origin main` -> `git push --force-with-lease origin <feature-branch>`, or replacing a pasted secret literal in a file edit with `process.env.NAME`), ThumbGate returns `suggestedCall` alongside `"Blocked: X. Run this instead: Y"`; destructive calls with no safe version (such as `rm -rf`) return `suggestedCall: null` and state that no safe replacement exists.
+
 ## References
 
 - Article: https://thenewstack.io/automation-anywhere-enterpriseclaw-ai-agents/

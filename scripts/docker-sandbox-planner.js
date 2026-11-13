@@ -112,7 +112,7 @@ function buildWhy({
   if (command && /\brm\s+-rf\b/i.test(command)) {
     lines.push('Recursive delete commands are safer when the filesystem boundary lives inside a disposable microVM.');
   }
-  if (command && /\bgit\s+push\b.*(?:--force|-f)\b/i.test(command)) {
+  if (command && /\bgit\s+push\b.*(?:--force(?!-with-lease)|-f\b|--force-with-lease\b.*\b(?:main|master|trunk|release)\b)/i.test(command)) {
     lines.push('Force-push flows should run in an isolated lane so host credentials and unrelated state stay out of scope.');
   }
   if (command && /\b(?:gh\s+pr\s+(?:create|merge)|npm\s+publish|yarn\s+publish|pnpm\s+publish)\b/i.test(command)) {
@@ -144,7 +144,7 @@ function buildDockerSandboxPlan(input = {}) {
     : null;
   const commandInfo = classifyCommand(command);
   const destructiveCommand = /\brm\s+-rf\b/i.test(command)
-    || /\bgit\s+push\b.*(?:--force|-f)\b/i.test(command)
+    || /\bgit\s+push\b.*(?:--force(?!-with-lease)|-f\b|--force-with-lease\b.*\b(?:main|master|trunk|release)\b)/i.test(command)
     || /\bgh\s+pr\s+merge\b.*--admin\b/i.test(command);
   const governedCommand = Boolean(
     commandInfo.isPrCreate

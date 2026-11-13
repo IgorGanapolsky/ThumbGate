@@ -205,6 +205,72 @@ function voteOnLesson(lessonId, signal, options = {}) {
   }, options);
 }
 
+/**
+ * Edit or relax a stored lesson through Rule change preview.
+ * Tightening applies at once; relaxing a lesson that turns recorded blocked calls
+ * into allowed calls is held until a human approves it.
+ */
+function editLesson(lessonId, patch = {}, options = {}) {
+  const { applyRuleChange, getAuditLogPath } = require('./audit-trail');
+  const paths = getFeedbackPaths(options);
+  const existing = fs.existsSync(paths.MEMORY_LOG_PATH)
+    ? readJSONL(paths.MEMORY_LOG_PATH, { maxLines: 2000 })
+    : [];
+  let found = false;
+  const nextLessons = existing.map((rec) => {
+    if (rec && (rec.id === lessonId || rec.canonicalHash === lessonId || rec.title === lessonId)) {
+      found = true;
+      return { ...rec, ...patch };
+    }
+    return rec;
+  });
+  if (!found) {
+    nextLessons.push({
+      id: lessonId,
+      title: patch.title || lessonId,
+      content: patch.content || lessonId,
+      signal: patch.signal || 'negative',
+      timestamp: new Date().toISOString(),
+      ...patch,
+    });
+  }
+  return applyRuleChange({
+    changeType: found ? (patch.demoted ? 'relax' : 'edit') : 'add',
+    ruleId: lessonId,
+    oldLessons: existing,
+    newLessons: nextLessons,
+    targetMemoryLogPath: paths.MEMORY_LOG_PATH,
+    auditEntries: options.auditEntries,
+    auditLogPath: options.auditLogPath || getAuditLogPath(),
+    feedbackDir: paths.FEEDBACK_DIR,
+  });
+}
+
+/**
+ * Delete a stored lesson through Rule change preview.
+ * Held for human approval if any recorded blocked call would become allowed.
+ */
+function deleteLesson(lessonId, options = {}) {
+  const { applyRuleChange, getAuditLogPath } = require('./audit-trail');
+  const paths = getFeedbackPaths(options);
+  const existing = fs.existsSync(paths.MEMORY_LOG_PATH)
+    ? readJSONL(paths.MEMORY_LOG_PATH, { maxLines: 2000 })
+    : [];
+  const nextLessons = existing.filter(
+    (rec) => rec && rec.id !== lessonId && rec.canonicalHash !== lessonId && rec.title !== lessonId,
+  );
+  return applyRuleChange({
+    changeType: 'delete',
+    ruleId: lessonId,
+    oldLessons: existing,
+    newLessons: nextLessons,
+    targetMemoryLogPath: paths.MEMORY_LOG_PATH,
+    auditEntries: options.auditEntries,
+    auditLogPath: options.auditLogPath || getAuditLogPath(),
+    feedbackDir: paths.FEEDBACK_DIR,
+  });
+}
+
 function matchesErrorMemory(norm, cleanQuery) {
   const errPattern = (norm.errorPattern || '').toLowerCase();
   if (errPattern && cleanQuery.includes(errPattern)) return true;
@@ -265,6 +331,8 @@ module.exports = {
   verifyLesson,
   voteOnLesson,
   voteLesson: voteOnLesson,
+  editLesson,
+  deleteLesson,
   lookupLessonByError,
   DEFAULT_E2E_BASE_URL_LESSON: SEEDED_LESSONS[0],
 };

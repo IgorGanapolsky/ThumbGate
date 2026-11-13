@@ -652,7 +652,7 @@ function scoreRisk({
       }
     );
   }
-  if (/\bgit\s+push\b.*(?:--force|-f)\b/i.test(commandInfo.text)) {
+  if (/\bgit\s+push\b.*(?:--force(?!-with-lease)|-f\b|--force-with-lease\b.*\b(?:main|master|trunk|release)\b)/i.test(commandInfo.text)) {
     addDriver(drivers, 'force_push', 0.5, 'Force push predicts destructive branch history rewrite.');
   }
   if (/\bgh\s+pr\s+merge\b.*--admin\b/i.test(commandInfo.text)) {
@@ -1239,7 +1239,7 @@ function getSentinelActionType(toolName) {
 function classifyReversibility({ command, blastRadius, integrity, protectedSurface, actionProfile }) {
   const text = String(command || '');
   const blockers = integrity && Array.isArray(integrity.blockers) ? integrity.blockers : [];
-  const destructiveCommand = /\bgit\s+push\b.*(?:--force|-f)\b/i.test(text)
+  const destructiveCommand = /\bgit\s+push\b.*(?:--force(?!-with-lease)|-f\b|--force-with-lease\b.*\b(?:main|master|trunk|release)\b)/i.test(text)
     || /\bgh\s+pr\s+merge\b.*--admin\b/i.test(text)
     || /\brm\s+-rf\b/i.test(text)
     || /\b(?:npm|yarn|pnpm)\s+publish\b/i.test(text)
@@ -1387,7 +1387,7 @@ function buildDecisionControl({
 }
 
 function isDestructiveBypass(command) {
-  return /\bgit\s+push\b.*(?:--force|-f)\b/i.test(command)
+  return /\bgit\s+push\b.*(?:--force(?!-with-lease)|-f\b|--force-with-lease\b.*\b(?:main|master|trunk|release)\b)/i.test(command)
     || /\bgh\s+pr\s+merge\b.*--admin\b/i.test(command);
 }
 

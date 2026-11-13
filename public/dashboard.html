@@ -497,6 +497,14 @@
         </div>
       </details>
 
+      <div class="panel" id="ruleChangePreviewPanel" style="margin-bottom:20px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:8px;">
+          <h3 style="margin:0;">🔍 Rule change preview</h3>
+          <span id="ruleChangePreviewBadge" style="font-size:12px;color:var(--text-muted);">Replays recorded tool calls before widening rules or credential hosts</span>
+        </div>
+        <div id="ruleChangePreviewList"><div class="empty">No held rule changes — tightening changes apply at once.</div></div>
+      </div>
+
       <div id="gatesList"><div class="loading">Loading gates...</div></div>
     </div>
   </div>
@@ -1672,6 +1680,7 @@ function renderDashboardData(data) {
         '<span class="gate-action ' + action + '">' + action.toUpperCase() + '</span></div>';
     }).join('');
   }
+  renderRuleChangePreview(data.ruleChangePreview || {});
 
   renderTeam(data.team || {}, data.analytics || {});
   renderAgentInventory(data.agentSurfaceInventory || {});
@@ -1682,6 +1691,57 @@ function renderDashboardData(data) {
   renderRegulatedProof(data.regulatedProof || {});
   renderTemplates(data.templateLibrary || {});
   renderInsights(data);
+}
+
+function renderRuleChangePreview(rcp) {
+  var listEl = document.getElementById('ruleChangePreviewList');
+  var badgeEl = document.getElementById('ruleChangePreviewBadge');
+  if (!listEl) return;
+  var heldCount = Number(rcp && rcp.heldCount) || 0;
+  var approvedCount = Number(rcp && rcp.approvedCount) || 0;
+  if (badgeEl) {
+    badgeEl.textContent = heldCount > 0
+      ? heldCount + ' widening change(s) held for human approval · ' + approvedCount + ' approved'
+      : '0 held · tightening applies at once (' + approvedCount + ' approved)';
+  }
+  var items = (rcp && Array.isArray(rcp.recentChanges) && rcp.recentChanges.length)
+    ? rcp.recentChanges
+    : (rcp && Array.isArray(rcp.heldChanges) ? rcp.heldChanges : []);
+  if (!items.length) {
+    listEl.innerHTML = '<div class="empty">No held rule changes — tightening changes apply at once.</div>';
+    return;
+  }
+  listEl.innerHTML = items.map(function(item) {
+    var isHeld = item.status === 'held';
+    var credBadge = item.requiresCredentialApproval
+      ? ' <span style="color:#f87171;font-weight:700;font-size:11px;">[CREDENTIAL HOST APPROVAL REQUIRED]</span>'
+      : '';
+    var statusMeta = isHeld
+      ? '<button class="btn-outline" style="font-size:12px;padding:6px 12px;" data-rcp-id="' + escHtml(item.id || '') + '" onclick="approveRuleChangeFromUi(this.getAttribute(\'data-rcp-id\'))">Approve</button>'
+      : (item.approvedBy
+        ? '<span class="gate-action warn">APPROVED BY ' + escHtml(item.approvedBy) + ' · ' + escHtml(item.approvedAt || '') + '</span>'
+        : '<span class="gate-action log">' + escHtml(String(item.status || 'applied').toUpperCase()) + '</span>');
+    return '<div class="gate-card" style="align-items:flex-start;gap:12px;"><div>'
+      + '<div class="gate-name">' + escHtml(item.ruleId || item.changeType || 'Rule change') + credBadge + '</div>'
+      + '<div class="gate-pattern">' + escHtml(item.plainPreview || '') + '</div>'
+      + '</div>' + statusMeta + '</div>';
+  }).join('');
+}
+
+async function approveRuleChangeFromUi(changeId) {
+  if (!changeId) return;
+  var who = window.prompt('Enter your name or handle to approve this widening rule change:');
+  if (!who || !who.trim()) return;
+  try {
+    var res = await fetch('/v1/gates/rule-changes/approve', {
+      method: 'POST',
+      headers: Object.assign({ 'Content-Type': 'application/json' }, getHeaders()),
+      body: JSON.stringify({ changeId: changeId, approvedBy: who.trim() })
+    });
+    if (res.ok) {
+      await loadDashboard();
+    }
+  } catch (_) {}
 }
 
 async function loadAiInventory() {
@@ -2382,6 +2442,20 @@ function loadDemo() {
       '<div class="gate-pattern">' + escHtml(g.pattern) + '</div></div>' +
       '<span class="gate-action ' + g.action + '">' + g.action.toUpperCase() + '</span></div>';
   }).join('');
+  renderRuleChangePreview({
+    heldCount: 1,
+    approvedCount: 0,
+    recentChanges: [
+      {
+        id: 'rcp_demo_force_push',
+        ruleId: 'force-push',
+        changeType: 'delete',
+        status: 'held',
+        requiresCredentialApproval: false,
+        plainPreview: 'After this change, these become allowed: command git push --force origin main'
+      }
+    ]
+  });
   renderTeam({
     totalAgents: 4,
     activeAgents: 3,
