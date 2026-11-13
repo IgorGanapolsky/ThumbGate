@@ -1,8 +1,15 @@
 'use strict';
 
-const test = require('node:test');
-const assert = require('node:assert');
+const fs = require('node:fs');
+const os = require('node:os');
 const path = require('node:path');
+const tmpRuntimeDir = fs.mkdtempSync(path.join(os.tmpdir(), 'tg-brand-standards-'));
+process.env.THUMBGATE_FEEDBACK_DIR = tmpRuntimeDir;
+process.env.THUMBGATE_STATE_DIR = tmpRuntimeDir;
+
+const test = require('node:test');
+test.after(() => fs.rmSync(tmpRuntimeDir, { recursive: true, force: true }));
+const assert = require('node:assert');
 const {
   loadBrandStandards,
   detectBrandFromText,
@@ -107,7 +114,7 @@ test('Feedback learning: stages candidate rule from negative feedback on post co
     whatWentWrong: 'Mentioned "unconditional lifetime SLA credit" which is false.',
     whatToChange: 'Never mention unconditional lifetime SLA credit.',
   };
-  const staged = stageCandidateBrandRuleFromFeedback(feedback, { feedbackDir: path.join(__dirname, '..', '.thumbgate', 'test-feedback') });
+  const staged = stageCandidateBrandRuleFromFeedback(feedback, { feedbackDir: tmpRuntimeDir });
   assert.ok(staged);
   assert.strictEqual(staged.status, 'pending_approval');
   assert.strictEqual(staged.autoApplied, false);
