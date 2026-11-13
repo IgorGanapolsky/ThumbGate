@@ -11,6 +11,7 @@ test('enterprise-governance: HTML file exists and is valid', () => {
   assert.ok(fs.existsSync(PAGE_PATH), 'public/enterprise-governance.html must exist');
   const html = fs.readFileSync(PAGE_PATH, 'utf8');
   assert.ok(html.length > 1000);
+  assert.doesNotMatch(html, /__GOOGLE_SITE_VERIFICATION_META__|__GA_BOOTSTRAP__/);
 });
 
 test('enterprise-governance: accurately bounds the approved local-workflow offer', () => {
