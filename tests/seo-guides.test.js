@@ -216,7 +216,7 @@ describe('SEO guide and comparison pages', () => {
     assert.ok(html.includes('Use the free CLI first'));
     assert.ok(html.includes('Use the free CLI first'));
     assert.ok(html.includes('Start $499 diagnostic'));
-    assert.ok(html.includes('href="/checkout/pro?'));
+    assert.doesNotMatch(html, /href="\/checkout\/pro\?/);
     assert.ok(html.includes('href="/guide?'));
     assert.ok(html.includes('href="/diagnostic?'));
     assert.equal(htmlHasBuyStripeHost(html), false, 'migration checklist must not hard-link buy.stripe.com');

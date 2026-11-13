@@ -277,9 +277,9 @@ test('hosted origin and repository metadata stay canonical across live-facing ar
   assert.match(publicLanding, /\$__SPRINT_DIAGNOSTIC_PRICE_DOLLARS__/);
   assert.match(publicLanding, /Setup Sprint/);
   assert.match(publicLanding, /action="\/go\/diagnostic-pay" method="POST"/);
-  assert.match(publicLanding, /\$19/);
-  assert.match(publicLanding, /\$149/);
-  assert.match(publicLanding, /\/go\/pro-direct/);
+  assert.doesNotMatch(publicLanding, /\$19/);
+  assert.doesNotMatch(publicLanding, /\$149/);
+  assert.doesNotMatch(publicLanding, /\/go\/pro-direct/);
   assert.match(publicLanding, /__GA_BOOTSTRAP__/);
   assert.match(publicLanding, /__GOOGLE_SITE_VERIFICATION_META__/);
   assert.match(publicLanding, /Stop AI agent mistakes before they cost you/i);
