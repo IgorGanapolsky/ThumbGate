@@ -3,6 +3,7 @@
 const { tenantDataScope, assertScopedDataPath, restrictedWorkerEnv, withDataScope } = require('./feedback-scope');
 
 const fs = require('fs');
+const { randomUUID } = require('node:crypto');
 const path = require('path');
 const { spawnSync } = require('child_process');
 
@@ -41,7 +42,13 @@ function readJson(filePath) {
 
 function writeJson(filePath, value) {
   ensureDir(path.dirname(filePath));
-  fs.writeFileSync(filePath, JSON.stringify(value, null, 2) + '\n', 'utf8');
+  const serialized = JSON.stringify(value, null, 2) + '\n';
+  const temporary = assertScopedDataPath(`${filePath}.${process.pid}.${randomUUID()}.tmp`);
+  const descriptor = fs.openSync(temporary, 'wx', 0o600);
+  try {
+    try { fs.writeFileSync(descriptor, serialized, 'utf8'); } finally { fs.closeSync(descriptor); }
+    fs.renameSync(temporary, filePath);
+  } finally { fs.rmSync(temporary, { force: true }); }
 }
 
 function appendJSONL(filePath, record) {
@@ -1151,6 +1158,7 @@ module.exports = {
   readJobLog,
   getJobStats,
   readJobState,
+  writeJobState,
   listJobStates,
   readJobControl,
   requestJobControl,
