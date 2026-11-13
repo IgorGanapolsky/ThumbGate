@@ -1,6 +1,8 @@
 #!/usr/bin/env node
 'use strict';
 
+const { tenantDataScope } = require('./feedback-scope');
+
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
@@ -1369,14 +1371,14 @@ function computeAnalyticsSummary(feedbackDir, options = {}) {
     (entry) => entry && (entry.receivedAt || entry.timestamp)
   );
   const telemetry = getTelemetryAnalytics(feedbackDir, analyticsWindow);
-  const billing = options.billingSummary || getBillingSummary(analyticsWindow);
+  const billing = tenantDataScope() ? {} : (options.billingSummary || getBillingSummary(analyticsWindow));
   const funnelEntries = filterEntriesForWindow(
-    loadFunnelLedger(),
+    tenantDataScope() ? [] : loadFunnelLedger(),
     analyticsWindow,
     (entry) => entry && entry.timestamp
   );
   const paidOrderEntries = filterEntriesForWindow(
-    loadResolvedRevenueEvents(),
+    tenantDataScope() ? [] : loadResolvedRevenueEvents(),
     analyticsWindow,
     (entry) => entry && entry.timestamp
   ).filter((entry) => entry && entry.status === 'paid');
@@ -1731,8 +1733,8 @@ function computeAgentFileAudit(projectRoot = PROJECT_ROOT) {
 }
 
 function computeAgentFileAuditFromFeedback(feedbackDir, options = {}) {
-  const readiness = options.readiness || generateAgentReadinessReport({ projectRoot: PROJECT_ROOT });
-  const auditResults = computeAgentFileAudit();
+  const readiness = options.readiness || generateAgentReadinessReport({ projectRoot: tenantDataScope()?.feedbackDir || PROJECT_ROOT });
+  const auditResults = computeAgentFileAudit(tenantDataScope()?.feedbackDir || PROJECT_ROOT);
 
   return {
     totalAgentFiles: auditResults.totalAgentFiles,
@@ -1997,7 +1999,7 @@ function summarizeMcpServerInventory(projectRoot = PROJECT_ROOT) {
 }
 
 function computeAgentSurfaceInventory(feedbackDir, options = {}) {
-  const readiness = options.readiness || generateAgentReadinessReport({ projectRoot: PROJECT_ROOT });
+  const readiness = options.readiness || generateAgentReadinessReport({ projectRoot: tenantDataScope()?.feedbackDir || PROJECT_ROOT });
   const auditEntries = Array.isArray(options.auditEntries)
     ? options.auditEntries
     : readJSONL(path.join(feedbackDir, AUDIT_LOG_FILENAME));
@@ -2056,7 +2058,7 @@ function computeAgentSurfaceInventory(feedbackDir, options = {}) {
     .sort((left, right) => right[1] - left[1] || left[0].localeCompare(right[0]))
     .map(([source, count]) => ({ source, count }))
     .slice(0, 6);
-  const mcpInventory = summarizeMcpServerInventory(PROJECT_ROOT);
+  const mcpInventory = summarizeMcpServerInventory(tenantDataScope()?.feedbackDir || PROJECT_ROOT);
 
   return {
     profile: readiness.permissions.profile,
@@ -2209,7 +2211,7 @@ function generateDashboard(feedbackDir, options = {}) {
     auditEntries,
     reviewedAt: options.now || new Date().toISOString(),
   });
-  const billingSummary = options.billingSummary || getBillingSummary(analyticsWindow);
+  const billingSummary = tenantDataScope() ? {} : (options.billingSummary || getBillingSummary(analyticsWindow));
 
   const approval = computeApprovalStats(entries);
   const gateStats = mergeRepeatMetricIntoGateStats(computeGateStats(feedbackDir));
@@ -2266,7 +2268,7 @@ function generateDashboard(feedbackDir, options = {}) {
   });
   analytics.lossAnalysis = buildLossAnalysis(analytics);
   const observability = computeObservabilityStats(diagnosticEntries, diagnostics, secretGuard, analytics.telemetry);
-  const instrumentation = computeInstrumentationReadiness(analytics, billingSummary);
+  const instrumentation = tenantDataScope() ? { availability: 'admin_only' } : computeInstrumentationReadiness(analytics, billingSummary);
   const delegationRuntime = loadDelegationRuntimeModule();
   const delegation = delegationRuntime
     ? delegationRuntime.summarizeDelegation(feedbackDir)
@@ -2277,7 +2279,7 @@ function generateDashboard(feedbackDir, options = {}) {
       activePlans: [],
       availability: 'private_core',
     };
-  const readiness = generateAgentReadinessReport({ projectRoot: PROJECT_ROOT });
+  const readiness = generateAgentReadinessReport({ projectRoot: tenantDataScope()?.feedbackDir || PROJECT_ROOT });
   const feedbackAnalysis = analyzeFeedback(path.join(feedbackDir, 'feedback-log.jsonl'), {
     entries,
     humanOnly: options.humanOnly,
@@ -2296,18 +2298,18 @@ function generateDashboard(feedbackDir, options = {}) {
     auditEntries,
     decisionRecords,
   });
-  const settingsStatus = getSettingsStatus({ projectRoot: PROJECT_ROOT });
+  const settingsStatus = getSettingsStatus({ projectRoot: tenantDataScope()?.feedbackDir || PROJECT_ROOT, ...(tenantDataScope() ? { homeDir: tenantDataScope().feedbackDir } : {}) });
   settingsStatus.routingPreview = {
     dashboardTool: routeProfile({
       toolName: 'dashboard',
-      settingsOptions: { projectRoot: PROJECT_ROOT },
+      settingsOptions: { projectRoot: tenantDataScope()?.feedbackDir || PROJECT_ROOT, ...(tenantDataScope() ? { homeDir: tenantDataScope().feedbackDir } : {}) },
     }),
     defaultSession: routeProfile({
-      settingsOptions: { projectRoot: PROJECT_ROOT },
+      settingsOptions: { projectRoot: tenantDataScope()?.feedbackDir || PROJECT_ROOT, ...(tenantDataScope() ? { homeDir: tenantDataScope().feedbackDir } : {}) },
     }),
     reviewSession: routeProfile({
       sessionType: 'review',
-      settingsOptions: { projectRoot: PROJECT_ROOT },
+      settingsOptions: { projectRoot: tenantDataScope()?.feedbackDir || PROJECT_ROOT, ...(tenantDataScope() ? { homeDir: tenantDataScope().feedbackDir } : {}) },
     }),
   };
   const workflowSummary = summarizeWorkflowRuns(feedbackDir);
@@ -2372,7 +2374,7 @@ function generateDashboard(feedbackDir, options = {}) {
     })
     : buildUnavailableOrgDashboard(teamWindowHours);
   const templateLibrary = summarizeGateTemplates();
-  const predictive = buildPredictiveInsights({
+  const predictive = tenantDataScope() ? { availability: 'admin_only' } : buildPredictiveInsights({
     telemetryAnalytics: analytics.telemetry,
     billingSummary,
     gateStats,

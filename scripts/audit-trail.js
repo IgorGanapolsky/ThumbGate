@@ -1,6 +1,8 @@
 #!/usr/bin/env node
 'use strict';
 
+const { assertScopedDataPath } = require('./feedback-scope');
+
 /**
  * Audit Trail — OpenShell-inspired governance layer
  *
@@ -24,7 +26,7 @@ const GATE_EVENTS_LOG_FILENAME = 'gate-events-log.jsonl';
 // ---------------------------------------------------------------------------
 
 function getAuditLogPath() {
-  return path.join(resolveFeedbackDir(), AUDIT_LOG_FILENAME);
+  return assertScopedDataPath(path.join(resolveFeedbackDir(), AUDIT_LOG_FILENAME));
 }
 
 /**
@@ -52,11 +54,11 @@ const OBSERVED_FILENAME = 'observed-agents.jsonl';
 const OBSERVED_COMPACT_BYTES = 512 * 1024;
 
 function getRegistryPath() {
-  return path.join(resolveFeedbackDir(), REGISTRY_FILENAME);
+  return assertScopedDataPath(path.join(resolveFeedbackDir(), REGISTRY_FILENAME));
 }
 
 function getObservedAgentsPath() {
-  return path.join(resolveFeedbackDir(), OBSERVED_FILENAME);
+  return assertScopedDataPath(path.join(resolveFeedbackDir(), OBSERVED_FILENAME));
 }
 
 /**
@@ -378,7 +380,7 @@ function auditToFeedback(auditRecord) {
 // ---------------------------------------------------------------------------
 
 function readAuditLog(logPath) {
-  const p = logPath || getAuditLogPath();
+  const p = assertScopedDataPath(logPath || getAuditLogPath());
   if (!fs.existsSync(p)) return [];
   const raw = fs.readFileSync(p, 'utf-8').trim();
   if (!raw) return [];

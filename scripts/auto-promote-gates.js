@@ -1,6 +1,8 @@
 #!/usr/bin/env node
 'use strict';
 
+const { tenantDataScope, assertScopedDataPath } = require('./feedback-scope');
+
 const fs = require('fs');
 const path = require('path');
 const { resolveFeedbackDir } = require('./feedback-paths');
@@ -32,6 +34,8 @@ function getRuleTtlMs() {
 const NEG_SIGNALS = new Set(['negative', 'negative_strong', 'down', 'thumbs_down']);
 
 function getFeedbackLogPath() {
+  const scope = tenantDataScope();
+  if (scope) return assertScopedDataPath(path.join(scope.feedbackDir, 'feedback-log.jsonl'));
   if (process.env.THUMBGATE_FEEDBACK_DIR) {
     return path.join(process.env.THUMBGATE_FEEDBACK_DIR, 'feedback-log.jsonl');
   }
@@ -46,7 +50,7 @@ function getFeedbackLogPath() {
 }
 
 function getAutoGatesPath() {
-  return path.join(path.dirname(getFeedbackLogPath()), 'auto-promoted-gates.json');
+  return assertScopedDataPath(path.join(path.dirname(getFeedbackLogPath()), 'auto-promoted-gates.json'));
 }
 
 function readJSONL(filePath) {
@@ -70,7 +74,7 @@ function readJSONL(filePath) {
 const REGRESSION_FALSE_BLOCK_LIMIT = 0; // any prior safe action it would block => quarantine
 
 function getAuditTrailPath() {
-  return path.join(path.dirname(getFeedbackLogPath()), 'audit-trail.jsonl');
+  return assertScopedDataPath(path.join(path.dirname(getFeedbackLogPath()), 'audit-trail.jsonl'));
 }
 
 // Returns { falseBlocks, allowSampleSize } or null when there is no history /

@@ -8,6 +8,7 @@
  */
 
 const crypto = require('node:crypto');
+const { tenantDataScope, assertScopedDataPath } = require('./feedback-scope');
 const fs = require('fs');
 const path = require('path');
 const { loadOptionalModule } = require('./private-core-boundary');
@@ -90,6 +91,7 @@ function isSelfHarnessOptimizerEnabled(env = process.env) {
  *   - 2-second timeout via AbortSignal.timeout.
  */
 function emitAnonymousFeedbackPing(signal) {
+  if (tenantDataScope()) return;
   try {
     const env = process.env || {};
     if (
@@ -172,6 +174,8 @@ let _lessonDB = null;
 let _lessonDBPath = null;
 
 function resolveLessonDbPath() {
+  const scope = tenantDataScope();
+  if (scope) return assertScopedDataPath(path.join(scope.feedbackDir, 'lessons.sqlite'));
   if (process.env.LESSON_DB_PATH) return process.env.LESSON_DB_PATH;
   if (process.env.THUMBGATE_FEEDBACK_DIR || process.env.RAILWAY_VOLUME_MOUNT_PATH) {
     return path.join(getFeedbackPaths().FEEDBACK_DIR, 'lessons.sqlite');
@@ -179,8 +183,13 @@ function resolveLessonDbPath() {
   return null;
 }
 
+function openTenantLessonDB(desiredPath) {
+  try { return require('./lesson-db').initDB(desiredPath); } catch { return null; }
+}
+
 function getLessonDB() {
   const desiredPath = resolveLessonDbPath();
+  if (tenantDataScope()) return openTenantLessonDB(desiredPath);
   if (_lessonDB && _lessonDBPath === desiredPath) return _lessonDB;
 
   if (_lessonDB && _lessonDBPath !== desiredPath) {
@@ -345,6 +354,8 @@ const THUMB_EMAIL_RE = /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b/g;
 const THUMB_PHONE_RE = /(?:\+\d{1,3}[\s.-]?)?(?:\(\d{3}\)|\b\d{3})[\s.-]\d{3}[\s.-]\d{4}\b/g;
 
 function recentThumbsOutputPath() {
+  const scope = tenantDataScope();
+  if (scope) return assertScopedDataPath(path.join(scope.feedbackDir, 'RECENT-THUMBS.md'));
   const override = process.env.THUMBGATE_RECENT_THUMBS_PATH;
   if (override) return override;
   if (process.env.THUMBGATE_RECENT_THUMBS_DISABLE === '1') return null;
@@ -743,6 +754,7 @@ function getPendingBackgroundSideEffectCount() {
 }
 
 function readJSONL(filePath, { maxLines = 500, maxBytes = 4 * 1024 * 1024 } = {}) {
+  assertScopedDataPath(filePath);
   if (!fs.existsSync(filePath)) return [];
   // Always go through readTextTail. A maxLines slice after readFileSync still
   // materializes the whole file and throws on prod-sized JSONL (0x1fffffe8).
@@ -1638,7 +1650,7 @@ function captureFeedback(params, options = {}) {
   const summary = loadSummary();
   // Only count real user feedback in the summary, not audit-trail gate events
   const isAuditEntry = Array.isArray(tags) && tags.includes(AUDIT_TRAIL_TAG);
-  if (!isAuditEntry) {
+  if (!tenantDataScope() && !isAuditEntry) {
     summary.total += 1;
     summary[signal] += 1;
   }
@@ -1939,8 +1951,9 @@ function captureFeedback(params, options = {}) {
 
   // Dual-write to SQLite lesson DB — deferred to avoid blocking response
   let correctiveActions = [];
+  let lessonDB;
   try {
-    const lessonDB = getLessonDB();
+    lessonDB = getLessonDB();
     if (lessonDB) {
       const { upsertLesson, inferCorrectiveActions } = require('./lesson-db');
       upsertLesson(lessonDB, feedbackEvent, memoryRecord);
@@ -1950,6 +1963,8 @@ function captureFeedback(params, options = {}) {
     }
   } catch (_err) {
     // Lesson DB write is non-critical — never fail the capture pipeline
+  } finally {
+    if (tenantDataScope() && lessonDB) lessonDB.close();
   }
 
   try {
@@ -2101,7 +2116,7 @@ function captureFeedback(params, options = {}) {
         // Prompt-file mutation and git commits are explicit opt-in side effects.
         // Feedback capture must never detach an unrequested process that edits
         // AGENTS.md/GEMINI.md merely because a negative rule was promoted.
-        if (isSelfHarnessOptimizerEnabled()) {
+        if (!tenantDataScope() && isSelfHarnessOptimizerEnabled()) {
           try {
             const { fork } = require('node:child_process');
             const localOptimizerPath = path.join(process.cwd(), 'scripts', 'self-harness-optimizer.js');
@@ -2121,7 +2136,7 @@ function captureFeedback(params, options = {}) {
   }
 
   // Auto-export to Obsidian if configured (deferred but tracked)
-  if (process.env.THUMBGATE_OBSIDIAN_VAULT_PATH) {
+  if (!tenantDataScope() && process.env.THUMBGATE_OBSIDIAN_VAULT_PATH) {
     const exportPromise = new Promise((resolve) => {
       setImmediate(() => {
         try {
@@ -2419,14 +2434,17 @@ function addDiagnosticRecs(diagnostics, output) {
 }
 
 function getSQLiteFallback(useSQLite, entries) {
-  const db = useSQLite ? getLessonDB() : null;
-  if (!db || entries.length > 0) return null;
+  if (!useSQLite || entries.length > 0) return null;
+  const db = getLessonDB();
+  if (!db) return null;
   try {
     const { getStatsFromDB } = require('./lesson-db');
     const sqliteStats = getStatsFromDB(db);
     return sqliteStats.total > 0 ? normalizeAnalysisShape(sqliteStats) : null;
   } catch {
     return null;
+  } finally {
+    if (tenantDataScope()) db.close();
   }
 }
 

@@ -427,3 +427,39 @@ test('runHarness compiles and executes a natural-language harness through async-
     fs.rmSync(feedbackDir, { recursive: true, force: true });
   }
 });
+
+test('job state remains readable while another worker publishes an update', async () => {
+  const feedbackDir = createFeedbackDir();
+  const harness = loadRuntimeHarness({ feedbackDir });
+  const signal = new Int32Array(new SharedArrayBuffer(4));
+  const { Worker } = require('node:worker_threads');
+  harness.runner.queueJob({ id: 'atomic-state', context: 'previous snapshot' });
+  const worker = new Worker(`
+    const { parentPort, workerData } = require('node:worker_threads');
+    const fs = require('node:fs');
+    process.env.THUMBGATE_FEEDBACK_DIR = workerData.feedbackDir;
+    const signal = new Int32Array(workerData.signal);
+    const write = fs.writeFileSync;
+    fs.writeFileSync = (file, ...args) => {
+      const fd = typeof file === 'number' ? file : fs.openSync(file, 'w');
+      parentPort.postMessage('pending-write');
+      Atomics.wait(signal, 0, 0);
+      try { write(fd, ...args); } finally { if (typeof file !== 'number') fs.closeSync(fd); }
+    };
+    require(workerData.runnerPath).queueJob({ id: 'atomic-state', context: 'next snapshot' });
+  `, { eval: true, workerData: { feedbackDir, signal: signal.buffer, runnerPath: RUNNER_PATH } });
+  const exited = new Promise((resolve, reject) => { worker.once('exit', resolve); worker.once('error', reject); });
+  try {
+    await new Promise((resolve) => worker.once('message', resolve));
+    const pending = harness.runner.readJobState('atomic-state');
+    Atomics.store(signal, 0, 1);
+    Atomics.notify(signal, 0);
+    assert.equal(await exited, 0);
+    assert.equal(pending?.jobSpec.stages[0].context, 'previous snapshot');
+    assert.equal(harness.runner.readJobState('atomic-state').jobSpec.stages[0].context, 'next snapshot');
+  } finally {
+    await worker.terminate();
+    harness.cleanup();
+    fs.rmSync(feedbackDir, { recursive: true, force: true });
+  }
+});
