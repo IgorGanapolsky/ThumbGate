@@ -15,11 +15,10 @@ const TRANSCRIPT_PREFIXES = Object.freeze([
   'it ignored a prior instruction: <',
 ]);
 
-const TERM_STOPWORDS = new Set([
-  'bash', 'node', 'npm', 'with', 'from', 'that', 'this', 'then', 'else',
-  'true', 'false', 'null', 'echo', 'test', 'undefined', 'function', 'return',
-  'const', 'async', 'await', 'the', 'and', 'for', 'not', 'git', 'yarn', 'pnpm',
+const COMMAND_TERMS = new Set([
+  'push', 'merge', 'curl', 'deploy', 'health', 'force', 'approve', 'admin', 'railway', 'trunk',
 ]);
+const FOREIGN_REPO_TAGS = new Set(['dayglass', 'stockservice', 'psn', 'screenpipe']);
 
 function estimateTokens(text) {
   return Math.ceil(String(text || '').length / CHARS_PER_TOKEN);
@@ -52,58 +51,82 @@ function lessonBlob(lesson) {
   return `${lessonDisplayText(lesson)} ${tags.join(' ')} ${tools.join(' ')}`.toLowerCase();
 }
 
-function toolNameMatches(lesson, toolName) {
+function declaredToolMatches(lesson, toolName) {
   const tool = String(toolName || '').trim().toLowerCase();
   if (!tool) return false;
   const listed = [
     ...(lesson.metadata?.toolsUsed || []),
     ...(lesson.structuredRule?.metadata?.toolsUsed || []),
-    ...(Array.isArray(lesson.tags) ? lesson.tags : []),
     lesson.tool,
     lesson.metadata?.tool,
   ].map((item) => String(item || '').trim().toLowerCase());
-  if (listed.includes(tool)) return true;
-  return new RegExp(`\\b${tool.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'i').test(lessonBlob(lesson));
+  return listed.includes(tool);
 }
 
 function actionMatchTerms(toolName, actionContext) {
-  const context = String(actionContext || '');
+  const context = String(actionContext || '').toLowerCase();
   const terms = new Set();
-  const tool = String(toolName || '').trim().toLowerCase();
   const paths = context.match(/(?:[\w.-]+\/)+[\w.-]+|[\w.-]+\.(?:js|ts|mjs|cjs|md|json|yml|yaml|sh|py|html)/gi) || [];
   for (const found of paths) {
-    const lower = found.toLowerCase();
-    terms.add(lower);
-    const base = lower.split('/').pop();
+    terms.add(found);
+    const base = found.split('/').pop();
     if (base && base.length >= 4) terms.add(base);
     const stem = base.replace(/\.[a-z0-9]+$/, '');
     if (stem.length >= 5) terms.add(stem);
   }
-  for (const word of context.toLowerCase().split(/[^a-z0-9_./-]+/)) {
-    const cleaned = word.replace(/^\/+|\/+$/g, '');
-    if (cleaned.length < 5 || cleaned === tool || TERM_STOPWORDS.has(cleaned)) continue;
-    terms.add(cleaned);
+  for (const word of context.split(/[^a-z0-9]+/)) {
+    if (COMMAND_TERMS.has(word)) terms.add(word);
   }
-  terms.delete(tool);
+  terms.delete(String(toolName || '').trim().toLowerCase());
   return [...terms];
 }
 
-function lessonMatchesToolCall(lesson, { toolName, actionContext, project } = {}) {
+function lessonInCallRepo(lesson, project) {
+  const {
+    isLessonRelevantForProject,
+    inferProjectFromLesson,
+    normalizeProjectName,
+  } = require('./project-scope');
+  if (isLessonRelevantForProject(lesson, project)) return true;
+  const target = normalizeProjectName(String(project || ''));
+  if (target !== 'thumbgate') return false;
+  const tags = (Array.isArray(lesson.tags) ? lesson.tags : [])
+    .map((tag) => String(tag || '').trim().toLowerCase());
+  if (tags.some((tag) => FOREIGN_REPO_TAGS.has(tag) || (tag.startsWith('repo:') && !tag.endsWith(':thumbgate') && !tag.endsWith('thumbgate')))) {
+    return false;
+  }
+  const inferred = inferProjectFromLesson(lesson);
+  if (!inferred || inferred === 'global') return true;
+  const normalized = normalizeProjectName(inferred);
+  return normalized === 'thumbgate';
+}
+
+function lessonMatchScore(lesson, { toolName, actionContext } = {}) {
+  const toolHit = declaredToolMatches(lesson, toolName);
+  const terms = actionMatchTerms(toolName, actionContext);
+  const blob = lessonBlob(lesson);
+  const hitTerms = terms.filter((term) => blob.includes(term));
+  if (!toolHit && hitTerms.length === 0) return 0;
+  let score = hitTerms.length + (toolHit ? 1 : 0);
+  const gitMutation = hitTerms.some((term) => ['push', 'merge', 'force', 'approve', 'admin'].includes(term));
+  if (gitMutation && blob.includes('branch protection')) score += 5;
+  if (hitTerms.includes('health') && (blob.includes('/health') || blob.includes('health curl'))) score += 5;
+  return score;
+}
+
+function lessonMatchesToolCall(lesson, options = {}) {
   const text = lessonDisplayText(lesson);
   if (!text || isRawTranscriptFragment(text)) return false;
-  const { isTranscriptShaped, isLessonRelevantForProject, inferProjectFromLesson } = require('./project-scope');
+  const { isTranscriptShaped, inferProjectFromLesson } = require('./project-scope');
   if (isTranscriptShaped(lesson) || isTranscriptShaped(text)) return false;
-  if (project) {
-    if (!isLessonRelevantForProject(lesson, project)) return false;
+  if (options.project) {
+    if (!lessonInCallRepo(lesson, options.project)) return false;
   } else {
+    const { normalizeProjectName } = require('./project-scope');
     const inferred = inferProjectFromLesson(lesson);
-    if (inferred && inferred !== 'global' && inferred !== 'thumbgate') return false;
+    if (inferred && inferred !== 'global' && normalizeProjectName(inferred) !== 'thumbgate') return false;
   }
-  if (!toolNameMatches(lesson, toolName)) return false;
-  const terms = actionMatchTerms(toolName, actionContext);
-  if (terms.length === 0) return false;
-  const blob = lessonBlob(lesson);
-  return terms.some((term) => blob.includes(term));
+  return lessonMatchScore(lesson, options) > 0;
 }
 
 function seenStorePath(sessionId, dir) {
@@ -130,12 +153,15 @@ function selectInjectableLessons(lessons, options = {}) {
   const storePath = options.seenStorePath || (sessionId ? seenStorePath(sessionId, options.seenDir) : null);
   const seen = storePath ? readSeen(storePath) : (options.seen || {});
   const matched = [];
-  for (const lesson of Array.isArray(lessons) ? lessons : []) {
-    if (!lessonMatchesToolCall(lesson, options)) continue;
-    const id = lessonIdentity(lesson);
+  const ranked = (Array.isArray(lessons) ? lessons : [])
+    .map((lesson, index) => ({ lesson, index, score: lessonMatchesToolCall(lesson, options) ? lessonMatchScore(lesson, options) : 0 }))
+    .filter((row) => row.score > 0)
+    .sort((a, b) => b.score - a.score || a.index - b.index);
+  for (const row of ranked) {
+    const id = lessonIdentity(row.lesson);
     const last = Number(seen[id] || 0);
     if (id && last && now - last < LESSON_REPEAT_MS) continue;
-    matched.push(lesson);
+    matched.push(row.lesson);
     if (matched.length >= MAX_INJECTED_LESSONS) break;
   }
   const kept = [];
