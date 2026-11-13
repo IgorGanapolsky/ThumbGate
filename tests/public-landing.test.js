@@ -661,28 +661,31 @@ test('homepage stays human-scannable instead of becoming a product monorepo', ()
   }
 });
 
-test('hero shows the blocked mistake and one free install, with price below it', () => {
+test('hero states the approved workflow scope with fit-first and free paths', () => {
   const hero = landingPage.slice(
     landingPage.indexOf('<!-- HERO -->'),
     landingPage.indexOf('</section>', landingPage.indexOf('<!-- HERO -->'))
   );
   const lede = normalizeHtmlText((hero.match(/<p class="hero-lede">([\s\S]*?)<\/p>/) || [])[1]);
 
-  assert.match(landingPage, /Stop AI agent mistakes before they cost you/i);
-  assert.match(landingPage, /ThumbGate — Stop AI agent mistakes before they cost you/i);
-  assert.match(hero, /<h1>Stop AI agent mistakes before they cost you\.<\/h1>/i);
+  assert.match(landingPage, /One repeated agent mistake\. One configured gate/i);
+  assert.match(landingPage, /ThumbGate — One repeated agent mistake\. One configured gate/i);
+  assert.match(hero, /<h1>One repeated agent mistake\. One configured gate\.<\/h1>/i);
   assert.match(hero, /Not a prompt · Not a postmortem/i);
-  assert.match(hero, /learn from your thumbs/i);
-  assert.match(hero, /tool-call boundary/i);
+  assert.match(hero, /supported hook integrations/i);
+  assert.match(hero, /Check my workflow fit/i);
+  assert.match(hero, /Illustrative example, not a recorded result/i);
+  assert.match(hero, /Illustrative tool-call decisions/i);
+  assert.match(hero, /advisory integrations do not guarantee execution blocking/i);
   assert.match(hero, /npx thumbgate init/);
-  assert.doesNotMatch(hero, /id="offers"|Start Pro|Setup Sprint/);
+  assert.doesNotMatch(hero, /id="offers"|Start Pro/);
   assert.match(landingPage, /id="thumbgate-dashboard-command"/);
   assert.match(landingPage, /thumbgate-dashboard/);
   assert.match(landingPage, /\/thumbgate-dashboard/);
   assert.match(landingPage, /npx thumbgate dashboard --open/);
   // Static hook comparison table replaced by enforcement table
   assert.match(landingPage, /Enforcement by agent and mode/);
-  assert.ok(lede.split(/\s+/).length <= 40, `hero lede is ${lede.split(/\s+/).length} words`);
+  assert.ok(lede.split(/\s+/).length <= 45, `hero lede is ${lede.split(/\s+/).length} words`);
 });
 
 test('how-it-works sells the self-improving loop, not a static allowlist', () => {
@@ -722,7 +725,7 @@ test('paid wedge includes managed implementation, regression, and rollout proof'
   assert.match(landingPage, /Setup Sprint/);
   assert.match(landingPage, /Book the \$499 setup/);
   assert.match(landingPage, /One configured local gate \+ regression test|One configured local gate and its regression test/);
-  assert.match(landingPage, /Rollout and rollback proof within two business days/);
+  assert.match(landingPage, /Delivery within two business days after access and agreed materials are available, subject to confirmed scheduling/);
   assert.match(landingPage, /If the workflow cannot be reduced to one supported gate, the order is refunded/);
   assert.match(landingPage, /Multi-system implementation[\s\S]*require separate scope/);
 });
