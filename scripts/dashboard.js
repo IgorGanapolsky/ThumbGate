@@ -2222,7 +2222,20 @@ function generateDashboard(feedbackDir, options = {}) {
   let flowIncomplete = false;
   try {
     const tail = readTextTail(path.join(feedbackDir, AUDIT_LOG_FILENAME), DEFAULT_JSONL_MAX_BYTES);
-    flowIncomplete = tail.truncated || tail.text.split('\n').length >= DEFAULT_JSONL_MAX_ENTRIES;
+    const lines = tail.text.split('\n');
+    flowIncomplete = tail.truncated || lines.length >= DEFAULT_JSONL_MAX_ENTRIES;
+    if (!flowIncomplete) {
+      for (const line of lines) {
+        if (!line.trim()) continue;
+        const event = JSON.parse(line);
+        if (!event || typeof event !== 'object' || Array.isArray(event)
+          || typeof event.timestamp !== 'string' || !Number.isFinite(Date.parse(event.timestamp))
+          || !['allow', 'deny', 'warn', 'approve', 'log', 'override'].includes(event.decision)) {
+          flowIncomplete = true;
+          break;
+        }
+      }
+    }
     flowTracked = !flowIncomplete;
   } catch {
     flowIncomplete = fs.existsSync(path.join(feedbackDir, AUDIT_LOG_FILENAME));

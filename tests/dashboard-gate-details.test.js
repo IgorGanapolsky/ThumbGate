@@ -165,6 +165,49 @@ test('an unnamed dashboard gate keeps its regex inside the details payload', () 
   assert.equal(result.pattern, 'secret-regex-pattern');
 });
 
+for (const [name, line] of [
+  ['malformed JSON', '{"decision":"deny"'],
+  ['a null event', 'null'],
+  ['an array event', '[]'],
+  ['a primitive event', '7'],
+  ['a missing timestamp', JSON.stringify({ decision: 'deny' })],
+  ['an invalid timestamp', JSON.stringify({ timestamp: 'not-a-date', decision: 'deny' })],
+  ['a non-string timestamp', JSON.stringify({ timestamp: 123, decision: 'deny' })],
+  ['a missing decision', JSON.stringify({ timestamp: new Date().toISOString() })],
+  ['an invalid decision', JSON.stringify({ timestamp: new Date().toISOString(), decision: 'bogus' })],
+]) {
+  test('flow counts are unavailable for audit history containing ' + name, () => {
+    const valid = JSON.stringify({ timestamp: new Date().toISOString(), decision: 'deny' });
+    fs.writeFileSync(path.join(dir, 'audit-trail.jsonl'), valid + '\n' + line + '\n');
+
+    assert.deepEqual(generateDashboard(dir).gateFlowStats, {
+      tracked: false,
+      incomplete: true,
+      blockedToday: null,
+      blocked30Days: null,
+      allowed30Days: null,
+      blockedEntries: [],
+    });
+  });
+}
+
+test('flow counts remain tracked for valid audit decisions and blank lines', () => {
+  const timestamp = new Date().toISOString();
+  const decisions = ['allow', 'deny', 'warn', 'approve', 'log', 'override'];
+  fs.writeFileSync(path.join(dir, 'audit-trail.jsonl'), '\n  \n' + decisions
+    .map((decision) => JSON.stringify({ timestamp, decision }))
+    .join('\n\n') + '\n');
+
+  assert.deepEqual(generateDashboard(dir).gateFlowStats, {
+    tracked: true,
+    incomplete: false,
+    blockedToday: 1,
+    blocked30Days: 1,
+    allowed30Days: 1,
+    blockedEntries: [{ timestamp, gateId: null, toolName: null }],
+  });
+});
+
 test('flow counts are unavailable when audit history exceeds the byte read budget', () => {
   const auditPath = path.join(dir, 'audit-trail.jsonl');
   const record = JSON.stringify({ timestamp: new Date().toISOString(), decision: 'deny', gateId: 'recent-block', toolName: 'Bash' });
