@@ -239,10 +239,19 @@ function findLatestTimestamp(entries) {
   }, null);
 }
 
+function selectDashboardFeedback(entries, humanOnly) {
+  return humanOnly
+    ? entries.filter((entry) => entry.reviewOrigin === 'human' && ['positive', 'negative'].includes(entry.signal))
+    : entries;
+}
+
 function buildReviewSnapshot(feedbackDir, options = {}) {
-  const feedbackEntries = Array.isArray(options.feedbackEntries)
-    ? options.feedbackEntries
-    : readJSONL(path.join(feedbackDir, 'feedback-log.jsonl'));
+  const feedbackEntries = selectDashboardFeedback(
+    Array.isArray(options.feedbackEntries)
+      ? options.feedbackEntries
+      : (options.humanOnly ? collectAllFeedbackEntries(feedbackDir) : readJSONL(path.join(feedbackDir, 'feedback-log.jsonl'))),
+    options.humanOnly,
+  );
   const memoryEntries = Array.isArray(options.memoryEntries)
     ? options.memoryEntries
     : readJSONL(path.join(feedbackDir, 'memory-log.jsonl'));
@@ -2181,7 +2190,7 @@ function collectAllFeedbackEntries(feedbackDir) {
 function generateDashboard(feedbackDir, options = {}) {
   const analyticsWindow = resolveAnalyticsWindow(options.analyticsWindow || options);
   const diagnosticLogPath = path.join(feedbackDir, 'diagnostic-log.jsonl');
-  const entries = collectAllFeedbackEntries(feedbackDir);
+  const entries = selectDashboardFeedback(collectAllFeedbackEntries(feedbackDir), options.humanOnly);
   const diagnosticEntries = readJSONL(diagnosticLogPath);
   const memoryEntries = readJSONL(path.join(feedbackDir, 'memory-log.jsonl'));
   const auditEntries = readJSONL(path.join(feedbackDir, AUDIT_LOG_FILENAME));
@@ -2225,6 +2234,7 @@ function generateDashboard(feedbackDir, options = {}) {
   const readiness = generateAgentReadinessReport({ projectRoot: PROJECT_ROOT });
   const feedbackAnalysis = analyzeFeedback(path.join(feedbackDir, 'feedback-log.jsonl'), {
     entries,
+    humanOnly: options.humanOnly,
     maxLines: DEFAULT_JSONL_MAX_ENTRIES,
     maxBytes: DEFAULT_JSONL_MAX_BYTES,
   });

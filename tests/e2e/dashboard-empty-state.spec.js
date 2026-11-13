@@ -8,6 +8,7 @@ async function openHostedDashboard(page, { total = 0 } = {}) {
     .replace('__DASHBOARD_BOOTSTRAP_KEY__', '""')
     .replace('__DASHBOARD_BOOTSTRAP_ENABLED__', 'false');
   const dashboard = loadFixture('dashboard.json');
+  dashboard.gateStats.totalGates = 43;
   dashboard.reviewDelta = { feedbackAdded: total, negativeAdded: 0, lessonsAdded: 8 };
   await page.route('https://dashboard.test/dashboard', (route) => route.fulfill({ contentType: 'text/html', body: html }));
   await page.route('https://cdn.jsdelivr.net/**', (route) => route.abort());
@@ -22,6 +23,7 @@ async function openHostedDashboard(page, { total = 0 } = {}) {
   });
   await page.goto('https://dashboard.test/dashboard');
   await expect(page.locator('#statTotal')).toHaveText(String(total));
+  await page.locator('[data-card-action="gates"]').click();
 }
 
 test('empty hosted feedback is explained while lessons and configured rules remain independent', async ({ page }) => {
