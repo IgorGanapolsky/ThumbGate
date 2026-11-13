@@ -133,7 +133,7 @@ test('landing page presents Pro self-serve and fixed-price managed offer clearly
 
   assert.match(html, /Setup Sprint/);
   assert.match(html, /One configured local gate and its regression test/);
-  assert.match(html, /Rollout and rollback proof within two business days/);
+  assert.match(html, /Delivery within two business days after access and agreed materials are available, subject to confirmed scheduling/);
   assert.match(html, /one supported local workflow/i);
   assert.match(html, /\$499/);
   assert.doesNotMatch(html, /\$19\/mo|\$149\/yr/);
