@@ -5,6 +5,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const tmpFeedbackDir = fs.mkdtempSync(path.join(os.tmpdir(), 'tg-onboarding-first-block-'));
 process.env.THUMBGATE_FEEDBACK_DIR = tmpFeedbackDir;
+process.env.THUMBGATE_STATE_DIR = tmpFeedbackDir;
 process.env.THUMBGATE_ALLOW_INSECURE = 'true';
 process.env.THUMBGATE_API_KEY = 'tg_test_first_block_key';
 
