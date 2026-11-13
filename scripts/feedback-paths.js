@@ -1,6 +1,8 @@
 #!/usr/bin/env node
 'use strict';
 
+const { tenantDataScope, assertScopedDataPath } = require('./feedback-scope');
+
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
@@ -9,7 +11,7 @@ const PROJECT_ROOT = path.join(__dirname, '..');
 const HOME = process.env.HOME || process.env.USERPROFILE || os.homedir() || '';
 
 function buildFeedbackPathsFromDir(dirPath) {
-  return {
+  const paths = {
     FEEDBACK_DIR: dirPath,
     FEEDBACK_LOG_PATH: path.join(dirPath, 'feedback-log.jsonl'),
     DIAGNOSTIC_LOG_PATH: path.join(dirPath, 'diagnostic-log.jsonl'),
@@ -18,6 +20,8 @@ function buildFeedbackPathsFromDir(dirPath) {
     SUMMARY_PATH: path.join(dirPath, 'feedback-summary.json'),
     PREVENTION_RULES_PATH: path.join(dirPath, 'prevention-rules.md'),
   };
+  if (tenantDataScope()) for (const value of Object.values(paths)) assertScopedDataPath(value);
+  return paths;
 }
 
 function uniquePaths(paths = []) {
@@ -216,6 +220,8 @@ function getGlobalFeedbackDir(options = {}) {
 }
 
 function resolveFeedbackDir(options = {}) {
+  const scope = tenantDataScope();
+  if (scope) return options.feedbackDir ? assertScopedDataPath(options.feedbackDir) : assertScopedDataPath(scope.feedbackDir);
   const explicit = getExplicitFeedbackDir(options);
   if (explicit) return explicit;
 
@@ -248,6 +254,7 @@ function getFeedbackPaths(options = {}) {
 }
 
 function listFallbackFeedbackDirs(options = {}) {
+  if (tenantDataScope()) return [];
   const activeDir = path.resolve(resolveFeedbackDir(options));
   return uniquePaths([
     getFallbackFeedbackDir(options),

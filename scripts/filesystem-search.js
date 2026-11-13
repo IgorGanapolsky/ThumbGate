@@ -16,6 +16,7 @@
  * - Data is always the JSONL source of truth (no sync drift)
  */
 
+const { tenantDataScope, assertScopedDataPath } = require('./feedback-scope');
 const fs = require('node:fs');
 const path = require('node:path');
 const crypto = require('node:crypto');
@@ -35,15 +36,17 @@ function getFeedbackDir() {
 }
 
 function getContextFsDir() {
+  if (tenantDataScope()) return assertScopedDataPath(path.join(tenantDataScope().feedbackDir, 'contextfs'));
   return process.env.THUMBGATE_CONTEXTFS_DIR || path.join(getFeedbackDir(), 'contextfs');
 }
 
 function listJsonFiles(dirPath) {
+  assertScopedDataPath(dirPath);
   if (!fs.existsSync(dirPath)) return [];
   const results = [];
   const entries = fs.readdirSync(dirPath, { withFileTypes: true });
   for (const entry of entries) {
-    const full = path.join(dirPath, entry.name);
+    const full = assertScopedDataPath(path.join(dirPath, entry.name));
     if (entry.isDirectory()) {
       results.push(...listJsonFiles(full));
     } else if (entry.isFile() && entry.name.endsWith('.json')) {
@@ -155,13 +158,13 @@ function scoreRecord(queryTokens, queryText, record) {
 
 function searchFeedbackLog(queryText, limit = 5, options = {}) {
   const feedbackDir = options.feedbackDir || getFeedbackDir();
-  const logPath = path.join(feedbackDir, 'feedback-log.jsonl');
+  const logPath = assertScopedDataPath(path.join(feedbackDir, 'feedback-log.jsonl'));
   let records = readJsonl(logPath);
 
   // SQLite fallback is allowed only inside the exact selected feedback root.
   // Falling back through lesson-db's ambient default can cross project/tenant
   // boundaries when a sparse project has zero or one JSONL row.
-  const lessonDbPath = path.join(feedbackDir, 'lessons.sqlite');
+  const lessonDbPath = assertScopedDataPath(path.join(feedbackDir, 'lessons.sqlite'));
   if (records.length <= 1 && fs.existsSync(lessonDbPath)) {
     let db = null;
     try {
@@ -221,13 +224,13 @@ function searchFeedbackLog(queryText, limit = 5, options = {}) {
 }
 
 function searchContextFs(queryText, limit = 5, options = {}) {
-  const contextDir = options.contextDir || (options.feedbackDir ? path.join(options.feedbackDir, 'contextfs') : getContextFsDir());
+  const contextDir = assertScopedDataPath(options.contextDir || (options.feedbackDir ? path.join(options.feedbackDir, 'contextfs') : getContextFsDir()));
   const namespaces = options.namespaces || ['memory/error', 'memory/learning', 'rules', 'raw_history'];
   const queryTokens = getSearchTokens(queryText);
   const scored = [];
 
   for (const ns of namespaces) {
-    const nsDir = path.join(contextDir, ns);
+    const nsDir = assertScopedDataPath(path.join(contextDir, ns));
     const files = listJsonFiles(nsDir);
 
     for (const filePath of files) {
@@ -257,7 +260,7 @@ function searchContextFs(queryText, limit = 5, options = {}) {
 }
 
 function searchPreventionRules(queryText, limit = 5, options = {}) {
-  const rulesPath = path.join(options.feedbackDir || getFeedbackDir(), 'prevention-rules.md');
+  const rulesPath = assertScopedDataPath(path.join(options.feedbackDir || getFeedbackDir(), 'prevention-rules.md'));
   if (!fs.existsSync(rulesPath)) return [];
 
   const content = fs.readFileSync(rulesPath, 'utf-8');

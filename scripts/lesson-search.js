@@ -1,5 +1,7 @@
 'use strict';
 
+const { tenantDataScope, assertScopedDataPath } = require('./feedback-scope');
+
 const path = require('node:path');
 const { readJSONL, getFeedbackPaths } = require('./feedback-loop');
 const { buildMemoryLifecycleView, scoreHybridMemoryMatch } = require('./agent-memory-lifecycle');
@@ -148,22 +150,11 @@ function buildLessonQuery(memory, parsed, sourceFeedback) {
 }
 
 function resolveLessonPaths(options = {}) {
-  if (options.feedbackDir) {
-    const feedbackDir = path.resolve(String(options.feedbackDir));
-    return {
-      FEEDBACK_DIR: feedbackDir,
-      FEEDBACK_LOG_PATH: path.join(feedbackDir, 'feedback-log.jsonl'),
-      MEMORY_LOG_PATH: path.join(feedbackDir, 'memory-log.jsonl'),
-      PREVENTION_RULES_PATH: path.join(feedbackDir, 'prevention-rules.md'),
-      AUTO_GATES_PATH: path.join(feedbackDir, 'auto-promoted-gates.json'),
-    };
-  }
-
-  const paths = getFeedbackPaths();
+  const paths = getFeedbackPaths(options.feedbackDir ? { feedbackDir: path.resolve(String(options.feedbackDir)) } : {});
   return {
     ...paths,
-    PREVENTION_RULES_PATH: path.join(paths.FEEDBACK_DIR, 'prevention-rules.md'),
-    AUTO_GATES_PATH: path.join(paths.FEEDBACK_DIR, 'auto-promoted-gates.json'),
+    PREVENTION_RULES_PATH: assertScopedDataPath(path.join(paths.FEEDBACK_DIR, 'prevention-rules.md')),
+    AUTO_GATES_PATH: assertScopedDataPath(path.join(paths.FEEDBACK_DIR, 'auto-promoted-gates.json')),
   };
 }
 
@@ -637,7 +628,7 @@ function tryFts5Search(query, options) {
   let db = null;
   try {
     const { initDB, searchLessons: fts5Search, getStats } = require('./lesson-db');
-    db = initDB();
+    db = tenantDataScope() ? initDB(path.join(resolveLessonPaths(options).FEEDBACK_DIR, 'lessons.sqlite')) : initDB();
     const stats = getStats(db);
 
     // If DB is empty, skip (not yet backfilled)

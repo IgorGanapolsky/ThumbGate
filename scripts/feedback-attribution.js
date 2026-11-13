@@ -1,6 +1,8 @@
 #!/usr/bin/env node
 'use strict';
 
+const { tenantDataScope } = require('./feedback-scope');
+
 const fs = require('fs');
 const path = require('path');
 const { resolveFeedbackDir } = require('./feedback-paths');
@@ -150,7 +152,7 @@ function scoreCandidate(action, feedbackNormalized, feedbackTokens, nowMs) {
 }
 
 function recordAction(toolName, toolInput, opts = {}) {
-  const actionLogPath = opts.actionLogPath || process.env.THUMBGATE_ACTION_LOG || getAttributionPaths(opts).actionLog;
+  const actionLogPath = tenantDataScope() ? getAttributionPaths().actionLog : (opts.actionLogPath || process.env.THUMBGATE_ACTION_LOG || getAttributionPaths(opts).actionLog);
   const tool = String(toolName || 'unknown');
   const inputSummary = summarizeToolInput(tool, toolInput);
   const normalized = normalize(inputSummary);
@@ -171,9 +173,9 @@ function recordAction(toolName, toolInput, opts = {}) {
 function attributeFeedback(signal, feedbackContext, opts = {}) {
   const sig = String(signal || '').toLowerCase().trim();
   const paths = getAttributionPaths(opts);
-  const actionLogPath = opts.actionLogPath || process.env.THUMBGATE_ACTION_LOG || paths.actionLog;
-  const attributionsPath = opts.attributionsPath || process.env.THUMBGATE_FEEDBACK_ATTRIBUTIONS || paths.attributions;
-  const attributedFeedbackPath = opts.attributedFeedbackPath || process.env.THUMBGATE_ATTRIBUTED_FEEDBACK || paths.attributedFeedback;
+  const actionLogPath = tenantDataScope() ? paths.actionLog : (opts.actionLogPath || process.env.THUMBGATE_ACTION_LOG || paths.actionLog);
+  const attributionsPath = tenantDataScope() ? paths.attributions : (opts.attributionsPath || process.env.THUMBGATE_FEEDBACK_ATTRIBUTIONS || paths.attributions);
+  const attributedFeedbackPath = tenantDataScope() ? paths.attributedFeedback : (opts.attributedFeedbackPath || process.env.THUMBGATE_ATTRIBUTED_FEEDBACK || paths.attributedFeedback);
 
   if (sig !== 'negative' && sig !== 'positive') {
     return { ok: true, skipped: true, reason: 'signal_not_supported' };

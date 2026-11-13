@@ -1,5 +1,7 @@
 'use strict';
 
+const { tenantDataScope, assertScopedDataPath, restrictedWorkerEnv, withDataScope } = require('./feedback-scope');
+
 const fs = require('fs');
 const path = require('path');
 const { spawnSync } = require('child_process');
@@ -48,16 +50,19 @@ function appendJSONL(filePath, record) {
 }
 
 function getJobRuntimePaths(jobId) {
+  if (jobId && !/^[A-Za-z0-9][A-Za-z0-9_.-]{0,159}$/.test(jobId)) {
+    const error = new Error('Invalid job identifier'); error.statusCode = 400; throw error;
+  }
   const { FEEDBACK_DIR } = getFeedbackPaths();
-  const jobsDir = path.join(FEEDBACK_DIR, JOB_STATE_DIRNAME);
-  const jobDir = jobId ? path.join(jobsDir, jobId) : null;
+  const jobsDir = assertScopedDataPath(path.join(FEEDBACK_DIR, JOB_STATE_DIRNAME));
+  const jobDir = jobId ? assertScopedDataPath(path.join(jobsDir, jobId)) : null;
   return {
     feedbackDir: FEEDBACK_DIR,
     jobsDir,
     jobDir,
-    statePath: jobDir ? path.join(jobDir, 'state.json') : null,
-    controlPath: jobDir ? path.join(jobDir, JOB_CONTROL_FILENAME) : null,
-    logPath: path.join(FEEDBACK_DIR, JOB_LOG_FILENAME),
+    statePath: jobDir ? assertScopedDataPath(path.join(jobDir, 'state.json')) : null,
+    controlPath: jobDir ? assertScopedDataPath(path.join(jobDir, JOB_CONTROL_FILENAME)) : null,
+    logPath: assertScopedDataPath(path.join(FEEDBACK_DIR, JOB_LOG_FILENAME)),
   };
 }
 
@@ -137,6 +142,7 @@ function serializeJobForState(job) {
 }
 
 function queueJob(job) {
+  assertTenantJob(job);
   const normalizedJob = {
     ...job,
     id: job.id || generateJobId(),
@@ -198,7 +204,7 @@ function listJobStates(options = {}) {
     : null;
 
   const results = fs.readdirSync(jobsDir)
-    .map((entry) => readJson(path.join(jobsDir, entry, 'state.json')))
+    .map((entry) => readJson(assertScopedDataPath(path.join(jobsDir, entry, 'state.json'))))
     .filter(Boolean)
     .filter((entry) => !statuses || statuses.has(entry.status))
     .sort((left, right) => {
@@ -576,7 +582,7 @@ function runCommandStage(stage) {
   const tokens = parseCommandArgv(stage.command);
   const result = spawnSync(tokens[0], tokens.slice(1), {
     cwd: stage.workingDirectory || process.cwd(),
-    env: process.env,
+    env: restrictedWorkerEnv(),
     encoding: 'utf8',
     stdio: 'pipe',
     shell: false,
@@ -842,7 +848,26 @@ function resumeJob(jobId, job = null, options = {}) {
  * @param {object} job
  * @returns {object} Job execution result
  */
+function assertTenantJob(job) {
+  if (!tenantDataScope()) return;
+  const denied = () => { const error = new Error('Hosted tenant jobs require a verified fixed export or an execution sandbox'); error.statusCode = 403; throw error; };
+  if (job.skill !== 'hosted-dpo-export' || job.recordFeedback !== false || job.autoImprove !== false || job.verificationMode !== 'none' || job.taskFn || !Array.isArray(job.stages) || job.stages.length !== 1) denied();
+  const stage = job.stages[0];
+  if (stage.taskFn || stage.run || typeof stage.command !== 'string') denied();
+  const args = parseCommandArgv(stage.command);
+  if (args[0] !== process.execPath || args[1] !== path.join(__dirname, 'managed-dpo-export.js')) denied();
+  let inputCount = 0;
+  for (let index = 2; index < args.length; index += 2) {
+    if (!['--inputPath', '--memoryLogPath', '--outputPath'].includes(args[index]) || !args[index + 1]) denied();
+    assertScopedDataPath(args[index + 1]);
+    if (args[index] !== '--outputPath') inputCount += 1;
+  }
+  if (inputCount !== 1) denied();
+  if (stage.workingDirectory) assertScopedDataPath(stage.workingDirectory);
+}
+
 function executeJob(job, options = {}) {
+  assertTenantJob(job);
   const started = Date.now();
   const normalizedJob = {
     ...job,
@@ -1052,7 +1077,7 @@ function executeJob(job, options = {}) {
 }
 
 function runJobFromFile(jobFilePath, options = {}) {
-  const resolvedPath = path.resolve(jobFilePath);
+  const resolvedPath = assertScopedDataPath(path.resolve(jobFilePath));
   const spec = readJson(resolvedPath);
   if (!spec) {
     throw new Error(`Unable to read job file: ${resolvedPath}`);
@@ -1118,6 +1143,7 @@ function runBatch(jobs) {
 
 module.exports = {
   recallContext,
+  assertTenantJob,
   executeJob,
   queueJob,
   runBatch,
@@ -1140,7 +1166,7 @@ module.exports = {
   JOB_STATE_DIRNAME,
 };
 
-if (require.main === module) {
+function runCli() {
   const args = {};
   process.argv.slice(2).forEach((arg) => {
     if (!arg.startsWith('--')) return;
@@ -1239,4 +1265,12 @@ if (require.main === module) {
   node scripts/async-job-runner.js --jobs [--limit=10]
   node scripts/async-job-runner.js --stats
   node scripts/async-job-runner.js --log --limit=10`);
+}
+
+if (require.main === module) {
+  if (process.env.THUMBGATE_WORKER_SCOPE) {
+    withDataScope(JSON.parse(process.env.THUMBGATE_WORKER_SCOPE), runCli);
+  } else {
+    runCli();
+  }
 }

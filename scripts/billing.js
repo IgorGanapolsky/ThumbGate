@@ -13,6 +13,7 @@ function withTimeout(promise, ms = STRIPE_TIMEOUT_MS) {
   });
 }
 
+const { withoutDataScope } = require('./feedback-scope');
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
@@ -79,7 +80,7 @@ const CONFIG = {
   STRIPE_PRICE_ID_TEAM_MONTHLY: process.env.STRIPE_PRICE_ID_TEAM_MONTHLY || TEAM_MONTHLY_PRICE_ID,
   STRIPE_PRODUCT_ID: process.env.STRIPE_PRODUCT_ID || '',
   get API_KEYS_PATH() {
-    return process.env._TEST_API_KEYS_PATH || path.join(getFeedbackPaths().FEEDBACK_DIR, 'api-keys.json');
+    return process.env._TEST_API_KEYS_PATH || withoutDataScope(() => path.join(getFeedbackPaths().FEEDBACK_DIR, 'api-keys.json'));
   },
   get FUNNEL_LEDGER_PATH() {
     return process.env._TEST_FUNNEL_LEDGER_PATH || process.env.THUMBGATE_FUNNEL_LEDGER_PATH || path.join(getFeedbackPaths().FEEDBACK_DIR, 'funnel-events.jsonl');
