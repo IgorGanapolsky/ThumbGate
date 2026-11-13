@@ -306,6 +306,9 @@ const {
 } = require('../../scripts/document-intake');
 const {
   checkLimit,
+  isProTier,
+  proWouldHaveBlockedSentence,
+  droppedRepeatFromRulesMarkdown,
   UPGRADE_MESSAGE: RATE_LIMIT_MESSAGE,
 } = require('../../scripts/rate-limiter');
 const { sendProblem, PROBLEM_TYPES } = require('../../scripts/problem-detail');
@@ -11756,17 +11759,18 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
       }
 
       if (req.method === 'POST' && pathname === '/v1/feedback/capture') {
+        const body = await parseJsonBody(req);
         const captureLimit = checkLimit('capture_feedback');
         if (!captureLimit.allowed) {
+          const sentence = proWouldHaveBlockedSentence(body.whatWentWrong || body.context || '');
           sendProblem(res, {
             type: PROBLEM_TYPES.RATE_LIMIT,
             title: 'Free tier limit reached',
             status: 429,
-            detail: RATE_LIMIT_MESSAGE,
+            detail: sentence || RATE_LIMIT_MESSAGE,
           });
           return;
         }
-        const body = await parseJsonBody(req);
         // Auto-include conversation window when caller doesn't provide one
         let chatHistory = Array.isArray(body.chatHistory) ? body.chatHistory : body.messages;
         if (!chatHistory || chatHistory.length === 0) {
@@ -12601,6 +12605,18 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
           return;
         }
         const { data } = dashboardResult;
+        if (!isProTier()) {
+          try {
+            const { getFeedbackPaths } = require('../../scripts/feedback-loop');
+            const { PREVENTION_RULES_PATH } = getFeedbackPaths({ feedbackDir: requestFeedbackDir });
+            if (PREVENTION_RULES_PATH && fs.existsSync(PREVENTION_RULES_PATH)) {
+              const dropped = droppedRepeatFromRulesMarkdown(fs.readFileSync(PREVENTION_RULES_PATH, 'utf8'));
+              const sentence = proWouldHaveBlockedSentence(dropped);
+              if (sentence) data.proWouldHaveBlocked = sentence;
+            }
+          } catch (_) {}
+        }
+
 
         sendJson(res, 200, data);
         return;

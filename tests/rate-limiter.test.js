@@ -140,6 +140,59 @@ describe('rate-limiter', () => {
     assert.ok(rateLimiter.UPGRADE_MESSAGE.includes('dashboard'));
   });
 
+  it('names the repeat Pro would have blocked and scrubs secrets', () => {
+    const sentence = rateLimiter.proWouldHaveBlockedSentence('agent force-pushed main and leaked ghp_abcdefghijklmnopqrstuvwxyz123456');
+    assert.equal(
+      sentence,
+      'Pro would have blocked this repeat: agent force-pushed main and leaked [redacted]. https://thumbgate.ai/pro',
+    );
+    assert.equal(rateLimiter.proWouldHaveBlockedSentence('   '), null);
+    const markdown = [
+      '## git',
+      '- Rule: do not force-push main',
+      '- Latest mistake: git push --force origin main',
+      '## shell',
+      '- Rule: do not delete the repo',
+      '- Latest mistake: rm -rf .',
+      '## secrets',
+      '- Rule: do not print tokens',
+      '- Latest mistake: echo token',
+      '## deploy',
+      '- Rule: do not deploy untested',
+      '- Latest mistake: agent deployed without tests',
+    ].join('\n');
+    assert.equal(rateLimiter.droppedRepeatFromRulesMarkdown(markdown, 3), 'agent deployed without tests');
+  });
+
+  it('CLI capture names the blocked repeat when the free limit is already hit', () => {
+    const { spawnSync } = require('node:child_process');
+    const usagePath = path.join(tempHomeDir, '.thumbgate', 'usage-limits.json');
+    fs.mkdirSync(path.dirname(usagePath), { recursive: true });
+    fs.writeFileSync(usagePath, JSON.stringify({
+      date: new Date().toISOString().slice(0, 10),
+      counts: { capture_feedback: 2 },
+      lifetime: { capture_feedback: 2 },
+    }));
+    const result = spawnSync(process.execPath, ['bin/cli.js', 'capture', 'down', 'agent force-pushed main'], {
+      cwd: path.join(__dirname, '..'),
+      encoding: 'utf8',
+      env: {
+        ...process.env,
+        HOME: tempHomeDir,
+        USERPROFILE: tempHomeDir,
+        THUMBGATE_NO_TRIAL: '1',
+        THUMBGATE_NO_NUDGE: '1',
+        THUMBGATE_API_KEY: '',
+        THUMBGATE_DEV_SECRET: '',
+        THUMBGATE_DEV_BYPASS: '',
+        THUMBGATE_DEV_KEY: '',
+      },
+    });
+    assert.notEqual(result.status, 0);
+    assert.match(result.stderr, /Pro would have blocked this repeat: agent force-pushed main\. https:\/\/thumbgate\.ai\/pro/);
+  });
+
+
   it('temp home starts without a saved license', () => {
     assert.equal(fs.existsSync(getLicensePath(tempHomeDir)), false);
   });

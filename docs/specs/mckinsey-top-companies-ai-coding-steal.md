@@ -30,7 +30,7 @@ ThumbGate already covers parts of 3 and 4. The gap is that these pieces are not 
 
 | McKinsey shift | ThumbGate mapping | Status |
 |---|---|---|
-| 1–2 day night-shift loops | `scripts/mac-dispatch-loop.js` polls `ready-for-agent` issues and runs them on the operator's Mac | EXISTS |
+| 1–2 day night-shift loops | `scripts/mac-dispatch-loop.js` polls open issues whose body contains `<!-- agent:ready -->` and runs them on the operator's Mac | EXISTS |
 | Standardized spec inputs | `docs/specs/TEMPLATE.md` + `tests/spec-template.test.js` | EXISTS |
 | Golden examples over averages | `scripts/verified-lessons.js` has verification, staleness and demotion (`isLessonStale`, `isLessonDemoted`) | EXISTS (partial) |
 | | A `qualityTier: "golden"` tier and a `preferGoldenExamples` retrieval option | PLANNED |

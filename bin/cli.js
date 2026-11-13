@@ -1263,7 +1263,7 @@ function capture() {
 
   const { getUsage } = require(path.join(PKG_ROOT, 'scripts', 'rate-limiter'));
   const capLimit = checkLimit('capture_feedback');
-  if (!capLimit.allowed) {
+  if (!capLimit.allowed && (args.stats || args.summary)) {
     limitNudge('capture_feedback', capLimit);
     process.exit(1);
   }
@@ -1343,6 +1343,15 @@ function capture() {
   } else if (!whatWentWrong && normalized === 'down' && context) {
     whatWentWrong = context;
   }
+
+  if (!capLimit.allowed) {
+    const { proWouldHaveBlockedSentence } = require(path.join(PKG_ROOT, 'scripts', 'rate-limiter'));
+    const sentence = proWouldHaveBlockedSentence(whatWentWrong || context);
+    if (sentence) process.stderr.write(`${sentence}\n`);
+    limitNudge('capture_feedback', capLimit);
+    process.exit(1);
+  }
+
 
   let whatToChange = args['what-to-change'];
   if (!whatToChange && consumedSignalArgs > 0 && positionalArgs.length > consumedSignalArgs + 2) {
@@ -2304,6 +2313,13 @@ function rules() {
   const { writePreventionRules } = require(path.join(PKG_ROOT, 'scripts', 'feedback-loop'));
   const outPath = args.output || path.join(CWD, '.thumbgate', 'prevention-rules.md');
   const result = writePreventionRules(outPath, Number(args.min || 2));
+  {
+    const { isProTier, droppedRepeatFromRulesMarkdown, proWouldHaveBlockedSentence, FREE_TIER_MAX_GATES } = require(path.join(PKG_ROOT, 'scripts', 'rate-limiter'));
+    if (!isProTier()) {
+      const sentence = proWouldHaveBlockedSentence(droppedRepeatFromRulesMarkdown(result.markdown, FREE_TIER_MAX_GATES));
+      if (sentence) process.stderr.write(`${sentence}\n`);
+    }
+  }
   if (args.json) {
     // Count rule sections (## headers) from the generated markdown
     const ruleHeaders = (result.markdown || '').match(/^## /gm);
@@ -4568,6 +4584,9 @@ switch (COMMAND) {
       console.error(err && err.message ? err.message : err);
       process.exit(1);
     });
+    break;
+  case 'proof':
+    require(path.join(PKG_ROOT, 'scripts', 'proof-report')).runProofCli(process.argv.slice(3));
     break;
   case 'stats':
     stats();

@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>30 days of one developer's agent gates | ThumbGate</title>
+  <meta name="description" content="Founder-only audit: 15 real Claude Code and Cursor tool calls stopped in 30 days. Not a customer case study." />
+  <link rel="canonical" href="https://thumbgate.ai/guides/founder-30-day-proof" />
+  <link rel="llm-context" href="/llm-context.md" type="text/markdown" />
+  <link rel="icon" type="image/png" href="/thumbgate-icon.png" />
+  <meta name="robots" content="index,follow" />
+  <style>
+    :root { --bg:#0a0a0b; --card:#161618; --line:#222225; --text:#e8e8ec; --muted:#8b8b96; --cyan:#22d3ee; }
+    * { box-sizing: border-box; }
+    body { margin:0; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif; background:var(--bg); color:var(--text); line-height:1.6; }
+    a { color:var(--cyan); }
+    .wrap { max-width:760px; margin:0 auto; padding:32px 20px 64px; }
+    nav { font-size:14px; margin-bottom:24px; }
+    h1 { font-size:32px; line-height:1.15; letter-spacing:-0.03em; margin:0 0 12px; }
+    .label { color:var(--muted); font-size:13px; text-transform:uppercase; letter-spacing:.06em; }
+    .count { font-size:56px; font-weight:700; letter-spacing:-0.04em; margin:8px 0; }
+    article, section { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:16px 18px; margin:16px 0; }
+    h2 { font-size:18px; margin:0 0 8px; }
+    code { font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:13px; }
+    .cta { display:inline-block; margin-right:12px; min-height:44px; padding:10px 14px; border-radius:8px; background:var(--cyan); color:#041016; font-weight:700; text-decoration:none; }
+  </style>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "TechArticle",
+    "headline": "30 days of one developer's Claude Code and Cursor agents: 15 risky actions stopped",
+    "datePublished": "2026-11-12",
+    "author": { "@type": "Person", "name": "Igor Ganapolsky" }
+  }
+  </script>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [{
+      "@type": "Question",
+      "name": "Is this a customer case study?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "No. It is the founder's own Claude Code and Cursor use on one Mac, counted from the local audit trail on 2026-11-12."
+      }
+    }]
+  }
+  </script>
+</head>
+<body>
+  <div class="wrap">
+    <nav><a href="/">ThumbGate</a> · founder audit, not a customer</nav>
+    <p class="label">30 days ending 2026-11-12</p>
+    <h1>30 days of one developer's Claude Code and Cursor agents: 15 risky actions stopped</h1>
+    <p>This page is Igor Ganapolsky's own use. It is not a customer, not a team rollout, and not a benchmark.</p>
+    <p class="count">15</p>
+    <p>Real agent tool calls blocked. Five more rows in the same window were recorder or test noise and are not in the 15.</p>
+
+    <article>
+      <h2>Secret in a command · 9</h2>
+      <p>An agent tried to run a shell command that contained an API token. The token is not printed here. The gate stopped the call before the shell ran.</p>
+    </article>
+    <article>
+      <h2>Force-push · 5</h2>
+      <p>Example, with no secret in it: <code>git push --force origin main</code>. The gate stopped it.</p>
+    </article>
+    <article>
+      <h2>Repeated mistake · 1</h2>
+      <p>The agent tried the same destructive file delete the founder had already marked down. Paths are not printed here.</p>
+    </article>
+
+    <section>
+      <h2>What this does not show</h2>
+      <p>Only three categories appeared in this window. There is no fourth or fifth. Nothing here is a paying customer's log. Re-count on the same machine with <code>thumbgate proof --days 30 --json</code> after that command is installed from this repo. Until that release is on npm, the number above is the 2026-11-12 local audit, not a live customer feed.</p>
+    </section>
+
+    <p>
+      <a class="cta" href="/install">Install free</a>
+      <a href="/diagnostic">Managed AI Agent Workflow Gate, $499</a>
+    </p>
+    <p>Pro is $19/mo or $149/yr. Enterprise is the third tier for a company that wants the same gate on more than one machine.</p>
+  </div>
+</body>
+</html>
