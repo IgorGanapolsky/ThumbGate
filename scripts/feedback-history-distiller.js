@@ -216,16 +216,26 @@ function buildRuleSuggestion(correctionMessage, signal) {
   return `Repeat the successful pattern: ${text}`;
 }
 
+function isCaptureFragment(text) {
+  const raw = String(text || '').trim();
+  if (!raw) return false;
+  const { isTranscriptShaped } = require('./project-scope');
+  return isTranscriptShaped(raw);
+}
+
 function inferNegativeDistillation(messages, params) {
   const correctionMessage = chooseMessage(messages, (entry) => {
     const text = normalizeText(entry.text);
-    return Boolean(text) && matchesAny(text, CORRECTION_PATTERNS);
+    return Boolean(text) && !isCaptureFragment(text) && matchesAny(text, CORRECTION_PATTERNS);
   });
 
   const failureMessage = chooseMessage(messages, (entry) => {
     const text = normalizeText(entry.text);
-    return Boolean(text) && matchesAny(text, FAILURE_PATTERNS);
-  }) || buildLastActionMessage(params.lastAction);
+    return Boolean(text) && !isCaptureFragment(text) && matchesAny(text, FAILURE_PATTERNS);
+  }) || (() => {
+    const fallback = buildLastActionMessage(params.lastAction);
+    return fallback && !isCaptureFragment(fallback.text) ? fallback : null;
+  })();
 
   if (!correctionMessage && !failureMessage) {
     return {
