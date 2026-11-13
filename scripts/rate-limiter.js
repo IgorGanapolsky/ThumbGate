@@ -218,6 +218,44 @@ function getUsage(action, authContext) {
   return { count: lifetimeCount, limit: lifetimeLimit, remaining: Math.max(0, lifetimeLimit - lifetimeCount) };
 }
 
+const PRO_REPEAT_URL = 'https://thumbgate.ai/pro';
+const RULE_SECTION_SKIP = new Set([
+  'High-Priority Contracts',
+  'Rubric Failure Dimensions',
+  'Root Cause Categories',
+  'Repeated Failure Constraints',
+]);
+
+function scrubRepeatText(value) {
+  return String(value || '')
+    .replace(/\b[\w.+-]+@[\w.-]+\.[A-Za-z]{2,}\b/g, '[redacted]')
+    .replace(/\b(?:sk|ghp|github_pat|AKIA)[A-Za-z0-9_-]{8,}\b/g, '[redacted]')
+    .replace(/\/Users\/[^\s]+/g, '[path]')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .slice(0, 140);
+}
+
+function proWouldHaveBlockedSentence(mistake) {
+  const clean = scrubRepeatText(mistake);
+  if (!clean) return null;
+  return `Pro would have blocked this repeat: ${clean}. ${PRO_REPEAT_URL}`;
+}
+
+function droppedRepeatFromRulesMarkdown(markdown, maxActive = FREE_TIER_MAX_GATES) {
+  const mistakes = [];
+  for (const section of String(markdown || '').split(/\n## /)) {
+    const title = section.replace(/^## /, '').split('\n')[0].trim();
+    if (!title || RULE_SECTION_SKIP.has(title)) continue;
+    if (!/^- Rule: /m.test(section) && !/^- Latest mistake: /m.test(section)) continue;
+    const latest = (section.match(/^- Latest mistake: (.+)$/m) || [])[1];
+    const rule = (section.match(/^- Rule: (.+)$/m) || [])[1];
+    const text = scrubRepeatText(latest || rule || title);
+    if (text) mistakes.push(text);
+  }
+  return mistakes.length > maxActive ? mistakes[maxActive] : null;
+}
+
 module.exports = {
   checkLimit,
   getUsage,
@@ -235,4 +273,7 @@ module.exports = {
   UPGRADE_MESSAGE,
   PAYWALL_MESSAGES,
   USAGE_FILE,
+  proWouldHaveBlockedSentence,
+  droppedRepeatFromRulesMarkdown,
+  scrubRepeatText,
 };

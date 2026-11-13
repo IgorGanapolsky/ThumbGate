@@ -218,6 +218,7 @@ h2{font-size:20px;font-weight:700;margin-bottom:16px;letter-spacing:-.02em}
       <button class="btn-outline" id="demoBtn" onclick="loadDemo()">Try Demo</button>
       <button class="btn-outline" id="disconnectBtn" onclick="disconnectKey()" style="display:none; border-color:#f87171; color:#f87171;">Log Out</button>
       <span class="auth-status" id="authStatus"></span>
+      <p id="proLimitNotice" hidden style="margin:8px 0 0;font-size:14px;color:#f8fafc;"></p>
     </div>
     <div id="dashboardKeyPanel" hidden style="display:none;gap:8px;align-items:center;flex-wrap:wrap;width:100%;">
       <input type="password" class="auth-input" id="apiKey" placeholder="Paste Pro / API key (tg_...)" aria-label="ThumbGate Pro or API key" autocomplete="off" onkeydown="if(event.key==='Enter'){event.preventDefault();connect();}" />
@@ -1717,6 +1718,16 @@ async function markReviewed() {
 }
 
 function renderDashboardData(data) {
+  var proLimitNotice = document.getElementById('proLimitNotice');
+  if (proLimitNotice) {
+    if (data && data.proWouldHaveBlocked) {
+      proLimitNotice.hidden = false;
+      proLimitNotice.textContent = data.proWouldHaveBlocked;
+    } else {
+      proLimitNotice.hidden = true;
+      proLimitNotice.textContent = '';
+    }
+  }
   dashboardSnapshot = data;
   var reviewButton = document.getElementById('reviewCheckpointBtn');
   if (reviewButton) reviewButton.disabled = false;
