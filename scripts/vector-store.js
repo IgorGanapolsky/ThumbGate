@@ -1,5 +1,7 @@
 'use strict';
 
+const { tenantDataScope } = require('./feedback-scope');
+
 const fs = require('fs');
 const path = require('path');
 const { ensureDir } = require('./fs-utils');
@@ -88,6 +90,7 @@ function finalizeEmbedding(vector, options = {}) {
 let _explicitVectorStoreEngine = null;
 
 function resolveVectorBackend(env = process.env) {
+  if (tenantDataScope()) return 'lancedb';
   if (_explicitVectorStoreEngine) return _explicitVectorStoreEngine;
   const explicit = String(env.THUMBGATE_VECTOR_BACKEND || '').trim().toLowerCase();
   if (explicit === 'hotdata') return 'hotdata';
@@ -97,7 +100,7 @@ function resolveVectorBackend(env = process.env) {
 }
 
 function getVectorStoreEngine() {
-  return _explicitVectorStoreEngine || resolveVectorBackend();
+  return tenantDataScope() ? 'lancedb' : (_explicitVectorStoreEngine || resolveVectorBackend());
 }
 
 function setVectorStoreEngine(engine) {

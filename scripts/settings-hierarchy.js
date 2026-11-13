@@ -1,6 +1,8 @@
 #!/usr/bin/env node
 'use strict';
 
+const { tenantDataScope } = require('./feedback-scope');
+
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
@@ -86,8 +88,8 @@ function getNestedValue(target, dottedPath) {
 }
 
 function resolveSettingsPaths(options = {}) {
-  const projectRoot = options.projectRoot || PROJECT_ROOT;
-  const homeDir = options.homeDir || process.env.HOME || os.homedir();
+  const projectRoot = tenantDataScope()?.feedbackDir || options.projectRoot || PROJECT_ROOT;
+  const homeDir = tenantDataScope()?.feedbackDir || options.homeDir || process.env.HOME || os.homedir();
 
   return {
     managed: path.join(projectRoot, 'config', 'thumbgate-settings.managed.json'),

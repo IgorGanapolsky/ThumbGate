@@ -1,6 +1,8 @@
 #!/usr/bin/env node
 'use strict';
 
+const { tenantDataScope, scopedStatePath } = require('./feedback-scope');
+
 const fs = require('fs');
 const path = require('path');
 const os = require('os');
@@ -427,7 +429,8 @@ function isRecursiveChmodCommand(command) {
 // ---------------------------------------------------------------------------
 
 function loadGatesConfig(configPath, harnessPath) {
-  const primaryPath = configPath || process.env.THUMBGATE_GATES_CONFIG || DEFAULT_CONFIG_PATH;
+  if (tenantDataScope()) { configPath = undefined; harnessPath = undefined; }
+  const primaryPath = tenantDataScope() ? DEFAULT_CONFIG_PATH : (configPath || process.env.THUMBGATE_GATES_CONFIG || DEFAULT_CONFIG_PATH);
 
   if (!fs.existsSync(primaryPath)) {
     throw new Error(`Gates config not found: ${primaryPath}`);
@@ -467,7 +470,7 @@ function loadGatesConfig(configPath, harnessPath) {
 
   // Load workflow-specific harness gates (always additive, never replaces default).
   // Resolved by harness-selector based on tool name + command context.
-  const resolvedHarness = harnessPath || process.env.THUMBGATE_HARNESS_CONFIG;
+  const resolvedHarness = tenantDataScope() ? null : (harnessPath || process.env.THUMBGATE_HARNESS_CONFIG);
   if (resolvedHarness && fs.existsSync(resolvedHarness)) {
     const harnessGates = (loadOne(resolvedHarness, false) || [])
       .map(g => ({ ...g, layer: g.layer || 'Execution', source: g.source || 'harness' }));
@@ -6180,5 +6183,17 @@ if (require.main === module) {
       process.stdout.write(JSON.stringify({}) + '\n');
       process.exit(0);
     }
+  });
+}
+
+for (const key of ['STATE_PATH', 'CONSTRAINTS_PATH', 'STATS_PATH', 'SESSION_ACTIONS_PATH', 'CUSTOM_CLAIM_GATES_PATH', 'GOVERNANCE_STATE_PATH']) {
+  let legacyPath = module.exports[key];
+  Object.defineProperty(module.exports, key, {
+    enumerable: true,
+    get() { return scopedStatePath(legacyPath); },
+    set(value) {
+      if (tenantDataScope()) throw new Error('Tenant scope cannot replace shared state paths');
+      legacyPath = value;
+    },
   });
 }
