@@ -11116,9 +11116,10 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
       });
       return;
     }
+    const baseFeedbackPaths = requestDataIdentity.partition ? getFeedbackPaths() : requestFeedbackPaths;
     requestFeedbackPaths = currentDataScope()
       ? getFeedbackPaths({ feedbackDir: currentDataScope().lexicalRoot })
-      : partitionFeedbackPaths(requestDataIdentity.partition ? getFeedbackPaths() : requestFeedbackPaths, requestDataIdentity);
+      : partitionFeedbackPaths(baseFeedbackPaths, requestDataIdentity);
     requestFeedbackDir = requestFeedbackPaths.FEEDBACK_DIR;
     requestSafeDataDir = path.resolve(requestFeedbackDir);
     requestDocumentAccessContext = requestDataIdentity.accessContext;

@@ -28,7 +28,7 @@ function nowIso() {
 }
 
 function generateJobId() {
-  return `job_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+  return `job_${Date.now()}_${randomUUID()}`;
 }
 
 function readJson(filePath) {
@@ -1184,7 +1184,7 @@ function parseCliArguments() {
   return args;
 }
 
-function runManagedCliCommand(args) {
+function runControlCliCommand(args) {
   if (args.pause) {
     console.log(JSON.stringify(requestJobControl(args.pause, 'pause'), null, 2));
     process.exit(0);
@@ -1207,6 +1207,9 @@ function runManagedCliCommand(args) {
     process.exit(result.failed > 0 || result.cancelled > 0 ? 1 : 0);
   }
 
+}
+
+function runHarnessCliCommand(args) {
   if (args['list-harnesses']) {
     const { listHarnesses } = require('./natural-language-harness');
     console.log(JSON.stringify({ harnesses: listHarnesses({ tag: args.tag }) }, null, 2));
@@ -1235,7 +1238,8 @@ function runManagedCliCommand(args) {
 
 function runCli() {
   const args = parseCliArguments();
-  runManagedCliCommand(args);
+  runControlCliCommand(args);
+  runHarnessCliCommand(args);
 
   if (args['run-file']) {
     const result = runJobFromFile(args['run-file']);
