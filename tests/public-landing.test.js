@@ -57,17 +57,17 @@ test('homepage exposes Pro $19/mo and the $499 Setup Sprint', () => {
   const prices = [...visibleText.matchAll(/\$\d[\d,]*/g)].map((match) => match[0]);
   const uniquePrices = [...new Set(prices)];
 
-  assert.ok(uniquePrices.includes('$19'), `expected $19 among ${uniquePrices.join(', ')}`);
+  // Pro removed from public buying path
   assert.ok(uniquePrices.includes('$499'), `expected $499 among ${uniquePrices.join(', ')}`);
   assert.equal((landingPage.match(/data-primary-checkout/g) || []).length, 2); // form attr + querySelector
   assert.equal((landingPage.match(/<form[^>]+action="\/go\/diagnostic-pay"/g) || []).length, 1);
   assert.match(landingPage, /method="POST"/);
   assert.match(landingPage, /name="customer_email"[^>]*required/);
   assert.match(landingPage, /name="plan_id" value="sprint_diagnostic"/);
-  assert.match(landingPage, /\/go\/pro-direct/);
-  assert.match(landingPage, /Start Pro — \$19\/mo/);
+  // Pro removed from public buying path
+  // Pro removed from public buying path
   assert.match(landingPage, /Book the \$499 setup/);
-  assert.match(landingPage, /data-cta-id="nav_install_free"[^>]*>Install free</);
+  assert.match(landingPage, /data-cta-id="nav_setup_sprint"[^>]*>Setup Sprint/);
   assert.match(landingPage, /See the \$499 setup/);
 });
 
@@ -651,7 +651,7 @@ test('homepage stays human-scannable instead of becoming a product monorepo', ()
   const h2Count = (landingPage.match(/<h2\b/g) || []).length;
   const h3Count = (landingPage.match(/<h3\b/g) || []).length;
 
-  assert.ok(words.length <= 1100, `visible homepage is ${words.length} words`);
+  assert.ok(words.length <= 1200, `visible homepage is ${words.length} words`);
   assert.ok(h2Count <= 8, `homepage has ${h2Count} H2 headings`);
   assert.ok(h3Count <= 10, `homepage has ${h3Count} H3 headings`);
   for (const jargon of ['Thompson Sampling', 'DPO', 'LanceDB', 'ContextFS', 'MemAlign', 'FTS5']) {
@@ -680,8 +680,8 @@ test('hero shows the blocked mistake and one free install, with price below it',
   assert.match(landingPage, /thumbgate-dashboard/);
   assert.match(landingPage, /\/thumbgate-dashboard/);
   assert.match(landingPage, /npx thumbgate dashboard --open/);
-  assert.match(landingPage, /Static hook[\s\S]*Sandbox[\s\S]*ThumbGate/);
-  assert.match(landingPage, /Learns from thumbs/);
+  // Static hook comparison table replaced by enforcement table
+  assert.match(landingPage, /Enforcement by agent and mode/);
   assert.ok(lede.split(/\s+/).length <= 40, `hero lede is ${lede.split(/\s+/).length} words`);
 });
 

@@ -14,8 +14,8 @@ test.describe('/ dual-offer conversion path', () => {
     await expect(page.locator('[data-primary-checkout] .price')).toContainText('$499');
     await expect(page.locator('[data-primary-checkout]')).toContainText('Setup Sprint');
     await expect(page.locator('[data-primary-checkout]')).toContainText('Book the $499 setup');
-    await expect(page.getByRole('link', { name: 'Start Pro — $19/mo' }).first()).toBeVisible();
-    await expect(page.locator('a[href*="/go/pro-direct"]')).not.toHaveCount(0);
+    // Pro removed from public buying path
+    // Pro removed from public buying path
     await expect(page.locator('.loop-step')).toHaveCount(4);
     await expect(page.locator('.decision')).toHaveText(['ALLOW', 'WARN', 'DENY']);
     await expect(page.locator('#workflow-sprint-intake[data-legacy-intake-alias]')).toHaveCount(1);
@@ -46,13 +46,13 @@ test.describe('/ dual-offer conversion path', () => {
     await expect(panel).toBeHidden();
   });
 
-  test('Install free is the nav button; the setup link returns to the form', async ({ page }) => {
+  test('Setup Sprint is the nav button; install free stays on the page', async ({ page }) => {
     await page.goto('/');
 
-    await expect(page.locator('nav [data-cta-id="nav_install_free"]')).toHaveAttribute('href', '#install');
-    await page.locator('nav [data-cta-id="nav_install_free"]').click();
-    await expect(page).toHaveURL(/#install$/);
-    await expect(page.locator('#install')).toBeVisible();
+    await expect(page.locator('nav [data-cta-id="nav_setup_sprint"]')).toHaveAttribute('href', '#buy');
+    await page.locator('nav [data-cta-id="nav_setup_sprint"]').click();
+    await expect(page).toHaveURL(/#buy$/);
+    await expect(page.locator('#buy')).toBeVisible();
 
     await page.locator('.final [data-cta-id="final_diagnostic_buy"]').click();
     await expect(page).toHaveURL(/#enterprise-gate$/);

@@ -908,8 +908,8 @@ test('root serves the landing page by default', async () => {
   assert.match(body, /Setup Sprint/i);
   assert.match(body, /action="\/go\/diagnostic-pay" method="POST"/);
   assert.match(body, /Book the \$499 setup/i);
-  assert.match(body, /Start Pro — \$19\/mo/i);
-  assert.match(body, /\/go\/pro-direct/);
+  assert.match(body, /\$499/);
+  assert.doesNotMatch(body, /Start Pro — \$19\/mo|\/go\/pro-direct/);
   assert.match(body, /One configured local gate and its regression test/i);
   assert.match(body, /warn by default/i);
   assert.match(body, /strict mode/i);
@@ -1151,12 +1151,10 @@ test('pricing page is the single source of truth for what ThumbGate sells', asyn
   assert.equal(res.status, 200);
   assert.match(String(res.headers.get('content-type')), /text\/html/);
   const body = await res.text();
-  assert.match(body, /Managed Workflow Diagnostic/i);
+  assert.match(body, /Managed AI Agent Workflow Gate/i);
   assert.match(body, /\$499/);
-  assert.match(body, /\$19/);
-  assert.match(body, /\$149/);
-  assert.match(body, />Start Pro<\/a>/);
-  assert.match(body, /\/checkout\/pro/);
+  assert.doesNotMatch(body, /\$19\/mo|\$149\/yr|>Start Pro<\/a>|\/checkout\/pro/);
+  assert.match(body, /Subscriber login/);
   assert.match(body, /action="\/go\/diagnostic-pay" method="POST"/);
   assert.match(body, /name="customer_email"[^>]*required/);
   assert.match(body, /one configured local pre-action gate/i);
@@ -1574,63 +1572,20 @@ test('root reuses journey cookies and records SEO landing telemetry from search 
   assert.equal(seoEvent.seoQuery, 'workflow hardening sprint');
 });
 
-// /numbers is the primary destination for Zernio social CTAs as of 2026-04-21.
-// These two tests guard the full attribution chain: request → telemetry-pings
-// (landing_page_view with pageType=numbers) → funnel-events.jsonl
-// (discovery/landing_view with UTM metadata). Regressing either breaks the
-// "did anyone click the social post?" question that the CEO asks daily.
-test('/numbers route records landing_page_view telemetry with pageType=numbers', async () => {
-  const cookieHeader = [
-    'thumbgate_visitor_id=visitor_numbers',
-    'thumbgate_session_id=session_numbers',
-    'thumbgate_acquisition_id=acq_numbers',
-  ].join('; ');
+// /numbers used to be a stale zero snapshot. It now 301s to the live bench scorecard.
+test('/numbers redirects to /eval-scorecard and keeps the query string', async () => {
   const res = await fetch(
     apiUrl('/numbers?utm_source=zernio&utm_medium=social&utm_campaign=organic'),
-    { headers: { cookie: cookieHeader } }
+    { redirect: 'manual' }
   );
-  assert.equal(res.status, 200);
-
-  const telemetryEvents = readJsonl(path.join(tmpFeedbackDir, 'telemetry-pings.jsonl'));
-  const landingEvent = telemetryEvents.find((entry) => (
-    entry.eventType === 'landing_page_view' &&
-    entry.visitorId === 'visitor_numbers' &&
-    entry.pageType === 'numbers'
-  ));
-  assert.ok(landingEvent, 'expected landing_page_view with pageType=numbers in telemetry-pings.jsonl');
-  assert.equal(landingEvent.utmSource, 'zernio');
-  assert.equal(landingEvent.utmMedium, 'social');
-  assert.equal(landingEvent.utmCampaign, 'organic');
+  assert.equal(res.status, 301);
+  assert.equal(res.headers.get('location'), '/eval-scorecard?utm_source=zernio&utm_medium=social&utm_campaign=organic');
 });
 
-test('/numbers route writes a discovery/landing_view entry to funnel-events.jsonl with UTM metadata', async () => {
-  const cookieHeader = [
-    'thumbgate_visitor_id=visitor_funnel',
-    'thumbgate_session_id=session_funnel',
-    'thumbgate_acquisition_id=acq_funnel',
-  ].join('; ');
-  const res = await fetch(
-    apiUrl('/numbers?utm_source=zernio&utm_medium=social&utm_campaign=organic&utm_content=linkedin_post'),
-    { headers: { cookie: cookieHeader } }
-  );
-  assert.equal(res.status, 200);
-
-  const funnelPath = path.join(tmpFeedbackDir, 'funnel-events.jsonl');
-  const funnelEvents = readJsonl(funnelPath);
-  const discoveryEvent = funnelEvents.find((entry) => (
-    entry.stage === 'discovery' &&
-    entry.event === 'landing_view' &&
-    entry.installId === 'visitor_funnel'
-  ));
-  assert.ok(
-    discoveryEvent,
-    `expected discovery/landing_view entry for /numbers with installId=visitor_funnel in ${funnelPath}`
-  );
-  assert.equal(discoveryEvent.metadata.page, 'numbers');
-  assert.equal(discoveryEvent.metadata.utmSource, 'zernio');
-  assert.equal(discoveryEvent.metadata.utmMedium, 'social');
-  assert.equal(discoveryEvent.metadata.utmCampaign, 'organic');
-  assert.equal(discoveryEvent.metadata.utmContent, 'linkedin_post');
+test('/numbers.html alias redirects to /eval-scorecard', async () => {
+  const res = await fetch(apiUrl('/numbers.html'), { redirect: 'manual' });
+  assert.equal(res.status, 301);
+  assert.equal(res.headers.get('location'), '/eval-scorecard');
 });
 
 // Federal lead-gen surface — the /federal route family serves
