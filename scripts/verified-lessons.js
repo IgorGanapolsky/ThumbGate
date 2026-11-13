@@ -255,6 +255,184 @@ function lookupLessonByError(errorText, options = {}) {
   return findMemoryErrorMatch(cleanQuery, options);
 }
 
+function getGoldenExamplesPath(options = {}) {
+  const paths = getFeedbackPaths(options);
+  return path.join(paths.FEEDBACK_DIR, 'golden-examples.jsonl');
+}
+
+function storeGoldenExample(entry = {}, options = {}) {
+  const goldenPath = getGoldenExamplesPath(options);
+  const dir = path.dirname(goldenPath);
+  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+
+  const now = options.now instanceof Date ? options.now : new Date(options.now || Date.now());
+  const nowIso = now.toISOString();
+
+  const goldenRecord = {
+    id: entry.id || `golden_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+    title: entry.title || entry.context || entry.whatWorked || 'Golden Example',
+    diff: entry.diff || null,
+    prLink: entry.prLink || null,
+    tags: Array.isArray(entry.tags) ? entry.tags : ['golden'],
+    context: entry.context || '',
+    whatWorked: entry.whatWorked || '',
+    scope: entry.scope || null,
+    upVotes: Number.isInteger(entry.upVotes) ? entry.upVotes : 1,
+    downVotes: Number.isInteger(entry.downVotes) ? entry.downVotes : 0,
+    netVotes: Number.isInteger(entry.upVotes) ? entry.upVotes - (entry.downVotes || 0) : 1,
+    score: typeof entry.score === 'number' ? entry.score : 1.0,
+    memoryId: entry.memoryId || null,
+    feedbackId: entry.feedbackId || null,
+    timestamp: nowIso,
+  };
+
+  fs.appendFileSync(goldenPath, JSON.stringify(goldenRecord) + '\n', 'utf8');
+
+  // If associated memoryId provided, update the memory in memory-log.jsonl
+  if (entry.memoryId) {
+    try {
+      updateMemoryRecord(entry.memoryId, (mem) => ({
+        ...mem,
+        isGolden: true,
+        diff: goldenRecord.diff,
+        prLink: goldenRecord.prLink,
+        goldenExample: goldenRecord,
+      }), options);
+    } catch {
+      // memory update is best-effort
+    }
+  }
+
+  return goldenRecord;
+}
+
+function scoreGoldenRelevance(query, example) {
+  if (!query || typeof query !== 'string') return 0.5;
+  const terms = query.toLowerCase().split(/[\s,._\-/]+/).filter((t) => t.length > 2);
+  if (terms.length === 0) return 0.5;
+
+  const searchable = [
+    example.title || '',
+    example.context || '',
+    example.whatWorked || '',
+    (example.tags || []).join(' '),
+    example.prLink || '',
+    (example.diff || '').slice(0, 500),
+  ].join(' ').toLowerCase();
+
+  let hits = 0;
+  for (const term of terms) {
+    if (searchable.includes(term)) {
+      hits += 1;
+    }
+  }
+
+  const baseScore = hits / terms.length;
+  const netVotes = Number(example.netVotes || (Number(example.upVotes || 0) - Number(example.downVotes || 0)));
+  const voteMultiplier = 1 + 0.1 * Math.max(-0.5, Math.min(5, netVotes));
+  return Math.max(0, baseScore * voteMultiplier);
+}
+
+function rankGoldenExamples(query, examples = [], options = {}) {
+  const scored = examples.map((ex) => ({
+    ...ex,
+    relevanceScore: scoreGoldenRelevance(query, ex),
+  }));
+
+  scored.sort((a, b) => {
+    if (b.relevanceScore !== a.relevanceScore) {
+      return b.relevanceScore - a.relevanceScore;
+    }
+    const netB = Number(b.netVotes || 0);
+    const netA = Number(a.netVotes || 0);
+    if (netB !== netA) return netB - netA;
+    const tB = b.timestamp ? new Date(b.timestamp).getTime() : 0;
+    const tA = a.timestamp ? new Date(a.timestamp).getTime() : 0;
+    return tB - tA;
+  });
+
+  return scored;
+}
+
+function retrieveGoldenExamples(query, options = {}) {
+  const paths = getFeedbackPaths(options);
+  const goldenPath = getGoldenExamplesPath(options);
+  const candidates = [];
+  const seenIds = new Set();
+
+  if (fs.existsSync(goldenPath)) {
+    const raw = fs.readFileSync(goldenPath, 'utf8');
+    for (const line of raw.split('\n')) {
+      if (!line.trim()) continue;
+      try {
+        const item = JSON.parse(line);
+        if (!seenIds.has(item.id)) {
+          seenIds.add(item.id);
+          candidates.push(item);
+        }
+      } catch {}
+    }
+  }
+
+  // Also look in memory-log.jsonl for isGolden or tags.includes('golden')
+  if (fs.existsSync(paths.MEMORY_LOG_PATH)) {
+    const mems = readJSONL(paths.MEMORY_LOG_PATH, { maxLines: 500 });
+    for (const mem of mems) {
+      const isGolden = mem.isGolden === true
+        || (Array.isArray(mem.tags) && mem.tags.includes('golden'))
+        || Boolean(mem.goldenExample);
+      if (isGolden) {
+        const id = mem.goldenExample?.id || mem.id;
+        if (!seenIds.has(id)) {
+          seenIds.add(id);
+          candidates.push({
+            id,
+            title: mem.title,
+            diff: mem.diff || mem.goldenExample?.diff || null,
+            prLink: mem.prLink || mem.goldenExample?.prLink || null,
+            tags: mem.tags || ['golden'],
+            context: mem.content || '',
+            whatWorked: mem.whatWorked || '',
+            scope: mem.scope || null,
+            upVotes: Number.isInteger(mem.upVotes) ? mem.upVotes : 1,
+            downVotes: Number.isInteger(mem.downVotes) ? mem.downVotes : 0,
+            netVotes: Number.isInteger(mem.upVotes) ? mem.upVotes - (mem.downVotes || 0) : 1,
+            timestamp: mem.timestamp,
+          });
+        }
+      }
+    }
+  }
+
+  // Filter out demoted
+  const active = candidates.filter((item) => !isLessonDemoted(item));
+  const limit = Math.max(1, Number(options.limit || 3));
+
+  if (active.length === 0) return [];
+  const ranked = rankGoldenExamples(query, active, options);
+  return ranked.slice(0, limit);
+}
+
+function formatGoldenExamplesRecallSection(examples = []) {
+  if (!Array.isArray(examples) || examples.length === 0) return '';
+  const lines = [
+    '## Golden Examples',
+    '',
+  ];
+  for (const ex of examples) {
+    const title = ex.title || 'Golden Example';
+    lines.push(`- [Golden Example] ${title}`);
+    if (ex.prLink) {
+      lines.push(`  PR: ${ex.prLink}`);
+    }
+    if (ex.diff) {
+      const firstLines = ex.diff.split('\n').slice(0, 6).join('\n');
+      lines.push(`  Diff preview:\n\`\`\`diff\n${firstLines}\n\`\`\``);
+    }
+  }
+  return lines.join('\n');
+}
+
 module.exports = {
   SEEDED_LESSONS,
   normalizeVerificationFields,
@@ -266,5 +444,9 @@ module.exports = {
   voteOnLesson,
   voteLesson: voteOnLesson,
   lookupLessonByError,
+  storeGoldenExample,
+  rankGoldenExamples,
+  retrieveGoldenExamples,
+  formatGoldenExamplesRecallSection,
   DEFAULT_E2E_BASE_URL_LESSON: SEEDED_LESSONS[0],
 };

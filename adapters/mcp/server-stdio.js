@@ -479,6 +479,19 @@ function buildRecallResponse(args = {}) {
     ? `${formatContextPack(pack)}\n\n${section}`
     : formatContextPack(pack);
 
+  try {
+    const { retrieveGoldenExamples, formatGoldenExamplesRecallSection } = require('../../scripts/verified-lessons');
+    const goldenExamples = retrieveGoldenExamples(args.query || '', { limit: Number(args.limit || 3) });
+    if (goldenExamples.length > 0) {
+      const goldenSection = formatGoldenExamplesRecallSection(goldenExamples);
+      if (goldenSection) {
+        text += `\n\n${goldenSection}`;
+      }
+    }
+  } catch (_gErr) {
+    /* golden examples recall is non-blocking */
+  }
+
   if (!limit.allowed) {
     text += '\n\n---\n';
     text += 'Upgrade to Context Gateway for unlimited recall, shared workflow memory, and hosted rollout.\n';
@@ -1155,6 +1168,30 @@ async function callToolInner(name, args) {
           rule: { fix: exactError.fix },
         };
         retrievalResults = [exactItem, ...(Array.isArray(retrievalResults) ? retrievalResults.filter(r => r.id !== exactError.id) : [])];
+      }
+      try {
+        const { retrieveGoldenExamples } = require('../../scripts/verified-lessons');
+        const goldenExamples = retrieveGoldenExamples(args.actionContext || args.toolName || '', {
+          limit: Math.min(Number(args.maxResults || 3), 3),
+          scope: args.scope,
+        });
+        if (Array.isArray(goldenExamples) && goldenExamples.length > 0) {
+          const goldenItems = goldenExamples.map((g) => ({
+            id: g.id,
+            title: `[GOLDEN EXAMPLE] ${g.title}`,
+            signal: 'golden',
+            isGolden: true,
+            prLink: g.prLink || null,
+            diff: g.diff || null,
+            content: g.content || `Golden Example: ${g.title}${g.prLink ? `\nPR: ${g.prLink}` : ''}${g.diff ? `\nDiff:\n${g.diff}` : ''}`,
+            rule: g.rule || null,
+            badge: 'golden example',
+            score: g.relevanceScore || g.score || 1.0,
+          }));
+          retrievalResults = [...goldenItems, ...(Array.isArray(retrievalResults) ? retrievalResults : [])];
+        }
+      } catch (_gErr) {
+        /* golden examples retrieval is non-blocking */
       }
       return toTextResult(retrievalResults);
     }

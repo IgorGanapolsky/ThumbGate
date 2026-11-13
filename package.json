@@ -1190,7 +1190,7 @@
     "panel:synthetic": "node scripts/synthetic-customer-panel.js",
     "test:synthetic-customer-panel": "node --test tests/synthetic-customer-panel.test.js",
     "workflow:notebook": "node scripts/workflow-notebook.js",
-    "test:eval-golden": "node --test tests/gate-golden-set.test.js tests/eval-holdout.test.js",
+    "test:eval-golden": "node --test tests/gate-golden-set.test.js tests/eval-holdout.test.js tests/golden-examples.test.js",
     "test:eval-mining": "node --test tests/mine-eval-set.test.js tests/eval-baseline.test.js",
     "test:task-scope-lease": "node --test tests/task-scope-lease.test.js",
     "eval-scorecard:generate": "node scripts/generate-eval-scorecard.js",

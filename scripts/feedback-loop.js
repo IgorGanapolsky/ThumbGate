@@ -1675,6 +1675,50 @@ function captureFeedback(params, options = {}) {
     timestamp: now,
   };
 
+  // Golden example capture on thumbs-up tagged 'golden'
+  const isGoldenVote = (signal === 'positive' || signal === 'up')
+    && (tags.includes('golden') || params.isGolden === true || params.golden === true);
+
+  let goldenStored = null;
+  if (isGoldenVote) {
+    let goldenDiff = params.diff || params.acceptedDiff || params.goldenDiff || null;
+    let goldenPrLink = params.prLink || params.prUrl || params.pr || null;
+
+    if (!goldenPrLink) {
+      const prMatch = String(context || '').match(/https?:\/\/github\.com\/[^\s\)]+\/pull\/\d+/i)
+        || String(whatWorked || '').match(/https?:\/\/github\.com\/[^\s\)]+\/pull\/\d+/i);
+      if (prMatch) goldenPrLink = prMatch[0];
+    }
+    if (!goldenDiff) {
+      const diffMatch = String(context || '').match(/(?:diff --git[^\n]+[\s\S]+|@@ -\d+,\d+ \+\d+,\d+ @@[\s\S]+)/);
+      if (diffMatch) goldenDiff = diffMatch[0];
+    }
+
+    try {
+      const { storeGoldenExample } = require('./verified-lessons');
+      goldenStored = storeGoldenExample({
+        title: memoryRecord.title || context || whatWorked || 'Golden Example',
+        diff: goldenDiff,
+        prLink: goldenPrLink,
+        tags: tags.includes('golden') ? tags : [...tags, 'golden'],
+        context,
+        whatWorked,
+        scope: memoryRecord.scope,
+        memoryId: memoryRecord.id,
+        feedbackId: feedbackEvent.id,
+      }, { feedbackDir: options.feedbackDir || FEEDBACK_DIR, now });
+
+      memoryRecord.isGolden = true;
+      memoryRecord.goldenExample = goldenStored;
+      if (goldenDiff) memoryRecord.diff = goldenDiff;
+      if (goldenPrLink) memoryRecord.prLink = goldenPrLink;
+      feedbackEvent.isGolden = true;
+      feedbackEvent.goldenExample = goldenStored;
+    } catch (_goldenErr) {
+      /* golden example storage is non-blocking */
+    }
+  }
+
   // Stamp a cross-session canonical hash on every memory record so future
   // captures can short-circuit dedup without re-canonicalizing legacy entries.
   // See scripts/lesson-canonical.js for the normalization contract.
@@ -1894,6 +1938,7 @@ function captureFeedback(params, options = {}) {
     ...(reflection && { reflection }),
     ...(feedbackSession && { feedbackSession }),
     ...(synthesisResult && { synthesis: synthesisResult }),
+    ...(goldenStored && { goldenExample: goldenStored }),
   };
 
   // Update statusline with lesson info (include proposed rule if reflection available)
