@@ -1072,8 +1072,8 @@ async function connect(options) {
     return;
   }
   var isEnterprise = opts.tier === 'Enterprise' || API_KEY.startsWith('tg_op_') || API_KEY.startsWith('tg_creator_');
-  var tierName = isEnterprise ? 'Enterprise' : 'Pro';
-  if ((opts.cookieSession && (opts.tier === 'Pro' || opts.tier === 'Enterprise')) || opts.localPro) {
+  var tierName = isEnterprise ? 'Enterprise' : (opts.tier === 'Team' ? 'Team' : 'Pro');
+  if ((opts.cookieSession && /^(Pro|Team|Enterprise)$/.test(opts.tier || '')) || opts.localPro) {
     syncAuthBarVisibility('signed_in', { localPro: Boolean(opts.localPro) });
     var earlyBanner = document.getElementById('demoBanner');
     if (earlyBanner) earlyBanner.style.display = 'none';
@@ -1168,7 +1168,7 @@ async function connect(options) {
   } catch (e) {
     status.className = 'auth-status err';
     status.textContent = '✗ ' + e.message;
-    const isPaidCookie = Boolean(opts.cookieSession && (opts.tier === 'Pro' || opts.tier === 'Enterprise'));
+    const isPaidCookie = Boolean(opts.cookieSession && /^(Pro|Team|Enterprise)$/.test(opts.tier || ''));
     const titleEl = document.getElementById('authTitle');
     if (titleEl && !isPaidCookie) {
       titleEl.textContent = 'Sign in to ThumbGate';

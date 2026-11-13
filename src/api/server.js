@@ -6428,9 +6428,10 @@ function resolveAccountSetupOptions(req, { tier, sessionEntry, expectedApiKey, e
   ));
   const validation = (!isAdmin && token) ? validateApiKey(token) : null;
   const validKey = validation && validation.valid === true ? validation : null;
-  const email = String(resolvedSession?.ssoEmail || validKey?.customerEmail || '').trim().toLowerCase();
+  const useCookieIdentity = !isAdmin && !validKey;
+  const email = String(validKey?.customerEmail || (useCookieIdentity ? resolvedSession?.ssoEmail : '') || '').trim().toLowerCase();
   const emailHash = email ? hashDataIdentity('sso_free', email) : null;
-  const customerId = resolvedSession?.customerId || validKey?.customerId || null;
+  const customerId = validKey?.customerId || (useCookieIdentity ? resolvedSession?.customerId : null) || null;
   const installId = validKey?.installId || null;
   const firstBlockAt = validKey?.firstBlockAt
     || (customerId && activations.byCustomerId[customerId]?.firstBlockAt)
@@ -6513,12 +6514,10 @@ async function handleFirstBlockActivationRoute(req, res, expectedApiKey, expecte
   const rawInstall = typeof body?.installId === 'string' ? body.installId.trim() : '';
   const safeBodyInstallId = /^[A-Za-z0-9._:-]{1,128}$/.test(rawInstall) ? rawInstall : null;
   const installId = validKey?.installId || safeBodyInstallId || null;
-  const targetEmail = String((isAdmin && body?.email) || sessionEntry?.ssoEmail || validKey?.customerEmail || '').trim().toLowerCase();
+  const useCookieTarget = !isAdmin && !isOperator && !validKey && !signedClaims;
+  const targetEmail = String((isAdmin && body?.email) || validKey?.customerEmail || (useCookieTarget ? sessionEntry?.ssoEmail : '') || '').trim().toLowerCase();
   const targetCustomerId = (isAdmin && body?.customerId ? String(body.customerId).trim() : null)
-    || validKey?.customerId
-    || signedClaims?.customerId
-    || sessionEntry?.customerId
-    || null;
+    || validKey?.customerId || signedClaims?.customerId || (useCookieTarget ? sessionEntry?.customerId : null) || null;
   const emailHash = targetEmail ? hashDataIdentity('sso_free', targetEmail) : null;
   const tenantDir = targetCustomerId
     ? path.join(FEEDBACK_DIR, 'tenants', hashDataIdentity('tenant', targetCustomerId))
@@ -6527,11 +6526,12 @@ async function handleFirstBlockActivationRoute(req, res, expectedApiKey, expecte
     { apiKey: validKey ? token : null, customerId: targetCustomerId, email: targetEmail },
     { firstBlockAt: rawStamp, installId: validKey ? installId : null },
   );
+  const trustedInstallId = (isAdmin || isOperator || validKey) ? installId : null;
   const recorded = recordHostedFirstBlock(FEEDBACK_DIR, {
     firstBlockAt: keyUpdate.updatedCount > 0 ? keyUpdate.firstBlockAt : rawStamp,
     customerId: targetCustomerId,
     emailHash,
-    installId: (isAdmin || isOperator || validKey) ? installId : null,
+    installId: trustedInstallId,
     tenantDir,
     isAdmin: (isAdmin || isOperator) && !body?.customerId && !body?.email,
     source: 'cli_first_block',
@@ -6544,12 +6544,12 @@ async function handleFirstBlockActivationRoute(req, res, expectedApiKey, expecte
       includeActivePaidKeys: Boolean(body?.includeActivePaidKeys),
     });
   }
-  if (installId) {
+  if (trustedInstallId) {
     try {
       appendTelemetryPing(FEEDBACK_DIR, {
         eventType: 'first_block',
         clientType: 'cli',
-        installId,
+        installId: trustedInstallId,
         firstBlockAt: recorded.firstBlockAt,
         ...(typeof body?.gateId === 'string' ? { gateId: body.gateId.slice(0, 120) } : {}),
       }, req.headers);

@@ -767,13 +767,17 @@ function collectTelemetryCliInstalls(baseFeedbackDir) {
 
 function backfillHostedAccountActivations(baseFeedbackDir, opts = {}) {
   if (!baseFeedbackDir) return { backfilled: 0 };
+  const keySig = Object.values((opts.keyStore && opts.keyStore.keys) || {})
+    .map((m) => `${m?.customerId || ''}|${m?.installId || ''}|${m?.active ? 1 : 0}|${m?.firstBlockAt ? 1 : 0}`).join(';');
   const sig = [
     statMtimeSafe(path.join(baseFeedbackDir, 'telemetry-pings.jsonl')),
     statMtimeSafe(resolveFunnelPathForBackfill(baseFeedbackDir)),
     statMtimeSafe(path.join(baseFeedbackDir, 'marketing-install-emails.jsonl')),
+    statMtimeSafe(path.join(baseFeedbackDir, 'account-activations.json')),
     Boolean(opts.includeAdmin),
     Boolean(opts.includeActivePaidKeys),
     (opts.ownerEmails || []).join(','),
+    keySig,
   ].join(':');
   if (!opts.force && _backfillMtimeCache.get(baseFeedbackDir) === sig) {
     return { backfilled: 0, cached: true };
