@@ -449,6 +449,79 @@ test('generateDashboard returns complete structure with data', () => {
   assert.equal(data.templateLibrary.total, EXPECTED_TEMPLATE_COUNT);
 });
 
+test('human-only dashboard keeps feedback totals and review deltas consistent with independent lessons', () => {
+  const timestamp = '2026-11-13T12:00:00.000Z';
+  writeFeedbackLog([
+    { id: 'automated', signal: 'positive', reviewOrigin: 'automated', timestamp },
+    { id: 'legacy', signal: 'negative', timestamp },
+    { id: 'unknown-human', signal: 'unknown', reviewOrigin: 'human', timestamp },
+    { id: 'missing-human', reviewOrigin: 'human', timestamp },
+    { id: 'malformed-human', signal: { invalid: true }, reviewOrigin: 'human', timestamp },
+  ]);
+  writeMemoryLog([{ id: 'lesson', title: 'Independent operational lesson', timestamp }]);
+
+  const hosted = generateDashboard(tmpDir, { humanOnly: true });
+  assert.equal(hosted.approval.total, 0);
+  assert.equal(hosted.approval.positive, 0);
+  assert.equal(hosted.approval.negative, 0);
+  assert.equal(hosted.reviewDelta.feedbackAdded, 0);
+  assert.equal(hosted.reviewDelta.negativeAdded, 0);
+  assert.equal(hosted.reviewDelta.latestFeedback, null);
+  assert.equal(hosted.reviewDelta.lessonsAdded, 1);
+  assert.equal(hosted.feedbackAnalysis.total, 0);
+  assert.equal(buildReviewSnapshot(tmpDir, { humanOnly: true }).feedbackCount, 0);
+  assert.equal(generateDashboard(tmpDir).approval.total, 5);
+});
+
+test('human-only review snapshots follow existing aggregate alias normalization', () => {
+  const previousAggregate = process.env.THUMBGATE_STATUSLINE_AGGREGATE;
+  writeFeedbackLog([
+    { id: 'canonical-positive', signal: 'positive', reviewOrigin: 'human' },
+    { id: 'canonical-negative', signal: 'negative', reviewOrigin: 'human' },
+    { id: 'alias-up', signal: 'up', reviewOrigin: 'human' },
+    { id: 'alias-down', feedback: 'thumbs_down', reviewOrigin: 'human' },
+  ]);
+  try {
+    for (const [aggregate, expected] of [['1', 4], ['0', 2]]) {
+      process.env.THUMBGATE_STATUSLINE_AGGREGATE = aggregate;
+      const data = generateDashboard(tmpDir, { humanOnly: true });
+      const snapshot = buildReviewSnapshot(tmpDir, { humanOnly: true });
+      assert.equal(data.approval.total, expected);
+      assert.equal(data.approval.positive, expected / 2);
+      assert.equal(data.approval.negative, expected / 2);
+      assert.equal(data.reviewDelta.feedbackAdded, expected);
+      assert.equal(snapshot.feedbackCount, expected);
+      assert.equal(snapshot.positiveCount, expected / 2);
+      assert.equal(snapshot.negativeCount, expected / 2);
+    }
+  } finally {
+    if (previousAggregate === undefined) delete process.env.THUMBGATE_STATUSLINE_AGGREGATE;
+    else process.env.THUMBGATE_STATUSLINE_AGGREGATE = previousAggregate;
+  }
+});
+
+test('human-only dashboard includes human feedback since a review and excludes automated activity', () => {
+  writeDashboardReviewState(tmpDir, { reviewedAt: '2026-11-13T10:00:00.000Z' });
+  writeFeedbackLog([
+    { id: 'before', signal: 'positive', reviewOrigin: 'human', timestamp: '2026-11-13T09:00:00.000Z' },
+    { id: 'after', signal: 'negative', reviewOrigin: 'human', tags: ['auto-hook', 'unknown'], context: '[unknown] Human regression', timestamp: '2026-11-13T11:00:00.000Z' },
+    { id: 'auto', signal: 'positive', reviewOrigin: 'automated', timestamp: '2026-11-13T12:00:00.000Z' },
+  ]);
+
+  const data = generateDashboard(tmpDir, { humanOnly: true });
+  assert.equal(data.approval.total, 2);
+  assert.equal(data.approval.positive, 1);
+  assert.equal(data.approval.negative, 1);
+  assert.equal(data.reviewDelta.feedbackAdded, 1);
+  assert.equal(data.reviewDelta.negativeAdded, 1);
+  assert.equal(data.reviewDelta.latestFeedback.title, '[unknown] Human regression');
+  assert.equal(data.feedbackAnalysis.total, 2);
+  const snapshot = buildReviewSnapshot(tmpDir, { humanOnly: true });
+  assert.equal(snapshot.feedbackCount, 2);
+  assert.equal(snapshot.positiveCount, 1);
+  assert.equal(snapshot.negativeCount, 1);
+});
+
 test('generateDashboard reports only activity since the saved review checkpoint', () => {
   const baselineTime = '2026-04-14T10:00:00.000Z';
   const freshTime = '2026-04-15T10:00:00.000Z';
