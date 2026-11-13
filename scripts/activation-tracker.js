@@ -222,12 +222,13 @@ function postActivationEvent(endpointUrl, apiKey, bodyObj, awaitDelivery = false
   return { ok: true, dispatched: true };
 }
 
-function spawnDetachedFirstBlockWorker(markerPath, apiKey, apiBaseUrl, env) {
+function spawnDetachedFirstBlockWorker(apiKey, apiBaseUrl, env, stateDir) {
   try {
     const childEnv = { ...env };
     if (apiKey) childEnv.THUMBGATE_API_KEY = apiKey;
     if (apiBaseUrl) childEnv.THUMBGATE_API_URL = apiBaseUrl;
-    const child = spawn(process.execPath, [__filename, '--deliver-first-block', markerPath], {
+    if (stateDir) childEnv.THUMBGATE_STATE_DIR = stateDir;
+    const child = spawn(process.execPath, [__filename, '--deliver-first-block'], {
       detached: true,
       stdio: 'ignore',
       env: childEnv,
@@ -312,7 +313,7 @@ function reportFirstBlockActivation(metadata = {}) {
   }
   nextMarker.firstBlockDispatchAttemptAt = new Date().toISOString();
   writeJsonSafe(markerPath, nextMarker);
-  const spawned = spawnDetachedFirstBlockWorker(markerPath, apiKey, apiBaseUrl, env);
+  const spawned = spawnDetachedFirstBlockWorker(apiKey, apiBaseUrl, env, stateDir);
   return { reported: spawned, dispatched: spawned, firstBlockAt };
 }
 function recordFirstBlockedToolCall(metadata = {}) {
@@ -398,7 +399,6 @@ module.exports = {
   resetForTesting,
 };
 
-if (require.main === module && process.argv[2] === '--deliver-first-block' && process.argv[3]) {
-  const marker = require('node:path').resolve(process.argv[3]);
-  reportFirstBlockActivation({ stateDir: require('node:path').dirname(marker), awaitDelivery: true }).catch(() => {});
+if (require.main === module && process.argv[2] === '--deliver-first-block') {
+  reportFirstBlockActivation({ awaitDelivery: true }).catch(() => {});
 }
