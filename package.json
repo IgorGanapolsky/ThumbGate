@@ -809,7 +809,7 @@
     "test:belief-update": "node --test tests/belief-update.test.js",
     "test:hosted-config": "node --test tests/hosted-config.test.js",
     "test:operational-summary": "node --test tests/operational-summary.test.js",
-    "test:operational-dashboard": "node --test tests/operational-dashboard.test.js",
+    "test:operational-dashboard": "node --test tests/operational-dashboard.test.js tests/dashboard-gate-details.test.js",
     "test:operator-artifacts": "node --test tests/operator-artifacts.test.js tests/revenue-pack-utils.test.js",
     "test:okara-money-promo-automation": "node --test tests/okara-money-promo-automation.test.js",
     "test:operator-key-auth": "node --test tests/api-operator-key-auth.test.js",
