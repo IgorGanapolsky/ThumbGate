@@ -20,7 +20,7 @@
   "applicationCategory": "DeveloperApplication",
   "operatingSystem": "Cross-platform",
   "url": "https://thumbgate.ai/dashboard",
-  "dateModified": "2026-04-20",
+  "dateModified": "2026-11-13",
   "creator": {
     "@type": "Person",
     "name": "Igor Ganapolsky",
@@ -268,7 +268,7 @@ h2{font-size:20px;font-weight:700;margin-bottom:16px;letter-spacing:-.02em}
 <div class="container" id="dashboardContent" style="display:none;">
   <div style="margin:0 0 24px;padding:24px;background:linear-gradient(135deg,rgba(34,211,238,0.08),rgba(74,222,128,0.05));border:1px solid rgba(34,211,238,0.2);border-radius:12px;">
     <h1 style="font-size:22px;font-weight:700;margin-bottom:8px;letter-spacing:-0.02em;">🔍 Operations Dashboard</h1>
-    <p style="font-size:12px;color:var(--text-muted);margin-bottom:8px;">Updated: <time datetime="2026-04-20">2026-04-20</time> · by <a href="https://github.com/IgorGanapolsky" style="color:inherit;">Igor Ganapolsky</a></p>
+    <p style="font-size:12px;color:var(--text-muted);margin-bottom:8px;">Data refreshed: <time id="dashboardRefreshedAt">Waiting for data</time> · by <a href="https://github.com/IgorGanapolsky" style="color:inherit;">Igor Ganapolsky</a></p>
     <p style="font-size:14px;color:var(--text-muted);line-height:1.6;max-width:700px;">What's happening right now? Search memories, inspect active checks, manage your team, and export training data. <span style="color:var(--cyan);font-weight:600;">This is your control plane for AI agent behavior.</span></p>
     <div style="display:flex;gap:16px;margin-top:12px;font-size:12px;color:var(--text-muted);">
       <span class="quick-nav-link" onclick="switchTab('search')">🔍 <strong style="color:var(--text);">Search</strong> — find any memory</span>
@@ -291,7 +291,12 @@ h2{font-size:20px;font-weight:700;margin-bottom:16px;letter-spacing:-.02em}
     <a class="stat-card" data-card-action="all" onclick="selectCard(this,'all')" href="/lessons?signal=all" style="cursor:pointer;text-decoration:none;color:inherit;display:block;" title="Click to view all feedback → Lessons page"><div class="stat-label">Total Feedback <span class="tooltip-trigger" onclick="event.stopPropagation(); event.preventDefault();">?<span class="tooltip-content">Total thumbs-up and thumbs-down signals captured from your AI agent interactions.</span></span></div><div class="stat-value cyan" id="statTotal">—</div></a>
     <a class="stat-card" data-card-action="up" onclick="selectCard(this,'up')" href="/lessons?signal=up" style="cursor:pointer;text-decoration:none;color:inherit;display:block;" title="Click to view positive feedback → Lessons page"><div class="stat-label">👍 Positive <span class="tooltip-trigger" onclick="event.stopPropagation(); event.preventDefault();">?<span class="tooltip-content">Successful outcomes where the agent's work met expectations (thumbs-up).</span></span></div><div class="stat-value green" id="statPositive">—</div></a>
     <a class="stat-card" data-card-action="down" onclick="selectCard(this,'down')" href="/lessons?signal=down" style="cursor:pointer;text-decoration:none;color:inherit;display:block;" title="Click to view negative feedback → Lessons page"><div class="stat-label">👎 Negative <span class="tooltip-trigger" onclick="event.stopPropagation(); event.preventDefault();">?<span class="tooltip-content">Unsuccessful runs or errors that we need to learn from to prevent repeat failures (thumbs-down).</span></span></div><div class="stat-value red" id="statNegative">—</div></a>
-    <a class="stat-card" data-card-action="gates" onclick="selectCard(this,'gates');return false;" href="#" style="cursor:pointer;text-decoration:none;color:inherit;display:block;" title="Click to view active checks"><div class="stat-label">Active Gates <span class="tooltip-trigger" onclick="event.stopPropagation(); event.preventDefault();">?<span class="tooltip-content">Pre-action checks actively monitoring and blocking known-bad tool calls before they run.</span></span></div><div class="stat-value cyan" id="statGates">—</div></a>
+    <a class="stat-card" data-card-action="gates" onclick="selectCard(this,'gates');return false;" href="#" style="cursor:pointer;text-decoration:none;color:inherit;display:block;" title="Click to view active checks"><div class="stat-label">Active Gates <span class="tooltip-trigger" onclick="event.stopPropagation(); event.preventDefault();">?<span class="tooltip-content">Configured pre-action rules available to check tool calls. This count does not mean feedback has been recorded.</span></span></div><div class="stat-value cyan" id="statGates">—</div></a>
+  </div>
+
+  <div class="panel" id="hostedFeedbackEmpty" role="status" style="display:none;margin-bottom:20px;">
+    <strong>No human feedback recorded on this hosted account yet.</strong>
+    <p style="margin:8px 0 0;color:var(--text-muted);line-height:1.6;">Local feedback history is not automatically synced here. On the machine where you use ThumbGate, run <code>npx thumbgate dashboard --open</code> to view your local feedback. Configured gates are available rules; lessons are independent records, not human feedback.</p>
   </div>
 
   <div class="panel" id="chatPanel" style="margin-bottom:20px;">
@@ -322,7 +327,7 @@ h2{font-size:20px;font-weight:700;margin-bottom:16px;letter-spacing:-.02em}
     <div class="generated-grid" id="reviewDeltaStats" style="margin-top:16px;">
       <div class="team-card"><div class="team-kicker">New feedback</div><div class="team-value" id="reviewDeltaFeedback">0</div><div class="team-note">events since checkpoint</div></div>
       <div class="team-card"><div class="team-kicker">New negatives</div><div class="team-value" id="reviewDeltaNegative">0</div><div class="team-note">fresh review risk</div></div>
-      <div class="team-card"><div class="team-kicker">New lessons</div><div class="team-value" id="reviewDeltaLessons">0</div><div class="team-note">promoted since checkpoint</div></div>
+      <div class="team-card"><div class="team-kicker">New lessons</div><div class="team-value" id="reviewDeltaLessons">0</div><div class="team-note">independent lesson records since checkpoint</div></div>
       <div class="team-card"><div class="team-kicker">New blocks</div><div class="team-value" id="reviewDeltaBlocks">0</div><div class="team-note">gate hits since checkpoint</div></div>
     </div>
     <div class="team-columns" style="margin-top:16px;">
@@ -1241,6 +1246,14 @@ function renderLessonStorageFooter(s) {
   var el = document.getElementById('lessonStorageSummary');
   if (el) el.textContent = ((s && s.label) || '100% On-Device Private Memory') + ' · ' + ((s && s.location) || '~/.thumbgate/feedback/memory-log.jsonl') + ' · ' + ((s && s.lessonDbSizeDisplay) || '0 B');
 }
+function markDashboardRefreshed() {
+  var refreshed = document.getElementById('dashboardRefreshedAt');
+  if (!refreshed || isDemo) return;
+  var now = new Date();
+  refreshed.dateTime = now.toISOString();
+  refreshed.textContent = now.toLocaleString();
+}
+
 function renderStats(data) {
   const total = (data.totalFeedback || data.total || 0);
   const pos = (data.totalPositive || data.positive || data.thumbsUp || 0);
@@ -1248,6 +1261,10 @@ function renderStats(data) {
   document.getElementById('statTotal').textContent = total;
   document.getElementById('statPositive').textContent = pos;
   document.getElementById('statNegative').textContent = neg;
+  var emptyNotice = document.getElementById('hostedFeedbackEmpty');
+  var localDashboard = LOCAL_PRO_BOOTSTRAP || /^(localhost|127\.0\.0\.1|\[?::1\]?)$/.test(window.location.hostname);
+  if (emptyNotice) emptyNotice.style.display = !isDemo && !localDashboard && Number(total) === 0 ? 'block' : 'none';
+  markDashboardRefreshed();
   var gateCount = resolveActiveGateCount(data);
   if (gateCount != null) document.getElementById('statGates').textContent = gateCount;
   var gs = data.gateStats || {};
@@ -1730,6 +1747,7 @@ function renderDashboardData(data) {
     }
   }
   dashboardSnapshot = data;
+  markDashboardRefreshed();
   var reviewButton = document.getElementById('reviewCheckpointBtn');
   if (reviewButton) reviewButton.disabled = false;
   const gates = data.gates || data.activeGates || [];
@@ -2414,6 +2432,10 @@ document.addEventListener('click', function(event) {
 });
 
 function loadDemo() {
+  var hostedEmpty = document.getElementById('hostedFeedbackEmpty');
+  if (hostedEmpty) hostedEmpty.style.display = 'none';
+  var refreshed = document.getElementById('dashboardRefreshedAt');
+  if (refreshed) { refreshed.removeAttribute('datetime'); refreshed.textContent = 'Sample data'; }
   document.querySelector('.auth-bar').style.display = 'none';
   var paidOnboardingEl = document.getElementById('firstBlockOnboarding');
     if (paidOnboardingEl && !isDemo) paidOnboardingEl.style.display = 'none';
