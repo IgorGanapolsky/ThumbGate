@@ -136,6 +136,14 @@ test('CLI `thumbgate agents --json` outputs register JSON and supports --owner /
   const helpOut = execFileSync(process.execPath, [CLI_PATH, 'agents', '--help'], { encoding: 'utf8' });
   assert.match(helpOut, /Usage: npx thumbgate agents/);
   assert.equal(after.agents[0].status, 'registered');
+  const humanText = execFileSync(
+    process.execPath,
+    [CLI_PATH, 'agents', `--data-dir=${dir}`, '--max-bytes=65536', '--register=mystery-cli-agent', '--owner=bob'],
+    { encoding: 'utf8' },
+  );
+  assert.match(humanText, /ThumbGate Agent Register/);
+  assert.match(humanText, /mystery-cli-agent.*owner=bob/);
+  assert.match(humanText, /none seen in window/);
 });
 
 test('generateDashboard exposes agentRegister card payload and dashboard HTML renders #agentRegisterCard', (t) => {
@@ -150,4 +158,59 @@ test('generateDashboard exposes agentRegister card payload and dashboard HTML re
   const html = fs.readFileSync(path.join(__dirname, '..', 'public', 'dashboard.html'), 'utf8');
   assert.match(html, /id="agentRegisterCard"/);
   assert.match(html, /function renderAgentRegister\(reg\)/);
+});
+
+test('HTTP GET and POST /v1/dashboard/agent-register read, validate, and update agent owners', async (t) => {
+  const dir = makeTempDir(t);
+  const prevFeedbackDir = process.env.THUMBGATE_FEEDBACK_DIR;
+  const prevApiKey = process.env.THUMBGATE_API_KEY;
+  const apiKey = 'test-agent-register-key';
+  process.env.THUMBGATE_FEEDBACK_DIR = dir;
+  process.env.THUMBGATE_API_KEY = apiKey;
+  t.after(() => {
+    if (prevFeedbackDir === undefined) delete process.env.THUMBGATE_FEEDBACK_DIR;
+    else process.env.THUMBGATE_FEEDBACK_DIR = prevFeedbackDir;
+    if (prevApiKey === undefined) delete process.env.THUMBGATE_API_KEY;
+    else process.env.THUMBGATE_API_KEY = prevApiKey;
+  });
+  writeJsonl(dir, 'audit-trail.jsonl', [
+    { id: 'http_a1', timestamp: new Date().toISOString(), agentId: 'http-caller', toolName: 'Bash', decision: 'allow', source: 'gates-engine' },
+  ]);
+  const { createApiServer } = require('../src/api/server');
+  const server = createApiServer();
+  await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
+  t.after(() => server.close());
+  const baseUrl = `http://127.0.0.1:${server.address().port}`;
+  const headers = { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' };
+
+  const getRes = await fetch(`${baseUrl}/v1/dashboard/agent-register?days=30`, { headers });
+  assert.equal(getRes.status, 200);
+  const initial = await getRes.json();
+  assert.equal(initial.agents[0].id, 'http-caller');
+  assert.equal(initial.agents[0].registered, false);
+
+  const badIdRes = await fetch(`${baseUrl}/v1/dashboard/agent-register`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify({ id: '' }),
+  });
+  assert.equal(badIdRes.status, 400);
+
+  const badOwnerRes = await fetch(`${baseUrl}/v1/dashboard/agent-register`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify({ id: 'http-caller', owner: 123 }),
+  });
+  assert.equal(badOwnerRes.status, 400);
+
+  const okPost = await fetch(`${baseUrl}/v1/dashboard/agent-register`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify({ id: 'http-caller', owner: 'secops', registered: true }),
+  });
+  assert.equal(okPost.status, 200);
+  const updated = await okPost.json();
+  assert.equal(updated.ok, true);
+  assert.equal(updated.agentRegister.agents[0].owner, 'secops');
+  assert.equal(updated.agentRegister.agents[0].registered, true);
 });
