@@ -133,7 +133,7 @@ test('dashboard paints Active Gates from feedback/stats so the hero card is neve
   assert.match(dashboard, /document\.getElementById\('statGates'\)\.textContent = gateCount/);
   // On /v1/dashboard failure, never leave the placeholder dash if still blank.
   assert.match(dashboard, /gatesEl\.textContent === '—'/);
-  assert.match(dashboard, /gatesEl\.textContent = '0'/);
+  assert.match(dashboard, /gatesEl\.textContent = 'Unavailable'/);
   // Dashboard payload path uses resolveActiveGateCount (not `length || totalGates`
   // which mis-handles zeros).
   assert.match(dashboard, /function renderDashboardData\(data\)/);

@@ -36,7 +36,7 @@ function getStatePath(jobId) {
 function writeStateFile(jobId, state) {
   const statePath = getStatePath(jobId);
   ensureDir(path.dirname(statePath));
-  fs.writeFileSync(statePath, JSON.stringify(state, null, 2) + '\n', 'utf8');
+  runner.writeJobState({ ...state, jobId });
   return state;
 }
 

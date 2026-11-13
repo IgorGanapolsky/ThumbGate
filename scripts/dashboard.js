@@ -533,11 +533,17 @@ function listActiveGates() {
     const config = loadGatesConfig();
     return (config.gates || []).map((gate) => ({
       id: gate.id || null,
-      name: gate.id || gate.pattern || 'gate',
+      name: gate.id || 'Gate',
       pattern: gate.pattern || '',
       action: gate.action || 'warn',
       severity: gate.severity || 'medium',
       layer: gate.layer || null,
+      message: gate.message || null,
+      source: gate.source || null,
+      sourceLessonId: gate.sourceLessonId || null,
+      sourceFeedbackId: gate.sourceFeedbackId || null,
+      createdAt: gate.createdAt || null,
+      promotedAt: gate.promotedAt || null,
     }));
   } catch {
     return [];
@@ -2213,6 +2219,46 @@ function generateDashboard(feedbackDir, options = {}) {
   const trend = computeSessionTrend(entries, 10);
   const health = computeSystemHealth(feedbackDir, gateStats);
   const gateAudit = computeGateAuditSeries(feedbackDir);
+  const flowAudit = computeGateAuditSeries(feedbackDir, { dayCount: 30 });
+  let flowTracked = false;
+  let flowIncomplete = false;
+  try {
+    const tail = readTextTail(path.join(feedbackDir, AUDIT_LOG_FILENAME), DEFAULT_JSONL_MAX_BYTES);
+    const lines = tail.text.split('\n');
+    flowIncomplete = tail.truncated || lines.length >= DEFAULT_JSONL_MAX_ENTRIES;
+    if (!flowIncomplete) {
+      for (const line of lines) {
+        if (!line.trim()) continue;
+        const event = JSON.parse(line);
+        if (!event || typeof event !== 'object' || Array.isArray(event)
+          || typeof event.timestamp !== 'string' || !Number.isFinite(Date.parse(event.timestamp))
+          || !['allow', 'deny', 'warn', 'approve', 'log', 'override'].includes(event.decision)) {
+          flowIncomplete = true;
+          break;
+        }
+      }
+    }
+    flowTracked = !flowIncomplete;
+  } catch {
+    flowIncomplete = fs.existsSync(path.join(feedbackDir, AUDIT_LOG_FILENAME));
+  }
+  const flowDays = new Set(flowAudit.days.map((day) => day.dayKey));
+  const gateFlowStats = {
+    tracked: flowTracked,
+    incomplete: flowIncomplete,
+    blockedToday: flowTracked ? flowAudit.days[flowAudit.days.length - 1].deny : null,
+    blocked30Days: flowTracked ? flowAudit.totals.deny : null,
+    allowed30Days: flowTracked ? flowAudit.totals.allow : null,
+    blockedEntries: flowTracked ? auditEntries
+      .filter((entry) => entry && entry.decision === 'deny' && flowDays.has(toLocalDayKey(entry.timestamp)))
+      .sort((a, b) => Date.parse(b.timestamp) - Date.parse(a.timestamp))
+      .slice(0, 20)
+      .map((entry) => ({
+        timestamp: entry.timestamp,
+        gateId: entry.gateId || null,
+        toolName: entry.toolName || null,
+      })) : [],
+  };
   const diagnostics = aggregateFailureDiagnostics([...entries, ...diagnosticEntries]);
   const secretGuard = computeSecretGuardStats(diagnosticEntries);
   const gates = listActiveGates();
@@ -2370,6 +2416,7 @@ function generateDashboard(feedbackDir, options = {}) {
     trend,
     health,
     gateAudit,
+    gateFlowStats,
     diagnostics,
     delegation,
     secretGuard,

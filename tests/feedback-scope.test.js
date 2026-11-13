@@ -20,13 +20,7 @@ Object.assign(process.env, {
   _TEST_FUNNEL_LEDGER_PATH: path.join(legacy, 'funnel-events.jsonl'),
   _TEST_REVENUE_LEDGER_PATH: path.join(legacy, 'revenue-events.jsonl'),
 });
-const scopePath = path.resolve(__dirname, '../scripts/feedback-scope.js');
-const scopeApi = fs.existsSync(scopePath) ? require(scopePath) : {
-  withDataScope: (_scope, callback) => callback(),
-  currentDataScope: () => null,
-  assertScopedDataPath: (candidate) => candidate,
-};
-const { withDataScope, currentDataScope, assertScopedDataPath } = scopeApi;
+const { withDataScope, currentDataScope, assertScopedDataPath } = require('../scripts/feedback-scope');
 const scopeA = { kind: 'tenant', feedbackDir: a, tenantId: 'alpha' };
 const scopeB = { kind: 'tenant', feedbackDir: b, tenantId: 'beta' };
 const paths = require('../scripts/feedback-paths');
