@@ -1,5 +1,7 @@
-const { test, expect } = require('./helpers/agent-browser');
+const { test, expect } = require('@playwright/test');
 const { mockDashboardApis, loadFixture } = require('./helpers/mock-api');
+
+test.use({ headless: true });
 
 test.beforeEach(async ({ page }) => {
   const dashboard = loadFixture('dashboard.json');
