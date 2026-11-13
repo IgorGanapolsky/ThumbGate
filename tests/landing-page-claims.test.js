@@ -112,3 +112,15 @@ test('public enforcement claims match the implemented default and strict boundar
   assert.match(HOME_HTML, /secret exfiltration[\s\S]*denied by default/i);
   assert.match(HOME_HTML, /Matching destructive actions warn by default and deny in strict mode/i);
 });
+
+test('founder 30-day proof page stays a founder audit, not a customer story', () => {
+  const html = fs.readFileSync(path.join(ROOT, 'public', 'guides', 'founder-30-day-proof.html'), 'utf8');
+  assert.match(html, /15 risky actions stopped/);
+  assert.match(html, /Secret in a command · 9/);
+  assert.match(html, /Force-push · 5/);
+  assert.match(html, /Repeated mistake · 1/);
+  assert.match(html, /not a customer/);
+  assert.match(html, /git push --force origin main/);
+  assert.doesNotMatch(html, /15,?000|our customer|Acme Corp|support@thumbgate\.ai|ghp_|sk-ant-/i);
+  assert.doesNotMatch(html, /top 5|fourth category|fifth category/i);
+});
