@@ -343,9 +343,9 @@ const STRIPE_OFFER_CATALOG = Object.freeze({
     checkoutPath: '/go/bundle-49?utm_source=website&utm_medium=objection_rescue&utm_campaign=bundle_49',
   }),
   pro_19: Object.freeze({
-    offerId: 'pro_19', productPagePath: '/pricing', priceUsd: 19, billingType: 'subscription', proofPath: '/pricing',
-    headline: 'Pro is $19/mo ($149/yr) when you want the dashboard.', ctaLabel: 'Start Pro',
-    rationale: 'Pro adds hosted recall, adapter coverage (Claude Code, Cursor, Codex, Gemini, Git, AWS), priority support, the visual gate debugger, and an export of your thumbs as training data. Cancel anytime.',
+    offerId: 'pro_19', productPagePath: '/pro', priceUsd: 19, billingType: 'subscription', proofPath: '/pro',
+    headline: 'ThumbGate Pro is for one operator who already hit a repeated AI-agent failure and now needs proof: what was blocked, why it was blocked, and what changed before the next risky run.', ctaLabel: 'Start Pro',
+    rationale: 'Start Pro when you want the local dashboard, DPO export, and a single proof lane for the repeated mistake you need to stop.',
     checkoutPath: '/go/pro-direct?utm_source=website&utm_medium=objection_rescue&utm_campaign=pro_upgrade',
   }),
   diagnostic_499: Object.freeze({

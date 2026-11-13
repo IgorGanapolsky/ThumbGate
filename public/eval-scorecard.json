@@ -1,6 +1,6 @@
 {
-  "generatedAt": "2026-07-29T15:28:24.788Z",
-  "version": "1.29.2",
+  "generatedAt": "2026-11-12T23:30:52.550Z",
+  "version": "1.39.1",
   "sourcePath": "bench/thumbgate-bench.json",
   "passed": true,
   "isolatedRuntime": true,

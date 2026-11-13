@@ -3,12 +3,12 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Pricing — Enforcement that pays for itself | ThumbGate</title>
-  <meta name="description" content="Choose ThumbGate by the value and scope of the agent risk: free evaluation, Pro for one operator, a $499 managed diagnostic for one workflow, or custom enterprise intake.">
+  <title>Pricing — $499 Managed Workflow Gate | ThumbGate</title>
+  <meta name="description" content="Install the free local CLI, or book the $499 one-time Managed AI Agent Workflow Gate for one supported workflow. Custom multi-workflow scope after proof.">
   <link rel="canonical" href="__APP_ORIGIN__/pricing">
   <link rel="alternate" type="text/markdown" title="ThumbGate LLM context" href="__APP_ORIGIN__/llm-context.md">
-  <meta property="og:title" content="ThumbGate Pricing — $499 Diagnostic · Pro $19/mo">
-  <meta property="og:description" content="Stop AI agent mistakes before they cost you. Dual path: $499 diagnostic gate or $19/mo Pro.">
+  <meta property="og:title" content="ThumbGate Pricing — $499 Managed Workflow Gate">
+  <meta property="og:description" content="Stop AI agent mistakes before they cost you. Free local CLI, or the $499 one-time managed gate for one workflow.">
   <meta property="og:url" content="__APP_ORIGIN__/pricing">
   <meta property="og:type" content="product">
   <style>
@@ -94,7 +94,7 @@
     "@graph": [
       {
         "@type": "Service",
-        "name": "ThumbGate Managed Workflow Diagnostic",
+        "name": "Managed AI Agent Workflow Gate",
         "description": "A bounded implementation for one supported local AI-agent workflow: review, configured pre-action gate, regression test, and rollout and rollback proof.",
         "provider": { "@type": "Organization", "name": "ThumbGate", "url": "__APP_ORIGIN__/" },
         "audience": { "@type": "BusinessAudience", "audienceType": "Engineering and platform teams with a repeated AI-agent failure" },
@@ -103,33 +103,9 @@
           "name": "Managed workflow diagnostic",
           "price": "499",
           "priceCurrency": "USD",
-          "url": "__APP_ORIGIN__/pricing#buy",
+          "url": "__APP_ORIGIN__/pricing#enterprise-gate",
           "availability": "https://schema.org/InStock"
         }
-      },
-      {
-        "@type": "SoftwareApplication",
-        "name": "ThumbGate Pro",
-        "applicationCategory": "DeveloperApplication",
-        "operatingSystem": "macOS, Linux, Windows",
-        "offers": [
-          {
-            "@type": "Offer",
-            "name": "ThumbGate Pro monthly",
-            "price": "19",
-            "priceCurrency": "USD",
-            "url": "__APP_ORIGIN__/checkout/pro?plan_id=pro",
-            "availability": "https://schema.org/InStock"
-          },
-          {
-            "@type": "Offer",
-            "name": "ThumbGate Pro annual",
-            "price": "149",
-            "priceCurrency": "USD",
-            "url": "__APP_ORIGIN__/checkout/pro?plan_id=pro",
-            "availability": "https://schema.org/InStock"
-          }
-        ]
       }
     ]
   }
@@ -176,6 +152,7 @@
         <a href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md" target="_blank" rel="noopener">Proof</a>
         <a href="/founders">Founders</a>
         <a href="/operator-framework">Done-for-you</a>
+        <a href="/dashboard">Subscriber login</a>
         <a class="nav-pro nav-buy" href="/#install">Install free</a>
         <a href="#enterprise-gate" data-offer-link data-cta-id="pricing_nav_buy" data-plan-id="sprint_diagnostic" data-value="499" data-segment="workflow_team">Setup sprint</a>
       </div>
@@ -187,22 +164,15 @@
       <div>
         <div class="eyebrow">Enforcement that pays for itself</div>
         <h1>Stop paying for the same AI mistake twice.</h1>
-        <p class="lede">Install free with <code>npx thumbgate init</code>. <strong>Pro is $19/mo</strong> ($149/yr) when you want the dashboard. The <strong>$499 one-time Setup Sprint</strong> configures one gate with you. It is not an enterprise contract.</p>
+        <p class="lede">Install free with <code>npx thumbgate init</code>. The <strong>$499 one-time Managed AI Agent Workflow Gate</strong> configures one gate with you. It is not an enterprise contract.</p>
         <div class="outcome">
-          <div class="outcome-row"><span class="tick">✓</span><span><strong>Setup Sprint ($499 one-time):</strong> one failure mapped, gate configured, regression + rollout proof.</span></div>
-          <div class="outcome-row"><span class="tick">✓</span><span><strong>Pro ($19/mo or $149/yr):</strong> self-serve dashboard, recall, adapter coverage, and an export of your thumbs as training data.</span></div>
-          <div class="outcome-row"><span class="tick">✓</span><span>Free local evaluate: <code>npx thumbgate init</code> — first hard gate usually minutes after install.</span></div>
+          <div class="outcome-row"><span class="tick">✓</span><span><strong>Managed AI Agent Workflow Gate ($499 one-time):</strong> one failure mapped, gate configured, regression + rollout proof. Setup Sprint is this same offer.</span></div>
+          <div class="outcome-row"><span class="tick">✓</span><span><strong>Free local evaluate:</strong> <code>npx thumbgate init</code> — first hard gate usually minutes after install.</span></div>
+          <div class="outcome-row"><span class="tick">✓</span><span><strong>Custom scope:</strong> multi-workflow rollout scoped by email only after one workflow proves fit.</span></div>
         </div>
       </div>
 
       <div class="offer-grid" id="buy">
-        <aside class="pro-card" id="pro" aria-label="ThumbGate Pro">
-          <div class="eyebrow">Self-serve · Individual developers</div>
-          <div class="price">$19<span style="font-size:1rem;font-weight:700">/mo</span></div>
-          <p class="price-note">Or $149/yr. You install the local gate yourself. Pro adds hosted recall, adapter coverage (Claude Code, Cursor, Codex, Gemini, Git, AWS), priority support, the visual gate debugger, and an export of your thumbs as training data. Cancel anytime.</p>
-          <a class="button" href="/go/pro-direct?utm_source=pricing&amp;utm_medium=card&amp;utm_campaign=value_packaging_v1&amp;cta_id=pricing_pro_buy&amp;plan_id=pro" data-offer-link data-cta-id="pricing_pro_buy" data-plan-id="pro" data-value="19" data-segment="solo_operator" style="width:100%;box-sizing:border-box">Start Pro</a>
-          <p class="fine">Instant Pro API key after payment · <a href="/go/pro-annual?utm_source=pricing&amp;utm_medium=card&amp;utm_campaign=pro_annual_149&amp;cta_id=pricing_pro_annual_buy&amp;plan_id=pro&amp;billing_cycle=annual" style="font-weight:700;text-decoration:underline;">Or choose Annual at $149/yr (save $79) →</a> · Free local evaluate stays free.</p>
-        </aside>
         <aside class="card" id="enterprise-gate" style="border-color:var(--green);box-shadow:0 18px 50px rgba(0,110,82,.12);">
           <div class="eyebrow">Done-with-you setup · 1 workflow</div>
           <div class="price">$499</div>
@@ -254,7 +224,7 @@
         <div class="value-factor value-result"><strong>Downstream impact</strong><span>delay, incident response, audit evidence. Not in the number.</span></div>
       </form>
       <p id="exposure-result" class="exposure-result" aria-live="polite">Enter last quarter. This multiplies those three numbers. It is not a ThumbGate savings measurement.</p>
-      <p id="exposure-note" class="exposure-note">Free local install covers the gate on your machine. Pro adds hosted recall. The $499 diagnostic is us doing the review, the gate, and the regression for one workflow.</p>
+      <p id="exposure-note" class="exposure-note">Free local install covers the gate on your machine. The $499 diagnostic is us doing the review, the gate, and the regression for one workflow.</p>
       <a id="exposure-cta" class="button" hidden href="#enterprise-gate" data-offer-link data-cta-id="pricing_exposure_diagnostic" data-plan-id="sprint_diagnostic" data-value="499" data-segment="workflow_team">Continue to the $499 diagnostic</a>
     </section>
 
@@ -265,10 +235,10 @@
       <div class="segment-grid">
         <article class="segment-card">
           <div class="eyebrow">Solo operator</div>
-          <h3>Evaluate free, then Pro</h3>
-          <p>Pro removes rule limits and adds personal recall, review, dashboard, and export workflows.</p>
-          <div class="fence"><strong>Fence:</strong> one operator, local-first, self-serve support. $19 monthly or $149 annual.</div>
-          <a class="button" href="/go/pro-direct?utm_source=pricing&amp;utm_medium=segment_card&amp;utm_campaign=value_packaging_v1&amp;cta_id=pricing_segment_pro&amp;plan_id=pro" data-offer-link data-cta-id="pricing_segment_pro" data-plan-id="pro" data-value="19" data-segment="solo_operator">Choose Pro</a>
+          <h3>Evaluate free</h3>
+          <p>Install the local gate yourself. Hard-blocks detected secret leaks and gate-process bypass by default.</p>
+          <div class="fence"><strong>Fence:</strong> one operator, local-first, self-serve. $0.</div>
+          <a class="button" href="/#install" data-offer-link data-cta-id="pricing_segment_free" data-plan-id="free" data-value="0" data-segment="solo_operator">Install free CLI</a>
         </article>
         <article class="segment-card recommended">
           <div class="eyebrow">Engineering or platform team</div>
@@ -308,7 +278,7 @@
               <td style="padding:12px 14px;border-bottom:1px solid var(--line);">Model + review time</td>
               <td style="padding:12px 14px;border-bottom:1px solid var(--line);">Loaded engineering cost</td>
               <td style="padding:12px 14px;border-bottom:1px solid var(--line);">Contract + implementation</td>
-              <td style="padding:12px 14px;border-bottom:1px solid var(--line);font-weight:800;color:var(--green);">$0–$19 · $499 once</td>
+              <td style="padding:12px 14px;border-bottom:1px solid var(--line);font-weight:800;color:var(--green);">$0 · $499 once</td>
             </tr>
             <tr>
               <td style="padding:12px 14px;border-bottom:1px solid var(--line);color:var(--muted);">Time to first gate</td>
@@ -327,6 +297,47 @@
           </tbody>
         </table>
       </div>
+
+    <section id="enforcement">
+      <div class="eyebrow">Enforcement by agent</div>
+      <h2>What blocks, what warns, what is advisory.</h2>
+      <div style="overflow-x:auto;margin-top:22px;border:1px solid var(--line);border-radius:14px;background:var(--card);">
+        <table style="width:100%;border-collapse:collapse;font-size:.92rem;min-width:620px;">
+          <thead>
+            <tr style="text-align:left;background:#efece3;">
+              <th style="padding:12px 14px;border-bottom:1px solid var(--line);">Agent</th>
+              <th style="padding:12px 14px;border-bottom:1px solid var(--line);">Enforcement</th>
+              <th style="padding:12px 14px;border-bottom:1px solid var(--line);">Default (secrets)</th>
+              <th style="padding:12px 14px;border-bottom:1px solid var(--line);">Default (destructive)</th>
+              <th style="padding:12px 14px;border-bottom:1px solid var(--line);">Strict mode</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td style="padding:12px 14px;border-bottom:1px solid var(--line);font-weight:700;">Claude Code, Codex, Gemini CLI</td>
+              <td style="padding:12px 14px;border-bottom:1px solid var(--line);">Blocks before tool runs</td>
+              <td style="padding:12px 14px;border-bottom:1px solid var(--line);color:var(--red);font-weight:800;">DENY</td>
+              <td style="padding:12px 14px;border-bottom:1px solid var(--line);">WARN</td>
+              <td style="padding:12px 14px;border-bottom:1px solid var(--line);color:var(--red);font-weight:800;">DENY</td>
+            </tr>
+            <tr>
+              <td style="padding:12px 14px;border-bottom:1px solid var(--line);font-weight:700;">Cursor, Cline, OpenCode</td>
+              <td style="padding:12px 14px;border-bottom:1px solid var(--line);">Advisory</td>
+              <td style="padding:12px 14px;border-bottom:1px solid var(--line);color:var(--red);font-weight:800;">DENY</td>
+              <td style="padding:12px 14px;border-bottom:1px solid var(--line);">WARN</td>
+              <td style="padding:12px 14px;border-bottom:1px solid var(--line);color:var(--red);font-weight:800;">DENY</td>
+            </tr>
+            <tr>
+              <td style="padding:12px 14px;font-weight:700;">Amp</td>
+              <td style="padding:12px 14px;">Feedback only</td>
+              <td style="padding:12px 14px;">Logged</td>
+              <td style="padding:12px 14px;">Logged</td>
+              <td style="padding:12px 14px;">Logged</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="section-lede" style="margin-top:14px;">Strict mode is <code>THUMBGATE_STRICT_ENFORCEMENT=1</code>. The force-push demo on the homepage is labeled strict mode.</p>
     </section>
 
     <section>
@@ -363,7 +374,7 @@
   <footer>
     <div class="shell footer-inner">
       <span>ThumbGate · Managed AI-agent enforcement</span>
-      <div class="footer-links"><a href="/support">Support</a><a href="/terms">Terms</a><a href="/privacy">Privacy</a><a href="/third-party-notices">Third-Party Notices</a><a href="/llm-context.md">LLM context</a></div>
+      <div class="footer-links"><a href="/support">Support</a><a href="/terms">Terms</a><a href="/privacy">Privacy</a><a href="/third-party-notices">Third-Party Notices</a><a href="/llm-context.md">LLM context</a><a href="/dashboard">Subscriber login</a><a href="/portal">Billing portal</a></div>
     </div>
     <div class="shell" style="margin-top:12px;font-size:12px;color:#6b7280;text-align:center;">
       Anthropic, Claude, OpenAI, ChatGPT, Cursor, Codex, Perplexity, Hermes, MCP, GitHub, Google, Nvidia, Railway, Stripe, Supabase, PostHog, and Plausible are trademarks of their respective owners. ThumbGate is an independent product.
@@ -455,7 +466,6 @@
     const exposureForm = document.querySelector('#exposure-calculator');
     const exposureResult = document.querySelector('#exposure-result');
     const exposureCta = document.querySelector('#exposure-cta');
-    const proCheckout = '/go/pro-direct?utm_source=pricing&utm_medium=exposure&utm_campaign=value_packaging_v1&cta_id=pricing_exposure_pro&plan_id=pro';
 
     function typedExposure() {
       if (!exposureForm) return null;
@@ -489,13 +499,13 @@
         exposureCta.dataset.segment = 'workflow_team';
         return;
       }
-      exposureResult.textContent = shown + ' of recovery work in the numbers you typed. That is under the $499 diagnostic. Pro is $19 a month for hosted recall on the local gate.';
+      exposureResult.textContent = shown + ' of recovery work in the numbers you typed. That is under the $499 diagnostic. Start with the free local CLI.';
       exposureCta.hidden = false;
-      exposureCta.href = proCheckout;
-      exposureCta.textContent = 'Start Pro — $19/mo';
-      exposureCta.dataset.ctaId = 'pricing_exposure_pro';
-      exposureCta.dataset.planId = 'pro';
-      exposureCta.dataset.value = '19';
+      exposureCta.href = '/#install';
+      exposureCta.textContent = 'Install free CLI';
+      exposureCta.dataset.ctaId = 'pricing_exposure_free';
+      exposureCta.dataset.planId = 'free';
+      exposureCta.dataset.value = '0';
       exposureCta.dataset.segment = 'solo_operator';
     }
 

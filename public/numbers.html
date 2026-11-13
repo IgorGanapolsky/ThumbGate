@@ -6,6 +6,7 @@
 <meta name="generator" content="ThumbGate">
 <meta name="author" content="Igor Ganapolsky">
 <title>ThumbGate — The Numbers | First-Party Data Snapshot</title>
+<meta name="robots" content="noindex, nofollow">
 <meta name="description" content="ThumbGate's generated first-party operational snapshot: configured pre-action checks, recorded block/warn events, estimated LLM token savings when events exist, and scorer calibration when the sample supports it.">
 <meta property="og:title" content="ThumbGate — The Numbers">
 <meta property="og:description" content="Generated first-party operational snapshot: configured gates, recorded interventions, and explicit zero-evidence caveats.">
@@ -27,7 +28,7 @@
   "operatingSystem": "Cross-platform, Node.js >=18.18.0",
   "softwareVersion": "1.39.1",
   "url": "https://thumbgate-production.up.railway.app/numbers",
-  "dateModified": "2026-08-03",
+  "dateModified": "2026-11-12",
   "creator": {
     "@type": "Person",
     "name": "Igor Ganapolsky",
@@ -57,8 +58,8 @@
       "https://www.linkedin.com/in/igorganapolsky"
     ]
   },
-  "dateModified": "2026-08-03",
-  "datePublished": "2026-08-03",
+  "dateModified": "2026-11-12",
+  "datePublished": "2026-11-12",
   "keywords": [
     "AI agent gates",
     "LLM token savings",
@@ -70,38 +71,38 @@
     {
       "@type": "PropertyValue",
       "name": "configured_gates",
-      "value": 40
+      "value": 47
     },
     {
       "@type": "PropertyValue",
       "name": "actions_blocked",
-      "value": 0
+      "value": 8602
     },
     {
       "@type": "PropertyValue",
       "name": "actions_warned",
-      "value": 0
+      "value": 2
     },
     {
       "@type": "PropertyValue",
       "name": "estimated_hours_saved",
-      "value": "0.0"
+      "value": "2151.0"
     },
     {
       "@type": "PropertyValue",
       "name": "estimated_dollars_saved",
-      "value": 0,
+      "value": 137.632,
       "unitText": "USD"
     },
     {
       "@type": "PropertyValue",
       "name": "tokens_saved_total",
-      "value": 0
+      "value": 22365200
     },
     {
       "@type": "PropertyValue",
       "name": "bayes_error_rate",
-      "value": null
+      "value": 0.084
     }
   ]
 }
@@ -194,41 +195,39 @@
   <a class="brand" href="/">ThumbGate</a>
   <a href="/learn">Learn</a>
   <a href="/compare">Compare</a>
-  <a href="/numbers">Numbers</a>
   <a href="/dashboard">Dashboard</a>
-  <a href="/pro">Pro</a>
 </nav>
 
 <main class="container">
   <h1>The Numbers</h1>
   <p class="subtitle">Generated first-party operational snapshot from the ThumbGate runtime. This is not customer traction, install volume, revenue, or proof that a configured gate has fired.</p>
-  <div class="freshness">Updated: 2026-08-03 · Version 1.39.1</div>
-  <div class="truth-note"><strong>Read this first:</strong> configured checks are inventory. Recorded blocks and warnings are usage evidence. This snapshot currently reports 0 recorded hard-block event(s) and 0 recorded warning event(s).</div>
+  <div class="freshness">Updated: 2026-11-12 · Version 1.39.1</div>
+  <div class="truth-note"><strong>Read this first:</strong> configured checks are inventory. Recorded blocks and warnings are usage evidence. This snapshot currently reports 8,602 recorded hard-block event(s) and 2 recorded warning event(s).</div>
 
   <h2>Gate enforcement</h2>
   <div class="stats-grid">
     <div class="stat-card">
       <div class="stat-label">Configured checks</div>
-      <div class="stat-value">40</div>
-      <div class="stat-sub">40 shipped defaults · 0 auto-promoted; inventory, not usage</div>
+      <div class="stat-value">47</div>
+      <div class="stat-sub">43 shipped defaults · 4 auto-promoted; inventory, not usage</div>
       <a class="stat-source" href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/scripts/gate-stats.js">source: gate-stats.js</a>
     </div>
     <div class="stat-card">
       <div class="stat-label">Actions blocked</div>
-      <div class="stat-value">0</div>
-      <div class="stat-sub">no recorded hard-block events in this snapshot</div>
+      <div class="stat-value">8,602</div>
+      <div class="stat-sub">recorded hard blocks in the local gate ledger</div>
       <a class="stat-source" href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/scripts/gate-stats.js">source: gate-stats.js</a>
     </div>
     <div class="stat-card">
       <div class="stat-label">Actions warned</div>
-      <div class="stat-value">0</div>
-      <div class="stat-sub">no recorded soft-warning events in this snapshot</div>
+      <div class="stat-value">2</div>
+      <div class="stat-sub">recorded soft interventions; not hard blocks</div>
       <a class="stat-source" href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/scripts/gate-stats.js">source: gate-stats.js</a>
     </div>
     <div class="stat-card">
       <div class="stat-label">Top recorded blocker</div>
-      <div class="stat-value" style="font-size:1.1rem;">No recorded blocker yet</div>
-      <div class="stat-sub">top blocker appears only after at least one recorded block</div>
+      <div class="stat-value" style="font-size:1.1rem;">auto-surface-outbound-email-send (7 blocks)</div>
+      <div class="stat-sub">highest recorded block count</div>
       <a class="stat-source" href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/scripts/gate-stats.js">source: gate-stats.js</a>
     </div>
   </div>
@@ -237,26 +236,26 @@
   <div class="stats-grid">
     <div class="stat-card">
       <div class="stat-label">Estimated hours saved</div>
-      <div class="stat-value">0.0</div>
-      <div class="stat-sub">0 because no block/warn events are recorded</div>
+      <div class="stat-value">2151.0</div>
+      <div class="stat-sub">~15 min per recorded block/warn event</div>
       <a class="stat-source" href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/scripts/gate-stats.js">source: gate-stats.js</a>
     </div>
     <div class="stat-card">
       <div class="stat-label">Estimated LLM dollars saved</div>
-      <div class="stat-value">$0.00</div>
-      <div class="stat-sub">0 because no recorded block events feed this estimate</div>
+      <div class="stat-value">$138</div>
+      <div class="stat-sub">blended Sonnet/Opus/Haiku 80/15/5 mix from recorded blocks</div>
       <a class="stat-source" href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/scripts/token-savings.js">source: token-savings.js</a>
     </div>
     <div class="stat-card">
       <div class="stat-label">Tokens not spent</div>
-      <div class="stat-value">0</div>
-      <div class="stat-sub">0 because no recorded block events feed this estimate</div>
+      <div class="stat-value">22.4M</div>
+      <div class="stat-sub">2,000 input + 600 output per recorded block, conservative</div>
       <a class="stat-source" href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/scripts/token-savings.js">source: token-savings.js</a>
     </div>
     <div class="stat-card">
       <div class="stat-label">Scorer Bayes error</div>
-      <div class="stat-value">n/a</div>
-      <div class="stat-sub">needs both safe and harmful feedback sequences</div>
+      <div class="stat-value">8.4%</div>
+      <div class="stat-sub">irreducible error given current feature set</div>
       <a class="stat-source" href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/scripts/bayes-optimal-gate.js">source: bayes-optimal-gate.js</a>
     </div>
   </div>
@@ -271,13 +270,13 @@
       <li><strong>Dollars saved</strong> — blended per-call token estimate (2k input + 600 output) × recorded blocks × 2026-04-15 Anthropic + OpenAI list prices. See <code>scripts/token-savings.js</code> for the full price snapshot.</li>
       <li><strong>Bayes error rate</strong> — shown only when the feedback sample contains both safe and harmful outcomes. One-class samples are reported as n/a.</li>
     </ul>
-    <p style="margin-top:12px;">Last auto-promotion: none. Regenerated on every release via <code>npm run numbers:generate</code> and on a weekly cadence.</p>
+    <p style="margin-top:12px;">Last auto-promotion: auto-history-aware-distillation-linked-this-failure-to- on 2026-11-11. Regenerated on every release via <code>npm run numbers:generate</code> and on a weekly cadence.</p>
   </div>
 
   <div class="cta">
     <a href="https://www.npmjs.com/package/thumbgate">Install ThumbGate — npx thumbgate init</a>
     <div class="footer-note">Prefer the raw feed? See <a href="https://github.com/IgorGanapolsky/ThumbGate">GitHub</a> or run <code>npm run gate:stats</code> locally.</div>
-    <div class="footer-note">Generated at 2026-08-03T05:26:21.201Z UTC.</div>
+    <div class="footer-note">Generated at 2026-11-12T23:30:52.286Z UTC.</div>
   </div>
 </main>
 </body>

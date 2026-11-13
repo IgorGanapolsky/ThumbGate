@@ -126,7 +126,6 @@ npm run self-heal:check
 npm run thumbgate:bench -- --json
 curl -s https://thumbgate-production.up.railway.app/health
 open https://thumbgate.ai/eval-scorecard
-open https://thumbgate.ai/numbers
 ```
 
 ## What this is not

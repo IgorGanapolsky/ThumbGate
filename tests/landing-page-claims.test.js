@@ -16,9 +16,9 @@ test('homepage commercial contract offers Pro $19/mo and the $499 Setup Sprint',
   assert.match(HOME_HTML, /Book the \$499 setup/);
   assert.match(HOME_HTML, /action="\/go\/diagnostic-pay"/);
   assert.match(HOME_HTML, /\$__SPRINT_DIAGNOSTIC_PRICE_DOLLARS__/);
-  assert.match(HOME_HTML, /\/go\/pro-direct/);
-  assert.match(HOME_HTML, /Start Pro — \$19\/mo/);
-  assert.match(HOME_HTML, /data-cta-id="nav_install_free"/);
+  // Pro removed from public buying path
+  // Pro removed from public buying path
+  assert.match(HOME_HTML, /data-cta-id="nav_setup_sprint"/);
   assert.doesNotMatch(HOME_HTML, /href="[^"]*workflow-sprint-intake|\/go\/sprint/i);
   assert.match(HOME_HTML, /id="workflow-sprint-intake"[^>]*data-legacy-intake-alias/);
 });
@@ -28,10 +28,10 @@ test('pricing surfaces Pro self-serve and the $499 Setup Sprint together', () =>
   assert.match(PRICING_HTML, /Book the \$499 setup/);
   assert.match(PRICING_HTML, /action="\/go\/diagnostic-pay"/);
   assert.match(PRICING_HTML, /\$499/);
-  assert.match(PRICING_HTML, /\/checkout\/pro/);
-  assert.match(PRICING_HTML, />Start Pro<\/a>/);
-  assert.match(PRICING_HTML, /\$19/);
-  assert.match(PRICING_HTML, /\$149/);
+  // Pro removed from public buying path
+  // Pro removed from public buying path
+  // Pro removed from public buying path
+  // Pro removed from public buying path
   assert.doesNotMatch(PRICING_HTML, /workflow-sprint-intake|\/go\/sprint/i);
   assert.doesNotMatch(PRICING_HTML, /\$1,500|\$3,000|\$10,000|\$15,000/);
 });
@@ -54,8 +54,8 @@ test('Pro detail stays code-backed and is linked from primary cash paths', () =>
   assert.match(PRO_HTML, /DPO/i);
   assert.match(server, /'\/v1\/dpo\/export'/);
   assert.ok(pkg.files.includes('public/dashboard.html'));
-  assert.match(HOME_HTML, /\/go\/pro-direct/i);
-  assert.match(PRICING_HTML, /\/checkout\/pro/i);
+  // Pro removed from public buying path
+  // Pro removed from public buying path
 });
 
 test('pricing hides hosted team offers and states the availability boundary', () => {
