@@ -510,6 +510,40 @@ test('/go/pro-direct deflects ?probe=1 and blocked synthetic emails to /checkout
     assert.equal(humanBundle.status, 302);
     assert.match(humanBundle.location, /^https:\/\/buy\.stripe\.com\//);
     assert.match(humanBundle.location, /prefilled_email=cto%40customer-corp\.io/i);
+
+    const liveDiagnosticRes = await fetch(`http://127.0.0.1:${handle.port}/go/diagnostic-pay`, {
+      method: 'POST',
+      redirect: 'manual',
+      headers: {
+        'content-type': 'application/x-www-form-urlencoded',
+        'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 14_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.1 Safari/605.1.15',
+        accept: 'text/html,application/xhtml+xml',
+        'sec-fetch-mode': 'navigate',
+        'sec-fetch-dest': 'document',
+      },
+      body: new URLSearchParams({ customer_email: 'mkjkjuwj@formtests.info' }),
+    });
+    assert.equal(liveDiagnosticRes.status, 302);
+    assert.match(liveDiagnosticRes.headers.get('location') || '', /\/checkout\/pro\b/);
+    assert.doesNotMatch(liveDiagnosticRes.headers.get('location') || '', /stripe\.com/i);
+
+    billing.CONFIG.STRIPE_SECRET_KEY = `${'sk_test_'}placeholder_not_a_real_key`;
+    process.env.STRIPE_SECRET_KEY = billing.CONFIG.STRIPE_SECRET_KEY;
+    const testModeDiagnosticRes = await fetch(`http://127.0.0.1:${handle.port}/go/diagnostic-pay`, {
+      method: 'POST',
+      redirect: 'manual',
+      headers: {
+        'content-type': 'application/x-www-form-urlencoded',
+        'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 14_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.1 Safari/605.1.15',
+        accept: 'text/html,application/xhtml+xml',
+        'sec-fetch-mode': 'navigate',
+        'sec-fetch-dest': 'document',
+      },
+      body: new URLSearchParams({ customer_email: 'buyer@example.com' }),
+    });
+    assert.equal(testModeDiagnosticRes.status, 303);
+    assert.match(testModeDiagnosticRes.headers.get('location') || '', /^https:\/\/buy\.stripe\.com\//);
+    assert.match(testModeDiagnosticRes.headers.get('location') || '', /prefilled_email=buyer%40example\.com/i);
   } finally {
     await new Promise((resolve) => handle.server.close(resolve));
     billing.CONFIG.STRIPE_SECRET_KEY = savedStripeKey;

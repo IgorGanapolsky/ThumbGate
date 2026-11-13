@@ -137,6 +137,7 @@ const {
   samplePosteriors,
 } = require('../../scripts/thompson-sampling');
 const {
+  CONFIG: billingConfig,
   appendFunnelEvent,
   createCheckoutSession,
   isSyntheticOrOwnerCheckoutEmail,
@@ -3271,10 +3272,22 @@ function trackedLinkQueryEmail(params) {
   );
 }
 
+function isLiveTrackedPaymentLink(destinationUrl) {
+  const configuredStripeKey = String(process.env.STRIPE_SECRET_KEY || billingConfig.STRIPE_SECRET_KEY || '').trim();
+  if (/^(?:sk|rk)_test_/i.test(configuredStripeKey)) return false;
+  if (!destinationUrl) return /^(?:sk|rk)_live_/i.test(configuredStripeKey);
+  const host = String(destinationUrl.hostname || '').toLowerCase();
+  const urlPath = String(destinationUrl.pathname || '').toLowerCase();
+  if (urlPath.startsWith('/test_') || urlPath.endsWith('-test')) return false;
+  if (/^(?:sk|rk)_live_/i.test(configuredStripeKey)) return true;
+  return host === 'buy.stripe.com' || host === 'checkout.stripe.com';
+}
+
 function applyTrackedLinkCustomerEmail(destinationUrl, params, target) {
   if (!target.allowCustomerEmail) return;
   const customerEmail = trackedLinkQueryEmail(params);
-  if (!customerEmail || isSyntheticOrOwnerCheckoutEmail(customerEmail)) return;
+  if (!customerEmail) return;
+  if (isSyntheticOrOwnerCheckoutEmail(customerEmail) && isLiveTrackedPaymentLink(destinationUrl)) return;
   appendQueryParam(
     destinationUrl,
     target.prefillStripeEmail ? 'prefilled_email' : 'customer_email',
@@ -3545,7 +3558,7 @@ async function serveTrackedLinkRedirect({ req, res, parsed, hostedConfig, isHead
     } catch (err) {
       if (err && err.code === 'AUTOMATED_CHECKOUT_BLOCKED') {
         const deflectUrl = new URL(target.botDeflectPath || '/checkout/pro', hostedConfig.appOrigin);
-        appendTrackedLinkQueryParams(deflectUrl, parsed, target);
+        appendTrackedLinkQueryParams(deflectUrl, parsed, { ...target, allowCustomerEmail: false });
         res.writeHead(302, {
           ...(journeyState.setCookieHeaders.length ? { 'Set-Cookie': journeyState.setCookieHeaders } : {}),
           'Cache-Control': 'no-store',
@@ -3559,9 +3572,14 @@ async function serveTrackedLinkRedirect({ req, res, parsed, hostedConfig, isHead
       // Fall back cleanly to static Payment Link if dynamic session creation fails
     }
   }
-  if (target.external && isSyntheticOrOwnerCheckoutEmail(trackedLinkQueryEmail(parsed.searchParams))) {
+  const destinationUrl = buildTrackedLinkDestination(target, hostedConfig, parsed);
+  if (
+    target.external
+    && isLiveTrackedPaymentLink(destinationUrl)
+    && isSyntheticOrOwnerCheckoutEmail(trackedLinkQueryEmail(parsed.searchParams))
+  ) {
     const deflectUrl = new URL(target.botDeflectPath || '/checkout/pro', hostedConfig.appOrigin);
-    appendTrackedLinkQueryParams(deflectUrl, parsed, target);
+    appendTrackedLinkQueryParams(deflectUrl, parsed, { ...target, allowCustomerEmail: false });
     res.writeHead(302, {
       ...(journeyState.setCookieHeaders.length ? { 'Set-Cookie': journeyState.setCookieHeaders } : {}),
       'Cache-Control': 'no-store',
@@ -3572,8 +3590,6 @@ async function serveTrackedLinkRedirect({ req, res, parsed, hostedConfig, isHead
     res.end();
     return;
   }
-
-  const destinationUrl = buildTrackedLinkDestination(target, hostedConfig, parsed);
   const attribution = buildTrackedLinkAttribution(target, parsed, req, journeyState, destinationUrl);
   if (target.external) {
     appendQueryParam(
