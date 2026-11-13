@@ -396,7 +396,7 @@ test('E2E: vague thumbs-down distills a lesson and preserves linked follow-up co
   assert.equal(feedbackLog.length, 1);
   assert.ok(feedbackLog[0].distillation);
 
-  const lessonPageRes = await fetch(apiUrl(port, `/lessons/${encodeURIComponent(captureBody.feedbackEvent.id)}`));
+  const lessonPageRes = await fetch(apiUrl(port, `/lessons/${encodeURIComponent(captureBody.feedbackEvent.id)}`), { headers: adminHeaders });
   assert.equal(lessonPageRes.status, 200);
   const lessonPageHtml = await lessonPageRes.text();
   assert.match(lessonPageHtml, /Also ignored the design-system rule in the same pass\./);
@@ -584,7 +584,10 @@ test('E2E: promoted lesson can be viewed, updated, searched, and deleted through
   assert.ok(lessonRecord);
   const memoryId = lessonRecord.id;
 
-  const lessonPageRes = await fetch(apiUrl(port, `/lessons/${encodeURIComponent(memoryId)}`));
+  const anonymousLessonRes = await fetch(apiUrl(port, `/lessons/${encodeURIComponent(memoryId)}`));
+  assert.equal(anonymousLessonRes.status, 401);
+
+  const lessonPageRes = await fetch(apiUrl(port, `/lessons/${encodeURIComponent(memoryId)}`), { headers: adminHeaders });
   assert.equal(lessonPageRes.status, 200);
   const lessonPageHtml = await lessonPageRes.text();
   assert.match(lessonPageHtml, /Lesson Detail/);
@@ -621,7 +624,7 @@ test('E2E: promoted lesson can be viewed, updated, searched, and deleted through
   assert.equal(deleteBody.ok, true);
   assert.equal(deleteBody.deleted, memoryId);
 
-  const deletedPageRes = await fetch(apiUrl(port, `/lessons/${encodeURIComponent(memoryId)}`));
+  const deletedPageRes = await fetch(apiUrl(port, `/lessons/${encodeURIComponent(memoryId)}`), { headers: adminHeaders });
   assert.equal(deletedPageRes.status, 404);
 
   const feedbackLog = readJsonl(path.join(tmpDir, 'feedback-log.jsonl'));
