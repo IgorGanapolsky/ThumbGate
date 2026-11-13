@@ -1121,7 +1121,7 @@
     "install:hooks": "bash bin/install-hooks.sh",
     "test:token-savings-dashboard": "node --test tests/token-savings-dashboard.test.js",
     "test:cursor-wiring": "node --test tests/cursor-wiring.test.js",
-    "test:pretooluse-injection": "node --test tests/pretooluse-lesson-injection.test.js",
+    "test:pretooluse-injection": "node --test tests/pretooluse-lesson-injection.test.js tests/lesson-hook-relevance.test.js",
     "test:recent-corrective-context": "node --test tests/recent-corrective-actions-context.test.js",
     "test:mailer": "node --test tests/mailer.test.js tests/mailer-dns.test.js tests/billing-webhook-email.test.js tests/revenue-email-dispatch.test.js",
     "test:brand-assets": "node --test tests/brand-assets.test.js",
