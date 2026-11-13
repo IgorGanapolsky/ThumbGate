@@ -386,5 +386,4 @@ Dedicated landing page at `/agent-manager` documents the mapping in full, includ
 - Eval scorecard: https://thumbgate.ai/eval-scorecard
 - ML evaluations: https://thumbgate.ai/evaluations
 - Case studies: https://thumbgate.ai/case-studies
-- Numbers: https://thumbgate.ai/numbers
 - Verification evidence: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md

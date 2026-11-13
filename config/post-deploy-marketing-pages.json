@@ -48,8 +48,8 @@
     },
     {
       "route": "/numbers",
-      "sentinel": "ThumbGate",
-      "description": "First-party numbers / data transparency page"
+      "sentinel": "Eval scorecard",
+      "description": "Legacy numbers URL 301s to the live bench scorecard"
     },
     {
       "route": "/ai-malpractice-prevention",

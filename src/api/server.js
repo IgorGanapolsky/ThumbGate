@@ -137,8 +137,10 @@ const {
   samplePosteriors,
 } = require('../../scripts/thompson-sampling');
 const {
+  CONFIG: billingConfig,
   appendFunnelEvent,
   createCheckoutSession,
+  isSyntheticOrOwnerCheckoutEmail,
   createBillingPortalSession,
   getCheckoutSessionStatus,
   provisionApiKey,
@@ -3264,10 +3266,27 @@ function applyTrackedLinkQueryKeys(destinationUrl, params) {
   }
 }
 
+function trackedLinkQueryEmail(params) {
+  return normalizeCheckoutCustomerEmail(
+    params.get('customer_email') || params.get('prefilled_email')
+  );
+}
+
+function isLiveTrackedPaymentLink(destinationUrl) {
+  if (!destinationUrl) return false;
+  const host = String(destinationUrl.hostname || '').toLowerCase();
+  if (host !== 'buy.stripe.com' && host !== 'checkout.stripe.com') return false;
+  const urlPath = String(destinationUrl.pathname || '').toLowerCase();
+  if (urlPath.startsWith('/test_') || urlPath.endsWith('-test')) return false;
+  const configuredStripeKey = String(process.env.STRIPE_SECRET_KEY || billingConfig.STRIPE_SECRET_KEY || '').trim();
+  return /^(?:sk|rk)_live_/i.test(configuredStripeKey);
+}
+
 function applyTrackedLinkCustomerEmail(destinationUrl, params, target) {
   if (!target.allowCustomerEmail) return;
-  const customerEmail = normalizeCheckoutCustomerEmail(params.get('customer_email'));
+  const customerEmail = trackedLinkQueryEmail(params);
   if (!customerEmail) return;
+  if (isSyntheticOrOwnerCheckoutEmail(customerEmail) && isLiveTrackedPaymentLink(destinationUrl)) return;
   appendQueryParam(
     destinationUrl,
     target.prefillStripeEmail ? 'prefilled_email' : 'customer_email',
@@ -3538,7 +3557,7 @@ async function serveTrackedLinkRedirect({ req, res, parsed, hostedConfig, isHead
     } catch (err) {
       if (err && err.code === 'AUTOMATED_CHECKOUT_BLOCKED') {
         const deflectUrl = new URL(target.botDeflectPath || '/checkout/pro', hostedConfig.appOrigin);
-        appendTrackedLinkQueryParams(deflectUrl, parsed, target);
+        appendTrackedLinkQueryParams(deflectUrl, parsed, { ...target, allowCustomerEmail: false });
         res.writeHead(302, {
           ...(journeyState.setCookieHeaders.length ? { 'Set-Cookie': journeyState.setCookieHeaders } : {}),
           'Cache-Control': 'no-store',
@@ -3553,6 +3572,23 @@ async function serveTrackedLinkRedirect({ req, res, parsed, hostedConfig, isHead
     }
   }
   const destinationUrl = buildTrackedLinkDestination(target, hostedConfig, parsed);
+  if (
+    target.external
+    && isLiveTrackedPaymentLink(destinationUrl)
+    && isSyntheticOrOwnerCheckoutEmail(trackedLinkQueryEmail(parsed.searchParams))
+  ) {
+    const deflectUrl = new URL(target.botDeflectPath || '/checkout/pro', hostedConfig.appOrigin);
+    appendTrackedLinkQueryParams(deflectUrl, parsed, { ...target, allowCustomerEmail: false });
+    res.writeHead(302, {
+      ...(journeyState.setCookieHeaders.length ? { 'Set-Cookie': journeyState.setCookieHeaders } : {}),
+      'Cache-Control': 'no-store',
+      'X-Robots-Tag': 'noindex,nofollow',
+      'X-ThumbGate-Link-Slug': target.slug,
+      Location: deflectUrl.toString(),
+    });
+    res.end();
+    return;
+  }
   const attribution = buildTrackedLinkAttribution(target, parsed, req, journeyState, destinationUrl);
   if (target.external) {
     appendQueryParam(
@@ -4702,7 +4738,6 @@ function renderRobotsTxt(runtimeConfig) {
 function renderSitemapXml(runtimeConfig) {
   const entries = [
     { path: '/', changefreq: 'weekly', priority: '1.0' },
-    { path: '/pro', changefreq: 'weekly', priority: '0.9' },
     { path: '/diagnostic', changefreq: 'weekly', priority: '0.9' },
     { path: '/founders', changefreq: 'weekly', priority: '0.95' },
     { path: '/operator-framework', changefreq: 'weekly', priority: '0.9' },
@@ -4731,7 +4766,6 @@ function renderSitemapXml(runtimeConfig) {
     { path: '/eval-scorecard', changefreq: 'weekly', priority: '0.9' },
     { path: '/evaluations', changefreq: 'weekly', priority: '0.85' },
     { path: '/case-studies', changefreq: 'weekly', priority: '0.9' },
-    { path: '/numbers', changefreq: 'weekly', priority: '0.8' },
     { path: '/yt', changefreq: 'weekly', priority: '0.8' },
     { path: '/learn/background-agent-control-layer', changefreq: 'weekly', priority: '0.85' },
     { path: '/learn/ac-dc-runtime-enforcement', changefreq: 'weekly', priority: '0.85' },
@@ -8254,22 +8288,12 @@ async function addContext(){
     }
 
     if (isGetLikeRequest && (pathname === '/numbers' || pathname === '/numbers.html')) {
-      // Route through servePublicMarketingPage so landing_page_view telemetry
-      // + funnel-events.jsonl `discovery/landing_view` get captured with UTM
-      // attribution — critical for Zernio social CTAs that target /numbers.
-      try {
-        servePublicMarketingPage({
-          req,
-          res,
-          parsed,
-          hostedConfig,
-          isHeadRequest,
-          renderHtml: () => fs.readFileSync(NUMBERS_PAGE_PATH, 'utf-8'),
-          extraTelemetry: { pageType: 'numbers' },
-        });
-      } catch {
-        sendJson(res, 404, { error: 'Numbers page not found' });
-      }
+      res.writeHead(301, {
+        Location: `/eval-scorecard${parsed.search || ''}`,
+        'Cache-Control': 'public, max-age=3600',
+        'X-Content-Type-Options': 'nosniff',
+      });
+      res.end();
       return;
     }
 
@@ -9003,6 +9027,15 @@ async function addContext(){
         });
         res.end();
       } catch (err) {
+        if (err && err.code === 'AUTOMATED_CHECKOUT_BLOCKED') {
+          sendProblem(res, {
+            type: PROBLEM_TYPES.BAD_REQUEST,
+            title: 'Checkout blocked',
+            status: 403,
+            detail: err.message,
+          }, responseHeaders);
+          return;
+        }
         appendBestEffortTelemetry(FEEDBACK_DIR, {
           eventType: 'checkout_api_failed',
           clientType: 'web',

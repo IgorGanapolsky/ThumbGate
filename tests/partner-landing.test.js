@@ -13,7 +13,7 @@ test('public/peter.html renders co-branded partner hero, comparison table, and p
   assert.match(content, /Partner Co-Branded Case Study/);
   assert.match(content, /How ThumbGate Stacks Up/);
   assert.match(content, /<50ms \(Local PreToolUse\)/);
-  assert.match(content, /Start Pro — \$19\/mo/);
+  assert.match(content, /Install free CLI/);
   assert.match(content, /Get \$499 Diagnostic Gate/);
   assert.match(content, /FAQPage/);
   // Diagnostic checkout requires email-backed POST (GET /go/diagnostic-pay is 405).

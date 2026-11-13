@@ -405,7 +405,7 @@ function classifyTelemetryAudience(entry = {}, raw = {}, options = {}) {
     .filter(Boolean);
   const matchesOwnerEmail = canonicalOwners.size > 0
     && emailCandidates.some((candidate) => canonicalOwners.has(candidate));
-  if (matchesOwnerEmail || includesAnyToken(identityValues, [
+  if (matchesOwnerEmail || includesAnyToken([...identityValues, ...emailCandidates], [
     '@example.com',
     '@example.org',
     '@example.net',
@@ -413,6 +413,11 @@ function classifyTelemetryAudience(entry = {}, raw = {}, options = {}) {
     'test@example.com',
     'buyer@acme.io',
     'buyer@acme.com',
+    '@acme.io',
+    '@acme.com',
+    '@formtests.info',
+    '@mailinator.com',
+    'founder@agent-startup.io',
     'test@test.com',
     'codex-verification',
     'audit@thumbgate.ai',

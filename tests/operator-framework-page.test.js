@@ -29,9 +29,6 @@ test.after(async () => {
 
 const OFFER_ROUTES = {
   '/go/operator-diagnostic': 'https://buy.stripe.com/fZueVd9eA4r42dz7mb3sI2W', // $499 Sprint Diagnostic
-  '/go/operator-turnkey': 'https://buy.stripe.com/14A8wP62o0aOcSd35V3sJ0Q', // $2,500 Turnkey Setup
-  '/go/operator-retainer': 'https://buy.stripe.com/9B614n0I43n03hD35V3sJ0P', // $500/mo Managed Retainer
-  '/go/operator-pro': 'https://buy.stripe.com/8x2dR91M84r4cSd9uj3sI3f', // $19/mo Pro
 };
 
 test('GET /operator-framework serves the offers, partner program, and FAQ schema', async () => {
@@ -46,16 +43,14 @@ test('GET /operator-framework serves the offers, partner program, and FAQ schema
   }
   assert.doesNotMatch(html, /buy\.stripe\.com/, 'payment links stay behind /go/ redirects');
   assert.match(html, /\$499/);
-  assert.match(html, /\$2,500/);
-  assert.match(html, /\$500<span[^>]*>\/mo/);
-  assert.match(html, /\$19\/mo/);
-  assert.match(html, /<h3>Managed Retainer<\/h3>\s*<div class="price">\$500<span[^>]*>\/mo/);
-  assert.match(html, /<h3>Turnkey Setup<\/h3>\s*<div class="price">\$2,500</);
-  assert.match(html, /<h3>Sprint Diagnostic<\/h3>\s*<div class="price">\$499</);
-  assert.match(html, /<div class="pro-strip">[\s\S]*?ThumbGate Pro is \$19\/mo[\s\S]*?Get Pro · \$19\/mo/);
   assert.match(html, /VERIFICATION_EVIDENCE\.md/);
   assert.match(html, /30% revenue share/);
-  assert.match(html, /mailto:iganapolsky@gmail\.com/);
+  assert.match(html, /mailto:igor@igorganapolsky\.com/);
+  assert.match(html, /"@type":\s*"FAQPage"/);
+  assert.doesNotMatch(html, /__APP_ORIGIN__/, 'template placeholders must be filled');
+  assert.doesNotMatch(html, /\$2,500/);
+  assert.doesNotMatch(html, /\$500/);
+  assert.doesNotMatch(html, /\$19\/mo/);
   assert.match(html, /"@type":\s*"FAQPage"/);
   assert.doesNotMatch(html, /__APP_ORIGIN__/, 'template placeholders must be filled');
 });

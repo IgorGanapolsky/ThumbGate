@@ -255,8 +255,9 @@ async function main() {
     'public/index.html must state the default-versus-strict enforcement boundary'
   );
   check(
-    /\$19\/mo/i.test(guideHtml) && /\$149\/yr/i.test(guideHtml),
-    'public/guide.html must advertise the current Pro monthly and annual pricing'
+    // Single-offer experiment: Pro pricing removed from public guide page.
+    true,
+    'public/guide.html Pro pricing check skipped during single-offer experiment'
   );
   check(
     enterpriseTierPattern.test(ENTERPRISE_PRICE_LABEL),
@@ -361,8 +362,9 @@ async function main() {
     'public/index.html must expose the $499 managed gate offer'
   );
   check(
-    (/\/checkout\/pro/i.test(landingHtml) || /\/go\/pro-direct/i.test(landingHtml)) && /\$19\/mo/i.test(landingHtml),
-    'public/index.html must expose self-serve Pro at $19/mo alongside the managed gate'
+    // Single-offer experiment: Pro is not promoted on the public buying path.
+    true,
+    'public/index.html Pro check skipped during single-offer experiment'
   );
   check(
     !/\/go\/sprint|href="[^"]*workflow-sprint-intake/i.test(landingHtml),
@@ -377,8 +379,9 @@ async function main() {
     'public/pricing.html must use the same canonical managed-gate checkout route'
   );
   check(
-    /\/checkout\/pro/i.test(pricingHtml) && /\$19\/mo/i.test(pricingHtml),
-    'public/pricing.html must expose self-serve Pro at $19/mo alongside the managed gate'
+    // Single-offer experiment: Pro is not promoted on the public buying path.
+    true,
+    'public/pricing.html Pro check skipped during single-offer experiment'
   );
   check(
     !/\/go\/sprint|workflow-sprint-intake/i.test(pricingHtml),
