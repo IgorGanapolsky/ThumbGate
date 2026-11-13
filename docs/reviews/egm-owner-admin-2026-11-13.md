@@ -65,3 +65,14 @@ Validation limits: the coordinator's full npm run on the original base exceeded 
 The independent design reviewer performed a bounded review of the tenant-baseline integration and found no actionable defects. Durable owner authorization precedes global collection; customer A/B reads stay partitioned; request-selected roots cannot redirect private reads; inherited scopes restore after collection; recursive dispatch records each response once. The reviewer inspected source; the parent and builder ran the tests.
 
 Against the integrated checkout, the parent repeated 48 anonymous GET/HEAD/OPTIONS checks (all 404 with no-store) and 15 headless Chromium checks (zero page errors). Health is HEALTHY with no required failures, proof-pack metrics/score/report checks pass, and the performance budget suite passes 3/3. Only synthetic fixtures were used. No visible browser or signed-in production session was accessed.
+
+
+## Updated tenant dispatcher dependency
+
+Tenant dependency advanced to `cfd7d1b453878d788de6cfd0325282f3c1dcdd3f`. The coordinator picked this update into a new unpublished commit above published owner commit `ac62f44e`. Only that new commit's constructor conflict was resolved with GitButler. The upstream unscoped external dispatcher and trusted continuation are preserved; owner dependencies are passed into the inner server constructor, and the owner gate still precedes private-route scoping. No published owner history was rewritten.
+
+Measured validation: 316/316 tests pass on Node 20.20.2 across owner-admin, feedback-scope, hosted-tenant-isolation, API-server, billing, telemetry, billing-portal and paid-order-attribution. This includes the upstream inherited-scope/one-metering regression and the owner cross-tenant/context-restoration regressions.
+
+Coverage limitation supplied by the coordinator: coverage was stopped at exactly 300 seconds after 3712 success markers and no failure markers. It produced no completed coverage percentage. Full-suite and coverage completion remain unclaimed. Signed-in production verification remains unverified. No browser, CDP or production actions were performed for this dependency integration.
+
+The independent reviewer rechecked the final private-dispatch refinement and found no concrete issue. Parent repeated headless UI acceptance (15 checks, zero page errors) and anonymous denial (48/48) on that final source. The previously published owner commit was preserved; the dependency update is a separate integration commit.

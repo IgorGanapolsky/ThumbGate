@@ -183,11 +183,13 @@ function resolveLessonDbPath() {
   return null;
 }
 
+function openTenantLessonDB(desiredPath) {
+  try { return require('./lesson-db').initDB(desiredPath); } catch { return null; }
+}
+
 function getLessonDB() {
   const desiredPath = resolveLessonDbPath();
-  if (tenantDataScope()) {
-    try { return require('./lesson-db').initDB(desiredPath); } catch { return null; }
-  }
+  if (tenantDataScope()) return openTenantLessonDB(desiredPath);
   if (_lessonDB && _lessonDBPath === desiredPath) return _lessonDB;
 
   if (_lessonDB && _lessonDBPath !== desiredPath) {

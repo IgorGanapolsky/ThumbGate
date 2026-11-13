@@ -7128,7 +7128,20 @@ function resolveDocumentImportFilePath(inputPath, options = {}) {
   return resolved;
 }
 
+const CONTINUE_DATA_SCOPE = Symbol('trustedDataScopeContinuation');
+
 function createApiServer({ ownerAdminDependencies = {} } = {}) {
+  const server = withoutDataScope(() => createUnscopedApiServer({ ownerAdminDependencies }));
+  const [listener] = server.listeners('request');
+  server.removeListener('request', listener);
+  server.on('request', (req, res) => {
+    req[CONTINUE_DATA_SCOPE] = (scope) => withDataScope(scope, () => listener(req, res));
+    return withoutDataScope(() => listener(req, res));
+  });
+  return server;
+}
+
+function createUnscopedApiServer({ ownerAdminDependencies = {} } = {}) {
   const expectedApiKey = getExpectedApiKey();
   const expectedOperatorKey = getExpectedOperatorKey();
   const humanReviewerConfig = getHumanReviewerConfig(expectedApiKey, expectedOperatorKey);
@@ -7139,7 +7152,7 @@ function createApiServer({ ownerAdminDependencies = {} } = {}) {
   eventBus.setMaxListeners(200);
   const publishEvent = (payload) => eventBus.emit('broadcast', { scopeKey: dataScopeKey(), payload });
 
-  return http.createServer(async function handleRequest(req, res) {
+  return http.createServer(async (req, res) => {
     const parsed = new URL(req.url, 'http://localhost');
     const pathname = parsed.pathname;
     const privatePath = ownerAdmin.adminPath(pathname);
@@ -7202,7 +7215,7 @@ function createApiServer({ ownerAdminDependencies = {} } = {}) {
       if (identity.invalidHostedIdentity) { sendJson(res, 403, { error: 'Invalid customer identity' }); return; }
       const roots = partitionFeedbackPaths(identity.partition ? getFeedbackPaths() : getRequestFeedbackPaths(req, parsed), identity);
       try {
-        return await withDataScope({ kind: identity.partition ? 'tenant' : 'legacy', feedbackDir: roots.FEEDBACK_DIR, tenantId: identity.partition, principalId: identity.accessContext?.principalId }, () => handleRequest(req, res));
+        return await req[CONTINUE_DATA_SCOPE]({ kind: identity.partition ? 'tenant' : 'legacy', feedbackDir: roots.FEEDBACK_DIR, tenantId: identity.partition, principalId: identity.accessContext?.principalId });
       } catch (error) {
         sendJson(res, error.statusCode || 500, { error: error.statusCode ? error.message : 'Request failed' });
         return;
@@ -11157,19 +11170,21 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
       });
       return;
     }
-    requestFeedbackPaths = partitionFeedbackPaths(requestDataIdentity.partition ? getFeedbackPaths() : requestFeedbackPaths, requestDataIdentity);
+    requestFeedbackPaths = currentDataScope()
+      ? getFeedbackPaths({ feedbackDir: currentDataScope().lexicalRoot })
+      : partitionFeedbackPaths(requestDataIdentity.partition ? getFeedbackPaths() : requestFeedbackPaths, requestDataIdentity);
     requestFeedbackDir = requestFeedbackPaths.FEEDBACK_DIR;
     requestSafeDataDir = path.resolve(requestFeedbackDir);
     requestDocumentAccessContext = requestDataIdentity.accessContext;
 
-    // Usage metering — record request for billing keys (not static THUMBGATE_API_KEY)
-    const _token = extractBearerToken(req);
-    if (_token && _token !== expectedApiKey) {
-      recordUsage(_token);
-    }
-
     try {
-      return await withDataScope({ kind: requestDataIdentity.partition ? 'tenant' : 'legacy', feedbackDir: requestFeedbackDir, tenantId: requestDataIdentity.partition, principalId: requestDocumentAccessContext?.principalId }, async () => {
+      if (!currentDataScope()) {
+        return await req[CONTINUE_DATA_SCOPE]({ kind: requestDataIdentity.partition ? 'tenant' : 'legacy', feedbackDir: requestFeedbackDir, tenantId: requestDataIdentity.partition, principalId: requestDocumentAccessContext?.principalId });
+      }
+      // Usage metering runs only on the scoped dispatch pass.
+      const _token = extractBearerToken(req);
+      if (_token && _token !== expectedApiKey) recordUsage(_token);
+
       if (req.method === 'GET' && pathname === '/v1/feedback/stats') {
         const stats = shouldAggregateFeedback()
           ? computeAggregateFeedbackStats({ feedbackDir: requestFeedbackPaths.FEEDBACK_DIR })
@@ -13393,7 +13408,6 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
         title: 'Not Found',
         status: 404,
         detail: `No handler for ${req.method} ${pathname}`,
-      });
       });
     } catch (err) {
       sendProblem(res, {

@@ -1166,14 +1166,17 @@ module.exports = {
   JOB_STATE_DIRNAME,
 };
 
-function runCli() {
+function parseCliArguments() {
   const args = {};
   process.argv.slice(2).forEach((arg) => {
     if (!arg.startsWith('--')) return;
     const [key, ...rest] = arg.slice(2).split('=');
     args[key] = rest.length > 0 ? rest.join('=') : true;
   });
+  return args;
+}
 
+function runManagedCliCommand(args) {
   if (args.pause) {
     console.log(JSON.stringify(requestJobControl(args.pause, 'pause'), null, 2));
     process.exit(0);
@@ -1219,6 +1222,12 @@ function runCli() {
     console.log(JSON.stringify(result, null, 2));
     process.exit(['failed', 'cancelled'].includes(result.status) ? 1 : 0);
   }
+
+}
+
+function runCli() {
+  const args = parseCliArguments();
+  runManagedCliCommand(args);
 
   if (args['run-file']) {
     const result = runJobFromFile(args['run-file']);
