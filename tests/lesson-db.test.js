@@ -233,11 +233,14 @@ describe('lesson-db', () => {
       assert.ok(actions.some((a) => a.includes('husky') || a.includes('git')));
     });
 
-    it('falls back to domain when no tag matches', () => {
-      const fb = makeFeedbackEvent({ tags: ['unique-tag-never-seen'], richContext: { domain: 'general' } });
+    it('does not fall back to unrelated general-domain lessons when tags and content do not match', () => {
+      const fb = makeFeedbackEvent({
+        context: 'Completely novel unrelated topic alpha beta',
+        tags: ['unique-tag-never-seen'],
+        richContext: { domain: 'general' },
+      });
       const actions = inferCorrectiveActions(db, fb, 3);
-      assert.ok(Array.isArray(actions));
-      // Should find general domain actions
+      assert.deepEqual(actions, []);
     });
 
     it('returns empty array when no past failures exist for tags/domain', () => {

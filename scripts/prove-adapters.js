@@ -627,6 +627,7 @@ async function runProof(options = {}) {
           arguments: {
             query: 'Refactor `planIntent` in scripts/intent-router.js',
             repoPath: ROOT,
+            verbose: true,
           },
         },
       });

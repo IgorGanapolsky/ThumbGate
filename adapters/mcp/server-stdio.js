@@ -440,6 +440,190 @@ function toCaptureFeedbackTextResult(result) {
   return { content: blocks, structuredContent: result };
 }
 
+const COMPACT_MCP_MAX_BYTES = 580;
+
+function truncateUtf8String(value, maxChars) {
+  const str = String(value || '').replace(/\s+/g, ' ').trim();
+  if (str.length <= maxChars) return str;
+  if (maxChars <= 1) return '';
+  return `${str.slice(0, maxChars - 1).trimEnd()}…`;
+}
+
+function extractCompactActionText(entry) {
+  if (!entry) return '';
+  if (typeof entry === 'string') return entry.replace(/\s+/g, ' ').trim();
+  if (typeof entry === 'object') {
+    return String(
+      entry.whatToChange
+      || entry.fix
+      || entry.rule
+      || entry.text
+      || entry.action
+      || entry.howToAvoid
+      || entry.actionNeeded
+      || entry.message
+      || entry.description
+      || '',
+    ).replace(/\s+/g, ' ').trim();
+  }
+  return '';
+}
+
+function dedupeTopActions(rawActions, maxItems = 3) {
+  const seen = new Set();
+  const out = [];
+  for (const raw of rawActions || []) {
+    const text = extractCompactActionText(raw);
+    if (!text) continue;
+    const key = text.toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push(text);
+    if (out.length >= maxItems) break;
+  }
+  return out;
+}
+
+function serializeCompactReply(payload, maxBytes = COMPACT_MCP_MAX_BYTES) {
+  let titleBudget = 120;
+  let actionBudget = 96;
+  let auxBudget = 110;
+  let actionsCount = Math.min(3, Array.isArray(payload.actions) ? payload.actions.length : 0);
+
+  while (titleBudget >= 16) {
+    const shaped = {
+      id: payload.id ? truncateUtf8String(payload.id, 64) : null,
+      status: truncateUtf8String(payload.status || 'ok', 32),
+      title: truncateUtf8String(payload.title || '', titleBudget),
+      actions: (payload.actions || [])
+        .slice(0, actionsCount)
+        .map((a) => truncateUtf8String(a, actionBudget))
+        .filter(Boolean),
+    };
+    if (typeof payload.accepted === 'boolean') shaped.accepted = payload.accepted;
+    if (typeof payload.promoted === 'boolean') shaped.promoted = payload.promoted;
+    if (payload.promotionAccepted === false) shaped.promotionAccepted = false;
+    if (payload.needsClarification === true) shaped.needsClarification = true;
+    if (payload.reason && auxBudget >= 24) shaped.reason = truncateUtf8String(payload.reason, auxBudget);
+    if (payload.prompt && auxBudget >= 24) shaped.prompt = truncateUtf8String(payload.prompt, auxBudget);
+
+    const serialized = JSON.stringify(shaped);
+    if (Buffer.byteLength(serialized, 'utf8') <= maxBytes) {
+      return { content: [{ type: 'text', text: serialized }] };
+    }
+    if (actionBudget > 48) {
+      actionBudget -= 16;
+    } else if (auxBudget > 32) {
+      auxBudget -= 26;
+    } else if (titleBudget > 40) {
+      titleBudget -= 24;
+    } else if (actionsCount > 1) {
+      actionsCount -= 1;
+    } else {
+      auxBudget = 0;
+      titleBudget -= 16;
+    }
+  }
+
+  const fallback = JSON.stringify({
+    id: payload.id ? String(payload.id).slice(0, 48) : null,
+    status: String(payload.status || 'ok').slice(0, 24),
+    title: String(payload.title || '').slice(0, 60),
+    actions: [],
+  });
+  return { content: [{ type: 'text', text: fallback }] };
+}
+
+function buildCompactCaptureFeedbackResponse(result = {}) {
+  const id = result.memoryRecord?.id
+    || result.feedbackEvent?.id
+    || result.existingEventId
+    || null;
+  const status = result.status
+    || (result.accepted === false ? 'rejected' : (result.promoted ? 'promoted' : 'logged'));
+  const title = result.memoryRecord?.title
+    || result.feedbackEvent?.context
+    || '';
+  const actions = dedupeTopActions(result.correctiveActions || [], 3);
+  return serializeCompactReply({
+    id,
+    status,
+    title,
+    actions,
+    accepted: Boolean(result.accepted),
+    promoted: Boolean(result.promoted),
+    promotionAccepted: result.promotionAccepted,
+    needsClarification: result.needsClarification,
+    reason: !result.promoted ? result.reason : undefined,
+    prompt: result.needsClarification ? result.prompt : undefined,
+  });
+}
+
+function extractHowToAvoidFromLessonContent(content) {
+  const lines = String(content || '').split('\n');
+  for (const raw of lines) {
+    const line = raw.trim();
+    if (/^(?:How to avoid|Action needed|What worked|Rule):\s*/i.test(line)) {
+      return line.replace(/^(?:How to avoid|Action needed|What worked|Rule):\s*/i, '').trim();
+    }
+  }
+  return '';
+}
+
+function buildCompactRetrieveLessonsResponse(results = []) {
+  const list = Array.isArray(results) ? results : [];
+  const relevant = list.filter((item) => item && (
+    item.rule?.fix
+    || Number(item.relevanceScore ?? item.combinedScore ?? 0) > 0
+  ));
+  const top = relevant[0] || null;
+  const rawActions = [];
+  for (const item of relevant.slice(0, 3)) {
+    const action = item.rule?.fix
+      || item.rule?.rule
+      || extractHowToAvoidFromLessonContent(item.content)
+      || '';
+    if (action) rawActions.push(action);
+  }
+  return serializeCompactReply({
+    id: top?.id || null,
+    status: relevant.length > 0 ? 'ok' : 'empty',
+    title: top?.title || '',
+    actions: dedupeTopActions(rawActions, 3),
+  });
+}
+
+function buildCompactSearchLessonsResponse(searchPayload = {}, query = '') {
+  const list = Array.isArray(searchPayload.results) ? searchPayload.results : [];
+  const hasQuery = Boolean(String(query || '').trim());
+  const relevant = list.filter((entry) => {
+    if (!entry) return false;
+    if (!hasQuery) return true;
+    const score = entry.evidenceScore ?? entry.score;
+    return score === undefined ? true : Number(score) > 0;
+  });
+  const top = relevant[0] || null;
+  const rawActions = [];
+  for (const item of relevant.slice(0, 3)) {
+    const sysActions = Array.isArray(item.systemResponse?.correctiveActions)
+      ? item.systemResponse.correctiveActions
+      : [];
+    for (const act of sysActions) {
+      const txt = extractCompactActionText(act);
+      if (txt) rawActions.push(txt);
+    }
+    if (item.whatToChange) rawActions.push(item.whatToChange);
+    if (item.lesson?.howToAvoid) rawActions.push(item.lesson.howToAvoid);
+    if (item.lesson?.actionNeeded) rawActions.push(item.lesson.actionNeeded);
+  }
+  return serializeCompactReply({
+    id: top?.id || null,
+    status: relevant.length > 0 ? 'ok' : 'empty',
+    title: top?.title || top?.context || top?.lesson?.summary || '',
+    actions: dedupeTopActions(rawActions, 3),
+  });
+}
+
 function formatContextPack(pack) {
   const lines = [
     '## Context Pack',
@@ -465,28 +649,46 @@ function formatContextPack(pack) {
 function buildRecallResponse(args = {}) {
   const limit = checkLimit('recall');
   ensureContextFs();
+  const query = String(args.query || '');
   const pack = constructContextPack({
-    query: args.query || '',
+    query,
     maxItems: Number(args.limit || 5),
   });
-  const impact = analyzeCodeGraphImpact({
-    intentId: null,
-    context: args.query || '',
-    repoPath: args.repoPath,
-  });
-  const section = formatCodeGraphRecallSection(impact);
-  let text = section
-    ? `${formatContextPack(pack)}\n\n${section}`
-    : formatContextPack(pack);
 
-  if (!limit.allowed) {
-    text += '\n\n---\n';
-    text += 'Upgrade to Context Gateway for unlimited recall, shared workflow memory, and hosted rollout.\n';
-    text += 'Hosted API: https://thumbgate-production.up.railway.app\n';
-    text += 'Pro pack: https://thumbgate-production.up.railway.app/checkout/pro';
+  if (args.verbose === true) {
+    const impact = analyzeCodeGraphImpact({
+      intentId: null,
+      context: query,
+      repoPath: args.repoPath,
+    });
+    const section = formatCodeGraphRecallSection(impact);
+    return toTextResult({
+      id: pack.packId || null,
+      status: limit.allowed ? 'ok' : 'rate_limited',
+      pack,
+      ...(section ? { codeGraphImpact: section } : {}),
+      ...(!limit.allowed ? {
+        upgradeMessage: 'Upgrade to Context Gateway for unlimited recall, shared workflow memory, and hosted rollout.',
+      } : {}),
+    });
   }
 
-  return toTextResult(text);
+  const hasQuery = Boolean(query.trim());
+  const items = Array.isArray(pack.items) ? pack.items : [];
+  const relevant = items.filter((item) => item && (!hasQuery || Number(item.score || 0) > 0));
+  const top = relevant[0] || null;
+  const rawActions = [];
+  for (const item of relevant.slice(0, 3)) {
+    const sc = item.structuredContext || {};
+    const candidate = sc.howToAvoid || sc.actionNeeded || sc.rule || sc.whatToChange || '';
+    if (candidate) rawActions.push(candidate);
+  }
+  return serializeCompactReply({
+    id: top?.id || pack.packId || null,
+    status: !limit.allowed ? 'rate_limited' : (relevant.length > 0 ? 'ok' : 'empty'),
+    title: top?.title || '',
+    actions: dedupeTopActions(rawActions, 3),
+  });
 }
 
 function buildSuggestFixResponse(args = {}) {
@@ -1119,26 +1321,32 @@ async function callToolInner(name, args) {
       // action receipt (this action -> this outcome) before promotion. Returns
       // args unchanged when there is no matching receipt (non-breaking).
       const pairedFeedback = pairFeedbackWithReceipt(args);
-      return toCaptureFeedbackTextResult(captureFeedback({
+      const captured = captureFeedback({
         ...pairedFeedback,
         lessonId: args.lessonId,
         lessonKey: args.lessonKey,
         reviewOrigin: 'automated',
-      }));
+      });
+      return args.verbose === true
+        ? toCaptureFeedbackTextResult(captured)
+        : buildCompactCaptureFeedbackResponse(captured);
     }
     case 'feedback_summary':
       return toTextResult(feedbackSummary(Number(args.recent || 20), { humanOnly: true }));
     case 'search_lessons': {
       const module = loadPrivateMcpModule('lessonSearch');
       if (!module) return unavailablePrivateMcpFeature('search_lessons');
-      return toTextResult(module.searchLessons(args.query || '', {
+      const searchResult = module.searchLessons(args.query || '', {
         limit: Number(args.limit || 10),
         category: args.category,
         tags: Array.isArray(args.tags) ? args.tags : [],
         scope: args.scope,
         requireScope: args.requireScope === true,
         includeShared: args.includeShared !== false,
-      }));
+      });
+      return args.verbose === true
+        ? toTextResult(searchResult)
+        : buildCompactSearchLessonsResponse(searchResult, args.query || '');
     }
     case 'suggest_fix':
       return buildSuggestFixResponse(args);
@@ -1181,7 +1389,9 @@ async function callToolInner(name, args) {
         };
         retrievalResults = [exactItem, ...(Array.isArray(retrievalResults) ? retrievalResults.filter(r => r.id !== exactError.id) : [])];
       }
-      return toTextResult(retrievalResults);
+      return args.verbose === true
+        ? toTextResult(retrievalResults)
+        : buildCompactRetrieveLessonsResponse(retrievalResults);
     }
     case 'ai_component_inventory': {
       const {

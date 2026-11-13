@@ -536,6 +536,22 @@ function main() {
     failOpen(err);
   }
 
+  if (isTrueEnv(process.env.THUMBGATE_CALL_BUDGET_GATE)) {
+    try {
+      const { evaluateCallBudgetPreToolUse } = require('./hook-call-budget');
+      const budgetVerdict = evaluateCallBudgetPreToolUse({
+        ...input,
+        tool_name: toolName,
+        tool_input: effectiveInput,
+      });
+      if (budgetVerdict && budgetVerdict.decision === 'block') {
+        return block(budgetVerdict.reason);
+      }
+    } catch (err) {
+      failOpen(err);
+    }
+  }
+
   // The plugin hook and `thumbgate gate-check` share one hard-floor evaluator.
   // Environment bypasses may skip advisory gates, but not secrets, critical
   // security findings, or changes that disable the guardrail itself.

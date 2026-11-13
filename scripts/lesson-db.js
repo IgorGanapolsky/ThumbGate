@@ -452,65 +452,154 @@ function searchLessons(db, query, options = {}) {
  * @param {number} [limit=3]
  * @returns {string[]} Top corrective actions
  */
-function inferCorrectiveActions(db, feedbackEvent, limit = 3) {
-  const tags = Array.isArray(feedbackEvent.tags) ? feedbackEvent.tags : [];
-  const domain = feedbackEvent.richContext?.domain || 'general';
+const GENERIC_LESSON_TAGS = new Set([
+  'general', 'negative', 'positive', 'feedback', 'automated', 'manual',
+  'human', 'agent', 'claude', 'codex', 'cursor', 'omp', 'grok', 'mcp',
+  'cli', 'issue', 'error', 'bug', 'fix', 'lesson', 'memory', 'workflow',
+  'thumbs-down', 'thumbs-up', 'down', 'up', 'other', 'stop-hook', 'auto-score',
+]);
 
-  // Strategy: find past negative lessons with overlapping tags, ranked by recency
-  let candidates = [];
+const CONTENT_STOPWORDS = new Set([
+  'the', 'and', 'for', 'with', 'this', 'that', 'from', 'into', 'when', 'where',
+  'what', 'which', 'while', 'were', 'was', 'are', 'have', 'has', 'had', 'not',
+  'but', 'you', 'your', 'our', 'its', 'their', 'they', 'them', 'then', 'than',
+  'too', 'very', 'just', 'only', 'also', 'more', 'most', 'some', 'such', 'each',
+  'every', 'all', 'any', 'both', 'did', 'does', 'done', 'doing', 'make', 'made',
+  'used', 'using', 'use', 'should', 'would', 'could', 'must', 'never', 'always',
+  'before', 'after', 'over', 'under', 'again', 'once', 'here', 'there', 'about',
+  'between', 'through', 'during', 'without', 'within', 'across', 'instead',
+  'tool', 'tools', 'call', 'calls', 'called', 'agent', 'agents', 'claude',
+  'codex', 'cursor', 'user', 'session', 'sessions', 'feedback', 'lesson',
+  'lessons', 'rule', 'rules', 'file', 'files', 'code', 'line', 'lines', 'work',
+  'wrong', 'went', 'change', 'avoid', 'error', 'issue', 'problem', 'failed',
+  'failure', 'awful', 'bad', 'good',
+]);
 
-  // 1. Tag overlap search — find lessons sharing tags with this failure
-  if (tags.length > 0) {
-    const tagPlaceholders = tags.map(() => `l.tags LIKE ?`).join(' OR ');
-    const tagParams = tags.map((t) => `%"${t}"%`);
+const MIN_CORRECTIVE_SIMILARITY = 0.15;
 
-    const sql = `
-      SELECT whatToChange, tags, timestamp
+function extractSpecificTags(tags) {
+  if (!Array.isArray(tags)) return [];
+  return [...new Set(
+    tags
+      .map((t) => String(t || '').trim().toLowerCase())
+      .filter((t) => t.length >= 2 && !GENERIC_LESSON_TAGS.has(t)),
+  )];
+}
+
+function extractContentTokens(text) {
+  const raw = String(text || '').toLowerCase().split(/[^a-z0-9]+/);
+  const out = new Set();
+  for (const tok of raw) {
+    if (tok.length < 3) continue;
+    if (/^\d+$/.test(tok)) continue;
+    if (CONTENT_STOPWORDS.has(tok) || GENERIC_LESSON_TAGS.has(tok)) continue;
+    out.add(tok);
+  }
+  return out;
+}
+
+function computeContentSimilarity(tokensA, tokensB) {
+  if (tokensA.size === 0 || tokensB.size === 0) {
+    return { shared: 0, similarity: 0 };
+  }
+  let shared = 0;
+  for (const tok of tokensA) {
+    if (tokensB.has(tok)) shared += 1;
+  }
+  const similarity = (2 * shared) / (tokensA.size + tokensB.size);
+  return { shared, similarity };
+}
+
+function inferCorrectiveActions(db, feedbackEvent = {}, limit = 3) {
+  const specificTags = extractSpecificTags(feedbackEvent.tags);
+  const selfId = String(feedbackEvent.id || '').trim();
+  const eventTokens = extractContentTokens([
+    feedbackEvent.context,
+    feedbackEvent.whatWentWrong,
+    feedbackEvent.whatToChange,
+    ...specificTags,
+  ].filter(Boolean).join(' '));
+
+  if (specificTags.length === 0 && eventTokens.size === 0) {
+    return [];
+  }
+
+  const candidateById = new Map();
+  if (specificTags.length > 0) {
+    const tagPlaceholders = specificTags.map(() => 'LOWER(l.tags) LIKE ?').join(' OR ');
+    const tagParams = specificTags.map((t) => `%"${t}"%`);
+    const rows = db.prepare(`
+      SELECT id, context, whatWentWrong, whatToChange, tags, timestamp
       FROM lessons l
       WHERE l.signal = 'negative'
         AND l.whatToChange IS NOT NULL
         AND l.whatToChange != ''
         AND (${tagPlaceholders})
       ORDER BY l.timestamp DESC
-      LIMIT 20
-    `;
-
-    candidates = db.prepare(sql).all(...tagParams);
+      LIMIT 30
+    `).all(...tagParams);
+    for (const row of rows) {
+      if (selfId && row.id === selfId) continue;
+      candidateById.set(row.id || `${row.whatToChange}:${row.timestamp}`, row);
+    }
   }
 
-  // 2. Domain fallback if no tag matches
-  if (candidates.length === 0) {
-    const sql = `
-      SELECT whatToChange, tags, timestamp
+  if (candidateById.size < limit && eventTokens.size > 0) {
+    const recentRows = db.prepare(`
+      SELECT id, context, whatWentWrong, whatToChange, tags, timestamp
       FROM lessons l
       WHERE l.signal = 'negative'
         AND l.whatToChange IS NOT NULL
         AND l.whatToChange != ''
-        AND l.domain = ?
       ORDER BY l.timestamp DESC
-      LIMIT 10
-    `;
-
-    candidates = db.prepare(sql).all(domain);
+      LIMIT 100
+    `).all();
+    for (const row of recentRows) {
+      if (selfId && row.id === selfId) continue;
+      const key = row.id || `${row.whatToChange}:${row.timestamp}`;
+      if (!candidateById.has(key)) candidateById.set(key, row);
+    }
   }
 
-  if (candidates.length === 0) return [];
+  if (candidateById.size === 0) return [];
 
-  // Deduplicate and rank by tag overlap count
+  const specificTagSet = new Set(specificTags);
   const actionMap = new Map();
-  for (const c of candidates) {
-    const action = c.whatToChange.trim();
+  for (const c of candidateById.values()) {
+    const action = String(c.whatToChange || '').trim();
+    if (!action) continue;
+    const candSpecificTags = extractSpecificTags(safeParseTags(c.tags));
+    const tagOverlap = candSpecificTags.filter((t) => specificTagSet.has(t)).length;
+    const candTokens = extractContentTokens([
+      c.context,
+      c.whatWentWrong,
+      c.whatToChange,
+      ...candSpecificTags,
+    ].filter(Boolean).join(' '));
+    const { shared, similarity } = computeContentSimilarity(eventTokens, candTokens);
+    const meetsLexicalFloor = (shared >= 2 && similarity >= MIN_CORRECTIVE_SIMILARITY)
+      || (eventTokens.size === 1 && shared === 1 && similarity >= 0.25);
+
+    if (tagOverlap === 0 && !meetsLexicalFloor) continue;
+
     if (actionMap.has(action)) {
-      actionMap.get(action).count += 1;
+      const existing = actionMap.get(action);
+      existing.count += 1;
+      existing.overlap = Math.max(existing.overlap, tagOverlap);
+      existing.similarity = Math.max(existing.similarity, similarity);
     } else {
-      const cTags = safeParseTags(c.tags);
-      const overlap = tags.filter((t) => cTags.includes(t)).length;
-      actionMap.set(action, { action, count: 1, overlap, timestamp: c.timestamp });
+      actionMap.set(action, {
+        action,
+        count: 1,
+        overlap: tagOverlap,
+        similarity,
+        timestamp: c.timestamp,
+      });
     }
   }
 
   return Array.from(actionMap.values())
-    .sort((a, b) => b.overlap - a.overlap || b.count - a.count)
+    .sort((a, b) => b.overlap - a.overlap || b.similarity - a.similarity || b.count - a.count)
     .slice(0, limit)
     .map((a) => a.action);
 }
