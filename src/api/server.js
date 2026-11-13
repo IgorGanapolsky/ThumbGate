@@ -4702,7 +4702,6 @@ function renderRobotsTxt(runtimeConfig) {
 function renderSitemapXml(runtimeConfig) {
   const entries = [
     { path: '/', changefreq: 'weekly', priority: '1.0' },
-    { path: '/pro', changefreq: 'weekly', priority: '0.9' },
     { path: '/diagnostic', changefreq: 'weekly', priority: '0.9' },
     { path: '/founders', changefreq: 'weekly', priority: '0.95' },
     { path: '/operator-framework', changefreq: 'weekly', priority: '0.9' },
@@ -4731,7 +4730,6 @@ function renderSitemapXml(runtimeConfig) {
     { path: '/eval-scorecard', changefreq: 'weekly', priority: '0.9' },
     { path: '/evaluations', changefreq: 'weekly', priority: '0.85' },
     { path: '/case-studies', changefreq: 'weekly', priority: '0.9' },
-    { path: '/numbers', changefreq: 'weekly', priority: '0.8' },
     { path: '/yt', changefreq: 'weekly', priority: '0.8' },
     { path: '/learn/background-agent-control-layer', changefreq: 'weekly', priority: '0.85' },
     { path: '/learn/ac-dc-runtime-enforcement', changefreq: 'weekly', priority: '0.85' },
@@ -8254,22 +8252,12 @@ async function addContext(){
     }
 
     if (isGetLikeRequest && (pathname === '/numbers' || pathname === '/numbers.html')) {
-      // Route through servePublicMarketingPage so landing_page_view telemetry
-      // + funnel-events.jsonl `discovery/landing_view` get captured with UTM
-      // attribution — critical for Zernio social CTAs that target /numbers.
-      try {
-        servePublicMarketingPage({
-          req,
-          res,
-          parsed,
-          hostedConfig,
-          isHeadRequest,
-          renderHtml: () => fs.readFileSync(NUMBERS_PAGE_PATH, 'utf-8'),
-          extraTelemetry: { pageType: 'numbers' },
-        });
-      } catch {
-        sendJson(res, 404, { error: 'Numbers page not found' });
-      }
+      res.writeHead(301, {
+        Location: `/eval-scorecard${parsed.search || ''}`,
+        'Cache-Control': 'public, max-age=3600',
+        'X-Content-Type-Options': 'nosniff',
+      });
+      res.end();
       return;
     }
 

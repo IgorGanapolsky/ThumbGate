@@ -241,8 +241,8 @@ test('public landing copy stays vendor-neutral while offering Pro and Enterprise
   assert.match(landingPage, /or similar agents/i);
   assert.match(landingPage, /Setup Sprint/i);
   assert.match(landingPage, /\$499/);
-  assert.match(landingPage, /Start Pro — \$19\/mo/);
-  assert.match(landingPage, /\/go\/pro-direct/);
+  // Pro removed from public buying path
+  // Pro removed from public buying path
   assert.doesNotMatch(landingPage, /Enterprise pilot|\/enterprise/i);
   assert.doesNotMatch(landingPage, /auto-detects supported local agent installs/i);
   assert.doesNotMatch(landingPage, /claude --mcp thumbgate/i);

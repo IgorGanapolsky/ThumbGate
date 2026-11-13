@@ -148,7 +148,7 @@
 <ul>
   <li><strong>npm package <code>thumbgate</code></strong> — the public shell. CLI, hook installer, adapter configs, JSON schemas. Node ≥18.18, MIT.</li>
   <li><strong>Railway-hosted API</strong> at <code>thumbgate.ai</code> — health, dashboard, checkout intent, billing summary. Docker rebuild on every push to <code>main</code> (2–5 min). Verified post-deploy by curling <code>/health</code> and grepping the version string.</li>
-  <li><strong>Stripe</strong> — 15 active products (Pro $19/mo + $149/yr; Enterprise; plus 13 funnel/diagnostic SKUs from $1 to $1,500). All carry the canonical ThumbGate logo. Checkout sessions verified to mint live <code>cs_live_</code> IDs.</li>
+  <li><strong>Stripe</strong> — 15 active products (Free CLI + $499 one-time; Enterprise; plus 13 funnel/diagnostic SKUs from $1 to $1,500). All carry the canonical ThumbGate logo. Checkout sessions verified to mint live <code>cs_live_</code> IDs.</li>
   <li><strong>SQLite + FTS5 lesson DB</strong> — ships in the package, runs on-device, never phones home.</li>
   <li><strong>LanceDB vector index</strong> — for semantic lesson recall.</li>
   <li><strong>Plausible analytics</strong> — privacy-respecting, no cookie banner, no IP logging.</li>
@@ -207,7 +207,7 @@
 
 <p>You'll have a working pre-action gate in your AI coding agent inside 60 seconds, or the install is broken and I want to hear about it.</p>
 
-<p>If you've been burned by an AI agent doing something it shouldn't have, the <a href="/checkout/pro?utm_source=blog&amp;utm_medium=prototype_to_production&amp;utm_campaign=build_log">Pro tier</a> is $19/mo and adds the dashboard, recall, and lesson search. Or just install the free version, get a feel for it, and decide later. The whole thing is MIT.</p>
+<p>If you've been burned by an AI agent doing something it shouldn't have, the <a href="/pricing">$499 Setup Sprint</a> and adds the dashboard, recall, and lesson search. Or just install the free version, get a feel for it, and decide later. The whole thing is MIT.</p>
 
 <p>I'll write the next build log at v2.0.0 — or when the first cold-traffic customer pays, whichever comes first.</p>
 
