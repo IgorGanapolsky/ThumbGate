@@ -268,3 +268,29 @@ test('tenant agent file audits inspect the customer root rather than the service
   assert.equal(dashboard.body.agentSurfaceInventory.totalAgentFiles, 1);
   assert.equal(dashboard.body.agentSurfaceInventory.highRiskCount, 0);
 });
+
+test('request dispatch clears inherited scope, binds the authenticated customer and meters once', async () => {
+  const { withDataScope } = require('../scripts/feedback-scope');
+  const inherited = await withDataScope({ kind: 'tenant', tenantId: 'construction-fixture', feedbackDir: dirs[0] }, () => startServer({ port: 0, host: '127.0.0.1' }));
+  const target = `http://127.0.0.1:${inherited.port}`;
+  const headers = { authorization: 'Bearer ' + credentials[1], 'content-type': 'application/json' };
+  try {
+    const before = billing.validateApiKey(credentials[1]).usageCount;
+    const stats = await fetch(target + '/v1/feedback/stats', { headers });
+    assert.equal(stats.status, 200);
+    assert.equal((await stats.json()).total, readRows(dirs[1], 'feedback-log.jsonl').length);
+    assert.equal(billing.validateApiKey(credentials[1]).usageCount, before + 1);
+    const checkout = await fetch(target + '/v1/billing/checkout', { method: 'POST', headers, body: JSON.stringify({ planId: 'pro', customerEmail: ['scope-control', 'example.invalid'].join('@') }) });
+    assert.equal(checkout.status, 200);
+    const session = await checkout.json();
+    assert.equal(session.localMode, true);
+    const stored = JSON.parse(fs.readFileSync(path.join(legacy, 'local-checkout-sessions.json'), 'utf8'));
+    assert.equal(Boolean((stored.sessions || stored)[session.sessionId]), true);
+    assert.equal(fs.existsSync(path.join(dirs[0], 'local-checkout-sessions.json')), false);
+    assert.equal(fs.existsSync(path.join(dirs[1], 'local-checkout-sessions.json')), false);
+    assert.equal(billing.validateApiKey(credentials[1]).usageCount, before + 1);
+  } finally {
+    inherited.server.closeAllConnections();
+    await new Promise((resolve) => inherited.server.close(resolve));
+  }
+});
