@@ -50,11 +50,7 @@ function normalizeTaskOutcome(input = {}, now = new Date()) {
     },
     failure: normalizeFailure(input.failure),
     escalation: normalizeEscalation(input.escalation),
-    efficiency: {
-      latencyMs: nonNegativeNumber(efficiency.latencyMs),
-      costUsd: nonNegativeNumber(efficiency.costUsd),
-      firstAttempt: efficiency.firstAttempt === true,
-    },
+    efficiency: normalizeEfficiency(efficiency, input, toolCalls),
     businessOutcome: normalizeBusinessOutcome(input.businessOutcome),
     traceId: optionalString(input.traceId),
     idempotencyKey: optionalString(input.idempotencyKey || input.taskId),
@@ -160,6 +156,11 @@ function recordTaskOutcome(input = {}, options = {}) {
   fs.mkdirSync(path.dirname(outcomesPath), { recursive: true });
   fs.appendFileSync(outcomesPath, `${JSON.stringify(receipt)}\n`, 'utf8');
   recordOutcomeTrace(receipt, options);
+  try {
+    if (receipt.status === 'completed' || receipt.status === 'failed' || receipt.status === 'escalated') {
+      require('./gates-engine').resetTaskBudgetUsage(receipt.taskId);
+    }
+  } catch { /* optional */ }
 
   // If task outcome succeeded and verified, verify any applied lessons
   try {
@@ -220,11 +221,25 @@ function getTaskOutcome(taskId, options = {}) {
 function calculateTaskOutcomeMetrics(outcomes = []) {
   const valid = outcomes.filter((entry) => entry && typeof entry === 'object');
   const toolCalls = valid.flatMap((entry) => entry.toolCalls || []);
-  const verifiedSuccesses = valid.filter((entry) => entry.status === 'completed' && entry.verification?.passed);
+  const finishedTasks = valid.filter((entry) => entry.status === 'completed');
+  const verifiedSuccesses = finishedTasks.filter((entry) => entry.verification?.passed);
   const escalationEligible = valid.filter((entry) => entry.escalation?.required);
   const failures = valid.filter((entry) => entry.status === 'failed');
   const latencies = valid.map((entry) => Number(entry.efficiency?.latencyMs)).filter(Number.isFinite);
   const totalCostUsd = valid.reduce((sum, entry) => sum + nonNegativeNumber(entry.efficiency?.costUsd), 0);
+  const finishedCostUsd = finishedTasks.reduce((sum, entry) => sum + nonNegativeNumber(entry.efficiency?.costUsd), 0);
+  const taskCallCount = (entry) => {
+    const explicit = optionalNonNegativeInteger(entry.efficiency?.toolCallCount);
+    if (explicit !== undefined) return explicit;
+    if (!Array.isArray(entry.toolCalls)) return 0;
+    return entry.toolCalls.reduce((sum, c) => sum + (optionalNonNegativeInteger(c?.attempts) || 1), 0);
+  };
+  const totalRecordedToolCalls = valid.reduce((sum, entry) => sum + taskCallCount(entry), 0);
+  const finishedToolCalls = finishedTasks.reduce((sum, entry) => sum + taskCallCount(entry), 0);
+  const tasksWithTokens = valid.filter((entry) => optionalNonNegativeInteger(entry.efficiency?.totalTokens) !== undefined);
+  const finishedWithTokens = finishedTasks.filter((entry) => optionalNonNegativeInteger(entry.efficiency?.totalTokens) !== undefined);
+  const totalTokens = tasksWithTokens.reduce((sum, entry) => sum + optionalNonNegativeInteger(entry.efficiency.totalTokens), 0);
+  const finishedTokens = finishedWithTokens.reduce((sum, entry) => sum + optionalNonNegativeInteger(entry.efficiency.totalTokens), 0);
   const businessOutcomes = aggregateBusinessOutcomes(valid);
   const nonWorking = valid.filter((entry) => !entry.working || entry.status === 'failed');
   let processFailureCount = 0;
@@ -292,7 +307,7 @@ function calculateTaskOutcomeMetrics(outcomes = []) {
       ),
     },
     tools: {
-      calls: toolCalls.length,
+      calls: Math.max(toolCalls.length, totalRecordedToolCalls),
       contractAccuracy: rate(toolCalls.filter((call) => call.contractValid).length, toolCalls.length),
       executionSuccessRate: rate(toolCalls.filter((call) => call.succeeded).length, toolCalls.length),
       duplicateSideEffectRate: rate(toolCalls.filter((call) => call.duplicateSideEffect).length, toolCalls.length),
@@ -314,9 +329,25 @@ function calculateTaskOutcomeMetrics(outcomes = []) {
       latencyP50Ms: percentile(latencies, 0.5),
       latencyP95Ms: percentile(latencies, 0.95),
       totalCostUsd: roundMoney(totalCostUsd),
+      finishedTaskCount: finishedTasks.length,
+      finishedCostUsd: roundMoney(finishedCostUsd),
+      costPerFinishedTaskUsd: finishedTasks.length ? roundMoney(finishedCostUsd / finishedTasks.length) : null,
       costPerVerifiedSuccessUsd: verifiedSuccesses.length
         ? roundMoney(totalCostUsd / verifiedSuccesses.length)
         : null,
+      avgToolCallsPerFinishedTask: finishedTasks.length ? roundMetric(finishedToolCalls / finishedTasks.length) : null,
+      totalTokens: tasksWithTokens.length ? totalTokens : null,
+      tokensReportedTasks: tasksWithTokens.length,
+      avgTokensPerFinishedTask: finishedWithTokens.length ? Math.round(finishedTokens / finishedWithTokens.length) : null,
+      recentFinishedTasks: finishedTasks.slice(-10).reverse().map((entry) => ({
+        taskId: entry.taskId,
+        goal: entry.goal,
+        recordedAt: entry.recordedAt,
+        toolCallCount: taskCallCount(entry),
+        totalTokens: optionalNonNegativeInteger(entry.efficiency?.totalTokens) ?? null,
+        costUsd: roundMoney(nonNegativeNumber(entry.efficiency?.costUsd)),
+        verified: Boolean(entry.verification?.passed),
+      })),
     },
     businessOutcomes,
     failureComposition,
@@ -440,8 +471,62 @@ function recordOutcomeTrace(receipt, options) {
   }
 }
 
+function optionalNonNegativeInteger(value) {
+  if (value === undefined || value === null || value === '' || typeof value === 'boolean') return undefined;
+  const n = Number(value);
+  return Number.isFinite(n) && n >= 0 ? Math.floor(n) : undefined;
+}
+
+function resolveUsageObject(source) {
+  if (isPlainObject(source.usage)) return source.usage;
+  if (isPlainObject(source.tokens)) return source.tokens;
+  return {};
+}
+
+function extractTokenCounts(source = {}) {
+  if (!source || typeof source !== 'object') return {};
+  const usage = resolveUsageObject(source);
+  const inputTokens = optionalNonNegativeInteger(source.inputTokens ?? source.input_tokens ?? usage.inputTokens ?? usage.input_tokens);
+  const outputTokens = optionalNonNegativeInteger(source.outputTokens ?? source.output_tokens ?? usage.outputTokens ?? usage.output_tokens);
+  const numericTokens = typeof source.tokens === 'number' ? source.tokens : undefined;
+  const directTotal = optionalNonNegativeInteger(source.totalTokens ?? source.total_tokens ?? numericTokens ?? usage.totalTokens ?? usage.total_tokens);
+  if (directTotal !== undefined) return { inputTokens, outputTokens, totalTokens: directTotal };
+  const hasAny = inputTokens !== undefined || outputTokens !== undefined;
+  const totalTokens = hasAny ? (inputTokens || 0) + (outputTokens || 0) : undefined;
+  return { inputTokens, outputTokens, totalTokens };
+}
+
+function normalizeEfficiency(efficiency = {}, input = {}, rawToolCalls = []) {
+  const normalizedCalls = Array.isArray(rawToolCalls) ? rawToolCalls.map((x) => normalizeToolCall(x)) : [];
+  const explicitCount = optionalNonNegativeInteger(efficiency.toolCallCount ?? input.toolCallCount);
+  const callAttempts = normalizedCalls.reduce((sum, c) => sum + (c.attempts || 1), 0);
+  const toolCallCount = explicitCount !== undefined ? explicitCount : callAttempts;
+  const effTokens = extractTokenCounts(efficiency);
+  const topTokens = extractTokenCounts(input);
+  const callsWithTokens = normalizedCalls.filter((c) => c.totalTokens !== undefined);
+  const summedInput = callsWithTokens.some((c) => c.inputTokens !== undefined)
+    ? callsWithTokens.reduce((s, c) => s + (c.inputTokens || 0), 0)
+    : undefined;
+  const summedOutput = callsWithTokens.some((c) => c.outputTokens !== undefined)
+    ? callsWithTokens.reduce((s, c) => s + (c.outputTokens || 0), 0)
+    : undefined;
+  const summedTotal = callsWithTokens.length
+    ? callsWithTokens.reduce((s, c) => s + (c.totalTokens || 0), 0)
+    : undefined;
+  return {
+    latencyMs: nonNegativeNumber(efficiency.latencyMs),
+    costUsd: nonNegativeNumber(efficiency.costUsd),
+    firstAttempt: efficiency.firstAttempt === true,
+    toolCallCount,
+    inputTokens: effTokens.inputTokens ?? topTokens.inputTokens ?? summedInput,
+    outputTokens: effTokens.outputTokens ?? topTokens.outputTokens ?? summedOutput,
+    totalTokens: effTokens.totalTokens ?? topTokens.totalTokens ?? summedTotal,
+  };
+}
+
 function normalizeToolCall(call = {}) {
   const sideEffect = call.sideEffect === true;
+  const tok = extractTokenCounts(call);
   return {
     name: cleanString(call.name),
     contractValid: call.contractValid === true,
@@ -450,6 +535,9 @@ function normalizeToolCall(call = {}) {
     attempts: Math.max(1, nonNegativeInteger(call.attempts || 1)),
     latencyMs: nonNegativeNumber(call.latencyMs),
     costUsd: nonNegativeNumber(call.costUsd),
+    inputTokens: tok.inputTokens,
+    outputTokens: tok.outputTokens,
+    totalTokens: tok.totalTokens,
     sideEffect,
     idempotencyKey: optionalString(call.idempotencyKey),
     duplicateSideEffect: call.duplicateSideEffect === true,

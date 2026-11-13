@@ -413,6 +413,13 @@
       <button class="btn-outline" style="padding:4px 10px;font-size:11px;border-radius:4px;" onclick="saveGeminiKey()">Save</button>
     </div>
   </div>
+  <div class="panel" id="taskCostCard" style="margin-bottom:20px;">
+    <div style="display:flex;justify-content:space-between;gap:12px;align-items:baseline;flex-wrap:wrap;margin-bottom:8px;">
+      <h3 style="margin:0;">💰 Cost per Finished Task</h3>
+      <span id="taskCostSummary" style="font-size:12px;color:var(--text-muted);font-family:var(--mono);">No finished tasks recorded yet</span>
+    </div>
+    <div id="taskCostList" class="inventory-tools"><div class="empty" style="padding:12px 0;">Record task outcomes to track tool calls, reported tokens, and cost per finished task.</div></div>
+  </div>
 
   <div class="panel" id="reviewDeltaPanel" style="margin-bottom:20px;">
     <div style="display:flex;justify-content:space-between;gap:16px;align-items:flex-start;flex-wrap:wrap;">
@@ -1858,6 +1865,7 @@ function renderDashboardData(data) {
 
   renderTeam(data.team || {}, data.analytics || {});
   renderAgentInventory(data.agentSurfaceInventory || {});
+  renderTaskCost(data.taskCost || {});
   renderBackgroundAgents(data.backgroundAgents || {});
   renderReviewDelta(data.reviewDelta || {});
   renderPredictive(data.predictive || {});
@@ -2213,6 +2221,30 @@ function renderPredictive(predictive) {
   document.getElementById('predictiveAnomalies').innerHTML = lines.length
     ? lines.join('')
     : '<div class="empty" style="padding:20px 0;">No predictive anomalies right now.</div>';
+}
+function renderTaskCost(tc) {
+  tc = tc || {};
+  var summaryEl = document.getElementById('taskCostSummary');
+  var listEl = document.getElementById('taskCostList');
+  if (!summaryEl || !listEl) return;
+  var count = Number(tc.finishedTaskCount) || 0;
+  if (!count) {
+    summaryEl.textContent = 'No finished tasks recorded yet';
+    listEl.innerHTML = '<div class="empty" style="padding:12px 0;">Record task outcomes to track tool calls, reported tokens, and cost per finished task.</div>';
+    return;
+  }
+  var avgCost = tc.costPerFinishedTaskUsd != null ? ('$' + Number(tc.costPerFinishedTaskUsd).toFixed(4) + '/task') : 'n/a';
+  var avgCalls = tc.avgToolCallsPerFinishedTask != null ? (String(tc.avgToolCallsPerFinishedTask) + ' avg calls') : '0 avg calls';
+  var avgTok = tc.avgTokensPerFinishedTask != null ? (String(tc.avgTokensPerFinishedTask) + ' avg tokens') : 'tokens unreported';
+  summaryEl.textContent = avgCost + ' · ' + count + ' finished · ' + avgCalls + ' · ' + avgTok;
+  var recent = Array.isArray(tc.recentFinishedTasks) ? tc.recentFinishedTasks : [];
+  listEl.innerHTML = recent.slice(0, 6).map(function(row) {
+    var tokLabel = row.totalTokens != null ? (String(row.totalTokens) + ' tokens') : 'tokens unreported';
+    var costLabel = '$' + Number(row.costUsd || 0).toFixed(4);
+    return '<div class="inventory-row"><div><div class="inventory-name">' + escHtml(row.taskId || 'task') +
+      '</div><div class="inventory-subtitle">' + escHtml((row.goal || '') + (row.goal ? ' · ' : '') + String(row.toolCallCount || 0) + ' calls · ' + tokLabel) +
+      '</div></div><span class="generated-badge">' + escHtml(costLabel) + '</span></div>';
+  }).join('');
 }
 
 function renderAgentInventory(inventory) {
@@ -2627,6 +2659,7 @@ function loadDemo() {
       { source: 'conflict-sentinel', count: 4 }
     ]
   });
+  renderTaskCost({finishedTaskCount:2,costPerFinishedTaskUsd:0.065,avgToolCallsPerFinishedTask:6,avgTokensPerFinishedTask:4200,recentFinishedTasks:[{taskId:'intake-gate-check',goal:'Validate conflict clearance',toolCallCount:5,totalTokens:3800,costUsd:0.05},{taskId:'privilege-audit',goal:'Verify matter boundary',toolCallCount:7,totalTokens:4600,costUsd:0.08}]});
   renderActionableRemediations([
     {
       title: 'add practice-area-specific UPL rules · litigation-intake',

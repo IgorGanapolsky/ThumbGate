@@ -309,6 +309,9 @@ function applyEnforcementPosture(result) {
   if (process.env.THUMBGATE_STRICT_KNOWLEDGE_CONFLICT === '1' && result.gate === 'knowledge-conflict-gate') {
     return { ...result, governanceMode: mode, alignmentLayer };
   }
+  if (result.gate === TASK_BUDGET_GATE_ID && result.enforceConfiguredBudget === true) {
+    return { ...result, governanceMode: mode, alignmentLayer };
+  }
   // Sidecar / warn-by-default: the gate still fired and is recorded; the action is allowed through
   // with the warning surfaced instead of hard-blocked, so legitimate work is never blocked.
   return {
@@ -442,6 +445,9 @@ function loadGatesConfig(configPath, harnessPath) {
       if (!config || !Array.isArray(config.gates)) {
         if (isPrimary) throw new Error('Invalid gates config: missing "gates" array');
         return;
+      }
+      if (config.taskBudget && typeof config.taskBudget === 'object' && !Array.isArray(config.taskBudget)) {
+        mergedConfig.taskBudget = { ...(mergedConfig.taskBudget || {}), ...config.taskBudget };
       }
       return config.gates;
     } catch (e) {
@@ -3958,6 +3964,8 @@ async function evaluateGatesAsyncInner(toolName, toolInput, configPath) {
     auditToFeedback(auditRecord);
     return brokerReceiptResultAsync;
   }
+  const taskBudgetAsync = runTaskBudgetEvaluation(toolName, toolInput, config, constraints);
+  if (taskBudgetAsync) return taskBudgetAsync;
 
   // Audit trail: record allow (no gate matched)
   recordAuditEvent({ toolName, toolInput, decision: 'allow', source: 'gates-engine' });
@@ -4278,6 +4286,9 @@ function evaluateGatesInner(toolName, toolInput, configPath) {
     auditToFeedback(auditRecord);
     return brokerReceiptResult;
   }
+
+  const taskBudgetSync = runTaskBudgetEvaluation(toolName, toolInput, config, constraints);
+  if (taskBudgetSync) return taskBudgetSync;
 
   // Audit trail: record allow
   recordAuditEvent({ toolName, toolInput, decision: 'allow', source: 'gates-engine' });
@@ -5477,7 +5488,7 @@ async function runAsync(rawInput) {
   if (hardFloor) return formatOutput(hardFloor);
 
   const toolName = input.tool_name || '';
-  const toolInput = input.tool_input || {};
+  const toolInput = attachHookTaskEnvelope(input.tool_input, input);
   const safeSecretStorageWrite = isSafeSecretStorageWrite(toolName, toolInput, process.cwd());
 
   const sequenceGuard = evaluateSequenceState(toolName, toolInput);
@@ -5526,7 +5537,7 @@ function run(rawInput) {
   if (hardFloor) return formatOutput(hardFloor);
 
   const toolName = input.tool_name || '';
-  const toolInput = input.tool_input || {};
+  const toolInput = attachHookTaskEnvelope(input.tool_input, input);
   const safeSecretStorageWrite = isSafeSecretStorageWrite(toolName, toolInput, process.cwd());
 
   const sequenceGuard = evaluateSequenceState(toolName, toolInput);
@@ -6035,8 +6046,273 @@ function evaluateAgentIdentityLifecycleGate(toolName, toolInput) {
   }
 }
 
+const TASK_BUDGET_GATE_ID = 'task-cost-budget';
+const DEFAULT_PRESET_WARN_CALLS = 50;
+const DEFAULT_PRESET_MAX_CALLS = 75;
+const DEFAULT_PRESET_WARN_TOKENS = 100000;
+const DEFAULT_PRESET_MAX_TOKENS = 150000;
+
+function parsePositiveInt(val) {
+  if (val === undefined || val === null || val === '') return null;
+  const n = Number(val);
+  return Number.isFinite(n) && n > 0 ? Math.floor(n) : null;
+}
+
+const TASK_BUDGET_TTL_MS = 2 * 60 * 60 * 1000;
+
+function attachHookTaskEnvelope(rawToolInput, hookInput) {
+  const base = rawToolInput && typeof rawToolInput === 'object' ? rawToolInput : {};
+  if (!hookInput || typeof hookInput !== 'object') return base;
+  const sessionId = hookInput.session_id || hookInput.sessionId;
+  const taskId = hookInput.task_id || hookInput.taskId;
+  const usage = hookInput.usage;
+  if (!sessionId && !taskId && !usage) return base;
+  const enriched = { ...base };
+  if (sessionId && !enriched.sessionId && !enriched.session_id) enriched.session_id = sessionId;
+  if (taskId && !enriched.taskId && !enriched.task_id) enriched.task_id = taskId;
+  if (usage && !enriched.usage) enriched.usage = usage;
+  return enriched;
+}
+
+function pickTokenInt(val) {
+  if (val === undefined || val === null || val === '' || typeof val === 'boolean') return null;
+  const n = Number(val);
+  return Number.isFinite(n) && n >= 0 ? Math.floor(n) : null;
+}
+
+function resolveInputUsageMap(inp) {
+  if (inp.usage && typeof inp.usage === 'object') return inp.usage;
+  if (inp.tokens && typeof inp.tokens === 'object') return inp.tokens;
+  return {};
+}
+
+function extractToolInputTokens(toolInput) {
+  const inp = toolInput && typeof toolInput === 'object' ? toolInput : {};
+  const usage = resolveInputUsageMap(inp);
+  const inTok = pickTokenInt(inp.inputTokens ?? inp.input_tokens ?? usage.inputTokens ?? usage.input_tokens);
+  const outTok = pickTokenInt(inp.outputTokens ?? inp.output_tokens ?? usage.outputTokens ?? usage.output_tokens);
+  const numericTok = typeof inp.tokens === 'number' ? inp.tokens : undefined;
+  const rawTot = pickTokenInt(inp.totalTokens ?? inp.total_tokens ?? numericTok ?? usage.totalTokens ?? usage.total_tokens);
+  if (rawTot !== null) return { inputTokens: inTok, outputTokens: outTok, totalTokens: rawTot };
+  const hasParts = inTok !== null || outTok !== null;
+  const total = hasParts ? (inTok || 0) + (outTok || 0) : null;
+  return { inputTokens: inTok, outputTokens: outTok, totalTokens: total };
+}
+
+function resolveTaskBudgetId(toolInput, constraints) {
+  const inp = toolInput && typeof toolInput === 'object' ? toolInput : {};
+  const candidates = [
+    inp.taskId,
+    inp.task_id,
+    inp._taskId,
+    constraints?.taskScope?.taskId,
+    process.env.THUMBGATE_TASK_ID,
+    process.env.CLAUDE_TASK_ID,
+    inp.sessionId,
+    inp.session_id,
+    process.env.CLAUDE_SESSION_ID,
+  ];
+  for (const c of candidates) {
+    const s = typeof c === 'string' ? c.trim() : '';
+    if (s && s !== '__proto__' && s !== 'constructor' && s !== 'prototype') return s;
+  }
+  return 'default-task';
+}
+
+function resolveDimensionThresholds(envWarn, cfgWarn, envMax, cfgMax, enabledFlag, presetWarn, presetMax) {
+  const explicitMax = envMax ?? cfgMax;
+  const explicitWarn = envWarn ?? cfgWarn;
+  const hasExplicit = explicitMax !== null || explicitWarn !== null;
+  const max = explicitMax ?? (enabledFlag ? presetMax : null);
+  let warn = explicitWarn;
+  if (warn === null && !hasExplicit && enabledFlag) warn = presetWarn;
+  return { warn, max, hasExplicit };
+}
+
+function isExplicitlyWarnOnly(merged, scopeCfg) {
+  const envAction = String(process.env.THUMBGATE_TASK_BUDGET_ACTION || '').trim().toLowerCase();
+  if (envAction === 'warn' || envAction === 'warn-only') return true;
+  if (envAction === 'block' || envAction === 'warn-then-block') return false;
+  const scopedAction = String(scopeCfg.action || merged.action || '').trim().toLowerCase();
+  if (scopedAction === 'warn-only') return true;
+  if (scopedAction === 'warn' && (scopeCfg.action === 'warn' || merged.maxToolCalls !== undefined || merged.maxTokens !== undefined)) {
+    return true;
+  }
+  return false;
+}
+
+function resolveTaskBudgetPolicy(config = {}, constraints = {}) {
+  const cfg = typeof config?.taskBudget === 'object' && config.taskBudget ? config.taskBudget : {};
+  const scopeCfg = typeof constraints?.taskBudget === 'object' && constraints.taskBudget ? constraints.taskBudget : {};
+  const merged = { ...cfg, ...scopeCfg };
+  const envEnabled = process.env.THUMBGATE_TASK_BUDGET === '1';
+  if (!envEnabled && (scopeCfg.enabled === false || (scopeCfg.enabled === undefined && cfg.enabled === false && !cfg.maxToolCalls && !cfg.maxTokens && !scopeCfg.maxToolCalls && !scopeCfg.maxTokens && !process.env.THUMBGATE_TASK_MAX_CALLS && !process.env.THUMBGATE_TASK_MAX_TOKENS && !process.env.THUMBGATE_TASK_WARN_CALLS && !process.env.THUMBGATE_TASK_WARN_TOKENS))) {
+    return { enabled: false };
+  }
+  const enabledFlag = envEnabled || merged.enabled === true;
+  const calls = resolveDimensionThresholds(
+    parsePositiveInt(process.env.THUMBGATE_TASK_WARN_CALLS),
+    parsePositiveInt(merged.warnToolCalls),
+    parsePositiveInt(process.env.THUMBGATE_TASK_MAX_CALLS),
+    parsePositiveInt(merged.maxToolCalls),
+    enabledFlag,
+    DEFAULT_PRESET_WARN_CALLS,
+    DEFAULT_PRESET_MAX_CALLS,
+  );
+  const tokens = resolveDimensionThresholds(
+    parsePositiveInt(process.env.THUMBGATE_TASK_WARN_TOKENS),
+    parsePositiveInt(merged.warnTokens),
+    parsePositiveInt(process.env.THUMBGATE_TASK_MAX_TOKENS),
+    parsePositiveInt(merged.maxTokens),
+    enabledFlag,
+    DEFAULT_PRESET_WARN_TOKENS,
+    DEFAULT_PRESET_MAX_TOKENS,
+  );
+  if (!calls.hasExplicit && !tokens.hasExplicit && !enabledFlag) return { enabled: false };
+  const forceWarn = isExplicitlyWarnOnly(merged, scopeCfg);
+  const forceBlock = /^(?:block|warn-then-block)$/i.test(String(process.env.THUMBGATE_TASK_BUDGET_ACTION || scopeCfg.action || ''));
+  return {
+    enabled: true,
+    warnToolCalls: calls.warn,
+    maxToolCalls: calls.max,
+    callsCanBlock: !forceWarn && (calls.hasExplicit || forceBlock),
+    warnTokens: tokens.warn,
+    maxTokens: tokens.max,
+    tokensCanBlock: !forceWarn && (tokens.hasExplicit || forceBlock),
+  };
+}
+
+function isFreshBudgetEntry(prev) {
+  if (!prev || typeof prev !== 'object') return false;
+  const ts = Date.parse(prev.updatedAt || '');
+  return !Number.isFinite(ts) || (Date.now() - ts) <= TASK_BUDGET_TTL_MS;
+}
+
+function recordTaskToolTelemetry(toolInput, constraints) {
+  const taskId = resolveTaskBudgetId(toolInput, constraints);
+  const tok = extractToolInputTokens(toolInput);
+  const state = loadState();
+  if (!state.taskBudgets || typeof state.taskBudgets !== 'object' || Array.isArray(state.taskBudgets)) {
+    state.taskBudgets = {};
+  }
+  const existing = state.taskBudgets[taskId];
+  const prev = isFreshBudgetEntry(existing)
+    ? existing
+    : { taskId, toolCalls: 0, inputTokens: 0, outputTokens: 0, totalTokens: 0, tokensReported: false, warned: false };
+  const entry = {
+    ...prev,
+    taskId,
+    toolCalls: (Number(prev.toolCalls) || 0) + 1,
+    inputTokens: (Number(prev.inputTokens) || 0) + (tok.inputTokens || 0),
+    outputTokens: (Number(prev.outputTokens) || 0) + (tok.outputTokens || 0),
+    totalTokens: (Number(prev.totalTokens) || 0) + (tok.totalTokens || 0),
+    tokensReported: Boolean(prev.tokensReported || tok.totalTokens !== null),
+    updatedAt: new Date().toISOString(),
+  };
+  state.taskBudgets[taskId] = entry;
+  const keys = Object.keys(state.taskBudgets);
+  if (keys.length > 50) {
+    keys.sort((a, b) => String(state.taskBudgets[a].updatedAt || '').localeCompare(String(state.taskBudgets[b].updatedAt || '')));
+    for (const k of keys.slice(0, keys.length - 50)) delete state.taskBudgets[k];
+  }
+  saveState(state);
+  return { state, entry };
+}
+
+function getTaskBudgetUsage(taskId) {
+  const state = loadState();
+  const map = typeof state?.taskBudgets === 'object' && state.taskBudgets ? state.taskBudgets : {};
+  return taskId ? (map[taskId] || null) : map;
+}
+
+function resetTaskBudgetUsage(taskId) {
+  const state = loadState();
+  if (!state?.taskBudgets || typeof state.taskBudgets !== 'object') return;
+  if (taskId) delete state.taskBudgets[taskId];
+  else state.taskBudgets = {};
+  saveState(state);
+}
+
+function hasTaskTelemetrySignal(policy, toolInput, constraints) {
+  if (policy.enabled || constraints?.taskScope?.taskId || process.env.THUMBGATE_TASK_ID) return true;
+  if (!toolInput || typeof toolInput !== 'object') return false;
+  return Boolean(toolInput.taskId || toolInput.task_id || toolInput.totalTokens !== undefined || toolInput.tokens !== undefined || toolInput.usage);
+}
+
+function evaluateTaskBudgetBreach(policy, entry) {
+  const callWarn = policy.warnToolCalls !== null && entry.toolCalls >= policy.warnToolCalls;
+  const callMax = policy.maxToolCalls !== null && entry.toolCalls > policy.maxToolCalls;
+  const tokWarn = entry.tokensReported && policy.warnTokens !== null && entry.totalTokens >= policy.warnTokens;
+  const tokMax = entry.tokensReported && policy.maxTokens !== null && entry.totalTokens > policy.maxTokens;
+  if (!callWarn && !callMax && !tokWarn && !tokMax) return null;
+  const reasons = [];
+  if (callMax || callWarn) reasons.push(`tool calls ${entry.toolCalls}/${policy.maxToolCalls ?? policy.warnToolCalls}`);
+  if (tokMax || tokWarn) reasons.push(`tokens ${entry.totalTokens}/${policy.maxTokens ?? policy.warnTokens}`);
+  const canHardBlock = (callMax && policy.callsCanBlock) || (tokMax && policy.tokensCanBlock);
+  return { summary: reasons.join(', '), canHardBlock };
+}
+
+function evaluateTaskBudgetGate(toolName, toolInput, config = {}, constraints = {}) {
+  if (process.env.THUMBGATE_SANDBOX_EVAL === '1') return null;
+  if (isRemedyToolName(toolName) || isConditionSatisfied(TASK_BUDGET_GATE_ID)) return null;
+  if (toolInput && typeof toolInput === 'object' && toolInput.originalCommand && toolInput.command !== toolInput.originalCommand) return null;
+  const policy = resolveTaskBudgetPolicy(config, constraints);
+  if (!hasTaskTelemetrySignal(policy, toolInput, constraints)) return null;
+  const { state, entry } = recordTaskToolTelemetry(toolInput, constraints);
+  if (!policy.enabled) return null;
+  const breach = evaluateTaskBudgetBreach(policy, entry);
+  if (!breach) return null;
+  if (!breach.canHardBlock || !entry.warned) {
+    entry.warned = true;
+    state.taskBudgets[entry.taskId] = entry;
+    saveState(state);
+    return {
+      decision: 'warn',
+      gate: TASK_BUDGET_GATE_ID,
+      action: 'warn',
+      severity: 'medium',
+      taskId: entry.taskId,
+      toolCalls: entry.toolCalls,
+      totalTokens: entry.tokensReported ? entry.totalTokens : null,
+      message: `Task "${entry.taskId}" reached budget warning threshold (${breach.summary}). Wrap up and verify to avoid runaway cost exhaustion.`,
+    };
+  }
+  return {
+    decision: 'deny',
+    gate: TASK_BUDGET_GATE_ID,
+    action: 'block',
+    enforceConfiguredBudget: true,
+    severity: 'high',
+    taskId: entry.taskId,
+    toolCalls: entry.toolCalls,
+    totalTokens: entry.tokensReported ? entry.totalTokens : null,
+    message: `Task "${entry.taskId}" exceeded configured task budget after prior warning (${breach.summary}). Halt runaway loop and split or finish the task.`,
+  };
+}
+
+function runTaskBudgetEvaluation(toolName, toolInput, config, constraints) {
+  const res = evaluateTaskBudgetGate(toolName, toolInput, config, constraints);
+  if (!res) return null;
+  recordStat(res.gate, res.decision === 'deny' ? 'block' : 'warn', null, { toolName, toolInput });
+  const auditRecord = recordAuditEvent({
+    toolName,
+    toolInput,
+    decision: res.decision,
+    gateId: res.gate,
+    message: res.message,
+    severity: res.severity,
+    source: 'gates-engine',
+  });
+  if (res.decision === 'deny') auditToFeedback(auditRecord);
+  return res;
+}
+
 module.exports = {
   evaluateAgentIdentityLifecycleGate,
+  evaluateTaskBudgetGate,
+  getTaskBudgetUsage,
+  resetTaskBudgetUsage,
+  TASK_BUDGET_GATE_ID,
   loadGatesConfig,
   loadState,
   saveState,

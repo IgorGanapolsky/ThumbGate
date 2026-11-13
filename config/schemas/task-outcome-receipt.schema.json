@@ -121,6 +121,18 @@
             "type": "number",
             "minimum": 0
           },
+          "inputTokens": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "outputTokens": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "totalTokens": {
+            "type": "integer",
+            "minimum": 0
+          },
           "sideEffect": {
             "type": "boolean"
           },
@@ -222,6 +234,22 @@
         },
         "firstAttempt": {
           "type": "boolean"
+        },
+        "toolCallCount": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "inputTokens": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "outputTokens": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "totalTokens": {
+          "type": "integer",
+          "minimum": 0
         }
       }
     },

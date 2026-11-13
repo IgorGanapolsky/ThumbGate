@@ -2069,6 +2069,12 @@ function generateDashboard(feedbackDir, options = {}) {
       blockedCalls: Number(gateStats.blocked) || 0,
     });
   } catch { /* module missing — skip */ }
+  let taskCost = null;
+  try {
+    const { readTaskOutcomes, calculateTaskOutcomeMetrics } = require('./task-outcomes');
+    const taskMetrics = calculateTaskOutcomeMetrics(readTaskOutcomes({ feedbackDir }));
+    taskCost = taskMetrics.efficiency;
+  } catch { /* optional */ }
 
   for (const day of feedbackTimeSeries.days) {
     day.lessons = lessonPipeline.lessonsByDay.get(day.dayKey) || 0;
@@ -2138,6 +2144,7 @@ function generateDashboard(feedbackDir, options = {}) {
     reviewDelta,
     feedbackTimeSeries,
     tokenSavings,
+    taskCost,
     todayOverview,
     lessonPipeline: {
       stages: lessonPipeline.stages,
@@ -2169,6 +2176,7 @@ function printDashboard(data) {
     team,
     templateLibrary,
     predictive,
+    taskCost,
   } = data;
 
   const trendArrow = approval.trendDirection === 'improving' ? '\u2191'
@@ -2249,6 +2257,10 @@ function printDashboard(data) {
   console.log('⚙️ Efficiency');
   console.log(`  Context Packs    : ${analytics.efficiency.contextPackRequests}`);
   console.log(`  Cache Hits       : ${analytics.efficiency.semanticCacheHits}`);
+  if (taskCost && taskCost.finishedTaskCount > 0) {
+    const tokLabel = taskCost.avgTokensPerFinishedTask != null ? `, ${taskCost.avgTokensPerFinishedTask} avg tokens` : '';
+    console.log(`  Cost / Task      : $${Number(taskCost.costPerFinishedTaskUsd || 0).toFixed(4)} (${taskCost.finishedTaskCount} finished, ${taskCost.avgToolCallsPerFinishedTask || 0} avg calls${tokLabel})`);
+  }
   console.log(`  Hit Rate         : ${analytics.efficiency.semanticCacheHitRate}`);
   console.log(`  Avg Similarity   : ${analytics.efficiency.averageSemanticSimilarity}`);
   console.log(`  Tokens Reused    : ${analytics.efficiency.estimatedContextTokensReused} (heuristic)`);

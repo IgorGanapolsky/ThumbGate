@@ -1,5 +1,13 @@
 {
   "version": 1,
+  "taskBudget": {
+    "enabled": false,
+    "action": "warn",
+    "warnToolCalls": null,
+    "maxToolCalls": null,
+    "warnTokens": null,
+    "maxTokens": null
+  },
   "gates": [
     {
       "id": "local-only-git-writes",
