@@ -204,6 +204,7 @@
     "scripts/dashboard.js",
     "scripts/decision-journal.js",
     "scripts/deepseek-v4-runtime-guardrails.js",
+    "scripts/migrate-project-scope.js",
     "scripts/nvidia-specdecode-al-doctor.js",
     "scripts/package-manager-honesty-doctor.js",
     "scripts/openui-catalog-compose-honesty.js",
@@ -561,6 +562,7 @@
     "public/admin.html"
   ],
   "scripts": {
+    "migrate:project-scope": "node scripts/migrate-project-scope.js",
     "canary:snapshot": "node scripts/gate-decision-canary.js --snapshot",
     "canary:check": "node scripts/gate-decision-canary.js --check",
     "diode:vulnerability": "node scripts/vulnerability-pre-action-diode.js",
@@ -1395,7 +1397,7 @@
     "test:verified-lessons": "node --test tests/verified-lessons.test.js",
     "test:egm-goldfish-packet": "node --test tests/egm-goldfish-packet.test.js",
     "test:hosted-tenant-isolation": "node --test tests/feedback-scope.test.js tests/hosted-tenant-isolation.test.js",
-    "test:project-scope": "node --test tests/project-identity.test.js tests/project-identity-perf.test.js tests/project-catalog-evidence.test.js",
+    "test:project-scope": "node --test tests/project-identity.test.js tests/project-identity-perf.test.js tests/project-catalog-evidence.test.js tests/project-attribution-evidence.test.js tests/project-migration.test.js",
     "test:owner-admin": "node --test tests/owner-admin.test.js"
   },
   "keywords": [
