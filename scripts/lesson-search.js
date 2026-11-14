@@ -510,7 +510,8 @@ function searchLessons(query = '', options = {}) {
   const allMemories = require('./project-catalog').readProjectRows(FEEDBACK_DIR, 'memory-log.jsonl', options);
   const memories = selectRetrievalMemories(allMemories, options);
   const feedbackEntries = require('./project-catalog').readProjectRows(FEEDBACK_DIR, 'feedback-log.jsonl', options);
-  const feedbackById = new Map(feedbackEntries.map((entry) => [entry.id, entry]));
+  const feedbackKey = (projectKey, id) => `${projectKey}\0${id}`;
+  const feedbackById = new Map(feedbackEntries.map((entry) => [feedbackKey(entry.projectKey, entry.id), entry]));
   const parsedLimit = Number(options.limit || 10);
   const limit = Number.isFinite(parsedLimit) && parsedLimit > 0 ? parsedLimit : 10;
   const category = options.category ? String(options.category).trim() : '';
@@ -522,7 +523,7 @@ function searchLessons(query = '', options = {}) {
       .filter(Boolean);
 
   let results = memories
-    .map((memory) => buildLessonResult(memory, feedbackById.get(memory.sourceFeedbackId), {
+    .map((memory) => buildLessonResult(memory, feedbackById.get(feedbackKey(memory.projectKey, memory.sourceFeedbackId)), {
       query,
       projectKey: options.projectKey,
       ruleLimit: options.ruleLimit,

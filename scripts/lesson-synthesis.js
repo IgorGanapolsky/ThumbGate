@@ -2,7 +2,7 @@
 const fs = require('fs');
 const path = require('path');
 const { projectForRecord, matchesProject } = require('./project-identity');
-const { readProjectRows, accountAttribution, attributionForFile } = require('./project-catalog');
+const { iterateRows, accountAttribution, attributionForFile } = require('./project-catalog');
 const { canonicalHash, findCanonicalDuplicate } = require('./lesson-canonical');
 
 const SIMILARITY_THRESHOLD = 0.6;
@@ -50,8 +50,19 @@ function appendJSONLLocal(filePath, record) {
  * The canonical pass runs first because it's O(N) with constant work per
  * entry and rejects trivial duplicates before we pay the Jaccard price.
  */
+function readLessonsInFile(memoryLogPath, projectKey) {
+  if (!fs.existsSync(memoryLogPath) || fs.lstatSync(memoryLogPath).isSymbolicLink()) return [];
+  const attribution = accountAttribution(path.dirname(memoryLogPath));
+  const rows = [];
+  for (const record of iterateRows(memoryLogPath)) {
+    const row = { ...record, ...projectForRecord(record, attributionForFile(attribution, memoryLogPath)) };
+    if (row.projectKey === projectKey) rows.push(row);
+  }
+  return rows;
+}
+
 function findSimilarLesson(memoryLogPath, newRecord) {
-  const existing = readProjectRows(path.dirname(memoryLogPath), path.basename(memoryLogPath), { projectKey: projectForRecord(newRecord).projectKey }).slice(-200);
+  const existing = readLessonsInFile(memoryLogPath, projectForRecord(newRecord).projectKey).slice(-200);
 
   // Layer 1: canonical-hash exact match (normalization-invariant).
   const canonicalMatch = findCanonicalDuplicate(existing, newRecord);

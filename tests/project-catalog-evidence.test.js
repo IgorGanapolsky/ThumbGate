@@ -101,3 +101,24 @@ test('provenanceReason and localRuntimeEvidenceOptions gate trust', () => {
   const trusted = localRuntimeEvidenceOptions({ feedbackDir: '/a', sourceRoot: '/a', homeDir: '/h' });
   assert.equal(trusted.localPathEvidence.trustedLocalSource, true);
 });
+
+test('searchLessons joins feedback to lessons within the same project only', () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'tg-join-'));
+  const row = (extra) => JSON.stringify({ timestamp: '2026-01-01T00:00:00Z', ...extra }) + '\n';
+  fs.writeFileSync(path.join(root, 'memory-log.jsonl'), row({ id: 'm1', remoteUrl: 'https://github.com/acme/beta.git', sourceFeedbackId: 'f1', title: 'beta lesson', content: 'beta content' }));
+  fs.writeFileSync(path.join(root, 'feedback-log.jsonl'), row({ id: 'f1', remoteUrl: 'https://github.com/acme/beta.git', context: 'beta context' }) + row({ id: 'f1', remoteUrl: 'https://github.com/acme/alpha.git', context: 'alpha only context' }));
+  const { searchLessons } = require('../scripts/lesson-search');
+  const text = JSON.stringify(searchLessons('beta', { feedbackDir: root }).results);
+  assert.ok(text.includes('beta context'));
+  assert.ok(!text.includes('alpha only context'));
+});
+
+test('findSimilarLesson only dedupes against the file being updated', () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'tg-dedupe-'));
+  fs.mkdirSync(path.join(root, 'projects', 'alpha'), { recursive: true });
+  const lesson = { id: 'x1', projectKey: 'alpha', projectName: 'alpha', title: 'never force push main', content: 'never force push main branch' };
+  fs.writeFileSync(path.join(root, 'projects', 'alpha', 'memory-log.jsonl'), JSON.stringify(lesson) + '\n');
+  fs.writeFileSync(path.join(root, 'memory-log.jsonl'), '');
+  const { findSimilarLesson } = require('../scripts/lesson-synthesis');
+  assert.equal(findSimilarLesson(path.join(root, 'memory-log.jsonl'), { ...lesson, id: 'x2' }), null);
+});
