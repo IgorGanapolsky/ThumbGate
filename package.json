@@ -247,6 +247,7 @@
     "scripts/gate-stats.js",
     "scripts/gate-templates.js",
     "scripts/gates-engine.js",
+    "scripts/session-context-dedupe.js",
     "scripts/gemini-embedding-policy.js",
     "scripts/generate-case-study-outreach.js",
     "scripts/generate-eval-scorecard.js",
