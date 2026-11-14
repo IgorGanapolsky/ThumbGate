@@ -518,7 +518,7 @@ test('integrated owner reads both tenants while customer requests and inherited 
     const accounts = results[2].data.records.filter((row) => customers.includes(row.accountId));
     assert.deepEqual(accounts.map((row) => row.partitions[0].feedback.total), [1, 2]);
     assert.equal(results[2].data.unattributedLegacy.feedback.total, 5);
-    assert.equal((await customerRead(0, '?project=' + encodeURIComponent(root))).total, 1);
+    assert.equal((await customerRead(0, '?projectDir=' + encodeURIComponent(root))).total, 1);
     assert.equal((await request('/v1/admin/data?project=' + encodeURIComponent(root))).status, 400);
     assert.equal((await request('/v1/admin/data', { token: null, headers: { authorization: 'Bearer ' + keys[0] } })).status, 404);
     const handler = server.listeners('request')[0];

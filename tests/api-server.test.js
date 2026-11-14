@@ -2791,7 +2791,7 @@ test('project-scoped endpoints honor explicit project selection for stats, lesso
       timestamp: '2026-04-08T09:05:01.000Z',
     })}\n`);
 
-    const projectQuery = `project=${encodeURIComponent(projectDir)}`;
+    const projectQuery = `projectDir=${encodeURIComponent(projectDir)}`;
 
     const statsRes = await fetch(apiUrl(`/v1/feedback/stats?${projectQuery}`), { headers: authHeader });
     assert.equal(statsRes.status, 200);
@@ -2827,7 +2827,7 @@ test('project-scoped endpoints honor explicit project selection for stats, lesso
 test('project-scoped overrides are rejected for non-loopback requests', async () => {
   const projectDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-project-remote-reject-'));
   try {
-    const projectQuery = `project=${encodeURIComponent(projectDir)}`;
+    const projectQuery = `projectDir=${encodeURIComponent(projectDir)}`;
     const res = await fetch(apiUrl(`/v1/feedback/stats?${projectQuery}`), {
       headers: {
         ...authHeader,
@@ -3681,8 +3681,11 @@ test('private-core API endpoints return 503 when hosted/private modules are abse
       headers: { ...authHeader, 'content-type': 'application/json' },
       body: JSON.stringify({ inline: false }),
     });
-    assert.equal(exportRes.status, 503);
-    assert.match(await exportRes.text(), /private core|hosted runtime/i);
+    // Project-safe JSONL export now belongs to the public read model and has no private synthesis dependency.
+    assert.equal(exportRes.status, 200);
+    const exported = await exportRes.json();
+    assert.equal(typeof exported.exported, 'number');
+    assert.equal(exported.bundle, undefined);
 
     const checkoutRes = await fetch(apiUrl('/v1/billing/checkout'), {
       method: 'POST',
@@ -4696,7 +4699,7 @@ test('dashboard chat endpoint degrades cleanly when Gemini is not configured', a
     // project-scoped key reader in the chat handler doesn't accidentally pick up a
     // real key from the repo cwd .env. This preserves the "no key configured" test.
     const testProject = tmpFeedbackDir;
-    const res = await fetch(apiUrl(`/v1/chat?project=${encodeURIComponent(testProject)}`), {
+    const res = await fetch(apiUrl(`/v1/chat?projectDir=${encodeURIComponent(testProject)}`), {
       method: 'POST',
       headers: { ...authHeader, 'x-thumbgate-project-dir': testProject },
       body: JSON.stringify({ question: 'What dashboard mistakes should we avoid?' }),
@@ -5044,7 +5047,7 @@ test('dashboard /v1/chat answers data questions LOCALLY with no cloud/LLM/API ke
 
   try {
     // Factual question → deterministic local answer from this install's own data.
-    const res = await fetch(apiUrl(`/v1/chat?project=${encodeURIComponent(tmpFeedbackDir)}`), {
+    const res = await fetch(apiUrl(`/v1/chat?projectDir=${encodeURIComponent(tmpFeedbackDir)}`), {
       method: 'POST',
       headers: { ...authHeader, 'x-thumbgate-project-dir': tmpFeedbackDir },
       body: JSON.stringify({ question: 'how many mistakes were blocked today?' }),
@@ -5058,7 +5061,7 @@ test('dashboard /v1/chat answers data questions LOCALLY with no cloud/LLM/API ke
     assert.match(body.answer, /feedback|mistake|negative|positive/i);
 
     // Intent-aware: a GATES question must reach the gates topic with a clean count.
-    const gatesQ = await fetch(apiUrl(`/v1/chat?project=${encodeURIComponent(tmpFeedbackDir)}`), {
+    const gatesQ = await fetch(apiUrl(`/v1/chat?projectDir=${encodeURIComponent(tmpFeedbackDir)}`), {
       method: 'POST',
       headers: { ...authHeader, 'x-thumbgate-project-dir': tmpFeedbackDir },
       body: JSON.stringify({ question: 'how many gates are active?' }),
@@ -5071,7 +5074,7 @@ test('dashboard /v1/chat answers data questions LOCALLY with no cloud/LLM/API ke
 
     // Open-ended question with no model configured must STILL return a local
     // answer, never a hard "no_api_key" failure and never a forced cloud call.
-    const open = await fetch(apiUrl(`/v1/chat?project=${encodeURIComponent(tmpFeedbackDir)}`), {
+    const open = await fetch(apiUrl(`/v1/chat?projectDir=${encodeURIComponent(tmpFeedbackDir)}`), {
       method: 'POST',
       headers: { ...authHeader, 'x-thumbgate-project-dir': tmpFeedbackDir },
       body: JSON.stringify({ question: 'what is our philosophy of work?' }),
@@ -5101,7 +5104,7 @@ test('dashboard /v1/chat is intent-aware: "what" returns a LIST, "how many" retu
   fs.mkdirSync(path.join(tmpFeedbackDir, '.thumbgate'), { recursive: true });
   fs.appendFileSync(path.join(tmpFeedbackDir, '.thumbgate', 'feedback-log.jsonl'), content);
 
-  const listRes = await fetch(apiUrl(`/v1/chat?project=${encodeURIComponent(tmpFeedbackDir)}`), {
+  const listRes = await fetch(apiUrl(`/v1/chat?projectDir=${encodeURIComponent(tmpFeedbackDir)}`), {
     method: 'POST',
     headers: { ...authHeader, 'x-thumbgate-project-dir': tmpFeedbackDir },
     body: JSON.stringify({ question: 'what mistakes were blocked today?' }),
@@ -5113,7 +5116,7 @@ test('dashboard /v1/chat is intent-aware: "what" returns a LIST, "how many" retu
   assert.match(listBody.answer, /recent mistakes/i);
   assert.match(listBody.answer, /•/);
 
-  const countRes = await fetch(apiUrl(`/v1/chat?project=${encodeURIComponent(tmpFeedbackDir)}`), {
+  const countRes = await fetch(apiUrl(`/v1/chat?projectDir=${encodeURIComponent(tmpFeedbackDir)}`), {
     method: 'POST',
     headers: { ...authHeader, 'x-thumbgate-project-dir': tmpFeedbackDir },
     body: JSON.stringify({ question: 'how many mistakes today?' }),

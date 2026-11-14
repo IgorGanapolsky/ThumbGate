@@ -648,7 +648,8 @@ describe('bin/cli.js', () => {
       assert.match(result.stdout, new RegExp(`http://127\\.0\\.0\\.1:${port}/dashboard\\?project=`));
       assert.ok(pidMatch, 'dashboard --open should report the detached server pid when it starts one');
 
-      const dashboard = await fetchLocal(port, `/dashboard?project=${encodeURIComponent(projectDir)}`);
+      const dashboardPath = result.stdout.match(/http:\/\/127\.0\.0\.1:\d+(\/dashboard\?project=\S+)/)[1];
+      const dashboard = await fetchLocal(port, dashboardPath);
       assert.equal(dashboard.status, 200, 'started dashboard should serve /dashboard');
       assert.match(dashboard.body, /ThumbGate Dashboard/, 'served page should be the ThumbGate dashboard');
     } finally {
