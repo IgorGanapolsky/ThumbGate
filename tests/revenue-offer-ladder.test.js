@@ -44,7 +44,7 @@ test('managed-gate fit mechanics prevent an open-ended upsell', () => {
   assert.match(diagnostic, /data-diagnostic-fit-terms/);
   assert.match(diagnostic, /order is refunded instead of being silently converted/i);
   assert.doesNotMatch(diagnostic, /public Workflow Hardening Sprint is/i);
-  assert.match(commercialTruth, /refunded instead of silently upsold/i);
+  assert.match(commercialTruth, /refund if no gate fires/i);
 });
 
 test('unverified marketplace obligations cannot receive a payment diversion', () => {

@@ -282,10 +282,10 @@ test('hosted origin and repository metadata stay canonical across live-facing ar
   assert.doesNotMatch(publicLanding, /\/go\/pro-direct/);
   assert.match(publicLanding, /__GA_BOOTSTRAP__/);
   assert.match(publicLanding, /__GOOGLE_SITE_VERIFICATION_META__/);
-  assert.match(publicLanding, /One repeated agent mistake\. One configured gate\./i);
+  assert.match(publicLanding, /Team setup sprint\. \$499 one-time\./i);
   assert.match(publicLanding, /test-backed verification evidence/i);
   assert.match(publicLanding, /strict-mode deny example/i);
-  assert.match(publicLanding, /configured local gate and its regression test/i);
+  assert.match(publicLanding, /a regression test, and show a before\/after count/i);
   assert.doesNotMatch(publicLanding, /billingDuration/);
   assert.doesNotMatch(publicLanding, /P1M/);
   assert.doesNotMatch(publicLanding, /mcp-gateway\.vercel\.app/);

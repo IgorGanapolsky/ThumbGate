@@ -904,13 +904,13 @@ test('root serves the landing page by default', async () => {
 
   const body = await res.text();
   assert.match(body, /ThumbGate/);
-  assert.match(body, /One repeated agent mistake\. One configured gate\./i);
+  assert.match(body, /Team setup sprint\. \$499 one-time\./i);
   assert.match(body, /Setup Sprint/i);
   assert.match(body, /action="\/go\/diagnostic-pay" method="POST"/);
   assert.match(body, /Book the \$499 setup/i);
   assert.match(body, /\$499/);
   assert.doesNotMatch(body, /Start Pro — \$19\/mo|\/go\/pro-direct/);
-  assert.match(body, /One configured local gate and its regression test/i);
+  assert.match(body, /3–5 local gates from your real repeated mistakes/i);
   assert.match(body, /warn by default/i);
   assert.match(body, /strict mode/i);
   assert.doesNotMatch(body, /learns from every mistake/i);
@@ -1151,15 +1151,15 @@ test('pricing page is the single source of truth for what ThumbGate sells', asyn
   assert.equal(res.status, 200);
   assert.match(String(res.headers.get('content-type')), /text\/html/);
   const body = await res.text();
-  assert.match(body, /Managed AI Agent Workflow Gate/i);
+  assert.match(body, /Team setup sprint/i);
   assert.match(body, /\$499/);
   assert.doesNotMatch(body, /\$19\/mo|\$149\/yr|>Start Pro<\/a>|\/checkout\/pro/);
   assert.match(body, /Subscriber login/);
   assert.match(body, /action="\/go\/diagnostic-pay" method="POST"/);
   assert.match(body, /name="customer_email"[^>]*required/);
-  assert.match(body, /one configured local pre-action gate/i);
+  assert.match(body, /3–5 gates/i);
   assert.match(body, /regression test/i);
-  assert.match(body, /rollout and rollback proof/i);
+  assert.match(body, /before\/after count/i);
   assert.doesNotMatch(body, /\$1,500|\$3,000|\$10,000|\$15,000/);
   assert.doesNotMatch(body, /buy\.stripe\.com/);
   assert.doesNotMatch(body, /mailto:igor\.ganapolsky@gmail\.com/);

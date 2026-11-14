@@ -73,7 +73,7 @@ test('proposal-only expansion prices remain internal catalog truth', () => {
   assert.equal(pilot.priceCents, 1500000);
   assert.equal(enterpriseOps.priceCents, 1000000);
   assert.doesNotMatch(pricing, /\$3,000|\$15,000|\$10,000/);
-  assert.match(pricing, /Enforcement that pays for itself|Two paid paths · one product/i);
+  assert.match(pricing, /For engineering leads and CTOs of 5–30 engineer teams/i);
   // Pro removed from public buying path
   assert.match(pricing, /\$499/);
 });

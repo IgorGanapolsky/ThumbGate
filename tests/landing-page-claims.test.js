@@ -23,8 +23,8 @@ test('homepage commercial contract offers Pro $19/mo and the $499 Setup Sprint',
   assert.match(HOME_HTML, /id="workflow-sprint-intake"[^>]*data-legacy-intake-alias/);
 });
 
-test('pricing surfaces Pro self-serve and the $499 Setup Sprint together', () => {
-  assert.match(PRICING_HTML, /Setup Sprint/);
+test('pricing leads with the $499 Team setup sprint', () => {
+  assert.match(PRICING_HTML, /Team setup sprint/);
   assert.match(PRICING_HTML, /Book the \$499 setup/);
   assert.match(PRICING_HTML, /action="\/go\/diagnostic-pay"/);
   assert.match(PRICING_HTML, /\$499/);
@@ -68,9 +68,9 @@ test('pricing hides hosted team offers and states the availability boundary', ()
 test('managed gate promise is bounded and backed by the canonical checkout rail', () => {
   const server = fs.readFileSync(path.join(ROOT, 'src', 'api', 'server.js'), 'utf8');
 
-  assert.match(HOME_HTML, /One configured local gate and its regression test/);
-  assert.match(HOME_HTML, /one supported local workflow/i);
-  assert.match(HOME_HTML, /order is refunded instead of silently upsold/i);
+  assert.match(HOME_HTML, /3–5 local gates from your real repeated mistakes/);
+  assert.match(HOME_HTML, /supported local workflows/i);
+  assert.match(HOME_HTML, /Refund if no gate fires/i);
   assert.match(server, /'diagnostic-pay':/);
   assert.match(server, /requiresPost: true/);
   assert.match(server, /requiresBuyerEmail: true/);

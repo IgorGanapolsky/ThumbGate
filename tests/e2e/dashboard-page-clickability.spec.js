@@ -117,12 +117,11 @@ test.describe('/dashboard clickability — non-stat-card surfaces', () => {
     await expect.poll(() => dashboardRequests.length).toBe(1);
   });
 
-  // --- 8 tab headers (demo auto-loads, so they're available immediately) ---
+  // --- Available tab headers (demo auto-loads, so they're available immediately) ---
 
   for (const [label, tabId] of [
     ['🔍 Search Memories', 'search'],
     ['🛡️ Active Gates', 'gates'],
-    ['👥 Team', 'team'],
     ['🧩 Generated Views', 'generated'],
     ['⚙️ Policy Origins', 'settings'],
     ['🧱 Gate Templates', 'templates'],

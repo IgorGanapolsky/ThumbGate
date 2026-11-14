@@ -25,10 +25,11 @@ test('public landing page exposes the $499 setup without calling it an enterpris
   const landing = read(path.join('public', 'index.html'));
 
   assert.match(landing, /Setup Sprint/i);
-  assert.match(landing, /not an enterprise contract/i);
-  assert.match(landing, /one supported local workflow/i);
+  assert.match(landing, /No enterprise rollout, SSO, hosted team sync or org-wide audit dashboard/i);
+  assert.match(landing, /supported local workflows through supported hook integrations/i);
   assert.match(landing, /regression test/i);
-  assert.match(landing, /rollout and rollback proof/i);
+  assert.match(landing, /before\/after count/i);
+  assert.match(landing, /Refund if no gate fires/i);
   assert.doesNotMatch(landing, /Docker Sandboxes/i);
   assert.doesNotMatch(landing, /signed hosted sandbox dispatch/i);
   assert.doesNotMatch(landing, /Changeset/i);

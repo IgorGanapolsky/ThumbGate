@@ -280,16 +280,16 @@ async function main() {
     'docs/COMMERCIAL_TRUTH.md must record the Enterprise tier'
   );
   check(
-    /configured gate, a regression test, and rollout and rollback evidence/i.test(githubAbout.metaDescription),
-    'config/github-about.json metaDescription must describe the one test-backed gate'
+    /3–5 gates.*a regression test.*before\/after count/i.test(githubAbout.metaDescription),
+    'config/github-about.json metaDescription must describe the team sprint gates, regression test, and count'
   );
   check(
-    /supported local workflow/i.test(githubAbout.metaDescription),
-    'config/github-about.json metaDescription must keep the supported-workflow boundary'
+    /two weeks of your team's own agent sessions/i.test(githubAbout.metaDescription),
+    'config/github-about.json metaDescription must describe the two-week session review'
   );
   check(
-    /supported hook integrations/i.test(githubAbout.metaDescription),
-    'config/github-about.json metaDescription must keep the supported-hook boundary'
+    /Refund if no gate fires/i.test(githubAbout.metaDescription),
+    'config/github-about.json metaDescription must state the sprint refund promise'
   );
   check(
     /\$19\/mo or \$149\/yr/i.test(readmeMd),

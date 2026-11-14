@@ -50,9 +50,9 @@ test('public surfaces lead with outcomes instead of infrastructure abstractions'
 
   assert.match(readme, /AI coding agents repeat mistakes/i);
   assert.match(readme, /evaluate the proposed tool call before execution/i);
-  assert.match(landingPage, /One repeated agent mistake\. One configured gate\./i);
+  assert.match(landingPage, /Team setup sprint\. \$499 one-time\./i);
   assert.match(landingPage, /allowed, warned, or denied/i);
-  assert.match(landingPage, /one configured local gate/i);
+  assert.match(landingPage, /3–5 configured gates/i);
   assert.match(gptInstructions, /Sell outcomes before infrastructure/i);
   assert.doesNotMatch(landingPage, /Global enforcement/i);
   assert.doesNotMatch(readme, /Behavior control system/i);

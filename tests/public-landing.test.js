@@ -668,12 +668,12 @@ test('hero states the approved workflow scope with fit-first and free paths', ()
   );
   const lede = normalizeHtmlText((hero.match(/<p class="hero-lede">([\s\S]*?)<\/p>/) || [])[1]);
 
-  assert.match(landingPage, /One repeated agent mistake\. One configured gate/i);
-  assert.match(landingPage, /ThumbGate — One repeated agent mistake\. One configured gate/i);
-  assert.match(hero, /<h1>One repeated agent mistake\. One configured gate\.<\/h1>/i);
-  assert.match(hero, /Not a prompt · Not a postmortem/i);
-  assert.match(hero, /supported hook integrations/i);
-  assert.match(hero, /Check my workflow fit/i);
+  assert.match(landingPage, /Team setup sprint\. \$499 one-time/i);
+  assert.match(landingPage, /ThumbGate — Team setup sprint\. \$499 one-time/i);
+  assert.match(hero, /<h1>Team setup sprint\. \$499 one-time\.<\/h1>/i);
+  assert.match(hero, /5–30 engineer teams/i);
+  assert.match(hero, /two weeks of your team\'s own agent sessions/i);
+  assert.match(hero, /href="#buy"[^>]*>Book the \$499 setup/i);
   assert.match(hero, /Illustrative example, not a recorded result/i);
   assert.match(hero, /Illustrative tool-call decisions/i);
   assert.match(hero, /advisory integrations do not guarantee execution blocking/i);
@@ -724,9 +724,9 @@ test('homepage explains the product with one four-stage self-improving loop', ()
 test('paid wedge includes managed implementation, regression, and rollout proof', () => {
   assert.match(landingPage, /Setup Sprint/);
   assert.match(landingPage, /Book the \$499 setup/);
-  assert.match(landingPage, /One configured local gate \+ regression test|One configured local gate and its regression test/);
-  assert.match(landingPage, /Delivery within two business days after access and agreed materials are available, subject to confirmed scheduling/);
-  assert.match(landingPage, /If the workflow cannot be reduced to one supported gate, the order is refunded/);
+  assert.match(landingPage, /3–5 local gates from your real repeated mistakes/);
+  assert.match(landingPage, /A regression test and before\/after count/);
+  assert.match(landingPage, /Refund if no gate fires/);
   assert.match(landingPage, /Multi-system implementation[\s\S]*require separate scope/);
 });
 
