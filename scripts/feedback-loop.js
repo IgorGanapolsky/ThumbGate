@@ -170,57 +170,28 @@ function isAuditTrailEntry(entry = {}) {
 }
 
 // Lesson DB — SQLite+FTS5 backing store (dual-write alongside JSONL)
-let _lessonDB = null;
-let _lessonDBPath = null;
-
-function resolveLessonDbPath() {
+const lessonConnections = new Map();
+function getLessonDB(options = {}) {
   const scope = tenantDataScope();
-  if (scope) return assertScopedDataPath(path.join(scope.feedbackDir, 'lessons.sqlite'));
-  if (process.env.LESSON_DB_PATH) return process.env.LESSON_DB_PATH;
-  if (process.env.THUMBGATE_FEEDBACK_DIR || process.env.RAILWAY_VOLUME_MOUNT_PATH) {
-    return path.join(getFeedbackPaths().FEEDBACK_DIR, 'lessons.sqlite');
+  const desiredPath = scope
+    ? assertScopedDataPath(path.join(getFeedbackPaths(options).FEEDBACK_DIR, 'lessons.sqlite'))
+    : path.resolve(options.feedbackDir ? path.join(options.feedbackDir, 'lessons.sqlite') : process.env.LESSON_DB_PATH || path.join(getFeedbackPaths(options).FEEDBACK_DIR, 'lessons.sqlite'));
+  // Tenant connections are request-owned and closed by their callers. Local
+  // explicit account roots retain the bounded per-path connection cache.
+  if (scope) {
+    try { return require('./lesson-db').initDB(desiredPath); } catch { return null; }
   }
-  return null;
-}
-
-function openTenantLessonDB(desiredPath) {
-  try { return require('./lesson-db').initDB(desiredPath); } catch { return null; }
-}
-
-function getLessonDB() {
-  const desiredPath = resolveLessonDbPath();
-  if (tenantDataScope()) return openTenantLessonDB(desiredPath);
-  if (_lessonDB && _lessonDBPath === desiredPath) return _lessonDB;
-
-  if (_lessonDB && _lessonDBPath !== desiredPath) {
-    try {
-      _lessonDB.close();
-    } catch {
-      // Non-critical; reopen on the new path below.
-    }
-    _lessonDB = null;
-    _lessonDBPath = null;
-  }
-
+  if (lessonConnections.has(desiredPath)) return lessonConnections.get(desiredPath);
   try {
-    const { initDB } = require('./lesson-db');
-    _lessonDB = desiredPath ? initDB(desiredPath) : initDB();
-    _lessonDBPath = desiredPath;
-    return _lessonDB;
-  } catch (_err) {
-    // Keep the DB path scoped to the active feedback root even when SQLite
-    // cannot open (for example, native module ABI drift in local dev).
-    if (desiredPath) {
-      try {
-        fs.mkdirSync(path.dirname(desiredPath), { recursive: true });
-        fs.closeSync(fs.openSync(desiredPath, 'a'));
-        _lessonDBPath = desiredPath;
-      } catch {
-        // Ignore file materialization failures and degrade gracefully below.
-      }
+    const db = require('./lesson-db').initDB(desiredPath);
+    if (lessonConnections.size >= 32) {
+      const oldest = lessonConnections.keys().next().value;
+      lessonConnections.get(oldest).close();
+      lessonConnections.delete(oldest);
     }
-    return null; // SQLite unavailable — degrade gracefully
-  }
+    lessonConnections.set(desiredPath, db);
+    return db;
+  } catch { return null; }
 }
 
 // ML sequence tracking constants (ML-03)
@@ -525,7 +496,7 @@ function findDuplicateMemory(memoryLogPath, newRecord) {
 
   const existing = readJSONL(memoryLogPath, { maxLines: 0 });
   for (let i = existing.length - 1; i >= 0; i--) {
-    if (existing[i].sourceFeedbackId === feedbackId) return existing[i];
+    if (existing[i].sourceFeedbackId === feedbackId && require('./project-identity').matchesProject(existing[i], require('./project-identity').projectForRecord(newRecord).projectKey)) return existing[i];
   }
   return null;
 }
@@ -542,8 +513,8 @@ function toStoredDiagnosis(diagnosis) {
   };
 }
 
-function appendRejectionLedger(feedbackEvent, reason) {
-  const { REJECTION_LEDGER_PATH } = getFeedbackPaths();
+function appendRejectionLedger(feedbackEvent, reason, options = {}) {
+  const { REJECTION_LEDGER_PATH } = getFeedbackPaths(options);
   appendJSONL(REJECTION_LEDGER_PATH, {
     id: feedbackEvent.id,
     signal: feedbackEvent.signal,
@@ -607,14 +578,15 @@ function listEnforcementMatrix() {
   };
 }
 
-function appendDiagnosticRecord(params = {}) {
-  const { DIAGNOSTIC_LOG_PATH } = getFeedbackPaths();
+function appendDiagnosticRecord(params = {}, options = {}) {
+  const { DIAGNOSTIC_LOG_PATH } = getFeedbackPaths(options);
   const storedDiagnosis = toStoredDiagnosis(params.diagnosis);
   if (!storedDiagnosis) {
     return null;
   }
 
   const record = {
+    ...require('./project-identity').projectForRecord(params),
     id: `diag_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
     source: params.source || 'system',
     step: params.step || storedDiagnosis.criticalFailureStep || null,
@@ -626,7 +598,7 @@ function appendDiagnosticRecord(params = {}) {
   appendJSONL(DIAGNOSTIC_LOG_PATH, record);
   try {
     const { trainAndPersistInterventionPolicy } = require('./intervention-policy');
-    trainAndPersistInterventionPolicy(getFeedbackPaths().FEEDBACK_DIR);
+    trainAndPersistInterventionPolicy(getFeedbackPaths(options).FEEDBACK_DIR);
   } catch { /* non-critical */ }
   return record;
 }
@@ -658,7 +630,7 @@ function buildMemoryFirewallViolations(decision = {}) {
   }));
 }
 
-function maybeBlockMemoryIngress({ feedbackEvent, memoryRecord = null, summary, now }) {
+function maybeBlockMemoryIngress({ feedbackEvent, memoryRecord = null, summary, now, options = {} }) {
   const memoryFirewall = getMemoryFirewallModule();
   if (!memoryFirewall || typeof memoryFirewall.evaluateMemoryIngress !== 'function') {
     return null;
@@ -675,6 +647,7 @@ function maybeBlockMemoryIngress({ feedbackEvent, memoryRecord = null, summary, 
   }
 
   appendDiagnosticRecord({
+    ...require('./project-identity').projectForRecord(feedbackEvent),
     source: 'memory_firewall',
     step: 'memory_ingress',
     context: decision.redactedPreview || '',
@@ -697,11 +670,11 @@ function maybeBlockMemoryIngress({ feedbackEvent, memoryRecord = null, summary, 
         ...(decision.threatIndicators || []),
       ].filter(Boolean),
     },
-  });
+  }, options);
 
   summary.rejected += 1;
   summary.lastUpdated = now;
-  saveSummary(summary);
+  saveSummary(summary, options);
 
   return {
     accepted: false,
@@ -1072,8 +1045,8 @@ function parseOptionalObject(input, name) {
   throw new Error(`${name} must be object or JSON string`);
 }
 
-function loadSummary() {
-  const { SUMMARY_PATH } = getFeedbackPaths();
+function loadSummary(options = {}) {
+  const { SUMMARY_PATH } = getFeedbackPaths(options);
   if (!fs.existsSync(SUMMARY_PATH)) {
     return {
       total: 0,
@@ -1087,8 +1060,8 @@ function loadSummary() {
   return JSON.parse(fs.readFileSync(SUMMARY_PATH, 'utf-8'));
 }
 
-function saveSummary(summary) {
-  const { SUMMARY_PATH } = getFeedbackPaths();
+function saveSummary(summary, options = {}) {
+  const { SUMMARY_PATH } = getFeedbackPaths(options);
   ensureDir(path.dirname(SUMMARY_PATH));
   fs.writeFileSync(SUMMARY_PATH, `${JSON.stringify(summary, null, 2)}\n`);
 }
@@ -1400,7 +1373,9 @@ function inferLessonFromConversation(conversationWindow, signal) {
 }
 
 function captureFeedback(params, options = {}) {
+  options = { ...options, hosted: options.hosted || Boolean(tenantDataScope()) };
   const _captureStart = Date.now();
+  const project = require('./project-identity').projectForCapture(params, options);
   const { FEEDBACK_LOG_PATH, MEMORY_LOG_PATH, FEEDBACK_DIR } = getFeedbackPaths(options);
   const signal = normalizeSignal(params.signal);
   if (!signal) {
@@ -1442,6 +1417,7 @@ function captureFeedback(params, options = {}) {
     allowLocalConversationFallback: params.allowLocalConversationFallback === true,
     lastAction: params.lastAction,
     feedbackDir: FEEDBACK_DIR,
+    projectKey: project.projectKey,
   });
 
   const shouldUseDistilledContext = !submittedContext || isGenericFeedbackText(submittedContext, signal);
@@ -1543,7 +1519,7 @@ function captureFeedback(params, options = {}) {
 
   const now = new Date().toISOString();
   const effectiveCwd = params.cwd || options.cwd || process.cwd();
-  const detectedProject = resolveProjectFromCwd(effectiveCwd);
+  const detectedProject = options.hosted ? null : resolveProjectFromCwd(effectiveCwd);
   const normalizedScope = require('./memory-scope-readiness').normalizeScope(params);
   if (!normalizedScope.projectId && detectedProject) normalizedScope.projectId = detectedProject;
   if (!normalizedScope.processId) normalizedScope.processId = 'agent';
@@ -1560,6 +1536,7 @@ function captureFeedback(params, options = {}) {
   };
 
   const rawFeedbackEvent = {
+    ...project,
     id: `fb_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
     signal,
     context,
@@ -1647,7 +1624,7 @@ function captureFeedback(params, options = {}) {
   }
   const historyEntries = readJSONL(FEEDBACK_LOG_PATH).slice(-SEQUENCE_WINDOW);
 
-  const summary = loadSummary();
+  const summary = loadSummary(options);
   // Only count real user feedback in the summary, not audit-trail gate events
   const isAuditEntry = Array.isArray(tags) && tags.includes(AUDIT_TRAIL_TAG);
   if (!tenantDataScope() && !isAuditEntry) {
@@ -1656,7 +1633,7 @@ function captureFeedback(params, options = {}) {
   }
 
   if (action.type === 'no-action') {
-    const firewallBlocked = maybeBlockMemoryIngress({ feedbackEvent, summary, now });
+    const firewallBlocked = maybeBlockMemoryIngress({ feedbackEvent, summary, now, options });
     if (firewallBlocked) {
       return firewallBlocked;
     }
@@ -1669,12 +1646,12 @@ function captureFeedback(params, options = {}) {
     });
     summary.rejected += 1;
     summary.lastUpdated = now;
-    saveSummary(summary);
+    saveSummary(summary, options);
     appendJSONL(FEEDBACK_LOG_PATH, feedbackEvent);
     emitAnonymousFeedbackPing(signal);
-    try { appendRejectionLedger(feedbackEvent, action.reason); } catch { /* non-critical */ }
+    try { appendRejectionLedger(feedbackEvent, action.reason, options); } catch { /* non-critical */ }
     try {
-      appendSequence(historyEntries, feedbackEvent, getFeedbackPaths(), { accepted: false });
+      appendSequence(historyEntries, feedbackEvent, getFeedbackPaths(options), { accepted: false });
     } catch { /* non-critical */ }
     try {
       const riskScorer = getRiskScorerModule();
@@ -1734,7 +1711,7 @@ function captureFeedback(params, options = {}) {
       if (hardIssues.length > 0) {
         summary.rejected += 1;
         summary.lastUpdated = now;
-        saveSummary(summary);
+        saveSummary(summary, options);
         const blockedEvent = {
           ...feedbackEvent,
           lifecycleDecision: lifecycle.decision,
@@ -1762,21 +1739,21 @@ function captureFeedback(params, options = {}) {
 
   const prepared = prepareForStorage(action.memory);
   if (!prepared.ok) {
-    const firewallBlocked = maybeBlockMemoryIngress({ feedbackEvent, summary, now });
+    const firewallBlocked = maybeBlockMemoryIngress({ feedbackEvent, summary, now, options });
     if (firewallBlocked) {
       return firewallBlocked;
     }
     summary.rejected += 1;
     summary.lastUpdated = now;
-    saveSummary(summary);
+    saveSummary(summary, options);
     appendJSONL(FEEDBACK_LOG_PATH, {
       ...feedbackEvent,
       validationIssues: prepared.issues,
     });
     emitAnonymousFeedbackPing(signal);
-    try { appendRejectionLedger(feedbackEvent, `Schema validation failed: ${prepared.issues.join('; ')}`); } catch { /* non-critical */ }
+    try { appendRejectionLedger(feedbackEvent, `Schema validation failed: ${prepared.issues.join('; ')}`, options); } catch { /* non-critical */ }
     try {
-      appendSequence(historyEntries, feedbackEvent, getFeedbackPaths(), { accepted: false });
+      appendSequence(historyEntries, feedbackEvent, getFeedbackPaths(options), { accepted: false });
     } catch { /* non-critical */ }
     try {
       const riskScorer = getRiskScorerModule();
@@ -1798,6 +1775,7 @@ function captureFeedback(params, options = {}) {
   }
 
   const memoryRecord = {
+    ...project,
     id: `mem_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
     ...prepared.memory,
     scope: feedbackEvent.scope,
@@ -1831,7 +1809,7 @@ function captureFeedback(params, options = {}) {
   // Bayesian Belief Update (Project Bayes)
   try {
     const { updateBelief, shouldPrune } = require('./belief-update');
-    const existingMemories = readJSONL(MEMORY_LOG_PATH);
+    const existingMemories = require('./project-catalog').readProjectRows(FEEDBACK_DIR, 'memory-log.jsonl', { projectKey: project.projectKey });
     const similarMemory = existingMemories.slice().reverse().find(m => 
       m.tags && m.tags.some(t => memoryRecord.tags.includes(t) && !GENERIC_TAGS.has(t))
     );
@@ -1849,6 +1827,7 @@ function captureFeedback(params, options = {}) {
   } catch (_err) { /* bayesian update is non-blocking */ }
 
   const firewallBlocked = maybeBlockMemoryIngress({
+    options,
     feedbackEvent,
     memoryRecord,
     summary,
@@ -1903,7 +1882,7 @@ function captureFeedback(params, options = {}) {
           // memory-log rather than feedback-log because memory records
           // carry the richer title/content fields the validator scores
           // against, and findSimilarLesson already reads this file.
-          const recentEvents = readJSONL(MEMORY_LOG_PATH).slice(-50);
+          const recentEvents = require('./project-catalog').readProjectRows(FEEDBACK_DIR, 'memory-log.jsonl', { projectKey: project.projectKey }).slice(-50);
           validation = validateProposedRule(rule, {
             seedLesson: merged,
             recentEvents,
@@ -1953,7 +1932,7 @@ function captureFeedback(params, options = {}) {
   let correctiveActions = [];
   let lessonDB;
   try {
-    lessonDB = getLessonDB();
+    lessonDB = getLessonDB(options);
     if (lessonDB) {
       const { upsertLesson, inferCorrectiveActions } = require('./lesson-db');
       upsertLesson(lessonDB, feedbackEvent, memoryRecord);
@@ -1983,7 +1962,7 @@ function captureFeedback(params, options = {}) {
 
   summary.accepted += 1;
   summary.lastUpdated = now;
-  saveSummary(summary);
+  saveSummary(summary, options);
 
   const _captureMs = Date.now() - _captureStart;
 
@@ -2056,7 +2035,7 @@ function captureFeedback(params, options = {}) {
   });
 
   // --- Synchronous side-effects (fast, needed by analyzeFeedback) ---
-  const mlPaths = getFeedbackPaths();
+  const mlPaths = getFeedbackPaths(options);
   try {
     appendSequence(historyEntries, feedbackEvent, mlPaths, { accepted: true });
   } catch { /* Sequence tracking failure is non-critical */ }
@@ -2189,8 +2168,11 @@ function captureFeedback(params, options = {}) {
 }
 
 function captureFeedbackIdempotent(params = {}, options = {}) {
+  options = { ...options, hosted: options.hosted || Boolean(tenantDataScope()) };
   const paths = getFeedbackPaths(options);
+  const project = require('./project-identity').projectForCapture(params, options);
   const identity = normalizeFeedbackSourceIdentity(params.sourceEvent, params);
+  if (identity) { identity.key = 'fev_' + hashFeedbackSourcePart(project.projectKey + ':' + identity.key); identity.projectHash = hashFeedbackSourcePart(project.projectKey); }
   if (!identity) return captureFeedback(params, options);
 
   const claim = acquireFeedbackEventClaim(identity, paths);
@@ -2453,7 +2435,7 @@ function analyzeFeedback(logPath, options = {}) {
   const resolvedPath = logPath || FEEDBACK_LOG_PATH;
   const feedbackDir = path.dirname(resolvedPath);
   const paths = buildFeedbackPathsFromDir(feedbackDir);
-  const useSQLite = !options.humanOnly && (!logPath || path.resolve(resolvedPath) === path.resolve(FEEDBACK_LOG_PATH));
+  const useSQLite = options.projectKey == null && !options.humanOnly && (!logPath || path.resolve(resolvedPath) === path.resolve(FEEDBACK_LOG_PATH));
   // Prefer caller-supplied entries (dashboard already bounded the read).
   let entries = Array.isArray(options.entries)
     ? options.entries.slice()
@@ -2461,6 +2443,7 @@ function analyzeFeedback(logPath, options = {}) {
       maxLines: Number(options.maxLines) > 0 ? Number(options.maxLines) : 20_000,
       maxBytes: Number(options.maxBytes) > 0 ? Number(options.maxBytes) : 4 * 1024 * 1024,
     });
+  if (options.projectKey != null) entries = require('./project-catalog').readProjectRows(feedbackDir, 'feedback-log.jsonl', options);
   const rawTotal = entries.length;
   if (options.humanOnly) {
     entries = entries.filter((entry) => normalizeReviewOrigin(entry.reviewOrigin) === 'human');
@@ -2468,7 +2451,7 @@ function analyzeFeedback(logPath, options = {}) {
   const fallback = getSQLiteFallback(useSQLite, entries);
   if (fallback) return fallback;
 
-  const diagnosticEntries = readDiagnosticEntries(path.join(feedbackDir, 'diagnostic-log.jsonl'));
+  const diagnosticEntries = require('./project-catalog').readProjectRows(feedbackDir, 'diagnostic-log.jsonl', options);
   const summary = summarizeFeedbackEntries(entries);
   const { skills, tags, criteria, samples, blocked, positive, negative } = summary;
   const total = positive + negative;
@@ -2482,9 +2465,9 @@ function analyzeFeedback(logPath, options = {}) {
   addSkillRecs(skills, recs);
   addTagRecs(tags, recs);
   addTrendRecs({ recent, recentRate, approvalRate, trend, rate7d, rate30d }, recs);
-  const boostedRisk = addRiskRecs(paths.FEEDBACK_DIR, recs);
+  const boostedRisk = options.projectKey != null ? null : addRiskRecs(paths.FEEDBACK_DIR, recs);
   const diagnostics = aggregateFailureDiagnostics([...entries, ...diagnosticEntries]);
-  const delegation = addDelegationRecs(paths.FEEDBACK_DIR, recs);
+  const delegation = options.projectKey != null ? null : addDelegationRecs(paths.FEEDBACK_DIR, recs);
   addDiagnosticRecs(diagnostics, recs);
 
   return normalizeAnalysisShape({
@@ -2764,7 +2747,7 @@ function writePreventionRules(filePath, minOccurrences = 2) {
 
 function feedbackSummary(recentN = 20, options = {}) {
   const { FEEDBACK_LOG_PATH } = getFeedbackPaths(options);
-  let entries = readJSONL(FEEDBACK_LOG_PATH);
+  let entries = require('./project-catalog').readProjectRows(path.dirname(FEEDBACK_LOG_PATH), 'feedback-log.jsonl', options);
   if (options.humanOnly) {
     entries = entries.filter((entry) => normalizeReviewOrigin(entry.reviewOrigin) === 'human');
   }
@@ -2777,7 +2760,7 @@ function feedbackSummary(recentN = 20, options = {}) {
   const negative = recent.filter((e) => e.signal === 'negative').length;
   const pct = Math.round((positive / recent.length) * 100);
 
-  const analysis = analyzeFeedback(FEEDBACK_LOG_PATH, { humanOnly: options.humanOnly });
+  const analysis = analyzeFeedback(FEEDBACK_LOG_PATH, options);
 
   const lines = [
     `## Feedback Summary (last ${recent.length})`,
