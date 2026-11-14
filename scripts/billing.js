@@ -2237,6 +2237,20 @@ function comparePaymentAmountEvidence(a, b) {
     || a.amountCents - b.amountCents;
 }
 
+function refundedCentsOf(entry) {
+  return Number.isSafeInteger(entry && entry.amountRefundedCents) && entry.amountRefundedCents > 0 ? entry.amountRefundedCents : 0;
+}
+
+// A fully refunded payment is not revenue; a partial refund books only the net amount.
+function isFullyRefundedRevenue(entry) {
+  return hasKnownRevenueAmount(entry) && entry.amountCents > 0 && refundedCentsOf(entry) >= entry.amountCents;
+}
+
+function netOfRefund(entry) {
+  const refunded = refundedCentsOf(entry);
+  return refunded && hasKnownRevenueAmount(entry) ? { ...entry, amountCents: entry.amountCents - refunded } : entry;
+}
+
 function summarizeExternalRevenue(entries = [], env = process.env) {
   const totals = { paidOrders: 0, bookedRevenueByCurrency: {}, refundedByCurrency: {}, excluded: { internal: 0, test: 0, unknown: 0 }, duplicates: 0, amountUnknownOrders: 0 };
   for (const group of groupRevenuePayments(entries)) {
@@ -2245,15 +2259,16 @@ function summarizeExternalRevenue(entries = [], env = process.env) {
     const classifications = new Set(evidence.map((entry) => classifyRevenueRecord(entry, env)));
     const classification = ['internal', 'test', 'external', 'unknown'].find((value) => classifications.has(value));
     if (classification !== 'external') { totals.excluded[classification] += 1; continue; }
-    totals.paidOrders += 1;
     const entry = evidence.filter(hasKnownRevenueAmount).sort(comparePaymentAmountEvidence)[0];
     if (entry) {
       const currency = String(entry.currency).toUpperCase();
-      totals.bookedRevenueByCurrency[currency] = (totals.bookedRevenueByCurrency[currency] || 0) + entry.amountCents;
       if (Number.isSafeInteger(entry.amountRefundedCents)) {
         totals.refundedByCurrency[currency] = (totals.refundedByCurrency[currency] || 0) + entry.amountRefundedCents;
       }
-    } else totals.amountUnknownOrders += 1;
+      if (isFullyRefundedRevenue(entry)) continue;
+      totals.paidOrders += 1;
+      totals.bookedRevenueByCurrency[currency] = (totals.bookedRevenueByCurrency[currency] || 0) + netOfRefund(entry).amountCents;
+    } else { totals.paidOrders += 1; totals.amountUnknownOrders += 1; }
   }
   return totals;
 }
@@ -2409,7 +2424,7 @@ function getFunnelAnalytics(options = {}) {
     );
   const { events, excludedSyntheticCheckoutSessions } = options._filteredFunnel
     || filterQualifiedCheckoutFunnelEvents(rawEvents);
-  const paidOrders = loadResolvedRevenueEvents({ ...analyticsWindow, extraRevenueEvents }).filter((entry) => entry && entry.status === 'paid');
+  const paidOrders = loadResolvedRevenueEvents({ ...analyticsWindow, extraRevenueEvents }).filter((entry) => entry && entry.status === 'paid' && !isFullyRefundedRevenue(entry));
   const stageCounts = { acquisition: 0, activation: 0, paid: 0 };
   const eventCounts = {};
   for (const entry of events) {
@@ -2468,7 +2483,8 @@ function getBusinessAnalytics(options = {}) {
   const acquisitionEvents = events.filter((entry) => entry && entry.stage === 'acquisition');
   const emailAccountSignups = collectEmailAccountSignups(analyticsWindow);
   const paidEvents = events.filter((entry) => entry && entry.stage === 'paid');
-  const paidOrders = revenueEvents.filter((entry) => entry && entry.status === 'paid');
+  const paidEventsGross = revenueEvents.filter((entry) => entry && entry.status === 'paid');
+  const paidOrders = paidEventsGross.filter((entry) => !isFullyRefundedRevenue(entry)).map(netOfRefund);
   const firstPaid = paidEvents[0] || null;
   const lastPaid = paidEvents[paidEvents.length - 1] || null;
 
@@ -2783,7 +2799,7 @@ function getBusinessAnalytics(options = {}) {
   const unreconciledPaidEvents = paidEvents.filter((entry) => {
     const eventKey = resolvePaidProviderEventKey(entry);
     if (!eventKey) return true;
-    return !paidOrders.some((order) => resolveRevenueEventKey(order) === eventKey);
+    return !paidEventsGross.some((order) => resolveRevenueEventKey(order) === eventKey);
   }).length;
 
   const trafficMetrics = {
@@ -2880,7 +2896,7 @@ function getBusinessAnalytics(options = {}) {
       byOfferCode: signupsByOfferCode,
     },
     revenue: {
-      external: summarizeExternalRevenue(paidOrders),
+      external: summarizeExternalRevenue(paidEventsGross),
       paidProviderEvents: paidEvents.length,
       paidOrders: paidOrders.length,
       paidCustomers: paidCustomerIds.size,

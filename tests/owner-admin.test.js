@@ -200,9 +200,9 @@ test('payment alias groups count an external payment once and preserve authorita
       metadata: { paymentIntentId: 'pi_refundgroup', stripeReconciled: true } });
     for (const entries of [[buyer, charge], [charge, buyer]]) {
       const report = billing.summarizeExternalRevenue(entries);
-      assert.equal(report.paidOrders, 1);
       assert.equal(report.duplicates, 1);
-      assert.deepEqual(report.bookedRevenueByCurrency, { USD: 10000 });
+      assert.deepEqual(report.bookedRevenueByCurrency, refund === 10000 ? {} : { USD: 10000 - refund });
+      assert.equal(report.paidOrders, refund === 10000 ? 0 : 1);
       assert.deepEqual(report.refundedByCurrency, { USD: refund });
     }
   }
@@ -332,7 +332,7 @@ test('reconciliation overlays authoritative partial and full refunds on existing
     const merged = billing._mergeRevenueEvents([ledger], [live]);
     assert.equal(merged.length, 1);
     const external = billing.summarizeExternalRevenue(merged);
-    assert.equal(external.bookedRevenueByCurrency.USD, 100);
+    assert.equal(external.bookedRevenueByCurrency.USD, refunded === 100 ? undefined : 75);
     assert.equal(external.refundedByCurrency.USD, refunded);
   }
 });
@@ -571,4 +571,34 @@ test('recursive private-route scope records one HTTP error observation per reque
     assert.equal(after.at(-1).route, 'page');
     assert.equal(after.at(-1).status, 500);
   } finally { server.removeListener('request', failInnerResponse); fs.writeFileSync(keyPath, original); }
+});
+
+test('refunds reduce every summary path: full refund adds nothing, partial books net, owner/test refunds stay excluded', () => {
+  const revenuePath = billing.CONFIG.REVENUE_LEDGER_PATH;
+  const funnelPath = billing.CONFIG.FUNNEL_LEDGER_PATH;
+  const saved = [revenuePath, funnelPath].map((file) => fs.existsSync(file) ? fs.readFileSync(file) : null);
+  const charge = (id, fields) => paymentFixture(id, { metadata: { stripeReconciled: true, paymentIntentId: `pi_${id}` }, ...fields });
+  try {
+    fs.writeFileSync(revenuePath, '');
+    fs.writeFileSync(funnelPath, '');
+    const summary = (events) => billing.getBillingSummary({ window: 'lifetime', extraRevenueEvents: events }).revenue;
+    const full = summary([charge('ch_full', { amountRefundedCents: 10000 })]);
+    assert.equal(full.paidOrders, 0);
+    assert.deepEqual(full.bookedRevenueByCurrency, {});
+    assert.equal(full.external.paidOrders, 0);
+    assert.deepEqual(full.external.bookedRevenueByCurrency, {});
+    const partial = summary([charge('ch_part', { amountRefundedCents: 2500 })]);
+    assert.equal(partial.paidOrders, 1);
+    assert.deepEqual(partial.bookedRevenueByCurrency, { USD: 7500 });
+    assert.deepEqual(partial.external.bookedRevenueByCurrency, { USD: 7500 });
+    for (const evidence of [{ customerEmail: 'owner@example.invalid' }, { livemode: false }]) {
+      const refunded = summary([charge('ch_int', { amountRefundedCents: 10000, ...evidence }), charge('ch_int2', { amountRefundedCents: 2500, ...evidence })]);
+      assert.equal(refunded.external.paidOrders, 0);
+      assert.deepEqual(refunded.external.bookedRevenueByCurrency, {});
+      assert.equal(refunded.paidOrders, 1);
+      assert.deepEqual(refunded.bookedRevenueByCurrency, { USD: 7500 });
+    }
+  } finally {
+    [revenuePath, funnelPath].forEach((file, i) => saved[i] === null ? fs.rmSync(file, { force: true }) : fs.writeFileSync(file, saved[i]));
+  }
 });
