@@ -80,6 +80,7 @@ test('promote: quarantines a would-be BLOCK to warn when it would block prior sa
   try {
     const logPath = path.join(dir, 'feedback-log.jsonl');
     const entries = [0, 1, 2].map((d) => ({
+      ...require('../scripts/project-identity').resolveLocalProject(),
       signal: 'negative',
       tags: ['echomarker'],
       context: 'python scripts/echomarker.py --apply',
@@ -97,6 +98,7 @@ test('promote: quarantines a would-be BLOCK to warn when it would block prior sa
     // incident command is the failure the operator thumbs-downed, and counting it
     // would quarantine every gate learned from a real failure (2026-07-31).
     writeAudit(dir, [{
+      ...require('../scripts/project-identity').resolveLocalProject(),
       decision: 'allow',
       toolName: 'Bash',
       toolInput: { command: 'notify-team --dry-run "python scripts/echomarker.py --apply"' },

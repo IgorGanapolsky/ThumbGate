@@ -1,5 +1,7 @@
 #!/usr/bin/env node
 const { withDataScope, withoutDataScope, currentDataScope, tenantDataScope, assertScopedDataPath, dataScopeKey } = require('../../scripts/feedback-scope');
+const { parseProjectSelection, projectForCapture, projectForRecord, matchesProject, validProjectKey } = require('../../scripts/project-identity');
+const { readProjectRows, buildProjectCatalog } = require('../../scripts/project-catalog');
 const http = require('http');
 const https = require('https');
 const fs = require('fs');
@@ -469,12 +471,12 @@ function readLessonJsonl(filePath, options) {
   return getLessonSynthesisModule().readJSONLLocal(filePath, options);
 }
 
-function updateLessonJsonlRecord(filePath, recordId, record) {
-  return getLessonSynthesisModule().updateRecordInJsonl(filePath, recordId, record);
+function updateLessonJsonlRecord(filePath, recordId, record, options) {
+  return getLessonSynthesisModule().updateRecordInJsonl(filePath, recordId, record, options);
 }
 
-function deleteLessonJsonlRecord(filePath, recordId) {
-  return getLessonSynthesisModule().deleteRecordFromJsonl(filePath, recordId);
+function deleteLessonJsonlRecord(filePath, recordId, options) {
+  return getLessonSynthesisModule().deleteRecordFromJsonl(filePath, recordId, options);
 }
 
 function serveStaticFile(res, filePath, { headOnly = false, cacheSeconds = 86400 } = {}) {
@@ -1045,10 +1047,10 @@ function computeConversionStats(events) {
 
 function getRequestedProjectSelection(req, parsed) {
   const projectFromQuery = parsed && parsed.searchParams
-    ? parsed.searchParams.get('project')
+    ? parsed.searchParams.get('projectDir')
     : null;
   const projectFromHeaders = req && req.headers
-    ? req.headers['x-thumbgate-project-dir'] || req.headers['x-thumbgate-project']
+    ? req.headers['x-thumbgate-project-dir']
     : null;
   return projectFromQuery || projectFromHeaders || null;
 }
@@ -1199,25 +1201,37 @@ function partitionFeedbackPaths(paths, dataIdentity) {
   });
 }
 
+function projectEvidenceForRequest(req, parsed, feedbackDir, dataIdentity) {
+  const hostedEvidenceSource = Boolean(tenantDataScope() || dataIdentity?.partition || process.env.RAILWAY_PROJECT_ID || process.env.RAILWAY_ENVIRONMENT || process.env.RENDER || process.env.K_SERVICE || process.env.THUMBGATE_HOSTED === '1')
+    || !isLoopbackHost(getRequestHostHeader(req)) || !['127.0.0.1', '::1', '::ffff:127.0.0.1'].includes(req.socket.remoteAddress)
+    || Boolean(getRequestedProjectSelection(req, parsed));
+  return require('../../scripts/project-evidence').localRuntimeEvidenceOptions({
+    feedbackDir, sourceRoot: process.env.THUMBGATE_FEEDBACK_DIR || path.join(require('node:os').homedir(), '.thumbgate'), hosted: hostedEvidenceSource,
+  });
+}
+
 function getSafeDataDir(req, parsed) {
   const { FEEDBACK_LOG_PATH } = getRequestFeedbackPaths(req, parsed);
   return path.resolve(path.dirname(FEEDBACK_LOG_PATH));
 }
 
-function findRecordById(id, feedbackDir) {
+function findRecordById(id, feedbackDir, options = {}) {
   const memoryLogPath = path.join(feedbackDir, 'memory-log.jsonl');
   const feedbackLogPath = path.join(feedbackDir, 'feedback-log.jsonl');
   let memoryRecord = null;
   let feedbackEvent = null;
-  const memoryRecords = readLessonJsonl(memoryLogPath, { maxLines: 0 });
+  const memoryRecords = readProjectRows(feedbackDir, 'memory-log.jsonl', options);
   for (const rec of memoryRecords) {
     if (rec.id === id) { memoryRecord = rec; break; }
   }
-  const feedbackRecords = readLessonJsonl(feedbackLogPath, { maxLines: 0 });
+  const feedbackRecords = readProjectRows(feedbackDir, 'feedback-log.jsonl', options);
   for (const rec of feedbackRecords) {
     if (rec.id === id) { feedbackEvent = rec; break; }
   }
   if (!memoryRecord && !feedbackEvent) return null;
+  if (options.projectKey == null && new Set([...memoryRecords, ...feedbackRecords].filter((row) => row.id === id).map((row) => row.projectKey)).size > 1) {
+    const error = new Error('Select a project for this lesson ID'); error.statusCode = 409; throw error;
+  }
   return { feedbackEvent, memoryRecord };
 }
 
@@ -1230,17 +1244,17 @@ function mergeFollowUpDetail(existingDetail, followUpText) {
   return `${existing}\n\nFollow-up: ${next}`;
 }
 
-function updateLessonRecord(feedbackDir, lessonId, updater) {
-  const record = findRecordById(lessonId, feedbackDir);
+function updateLessonRecord(feedbackDir, lessonId, updater, options = {}) {
+  const record = findRecordById(lessonId, feedbackDir, options);
   if (!record) return null;
   const existing = { ...(record.feedbackEvent || {}), ...(record.memoryRecord || {}) };
   const updated = updater({ ...existing });
   if (!updated) return null;
-  const memoryLogPath = path.join(feedbackDir, 'memory-log.jsonl');
-  const feedbackLogPath = path.join(feedbackDir, 'feedback-log.jsonl');
-  const updatedMemory = updateLessonJsonlRecord(memoryLogPath, lessonId, updated);
-  const updatedFeedback = updateLessonJsonlRecord(feedbackLogPath, lessonId, updated);
-  if (!updatedMemory && !updatedFeedback) return null;
+  const { signalPaths, accountAttribution } = require('../../scripts/project-catalog');
+  const writeOptions = { ...options, projectKey: existing.projectKey, attribution: accountAttribution(feedbackDir, options) };
+  let changed = false;
+  for (const name of ['memory-log.jsonl', 'feedback-log.jsonl']) for (const file of signalPaths(feedbackDir, name)) changed = updateLessonJsonlRecord(file, lessonId, updated, writeOptions) || changed;
+  if (!changed) return null;
   return updated;
 }
 
@@ -2166,6 +2180,7 @@ async function buildLiveDashboardData(parsed, feedbackDir) {
   }
   const data = generateDashboard(feedbackDir, {
     analyticsWindow: summaryOptions,
+    projectKey: parseProjectSelection(parsed.searchParams),
     billingSummary,
     billingSource,
     humanOnly: true,
@@ -4650,7 +4665,7 @@ async function saveChanges() {
   var detailVal = document.getElementById('editDetail').value;
   if ('${signal}' === 'down') { body.whatWentWrong = detailVal; } else { body.whatWorked = detailVal; }
   try {
-    var resp = await fetch('/lessons/${encodeURIComponent(lessonId)}/update', {
+    var resp = await fetch(ThumbGateProjects.url('/lessons/${encodeURIComponent(lessonId)}/update'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body)
@@ -4665,7 +4680,7 @@ async function saveChanges() {
 async function deleteLesson() {
   if (!confirm('Delete this lesson permanently?')) return;
   try {
-    var resp = await fetch('/lessons/${encodeURIComponent(lessonId)}/delete', {
+    var resp = await fetch(ThumbGateProjects.url('/lessons/${encodeURIComponent(lessonId)}/delete'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' }
     });
@@ -5891,7 +5906,9 @@ async function parseJsonBody(req, maxBytes = 1024 * 1024) {
   const body = await readBodyBuffer(req, maxBytes);
   if (!body.length) return {};
   try {
-    return JSON.parse(body.toString('utf-8'));
+    const value = JSON.parse(body.toString('utf-8'));
+    parseProjectSelection(new URL(req.url, 'http://localhost').searchParams, req.headers, value);
+    return value;
   } catch {
     throw createHttpError(400, 'Invalid JSON body');
   }
@@ -7168,6 +7185,20 @@ function createUnscopedApiServer() {
         return;
       }
     }
+    let requestProjectKey;
+    const projectOptions = {};
+    const unavailableProjectRoutes = ['/v1/documents', '/v1/dashboard/ai-inventory', '/v1/dashboard/render-spec', '/v1/analytics/databricks/export', '/v1/feedback/rules', '/v1/skills/generate', '/v1/decisions/metrics', '/v1/settings/status'];
+    async function readProjectBody(request, maxBytes) {
+      const value = await parseJsonBody(request, maxBytes);
+      requestProjectKey = parseProjectSelection(parsed.searchParams, request.headers, value);
+      projectOptions.projectKey = requestProjectKey;
+      if (requestProjectKey) parsed.searchParams.set('project', requestProjectKey);
+      if (requestProjectKey != null && unavailableProjectRoutes.includes(pathname)) throw createHttpError(409, 'Unavailable for this project');
+      return value;
+    }
+    try { requestProjectKey = parseProjectSelection(parsed.searchParams, req.headers); }
+    catch (error) { sendJson(res, 400, { error: error.message }); return; }
+    if (requestProjectKey && !parsed.searchParams.has('project')) parsed.searchParams.set('project', requestProjectKey);
     const isHeadRequest = req.method === 'HEAD';
     const isGetLikeRequest = req.method === 'GET' || isHeadRequest;
     const publicOrigin = getPublicOrigin(req);
@@ -7183,6 +7214,7 @@ function createUnscopedApiServer() {
 
     // PostHog reverse proxy -- bypasses ad blockers.
     // Only allow known PostHog API paths to prevent SSRF (CodeQL js/request-forgery).
+    if (isGetLikeRequest && pathname === '/project-switcher.js') { serveStaticFile(res, path.join(__dirname, '../../public/project-switcher.js'), { headOnly: isHeadRequest }); return; }
     if (pathname.startsWith('/ingest')) {
       const posthogPath = getPosthogProxyPath(pathname);
       if (!isAllowedPosthogProxyPath(posthogPath)) {
@@ -7852,7 +7884,7 @@ async function addContext(){
         sendJson(res, 401, { error: 'Authentication required to update human feedback' });
         return;
       }
-      const body = await parseJsonBody(req);
+      const body = await readProjectBody(req);
       const signal = body.signal;
       const context = typeof body.context === 'string' ? body.context.trim() : '';
       const relatedFeedbackId = typeof body.relatedFeedbackId === 'string' ? body.relatedFeedbackId.trim() : '';
@@ -7883,7 +7915,7 @@ async function addContext(){
           tags: nextTags,
           [detailField]: mergeFollowUpDetail(existing[detailField], context),
         };
-      });
+      }, { projectKey: requestProjectKey });
       if (!updated) {
         sendJson(res, 404, { error: 'Related lesson not found' });
         return;
@@ -8051,13 +8083,24 @@ async function addContext(){
       return;
     }
 
+    if (/^\/lessons\/[^/]+/.test(pathname)) {
+      if (!isAuthorized(req, expectedApiKey)) { sendJson(res, 401, { error: 'Unauthorized' }); return; }
+      const identity = resolveRequestDataIdentity(req, expectedApiKey);
+      if (identity.invalidHostedIdentity) { sendJson(res, 403, { error: 'Unauthorized' }); return; }
+      requestFeedbackPaths = currentDataScope()
+        ? getFeedbackPaths({ feedbackDir: currentDataScope().lexicalRoot })
+        : partitionFeedbackPaths(requestFeedbackPaths, identity);
+      requestFeedbackDir = requestFeedbackPaths.FEEDBACK_DIR;
+      requestSafeDataDir = path.resolve(requestFeedbackDir);
+      Object.assign(projectOptions, { projectKey: requestProjectKey, feedbackDir: requestFeedbackDir }, projectEvidenceForRequest(req, parsed, requestFeedbackDir, identity));
+    }
     // --- Lesson detail: POST /lessons/:id/update ---
     const lessonUpdateMatch = pathname.match(/^\/lessons\/([^/]+)\/update$/);
     if (req.method === 'POST' && lessonUpdateMatch) {
       const lessonId = decodeURIComponent(lessonUpdateMatch[1]);
       const feedbackDir = requestSafeDataDir;
-      const body = await parseJsonBody(req);
-      const record = findRecordById(lessonId, feedbackDir);
+      const body = await readProjectBody(req);
+      const record = findRecordById(lessonId, feedbackDir, projectOptions);
       if (!record) {
         sendJson(res, 404, { error: 'Record not found' });
         return;
@@ -8074,7 +8117,7 @@ async function addContext(){
         if (body.whatWentWrong !== undefined) next.whatWentWrong = body.whatWentWrong;
         if (body.whatWorked !== undefined) next.whatWorked = body.whatWorked;
         return next;
-      });
+      }, projectOptions);
       if (!updated) {
         sendJson(res, 404, { error: 'Record not found' });
         return;
@@ -8090,9 +8133,12 @@ async function addContext(){
       const feedbackDir = requestSafeDataDir;
       const memoryLogPath = path.join(feedbackDir, 'memory-log.jsonl');
       const feedbackLogPath = path.join(feedbackDir, 'feedback-log.jsonl');
-      const deletedMemory = deleteLessonJsonlRecord(memoryLogPath, lessonId);
-      const deletedFeedback = deleteLessonJsonlRecord(feedbackLogPath, lessonId);
-      if (!deletedMemory && !deletedFeedback) {
+      if (!findRecordById(lessonId, feedbackDir, projectOptions)) { sendJson(res, 404, { error: 'Record not found' }); return; }
+      const { signalPaths, accountAttribution } = require('../../scripts/project-catalog');
+      const writeOptions = { ...projectOptions, attribution: accountAttribution(feedbackDir, projectOptions) };
+      let deleted = false;
+      for (const name of ['memory-log.jsonl', 'feedback-log.jsonl']) for (const file of signalPaths(feedbackDir, name)) deleted = deleteLessonJsonlRecord(file, lessonId, writeOptions) || deleted;
+      if (!deleted) {
         sendJson(res, 404, { error: 'Record not found' });
         return;
       }
@@ -8105,12 +8151,12 @@ async function addContext(){
     if (isGetLikeRequest && lessonDetailMatch && lessonDetailMatch[1] !== '') {
       const lessonId = decodeURIComponent(lessonDetailMatch[1]);
       const feedbackDir = requestSafeDataDir;
-      const record = findRecordById(lessonId, feedbackDir);
+      const record = findRecordById(lessonId, feedbackDir, projectOptions);
       if (!record) {
         sendHtml(res, 404, renderLessonDetailHtml(null, lessonId));
         return;
       }
-      sendHtml(res, 200, renderLessonDetailHtml(record, lessonId), {}, { headOnly: isHeadRequest });
+      sendHtml(res, 200, renderLessonDetailHtml(record, lessonId).replace('</head>', '<script src="/project-switcher.js"></script></head>'), {}, { headOnly: isHeadRequest });
       return;
     }
 
@@ -9726,7 +9772,7 @@ a{color:#8b9}</style></head><body><form class="card" method="post" action="/oaut
     if (req.method === 'POST' && pathname === '/v1/telemetry/ping') {
       const { FEEDBACK_DIR } = getFeedbackPaths();
       try {
-        const payload = await parseJsonBody(req, 16 * 1024);
+        const payload = await readProjectBody(req, 16 * 1024);
         appendTelemetryPing(FEEDBACK_DIR, payload, req.headers);
       } catch (err) {
         try {
@@ -10212,7 +10258,7 @@ a{color:#8b9}</style></head><body><form class="card" method="post" action="/oaut
       try {
         const body = isFormSubmission
           ? await parseFormBody(req, 24 * 1024)
-          : await parseJsonBody(req, 24 * 1024);
+          : await readProjectBody(req, 24 * 1024);
         const workflowSprintIntake = requirePrivateApiModule('workflowSprintIntake', 'Workflow sprint intake');
         const reqCookies = parseCookies(req?.headers?.cookie || '');
         const ssoEntry = getPaidAuthSessionEntry(reqCookies[PAID_AUTH_COOKIE_NAME], expectedApiKey, expectedOperatorKey);
@@ -10829,7 +10875,7 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
 
     if (req.method === 'POST' && pathname === '/v1/design/self-correct') {
       try {
-        const body = await parseJsonBody(req);
+        const body = await readProjectBody(req);
         if (!body || typeof body !== 'object' || Array.isArray(body)) {
           throw createHttpError(400, 'JSON object body is required');
         }
@@ -10864,7 +10910,7 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
 
     if (req.method === 'POST' && pathname === '/v1/boost/evaluate') {
       try {
-        const body = await parseJsonBody(req);
+        const body = await readProjectBody(req);
         if (!body || typeof body !== 'object' || Array.isArray(body)) {
           throw createHttpError(400, 'JSON object body is required');
         }
@@ -10886,7 +10932,7 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
 
     if (req.method === 'POST' && pathname === '/v1/decisions/subq-snap') {
       try {
-        const body = await parseJsonBody(req);
+        const body = await readProjectBody(req);
         if (!body || typeof body !== 'object' || Array.isArray(body)) {
           throw createHttpError(400, 'JSON object body is required');
         }
@@ -10912,7 +10958,7 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
 
     if (req.method === 'POST' && pathname === '/v1/billing/recommend-offer') {
       try {
-        const body = await parseJsonBody(req);
+        const body = await readProjectBody(req);
         const traceId = body.traceId || createTraceId('offer');
         const forwardedList = req.headers['x-forwarded-for']
           ? String(req.headers['x-forwarded-for']).split(',').map((s) => s.trim()).filter(Boolean)
@@ -10946,7 +10992,7 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
     // Public checkout session creation for top-of-funnel acquisition.
     if (req.method === 'POST' && pathname === '/v1/billing/checkout') {
       try {
-        const body = await parseJsonBody(req);
+        const body = await readProjectBody(req);
         const traceId = body.traceId || createTraceId('checkout');
         const responseHeaders = getPublicBillingHeaders(traceId);
         const analyticsMetadata = {
@@ -11046,7 +11092,7 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
 
     if (req.method === 'POST' && pathname === '/v1/billing/portal') {
       try {
-        const body = await parseJsonBody(req);
+        const body = await readProjectBody(req);
         const traceId = body.traceId || createTraceId('billing_portal');
         const responseHeaders = getPublicBillingHeaders(traceId);
         const authHeader = req.headers['authorization'] || '';
@@ -11131,7 +11177,19 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
       // Usage metering runs only on the scoped dispatch pass.
       const _token = extractBearerToken(req);
       if (_token && _token !== expectedApiKey) recordUsage(_token);
-
+      Object.assign(projectOptions, { projectKey: requestProjectKey, feedbackDir: requestFeedbackDir }, projectEvidenceForRequest(req, parsed, requestFeedbackDir, requestDataIdentity));
+      if (req.method === 'GET' && pathname === '/v1/projects') { sendJson(res, 200, buildProjectCatalog(requestFeedbackDir, projectOptions)); return; }
+      if (requestProjectKey != null && req.method === 'GET' && ['/v1/dashboard', '/v1/feedback/stats'].includes(pathname)) {
+        const data = generateDashboard(requestFeedbackDir, {
+          projectKey: requestProjectKey, ...projectOptions, humanOnly: true });
+        const tier = resolvePaidSessionTier(extractApiKey(req), expectedApiKey, expectedOperatorKey) || 'pro';
+        if (pathname === '/v1/dashboard') sendJson(res, 200, { ...data, tier });
+        else sendJson(res, 200, { ...data.feedbackAnalysis, projectKey: requestProjectKey, tier, gateStats: data.gateStats, activeGateCount: data.gateStats.totalGates, todayOverview: data.todayOverview });
+        return;
+      }
+      if (requestProjectKey != null && unavailableProjectRoutes.includes(pathname)) {
+        sendJson(res, 409, { error: 'Unavailable for this project', unavailableSources: [pathname] }); return;
+      }
       if (req.method === 'GET' && pathname === '/v1/feedback/stats') {
         const stats = shouldAggregateFeedback()
           ? computeAggregateFeedbackStats({ feedbackDir: requestFeedbackPaths.FEEDBACK_DIR })
@@ -11223,7 +11281,7 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
       // Only open-ended/qualitative questions fall through to lesson retrieval +
       // the user's configured LOCAL model (a BYO cloud key is optional, not required).
       if (req.method === 'POST' && pathname === '/v1/chat') {
-        const body = await parseJsonBody(req);
+        const body = await readProjectBody(req);
         const question = body.question || body.q || body.message;
         const normalizedChatPrompt = normalizeEnterpriseChatPrompt(question);
         const chatFeedbackDir = requestFeedbackPaths.FEEDBACK_DIR;
@@ -11267,7 +11325,7 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
 
       // Save Gemini API key from the dashboard UI
       if (req.method === 'POST' && pathname === '/v1/settings/gemini-key') {
-        const body = await parseJsonBody(req);
+        const body = await readProjectBody(req);
         const key = String(body.key || '').trim();
         if (!key) {
           sendJson(res, 400, { ok: false, error: 'missing_key', message: 'No API key provided.' });
@@ -11371,7 +11429,9 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
         const onEvent = (envelope) => {
           if (envelope.scopeKey !== subscriberKey) return;
           const payload = envelope.payload;
-          safeWrite(`event: ${payload.type}\ndata: ${JSON.stringify(payload)}\n\n`);
+          if (!matchesProject(payload, requestProjectKey)) return;
+          const { accountRoot, ...publicPayload } = payload;
+          safeWrite(`event: ${payload.type}\ndata: ${JSON.stringify(publicPayload)}\n\n`);
         };
         eventBus.on('broadcast', onEvent);
 
@@ -11403,10 +11463,11 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
         pathname === '/v1/enterprise/data-chat/chat'
         || pathname === '/v1/enterprise/dialogflow/chat'
       )) {
-        const body = await parseJsonBody(req, 16 * 1024);
+        const body = await readProjectBody(req, 16 * 1024);
         const result = await answerEnterpriseDataChat({
           prompt: body.prompt || body.message || body.query,
           feedbackDir: requestFeedbackDir,
+          projectKey: requestProjectKey,
           parsed,
         });
         sendJson(res, 200, result);
@@ -11428,7 +11489,7 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
       }
 
       if (req.method === 'POST' && pathname === '/v1/intents/plan') {
-        const body = await parseJsonBody(req);
+        const body = await readProjectBody(req);
         try {
           const intentRouter = requirePrivateApiModule('intentRouter', 'Intent planning');
           const plan = intentRouter.planIntent({
@@ -11450,7 +11511,7 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
       }
 
       if (req.method === 'POST' && pathname === '/v1/handoffs/start') {
-        const body = await parseJsonBody(req);
+        const body = await readProjectBody(req);
         try {
           const intentRouter = requirePrivateApiModule('intentRouter', 'Handoff planning');
           const delegationRuntime = requirePrivateApiModule('delegationRuntime', 'Sequential handoffs');
@@ -11481,7 +11542,7 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
       }
 
       if (req.method === 'POST' && pathname === '/v1/handoffs/complete') {
-        const body = await parseJsonBody(req);
+        const body = await readProjectBody(req);
         try {
           const delegationRuntime = requirePrivateApiModule('delegationRuntime', 'Sequential handoffs');
           const result = delegationRuntime.completeHandoff({
@@ -11502,7 +11563,7 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
       }
 
       if (req.method === 'POST' && pathname === '/v1/internal-agent/bootstrap') {
-        const body = await parseJsonBody(req);
+        const body = await readProjectBody(req);
         try {
           const result = bootstrapInternalAgent({
             source: body.source,
@@ -11529,7 +11590,7 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
       }
 
       if (req.method === 'POST' && pathname === '/v1/hosted/sandbox/dispatch') {
-        const body = await parseJsonBody(req);
+        const body = await readProjectBody(req);
         try {
           const result = buildCloudflareSandboxPlan({
             source: body.source,
@@ -11569,7 +11630,7 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
 
       if (req.method === 'POST' && pathname === '/v1/jobs/harness') {
         if (tenantDataScope()) throw createHttpError(403, 'Hosted tenant harness execution requires an execution sandbox');
-        const body = await parseJsonBody(req);
+        const body = await readProjectBody(req);
         const identifier = body.harness || body.harnessId;
         if (!identifier) {
           throw createHttpError(400, 'harness is required');
@@ -11626,7 +11687,7 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
         const jobId = normalizeJobIdFromPath(pathname, '/control');
         if (req.method === 'POST' && jobId) {
           const state = readHostedJobOrThrow(jobId);
-          const body = await parseJsonBody(req);
+          const body = await readProjectBody(req);
           const action = normalizeNullableText(body.action);
           if (!action || !JOB_CONTROL_ACTIONS.has(action)) {
             throw createHttpError(400, 'action must be one of pause, cancel, or resume');
@@ -11677,7 +11738,7 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
       }
 
       if (req.method === 'POST' && pathname === '/v1/gates/decide') {
-        const body = await parseJsonBody(req);
+        const body = await readProjectBody(req);
         if (!body.toolName) {
           throw createHttpError(400, 'Missing toolName');
         }
@@ -11711,7 +11772,7 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
       }
 
       if (req.method === 'POST' && pathname === '/v1/gates/constraint') {
-        const body = await parseJsonBody(req);
+        const body = await readProjectBody(req);
         if (!body.key || body.value === undefined) {
           throw createHttpError(400, 'Missing key or value');
         }
@@ -11726,7 +11787,7 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
       }
 
       if (req.method === 'POST' && pathname === '/v1/gates/task-scope') {
-        const body = await parseJsonBody(req);
+        const body = await readProjectBody(req);
         const scope = setTaskScope({
           taskId: body.taskId,
           summary: body.summary,
@@ -11748,7 +11809,7 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
       }
 
       if (req.method === 'POST' && pathname === '/v1/gates/branch-governance') {
-        const body = await parseJsonBody(req);
+        const body = await readProjectBody(req);
         const branchGovernance = setBranchGovernance({
           branchName: body.branchName,
           baseBranch: body.baseBranch,
@@ -11772,7 +11833,7 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
       }
 
       if (req.method === 'POST' && pathname === '/v1/gates/protected-approval') {
-        const body = await parseJsonBody(req);
+        const body = await readProjectBody(req);
         const approval = approveProtectedAction({
           pathGlobs: body.pathGlobs,
           reason: body.reason,
@@ -11785,9 +11846,9 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
       }
 
       if (req.method === 'POST' && pathname === '/v1/task-outcomes') {
-        const body = await parseJsonBody(req);
+        const body = await readProjectBody(req);
         try {
-          const result = recordTaskOutcome(body, { feedbackDir: requestFeedbackDir });
+          const result = recordTaskOutcome(body, { feedbackDir: requestFeedbackDir, projectKey: requestProjectKey });
           sendJson(res, result.recorded ? 201 : 200, result);
         } catch (error) {
           throw createHttpError(400, error.message);
@@ -11799,34 +11860,34 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
         const taskId = parsed.searchParams.get('taskId');
         const limit = Math.max(1, Math.min(100, Number(parsed.searchParams.get('limit') || 20)));
         if (taskId) {
-          const outcome = getTaskOutcome(taskId, { feedbackDir: requestFeedbackDir });
+          const outcome = getTaskOutcome(taskId, { feedbackDir: requestFeedbackDir, projectKey: requestProjectKey });
           if (!outcome) throw createHttpError(404, `Task outcome not found: ${taskId}`);
           sendJson(res, 200, outcome);
         } else {
           sendJson(res, 200, {
-            outcomes: readTaskOutcomes({ feedbackDir: requestFeedbackDir }).slice(-limit),
+            outcomes: readTaskOutcomes({ feedbackDir: requestFeedbackDir, projectKey: requestProjectKey }).slice(-limit),
           });
         }
         return;
       }
 
       if (req.method === 'GET' && pathname === '/v1/task-outcomes/metrics') {
-        const outcomes = readTaskOutcomes({ feedbackDir: requestFeedbackDir });
+        const outcomes = readTaskOutcomes({ feedbackDir: requestFeedbackDir, projectKey: requestProjectKey });
         sendJson(res, 200, calculateTaskOutcomeMetrics(outcomes));
         return;
       }
 
       if (req.method === 'GET' && pathname === '/v1/task-outcomes/monitor') {
-        const outcomes = readTaskOutcomes({ feedbackDir: requestFeedbackDir });
-        const toolKpis = computeToolKpis({ feedbackDir: requestFeedbackDir });
+        const outcomes = readTaskOutcomes({ feedbackDir: requestFeedbackDir, projectKey: requestProjectKey });
+        const toolKpis = computeToolKpis({ feedbackDir: requestFeedbackDir, projectKey: requestProjectKey });
         sendJson(res, 200, monitorProductionSignals(outcomes, toolKpis));
         return;
       }
 
       if (req.method === 'POST' && pathname === '/v1/escalations') {
-        const body = await parseJsonBody(req);
+        const body = await readProjectBody(req);
         try {
-          const result = requestEscalation(body, { feedbackDir: requestFeedbackDir });
+          const result = requestEscalation(body, { feedbackDir: requestFeedbackDir, projectKey: requestProjectKey });
           sendJson(res, result.recorded ? 201 : 200, result);
         } catch (error) {
           throw createHttpError(400, error.message);
@@ -11836,7 +11897,8 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
 
       if (req.method === 'GET' && pathname === '/v1/escalations') {
         const status = parsed.searchParams.get('status') || undefined;
-        const escalations = listEscalations({ feedbackDir: requestFeedbackDir, status });
+        const escalations = listEscalations({ feedbackDir: requestFeedbackDir,
+          projectKey: requestProjectKey, status });
         sendJson(res, 200, {
           escalations,
           metrics: calculateEscalationMetrics(escalations),
@@ -11847,7 +11909,7 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
       if (req.method === 'POST' && /^\/v1\/escalations\/[^/]+\/decision$/.test(pathname)) {
         const escalationId = decodeURIComponent(pathname.split('/')[3]);
         const authenticatedActor = authenticateHumanReviewer(req, humanReviewerConfig);
-        const body = await parseJsonBody(req);
+        const body = await readProjectBody(req);
         try {
           sendJson(res, 200, decideEscalation({
             ...body,
@@ -11856,6 +11918,7 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
             authenticatedActor,
             approvalSigningKey: humanReviewerConfig.key,
             feedbackDir: requestFeedbackDir,
+          projectKey: requestProjectKey,
           }));
         } catch (error) {
           throw createHttpError(400, error.message);
@@ -11883,7 +11946,9 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
       if (req.method === 'GET' && pathname === '/v1/feedback/summary') {
         const recent = Number(parsed.searchParams.get('recent') || 20);
         const summary = feedbackSummary(Number.isFinite(recent) ? recent : 20, {
+          ...projectOptions,
           feedbackDir: requestFeedbackDir,
+          projectKey: requestProjectKey,
         });
         sendJson(res, 200, { summary });
         return;
@@ -11904,10 +11969,12 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
           .filter(Boolean);
         const lessonSearch = requirePrivateApiModule('lessonSearch', 'Lesson search');
         const results = lessonSearch.searchLessons(query, {
+          ...projectOptions,
           limit: Number.isFinite(limit) ? limit : 10,
           category,
           tags,
           feedbackDir: requestFeedbackDir,
+          projectKey: requestProjectKey,
         });
         sendJson(res, 200, results);
         return;
@@ -11926,11 +11993,13 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
         let results;
         try {
           results = await searchThumbgateAsync({
+            ...projectOptions,
             query,
             limit: Number.isFinite(limit) ? limit : 10,
             source,
             signal,
             feedbackDir: requestFeedbackDir,
+          projectKey: requestProjectKey,
             metadataFilters: {
               tags: (parsed.searchParams.get('tags') || '').split(',').map((tag) => tag.trim()).filter(Boolean),
               sourceFormat: parsed.searchParams.get('sourceFormat') || undefined,
@@ -11952,7 +12021,7 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
           sendJson(res, 429, { error: 'Free tier: search requires Pro. Upgrade at /pricing', code: 'PRO_REQUIRED' });
           return;
         }
-        const body = await parseJsonBody(req);
+        const body = await readProjectBody(req);
         let results;
         try {
           results = await searchThumbgateAsync({
@@ -11961,6 +12030,7 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
             source: body.source,
             signal: body.signal,
             feedbackDir: requestFeedbackDir,
+          projectKey: requestProjectKey,
             metadataFilters: body.filters,
             queryRewrite: body.queryRewrite !== false,
             accessContext: requestDocumentAccessContext,
@@ -11978,6 +12048,7 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
         const tag = parsed.searchParams.get('tag') || '';
         const results = listImportedDocuments({
           feedbackDir: requestFeedbackDir,
+          projectKey: requestProjectKey,
           limit: Number.isFinite(limit) ? limit : 20,
           query,
           tag,
@@ -11995,6 +12066,7 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
           }
           const document = readImportedDocument(documentId, {
             feedbackDir: requestFeedbackDir,
+          projectKey: requestProjectKey,
             accessContext: requestDocumentAccessContext,
           });
           if (!document) {
@@ -12006,7 +12078,7 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
       }
 
       if (req.method === 'POST' && pathname === '/v1/feedback/capture') {
-        const body = await parseJsonBody(req);
+        const body = await readProjectBody(req);
         const captureLimit = checkLimit('capture_feedback');
         if (!captureLimit.allowed) {
           const sentence = proWouldHaveBlockedSentence(body.whatWentWrong || body.context || '');
@@ -12018,17 +12090,23 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
           });
           return;
         }
-        // Auto-include conversation window when caller doesn't provide one
+        const captureProject = projectForCapture({ ...body, projectKey: body.projectKey || requestProjectKey || undefined }, { hosted: Boolean(requestDataIdentity.partition) || !isLoopbackHost(getRequestHostHeader(req)), cwd: resolveRequestProjectDir(req, parsed) });
+        // Auto-include only conversation events attributed to this project
         let chatHistory = Array.isArray(body.chatHistory) ? body.chatHistory : body.messages;
         if (!chatHistory || chatHistory.length === 0) {
           try {
             chatHistory = readRecentConversationWindow({
               feedbackDir: requestFeedbackDir,
+              projectKey: captureProject.projectKey,
               limit: 10,
             });
           } catch { /* best-effort — conversation window is optional */ }
         }
+
         const result = captureFeedback({
+          ...captureProject,
+          cwd: body.cwd,
+          scope: body.scope,
           signal: body.signal,
           context: body.context || '',
           relatedFeedbackId: body.relatedFeedbackId,
@@ -12052,9 +12130,10 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
             }
             : undefined,
           reviewOrigin: 'human',
-        }, { feedbackDir: requestFeedbackDir });
+        }, { feedbackDir: requestFeedbackDir, hosted: true });
         const actionIntegration = inferActionIntegration(body, req.headers);
         appendBestEffortTelemetry(requestFeedbackDir, {
+          ...captureProject,
           eventType: chatgptActionEventType(actionIntegration, 'capture_feedback'),
           clientType: 'api',
           source: actionIntegration,
@@ -12071,6 +12150,8 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
           // no evidence blobs).
           publishEvent({
             type: 'feedback',
+            ...captureProject,
+            accountRoot: requestSafeDataDir,
             signal: body.signal,
             tags: Array.isArray(body.tags) ? body.tags.slice(0, 8) : [],
             feedbackId: result.feedbackId,
@@ -12084,7 +12165,7 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
       }
 
       if (req.method === 'POST' && pathname === '/v1/feedback/rules') {
-        const body = await parseJsonBody(req);
+        const body = await readProjectBody(req);
         const minOccurrences = Number(body.minOccurrences || 2);
         const outputPath = body.outputPath
           ? resolveSafePath(body.outputPath, { safeDataDir: requestSafeDataDir })
@@ -12094,6 +12175,8 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
         // re-fetch the summary without waiting on a poll tick.
         publishEvent({
           type: 'rules-updated',
+          projectKey: requestProjectKey || 'unassigned',
+          accountRoot: requestSafeDataDir,
           path: result.path,
           ts: Date.now(),
         });
@@ -12105,7 +12188,7 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
       }
 
       if (req.method === 'POST' && pathname === '/v1/skills/generate') {
-        const body = await parseJsonBody(req);
+        const body = await readProjectBody(req);
         const minOccurrences = Number(body.minOccurrences || 3);
         const tags = Array.isArray(body.tags) ? body.tags : [];
         let skills = generateSkills({
@@ -12120,7 +12203,7 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
       }
 
       if (req.method === 'POST' && pathname === '/v1/documents/import') {
-        const body = await parseJsonBody(req, 2 * 1024 * 1024);
+        const body = await readProjectBody(req, 2 * 1024 * 1024);
         const document = importDocument({
           filePath: body.filePath
             ? resolveDocumentImportFilePath(body.filePath, {
@@ -12136,6 +12219,7 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
           tags: extractTags(body.tags),
           proposeGates: body.proposeGates !== false,
           feedbackDir: requestFeedbackDir,
+          projectKey: requestProjectKey,
           accessContext: requestDocumentAccessContext,
           visibility: body.visibility === 'private' ? 'private' : 'tenant',
           allowedPrincipals: Array.isArray(body.allowedPrincipals)
@@ -12155,13 +12239,14 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
           sendJson(res, 429, { error: 'Free tier: DPO export requires Pro. Upgrade at /pricing', code: 'PRO_REQUIRED' });
           return;
         }
-        const body = await parseJsonBody(req);
+        const body = await readProjectBody(req);
         const paths = resolveDpoExportPaths(body, {
           safeDataDir: requestSafeDataDir,
           fallbackMemoryLogPath: requestFeedbackPaths.MEMORY_LOG_PATH,
         });
         const wantsAsync = body.async === true || normalizeNullableText(body.mode) === 'async';
 
+        if (wantsAsync && requestProjectKey != null) throw createHttpError(409, 'Async export is unavailable for this project');
         if (wantsAsync) {
           try {
             const hostedJobLauncher = requirePrivateApiModule('hostedJobLauncher', 'Hosted DPO export jobs');
@@ -12184,8 +12269,8 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
           return;
         }
 
-        const memories = loadDpoExportMemories(paths);
-        const result = exportDpoFromMemories(memories);
+        const memories = body.inputPath ? loadDpoExportMemories(paths).map((row) => ({ ...row, ...projectForRecord(row) })) : readProjectRows(requestFeedbackDir, 'memory-log.jsonl', projectOptions);
+        const result = exportDpoFromMemories(memories, projectOptions);
         if (paths.outputPath) {
           fs.mkdirSync(path.dirname(paths.outputPath), { recursive: true });
           fs.writeFileSync(paths.outputPath, result.jsonl);
@@ -12209,23 +12294,23 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
 
       // --- Team Lesson Export: POST /v1/lessons/export ---
       if (req.method === 'POST' && pathname === '/v1/lessons/export') {
-        const body = await parseJsonBody(req);
+        const body = await readProjectBody(req);
         const feedbackDir = requestSafeDataDir;
         const memoryLogPath = path.join(feedbackDir, 'memory-log.jsonl');
         const feedbackLogPath = path.join(feedbackDir, 'feedback-log.jsonl');
-        const memories = readLessonJsonl(memoryLogPath, { maxLines: 0 });
-        const feedbacks = readLessonJsonl(feedbackLogPath, { maxLines: 0 });
+        const memories = readProjectRows(feedbackDir, 'memory-log.jsonl', projectOptions);
+        const feedbacks = readProjectRows(feedbackDir, 'feedback-log.jsonl', projectOptions);
 
         // Merge into unified lesson records
         const lessonMap = new Map();
         for (const rec of feedbacks) {
-          if (rec.id) lessonMap.set(rec.id, { feedbackEvent: rec, memoryRecord: null });
+          if (rec.id) lessonMap.set(rec.projectKey + ':' + rec.id, { feedbackEvent: rec, memoryRecord: null });
         }
         for (const rec of memories) {
           if (rec.id) {
-            const existing = lessonMap.get(rec.id);
+            const existing = lessonMap.get(rec.projectKey + ':' + rec.id);
             if (existing) { existing.memoryRecord = rec; }
-            else { lessonMap.set(rec.id, { feedbackEvent: null, memoryRecord: rec }); }
+            else { lessonMap.set(rec.projectKey + ':' + rec.id, { feedbackEvent: null, memoryRecord: rec }); }
           }
         }
 
@@ -12251,13 +12336,14 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
           version: '1.0.0',
           exportedAt: new Date().toISOString(),
           source: {
-            project: path.basename(feedbackDir),
-            hostname: require('os').hostname(),
+            projectKey: requestProjectKey,
+            label: requestProjectKey ? 'Project export' : 'Account export',
           },
           lessonCount: lessons.length,
           lessons: lessons.map((l) => {
             const merged = { ...(l.feedbackEvent || {}), ...(l.memoryRecord || {}) };
             return {
+              ...projectForRecord(merged),
               id: merged.id,
               signal: normalizeLessonSignal(merged.signal),
               title: merged.title || merged.context || '',
@@ -12293,8 +12379,13 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
 
       // --- Team Lesson Import: POST /v1/lessons/import ---
       if (req.method === 'POST' && pathname === '/v1/lessons/import') {
-        const body = await parseJsonBody(req);
+        const body = await readProjectBody(req);
         const bundle = body.bundle || body;
+        if (Array.isArray(bundle.lessons)) {
+          for (const lesson of bundle.lessons) {
+            if ((lesson.projectKey != null && !validProjectKey(lesson.projectKey)) || (requestProjectKey != null && lesson.projectKey !== requestProjectKey)) throw createHttpError(400, 'Every imported lesson must explicitly match the selected project');
+          }
+        }
         if (!bundle.lessons || !Array.isArray(bundle.lessons)) {
           sendJson(res, 400, { error: 'Invalid bundle: missing lessons array' });
           return;
@@ -12305,12 +12396,12 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
 
         // Load existing IDs for dedup
         const existing = readLessonJsonl(feedbackLogPath, { maxLines: 0 });
-        const existingIds = new Set(existing.map((r) => r.id).filter(Boolean));
+        const existingIds = new Set(existing.map((r) => projectForRecord(r).projectKey + ':' + (r.provenance?.originalId || r.id)));
         // Also dedup by title+signal content hash
         const existingHashes = new Set(existing.map((r) => {
           const t = (r.title || r.context || '').trim().toLowerCase();
           const s = normalizeLessonSignal(r.signal);
-          return `${s}|${t}`;
+          return `${projectForRecord(r).projectKey}|${s}|${t}`;
         }).filter((h) => h !== '|'));
 
         let imported = 0;
@@ -12319,12 +12410,12 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
 
         for (const lesson of bundle.lessons) {
           // Skip if exact ID exists
-          if (lesson.id && existingIds.has(lesson.id)) {
+          if (lesson.id && existingIds.has(projectForRecord(lesson).projectKey + ':' + lesson.id)) {
             skippedDuplicate++;
             continue;
           }
           // Skip if same title+signal already exists (content dedup)
-          const contentHash = `${normalizeLessonSignal(lesson.signal)}|${(lesson.title || lesson.context || '').trim().toLowerCase()}`;
+          const contentHash = `${projectForRecord(lesson).projectKey}|${normalizeLessonSignal(lesson.signal)}|${(lesson.title || lesson.context || '').trim().toLowerCase()}`;
           if (contentHash !== '|' && existingHashes.has(contentHash)) {
             skippedDuplicate++;
             continue;
@@ -12332,6 +12423,7 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
 
           // Create imported record with provenance
           const importedRecord = {
+            ...projectForRecord(lesson),
             id: `imported_${Date.now()}_${require("crypto").randomBytes(4).toString("hex")}`,
             signal: lesson.signal || 'down',
             title: lesson.title || '',
@@ -12353,8 +12445,9 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
             },
           };
 
+          fs.mkdirSync(feedbackDir, { recursive: true });
           fs.appendFileSync(feedbackLogPath, JSON.stringify(importedRecord) + '\n', 'utf8');
-          existingIds.add(importedRecord.id);
+          existingIds.add(importedRecord.projectKey + ':' + (lesson.id || importedRecord.id));
           existingHashes.add(contentHash);
           importedIds.push(importedRecord.id);
           imported++;
@@ -12371,7 +12464,7 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
       }
 
       if (req.method === 'POST' && pathname === '/v1/analytics/databricks/export') {
-        const body = await parseJsonBody(req);
+        const body = await readProjectBody(req);
         const outputPath = body.outputPath
           ? resolveSafePath(body.outputPath, { safeDataDir: requestSafeDataDir })
           : undefined;
@@ -12381,7 +12474,7 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
       }
 
       if (req.method === 'POST' && pathname === '/v1/context/construct') {
-        const body = await parseJsonBody(req);
+        const body = await readProjectBody(req);
         ensureContextFs();
         let namespaces = [];
         try {
@@ -12411,7 +12504,7 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
       }
 
       if (req.method === 'POST' && pathname === '/v1/context/evaluate') {
-        const body = await parseJsonBody(req);
+        const body = await readProjectBody(req);
         if (!body.packId || !body.outcome) {
           throw createHttpError(400, 'packId and outcome are required');
         }
@@ -12559,7 +12652,7 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
           return;
         }
 
-        const body = await parseJsonBody(req);
+        const body = await readProjectBody(req);
         const keyFingerprint = fingerprintProKey(token);
         const alert = await sendProActivationAlert({
           key: token,
@@ -12599,7 +12692,7 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
           return;
         }
 
-        const body = await parseJsonBody(req);
+        const body = await readProjectBody(req);
         if (!body.customerId) {
           throw createHttpError(400, 'customerId is required');
         }
@@ -12724,7 +12817,7 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
 
         const { FEEDBACK_DIR } = getFeedbackPaths();
         try {
-          const body = await parseJsonBody(req, 24 * 1024);
+          const body = await readProjectBody(req, 24 * 1024);
           const workflowSprintIntake = requirePrivateApiModule('workflowSprintIntake', 'Workflow sprint intake');
           const result = workflowSprintIntake.advanceWorkflowSprintLead(body, { feedbackDir: FEEDBACK_DIR });
 
@@ -12867,7 +12960,7 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
         if (!isProTier() && (!reqToken || dashTier === 'Free')) {
           try {
             const { getFeedbackPaths: getScopedFeedbackPaths } = require('../../scripts/feedback-loop');
-            const { PREVENTION_RULES_PATH } = getScopedFeedbackPaths({ feedbackDir: requestFeedbackDir });
+            const { PREVENTION_RULES_PATH } = getScopedFeedbackPaths({ feedbackDir: requestFeedbackDir, projectKey: requestProjectKey });
             if (PREVENTION_RULES_PATH && fs.existsSync(PREVENTION_RULES_PATH)) {
               const dropped = droppedRepeatFromRulesMarkdown(fs.readFileSync(PREVENTION_RULES_PATH, 'utf8'));
               const sentence = proWouldHaveBlockedSentence(dropped);
@@ -12930,8 +13023,9 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
 
       // GET /v1/dashboard/review-state -- incremental review baseline and deltas
       if (req.method === 'GET' && pathname === '/v1/dashboard/review-state') {
-        const reviewState = readDashboardReviewState(requestFeedbackDir);
+        const reviewState = readDashboardReviewState(requestFeedbackDir, projectOptions);
         const data = generateDashboard(requestFeedbackDir, {
+          projectKey: requestProjectKey,
           reviewBaseline: reviewState,
           humanOnly: true,
           authContext: { tier: 'pro' },
@@ -12945,14 +13039,15 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
 
       // POST /v1/dashboard/review-state -- mark current dashboard state as reviewed
       if (req.method === 'POST' && pathname === '/v1/dashboard/review-state') {
-        const body = await parseJsonBody(req);
-        const snapshot = buildReviewSnapshot(requestFeedbackDir, { humanOnly: true });
+        const body = await readProjectBody(req);
+        const snapshot = buildReviewSnapshot(requestFeedbackDir, { humanOnly: true, feedbackEntries: readProjectRows(requestFeedbackDir, 'feedback-log.jsonl', projectOptions), memoryEntries: readProjectRows(requestFeedbackDir, 'memory-log.jsonl', projectOptions), auditEntries: readProjectRows(requestFeedbackDir, 'audit-trail.jsonl', projectOptions), projectRoot: null });
         // Override snapshot timestamp with client-provided one if available
         if (body?.reviewedAt) {
           snapshot.reviewedAt = body.reviewedAt;
         }
-        writeDashboardReviewState(requestFeedbackDir, snapshot);
+        writeDashboardReviewState(requestFeedbackDir, snapshot, projectOptions);
         const data = generateDashboard(requestFeedbackDir, {
+          projectKey: requestProjectKey,
           reviewBaseline: snapshot,
           humanOnly: true,
           authContext: { tier: 'pro' },
@@ -12968,13 +13063,14 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
       if (req.method === 'GET' && pathname === '/v1/dashboard/agent-register') {
         const { buildAgentRegister } = require('../../scripts/agent-action-inventory');
         const windowDays = parsed.searchParams.get('days') || 30;
-        sendJson(res, 200, buildAgentRegister({ dataDir: requestFeedbackDir, windowDays }));
+        sendJson(res, 200, buildAgentRegister({ ...projectOptions, dataDir: requestFeedbackDir, windowDays, projectKey: requestProjectKey }));
         return;
       }
 
       // POST /v1/dashboard/agent-register -- edit agent owner or registration status
       if (req.method === 'POST' && pathname === '/v1/dashboard/agent-register') {
-        const body = await parseJsonBody(req);
+        if (requestProjectKey != null) throw createHttpError(409, 'Agent ownership is an account setting; edit it in All projects');
+        const body = await readProjectBody(req);
         const { isSafeKey, updateAgentRegisterEntry, buildAgentRegister } = require('../../scripts/agent-action-inventory');
         const id = typeof body?.id === 'string' ? body.id.trim() : '';
         if (!isSafeKey(id)) {
@@ -12991,7 +13087,7 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
           owner: body?.owner !== undefined ? body.owner : undefined,
           registered: typeof body?.registered === 'boolean' ? body.registered : undefined,
         });
-        sendJson(res, 200, { ok: true, agentRegister: buildAgentRegister({ dataDir: requestFeedbackDir }) });
+        sendJson(res, 200, { ok: true, agentRegister: buildAgentRegister({ ...projectOptions, dataDir: requestFeedbackDir, projectKey: requestProjectKey }) });
         return;
       }
 
@@ -13027,7 +13123,7 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
       }
 
       if (req.method === 'POST' && pathname === '/v1/decisions/evaluate') {
-        const body = await parseJsonBody(req);
+        const body = await readProjectBody(req);
         const normalizedRequestAction = normalizeProviderAction(body);
         const hasProviderNativeAction = Boolean(
           body.providerToolCall
@@ -13096,6 +13192,7 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
               : scopeState.branchGovernance,
           },
           feedbackDir: requestFeedbackDir,
+          projectKey: requestProjectKey,
         });
         const evaluation = recordDecisionEvaluation(report, {
           source: 'api',
@@ -13112,6 +13209,7 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
           changedFiles,
         }, {
           feedbackDir: requestFeedbackDir,
+          projectKey: requestProjectKey,
         });
         report.actionId = evaluation.actionId;
         if (report.decisionControl) report.decisionControl.actionId = evaluation.actionId;
@@ -13132,7 +13230,7 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
       }
 
       if (req.method === 'POST' && pathname === '/v1/decisions/outcome') {
-        const body = await parseJsonBody(req);
+        const body = await readProjectBody(req);
         if (!body.actionId || !body.outcome) {
           sendProblem(res, {
             type: PROBLEM_TYPES.BAD_REQUEST,
@@ -13153,6 +13251,7 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
           source: 'api',
         }, {
           feedbackDir: requestFeedbackDir,
+          projectKey: requestProjectKey,
         });
         sendJson(res, 200, outcome);
         return;
@@ -13171,14 +13270,14 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
 
       // GET /v1/gates/stats -- Gate enforcement statistics
       if (req.method === 'GET' && pathname === '/v1/gates/stats') {
-        const stats = loadGateStats();
+        const stats = requestProjectKey != null ? require('../../scripts/project-dashboard').generateProjectDashboard(requestFeedbackDir, projectOptions).gateStats : loadGateStats({ feedbackDir: requestFeedbackDir });
         sendJson(res, 200, stats);
         return;
       }
 
       // POST /v1/gates/satisfy -- Record evidence that a gate condition is satisfied
       if (req.method === 'POST' && pathname === '/v1/gates/satisfy') {
-        const body = await parseJsonBody(req);
+        const body = await readProjectBody(req);
         if (!body.gateId || !body.evidence) {
           sendProblem(res, {
             type: PROBLEM_TYPES.BAD_REQUEST,
@@ -13192,6 +13291,7 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
         // source the record defaults to 'cli' and the audit summary cannot
         // tell an HTTP unlock from a local one.
         const entry = satisfyCondition(body.gateId, body.evidence, null, {
+          ...projectOptions,
           source: 'api',
           actor: body.actor || 'api-client',
         });
@@ -13201,7 +13301,7 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
 
       // POST /v1/hermes/initialize — Bind a connectionId before turn start/end
       if (req.method === 'POST' && pathname === '/v1/hermes/initialize') {
-        const body = await parseJsonBody(req);
+        const body = await readProjectBody(req);
         const { protocol } = getHostedHermes(requestDataIdentity);
         const result = protocol.initialize({
           connectionId: body.connectionId,
@@ -13223,7 +13323,7 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
       // POST /v1/hermes/turn/start — Start turn under Hermes Platform Protocol
       // Fail closed until POST /v1/hermes/initialize registers the connectionId.
       if (req.method === 'POST' && pathname === '/v1/hermes/turn/start') {
-        const body = await parseJsonBody(req);
+        const body = await readProjectBody(req);
         const { protocol } = getHostedHermes(requestDataIdentity);
         const result = protocol.startTurn(body);
         if (!result.ok) {
@@ -13242,7 +13342,7 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
 
       // POST /v1/hermes/turn/end — End active turn under Hermes Platform Protocol
       if (req.method === 'POST' && pathname === '/v1/hermes/turn/end') {
-        const body = await parseJsonBody(req);
+        const body = await readProjectBody(req);
         const { protocol } = getHostedHermes(requestDataIdentity);
         const result = protocol.endTurn(body);
         if (!result.ok) {
@@ -13261,7 +13361,7 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
 
       // POST /v1/hermes/action/approve — Record human/operator approval for consequential action
       if (req.method === 'POST' && pathname === '/v1/hermes/action/approve') {
-        const body = await parseJsonBody(req);
+        const body = await readProjectBody(req);
         const boundApproverId = resolveHermesApproverId(
           req,
           humanReviewerConfig,

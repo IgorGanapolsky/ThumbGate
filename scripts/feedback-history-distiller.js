@@ -113,6 +113,7 @@ function recordConversationEntry(entry, options = {}) {
     return { recorded: false, reason: 'empty_text', conversationLogPath };
   }
   const record = {
+    ...require('./project-identity').projectForCapture(entry || {}, options),
     ...normalized,
     timestamp: normalized.timestamp || new Date().toISOString(),
   };
@@ -123,7 +124,7 @@ function recordConversationEntry(entry, options = {}) {
 function readRecentConversationWindow(options = {}) {
   const limit = Number(options.limit || DEFAULT_HISTORY_LIMIT);
   const { conversationLogPath } = getConversationPaths(options.feedbackDir);
-  return readJsonlTail(conversationLogPath, limit)
+  return (options.projectKey != null ? require('./project-catalog').readProjectRows(path.dirname(conversationLogPath), 'conversation-window.jsonl', options).slice(-limit) : readJsonlTail(conversationLogPath, limit))
     .map((entry) => normalizeChatHistory([entry])[0])
     .filter(Boolean);
 }
@@ -131,7 +132,7 @@ function readRecentConversationWindow(options = {}) {
 function findFeedbackEventById(feedbackId, options = {}) {
   if (!feedbackId) return null;
   const { feedbackLogPath } = getConversationPaths(options.feedbackDir);
-  const matches = readJsonlTail(feedbackLogPath, Number(options.searchLimit || 200));
+  const matches = options.projectKey != null ? require('./project-catalog').readProjectRows(path.dirname(feedbackLogPath), 'feedback-log.jsonl', options).slice(-Number(options.searchLimit || 200)) : readJsonlTail(feedbackLogPath, Number(options.searchLimit || 200));
   for (let index = matches.length - 1; index >= 0; index -= 1) {
     if (matches[index] && matches[index].id === feedbackId) {
       return matches[index];
@@ -315,10 +316,11 @@ function distillFeedbackHistory(params = {}) {
   const historyLimit = Number(params.historyLimit || DEFAULT_HISTORY_LIMIT);
   const explicitHistory = normalizeChatHistory(params.chatHistory || params.messages || []);
   const fallbackHistory = params.allowLocalConversationFallback
-    ? readRecentConversationWindow({ feedbackDir: params.feedbackDir, limit: historyLimit })
+    ? readRecentConversationWindow({ feedbackDir: params.feedbackDir, projectKey: params.projectKey, limit: historyLimit })
     : [];
   const relatedEvent = findFeedbackEventById(params.relatedFeedbackId, {
     feedbackDir: params.feedbackDir,
+    projectKey: params.projectKey,
     searchLimit: params.searchLimit,
   });
 

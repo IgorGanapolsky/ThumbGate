@@ -18,9 +18,20 @@ const path = require('node:path');
 const fs = require('node:fs');
 const { readJsonl } = require('./fs-utils');
 const { resolveFeedbackDir } = require('./feedback-paths');
+const { projectForRecord } = require('./project-identity');
 
 function resolveDefaultDbPath(options = {}) {
   return path.join(resolveFeedbackDir(options), 'lessons.sqlite');
+}
+
+function upgradeProjectColumns(db) {
+  db.transaction(() => {
+    const columns = new Set(db.prepare('PRAGMA table_info(lessons)').all().map((column) => column.name));
+    if (!columns.has('projectKey')) db.exec("ALTER TABLE lessons ADD COLUMN projectKey TEXT NOT NULL DEFAULT 'unassigned'");
+    if (!columns.has('sourceRecordId')) db.exec('ALTER TABLE lessons ADD COLUMN sourceRecordId TEXT');
+    if (!columns.has('projectName')) db.exec("ALTER TABLE lessons ADD COLUMN projectName TEXT NOT NULL DEFAULT 'Unassigned (before project tracking)'");
+    db.exec('CREATE INDEX IF NOT EXISTS idx_lessons_project ON lessons(projectKey, timestamp)');
+  })();
 }
 
 /** @returns {import('better-sqlite3').Database} */
@@ -64,6 +75,8 @@ function initDB(dbPath) {
     CREATE INDEX IF NOT EXISTS idx_lessons_timestamp ON lessons(timestamp);
     CREATE INDEX IF NOT EXISTS idx_lessons_skill ON lessons(skill);
   `);
+
+  upgradeProjectColumns(db);
 
   // FTS5 virtual table for full-text search
   db.exec(`
@@ -178,12 +191,27 @@ function searchSessions(db, query, limit = 10) {
  * 3. Always store if whatToChange is empty (raw feedback, not actionable yet)
  */
 function upsertLesson(db, feedbackEvent, memoryRecord) {
+  return db.transaction(() => upsertLessonInTransaction(db, feedbackEvent, memoryRecord)).immediate();
+}
+
+function upsertLessonInTransaction(db, feedbackEvent, memoryRecord) {
   // Rule 1: skip pruned records — they add noise, not signal
   if (memoryRecord?.pruned) {
     return null;
   }
 
-  const id = memoryRecord?.id || feedbackEvent.id;
+  const project = projectForRecord(feedbackEvent);
+  const sourceRecordId = memoryRecord?.id || feedbackEvent.id;
+  const prior = db.prepare('SELECT id FROM lessons WHERE projectKey = ? AND sourceRecordId = ?').get(project.projectKey, sourceRecordId);
+  const lookup = db.prepare('SELECT projectKey, sourceRecordId FROM lessons WHERE id = ?');
+  let id = prior?.id || sourceRecordId;
+  let collision = lookup.get(id);
+  let suffix = 0;
+  while (collision && (collision.projectKey !== project.projectKey || (collision.sourceRecordId && collision.sourceRecordId !== sourceRecordId))) {
+    id = sourceRecordId + '@' + project.projectKey + (suffix ? '@' + suffix : '');
+    suffix++;
+    collision = lookup.get(id);
+  }
   const signal = feedbackEvent.signal === 'positive' || feedbackEvent.signal === 'up' ? 'positive' : 'negative';
   const tags = Array.isArray(feedbackEvent.tags) ? feedbackEvent.tags : [];
   const tagsJson = JSON.stringify(tags);
@@ -210,9 +238,9 @@ function upsertLesson(db, feedbackEvent, memoryRecord) {
 
   const stmt = db.prepare(`
     INSERT OR REPLACE INTO lessons
-      (id, signal, context, whatWentWrong, whatToChange, whatWorked, domain, tags, rootCause, importance, skill, timestamp, sourceFeedbackId, pruned)
+      (id, signal, context, whatWentWrong, whatToChange, whatWorked, domain, tags, rootCause, importance, skill, timestamp, sourceFeedbackId, pruned, projectKey, projectName, sourceRecordId)
     VALUES
-      (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `);
 
   stmt.run(
@@ -230,6 +258,9 @@ function upsertLesson(db, feedbackEvent, memoryRecord) {
     feedbackEvent.timestamp || new Date().toISOString(),
     feedbackEvent.id,
     0, // not pruned (we skip pruned above)
+    project.projectKey,
+    project.projectName,
+    sourceRecordId,
   );
 
   return id;
@@ -256,10 +287,11 @@ function findDuplicate(db, whatToChange, tags, opts = null) {
   if (!whatToChange || !whatToChange.trim()) return null;
 
   // Layer 1: exact match on whatToChange text (normalized)
+  const projectKey = projectForRecord(opts?.feedbackEvent || opts?.memoryRecord || {}).projectKey;
   const normalized = whatToChange.trim().toLowerCase();
   const candidates = db.prepare(
-    `SELECT id, importance, tags FROM lessons WHERE LOWER(TRIM(whatToChange)) = ?`,
-  ).all(normalized);
+    `SELECT id, importance, tags FROM lessons WHERE LOWER(TRIM(whatToChange)) = ? AND projectKey = ?`,
+  ).all(normalized, projectKey);
 
   if (candidates.length > 0) {
     for (const c of candidates) {
@@ -293,12 +325,12 @@ function findDuplicate(db, whatToChange, tags, opts = null) {
         const rows = signalFilter
           ? db.prepare(
               `SELECT id, importance, tags, whatToChange, whatWentWrong, whatWorked
-                 FROM lessons WHERE signal = ? AND pruned = 0`,
-            ).all(signalFilter)
+                 FROM lessons WHERE signal = ? AND pruned = 0 AND projectKey = ?`,
+            ).all(signalFilter, projectKey)
           : db.prepare(
               `SELECT id, importance, tags, whatToChange, whatWentWrong, whatWorked
-                 FROM lessons WHERE pruned = 0`,
-            ).all();
+                 FROM lessons WHERE pruned = 0 AND projectKey = ?`,
+            ).all(projectKey);
         for (const row of rows) {
           const rowRecord = {
             whatToChange: row.whatToChange,
@@ -330,14 +362,14 @@ function findDuplicate(db, whatToChange, tags, opts = null) {
  * @returns {{ removed: number, kept: number }}
  */
 function compactLessons(db) {
-  const all = db.prepare('SELECT id, whatToChange, importance, timestamp, tags FROM lessons ORDER BY timestamp DESC').all();
+  const all = db.prepare('SELECT id, whatToChange, importance, timestamp, tags, projectKey FROM lessons ORDER BY timestamp DESC').all();
   const seen = new Map(); // normalized whatToChange → best record
   const toDelete = [];
   const PRIORITY = { critical: 4, high: 3, medium: 2, low: 1 };
 
   for (const row of all) {
     if (!row.whatToChange || !row.whatToChange.trim()) continue;
-    const key = row.whatToChange.trim().toLowerCase();
+    const key = row.projectKey + '\0' + row.whatToChange.trim().toLowerCase();
 
     if (!seen.has(key)) {
       seen.set(key, row);
@@ -386,6 +418,7 @@ function searchLessons(db, query, options = {}) {
     // No query — return most recent lessons with optional filters
     let sql = 'SELECT * FROM lessons WHERE 1=1';
     const params = [];
+    if (options.projectKey != null) { sql += ' AND projectKey = ?'; params.push(options.projectKey); }
 
     if (options.signal) {
       sql += ' AND signal = ?';
@@ -412,6 +445,7 @@ function searchLessons(db, query, options = {}) {
     WHERE lessons_fts MATCH ?
   `;
   const params = [safeQuery];
+  if (options.projectKey != null) { sql += ' AND l.projectKey = ?'; params.push(options.projectKey); }
 
   if (options.signal) {
     sql += ' AND l.signal = ?';
@@ -471,6 +505,7 @@ function inferCorrectiveActions(db, feedbackEvent, limit = 3) {
       SELECT whatToChange, tags, timestamp
       FROM lessons l
       WHERE l.signal = 'negative'
+        AND l.projectKey = ?
         AND l.whatToChange IS NOT NULL
         AND l.whatToChange != ''
         AND (${tagPlaceholders})
@@ -478,7 +513,7 @@ function inferCorrectiveActions(db, feedbackEvent, limit = 3) {
       LIMIT 20
     `;
 
-    candidates = db.prepare(sql).all(...tagParams);
+    candidates = db.prepare(sql).all(projectForRecord(feedbackEvent).projectKey, ...tagParams);
   }
 
   // 2. Domain fallback if no tag matches
@@ -487,6 +522,7 @@ function inferCorrectiveActions(db, feedbackEvent, limit = 3) {
       SELECT whatToChange, tags, timestamp
       FROM lessons l
       WHERE l.signal = 'negative'
+        AND l.projectKey = ?
         AND l.whatToChange IS NOT NULL
         AND l.whatToChange != ''
         AND l.domain = ?
@@ -494,7 +530,7 @@ function inferCorrectiveActions(db, feedbackEvent, limit = 3) {
       LIMIT 10
     `;
 
-    candidates = db.prepare(sql).all(domain);
+    candidates = db.prepare(sql).all(projectForRecord(feedbackEvent).projectKey, domain);
   }
 
   if (candidates.length === 0) return [];
@@ -615,6 +651,7 @@ function fallbackLikeSearch(db, query, options, limit) {
   });
 
   let sql = `SELECT * FROM lessons WHERE ${conditions.join(' AND ')}`;
+  if (options.projectKey != null) { sql += ' AND projectKey = ?'; params.push(options.projectKey); }
 
   if (options.signal) {
     sql += ' AND signal = ?';
@@ -650,6 +687,7 @@ function safeParseTags(tagsStr) {
 
 const lessonDbApi = {
   initDB,
+  upgradeProjectColumns,
   upsertLesson,
   upsertSession,
   searchSessions,

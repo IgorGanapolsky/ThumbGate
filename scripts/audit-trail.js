@@ -1,7 +1,9 @@
 #!/usr/bin/env node
 'use strict';
+const { resolveLocalProject, projectForRecord, validProjectKey } = require('./project-identity');
+function eventProject(input = {}) { return validProjectKey(input.projectKey) ? projectForRecord(input) : tenantDataScope() ? projectForRecord({ projectKey: 'unassigned' }) : resolveLocalProject(input.cwd || input.toolInput?.cwd || process.cwd()); }
 
-const { assertScopedDataPath } = require('./feedback-scope');
+const { assertScopedDataPath, tenantDataScope } = require('./feedback-scope');
 
 /**
  * Audit Trail — OpenShell-inspired governance layer
@@ -25,8 +27,8 @@ const GATE_EVENTS_LOG_FILENAME = 'gate-events-log.jsonl';
 // Paths
 // ---------------------------------------------------------------------------
 
-function getAuditLogPath() {
-  return assertScopedDataPath(path.join(resolveFeedbackDir(), AUDIT_LOG_FILENAME));
+function getAuditLogPath(options = {}) {
+  return assertScopedDataPath(path.join(resolveFeedbackDir(options), AUDIT_LOG_FILENAME));
 }
 
 /**
@@ -53,32 +55,33 @@ const REGISTRY_FILENAME = 'agent-registry.jsonl';
 const OBSERVED_FILENAME = 'observed-agents.jsonl';
 const OBSERVED_COMPACT_BYTES = 512 * 1024;
 
-function getRegistryPath() {
-  return assertScopedDataPath(path.join(resolveFeedbackDir(), REGISTRY_FILENAME));
+function getRegistryPath(options = {}) {
+  return assertScopedDataPath(path.join(resolveFeedbackDir(options), REGISTRY_FILENAME));
 }
 
-function getObservedAgentsPath() {
-  return assertScopedDataPath(path.join(resolveFeedbackDir(), OBSERVED_FILENAME));
+function getObservedAgentsPath(options = {}) {
+  return assertScopedDataPath(path.join(resolveFeedbackDir(options), OBSERVED_FILENAME));
 }
 
 /**
  * Register an agent session. Called on MCP server startup or agent bootstrap.
  */
-function registerAgent({ agentId, source, project, branch, metadata } = {}) {
+function registerAgent({ agentId, source, project, branch, metadata, ...options } = {}) {
   const id = agentId || `agent_${Date.now()}_${crypto.randomUUID().slice(0, 8)}`;
   const record = {
+    ...eventProject(options),
     id,
     registeredAt: new Date().toISOString(),
     lastSeenAt: new Date().toISOString(),
     source: source || 'unknown',
-    project: project || path.basename(process.cwd()),
+    project: project || (tenantDataScope() ? null : path.basename(process.cwd())),
     branch: branch || null,
     toolCalls: 0,
     gateBlocks: 0,
     gateWarns: 0,
     metadata: { lifecycleStatus: 'active', ...(metadata || {}) },
   };
-  const registryPath = getRegistryPath();
+  const registryPath = getRegistryPath(options);
   ensureDir(path.dirname(registryPath));
   fs.appendFileSync(registryPath, JSON.stringify(record) + '\n');
   return record;
@@ -87,8 +90,8 @@ function registerAgent({ agentId, source, project, branch, metadata } = {}) {
 /**
  * Record agent activity — called after each tool call evaluation.
  */
-function recordAgentActivity(agentId, decision) {
-  const registryPath = getRegistryPath();
+function recordAgentActivity(agentId, decision, options = {}) {
+  const registryPath = getRegistryPath(options);
   if (!fs.existsSync(registryPath)) return;
   const lines = fs.readFileSync(registryPath, 'utf-8').trim().split('\n');
   const updated = [];
@@ -166,18 +169,18 @@ function retireAgent(agentId, reason) {
  * only under the cross-process ledger lock so a concurrent agent's append can
  * never be truncated by the read-aggregate-rewrite window.
  */
-function recordObservedAgent(agentId) {
+function recordObservedAgent(agentId, options = {}) {
   const id = String(agentId || '').trim();
   if (!id) return null;
-  const observedPath = getObservedAgentsPath();
+  const observedPath = getObservedAgentsPath(options);
   ensureDir(path.dirname(observedPath));
-  const event = { id, seenAt: new Date().toISOString() };
+  const event = { ...eventProject(options), id, seenAt: new Date().toISOString() };
   fs.appendFileSync(observedPath, JSON.stringify(event) + '\n');
   try {
     if (fs.statSync(observedPath).size > OBSERVED_COMPACT_BYTES) {
       const { withFileLedgerLock } = require('./file-ledger-lock');
       withFileLedgerLock(observedPath + '.lock', () => {
-        const compacted = loadObservedAgents()
+        const compacted = loadObservedAgents(options)
           .map((row) => JSON.stringify(row))
           .join('\n');
         fs.writeFileSync(observedPath, compacted + '\n');
@@ -193,8 +196,8 @@ function recordObservedAgent(agentId) {
  * Aggregate observation events into one row per agent id:
  * { id, firstSeenAt, lastSeenAt, observations }.
  */
-function loadObservedAgents() {
-  const observedPath = getObservedAgentsPath();
+function loadObservedAgents(options = {}) {
+  const observedPath = getObservedAgentsPath(options);
   if (!fs.existsSync(observedPath)) return [];
   const byId = new Map();
   const raw = fs.readFileSync(observedPath, 'utf-8').trim();
@@ -209,7 +212,10 @@ function loadObservedAgents() {
     const id = String(event.id || '').trim();
     if (!id) continue;
     const seenAt = event.seenAt || event.lastSeenAt || new Date().toISOString();
-    const row = byId.get(id) || {
+    const descriptor = projectForRecord(event);
+    const key = descriptor.projectKey + ':' + id;
+    const row = byId.get(key) || {
+      ...descriptor,
       id,
       firstSeenAt: event.firstSeenAt || seenAt,
       lastSeenAt: seenAt,
@@ -218,7 +224,7 @@ function loadObservedAgents() {
     if (seenAt < row.firstSeenAt) row.firstSeenAt = seenAt;
     if (seenAt > row.lastSeenAt) row.lastSeenAt = seenAt;
     row.observations += Number(event.observations) > 0 ? Number(event.observations) : 1;
-    byId.set(id, row);
+    byId.set(key, row);
   }
   return [...byId.values()];
 }
@@ -244,9 +250,10 @@ function recordAuditEvent(params = {}) {
   if (process.env.THUMBGATE_SANDBOX_EVAL === '1' || params.dryRun) {
     return { id: 'audit_sandbox', decision: params.decision || 'allow', _sandbox: true };
   }
-  const logPath = getAuditLogPath();
+  const logPath = getAuditLogPath(params);
   ensureDir(path.dirname(logPath));
   const record = {
+    ...eventProject(params),
     id: `audit_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
     timestamp: new Date().toISOString(),
     toolName: params.toolName || 'unknown',
@@ -349,16 +356,17 @@ function getCircularReplacer() {
  * vs ~300 real). Gate events are now logged to gate-events-log.jsonl for
  * internal analytics only — they never pollute thumbs-up/thumbs-down counts.
  */
-function auditToFeedback(auditRecord) {
+function auditToFeedback(auditRecord, options = {}) {
   if (!auditRecord || auditRecord._sandbox || process.env.THUMBGATE_SANDBOX_EVAL === '1') return null;
   if (auditRecord.decision === 'allow') return null;
 
   try {
     const { getFeedbackPaths } = require('./feedback-paths');
-    const { FEEDBACK_DIR } = getFeedbackPaths();
+    const { FEEDBACK_DIR } = getFeedbackPaths(options);
     const gateLogPath = path.join(FEEDBACK_DIR, GATE_EVENTS_LOG_FILENAME);
     ensureDir(path.dirname(gateLogPath));
     const entry = {
+      ...projectForRecord(auditRecord),
       id: `gate_${crypto.randomUUID()}`,
       gateId: auditRecord.gateId,
       decision: auditRecord.decision,

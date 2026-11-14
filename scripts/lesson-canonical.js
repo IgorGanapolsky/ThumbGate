@@ -125,7 +125,7 @@ function lessonCanonicalSignature(lesson) {
   ].filter(Boolean).join(' ');
   const textSig = canonicalizeText(blob);
   const tagSig = normalizeTags(lesson.tags).join(',');
-  return textSig ? `${textSig}::${tagSig}` : '';
+  return textSig ? `${require('./project-identity').projectForRecord(lesson).projectKey}::${textSig}::${tagSig}` : '';
 }
 
 /**
@@ -163,7 +163,7 @@ function findCanonicalDuplicate(memoryEntries, lesson) {
     const entrySignal = entry.signal ? String(entry.signal).toLowerCase() : null;
     if (signalFilter && entrySignal && entrySignal !== signalFilter) continue;
 
-    const entryHash = entry.canonicalHash || canonicalHash(entry);
+    const entryHash = canonicalHash(entry);
     if (entryHash && entryHash === hash) {
       return entry;
     }

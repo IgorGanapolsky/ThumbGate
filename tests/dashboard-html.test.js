@@ -99,7 +99,7 @@ test('dashboard includes incremental review checkpoint controls', () => {
   assert.match(dashboard, /id="reviewDeltaLatest"/);
   assert.match(dashboard, /function renderReviewDelta\(reviewDelta\)/);
   assert.match(dashboard, /function markReviewed\(\)/);
-  assert.match(dashboard, /fetch\('\/v1\/dashboard\/review-state'/);
+  assert.match(dashboard, /projectFetch\('\/v1\/dashboard\/review-state'/);
   assert.match(dashboard, /Mark Current Dashboard Reviewed/);
 });
 

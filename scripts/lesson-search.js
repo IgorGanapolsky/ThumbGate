@@ -191,6 +191,7 @@ function readPreventionRuleMatches(queryText, limit = 3, options = {}) {
 }
 
 function readAutoGates(options = {}) {
+  if (options.projectKey != null) return { gates: require('./project-catalog').readProjectGates(resolveLessonPaths(options).FEEDBACK_DIR, options).filter(require('./project-identity').isGeneratedGate) };
   const { AUTO_GATES_PATH } = resolveLessonPaths(options);
   try {
     return JSON.parse(require('node:fs').readFileSync(AUTO_GATES_PATH, 'utf-8'));
@@ -232,6 +233,8 @@ function buildGateMatches(memory, parsed, limit = 3, options = {}) {
     .sort((a, b) => b.score - a.score)
     .slice(0, limit)
     .map(({ gate, score }) => ({
+      ...require('./project-identity').projectForRecord(gate),
+      scope: gate.scope || (gate.projectKey ? 'project' : 'global'),
       id: gate.id,
       action: gate.action,
       pattern: gate.pattern,
@@ -420,7 +423,7 @@ function scoreLesson(queryText, memory, parsed, sourceFeedback) {
 function buildLessonResult(memory, sourceFeedback, options = {}) {
   const parsed = parseLessonContent(memory.content);
   const lessonQuery = buildLessonQuery(memory, parsed, sourceFeedback);
-  const ruleMatches = readPreventionRuleMatches(lessonQuery, Number(options.ruleLimit || 3), options);
+  const ruleMatches = options.projectKey != null ? [] : readPreventionRuleMatches(lessonQuery, Number(options.ruleLimit || 3), options);
   const gateMatches = buildGateMatches(memory, parsed, Number(options.gateLimit || 3), options);
   const { score, evidenceScore, priorScore, matchedTokens } = scoreLesson(options.query || '', memory, parsed, sourceFeedback);
   const harnessRecommendations = buildHarnessRecommendations(memory, parsed, sourceFeedback, ruleMatches, gateMatches);
@@ -428,6 +431,7 @@ function buildLessonResult(memory, sourceFeedback, options = {}) {
   const memoryLifecycle = buildMemoryLifecycleView(memory, { query: options.query || '' });
 
   return {
+    ...require('./project-identity').projectForRecord(memory),
     id: memory.id,
     title: (function() { const isStale = memory.lastVerifiedAt && ((new Date((options.now || Date.now())).getTime() - new Date(memory.lastVerifiedAt).getTime()) / 86400000 > 30); return (isStale ? "[STALE] " : "") + memory.title; })(),
     category: memory.category,
@@ -496,16 +500,16 @@ function searchLessons(query = '', options = {}) {
   const { MEMORY_LOG_PATH, FEEDBACK_DIR, FEEDBACK_LOG_PATH } = resolveLessonPaths(options);
 
   // Try SQLite FTS5 first — falls back to JSONL Jaccard if unavailable
-  const sqliteResults = tryFts5Search(query, options);
+  const sqliteResults = options.projectKey != null ? null : tryFts5Search(query, options);
   if (sqliteResults) return sqliteResults;
 
   // Exact error lookup (Search before solving)
   const { lookupLessonByError } = require('./verified-lessons');
-  const exactErrorMatch = lookupLessonByError(query, { feedbackDir: FEEDBACK_DIR, now: options.now });
+  const exactErrorMatch = options.projectKey != null ? null : lookupLessonByError(query, { feedbackDir: FEEDBACK_DIR, now: options.now });
 
-  const allMemories = readJSONL(MEMORY_LOG_PATH);
+  const allMemories = require('./project-catalog').readProjectRows(FEEDBACK_DIR, 'memory-log.jsonl', options);
   const memories = selectRetrievalMemories(allMemories, options);
-  const feedbackEntries = readJSONL(FEEDBACK_LOG_PATH);
+  const feedbackEntries = require('./project-catalog').readProjectRows(FEEDBACK_DIR, 'feedback-log.jsonl', options);
   const feedbackById = new Map(feedbackEntries.map((entry) => [entry.id, entry]));
   const parsedLimit = Number(options.limit || 10);
   const limit = Number.isFinite(parsedLimit) && parsedLimit > 0 ? parsedLimit : 10;
@@ -520,6 +524,7 @@ function searchLessons(query = '', options = {}) {
   let results = memories
     .map((memory) => buildLessonResult(memory, feedbackById.get(memory.sourceFeedbackId), {
       query,
+      projectKey: options.projectKey,
       ruleLimit: options.ruleLimit,
       gateLimit: options.gateLimit,
       now: options.now,

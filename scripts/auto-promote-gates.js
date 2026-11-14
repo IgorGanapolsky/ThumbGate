@@ -49,8 +49,9 @@ function getFeedbackLogPath() {
   return localFallback; // default even if doesn't exist
 }
 
-function getAutoGatesPath() {
-  return assertScopedDataPath(path.join(path.dirname(getFeedbackLogPath()), 'auto-promoted-gates.json'));
+function getAutoGatesPath(options = {}) {
+  const feedbackDir = options.feedbackDir ? resolveFeedbackDir(options) : path.dirname(getFeedbackLogPath());
+  return assertScopedDataPath(path.join(feedbackDir, 'auto-promoted-gates.json'));
 }
 
 function readJSONL(filePath) {
@@ -88,7 +89,7 @@ function regressionCheck(gate, options = {}) {
   let matchesGate;
   try { ({ matchesGate } = require('./gates-engine')); } catch { return null; }
   if (typeof matchesGate !== 'function') return null;
-  let allowed = entries.filter((e) => e && e.decision === 'allow' && e.toolName);
+  let allowed = entries.filter((e) => e && e.decision === 'allow' && e.toolName && require('./project-identity').matchesProject(e, gate.projectKey));
   if (!allowed.length) return null;
 
   // The command we just learned to block was, by definition, ALLOWED before we
@@ -117,7 +118,7 @@ function regressionCheck(gate, options = {}) {
   let falseBlocks = 0;
   for (const e of allowed) {
     try {
-      if (matchesGate(gate, e.toolName, e.toolInput || {})) falseBlocks += 1;
+      if (matchesGate(gate, e.toolName, e.toolInput || {}, { projectKey: gate.projectKey })) falseBlocks += 1;
     } catch { /* a bad pattern/entry never counts as a false block */ }
   }
   return { falseBlocks, allowSampleSize: allowed.length };
@@ -127,8 +128,8 @@ function safeRegressionCheck(gate, options) {
   try { return regressionCheck(gate, options); } catch { return null; }
 }
 
-function loadAutoGates() {
-  const autoGatesPath = getAutoGatesPath();
+function loadAutoGates(options = {}) {
+  const autoGatesPath = getAutoGatesPath(options);
   if (!fs.existsSync(autoGatesPath)) {
     return { version: 1, gates: [], promotionLog: [] };
   }
@@ -139,8 +140,8 @@ function loadAutoGates() {
   }
 }
 
-function saveAutoGates(data) {
-  const autoGatesPath = getAutoGatesPath();
+function saveAutoGates(data, options = {}) {
+  const autoGatesPath = getAutoGatesPath(options);
   const dir = path.dirname(autoGatesPath);
   if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
   fs.writeFileSync(autoGatesPath, JSON.stringify(data, null, 2) + '\n');
@@ -281,12 +282,15 @@ function groupNegativeFeedback(entries, windowDays) {
     // Enforcement groups ONLY by executable action. Tag/diagnosis metadata is
     // useful for memory and dashboards, but must not create hard-block thresholds
     // that attach to an unrelated latest command.
-    const key = extractPatternKey(entry);
-    if (!key) continue;
+    const patternKey = extractPatternKey(entry);
+    if (!patternKey) continue;
+    const project = require('./project-identity').projectForRecord(entry);
+    const key = project.projectKey + ':' + patternKey;
 
     if (!groups[key]) {
       groups[key] = {
-        key,
+        ...project,
+        key: patternKey,
         count: 0,
         entries: [],
         latestContext: '',
@@ -433,7 +437,10 @@ function buildGateRule(group, actionOverride) {
   const expiresAt = isManual ? null : new Date(nowMs + getRuleTtlMs()).toISOString();
 
   return {
-    id: patternToGateId(String(g.key || 'unknown')),
+    ...require('./project-identity').projectForRecord(g),
+    scope: 'project',
+    active: require('./project-identity').projectForRecord(g).projectKey !== 'unassigned',
+    id: patternToGateId(String(g.key || 'unknown')) + '-' + require('./project-identity').hash(require('./project-identity').projectForRecord(g).projectKey).slice(0, 16),
     trigger: `auto:${g.key || 'unknown'}`,
     // Derived from executable action OR known surface class — never raw prose.
     pattern,
@@ -520,7 +527,7 @@ function recordGateFire(data, gateId, now = Date.now()) {
   return updated;
 }
 
-function forcePromote(context, action = 'block') {
+function forcePromote(context, action = 'block', options = {}) {
   if (!context) throw new Error('context is required for force-promote');
   let executable = extractExecutableAction({ context });
   // If extractExecutableAction returned narration that would become inert prose,
@@ -542,13 +549,10 @@ function forcePromote(context, action = 'block') {
     );
   }
 
-  const data = loadAutoGates();
-  const gateId = patternToGateId(context);
-
-  // Remove existing if any
-  data.gates = data.gates.filter(g => g.id !== gateId);
-
+  const data = loadAutoGates(options);
+  const project = require('./project-identity').projectForCapture(options, options);
   const gate = buildGateRule({
+    ...project,
     key: context,
     latestContext: context,
     latestExecutable: executable || '',
@@ -565,6 +569,8 @@ function forcePromote(context, action = 'block') {
     );
   }
 
+  const gateId = gate.id;
+  data.gates = data.gates.filter((existing) => existing.id !== gateId || existing.projectKey !== project.projectKey);
   data.gates.unshift(gate);
 
   if (data.gates.length > MAX_AUTO_GATES) {
@@ -582,7 +588,7 @@ function forcePromote(context, action = 'block') {
     source: 'force-promote',
   });
 
-  saveAutoGates(data);
+  saveAutoGates(data, options);
   return {
     gateId,
     action,
@@ -593,14 +599,14 @@ function forcePromote(context, action = 'block') {
 }
 
 function promote(feedbackLogPath, options) {
-  const opts = options || {};
+  const opts = { ...(options || {}), ...(feedbackLogPath ? { feedbackDir: path.dirname(feedbackLogPath) } : {}) };
   const logPath = feedbackLogPath || getFeedbackLogPath();
   const entries = readJSONL(logPath);
   const groups = groupNegativeFeedback(entries, WINDOW_DAYS);
   // Expire stale gates BEFORE running the promotion loop so an expiring
   // gate that's about to be re-promoted gets a fresh TTL via the normal
   // path rather than carrying a near-stale expiresAt.
-  const { data: expiredData, expired } = expireGates(loadAutoGates());
+  const { data: expiredData, expired } = expireGates(loadAutoGates(opts));
   const data = expiredData;
   // Drop permanently inert prose gates left by older force-promote / promotion bugs.
   const inertRemoved = [];
@@ -612,7 +618,7 @@ function promote(feedbackLogPath, options) {
     return true;
   });
   if (expired.length > 0 || inertRemoved.length > 0) {
-    saveAutoGates(data);
+    saveAutoGates(data, opts);
   }
   const promotions = [
     ...expired.map((e) => ({ type: 'expired', gateId: e.id, expiredAt: e.expiresAt })),
@@ -622,7 +628,7 @@ function promote(feedbackLogPath, options) {
   for (const group of Object.values(groups)) {
     if (group.count < WARN_THRESHOLD) continue;
 
-    const gateId = patternToGateId(group.key);
+    const gateId = buildGateRule(group).id;
 
     // Contexts that produced this gate. Their prior "allow" decisions are the
     // incident the operator thumbs-downed, not false positives — both the
@@ -632,7 +638,7 @@ function promote(feedbackLogPath, options) {
       group.latestContext,
       ...(group.entries || []).map((e) => e && (e.context || e.whatWentWrong)),
     ].filter(Boolean);
-    const regressionOpts = { ...opts, incidentContexts };
+    const regressionOpts = { ...opts, auditTrailPath: opts.auditTrailPath || path.join(path.dirname(logPath), 'audit-trail.jsonl'), incidentContexts };
 
     // Check for existing gate — possibly upgrade
     const existingIdx = data.gates.findIndex((g) => g.id === gateId);
@@ -719,7 +725,7 @@ function promote(feedbackLogPath, options) {
     data.promotionLog.push({ ...p, timestamp: new Date().toISOString() });
   }
 
-  saveAutoGates(data);
+  saveAutoGates(data, opts);
 
   return { promotions, totalGates: data.gates.length, data };
 }
