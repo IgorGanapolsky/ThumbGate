@@ -11,6 +11,7 @@ const { normalizeScope, missingScopeFields } = require('./memory-scope-readiness
 
 function scopeKey(record) {
   const scope = normalizeScope(record || {});
+  if (record?.projectKey) scope.projectId = record.projectKey;
   return missingScopeFields(scope).length ? null : JSON.stringify([scope.entityId, scope.projectId, scope.processId, scope.sessionId]);
 }
 
@@ -22,7 +23,7 @@ function sameScope(a, b) {
 function sameScopeIdentity(a, b) {
   const left = normalizeScope(a);
   const right = normalizeScope(b);
-  return Object.keys(left).every(field => left[field] === right[field]);
+  return require('./project-identity').projectForRecord(a).projectKey === require('./project-identity').projectForRecord(b).projectKey && Object.keys(left).every(field => left[field] === right[field]);
 }
 
 const EDGE_TYPES = ['supersedes', 'contradicts', 'duplicate_of', 'refines'];

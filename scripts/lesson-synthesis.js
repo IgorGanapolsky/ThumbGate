@@ -1,6 +1,8 @@
 'use strict';
 const fs = require('fs');
 const path = require('path');
+const { projectForRecord, matchesProject } = require('./project-identity');
+const { iterateRows, accountAttribution, attributionForFile } = require('./project-catalog');
 const { canonicalHash, findCanonicalDuplicate } = require('./lesson-canonical');
 
 const SIMILARITY_THRESHOLD = 0.6;
@@ -48,8 +50,19 @@ function appendJSONLLocal(filePath, record) {
  * The canonical pass runs first because it's O(N) with constant work per
  * entry and rejects trivial duplicates before we pay the Jaccard price.
  */
+function readLessonsInFile(memoryLogPath, projectKey) {
+  if (!fs.existsSync(memoryLogPath) || fs.lstatSync(memoryLogPath).isSymbolicLink()) return [];
+  const attribution = accountAttribution(path.dirname(memoryLogPath));
+  const rows = [];
+  for (const record of iterateRows(memoryLogPath)) {
+    const row = { ...record, ...projectForRecord(record, attributionForFile(attribution, memoryLogPath)) };
+    if (row.projectKey === projectKey) rows.push(row);
+  }
+  return rows;
+}
+
 function findSimilarLesson(memoryLogPath, newRecord) {
-  const existing = readJSONLLocal(memoryLogPath, { maxLines: 200 });
+  const existing = readLessonsInFile(memoryLogPath, projectForRecord(newRecord).projectKey).slice(-200);
 
   // Layer 1: canonical-hash exact match (normalization-invariant).
   const canonicalMatch = findCanonicalDuplicate(existing, newRecord);
@@ -143,14 +156,16 @@ function synthesizePreventionRule(lesson) {
 /**
  * Update a single record in a JSONL file by ID.
  */
-function updateRecordInJsonl(filePath, recordId, updatedRecord) {
+function updateRecordInJsonl(filePath, recordId, updatedRecord, options = {}) {
   if (!fs.existsSync(filePath)) return false;
   const lines = fs.readFileSync(filePath, 'utf-8').split('\n').filter(Boolean);
+  const projectKey = options.projectKey ?? updatedRecord.projectKey;
+  const attribution = attributionForFile(options.attribution || accountAttribution(path.dirname(filePath)), filePath);
   let found = false;
   const updated = lines.map(function(line) {
     try {
       const obj = JSON.parse(line);
-      if (obj.id === recordId) {
+      if (obj.id === recordId && matchesProject(projectForRecord(obj, attribution), projectKey)) {
         found = true;
         return JSON.stringify(updatedRecord);
       }
@@ -166,13 +181,14 @@ function updateRecordInJsonl(filePath, recordId, updatedRecord) {
 /**
  * Delete a single record from a JSONL file by ID.
  */
-function deleteRecordFromJsonl(filePath, recordId) {
+function deleteRecordFromJsonl(filePath, recordId, options = {}) {
   if (!fs.existsSync(filePath)) return false;
   const lines = fs.readFileSync(filePath, 'utf-8').split('\n').filter(Boolean);
+  const attribution = attributionForFile(options.attribution || accountAttribution(path.dirname(filePath)), filePath);
   const filtered = lines.filter(function(line) {
     try {
       const obj = JSON.parse(line);
-      return obj.id !== recordId;
+      return obj.id !== recordId || !matchesProject(projectForRecord(obj, attribution), options.projectKey);
     } catch { return true; }
   });
   if (filtered.length === lines.length) return false;
