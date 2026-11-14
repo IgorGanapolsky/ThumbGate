@@ -1397,7 +1397,7 @@
     "test:verified-lessons": "node --test tests/verified-lessons.test.js",
     "test:egm-goldfish-packet": "node --test tests/egm-goldfish-packet.test.js",
     "test:hosted-tenant-isolation": "node --test tests/feedback-scope.test.js tests/hosted-tenant-isolation.test.js",
-    "test:project-scope": "node --test tests/project-identity.test.js tests/project-identity-perf.test.js tests/project-catalog-evidence.test.js tests/project-attribution-evidence.test.js tests/project-migration.test.js",
+    "test:project-scope": "node --test tests/project-identity.test.js tests/project-identity-perf.test.js tests/project-catalog-evidence.test.js tests/project-attribution-evidence.test.js tests/project-migration.test.js tests/project-gates.test.js tests/project-capture.test.js tests/project-capture-time-key.test.js",
     "test:owner-admin": "node --test tests/owner-admin.test.js"
   },
   "keywords": [
