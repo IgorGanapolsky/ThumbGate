@@ -12,7 +12,7 @@ ThumbGate uses three payment rails so buyers can pay with the least practical fr
    - Keep it first when the buyer is comfortable with card checkout.
    - Current verified service offers in code:
      - `$499` Workflow Hardening Diagnostic
-     - `$1500` Workflow Hardening Sprint
+     - `$1500` Setup Sprint
 
 2. **PayPal fallback**
    - Use when the buyer hesitates on card entry, asks for PayPal, or needs the fastest trust shortcut.

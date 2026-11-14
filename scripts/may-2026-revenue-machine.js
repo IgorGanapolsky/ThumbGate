@@ -15,7 +15,7 @@ const DEFAULT_OFFER_STACK = {
     envKey: 'THUMBGATE_SPRINT_DIAGNOSTIC_CHECKOUT_URL',
   },
   sprint: {
-    name: 'Workflow Hardening Sprint',
+    name: 'Setup Sprint',
     priceDollars: 1500,
     envKey: 'THUMBGATE_WORKFLOW_SPRINT_CHECKOUT_URL',
   },

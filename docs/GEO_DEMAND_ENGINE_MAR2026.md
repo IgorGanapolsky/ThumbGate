@@ -3,7 +3,7 @@
 Status: current  
 Updated: March 18, 2026
 
-This document turns the current AI-search playbook into a repeatable demand engine for `thumbgate`, the `Workflow Hardening Sprint`, and Pro at `$19/mo or $149/yr`.
+This document turns the current AI-search playbook into a repeatable demand engine for `thumbgate`, the `Setup Sprint`, and Pro at `$19/mo or $149/yr`.
 
 Commercial guardrails:
 
@@ -16,7 +16,7 @@ Commercial guardrails:
 Primary brands and offers:
 
 - `thumbgate`
-- `Workflow Hardening Sprint`
+- `Setup Sprint`
 - `Pro at $19/mo or $149/yr`
 - `Reliability Studio`
 - `Workflow Hardening Fit Checker`
@@ -156,7 +156,7 @@ Quarterly:
 
 Continuous:
 
-- Keep brand names stable: `thumbgate`, `Workflow Hardening Sprint`, `Reliability Studio`.
+- Keep brand names stable: `thumbgate`, `Setup Sprint`, `Reliability Studio`.
 - Link authority claims back to [VERIFICATION_EVIDENCE.md](VERIFICATION_EVIDENCE.md).
 - Keep pricing and traction aligned with [COMMERCIAL_TRUTH.md](COMMERCIAL_TRUTH.md).
 

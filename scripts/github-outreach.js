@@ -282,7 +282,7 @@ function renderOutreachTargetsMarkdown(report = {}) {
     `Updated: ${report.generatedAt}`,
     '',
     'This file mirrors the evidence-backed GTM queue in `docs/marketing/gtm-target-queue.jsonl`.',
-    'It is the qualification screen and send surface for the current Workflow Hardening Sprint revenue loop, not a raw GitHub scrape.',
+    'It is the qualification screen and send surface for the current Setup Sprint revenue loop, not a raw GitHub scrape.',
     '',
     '## Current Queue',
     `- Revenue state: ${report.state || 'cold-start'}`,

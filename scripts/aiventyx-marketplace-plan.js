@@ -153,12 +153,12 @@ function buildAiventyxListings(links = buildPublicAiventyxRevenueLinks()) {
       name: 'ThumbGate Teams',
       dashboardStatus: 'submit as team/service listing',
       category: AI_CODING_CATEGORY,
-      pricingModel: 'Workflow Hardening Sprint, then Team at $49/seat/mo with 3-seat minimum after qualification',
+      pricingModel: 'Setup Sprint, then Team at $49/seat/mo with 3-seat minimum after qualification',
       APIEndpoint: links.appOrigin,
       primaryCTA: buildTrackedMarketplaceLink(links.sprintLink, teamsTracking),
       headline: 'Harden one AI-agent workflow before scaling it team-wide.',
       description: [
-        'ThumbGate Teams starts with a Workflow Hardening Sprint: one workflow, one owner, one repeated failure, one proof review.',
+        'ThumbGate Teams starts with a Setup Sprint: one workflow, one owner, one repeated failure, one proof review.',
         'The sprint turns repeated AI-agent mistakes into shared prevention gates, audit-ready evidence, and a rollout path for teams that need approvals, compliance, and repeatability.'
       ].join(' '),
       buyer: 'Teams with one valuable AI-agent workflow that keeps repeating the same mistake or losing operational context.',

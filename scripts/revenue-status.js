@@ -341,7 +341,7 @@ function buildDiagnosis({ publicProbe, hostedAudit }) {
     gaps.push('Workflow Hardening Diagnostic payment link env is missing in Railway');
   }
   if (runtimePresenceKnown && !runtimePresence.THUMBGATE_WORKFLOW_SPRINT_CHECKOUT_URL) {
-    gaps.push('Workflow Hardening Sprint payment link env is missing in Railway');
+    gaps.push('Setup Sprint payment link env is missing in Railway');
   }
   if (runtimePresenceKnown && !runtimePresence.THUMBGATE_PUBLIC_APP_ORIGIN) {
     gaps.push('THUMBGATE_PUBLIC_APP_ORIGIN is not explicitly set in Railway runtime');

@@ -57,8 +57,8 @@ test('Agentix comparison page frames agency services as adjacent competition', (
   assert.match(agentixHtml, /adjacent competition/i);
   assert.match(agentixHtml, /custom AI agent and automation services/i);
   assert.match(agentixHtml, /productized enforcement layer/i);
-  assert.match(agentixHtml, /\$499 one-time Managed AI Agent Workflow Gate/i);
-  assert.doesNotMatch(agentixHtml, /Pro \$19|\$149|Workflow Hardening Sprint/i);
+  assert.match(agentixHtml, /\$499 one-time Setup Sprint/i);
+  assert.doesNotMatch(agentixHtml, /Pro \$19|\$149/i);
 });
 
 test('FAR.AI comparison keeps research, evaluation, and runtime enforcement separate', () => {
@@ -71,7 +71,7 @@ test('FAR.AI comparison keeps research, evaluation, and runtime enforcement sepa
   assert.match(farAiHtml, /https:\/\/www\.far\.ai\/research/);
   assert.match(farAiHtml, /utm_source=far_ai_comparison/);
   assert.equal((farAiHtml.match(/When should I use ThumbGate\?/g) || []).length, 2);
-  assert.match(farAiHtml, /\$499 Managed AI Agent Workflow Gate/);
+  assert.match(farAiHtml, /\$499 Setup Sprint/);
   assert.doesNotMatch(farAiHtml, /managed workflow hardening sprint/i);
   assert.match(compareHtml, /href="\/compare\/far-ai"/);
 });
@@ -103,7 +103,7 @@ test('EdotEnv comparison keeps RSI train/eval and runtime enforcement separate',
   assert.match(edotenvHtml, /No affiliation with EdotEnv/i);
   assert.match(edotenvHtml, /https:\/\/edotenv\.com\//);
   assert.match(edotenvHtml, /utm_source=edotenv_comparison/);
-  assert.match(edotenvHtml, /\$499 Managed AI Agent Workflow Gate/);
+  assert.match(edotenvHtml, /\$499 Setup Sprint/);
   assert.doesNotMatch(edotenvHtml, /we are affiliated|official EdotEnv/i);
   assert.match(compareHtml, /href="\/compare\/edotenv"/);
 });
@@ -127,7 +127,7 @@ test('deployment readiness guide converts OpenAI-style deployment demand into on
   assert.match(deploymentReadinessHtml, /AI Deployment Readiness/i);
   assert.match(deploymentReadinessHtml, /deployment companies/i);
   assert.match(deploymentReadinessHtml, /governance and proof layer/i);
-  assert.match(deploymentReadinessHtml, /Managed AI Agent Workflow Gate/);
+  assert.match(deploymentReadinessHtml, /Setup Sprint/);
   assert.match(deploymentReadinessHtml, /\$499 one-time/i);
   assert.doesNotMatch(deploymentReadinessHtml, /\$1500|workflow-sprint-intake|Pro \$19|\$149/i);
 });

@@ -67,7 +67,7 @@ test('README keeps the business sprint-first while preserving the Pro side lane'
   assert.match(readme, /what repeated AI mistake would be worth catching before the tool executes/i);
   assert.match(readme, /Native ChatGPT rating buttons are not the ThumbGate capture path/i);
   assert.match(readme, /install the CLI and use `init` plus the documented setup/i);
-  assert.match(readme, /Workflow Hardening Sprint/i);
+  assert.match(readme, /Setup Sprint/i);
   assert.match(readme, /Paid path for individual operators/i);
   assert.match(readme, /self-serve side lane/i);
   assert.match(readme, /https:\/\/thumbgate\.ai\/go\/pro-direct\?utm_source=github&utm_medium=readme&utm_campaign=pro_page/);
@@ -77,7 +77,7 @@ test('README keeps the business sprint-first while preserving the Pro side lane'
 test('README exposes prompt-shaped buyer questions with tracked guide links', () => {
   const readme = readText('README.md');
 
-  assert.match(readme, /Workflow Hardening Sprint/i);
+  assert.match(readme, /Setup Sprint/i);
   assert.match(readme, /Popular buyer questions/i);
   assert.match(readme, /guides\/ai-search-topical-presence\?utm_source=github&utm_medium=readme&utm_campaign=buyer_questions/);
   assert.match(readme, /guides\/relational-knowledge-ai-recommendations\?utm_source=github&utm_medium=readme&utm_campaign=buyer_questions/);
@@ -127,7 +127,7 @@ test('README keeps lesson search on Pro instead of the Free tier', () => {
 test('LLM context keeps the promoted offer and CLI positioning aligned with commercial truth', () => {
   const context = readText(path.join('public', 'llm-context.md'));
 
-  assert.match(context, /\$499 Managed AI Agent Workflow Gate/i);
+  assert.match(context, /\$499 Setup Sprint/i);
   assert.match(context, /one supported workflow/i);
   assert.match(context, /60-minute working review/i);
   assert.match(context, /regression test/i);
@@ -253,7 +253,7 @@ test('GEO demand engine prioritizes action queries and proof-backed fan-out surf
 
   assert.match(geoDemandEngine, /Workflow Hardening Fit Checker/i);
   assert.match(geoDemandEngine, /Can AI fully satisfy this query without a click\?/i);
-  assert.match(geoDemandEngine, /Workflow Hardening Sprint/i);
+  assert.match(geoDemandEngine, /Setup Sprint/i);
   assert.match(geoDemandEngine, /Pro at \$19\/mo or \$149\/yr/i);
   assert.match(geoDemandEngine, /VERIFICATION_EVIDENCE\.md/);
   assert.match(geoDemandEngine, /COMMERCIAL_TRUTH\.md/);
@@ -274,7 +274,7 @@ test('first dollar playbook keeps the sales motion sprint-first and proof-backed
   assert.match(playbook, /First-dollar activation ladder/i);
   assert.match(playbook, /move a cold user from curiosity to one caught repeat/i);
   assert.match(playbook, /Do not claim ChatGPT's native rating buttons feed ThumbGate/i);
-  assert.match(playbook, /Workflow Hardening Sprint/i);
+  assert.match(playbook, /Setup Sprint/i);
   assert.match(playbook, /proof pack/i);
   assert.match(playbook, /named pilot agreement/i);
   assert.match(playbook, /COMMERCIAL_TRUTH\.md/);

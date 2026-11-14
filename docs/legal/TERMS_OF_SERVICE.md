@@ -8,7 +8,7 @@ These Terms of Service (“**Terms**”) govern access to and use of software an
 services provided under the ThumbGate brand (“**ThumbGate**,” “**we**,” “**us**”),
 including the local engine (`thumbgate` npm package), hosted services
 (`thumbgate.app` and related APIs), and professional services (including the
-$499 Enterprise Workflow Gate).
+$499 Setup Sprint).
 
 By installing, accessing, purchasing, or using the Services, you (“**Customer**”
 or “**you**”) agree to these Terms. If you accept on behalf of an entity, you
@@ -23,7 +23,7 @@ These Terms are a master agreement with product modules:
 | Module | Surface |
 | --- | --- |
 | **A** | Local software engine and Pro subscription |
-| **B** | $499 Enterprise Workflow Gate (professional services SOW) |
+| **B** | $499 Setup Sprint (professional services SOW) |
 | **C** | Hosted platform, pairing, mobile, and cloud runners (`thumbgate.app`) |
 
 If a module conflicts with the core terms on a scoped topic (refund fence,
@@ -60,7 +60,7 @@ we publish for community channels.
 | Product | Refund rule |
 | --- | --- |
 | **Pro / Team-style subscriptions** | Cancel anytime. Full refund within **7 days** of the first charge on request; thereafter access continues through the paid period unless required by law. |
-| **$499 Enterprise Workflow Gate** | If the repeated failure **cannot be reduced to one supported ThumbGate gate**, the order is **refunded in full** instead of being converted into open-ended consulting. After delivery and acceptance of the regression evidence package, the fee is non-refundable except as required by law. |
+| **$499 Setup Sprint** | If the repeated failure **cannot be reduced to one supported ThumbGate gate**, the order is **refunded in full** instead of being converted into open-ended consulting. After delivery and acceptance of the regression evidence package, the fee is non-refundable except as required by law. |
 | **Other one-off purchases** | Refund on request if we cannot deliver the scoped artifact described at purchase. |
 
 ### 2.5 Acceptable use
@@ -170,7 +170,7 @@ constitutes acceptance, except where law requires consent.
 
 ---
 
-## Module B — $499 Enterprise Workflow Gate (SOW)
+## Module B — $499 Setup Sprint (SOW)
 
 ### B.1 Narrow deliverable
 

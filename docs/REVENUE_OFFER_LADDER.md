@@ -25,7 +25,7 @@ At the current promoted public price, the cash path would require approximately:
 
 These are arithmetic requirements, not forecasts. They show why founder-delivered diagnostics and sprints can validate demand but cannot alone support the target without productization, recurring revenue, and Enterprise expansion.
 
-## Offer 1: Managed AI Agent Workflow Gate
+## Offer 1: Setup Sprint
 
 ```text
 buyer: one accountable owner with one repeated AI-agent workflow failure
@@ -41,7 +41,7 @@ boundaries: no multi-system implementation, legal/compliance certification, savi
 next_step: /diagnostic or /go/diagnostic after fit is clear
 ```
 
-## Offer 2: Workflow Hardening Sprint (internal catalog; hidden during the single-offer experiment)
+## Offer 2: Setup Sprint (internal catalog; hidden during the single-offer experiment)
 
 ```text
 buyer: a diagnostic-qualified workflow owner ready to implement the first gate set

@@ -4,7 +4,7 @@ Make one Claude workflow safe enough to sell and ship team-wide.
 
 # Positioning
 
-ThumbGate is the AI reliability system behind one workflow with business value. It is not another horizontal agent platform. The front-line offer is a **Workflow Hardening Sprint** that gives teams shared memory, guardrails, and proof-ready runs so one workflow can be deployed, audited, and improved over time.
+ThumbGate is the AI reliability system behind one workflow with business value. It is not another horizontal agent platform. The front-line offer is a **Setup Sprint** that gives teams shared memory, guardrails, and proof-ready runs so one workflow can be deployed, audited, and improved over time.
 
 - **Primary Goal:** Turn "vibe coding" into a controlled rollout for one sharp agent.
 - **Secondary Goal:** Convert real operator feedback into prevention rules, Thompson Sampling signals, and ThumbGate-ready datasets such as KTO/DPO pairs.
@@ -34,7 +34,7 @@ We make one workflow measurable enough to justify and safe enough to roll out.
 
 Start with one workflow, not a platform migration or generic "AI employee" pitch.
 
-- Best first offer: **Workflow Hardening Sprint**.
+- Best first offer: **Setup Sprint**.
 - Best fit: code modernization, PR review hardening, and internal ops automation.
 - Qualification: one workflow owner, one repeated failure pattern, one proof review.
 - Technical engine stays the same: feedback capture, context engineering, Thompson Sampling, and DPO export.

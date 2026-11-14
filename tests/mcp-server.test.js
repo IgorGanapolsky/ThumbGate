@@ -210,7 +210,7 @@ test('plan_chatgpt_ads_readiness returns paid AI campaign plan', async () => {
     params: {
       name: 'plan_chatgpt_ads_readiness',
       arguments: {
-        offer: 'Workflow Hardening Sprint',
+        offer: 'Setup Sprint',
         budget: 750,
       },
     },

@@ -162,7 +162,7 @@ const CLAIM_GUARDRAILS = [
   'Keep public pricing and traction claims aligned with COMMERCIAL_TRUTH.md.',
   'Keep proof and quality claims aligned with VERIFICATION_EVIDENCE.md.',
 ];
-const OFFER_SPLIT_RULE = 'Use Pro after one blocked repeat or explicit self-serve install intent. Use the Workflow Hardening Sprint when one workflow owner needs approval boundaries, rollback safety, and proof before wider rollout.';
+const OFFER_SPLIT_RULE = 'Use Pro after one blocked repeat or explicit self-serve install intent. Use the Setup Sprint when one workflow owner needs approval boundaries, rollback safety, and proof before wider rollout.';
 const TERMINAL_PIPELINE_STAGES = new Set(['paid', 'lost']);
 const PIPELINE_STAGE_PRIORITY = {
   sprint_intake: 6,
@@ -512,7 +512,7 @@ function buildTargetSalesCommands(target = {}) {
   const channel = normalizeText(target.channel) || normalizeText(target.source) || 'manual';
   const pain = buildTargetPainHypothesis(target);
   const motionKey = normalizeText(target.motion) || normalizeText(target.selectedMotion?.key);
-  const motionLabel = normalizeText(target.motionLabel) || normalizeText(target.selectedMotion?.label) || 'Workflow Hardening Sprint';
+  const motionLabel = normalizeText(target.motionLabel) || normalizeText(target.selectedMotion?.label) || 'Setup Sprint';
   const commandBase = { lead: leadId, channel };
   const isProMotion = motionKey === 'pro';
 
@@ -560,8 +560,8 @@ function buildTargetSalesCommands(target = {}) {
       'evidence-source': 'REPLACE_WITH_INTAKE_SYSTEM',
       'evidence-ref': 'REPLACE_WITH_INTAKE_RECEIPT',
       note: isProMotion
-        ? `Buyer escalated from the self-serve lane into Workflow Hardening Sprint intake for ${pain}.`
-        : `Buyer moved into Workflow Hardening Sprint intake for ${pain}.`,
+        ? `Buyer escalated from the self-serve lane into Setup Sprint intake for ${pain}.`
+        : `Buyer moved into Setup Sprint intake for ${pain}.`,
     }),
     markPaid: buildPaymentReconciliationCommand({
       lead: leadId,
@@ -684,7 +684,7 @@ function buildMotionCatalog(links = buildRevenueLinks()) {
     },
     sprint: {
       key: 'sprint',
-      label: 'Workflow Hardening Sprint',
+      label: 'Setup Sprint',
       audience: 'Teams with one production workflow, one owner, and one repeated failure pattern blocking rollout.',
       cta: links.sprintLink,
       proof: links.verificationEvidenceLink,
@@ -1008,8 +1008,8 @@ function deriveRevenueDirective(
       primaryMotion: motionCatalog.sprint.key,
       secondaryMotion: motionCatalog.pro.key,
       headline: liveHostedRevenue
-        ? 'Verified booked revenue exists. Keep selling one concrete Workflow Hardening Sprint first, then route self-serve buyers to Pro.'
-        : 'Historical booked revenue is verified, but the current hosted billing summary is unavailable in this run. Keep selling one concrete Workflow Hardening Sprint first, then route self-serve buyers to Pro.',
+        ? 'Verified booked revenue exists. Keep selling one concrete Setup Sprint first, then route self-serve buyers to Pro.'
+        : 'Historical booked revenue is verified, but the current hosted billing summary is unavailable in this run. Keep selling one concrete Setup Sprint first, then route self-serve buyers to Pro.',
       actions: [
         'Reply to every qualified lead with one offer: "I will harden one AI-agent workflow for you."',
         'Use the proof pack after the buyer names the repeated workflow pain, not as the opener.',
@@ -1028,7 +1028,7 @@ function deriveRevenueDirective(
       objective: 'Convert existing interest into the first paid orders without inventing traction.',
       primaryMotion: motionCatalog.sprint.key,
       secondaryMotion: motionCatalog.pro.key,
-      headline: 'Interest exists but paid conversion is still zero. Sell the Workflow Hardening Sprint first; Pro is self-serve follow-up.',
+      headline: 'Interest exists but paid conversion is still zero. Sell the Setup Sprint first; Pro is self-serve follow-up.',
       actions: [
         'Follow up on every checkout start or lead within one business day with one concrete workflow-hardening offer.',
         'Track every lead as contacted -> replied -> call booked -> checkout or sprint intake -> paid.',
@@ -1042,7 +1042,7 @@ function deriveRevenueDirective(
     objective: 'Land the first 10 paying customers with founder-led workflow hardening.',
     primaryMotion: motionCatalog.sprint.key,
     secondaryMotion: motionCatalog.pro.key,
-    headline: 'No verified revenue and no active pipeline. Stop treating posts as sales; directly sell one Workflow Hardening Sprint.',
+    headline: 'No verified revenue and no active pipeline. Stop treating posts as sales; directly sell one Setup Sprint.',
     actions: [
       'Directly contact qualified buyers with: "I will harden one AI-agent workflow for you."',
       'Use Pro at $19/mo or $149/yr only as the self-serve follow-up after the buyer asks for the tool path.',
@@ -1483,7 +1483,7 @@ function buildPainConfirmedFollowUp(target, selectedMotion, motionCatalog = buil
   const proRef = repoName ? ` for ${repoRef}` : '';
   if (selectedMotion.key === motionCatalog.sprint.key) {
     return [
-      `If ${repoRef} really has one repeated workflow failure blocking rollout, I can send the Workflow Hardening Sprint brief plus the commercial truth and verification evidence: ${motion.cta}`,
+      `If ${repoRef} really has one repeated workflow failure blocking rollout, I can send the Setup Sprint brief plus the commercial truth and verification evidence: ${motion.cta}`,
       `Commercial truth: ${motion.truth} Verification evidence: ${motion.proof}`,
     ].join(' ');
   }
@@ -1536,7 +1536,7 @@ Stay inside current commercial truth. Never invent traction, partners, or scarci
 
 Current public self-serve offer: ${motionCatalog.pro.label}
 Public self-serve checkout: ${motionCatalog.pro.cta}
-Workflow Hardening Sprint intake: ${motionCatalog.sprint.cta}
+Setup Sprint intake: ${motionCatalog.sprint.cta}
 Commercial truth: ${motionCatalog.pro.truth}
 Verification evidence: ${motionCatalog.pro.proof}
 
@@ -2657,7 +2657,7 @@ function renderTeamOutreachMessagesMarkdown(report) {
     : ['- No approval-ready warm discovery targets were loaded for this run.', ''];
 
   return [
-    '# Workflow Hardening Sprint Outreach Messages',
+    '# Setup Sprint Outreach Messages',
     '',
     `Updated: ${report.generatedAt}`,
     '',

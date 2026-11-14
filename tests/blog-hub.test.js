@@ -35,7 +35,7 @@ test('blog posts exist with honest process and boundary claims', () => {
 
   assert.match(boundaryPost, /inside your boundary/i);
   assert.match(boundaryPost, /Local-first checks/i);
-  assert.match(boundaryPost, /Enterprise Workflow Gate/i);
+  assert.match(boundaryPost, /Setup Sprint/i);
   assert.match(boundaryPost, /do not claim a full air-gapped/i);
 
   const computerPost = read('public', 'blog', 'a-10-dollar-vps-is-not-a-computer.html');

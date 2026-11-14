@@ -727,13 +727,13 @@ function validateSignedScope(scope = {}, { now = new Date().toISOString() } = {}
     const creditedPrice = scope.amountCents === creditedSprintBalance &&
       scope.creditCents === DIAGNOSTIC_CREDIT_CENTS && Boolean(scope.creditSalesLeadId);
     if (!fullPrice && !creditedPrice) {
-      return 'Signed Workflow Hardening Sprint scope must use the full catalog price or the documented diagnostic-credit balance with a credited paid sales lead.';
+      return 'Signed Setup Sprint scope must use the full catalog price or the documented diagnostic-credit balance with a credited paid sales lead.';
     }
   } else if (scope.amountCents !== offer.priceCents || scope.creditCents !== 0 || scope.creditSalesLeadId) {
     return `Signed scope must match the fixed ${scope.offerId} catalog price without an unrelated credit.`;
   }
   if (scope.offerId === 'workflow_hardening_sprint' && scope.workflowCount !== 1) {
-    return 'Workflow Hardening Sprint scope must contain exactly one workflow.';
+    return 'Setup Sprint scope must contain exactly one workflow.';
   }
   if (scope.offerId === 'workflow_reliability_operations' && scope.workflowCount !== 1) {
     return 'Workflow Reliability Operations scope must contain exactly one existing workflow.';

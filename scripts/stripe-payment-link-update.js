@@ -53,9 +53,9 @@ const TARGETS = [
   },
   {
     urlSlug: '8x25kDcqMaPs9G15e33sI0p',
-    label: 'Workflow Hardening Sprint',
+    label: 'Setup Sprint',
     expectedPriceUsd: 1500,
-    customText: 'Full Workflow Hardening Sprint — diagnostic + applied prevention rules + deployed PreToolUse hooks + rollout review. Two weeks calendar time. Refund within 7 days.',
+    customText: 'Full Setup Sprint — diagnostic + applied prevention rules + deployed PreToolUse hooks + rollout review. Two weeks calendar time. Refund within 7 days.',
     metadata: {
       utm_source: 'thumbgate.ai',
       cta_id: 'workflow_sprint_1500',
