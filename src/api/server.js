@@ -1201,6 +1201,15 @@ function partitionFeedbackPaths(paths, dataIdentity) {
   });
 }
 
+function projectEvidenceForRequest(req, parsed, feedbackDir, dataIdentity) {
+  const hostedEvidenceSource = Boolean(tenantDataScope() || dataIdentity?.partition || process.env.RAILWAY_PROJECT_ID || process.env.RAILWAY_ENVIRONMENT || process.env.RENDER || process.env.K_SERVICE || process.env.THUMBGATE_HOSTED === '1')
+    || !isLoopbackHost(getRequestHostHeader(req)) || !['127.0.0.1', '::1', '::ffff:127.0.0.1'].includes(req.socket.remoteAddress)
+    || Boolean(getRequestedProjectSelection(req, parsed));
+  return require('../../scripts/project-evidence').localRuntimeEvidenceOptions({
+    feedbackDir, sourceRoot: process.env.THUMBGATE_FEEDBACK_DIR || path.join(require('node:os').homedir(), '.thumbgate'), hosted: hostedEvidenceSource,
+  });
+}
+
 function getSafeDataDir(req, parsed) {
   const { FEEDBACK_LOG_PATH } = getRequestFeedbackPaths(req, parsed);
   return path.resolve(path.dirname(FEEDBACK_LOG_PATH));
@@ -1242,7 +1251,7 @@ function updateLessonRecord(feedbackDir, lessonId, updater, options = {}) {
   const updated = updater({ ...existing });
   if (!updated) return null;
   const { signalPaths, accountAttribution } = require('../../scripts/project-catalog');
-  const writeOptions = { ...options, projectKey: existing.projectKey, attribution: accountAttribution(feedbackDir) };
+  const writeOptions = { ...options, projectKey: existing.projectKey, attribution: accountAttribution(feedbackDir, options) };
   let changed = false;
   for (const name of ['memory-log.jsonl', 'feedback-log.jsonl']) for (const file of signalPaths(feedbackDir, name)) changed = updateLessonJsonlRecord(file, lessonId, updated, writeOptions) || changed;
   if (!changed) return null;
@@ -8078,9 +8087,12 @@ async function addContext(){
       if (!isAuthorized(req, expectedApiKey)) { sendJson(res, 401, { error: 'Unauthorized' }); return; }
       const identity = resolveRequestDataIdentity(req, expectedApiKey);
       if (identity.invalidHostedIdentity) { sendJson(res, 403, { error: 'Unauthorized' }); return; }
-      requestFeedbackPaths = partitionFeedbackPaths(requestFeedbackPaths, identity);
+      requestFeedbackPaths = currentDataScope()
+        ? getFeedbackPaths({ feedbackDir: currentDataScope().lexicalRoot })
+        : partitionFeedbackPaths(requestFeedbackPaths, identity);
       requestFeedbackDir = requestFeedbackPaths.FEEDBACK_DIR;
       requestSafeDataDir = path.resolve(requestFeedbackDir);
+      Object.assign(projectOptions, { projectKey: requestProjectKey, feedbackDir: requestFeedbackDir }, projectEvidenceForRequest(req, parsed, requestFeedbackDir, identity));
     }
     // --- Lesson detail: POST /lessons/:id/update ---
     const lessonUpdateMatch = pathname.match(/^\/lessons\/([^/]+)\/update$/);
@@ -8088,7 +8100,7 @@ async function addContext(){
       const lessonId = decodeURIComponent(lessonUpdateMatch[1]);
       const feedbackDir = requestSafeDataDir;
       const body = await readProjectBody(req);
-      const record = findRecordById(lessonId, feedbackDir, { projectKey: requestProjectKey });
+      const record = findRecordById(lessonId, feedbackDir, projectOptions);
       if (!record) {
         sendJson(res, 404, { error: 'Record not found' });
         return;
@@ -8105,7 +8117,7 @@ async function addContext(){
         if (body.whatWentWrong !== undefined) next.whatWentWrong = body.whatWentWrong;
         if (body.whatWorked !== undefined) next.whatWorked = body.whatWorked;
         return next;
-      }, { projectKey: requestProjectKey });
+      }, projectOptions);
       if (!updated) {
         sendJson(res, 404, { error: 'Record not found' });
         return;
@@ -8121,9 +8133,9 @@ async function addContext(){
       const feedbackDir = requestSafeDataDir;
       const memoryLogPath = path.join(feedbackDir, 'memory-log.jsonl');
       const feedbackLogPath = path.join(feedbackDir, 'feedback-log.jsonl');
-      if (!findRecordById(lessonId, feedbackDir, { projectKey: requestProjectKey })) { sendJson(res, 404, { error: 'Record not found' }); return; }
+      if (!findRecordById(lessonId, feedbackDir, projectOptions)) { sendJson(res, 404, { error: 'Record not found' }); return; }
       const { signalPaths, accountAttribution } = require('../../scripts/project-catalog');
-      const writeOptions = { projectKey: requestProjectKey, attribution: accountAttribution(feedbackDir) };
+      const writeOptions = { ...projectOptions, attribution: accountAttribution(feedbackDir, projectOptions) };
       let deleted = false;
       for (const name of ['memory-log.jsonl', 'feedback-log.jsonl']) for (const file of signalPaths(feedbackDir, name)) deleted = deleteLessonJsonlRecord(file, lessonId, writeOptions) || deleted;
       if (!deleted) {
@@ -8139,7 +8151,7 @@ async function addContext(){
     if (isGetLikeRequest && lessonDetailMatch && lessonDetailMatch[1] !== '') {
       const lessonId = decodeURIComponent(lessonDetailMatch[1]);
       const feedbackDir = requestSafeDataDir;
-      const record = findRecordById(lessonId, feedbackDir, { projectKey: requestProjectKey });
+      const record = findRecordById(lessonId, feedbackDir, projectOptions);
       if (!record) {
         sendHtml(res, 404, renderLessonDetailHtml(null, lessonId));
         return;
@@ -11934,6 +11946,7 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
       if (req.method === 'GET' && pathname === '/v1/feedback/summary') {
         const recent = Number(parsed.searchParams.get('recent') || 20);
         const summary = feedbackSummary(Number.isFinite(recent) ? recent : 20, {
+          ...projectOptions,
           feedbackDir: requestFeedbackDir,
           projectKey: requestProjectKey,
         });
@@ -11956,6 +11969,7 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
           .filter(Boolean);
         const lessonSearch = requirePrivateApiModule('lessonSearch', 'Lesson search');
         const results = lessonSearch.searchLessons(query, {
+          ...projectOptions,
           limit: Number.isFinite(limit) ? limit : 10,
           category,
           tags,
@@ -11979,6 +11993,7 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
         let results;
         try {
           results = await searchThumbgateAsync({
+            ...projectOptions,
             query,
             limit: Number.isFinite(limit) ? limit : 10,
             source,
@@ -13048,7 +13063,7 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
       if (req.method === 'GET' && pathname === '/v1/dashboard/agent-register') {
         const { buildAgentRegister } = require('../../scripts/agent-action-inventory');
         const windowDays = parsed.searchParams.get('days') || 30;
-        sendJson(res, 200, buildAgentRegister({ dataDir: requestFeedbackDir, windowDays, projectKey: requestProjectKey }));
+        sendJson(res, 200, buildAgentRegister({ ...projectOptions, dataDir: requestFeedbackDir, windowDays, projectKey: requestProjectKey }));
         return;
       }
 
@@ -13072,7 +13087,7 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
           owner: body?.owner !== undefined ? body.owner : undefined,
           registered: typeof body?.registered === 'boolean' ? body.registered : undefined,
         });
-        sendJson(res, 200, { ok: true, agentRegister: buildAgentRegister({ dataDir: requestFeedbackDir, projectKey: requestProjectKey }) });
+        sendJson(res, 200, { ok: true, agentRegister: buildAgentRegister({ ...projectOptions, dataDir: requestFeedbackDir, projectKey: requestProjectKey }) });
         return;
       }
 

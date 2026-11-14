@@ -343,6 +343,7 @@
     "scripts/project-catalog.js",
     "scripts/project-dashboard.js",
     "scripts/project-identity.js",
+    "scripts/project-evidence.js",
     "scripts/project-scope.js",
     "scripts/prompt-eval.js",
     "scripts/prompt-guard.js",
@@ -1393,7 +1394,7 @@
     "test:verified-lessons": "node --test tests/verified-lessons.test.js",
     "test:egm-goldfish-packet": "node --test tests/egm-goldfish-packet.test.js",
     "test:hosted-tenant-isolation": "node --test tests/feedback-scope.test.js tests/hosted-tenant-isolation.test.js",
-    "test:project-scope": "node --test tests/project-attribution-evidence.test.js tests/project-identity.test.js tests/project-migration.test.js tests/project-gates.test.js tests/project-capture.test.js tests/project-dashboard-api.test.js",
+    "test:project-scope": "node --test tests/project-attribution-evidence.test.js tests/project-identity.test.js tests/project-migration.test.js tests/project-gates.test.js tests/project-capture.test.js tests/project-dashboard-api.test.js tests/project-dashboard-browser.test.js tests/project-identity-perf.test.js tests/project-capture-time-key.test.js",
     "test:project-browser": "THUMBGATE_PROJECT_BROWSER_TEST=1 node --test tests/project-dashboard-browser.test.js"
   },
   "keywords": [

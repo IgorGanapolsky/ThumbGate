@@ -2227,7 +2227,7 @@ function generateDashboard(feedbackDir, options = {}) {
   };
   const diagnostics = aggregateFailureDiagnostics([...entries, ...diagnosticEntries]);
   const secretGuard = computeSecretGuardStats(diagnosticEntries);
-  const gates = require('./project-catalog').readProjectGates(feedbackDir).filter((gate) => gate.active !== false).map((gate) => ({ ...gate, scopeLabel: gate.scope === 'global' ? 'Global' : 'Project' }));
+  const gates = require('./project-catalog').readProjectGates(feedbackDir).filter((gate) => gate.active !== false).map((gate) => ({ ...gate, name: gate.name || gate.id || 'Gate', pattern: gate.pattern || '', action: gate.action || 'warn', severity: gate.severity || 'medium', layer: gate.layer || 'Execution', message: gate.message || null, source: gate.source || null, sourceLessonId: gate.sourceLessonId || null, sourceFeedbackId: gate.sourceFeedbackId || null, createdAt: gate.createdAt || null, promotedAt: gate.promotedAt || null, scopeLabel: gate.scope === 'global' ? 'Global' : 'Project' }));
   const analytics = computeAnalyticsSummary(feedbackDir, {
     analyticsWindow,
     billingSummary,

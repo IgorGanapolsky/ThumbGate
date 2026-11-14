@@ -230,8 +230,8 @@ function deduplicateResults(results) {
   return finalResults;
 }
 
-function getFeedbackResults(query, limit, signal, feedbackDir, projectKey = null, includeMemories = false) {
-  const results = searchFeedbackLog(query, Math.max(limit * 3, limit), { feedbackDir, projectKey, signal, includeMemories });
+function getFeedbackResults(query, limit, signal, feedbackDir, projectKey = null, includeMemories = false, localPathEvidence) {
+  const results = searchFeedbackLog(query, Math.max(limit * 3, limit), { feedbackDir, projectKey, signal, includeMemories, localPathEvidence });
   const normalizedSignal = normalizeSignal(signal);
   const filtered = normalizedSignal
     ? results.filter((record) => normalizeRecordSignal(record.signal) === normalizedSignal)
@@ -264,6 +264,7 @@ function searchThumbgate({
   feedbackDir = null,
   accessContext = null,
   projectKey = null,
+  localPathEvidence,
 } = {}) {
   const trimmedQuery = String(query || '').trim();
   if (!trimmedQuery) {
@@ -278,7 +279,7 @@ function searchThumbgate({
 
   if (projectKey != null) {
     const unavailableSources = normalizedSource === 'all' ? ['context', 'rules', 'documents'] : ['context', 'rules', 'documents'].filter((item) => item === normalizedSource);
-    const rows = ['all', 'feedback'].includes(normalizedSource) ? getFeedbackResults(trimmedQuery, fetchLimit, normalizedSignal, feedbackDir, projectKey, normalizedSource === 'all') : [];
+    const rows = ['all', 'feedback'].includes(normalizedSource) ? getFeedbackResults(trimmedQuery, fetchLimit, normalizedSignal, feedbackDir, projectKey, normalizedSource === 'all', localPathEvidence) : [];
     const results = deduplicateResults(sortResults(rows)).slice(0, normalizedLimit);
     return { query: trimmedQuery, source: normalizedSource, signal: normalizedSignal, limit: normalizedLimit, engine: 'filesystem-search', returned: results.length, total: results.length, results, unavailableSources };
   }
@@ -329,8 +330,9 @@ async function searchThumbgateAsync({
   embedderId,
   accessContext = null,
   projectKey = null,
+  localPathEvidence,
 } = {}) {
-  if (projectKey != null) return searchThumbgate({ query, source, limit, signal, feedbackDir, accessContext, projectKey });
+  if (projectKey != null) return searchThumbgate({ query, source, limit, signal, feedbackDir, accessContext, projectKey, localPathEvidence });
   const trimmedQuery = String(query || '').trim();
   if (!trimmedQuery) throw new Error('query is required');
   const normalizedSource = normalizeSource(source);

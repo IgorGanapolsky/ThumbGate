@@ -4,6 +4,7 @@ const { readProjectRows, readProjectGates, buildProjectCatalog } = require('./pr
 
 function generateProjectDashboard(feedbackDir, options = {}) {
   const dashboard = require('./dashboard');
+  options = { ...options, attribution: options.attribution || require('./project-catalog').accountAttribution(feedbackDir, options) };
   const rows = (file) => readProjectRows(feedbackDir, file, options);
   const feedback = rows('feedback-log.jsonl').filter((row) => !options.humanOnly || !row.reviewOrigin || row.reviewOrigin === 'human');
   const memories = rows('memory-log.jsonl');
@@ -36,7 +37,7 @@ function generateProjectDashboard(feedbackDir, options = {}) {
   });
   const reviewSnapshot = dashboard.buildReviewSnapshot(feedbackDir, { feedbackEntries: feedback, memoryEntries: memories, auditEntries: audit, projectRoot: null, reviewedAt: now.toISOString() });
   const baseline = dashboard.readDashboardReviewState(feedbackDir, options);
-  const project = buildProjectCatalog(feedbackDir).projects.find((item) => item.projectKey === options.projectKey) || { projectKey: options.projectKey, projectName: options.projectKey === 'unassigned' ? 'Unassigned' : 'Project' };
+  const project = buildProjectCatalog(feedbackDir, options).projects.find((item) => item.projectKey === options.projectKey) || { projectKey: options.projectKey, projectName: options.projectKey === 'unassigned' ? 'Unassigned' : 'Project' };
   const unavailableMetrics = ['analytics', 'billing', 'prevention', 'harness', 'health', 'delegation', 'observability', 'instrumentation', 'readiness', 'agentSurfaceInventory', 'backgroundAgents', 'regulatedProof', 'interventionPolicy', 'decisions', 'settingsStatus', 'team', 'templateLibrary', 'predictive', 'tokenSavings'];
   const data = Object.fromEntries(unavailableMetrics.map((name) => [name, null]));
   const today = auditDays.at(-1);
@@ -50,7 +51,7 @@ function generateProjectDashboard(feedbackDir, options = {}) {
     secretGuard: dashboard.computeSecretGuardStats(rows('diagnostic-log.jsonl')),
     feedbackAnalysis,
     actionableRemediations: feedbackAnalysis.actionableRemediations || [],
-    agentRegister: require('./agent-action-inventory').buildAgentRegister({ dataDir: feedbackDir, projectKey: options.projectKey, now: options.now }),
+    agentRegister: require('./agent-action-inventory').buildAgentRegister({ ...options, dataDir: feedbackDir }),
     reviewDelta: dashboard.summarizeReviewDelta(feedback, memories, audit, baseline, reviewSnapshot),
     feedbackTimeSeries: { days, dayCount: 30, totals: { positive: feedback.filter((r) => r.signal === 'positive').length, negative: feedback.filter((r) => r.signal === 'negative').length, total: feedback.length, lessons: memories.length } },
     todayOverview: { gateStatusChips: { blockedToday: today.deny, warnedToday: today.warn, activeGates: gates.length }, lessonStorage: { lessonCount: memories.length, location: null, bytes: null, label: 'Project lessons' }, upNext: null },

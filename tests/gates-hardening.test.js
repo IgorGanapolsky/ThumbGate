@@ -151,7 +151,7 @@ test('gh pr create requires explicit permission', (t) => {
   assert.ok(result, 'should block gh pr create without permission');
   assert.strictEqual(result.gate, 'gh-pr-create-restricted');
 
-  harness.gates.satisfyCondition('pr_create_allowed', 'User said go ahead');
+  harness.gates.satisfyCondition('pr_create_allowed', 'User said go ahead', null, { cwd: harness.repoDir });
 
   result = harness.gates.evaluateGates('Bash', {
     command: 'gh pr create --title "test"',

@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 'use strict';
 const { resolveLocalProject, projectForRecord, validProjectKey } = require('./project-identity');
-function eventProject(input = {}) { return validProjectKey(input.projectKey) ? projectForRecord(input) : resolveLocalProject(input.cwd || input.toolInput?.cwd || process.cwd()); }
+function eventProject(input = {}) { return validProjectKey(input.projectKey) ? projectForRecord(input) : tenantDataScope() ? projectForRecord({ projectKey: 'unassigned' }) : resolveLocalProject(input.cwd || input.toolInput?.cwd || process.cwd()); }
 
-const { assertScopedDataPath } = require('./feedback-scope');
+const { assertScopedDataPath, tenantDataScope } = require('./feedback-scope');
 
 /**
  * Audit Trail — OpenShell-inspired governance layer
@@ -74,7 +74,7 @@ function registerAgent({ agentId, source, project, branch, metadata, ...options 
     registeredAt: new Date().toISOString(),
     lastSeenAt: new Date().toISOString(),
     source: source || 'unknown',
-    project: project || path.basename(process.cwd()),
+    project: project || (tenantDataScope() ? null : path.basename(process.cwd())),
     branch: branch || null,
     toolCalls: 0,
     gateBlocks: 0,

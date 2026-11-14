@@ -850,11 +850,11 @@ function buildAgentRegister(opts = {}) {
   const defaultOwner = resolveDefaultOwner(opts), regCfg = loadAgentRegisterConfig(dataDir), allow = loadMcpAllowlistIndex(opts.allowlistsPath);
   const ro = { maxBytes: opts.maxBytes };
   const maps = { agents: new Map(), models: new Map(), mcpServers: new Map(), hookSources: new Map(), unattributedCalls: 0 };
-  ingestRecords(require('./project-catalog').readProjectRows(dataDir, AUDIT_LOG_FILENAME, { projectKey: opts.projectKey }).filter((r) => withinWindow(r, sinceMs)), maps, allow.tools);
-  ingestRecords(require('./project-catalog').readProjectRows(dataDir, KPI_LOG_FILENAME, { projectKey: opts.projectKey }).filter((r) => withinWindow(r, sinceMs)), maps, allow.tools);
+  ingestRecords(require('./project-catalog').readProjectRows(dataDir, AUDIT_LOG_FILENAME, { ...opts, projectKey: opts.projectKey }).filter((r) => withinWindow(r, sinceMs)), maps, allow.tools);
+  ingestRecords(require('./project-catalog').readProjectRows(dataDir, KPI_LOG_FILENAME, { ...opts, projectKey: opts.projectKey }).filter((r) => withinWindow(r, sinceMs)), maps, allow.tools);
   const regState = { active: new Set(), retired: new Set(), owners: new Map() };
-  for (const reg of require('./project-catalog').readProjectRows(dataDir, REGISTRY_FILENAME, { projectKey: opts.projectKey, dedupe: false })) ingestRegistryEntry(reg, sinceMs, maps, regState);
-  for (const obs of require('./project-catalog').readProjectRows(dataDir, OBSERVED_FILENAME, { projectKey: opts.projectKey, dedupe: false })) ingestObservedEntry(obs, sinceMs, maps);
+  for (const reg of require('./project-catalog').readProjectRows(dataDir, REGISTRY_FILENAME, { ...opts, projectKey: opts.projectKey, dedupe: false })) ingestRegistryEntry(reg, sinceMs, maps, regState);
+  for (const obs of require('./project-catalog').readProjectRows(dataDir, OBSERVED_FILENAME, { ...opts, projectKey: opts.projectKey, dedupe: false })) ingestObservedEntry(obs, sinceMs, maps);
   const ownerFor = (id) => regCfg.owners.get(id) || regState.owners.get(id) || defaultOwner;
   const agents = sortRows([...maps.agents.values()].map((b) => {
     const inReg = regCfg.registered.has(b.id) || (regState.active.has(b.id) && !regState.retired.has(b.id));

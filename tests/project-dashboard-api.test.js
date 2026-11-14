@@ -94,3 +94,26 @@ test('selected SSE receives its capture while excluding the other project', asyn
   assert(text.includes(B.projectKey)); assert(!text.includes(A.projectKey)); assert(!text.includes('accountRoot'));
   controller.abort();
 });
+test('local HTTP reads attribute recorded paths before migration while hosted requests never probe', async (t) => {
+  const workspace = path.join(os.homedir(), 'workspace');
+  const repository = fs.mkdtempSync(path.join(workspace, '.thumbgate-project-evidence-test-'));
+  const previousFeedback = fs.readFileSync(path.join(dir, 'feedback-log.jsonl')); const previousMemory = fs.readFileSync(path.join(dir, 'memory-log.jsonl'));
+  t.after(() => { fs.rmSync(repository, { recursive: true, force: true }); fs.writeFileSync(path.join(dir, 'feedback-log.jsonl'), previousFeedback); fs.writeFileSync(path.join(dir, 'memory-log.jsonl'), previousMemory); });
+  fs.mkdirSync(path.join(repository, '.git')); fs.writeFileSync(path.join(repository, '.git', 'config'), '[remote "origin"]\nurl=https://github.com/fixture/local-historical-path\n');
+  const project = projectFromRemote('https://github.com/fixture/local-historical-path');
+  fs.appendFileSync(path.join(dir, 'feedback-log.jsonl'), JSON.stringify({ id: 'historical-path', cwd: repository, reviewOrigin: 'human', signal: 'positive', context: 'LOCAL_PATH_EVIDENCE fixture', whatWorked: 'LOCAL_PATH_EVIDENCE', timestamp: stamp, tags: ['fixture'] }) + '\n');
+  fs.appendFileSync(path.join(dir, 'memory-log.jsonl'), JSON.stringify({ id: 'historical-lesson', sourceFeedbackId: 'historical-path', category: 'learning', title: 'LOCAL_PATH_EVIDENCE fixture', content: 'LOCAL_PATH_EVIDENCE', timestamp: stamp, tags: ['fixture'] }) + '\n');
+  const projects = await request('/v1/projects'); assert.equal(projects.status, 200); assert.equal(projects.body.projects.find((row) => row.projectKey === project.projectKey).counts.feedback, 1);
+  for (const route of ['/v1/dashboard', '/v1/feedback/stats', '/v1/lessons/search?limit=50', '/v1/search?q=*&source=feedback&limit=50']) {
+    const result = await request(route + (route.includes('?') ? '&' : '?') + 'project=' + project.projectKey); assert.equal(result.status, 200, route);
+    if (route === '/v1/dashboard') assert.equal(result.body.approval.total, 1);
+    else if (route === '/v1/feedback/stats') assert.equal(result.body.total, 1);
+    else assert(result.text.includes('LOCAL_PATH_EVIDENCE'), route);
+  }
+  const detail = await request('/lessons/historical-lesson?project=' + project.projectKey); assert.equal(detail.status, 200); assert(detail.text.includes('LOCAL_PATH_EVIDENCE'));
+  const hosted = await request('/v1/feedback/stats?project=' + project.projectKey, { headers: { 'x-forwarded-host': 'hosted.example' } }); assert.equal(hosted.body.total, 0);
+  assert(!fs.existsSync(path.join(dir, 'project-scope-migration.json')));
+  assert.equal((await request('/lessons/historical-lesson/update?project=' + A.projectKey, { method: 'POST', body: '{"title":"wrong"}' })).status, 404);
+  assert.equal((await request('/lessons/historical-lesson/update?project=' + project.projectKey, { method: 'POST', body: '{"title":"LOCAL_PATH_EDITED"}' })).status, 200);
+  assert.equal((await request('/lessons/historical-lesson/delete?project=' + project.projectKey, { method: 'POST', body: '{}' })).status, 200);
+});

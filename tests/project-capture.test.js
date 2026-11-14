@@ -70,3 +70,24 @@ test('SQLite storage IDs cannot collide with arbitrary logical IDs or fork legac
   assert.equal(db.prepare('SELECT COUNT(*) n FROM lessons').get().n, 3);
   assert.equal(db.prepare('SELECT context FROM lessons WHERE id = ?').get('x').context, 'legacy update');
 });
+
+test('trusted tenant storage rejects explicit foreign roots and never invents a server project', async (t) => {
+  const root = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), 'project-tenant-boundary-'))); const tenant = path.join(root, 'tenant'); const outside = path.join(root, 'outside'); fs.mkdirSync(tenant); fs.mkdirSync(outside);
+  t.after(() => fs.rmSync(root, { recursive: true, force: true }));
+  const { withDataScope } = require('../scripts/feedback-scope'); const loop = require('../scripts/feedback-loop'); const audit = require('../scripts/audit-trail'); const gates = require('../scripts/gates-engine');
+  withDataScope({ kind: 'tenant', tenantId: 'fixture', feedbackDir: tenant }, () => {
+    assert.throws(() => readProjectRows(outside, 'feedback-log.jsonl'), /authenticated tenant scope/);
+    assert.throws(() => gates.saveState({}, { feedbackDir: outside }), /authenticated tenant scope/);
+    assert.throws(() => audit.registerAgent({ agentId: 'outside', feedbackDir: outside }), /authenticated tenant scope/);
+    assert.throws(() => require('../scripts/auto-promote-gates').getAutoGatesPath({ feedbackDir: outside }), /authenticated tenant scope/);
+    const registered = audit.registerAgent({ agentId: 'unknown-project', source: 'fixture' });
+    assert.equal(registered.projectKey, 'unassigned'); assert.equal(registered.project, null);
+    loop.captureFeedback({ signal: 'positive', context: 'Unknown hosted repository fixture', whatWorked: 'The result was verified within the authenticated account.', cwd: process.cwd() });
+    gates.satisfyCondition('unknown-ready', 'fixture evidence');
+    assert(gates.loadState().satisfiedByProject.unassigned['unknown-ready']);
+  });
+  await loop.waitForBackgroundSideEffects();
+  const rows = readProjectRows(tenant, 'feedback-log.jsonl'); assert.equal(rows.length, 1); assert.equal(rows[0].projectKey, 'unassigned');
+  const Database = require('better-sqlite3'); const db = new Database(path.join(tenant, 'lessons.sqlite'), { readonly: true });
+  assert.equal(db.prepare('SELECT projectKey FROM lessons').get().projectKey, 'unassigned'); db.close(); assert.equal(fs.readdirSync(outside).length, 0);
+});

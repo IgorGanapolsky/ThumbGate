@@ -4,8 +4,8 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const crypto = require('node:crypto');
-const { projectForRecord, isGeneratedGate } = require('./project-identity');
-const { SIGNAL_FILES, signalPaths, accountDirectories, accountAttribution, attributionForFile, readProjectRows, readRows } = require('./project-catalog');
+const { projectForRecord, resolveProjectEvidence, isGeneratedGate } = require('./project-identity');
+const { SIGNAL_FILES, signalPaths, accountDirectories, accountAttribution, attributionForFile } = require('./project-catalog');
 
 function digest(file) {
   const hash = crypto.createHash('sha256');
@@ -60,7 +60,7 @@ function copyDatabaseForInspection(file) {
   } catch (error) { fs.rmSync(directory, { recursive: true, force: true }); throw error; }
 }
 function migrateAccount(root, options, counts) {
-  const attribution = accountAttribution(root);
+  const attribution = accountAttribution(root, options);
   const manifestPath = path.join(root, 'project-scope-migration.json');
   let manifest = { version: 1, files: {}, databases: {} };
   if (fs.existsSync(manifestPath)) manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
@@ -105,8 +105,13 @@ function migrateAccount(root, options, counts) {
             const row = JSON.parse(line);
             if (!row || typeof row !== 'object' || Array.isArray(row)) throw new Error('Not a record');
             counts.rows++;
-            const project = projectForRecord(row, attributionForFile(attribution, file));
-            if (project.projectKey === 'unassigned') counts.unassigned++; else counts.attributed++;
+            const result = resolveProjectEvidence(row, attributionForFile(attribution, file));
+            const project = result.descriptor;
+            counts.evidence[result.evidence] = (counts.evidence[result.evidence] || 0) + 1;
+            if (result.reason) counts.reasons[result.reason] = (counts.reasons[result.reason] || 0) + 1;
+            if (result.anchorEvidence) counts.anchorEvidence[result.anchorEvidence] = (counts.anchorEvidence[result.anchorEvidence] || 0) + 1;
+            if (project.projectKey === 'unassigned') { counts.unassigned++; counts.unassignedReasons[result.reason] = (counts.unassignedReasons[result.reason] || 0) + 1; }
+            else { counts.attributed++; if (project.projectKey.startsWith('legacy_')) counts.legacyAttributed++; else if (project.projectKey.startsWith('repo_')) counts.canonicalAttributed++; else counts.localAttributed++; }
             const newline = line.endsWith('\r\n') ? '\r\n' : line.endsWith('\n') ? '\n' : '';
             output = JSON.stringify({ ...row, ...project }) + newline;
           } catch { if (line.trim()) counts.malformed++; }
@@ -115,7 +120,6 @@ function migrateAccount(root, options, counts) {
       });
     }
   }
-  const seeds = [...readProjectRows(root, 'feedback-log.jsonl'), ...readProjectRows(root, 'memory-log.jsonl')];
   for (const dir of accountDirectories(root)) {
     for (const name of ['auto-promoted-gates.json', 'custom-gates.json', 'dashboard-review-state.json']) {
       const file = path.join(dir, name);
@@ -130,11 +134,7 @@ function migrateAccount(root, options, counts) {
             if (item.scope === 'global' && !isGeneratedGate(item)) return item;
             const generated = name === 'auto-promoted-gates.json' || isGeneratedGate(item);
             if (!generated && !item.projectKey) return { ...item, scope: 'global' };
-            const sourceId = item.sourceLessonId || item.sourceFeedbackId;
-            const localSeeds = ['feedback-log.jsonl', 'memory-log.jsonl'].flatMap((filename) => { const source = path.join(dir, filename); return fs.existsSync(source) ? readRows(source) : []; });
-            const candidates = (localSeeds.some((row) => row.id === sourceId) ? localSeeds : seeds).filter((row) => sourceId && row.id === sourceId);
-            const keys = new Set(candidates.map((row) => projectForRecord(row, attribution).projectKey));
-            const descriptor = projectForRecord(item.projectKey ? item : keys.size === 1 ? candidates[0] : item, attribution);
+            const descriptor = projectForRecord(item, attributionForFile(attribution, file));
             return { ...item, ...descriptor, scope: 'project', ...(descriptor.projectKey === 'unassigned' ? { active: false } : {}) };
           });
           updated = Array.isArray(original) ? items : { ...original, gates: items };
@@ -172,9 +172,11 @@ function migrateAccount(root, options, counts) {
       }
     } finally { db.close(); inspection?.cleanup(); }
   }
+  const report = attribution.pathEvidence.report();
+  for (const key of ['probes', 'cachedCandidates', 'metadataBytes']) counts.pathProbe[key] += report[key];
 }
 function migrateProjectScope(root, options = {}) {
-  const counts = { files: 0, rows: 0, attributed: 0, unassigned: 0, malformed: 0, dbRows: 0, skipped: 0, uninitializedDatabases: 0 };
+  const counts = { files: 0, rows: 0, attributed: 0, unassigned: 0, malformed: 0, dbRows: 0, skipped: 0, uninitializedDatabases: 0, canonicalAttributed: 0, legacyAttributed: 0, localAttributed: 0, evidence: {}, reasons: {}, unassignedReasons: {}, anchorEvidence: {}, pathProbe: { probes: 0, cachedCandidates: 0, metadataBytes: 0 } };
   if (!root || !fs.existsSync(root)) return counts;
   if (fs.lstatSync(root).isSymbolicLink()) throw new Error('Symlink account root refused');
   if (options.apply && !options.offline) throw new Error('Apply requires offline: true after stopping all writers');
@@ -188,7 +190,7 @@ function migrateProjectScope(root, options = {}) {
     if (fs.lstatSync(tenants).isSymbolicLink()) throw new Error('Symlink tenant directory refused');
     for (const tenant of fs.readdirSync(tenants, { withFileTypes: true })) {
       if (tenant.isSymbolicLink()) throw new Error('Symlink tenant refused');
-      if (tenant.isDirectory()) migrateAccount(path.join(tenants, tenant.name), options, counts);
+      if (tenant.isDirectory()) migrateAccount(path.join(tenants, tenant.name), { ...options, localPathEvidence: undefined }, counts);
     }
   }
   return counts;

@@ -902,12 +902,13 @@ test('evaluateGatesAsync enriches memory guard results with workflow sentinel co
   const configPath = makeTempPath('gates.json');
   const feedbackLogPath = makeTempPath('feedback-log.jsonl');
   const attributedFeedbackPath = makeTempPath('attributed-feedback.jsonl');
+  const { projectKey } = require('../scripts/project-identity').resolveLocalProject(process.cwd());
   writeJson(configPath, { version: 1, gates: [] });
   writeJsonl(feedbackLogPath, []);
   writeJsonl(attributedFeedbackPath, [
-    { id: 'fb_1', signal: 'negative', tool_name: 'Bash', context: 'rm -rf generated-cache removed runtime files', timestamp: new Date().toISOString() },
-    { id: 'fb_2', signal: 'negative', tool_name: 'Bash', context: 'rm -rf generated-cache removed runtime files', timestamp: new Date().toISOString() },
-    { id: 'fb_3', signal: 'negative', tool_name: 'Bash', context: 'rm -rf generated-cache removed runtime files', timestamp: new Date().toISOString() },
+    { id: 'fb_1', projectKey, signal: 'negative', tool_name: 'Bash', context: 'rm -rf generated-cache removed runtime files', timestamp: new Date().toISOString() },
+    { id: 'fb_2', projectKey, signal: 'negative', tool_name: 'Bash', context: 'rm -rf generated-cache removed runtime files', timestamp: new Date().toISOString() },
+    { id: 'fb_3', projectKey, signal: 'negative', tool_name: 'Bash', context: 'rm -rf generated-cache removed runtime files', timestamp: new Date().toISOString() },
   ]);
 
   const previousFeedbackLog = process.env.THUMBGATE_FEEDBACK_LOG;

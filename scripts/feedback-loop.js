@@ -1373,6 +1373,7 @@ function inferLessonFromConversation(conversationWindow, signal) {
 }
 
 function captureFeedback(params, options = {}) {
+  options = { ...options, hosted: options.hosted || Boolean(tenantDataScope()) };
   const _captureStart = Date.now();
   const project = require('./project-identity').projectForCapture(params, options);
   const { FEEDBACK_LOG_PATH, MEMORY_LOG_PATH, FEEDBACK_DIR } = getFeedbackPaths(options);
@@ -2167,6 +2168,7 @@ function captureFeedback(params, options = {}) {
 }
 
 function captureFeedbackIdempotent(params = {}, options = {}) {
+  options = { ...options, hosted: options.hosted || Boolean(tenantDataScope()) };
   const paths = getFeedbackPaths(options);
   const project = require('./project-identity').projectForCapture(params, options);
   const identity = normalizeFeedbackSourceIdentity(params.sourceEvent, params);

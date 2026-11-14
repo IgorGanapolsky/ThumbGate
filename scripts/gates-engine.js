@@ -2,12 +2,12 @@
 'use strict';
 const { resolveLocalProject, projectForRecord, gateAppliesToProject, validProjectKey } = require('./project-identity');
 function gateExecution(toolInput = {}, options = {}) {
-  const descriptor = options.projectKey ? projectForRecord(options) : resolveLocalProject(toolInput?.cwd || options.cwd || process.cwd());
+  const descriptor = options.projectKey ? projectForRecord(options) : tenantDataScope() ? projectForRecord({ projectKey: 'unassigned' }) : resolveLocalProject(toolInput?.cwd || options.cwd || process.cwd());
   return { ...options, ...descriptor };
 }
-function accountStatePath(name, fallback, options = {}) { return options.feedbackDir ? path.join(options.feedbackDir, name) : fallback; }
+function accountStatePath(name, fallback, options = {}) { return assertScopedDataPath(options.feedbackDir ? path.join(options.feedbackDir, name) : fallback); }
 
-const { tenantDataScope, scopedStatePath } = require('./feedback-scope');
+const { tenantDataScope, scopedStatePath, assertScopedDataPath } = require('./feedback-scope');
 
 const fs = require('fs');
 const path = require('path');

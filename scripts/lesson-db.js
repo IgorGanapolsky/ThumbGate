@@ -29,7 +29,7 @@ function upgradeProjectColumns(db) {
     const columns = new Set(db.prepare('PRAGMA table_info(lessons)').all().map((column) => column.name));
     if (!columns.has('projectKey')) db.exec("ALTER TABLE lessons ADD COLUMN projectKey TEXT NOT NULL DEFAULT 'unassigned'");
     if (!columns.has('sourceRecordId')) db.exec('ALTER TABLE lessons ADD COLUMN sourceRecordId TEXT');
-    if (!columns.has('projectName')) db.exec("ALTER TABLE lessons ADD COLUMN projectName TEXT NOT NULL DEFAULT 'Unassigned'");
+    if (!columns.has('projectName')) db.exec("ALTER TABLE lessons ADD COLUMN projectName TEXT NOT NULL DEFAULT 'Unassigned (before project tracking)'");
     db.exec('CREATE INDEX IF NOT EXISTS idx_lessons_project ON lessons(projectKey, timestamp)');
   })();
 }

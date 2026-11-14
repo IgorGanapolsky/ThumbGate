@@ -2,11 +2,12 @@
 
 const fs = require('node:fs');
 const path = require('node:path');
-const { buildAliases, projectForRecord, matchesProject, gateAppliesToProject, isGeneratedGate } = require('./project-identity');
+const { assertScopedDataPath, tenantDataScope } = require('./feedback-scope');
+const { buildAliases, resolveProjectEvidence, projectForRecord, matchesProject, gateAppliesToProject, isGeneratedGate } = require('./project-identity');
 
 const SIGNAL_FILES = ['feedback-log.jsonl', 'memory-log.jsonl', 'audit-trail.jsonl', 'gate-events-log.jsonl', 'telemetry-pings.jsonl', 'telemetry-log.jsonl', 'agent-registry.jsonl', 'observed-agents.jsonl', 'diagnostic-log.jsonl', 'decision-journal.jsonl', 'tool-kpi.jsonl', 'task-outcome-receipts.jsonl'];
 function accountDirectories(root) {
-  const absolute = path.resolve(root);
+  const absolute = assertScopedDataPath(path.resolve(root));
   if (!fs.existsSync(absolute)) return [];
   const canonical = fs.realpathSync(absolute);
   const directories = [canonical];
@@ -21,7 +22,7 @@ function accountDirectories(root) {
   return [...new Set(directories)];
 }
 function signalPaths(root, filename) {
-  return accountDirectories(root).map((dir) => path.join(dir, filename)).filter((file) => {
+  return accountDirectories(root).map((dir) => assertScopedDataPath(path.join(dir, filename))).filter((file) => {
     if (!fs.existsSync(file)) return false;
     if (fs.lstatSync(file).isSymbolicLink()) throw new Error('Symlink signal file refused');
     return fs.statSync(file).isFile();
@@ -54,37 +55,115 @@ function uniqueSourceIndex(records, aliases) {
   const index = new Map();
   for (const record of records) {
     if (!record.id) continue;
-    const descriptor = projectForRecord(record, { aliases });
+    const resolved = record.descriptor ? record : resolveProjectEvidence(record, { aliases });
+    const descriptor = resolved.descriptor;
+    if (descriptor.projectKey === 'unassigned') {
+      if (/^(conflicting_|ambiguous_)/.test(resolved.reason || '')) index.set(record.id, { ambiguous: true, projectKey: 'unassigned' });
+      continue;
+    }
     const prior = index.get(record.id);
-    index.set(record.id, prior && prior.projectKey !== descriptor.projectKey ? { projectKey: 'unassigned', projectName: 'Unassigned', identitySource: 'ambiguous-source' } : (prior || descriptor));
+    index.set(record.id, prior && (prior.ambiguous || prior.projectKey !== descriptor.projectKey) ? { ambiguous: true, projectKey: 'unassigned' } : (prior || { ...descriptor, evidence: resolved.evidence || descriptor.identitySource }));
   }
   return index;
 }
-function accountAttribution(root) {
-  const feedback = [];
-  const evidence = [];
-  const byDirectory = new Map();
-  for (const filename of ['feedback-log.jsonl', 'memory-log.jsonl']) {
-    for (const file of signalPaths(root, filename)) {
-      const local = byDirectory.get(path.dirname(file)) || [];
-      byDirectory.set(path.dirname(file), local);
-      for (const row of iterateRows(file)) {
-        const record = { id: row.id, projectKey: row.projectKey, projectName: row.projectName, identitySource: row.identitySource, remoteUrl: row.remoteUrl || row.remote || row.metadata?.remoteUrl, scope: row.scope, metadata: { project: row.metadata?.project, repo: row.metadata?.repo }, projectId: row.projectId };
-        if (filename === 'feedback-log.jsonl') { feedback.push(record); local.push(record); }
-        if (record.projectKey && (record.scope?.projectId || record.metadata.project || record.metadata.repo)) evidence.push(record);
-      }
+function compactEvidence(row, filename) {
+  const { pathCandidates } = require('./project-evidence');
+  return {
+    id: row.id, projectKey: row.projectKey, projectName: row.projectName, identitySource: row.identitySource,
+    remoteUrl: row.remoteUrl, remote: row.remote, scope: row.scope ? { projectId: row.scope.projectId, sessionId: row.scope.sessionId, remoteUrl: row.scope.remoteUrl, remote: row.scope.remote } : undefined,
+    metadata: row.metadata ? { project: row.metadata.project, repo: row.metadata.repo, remoteUrl: row.metadata.remoteUrl, remote: row.metadata.remote, machineId: row.metadata.machineId, importedFrom: row.metadata.importedFrom, sourceType: row.metadata.sourceType } : undefined,
+    projectId: row.projectId, registryProject: filename === 'agent-registry.jsonl' ? row.project : undefined,
+    sourceFeedbackId: row.sourceFeedbackId, sourceLessonId: row.sourceLessonId, agentId: row.agentId,
+    sessionId: row.sessionId, timestamp: row.timestamp, seenAt: row.seenAt, registeredAt: row.registeredAt, lastSeenAt: row.lastSeenAt,
+    source: row.source, sourceType: row.sourceType, machineId: row.machineId, sourceMachineId: row.sourceMachineId,
+    imported: row.imported, importedFrom: row.importedFrom, syncedFrom: row.syncedFrom, provenance: row.provenance ? { imported: row.provenance.imported, origin: row.provenance.origin, machineId: row.provenance.machineId } : undefined,
+    recordType: filename, pathCandidates: pathCandidates({ ...row, registryProject: filename === 'agent-registry.jsonl' ? row.project : undefined }).slice(0, 17),
+  };
+}
+function sessionToken(record, options = {}) {
+  const id = record.sessionId || record.scope?.sessionId;
+  if (typeof id !== 'string' || !id || /^(unknown|default|none|null|session|\d+)$/i.test(id)) return null;
+  const machines = [record.sourceMachineId, record.machineId, record.metadata?.machineId, record.provenance?.machineId].filter(Boolean);
+  if (new Set(machines).size > 1) return null;
+  const machine = machines[0];
+  if (require('./project-evidence').provenanceReason(record, { sourceMachineId: machine })) return null;
+  if (!machine && options.trustedLocalSource !== true) return null;
+  if (machine && options.sourceMachineId && machine !== options.sourceMachineId) return null;
+  return `${machine || 'trusted_local'}\0${record.source || record.sourceType || record.recordType || ''}\0${id}`;
+}
+function accountAttribution(root, options = {}) {
+  const records = []; const directories = new Map();
+  for (const filename of SIGNAL_FILES) for (const file of signalPaths(root, filename)) {
+    const local = directories.get(path.dirname(file)) || []; directories.set(path.dirname(file), local);
+    for (const row of iterateRows(file)) {
+      const record = compactEvidence(row, filename);
+      // Identity indexes never retain duplicated context/tool payloads from large logs.
+      if (!record.id && !record.agentId && !record.projectKey && !record.remoteUrl && !record.remote && !record.scope?.projectId && !record.registryProject && !record.sessionId && !record.sourceFeedbackId && !record.sourceLessonId && !record.pathCandidates.length) continue;
+      records.push(record); local.push(record);
     }
   }
-  const aliases = buildAliases(evidence);
-  return { aliases, feedbackById: uniqueSourceIndex(feedback, aliases), feedbackByDirectory: new Map([...byDirectory].map(([dir, records]) => [dir, uniqueSourceIndex(records, aliases)])) };
+  const aliases = buildAliases(records);
+  const pathEvidence = require('./project-evidence').createPathEvidence(options.localPathEvidence);
+  const state = { aliases, pathEvidence, localPathEvidence: options.localPathEvidence, feedbackById: new Map(), lessonById: new Map(), feedbackByDirectory: new Map(), lessonByDirectory: new Map(), registryByDirectory: new Map(), sessionsByDirectory: new Map() };
+  const resolveRows = (rows, filename, context) => rows.filter((row) => row.recordType === filename).map((row) => ({ id: row.id, ...resolveProjectEvidence(row, context) }));
+  for (const [directory, local] of directories) state.registryByDirectory.set(directory, uniqueSourceIndex(resolveRows(local, 'agent-registry.jsonl', { aliases, pathEvidence })));
+  for (const [directory, local] of directories) {
+    const context = { aliases, pathEvidence, registryById: state.registryByDirectory.get(directory) };
+    state.feedbackByDirectory.set(directory, uniqueSourceIndex(resolveRows(local, 'feedback-log.jsonl', context)));
+  }
+  state.feedbackById = mergeSourceIndexes(state.feedbackByDirectory);
+  for (const [directory, local] of directories) {
+    const context = attributionForFile(state, path.join(directory, 'memory-log.jsonl'));
+    state.lessonByDirectory.set(directory, uniqueSourceIndex(resolveRows(local, 'memory-log.jsonl', context)));
+  }
+  state.lessonById = mergeSourceIndexes(state.lessonByDirectory);
+  for (const [directory, local] of directories) {
+    const sessions = new Map();
+    for (const row of local) {
+      const token = sessionToken(row, options.localPathEvidence); const stamp = Date.parse(row.timestamp || row.seenAt || row.registeredAt || row.lastSeenAt);
+      if (!token || !Number.isFinite(stamp)) continue;
+      const resolved = resolveProjectEvidence(row, attributionForFile(state, path.join(directory, row.recordType)));
+      if (resolved.descriptor.projectKey === 'unassigned') continue;
+      const prior = sessions.get(token);
+      sessions.set(token, prior ? { ...prior, ambiguous: prior.ambiguous || prior.projectKey !== resolved.descriptor.projectKey, first: Math.min(prior.first, stamp), last: Math.max(prior.last, stamp) } : { ...resolved.descriptor, evidence: resolved.evidence, first: stamp, last: stamp });
+    }
+    state.sessionsByDirectory.set(directory, sessions);
+  }
+  // Fixed session anchors may support typed descendants, but descendants never
+  // feed back into session anchors or scope aliases.
+  for (const [directory, local] of directories) state.feedbackByDirectory.set(directory, uniqueSourceIndex(resolveRows(local, 'feedback-log.jsonl', attributionForFile(state, path.join(directory, 'feedback-log.jsonl')))));
+  state.feedbackById = mergeSourceIndexes(state.feedbackByDirectory);
+  for (const [directory, local] of directories) state.lessonByDirectory.set(directory, uniqueSourceIndex(resolveRows(local, 'memory-log.jsonl', attributionForFile(state, path.join(directory, 'memory-log.jsonl')))));
+  state.lessonById = mergeSourceIndexes(state.lessonByDirectory);
+  return state;
+}
+function mergeSourceIndexes(byDirectory) {
+  const merged = new Map();
+  for (const index of byDirectory.values()) for (const [id, descriptor] of index) {
+    const prior = merged.get(id);
+    merged.set(id, descriptor.ambiguous || (prior && (prior.ambiguous || prior.projectKey !== descriptor.projectKey)) ? { ambiguous: true, projectKey: 'unassigned' } : descriptor);
+  }
+  return merged;
 }
 function attributionForFile(attribution, file) {
-  const local = attribution.feedbackByDirectory?.get(path.dirname(file));
-  if (!local?.size) return attribution;
-  return { ...attribution, feedbackById: new Map([...attribution.feedbackById, ...local]) };
+  const directory = path.dirname(file);
+  const overlay = (global, local) => local?.size ? new Map([...(global || []), ...local]) : global;
+  const sessions = attribution.sessionsByDirectory?.get(directory);
+  return { ...attribution, recordType: path.basename(file),
+    feedbackById: overlay(attribution.feedbackById, attribution.feedbackByDirectory?.get(directory)),
+    lessonById: overlay(attribution.lessonById, attribution.lessonByDirectory?.get(directory)),
+    registryById: attribution.registryByDirectory?.get(directory),
+    sessionLookup(record) {
+      const candidate = sessions?.get(sessionToken({ ...record, recordType: path.basename(file) }, attribution.localPathEvidence));
+      if (!candidate) return null;
+      const stamp = Date.parse(record.timestamp || record.seenAt || record.registeredAt || record.lastSeenAt);
+      if (!Number.isFinite(stamp) || candidate.last - candidate.first > 86400000 || stamp < candidate.first || stamp > candidate.last) return null;
+      return candidate;
+    },
+  };
 }
 function readProjectRows(root, filename, options = {}) {
-  const attribution = options.attribution || accountAttribution(root);
+  const attribution = options.attribution || accountAttribution(root, options);
   const seen = new Set();
   const rows = [];
   for (const file of signalPaths(root, filename)) {
@@ -101,28 +180,20 @@ function readProjectRows(root, filename, options = {}) {
   return rows;
 }
 function readProjectGates(root, options = {}) {
-  const attribution = accountAttribution(root);
-  const source = ['feedback-log.jsonl', 'memory-log.jsonl'].flatMap((name) => readProjectRows(root, name, { attribution }));
-  const byId = uniqueSourceIndex(source, attribution.aliases);
-  const files = [path.join(__dirname, '..', 'config', 'gates', 'default.json'), ...accountDirectories(root).flatMap((dir) => ['auto-promoted-gates.json', 'custom-gates.json'].map((name) => path.join(dir, name)))];
+  const attribution = options.attribution || accountAttribution(root, options);
+  const defaultFile = path.join(__dirname, '..', 'config', 'gates', 'default.json');
+  // The primary policy file is the operator's configured safety policy: always global, never re-attributed to a project.
+  const primaryFile = tenantDataScope() ? defaultFile : (process.env.THUMBGATE_GATES_CONFIG || defaultFile);
+  const files = [primaryFile, ...accountDirectories(root).flatMap((dir) => ['auto-promoted-gates.json', 'custom-gates.json'].map((name) => path.join(dir, name)))];
   const gates = new Map();
   for (const file of files) {
     if (!fs.existsSync(file) || fs.lstatSync(file).isSymbolicLink()) continue;
-    let config;
-    try { config = JSON.parse(fs.readFileSync(file, 'utf8')); } catch { continue; }
+    let config; try { config = JSON.parse(fs.readFileSync(file, 'utf8')); } catch { continue; }
     for (const item of Array.isArray(config) ? config : config.gates || []) {
       let gate = { ...item };
-      const generated = path.basename(file) === 'auto-promoted-gates.json' || isGeneratedGate(gate);
-      if (generated && !gate.projectKey) {
-        const sourceId = gate.sourceLessonId || gate.sourceFeedbackId;
-        const local = [];
-        for (const name of ['feedback-log.jsonl', 'memory-log.jsonl']) {
-          const sourceFile = path.join(path.dirname(file), name);
-          if (fs.existsSync(sourceFile)) for (const row of iterateRows(sourceFile)) local.push({ ...row, ...projectForRecord(row, attributionForFile(attribution, sourceFile)) });
-        }
-        const localIndex = uniqueSourceIndex(local, attribution.aliases);
-        const seed = localIndex.has(sourceId) ? localIndex.get(sourceId) : byId.get(sourceId);
-        gate = { ...gate, ...projectForRecord(seed || gate, attribution), scope: 'project' };
+      const generated = file !== primaryFile && (path.basename(file) === 'auto-promoted-gates.json' || isGeneratedGate(gate));
+      if (generated && (!gate.projectKey || gate.projectKey === 'unassigned')) {
+        gate = { ...gate, ...projectForRecord(gate, attributionForFile(attribution, file)), scope: 'project' };
         if (gate.projectKey === 'unassigned') gate.active = false;
       } else gate.scope = gate.scope || (gate.projectKey ? 'project' : 'global');
       if (options.projectKey != null && !gateAppliesToProject(gate, options.projectKey)) continue;
@@ -131,9 +202,9 @@ function readProjectGates(root, options = {}) {
   }
   return [...gates.values()];
 }
-function buildProjectCatalog(root) {
+function buildProjectCatalog(root, options = {}) {
   const projects = new Map();
-  const attribution = accountAttribution(root);
+  const attribution = options.attribution || accountAttribution(root, options);
   const ensure = (row) => {
     const descriptor = projectForRecord(row, attribution);
     if (!projects.has(descriptor.projectKey)) projects.set(descriptor.projectKey, { ...descriptor, counts: { feedback: 0, lessons: 0, gates: 0, blocks: 0, warns: 0, toolCalls: 0, agents: 0 }, lastActivity: null });
@@ -158,7 +229,7 @@ function buildProjectCatalog(root) {
       }
     }
   }
-  const gates = readProjectGates(root);
+  const gates = readProjectGates(root, { ...options, attribution });
   for (const gate of gates) {
     if (gate.scope !== 'project') continue;
     const project = ensure(gate);

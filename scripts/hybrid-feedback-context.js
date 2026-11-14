@@ -329,7 +329,7 @@ function buildHybridState(opts) {
   if (o.requireScope && !o.scope) throw new Error('Scoped hybrid state requires scope');
   const readEntries = file => {
     const rows = o.projectKey != null
-      ? require('./project-catalog').readProjectRows(paths.feedbackDir, path.basename(file), { projectKey: o.projectKey }).slice(-HYBRID_JSONL_READ_LIMIT)
+      ? require('./project-catalog').readProjectRows(path.dirname(file), path.basename(file), { projectKey: o.projectKey }).slice(-HYBRID_JSONL_READ_LIMIT)
       : readJsonl(file, HYBRID_JSONL_READ_LIMIT);
     return o.scope ? selectRecordsForScope(rows, o.scope, { includeShared: o.includeShared !== false }).allowed : rows;
   };

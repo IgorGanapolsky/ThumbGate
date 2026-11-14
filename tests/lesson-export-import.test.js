@@ -274,7 +274,7 @@ describe('lesson export/import endpoints', () => {
     const serverCode = fs.readFileSync(path.join(ROOT, 'src', 'api', 'server.js'), 'utf-8');
     const importSection = serverCode.slice(
       serverCode.indexOf('POST /v1/lessons/import'),
-      serverCode.indexOf('POST /v1/lessons/import') + 2000
+      serverCode.indexOf('POST /v1/lessons/import') + 3500
     );
     assert.ok(importSection.includes('crypto'), 'Import should use crypto module');
     assert.ok(!importSection.includes('Math.random'), 'Import should not use Math.random');

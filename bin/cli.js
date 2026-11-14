@@ -3774,7 +3774,8 @@ function dashboard() {
     const { resolveProjectDir } = require(path.join(PKG_ROOT, 'scripts', 'feedback-paths'));
     const projectDir = resolveProjectDir({ cwd: process.cwd(), env: process.env });
     const port = process.env.PORT || 3456;
-    const url = `http://127.0.0.1:${port}/dashboard?project=${encodeURIComponent(projectDir)}`;
+    const { resolveLocalProject } = require(path.join(PKG_ROOT, 'scripts', 'project-identity'));
+    const url = `http://127.0.0.1:${port}/dashboard?project=${encodeURIComponent(resolveLocalProject(projectDir).projectKey)}`;
 
     progress.start(`Starting local dashboard on :${port}…`);
     ensureDash(Number(port))
