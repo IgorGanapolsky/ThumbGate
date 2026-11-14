@@ -1542,10 +1542,10 @@ test('satisfyCondition stores structuredReasoning when provided', () => {
   };
   satisfyCondition('test_reasoning', 'CI green', reasoning);
   const state = loadState();
-  assert.ok(state.test_reasoning.structuredReasoning, 'should store structured reasoning');
-  assert.equal(state.test_reasoning.structuredReasoning.premise, reasoning.premise);
-  assert.equal(state.test_reasoning.structuredReasoning.conclusion, reasoning.conclusion);
-  assert.equal(state.test_reasoning.evidence, 'CI green');
+  assert.ok(state.satisfiedByProject[require('../scripts/project-identity').resolveLocalProject().projectKey].test_reasoning.structuredReasoning, 'should store structured reasoning');
+  assert.equal(state.satisfiedByProject[require('../scripts/project-identity').resolveLocalProject().projectKey].test_reasoning.structuredReasoning.premise, reasoning.premise);
+  assert.equal(state.satisfiedByProject[require('../scripts/project-identity').resolveLocalProject().projectKey].test_reasoning.structuredReasoning.conclusion, reasoning.conclusion);
+  assert.equal(state.satisfiedByProject[require('../scripts/project-identity').resolveLocalProject().projectKey].test_reasoning.evidence, 'CI green');
   cleanupStateFiles();
 });
 
@@ -1553,8 +1553,8 @@ test('satisfyCondition works without structuredReasoning (backward compat)', () 
   cleanupStateFiles();
   satisfyCondition('test_no_reasoning', 'simple evidence');
   const state = loadState();
-  assert.ok(!state.test_no_reasoning.structuredReasoning, 'should not have structured reasoning');
-  assert.equal(state.test_no_reasoning.evidence, 'simple evidence');
+  assert.ok(!state.satisfiedByProject[require('../scripts/project-identity').resolveLocalProject().projectKey].test_no_reasoning.structuredReasoning, 'should not have structured reasoning');
+  assert.equal(state.satisfiedByProject[require('../scripts/project-identity').resolveLocalProject().projectKey].test_no_reasoning.evidence, 'simple evidence');
   cleanupStateFiles();
 });
 
@@ -1563,7 +1563,7 @@ test('satisfyCondition stores all four reasoning fields', () => {
   const reasoning = { premise: 'P', evidence: 'E', risk: 'R', conclusion: 'C' };
   satisfyCondition('test_full', 'ev', reasoning);
   const state = loadState();
-  const sr = state.test_full.structuredReasoning;
+  const sr = state.satisfiedByProject[require('../scripts/project-identity').resolveLocalProject().projectKey].test_full.structuredReasoning;
   assert.equal(sr.premise, 'P');
   assert.equal(sr.evidence, 'E');
   assert.equal(sr.risk, 'R');
