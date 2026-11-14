@@ -133,8 +133,8 @@ test('groupNegativeFeedback: groups by executable action within window', () => {
   const groups = groupNegativeFeedback(entries, WINDOW_DAYS);
   const unitKey = normalizeCommandSignature('npm test -- unit-a');
   const auditKey = normalizeCommandSignature('npm audit --json');
-  assert.strictEqual(groups[unitKey].count, 3);
-  assert.strictEqual(groups[auditKey].count, 1);
+  assert.strictEqual(groups['unassigned:' + unitKey].count, 3);
+  assert.strictEqual(groups['unassigned:' + auditKey].count, 1);
 });
 
 test('groupNegativeFeedback: excludes entries outside window', () => {
@@ -144,7 +144,7 @@ test('groupNegativeFeedback: excludes entries outside window', () => {
   ];
   const groups = groupNegativeFeedback(entries, WINDOW_DAYS);
   const recentKey = normalizeCommandSignature('npm test -- recent-failure');
-  assert.strictEqual(groups[recentKey].count, 1);
+  assert.strictEqual(groups['unassigned:' + recentKey].count, 1);
   assert.equal(groups[normalizeCommandSignature('npm test -- old-failure')], undefined);
 });
 
@@ -155,7 +155,7 @@ test('groupNegativeFeedback: ignores positive signals', () => {
   ];
   const groups = groupNegativeFeedback(entries, WINDOW_DAYS);
   const failKey = normalizeCommandSignature('npm test -- failure');
-  assert.strictEqual(groups[failKey].count, 1);
+  assert.strictEqual(groups['unassigned:' + failKey].count, 1);
 });
 
 test('groupNegativeFeedback: does not create enforcement groups from diagnosis tags alone', () => {
@@ -739,6 +739,7 @@ test('P0: tagged multi-thumbs promote produces a pattern that gate-check denies'
   try {
     const cmd = 'kubectl delete deploy checkout-api -n prod';
     const rows = [1, 2, 3].map(() => JSON.stringify({
+      ...require('../scripts/project-identity').resolveLocalProject(),
       signal: 'negative',
       feedback: 'down',
       tags: ['entity:Customer', 'entity:Funnel', 'feedback', 'negative'],

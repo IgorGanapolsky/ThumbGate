@@ -61,6 +61,7 @@ function recordToolCall({
   writeRiskTier,
   metadata,
   feedbackDir,
+  projectKey, projectName, identitySource, cwd, hosted,
 } = {}) {
   const logPath = getKpiLogPath({ feedbackDir });
   fs.mkdirSync(path.dirname(logPath), { recursive: true });
@@ -71,6 +72,7 @@ function recordToolCall({
     metadata,
   });
   const entry = {
+    ...require('./project-identity').projectForCapture({ projectKey, projectName, identitySource, cwd }, { hosted: Boolean(hosted) }),
     id: `kpi_${Date.now()}_${crypto.randomBytes(4).toString('hex')}`,
     timestamp: new Date().toISOString(),
     toolName: toolName || 'unknown',
@@ -115,8 +117,8 @@ function pickDominantTier(tierCounts = {}) {
   return best;
 }
 
-function computeToolKpis({ periodHours = 24, feedbackDir } = {}) {
-  const entries = readJsonl(getKpiLogPath({ feedbackDir }));
+function computeToolKpis({ periodHours = 24, feedbackDir, projectKey } = {}) {
+  const entries = require('./project-catalog').readProjectRows(path.dirname(getKpiLogPath({ feedbackDir })), path.basename(getKpiLogPath({ feedbackDir })), { projectKey });
   const cutoff = Date.now() - periodHours * 60 * 60 * 1000;
   const recent = entries.filter((entry) => new Date(entry.timestamp).getTime() > cutoff);
   const byTool = {};
@@ -210,6 +212,7 @@ function getAtRiskTools({
   p95Threshold = 500,
   periodHours = 24,
   feedbackDir,
+  projectKey, projectName, identitySource, cwd, hosted,
 } = {}) {
   const { tools } = computeToolKpis({ periodHours, feedbackDir });
   return tools.filter((tool) => tool.requestCount >= 3

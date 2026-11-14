@@ -89,6 +89,8 @@ function recordOverride(params = {}) {
 
   try {
     return recordAuditEvent({
+      ...require('./project-identity').projectForRecord(params),
+      feedbackDir: params.feedbackDir,
       toolName: OVERRIDE_TOOL_NAME,
       toolInput: { gateId, source: override.source },
       decision: OVERRIDE_DECISION,
