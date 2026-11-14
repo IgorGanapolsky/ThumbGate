@@ -13,7 +13,7 @@
 |---|---|---|---|
 | **Business Name & Model** | **ThumbGate** — Deterministic pre-action approval gate and security firewall for autonomous AI coding agents (Claude Code, Cursor, Codex, OpenCode, Hermes, Herdr). Hybrid SaaS + developer tooling (open-core CLI + hosted telemetry & policy engine). | **VERIFIED** | `package.json`, `README.md`, `https://thumbgate.ai` |
 | **Target Customer** | Engineering leaders, platform teams, security architects, and AI developers running autonomous agent swarms who require hard boundary protection against production outages, unauthorized shell execution, and secret egress. | **VERIFIED** | Public documentation, developer guide surfaces (`public/guides/`) |
-| **Product & Offer Ladder** | 1. **ThumbGate Open Core**: Free MIT npm package (`npx thumbgate@latest init`)<br>2. **ThumbGate Pro**: $19/mo or $149/yr recurring SaaS (`https://thumbgate.ai/go/pro-direct`)<br>3. **Production Rule-Pack Kit**: $49 one-time bundle (`https://thumbgate.ai/go/bundle-49`)<br>4. **Enterprise Workflow Gate Diagnostic**: $499 one-time audit (`https://thumbgate.ai/diagnostic`) | **VERIFIED** | `AGENTS.md`, `COMMERCIAL_TRUTH.md`, Stripe payment rails |
+| **Product & Offer Ladder** | 1. **ThumbGate Open Core**: Free MIT npm package (`npx thumbgate@latest init`)<br>2. **ThumbGate Pro**: $19/mo or $149/yr recurring SaaS (`https://thumbgate.ai/go/pro-direct`)<br>3. **Production Rule-Pack Kit**: $49 one-time bundle (`https://thumbgate.ai/go/bundle-49`)<br>4. **Setup Sprint Diagnostic**: $499 one-time audit (`https://thumbgate.ai/diagnostic`) | **VERIFIED** | `AGENTS.md`, `COMMERCIAL_TRUTH.md`, Stripe payment rails |
 | **Revenue Targets** | • **Daily**: $100.00 gross booked revenue<br>• **Weekly**: $700.00 gross booked revenue<br>• **Monthly**: $3,000.00 gross booked revenue ($1,500 MRR from subscriptions + $1,500 from diagnostics & rule packs)<br>• **Annual**: $36,000.00 gross booked revenue | **ASSUMPTION** | Provisional operating growth targets; user has not set explicit alternate quota. Baseline today: $0.00. |
 | **Profit Targets** | • **Contribution Margin Target**: ≥85.0% across all revenue streams.<br>• **Net Operating Margin Target**: ≥70.0% after infrastructure (Railway, Stripe fees, compute).<br>• **Delivery Cost per Outcome**: ≤$2.50 in compute, storage, and telemetry per active subscriber. | **ASSUMPTION** | Software-only delivery model with minimal incremental inference cost per user. |
 | **Customer Targets** | • **New Paid Customers**: 15 Pro subscribers/mo, 2 Diagnostic audits/mo, 10 Rule-Pack purchasers/mo.<br>• **Active Retention**: ≥90% monthly retention rate on Pro subscriptions.<br>• **Churn Target**: ≤10% monthly voluntary churn. | **ASSUMPTION** | Standard B2B developer tool SaaS cohort targets. |
@@ -97,11 +97,11 @@ $$\text{Priority Score} = \frac{\text{Expected Incremental Profit} \times \text{
 
 ---
 
-### Rank 2: Enterprise Workflow Gate Diagnostic ($499 One-Time) High-Intent Outreach
+### Rank 2: Setup Sprint Diagnostic ($499 One-Time) High-Intent Outreach
 
 - **Problem / Gap**: High-traffic comparison guides (CrowdStrike Falcon Guardian, Fiddler, Palo Alto Clutch, prompt injection post-mortems) attract enterprise platform engineers and security leads, but direct self-service SaaS ($19/mo) does not match enterprise procurement behavior.
 - **Intervention**:
-  1. Prominently position the **ThumbGate Enterprise Workflow Gate Diagnostic ($499)** (`https://thumbgate.ai/diagnostic`) as the primary CTA on high-intent comparison and incident pages.
+  1. Prominently position the **ThumbGate Setup Sprint Diagnostic ($499)** (`https://thumbgate.ai/diagnostic`) as the primary CTA on high-intent comparison and incident pages.
   2. The offer delivers a comprehensive automated audit of the organization's agent harnesses, MCP tool policies, and LLM-as-judge failure boundaries, packaged into an executive risk scorecard within 48 hours.
   3. Wire direct checkout link (`https://buy.stripe.com/9B69ATbmI4r4aK5eOD3sI3k`) and inbound lead intake form.
 - **Unit Economics & Expected Incremental Profit**:

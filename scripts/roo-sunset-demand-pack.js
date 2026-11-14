@@ -245,7 +245,7 @@ function buildFollowOnOffers(links = buildRevenueLinks()) {
     },
     {
       key: 'sprint',
-      label: 'Workflow Hardening Sprint',
+      label: 'Setup Sprint',
       pricing: 'Intake-led sprint, then Team at $49/seat/mo with 3-seat minimum after qualification',
       buyer: 'Teams that already know their Roo migration touches one production workflow with approval boundaries, rollback risk, or bad handoffs.',
       cta: buildTrackedRooLink(links.sprintLink, {
@@ -298,7 +298,7 @@ function buildOperatorQueue(links, report) {
         ctaPlacement: 'operator_queue',
         surface: 'roo_outreach',
       }),
-      recommendedMotion: 'Workflow Hardening Sprint first. Use proof only after the workflow risk is explicit.',
+      recommendedMotion: 'Setup Sprint first. Use proof only after the workflow risk is explicit.',
     },
     {
       key: 'roo_self_serve_evaluator',
@@ -339,7 +339,7 @@ function buildOutreachDrafts(links = buildRevenueLinks()) {
       key: 'workflow_owner_note',
       channel: 'Founder note',
       audience: 'Team owner migrating one production workflow off Roo',
-      draft: `A Roo-to-Cline move is not the hard part. Keeping one risky workflow from relearning the same repo, approval, or rollback mistake is the hard part. If that workflow already exists on your side, use the Workflow Hardening Sprint intake here: ${sprintLink} .`,
+      draft: `A Roo-to-Cline move is not the hard part. Keeping one risky workflow from relearning the same repo, approval, or rollback mistake is the hard part. If that workflow already exists on your side, use the Setup Sprint intake here: ${sprintLink} .`,
     },
   ];
 }
@@ -385,14 +385,14 @@ function buildRooSendNowPayload(report = {}, links = buildRevenueLinks()) {
       whyNow: 'The shutdown creates urgency, but the strongest monetizable angle is one risky workflow with approval boundaries, rollback risk, or handoff failures.',
       proofRule: 'Lead with one workflow-hardening offer. Send proof only after the buyer names the workflow risk.',
       cta: sprintLink,
-      firstTouchDraft: `A Roo-to-Cline move is not the hard part. Keeping one risky workflow from relearning the same repo, approval, or rollback mistake is the hard part. If that workflow already exists on your side, use the Workflow Hardening Sprint intake here: ${sprintLink} .`,
+      firstTouchDraft: `A Roo-to-Cline move is not the hard part. Keeping one risky workflow from relearning the same repo, approval, or rollback mistake is the hard part. If that workflow already exists on your side, use the Setup Sprint intake here: ${sprintLink} .`,
       painConfirmedFollowUpDraft: `Once the workflow risk is explicit, send Verification Evidence plus Commercial Truth before a wider rollout: ${VERIFICATION_EVIDENCE_LINK} and ${COMMERCIAL_TRUTH_LINK} . If they still want the sprint path, keep the intake here: ${sprintLink} .`,
       toolPathFollowUpDraft: `If the buyer wants the product path before founder-led help, move them to the setup guide ${guideLink} and keep Pro ${proLink} as the self-serve follow-on. If the workflow is still risky, keep the sprint path primary: ${sprintLink} .`,
-      checkoutCloseDraft: `If the team is already comparing close options, keep the Workflow Hardening Sprint primary: ${sprintLink} . Self-serve Pro is secondary: ${proLink} . Commercial truth: ${COMMERCIAL_TRUTH_LINK} Verification evidence: ${VERIFICATION_EVIDENCE_LINK}`,
+      checkoutCloseDraft: `If the team is already comparing close options, keep the Setup Sprint primary: ${sprintLink} . Self-serve Pro is secondary: ${proLink} . Commercial truth: ${COMMERCIAL_TRUTH_LINK} Verification evidence: ${VERIFICATION_EVIDENCE_LINK}`,
       addLeadCommand: `npm run sales:pipeline -- add --lead 'roo_workflow_owner_<account>' --source 'roo_sunset' --channel 'linkedin' --account '<account>' --pain 'Roo migration workflow with approval boundaries or rollback risk' --offer 'workflow_hardening_sprint' --campaign 'roo_sunset' --cta '${sprintLink}'`,
       markContactedCommand: `npm run sales:pipeline -- advance --lead 'roo_workflow_owner_<account>' --channel 'linkedin' --stage 'contacted' --note 'Sent Roo workflow-hardening first touch.'`,
       markRepliedCommand: `npm run sales:pipeline -- advance --lead 'roo_workflow_owner_<account>' --channel 'linkedin' --stage 'replied' --note 'Buyer confirmed one risky workflow during Roo migration.'`,
-      markCheckoutStartedCommand: `npm run sales:pipeline -- advance --lead 'roo_workflow_owner_<account>' --channel 'linkedin' --stage 'sprint_intake' --note 'Buyer started the Workflow Hardening Sprint intake.'`,
+      markCheckoutStartedCommand: `npm run sales:pipeline -- advance --lead 'roo_workflow_owner_<account>' --channel 'linkedin' --stage 'sprint_intake' --note 'Buyer started the Setup Sprint intake.'`,
       markPaidCommand: `npm run sales:reconcile-payment -- --lead 'roo_workflow_owner_<account>' --payment 'REPLACE_WITH_PAYPAL_PAYMENT_ID'`,
     },
     {
@@ -484,7 +484,7 @@ function buildChannelDrafts(links, report) {
         surface: 'roo_linkedin',
       }),
       proofTiming: 'Public post can reference the shutdown, but hold proof links until the buyer confirms one workflow risk.',
-      draft: `Roo shutting down is a forcing function, not the real problem. The real problem is migrating one live workflow without reteaching approval boundaries, rollback rules, and repo-specific mistakes from zero. If your team already has that workflow in mind, start with the Workflow Hardening Sprint here: ${buildTrackedRooLink(resolvedLinks.sprintLink, {
+      draft: `Roo shutting down is a forcing function, not the real problem. The real problem is migrating one live workflow without reteaching approval boundaries, rollback rules, and repo-specific mistakes from zero. If your team already has that workflow in mind, start with the Setup Sprint here: ${buildTrackedRooLink(resolvedLinks.sprintLink, {
         utmMedium: LINKEDIN_MEDIUM,
         utmCampaign: 'roo_channel_linkedin',
         utmContent: 'workflow_sprint',

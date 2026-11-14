@@ -1,4 +1,4 @@
-# Workflow Hardening Sprint
+# Setup Sprint
 
 Status: current  
 Updated: April 9, 2026
@@ -7,7 +7,7 @@ Use [COMMERCIAL_TRUTH.md](COMMERCIAL_TRUTH.md) for live pricing and traction cla
 
 ## Summary
 
-The front-line sales offer is a **Workflow Hardening Sprint**:
+The front-line sales offer is a **Setup Sprint**:
 
 - one workflow
 - one owner

@@ -190,7 +190,7 @@ function buildFollowOnOffers(links = buildRevenueLinks()) {
     },
     {
       key: 'sprint',
-      label: 'Workflow Hardening Sprint',
+      label: 'Setup Sprint',
       pricing: 'Intake-led sprint, then Team at $49/seat/mo with 3-seat minimum after qualification',
       buyer: 'Teams that already named one repeated workflow failure, one owner, and one approval boundary.',
       cta: buildTrackedGeminiLink(links.sprintLink, {
@@ -243,7 +243,7 @@ function buildOperatorQueue(links = buildRevenueLinks(), report = {}) {
         ctaPlacement: 'operator_queue',
         surface: 'gemini_workflow_queue',
       }),
-      recommendedMotion: 'Qualify one high-risk workflow for the Workflow Hardening Sprint.',
+      recommendedMotion: 'Qualify one high-risk workflow for the Setup Sprint.',
     },
     {
       key: 'gemini_enterprise_governance_owner',
@@ -261,7 +261,7 @@ function buildOperatorQueue(links = buildRevenueLinks(), report = {}) {
         ctaPlacement: 'operator_queue',
         surface: 'gemini_enterprise_queue',
       }),
-      recommendedMotion: 'Lead with governance fit, then qualify one partner-agent workflow for the Workflow Hardening Sprint.',
+      recommendedMotion: 'Lead with governance fit, then qualify one partner-agent workflow for the Setup Sprint.',
     },
     {
       key: 'local_first_evaluator',

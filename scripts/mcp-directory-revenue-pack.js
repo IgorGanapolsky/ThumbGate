@@ -154,7 +154,7 @@ function buildFollowOnOffers(links = buildMcpDirectoryRevenueLinks()) {
       }),
     },
     {
-      label: 'Workflow Hardening Sprint',
+      label: 'Setup Sprint',
       pricing: 'Primary revenue motion',
       buyer: 'Teams that already named one repeated workflow failure and want rollout proof, not just a directory listing.',
       cta: buildTrackedDirectoryLink(links.sprintLink, {

@@ -167,7 +167,7 @@ function buildFollowOnOffers(links = buildRevenueLinks()) {
     },
     {
       key: 'sprint',
-      label: 'Workflow Hardening Sprint',
+      label: 'Setup Sprint',
       pricing: 'Intake-led sprint, then Team at $49/seat/mo with 3-seat minimum after qualification',
       buyer: 'Teams that already use ChatGPT for discovery or checkpointing and need a real execution boundary before risky workflows run.',
       cta: buildTrackedChatgptLink(links.sprintLink, {
@@ -226,7 +226,7 @@ function buildOperatorQueue(links = buildRevenueLinks()) {
         ctaPlacement: 'operator_queue',
         surface: 'chatgpt_workflow_queue',
       }),
-      recommendedMotion: 'Trust guide -> workflow intake -> Workflow Hardening Sprint.',
+      recommendedMotion: 'Trust guide -> workflow intake -> Setup Sprint.',
     },
   ];
 }
@@ -281,7 +281,7 @@ function buildOutreachDrafts(links = buildRevenueLinks()) {
       key: 'trust_boundary_team',
       channel: 'Founder note',
       audience: 'Platform, ops, or AI product lead',
-      draft: `I am not pitching ChatGPT as the execution surface. I am pitching a cleaner boundary between ChatGPT discovery and the risky workflow that follows. If your team already has one owner and one approval-boundary failure tied to AI-assisted work, the next useful step is the Workflow Hardening Sprint intake: ${sprintLink} .`,
+      draft: `I am not pitching ChatGPT as the execution surface. I am pitching a cleaner boundary between ChatGPT discovery and the risky workflow that follows. If your team already has one owner and one approval-boundary failure tied to AI-assisted work, the next useful step is the Setup Sprint intake: ${sprintLink} .`,
     },
   ];
 }

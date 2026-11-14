@@ -1446,7 +1446,7 @@ paths:
               $ref: '#/components/schemas/WorkflowSprintIntakeRequest'
       responses:
         '201':
-          description: Workflow Hardening Sprint lead accepted
+          description: Setup Sprint lead accepted
           content:
             application/json:
               schema:
@@ -1494,7 +1494,7 @@ paths:
               $ref: '#/components/schemas/WorkflowSprintAdvanceRequest'
       responses:
         '200':
-          description: Workflow Hardening Sprint lead advanced to the next state
+          description: Setup Sprint lead advanced to the next state
           content:
             application/json:
               schema:

@@ -199,7 +199,7 @@ function buildListingCopy(links = buildRevenueLinks()) {
     marketplaceNote: 'Official directory review is separate. Use the repo marketplace path and review packet honestly while approval is pending.',
     followOnOffers: [
       {
-        label: 'Workflow Hardening Sprint',
+        label: 'Setup Sprint',
         url: buildTrackedClaudeLink(links.sprintLink, {
           utmCampaign: 'claude_listing_sprint',
           utmContent: 'workflow_sprint',
@@ -231,7 +231,7 @@ function buildFollowOnOffers(links = buildRevenueLinks()) {
   return [
     {
       key: 'sprint',
-      label: 'Workflow Hardening Sprint',
+      label: 'Setup Sprint',
       pricing: 'Intake-led sprint, then Team at $49/seat/mo with a 3-seat minimum after qualification',
       buyer: 'Teams that already named one repeated Claude workflow failure, one owner, and one approval boundary.',
       cta: buildTrackedClaudeLink(links.sprintLink, {
@@ -272,7 +272,7 @@ function buildProspectQueue(report = {}) {
       ? `${normalizeText(target.username)}/${normalizeText(target.repoName)}`
       : `@${normalizeText(target.username) || 'unknown'}`,
     temperature: normalizeText(target.temperature) || 'cold',
-    motion: normalizeText(target.motionLabel || target.motion) || 'Workflow Hardening Sprint',
+    motion: normalizeText(target.motionLabel || target.motion) || 'Setup Sprint',
     reason: normalizeText(target.motionReason || target.outreachAngle || target.description) || 'No motion reason recorded.',
     evidence: Array.isArray(target.evidence) && target.evidence.length
       ? target.evidence.map((entry) => normalizeText(entry)).filter(Boolean).join(', ')
@@ -430,7 +430,7 @@ function buildMeasurementPlan() {
   return {
     northStar: 'claude_install_to_paid_intent',
     policy: 'Treat Claude installs as useful only when they produce a tracked sprint intake, Pro checkout start, or qualified team conversation.',
-    minimumUsefulSignal: 'One tracked Workflow Hardening Sprint intake or Pro checkout start sourced from a Claude-tagged surface.',
+    minimumUsefulSignal: 'One tracked Setup Sprint intake or Pro checkout start sourced from a Claude-tagged surface.',
     strongSignal: 'Three tracked paid-intent events across sprint intakes, Pro checkout starts, or qualified team conversations.',
     metrics: [
       'claude_desktop_guide_views',

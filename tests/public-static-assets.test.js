@@ -207,7 +207,7 @@ test('GET /diagnostic serves the managed workflow gate checkout and fit page', a
   assert.match(html, /one configured local gate and regression test/i);
   assert.match(html, /rollout and rollback proof within two business days/i);
   assert.match(html, /order is refunded instead of being silently converted/i);
-  assert.doesNotMatch(html, /\$1500|public Workflow Hardening Sprint/i);
+  assert.doesNotMatch(html, /\$1500|public Setup Sprint/i);
   assert.doesNotMatch(html, /__WORKFLOW_SPRINT_PRICE_DOLLARS__|__SPRINT_DIAGNOSTIC_PRICE_DOLLARS__/);
   assert.match(html, /action="\/go\/diagnostic-pay" method="POST"/);
   assert.match(html, /name="customer_email"[^>]*required/);
@@ -264,7 +264,7 @@ test('GET /install serves the verified distribution and buyer path page', async 
     assert.match(html, /grok mcp add thumbgate/);
     assert.match(html, /hermes-gate/);
     assert.match(html, /\/diagnostic\?utm_source=install_page/);
-    assert.match(html, /Managed AI Agent Workflow Gate/);
+    assert.match(html, /Setup Sprint/);
   }
 });
 

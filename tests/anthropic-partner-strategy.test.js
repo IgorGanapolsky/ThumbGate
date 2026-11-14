@@ -12,7 +12,7 @@ test('Anthropic partner strategy stays proof-backed and avoids false membership 
   const strategy = fs.readFileSync(strategyPath, 'utf8');
 
   assert.match(strategy, /Claude workflow hardening/i);
-  assert.match(strategy, /Workflow Hardening Sprint/i);
+  assert.match(strategy, /Setup Sprint/i);
   assert.match(strategy, /founder-led outbound/i);
   assert.match(strategy, /booked pilots/i);
   assert.match(strategy, /code modernization/i);

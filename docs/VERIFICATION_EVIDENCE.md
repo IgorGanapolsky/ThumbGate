@@ -395,7 +395,7 @@ This entry proves local candidate behavior and repository release readiness. It 
 Scope:
 
 - Bound `paid_team`, productized recurring, and Enterprise revenue claims to a fixed catalog offer, exact signed-scope fields, buyer identity, currency, amount, workflow count, and a provider-reconciled paid sales record.
-- Preserved the documented `$499` diagnostic credit toward a `$1,500` Workflow Hardening Sprint while requiring the same buyer and a separate provider-paid diagnostic record before accepting the `$1,001` balance.
+- Preserved the documented `$499` diagnostic credit toward a `$1,500` Setup Sprint while requiring the same buyer and a separate provider-paid diagnostic record before accepting the `$1,001` balance.
 - Prevented one paid sales record or diagnostic credit from supporting multiple workflow contracts, including a multiprocess race protected by a per-pipeline commercial-proof lock.
 - Kept generic Pro MRR separate from productized recurring and Enterprise contract milestones.
 - Preserved provider-returned PayPal invoice IDs across reporting, recent capture/order reconciliation, individual-payment proof, and paid sales evidence; conflicting provider views fail closed.
@@ -600,8 +600,8 @@ Requirements verified:
 
 Scope:
 
-- Added explicit machine-readable buyer actions to the public landing page and the generated docs landing page so AI parsers and buyers can distinguish the install path, Pro checkout path, and Workflow Hardening Sprint intake path.
-- Added a dedicated `Service` JSON-LD entity for the Workflow Hardening Sprint offer.
+- Added explicit machine-readable buyer actions to the public landing page and the generated docs landing page so AI parsers and buyers can distinguish the install path, Pro checkout path, and Setup Sprint intake path.
+- Added a dedicated `Service` JSON-LD entity for the Setup Sprint offer.
 - Tightened regression coverage around landing-page structured data and customer-discovery artifact documentation.
 - Kept operator-only runtime state out of tracked outputs.
 
@@ -638,7 +638,7 @@ Observed result:
 Requirements verified:
 
 - Public and generated landing surfaces now advertise the three buyer paths in machine-readable form.
-- The Workflow Hardening Sprint offer is represented as a distinct service entity for search/indexing and buyer parsing.
+- The Setup Sprint offer is represented as a distinct service entity for search/indexing and buyer parsing.
 - Regression coverage now protects both the schema additions and the operator handoff artifact documentation that supports outreach execution.
 
 ## April 9, 2026: technical debt audit follow-through for stale-claim cleanup, docs hygiene regression coverage, and protected-system revalidation
@@ -1528,7 +1528,7 @@ Requirements verified:
 
 Scope:
 
-- Replaced the public Workflow Hardening Sprint `mailto:` dependency with a hosted sprint-intake form on the landing page, including structured CTA tracking and success/failure handling.
+- Replaced the public Setup Sprint `mailto:` dependency with a hosted sprint-intake form on the landing page, including structured CTA tracking and success/failure handling.
 - Added `scripts/workflow-sprint-intake.js` as the single owner for sprint-intake lead capture, writing contactable workflow leads to the active local feedback runtime as `workflow-sprint-leads.jsonl`.
 - Added `POST /v1/intake/workflow-sprint` to the hosted API and wired the landing form to it.
 - Strengthened public machine-readable positioning with `Organization`, `SoftwareApplication`, `BuyAction`, and `CommunicateAction` schema on the public landing page.
@@ -1571,7 +1571,7 @@ Requirements verified:
 
 - The public sprint offer now has a direct hosted intake path for qualified workflow demand instead of forcing an email handoff.
 - Sprint-intake leads are captured as structured local runtime records and exposed in the admin billing/CFO summary without being misrepresented as revenue.
-- Public positioning, outreach assets, billing truth surfaces, and operator scripts now agree on the same commercial story: Workflow Hardening Sprint for pipeline, Pro for self-serve $19/mo access.
+- Public positioning, outreach assets, billing truth surfaces, and operator scripts now agree on the same commercial story: Setup Sprint for pipeline, Pro for self-serve $19/mo access.
 - Clean-worktree verification is stable again after hardening the delegation test teardown.
 
 ## March 16, 2026: Databricks post-merge safety follow-up
@@ -3481,11 +3481,11 @@ Behavioral proof points:
 - The billing summary can surface booked revenue truth immediately from reconciled legacy Marketplace rows before a write-back is applied.
 - The explicit repair command materializes that truth into the local `.thumbgate` or legacy feedback ledger without fabricating prices.
 
-## 2026-03-17 Workflow Hardening Sprint Revenue-Motion Verification
+## 2026-03-17 Setup Sprint Revenue-Motion Verification
 
 Scope:
 
-- Tightened the landing page around the Workflow Hardening Sprint as the front-line commercial motion.
+- Tightened the landing page around the Setup Sprint as the front-line commercial motion.
 - Added a current sprint brief for one workflow, one owner, and one proof review.
 - Aligned README, pitch, Anthropic partner strategy, outreach targets, cold outreach, LinkedIn, Reddit, and X assets to the same workflow-hardening story.
 - Added regression coverage so the public and sales surfaces do not drift back to generic AI-employee or infrastructure-first language.
@@ -3517,7 +3517,7 @@ Observed results:
 
 Behavioral proof points:
 
-- `public/index.html` now sells the Workflow Hardening Sprint first, keeps Pro truthful and secondary, exposes a proof CTA, and adds Sprint FAQ/schema support without fake partner claims.
+- `public/index.html` now sells the Setup Sprint first, keeps Pro truthful and secondary, exposes a proof CTA, and adds Sprint FAQ/schema support without fake partner claims.
 - `docs/WORKFLOW_HARDENING_SPRINT.md` now defines the actual service offer, qualification rules, deliverables, contact path, and proof-pack requirement.
 - `docs/PITCH.md`, `docs/ANTHROPIC_MARKETPLACE_STRATEGY.md`, `docs/OUTREACH_TARGETS.md`, and `docs/marketing/cold-outreach-sequence.md` now align on the same 30-day revenue motion: founder-led outbound, one workflow, one owner, one proof review.
 - `docs/marketing/social-posts.md`, `docs/marketing/linkedin-ai-reliability-post.md`, `docs/marketing/reddit-posts.md`, and `docs/marketing/x-launch-thread.md` now frame the product as workflow hardening instead of generic AI-employee hype.

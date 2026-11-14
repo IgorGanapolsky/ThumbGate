@@ -33,7 +33,7 @@ The product remains broad enough to work with Codex, Gemini, Amp, and Cursor, bu
 ## Primary 30-Day Motion
 
 - Primary channel: founder-led outbound
-- Front-line offer: [Workflow Hardening Sprint](WORKFLOW_HARDENING_SPRINT.md)
+- Front-line offer: [Setup Sprint](WORKFLOW_HARDENING_SPRINT.md)
 - Support assets: landing page, proof pack, pitch, and outreach sequence
 - Target accounts: Claude-first consultancies, platform engineering leaders, and AI product teams with one workflow owner
 
@@ -49,7 +49,7 @@ Our angle:
 
 ## Packaged Offers
 
-### 1. Workflow Hardening Sprint
+### 1. Setup Sprint
 
 Outcome:
 
@@ -149,7 +149,7 @@ Always include:
 
 ## Recommended Distribution Sequence
 
-1. Tighten the public landing page around the Workflow Hardening Sprint.
+1. Tighten the public landing page around the Setup Sprint.
 2. Use the proof pack in direct outreach to consultancies, platform teams, and Claude-first engineering leaders.
 3. Support the outreach with the generated Claude workflow hardening pack plus role-based LinkedIn, Reddit, or Bluesky follow-ups.
 4. Keep the ask narrow: one workflow, one pilot, one proof review.

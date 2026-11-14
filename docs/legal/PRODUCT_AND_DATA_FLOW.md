@@ -67,7 +67,7 @@ Outcomes include allow, warn / checkpoint, require human approval, or hard
 deny. **Absence of a deny is not proof the action is safe** — only that no
 matching gate fired under current config and integrations.
 
-## 4. $499 Enterprise Workflow Gate — deliverable fence
+## 4. $499 Setup Sprint — deliverable fence
 
 Narrow deliverable (must match site and Module B of Terms):
 

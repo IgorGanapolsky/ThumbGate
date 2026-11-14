@@ -784,7 +784,7 @@ const SEO_AGENT_SKILLS_GUARDRAILS_SPEC = Object.freeze({
       'Reviewer handoff gate: require the agent to summarize claim risk, source evidence, and next conversion path before a human approves.',
     ]],
     ['paragraphs', 'Where this creates revenue', [
-      'This turns SEO-agent interest into the same Workflow Hardening Sprint offer: harden one content workflow, prove one publish gate, and connect the page to checkout or team intake instead of shipping more ungoverned AI content.',
+      'This turns SEO-agent interest into the same Setup Sprint offer: harden one content workflow, prove one publish gate, and connect the page to checkout or team intake instead of shipping more ungoverned AI content.',
     ]],
   ],
   faq: [
@@ -835,7 +835,7 @@ const CLAUDE_CODE_SKILLS_GUARDRAILS_SPEC = Object.freeze({
       'Require each skill to name inputs, forbidden actions, verification steps, and examples of good and bad execution.',
       'Capture thumbs-down failures from skill use and promote repeat patterns into ThumbGate prevention rules.',
       'Block risky actions when the current task claims a skill but skips its required verification.',
-      'Route buyers into the Workflow Hardening Sprint when one skill repeatedly fails in a shared repo.',
+      'Route buyers into the Setup Sprint when one skill repeatedly fails in a shared repo.',
     ]],
     ['paragraphs', 'Where this creates revenue', [
       'This is a concrete sales bridge from Claude Code training content to ThumbGate: if a team is investing in skills, they already believe AI coding workflows can improve. ThumbGate sells the part that makes those workflows reliable across sessions and teammates.',
@@ -995,7 +995,7 @@ const DEEPSEEK_V4_RUNTIME_GUARDRAILS_SPEC = Object.freeze({
       'CLI path: npx thumbgate deepseek-v4-runtime-guardrails --context-tokens=900000 --hybrid-attention --speculative-decoding --accept-length=1.4 --precision-mode=fp8 --json.',
     ]],
     ['paragraphs', 'Where this creates revenue', [
-      'This gives ThumbGate a serious infrastructure story for teams moving beyond hosted APIs. The offer is a Workflow Hardening Sprint around one model-routing lane: prove the runtime change, gate the risks, and keep the agent from silently routing expensive work through an unverified path.',
+      'This gives ThumbGate a serious infrastructure story for teams moving beyond hosted APIs. The offer is a Setup Sprint around one model-routing lane: prove the runtime change, gate the risks, and keep the agent from silently routing expensive work through an unverified path.',
     ]],
   ],
   faq: [
@@ -1047,7 +1047,7 @@ const CODE_KNOWLEDGE_GRAPH_GUARDRAILS_SPEC = Object.freeze({
     ]],
     ['paragraphs', 'Where this creates revenue', [
       'This is a strong engagement wedge for audiences already excited about codebase understanding. The public line is simple: Code graphs tell the agent what the system is; ThumbGate decides what the agent is allowed to do next.',
-      'For teams, sell the Workflow Hardening Sprint around one graph-informed repeated failure: one central file, one risky refactor path, or one generated artifact that agents keep touching incorrectly.',
+      'For teams, sell the Setup Sprint around one graph-informed repeated failure: one central file, one risky refactor path, or one generated artifact that agents keep touching incorrectly.',
     ]],
   ],
   faq: [
@@ -1094,7 +1094,7 @@ const DEVELOPER_MACHINE_SUPPLY_CHAIN_GUARDRAILS_SPEC = Object.freeze({
     ]],
     ['paragraphs', 'Where this creates revenue', [
       'This is a strong security wedge for teams that already run scanners but still let agents execute local install/update commands. The offer is not "replace your scanner"; it is "connect scanner and incident lessons to pre-action enforcement."',
-      'For the Workflow Hardening Sprint, pick one concrete local-risk pattern: package lifecycle scripts, one-shot installers, dependency bot autofixes, or unresolved credential exposure after a suspected compromise.',
+      'For the Setup Sprint, pick one concrete local-risk pattern: package lifecycle scripts, one-shot installers, dependency bot autofixes, or unresolved credential exposure after a suspected compromise.',
     ]],
   ],
   faq: [
@@ -1141,7 +1141,7 @@ const PROMPT_TRICKS_TO_WORKFLOW_RULES_SPEC = Object.freeze({
     ]],
     ['paragraphs', 'Where this creates revenue', [
       'This turns generic prompt advice into a buyer-ready diagnostic. The public offer is simple: send one messy AI-agent workflow and ThumbGate turns it into clear rules, examples, and pre-action checks.',
-      'For teams, position the Workflow Hardening Sprint around the repeated failure they can already name. The deliverable is not a better pep talk for the model; it is enforcement that survives across sessions and agents.',
+      'For teams, position the Setup Sprint around the repeated failure they can already name. The deliverable is not a better pep talk for the model; it is enforcement that survives across sessions and agents.',
     ]],
   ],
   faq: [
@@ -1188,7 +1188,7 @@ const BACKGROUND_AGENT_GOVERNANCE_GUIDE_SPEC = Object.freeze({
       'A risk check command for dispatch systems: npx thumbgate background-governance --check --agent-id=builder --branch=main --files-changed=25 --json.',
     ]],
     ['paragraphs', 'Where this creates revenue', [
-      'This is a clean Workflow Hardening Sprint wedge. The buyer does not need a broad platform migration; they need one background-agent workflow hardened from context intake to isolated execution to risk-tiered review.',
+      'This is a clean Setup Sprint wedge. The buyer does not need a broad platform migration; they need one background-agent workflow hardened from context intake to isolated execution to risk-tiered review.',
       'The promise stays honest: ThumbGate does not remove human review. It makes the review queue smaller, better labeled, and backed by evidence before a risky agent PR reaches a reviewer.',
     ]],
   ],
@@ -1202,7 +1202,7 @@ const BACKGROUND_AGENT_GOVERNANCE_GUIDE_SPEC = Object.freeze({
       'Check recent agent failure rate, prior gate blocks, target branch, expected blast radius, isolated execution environment, CI expectations, and the human context that authorized the task.',
     ],
     [
-      'How does this connect to the Workflow Hardening Sprint?',
+      'How does this connect to the Setup Sprint?',
       'The sprint can harden one background-agent workflow end to end: context intake, pre-dispatch governance, sandbox routing, CI audit, prevention rules, and proof review.',
     ],
   ],
@@ -1225,7 +1225,7 @@ const AI_AGENT_GOVERNANCE_SPRINT_GUIDE_SPEC = Object.freeze({
     query: 'ai agent governance sprint',
     title: 'AI Agent Governance Sprint | 48-Hour Workflow Hardening',
     heroTitle: 'AI Agent Governance Sprint for One Risky Workflow',
-    heroSummary: 'ThumbGate turns one repeated AI-agent failure into approval boundaries, pre-action checks, rollback safety, and rollout proof in a focused 48-hour Workflow Hardening Sprint.',
+    heroSummary: 'ThumbGate turns one repeated AI-agent failure into approval boundaries, pre-action checks, rollback safety, and rollout proof in a focused 48-hour Setup Sprint.',
   },
   takeaways: [
     'The fastest paid wedge is not a broad platform migration; it is one repo, one workflow owner, and one repeated failure that already has budget pressure.',
@@ -1255,7 +1255,7 @@ const AI_AGENT_GOVERNANCE_SPRINT_GUIDE_SPEC = Object.freeze({
       'A focused 48-hour implementation around one workflow: intake, governance mapping, pre-action checks, background-agent risk routing, rollback notes, and a proof pack for the buyer review.',
     ],
     [
-      'How is this different from the Workflow Hardening Sprint?',
+      'How is this different from the Setup Sprint?',
       'It is the same Team conversion path positioned for buyers searching for AI agent governance. The deliverable remains narrow: one repeated failure hardened with approval boundaries, rollback safety, and rollout proof.',
     ],
     [
@@ -1293,7 +1293,7 @@ const AI_DEPLOYMENT_READINESS_GUIDE_SPEC = Object.freeze({
   takeaways: [
     'AI deployment readiness is about workflow controls, not just prompts, demos, or model selection.',
     'The high-ROI starting point is one priority workflow with mapped tools, data, owners, risky actions, and proof-backed gates.',
-    'ThumbGate turns deployment demand into revenue through a $499 diagnostic, a $1500 Workflow Hardening Sprint, and Team seats at $49/seat/mo.',
+    'ThumbGate turns deployment demand into revenue through a $499 diagnostic, a $1500 Setup Sprint, and Team seats at $49/seat/mo.',
   ],
   sections: [
     ['paragraphs', 'Why deployment is now the buying category', [
@@ -1323,7 +1323,7 @@ const AI_DEPLOYMENT_READINESS_GUIDE_SPEC = Object.freeze({
     ],
     [
       'Can this start before procurement?',
-      'Yes. Start with one $499 diagnostic or the Workflow Hardening Sprint intake. The point is to prove one workflow before asking a buyer to fund a broad platform rollout.',
+      'Yes. Start with one $499 diagnostic or the Setup Sprint intake. The point is to prove one workflow before asking a buyer to fund a broad platform rollout.',
     ],
   ],
   relatedPaths: ['/guides/ai-agent-governance-sprint', '/guides/background-agent-governance', '/guides/pre-action-checks'],
@@ -1371,7 +1371,7 @@ const MODEL_UPGRADE_EVALUATION_GUIDE_SPEC = Object.freeze({
     ]],
     ['paragraphs', 'Where this creates ROI', [
       'This gives platform teams a defensible answer to "should we move to GPT-5.5?" Run the candidate report, attach gate and benchmark evidence, and only then route high-value analytical or long-context agent tasks to the frontier tier.',
-      'The commercial wedge is a Workflow Hardening Sprint focused on model routing: define which workflows deserve frontier spend, which stay on cheap tiers, and which require pre-action checks before a model can touch live systems.',
+      'The commercial wedge is a Setup Sprint focused on model routing: define which workflows deserve frontier spend, which stay on cheap tiers, and which require pre-action checks before a model can touch live systems.',
     ]],
   ],
   faq: [
@@ -1591,7 +1591,7 @@ const AI_RECOMMENDATION_VISIBILITY_GUIDE_SPECS = Object.freeze([
     sections: [
       ['paragraphs', 'Why conversational ads change the promotion plan', [
         'Search ads are moving toward generated answers and product recommendations inside the search conversation. A buyer may not click ten blue links before forming an opinion; the assistant-like surface may summarize the category, compare options, and mention a vendor in one flow.',
-        'That means ThumbGate promotion has to be answer-shaped. The page must say exactly what ThumbGate is, which agent-risk problem it solves, which tools it supports, and what proof a buyer can verify before starting checkout or a Workflow Hardening Sprint.',
+        'That means ThumbGate promotion has to be answer-shaped. The page must say exactly what ThumbGate is, which agent-risk problem it solves, which tools it supports, and what proof a buyer can verify before starting checkout or a Setup Sprint.',
       ]],
       ['bullets', 'Buyer prompts ThumbGate should target', [
         'How do I stop Claude Code or Cursor from repeating risky mistakes?',

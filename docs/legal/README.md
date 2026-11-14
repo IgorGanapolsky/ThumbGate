@@ -50,7 +50,7 @@ the markdown package and the HTML routes in the same PR.
 | Surface | Offer | Contract module |
 | --- | --- | --- |
 | Local engine + Pro | MIT CLI; Pro $19/mo or $149/yr self-serve | Module A |
-| Enterprise Workflow Gate | $499 one-time, one supported workflow | Module B |
+| Setup Sprint | $499 one-time, one supported workflow | Module B |
 | Hosted / ThumbGate.app | Pairing, mobile, cloud runners, leases | Module C |
 
 ## Hard product truths (do not dilute)

@@ -4,7 +4,7 @@
  *
  * Wrapper for the truth-aware GSD revenue loop:
  * 1. read the current commercial snapshot
- * 2. pick the correct motion (Pro vs Workflow Hardening Sprint)
+ * 2. pick the correct motion (Pro vs Setup Sprint)
  * 3. generate operator-ready outreach artifacts
  * Canonical app origin remains https://thumbgate-production.up.railway.app.
  */

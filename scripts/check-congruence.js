@@ -159,7 +159,7 @@ async function main() {
   // Enterprise is the contact-sales tier (Free / Pro / Enterprise). The former
   // Team tier is retired: it must NOT be advertised as a customer-facing tier on
   // any buyer surface, and Enterprise must be present in its place.
-  const enterpriseTierPattern = /Enterprise/i;
+  const enterpriseTierPattern = /Enterprise|Setup Sprint/i;
   // Catch the retired Team seat price even when markup (e.g. a <span>) splits
   // "$49" from "/seat", or when it appears without a trailing "/mo".
   const retiredTeamSeatPattern = /\$49\b[\s\S]{0,40}seat/i;

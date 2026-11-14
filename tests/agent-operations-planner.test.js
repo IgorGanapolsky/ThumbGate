@@ -241,7 +241,7 @@ test('buildMarketingAgencyGtmPlan packages ThumbGate as a proof-led lead-gen off
   });
 
   assert.equal(plan.status, 'ready-to-sell-workflow-sprint');
-  assert.equal(plan.offer, 'AI Agent Governance Workflow Hardening Sprint');
+  assert.equal(plan.offer, 'AI Agent Governance Setup Sprint');
   assert.ok(plan.gates.some((gate) => /not generic AI automation/.test(gate)));
 });
 

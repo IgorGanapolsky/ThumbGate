@@ -778,7 +778,7 @@ function buildMarketingAgencyGtmPlan(input = {}) {
     status: ready ? 'ready-to-sell-workflow-sprint' : 'build-gtm-proof-first',
     channels,
     monthlyRetainer,
-    offer: 'AI Agent Governance Workflow Hardening Sprint',
+    offer: 'AI Agent Governance Setup Sprint',
     gates: [
       'target lead generation around one expensive repeated AI-agent mistake, not generic AI automation',
       'use CRM automation only after consent, attribution, and unsubscribe paths are configured',

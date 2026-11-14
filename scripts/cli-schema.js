@@ -328,7 +328,7 @@ const CLI_COMMANDS = [
     mcpTool: 'plan_chatgpt_ads_readiness',
     flags: [
       jsonFlag(),
-      { name: 'offer', type: 'string', description: 'Offer to advertise, such as Pro or Workflow Hardening Sprint' },
+      { name: 'offer', type: 'string', description: 'Offer to advertise, such as Pro or Setup Sprint' },
       { name: 'audience', type: 'string', description: 'Audience segment to target' },
       { name: 'budget', type: 'number', description: 'Initial test budget' },
       { name: 'keywords', type: 'string', description: 'Comma-separated high-intent conversational queries' },

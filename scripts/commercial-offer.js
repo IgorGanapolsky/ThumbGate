@@ -22,10 +22,10 @@ const TEAM_ANNUAL_PRICE_DOLLARS = 588;
 const TEAM_MIN_SEATS = 3;
 
 const PRO_PRICE_LABEL = '$19/mo or $149/yr (individual)';
-// The Enterprise Workflow Gate is the one promoted public service offer. The
+// The Setup Sprint is the one promoted public service offer. The
 // dormant TEAM_* Stripe constants below remain only as inert billing plumbing
 // pending a dedicated cleanup; they are no longer a customer-facing tier.
-const ENTERPRISE_PRICE_LABEL = 'Enterprise Workflow Gate — $499 one-time for one supported workflow';
+const ENTERPRISE_PRICE_LABEL = 'Setup Sprint — $499 one-time for one supported workflow';
 const ENTERPRISE_ENTRY_URL = 'https://thumbgate.ai/pricing';
 
 function normalizePlanId(value) {

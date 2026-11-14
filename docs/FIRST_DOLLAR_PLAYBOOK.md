@@ -12,7 +12,7 @@ ThumbGate has **no external paying customer and no external customer revenue yet
 The shortest honest path is:
 
 1. qualify one painful workflow
-2. sell the **Workflow Hardening Sprint**
+2. sell the **Setup Sprint**
 3. attach the proof pack
 4. expand into Team rollout only after the first workflow proves out
 
@@ -33,7 +33,7 @@ The first-dollar motion therefore has one job: move a cold user from curiosity t
 2. **Typed feedback:** have them type `thumbs down:` or `thumbs up:` with one concrete sentence. Do not claim ChatGPT's native rating buttons feed ThumbGate.
 3. **Local enforcement:** install with `npx thumbgate init` where the agent executes, then show the saved lesson, generated rule, or caught repeat.
 4. **Solo Pro trigger:** upgrade only after a real caught repeat when the buyer needs more captures, the dashboard, DPO export, or proof-ready evidence.
-5. **Team trigger:** if there is a shared repo, review queue, deploy workflow, migration process, or release approval problem, convert to the Workflow Hardening Sprint.
+5. **Team trigger:** if there is a shared repo, review queue, deploy workflow, migration process, or release approval problem, convert to the Setup Sprint.
 
 ## Operating thesis
 
@@ -50,7 +50,7 @@ The first-dollar motion therefore has one job: move a cold user from curiosity t
 
 ## What to say
 
-> We are not pitching another agent platform. We harden one workflow that already matters, so it becomes safe enough to ship team-wide. The offer is a Workflow Hardening Sprint: one workflow, one owner, one proof review.
+> We are not pitching another agent platform. We harden one workflow that already matters, so it becomes safe enough to ship team-wide. The offer is a Setup Sprint: one workflow, one owner, one proof review.
 
 ## 14-day execution loop
 

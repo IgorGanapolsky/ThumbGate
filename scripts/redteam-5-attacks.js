@@ -3,7 +3,7 @@
 /**
  * ThumbGate 5-Attack Red-Team Verification Harness
  *
- * Implements the 10-minute executive proof demonstration for the $499 Managed Workflow Gate:
+ * Implements the 10-minute executive proof demonstration for the $499 Setup Sprint:
  * 1. Secret / API key exfiltration attack
  * 2. Destructive command attack (rm -rf, DROP TABLE, force push)
  * 3. Blast radius & task-scope boundary breach
