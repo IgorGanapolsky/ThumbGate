@@ -128,7 +128,7 @@ function buildEvidenceSurfaces(links = buildRevenueLinks(), about = readGitHubAb
   return [
     {
       key: 'workflow_sprint_intake',
-      name: 'Workflow Hardening Sprint intake',
+      name: 'Setup Sprint intake',
       url: buildTrackedLinkedinLink(links.sprintLink, {
         utmCampaign: 'linkedin_sprint_intake',
         utmContent: 'workflow_sprint',
@@ -197,7 +197,7 @@ function buildFollowOnOffers(links = buildRevenueLinks()) {
   return [
     {
       key: 'sprint',
-      label: 'Workflow Hardening Sprint',
+      label: 'Setup Sprint',
       pricing: 'Intake-led sprint, then Team at $49/seat/mo with a 3-seat minimum after qualification',
       buyer: 'Teams that already named one repeated workflow failure, one owner, and one approval boundary.',
       cta: buildTrackedLinkedinLink(links.sprintLink, {
@@ -272,7 +272,7 @@ function buildOperatorQueue(links = buildRevenueLinks(), report = {}) {
       proofTrigger: 'The buyer confirms the workflow is active now and wants one founder-led diagnostic instead of more generic AI tooling.',
       proofAsset: VERIFICATION_EVIDENCE_LINK,
       nextAsk: sprintLink,
-      recommendedMotion: 'Workflow Hardening Sprint first. Use proof only after pain is confirmed.',
+      recommendedMotion: 'Setup Sprint first. Use proof only after pain is confirmed.',
     },
     {
       key: 'business_system_operator',
@@ -403,7 +403,7 @@ function buildChannelDrafts(links = buildRevenueLinks(), report = {}) {
       evidenceSummary: 'The first comment should keep one CTA live without turning the post into a proof dump.',
       cta: sprintLink,
       proofTiming: 'Comment can carry the sprint CTA, but keep Commercial Truth and Verification Evidence in reserve until pain is confirmed.',
-      draft: `If you already have one workflow where approval boundaries, rollback safety, or repeated tool-call mistakes are blocking rollout, use the Workflow Hardening Sprint intake here: ${sprintLink} .`,
+      draft: `If you already have one workflow where approval boundaries, rollback safety, or repeated tool-call mistakes are blocking rollout, use the Setup Sprint intake here: ${sprintLink} .`,
     },
     {
       key: 'linkedin_reply_follow_up',

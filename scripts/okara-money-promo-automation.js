@@ -238,7 +238,7 @@ function buildAutomationPack({
     commercialTruth: {
       free: 'Free local CLI: 2 captures/day, 10 total, 3 active rules.',
       pro: 'Pro: $19/mo or $149/yr via hosted checkout.',
-      enterprise: 'Workflow Hardening Sprint and Enterprise are intake-led, scoped after one real repeated workflow failure.',
+      enterprise: 'Setup Sprint and Enterprise are intake-led, scoped after one real repeated workflow failure.',
       revenueClaim: 'Do not claim new revenue unless Stripe/payment evidence proves it in the current run.',
     },
     evidenceSnapshot: {
@@ -348,7 +348,7 @@ function buildAutomationPack({
       },
       {
         priority: 3,
-        action: 'Send one warm Workflow Hardening Sprint close to a buyer who names a repeated failure',
+        action: 'Send one warm Setup Sprint close to a buyer who names a repeated failure',
         reason: 'Pipeline has replies/intake but no paid stage; warm direct closes outrank cold content.',
         approvalPhrase: APPROVAL_PHRASE,
         destination: 'LinkedIn/Reddit/email, only after recipient and exact text are confirmed',
@@ -491,7 +491,7 @@ function renderStakeholderTargetMap(pack) {
     '- Regulated or customer-facing teams that need approval boundaries, rollback proof, and audit evidence.',
     '',
     '## Route By Signal',
-    '- Concrete repeated failure named: Workflow Hardening Sprint / Enterprise intake.',
+    '- Concrete repeated failure named: Setup Sprint / Enterprise intake.',
     '- Solo builder with install intent: Pro checkout after one blocked repeat.',
     '- Curious but not urgent: Free CLI plus proof-backed guide.',
     '',

@@ -141,7 +141,7 @@ function buildCanonicalIdentity(about = readGitHubAbout()) {
 function buildEvidenceSurfaces(links = buildRevenueLinks(), about = readGitHubAbout()) {
   return [
     {
-      name: 'Workflow Hardening Sprint intake',
+      name: 'Setup Sprint intake',
       url: buildTrackedRedditLink(links.sprintLink, {
         utmCampaign: 'reddit_sprint_intake',
         utmContent: 'workflow_sprint',
@@ -183,7 +183,7 @@ function buildEvidenceSurfaces(links = buildRevenueLinks(), about = readGitHubAb
 function buildFollowOnOffers(links = buildRevenueLinks()) {
   return [
     {
-      label: 'Workflow Hardening Sprint',
+      label: 'Setup Sprint',
       pricing: 'Discovery-led sprint, then Team at $49/seat/mo with a 3-seat minimum after qualification',
       buyer: 'Warm buyers who already named a repeated workflow failure and want one proof-backed fix loop.',
       cta: buildTrackedRedditLink(links.sprintLink, {
@@ -228,7 +228,7 @@ function buildOperatorQueue(links = buildRevenueLinks(), report = {}) {
       proofTrigger: normalizeText(target.proofPackTrigger) || 'Use proof links only after the buyer confirms pain.',
       proofAsset: `Commercial truth: ${COMMERCIAL_TRUTH_LINK} | Verification evidence: ${VERIFICATION_EVIDENCE_LINK}`,
       nextAsk,
-      recommendedMotion: `${normalizeText(target.motionLabel) || 'Workflow Hardening Sprint'} -> pain-confirmed proof -> diagnostic`,
+      recommendedMotion: `${normalizeText(target.motionLabel) || 'Setup Sprint'} -> pain-confirmed proof -> diagnostic`,
       subject: normalizeText(target.subject) || 'Workflow hardening diagnostic',
       contactUrl: normalizeText(target.contactUrl),
       firstTouchDraft: normalizeText(target.firstTouchDraft || target.message),
@@ -320,7 +320,7 @@ function buildRedditDmWorkflowHardeningPack(report = readRevenueLoopReport()) {
 
   return {
     generatedAt: normalizeText(report.generatedAt) || new Date().toISOString(),
-    objective: 'Convert the current warm Reddit workflow-risk queue into replied conversations, diagnostics, and the first paid Workflow Hardening Sprint.',
+    objective: 'Convert the current warm Reddit workflow-risk queue into replied conversations, diagnostics, and the first paid Setup Sprint.',
     state: normalizeText(report.directive?.state) || 'cold-start',
     headline: CANONICAL_HEADLINE,
     shortDescription: CANONICAL_SHORT_DESCRIPTION,

@@ -491,7 +491,7 @@ test('E2E: workflow sprint intake progresses to paid team and surfaces in dashbo
         urgencyAndTrigger: 'The latest rollout is blocked until the workflow is hardened.',
         decisionAuthority: 'The named platform lead can approve the scoped sprint.',
         budgetMechanism: 'The buyer reviews the fixed price before accepting scope.',
-        offerFit: 'One bounded workflow fits the Workflow Hardening Sprint.',
+        offerFit: 'One bounded workflow fits the Setup Sprint.',
         proofRequired: 'Regression evidence and an approval runbook are required.',
         nextStep: 'Review the fixed one-workflow scope.',
         evidenceReferences: ['intake:e2e-paid-team'],

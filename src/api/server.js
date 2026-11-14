@@ -1305,7 +1305,7 @@ function getMcpSkillManifests(hostedConfig) {
     },
     {
       name: 'workflow-hardening-sprint',
-      title: 'Workflow Hardening Sprint',
+      title: 'Setup Sprint',
       description: 'Turn one repeated agent failure into an enforced gate with proof and rollout evidence.',
       triggers: ['workflow hardening', 'team rollout', 'agent governance', 'approval boundary', 'audit trail'],
       recommendedFlow: [
@@ -1409,7 +1409,7 @@ function getMcpSkillManifests(hostedConfig) {
       recommendedFlow: [
         'Submit advertiser interest when eligible.',
         'Cluster high-intent conversational queries around agent governance and repeated workflow failures.',
-        'Route self-serve intent to the guide and team pain to Workflow Hardening Sprint intake.',
+        'Route self-serve intent to the guide and team pain to Setup Sprint intake.',
         'Block unsupported ad and landing-page claims before spend scales.',
       ],
       contextUrl: buildPublicUrl(hostedConfig, '/llm-context.md'),
@@ -1443,7 +1443,7 @@ function getMcpApplications(hostedConfig) {
     },
     {
       name: 'workflow-sprint-intake',
-      title: 'Workflow Hardening Sprint Intake',
+      title: 'Setup Sprint Intake',
       description: 'Submit a repeated agent failure for a proof-backed sprint.',
       url: buildPublicUrl(hostedConfig, '/#workflow-sprint-intake'),
       useWhen: 'Ready to convert mistakes into gates.',

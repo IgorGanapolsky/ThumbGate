@@ -97,7 +97,7 @@ function qualificationReview(overrides = {}) {
     urgencyAndTrigger: 'The failure recurred this week and blocks rollout.',
     decisionAuthority: 'The named workflow owner can approve the next scoped step.',
     budgetMechanism: 'The fixed price will be reviewed before any checkout or signed scope.',
-    offerFit: 'One bounded workflow fits the Workflow Hardening Sprint.',
+    offerFit: 'One bounded workflow fits the Setup Sprint.',
     proofRequired: 'The buyer requires local regression evidence and an approval runbook.',
     nextStep: 'Review one fixed workflow scope without sending or charging automatically.',
     evidenceReferences: ['intake:workflow-sprint-test'],

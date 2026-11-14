@@ -29,7 +29,7 @@ function parseNumber(value, fallback = 0) {
 
 function normalizeOptions(raw = {}) {
   return {
-    offer: normalizeText(raw.offer) || 'ThumbGate Pro and Workflow Hardening Sprint',
+    offer: normalizeText(raw.offer) || 'ThumbGate Pro and Setup Sprint',
     audience: normalizeText(raw.audience) || 'AI coding teams and developers comparing agent governance tools',
     budget: parseNumber(raw.budget || raw['test-budget'], 500),
     keywords: splitList(raw.keywords || raw.queries).length

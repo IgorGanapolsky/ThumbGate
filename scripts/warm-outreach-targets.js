@@ -32,7 +32,7 @@ function warmLead({
     },
     selectedMotion: {
       key: 'sprint',
-      label: 'Workflow Hardening Sprint',
+      label: 'Setup Sprint',
       reason,
     },
     subject,

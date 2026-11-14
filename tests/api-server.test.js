@@ -596,7 +596,7 @@ test('/diagnostic serves the managed workflow gate checkout and fit page', async
   assert.match(html, /one configured local gate and regression test/i);
   assert.match(html, /rollout and rollback proof within two business days/i);
   assert.match(html, /order is refunded instead of being silently converted/i);
-  assert.doesNotMatch(html, /\$1500|public Workflow Hardening Sprint/i);
+  assert.doesNotMatch(html, /\$1500|public Setup Sprint/i);
   assert.doesNotMatch(html, /__WORKFLOW_SPRINT_PRICE_DOLLARS__|__SPRINT_DIAGNOSTIC_PRICE_DOLLARS__/);
   assert.match(html, /action="\/go\/diagnostic-pay" method="POST"/);
   assert.match(html, /name="customer_email"[^>]*required/);
@@ -1151,7 +1151,7 @@ test('pricing page is the single source of truth for what ThumbGate sells', asyn
   assert.equal(res.status, 200);
   assert.match(String(res.headers.get('content-type')), /text\/html/);
   const body = await res.text();
-  assert.match(body, /Managed AI Agent Workflow Gate/i);
+  assert.match(body, /Setup Sprint/i);
   assert.match(body, /\$499/);
   assert.doesNotMatch(body, /\$19\/mo|\$149\/yr|>Start Pro<\/a>|\/checkout\/pro/);
   assert.match(body, /Subscriber login/);
@@ -3521,7 +3521,7 @@ test('workflow sprint advance endpoint appends pipeline snapshots and workflow r
         urgencyAndTrigger: 'The failure recurred this week and blocks rollout.',
         decisionAuthority: 'The workflow owner can approve the next scoped step.',
         budgetMechanism: 'The fixed price will be reviewed before checkout.',
-        offerFit: 'One bounded workflow fits the Workflow Hardening Sprint.',
+        offerFit: 'One bounded workflow fits the Setup Sprint.',
         proofRequired: 'The buyer requires regression proof and an approval runbook.',
         nextStep: 'Review a fixed one-workflow scope.',
         evidenceReferences: ['intake:api-server-test'],

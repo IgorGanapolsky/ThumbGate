@@ -145,7 +145,7 @@ function buildArticleBody(topic, date = new Date()) {
     '',
     `If you want the self-serve path, start with the pre-action checks guide: ${guideUrl}`,
     '',
-    `If you have one AI-agent workflow that needs hardening, use the Workflow Hardening Sprint intake: ${sprintUrl}`,
+    `If you have one AI-agent workflow that needs hardening, use the Setup Sprint intake: ${sprintUrl}`,
     '',
     `For proof-backed numbers and current evidence, use: ${numbersUrl}`,
   ].join('\n');

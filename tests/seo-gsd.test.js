@@ -355,7 +355,7 @@ test('AI agent governance sprint page routes bottom-funnel buyers into Team inta
     priority: '0.8',
   });
   assert.match(html, /AI Agent Governance Sprint/);
-  assert.match(html, /48-hour Workflow Hardening Sprint/);
+  assert.match(html, /48-hour Setup Sprint/);
   assert.match(html, /npx thumbgate background-governance --check --json/);
   assert.match(html, /workflow-sprint-intake/);
 });

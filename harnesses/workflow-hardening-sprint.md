@@ -1,7 +1,7 @@
 ---
 {
   "id": "workflow-hardening-sprint",
-  "title": "Workflow Hardening Sprint",
+  "title": "Setup Sprint",
   "description": "Run a focused hardening pass for one workflow and summarize prevention evidence.",
   "tags": ["workflow", "hardening", "reliability"],
   "inputs": {
@@ -20,7 +20,7 @@
   }
 }
 ---
-# Workflow Hardening Sprint
+# Setup Sprint
 
 ## Purpose
 Use the latest lessons for `{{lessonQuery}}` to harden `{{targetWorkflow}}`, then prove the workflow stays green under focused verification.

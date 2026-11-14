@@ -19,7 +19,7 @@ function diagnosticPrice(overrides = {}) {
     recurring: null,
     product: {
       id: 'prod_Us8Nf20z0bOb1g',
-      name: 'Managed AI Agent Workflow Gate',
+      name: 'Setup Sprint',
     },
     ...overrides,
   };
@@ -62,7 +62,7 @@ test('a ThumbGate-looking product name cannot substitute for an exact catalog id
 
 test('known price ID fails closed when product, amount, currency, or cadence drifts', () => {
   const cases = [
-    diagnosticPrice({ product: { id: 'prod_wrong', name: 'Managed AI Agent Workflow Gate' } }),
+    diagnosticPrice({ product: { id: 'prod_wrong', name: 'Setup Sprint' } }),
     diagnosticPrice({ unit_amount: 99900 }),
     diagnosticPrice({ currency: 'eur' }),
     diagnosticPrice({ recurring: { interval: 'month', interval_count: 1 } }),

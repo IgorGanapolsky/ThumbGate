@@ -146,7 +146,7 @@ function buildListingCopy(links = buildCodexRevenueLinks()) {
     },
     {
       key: 'sprint',
-      label: 'Workflow Hardening Sprint',
+      label: 'Setup Sprint',
       pricing: 'Intake-led sprint, then Team at $49/seat/mo with 3-seat minimum after qualification',
       buyer: 'Teams that already named one repeated workflow failure, one owner, and one approval boundary.',
       cta: buildTrackedCodexLink(links.sprintLink, {
@@ -229,7 +229,7 @@ function buildOperatorQueue(links = buildCodexRevenueLinks()) {
       evidence: 'plugins/codex-profile/README.md documents the standalone bundle, repo-local plugin surface, and auto-updating manual MCP profile.',
       proofTrigger: 'They care about controlled rollout, support docs, and proof links more than raw plugin novelty.',
       proofAsset: INSTALL_DOC_URL,
-      recommendedMotion: 'Qualify the team for the Workflow Hardening Sprint before pitching Team expansion.',
+      recommendedMotion: 'Qualify the team for the Setup Sprint before pitching Team expansion.',
       nextAskBase: links.sprintLink,
       tracking: {
         utmCampaign: 'codex_repo_rollout',
@@ -279,7 +279,7 @@ function buildOutreachDrafts(links = buildCodexRevenueLinks()) {
       key: 'proof_first_team',
       channel: 'Founder note',
       audience: 'Platform lead or consultancy owner',
-      draft: `I am not pitching another agent platform. I am pitching one Codex-adjacent workflow that becomes safe enough to ship because the repeated mistake gets turned into a Pre-Action Check and the proof stays inspectable. If your team already has one owner and one repeated approval-boundary failure, the next useful step is the Workflow Hardening Sprint intake: ${sprintLink} .`,
+      draft: `I am not pitching another agent platform. I am pitching one Codex-adjacent workflow that becomes safe enough to ship because the repeated mistake gets turned into a Pre-Action Check and the proof stays inspectable. If your team already has one owner and one repeated approval-boundary failure, the next useful step is the Setup Sprint intake: ${sprintLink} .`,
     },
     {
       key: 'bridge_lane',

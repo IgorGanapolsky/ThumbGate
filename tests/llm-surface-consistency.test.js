@@ -374,7 +374,7 @@ test('the promoted one-time offer is stated at the canonical amount wherever it 
 
   // Any three-or-four figure amount presented as a one-time/diagnostic/managed
   // gate price must be THE amount. Catches "$599 Diagnostic" drift on one page.
-  const oneTimeContext = /\$(\d{3,4})(?=\s*(?:one-time|once|Diagnostic|diagnostic|managed|Enterprise Workflow Gate|enterprise gate))/g;
+  const oneTimeContext = /\$(\d{3,4})(?=\s*(?:one-time|once|Diagnostic|diagnostic|managed|Setup Sprint|enterprise gate))/g;
 
   let statedSomewhere = false;
 
@@ -467,7 +467,7 @@ test('every AI-discovery surface describes the promoted paid offer', () => {
   // An llms.txt/llm-context.md that lists tiers but silently omits the promoted
   // offer teaches retrieval engines an incomplete answer. Both must name it and
   // point at the canonical terms page.
-  const offerName = /Managed AI Agent Workflow Gate/;
+  const offerName = /Setup Sprint/;
   const termsUrl = `${CANONICAL.appOrigin}/pricing`;
   const canonicalDollars = wholeDollars(currentOffer('workflow_hardening_diagnostic'));
 

@@ -374,7 +374,7 @@ test('buildDiagnosis prioritizes GA4 runtime config over stale local fallback la
   assert.equal(diagnosis.hostedRevenueObserved, true);
   assert.ok(diagnosis.gaps.includes('GA4 runtime env is missing in Railway'));
   assert.ok(diagnosis.gaps.includes('Workflow Hardening Diagnostic payment link env is missing in Railway'));
-  assert.ok(diagnosis.gaps.includes('Workflow Hardening Sprint payment link env is missing in Railway'));
+  assert.ok(diagnosis.gaps.includes('Setup Sprint payment link env is missing in Railway'));
 });
 
 test('generateRevenueStatusReport uses hosted railway audit when available', async () => {

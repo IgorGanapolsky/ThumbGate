@@ -34,7 +34,7 @@ test('buildCaptureReceipt turns a saved thumbs signal into a paid-intent next st
   assert.match(receipt, /npx thumbgate cost/);
   assert.match(receipt, /utm_source=cli_capture_receipt/);
   assert.match(receipt, /utm_campaign=pro_conversion/);
-  assert.match(receipt, /Enterprise Workflow Gate — \$499 one-time/);
+  assert.match(receipt, /Setup Sprint — \$499 one-time/);
   assert.match(receipt, /https:\/\/thumbgate\.ai\/pricing/);
   assert.doesNotMatch(receipt, /\$15k|\$10k\/mo|workflow-sprint-intake/i);
 });

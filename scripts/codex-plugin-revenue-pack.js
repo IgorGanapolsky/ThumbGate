@@ -249,7 +249,7 @@ function buildReadyTargetLanes(report = {}) {
     {
       key: 'workflow_hardening',
       label: 'Send Now: Codex-Adjacent Workflow Hardening',
-      motion: 'Workflow Hardening Sprint',
+      motion: 'Setup Sprint',
       summary: 'Use these when the buyer already named one repeated failure, mature review boundary, or rollout risk.',
       targets: workflowTargets,
     },
@@ -334,7 +334,7 @@ function buildCodexPluginSurfaces(links = buildRevenueLinks(), about = readGitHu
       shortDescription: 'Proof-backed setup path for Codex buyers who want the install flow, Commercial Truth, and verification evidence in one place.',
       longDescription: [
         'Send the setup guide after the buyer already wants the tool path.',
-        'Keep the guide as the self-serve bridge between Codex install intent and either Pro checkout or the Workflow Hardening Sprint.',
+        'Keep the guide as the self-serve bridge between Codex install intent and either Pro checkout or the Setup Sprint.',
       ],
       supportPath: 'docs/CODEX_PLUGIN_OPERATIONS.md',
       baseUrl: 'guide',
@@ -405,8 +405,8 @@ function buildFollowOnOffers(links = buildRevenueLinks()) {
     },
     {
       key: 'teams',
-      label: 'Workflow Hardening Sprint',
-      pricingModel: 'Workflow Hardening Sprint, then Team at $49/seat/mo with 3-seat minimum after qualification',
+      label: 'Setup Sprint',
+      pricingModel: 'Setup Sprint, then Team at $49/seat/mo with 3-seat minimum after qualification',
       buyer: 'Teams who already named one repeated Codex-adjacent workflow failure and need rollout proof.',
       cta: buildTrackedCodexLink(links.sprintLink, sprintTracking),
     },
@@ -433,7 +433,7 @@ function buildMeasurementPlan() {
       },
       {
         window: 'days_31_60',
-        goal: 'Promote whichever paid motion converts better after Codex install intent: Pro or Workflow Hardening Sprint.',
+        goal: 'Promote whichever paid motion converts better after Codex install intent: Pro or Setup Sprint.',
         decision: 'If setup-guide traffic rises without paid intent, move the proof-backed offer stack higher on the Codex page and guide.',
       },
       {
@@ -444,7 +444,7 @@ function buildMeasurementPlan() {
     ],
     successThresholds: {
       minimumUsefulSignal: 'one tracked Pro checkout start or one qualified workflow-hardening conversation',
-      strongSignal: 'three tracked paid-intent events across Pro or Workflow Hardening Sprint motion',
+      strongSignal: 'three tracked paid-intent events across Pro or Setup Sprint motion',
       doNotCountAsSuccess: [
         'page views without guide clicks',
         'bundle downloads without a tracked follow-on event',
@@ -497,10 +497,10 @@ function buildOperatorSequences(links = buildRevenueLinks()) {
     {
       key: 'workflow_hardening_escalation',
       trigger: 'Team already named one repeated approval-boundary, handoff, or rollout failure.',
-      evidence: 'The Workflow Hardening Sprint remains the primary paid motion when one owner and one repeated failure are explicit.',
+      evidence: 'The Setup Sprint remains the primary paid motion when one owner and one repeated failure are explicit.',
       goal: 'Move team pain into a qualified workflow-hardening conversation.',
       cta: sprintOffer.cta,
-      draft: `If one approval, handoff, or rollout failure keeps repeating around Codex or a neighboring review lane, route it to the Workflow Hardening Sprint instead of a generic plugin pitch: ${sprintOffer.cta} . That keeps the conversation anchored on one workflow, one owner, and one proof review.`,
+      draft: `If one approval, handoff, or rollout failure keeps repeating around Codex or a neighboring review lane, route it to the Setup Sprint instead of a generic plugin pitch: ${sprintOffer.cta} . That keeps the conversation anchored on one workflow, one owner, and one proof review.`,
     },
   ];
 }

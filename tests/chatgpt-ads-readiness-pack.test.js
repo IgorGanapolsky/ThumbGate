@@ -11,7 +11,7 @@ const {
 
 test('ChatGPT ads readiness pack prepares proof-backed ad groups and measurement', () => {
   const report = buildChatgptAdsReadinessPack({
-    offer: 'Workflow Hardening Sprint',
+    offer: 'Setup Sprint',
     keywords: ['AI agent verification before PR', 'agent governance for coding teams'],
     budget: 750,
   });
