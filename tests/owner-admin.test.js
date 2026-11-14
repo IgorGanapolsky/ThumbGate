@@ -74,6 +74,35 @@ test('credentials, forged identity and request-selected paths cannot replace own
   assert.equal(providerCalls, before);
 });
 
+test('owner page has restrictive CSP and no extra login; HEAD and forbidden methods never collect', async () => {
+  const response = await request('/admin');
+  assert.equal(response.status, 200);
+  const html = await response.text();
+  assert.ok(response.headers.get('content-security-policy').includes("frame-ancestors 'none'"));
+  assert.ok(!html.includes('__ADMIN_NONCE__'));
+  assert.ok(!html.includes('innerHTML'));
+  assert.ok(!html.includes('adminToken'));
+  const count = providerCalls;
+  assert.equal((await request('/v1/admin/stripe/customers', { method: 'HEAD' })).status, 200);
+  assert.equal((await request('/v1/admin/stripe/customers', { method: 'POST' })).status, 405);
+  assert.equal((await request('/v1/admin/login', { method: 'POST' })).status, 404);
+  assert.equal((await request('/v1/admin/unknown')).status, 404);
+  assert.equal(providerCalls, count);
+});
+
+test('durable deletion and allowlist changes revoke a warmed session immediately', async () => {
+  assert.equal((await request('/admin')).status, 200);
+  fs.writeFileSync(sessionPath, '{}');
+  assert.equal((await request('/admin')).status, 404);
+  writeSessions();
+  process.env.THUMBGATE_OWNER_EMAILS = '';
+  assert.equal((await request('/admin')).status, 404);
+  process.env.THUMBGATE_OWNER_EMAILS = 'other@example.invalid';
+  assert.equal((await request('/admin')).status, 404);
+  process.env.THUMBGATE_OWNER_EMAILS = 'owner@example.invalid';
+  assert.equal((await request('/admin')).status, 200);
+});
+
 test('Stripe lists paginate and project fields without leaking provider secrets', async () => {
   const response = await request('/v1/admin/stripe/customers?limit=1');
   const first = await response.json();
@@ -433,6 +462,27 @@ test('subscription-item endpoint reaches every price page with strict resource a
   assert.equal(calls[0].subscription, 'sub_fixture');
   assert.throws(() => admin.parseAdminRoute(url, new URLSearchParams()), { code: 'invalid_query' });
   assert.throws(() => admin.parseAdminRoute(url, new URLSearchParams('subscription=sub_fixture&starting_after=price_wrong')), { code: 'invalid_query' });
+});
+
+test('UI renders full billing intervals and currency exponents rather than raw cents', () => {
+  const vm = require('node:vm');
+  const html = fs.readFileSync(path.join(__dirname, '../public/admin.html'), 'utf8');
+  // Slice by index (not a tag regexp) so CodeQL js/bad-tag-filter stays clean.
+  const lower = html.toLowerCase();
+  const openTag = lower.indexOf('<script');
+  const bodyStart = lower.indexOf('>', openTag) + 1;
+  let script = html.slice(bodyStart, lower.indexOf('</script', bodyStart));
+  script = script.replace(/controls\(\);\s*load\(\);\s*$/, '');
+  const context = vm.createContext({ document: { getElementById: () => ({ addEventListener() {} }) }, Intl, Number });
+  vm.runInContext(script, context);
+  assert.equal(vm.runInContext("recurringInterval({ interval: 'month', interval_count: 3 })", context), 'Every 3 months');
+  assert.equal(vm.runInContext("recurringInterval({ interval: 'year', interval_count: 1 })", context), 'Every year');
+  for (const [amount, currency, expected] of [[8000, 'USD', '80.00'], [500, 'JPY', '500'], [500, 'ISK', '5'], [500, 'UGX', '5'], [1230, 'KWD', '1.230'], [500, 'MGA', '500']]) {
+    const rendered = vm.runInContext(`money(${amount}, '${currency}')`, context);
+    assert.ok(rendered.includes(expected), currency + ' exponent must match charge units');
+    assert.ok(!rendered.includes('minor units'));
+  }
+  assert.ok(html.includes('View all prices')); assert.ok(html.includes('recurringInterval(i.price?.recurring)'));
 });
 
 test('integrated owner reads both tenants while customer requests and inherited scope stay isolated', async () => {
