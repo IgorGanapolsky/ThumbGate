@@ -1121,17 +1121,19 @@ async function callToolInner(name, args) {
       const pairedFeedback = pairFeedbackWithReceipt(args);
       return toCaptureFeedbackTextResult(captureFeedback({
         ...pairedFeedback,
+        cwd: resolveWorkspaceCwd(args.cwd),
         lessonId: args.lessonId,
         lessonKey: args.lessonKey,
         reviewOrigin: 'automated',
       }));
     }
     case 'feedback_summary':
-      return toTextResult(feedbackSummary(Number(args.recent || 20), { humanOnly: true }));
+      return toTextResult(feedbackSummary(Number(args.recent || 20), { humanOnly: true, projectKey: require('../../scripts/project-identity').resolveLocalProject(resolveWorkspaceCwd(args.cwd)).projectKey }));
     case 'search_lessons': {
       const module = loadPrivateMcpModule('lessonSearch');
       if (!module) return unavailablePrivateMcpFeature('search_lessons');
       return toTextResult(module.searchLessons(args.query || '', {
+        projectKey: require('../../scripts/project-identity').resolveLocalProject(resolveWorkspaceCwd(args.cwd)).projectKey,
         limit: Number(args.limit || 10),
         category: args.category,
         tags: Array.isArray(args.tags) ? args.tags : [],
@@ -1488,7 +1490,7 @@ async function callToolInner(name, args) {
         gateName,
         args.evidence || '',
         args.structuredReasoning || null,
-        { source: 'mcp', actor: args.actor || 'agent' },
+        { ...require('../../scripts/project-identity').resolveLocalProject(resolveWorkspaceCwd(args.cwd)), source: 'mcp', actor: args.actor || 'agent' },
       );
       const result = { satisfied: true, gate: gateName, ...entry };
       if (args.lessonId || args.lessonKey || args.appliedLessons) {

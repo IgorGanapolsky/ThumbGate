@@ -1359,6 +1359,7 @@ test('search_lessons returns promoted lessons with corrective actions over MCP',
 
   try {
     fs.writeFileSync(feedbackLogPath, `${JSON.stringify({
+      ...require('../scripts/project-identity').resolveLocalProject(process.cwd()),
       id: 'fb_mcp_lesson',
       signal: 'negative',
       context: 'Skipped release verification proof',
@@ -1379,6 +1380,9 @@ test('search_lessons returns promoted lessons with corrective actions over MCP',
     fs.writeFileSync(autoGatesPath, JSON.stringify({
       version: 1,
       gates: [{
+        ...require('../scripts/project-identity').resolveLocalProject(process.cwd()),
+        scope: 'project',
+        sourceLessonId: 'mem_mcp_lesson',
         id: 'auto-release-checklist',
         action: 'block',
         pattern: 'release+verification',

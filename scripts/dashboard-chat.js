@@ -170,6 +170,7 @@ function retrieveLessonContext(question, opts = {}) {
     const res = searchLessons(String(question || ''), {
       limit: MAX_CONTEXT_LESSONS,
       feedbackDir: opts.feedbackDir,
+      ...(opts.projectKey != null ? { projectKey: opts.projectKey } : {}),
     });
     const rows = res?.results || res?.lessons || [];
     return rows.slice(0, MAX_CONTEXT_LESSONS).map((x) => lessonToContextItem(x));
@@ -274,6 +275,9 @@ async function retrieveHybridLessonContext(question, opts = {}) {
 
 // Retrieve relevant stored lessons and optional raw feedback vector matches.
 async function retrieveContext(question, opts = {}) {
+  // The hybrid and vector indexes are account-wide and carry no project key, so a
+  // project-scoped question only reads the project-filtered lesson search.
+  if (opts.projectKey != null) return dedupeContextItems(retrieveLessonContext(question, opts));
   const hybrid = await retrieveHybridLessonContext(question, opts);
   const lessons = hybrid.length ? hybrid : retrieveLessonContext(question, opts);
   const vectors = await retrieveVectorContext(question, opts);
