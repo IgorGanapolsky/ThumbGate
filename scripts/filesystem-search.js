@@ -159,13 +159,15 @@ function scoreRecord(queryTokens, queryText, record) {
 function searchFeedbackLog(queryText, limit = 5, options = {}) {
   const feedbackDir = options.feedbackDir || getFeedbackDir();
   const logPath = assertScopedDataPath(path.join(feedbackDir, 'feedback-log.jsonl'));
-  let records = readJsonl(logPath);
+  let records = require('./project-catalog').readProjectRows(feedbackDir, 'feedback-log.jsonl', options);
+  if (options.includeMemories) records.push(...require('./project-catalog').readProjectRows(feedbackDir, 'memory-log.jsonl', options).map((row) => ({ ...row, context: row.context || row.content || row.title, _kind: 'memory' })));
+  if (options.signal) records = records.filter((row) => require('./project-identity').matchesProject(row, options.projectKey) && (row.signal === options.signal || (options.signal === 'up' && row.signal === 'positive') || (options.signal === 'down' && row.signal === 'negative')));
 
   // SQLite fallback is allowed only inside the exact selected feedback root.
   // Falling back through lesson-db's ambient default can cross project/tenant
   // boundaries when a sparse project has zero or one JSONL row.
   const lessonDbPath = assertScopedDataPath(path.join(feedbackDir, 'lessons.sqlite'));
-  if (records.length <= 1 && fs.existsSync(lessonDbPath)) {
+  if (options.projectKey == null && records.length <= 1 && fs.existsSync(lessonDbPath)) {
     let db = null;
     try {
       const { initDB } = require('./lesson-db');

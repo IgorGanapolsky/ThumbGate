@@ -114,6 +114,7 @@ function recordDecisionEvaluation(report, params = {}, options = {}) {
       ? report.blastRadius.affectedFiles.slice()
       : [];
   const record = {
+    ...require('./project-identity').projectForRecord({ ...params, ...options }),
     recordType: 'evaluation',
     actionId,
     timestamp: params.timestamp || new Date().toISOString(),
@@ -142,7 +143,7 @@ function recordDecisionOutcome(params = {}, options = {}) {
   const entries = readDecisionLog(getDecisionLogPath(options.feedbackDir));
   const evaluation = [...entries]
     .reverse()
-    .find((entry) => entry && entry.recordType === 'evaluation' && entry.actionId === actionId) || null;
+    .find((entry) => entry && entry.recordType === 'evaluation' && entry.actionId === actionId && require('./project-identity').matchesProject(entry, options.projectKey)) || null;
   const outcome = normalizeOutcome(params.outcome);
   const timestamp = params.timestamp || new Date().toISOString();
   const latencyMs = Number.isFinite(params.latencyMs)
@@ -151,6 +152,7 @@ function recordDecisionOutcome(params = {}, options = {}) {
       ? Math.max(0, new Date(timestamp).getTime() - new Date(evaluation.timestamp).getTime())
       : null;
   const record = {
+    ...require('./project-identity').projectForRecord({ ...params, ...options }),
     recordType: 'outcome',
     actionId,
     timestamp,
@@ -172,10 +174,11 @@ function collapseDecisionTimeline(records) {
   const actions = new Map();
   for (const record of records) {
     if (!record || !record.actionId) continue;
-    if (!actions.has(record.actionId)) {
-      actions.set(record.actionId, { actionId: record.actionId, evaluation: null, outcomes: [] });
+    const scopedId = require('./project-identity').projectForRecord(record).projectKey + ':' + record.actionId;
+    if (!actions.has(scopedId)) {
+      actions.set(scopedId, { actionId: record.actionId, evaluation: null, outcomes: [] });
     }
-    const bucket = actions.get(record.actionId);
+    const bucket = actions.get(scopedId);
     if (record.recordType === 'evaluation') {
       bucket.evaluation = record;
     } else if (record.recordType === 'outcome') {
