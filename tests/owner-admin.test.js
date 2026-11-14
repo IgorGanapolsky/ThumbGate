@@ -467,7 +467,11 @@ test('subscription-item endpoint reaches every price page with strict resource a
 test('UI renders full billing intervals and currency exponents rather than raw cents', () => {
   const vm = require('node:vm');
   const html = fs.readFileSync(path.join(__dirname, '../public/admin.html'), 'utf8');
-  let script = html.match(/<script[^>]*>([\s\S]*?)<\/script>/)[1];
+  // Slice by index (not a tag regexp) so CodeQL js/bad-tag-filter stays clean.
+  const lower = html.toLowerCase();
+  const openTag = lower.indexOf('<script');
+  const bodyStart = lower.indexOf('>', openTag) + 1;
+  let script = html.slice(bodyStart, lower.indexOf('</script', bodyStart));
   script = script.replace(/controls\(\);\s*load\(\);\s*$/, '');
   const context = vm.createContext({ document: { getElementById: () => ({ addEventListener() {} }) }, Intl, Number });
   vm.runInContext(script, context);
