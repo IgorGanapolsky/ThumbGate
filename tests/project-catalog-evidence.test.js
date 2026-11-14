@@ -5,7 +5,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
-const { literalCommandPaths, pathCandidates } = require('../scripts/project-evidence');
+const { literalCommandPaths, pathCandidates, createPathEvidence, provenanceReason, localRuntimeEvidenceOptions } = require('../scripts/project-evidence');
 const { buildProjectCatalog, readProjectRows, accountDirectories, readRows } = require('../scripts/project-catalog');
 
 function fixture() {
@@ -64,4 +64,40 @@ test('catalog refuses symlinked project directories', () => {
     fs.rmSync(elsewhere, { recursive: true, force: true });
     fs.rmSync(root, { recursive: true, force: true });
   }
+});
+
+test('createPathEvidence resolves a trusted local repository and rejects everything else', () => {
+  const root = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), 'tg-evidence-')));
+  try {
+    const repo = path.join(root, 'repo');
+    fs.mkdirSync(path.join(repo, '.git'), { recursive: true });
+    fs.mkdirSync(path.join(repo, 'src'));
+    fs.writeFileSync(path.join(repo, '.git', 'config'), '[remote "origin"]\n\turl = https://github.com/acme/widget.git\n');
+    const bare = path.join(root, 'bare');
+    fs.mkdirSync(path.join(bare, '.git'), { recursive: true });
+    fs.writeFileSync(path.join(bare, '.git', 'config'), '[core]\n\tbare = false\n');
+    const evidence = createPathEvidence({ trustedLocalSource: true, allowedRoots: [root, path.join(root, 'absent')] });
+    const hit = evidence.resolve({ cwd: path.join(repo, 'src') });
+    assert.equal(hit.reason, null);
+    assert.equal(hit.descriptor.identitySource, 'path_remote_current');
+    assert.equal(evidence.resolve({ cwd: path.join(repo, 'src') }).reason, null);
+    assert.equal(evidence.resolve({ cwd: bare }).reason, 'remote_missing');
+    assert.equal(evidence.resolve({ cwd: '/elsewhere/repo' }).reason, 'outside_approved_roots');
+    assert.equal(evidence.resolve({ cwd: path.join(root, 'x*') }).reason, 'redacted_or_expanding_path');
+    assert.equal(evidence.resolve({}).reason, 'no_path_evidence');
+    assert.equal(evidence.resolve({ cwd: repo, imported: true }).reason, 'foreign_provenance');
+    assert.equal(evidence.resolve({ cwd: repo, machineId: 'm1' }).reason, 'foreign_machine');
+    assert.equal(evidence.report().probes >= 1, true);
+    assert.equal(createPathEvidence({}).resolve({ cwd: repo }).reason, 'path_probe_disabled');
+  } finally { fs.rmSync(root, { recursive: true, force: true }); }
+});
+
+test('provenanceReason and localRuntimeEvidenceOptions gate trust', () => {
+  assert.equal(provenanceReason({ source: 'cloud-sync' }, {}), 'foreign_provenance');
+  assert.equal(provenanceReason({ machineId: 'a', sourceMachineId: 'b' }, {}), 'foreign_machine');
+  assert.equal(provenanceReason({ machineId: 'a' }, { sourceMachineId: 'a' }), null);
+  assert.deepEqual(localRuntimeEvidenceOptions({ hosted: true, feedbackDir: '/a', sourceRoot: '/a' }), {});
+  assert.deepEqual(localRuntimeEvidenceOptions({ feedbackDir: '/a', sourceRoot: '/b' }), {});
+  const trusted = localRuntimeEvidenceOptions({ feedbackDir: '/a', sourceRoot: '/a', homeDir: '/h' });
+  assert.equal(trusted.localPathEvidence.trustedLocalSource, true);
 });
