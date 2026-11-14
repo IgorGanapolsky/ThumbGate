@@ -1395,7 +1395,7 @@
     "test:verified-lessons": "node --test tests/verified-lessons.test.js",
     "test:egm-goldfish-packet": "node --test tests/egm-goldfish-packet.test.js",
     "test:hosted-tenant-isolation": "node --test tests/feedback-scope.test.js tests/hosted-tenant-isolation.test.js",
-    "test:project-scope": "node --test tests/project-identity.test.js tests/project-identity-perf.test.js",
+    "test:project-scope": "node --test tests/project-identity.test.js tests/project-identity-perf.test.js tests/project-catalog-evidence.test.js",
     "test:owner-admin": "node --test tests/owner-admin.test.js"
   },
   "keywords": [
