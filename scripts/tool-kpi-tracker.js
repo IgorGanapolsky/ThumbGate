@@ -72,7 +72,7 @@ function recordToolCall({
     metadata,
   });
   const entry = {
-    ...require('./project-identity').projectForCapture({ projectKey, projectName, identitySource, cwd }, { hosted: Boolean(hosted) }),
+    ...require('./project-identity').projectForCapture({ projectKey, projectName, identitySource, cwd }, { hosted: hosted === undefined ? Boolean(require('./feedback-scope').tenantDataScope()) : Boolean(hosted) }),
     id: `kpi_${Date.now()}_${crypto.randomBytes(4).toString('hex')}`,
     timestamp: new Date().toISOString(),
     toolName: toolName || 'unknown',

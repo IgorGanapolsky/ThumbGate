@@ -94,3 +94,20 @@ test('manual promotion returns the persisted project gate ID and updates only th
   assert.equal(rows.find((gate) => gate.id === a.gateId).active, true);
   assert.equal(rows.find((gate) => gate.id === b.gateId).action, 'warn');
 });
+
+test('autonomous fail-closed audit feedback lands in the requested feedback dir', () => {
+  delete process.env.THUMBGATE_SANDBOX_EVAL;
+  const target = fs.mkdtempSync(path.join(dir, 'failclosed-'));
+  const config = path.join(target, 'gates.json');
+  fs.writeFileSync(config, JSON.stringify({ gates: [{ id: 'needs-approval', pattern: 'needs-approval-probe', action: 'approve', message: 'needs sign-off', severity: 'high' }] }));
+  const before = process.env.THUMBGATE_AUTONOMOUS;
+  process.env.THUMBGATE_AUTONOMOUS = '1';
+  try {
+    const result = gates.evaluateGates('Bash', { command: 'needs-approval-probe' }, config, { ...A, feedbackDir: target });
+    assert.equal(result?.failedClosed, true);
+    assert.ok(fs.existsSync(path.join(target, 'audit-trail.jsonl')), 'audit written to requested dir');
+    assert.ok(fs.existsSync(path.join(target, 'gate-events-log.jsonl')), 'gate event written to requested dir, not the default dir');
+  } finally {
+    if (before === undefined) delete process.env.THUMBGATE_AUTONOMOUS; else process.env.THUMBGATE_AUTONOMOUS = before;
+  }
+});

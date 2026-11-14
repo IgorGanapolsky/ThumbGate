@@ -54,3 +54,15 @@ test('rows with no project evidence stay labelled as unassigned before project t
   const legacyHostedRow = { id: 'old_1', signal: 'down', context: 'recorded before project tracking existed' };
   assert.deepEqual(projectForRecord(legacyHostedRow), { ...UNASSIGNED });
 });
+
+test('recordToolCall inside a hosted tenant scope never adopts the server checkout as the project', () => {
+  const { withDataScope } = require('../scripts/feedback-scope');
+  const kpiDir = fs.mkdtempSync(path.join(os.tmpdir(), 'kpi-tenant-'));
+  const tracker = require('../scripts/tool-kpi-tracker');
+  withDataScope({ kind: 'tenant', tenantId: 'tenant-1', feedbackDir: kpiDir }, () => {
+    tracker.recordToolCall({ toolName: 'Bash', cwd: process.cwd(), feedbackDir: kpiDir, success: true });
+  });
+  const rows = readJsonl(tracker.getKpiLogPath({ feedbackDir: kpiDir }));
+  assert.equal(rows.at(-1).projectKey, UNASSIGNED.projectKey);
+  fs.rmSync(kpiDir, { recursive: true, force: true });
+});

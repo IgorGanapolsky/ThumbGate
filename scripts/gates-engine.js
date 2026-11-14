@@ -3908,7 +3908,7 @@ async function evaluateGatesAsyncInner(toolName, toolInput, configPath, options 
           const failClosedMessage = `[autonomous run — no approver present, failing closed] ${message}`;
           recordStat(gate.id, 'block', gate, { ...execution, toolName, toolInput });
           const failClosedAudit = recordAuditEvent({ ...execution, toolName, toolInput, decision: 'deny', gateId: gate.id, message: failClosedMessage, severity: gate.severity, source: 'gates-engine', autonomousFailClosed: true });
-          auditToFeedback(failClosedAudit);
+          auditToFeedback(failClosedAudit, execution);
           return { decision: 'deny', gate: gate.id, message: failClosedMessage, severity: gate.severity, reasoning, requiresApproval: true, failedClosed: true };
         }
         recordStat(gate.id, 'approve', gate, { ...execution, toolName, toolInput });
@@ -4229,7 +4229,7 @@ function evaluateGatesInner(toolName, toolInput, configPath, options = {}) {
           const failClosedMessage = `[autonomous run — no approver present, failing closed] ${message}`;
           recordStat(gate.id, 'block', gate, { ...execution, toolName, toolInput });
           const failClosedAudit = recordAuditEvent({ ...execution, toolName, toolInput, decision: 'deny', gateId: gate.id, message: failClosedMessage, severity: gate.severity, source: 'gates-engine', autonomousFailClosed: true });
-          auditToFeedback(failClosedAudit);
+          auditToFeedback(failClosedAudit, execution);
           return { decision: 'deny', gate: gate.id, message: failClosedMessage, severity: gate.severity, reasoning, requiresApproval: true, failedClosed: true };
         }
         recordStat(gate.id, 'approve', gate, { ...execution, toolName, toolInput });
