@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 const { withDataScope, withoutDataScope, currentDataScope, tenantDataScope, assertScopedDataPath, dataScopeKey } = require('../../scripts/feedback-scope');
+const ownerAdmin = require('../../scripts/owner-admin');
 const http = require('http');
 const https = require('https');
 const fs = require('fs');
@@ -7129,8 +7130,8 @@ function resolveDocumentImportFilePath(inputPath, options = {}) {
 
 const CONTINUE_DATA_SCOPE = Symbol('trustedDataScopeContinuation');
 
-function createApiServer() {
-  const server = withoutDataScope(createUnscopedApiServer);
+function createApiServer({ ownerAdminDependencies = {} } = {}) {
+  const server = withoutDataScope(() => createUnscopedApiServer({ ownerAdminDependencies }));
   const [listener] = server.listeners('request');
   server.removeListener('request', listener);
   server.on('request', (req, res) => {
@@ -7140,11 +7141,13 @@ function createApiServer() {
   return server;
 }
 
-function createUnscopedApiServer() {
+function createUnscopedApiServer({ ownerAdminDependencies = {} } = {}) {
   const expectedApiKey = getExpectedApiKey();
   const expectedOperatorKey = getExpectedOperatorKey();
   const humanReviewerConfig = getHumanReviewerConfig(expectedApiKey, expectedOperatorKey);
 
+  const adminRuntime = ownerAdmin.createRuntimeObservations();
+  const observedRequests = new WeakSet();
   const eventBus = new EventEmitter();
   eventBus.setMaxListeners(200);
   const publishEvent = (payload) => eventBus.emit('broadcast', { scopeKey: dataScopeKey(), payload });
@@ -7152,6 +7155,56 @@ function createUnscopedApiServer() {
   return http.createServer(async (req, res) => {
     const parsed = new URL(req.url, 'http://localhost');
     const pathname = parsed.pathname;
+    const privatePath = ownerAdmin.adminPath(pathname);
+    const category = privatePath.matched ? 'admin' : pathname === '/v1/telemetry/ping' ? 'telemetry'
+      : pathname === '/health' ? 'health' : pathname.startsWith('/v1/') ? 'api' : 'page';
+    if (!observedRequests.has(req)) {
+      observedRequests.add(req);
+      res.once('finish', () => adminRuntime.recordResponse(res.statusCode, category));
+    }
+    if (privatePath.matched) {
+      const headers = ownerAdmin.PRIVATE_HEADERS;
+      const respond = (status, payload) => {
+        res.writeHead(status, { ...headers, 'Content-Type': 'application/json; charset=utf-8' });
+        res.end(req.method === 'HEAD' ? undefined : JSON.stringify(payload));
+      };
+      const feedbackDir = withoutDataScope(() => getFeedbackPaths().FEEDBACK_DIR);
+      const cookies = parseCookies(req.headers?.cookie || '');
+      const identity = ownerAdmin.readOwnerIdentity({ feedbackDir, token: cookies[PAID_AUTH_COOKIE_NAME], isOwner: isConfiguredOwnerEmail });
+      if (!identity || !privatePath.pathname) { respond(404, { error: 'Not found' }); return; }
+      let route;
+      try { route = ownerAdmin.parseAdminRoute(privatePath.pathname, parsed.searchParams); }
+      catch { respond(400, { error: 'Invalid query' }); return; }
+      if (!route) { respond(404, { error: 'Not found' }); return; }
+      if (!['GET', 'HEAD'].includes(req.method)) { respond(405, { error: 'Method not allowed' }); return; }
+      if (req.method === 'HEAD') { respond(200, {}); return; }
+      if (route.page) {
+        try {
+          const nonce = crypto.randomBytes(24).toString('base64');
+          const html = fs.readFileSync(path.join(PUBLIC_DIR, 'admin.html'), 'utf8').replaceAll('__ADMIN_NONCE__', nonce);
+          res.writeHead(200, { ...headers, 'Content-Type': 'text/html; charset=utf-8', 'Content-Security-Policy': `default-src 'none'; script-src 'nonce-${nonce}'; style-src 'nonce-${nonce}'; connect-src 'self'; img-src 'self'; base-uri 'none'; frame-ancestors 'none'; form-action 'self'` });
+          res.end(html);
+        } catch { respond(503, { error: 'Page unavailable' }); }
+        return;
+      }
+      const cancellation = new AbortController();
+      res.once('close', () => { if (!res.writableEnded) cancellation.abort(); });
+      try {
+        const result = await withoutDataScope(() => ownerAdmin.collectAdminSection(route, {
+          feedbackDir, buildMetadata: BUILD_METADATA, runtime: adminRuntime,
+          hashDataIdentity, buildHostedTenantIdentity,
+          health: () => ({ version: pkg.version, buildSha: BUILD_METADATA.buildSha, uptime: process.uptime() }),
+          ...ownerAdminDependencies,
+        }, cancellation.signal));
+        const body = JSON.stringify(result);
+        if (Buffer.byteLength(body) > ownerAdmin.RESPONSE_LIMIT) { respond(503, { error: 'Response limit exceeded' }); return; }
+        res.writeHead(200, { ...headers, 'Content-Type': 'application/json; charset=utf-8' });
+        res.end(body);
+      } catch (error) {
+        respond(error.code === 'collection_busy' ? 429 : 503, { error: error.code === 'collection_busy' ? 'Collection busy' : 'Collection unavailable' });
+      }
+      return;
+    }
     const earlyPrivateRoute = (req.method === 'POST' && pathname.startsWith('/feedback/quick')) || /^\/lessons\/[^/]+(?:\/[^/]+)?$/.test(pathname);
     if (earlyPrivateRoute && !currentDataScope()) {
       if (!isAuthorized(req, expectedApiKey)) {
@@ -9727,7 +9780,8 @@ a{color:#8b9}</style></head><body><form class="card" method="post" action="/oaut
       const { FEEDBACK_DIR } = getFeedbackPaths();
       try {
         const payload = await parseJsonBody(req, 16 * 1024);
-        appendTelemetryPing(FEEDBACK_DIR, payload, req.headers);
+        const persisted = appendTelemetryPing(FEEDBACK_DIR, payload, req.headers);
+        adminRuntime.recordTelemetry(Boolean(persisted));
       } catch (err) {
         try {
           appendDiagnosticRecord({
