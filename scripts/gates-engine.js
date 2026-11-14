@@ -5524,7 +5524,7 @@ async function runAsync(rawInput) {
   
   const recentContext = buildRecentCorrectiveActionsContext();
   const designContext = safeSecretStorageWrite ? null : buildDesignSelfCorrectionContext(toolName, toolInput);
-  const combinedContext = mergeContextStrings(lessonContext, recentContext, behavioralContext, designContext);
+  const combinedContext = combineWithSessionDedupe(input, lessonContext, recentContext, behavioralContext, designContext);
   return formatOutput(posturedResult, combinedContext);
 
 }
@@ -5573,9 +5573,31 @@ function run(rawInput) {
   
   const recentContext = buildRecentCorrectiveActionsContext();
   const designContext = safeSecretStorageWrite ? null : buildDesignSelfCorrectionContext(toolName, toolInput);
-  const combinedContext = mergeContextStrings(lessonContext, recentContext, behavioralContext, designContext);
+  const combinedContext = combineWithSessionDedupe(input, lessonContext, recentContext, behavioralContext, designContext);
   return formatOutput(posturedResult, combinedContext);
 
+}
+
+// Recent-corrections and recurring-pattern text is identical call after call; inject it
+// only when it changed since the last injection in this session. Lesson context (matched to
+// the current tool call) and design context (derived from this call's content) always pass.
+function combineWithSessionDedupe(input, lessonContext, recentContext, behavioralContext, designContext) {
+  const { dedupeSessionContext, logInjection } = require('./session-context-dedupe');
+  const sessionId = input.session_id || input.sessionId || '';
+  const staticContext = mergeContextStrings(recentContext, behavioralContext);
+  const injectedStatic = dedupeSessionContext(sessionId, staticContext);
+  const before = mergeContextStrings(lessonContext, staticContext, designContext);
+  const after = mergeContextStrings(lessonContext, injectedStatic, designContext);
+  if (before) {
+    logInjection({
+      ts: new Date().toISOString(),
+      session: String(sessionId).slice(0, 12),
+      tool: input.tool_name || '',
+      bytesBefore: Buffer.byteLength(before),
+      bytesAfter: after ? Buffer.byteLength(after) : 0,
+    });
+  }
+  return after;
 }
 
 
@@ -6130,6 +6152,7 @@ module.exports = {
   DEFAULT_PROTECTED_FILE_GLOBS,
   buildBehavioralContext,
   buildRecentCorrectiveActionsContext,
+  combineWithSessionDedupe,
   buildRelevantLessonContext,
   buildRelevantLessonContextAsync,
   extractActionContext,
