@@ -73,8 +73,9 @@ function extractFeedbackCorrectiveAction(record) {
 
 function mapFeedbackResult(record) {
   return {
+    ...require('./project-identity').projectForRecord(record),
     id: record.id || null,
-    source: 'feedback',
+    source: record._kind || 'feedback',
     score: clampScore(record._score),
     signal: normalizeRecordSignal(record.signal),
     tags: safeArray(record.tags),
@@ -178,7 +179,8 @@ function deduplicateResults(results) {
   const bestByFeedbackId = new Map();
 
   for (const r of results) {
-    const feedId = extractFeedbackId(r.id || r.title || r.file || '');
+    const rawFeedId = extractFeedbackId(r.id || r.title || r.file || '');
+    const feedId = rawFeedId ? (r.projectKey || 'unassigned') + ':' + rawFeedId : null;
     if (feedId) {
       const existing = bestByFeedbackId.get(feedId);
       if (!existing) {
@@ -201,24 +203,25 @@ function deduplicateResults(results) {
   const seenIds = new Set();
 
   for (const r of results) {
-    const feedId = extractFeedbackId(r.id || r.title || r.file || '');
+    const rawFeedId = extractFeedbackId(r.id || r.title || r.file || '');
+    const feedId = rawFeedId ? (r.projectKey || 'unassigned') + ':' + rawFeedId : null;
     let recordToUse = r;
     if (feedId) {
       recordToUse = bestByFeedbackId.get(feedId);
-      if (seenIds.has(recordToUse.id)) continue;
+      if (seenIds.has((recordToUse.projectKey || 'unassigned') + ':' + recordToUse.id)) continue;
     } else {
       if (r.id && r.id !== 'null' && String(r.id).trim() !== '') {
-        if (seenIds.has(r.id)) continue;
+        if (seenIds.has((r.projectKey || 'unassigned') + ':' + r.id)) continue;
       }
     }
 
     const normTitle = String(recordToUse.title || '').trim().toLowerCase();
     const normContext = String(recordToUse.context || '').trim().toLowerCase();
-    const contentKey = `${normTitle}|${normContext}`;
+    const contentKey = `${recordToUse.projectKey || 'unassigned'}|${normTitle}|${normContext}`;
     if (seenContent.has(contentKey)) continue;
 
     if (recordToUse.id && recordToUse.id !== 'null' && String(recordToUse.id).trim() !== '') {
-      seenIds.add(recordToUse.id);
+      seenIds.add((recordToUse.projectKey || 'unassigned') + ':' + recordToUse.id);
     }
     seenContent.add(contentKey);
     finalResults.push(recordToUse);
@@ -227,8 +230,8 @@ function deduplicateResults(results) {
   return finalResults;
 }
 
-function getFeedbackResults(query, limit, signal, feedbackDir) {
-  const results = searchFeedbackLog(query, Math.max(limit * 3, limit), { feedbackDir });
+function getFeedbackResults(query, limit, signal, feedbackDir, projectKey = null, includeMemories = false, localPathEvidence) {
+  const results = searchFeedbackLog(query, Math.max(limit * 3, limit), { feedbackDir, projectKey, signal, includeMemories, localPathEvidence });
   const normalizedSignal = normalizeSignal(signal);
   const filtered = normalizedSignal
     ? results.filter((record) => normalizeRecordSignal(record.signal) === normalizedSignal)
@@ -260,6 +263,8 @@ function searchThumbgate({
   signal = null,
   feedbackDir = null,
   accessContext = null,
+  projectKey = null,
+  localPathEvidence,
 } = {}) {
   const trimmedQuery = String(query || '').trim();
   if (!trimmedQuery) {
@@ -272,6 +277,12 @@ function searchThumbgate({
 
   const fetchLimit = Math.max(100, normalizedLimit * 5);
 
+  if (projectKey != null) {
+    const unavailableSources = normalizedSource === 'all' ? ['context', 'rules', 'documents'] : ['context', 'rules', 'documents'].filter((item) => item === normalizedSource);
+    const rows = ['all', 'feedback'].includes(normalizedSource) ? getFeedbackResults(trimmedQuery, fetchLimit, normalizedSignal, feedbackDir, projectKey, normalizedSource === 'all', localPathEvidence) : [];
+    const results = deduplicateResults(sortResults(rows)).slice(0, normalizedLimit);
+    return { query: trimmedQuery, source: normalizedSource, signal: normalizedSignal, limit: normalizedLimit, engine: 'filesystem-search', returned: results.length, total: results.length, results, unavailableSources };
+  }
   let results = [];
   if (normalizedSource === 'feedback') {
     const raw = getFeedbackResults(trimmedQuery, fetchLimit, normalizedSignal, feedbackDir);
@@ -318,7 +329,10 @@ async function searchThumbgateAsync({
   embedder,
   embedderId,
   accessContext = null,
+  projectKey = null,
+  localPathEvidence,
 } = {}) {
+  if (projectKey != null) return searchThumbgate({ query, source, limit, signal, feedbackDir, accessContext, projectKey, localPathEvidence });
   const trimmedQuery = String(query || '').trim();
   if (!trimmedQuery) throw new Error('query is required');
   const normalizedSource = normalizeSource(source);
