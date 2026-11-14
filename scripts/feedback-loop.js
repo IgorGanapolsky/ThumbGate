@@ -2451,7 +2451,9 @@ function analyzeFeedback(logPath, options = {}) {
   const fallback = getSQLiteFallback(useSQLite, entries);
   if (fallback) return fallback;
 
-  const diagnosticEntries = require('./project-catalog').readProjectRows(feedbackDir, 'diagnostic-log.jsonl', options);
+  const diagnosticEntries = options.projectKey != null
+    ? require('./project-catalog').readProjectRows(feedbackDir, 'diagnostic-log.jsonl', options)
+    : readDiagnosticEntries(path.join(feedbackDir, 'diagnostic-log.jsonl'));
   const summary = summarizeFeedbackEntries(entries);
   const { skills, tags, criteria, samples, blocked, positive, negative } = summary;
   const total = positive + negative;

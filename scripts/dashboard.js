@@ -279,7 +279,9 @@ function buildReviewSnapshot(feedbackDir, options = {}) {
 }
 
 function readDashboardReviewState(feedbackDir) {
-  return readJsonFile(getDashboardReviewStatePath(feedbackDir));
+  const state = readJsonFile(getDashboardReviewStatePath(feedbackDir));
+  // Migrated checkpoints keep the account-wide baseline under byProject.all.
+  return state && state.version === 2 ? (state.byProject && state.byProject.all) || null : state;
 }
 
 function writeDashboardReviewState(feedbackDir, snapshot) {

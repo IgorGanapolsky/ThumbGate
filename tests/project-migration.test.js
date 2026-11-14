@@ -114,3 +114,13 @@ test('SQLite interrupted schema and backfill roll back as one transaction', (t) 
     assert(!fs.existsSync(path.join(dir, '.project-scope-migration.lock')));
   }
 });
+
+test("readDashboardReviewState reads both legacy and migrated (version 2) checkpoints", () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "tg-review-"));
+  const { readDashboardReviewState } = require("../scripts/dashboard");
+  const legacy = { reviewedAt: "2026-01-01T00:00:00Z", gitHead: "abc" };
+  fs.writeFileSync(path.join(dir, "dashboard-review-state.json"), JSON.stringify(legacy));
+  assert.deepEqual(readDashboardReviewState(dir), legacy);
+  fs.writeFileSync(path.join(dir, "dashboard-review-state.json"), JSON.stringify({ version: 2, byProject: { all: legacy } }));
+  assert.deepEqual(readDashboardReviewState(dir), legacy);
+});
