@@ -30,7 +30,7 @@ for (const page of ['public/diagnostic.html', 'public/pricing.html']) {
     const html = fs.readFileSync(path.join(ROOT, page), 'utf8');
     const match = html.match(/<div class="offer-promise" data-offer-promise>([\s\S]*?)<\/div>/);
     assert.ok(match, 'offer-promise block present');
-    const text = match[1].replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim();
+    const text = match[1].split('<').map((part) => part.slice(part.indexOf('>') + 1)).join(' ').replace(/\s+/g, ' ').trim();
     assert.ok(text.startsWith(PROMISE), 'promise sentence comes first');
     assert.match(text, /Supported failure: one repeated agent mistake in one local workflow/);
     assert.match(text, /Refund: if the failure cannot be reduced to one supported gate, we refund the \$499 order\./);
