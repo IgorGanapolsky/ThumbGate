@@ -1,0 +1,124 @@
+'use strict';
+
+const test = require('node:test');
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const os = require('node:os');
+const path = require('node:path');
+const { literalCommandPaths, pathCandidates, createPathEvidence, provenanceReason, localRuntimeEvidenceOptions } = require('../scripts/project-evidence');
+const { buildProjectCatalog, readProjectRows, accountDirectories, readRows } = require('../scripts/project-catalog');
+
+function fixture() {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'tg-catalog-'));
+  fs.writeFileSync(path.join(root, 'feedback-log.jsonl'), [
+    JSON.stringify({ id: 'a', timestamp: '2026-01-01T00:00:00Z', projectKey: 'alpha', projectName: 'alpha' }),
+    JSON.stringify({ id: 'a', timestamp: '2026-01-01T00:00:00Z', projectKey: 'alpha', projectName: 'alpha' }),
+    'not json',
+    JSON.stringify({ id: 'b', timestamp: '2026-01-02T00:00:00Z', projectKey: 'beta', projectName: 'beta' }),
+  ].join('\n') + '\n');
+  return root;
+}
+
+test('literalCommandPaths extracts only literal absolute operands', () => {
+  assert.deepEqual(literalCommandPaths('cd /work/repo && cat /work/repo/a.txt'), [
+    { value: '/work/repo', kind: 'command_directory' },
+    { value: '/work/repo/a.txt', kind: 'command_file' },
+  ]);
+  assert.deepEqual(literalCommandPaths('git -C /work/repo status'), [{ value: '/work/repo', kind: 'command_directory' }]);
+  assert.deepEqual(literalCommandPaths('head -n 5 /work/a.txt'), [{ value: '/work/a.txt', kind: 'command_file' }]);
+  for (const unsafe of ['cat $HOME/x', 'cat "/a/b', 'cat /a/b...', 'cat /a | wc', 'cat \\x', 'a & b', null]) {
+    assert.deepEqual(literalCommandPaths(unsafe), [], String(unsafe));
+  }
+  assert.deepEqual(literalCommandPaths('cat -Z /a/b'), []);
+});
+
+test('pathCandidates collects directories, files and commands from a record', () => {
+  const found = pathCandidates({ cwd: '/w', toolInput: { file_path: '/w/f.js', command: 'cd /w/sub' }, scope: { projectId: '/w/p' } });
+  assert.deepEqual(found.map((item) => item.value).sort(), ['/w', '/w/f.js', '/w/p', '/w/sub']);
+  const preset = [{ value: '/x', kind: 'file' }];
+  assert.equal(pathCandidates({ pathCandidates: preset }), preset);
+});
+
+test('catalog groups rows per project and dedupes by id', () => {
+  const root = fixture();
+  try {
+    const catalog = buildProjectCatalog(root);
+    assert.equal(catalog.projects.length, 1);
+    assert.equal(catalog.projects[0].projectKey, 'unassigned');
+    assert.equal(catalog.projects[0].counts.feedback, 2);
+    assert.equal(readProjectRows(root, 'feedback-log.jsonl', { projectKey: 'unassigned' }).length, 2);
+    assert.equal(readProjectRows(root, 'feedback-log.jsonl', { dedupe: false }).length, 3);
+    assert.equal(readProjectRows(root, 'feedback-log.jsonl', { projectKey: 'beta' }).length, 0);
+    assert.equal(readRows(path.join(root, 'feedback-log.jsonl')).length, 3);
+    assert.equal(accountDirectories(path.join(root, 'missing')).length, 0);
+  } finally { fs.rmSync(root, { recursive: true, force: true }); }
+});
+
+test('catalog refuses symlinked project directories', () => {
+  const root = fixture();
+  const elsewhere = fs.mkdtempSync(path.join(os.tmpdir(), 'tg-elsewhere-'));
+  try {
+    fs.symlinkSync(elsewhere, path.join(root, 'projects'));
+    assert.throws(() => accountDirectories(root), /Symlink/);
+  } finally {
+    fs.rmSync(elsewhere, { recursive: true, force: true });
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('createPathEvidence resolves a trusted local repository and rejects everything else', () => {
+  const root = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), 'tg-evidence-')));
+  try {
+    const repo = path.join(root, 'repo');
+    fs.mkdirSync(path.join(repo, '.git'), { recursive: true });
+    fs.mkdirSync(path.join(repo, 'src'));
+    fs.writeFileSync(path.join(repo, '.git', 'config'), '[remote "origin"]\n\turl = https://github.com/acme/widget.git\n');
+    const bare = path.join(root, 'bare');
+    fs.mkdirSync(path.join(bare, '.git'), { recursive: true });
+    fs.writeFileSync(path.join(bare, '.git', 'config'), '[core]\n\tbare = false\n');
+    const evidence = createPathEvidence({ trustedLocalSource: true, allowedRoots: [root, path.join(root, 'absent')] });
+    const hit = evidence.resolve({ cwd: path.join(repo, 'src') });
+    assert.equal(hit.reason, null);
+    assert.equal(hit.descriptor.identitySource, 'path_remote_current');
+    assert.equal(evidence.resolve({ cwd: path.join(repo, 'src') }).reason, null);
+    assert.equal(evidence.resolve({ cwd: bare }).reason, 'remote_missing');
+    assert.equal(evidence.resolve({ cwd: '/elsewhere/repo' }).reason, 'outside_approved_roots');
+    assert.equal(evidence.resolve({ cwd: path.join(root, 'x*') }).reason, 'redacted_or_expanding_path');
+    assert.equal(evidence.resolve({}).reason, 'no_path_evidence');
+    assert.equal(evidence.resolve({ cwd: repo, imported: true }).reason, 'foreign_provenance');
+    assert.equal(evidence.resolve({ cwd: repo, machineId: 'm1' }).reason, 'foreign_machine');
+    assert.equal(evidence.report().probes >= 1, true);
+    assert.equal(createPathEvidence({}).resolve({ cwd: repo }).reason, 'path_probe_disabled');
+  } finally { fs.rmSync(root, { recursive: true, force: true }); }
+});
+
+test('provenanceReason and localRuntimeEvidenceOptions gate trust', () => {
+  assert.equal(provenanceReason({ source: 'cloud-sync' }, {}), 'foreign_provenance');
+  assert.equal(provenanceReason({ machineId: 'a', sourceMachineId: 'b' }, {}), 'foreign_machine');
+  assert.equal(provenanceReason({ machineId: 'a' }, { sourceMachineId: 'a' }), null);
+  assert.deepEqual(localRuntimeEvidenceOptions({ hosted: true, feedbackDir: '/a', sourceRoot: '/a' }), {});
+  assert.deepEqual(localRuntimeEvidenceOptions({ feedbackDir: '/a', sourceRoot: '/b' }), {});
+  const trusted = localRuntimeEvidenceOptions({ feedbackDir: '/a', sourceRoot: '/a', homeDir: '/h' });
+  assert.equal(trusted.localPathEvidence.trustedLocalSource, true);
+});
+
+test('searchLessons joins feedback to lessons within the same project only', () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'tg-join-'));
+  const row = (extra) => JSON.stringify({ timestamp: '2026-01-01T00:00:00Z', ...extra }) + '\n';
+  fs.writeFileSync(path.join(root, 'memory-log.jsonl'), row({ id: 'm1', remoteUrl: 'https://github.com/acme/beta.git', sourceFeedbackId: 'f1', title: 'beta lesson', content: 'beta content' }));
+  fs.writeFileSync(path.join(root, 'feedback-log.jsonl'), row({ id: 'f1', remoteUrl: 'https://github.com/acme/beta.git', context: 'beta context' }) + row({ id: 'f1', remoteUrl: 'https://github.com/acme/alpha.git', context: 'alpha only context' }));
+  const { searchLessons } = require('../scripts/lesson-search');
+  const text = JSON.stringify(searchLessons('beta', { feedbackDir: root }).results);
+  assert.ok(text.includes('beta context'));
+  assert.ok(!text.includes('alpha only context'));
+});
+
+test('findSimilarLesson only dedupes against the file being updated', () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'tg-dedupe-'));
+  fs.mkdirSync(path.join(root, 'projects', 'alpha'), { recursive: true });
+  const lesson = { id: 'x1', projectKey: 'alpha', projectName: 'alpha', title: 'never force push main', content: 'never force push main branch' };
+  fs.writeFileSync(path.join(root, 'projects', 'alpha', 'memory-log.jsonl'), JSON.stringify(lesson) + '\n');
+  fs.writeFileSync(path.join(root, 'memory-log.jsonl'), '');
+  const { findSimilarLesson } = require('../scripts/lesson-synthesis');
+  assert.equal(findSimilarLesson(path.join(root, 'memory-log.jsonl'), { ...lesson, id: 'x2' }), null);
+});
