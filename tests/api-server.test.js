@@ -4550,6 +4550,74 @@ test('dashboard render-spec endpoint rejects unsupported views', async () => {
   assert.match(body.detail, /Unsupported dashboard render view/);
 });
 
+test('dashboard API uses human feedback consistently across stats, dashboard and review checkpoints', async () => {
+  const previousCacheTtl = process.env.THUMBGATE_DASHBOARD_CACHE_TTL_MS;
+  process.env.THUMBGATE_DASHBOARD_CACHE_TTL_MS = '0';
+  const feedbackPath = path.join(tmpFeedbackDir, 'feedback-log.jsonl');
+  const memoryPath = path.join(tmpFeedbackDir, 'memory-log.jsonl');
+  const reviewPath = path.join(tmpFeedbackDir, 'dashboard-review-state.json');
+  const originalFiles = [feedbackPath, memoryPath, reviewPath].map((file) => [file, fs.existsSync(file) ? fs.readFileSync(file) : null]);
+  try {
+    fs.writeFileSync(feedbackPath, [
+      { id: 'automated-only', signal: 'positive', reviewOrigin: 'automated' },
+      { id: 'unknown-human', signal: 'unknown', reviewOrigin: 'human' },
+      { id: 'missing-human', reviewOrigin: 'human' },
+      { id: 'malformed-human', signal: { invalid: true }, reviewOrigin: 'human' },
+    ].map((entry) => JSON.stringify({ ...entry, timestamp: '2026-11-13T11:00:00.000Z' })).join('\n') + '\n');
+    fs.writeFileSync(memoryPath, Array.from({ length: 8 }, (_, index) => JSON.stringify({ id: 'independent-' + index, title: 'Independent lesson', timestamp: '2026-11-13T11:00:00.000Z' })).join('\n') + '\n');
+    fs.rmSync(reviewPath, { force: true });
+
+    for (const endpoint of ['/v1/feedback/stats', '/v1/dashboard', '/v1/dashboard/review-state']) {
+      const response = await fetch(apiUrl(endpoint), { headers: authHeader });
+      assert.equal(response.status, 200);
+      const body = await response.json();
+      if (endpoint === '/v1/feedback/stats') {
+        assert.equal(body.total, 0);
+      } else {
+        assert.equal(body.reviewDelta.feedbackAdded, 0);
+        assert.equal(body.reviewDelta.lessonsAdded, 8);
+        if (body.approval) assert.equal(body.approval.total, 0);
+      }
+    }
+    const marked = await fetch(apiUrl('/v1/dashboard/review-state'), { method: 'POST', headers: authHeader });
+    assert.equal(marked.status, 200);
+    const checkpoint = await marked.json();
+    assert.equal(checkpoint.reviewState.feedbackCount, 0);
+    assert.equal(checkpoint.reviewDelta.feedbackAdded, 0);
+    assert.equal(checkpoint.reviewDelta.lessonsAdded, 0);
+    const afterReview = new Date(Date.parse(checkpoint.reviewState.reviewedAt) + 1000).toISOString();
+    fs.appendFileSync(feedbackPath, JSON.stringify({ id: 'human-after', signal: 'down', reviewOrigin: 'human', tags: ['auto-hook', 'unknown'], context: 'Human feedback after review', timestamp: afterReview }) + '\n');
+    const refreshed = await fetch(apiUrl('/v1/dashboard/review-state'), { headers: authHeader });
+    assert.equal(refreshed.status, 200);
+    const after = await refreshed.json();
+    assert.equal(after.reviewDelta.feedbackAdded, 1);
+    assert.equal(after.reviewDelta.negativeAdded, 1);
+    const statsResponse = await fetch(apiUrl('/v1/feedback/stats'), { headers: authHeader });
+    assert.equal(statsResponse.status, 200);
+    const stats = await statsResponse.json();
+    assert.equal(stats.total, 1);
+    assert.equal(stats.totalNegative, 1);
+    const dashboardResponse = await fetch(apiUrl('/v1/dashboard'), { headers: authHeader });
+    assert.equal(dashboardResponse.status, 200);
+    const dashboard = await dashboardResponse.json();
+    assert.equal(dashboard.approval.total, 1);
+    assert.equal(dashboard.approval.negative, 1);
+    assert.equal(dashboard.reviewDelta.feedbackAdded, 1);
+    const remarked = await fetch(apiUrl('/v1/dashboard/review-state'), { method: 'POST', headers: authHeader });
+    assert.equal(remarked.status, 200);
+    const aliasCheckpoint = await remarked.json();
+    assert.equal(aliasCheckpoint.reviewState.feedbackCount, 1);
+    assert.equal(aliasCheckpoint.reviewState.negativeCount, 1);
+  } finally {
+    if (previousCacheTtl === undefined) delete process.env.THUMBGATE_DASHBOARD_CACHE_TTL_MS;
+    else process.env.THUMBGATE_DASHBOARD_CACHE_TTL_MS = previousCacheTtl;
+    for (const [file, contents] of originalFiles) {
+      if (contents === null) fs.rmSync(file, { force: true });
+      else fs.writeFileSync(file, contents);
+    }
+  }
+});
+
 test('dashboard review-state endpoint persists a checkpoint and returns zero deltas immediately after marking reviewed', async () => {
   const feedbackLogPath = path.join(tmpFeedbackDir, 'feedback-log.jsonl');
   const reviewStatePath = path.join(tmpFeedbackDir, 'dashboard-review-state.json');
@@ -4558,6 +4626,7 @@ test('dashboard review-state endpoint persists a checkpoint and returns zero del
     JSON.stringify({
       id: 'fb_review_state_1',
       signal: 'negative',
+      reviewOrigin: 'human',
       context: 'Fresh issue before review checkpoint',
       timestamp: '2026-04-15T12:00:00.000Z',
     }),
@@ -4582,12 +4651,14 @@ test('dashboard review-state endpoint persists a checkpoint and returns zero del
     JSON.stringify({
       id: 'fb_review_state_1',
       signal: 'negative',
+      reviewOrigin: 'human',
       context: 'Fresh issue before review checkpoint',
       timestamp: '2026-04-15T12:00:00.000Z',
     }),
     JSON.stringify({
       id: 'fb_review_state_2',
       signal: 'negative',
+      reviewOrigin: 'human',
       context: 'New issue after review checkpoint',
       timestamp: afterCheckpointTime,
     }),

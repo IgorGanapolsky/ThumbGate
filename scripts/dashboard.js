@@ -1,6 +1,8 @@
 #!/usr/bin/env node
 'use strict';
 
+const { tenantDataScope } = require('./feedback-scope');
+
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
@@ -239,10 +241,19 @@ function findLatestTimestamp(entries) {
   }, null);
 }
 
+function selectDashboardFeedback(entries, humanOnly) {
+  return humanOnly
+    ? entries.filter((entry) => entry.reviewOrigin === 'human' && ['positive', 'negative'].includes(entry.signal))
+    : entries;
+}
+
 function buildReviewSnapshot(feedbackDir, options = {}) {
-  const feedbackEntries = Array.isArray(options.feedbackEntries)
-    ? options.feedbackEntries
-    : readJSONL(path.join(feedbackDir, 'feedback-log.jsonl'));
+  const feedbackEntries = selectDashboardFeedback(
+    Array.isArray(options.feedbackEntries)
+      ? options.feedbackEntries
+      : (options.humanOnly ? collectAllFeedbackEntries(feedbackDir) : readJSONL(path.join(feedbackDir, 'feedback-log.jsonl'))),
+    options.humanOnly,
+  );
   const memoryEntries = Array.isArray(options.memoryEntries)
     ? options.memoryEntries
     : readJSONL(path.join(feedbackDir, 'memory-log.jsonl'));
@@ -522,11 +533,17 @@ function listActiveGates() {
     const config = loadGatesConfig();
     return (config.gates || []).map((gate) => ({
       id: gate.id || null,
-      name: gate.id || gate.pattern || 'gate',
+      name: gate.id || 'Gate',
       pattern: gate.pattern || '',
       action: gate.action || 'warn',
       severity: gate.severity || 'medium',
       layer: gate.layer || null,
+      message: gate.message || null,
+      source: gate.source || null,
+      sourceLessonId: gate.sourceLessonId || null,
+      sourceFeedbackId: gate.sourceFeedbackId || null,
+      createdAt: gate.createdAt || null,
+      promotedAt: gate.promotedAt || null,
     }));
   } catch {
     return [];
@@ -1354,14 +1371,14 @@ function computeAnalyticsSummary(feedbackDir, options = {}) {
     (entry) => entry && (entry.receivedAt || entry.timestamp)
   );
   const telemetry = getTelemetryAnalytics(feedbackDir, analyticsWindow);
-  const billing = options.billingSummary || getBillingSummary(analyticsWindow);
+  const billing = tenantDataScope() ? {} : (options.billingSummary || getBillingSummary(analyticsWindow));
   const funnelEntries = filterEntriesForWindow(
-    loadFunnelLedger(),
+    tenantDataScope() ? [] : loadFunnelLedger(),
     analyticsWindow,
     (entry) => entry && entry.timestamp
   );
   const paidOrderEntries = filterEntriesForWindow(
-    loadResolvedRevenueEvents(),
+    tenantDataScope() ? [] : loadResolvedRevenueEvents(),
     analyticsWindow,
     (entry) => entry && entry.timestamp
   ).filter((entry) => entry && entry.status === 'paid');
@@ -1716,8 +1733,8 @@ function computeAgentFileAudit(projectRoot = PROJECT_ROOT) {
 }
 
 function computeAgentFileAuditFromFeedback(feedbackDir, options = {}) {
-  const readiness = options.readiness || generateAgentReadinessReport({ projectRoot: PROJECT_ROOT });
-  const auditResults = computeAgentFileAudit();
+  const readiness = options.readiness || generateAgentReadinessReport({ projectRoot: tenantDataScope()?.feedbackDir || PROJECT_ROOT });
+  const auditResults = computeAgentFileAudit(tenantDataScope()?.feedbackDir || PROJECT_ROOT);
 
   return {
     totalAgentFiles: auditResults.totalAgentFiles,
@@ -1982,7 +1999,7 @@ function summarizeMcpServerInventory(projectRoot = PROJECT_ROOT) {
 }
 
 function computeAgentSurfaceInventory(feedbackDir, options = {}) {
-  const readiness = options.readiness || generateAgentReadinessReport({ projectRoot: PROJECT_ROOT });
+  const readiness = options.readiness || generateAgentReadinessReport({ projectRoot: tenantDataScope()?.feedbackDir || PROJECT_ROOT });
   const auditEntries = Array.isArray(options.auditEntries)
     ? options.auditEntries
     : readJSONL(path.join(feedbackDir, AUDIT_LOG_FILENAME));
@@ -2041,7 +2058,7 @@ function computeAgentSurfaceInventory(feedbackDir, options = {}) {
     .sort((left, right) => right[1] - left[1] || left[0].localeCompare(right[0]))
     .map(([source, count]) => ({ source, count }))
     .slice(0, 6);
-  const mcpInventory = summarizeMcpServerInventory(PROJECT_ROOT);
+  const mcpInventory = summarizeMcpServerInventory(tenantDataScope()?.feedbackDir || PROJECT_ROOT);
 
   return {
     profile: readiness.permissions.profile,
@@ -2181,7 +2198,7 @@ function collectAllFeedbackEntries(feedbackDir) {
 function generateDashboard(feedbackDir, options = {}) {
   const analyticsWindow = resolveAnalyticsWindow(options.analyticsWindow || options);
   const diagnosticLogPath = path.join(feedbackDir, 'diagnostic-log.jsonl');
-  const entries = collectAllFeedbackEntries(feedbackDir);
+  const entries = selectDashboardFeedback(collectAllFeedbackEntries(feedbackDir), options.humanOnly);
   const diagnosticEntries = readJSONL(diagnosticLogPath);
   const memoryEntries = readJSONL(path.join(feedbackDir, 'memory-log.jsonl'));
   const auditEntries = readJSONL(path.join(feedbackDir, AUDIT_LOG_FILENAME));
@@ -2194,7 +2211,7 @@ function generateDashboard(feedbackDir, options = {}) {
     auditEntries,
     reviewedAt: options.now || new Date().toISOString(),
   });
-  const billingSummary = options.billingSummary || getBillingSummary(analyticsWindow);
+  const billingSummary = tenantDataScope() ? {} : (options.billingSummary || getBillingSummary(analyticsWindow));
 
   const approval = computeApprovalStats(entries);
   const gateStats = mergeRepeatMetricIntoGateStats(computeGateStats(feedbackDir));
@@ -2202,6 +2219,46 @@ function generateDashboard(feedbackDir, options = {}) {
   const trend = computeSessionTrend(entries, 10);
   const health = computeSystemHealth(feedbackDir, gateStats);
   const gateAudit = computeGateAuditSeries(feedbackDir);
+  const flowAudit = computeGateAuditSeries(feedbackDir, { dayCount: 30 });
+  let flowTracked = false;
+  let flowIncomplete = false;
+  try {
+    const tail = readTextTail(path.join(feedbackDir, AUDIT_LOG_FILENAME), DEFAULT_JSONL_MAX_BYTES);
+    const lines = tail.text.split('\n');
+    flowIncomplete = tail.truncated || lines.length >= DEFAULT_JSONL_MAX_ENTRIES;
+    if (!flowIncomplete) {
+      for (const line of lines) {
+        if (!line.trim()) continue;
+        const event = JSON.parse(line);
+        if (!event || typeof event !== 'object' || Array.isArray(event)
+          || typeof event.timestamp !== 'string' || !Number.isFinite(Date.parse(event.timestamp))
+          || !['allow', 'deny', 'warn', 'approve', 'log', 'override'].includes(event.decision)) {
+          flowIncomplete = true;
+          break;
+        }
+      }
+    }
+    flowTracked = !flowIncomplete;
+  } catch {
+    flowIncomplete = fs.existsSync(path.join(feedbackDir, AUDIT_LOG_FILENAME));
+  }
+  const flowDays = new Set(flowAudit.days.map((day) => day.dayKey));
+  const gateFlowStats = {
+    tracked: flowTracked,
+    incomplete: flowIncomplete,
+    blockedToday: flowTracked ? flowAudit.days[flowAudit.days.length - 1].deny : null,
+    blocked30Days: flowTracked ? flowAudit.totals.deny : null,
+    allowed30Days: flowTracked ? flowAudit.totals.allow : null,
+    blockedEntries: flowTracked ? auditEntries
+      .filter((entry) => entry && entry.decision === 'deny' && flowDays.has(toLocalDayKey(entry.timestamp)))
+      .sort((a, b) => Date.parse(b.timestamp) - Date.parse(a.timestamp))
+      .slice(0, 20)
+      .map((entry) => ({
+        timestamp: entry.timestamp,
+        gateId: entry.gateId || null,
+        toolName: entry.toolName || null,
+      })) : [],
+  };
   const diagnostics = aggregateFailureDiagnostics([...entries, ...diagnosticEntries]);
   const secretGuard = computeSecretGuardStats(diagnosticEntries);
   const gates = listActiveGates();
@@ -2211,7 +2268,7 @@ function generateDashboard(feedbackDir, options = {}) {
   });
   analytics.lossAnalysis = buildLossAnalysis(analytics);
   const observability = computeObservabilityStats(diagnosticEntries, diagnostics, secretGuard, analytics.telemetry);
-  const instrumentation = computeInstrumentationReadiness(analytics, billingSummary);
+  const instrumentation = tenantDataScope() ? { availability: 'admin_only' } : computeInstrumentationReadiness(analytics, billingSummary);
   const delegationRuntime = loadDelegationRuntimeModule();
   const delegation = delegationRuntime
     ? delegationRuntime.summarizeDelegation(feedbackDir)
@@ -2222,9 +2279,10 @@ function generateDashboard(feedbackDir, options = {}) {
       activePlans: [],
       availability: 'private_core',
     };
-  const readiness = generateAgentReadinessReport({ projectRoot: PROJECT_ROOT });
+  const readiness = generateAgentReadinessReport({ projectRoot: tenantDataScope()?.feedbackDir || PROJECT_ROOT });
   const feedbackAnalysis = analyzeFeedback(path.join(feedbackDir, 'feedback-log.jsonl'), {
     entries,
+    humanOnly: options.humanOnly,
     maxLines: DEFAULT_JSONL_MAX_ENTRIES,
     maxBytes: DEFAULT_JSONL_MAX_BYTES,
   });
@@ -2240,18 +2298,18 @@ function generateDashboard(feedbackDir, options = {}) {
     auditEntries,
     decisionRecords,
   });
-  const settingsStatus = getSettingsStatus({ projectRoot: PROJECT_ROOT });
+  const settingsStatus = getSettingsStatus({ projectRoot: tenantDataScope()?.feedbackDir || PROJECT_ROOT, ...(tenantDataScope() ? { homeDir: tenantDataScope().feedbackDir } : {}) });
   settingsStatus.routingPreview = {
     dashboardTool: routeProfile({
       toolName: 'dashboard',
-      settingsOptions: { projectRoot: PROJECT_ROOT },
+      settingsOptions: { projectRoot: tenantDataScope()?.feedbackDir || PROJECT_ROOT, ...(tenantDataScope() ? { homeDir: tenantDataScope().feedbackDir } : {}) },
     }),
     defaultSession: routeProfile({
-      settingsOptions: { projectRoot: PROJECT_ROOT },
+      settingsOptions: { projectRoot: tenantDataScope()?.feedbackDir || PROJECT_ROOT, ...(tenantDataScope() ? { homeDir: tenantDataScope().feedbackDir } : {}) },
     }),
     reviewSession: routeProfile({
       sessionType: 'review',
-      settingsOptions: { projectRoot: PROJECT_ROOT },
+      settingsOptions: { projectRoot: tenantDataScope()?.feedbackDir || PROJECT_ROOT, ...(tenantDataScope() ? { homeDir: tenantDataScope().feedbackDir } : {}) },
     }),
   };
   const workflowSummary = summarizeWorkflowRuns(feedbackDir);
@@ -2316,7 +2374,7 @@ function generateDashboard(feedbackDir, options = {}) {
     })
     : buildUnavailableOrgDashboard(teamWindowHours);
   const templateLibrary = summarizeGateTemplates();
-  const predictive = buildPredictiveInsights({
+  const predictive = tenantDataScope() ? { availability: 'admin_only' } : buildPredictiveInsights({
     telemetryAnalytics: analytics.telemetry,
     billingSummary,
     gateStats,
@@ -2358,6 +2416,7 @@ function generateDashboard(feedbackDir, options = {}) {
     trend,
     health,
     gateAudit,
+    gateFlowStats,
     diagnostics,
     delegation,
     secretGuard,

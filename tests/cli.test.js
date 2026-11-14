@@ -446,7 +446,7 @@ function runCliCommand(args, options = {}) {
       clearTimeout(timer);
       done(err);
     });
-    child.on('exit', (code, signal) => {
+    child.on('close', (code, signal) => {
       clearTimeout(timer);
       done(null, {
         status: code,
@@ -2168,6 +2168,36 @@ describe('bin/cli.js', () => {
       process.env._TEST_FUNNEL_LEDGER_PATH = savedEnv._TEST_FUNNEL_LEDGER_PATH;
       process.env._TEST_REVENUE_LEDGER_PATH = savedEnv._TEST_REVENUE_LEDGER_PATH;
       fs.rmSync(remoteDir, { recursive: true, force: true });
+    }
+  });
+
+  test('cfo drains a large hosted summary to piped stdout before exiting', async () => {
+    const summary = { detail: 'x'.repeat(1024 * 1024), lastField: 'complete' };
+    const server = http.createServer((_req, res) => {
+      res.writeHead(200, { 'content-type': 'application/json' });
+      res.end(JSON.stringify(summary));
+    });
+    await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
+    const isolatedDir = makeTmpDir();
+    try {
+      const result = await runCliCommand(['cfo'], {
+        cwd: isolatedDir,
+        env: {
+          ...process.env,
+          THUMBGATE_BILLING_API_BASE_URL: `http://127.0.0.1:${server.address().port}`,
+          THUMBGATE_OPERATOR_KEY: 'test-cfo-large-summary',
+          THUMBGATE_METRICS_SOURCE: 'hosted',
+        },
+      });
+      assert.equal(result.status, 0);
+      assert.deepEqual(JSON.parse(result.stdout), {
+        source: 'hosted',
+        fallbackReason: null,
+        summary,
+      });
+    } finally {
+      await new Promise((resolve) => server.close(resolve));
+      fs.rmSync(isolatedDir, { recursive: true, force: true });
     }
   });
 

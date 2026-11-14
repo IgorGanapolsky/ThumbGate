@@ -1,6 +1,8 @@
 #!/usr/bin/env node
 'use strict';
 
+const { dataScopeKey } = require('./feedback-scope');
+
 /**
  * Feedback Sessions
  *
@@ -54,6 +56,7 @@ function openSession(feedbackEventId, signal, initialContext) {
 
   const session = {
     sessionId,
+    scopeKey: dataScopeKey(),
     feedbackEventId,
     signal,
     initialContext: initialContext || '',
@@ -82,6 +85,7 @@ function openSession(feedbackEventId, signal, initialContext) {
  */
 function appendToSession(sessionId, message, role = 'user') {
   const session = activeSessions.get(sessionId);
+  if (session && session.scopeKey !== dataScopeKey()) return { status: 'not_found' };
   if (!session) {
     return { status: 'not_found', message: `No active session: ${sessionId}` };
   }
@@ -113,6 +117,7 @@ function appendToSession(sessionId, message, role = 'user') {
  */
 function finalizeSession(sessionId) {
   const session = activeSessions.get(sessionId);
+  if (session && session.scopeKey !== dataScopeKey()) return { status: 'not_found' };
   if (!session) {
     return { status: 'not_found' };
   }
@@ -253,7 +258,8 @@ function isGeneralFrustration(content) {
  * Get an active session by ID
  */
 function getSession(sessionId) {
-  return activeSessions.get(sessionId) || null;
+  const session = activeSessions.get(sessionId);
+  return session?.scopeKey === dataScopeKey() ? session : null;
 }
 
 /**
@@ -261,7 +267,7 @@ function getSession(sessionId) {
  */
 function getActiveSession() {
   for (const [, session] of activeSessions) {
-    if (session.status === 'open') return session;
+    if (session.scopeKey === dataScopeKey() && session.status === 'open') return session;
   }
   return null;
 }

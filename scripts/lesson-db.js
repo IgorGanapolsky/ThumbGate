@@ -1,6 +1,8 @@
 #!/usr/bin/env node
 'use strict';
 
+const { tenantDataScope, assertScopedDataPath } = require('./feedback-scope');
+
 /**
  * Lesson DB — SQLite + FTS5 backing store for feedback & memories.
  *
@@ -24,7 +26,8 @@ function resolveDefaultDbPath(options = {}) {
 /** @returns {import('better-sqlite3').Database} */
 function initDB(dbPath) {
   const Database = require('better-sqlite3');
-  const resolvedPath = dbPath || process.env.LESSON_DB_PATH || resolveDefaultDbPath();
+  const scope = tenantDataScope();
+  const resolvedPath = scope ? assertScopedDataPath(dbPath || path.join(scope.feedbackDir, 'lessons.sqlite')) : (dbPath || process.env.LESSON_DB_PATH || resolveDefaultDbPath());
 
   // Ensure parent directory exists
   const dir = path.dirname(resolvedPath);

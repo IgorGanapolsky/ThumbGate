@@ -1,5 +1,7 @@
 'use strict';
 
+const { tenantDataScope, restrictedWorkerEnv, assertScopedDataPath } = require('./feedback-scope');
+
 const fs = require('fs');
 const path = require('path');
 const { spawn } = require('child_process');
@@ -34,7 +36,7 @@ function getStatePath(jobId) {
 function writeStateFile(jobId, state) {
   const statePath = getStatePath(jobId);
   ensureDir(path.dirname(statePath));
-  fs.writeFileSync(statePath, JSON.stringify(state, null, 2) + '\n', 'utf8');
+  runner.writeJobState({ ...state, jobId });
   return state;
 }
 
@@ -98,7 +100,7 @@ function launchRunner(args, options = {}) {
 
   const child = spawn(process.execPath, [RUNNER_SCRIPT_PATH, ...runnerArgs], {
     cwd: options.cwd || process.cwd(),
-    env: process.env,
+    env: restrictedWorkerEnv(),
     detached: true,
     stdio: 'ignore',
   });
@@ -151,8 +153,8 @@ function buildManagedDpoExportJob(params = {}) {
 
   if (params.inputPath) {
     command.push('--inputPath', shellQuote(params.inputPath));
-  } else if (params.memoryLogPath) {
-    command.push('--memoryLogPath', shellQuote(params.memoryLogPath));
+  } else if (params.memoryLogPath || params.fallbackMemoryLogPath) {
+    command.push('--memoryLogPath', shellQuote(params.memoryLogPath || params.fallbackMemoryLogPath));
   }
 
   if (params.outputPath) {
@@ -210,6 +212,12 @@ function resumeHostedJob(jobId, options = {}) {
     throw error;
   }
 
+  if (tenantDataScope()) {
+    const spec = state.jobFilePath
+      ? JSON.parse(fs.readFileSync(assertScopedDataPath(state.jobFilePath), 'utf8'))
+      : state.jobSpec;
+    runner.assertTenantJob(spec || {});
+  }
   const launch = launchRunner({ resumeJobId: jobId }, options);
   return {
     jobId,

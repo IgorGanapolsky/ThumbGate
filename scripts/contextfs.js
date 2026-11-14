@@ -8,6 +8,7 @@
  * - Evaluator: record pack outcome for learning loop
  */
 
+const { tenantDataScope, assertScopedDataPath } = require('./feedback-scope');
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
@@ -25,13 +26,15 @@ function getFeedbackBaseDir() {
 }
 
 function getContextFsRoot() {
+  const scope = tenantDataScope();
+  if (scope) return assertScopedDataPath(path.join(scope.feedbackDir, 'contextfs'));
   const feedbackDir = getFeedbackBaseDir();
   if (process.env.THUMBGATE_CONTEXTFS_DIR) return process.env.THUMBGATE_CONTEXTFS_DIR;
   return feedbackDir.endsWith('contextfs') ? feedbackDir : path.join(feedbackDir, 'contextfs');
 }
 
 function contextFsPath(...segments) {
-  return path.join(getContextFsRoot(), ...segments);
+  return assertScopedDataPath(path.join(getContextFsRoot(), ...segments));
 }
 
 const NAMESPACES = {
@@ -130,21 +133,24 @@ function toSlug(input) {
 }
 
 function writeJson(filePath, payload) {
+  assertScopedDataPath(filePath);
   ensureDir(path.dirname(filePath));
   fs.writeFileSync(filePath, `${JSON.stringify(payload, null, 2)}\n`);
 }
 
 function appendJsonl(filePath, payload) {
+  assertScopedDataPath(filePath);
   ensureDir(path.dirname(filePath));
   fs.appendFileSync(filePath, `${JSON.stringify(payload)}\n`);
 }
 
 function listJsonFiles(dirPath) {
+  assertScopedDataPath(dirPath);
   if (!fs.existsSync(dirPath)) return [];
   const files = fs.readdirSync(dirPath, { withFileTypes: true });
   const out = [];
   files.forEach((entry) => {
-    const fullPath = path.join(dirPath, entry.name);
+    const fullPath = assertScopedDataPath(path.join(dirPath, entry.name));
     if (entry.isDirectory()) {
       out.push(...listJsonFiles(fullPath));
       return;
@@ -851,7 +857,7 @@ function loadMemexIndex() {
 function dereferenceEntry(entry) {
   if (!entry || !entry.stableRef) return null;
   try {
-    return JSON.parse(fs.readFileSync(entry.stableRef, 'utf-8'));
+    return JSON.parse(fs.readFileSync(assertScopedDataPath(entry.stableRef), 'utf-8'));
   } catch {
     return null;
   }

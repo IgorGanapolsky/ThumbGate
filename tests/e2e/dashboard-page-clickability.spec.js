@@ -2,6 +2,8 @@ const fs = require('node:fs');
 const { test, expect } = require('@playwright/test');
 const { mockDashboardApis, loadFixture } = require('./helpers/mock-api');
 
+test.use({ headless: true });
+
 // Comprehensive clickability coverage for the NON-stat-card surfaces on
 // /dashboard. The four stat tiles are already covered by
 // dashboard-stat-cards.spec.js (PR #2242) — this spec covers everything else
@@ -216,12 +218,13 @@ test.describe('/dashboard clickability — non-stat-card surfaces', () => {
 
   // --- DPO export button (lives inside the Export tab) ---
 
-  test('clicking "Download DPO Pairs" shows export status text', async ({ page }) => {
+  test('clicking "Download DPO Pairs" explains when no pairs are recorded', async ({ page }) => {
     await page.goto('/dashboard#export');
     const exportBtn = page.locator('.export-btn', { hasText: /Download DPO Pairs/ });
     await exportBtn.click();
     const status = page.locator('#exportStatus');
-    await expect(status).toHaveText(/Exported \d+ preference pairs|Exporting\.\.\./);
+    await expect(status).toContainText('No preference pairs recorded in this dashboard');
+    await expect(status).toContainText('npx thumbgate feedback');
   });
 
   test('exportDpo POSTs for records and downloads the real pair array', async ({ page }) => {

@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+const { withDataScope, withoutDataScope, currentDataScope, tenantDataScope, assertScopedDataPath, dataScopeKey } = require('../../scripts/feedback-scope');
 const http = require('http');
 const https = require('https');
 const fs = require('fs');
@@ -1065,6 +1066,7 @@ function isProjectSelectionAllowed(req, parsed) {
 }
 
 function resolveRequestProjectDir(req, parsed) {
+  if (tenantDataScope()) return tenantDataScope().feedbackDir;
   const explicitProject = getEffectiveRequestedProjectSelection(req, parsed);
   return resolveProjectDir({
     projectDir: explicitProject,
@@ -2141,6 +2143,9 @@ function resolveBillingSummaryOptionsOrRespondProblem(res, parsed, invalidTitle)
 
 async function buildLiveDashboardData(parsed, feedbackDir) {
   const summaryOptions = resolveBillingSummaryOptions(parsed);
+  if (tenantDataScope()) {
+    return { summaryOptions, data: generateDashboard(feedbackDir, { analyticsWindow: summaryOptions, billingSummary: {}, billingSource: 'tenant', humanOnly: true, authContext: { tier: 'pro' } }) };
+  }
   // Stripe/live billing can hang longer than the authenticated deploy proof
   // timeout (12s). Prefer live, but fail closed to local summary so /v1/dashboard
   // remains usable for operational proof.
@@ -2163,6 +2168,7 @@ async function buildLiveDashboardData(parsed, feedbackDir) {
     analyticsWindow: summaryOptions,
     billingSummary,
     billingSource,
+    humanOnly: true,
     authContext: { tier: 'pro' },
   });
   return { summaryOptions, data };
@@ -2180,7 +2186,7 @@ function parseNonNegativeInteger(value, fallback) {
 function buildLiveDashboardCacheKey(parsed, feedbackDir) {
   const query = new URLSearchParams(parsed.searchParams);
   query.sort();
-  return `${path.resolve(feedbackDir)}?${query.toString()}`;
+  return `${dataScopeKey()}:${path.resolve(feedbackDir)}?${query.toString()}`;
 }
 
 async function loadCachedLiveDashboardData(parsed, feedbackDir, options = {}) {
@@ -6225,7 +6231,7 @@ function hashSessionToken(token) {
 }
 
 function resolveAuthSessionsStorePath() {
-  return path.join(getFeedbackPaths().FEEDBACK_DIR, 'auth-sessions.json');
+  return withoutDataScope(() => path.join(getFeedbackPaths().FEEDBACK_DIR, 'auth-sessions.json'));
 }
 
 function readPersistedAuthSessions(nowMs = Date.now()) {
@@ -6956,6 +6962,7 @@ function isBillingSummaryAuthorized(req, expectedAdminKey, expectedOperatorKey) 
 /** Read-only paths the operator key may access (CLI dashboard / CFO / north-star). */
 const OPERATOR_READONLY_GET_PATHS = new Set([
   '/v1/billing/summary',
+  '/v1/analytics/funnel',
   '/v1/dashboard',
   '/v1/dashboard/render-spec',
   '/v1/dashboard/ai-inventory',
@@ -6984,8 +6991,8 @@ function extractTags(input) {
 }
 
 function resolveSafePath(inputPath, { mustExist = false, safeDataDir } = {}) {
-  const allowExternal = process.env.THUMBGATE_ALLOW_EXTERNAL_PATHS === 'true';
-  const resolved = path.resolve(String(inputPath || ''));
+  const allowExternal = !tenantDataScope() && process.env.THUMBGATE_ALLOW_EXTERNAL_PATHS === 'true';
+  const resolved = assertScopedDataPath(path.resolve(String(inputPath || '')));
   const SAFE_DATA_DIR = safeDataDir || getSafeDataDir();
   const inSafeRoot = resolved === SAFE_DATA_DIR || resolved.startsWith(`${SAFE_DATA_DIR}${path.sep}`);
 
@@ -7120,17 +7127,47 @@ function resolveDocumentImportFilePath(inputPath, options = {}) {
   return resolved;
 }
 
+const CONTINUE_DATA_SCOPE = Symbol('trustedDataScopeContinuation');
+
 function createApiServer() {
+  const server = withoutDataScope(createUnscopedApiServer);
+  const [listener] = server.listeners('request');
+  server.removeListener('request', listener);
+  server.on('request', (req, res) => {
+    req[CONTINUE_DATA_SCOPE] = (scope) => withDataScope(scope, () => listener(req, res));
+    return withoutDataScope(() => listener(req, res));
+  });
+  return server;
+}
+
+function createUnscopedApiServer() {
   const expectedApiKey = getExpectedApiKey();
   const expectedOperatorKey = getExpectedOperatorKey();
   const humanReviewerConfig = getHumanReviewerConfig(expectedApiKey, expectedOperatorKey);
 
   const eventBus = new EventEmitter();
   eventBus.setMaxListeners(200);
+  const publishEvent = (payload) => eventBus.emit('broadcast', { scopeKey: dataScopeKey(), payload });
 
   return http.createServer(async (req, res) => {
     const parsed = new URL(req.url, 'http://localhost');
     const pathname = parsed.pathname;
+    const earlyPrivateRoute = (req.method === 'POST' && pathname.startsWith('/feedback/quick')) || /^\/lessons\/[^/]+(?:\/[^/]+)?$/.test(pathname);
+    if (earlyPrivateRoute && !currentDataScope()) {
+      if (!isAuthorized(req, expectedApiKey)) {
+        sendJson(res, 401, { error: 'Authentication required' });
+        return;
+      }
+      const identity = resolveRequestDataIdentity(req, expectedApiKey);
+      if (identity.invalidHostedIdentity) { sendJson(res, 403, { error: 'Invalid customer identity' }); return; }
+      const roots = partitionFeedbackPaths(identity.partition ? getFeedbackPaths() : getRequestFeedbackPaths(req, parsed), identity);
+      try {
+        return await req[CONTINUE_DATA_SCOPE]({ kind: identity.partition ? 'tenant' : 'legacy', feedbackDir: roots.FEEDBACK_DIR, tenantId: identity.partition, principalId: identity.accessContext?.principalId });
+      } catch (error) {
+        sendJson(res, error.statusCode || 500, { error: error.statusCode ? error.message : 'Request failed' });
+        return;
+      }
+    }
     const isHeadRequest = req.method === 'HEAD';
     const isGetLikeRequest = req.method === 'GET' || isHeadRequest;
     const publicOrigin = getPublicOrigin(req);
@@ -11079,18 +11116,22 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
       });
       return;
     }
-    requestFeedbackPaths = partitionFeedbackPaths(requestFeedbackPaths, requestDataIdentity);
+    const baseFeedbackPaths = requestDataIdentity.partition ? getFeedbackPaths() : requestFeedbackPaths;
+    requestFeedbackPaths = currentDataScope()
+      ? getFeedbackPaths({ feedbackDir: currentDataScope().lexicalRoot })
+      : partitionFeedbackPaths(baseFeedbackPaths, requestDataIdentity);
     requestFeedbackDir = requestFeedbackPaths.FEEDBACK_DIR;
     requestSafeDataDir = path.resolve(requestFeedbackDir);
     requestDocumentAccessContext = requestDataIdentity.accessContext;
 
-    // Usage metering — record request for billing keys (not static THUMBGATE_API_KEY)
-    const _token = extractBearerToken(req);
-    if (_token && _token !== expectedApiKey) {
-      recordUsage(_token);
-    }
-
     try {
+      if (!currentDataScope()) {
+        return await req[CONTINUE_DATA_SCOPE]({ kind: requestDataIdentity.partition ? 'tenant' : 'legacy', feedbackDir: requestFeedbackDir, tenantId: requestDataIdentity.partition, principalId: requestDocumentAccessContext?.principalId });
+      }
+      // Usage metering runs only on the scoped dispatch pass.
+      const _token = extractBearerToken(req);
+      if (_token && _token !== expectedApiKey) recordUsage(_token);
+
       if (req.method === 'GET' && pathname === '/v1/feedback/stats') {
         const stats = shouldAggregateFeedback()
           ? computeAggregateFeedbackStats({ feedbackDir: requestFeedbackPaths.FEEDBACK_DIR })
@@ -11326,7 +11367,10 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
           }
         };
 
-        const onEvent = (payload) => {
+        const subscriberKey = dataScopeKey();
+        const onEvent = (envelope) => {
+          if (envelope.scopeKey !== subscriberKey) return;
+          const payload = envelope.payload;
           safeWrite(`event: ${payload.type}\ndata: ${JSON.stringify(payload)}\n\n`);
         };
         eventBus.on('broadcast', onEvent);
@@ -11524,6 +11568,7 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
       }
 
       if (req.method === 'POST' && pathname === '/v1/jobs/harness') {
+        if (tenantDataScope()) throw createHttpError(403, 'Hosted tenant harness execution requires an execution sandbox');
         const body = await parseJsonBody(req);
         const identifier = body.harness || body.harnessId;
         if (!identifier) {
@@ -11978,7 +12023,7 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
         if (!chatHistory || chatHistory.length === 0) {
           try {
             chatHistory = readRecentConversationWindow({
-              feedbackDir: getSafeDataDir(),
+              feedbackDir: requestFeedbackDir,
               limit: 10,
             });
           } catch { /* best-effort — conversation window is optional */ }
@@ -12007,7 +12052,7 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
             }
             : undefined,
           reviewOrigin: 'human',
-        });
+        }, { feedbackDir: requestFeedbackDir });
         const actionIntegration = inferActionIntegration(body, req.headers);
         appendBestEffortTelemetry(requestFeedbackDir, {
           eventType: chatgptActionEventType(actionIntegration, 'capture_feedback'),
@@ -12024,7 +12069,7 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
           // Fan out to any connected dashboard clients so they re-render
           // without polling. Non-sensitive summary only (no chat history,
           // no evidence blobs).
-          eventBus.emit('broadcast', {
+          publishEvent({
             type: 'feedback',
             signal: body.signal,
             tags: Array.isArray(body.tags) ? body.tags.slice(0, 8) : [],
@@ -12047,7 +12092,7 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
         const result = writePreventionRules(outputPath, Number.isFinite(minOccurrences) ? minOccurrences : 2);
         // Tell live dashboard clients the rules file just changed so they can
         // re-fetch the summary without waiting on a poll tick.
-        eventBus.emit('broadcast', {
+        publishEvent({
           type: 'rules-updated',
           path: result.path,
           ts: Date.now(),
@@ -12773,6 +12818,7 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
 
       // GET /v1/analytics/funnel — aggregate acquisition/activation/paid funnel metrics
       if (req.method === 'GET' && pathname === '/v1/analytics/funnel') {
+        if (!isBillingSummaryAuthorized(req, expectedApiKey, expectedOperatorKey)) throw createHttpError(403, 'Admin or operator API key required for this endpoint.');
         const summary = getFunnelAnalytics();
         sendJson(res, 200, summary);
         return;
@@ -12887,6 +12933,7 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
         const reviewState = readDashboardReviewState(requestFeedbackDir);
         const data = generateDashboard(requestFeedbackDir, {
           reviewBaseline: reviewState,
+          humanOnly: true,
           authContext: { tier: 'pro' },
         });
         sendJson(res, 200, {
@@ -12899,7 +12946,7 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
       // POST /v1/dashboard/review-state -- mark current dashboard state as reviewed
       if (req.method === 'POST' && pathname === '/v1/dashboard/review-state') {
         const body = await parseJsonBody(req);
-        const snapshot = buildReviewSnapshot(requestFeedbackDir);
+        const snapshot = buildReviewSnapshot(requestFeedbackDir, { humanOnly: true });
         // Override snapshot timestamp with client-provided one if available
         if (body?.reviewedAt) {
           snapshot.reviewedAt = body.reviewedAt;
@@ -12907,6 +12954,7 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
         writeDashboardReviewState(requestFeedbackDir, snapshot);
         const data = generateDashboard(requestFeedbackDir, {
           reviewBaseline: snapshot,
+          humanOnly: true,
           authContext: { tier: 'pro' },
         });
         sendJson(res, 200, {

@@ -1,6 +1,8 @@
 #!/usr/bin/env node
 'use strict';
 
+const { tenantDataScope, assertScopedDataPath } = require('./feedback-scope');
+
 const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
@@ -94,6 +96,8 @@ function ancestorProjectFeedbackDirs(projectDir, options = {}) {
 }
 
 function listFeedbackStoreDirs(options = {}) {
+  const scope = tenantDataScope();
+  if (scope) return [assertScopedDataPath(scope.feedbackDir)];
   const env = options.env || process.env;
   const projectDir = resolveProjectDir({ cwd: options.cwd, env, projectDir: options.projectDir });
   const home = getHomeDir({ env });
