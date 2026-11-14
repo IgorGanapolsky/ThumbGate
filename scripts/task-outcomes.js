@@ -146,7 +146,7 @@ function recordTaskOutcome(input = {}, options = {}) {
     throw error;
   }
 
-  Object.assign(receipt, projectForCapture({ ...input, ...options }, { hosted: Boolean(options.projectKey || options.hosted) }));
+  Object.assign(receipt, projectForCapture({ ...input, ...options }, { hosted: Boolean(options.projectKey || options.hosted || require('./feedback-scope').tenantDataScope() || process.env.RAILWAY_PROJECT_ID || process.env.RAILWAY_ENVIRONMENT) }));
   const outcomesPath = getTaskOutcomesPath(options);
   const existing = readTaskOutcomes({ ...options, projectKey: receipt.projectKey });
   const duplicate = existing.find((entry) => entry.idempotencyKey === receipt.idempotencyKey);

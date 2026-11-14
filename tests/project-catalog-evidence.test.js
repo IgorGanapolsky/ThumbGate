@@ -122,3 +122,17 @@ test('findSimilarLesson only dedupes against the file being updated', () => {
   const { findSimilarLesson } = require('../scripts/lesson-synthesis');
   assert.equal(findSimilarLesson(path.join(root, 'memory-log.jsonl'), { ...lesson, id: 'x2' }), null);
 });
+
+test('dashboard chat context for a selected project only contains that project lessons', async () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'tg-chat-'));
+  const row = (extra) => JSON.stringify({ timestamp: '2026-01-01T00:00:00Z', ...extra }) + '\n';
+  fs.writeFileSync(path.join(dir, 'memory-log.jsonl'),
+    row({ id: 'a1', remoteUrl: 'https://github.com/acme/alpha.git', title: 'zebra lesson alpha', content: 'zebra alpha content' }) +
+    row({ id: 'b1', remoteUrl: 'https://github.com/acme/beta.git', title: 'zebra lesson beta', content: 'zebra beta content' }));
+  const { projectFromRemote } = require('../scripts/project-identity');
+  const { retrieveContext } = require('../scripts/dashboard-chat');
+  const items = await retrieveContext('zebra', { feedbackDir: dir, projectKey: projectFromRemote('https://github.com/acme/beta.git').projectKey });
+  const text = JSON.stringify(items);
+  assert.ok(text.includes('zebra lesson beta'));
+  assert.ok(!text.includes('zebra lesson alpha'));
+});

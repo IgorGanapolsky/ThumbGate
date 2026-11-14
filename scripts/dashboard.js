@@ -2155,7 +2155,61 @@ function resolveTeamWindowHours(analyticsWindow) {
   return 24;
 }
 
+function collectLegacyFeedbackEntries(feedbackDir) {
+  if (shouldAggregateFeedback()) {
+    return collectAggregateLogEntries('feedback-log.jsonl', {
+      feedbackDir,
+      maxLines: DEFAULT_JSONL_MAX_ENTRIES,
+      maxBytes: DEFAULT_JSONL_MAX_BYTES,
+    }).entries;
+  }
+
+  const entries = [];
+  const seen = new Set();
+
+  function mergeFrom(logPath) {
+    if (!fs.existsSync(logPath)) return;
+    for (const entry of readJSONL(logPath)) {
+      const id = entry.id || entry.feedbackId;
+      if (id && seen.has(id)) continue;
+      if (id) seen.add(id);
+      entries.push(entry);
+    }
+  }
+
+  mergeFrom(path.join(feedbackDir, 'feedback-log.jsonl'));
+
+  const projectsDir = path.join(feedbackDir, 'projects');
+  if (fs.existsSync(projectsDir)) {
+    try {
+      for (const project of fs.readdirSync(projectsDir)) {
+        mergeFrom(path.join(projectsDir, project, 'feedback-log.jsonl'));
+      }
+    } catch {  }
+  }
+
+  const homeThumbgate = path.join(process.env.HOME || '/tmp', '.thumbgate');
+  const projectLocalDir = path.join(PROJECT_ROOT, '.thumbgate');
+  if (
+    path.resolve(feedbackDir) === path.resolve(homeThumbgate) &&
+    projectLocalDir !== feedbackDir &&
+    fs.existsSync(projectLocalDir)
+  ) {
+    mergeFrom(path.join(projectLocalDir, 'feedback-log.jsonl'));
+  }
+
+  entries.sort((a, b) => {
+    const ta = a.timestamp ? new Date(a.timestamp).getTime() : 0;
+    const tb = b.timestamp ? new Date(b.timestamp).getTime() : 0;
+    return ta - tb;
+  });
+
+  return entries;
+}
+
 function collectAllFeedbackEntries(feedbackDir, options = {}) {
+  // Without a project selection keep reading every aggregate root, home store and legacy store.
+  if (options.projectKey == null) return collectLegacyFeedbackEntries(feedbackDir);
   const rows = require('./project-catalog').readProjectRows(feedbackDir, 'feedback-log.jsonl', options);
   return shouldAggregateFeedback() ? normalizeDashboardFeedback(rows) : rows;
 }

@@ -11357,6 +11357,7 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
 
         const result = await answerDataQuestion(question, {
           feedbackDir: chatFeedbackDir,
+          ...(requestProjectKey != null ? { projectKey: requestProjectKey } : {}),
           model: typeof body.model === 'string' ? body.model : undefined,
           apiKey: projectChatSettings.perplexityKey || projectChatSettings.geminiKey || process.env.PERPLEXITY_API_KEY || process.env.THUMBGATE_PERPLEXITY_API_KEY || process.env.GEMINI_API_KEY || process.env.THUMBGATE_GEMINI_API_KEY || process.env.GOOGLE_API_KEY || '',
           localEndpoint: projectChatSettings.localEndpoint || process.env.THUMBGATE_LOCAL_LLM_ENDPOINT || '',

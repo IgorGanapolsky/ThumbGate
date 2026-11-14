@@ -124,3 +124,23 @@ test("readDashboardReviewState reads both legacy and migrated (version 2) checkp
   fs.writeFileSync(path.join(dir, "dashboard-review-state.json"), JSON.stringify({ version: 2, byProject: { all: legacy } }));
   assert.deepEqual(readDashboardReviewState(dir), legacy);
 });
+
+test('collectAllFeedbackEntries without a project still reads aggregate roots', () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'tg-agg-'));
+  const main = path.join(dir, 'main');
+  const other = path.join(dir, 'other');
+  fs.mkdirSync(main);
+  fs.mkdirSync(other);
+  const row = (id) => JSON.stringify({ id, timestamp: '2026-01-01T00:00:00Z', signal: 'down' }) + '\n';
+  fs.writeFileSync(path.join(main, 'feedback-log.jsonl'), row('m1'));
+  fs.writeFileSync(path.join(other, 'feedback-log.jsonl'), row('o1'));
+  const old = process.env.THUMBGATE_AGGREGATE_ROOTS;
+  process.env.THUMBGATE_AGGREGATE_ROOTS = other;
+  try {
+    const { collectAllFeedbackEntries } = require('../scripts/dashboard');
+    const ids = collectAllFeedbackEntries(main).map((e) => e.id);
+    assert.ok(ids.includes('m1') && ids.includes('o1'), 'main and aggregate-root rows both read');
+  } finally {
+    if (old === undefined) delete process.env.THUMBGATE_AGGREGATE_ROOTS; else process.env.THUMBGATE_AGGREGATE_ROOTS = old;
+  }
+});
