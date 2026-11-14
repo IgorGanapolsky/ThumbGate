@@ -552,7 +552,8 @@
     "scripts/saas-moat-honesty.js",
     ".agents/skills/saas-moat-honesty-not-clone/",
     "scripts/craft-playbook-gate.js",
-    ".agents/skills/craft-playbook-gate/"
+    ".agents/skills/craft-playbook-gate/",
+    "scripts/owner-admin.js"
   ],
   "scripts": {
     "canary:snapshot": "node scripts/gate-decision-canary.js --snapshot",
