@@ -99,7 +99,7 @@ function buildPublicAiventyxRevenueLinks() {
     appOrigin: BUYER_ORIGIN,
     guideLink: `${BUYER_ORIGIN}/guide`,
     proCheckoutLink: `${BUYER_ORIGIN}/checkout/pro`,
-    sprintLink: `${BUYER_ORIGIN}/#workflow-sprint-intake`,
+    sprintLink: `${BUYER_ORIGIN}/pricing`,
   });
 }
 
@@ -151,15 +151,15 @@ function buildAiventyxListings(links = buildPublicAiventyxRevenueLinks()) {
     {
       key: 'teams',
       name: 'ThumbGate Teams',
-      dashboardStatus: 'submit as team/service listing',
+      dashboardStatus: 'submit as team software listing',
       category: AI_CODING_CATEGORY,
-      pricingModel: 'Setup Sprint, then Team at $49/seat/mo with 3-seat minimum after qualification',
+      pricingModel: 'Team at $49/seat/mo with 3-seat minimum after qualification',
       APIEndpoint: links.appOrigin,
       primaryCTA: buildTrackedMarketplaceLink(links.sprintLink, teamsTracking),
       headline: 'Harden one AI-agent workflow before scaling it team-wide.',
       description: [
-        'ThumbGate Teams starts with a Setup Sprint: one workflow, one owner, one repeated failure, one proof review.',
-        'The sprint turns repeated AI-agent mistakes into shared prevention gates, audit-ready evidence, and a rollout path for teams that need approvals, compliance, and repeatability.'
+        'Start with the free local CLI. Pro adds recall, dashboard, adapters, and exports. Compare current plans at https://thumbgate.ai/pricing.',
+        'Operators configure and validate their own prevention gates and rollout; software plans do not include implementation services.'
       ].join(' '),
       buyer: 'Teams with one valuable AI-agent workflow that keeps repeating the same mistake or losing operational context.',
       conversionGoal: 'qualified_team_conversation',
@@ -192,7 +192,7 @@ function buildAiventyxNinetyDayPlan() {
       {
         window: 'days_31_60',
         goal: 'Optimize headline, screenshots, and CTA order around the listing that produces the highest paid-intent rate.',
-        decision: 'If free installs happen without paid intent, move Pro proof and sprint qualification higher in the listing.',
+        decision: 'If free installs happen without paid intent, move Pro proof and Pro checkout higher in the listing.',
       },
       {
         window: 'days_61_90',
@@ -335,7 +335,7 @@ function renderAiventyxMarketplaceMarkdown(plan) {
     '',
     'Attribution contract:',
     '- Use only the tracked first-party CTAs below so Aiventyx clicks land with explicit source, medium, campaign, and offer metadata.',
-    '- Free routes through `/go/install`, Pro routes through `/go/pro`, and Teams routes to the sprint intake with Aiventyx UTMs attached.',
+    '- Free routes through `/go/install` and self-serve Pro through `/go/pro`, with Aiventyx UTMs attached. Managed sprint offers are retired.',
     '',
     'Milestones:',
     ...plan.ninetyDayPlan.milestones.flatMap((milestone) => [

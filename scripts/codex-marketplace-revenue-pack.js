@@ -40,7 +40,7 @@ function buildCodexRevenueLinks(baseLinks = buildRevenueLinks()) {
     appOrigin: CODEX_PUBLIC_APP_ORIGIN,
     guideLink: `${CODEX_PUBLIC_APP_ORIGIN}/guide`,
     proCheckoutLink: `${CODEX_PUBLIC_APP_ORIGIN}/checkout/pro`,
-    sprintLink: `${CODEX_PUBLIC_APP_ORIGIN}/#workflow-sprint-intake`,
+    sprintLink: `${CODEX_PUBLIC_APP_ORIGIN}/pricing`,
   };
 }
 
@@ -144,21 +144,6 @@ function buildListingCopy(links = buildCodexRevenueLinks()) {
         surface: 'codex_post_install',
       }),
     },
-    {
-      key: 'sprint',
-      label: 'Setup Sprint',
-      pricing: 'Intake-led sprint, then Team at $49/seat/mo with 3-seat minimum after qualification',
-      buyer: 'Teams that already named one repeated workflow failure, one owner, and one approval boundary.',
-      cta: buildTrackedCodexLink(links.sprintLink, {
-        utmCampaign: 'codex_team_follow_on',
-        utmContent: 'workflow_sprint',
-        campaignVariant: 'teams_follow_on',
-        offerCode: 'CODEX-TEAMS_FOLLOW_ON',
-        ctaId: 'codex_team_follow_on',
-        ctaPlacement: 'post_install',
-        surface: 'codex_post_install',
-      }),
-    },
   ];
 
   return {
@@ -211,7 +196,7 @@ function buildOperatorQueue(links = buildCodexRevenueLinks()) {
       evidence: 'plugins/claude-codex-bridge/README.md already positions Codex as a review surface inside the same ThumbGate memory loop.',
       proofTrigger: 'They already rely on Claude Code and want a Codex review or second-pass workflow without losing local gates.',
       proofAsset: BRIDGE_README_URL,
-      recommendedMotion: 'Lead with one workflow, one owner, one proof review and route to the sprint intake.',
+      recommendedMotion: 'Start with local evaluation and compare current free and self-serve Pro software plans.',
       nextAskBase: links.sprintLink,
       tracking: {
         utmCampaign: 'codex_bridge_team_motion',
@@ -229,7 +214,7 @@ function buildOperatorQueue(links = buildCodexRevenueLinks()) {
       evidence: 'plugins/codex-profile/README.md documents the standalone bundle, repo-local plugin surface, and auto-updating manual MCP profile.',
       proofTrigger: 'They care about controlled rollout, support docs, and proof links more than raw plugin novelty.',
       proofAsset: INSTALL_DOC_URL,
-      recommendedMotion: 'Qualify the team for the Setup Sprint before pitching Team expansion.',
+      recommendedMotion: 'Evaluate free local checks and compare current software plans before discussing Team expansion.',
       nextAskBase: links.sprintLink,
       tracking: {
         utmCampaign: 'codex_repo_rollout',
@@ -279,13 +264,13 @@ function buildOutreachDrafts(links = buildCodexRevenueLinks()) {
       key: 'proof_first_team',
       channel: 'Founder note',
       audience: 'Platform lead or consultancy owner',
-      draft: `I am not pitching another agent platform. I am pitching one Codex-adjacent workflow that becomes safe enough to ship because the repeated mistake gets turned into a Pre-Action Check and the proof stays inspectable. If your team already has one owner and one repeated approval-boundary failure, the next useful step is the Setup Sprint intake: ${sprintLink} .`,
+      draft: `I am not pitching another agent platform. I am pitching one Codex-adjacent workflow that becomes safe enough to ship because the repeated mistake gets turned into a Pre-Action Check and the proof stays inspectable. If your team already has one owner and one repeated approval-boundary failure, the next useful step is the self-serve ThumbGate Pro plans: ${sprintLink} .`,
     },
     {
       key: 'bridge_lane',
       channel: 'Reply or follow-up comment',
       audience: 'Claude Code team evaluating Codex as a second reviewer',
-      draft: `If the team already trusts Claude Code but wants a Codex second-pass lane, ThumbGate keeps the same local feedback memory while Codex handles review or adversarial review. The bridge surface is here: ${BRIDGE_README_URL} . If that maps to a real workflow with one owner, route it to the sprint intake instead of a generic plugin pitch.`,
+      draft: `If the team already trusts Claude Code but wants a Codex second-pass lane, ThumbGate keeps the same local feedback memory while Codex handles review or adversarial review. The bridge surface is here: ${BRIDGE_README_URL} . If that maps to a real workflow, evaluate the local checks and compare current software plans; implementation services are not included.`,
     },
   ];
 }
@@ -293,7 +278,7 @@ function buildOutreachDrafts(links = buildCodexRevenueLinks()) {
 function buildMeasurementPlan() {
   return {
     northStar: 'codex_install_to_paid_intent',
-    policy: 'Treat Codex installs as useful only when they produce a tracked Pro checkout start or a qualified sprint conversation.',
+    policy: 'Treat Codex installs as useful only when they produce a tracked Pro checkout start or a qualified product inquiry.',
     metrics: [
       'codex_plugin_page_visits',
       'codex_bundle_downloads',
@@ -314,7 +299,7 @@ function buildCodexMarketplaceRevenuePack(links = buildCodexRevenueLinks(), abou
   return {
     generatedAt: new Date().toISOString(),
     channel: 'Codex',
-    objective: 'Turn Codex plugin interest into proof-backed installs, Pro checkout starts, and qualified workflow sprint conversations.',
+    objective: 'Turn Codex plugin interest into proof-backed installs, Pro checkout starts, and qualified product conversations.',
     canonicalIdentity: {
       displayName: 'ThumbGate for Codex',
       repositoryUrl: about.repositoryUrl,

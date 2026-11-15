@@ -249,7 +249,7 @@ function buildReadyTargetLanes(report = {}) {
     {
       key: 'workflow_hardening',
       label: 'Send Now: Codex-Adjacent Workflow Hardening',
-      motion: 'Setup Sprint',
+      motion: 'ThumbGate Pro',
       summary: 'Use these when the buyer already named one repeated failure, mature review boundary, or rollout risk.',
       targets: workflowTargets,
     },
@@ -328,13 +328,13 @@ function buildCodexPluginSurfaces(links = buildRevenueLinks(), about = readGitHu
       name: 'Proof-backed setup guide',
       role: 'Self-serve activation surface after install intent',
       operatorStatus: 'Use when the buyer wants steps, proof, and Commercial Truth before checkout.',
-      buyer: 'Codex users who need setup clarity and proof before they decide between free install, Pro, or workflow hardening.',
+      buyer: 'Codex users who need setup clarity and proof before they decide between free install or self-serve Pro.',
       conversionGoal: 'setup_guide_to_paid_intent',
       submissionUrl: links.guideLink,
       shortDescription: 'Proof-backed setup path for Codex buyers who want the install flow, Commercial Truth, and verification evidence in one place.',
       longDescription: [
         'Send the setup guide after the buyer already wants the tool path.',
-        'Keep the guide as the self-serve bridge between Codex install intent and either Pro checkout or the Setup Sprint.',
+        'Keep the guide as the self-serve bridge between Codex install intent and self-serve Pro checkout.',
       ],
       supportPath: 'docs/CODEX_PLUGIN_OPERATIONS.md',
       baseUrl: 'guide',
@@ -386,14 +386,6 @@ function buildFollowOnOffers(links = buildRevenueLinks()) {
     planId: 'pro',
     surface: 'codex_follow_on',
   });
-  const sprintTracking = buildCodexTrackingMetadata('sprint_follow_on', {
-    utmMedium: SETUP_GUIDE_MEDIUM,
-    utmCampaign: 'codex_sprint_follow_on',
-    utmContent: 'workflow_sprint',
-    ctaPlacement: 'codex_follow_on',
-    ctaId: 'codex_sprint_follow_on',
-    surface: 'codex_follow_on',
-  });
 
   return [
     {
@@ -403,13 +395,7 @@ function buildFollowOnOffers(links = buildRevenueLinks()) {
       buyer: 'Solo Codex operators who want the self-serve dashboard and proof-ready exports after install.',
       cta: buildTrackedCodexLink(links.proCheckoutLink, proTracking),
     },
-    {
-      key: 'teams',
-      label: 'Setup Sprint',
-      pricingModel: 'Setup Sprint, then Team at $49/seat/mo with 3-seat minimum after qualification',
-      buyer: 'Teams who already named one repeated Codex-adjacent workflow failure and need rollout proof.',
-      cta: buildTrackedCodexLink(links.sprintLink, sprintTracking),
-    },
+
   ];
 }
 
@@ -433,18 +419,18 @@ function buildMeasurementPlan() {
       },
       {
         window: 'days_31_60',
-        goal: 'Promote whichever paid motion converts better after Codex install intent: Pro or Setup Sprint.',
+        goal: 'Evaluate whether self-serve Pro features fit buyers after free install.',
         decision: 'If setup-guide traffic rises without paid intent, move the proof-backed offer stack higher on the Codex page and guide.',
       },
       {
         window: 'days_61_90',
-        goal: 'Decide whether Codex remains a self-serve lane or becomes a workflow-hardening entry point for teams.',
-        decision: 'Only prioritize team rollout motion when qualified conversations exist.',
+        goal: 'Evaluate the self-serve Codex install and upgrade journey.',
+        decision: 'Use buyer feedback to improve install clarity without promising implementation services.',
       },
     ],
     successThresholds: {
-      minimumUsefulSignal: 'one tracked Pro checkout start or one qualified workflow-hardening conversation',
-      strongSignal: 'three tracked paid-intent events across Pro or Setup Sprint motion',
+      minimumUsefulSignal: 'one buyer-confirmed Pro checkout start',
+      strongSignal: 'three buyer-confirmed Pro checkout starts',
       doNotCountAsSuccess: [
         'page views without guide clicks',
         'bundle downloads without a tracked follow-on event',
@@ -467,7 +453,7 @@ function buildOperatorSequences(links = buildRevenueLinks()) {
     utmContent: 'guide',
     surface: 'codex_setup_guide',
   }));
-  const [proOffer, sprintOffer] = buildFollowOnOffers(links);
+  const [proOffer] = buildFollowOnOffers(links);
 
   return [
     {
@@ -482,9 +468,9 @@ function buildOperatorSequences(links = buildRevenueLinks()) {
       key: 'setup_guide_follow_up',
       trigger: 'Buyer already wants the tool path and asks for steps, proof, or setup clarity.',
       evidence: 'The setup guide is the designated self-serve bridge between Codex install intent and paid intent.',
-      goal: 'Move install intent into either a qualified sprint conversation or a tracked Pro checkout start.',
+      goal: 'Move install intent into either a qualified product inquiry or a tracked Pro checkout start.',
       cta: guideCta,
-      draft: `Here is the proof-backed Codex setup guide: ${guideCta} . Use it when the buyer wants the exact install flow plus Commercial Truth and verification evidence before choosing between free install, Pro, or a workflow-hardening conversation.`,
+      draft: `Here is the proof-backed Codex setup guide: ${guideCta} . Use it when the buyer wants the exact install flow plus Commercial Truth and verification evidence before choosing between free install or self-serve Pro.`,
     },
     {
       key: 'post_proof_pro_upgrade',
@@ -497,10 +483,10 @@ function buildOperatorSequences(links = buildRevenueLinks()) {
     {
       key: 'workflow_hardening_escalation',
       trigger: 'Team already named one repeated approval-boundary, handoff, or rollout failure.',
-      evidence: 'The Setup Sprint remains the primary paid motion when one owner and one repeated failure are explicit.',
-      goal: 'Move team pain into a qualified workflow-hardening conversation.',
-      cta: sprintOffer.cta,
-      draft: `If one approval, handoff, or rollout failure keeps repeating around Codex or a neighboring review lane, route it to the Setup Sprint instead of a generic plugin pitch: ${sprintOffer.cta} . That keeps the conversation anchored on one workflow, one owner, and one proof review.`,
+      evidence: 'Pro is a self-serve software subscription; operators implement and validate their own checks.',
+      goal: 'Help the team evaluate local checks and current software plans.',
+      cta: proOffer.cta,
+      draft: `If one approval, handoff, or rollout failure keeps repeating around Codex or a neighboring review lane, evaluate the free local CLI and compare self-serve Pro: ${proOffer.cta} . Operators configure and validate their own checks; Pro does not include implementation or a proof review.`,
     },
   ];
 }

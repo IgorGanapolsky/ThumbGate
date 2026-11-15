@@ -127,14 +127,17 @@ test('IAM escalation and Bedrock/Agent tool expansion are treated as owner-appro
   assert.ok(agent.requiredEvidence.some((entry) => entry.id === 'agent-tool-allowlist'));
 });
 
-test('hardening offer converts AWS Blocks news into one paid diagnostic path', () => {
+test('hardening offer converts AWS Blocks news into self-serve software evaluation', () => {
   const offer = buildAwsBlocksHardeningOffer({
     workflow: 'customer onboarding backend',
     buyer: 'AI platform lead',
   });
 
-  assert.equal(offer.offer, 'AWS Blocks Agent Safety Review');
-  assert.equal(offer.diagnosticPrice, '$499');
+  assert.equal(offer.offer, 'Self-serve ThumbGate Pro');
+  assert.equal(offer.diagnosticPrice, undefined);
+  assert.equal(offer.pricingUrl, 'https://thumbgate.ai/pricing');
+  assert.equal(offer.checkoutUrl, 'https://thumbgate.ai/checkout/pro');
+  assert.match(offer.fulfillment, /operator responsibility/);
   assert.match(offer.headline, /AWS Blocks helps agents build/);
   assert.ok(offer.proofPlan.some((step) => /deploy, destroy, data mutation, IAM, Bedrock Agent/.test(step)));
 });
@@ -161,5 +164,5 @@ test('CLI renders the hardening offer in text mode', () => {
   ], { encoding: 'utf8' });
 
   assert.match(stdout, /thumbgate-aws-blocks-hardening-offer: ready-for-positioning/);
-  assert.match(stdout, /map one AWS Blocks local-to-cloud workflow/);
+  assert.match(stdout, /Identify your AWS Blocks local-to-cloud action boundaries/);
 });

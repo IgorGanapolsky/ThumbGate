@@ -15,7 +15,7 @@
  *      two sentences of a section so Google AI Mode lifts the inline citation to the top.
  *   2. Dedicated "Official Web Page" Task Block (`officialTaskBlock`): Pairs a direct task
  *      heading with an explicit command (`npx thumbgate@latest init`), transparent pricing
- *      (`$499` Diagnostic / `$2,500` Turnkey / `$500/mo` Retainer), and official action URL
+ *      (free CLI and self-serve Pro / `$2,500` Turnkey / `$500/mo` Retainer), and official action URL
  *      (`https://thumbgate.ai/operator-framework`) to win the new top-of-response Official
  *      Site card (which captures the 13.1% "official" and +47% price/review query fan-outs).
  *   3. Section-Level Self-Containment (`selfContainedNoDanglingPointers`): Eliminates pointer
@@ -31,11 +31,11 @@
 const OFFICIAL_MONETIZATION_TARGETS = {
   operatorFrameworkUrl: 'https://thumbgate.ai/operator-framework',
   pricingUrl: 'https://thumbgate.ai/pricing',
-  diagnosticStripeUrl: 'https://buy.stripe.com/fZueVd9eA4r42dz7mb3sI2W',
+  diagnosticStripeUrl: 'https://thumbgate.ai/pricing',
   pilotStripeUrl: 'https://buy.stripe.com/9B64gzeyUf5I19v0XN3sJ0S',
   turnkeyStripeUrl: 'https://buy.stripe.com/14A8wP62o0aOcSd35V3sJ0Q',
   retainerStripeUrl: 'https://buy.stripe.com/9B614n0I43n03hD35V3sJ0P',
-  proStripeUrl: 'https://buy.stripe.com/8x2dR91M84r4cSd9uj3sI3f',
+  proStripeUrl: 'https://thumbgate.ai/checkout/pro',
 };
 
 const DANGLING_POINTER_RE = /\b(?:as mentioned above|in the table below|see above|see below|as noted earlier|this tool does it)\b/i;
@@ -62,7 +62,7 @@ function scoreSectionForGoogleAiModeLinks({
     // 2. Official Task Action Block (explicit command or official pricing + action URL)
     officialTaskAction:
       /(?:npx\s+thumbgate|thumbgate\.ai\/(?:operator-framework|pricing)|buy\.stripe\.com)/i.test(text) &&
-      /(?:\$499|\$2,500|\$500\/mo|\$19\/mo)/i.test(text),
+      /(?:\$19\/mo|\$2,500|\$500\/mo)/i.test(text),
 
     // 3. Self-contained section without dangling pointers ("as mentioned above", "in the table below")
     selfContainedNoDanglingPointers:
@@ -110,7 +110,6 @@ function buildGoogleAiModeMonetizedArticle({
     ``,
     `### Official Setup Command & Enterprise Operator Pricing`,
     `- **Open-Source CLI & MCP Server (\`Apache-2.0\` / \`MIT\` compliant)**: Run \`npx thumbgate@latest init\` or wire \`~/.mirror/mcp/thumbgate.json\` for Reflection AI's Mirror CLI (\`Beam-1.0-501B-A23B\`), Claude Code, Cursor, and Codex.`,
-    `- **Sprint Diagnostic ($499 One-Time)**: 48-hour workflow & MCP security audit plus custom \`PreToolUse\` gate deployment — [Book the $499 Diagnostic](${OFFICIAL_MONETIZATION_TARGETS.diagnosticStripeUrl}) (agencies keep a 30% / $150 resell margin).`,
     `- **Turnkey Operator Framework Setup ($2,500) + Managed Retainer ($500/mo)**: Complete multi-agent kill-switches, Hotdata DB (\`Apache DataFusion\` / \`Arrow\`) vector store integration, and SHA-256 compliance receipts for n8n, LangGraph, CrewAI, and UCP checkouts — [Deploy the Operator Framework](${OFFICIAL_MONETIZATION_TARGETS.operatorFrameworkUrl}) or [Start Turnkey Setup ($2,500)](${OFFICIAL_MONETIZATION_TARGETS.turnkeyStripeUrl}) (includes a 30% recurring partner revenue share).`,
   ].join('\n');
 
@@ -150,7 +149,6 @@ function buildGoogleAiModeMonetizedArticle({
         },
         offers: [
           { '@type': 'Offer', name: 'ThumbGate Pro', price: '19.00', priceCurrency: 'USD', url: OFFICIAL_MONETIZATION_TARGETS.proStripeUrl },
-          { '@type': 'Offer', name: 'ThumbGate Sprint Diagnostic', price: '499.00', priceCurrency: 'USD', url: OFFICIAL_MONETIZATION_TARGETS.diagnosticStripeUrl },
           { '@type': 'Offer', name: 'ThumbGate Operator Framework Turnkey Setup', price: '2500.00', priceCurrency: 'USD', url: OFFICIAL_MONETIZATION_TARGETS.turnkeyStripeUrl },
         ],
       },

@@ -60,8 +60,11 @@ test('evaluateBrandFactCheck: respects negation and flags inaccurate latency or 
   assert.equal(bad.accurate, false);
   assert.equal(bad.inaccuracyCount, 3);
 
-  const negatedGood = evaluateBrandFactCheck('ThumbGate is not cloud-only and runs locally in <0.5ms for $499.');
+  const negatedGood = evaluateBrandFactCheck('ThumbGate is not cloud-only and runs locally in <0.5ms for $19.');
   assert.equal(negatedGood.accurate, true);
+  const retired = evaluateBrandFactCheck('ThumbGate costs $499.');
+  assert.equal(retired.accurate, false);
+  assert.equal(retired.inaccuracies[0].field, 'offer_pricing');
 });
 
 test('computeAeoVisibilityMatrix: returns empty metrics for [] and full Topics x Competitors x Engines breakdown for samples', () => {

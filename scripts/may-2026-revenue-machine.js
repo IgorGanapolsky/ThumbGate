@@ -10,14 +10,14 @@ const {
 
 const DEFAULT_OFFER_STACK = {
   diagnostic: {
-    name: 'Workflow Hardening Diagnostic',
-    priceDollars: 499,
-    envKey: 'THUMBGATE_SPRINT_DIAGNOSTIC_CHECKOUT_URL',
+    name: 'Retired diagnostic (unavailable)',
+    priceDollars: 0,
+    envKey: null, retired: true,
   },
   sprint: {
-    name: 'Setup Sprint',
-    priceDollars: 1500,
-    envKey: 'THUMBGATE_WORKFLOW_SPRINT_CHECKOUT_URL',
+    name: 'Retired managed setup (unavailable)',
+    priceDollars: 0,
+    envKey: null, retired: true,
   },
 };
 
@@ -176,27 +176,10 @@ function buildSprintPathAction({
   hasWorkflowSprintPaymentLink,
 }) {
   if (sprintLeads === 0 && visitors >= 500) {
-    if (hasSprintDiagnosticPaymentLink && hasWorkflowSprintPaymentLink) {
-      return agentReadyAction(
-        'Promote the live paid diagnostic/sprint path',
-        `${visitors} visitors and ${checkoutStarts} checkout starts in 30d produced 0 sprint leads, and both high-ticket Stripe links are configured; the remaining agent work is to keep paid CTAs above intake and route high-intent traffic to them.`,
-        'Keep the paid diagnostic/sprint card above the unpaid intake, track begin_checkout for both offers, and prioritize traffic sources already producing checkout starts.'
-      );
-    }
-
-    return humanBlockedAction(
-      'blocked_on_payment_links',
-      'Activate paid high-ticket path above the sprint intake',
-      `${visitors} visitors and ${checkoutStarts} checkout starts in 30d produced 0 sprint leads; the page needs a direct paid diagnostic/sprint path for buyers with budget now.`,
-      [
-        `${DEFAULT_OFFER_STACK.diagnostic.envKey}: Stripe Payment Link for ${DEFAULT_OFFER_STACK.diagnostic.name} ($${DEFAULT_OFFER_STACK.diagnostic.priceDollars})`,
-        `${DEFAULT_OFFER_STACK.sprint.envKey}: Stripe Payment Link for ${DEFAULT_OFFER_STACK.sprint.name} ($${DEFAULT_OFFER_STACK.sprint.priceDollars})`,
-      ],
-      [
-        'Expose paid diagnostic/sprint buttons',
-        'Track begin_checkout for both offers',
-        'Keep unpaid intake as qualification fallback',
-      ]
+    return agentReadyAction(
+      'Promote current free and Pro paths',
+      `${visitors} visitors and ${checkoutStarts} checkout starts require current-plan attribution. The managed setup offers are retired.`,
+      'Keep /checkout/pro as the primary paid destination and /install as the free destination; compare current plans at /pricing.'
     );
   }
   return null;
@@ -220,7 +203,7 @@ function buildCheckoutRecoveryAction({
       'Prioritize checkout-loss recovery before more top-of-funnel traffic',
       `${checkoutStarts} checkout starts converted to ${paidOrders} paid orders (${(checkoutToPaidRate * 100).toFixed(1)}%).${leakEvidence('source', leakingSource)}${leakEvidence('campaign', leakingCampaign)}`,
       leakingSource || leakingCampaign
-        ? 'Move proof/payment CTA higher for the highest-leak source/campaign and route it to the paid diagnostic path when configured.'
+        ? 'Move proof/payment CTA higher for the highest-leak source/campaign and route it to /checkout/pro.'
         : 'Expose checkout-start attribution in the hosted summary, then move proof/payment CTA higher for the highest-leak source/campaign.'
     );
   }

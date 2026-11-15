@@ -15,6 +15,9 @@ test('buildGoogleAiModeMonetizedArticle: achieves 5/5 (1.0) Google AI Mode link-
   assert.equal(pkg.audit.readyForTopInlineLink, true);
   assert.equal(pkg.audit.readyForOfficialSiteBlock, true);
   assert.equal(pkg.jsonLd['@graph'].length, 2);
+  assert.doesNotMatch(JSON.stringify(pkg), /499|Sprint Diagnostic/);
+  assert.match(JSON.stringify(pkg), /2500/);
+  assert.match(JSON.stringify(pkg), /checkout\/pro/);
 });
 
 test('scoreSectionForGoogleAiModeLinks: penalizes dangling pointers and missing early inline anchors', () => {

@@ -202,7 +202,7 @@ async function probePublicFunnel({ appOrigin, fetchImpl = globalThis.fetch, time
     const checkoutHasEmailInput = /name=["']customer_email["']/i.test(checkoutBody);
     const checkoutRequiresEmailBeforeStripe = /name=["']customer_email["'][^>]*\brequired\b/i.test(checkoutBody);
     const checkoutEmailOptionalBeforeStripe = checkoutHasEmailInput && !checkoutRequiresEmailBeforeStripe;
-    const checkoutLeaksServiceLinks = /https:\/\/buy\.stripe\.com\/|https:\/\/(?:www\.)?paypal\.com\/ncp\/payment\/|Pay \$1 first rule|Pay \$99 teardown|Book \$499 diagnostic|Start \$1500 sprint/.test(checkoutBody);
+    const checkoutLeaksServiceLinks = /https:\/\/buy\.stripe\.com\/|https:\/\/(?:www\.)?paypal\.com\/ncp\/payment\/|Pay \$1 first rule|Pay \$99 teardown|Book \$499 (?:diagnostic|setup)|Start \$1500 sprint/.test(checkoutBody);
 
     return {
       ok: root.ok && checkout.ok && checkoutHasFocusedProCta && checkoutHasFallback && checkoutRequiresEmailBeforeStripe && !checkoutLeaksServiceLinks,

@@ -153,20 +153,6 @@ function buildFollowOnOffers(links = buildMcpDirectoryRevenueLinks()) {
         surface: 'mcp_directory_pro',
       }),
     },
-    {
-      label: 'Setup Sprint',
-      pricing: 'Primary revenue motion',
-      buyer: 'Teams that already named one repeated workflow failure and want rollout proof, not just a directory listing.',
-      cta: buildTrackedDirectoryLink(links.sprintLink, {
-        utmCampaign: 'mcp_directory_sprint',
-        utmContent: 'workflow_sprint',
-        campaignVariant: 'repair_to_team_motion',
-        offerCode: 'MCP-DIRECTORY_SPRINT',
-        ctaId: 'mcp_directory_sprint',
-        ctaPlacement: 'follow_on_offer',
-        surface: 'mcp_directory_sprint',
-      }),
-    },
   ];
 }
 
@@ -248,14 +234,14 @@ function buildOutreachDrafts() {
 function buildMeasurementPlan() {
   return {
     northStar: 'directory_referral_to_paid_intent',
-    policy: 'Treat directory presence as acquisition evidence only after a tracked guide click, install-surface click, or qualified workflow conversation exists.',
-    minimumUsefulSignal: 'One tracked setup-guide visit or workflow-sprint conversation sourced from a repaired directory surface.',
-    strongSignal: 'Three tracked paid-intent events sourced from repaired directory referrals across guide, Pro, or sprint lanes.',
+    policy: 'Treat directory presence as acquisition evidence only after a tracked guide click, install-surface click, or Pro checkout start exists.',
+    minimumUsefulSignal: 'One tracked setup-guide visit or Pro checkout start sourced from a repaired directory surface.',
+    strongSignal: 'Three tracked paid-intent events sourced from repaired directory referrals across guide, Pro, or free install paths.',
     metrics: [
       'directory_referral_clicks',
       'guide_visits_from_directories',
       'codex_plugin_page_visits_from_directories',
-      'workflow_sprint_intake_submissions_from_directories',
+      'free_install_clicks_from_directories',
       'pro_checkout_starts_from_directories',
     ],
     guardrails: [
@@ -272,13 +258,13 @@ function buildMeasurementPlan() {
       },
       {
         window: 'days_31_60',
-        goal: 'Measure whether repaired directory referrals produce guide clicks or qualified workflow conversations.',
+        goal: 'Measure whether repaired directory referrals produce guide clicks or Pro checkout starts.',
         decisionRule: 'If referral clicks exist without paid intent, move proof and install CTAs higher on the linked destination pages.',
       },
       {
         window: 'days_61_90',
         goal: 'Prune low-signal directories and keep only the surfaces that produce tracked downstream intent.',
-        decisionRule: 'If a directory does not create tracked guide clicks or workflow conversations, stop treating it as an active acquisition lane.',
+        decisionRule: 'If a directory does not create tracked guide clicks or Pro checkout starts, stop treating it as an active acquisition lane.',
       },
     ],
     doNotCountAsSuccess: [

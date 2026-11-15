@@ -87,7 +87,7 @@ const MARKETPLACE_SIGNAL_THEMES = [
     key: 'warm_discovery',
     label: 'Warm discovery workflows',
     summary: 'Warm inbound engagers already named rollback risk, brittle guardrails, or review-boundary pain.',
-    listingAngle: 'Lead with one repeated workflow failure and a founder-led diagnostic before any generic tool pitch.',
+    listingAngle: 'Lead with configurable local checks and current free and self-serve Pro software plans.',
     match: (target) => normalizeText(target.temperature).toLowerCase() === 'warm',
   },
   {
@@ -122,8 +122,8 @@ const MARKETPLACE_SIGNAL_THEMES = [
 const MARKETPLACE_VARIANT_TEMPLATES = {
   warm_discovery: {
     audience: 'Warm buyers who already named a repeated workflow failure.',
-    headline: 'Turn one repeated AI-agent workflow failure into a proof-backed sprint.',
-    shortDescription: 'Lead with one concrete workflow failure, then offer a founder-led hardening diagnostic before any generic tool pitch.',
+    headline: 'Evaluate local checks for repeated AI-agent workflow failures.',
+    shortDescription: 'Start with one concrete workflow failure and the free local CLI. Pro is a self-serve software subscription.',
     primaryMotion: 'sprint',
     secondaryMotion: 'guide',
   },
@@ -162,7 +162,7 @@ const CLAIM_GUARDRAILS = [
   'Keep public pricing and traction claims aligned with COMMERCIAL_TRUTH.md.',
   'Keep proof and quality claims aligned with VERIFICATION_EVIDENCE.md.',
 ];
-const OFFER_SPLIT_RULE = 'Use Pro after one blocked repeat or explicit self-serve install intent. Use the Setup Sprint when one workflow owner needs approval boundaries, rollback safety, and proof before wider rollout.';
+const OFFER_SPLIT_RULE = 'Start with the free local CLI and compare self-serve Pro when its features fit the workflow. The operator owns implementation and approval boundaries.';
 const TERMINAL_PIPELINE_STAGES = new Set(['paid', 'lost']);
 const PIPELINE_STAGE_PRIORITY = {
   sprint_intake: 6,
@@ -512,7 +512,7 @@ function buildTargetSalesCommands(target = {}) {
   const channel = normalizeText(target.channel) || normalizeText(target.source) || 'manual';
   const pain = buildTargetPainHypothesis(target);
   const motionKey = normalizeText(target.motion) || normalizeText(target.selectedMotion?.key);
-  const motionLabel = normalizeText(target.motionLabel) || normalizeText(target.selectedMotion?.label) || 'Setup Sprint';
+  const motionLabel = normalizeText(target.motionLabel) || normalizeText(target.selectedMotion?.label) || 'ThumbGate Pro';
   const commandBase = { lead: leadId, channel };
   const isProMotion = motionKey === 'pro';
 
@@ -542,8 +542,8 @@ function buildTargetSalesCommands(target = {}) {
       'evidence-source': 'REPLACE_WITH_CALENDAR_PROVIDER',
       'evidence-ref': 'REPLACE_WITH_BOOKING_RECEIPT',
       note: isProMotion
-        ? `Booked a 15-minute diagnostic after the self-serve conversation exposed repeated pain around ${pain}.`
-        : `Booked a 15-minute workflow hardening diagnostic for ${pain}.`,
+        ? `Booked a product discussion after the self-serve conversation exposed repeated pain around ${pain}.`
+        : `Booked a product discussion for ${pain}.`,
     }),
     markCheckoutStarted: buildSalesPipelineCommand('advance', {
       ...commandBase,
@@ -664,7 +664,7 @@ function buildRevenueLinks(config = resolveHostedBillingConfig({
     appOrigin,
     guideLink: `${appOrigin}/guide`,
     proCheckoutLink: `${appOrigin}/checkout/pro`,
-    sprintLink: `${appOrigin}/#workflow-sprint-intake`,
+    sprintLink: `${appOrigin}/pricing`,
     commercialTruthLink: COMMERCIAL_TRUTH_LINK,
     verificationEvidenceLink: VERIFICATION_EVIDENCE_LINK,
     proPriceLabel: '$19/mo or $149/yr',
@@ -684,7 +684,7 @@ function buildMotionCatalog(links = buildRevenueLinks()) {
     },
     sprint: {
       key: 'sprint',
-      label: 'Setup Sprint',
+      label: 'ThumbGate Pro',
       audience: 'Teams with one production workflow, one owner, and one repeated failure pattern blocking rollout.',
       cta: links.sprintLink,
       proof: links.verificationEvidenceLink,
@@ -1004,14 +1004,14 @@ function deriveRevenueDirective(
     const liveHostedRevenue = verification?.mode === 'live-hosted';
     return {
       state: 'post-first-dollar',
-      objective: 'Scale the first-10-customers loop with direct workflow hardening and self-serve follow-up.',
+      objective: 'Scale the first-10-customers loop with free local evaluation and self-serve Pro.',
       primaryMotion: motionCatalog.sprint.key,
       secondaryMotion: motionCatalog.pro.key,
       headline: liveHostedRevenue
-        ? 'Verified booked revenue exists. Keep selling one concrete Setup Sprint first, then route self-serve buyers to Pro.'
-        : 'Historical booked revenue is verified, but the current hosted billing summary is unavailable in this run. Keep selling one concrete Setup Sprint first, then route self-serve buyers to Pro.',
+        ? 'Verified booked revenue exists. Offer free local evaluation and self-serve Pro when its features fit.'
+        : 'Historical booked revenue is verified, but the current hosted billing summary is unavailable in this run. Offer free local evaluation and self-serve Pro when its features fit.',
       actions: [
-        'Reply to every qualified lead with one offer: "I will harden one AI-agent workflow for you."',
+        'Reply to every qualified lead with one offer: "Try the free local CLI or choose self-serve Pro for recall, dashboard, adapters, and exports."',
         'Use the proof pack after the buyer names the repeated workflow pain, not as the opener.',
         'Route buyers who only want a tool to the Pro monthly/annual checkout after the pain is qualified.',
         'Publish only booked revenue and paid-order proof from the billing summary or named pilot agreements.',
@@ -1028,10 +1028,10 @@ function deriveRevenueDirective(
       objective: 'Convert existing interest into the first paid orders without inventing traction.',
       primaryMotion: motionCatalog.sprint.key,
       secondaryMotion: motionCatalog.pro.key,
-      headline: 'Interest exists but paid conversion is still zero. Sell the Setup Sprint first; Pro is self-serve follow-up.',
+      headline: 'Interest exists but paid conversion is still zero. Help buyers evaluate free local checks and self-serve Pro.',
       actions: [
-        'Follow up on every checkout start or lead within one business day with one concrete workflow-hardening offer.',
-        'Track every lead as contacted -> replied -> call booked -> checkout or sprint intake -> paid.',
+        'Follow up on every checkout start or lead within one business day with the free local guide and current self-serve software plans.',
+        'Track every lead as contacted -> replied -> call booked -> buyer-confirmed Pro checkout -> paid.',
         'Use Commercial Truth and Verification Evidence only after pain is confirmed to reduce buyer risk.',
       ],
     };
@@ -1039,14 +1039,14 @@ function deriveRevenueDirective(
 
   return {
     state: 'cold-start',
-    objective: 'Land the first 10 paying customers with founder-led workflow hardening.',
+    objective: 'Help buyers evaluate free software and choose self-serve Pro when its features fit.',
     primaryMotion: motionCatalog.sprint.key,
     secondaryMotion: motionCatalog.pro.key,
-    headline: 'No verified revenue and no active pipeline. Stop treating posts as sales; directly sell one Setup Sprint.',
+    headline: 'No verified revenue and no active pipeline. Stop treating posts as sales; offer free local evaluation and current self-serve Pro plans.',
     actions: [
-      'Directly contact qualified buyers with: "I will harden one AI-agent workflow for you."',
-      'Use Pro at $19/mo or $149/yr only as the self-serve follow-up after the buyer asks for the tool path.',
-      'Track every lead as contacted -> replied -> call booked -> checkout or sprint intake -> paid.',
+      'Directly contact qualified buyers with: "Try the free local CLI or choose self-serve Pro for recall, dashboard, adapters, and exports."',
+      'Link directly to /checkout/pro for self-serve Pro or /install for the free CLI.',
+      'Track every lead as contacted -> replied -> call booked -> buyer-confirmed Pro checkout -> paid.',
       'Treat stars, traffic, and model praise as noise until they become paid orders or named pilot agreements.',
     ],
   };
@@ -1265,7 +1265,7 @@ function analyzeTargetEvidence(target) {
     score = Math.max(0, score - 4);
   }
 
-  let outreachAngle = 'Pitch one repeated workflow failure, then offer proof-backed hardening instead of a generic tool trial.';
+  let outreachAngle = 'Pitch one repeated workflow failure, then offer a local guide for configuring and validating checks.';
   if (/\b(jira|github|gitlab|microsoft ?365|office|google drive|calendar|slack|salesforce|crm|analytics)\b/.test(haystack)) {
     outreachAngle = 'Lead with one business-system workflow that needs approval boundaries, rollback safety, and proof.';
   } else if (isSelfServeToolingProspect(target)) {
@@ -1413,7 +1413,7 @@ function selectOutreachMotion(target, motionCatalog = buildMotionCatalog()) {
     return {
       key: motionCatalog.pro.key,
       label: motionCatalog.pro.label,
-      reason: 'Target looks like a local hook, plugin, or config surface, so start with the setup guide and Pro follow-on before pitching a sprint.',
+      reason: 'Target looks like a local hook, plugin, or config surface, so start with the setup guide and compare self-serve Pro features.',
     };
   }
 
@@ -1429,7 +1429,7 @@ function selectOutreachMotion(target, motionCatalog = buildMotionCatalog()) {
     key: motionCatalog.sprint.key,
     label: motionCatalog.sprint.label,
     reason: target.evidence?.outreachAngle
-      || 'Target can be approached with one concrete workflow-hardening offer before any generic Pro pitch.',
+      || 'Target can evaluate local checks and compare current free and self-serve Pro plans.',
   };
 }
 
@@ -1465,7 +1465,7 @@ function buildFallbackMessage(target, selectedMotion, motionCatalog = buildMotio
   if (selectedMotion.key === motionCatalog.sprint.key) {
     return [
       `Hey @${target.username}, saw you're shipping ${targetRef}.`,
-      `${buildSprintProblemHook(target)}, I can harden that workflow for you with a prevention gate and proof run: ${motion.cta}`,
+      `${buildSprintProblemHook(target)}, you can configure and validate your own local checks; compare current software plans: ${motion.cta}`,
     ].join(' ');
   }
 
@@ -1483,7 +1483,7 @@ function buildPainConfirmedFollowUp(target, selectedMotion, motionCatalog = buil
   const proRef = repoName ? ` for ${repoRef}` : '';
   if (selectedMotion.key === motionCatalog.sprint.key) {
     return [
-      `If ${repoRef} really has one repeated workflow failure blocking rollout, I can send the Setup Sprint brief plus the commercial truth and verification evidence: ${motion.cta}`,
+      `If ${repoRef} really has one repeated workflow failure blocking rollout, I can send the current software plan comparison plus the commercial truth and verification evidence: ${motion.cta}`,
       `Commercial truth: ${motion.truth} Verification evidence: ${motion.proof}`,
     ].join(' ');
   }
@@ -1508,7 +1508,7 @@ function buildSelfServeFollowUp(target, selectedMotion, motionCatalog = buildMot
 
   return [
     `If you want to inspect the self-serve path while you evaluate ${repoRef}, start with the proof-backed setup guide: ${links.guideLink}`,
-    `If you decide the tool path is enough, the live Pro checkout is ${motionCatalog.pro.cta}. If the blocker needs hands-on workflow hardening, keep the sprint intake here: ${motionCatalog.sprint.cta}`,
+    `Evaluate the free local CLI first. Self-serve Pro checkout is ${motionCatalog.pro.cta}; it does not include hands-on workflow implementation.`,
   ].join(' ');
 }
 
@@ -1536,7 +1536,7 @@ Stay inside current commercial truth. Never invent traction, partners, or scarci
 
 Current public self-serve offer: ${motionCatalog.pro.label}
 Public self-serve checkout: ${motionCatalog.pro.cta}
-Setup Sprint intake: ${motionCatalog.sprint.cta}
+self-serve Pro plans: ${motionCatalog.sprint.cta}
 Commercial truth: ${motionCatalog.pro.truth}
 Verification evidence: ${motionCatalog.pro.proof}
 
@@ -1551,7 +1551,7 @@ Write a short founder-style outreach note in 2 sentences max.
 Sound like a senior engineer, not a marketer.
 Use the recommended motion only.
 Do not lead with proof links. Proof is for after the buyer confirms pain.
-For sprint outreach, make the offer concrete: "I will harden one AI-agent workflow for you."
+For product outreach, describe the current plans: "Try the free local CLI or choose self-serve Pro for recall, dashboard, adapters, and exports."
 `;
 }
 
@@ -1695,7 +1695,7 @@ function buildRevenueLoopReport({ source, fallbackReason, summary, motionCatalog
         pipelineUpdatedAt: normalizeText(target.pipelineUpdatedAt),
         actionEligibility,
         nextOperatorAction: buildNextOperatorAction(pipelineStage, actionEligibility),
-        offer: target.selectedMotion.key === motionCatalog.sprint.key ? 'workflow_hardening_sprint' : 'pro_self_serve',
+        offer: 'pro_self_serve',
         cta: target.selectedMotion.key === motionCatalog.sprint.key
           ? motionCatalog.sprint.cta
           : currentTruth.guideLink,
@@ -2121,7 +2121,7 @@ function renderOperatorPriorityTargetMarkdown(target, index) {
     `- Log after pain-confirmed reply: \`${salesCommands.markReplied || 'n/a'}\``,
     `- Log after call booked: \`${salesCommands.markCallBooked || 'n/a'}\``,
     `- Log after checkout started: \`${salesCommands.markCheckoutStarted || 'n/a'}\``,
-    `- Log after sprint intake: \`${salesCommands.markSprintIntake || 'n/a'}\``,
+    `- Log historical sprint intake: \`${salesCommands.markSprintIntake || 'n/a'}\``,
     `- Log after paid: \`${salesCommands.markPaid || 'n/a'}\``,
     `- Contact surface: ${contactSurface}`,
     `- Contact surfaces: ${contactSurfaces}`,
@@ -2282,7 +2282,7 @@ function buildOperatorHandoffPayload(report) {
     },
     operatorRules: [
       'Import the queue into the sales ledger before sending anything.',
-      'Follow the row motion: sprint rows get one workflow-hardening offer; self-serve rows get the guide-to-Pro lane unless pain is confirmed.',
+      'Follow the row motion: all rows use accurate free CLI and self-serve Pro software copy; managed sprint offers are retired.',
       `Qualify the offer split: ${OFFER_SPLIT_RULE}`,
       'Use VERIFICATION_EVIDENCE.md and COMMERCIAL_TRUTH.md only after the buyer confirms pain.',
       'No row enters a send-now section from a stage label alone; current stage evidence, zero-spend status, receipt chronology, cooldown, and duplicate-follow-up state must all pass.',
@@ -2587,7 +2587,7 @@ function renderOperatorSendNowMarkdown(report) {
             `- Log after pain-confirmed reply: \`${row.markRepliedCommand || 'n/a'}\``,
             `- Log after call booked: \`${row.markCallBookedCommand || 'n/a'}\``,
             `- Log after checkout started: \`${row.markCheckoutStartedCommand || 'n/a'}\``,
-            `- Log after sprint intake: \`${row.markSprintIntakeCommand || 'n/a'}\``,
+            `- Log historical sprint intake: \`${row.markSprintIntakeCommand || 'n/a'}\``,
             `- Log after paid: \`${row.markPaidCommand || 'n/a'}\``,
             '',
             'First-touch draft:',
@@ -2634,7 +2634,7 @@ function renderOperatorSendNowMarkdown(report) {
     '',
     '## Batch Rules',
     '- Import the queue into the sales ledger before sending anything.',
-    '- Keep the offer split honest: sprint rows get one workflow-hardening offer; self-serve rows get the guide-to-Pro lane unless pain is confirmed.',
+    '- Keep the offer split honest: all rows use accurate free CLI and self-serve Pro software copy; managed sprint offers are retired.',
     `- Qualify the offer split: ${OFFER_SPLIT_RULE}`,
     '- Use [VERIFICATION_EVIDENCE.md](../VERIFICATION_EVIDENCE.md) and [COMMERCIAL_TRUTH.md](../COMMERCIAL_TRUTH.md) only after the buyer confirms pain.',
     '',
@@ -2657,7 +2657,7 @@ function renderTeamOutreachMessagesMarkdown(report) {
     : ['- No approval-ready warm discovery targets were loaded for this run.', ''];
 
   return [
-    '# Setup Sprint Outreach Messages',
+    '# ThumbGate Pro Outreach Messages',
     '',
     `Updated: ${report.generatedAt}`,
     '',
@@ -2672,9 +2672,9 @@ function renderTeamOutreachMessagesMarkdown(report) {
     '',
     'Use them as part of the one-week discovery loop in [CUSTOMER_DISCOVERY_SPRINT.md](../CUSTOMER_DISCOVERY_SPRINT.md). The goal is not to sell on first touch. The goal is to learn whether the real buyer problem is team agent governance, approval boundaries, and rollout proof.',
     '',
-    'First-touch rule: lead with one concrete offer, not generic Pro and not the proof pack.',
+    'First-touch rule: describe free local evaluation and self-serve Pro accurately; send proof after the buyer confirms pain.',
     '',
-    '> I will harden one AI-agent workflow for you.',
+    '> Try the free local CLI or choose self-serve Pro for recall, dashboard, adapters, and exports.',
     '',
     'Use [VERIFICATION_EVIDENCE.md](../VERIFICATION_EVIDENCE.md) and [COMMERCIAL_TRUTH.md](../COMMERCIAL_TRUTH.md) only after the buyer confirms the workflow pain.',
     '',

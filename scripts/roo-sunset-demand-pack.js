@@ -214,7 +214,7 @@ function buildEvidenceSurfaces(links, about) {
       supportUrl: COMMERCIAL_TRUTH_LINK,
       evidenceSource: 'docs/VERIFICATION_EVIDENCE.md',
       operatorUse: 'Send only after the buyer confirms the workflow pain or asks for proof and commercial truth.',
-      buyerSignal: 'Pain-confirmed Roo migrants who need evidence before choosing Pro or a workflow sprint.',
+      buyerSignal: 'Pain-confirmed Roo migrants who need evidence before choosing free install or self-serve Pro.',
     },
   ].map((surface) => ({
     ...surface,
@@ -240,21 +240,6 @@ function buildFollowOnOffers(links = buildRevenueLinks()) {
         ctaId: 'roo_follow_on_pro',
         ctaPlacement: 'post_install',
         planId: 'pro',
-        surface: 'roo_follow_on',
-      }),
-    },
-    {
-      key: 'sprint',
-      label: 'Setup Sprint',
-      pricing: 'Intake-led sprint, then Team at $49/seat/mo with 3-seat minimum after qualification',
-      buyer: 'Teams that already know their Roo migration touches one production workflow with approval boundaries, rollback risk, or bad handoffs.',
-      cta: buildTrackedRooLink(links.sprintLink, {
-        utmCampaign: 'roo_follow_on_sprint',
-        utmContent: 'workflow_sprint',
-        campaignVariant: 'team_follow_on',
-        offerCode: 'ROO-FOLLOW_ON_SPRINT',
-        ctaId: 'roo_follow_on_sprint',
-        ctaPlacement: 'post_install',
         surface: 'roo_follow_on',
       }),
     },
@@ -298,11 +283,11 @@ function buildOperatorQueue(links, report) {
         ctaPlacement: 'operator_queue',
         surface: 'roo_outreach',
       }),
-      recommendedMotion: 'Setup Sprint first. Use proof only after the workflow risk is explicit.',
+      recommendedMotion: 'ThumbGate Pro first. Use proof only after the workflow risk is explicit.',
     },
     {
       key: 'roo_self_serve_evaluator',
-      audience: 'Local-first buyer who wants the tool path before founder-led help',
+      audience: 'Local-first buyer evaluating self-serve software',
       evidence: `${backstop.selfServeTargetCount} self-serve target(s) in the live queue already skew toward guide-first evaluation once the migration urgency is understood.`,
       proofTrigger: 'They ask for install, pricing, or the dashboard path instead of workflow consulting.',
       proofAsset: GUIDE_URL,
@@ -333,13 +318,13 @@ function buildOutreachDrafts(links = buildRevenueLinks()) {
       key: 'proof_after_pain',
       channel: 'Pain-confirmed follow-up',
       audience: 'Buyer who already named one repeated workflow failure',
-      draft: `Once the migration risk is concrete, move from urgency to proof. Send Verification Evidence plus Commercial Truth first: ${VERIFICATION_EVIDENCE_LINK} and ${COMMERCIAL_TRUTH_LINK} . If they want the self-serve lane, use ${guideLink} then ${proLink} . If they want help hardening one workflow before rollout, route them to ${sprintLink} .`,
+      draft: `Once the migration risk is concrete, move from urgency to proof. Send Verification Evidence plus Commercial Truth first: ${VERIFICATION_EVIDENCE_LINK} and ${COMMERCIAL_TRUTH_LINK} . If they want the self-serve lane, use ${guideLink} then ${proLink} . Free and Pro are software plans; they do not include workflow implementation.`,
     },
     {
       key: 'workflow_owner_note',
       channel: 'Founder note',
       audience: 'Team owner migrating one production workflow off Roo',
-      draft: `A Roo-to-Cline move is not the hard part. Keeping one risky workflow from relearning the same repo, approval, or rollback mistake is the hard part. If that workflow already exists on your side, use the Setup Sprint intake here: ${sprintLink} .`,
+      draft: `A Roo-to-Cline move is not the hard part. Keeping one risky workflow from relearning the same repo, approval, or rollback mistake is the hard part. If that workflow already exists on your side, compare current free and self-serve Pro plans here: ${sprintLink} .`,
     },
   ];
 }
@@ -366,7 +351,7 @@ function buildRooSendNowPayload(report = {}, links = buildRevenueLinks()) {
       firstTouchDraft: `Roo can sunset. Your lesson memory should not. If you already know Cline is the successor, the fastest path is to keep the corrections local and move them with one install lane: ${installLink} .`,
       painConfirmedFollowUpDraft: `If one repeated mistake is the part you do not want to reteach after moving off Roo, send the proof path next: ${VERIFICATION_EVIDENCE_LINK} and ${COMMERCIAL_TRUTH_LINK} . Then use the setup guide ${guideLink} before the Pro path ${proLink} .`,
       toolPathFollowUpDraft: `If you want the clean self-serve route first, start with the setup guide: ${guideLink} . If the install path looks right and you want the dashboard plus proof-ready exports after one saved correction, use Pro here: ${proLink} .`,
-      checkoutCloseDraft: `If the migration path is clear and you already want the self-serve close, use Pro here: ${proLink} . Commercial truth: ${COMMERCIAL_TRUTH_LINK} Verification evidence: ${VERIFICATION_EVIDENCE_LINK}`,
+      checkoutCloseDraft: `Compare free and self-serve Pro plans: ${proLink} . Commercial truth: ${COMMERCIAL_TRUTH_LINK} Verification evidence: ${VERIFICATION_EVIDENCE_LINK}`,
       addLeadCommand: `npm run sales:pipeline -- add --lead 'roo_memory_migrant_<handle>' --source 'roo_sunset' --channel 'github' --username '<handle>' --pain 'Roo migration memory portability and saved corrections' --offer 'pro_self_serve' --campaign 'roo_sunset' --cta '${installLink}'`,
       markContactedCommand: `npm run sales:pipeline -- advance --lead 'roo_memory_migrant_<handle>' --channel 'github' --stage 'contacted' --note 'Sent Roo migration install-first first touch.'`,
       markRepliedCommand: `npm run sales:pipeline -- advance --lead 'roo_memory_migrant_<handle>' --channel 'github' --stage 'replied' --note 'Buyer confirmed migration pain and wants saved corrections to survive the move.'`,
@@ -383,16 +368,16 @@ function buildRooSendNowPayload(report = {}, links = buildRevenueLinks()) {
       audience: 'Team owner migrating one risky workflow off Roo',
       evidence: `${backstop.workflowControlSurfaceCount} workflow-control target(s), ${backstop.businessSystemTargetCount} business-system target(s), and ${backstop.sprintTargetCount} sprint-fit target(s) currently favor a workflow-hardening motion over a generic plugin pitch.`,
       whyNow: 'The shutdown creates urgency, but the strongest monetizable angle is one risky workflow with approval boundaries, rollback risk, or handoff failures.',
-      proofRule: 'Lead with one workflow-hardening offer. Send proof only after the buyer names the workflow risk.',
+      proofRule: 'Lead with the free CLI and self-serve software plans. Send proof only after the buyer names the workflow risk.',
       cta: sprintLink,
-      firstTouchDraft: `A Roo-to-Cline move is not the hard part. Keeping one risky workflow from relearning the same repo, approval, or rollback mistake is the hard part. If that workflow already exists on your side, use the Setup Sprint intake here: ${sprintLink} .`,
-      painConfirmedFollowUpDraft: `Once the workflow risk is explicit, send Verification Evidence plus Commercial Truth before a wider rollout: ${VERIFICATION_EVIDENCE_LINK} and ${COMMERCIAL_TRUTH_LINK} . If they still want the sprint path, keep the intake here: ${sprintLink} .`,
-      toolPathFollowUpDraft: `If the buyer wants the product path before founder-led help, move them to the setup guide ${guideLink} and keep Pro ${proLink} as the self-serve follow-on. If the workflow is still risky, keep the sprint path primary: ${sprintLink} .`,
-      checkoutCloseDraft: `If the team is already comparing close options, keep the Setup Sprint primary: ${sprintLink} . Self-serve Pro is secondary: ${proLink} . Commercial truth: ${COMMERCIAL_TRUTH_LINK} Verification evidence: ${VERIFICATION_EVIDENCE_LINK}`,
-      addLeadCommand: `npm run sales:pipeline -- add --lead 'roo_workflow_owner_<account>' --source 'roo_sunset' --channel 'linkedin' --account '<account>' --pain 'Roo migration workflow with approval boundaries or rollback risk' --offer 'workflow_hardening_sprint' --campaign 'roo_sunset' --cta '${sprintLink}'`,
+      firstTouchDraft: `A Roo-to-Cline move is not the hard part. Keeping one risky workflow from relearning the same repo, approval, or rollback mistake is the hard part. If that workflow already exists on your side, compare current free and self-serve Pro plans here: ${sprintLink} .`,
+      painConfirmedFollowUpDraft: `Once the workflow risk is explicit, send Verification Evidence plus Commercial Truth before a wider rollout: ${VERIFICATION_EVIDENCE_LINK} and ${COMMERCIAL_TRUTH_LINK} . Compare current free and Pro plans at ${proLink} .`,
+      toolPathFollowUpDraft: `Use the setup guide ${guideLink} for local evaluation. Compare self-serve Pro at ${proLink}; the buyer configures and validates their own workflow gates.`,
+      checkoutCloseDraft: `Compare free and self-serve Pro plans: ${proLink} . Commercial truth: ${COMMERCIAL_TRUTH_LINK} Verification evidence: ${VERIFICATION_EVIDENCE_LINK}`,
+      addLeadCommand: `npm run sales:pipeline -- add --lead 'roo_workflow_owner_<account>' --source 'roo_sunset' --channel 'linkedin' --account '<account>' --pain 'Roo migration workflow with approval boundaries or rollback risk' --offer 'pro' --campaign 'roo_sunset' --cta '${sprintLink}'`,
       markContactedCommand: `npm run sales:pipeline -- advance --lead 'roo_workflow_owner_<account>' --channel 'linkedin' --stage 'contacted' --note 'Sent Roo workflow-hardening first touch.'`,
       markRepliedCommand: `npm run sales:pipeline -- advance --lead 'roo_workflow_owner_<account>' --channel 'linkedin' --stage 'replied' --note 'Buyer confirmed one risky workflow during Roo migration.'`,
-      markCheckoutStartedCommand: `npm run sales:pipeline -- advance --lead 'roo_workflow_owner_<account>' --channel 'linkedin' --stage 'sprint_intake' --note 'Buyer started the Setup Sprint intake.'`,
+      markCheckoutStartedCommand: `npm run sales:pipeline -- advance --lead 'roo_workflow_owner_<account>' --channel 'linkedin' --stage 'checkout_started' --evidence-kind 'provider_checkout_session' --evidence-ref 'REPLACE_WITH_PROVIDER_CHECKOUT_SESSION' --note 'Buyer confirmed starting Pro checkout.'`,
       markPaidCommand: `npm run sales:reconcile-payment -- --lead 'roo_workflow_owner_<account>' --payment 'REPLACE_WITH_PAYPAL_PAYMENT_ID'`,
     },
     {
@@ -402,15 +387,15 @@ function buildRooSendNowPayload(report = {}, links = buildRevenueLinks()) {
       sectionLabel: 'Close Now: Self-Serve Evaluators',
       channel: 'github_comment_or_threads_reply',
       pipelineStage: 'targeted',
-      audience: 'Local-first Roo evaluator who wants the tool path before founder-led help',
+      audience: 'Local-first Roo evaluator comparing software plans',
       evidence: `${backstop.selfServeTargetCount} self-serve target(s) in the live queue already support a guide-first motion once the buyer accepts the memory-portability story.`,
       whyNow: 'This lane is the cleanest close for buyers who ask for install, pricing, or the dashboard path instead of workflow consulting.',
       proofRule: 'Guide first, then Commercial Truth and Verification Evidence, then Pro once the buyer explicitly asks for the tool path.',
       cta: guideLink,
       firstTouchDraft: `Roo can go away without taking your agent memory with it. If you want the clean self-serve move first, start with the setup guide here: ${guideLink} .`,
       painConfirmedFollowUpDraft: `If they ask for proof, send Commercial Truth plus Verification Evidence after the guide: ${COMMERCIAL_TRUTH_LINK} and ${VERIFICATION_EVIDENCE_LINK} . If they want the direct paid path next, use Pro here: ${proLink} .`,
-      toolPathFollowUpDraft: `If the buyer already wants the product path, keep it simple: setup guide ${guideLink} then Pro ${proLink} . Do not expand into a workflow sprint unless they name one risky workflow.`,
-      checkoutCloseDraft: `If the buyer is ready for the self-serve close, use Pro here: ${proLink} . Commercial truth: ${COMMERCIAL_TRUTH_LINK} Verification evidence: ${VERIFICATION_EVIDENCE_LINK}`,
+      toolPathFollowUpDraft: `If the buyer already wants the product path, keep it simple: setup guide ${guideLink} then Pro ${proLink} . Operators configure and validate their own workflow checks.`,
+      checkoutCloseDraft: `Compare free and self-serve Pro plans: ${proLink} . Commercial truth: ${COMMERCIAL_TRUTH_LINK} Verification evidence: ${VERIFICATION_EVIDENCE_LINK}`,
       addLeadCommand: `npm run sales:pipeline -- add --lead 'roo_self_serve_evaluator_<handle>' --source 'roo_sunset' --channel 'github' --username '<handle>' --pain 'Needs clean Roo-to-Cline setup path before founder help' --offer 'pro_self_serve' --campaign 'roo_sunset' --cta '${guideLink}'`,
       markContactedCommand: `npm run sales:pipeline -- advance --lead 'roo_self_serve_evaluator_<handle>' --channel 'github' --stage 'contacted' --note 'Sent Roo guide-first self-serve first touch.'`,
       markRepliedCommand: `npm run sales:pipeline -- advance --lead 'roo_self_serve_evaluator_<handle>' --channel 'github' --stage 'replied' --note 'Buyer asked for install, pricing, or dashboard path.'`,
@@ -484,7 +469,7 @@ function buildChannelDrafts(links, report) {
         surface: 'roo_linkedin',
       }),
       proofTiming: 'Public post can reference the shutdown, but hold proof links until the buyer confirms one workflow risk.',
-      draft: `Roo shutting down is a forcing function, not the real problem. The real problem is migrating one live workflow without reteaching approval boundaries, rollback rules, and repo-specific mistakes from zero. If your team already has that workflow in mind, start with the Setup Sprint here: ${buildTrackedRooLink(resolvedLinks.sprintLink, {
+      draft: `Roo shutting down is a forcing function, not the real problem. The real problem is migrating one live workflow without reteaching approval boundaries, rollback rules, and repo-specific mistakes from zero. If your team already has that workflow in mind, compare current software plans here: ${buildTrackedRooLink(resolvedLinks.sprintLink, {
         utmMedium: LINKEDIN_MEDIUM,
         utmCampaign: 'roo_channel_linkedin',
         utmContent: 'workflow_sprint',
@@ -557,9 +542,9 @@ function buildChannelDrafts(links, report) {
 function buildMeasurementPlan() {
   return {
     northStar: 'roo_migration_to_paid_intent',
-    policy: 'Treat Roo migration traffic as acquisition evidence only after a tracked install-doc click, setup-guide click, qualified sprint conversation, or Pro checkout start exists.',
+    policy: 'Treat Roo migration traffic as acquisition evidence only after a tracked install-doc click, setup-guide click, qualified product inquiry, or Pro checkout start exists.',
     minimumUsefulSignal: 'One tracked install-doc click plus one paid-intent event sourced from a Roo-tagged migration surface.',
-    strongSignal: 'Three tracked paid-intent events across sprint conversations or Pro checkout starts sourced from Roo migration surfaces.',
+    strongSignal: 'Three tracked paid-intent events across product inquiries or Pro checkout starts sourced from Roo migration surfaces.',
     metrics: [
       'roo_install_doc_clicks',
       'roo_setup_guide_clicks',
@@ -577,12 +562,12 @@ function buildMeasurementPlan() {
     milestones: [
       {
         window: 'days_0_30',
-        goal: 'Exploit the shutdown window with one migration story: keep lesson memory, move to Cline, then route to proof-backed setup or one workflow sprint.',
+        goal: 'Exploit the shutdown window with one migration story: keep lesson memory, move to Cline, then route to proof-backed setup and current self-serve Pro plans.',
         decisionRule: 'Do not broaden the angle beyond Roo migration unless the tracked clicks fail to produce qualified replies or paid intent.',
       },
       {
         window: 'days_31_60',
-        goal: 'Promote the better-converting Roo lane: self-serve Pro or workflow sprint.',
+        goal: 'Promote the better-converting Roo lane: free installation or self-serve Pro.',
         decisionRule: 'If clicks exist without paid intent, move the proof-backed setup and commercial-truth handoff earlier in follow-up copy.',
       },
       {
@@ -606,7 +591,7 @@ function buildRooSunsetDemandPack(report, links, about) {
   const directive = resolvedReport.directive || {};
   const state = normalizeText(directive.state) || 'post-first-dollar';
   const summary = normalizeText(directive.headline)
-    || 'Use the Roo shutdown window to sell one honest migration outcome: keep lesson memory, prove the install path, then route buyers to Pro or one workflow sprint.';
+    || 'Use the Roo shutdown window to sell one honest migration outcome: keep lesson memory, prove the install path, then route buyers to Pro or one self-serve Pro.';
 
   return {
     generatedAt: resolvedReport.generatedAt || new Date().toISOString(),
@@ -781,7 +766,7 @@ function renderRooSendNowMarkdown(pack = {}) {
     '',
     '## Batch Rules',
     '- Add the lead to the sales ledger before sending anything.',
-    '- Keep the motion honest: memory migrants and self-serve evaluators get the install or guide path first; workflow owners get the sprint path first.',
+    '- Keep the motion honest: memory migrants and self-serve evaluators get the install or guide path first; workflow owners also start with local evaluation and current software plans.',
     '- Use [VERIFICATION_EVIDENCE.md](../VERIFICATION_EVIDENCE.md) and [COMMERCIAL_TRUTH.md](../COMMERCIAL_TRUTH.md) only after the buyer confirms pain.',
     '',
     '```bash',

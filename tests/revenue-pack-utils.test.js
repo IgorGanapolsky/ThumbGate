@@ -65,3 +65,47 @@ test('writeRevenuePackArtifacts uses csvName fallback when csvArtifacts are omit
     fs.rmSync(repoRoot, { recursive: true, force: true });
   }
 });
+
+
+test('revenue packs generate attributed software paths without retired managed-service offers', () => {
+  const builders = [
+    ['aiventyx-marketplace-plan', 'buildAiventyxMarketplacePlan'],
+    ['chatgpt-gpt-revenue-pack', 'buildChatgptGptRevenuePack', {}],
+    ['claude-workflow-hardening-pack', 'buildClaudeWorkflowHardeningPack', {}],
+    ['codex-marketplace-revenue-pack', 'buildCodexMarketplaceRevenuePack'],
+    ['codex-plugin-revenue-pack', 'buildCodexPluginRevenuePack', {}],
+    ['gemini-cli-demand-pack', 'buildGeminiCliDemandPack', {}],
+    ['linkedin-workflow-hardening-pack', 'buildLinkedinWorkflowHardeningPack', {}],
+    ['mcp-directory-revenue-pack', 'buildMcpDirectoryRevenuePack'],
+    ['reddit-dm-workflow-hardening-pack', 'buildRedditDmWorkflowHardeningPack', {}],
+    ['roo-sunset-demand-pack', 'buildRooSunsetDemandPack', {}],
+    ['chatgpt-ads-readiness-pack', 'buildChatgptAdsReadinessPack', {}],
+  ];
+  for (const [moduleName, builder, ...args] of builders) {
+    const pack = require(`../scripts/${moduleName}`)[builder](...args);
+    const output = JSON.stringify(pack);
+    assert.doesNotMatch(output, /Setup Sprint|Intake-led sprint|\$499|workflow hardening sprint|self-serve Pro intake|#workflow-sprint-intake/i, moduleName);
+    assert.match(output, /https:\/\/[^\s"/]+\/(?:pricing|checkout\/pro|go\/pro)/, moduleName);
+    assert.match(output, /utm_source=/, moduleName);
+    if (['reddit-dm-workflow-hardening-pack', 'linkedin-workflow-hardening-pack'].includes(moduleName)) {
+      assert.doesNotMatch(output, /15-minute diagnostic|deeper diagnostic|one honest offer: harden|one offer: workflow hardening/i, moduleName);
+      assert.match(output, /free local checks and self-serve Pro software plans/, moduleName);
+      assert.match(output, /Operators configure and validate their own workflow boundaries/, moduleName);
+    }
+  }
+});
+
+test('GTM generation preserves historical intake and paid evidence while offering software', () => {
+  const gtm = require('../scripts/gtm-revenue-loop');
+  const catalog = gtm.buildMotionCatalog();
+  assert.equal(new URL(catalog.sprint.cta).pathname, '/pricing');
+  const target = { username: 'fixture', repoName: 'fixture', selectedMotion: { key: 'sprint' } };
+  const draft = gtm.buildFallbackMessage(target, catalog.sprint, catalog);
+  assert.doesNotMatch(draft, /harden.*for you|Setup Sprint|\$499/i);
+  assert.match(draft, /configure and validate your own/);
+  const commands = gtm.buildTargetSalesCommands(target);
+  assert.match(commands.markSprintIntake, /sprint_intake/);
+  assert.match(commands.markSprintIntake, /intake_submission/);
+  assert.match(commands.markPaid, /sales:reconcile-payment/);
+  assert.match(commands.markCheckoutStarted, /provider_checkout_session/);
+});
