@@ -23,7 +23,7 @@ function proofLinks(anchor) {
     caseStudyPath: `/case-studies#${anchor}`,
     scorecardPath: '/eval-scorecard',
     whitepaperPath: '/whitepaper',
-    diagnosticPath: '/diagnostic',
+    diagnosticPath: '/pricing',
     proPath: '/checkout/pro',
   };
 }
@@ -122,7 +122,7 @@ function buildPack(caseDef, options = {}) {
     `Full write-up (no fabricated logos): ${links.caseStudy}`,
     `Live bench scorecard: ${links.scorecard}`,
     '',
-    `If one repeated AI-agent failure is already costing you, the $499 Diagnostic installs one hard gate with regression proof: ${links.diagnostic}`,
+    `Compare the free local CLI and self-serve Pro for recall, dashboard, adapters, and exports: ${links.diagnostic}`,
   ].join('\n');
 
   const email = [
@@ -167,7 +167,7 @@ function buildPack(caseDef, options = {}) {
     `- Case study: ${links.caseStudy}`,
     `- Scorecard: ${links.scorecard}`,
     `- White paper: ${links.whitepaper}`,
-    `- Diagnostic $499: ${links.diagnostic}`,
+    `- Current free and Pro plans: ${links.diagnostic}`,
     `- Pro: ${links.pro}`,
     '',
     '## LinkedIn',

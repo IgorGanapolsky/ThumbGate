@@ -76,32 +76,35 @@ test('buildPlatformPost can create Skool operator lab copy', () => {
   assert.match(xPost, /utm_content=operator_lab_twitter/);
 });
 
-test('buildPlatformPost can create paid voice-agent diagnostic copy', () => {
+test('buildPlatformPost routes legacy voice-agent campaigns to self-serve plans', () => {
   const linkedinPost = buildPlatformPost('linkedin', 'voice-agent-diagnostic');
   const threadsPost = buildPlatformPost('threads', 'voice-agent-diagnostic');
 
-  assert.match(linkedinPost, /voice-agent reliability diagnostics/);
-  assert.match(linkedinPost, /\$499 diagnostic/);
-  assert.ok(linkedinPost.includes(DIAGNOSTIC_CHECKOUT_URL));
+  assert.match(linkedinPost, /free local CLI/);
+  assert.match(linkedinPost, /self-serve Pro/);
+  assert.equal(new URL(linkedinPost.match(/https:\/\/\S+/)[0]).pathname, '/pricing');
+  assert.doesNotMatch(linkedinPost, /\$499|paid voice-agent|Opening 3/);
   assert.match(linkedinPost, /utm_medium=paid_service/);
   assert.match(linkedinPost, /utm_campaign=voice_agent_reliability_diagnostic/);
   assert.match(linkedinPost, /utm_content=voice_agent_diagnostic_linkedin/);
-  assert.match(threadsPost, /Opening 3 paid voice-agent reliability diagnostics/);
+  assert.match(threadsPost, /self-serve Pro/);
   assert.match(threadsPost, /utm_content=voice_agent_diagnostic_threads/);
 });
 
-test('buildPlatformPost creates paid sprint copy with first-party intent links', () => {
+test('buildPlatformPost routes legacy sprint campaigns to first-party plan comparison', () => {
   const linkedInPost = buildPlatformPost('linkedin', 'paid-sprint');
   const xPost = buildPlatformPost('twitter', 'paid-sprint');
   const threadsPost = buildPlatformPost('threads', 'paid-sprint');
   const links = buildPaidSprintCheckoutUrls('linkedin', 'paid_sprint_linkedin');
 
-  assert.match(linkedInPost, /\$499 diagnostic/);
-  assert.match(linkedInPost, /\$1500 sprint/);
+  assert.match(linkedInPost, /free local CLI/);
+  assert.match(linkedInPost, /self-serve Pro/);
   assert.ok(linkedInPost.includes(PAID_SPRINT_DIAGNOSTIC_PAYMENT_URL));
   assert.ok(linkedInPost.includes(PAID_SPRINT_IMPLEMENTATION_PAYMENT_URL));
   assert.ok(linkedInPost.includes(links.diagnostic));
-  assert.ok(linkedInPost.includes(links.sprint));
+  assert.equal(new URL(links.sprint).pathname, '/pricing');
+  assert.equal(new URL(links.diagnostic).pathname, '/pricing');
+  assert.doesNotMatch(linkedInPost, /\$499|\$1500|hardening is open/);
   assert.match(linkedInPost, /utm_campaign=paid_workflow_sprint/);
   assert.match(linkedInPost, /utm_content=paid_sprint_linkedin_diagnostic/);
   assert.doesNotMatch(linkedInPost, /buy\.stripe\.com/);
@@ -202,8 +205,8 @@ test('publishLaunchCampaign uses paid voice-agent diagnostic UTM settings when r
   assert.equal(calls[0].options.utm.source, 'linkedin');
   assert.equal(calls[0].options.utm.medium, 'paid_service');
   assert.equal(calls[0].options.utm.campaign, VOICE_AGENT_DIAGNOSTIC_CAMPAIGN);
-  assert.match(calls[0].content, /Checkout:/);
-  assert.match(calls[0].content, /\$499 diagnostic/);
+  assert.match(calls[0].content, /free local CLI/);
+  assert.match(calls[0].content, /self-serve Pro/);
 });
 
 test('publishLaunchCampaign uses paid sprint UTM settings when requested', async () => {
@@ -467,4 +470,23 @@ test('publishLaunchCampaign skips recent duplicate provider exceptions', async (
   assert.equal(result.skipped.length, 1);
   assert.equal(result.skipped[0].platform, 'bluesky');
   assert.equal(result.skipped[0].reason, 'duplicate_recent_post');
+});
+
+test('legacy service campaign aliases generate only attributed current plan links', () => {
+  for (const offer of ['paid-sprint', 'voice-agent-diagnostic']) {
+    for (const platform of ['twitter', 'x', 'linkedin', 'instagram', 'threads', 'bluesky', 'reddit', 'youtube']) {
+      const post = buildPlatformPost(platform, offer);
+      const urls = post.match(/https:\/\/\S+/g) || [];
+      assert.equal(urls.length, 1);
+      const url = new URL(urls[0]);
+      assert.equal(url.pathname, '/pricing');
+      assert.equal(url.hash, '');
+      assert.equal(url.searchParams.get('utm_source'), platform === 'x' ? 'twitter' : platform);
+      assert.ok(url.searchParams.get('utm_campaign'));
+      assert.ok(url.searchParams.get('utm_content'));
+      assert.doesNotMatch(post.replace(/https:\/\/\S+/g, ''), /\$499|\$1500|paid.*diagnostic|implementation sprint/i);
+      if (['twitter', 'x'].includes(platform)) assert.ok(post.length <= 280);
+      if (platform === 'threads') assert.ok(post.length <= 500);
+    }
+  }
 });

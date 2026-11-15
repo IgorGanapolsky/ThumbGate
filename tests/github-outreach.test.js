@@ -249,7 +249,7 @@ test('report core links inherit the current team pilot CTA when provided', () =>
   const markdown = renderOutreachTargetsMarkdown(report);
 
   assert.equal(report.coreLinks.sprint, 'https://thumbgate-production.up.railway.app/#custom-sprint-intake');
-  assert.match(markdown, /Sprint intake: https:\/\/thumbgate-production\.up\.railway\.app\/#custom-sprint-intake/);
+  assert.match(markdown, /Current plans: https:\/\/thumbgate-production\.up\.railway\.app\/#custom-sprint-intake/);
   assert.match(markdown, /Proof-backed setup guide: https:\/\/thumbgate-production\.up\.railway\.app\/custom-guide/);
 });
 

@@ -75,7 +75,7 @@ function markContacted(message, {
     leadId,
     stage: 'contacted',
     channel: 'reddit_dm',
-    note: `Sent same-day $499 workflow diagnostic offer to u/${message.to}.`,
+    note: `Sent current free and Pro plan information to u/${message.to}.`,
     timestamp,
     evidenceKind: 'platform_send_receipt',
     evidenceSource: 'reddit_compose_api',
@@ -222,7 +222,7 @@ async function main() {
     const billingConfig = resolveHostedBillingConfig({
       requestOrigin: 'https://thumbgate-production.up.railway.app',
     });
-    let messages = buildWarmRedditMessages(`${billingConfig.appOrigin}/#workflow-sprint-intake`);
+    let messages = buildWarmRedditMessages(`${billingConfig.appOrigin}/pricing`);
     if (selectedTargets && !selectedTargets.has('all')) {
       messages = messages.filter((message) => selectedTargets.has(message.to));
     }

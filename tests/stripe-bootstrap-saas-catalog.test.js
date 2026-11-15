@@ -9,9 +9,13 @@ const {
   upsertTier,
 } = require('../scripts/stripe-bootstrap-saas-catalog.js');
 
-test('TIERS contains all 8 expected SaaS + one-off tiers in order', () => {
-  const want = ['pro', 'team', 'free', 'first_failure_rule', 'quick_read', 'workflow_teardown', 'sprint_diagnostic', 'workflow_sprint'];
+test('TIERS contains the remaining SaaS and one-off tiers in order', () => {
+  const want = ['pro', 'team', 'free', 'first_failure_rule', 'quick_read', 'workflow_teardown'];
   assert.deepEqual(TIERS.map((t) => t.tier), want);
+});
+
+test('retired services cannot be created by catalog bootstrap', () => {
+  assert.doesNotMatch(JSON.stringify(TIERS), /sprint_diagnostic|workflow_sprint|Setup Sprint|Sprint Diagnostic/);
 });
 
 test('every tier has name, description, imageUrl, marketingFeatures, and prices array', () => {
@@ -48,13 +52,11 @@ test('Free has no prices (placeholder in catalog only)', () => {
 });
 
 test('each one-off tier has exactly one one-time price (interval=null)', () => {
-  const oneOffs = ['first_failure_rule', 'quick_read', 'workflow_teardown', 'sprint_diagnostic', 'workflow_sprint'];
+  const oneOffs = ['first_failure_rule', 'quick_read', 'workflow_teardown'];
   const expected = {
     first_failure_rule: 100,
     quick_read: 1900,
     workflow_teardown: 9900,
-    sprint_diagnostic: 49900,
-    workflow_sprint: 150000,
   };
   for (const tier of oneOffs) {
     const t = TIERS.find((x) => x.tier === tier);

@@ -12,7 +12,7 @@ const DEFAULT_QUEUE_PATH = path.join(__dirname, '..', 'docs', 'marketing', 'gtm-
 const DEFAULT_REPORT_PATH = path.join(__dirname, '..', 'docs', 'marketing', 'gtm-revenue-loop.json');
 const DEFAULT_DOCS_PATH = path.join(__dirname, '..', 'docs', 'OUTREACH_TARGETS.md');
 const DEFAULT_CORE_LINKS = {
-  sprint: 'https://thumbgate-production.up.railway.app/#workflow-sprint-intake',
+  sprint: 'https://thumbgate-production.up.railway.app/pricing',
   guide: 'https://thumbgate-production.up.railway.app/guide',
   proof: 'https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md',
   truth: 'https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md',
@@ -282,7 +282,7 @@ function renderOutreachTargetsMarkdown(report = {}) {
     `Updated: ${report.generatedAt}`,
     '',
     'This file mirrors the evidence-backed GTM queue in `docs/marketing/gtm-target-queue.jsonl`.',
-    'It is the qualification screen and send surface for the current Setup Sprint revenue loop, not a raw GitHub scrape.',
+    'It is the qualification screen and send surface for the current ThumbGate Pro revenue loop, not a raw GitHub scrape.',
     '',
     '## Current Queue',
     `- Revenue state: ${report.state || 'cold-start'}`,
@@ -312,7 +312,7 @@ function renderOutreachTargetsMarkdown(report = {}) {
     '## Held: Evidence, Cost, Receipt, or Cooldown',
     ...heldLines,
     '## Core Links',
-    `- Sprint intake: ${report.coreLinks?.sprint || DEFAULT_CORE_LINKS.sprint}`,
+    `- Current plans: ${report.coreLinks?.sprint || DEFAULT_CORE_LINKS.sprint}`,
     `- Proof-backed setup guide: ${report.coreLinks?.guide || DEFAULT_CORE_LINKS.guide}`,
     `- Commercial truth: ${report.coreLinks?.truth || DEFAULT_CORE_LINKS.truth}`,
     `- Verification evidence: ${report.coreLinks?.proof || DEFAULT_CORE_LINKS.proof}`,

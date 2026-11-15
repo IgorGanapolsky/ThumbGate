@@ -126,7 +126,7 @@ const HIGH_ROI_QUERY_SEEDS = [
   querySeed(
     'ai agent governance sprint',
     95,
-    'Bottom-of-funnel service query that turns background-agent governance demand into a paid 48-hour Team intake and implementation wedge.',
+    'Governance evaluation query connecting configurable local checks to current free and self-serve Pro plans.',
   ),
   querySeed(
     'ai deployment readiness',
@@ -389,7 +389,7 @@ const SEMANTIC_PSEO_GUARDRAILS_SPEC = Object.freeze({
       'Technical guardian gate: block publish when canonical tags, JSON-LD, llm-context links, route coverage, or proof freshness are missing.',
     ]],
     ['paragraphs', 'Where the conversion path belongs', [
-      'Semantic pSEO only helps us make money when the page routes the searcher into a concrete next step. For ThumbGate, the next step is either the $19/mo Pro lane for self-serve operators or the workflow-hardening sprint for teams with risky agent workflows.',
+      'Start with the free local CLI. Choose self-serve Pro for recall, dashboard, adapters, and exports. Compare current plans at https://thumbgate.ai/pricing.',
       'That is why each page generated from the SEO/GEO engine needs a buyer-intent CTA, related pages that keep the journey alive, and proof assets that reduce trust friction before checkout.',
     ]],
   ],
@@ -784,7 +784,7 @@ const SEO_AGENT_SKILLS_GUARDRAILS_SPEC = Object.freeze({
       'Reviewer handoff gate: require the agent to summarize claim risk, source evidence, and next conversion path before a human approves.',
     ]],
     ['paragraphs', 'Where this creates revenue', [
-      'This turns SEO-agent interest into the same Setup Sprint offer: harden one content workflow, prove one publish gate, and connect the page to checkout or team intake instead of shipping more ungoverned AI content.',
+      'Use the free local CLI to configure checks for content workflows. Compare self-serve Pro for recall, dashboard, adapters, and exports.',
     ]],
   ],
   faq: [
@@ -835,7 +835,7 @@ const CLAUDE_CODE_SKILLS_GUARDRAILS_SPEC = Object.freeze({
       'Require each skill to name inputs, forbidden actions, verification steps, and examples of good and bad execution.',
       'Capture thumbs-down failures from skill use and promote repeat patterns into ThumbGate prevention rules.',
       'Block risky actions when the current task claims a skill but skips its required verification.',
-      'Route buyers into the Setup Sprint when one skill repeatedly fails in a shared repo.',
+      'Configure and verify a local prevention rule when one skill repeatedly fails in a shared repo. Compare Pro for recall, dashboard, adapters, and exports.',
     ]],
     ['paragraphs', 'Where this creates revenue', [
       'This is a concrete sales bridge from Claude Code training content to ThumbGate: if a team is investing in skills, they already believe AI coding workflows can improve. ThumbGate sells the part that makes those workflows reliable across sessions and teammates.',
@@ -995,7 +995,7 @@ const DEEPSEEK_V4_RUNTIME_GUARDRAILS_SPEC = Object.freeze({
       'CLI path: npx thumbgate deepseek-v4-runtime-guardrails --context-tokens=900000 --hybrid-attention --speculative-decoding --accept-length=1.4 --precision-mode=fp8 --json.',
     ]],
     ['paragraphs', 'Where this creates revenue', [
-      'This gives ThumbGate a serious infrastructure story for teams moving beyond hosted APIs. The offer is a Setup Sprint around one model-routing lane: prove the runtime change, gate the risks, and keep the agent from silently routing expensive work through an unverified path.',
+      'This gives ThumbGate a serious infrastructure story for teams moving beyond hosted APIs. Evaluate one model-routing lane locally: prove the runtime change, gate the risks, and keep the agent from silently routing expensive work through an unverified path.',
     ]],
   ],
   faq: [
@@ -1047,7 +1047,7 @@ const CODE_KNOWLEDGE_GRAPH_GUARDRAILS_SPEC = Object.freeze({
     ]],
     ['paragraphs', 'Where this creates revenue', [
       'This is a strong engagement wedge for audiences already excited about codebase understanding. The public line is simple: Code graphs tell the agent what the system is; ThumbGate decides what the agent is allowed to do next.',
-      'For teams, sell the Setup Sprint around one graph-informed repeated failure: one central file, one risky refactor path, or one generated artifact that agents keep touching incorrectly.',
+      'Configure local checks around one graph-informed repeated failure: one central file, one risky refactor path, or one generated artifact that agents keep touching incorrectly.',
     ]],
   ],
   faq: [
@@ -1094,7 +1094,7 @@ const DEVELOPER_MACHINE_SUPPLY_CHAIN_GUARDRAILS_SPEC = Object.freeze({
     ]],
     ['paragraphs', 'Where this creates revenue', [
       'This is a strong security wedge for teams that already run scanners but still let agents execute local install/update commands. The offer is not "replace your scanner"; it is "connect scanner and incident lessons to pre-action enforcement."',
-      'For the Setup Sprint, pick one concrete local-risk pattern: package lifecycle scripts, one-shot installers, dependency bot autofixes, or unresolved credential exposure after a suspected compromise.',
+      'For local evaluation, pick one concrete local-risk pattern: package lifecycle scripts, one-shot installers, dependency bot autofixes, or unresolved credential exposure after a suspected compromise.',
     ]],
   ],
   faq: [
@@ -1125,8 +1125,8 @@ const PROMPT_TRICKS_TO_WORKFLOW_RULES_SPEC = Object.freeze({
   },
   takeaways: [
     'Politeness, threats, flattery, and clever prompt rituals are unreliable leverage; clear task shape, examples, and verification are the durable parts.',
-    'The paid layer is enforcement: convert repeated mistakes into durable rules that run before an agent acts.',
-    'The fastest revenue offer is a $99 workflow diagnostic that turns one messy AI workflow into clear instructions, examples, and pre-action checks.',
+    'The enforcement layer is configurable local rules: convert repeated mistakes into durable rules that run before an agent acts.',
+    'Use the free CLI to turn one messy AI workflow into clear instructions, examples, and pre-action checks.',
   ],
   sections: [
     ['paragraphs', 'Why this became a buyer question', [
@@ -1140,14 +1140,14 @@ const PROMPT_TRICKS_TO_WORKFLOW_RULES_SPEC = Object.freeze({
       'Verify with proof: record the next prevented action, the saved remediation time, and the narrower rule created from feedback.',
     ]],
     ['paragraphs', 'Where this creates revenue', [
-      'This turns generic prompt advice into a buyer-ready diagnostic. The public offer is simple: send one messy AI-agent workflow and ThumbGate turns it into clear rules, examples, and pre-action checks.',
-      'For teams, position the Setup Sprint around the repeated failure they can already name. The deliverable is not a better pep talk for the model; it is enforcement that survives across sessions and agents.',
+      'Operators can turn repeated feedback into clear rules, examples, and pre-action checks with the free local CLI. Pro adds recall, dashboard, adapters, and exports.',
+      'Start with a repeated failure the team can already name, then configure and verify local prevention rules. Pro is a self-serve subscription for recall, dashboard, adapters, and exports.',
     ]],
   ],
   faq: [
     ['Do better prompts still matter?', 'Yes. Clear prompts and examples reduce ambiguity. ThumbGate starts where prompts stop: enforcing repeated lessons before the next action executes.'],
     ['What prompt tactics should teams stop wasting time on?', 'Do not rely on politeness, threats, flattery, or roleplay as control mechanisms. Use clear instructions, concrete examples, neutral constraints, and verification gates.'],
-    ['What should a $99 workflow diagnostic produce?', 'One repeated failure translated into a rule, one good and bad example, one pre-action check, and a short verification plan for proving the check paid for itself.'],
+    ['What should a local workflow review produce?', 'One repeated failure translated into a rule, one good and bad example, one pre-action check, and a short verification plan for proving the check paid for itself.'],
   ],
   relatedPaths: ['/guides/pre-action-checks', '/guides/agent-harness-optimization', '/guides/best-tools-stop-ai-agents-breaking-production'],
 });
@@ -1188,7 +1188,7 @@ const BACKGROUND_AGENT_GOVERNANCE_GUIDE_SPEC = Object.freeze({
       'A risk check command for dispatch systems: npx thumbgate background-governance --check --agent-id=builder --branch=main --files-changed=25 --json.',
     ]],
     ['paragraphs', 'Where this creates revenue', [
-      'This is a clean Setup Sprint wedge. The buyer does not need a broad platform migration; they need one background-agent workflow hardened from context intake to isolated execution to risk-tiered review.',
+      'Configure and verify local gates for background-agent work before relying on them. Pro adds recall, dashboard, adapters, and exports.',
       'The promise stays honest: ThumbGate does not remove human review. It makes the review queue smaller, better labeled, and backed by evidence before a risky agent PR reaches a reviewer.',
     ]],
   ],
@@ -1202,8 +1202,8 @@ const BACKGROUND_AGENT_GOVERNANCE_GUIDE_SPEC = Object.freeze({
       'Check recent agent failure rate, prior gate blocks, target branch, expected blast radius, isolated execution environment, CI expectations, and the human context that authorized the task.',
     ],
     [
-      'How does this connect to the Setup Sprint?',
-      'The sprint can harden one background-agent workflow end to end: context intake, pre-dispatch governance, sandbox routing, CI audit, prevention rules, and proof review.',
+      'How does this connect to ThumbGate Pro?',
+      'Use the free CLI to configure and validate local checks. Pro adds recall, dashboard, adapters, and exports; it does not include workflow implementation.',
     ],
   ],
   relatedPaths: ['/guides/pre-action-checks', '/guides/agent-harness-optimization', '/guides/best-tools-stop-ai-agents-breaking-production'],
@@ -1223,45 +1223,31 @@ const AI_AGENT_GOVERNANCE_SPRINT_GUIDE_SPEC = Object.freeze({
   slug: 'ai-agent-governance-sprint',
   meta: {
     query: 'ai agent governance sprint',
-    title: 'AI Agent Governance Sprint | 48-Hour Workflow Hardening',
-    heroTitle: 'AI Agent Governance Sprint for One Risky Workflow',
-    heroSummary: 'ThumbGate turns one repeated AI-agent failure into approval boundaries, pre-action checks, rollback safety, and rollout proof in a focused 48-hour Setup Sprint.',
+    title: 'AI Agent Governance Sprint | Local Workflow Checks',
+    heroTitle: 'AI Agent Governance Sprint: A Local Evaluation Guide',
+    heroSummary: 'Evaluate approval boundaries and pre-action checks with the free ThumbGate CLI. The former managed sprint is retired; Pro is a self-serve software subscription.',
   },
   takeaways: [
-    'The fastest paid wedge is not a broad platform migration; it is one repo, one workflow owner, and one repeated failure that already has budget pressure.',
-    'A governance sprint should ship evidence: rule inventory, pre-action checks, review routing, rollback notes, and a buyer-ready proof pack.',
-    'ThumbGate keeps the promise narrow enough to sell quickly while creating the path to Team seats and recurring governance.',
+    'Choose a repeated failure and document its owner, risky actions, approval boundaries, and rollback expectations.',
+    'Configure and verify local checks before allowing an agent to act on production systems.',
+    'Free and Pro are software plans; neither includes a managed implementation or a buyer proof review.',
   ],
   sections: [
-    ['paragraphs', 'Who this is for', [
-      'The right buyer is already running Claude Code, Codex, Cursor, Gemini, or another agent against real code and has one failure they no longer want to review manually. Examples include unsafe migrations, noisy background-agent PRs, deploy approval bypasses, credential-adjacent commands, and repeated generated-artifact edits.',
-      'The sprint works because it avoids generic AI consulting. The scope is one workflow that can be observed, hardened, and reviewed in front of the buyer before a wider team rollout.',
+    ['paragraphs', 'Evaluate one workflow', [
+      'Start with a workflow you can inspect locally. Identify protected files, commands requiring approval, and the evidence you need before rollout.',
     ]],
-    ['bullets', 'What the sprint ships', [
-      'Intake: one repo, one owner, one repeated failure, one target rollout date, and the current agent/runtime surface.',
-      'Governance map: approval boundaries, risky commands, protected files, branch rules, review tiers, and rollback expectations.',
-      'Pre-action checks: concrete blocks or warnings for the repeated failure and adjacent high-risk actions.',
-      'Background-agent review routing: npx thumbgate background-governance --check --json to label risk before dispatch or PR review.',
-      'Proof pack: verification evidence, run reports, blocked-repeat examples, and rollout notes the buyer can share internally.',
+    ['bullets', 'Run your own checks', [
+      'Install the free CLI and configure reviewed prevention rules for the repeated failure.',
+      'Run npx thumbgate background-governance --check --json to inspect risk before dispatch or PR review.',
+      'Review blocked-repeat examples and rollback expectations with your own workflow owner.',
     ]],
-    ['paragraphs', 'Where this creates ROI', [
-      'This page is the service conversion layer for the governance guides. Readers who already understand background-agent risk need a next step that is smaller than procurement and more concrete than a demo.',
-      'The offer stays defensible: ThumbGate does not claim to make agents autonomous without review. It makes one expensive review failure measurable, enforceable, and easier to roll out across Team seats.',
+    ['paragraphs', 'Choose a software plan', [
+      'Use the free local CLI to evaluate the enforcement boundary. Pro adds recall, dashboard, adapters, and exports. Compare current plans before subscribing.',
     ]],
   ],
   faq: [
-    [
-      'What is included in the AI Agent Governance Sprint?',
-      'A focused 48-hour implementation around one workflow: intake, governance mapping, pre-action checks, background-agent risk routing, rollback notes, and a proof pack for the buyer review.',
-    ],
-    [
-      'How is this different from the Setup Sprint?',
-      'It is the same Team conversion path positioned for buyers searching for AI agent governance. The deliverable remains narrow: one repeated failure hardened with approval boundaries, rollback safety, and rollout proof.',
-    ],
-    [
-      'Do we need to migrate every agent workflow first?',
-      'No. Start with one repeated failure that already costs review time or rollout confidence. After it proves value, reuse the checks, lesson database, and proof workflow across Team seats.',
-    ],
+    ['Can I book the former governance sprint?', 'The managed diagnostic and sprint offers are retired. Compare the current free CLI and self-serve Pro subscription at /pricing.'],
+    ['Does Pro include workflow implementation?', 'No. Pro is a software subscription. You configure and validate your workflow checks.'],
   ],
   relatedPaths: ['/guides/background-agent-governance', '/guides/pre-action-checks', '/guides/best-tools-stop-ai-agents-breaking-production'],
 });
@@ -1276,8 +1262,8 @@ function buildAiAgentGovernanceSprintGuide() {
       relatedPaths: AI_AGENT_GOVERNANCE_SPRINT_GUIDE_SPEC.relatedPaths,
     }),
     cta: {
-      label: 'Start the governance sprint',
-      href: '/?utm_source=website&utm_medium=seo_page&utm_campaign=ai_agent_governance_sprint&cta_placement=seo_brief&plan_id=team#workflow-sprint-intake',
+      label: 'Compare current plans',
+      href: '/pricing?utm_source=website&utm_medium=seo_page&utm_campaign=ai_agent_governance_sprint&cta_placement=seo_brief&plan_id=pro',
     },
   };
 }
@@ -1288,12 +1274,12 @@ const AI_DEPLOYMENT_READINESS_GUIDE_SPEC = Object.freeze({
     query: 'ai deployment readiness',
     title: 'AI Deployment Readiness | Production Workflow Gates Before Rollout',
     heroTitle: 'AI Deployment Readiness Before Agents Touch Production',
-    heroSummary: 'Deployment-company demand proves the buyer problem: teams need help moving AI into real workflows. ThumbGate is the governance and proof layer that makes one priority workflow ready for production with pre-action gates, rollout evidence, and paid sprint paths.',
+    heroSummary: 'Deployment-company demand proves the buyer problem: teams need help moving AI into real workflows. ThumbGate provides configurable pre-action gates and inspectable local evidence. Free and Pro plans do not include workflow implementation services.',
   },
   takeaways: [
     'AI deployment readiness is about workflow controls, not just prompts, demos, or model selection.',
     'The high-ROI starting point is one priority workflow with mapped tools, data, owners, risky actions, and proof-backed gates.',
-    'ThumbGate turns deployment demand into revenue through a $499 diagnostic, a $1500 Setup Sprint, and Team seats at $49/seat/mo.',
+    'Start with the free local CLI. Choose self-serve Pro for recall, dashboard, adapters, and exports. Compare current plans at https://thumbgate.ai/pricing.',
   ],
   sections: [
     ['paragraphs', 'Why deployment is now the buying category', [
@@ -1301,14 +1287,14 @@ const AI_DEPLOYMENT_READINESS_GUIDE_SPEC = Object.freeze({
       'That creates a clean ThumbGate wedge. A forward deployment team can map the workflow and build the automation; ThumbGate defines what the automation is allowed to execute, what evidence must exist before it acts, and what proof the buyer can review after rollout.',
     ]],
     ['bullets', 'What ThumbGate adds to AI deployment readiness', [
-      'Intake for one workflow owner, one priority workflow, one repeated failure, and one production rollout target.',
+      'Identify your workflow owner, repeated failure, and rollout target before configuring local checks.',
       'A governance map for data access, tools, protected files, risky commands, approval boundaries, review tiers, and rollback expectations.',
       'Pre-action gates that stop repeated mistakes before the next shell command, PR, release, or production automation step.',
       'Background-agent risk checks through npx thumbgate background-governance --check --json before unattended work reaches review.',
-      'A proof pack with blocked-repeat examples, run evidence, verification notes, and rollout decisions the buyer can share internally.',
+      'Collect your own blocked-repeat examples, verification notes, and rollout decisions for review.',
     ]],
     ['paragraphs', 'How this makes money', [
-      'The page should convert deployment curiosity into concrete buying motion. The $499 Workflow Hardening Diagnostic validates one repeated failure and produces a readiness map. The $1500 sprint implements the first gates and proof pack. Team seats expand the same enforcement path across more repos and workflow owners.',
+      'Start with the free local CLI. Choose self-serve Pro for recall, dashboard, adapters, and exports. Compare current plans at https://thumbgate.ai/pricing.',
       'This keeps the offer honest. ThumbGate does not claim to be the deployment company or a generic AI consultancy. It is the enforcement, governance, and proof layer that lets deployment work survive contact with production.',
     ]],
   ],
@@ -1323,7 +1309,7 @@ const AI_DEPLOYMENT_READINESS_GUIDE_SPEC = Object.freeze({
     ],
     [
       'Can this start before procurement?',
-      'Yes. Start with one $499 diagnostic or the Setup Sprint intake. The point is to prove one workflow before asking a buyer to fund a broad platform rollout.',
+      'Start with the free local CLI. Choose self-serve Pro for recall, dashboard, adapters, and exports. Compare current plans at https://thumbgate.ai/pricing.',
     ],
   ],
   relatedPaths: ['/guides/ai-agent-governance-sprint', '/guides/background-agent-governance', '/guides/pre-action-checks'],
@@ -1339,8 +1325,8 @@ function buildAiDeploymentReadinessGuide() {
       relatedPaths: AI_DEPLOYMENT_READINESS_GUIDE_SPEC.relatedPaths,
     }),
     cta: {
-      label: 'Start deployment readiness intake',
-      href: '/?utm_source=website&utm_medium=seo_page&utm_campaign=ai_deployment_readiness&cta_placement=seo_brief&plan_id=team#workflow-sprint-intake',
+      label: 'Compare current plans',
+      href: '/pricing?utm_source=website&utm_medium=seo_page&utm_campaign=ai_deployment_readiness&cta_placement=seo_brief&plan_id=pro',
     },
   };
 }
@@ -1371,7 +1357,7 @@ const MODEL_UPGRADE_EVALUATION_GUIDE_SPEC = Object.freeze({
     ]],
     ['paragraphs', 'Where this creates ROI', [
       'This gives platform teams a defensible answer to "should we move to GPT-5.5?" Run the candidate report, attach gate and benchmark evidence, and only then route high-value analytical or long-context agent tasks to the frontier tier.',
-      'The commercial wedge is a Setup Sprint focused on model routing: define which workflows deserve frontier spend, which stay on cheap tiers, and which require pre-action checks before a model can touch live systems.',
+      'Use the free CLI to evaluate model-routing checks: define which workflows deserve frontier spend, which stay on cheap tiers, and which require pre-action checks before a model can touch live systems.',
     ]],
   ],
   faq: [
@@ -1591,7 +1577,7 @@ const AI_RECOMMENDATION_VISIBILITY_GUIDE_SPECS = Object.freeze([
     sections: [
       ['paragraphs', 'Why conversational ads change the promotion plan', [
         'Search ads are moving toward generated answers and product recommendations inside the search conversation. A buyer may not click ten blue links before forming an opinion; the assistant-like surface may summarize the category, compare options, and mention a vendor in one flow.',
-        'That means ThumbGate promotion has to be answer-shaped. The page must say exactly what ThumbGate is, which agent-risk problem it solves, which tools it supports, and what proof a buyer can verify before starting checkout or a Setup Sprint.',
+        'That means ThumbGate promotion has to be answer-shaped. The page must say exactly what ThumbGate is, which agent-risk problem it solves, which tools it supports, and what proof a buyer can verify before comparing free and self-serve Pro plans.',
       ]],
       ['bullets', 'Buyer prompts ThumbGate should target', [
         'How do I stop Claude Code or Cursor from repeating risky mistakes?',
@@ -2451,7 +2437,7 @@ const PAGE_BLUEPRINTS = [
         heading: 'The buyer message',
         paragraphs: [
           'Hermes can be the agent that grows with you. ThumbGate is the firewall that makes sure growth does not mean repeating expensive mistakes faster across more surfaces.',
-          'For teams evaluating persistent agents, the practical first step is not another prompt. It is one enforced rule from one real failure, proven locally, then expanded into Pro or a workflow hardening sprint when the risk is recurring.',
+          'Start with the free local CLI. Choose self-serve Pro for recall, dashboard, adapters, and exports. Compare current plans at https://thumbgate.ai/pricing.',
         ],
       },
     ],
@@ -2584,7 +2570,7 @@ const PAGE_BLUEPRINTS = [
         heading: 'The buyer message',
         paragraphs: [
           'The pitch is not "use fewer tokens" or "summarize harder." The pitch is: keep the agent productive by feeding it the right context, then stop it before risky actions unless the session, sandbox, credentials, and evidence are clean.',
-          'This turns ThumbGate into the practitioner-led governance layer teams can adopt before top-down AI policy arrives. Start with one workflow, prove the gates locally, then expand to Pro or a hardening sprint once the same failure pattern recurs.',
+          'Start with the free local CLI. Choose self-serve Pro for recall, dashboard, adapters, and exports. Compare current plans at https://thumbgate.ai/pricing.',
         ],
       },
     ],
@@ -2864,7 +2850,7 @@ const PAGE_BLUEPRINTS = [
       },
       {
         question: 'How does this create revenue?',
-        answer: 'It gives ThumbGate a timely category narrative for buyers: as agent actions multiply, teams need pre-action controls before code, data, deploys, payments, or customers are touched. The page routes that demand into Pro checkout and the Team workflow hardening sprint.',
+        answer: 'Start with the free local CLI. Choose self-serve Pro for recall, dashboard, adapters, and exports. Compare current plans at https://thumbgate.ai/pricing.',
       },
     ],
     relatedPaths: ['/guides/ai-search-topical-presence', '/guides/mcp-tool-governance', '/guides/ai-agent-pre-action-approval-gates'],
@@ -3298,7 +3284,7 @@ function buildContextGovernance() {
     ],
     requiredContext: [
       'ThumbGate turns thumbs-up/down feedback into pre-action checks.',
-      'Every buyer-facing page needs a concrete next step: Pro checkout, workflow sprint intake, or a proof-backed guide.',
+      'Start with the free local CLI. Choose self-serve Pro for recall, dashboard, adapters, and exports. Compare current plans at https://thumbgate.ai/pricing.',
       'Every generated page must include verification evidence, automation proof, llm-context, FAQPage, and TechArticle schema.',
     ],
   };
@@ -3582,21 +3568,7 @@ function renderPaidSprintCheckoutCard(page) {
   ]);
   if (!paidSprintGuidePaths.has(page.path)) return '';
 
-  return `<div class="sidebar-card paid-sprint-card">
-          <h2>Ready to buy the sprint?</h2>
-          <p>Skip the unpaid intake when budget is ready. Pick the smaller diagnostic to validate one repeated failure, or buy the 48-hour sprint for implementation and proof.</p>
-          <div class="paid-offers">
-            <a class="paid-offer diagnostic" href="${escapeHtml(PRODUCT.sprintDiagnosticPaymentUrl)}" target="_blank" rel="noopener">
-              <span>Workflow Hardening Diagnostic</span>
-              <strong>$499</strong>
-            </a>
-            <a class="paid-offer sprint" href="${escapeHtml(PRODUCT.workflowSprintPaymentUrl)}" target="_blank" rel="noopener">
-              <span>AI Agent Governance Sprint</span>
-              <strong>$1500</strong>
-            </a>
-          </div>
-          <a class="secondary-cta" href="${escapeHtml(page.cta.href)}" target="_blank" rel="noopener">Use intake instead</a>
-        </div>`;
+  return `<div class="sidebar-card"><h2>Free local CLI or self-serve Pro</h2><p>Start with local feedback capture and configured gates. Pro adds recall, dashboard, adapters, and exports.</p><a class="secondary-cta" href="${escapeHtml(page.cta.href)}">Compare current plans</a></div>`;
 }
 
 function renderSeoPageHtml(page, runtimeConfig = {}) {

@@ -37,7 +37,7 @@ describe('postinstall banner', () => {
     assert.equal(stdout, '', 'stdout should be empty');
   });
 
-  it('includes trial banner and the single managed-gate cash path in stderr output', () => {
+  it('includes trial banner and the current Pro comparison path in stderr output', () => {
     const { stderr, exitCode } = runPostinstall();
     assert.equal(exitCode, 0);
     assert.ok(stderr.includes('ThumbGate'), 'should mention ThumbGate');
@@ -47,8 +47,9 @@ describe('postinstall banner', () => {
     assert.match(stderr, /unlimited rules/i, 'should list trial features');
     assert.match(stderr, /Lesson search/i, 'should mention lesson search');
     assert.match(stderr, /DPO export/i, 'should mention DPO export');
-    assert.match(stderr, /thumbgate\.ai\/diagnostic/i, 'should include managed-gate URL');
-    assert.match(stderr, /\$499 one-time/i, 'should name the single promoted offer');
+    assert.match(stderr, /thumbgate\.ai\/pricing\?utm_source=npm&utm_medium=postinstall&utm_campaign=self_serve_pro/i, 'should preserve postinstall attribution');
+    assert.match(stderr, /Pro adds recall, dashboard, adapters, exports/i);
+    assert.doesNotMatch(stderr, /\$499|\/diagnostic|Setup Sprint/i);
     assert.doesNotMatch(stderr, /\$19|Keep Pro/i);
     assert.doesNotMatch(stderr, /optional hosted API key/i);
   });

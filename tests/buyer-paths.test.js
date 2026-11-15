@@ -39,9 +39,14 @@ test('buyer-path builders route every active offer through ThumbGate first', () 
   assert.equal(monthly.searchParams.get('billing_cycle'), 'monthly');
   assert.equal(annual.pathname, '/go/pro');
   assert.equal(annual.searchParams.get('billing_cycle'), 'annual');
-  assert.equal(diagnostic.pathname, '/diagnostic');
-  assert.equal(sprint.pathname, '/go/sprint');
-  assert.equal(enterprise.hash, '#workflow-sprint-intake');
+  assert.equal(diagnostic.pathname, '/pricing');
+  assert.equal(sprint.pathname, '/pricing');
+  assert.equal(enterprise.pathname, '/pricing');
+  assert.equal(enterprise.hash, '');
+  for (const url of [diagnostic, sprint]) {
+    assert.equal(url.searchParams.get('plan_id'), 'pro');
+    assert.equal(url.searchParams.get('utm_source'), 'test');
+  }
   assert.throws(
     () => buildBuyerUrl('https://buy.stripe.com/unsafe'),
     /must remain on the configured first-party origin/,
@@ -83,4 +88,15 @@ test('social publisher requires an injected direct-platform adapter outside dry-
     () => publishLaunchCampaign({ platforms: ['linkedin'] }),
     /direct_platform_publisher_required/,
   );
+});
+
+test('retired service link aliases preserve all campaign attribution on custom origins', () => {
+  for (const builder of [buildDiagnosticBuyerUrl, buildSprintBuyerUrl]) {
+    const url = new URL(builder({ appOrigin: 'https://app.example/subpath', source: 'creator', medium: 'email', campaign: 'launch', content: 'footer' }));
+    assert.equal(url.origin, 'https://app.example');
+    assert.equal(url.pathname, '/pricing');
+    for (const [key, value] of Object.entries({ utm_source: 'creator', utm_medium: 'email', utm_campaign: 'launch', utm_content: 'footer' })) {
+      assert.equal(url.searchParams.get(key), value);
+    }
+  }
 });

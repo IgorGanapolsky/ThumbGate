@@ -114,13 +114,13 @@ function buildOrganicDraftCalendar(kits = buildKits()) {
       day: index + 1,
       platform: 'linkedin',
       kit: kit.key,
-      post: `${kit.organicHook}\n\nArchived concept: ${kit.name}\nCurrent diagnostic path: ${kit.catalog.buyerPath}`,
+      post: `${kit.organicHook}\n\nArchived concept: ${kit.name}\nCurrent plan comparison: ${kit.catalog.buyerPath}`,
     },
     {
       day: index + 1,
       platform: 'threads',
       kit: kit.key,
-      post: `${kit.name}: ${kit.promise} Current diagnostic path: ${kit.catalog.buyerPath}`,
+      post: `${kit.name}: ${kit.promise} Current plan comparison: ${kit.catalog.buyerPath}`,
     },
   ]));
 }
@@ -146,7 +146,7 @@ function buildOpenClawGovernancePack(options = {}) {
       'Use OpenClaw-compatible or OpenClaw-style unless the exact upstream runtime has been tested for that kit.',
       'Promise prevention of known repeated failure modes, not absolute safety or unsupervised autonomy.',
       'These retired kit prices are catalog history, not current public offers.',
-      'Route qualified buyers through the current $499 diagnostic or scope-first $1,500 sprint path.',
+      'Use the free local CLI or compare self-serve Pro at https://thumbgate.ai/pricing.',
     ],
   };
 }
@@ -181,7 +181,7 @@ function renderMarkdown(pack = buildOpenClawGovernancePack()) {
       `### ${kit.name}`,
       `- Price: ${dollars(kit.priceCents)}`,
       `- Status: ${kit.catalog.status}`,
-      `- Current diagnostic path: ${kit.catalog.buyerPath}`,
+      `- Current plan comparison: ${kit.catalog.buyerPath}`,
       `- Historical Stripe product: ${kit.catalog.stripeProductId}`,
       `- Buyer: ${kit.buyer}`,
       `- Promise: ${kit.promise}`,

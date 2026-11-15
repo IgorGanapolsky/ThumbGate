@@ -70,11 +70,10 @@ test('parseArgs: --dry-run and --json flags work', () => {
   assert.deepStrictEqual(parseArgs(['--json', '--dry-run']), { dryRun: true, json: true });
 });
 
-test('TARGETS: 3 customer-facing payment links with required fields', () => {
-  assert.strictEqual(TARGETS.length, 3);
+test('TARGETS: remaining kit payment link retains required fields', () => {
+  assert.strictEqual(TARGETS.length, 1);
   const labels = TARGETS.map((t) => t.label);
-  assert.ok(labels.some((l) => /diagnostic/i.test(l)));
-  assert.ok(labels.some((l) => /sprint/i.test(l)));
+  assert.ok(labels.every((l) => !/diagnostic|sprint/i.test(l)));
   assert.ok(labels.some((l) => /kit/i.test(l)));
   for (const t of TARGETS) {
     assert.ok(t.urlSlug, `${t.label} missing urlSlug`);
@@ -117,7 +116,7 @@ test('updateLink: empty link gets all 3 patches', async () => {
 });
 
 test('updateLink: fully-populated link is a no-op', async () => {
-  const target = TARGETS[1];
+  const target = TARGETS[0];
   const { stripe, state } = makeStripeMock([makeFullLink(target.urlSlug, 'plink_y', target)]);
   const result = await updateLink({ stripe, target, options: { dryRun: false } });
   assert.strictEqual(result.changed, false);
@@ -141,11 +140,17 @@ test('updateLink: returns error when slug cannot be resolved', async () => {
   assert.match(result.error, /could not resolve plink ID/);
 });
 
-test('applyAll: processes every TARGETS entry', async () => {
-  const links = TARGETS.map((t, i) => makeEmptyLink(t.urlSlug, `plink_${i}`));
-  const { stripe } = makeStripeMock(links);
+test('applyAll: updates current targets without touching historical service links', async () => {
+  const historical = [
+    makeEmptyLink('3cI7sLgH25v8dWh5e33sI0o', 'plink_old_diagnostic'),
+    makeEmptyLink('8x25kDcqMaPs9G15e33sI0p', 'plink_old_sprint'),
+  ];
+  const links = [...historical, ...TARGETS.map((t, i) => makeEmptyLink(t.urlSlug, `plink_${i}`))];
+  const { stripe, state } = makeStripeMock(links);
   const results = await applyAll({ stripe, options: { dryRun: false } });
-  assert.strictEqual(results.length, 3);
+  assert.strictEqual(results.length, 1);
+  assert.deepEqual(state.updates.map((update) => update.id), ['plink_0']);
+  assert.deepEqual(state.links.slice(0, historical.length), historical);
   for (const r of results) {
     assert.strictEqual(r.error, undefined);
     assert.strictEqual(r.changed, true);

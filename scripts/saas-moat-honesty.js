@@ -58,7 +58,7 @@ const RAIL_MAP = Object.freeze([
   {
     wallingMoat: '8. Operational Grit (Painful Infrastructure)',
     score: 65,
-    thumbgateRail: 'Multi-CLI hook/adapter matrix (Claude Code, Cursor, Codex, Gemini, Amp, Cline, OpenCode) + $499 Diagnostic',
+    thumbgateRail: 'Multi-CLI hook/adapter matrix (Claude Code, Cursor, Codex, Gemini, Amp, Cline, OpenCode); compare free and Pro at https://thumbgate.ai/pricing.',
   },
   {
     wallingMoat: '2. System of Record (Point Solution -> Audit OS)',
@@ -83,7 +83,7 @@ const RAIL_MAP = Object.freeze([
   {
     wallingMoat: '1. Trust & Ecosystem (Vertical -> Partner Channel)',
     score: 10,
-    thumbgateRail: '$499 Managed Workflow Diagnostic (founder-delivered today; partner intake at public/partner-intake.html)',
+    thumbgateRail: 'Start with the free local CLI. Choose self-serve Pro for recall, dashboard, adapters, and exports. Compare current plans at https://thumbgate.ai/pricing.',
   },
   {
     wallingMoat: '5. Regulatory (Held Certifications)',

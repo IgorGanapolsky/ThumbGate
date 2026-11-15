@@ -41,20 +41,20 @@ test('Unified Agentic Graph RAG: builds 3-tier graph with AST, gates, and cash p
   assert.ok(graph.nodes.has('gate:pretool:spend-cap'));
 
   // Tier 3 Cash path nodes exist
-  assert.ok(graph.nodes.has('cash:diagnostic-499'));
+  assert.equal(graph.nodes.has('cash:diagnostic-499'), false);
   assert.ok(graph.nodes.has('cash:pro-subscription'));
 });
 
-test('Unified Agentic Graph RAG: traverses multi-hop path from code symbol to $499 Diagnostic', () => {
+test('Unified Agentic Graph RAG: traverses multi-hop path from code symbol to Pro subscription', () => {
   const graph = buildAgenticGraph();
-  const traversal = traverseMultiHop(graph, 'scripts/decisive-step-evaluator.js', 'cash:diagnostic-499', 4);
+  const traversal = traverseMultiHop(graph, 'scripts/decisive-step-evaluator.js', 'cash:pro-subscription', 4);
 
   assert.equal(traversal.found, true);
   assert.equal(traversal.depth, 2);
   assert.deepEqual(traversal.path, [
     'scripts/decisive-step-evaluator.js',
     'gate:pretool:decisive-step',
-    'cash:diagnostic-499',
+    'cash:pro-subscription',
   ]);
 });
 
@@ -62,7 +62,7 @@ test('Unified Agentic Graph RAG: queryAgenticGraph returns linked cash paths and
   const res = queryAgenticGraph('spend');
   assert.equal(res.status, 'ok');
   assert.ok(res.totalGraphNodes >= 10);
-  assert.ok(res.monetizationTiers.some((m) => m.id === 'cash:diagnostic-499'));
+  assert.ok(res.monetizationTiers.some((m) => m.id === 'cash:pro-subscription'));
 });
 
 test('Decisive DPO Distiller: extracts high-signal preference triple from fail->pass flip', () => {

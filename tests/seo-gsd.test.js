@@ -339,7 +339,7 @@ test('background agent governance page is discoverable and commercially classifi
   assert.match(html, /risk-tiered review/i);
 });
 
-test('AI agent governance sprint page routes bottom-funnel buyers into Team intake', () => {
+test('AI agent governance sprint page routes readers to attributed self-serve plan comparison', () => {
   const page = findSeoPageByPath('/guides/ai-agent-governance-sprint');
   const sitemapEntry = THUMBGATE_SEO_SITEMAP_ENTRIES.find((entry) => entry.path === '/guides/ai-agent-governance-sprint');
   const html = renderSeoPageHtml(page, { appOrigin: 'https://app.example.com' });
@@ -355,12 +355,19 @@ test('AI agent governance sprint page routes bottom-funnel buyers into Team inta
     priority: '0.8',
   });
   assert.match(html, /AI Agent Governance Sprint/);
-  assert.match(html, /48-hour Setup Sprint/);
+  assert.match(html, /former managed sprint is retired/);
   assert.match(html, /npx thumbgate background-governance --check --json/);
-  assert.match(html, /workflow-sprint-intake/);
+  assert.match(html, /Compare current plans/);
+  const cta = new URL(page.cta.href, 'https://app.example.com');
+  assert.equal(cta.pathname, '/pricing');
+  assert.equal(cta.searchParams.get('utm_source'), 'website');
+  assert.equal(cta.searchParams.get('utm_medium'), 'seo_page');
+  assert.equal(cta.searchParams.get('cta_placement'), 'seo_brief');
+  assert.equal(cta.searchParams.get('plan_id'), 'pro');
+  assert.doesNotMatch(html, /workflow-sprint-intake|\$499|\$1500|48-hour Setup Sprint/);
 });
 
-test('AI deployment readiness page turns deployment demand into sprint intake', () => {
+test('AI deployment readiness page routes deployment readers to current software plans', () => {
   const page = findSeoPageByPath('/guides/ai-deployment-readiness');
   const sitemapEntry = THUMBGATE_SEO_SITEMAP_ENTRIES.find((entry) => entry.path === '/guides/ai-deployment-readiness');
   const html = renderSeoPageHtml(page, { appOrigin: 'https://app.example.com' });
@@ -379,8 +386,15 @@ test('AI deployment readiness page turns deployment demand into sprint intake', 
   assert.match(html, /deployment companies/i);
   assert.match(html, /governance and proof layer/i);
   assert.match(html, /npx thumbgate background-governance --check --json/);
-  assert.match(html, /workflow-sprint-intake/);
-  assert.match(html, /Workflow Hardening Diagnostic/);
+  assert.match(html, /Compare current plans/);
+  const cta = new URL(page.cta.href, 'https://app.example.com');
+  assert.equal(cta.pathname, '/pricing');
+  assert.equal(cta.searchParams.get('utm_source'), 'website');
+  assert.equal(cta.searchParams.get('utm_medium'), 'seo_page');
+  assert.equal(cta.searchParams.get('cta_placement'), 'seo_brief');
+  assert.equal(cta.searchParams.get('plan_id'), 'pro');
+  assert.doesNotMatch(html, /workflow-sprint-intake|\$499|\$1500|48-hour Setup Sprint/);
+  assert.match(html, /Free and Pro plans do not include workflow implementation services/);
 });
 
 test('GPT-5.5 model evaluation page is discoverable and commercially classified', () => {
@@ -612,5 +626,17 @@ test('writePlanOutputs persists machine-readable GSD artifacts', () => {
     assert.match(execute, /Recommended publish order/);
   } finally {
     fs.rmSync(tmpDir, { recursive: true, force: true });
+  }
+});
+
+test('SEO generators retire service pitches without changing unrelated styles or plan attribution', () => {
+  for (const blueprint of PAGE_BLUEPRINTS) {
+    const page = findSeoPageByPath(blueprint.path);
+    if (!page) continue;
+    const html = renderSeoPageHtml(page, { appOrigin: 'https://app.example.com' });
+    assert.doesNotMatch(html, /\$499|\$1500|Setup Sprint|workflow-sprint-intake|Pro around one model-routing|Pro focused on model routing/);
+    for (const match of html.matchAll(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/g)) {
+      assert.doesNotThrow(() => JSON.parse(match[1]));
+    }
   }
 });

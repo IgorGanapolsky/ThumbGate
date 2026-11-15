@@ -196,7 +196,7 @@ function buildCreatorGrowthCampaign(input = {}) {
         'Replay the action and show the gate blocking it.',
         'Export the decision journal and proof report.',
       ],
-      cta: `${appUrl}/#workflow-sprint-intake?utm_source=beehiiv&utm_campaign=creator_webinar_agent_governance&offer=${offerCode}`,
+      cta: `${appUrl}/pricing?utm_source=beehiiv&utm_campaign=creator_webinar_agent_governance&offer=${offerCode}`,
     },
     paywall: {
       freeMeter: 2,

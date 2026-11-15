@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
- * stripe-payment-link-update.js — fix attribution + urgency on the 3
- * customer-facing Payment Links.
+ * stripe-payment-link-update.js — fix attribution + urgency on the remaining
+ * customer-facing kit Payment Link.
  *
  * Background. docs/audits/payment-links-2026-05-18.md verified that 100
  * active Stripe Payment Links exist on the account and most are missing
@@ -19,8 +19,8 @@
  * endpoint `stripe.paymentLinks.update(id, params)` DOES work for
  * own-account links. This is the API-reachable lever.
  *
- * Scope. Targets ONLY the 3 customer-facing links documented in the
- * audit. The other 97 are left alone — they're noise from past
+ * Scope. Targets ONLY the remaining kit link documented in the
+ * audit. Retired service links and other links are left alone — they're noise from past
  * iterations and changing them risks breaking embeds we don't know about.
  *
  * Idempotency. Re-running after a successful run is a no-op because
@@ -39,30 +39,6 @@ const path = require('node:path');
 // Customer-facing Payment Link URL slugs (from public/index.html grep, 2026-05-18).
 // Slugs map to plink_* IDs via the Stripe API. The script resolves IDs from URLs.
 const TARGETS = [
-  {
-    urlSlug: '3cI7sLgH25v8dWh5e33sI0o',
-    label: 'Sprint Diagnostic',
-    expectedPriceUsd: 499,
-    customText: 'Two-day diagnostic on one AI-agent workflow. Refund within 7 days if we cannot extract a prevention rule from your failure trace. Sent within 48 hours of payment.',
-    metadata: {
-      utm_source: 'thumbgate.ai',
-      cta_id: 'sprint_diagnostic_499',
-      attribution_version: '2026-05-18',
-      offer_kind: 'one_time_consulting',
-    },
-  },
-  {
-    urlSlug: '8x25kDcqMaPs9G15e33sI0p',
-    label: 'Setup Sprint',
-    expectedPriceUsd: 1500,
-    customText: 'Full Setup Sprint — diagnostic + applied prevention rules + deployed PreToolUse hooks + rollout review. Two weeks calendar time. Refund within 7 days.',
-    metadata: {
-      utm_source: 'thumbgate.ai',
-      cta_id: 'workflow_sprint_1500',
-      attribution_version: '2026-05-18',
-      offer_kind: 'one_time_consulting',
-    },
-  },
   {
     urlSlug: 'bJe14naiE9Lo7xT49Z3sI12',
     label: 'OpenClaw Agent Governance Kit',

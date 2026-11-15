@@ -84,7 +84,7 @@ function buildTrackedUrl(pathname, topic) {
 
 function buildArticleBody(topic, date = new Date()) {
   const numbersUrl = buildTrackedUrl('/numbers', topic);
-  const sprintUrl = buildTrackedUrl('/#workflow-sprint-intake', topic);
+  const sprintUrl = buildTrackedUrl('/pricing', topic);
   const compareUrl = buildTrackedUrl('/compare/agentix-labs', topic);
   const guideUrl = buildTrackedUrl('/guides/pre-action-checks', topic);
 
@@ -145,7 +145,7 @@ function buildArticleBody(topic, date = new Date()) {
     '',
     `If you want the self-serve path, start with the pre-action checks guide: ${guideUrl}`,
     '',
-    `If you have one AI-agent workflow that needs hardening, use the Setup Sprint intake: ${sprintUrl}`,
+    `Start with the free local CLI. Choose self-serve Pro for recall, dashboard, adapters, and exports. Compare current plans: ${sprintUrl}`,
     '',
     `For proof-backed numbers and current evidence, use: ${numbersUrl}`,
   ].join('\n');
@@ -240,7 +240,7 @@ function buildVisibilityPlan({ date = new Date(), topic = topicForDate(date) } =
 }
 
 function buildEngagementQueue({ date = new Date(), topic = topicForDate(date) } = {}) {
-  const sprintUrl = buildTrackedUrl('/#workflow-sprint-intake', topic);
+  const sprintUrl = buildTrackedUrl('/pricing', topic);
   return [
     {
       channel: 'medium_comment',
@@ -256,7 +256,7 @@ function buildEngagementQueue({ date = new Date(), topic = topicForDate(date) } 
       priority: 'high',
       reason: 'A response article can convert their audience without interruptive outreach.',
       prompt: 'Turn the weekly draft into a Medium response if a current article discusses agent operations, observability, safety, or business automation.',
-      draft: `If the audience has one tool-using workflow that keeps repeating the same failure, the fastest diagnostic is one workflow hardening sprint: ${sprintUrl}`,
+      draft: `Start with the free local CLI. Choose self-serve Pro for recall, dashboard, adapters, and exports. Compare current plans: ${sprintUrl}`,
     },
   ];
 }

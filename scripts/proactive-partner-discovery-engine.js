@@ -102,7 +102,7 @@ async function fetchLiveShowHnAgentLaunches(limit = 5) {
       integrationSurface: hit.title || 'AI Agent / MCP execution boundary',
       painPoint: 'Newly launched agent tools execute shell/API actions without a <0.5ms pre-action loop/spend firewall or thumbs-down-to-rule compiler.',
       thumbgateSolution: 'Drop-in <0.5ms PreToolUse firewall (`npx thumbgate@latest init`) + tamper-evident SHA-256 execution receipts.',
-      offerTier: 'Launch Partner Integration & 48-Hr Hardening Sprint ($499)',
+      offerTier: 'Start with the free local CLI. Choose self-serve Pro for recall, dashboard, adapters, and exports. Compare current plans at https://thumbgate.ai/pricing.',
       hnUrl: `https://news.ycombinator.com/item?id=${hit.objectID}`,
     }));
   } catch {

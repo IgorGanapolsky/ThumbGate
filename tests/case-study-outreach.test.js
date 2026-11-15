@@ -33,7 +33,7 @@ describe('case-study outreach generator', () => {
     assert.match(url, /#sudo-evasion$/);
   });
 
-  it('builds channel copy with proof + diagnostic CTA', () => {
+  it('builds channel copy with proof + plan comparison CTA', () => {
     const pack = buildPack(CASES['sudo-evasion'], { baseUrl: 'https://thumbgate.ai' });
     assert.match(pack.channels.linkedin, /62/);
     assert.match(pack.channels.email, /Diagnostic/i);
@@ -41,6 +41,7 @@ describe('case-study outreach generator', () => {
     assert.match(pack.markdown, /Honesty/);
     assert.doesNotMatch(pack.markdown, /Fortune 500|customer logo wall/i);
     assert.match(pack.links.diagnostic, /utm_campaign=case_sudo_evasion/);
+    assert.equal(new URL(pack.links.diagnostic).pathname, '/pricing');
     assert.match(pack.channels.email, /^Subject: A guardrail you could walk past with sudo/);
   });
 

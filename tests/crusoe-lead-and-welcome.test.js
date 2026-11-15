@@ -84,16 +84,16 @@ test('day-0 signup welcome email renders two CTA buttons, postal address, and op
     const anchorHrefs = [...rendered.html.matchAll(/<a\s+href="([^"]+)"/gi)].map((m) => m[1]);
     assert.deepEqual(anchorHrefs, [
       'https://thumbgate.ai/#install',
-      'https://thumbgate.ai/diagnostic',
+      'https://thumbgate.ai/pricing',
       'mailto:igor@igorganapolsky.com?subject=unsubscribe&amp;body=Please%20remove%20me%20from%20ThumbGate%20emails.',
     ]);
     assert.match(rendered.html, /Install ThumbGate free/);
-    assert.match(rendered.html, /Book the \$499 diagnostic/);
+    assert.match(rendered.html, /Compare free and Pro/);
     assert.match(rendered.html, /2261 Market Street #4242, San Francisco, CA 94114/);
     assert.match(rendered.html, /Unsubscribe/);
     assert.doesNotMatch(rendered.html, /checkout\.stripe\.com/i);
     assert.match(rendered.text, /npx thumbgate init/);
-    assert.match(rendered.text, /https:\/\/thumbgate\.ai\/diagnostic/);
+    assert.match(rendered.text, /https:\/\/thumbgate\.ai\/pricing/);
     assert.match(rendered.text, /Unsubscribe: igor@igorganapolsky\.com/);
     assert.match(rendered.text, /2261 Market Street #4242, San Francisco, CA 94114/);
 

@@ -113,8 +113,7 @@ function buildCreatorCampaignLinks(options = {}, runtimeConfig = resolveHostedBi
   teamCheckoutUrl.searchParams.set('billing_cycle', 'monthly');
   teamCheckoutUrl.searchParams.set('seat_count', String(teamSeatCount));
 
-  const sprintUrl = applyAttributionParams(new URL('/', runtimeConfig.appOrigin), attribution);
-  sprintUrl.hash = 'workflow-sprint-intake';
+  const sprintUrl = applyAttributionParams(new URL('/pricing', runtimeConfig.appOrigin), attribution);
 
   return {
     creator,

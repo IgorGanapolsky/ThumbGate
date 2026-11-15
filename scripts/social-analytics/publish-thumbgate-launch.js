@@ -255,7 +255,7 @@ function buildPaidSprintUrl(platform, content) {
 }
 
 function buildVoiceAgentDiagnosticUrl(platform, content) {
-  return buildUTMLink(`${APP_ORIGIN}/#workflow-sprint-intake`, {
+  return buildUTMLink(`${APP_ORIGIN}/pricing`, {
     source: platform,
     medium: 'paid_service',
     campaign: VOICE_AGENT_DIAGNOSTIC_CAMPAIGN,
@@ -430,118 +430,16 @@ function buildOperatorLabPost(platform) {
 
 function buildPaidSprintPost(platform) {
   const normalized = String(platform || '').trim().toLowerCase();
-  const key = normalized === 'x' ? 'twitter' : normalized;
-  const links = buildPaidSprintCheckoutUrls(key || 'direct', `paid_sprint_${key || 'generic'}`);
-  const compact = [
-    'Paid ThumbGate hardening is open.',
-    '$499 diagnostic maps one repeated Claude/Codex/Cursor failure into prevention rules.',
-    links.diagnostic,
-    '$1500 sprint implements the first guardrails.',
-    links.sprint,
-  ];
-
-  if (key === 'linkedin') {
-    return [
-      'I opened a paid ThumbGate workflow-hardening lane for teams running Claude Code, Codex, Cursor, Gemini, Amp, OpenCode, or MCP agents in real repos.',
-      '',
-      'The offer is intentionally narrow:',
-      '',
-      '- $499 diagnostic: one risky AI-agent workflow, failure-pattern review, prevention-rule map, and concrete hardening plan',
-      '- $1500 sprint: implement the first guardrails and prove the same failure gets blocked',
-      '',
-      'This is for teams seeing repeated agent mistakes: unsafe file edits, bad deploy steps, ignored repo rules, or risky tool calls that keep coming back across sessions.',
-      '',
-      `Book the $499 diagnostic: ${links.diagnostic}`,
-      `Start the $1500 sprint: ${links.sprint}`,
-    ].join('\n');
-  }
-
-  if (key === 'twitter') {
-    return [
-      'Paid ThumbGate hardening:',
-      '$499 diagnostic for repeated Claude/Codex/Cursor failures.',
-      links.diagnostic,
-    ].join(' ');
-  }
-
-  if (key === 'instagram') {
-    return [
-      'Stop repeated AI-agent mistakes.',
-      '',
-      '$499 diagnostic: map one risky workflow.',
-      '$1500 sprint: implement the first guardrails.',
-      '',
-      'For Claude Code, Codex, Cursor, Gemini, Amp, OpenCode, and MCP teams.',
-      '',
-      `Diagnostic: ${links.diagnostic}`,
-      `Sprint: ${links.sprint}`,
-    ].join('\n');
-  }
-
-  if (key === 'bluesky') {
-    return [
-      'Paid ThumbGate workflow hardening is open.',
-      '$499 diagnostic. $1500 implementation sprint.',
-      'For repeated Claude/Codex/Cursor failures.',
-      links.diagnostic,
-    ].join(' ');
-  }
-
-  if (key === 'threads') {
-    return [
-      'Paid ThumbGate hardening: $499 diagnostic for one repeated AI-agent workflow failure.',
-      'Scope the first gate set after the diagnostic.',
-      links.diagnostic,
-    ].join(' ');
-  }
-
-  return compact.join(' ');
+  const key = normalized === 'x' ? 'twitter' : normalized || 'direct';
+  const links = buildPaidSprintCheckoutUrls(key, `paid_sprint_${key}`);
+  return `ThumbGate: start with the free local CLI or compare self-serve Pro. ${links.diagnostic}`;
 }
 
 function buildVoiceAgentDiagnosticPost(platform) {
   const normalized = String(platform || '').trim().toLowerCase();
-  const key = normalized === 'x' ? 'twitter' : normalized;
-  const intakeUrl = buildVoiceAgentDiagnosticUrl(key || 'direct', `voice_agent_diagnostic_${key || 'generic'}`);
-
-  if (key === 'linkedin') {
-    return [
-      'I have 3 paid voice-agent reliability diagnostics open this week.',
-      '',
-      'This is for teams shipping phone, support, or sales agents where missed intents, brittle handoffs, latency, tool failures, or unclear escalation paths are already costing real calls.',
-      '',
-      '$499 diagnostic: I review one agent flow, logs/transcripts if available, and the current eval or monitoring setup. You get a concrete failure map, prevention-rule plan, and first-fix checklist.',
-      '',
-      `Checkout: ${DIAGNOSTIC_CHECKOUT_URL}`,
-      `Intake: ${intakeUrl}`,
-    ].join('\n');
-  }
-
-  if (key === 'threads') {
-    return [
-      'Opening 3 paid voice-agent reliability diagnostics this week.',
-      '',
-      '$499: one live phone/support/sales agent flow, failure map, eval gaps, escalation risks, and first-fix checklist.',
-      '',
-      `Checkout: ${DIAGNOSTIC_CHECKOUT_URL}`,
-      `Intake: ${intakeUrl}`,
-    ].join('\n');
-  }
-
-  if (key === 'bluesky') {
-    return [
-      'Voice-agent reliability diagnostic: $499.',
-      'One flow, failure map, eval gaps, first-fix checklist.',
-      'Checkout:',
-      DIAGNOSTIC_CHECKOUT_URL,
-    ].join(' ');
-  }
-
-  return [
-    'Paid voice-agent reliability diagnostic is open.',
-    '$499 for one flow: failure map, eval gaps, escalation risks, first-fix checklist.',
-    DIAGNOSTIC_CHECKOUT_URL,
-    intakeUrl,
-  ].join(' ');
+  const key = normalized === 'x' ? 'twitter' : normalized || 'direct';
+  const url = buildVoiceAgentDiagnosticUrl(key, `voice_agent_diagnostic_${key}`);
+  return `ThumbGate: start with the free local CLI or compare self-serve Pro. ${url}`;
 }
 
 function buildPlatformPost(platform, offer = 'launch') {

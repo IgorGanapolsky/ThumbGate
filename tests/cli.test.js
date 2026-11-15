@@ -1063,12 +1063,28 @@ describe('bin/cli.js', () => {
     assert.match(result.stdout, /Pro \(\$19\/mo or \$149\/yr\)/);
     assert.match(result.stdout, /Personal recall: search lessons, rules, and proof/);
     assert.match(result.stdout, /Managed adapters: Claude Code, Cursor, Codex, Gemini, Amp, Cline, OpenCode/);
-    assert.match(result.stdout, /Setup Sprint: \$499 for one supported workflow; hosted team sync and org dashboard are not GA/);
+    assert.match(result.stdout, /Hosted team sync and organization dashboard are not generally available/);
+    assert.doesNotMatch(result.stdout, /\$499|Setup Sprint/);
     assert.match(result.stdout, /personal local dashboard/i);
     assert.match(result.stdout, /Launch dashboard\s*:\s*npx thumbgate pro/);
     assert.match(result.stdout, /Activate \+ run\s*:\s*npx thumbgate pro --activate --key=YOUR_KEY/);
     assert.match(result.stdout, /COMMERCIAL_TRUTH\.md/);
     assert.doesNotMatch(result.stdout, /\$10\/mo|38 spots remaining|first 50 users|Founding Member/i);
+  });
+
+  test('retired diagnostic aliases show current plans with attribution', () => {
+    for (const command of ['diagnostic', 'workflow-diagnostic', 'sprint-diagnostic']) {
+      const result = runCliSync([command], { env: unlicensedProEnv(testHomeDir) });
+      assert.equal(result.status, 0, result.stderr);
+      assert.match(result.stdout, /offers are retired/);
+      assert.match(result.stdout, /npx thumbgate init/);
+      assert.match(result.stdout, /Self-serve Pro/);
+      assert.doesNotMatch(result.stdout, /\$499|\/go\/diagnostic/);
+      const url = new URL(extractHttpUrls(result.stdout)[0]);
+      assert.equal(url.pathname, '/pricing');
+      assert.equal(url.searchParams.get('utm_source'), 'cli_diagnostic');
+      assert.equal(url.searchParams.get('utm_content'), command);
+    }
   });
 
   test('pro --upgrade installs the shipped public Pro config bundle', () => {
@@ -1363,7 +1379,7 @@ describe('bin/cli.js', () => {
     assert.equal(checkoutUrl, PRO_MONTHLY_PAYMENT_LINK, 'Pro command should include the attributed Pro checkout URL');
     assert.ok(result.stdout.includes('$19/mo or $149/yr'), 'Pro command should include current pricing');
     assert.ok(result.stdout.includes('Personal recall: search lessons, rules, and proof'), 'Pro command should lead with personal recall');
-    assert.ok(result.stdout.includes('Setup Sprint: $499 for one supported workflow; hosted team sync and org dashboard are not GA'), 'Pro command should separate the individual product from unavailable hosted team features');
+    assert.ok(result.stdout.includes('Hosted team sync and organization dashboard are not generally available'), 'Pro command should separate the individual product from unavailable hosted team features');
     assert.ok(result.stdout.includes('Launch dashboard: npx thumbgate pro'), 'Pro command should include the local dashboard launcher');
     assert.ok(result.stdout.includes('Private core    : ThumbGate-Core (private repo)'), 'Pro command should describe the current private-core split');
   });

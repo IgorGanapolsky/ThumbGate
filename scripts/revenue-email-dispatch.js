@@ -5,7 +5,6 @@ const path = require('node:path');
 const { sendEmail } = require('./mailer');
 const {
   buildDiagnosticBuyerUrl,
-  buildSprintBuyerUrl,
 } = require('./buyer-paths');
 
 const DEFAULT_FROM = 'ThumbGate <igor@igorganapolsky.com>';
@@ -30,8 +29,7 @@ const CAMPAIGNS = {
       'For reference only, the current first-party buyer paths are:',
       '',
       'Free / guide: https://thumbgate.ai/guide?utm_source=aiventyx&utm_medium=marketplace&utm_campaign=aiventyx_free_listing',
-      `$499 diagnostic: ${buildDiagnosticBuyerUrl({ source: 'aiventyx', medium: 'marketplace' })}`,
-      `$1,500 sprint scope: ${buildSprintBuyerUrl({ source: 'aiventyx', medium: 'marketplace' })}`,
+      `Free and Pro plans: ${buildDiagnosticBuyerUrl({ source: 'aiventyx', medium: 'marketplace' })}`,
       '',
       'Do not publish or route payment traffic until the zero-cost terms are confirmed in writing.',
     ].join('\n'),
