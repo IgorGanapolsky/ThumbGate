@@ -1,57 +1,41 @@
 ---
 name: thumbgate-daily-discoveries
-description: Autonomous daily publishing engine and monitoring skill for ThumbGate news and technical discoveries. Generates high-density engineering posts with full UTM attribution, synchronizes to Obsidian, schedules dual cron/launchd runs at 9:00 AM EST, and tracks publication ledgers.
+description: Daily technical-content staging, engagement polling, and reply-draft routine for ThumbGate.
 ---
 
-# 📰 ThumbGate Daily Technical Discoveries & News Engine
+# ThumbGate daily technical-content routine
 
-This skill automates the daily harvesting, synthesis, UTM attribution, and multi-channel publication of ThumbGate engineering discoveries and release news.
+Use this routine to turn a verified engineering finding into one useful technical post, then track responses without sending duplicate or unsupported claims.
 
----
+## Daily routine
 
-## 🎯 Architecture & Operating Principles
+The LaunchAgent runs at 9:00 AM local time. It stages one canonical technical article, polls available engagement metrics, and queues reply drafts. It sends no posts or replies.
 
-1. **Daily Cadence (9:00 AM EST):** Runs once per calendar day. Avoids spam while establishing consistent technical authority.
-2. **Dual Scheduling Redundancy:**
-   - Primary: macOS crontab (`0 9 * * * /bin/bash scripts/thumbgate-daily-discoveries-publish.sh ...`)
-   - Fallback: macOS LaunchAgent (`~/Library/LaunchAgents/com.thumbgate.daily-publish.plist`)
-   - Note: GitHub Actions `schedule:` is strictly limited to `codeql.yml` per repo hygiene tests.
-3. **Full UTM Attribution & Tracked Redirects:**
-   - All outbound links to `thumbgate.ai` must use `buildUTMLink` from `scripts/social-analytics/utm.js`.
-   - Outbound pro/checkout links must route through `/go/pro` (`serveTrackedLinkRedirect` in `src/api/server.js`) to capture first-party funnel telemetry.
-4. **Multi-Surface Staging & Sync:**
-   - Staged locally at `docs/marketing/daily-discoveries/YYYY-MM-DD-<slug>.md`.
-   - Synchronized to the CEO's Obsidian Vault at `~/Documents/Igor/Research/Daily-Discoveries/`.
-   - Logged idempotently to `.thumbgate/daily-discoveries-ledger.jsonl`.
-   - Dispatches to Dev.to / Zernio if API keys are configured.
+1. Review the staged article and confirm each technical claim against its cited commit or source.
+2. Adapt the finding to the rules and format of each relevant community. Do not paste the same promotion everywhere.
+3. Use the canonical ThumbGate URL and UTM links from the article. Disclose the ThumbGate affiliation.
+4. Before each external post, add an OPEN row to `coordination/LOCKS.md` and comment on the Ops Coordination Linear issue. Mark the row DONE after verifying the post URL.
+5. Review `.thumbgate/reply-drafts.jsonl` for useful questions. Reply in the platform only when the answer is accurate, relevant, and welcome. Mark the coordination row DONE after verifying delivery.
+6. Review the metrics database and the daily log. Record which posts led to meaningful discussion or attributed visits.
 
----
+Skip posts that repeat yesterday's point, lack evidence, violate a community's rules, or expose private or employer information. Do not invent customer results or product capabilities.
 
-## 🛠️ CLI Commands & Usage
+## What the automation supports
+
+The daily article is staged at `docs/marketing/daily-discoveries/YYYY-MM-DD-<slug>.md`, its canonical HTML is written under `public/blog/`, and a receipt is added to `.thumbgate/daily-discoveries-ledger.jsonl`. A second run on the same date skips an existing staged article. The article uses UTM-tagged links. The Obsidian copy is written only when the vault is available and has no conflicting claim.
+
+The scheduled command uses `--stage-only`, so a configured Dev.to key cannot trigger publication. The default metrics poller reads GitHub and Plausible metrics and uses Zernio for connected social accounts when its API key exists. Legacy direct pollers for Reddit, LinkedIn, Threads, Instagram, TikTok, and YouTube are disabled by default. Reddit and Bluesky monitors queue reply drafts. The LinkedIn reply monitor currently reports that its required Community Management API access is unavailable.
+
+No working integration was confirmed for Hacker News, Hashnode, Medium, or ZyVOP. The HubSpot social connector denied access, and Zernio publishing is disabled by project policy. Do not describe those channels as scheduled or monitored until an authorized path is verified.
+
+## Run it by hand
 
 ```bash
-# Preview today's technical discovery without making mutations or network calls
-node scripts/thumbgate-daily-discoveries-publish.js --dry-run
-
-# Output structured JSON report
-node scripts/thumbgate-daily-discoveries-publish.js --json
-
-# Force publish/restage today's discovery even if already logged in ledger
-node scripts/thumbgate-daily-discoveries-publish.js --force
-
-# Shell wrapper (used by crontab / launchd)
+node scripts/thumbgate-daily-discoveries-publish.js --dry-run --json
+node scripts/thumbgate-daily-discoveries-publish.js --stage-only --json
 ./scripts/thumbgate-daily-discoveries-publish.sh
-
-# Run test suite
-node --test tests/thumbgate-daily-discoveries-publish.test.js
+bash scripts/install-thumbgate-daily-publish-launchd.sh
+bash scripts/install-thumbgate-daily-publish-launchd.sh --uninstall
 ```
 
----
-
-## 📋 Pre-Flight Verification Checklist
-
-- [ ] Verify `node --test tests/thumbgate-daily-discoveries-publish.test.js` passes.
-- [ ] Verify outbound links contain valid UTM parameters (`utm_source=daily_discoveries`, `utm_campaign=daily_technical_discoveries`).
-- [ ] Verify `launchctl list | grep thumbgate` reports exit code 0.
-- [ ] Verify `crontab -l | grep thumbgate` contains the 9:00 AM daily trigger.
-- [ ] Check `.thumbgate/daily-discoveries-ledger.jsonl` for recent execution receipts.
+The LaunchAgent label is `com.thumbgate.daily-publish`. It is the only scheduler for this routine. Do not also add a cron entry.

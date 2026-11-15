@@ -358,3 +358,32 @@ test('runDailyPublish holds ambiguous transport and JSON failures instead of rep
     post.mock.restore();
   }
 });
+
+test('stage-only never publishes with credentials and repeated staging is idempotent', async (t) => {
+  process.env.DEVTO_API_KEY = 'test-stage-only';
+  const publisher = require('../scripts/social-analytics/publishers/devto');
+  const publish = t.mock.method(publisher, 'publishArticle', async () => {
+    throw new Error('Stage-only must not publish');
+  });
+  const first = await runDailyPublish({ stageOnly: true });
+  assert.equal(first.status, 'staged');
+  const ledger = fs.readFileSync(ledgerPath, 'utf8');
+  const second = await runDailyPublish({ stageOnly: true });
+  assert.equal(second.status, 'already_staged');
+  assert.equal(fs.readFileSync(ledgerPath, 'utf8'), ledger);
+  assert.equal(publish.mock.callCount(), 0);
+  assert.equal(hasAlreadyPublishedToday(dateStr), false);
+});
+
+
+test('scheduled wrapper dry-run previews without staging or polling', () => {
+  const output = execFileSync('bash', [
+    path.join(REPO_ROOT, 'scripts/thumbgate-daily-discoveries-publish.sh'), '--dry-run',
+  ], cliOptions);
+  assert.equal(JSON.parse(output).status, 'dry_run_preview');
+  assert.equal(fs.existsSync(ledgerPath), false);
+  assert.equal(fs.existsSync(path.join(runtimeDir, 'public')), false);
+  assert.throws(() => execFileSync('bash', [
+    path.join(REPO_ROOT, 'scripts/thumbgate-daily-discoveries-publish.sh'), '--unsupported',
+  ], { ...cliOptions, stdio: 'pipe' }), { status: 2 });
+});
