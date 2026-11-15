@@ -241,6 +241,7 @@ describe('Stripe checkout conversion & Payment Link / Annual routing fixes', () 
     const pricingHtml = fs.readFileSync(path.join(__dirname, '..', 'public', 'pricing.html'), 'utf8');
     assert.doesNotMatch(pricingHtml, /href="\/go\/pro-direct/);
     assert.doesNotMatch(pricingHtml, /href="\/go\/pro-annual/);
-    assert.match(pricingHtml, /action="\/go\/diagnostic-pay" method="POST"/);
+    assert.match(pricingHtml, /<a[^>]*href="\/checkout\/pro"[^>]*data-cta-id="pricing_pro_checkout"/);
+    assert.doesNotMatch(pricingHtml, /action="\/go\/diagnostic-pay"/);
   });
 });
