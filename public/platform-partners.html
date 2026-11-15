@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>ThumbGate for Platforms — AI-Native Governance API</title>
-  <meta name="description" content="List ThumbGate.ai on your platform. AI-native infrastructure firewall, feedback loops, and execution receipts for enterprise AI agents.">
+  <meta name="description" content="Explore ThumbGate integrations: free local enforcement, optional self-serve Pro software, and an API reference for supported integrations.">
   <link rel="canonical" href="__APP_ORIGIN__/platform-partners.html">
   <link rel="icon" type="image/svg+xml" href="__APP_ORIGIN__/favicon.svg">
   <style>
@@ -36,13 +36,10 @@
     "@type": "SoftwareApplication",
     "name": "ThumbGate.ai",
     "applicationCategory": "DeveloperApplication,BusinessApplication",
-    "offers": {
-      "@type": "AggregateOffer",
-      "lowPrice": "25",
-      "highPrice": "499",
-      "priceCurrency": "USD",
-      "availability": "https://schema.org/InStock"
-    }
+    "offers": [
+      { "@type": "Offer", "name": "Free CLI", "price": "0", "priceCurrency": "USD", "url": "__APP_ORIGIN__/install" },
+      { "@type": "Offer", "name": "ThumbGate Pro", "description": "Self-serve Pro software; see current pricing.", "url": "__APP_ORIGIN__/pricing" }
+    ]
   }
   </script>
 </head>
@@ -57,7 +54,7 @@
 
   <main>
     <h1>ThumbGate for Platforms</h1>
-    <p class="lead">Resell the AI-native infrastructure firewall to enterprise customers. Fully automated governance, feedback loops, and execution receipts through a single API.</p>
+    <p class="lead">Explore how ThumbGate fits your platform: start with free local enforcement or optional self-serve Pro software. Platform integrations require review; no reseller margins or hosted Enterprise subscriptions are offered on this page.</p>
 
     <p><span class="status">● Live</span> API — verified at <a href="https://thumbgate.ai/health">thumbgate.ai/health</a>. OpenAPI at <a href="https://thumbgate.ai/openapi.json">/openapi.json</a>.</p>
 
@@ -76,12 +73,13 @@
         <p>Every action produces an HMAC-signed task outcome through <code>/v1/task-outcomes</code>.</p>
       </div>
       <div class="card">
-        <h3>No human bottleneck</h3>
-        <p>Policy-driven approval gates, automated provisioning, and usage reporting.</p>
+        <h3>Review integration boundaries</h3>
+        <p>Check supported hooks, authentication, and deployment requirements before integrating. An API reference is not a reseller agreement.</p>
       </div>
     </div>
 
-    <h2>Core enterprise endpoints</h2>
+    <h2>Integration API reference</h2>
+    <p>Endpoint access depends on your configured deployment and authentication. Listing an endpoint here does not promise a hosted platform plan.</p>
     <table>
       <tr><th>Endpoint</th><th>Purpose</th></tr>
       <tr><td><code>POST /v1/decisions/evaluate</code></td><td>Policy decision on any agent action</td></tr>
@@ -98,16 +96,16 @@
       <tr><td><code>POST /v1/billing/provision</code></td><td>Automated API-key provisioning</td></tr>
     </table>
 
-    <h2>Pay-per-usage platform tiers</h2>
+    <h2>Free CLI and optional Pro</h2>
     <table>
-      <tr><th>Tier</th><th>Monthly minimum</th><th>Includes</th><th>Reseller margin</th></tr>
-      <tr><td>Free CLI</td><td>$0</td><td>Local evaluation</td><td>—</td></tr>
-      <tr><td>Pro</td><td>$499</td><td>500,000 evaluations + DPO export</td><td>30%</td></tr>
-      <tr><td>Enterprise</td><td>Custom</td><td>Custom commit</td><td>30%</td></tr>
+      <tr><th>Plan</th><th>Price</th><th>Includes</th><th>Next step</th></tr>
+      <tr><td>Free CLI</td><td>$0</td><td>Local prevention rules and hook enforcement</td><td><a href="/install">Install free</a></td></tr>
+      <tr><td>Pro</td><td><a href="/pricing">Current pricing</a></td><td>Recall, search, personal local dashboard, managed adapters, unlimited captures and rules, DPO export</td><td><a href="/checkout/pro">Get Pro</a></td></tr>
     </table>
+    <p>See <a href="/pricing">current pricing</a>. Hosted team sync and a hosted org dashboard are not generally available. No evaluation quota or revenue share is promised.</p>
 
     <div class="cta">
-      <a class="button" href="__APP_ORIGIN__/partner-intake.html">Apply to list ThumbGate</a>
+      <a class="button" href="__APP_ORIGIN__/partner-intake.html">Discuss an integration</a>
       <span style="margin-left:1rem; color:var(--muted);">or email <a href="mailto:igor@igorganapolsky.com">igor@igorganapolsky.com</a></span>
     </div>
   </main>
