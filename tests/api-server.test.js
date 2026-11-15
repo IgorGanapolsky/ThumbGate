@@ -1142,6 +1142,35 @@ test('terms of service route covers payment, refunds, acceptable use, and limita
   assert.match(body, /href="\/support"/);
 });
 
+test('pricing JSON-LD matches the default and configured monthly Pro offer', async () => {
+  const previousPrice = process.env.THUMBGATE_PRO_PRICE_DOLLARS;
+  try {
+    for (const configuredPrice of [undefined, '37']) {
+      if (configuredPrice === undefined) delete process.env.THUMBGATE_PRO_PRICE_DOLLARS;
+      else process.env.THUMBGATE_PRO_PRICE_DOLLARS = configuredPrice;
+      const res = await fetch(apiUrl('/pricing'), { headers: { 'sec-gpc': '1' } });
+      assert.equal(res.status, 200);
+      const body = await res.text();
+      const schemas = [...body.matchAll(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/g)]
+        .map((match) => JSON.parse(match[1]));
+      const app = schemas.find((schema) => schema['@type'] === 'SoftwareApplication');
+      assert.ok(app, 'pricing must expose its software offer as JSON-LD');
+      assert.equal(app.name, 'ThumbGate Pro');
+      assert.equal(app.url, 'https://app.example.com/pricing');
+      assert.equal(app.offers['@type'], 'Offer');
+      assert.equal(Number(app.offers.price), configuredPrice === undefined ? 19 : 37);
+      assert.equal(app.offers.priceCurrency, 'USD');
+      assert.equal(app.offers.url, 'https://app.example.com/checkout/pro');
+      assert.match(app.offers.description, /Monthly Pro subscription/);
+      assert.ok(body.includes(`data-value="${app.offers.price}"`));
+      assert.doesNotMatch(JSON.stringify(schemas), /__|499|Setup Sprint|diagnostic-pay/);
+    }
+  } finally {
+    if (previousPrice === undefined) delete process.env.THUMBGATE_PRO_PRICE_DOLLARS;
+    else process.env.THUMBGATE_PRO_PRICE_DOLLARS = previousPrice;
+  }
+});
+
 test('pricing page is the single source of truth for what ThumbGate sells', async () => {
   const res = await fetch(apiUrl('/pricing'));
   assert.equal(res.status, 200);
