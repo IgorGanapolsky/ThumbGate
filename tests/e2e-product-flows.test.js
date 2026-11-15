@@ -5,6 +5,7 @@ const path = require('node:path');
 const os = require('node:os');
 const gatesEngine = require('../scripts/gates-engine');
 const { readJsonl } = require('../scripts/fs-utils');
+const historicalIntake = require('../scripts/workflow-sprint-intake');
 const { addSalesLead } = require('../scripts/sales-pipeline');
 const { reconcileProviderPayment } = require('../scripts/provider-payment-reconciler');
 const { digestBuyerEmail } = require('../scripts/provider-revenue-evidence');
@@ -424,13 +425,58 @@ test('E2E: learn hub and article pages serve live over HTTP', async (t) => {
   assert.match(articleHtml, /npx thumbgate init/);
 });
 
-test('E2E: workflow sprint intake progresses to paid team and surfaces in dashboard analytics', async (t) => {
+test('E2E: product inquiry remains available while retired service APIs cannot mutate it', async (t) => {
+  const savedMailKeys = [process.env.RESEND_API_KEY, process.env.THUMBGATE_RESEND_API_KEY];
+  delete process.env.RESEND_API_KEY;
+  delete process.env.THUMBGATE_RESEND_API_KEY;
+  t.after(() => {
+    for (const [index, key] of ['RESEND_API_KEY', 'THUMBGATE_RESEND_API_KEY'].entries()) {
+      if (savedMailKeys[index] === undefined) delete process.env[key];
+      else process.env[key] = savedMailKeys[index];
+    }
+  });
+  const { tmpDir, port, adminHeaders } = await startIsolatedServer(t, 'thumbgate-e2e-inquiry-');
+  const res = await fetch(apiUrl(port, '/v1/inquiries'), {
+    method: 'POST', headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ email: 'question@example.com', workflow: 'How do I configure Pro?',
+      planId: 'diagnostic', utmSource: 'dashboard' }),
+  });
+  assert.equal(res.status, 201);
+  const inquiry = await res.json();
+  assert.equal(inquiry.offer, 'product_inquiry');
+  const ledger = path.join(tmpDir, 'workflow-sprint-leads.jsonl');
+  const before = fs.readFileSync(ledger, 'utf8');
+  for (const suffix of ['', '/queue', '/advance']) {
+    for (const headers of [{ 'content-type': 'application/json' }, adminHeaders]) {
+      const retired = await fetch(apiUrl(port, `/v1/intake/workflow-sprint${suffix}`), {
+        method: 'POST', headers,
+        body: JSON.stringify({ leadId: inquiry.leadId, status: 'qualified' }),
+      });
+      assert.equal(retired.status, 410);
+      assert.equal((await retired.json()).pricingUrl, '/pricing');
+    }
+  }
+  assert.equal(fs.readFileSync(ledger, 'utf8'), before);
+  const queueRes = await fetch(apiUrl(port,
+    '/v1/billing/summary?include_intake_queue=1&intake_status=new&intake_limit=1'), { headers: adminHeaders });
+  assert.equal(queueRes.status, 200);
+  assert.match(queueRes.headers.get('cache-control'), /private.*no-store/);
+  assert.match(queueRes.headers.get('vary'), /Authorization/i);
+  const { intakeQueue } = await queueRes.json();
+  assert.equal(intakeQueue.leads.length, 1);
+  const lead = intakeQueue.leads[0];
+  assert.equal(lead.leadId, inquiry.leadId);
+  assert.equal(lead.qualificationCard.recommendedOffer, null);
+  assert.equal(lead.discoveryPacket.draft, null);
+  assert.equal(lead.closePacket.draft, null);
+  assert.equal(lead.closePacket.externalActionAuthorized, false);
+  assert.deepEqual(readJsonl(path.join(tmpDir, 'workflow-runs.jsonl')), []);
+});
+
+test('E2E: historical paid-team evidence remains visible after service API retirement', async (t) => {
   const { tmpDir, port, adminHeaders } = await startIsolatedServer(t, 'thumbgate-e2e-sprint-');
 
-  const intakeRes = await fetch(apiUrl(port, '/v1/intake/workflow-sprint'), {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
+  const intakeBody = historicalIntake.appendWorkflowSprintLead({
       email: 'pilot@example.com',
       company: 'North Star Systems',
       workflow: 'PR review hardening',
@@ -441,11 +487,7 @@ test('E2E: workflow sprint intake progresses to paid team and surfaces in dashbo
       utmSource: 'linkedin',
       creator: 'reach_vb',
       ctaId: 'workflow_sprint_intake',
-    }),
-  });
-  assert.equal(intakeRes.status, 201);
-  const intakeBody = await intakeRes.json();
-  assert.equal(intakeBody.ok, true);
+    }, { feedbackDir: tmpDir });
   assert.ok(intakeBody.leadId);
 
   addSalesLead({
@@ -528,18 +570,20 @@ test('E2E: workflow sprint intake progresses to paid team and surfaces in dashbo
   ];
 
   for (const transition of transitions) {
-    const advanceRes = await fetch(apiUrl(port, '/v1/intake/workflow-sprint/advance'), {
-      method: 'POST',
-      headers: adminHeaders,
-      body: JSON.stringify({
+    const advanceBody = historicalIntake.advanceWorkflowSprintLead({
         leadId: intakeBody.leadId,
         ...transition,
-      }),
-    });
-    assert.equal(advanceRes.status, 200);
-    const advanceBody = await advanceRes.json();
-    assert.equal(advanceBody.ok, true);
+      }, { feedbackDir: tmpDir });
     assert.equal(advanceBody.lead.status, transition.status);
+  }
+
+  for (const suffix of ['', '/queue', '/advance']) {
+    const retired = await fetch(apiUrl(port, `/v1/intake/workflow-sprint${suffix}`), {
+      method: 'POST', headers: adminHeaders,
+      body: JSON.stringify({ leadId: intakeBody.leadId, status: 'paid_team' }),
+    });
+    assert.equal(retired.status, 410);
+    assert.equal((await retired.json()).pricingUrl, '/pricing');
   }
 
   const dashboardRes = await fetch(apiUrl(port, '/v1/dashboard?window=lifetime'), {

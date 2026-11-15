@@ -68,6 +68,7 @@ const { listGateTemplates } = require('../scripts/gate-templates');
 const { buildHostedSuccessUrl } = require('../scripts/hosted-config');
 const { parseCheckoutReference } = require('../scripts/checkout-attribution-reference');
 const { readJsonl } = require('../scripts/fs-utils');
+const historicalIntake = require('../scripts/workflow-sprint-intake');
 const {
   recordConversationEntry,
   getConversationPaths,
@@ -3142,8 +3143,9 @@ test('product feedback reason chips require a reason and keep the detail on the 
   }
 });
 
-test('workflow sprint intake endpoint captures a contactable lead', async () => {
-  const res = await fetch(apiUrl('/v1/intake/workflow-sprint'), {
+test('product inquiry endpoint captures a contactable lead', async () => {
+  const leadsBefore = readJsonl(path.join(tmpFeedbackDir, 'workflow-sprint-leads.jsonl')).length;
+  const res = await fetch(apiUrl('/v1/inquiries'), {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify({
@@ -3173,26 +3175,29 @@ test('workflow sprint intake endpoint captures a contactable lead', async () => 
   assert.match(body.proofPackUrl, /VERIFICATION_EVIDENCE\.md/);
 
   const leads = readJsonl(path.join(tmpFeedbackDir, 'workflow-sprint-leads.jsonl'));
-  assert.equal(leads.length, 1);
-  assert.equal(leads[0].contact.email, 'buyer@example.com');
-  assert.equal(leads[0].qualification.workflow, 'PR review hardening');
-  assert.equal(leads[0].attribution.planId, 'sprint');
-  assert.equal(leads[0].attribution.source, 'linkedin');
-  assert.equal(leads[0].attribution.utmMedium, 'organic_social');
-  assert.equal(leads[0].attribution.creator, 'reach_vb');
+  assert.equal(leads.length, leadsBefore + 1);
+  const lead = leads.find((entry) => entry.leadId === body.leadId);
+  assert.ok(lead);
+  assert.equal(lead.contact.email, 'buyer@example.com');
+  assert.equal(lead.qualification.workflow, 'PR review hardening');
+  assert.equal(lead.attribution.planId, 'inquiry');
+  assert.equal(lead.offer, 'product_inquiry');
+  assert.equal(lead.attribution.source, 'linkedin');
+  assert.equal(lead.attribution.utmMedium, 'organic_social');
+  assert.equal(lead.attribution.creator, 'reach_vb');
 
   const telemetry = readJsonl(path.join(tmpFeedbackDir, 'telemetry-pings.jsonl'));
   assert.ok(telemetry.some((entry) => entry.eventType === 'workflow_sprint_lead_submitted'));
 });
 
-test('workflow sprint intake falls back to journey cookies when IDs are omitted from the payload', async () => {
+test('product inquiry falls back to journey cookies when IDs are omitted from the payload', async () => {
   const cookieHeader = [
     'thumbgate_visitor_id=visitor_cookie_lead',
     'thumbgate_session_id=session_cookie_lead',
     'thumbgate_acquisition_id=acq_cookie_lead',
   ].join('; ');
 
-  const res = await fetch(apiUrl('/v1/intake/workflow-sprint'), {
+  const res = await fetch(apiUrl('/v1/inquiries'), {
     method: 'POST',
     headers: {
       'content-type': 'application/json',
@@ -3227,7 +3232,7 @@ test('workflow sprint intake falls back to journey cookies when IDs are omitted 
   assert.ok(submitted);
 });
 
-test('workflow sprint intake accepts form posts, seeds journey cookies, and returns an HTML confirmation page', async () => {
+test('product inquiry accepts form posts, seeds journey cookies, and returns an HTML confirmation page', async () => {
   const body = new URLSearchParams({
     email: 'formbuyer@example.com',
     company: 'HTML Forms Co',
@@ -3237,7 +3242,7 @@ test('workflow sprint intake accepts form posts, seeds journey cookies, and retu
     blocker: 'No-JS buyers need a real intake path.',
   }).toString();
 
-  const res = await fetch(apiUrl('/v1/intake/workflow-sprint'), {
+  const res = await fetch(apiUrl('/v1/inquiries'), {
     method: 'POST',
     headers: {
       'content-type': 'application/x-www-form-urlencoded',
@@ -3259,9 +3264,9 @@ test('workflow sprint intake accepts form posts, seeds journey cookies, and retu
   assert.match(String(acquisitionId), /^acq_/);
 
   const html = await res.text();
-  assert.match(html, /Workflow sprint intake received/);
+  assert.match(html, /Inquiry received/);
   assert.match(html, /Review Proof Pack/);
-  assert.match(html, /Review Sprint Brief/);
+  assert.match(html, /Compare free and Pro/);
   assert.doesNotMatch(html, /\$\s*\d|Stripe|checkout|payment/i);
 
   const leads = readJsonl(path.join(tmpFeedbackDir, 'workflow-sprint-leads.jsonl'));
@@ -3287,7 +3292,7 @@ test('workflow sprint intake accepts form posts, seeds journey cookies, and retu
   assert.ok(submitted);
 });
 
-test('diagnostic page form posts create a contactable lead instead of failing shared intake validation', async () => {
+test('product inquiries accept legacy form payloads without creating a retired service offer', async () => {
   const body = new URLSearchParams({
     name: 'Ada Lovelace',
     email: 'ada@example.com',
@@ -3302,7 +3307,7 @@ test('diagnostic page form posts create a contactable lead instead of failing sh
     utm_campaign: 'hosted_listing',
   }).toString();
 
-  const res = await fetch(apiUrl('/v1/intake/workflow-sprint'), {
+  const res = await fetch(apiUrl('/v1/inquiries'), {
     method: 'POST',
     headers: {
       'content-type': 'application/x-www-form-urlencoded',
@@ -3313,24 +3318,24 @@ test('diagnostic page form posts create a contactable lead instead of failing sh
 
   assert.equal(res.status, 201);
   assert.match(String(res.headers.get('content-type')), /text\/html/);
-  assert.match(await res.text(), /Workflow sprint intake received/);
+  assert.match(await res.text(), /Inquiry received/);
 
   const leads = readJsonl(path.join(tmpFeedbackDir, 'workflow-sprint-leads.jsonl'));
   const lead = leads.find((entry) => entry.contact.email === 'ada@example.com');
   assert.ok(lead);
   assert.equal(lead.contact.name, 'Ada Lovelace');
-  assert.equal(lead.offer, 'workflow_hardening_diagnostic');
+  assert.equal(lead.offer, 'product_inquiry');
   assert.equal(lead.qualification.owner, null);
   assert.equal(lead.qualification.blocker, null);
   assert.equal(lead.qualification.runtime, null);
   assert.equal(lead.qualification.urgency, 'Repeated failure already cost us time');
-  assert.equal(lead.attribution.planId, 'diagnostic');
+  assert.equal(lead.attribution.planId, 'inquiry');
   assert.equal(lead.attribution.utmSource, 'aiventyx');
 });
 
-test('workflow sprint intake validation failure records failure telemetry and writes no lead', async () => {
+test('product inquiry validation failure records failure telemetry and writes no lead', async () => {
   const leadsBefore = readJsonl(path.join(tmpFeedbackDir, 'workflow-sprint-leads.jsonl')).length;
-  const res = await fetch(apiUrl('/v1/intake/workflow-sprint'), {
+  const res = await fetch(apiUrl('/v1/inquiries'), {
     method: 'POST',
     headers: {
       'content-type': 'application/json',
@@ -3354,7 +3359,7 @@ test('workflow sprint intake validation failure records failure telemetry and wr
   assert.ok(failure);
   assert.equal(failure.utmSource, 'linkedin');
   assert.equal(failure.utmCampaign, 'workflow_hardening');
-  assert.equal(failure.ctaId, 'workflow_sprint_intake');
+  assert.equal(failure.ctaId, 'inquiry');
   assert.match(failure.referrer, /\[REDACTED:stripe_test_secret\]/);
   assert.doesNotMatch(JSON.stringify(failure), /sk_test_1234567890abcdef/);
 });
@@ -3381,92 +3386,89 @@ test('removed real-estate /broker-audit and /v1/intake/broker-audit routes retur
   assert.equal(authIntakeRes.status, 404);
 });
 
-test('workflow sprint advance endpoint requires the static admin key', async () => {
-  const intakeRes = await fetch(apiUrl('/v1/intake/workflow-sprint'), {
-    method: 'POST',
-    headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({
-      email: 'advance-auth@example.com',
-      workflow: 'Release hardening',
-      owner: 'Platform lead',
-      blocker: 'Need an admin-only transition path.',
-      runtime: 'Claude Code',
-    }),
+test('retired service intake routes fail closed for every method and credential without side effects', async () => {
+  const billingKey = billing.provisionApiKey('cus_retired_service_intake').key;
+  const watchedFiles = ['workflow-sprint-leads.jsonl', 'workflow-runs.jsonl',
+    'workflow-sprint-intake-limits.json', 'telemetry-pings.jsonl', 'funnel-events.jsonl',
+    'revenue-events.jsonl', 'local-checkout-sessions.json'];
+  const snapshot = () => watchedFiles.map((file) => {
+    const target = path.join(tmpFeedbackDir, file);
+    return fs.existsSync(target) ? fs.readFileSync(target, 'utf8') : null;
   });
-  assert.equal(intakeRes.status, 201);
-  const intakeBody = await intakeRes.json();
-
-  const billingKey = billing.provisionApiKey('cus_sprint_non_admin', {
-    installId: 'inst_sprint_non_admin',
-    source: 'stripe_webhook_checkout_completed',
-  }).key;
-
-  const res = await fetch(apiUrl('/v1/intake/workflow-sprint/advance'), {
-    method: 'POST',
-    headers: {
-      'content-type': 'application/json',
-      authorization: `Bearer ${billingKey}`,
-    },
-    body: JSON.stringify({
-      leadId: intakeBody.leadId,
-      status: 'qualified',
-    }),
-  });
-
-  assert.equal(res.status, 403);
+  const before = snapshot();
+  const originalFetch = global.fetch;
+  let providerCalls = 0;
+  global.fetch = (url, options) => {
+    if (new URL(url).origin !== apiOrigin) {
+      providerCalls += 1;
+      throw new Error('retired intake must not contact any provider');
+    }
+    return originalFetch(url, options);
+  };
+  const originalRequest = https.request;
+  https.request = () => { providerCalls += 1; throw new Error('unexpected provider request'); };
+  try {
+    for (const suffix of ['', '/queue', '/advance']) {
+      for (const method of ['GET', 'HEAD', 'OPTIONS', 'POST', 'PUT', 'PATCH', 'DELETE']) {
+        for (const credential of [null, 'invalid', 'test-api-key', billingKey]) {
+          const res = await fetch(apiUrl(`/v1/intake/workflow-sprint${suffix}`), {
+            method,
+            headers: { ...(credential ? { authorization: `Bearer ${credential}` } : {}),
+              'content-type': 'application/json' },
+            ...(['GET', 'HEAD'].includes(method) ? {} : { body: '{invalid JSON' }),
+          });
+          assert.equal(res.status, 410, `${method} ${suffix} with ${credential ? 'credentials' : 'anonymous'}`);
+          assert.equal(res.headers.get('cache-control'), 'no-store');
+          assert.equal(res.headers.get('link'), '</pricing>; rel="alternate"');
+          if (method === 'HEAD') assert.equal(await res.text(), '');
+          else assert.deepEqual(await res.json(), { error: 'This offer has been retired.', pricingUrl: '/pricing' });
+        }
+      }
+    }
+    assert.equal(providerCalls, 0);
+    assert.deepEqual(snapshot(), before);
+  } finally {
+    global.fetch = originalFetch;
+    https.request = originalRequest;
+  }
 });
 
-test('workflow sprint advance endpoint appends pipeline snapshots and workflow run evidence', async () => {
-  const intakeRes = await fetch(apiUrl('/v1/intake/workflow-sprint'), {
-    method: 'POST',
-    headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({
-      email: 'advance@example.com',
-      company: 'North Star Systems',
-      workflow: 'PR review hardening',
-      owner: 'Platform lead',
-      blocker: 'Need proof-backed pilot promotion.',
-      runtime: 'Claude Code',
-      utmSource: 'linkedin',
-    }),
-  });
-  assert.equal(intakeRes.status, 201);
-  const intakeBody = await intakeRes.json();
+test('historical intake library preserves signed scope snapshots and workflow run evidence', async () => {
+  const intakeBody = historicalIntake.appendWorkflowSprintLead({
+    email: 'advance@example.com',
+    company: 'North Star Systems',
+    workflow: 'PR review hardening',
+    owner: 'Platform lead',
+    blocker: 'Need proof-backed pilot promotion.',
+    runtime: 'Claude Code',
+    utmSource: 'linkedin',
+  }, { feedbackDir: tmpFeedbackDir });
 
-  const qualifiedRes = await fetch(apiUrl('/v1/intake/workflow-sprint/advance'), {
-    method: 'POST',
-    headers: {
-      'content-type': 'application/json',
-      ...authHeader,
+  const qualifiedBody = { ok: true, ...historicalIntake.advanceWorkflowSprintLead({
+    leadId: intakeBody.leadId,
+    status: 'qualified',
+    actor: 'ops',
+    note: 'Qualified for pilot review.',
+    reviewedBy: 'ops@example.com',
+    qualificationReview: {
+      severityAndFrequency: 'The approval failure repeated in the current workflow.',
+      measurableImpact: 'The team must re-review and repair unsafe retries.',
+      urgencyAndTrigger: 'The failure recurred this week and blocks rollout.',
+      decisionAuthority: 'The workflow owner can approve the next scoped step.',
+      budgetMechanism: 'The fixed price will be reviewed before checkout.',
+      offerFit: 'One bounded workflow fits the Setup Sprint.',
+      proofRequired: 'The buyer requires regression proof and an approval runbook.',
+      nextStep: 'Review a fixed one-workflow scope.',
+      evidenceReferences: ['intake:api-server-test'],
+      zeroSpendStatus: 'proceed_zero_cost',
+      priceUnderstandingConfirmed: true,
+      workflowCount: 1,
+      authorityConfirmed: true,
+      urgencyDays: 14,
+      budgetCents: 150000,
+      readyToImplement: true,
     },
-    body: JSON.stringify({
-      leadId: intakeBody.leadId,
-      status: 'qualified',
-      actor: 'ops',
-      note: 'Qualified for pilot review.',
-      reviewedBy: 'ops@example.com',
-      qualificationReview: {
-        severityAndFrequency: 'The approval failure repeated in the current workflow.',
-        measurableImpact: 'The team must re-review and repair unsafe retries.',
-        urgencyAndTrigger: 'The failure recurred this week and blocks rollout.',
-        decisionAuthority: 'The workflow owner can approve the next scoped step.',
-        budgetMechanism: 'The fixed price will be reviewed before checkout.',
-        offerFit: 'One bounded workflow fits the Setup Sprint.',
-        proofRequired: 'The buyer requires regression proof and an approval runbook.',
-        nextStep: 'Review a fixed one-workflow scope.',
-        evidenceReferences: ['intake:api-server-test'],
-        zeroSpendStatus: 'proceed_zero_cost',
-        priceUnderstandingConfirmed: true,
-        workflowCount: 1,
-        authorityConfirmed: true,
-        urgencyDays: 14,
-        budgetCents: 150000,
-        readyToImplement: true,
-      },
-    }),
-  });
-  assert.equal(qualifiedRes.status, 200);
-  const qualifiedBody = await qualifiedRes.json();
+  }, { feedbackDir: tmpFeedbackDir }) };
   assert.equal(qualifiedBody.ok, true);
   assert.equal(qualifiedBody.lead.status, 'qualified');
   assert.equal(qualifiedBody.lead.qualificationReview.evidenceBased, true);
@@ -3474,50 +3476,32 @@ test('workflow sprint advance endpoint appends pipeline snapshots and workflow r
   assert.equal(qualifiedBody.lead.qualificationReview.recommendedOfferId, 'workflow_hardening_sprint');
   assert.equal(qualifiedBody.workflowRun, null);
 
-  const pilotRes = await fetch(apiUrl('/v1/intake/workflow-sprint/advance'), {
-    method: 'POST',
-    headers: {
-      'content-type': 'application/json',
-      ...authHeader,
-    },
-    body: JSON.stringify({
-      leadId: intakeBody.leadId,
-      status: 'named_pilot',
-      actor: 'ops',
-      workflowId: 'pr_review_hardening',
-      teamId: 'north_star_systems',
-      agreementSource: 'docusign',
-      agreementRef: 'envelope_api_signed',
-      agreementSignedBy: 'buyer@example.com',
-      agreementSignedAt: '2026-07-15T12:00:00.000Z',
-      agreementDigest: `sha256:${'b'.repeat(64)}`,
-      agreementOfferId: 'workflow_hardening_sprint',
-      agreementAmountCents: 150000,
-      agreementWorkflowCount: 1,
-    }),
-  });
-  assert.equal(pilotRes.status, 200);
-  const pilotBody = await pilotRes.json();
+  const pilotBody = { ok: true, ...historicalIntake.advanceWorkflowSprintLead({
+    leadId: intakeBody.leadId,
+    status: 'named_pilot',
+    actor: 'ops',
+    workflowId: 'pr_review_hardening',
+    teamId: 'north_star_systems',
+    agreementSource: 'docusign',
+    agreementRef: 'envelope_api_signed',
+    agreementSignedBy: 'buyer@example.com',
+    agreementSignedAt: '2026-07-15T12:00:00.000Z',
+    agreementDigest: `sha256:${'b'.repeat(64)}`,
+    agreementOfferId: 'workflow_hardening_sprint',
+    agreementAmountCents: 150000,
+    agreementWorkflowCount: 1,
+  }, { feedbackDir: tmpFeedbackDir }) };
   assert.equal(pilotBody.lead.status, 'named_pilot');
   assert.ok(pilotBody.workflowRun);
   assert.equal(pilotBody.workflowRun.customerType, 'named_pilot');
 
-  const proofRes = await fetch(apiUrl('/v1/intake/workflow-sprint/advance'), {
-    method: 'POST',
-    headers: {
-      'content-type': 'application/json',
-      ...authHeader,
-    },
-    body: JSON.stringify({
-      leadId: intakeBody.leadId,
-      status: 'proof_backed_run',
-      actor: 'ops',
-      reviewedBy: 'buyer@example.com',
-      proofArtifacts: ['docs/VERIFICATION_EVIDENCE.md'],
-    }),
-  });
-  assert.equal(proofRes.status, 200);
-  const proofBody = await proofRes.json();
+  const proofBody = { ok: true, ...historicalIntake.advanceWorkflowSprintLead({
+    leadId: intakeBody.leadId,
+    status: 'proof_backed_run',
+    actor: 'ops',
+    reviewedBy: 'buyer@example.com',
+    proofArtifacts: ['docs/VERIFICATION_EVIDENCE.md'],
+  }, { feedbackDir: tmpFeedbackDir }) };
   assert.equal(proofBody.lead.status, 'proof_backed_run');
   assert.ok(proofBody.workflowRun);
   assert.equal(proofBody.workflowRun.proofBacked, true);
@@ -3532,11 +3516,6 @@ test('workflow sprint advance endpoint appends pipeline snapshots and workflow r
   assert.equal(runs.at(-1).proofBacked, true);
   assert.equal(runs.at(-1).metadata.leadId, intakeBody.leadId);
 
-  const telemetry = readJsonl(path.join(tmpFeedbackDir, 'telemetry-pings.jsonl'));
-  assert.ok(telemetry.some((entry) => (
-    entry.eventType === 'workflow_sprint_lead_advanced' &&
-    entry.pipelineStatus === 'proof_backed_run'
-  )));
 });
 
 test('private-core API endpoints return 503 when hosted/private modules are absent', async () => {
@@ -3590,13 +3569,21 @@ test('private-core API endpoints return 503 when hosted/private modules are abse
       headers: { ...authHeader, 'x-admin-key': 'thumbgate-admin-key', 'content-type': 'application/json' },
       body: JSON.stringify({ leadId: 'lead_123', status: 'qualified' }),
     });
-    assert.equal(advanceRes.status, 503);
+    assert.equal(advanceRes.status, 410);
 
     const intakeQueueRes = await fetch(apiUrl('/v1/intake/workflow-sprint/queue'), {
       headers: { ...authHeader, 'x-admin-key': 'thumbgate-admin-key' },
     });
-    assert.equal(intakeQueueRes.status, 503);
-    assert.match(await intakeQueueRes.text(), /private core|hosted runtime/i);
+    assert.equal(intakeQueueRes.status, 410);
+    assert.equal((await intakeQueueRes.json()).pricingUrl, '/pricing');
+    const inquiryRes = await fetch(apiUrl('/v1/inquiries'), {
+      method: 'POST', headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ email: 'buyer@example.com', workflow: 'Product question' }),
+    });
+    assert.equal(inquiryRes.status, 503);
+    const billingQueueRes = await fetch(apiUrl('/v1/billing/summary?include_intake_queue=1'), { headers: authHeader });
+    assert.equal(billingQueueRes.status, 503);
+    assert.match(await billingQueueRes.text(), /private core|hosted runtime/i);
 
     const lessonsRes = await fetch(apiUrl('/v1/lessons/search?q=rollback&limit=5'), { headers: authHeader });
     assert.equal(lessonsRes.status, 503);
@@ -4705,7 +4692,7 @@ test('billing summary rejects billing keys', async () => {
 });
 
 test('billing summary batch reuses one authenticated response and exposes an explicit no-cache intake queue', async () => {
-  const intakeRes = await fetch(apiUrl('/v1/intake/workflow-sprint'), {
+  const intakeRes = await fetch(apiUrl('/v1/inquiries'), {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify({
@@ -4743,25 +4730,22 @@ test('billing summary batch reuses one authenticated response and exposes an exp
   assert.ok(queued);
   assert.equal(queued.contact.email, 'queue-buyer@example.com');
   assert.equal(queued.qualification.workflow, 'Customer-email approval hardening');
-  assert.equal(queued.nextOperatorStep, 'request_action_time_approval_for_discovery');
+  assert.equal(queued.nextOperatorStep, 'review_and_qualify');
   assert.equal(queued.qualificationCard.status, 'evidence_based_operator_recommendation_not_buyer_intent_or_revenue');
-  assert.equal(queued.qualificationCard.route, 'diagnostic');
+  assert.equal(queued.qualificationCard.route, 'nurture');
   assert.equal(queued.qualificationCard.fitBand, 'strong_evidence_for_review');
   assert.equal(queued.qualificationCard.priorityBand, 'review_now');
   assert.ok(Number.isInteger(queued.priorityRank) && queued.priorityRank >= 1);
-  assert.equal(queued.qualificationCard.recommendedOffer.offerId, 'workflow_hardening_sprint');
-  assert.equal(queued.qualificationCard.recommendedOffer.priceCents, 150000);
+  assert.equal(queued.qualificationCard.recommendedOffer, null);
   assert.equal(queued.qualificationCard.chronology.freshness, 'same_day');
   assert.equal(queued.qualificationCard.approvalPhrase, null);
   assert.equal(queued.qualificationCard.checkoutEligible, false);
   assert.equal(queued.qualificationCard.externalActionAuthorized, false);
   assert.equal(queued.qualificationCard.revenueRecognized, false);
-  assert.equal(queued.discoveryPacket.status, 'approval_ready_not_authorized');
-  assert.equal(queued.discoveryPacket.destination.address, 'queue-buyer@example.com');
-  assert.equal(queued.discoveryPacket.evidence.questionCount, 3);
-  assert.equal(queued.discoveryPacket.evidence.sellerAccessCostStatus, 'proceed_zero_cost');
-  assert.match(queued.discoveryPacket.draft.body, /No payment or commitment is requested/i);
-  assert.match(queued.discoveryPacket.approvalPhrase, /^APPROVE SEND THUMBGATE DISCOVERY QUESTIONS TO /);
+  assert.equal(queued.discoveryPacket.status, 'hold_not_approval_ready');
+  assert.ok(queued.discoveryPacket.blockers.includes('product_inquiry_not_a_service_offer'));
+  assert.equal(queued.discoveryPacket.draft, null);
+  assert.equal(queued.discoveryPacket.approvalPhrase, null);
   assert.equal(queued.discoveryPacket.externalActionAuthorized, false);
   assert.equal(queued.discoveryPacket.revenueRecognized, false);
   assert.equal(queued.closePacket.status, 'hold_not_approval_ready');
@@ -4769,8 +4753,8 @@ test('billing summary batch reuses one authenticated response and exposes an exp
   assert.equal(queued.closePacket.approvalPhrase, null);
   assert.equal(queued.closePacket.externalActionAuthorized, false);
   assert.equal(queued.commercialProof, undefined);
-  assert.ok(body.intakeQueue.discoveryReadyTotal >= 1);
-  assert.ok(body.intakeQueue.primaryDiscoveryAction);
+  assert.equal(body.intakeQueue.discoveryReadyTotal, 0);
+  assert.equal(body.intakeQueue.primaryDiscoveryAction, null);
 
   const single = await fetch(apiUrl('/v1/billing/summary?window=30d'), {
     headers: authHeader,
@@ -4780,25 +4764,16 @@ test('billing summary batch reuses one authenticated response and exposes an exp
   assert.match(single.headers.get('cache-control') || '', /no-store/);
 });
 
-test('dedicated intake queue emits one exact approval-ready diagnostic action after evidence review', async () => {
-  const intakeRes = await fetch(apiUrl('/v1/intake/workflow-sprint'), {
-    method: 'POST',
-    headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({
+test('billing queue preserves historical diagnostic evidence without authorizing external actions', async () => {
+  const intake = historicalIntake.appendWorkflowSprintLead({
       email: 'diagnostic-close@example.com',
       workflow: 'Release approval workflow',
       urgency: 'A repeated approval failure happened this week.',
       planId: 'diagnostic',
       ctaId: 'diagnostic_page_intake',
-    }),
-  });
-  assert.equal(intakeRes.status, 201);
-  const intake = await intakeRes.json();
+    }, { feedbackDir: tmpFeedbackDir });
 
-  const qualifiedRes = await fetch(apiUrl('/v1/intake/workflow-sprint/advance'), {
-    method: 'POST',
-    headers: { 'content-type': 'application/json', ...authHeader },
-    body: JSON.stringify({
+  historicalIntake.advanceWorkflowSprintLead({
       leadId: intake.leadId,
       status: 'qualified',
       reviewedBy: 'ops@example.com',
@@ -4820,18 +4795,16 @@ test('dedicated intake queue emits one exact approval-ready diagnostic action af
         budgetCents: 49900,
         readyToImplement: false,
       },
-    }),
-  });
-  assert.equal(qualifiedRes.status, 200);
+    }, { feedbackDir: tmpFeedbackDir });
 
   const queueRes = await fetch(apiUrl(
-    '/v1/intake/workflow-sprint/queue?status=qualified&limit=100'
+    '/v1/billing/summary?include_intake_queue=1&intake_status=qualified&intake_limit=100'
   ), { headers: authHeader });
   assert.equal(queueRes.status, 200);
   assert.match(queueRes.headers.get('cache-control') || '', /private/);
   assert.match(queueRes.headers.get('cache-control') || '', /no-store/);
   assert.equal(queueRes.headers.get('pragma'), 'no-cache');
-  const queue = await queueRes.json();
+  const { intakeQueue: queue } = await queueRes.json();
   const queued = queue.leads.find((lead) => lead.leadId === intake.leadId);
   assert.ok(queued);
   assert.equal(queued.nextOperatorStep, 'request_action_time_approval');
@@ -4854,7 +4827,7 @@ test('dedicated intake queue emits one exact approval-ready diagnostic action af
   assert.equal(queue.primaryDiscoveryAction, null);
 
   const billingKey = billing.provisionApiKey('cus_queue_billing_key').key;
-  const forbidden = await fetch(apiUrl('/v1/intake/workflow-sprint/queue'), {
+  const forbidden = await fetch(apiUrl('/v1/billing/summary?include_intake_queue=1'), {
     headers: { authorization: `Bearer ${billingKey}` },
   });
   assert.equal(forbidden.status, 403);

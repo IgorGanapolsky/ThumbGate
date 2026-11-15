@@ -6957,7 +6957,6 @@ const OPERATOR_READONLY_GET_PATHS = new Set([
   '/v1/dashboard/review-state',
   '/v1/dashboard/agent-register',
   '/v1/feedback/stats',
-  '/v1/intake/workflow-sprint/queue',
   '/v1/task-outcomes/monitor',
 ]);
 
@@ -7149,7 +7148,8 @@ function createUnscopedApiServer({ ownerAdminDependencies = {} } = {}) {
     const retiredPath = pathname.replace(/\/$/, '').replace(/\.html$/, '');
     if (retiredOfferPages.has(retiredPath)
       || /^\/go\/(?:diagnostic(?:-499|-direct|-pay)?|sprint|operator-diagnostic)$/.test(retiredPath)
-      || /^\/checkout\/(?:sprint|diagnostic|workflow-sprint)$/.test(retiredPath)) {
+      || /^\/checkout\/(?:sprint|diagnostic|workflow-sprint)$/.test(retiredPath)
+      || /^\/v1\/intake\/workflow-sprint(?:\/(?:queue|advance))?$/.test(retiredPath)) {
       res.writeHead(410, {
         'Content-Type': 'application/json; charset=utf-8',
         'Cache-Control': 'no-store',
@@ -10286,12 +10286,12 @@ a{color:#8b9}</style></head><body><form class="card" method="post" action="/oaut
       return;
     }
 
-    if (req.method === 'OPTIONS' && (pathname === '/v1/intake/workflow-sprint' || pathname === '/v1/inquiries')) {
+    if (req.method === 'OPTIONS' && pathname === '/v1/inquiries') {
       sendPublicBillingPreflight(res);
       return;
     }
 
-    if (req.method === 'POST' && (pathname === '/v1/intake/workflow-sprint' || pathname === '/v1/inquiries')) {
+    if (req.method === 'POST' && pathname === '/v1/inquiries') {
       const { FEEDBACK_DIR } = getFeedbackPaths();
       const productInquiry = pathname === '/v1/inquiries';
       const traceId = createTraceId(productInquiry ? 'inquiry' : 'sprint_intake');
@@ -12757,33 +12757,6 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
         return;
       }
 
-      // GET /v1/intake/workflow-sprint/queue — authenticated, no-store operator close queue
-      if (req.method === 'GET' && pathname === '/v1/intake/workflow-sprint/queue') {
-        if (!isBillingSummaryAuthorized(req, expectedApiKey, expectedOperatorKey)) {
-          sendProblem(res, {
-            type: PROBLEM_TYPES.FORBIDDEN,
-            title: 'Forbidden',
-            status: 403,
-            detail: 'Admin or operator API key required for this endpoint.',
-          });
-          return;
-        }
-        try {
-          const { FEEDBACK_DIR } = getFeedbackPaths();
-          const workflowSprintIntake = requirePrivateApiModule(
-            'workflowSprintIntake',
-            'Workflow sprint intake'
-          );
-          const queue = buildWorkflowIntakeQueue(parsed, workflowSprintIntake, FEEDBACK_DIR, {
-            publicOrigin: hostedConfig.appOrigin,
-          });
-          sendJson(res, 200, queue, PRIVATE_OPERATOR_RESPONSE_HEADERS);
-        } catch (err) {
-          sendWorkflowIntakeQueueProblem(res, err);
-        }
-        return;
-      }
-
       // GET /v1/billing/summary — operator billing summary (admin key or operator key)
       if (req.method === 'GET' && pathname === '/v1/billing/summary') {
         if (!isBillingSummaryAuthorized(req, expectedApiKey, expectedOperatorKey)) {
@@ -12853,64 +12826,6 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
           runtimePresence,
           ...(intakeQueue ? { intakeQueue } : {}),
         }, PRIVATE_OPERATOR_RESPONSE_HEADERS);
-        return;
-      }
-
-      // POST /v1/intake/workflow-sprint/advance — admin-only workflow sprint progression
-      if (req.method === 'POST' && pathname === '/v1/intake/workflow-sprint/advance') {
-        if (!isStaticAdminAuthorized(req, expectedApiKey)) {
-          sendProblem(res, {
-            type: PROBLEM_TYPES.FORBIDDEN,
-            title: 'Forbidden',
-            status: 403,
-            detail: 'Admin API key required for this endpoint.',
-          });
-          return;
-        }
-
-        const { FEEDBACK_DIR } = getFeedbackPaths();
-        try {
-          const body = await readProjectBody(req, 24 * 1024);
-          const workflowSprintIntake = requirePrivateApiModule('workflowSprintIntake', 'Workflow sprint intake');
-          const result = workflowSprintIntake.advanceWorkflowSprintLead(body, { feedbackDir: FEEDBACK_DIR });
-
-          appendBestEffortTelemetry(FEEDBACK_DIR, {
-            eventType: 'workflow_sprint_lead_advanced',
-            clientType: 'server',
-            traceId: result.lead.attribution.traceId,
-            acquisitionId: result.lead.attribution.acquisitionId,
-            visitorId: result.lead.attribution.visitorId,
-            sessionId: result.lead.attribution.sessionId,
-            installId: result.lead.attribution.installId,
-            source: result.lead.attribution.source,
-            utmSource: result.lead.attribution.utmSource,
-            utmMedium: result.lead.attribution.utmMedium,
-            utmCampaign: result.lead.attribution.utmCampaign,
-            creator: result.lead.attribution.creator,
-            community: result.lead.attribution.community,
-            ctaId: result.lead.attribution.ctaId,
-            ctaPlacement: result.lead.attribution.ctaPlacement,
-            planId: result.lead.attribution.planId,
-            page: result.lead.attribution.page,
-            landingPath: result.lead.attribution.landingPath,
-            pipelineStatus: result.lead.status,
-            workflowRunKey: result.workflowRun ? result.workflowRun.workflowRunKey : null,
-          }, req.headers, 'workflow_sprint_lead_advanced');
-
-          sendJson(res, 200, {
-            ok: true,
-            unchanged: result.unchanged,
-            lead: result.lead,
-            workflowRun: result.workflowRun,
-          });
-        } catch (err) {
-          sendProblem(res, {
-            type: err && err.statusCode === 404 ? PROBLEM_TYPES.NOT_FOUND : PROBLEM_TYPES.BAD_REQUEST,
-            title: err && err.statusCode === 404 ? 'Lead Not Found' : 'Request Error',
-            status: err && err.statusCode ? err.statusCode : 400,
-            detail: err?.message ? err.message : 'Unable to advance workflow sprint lead.',
-          });
-        }
         return;
       }
 

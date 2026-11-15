@@ -58,9 +58,7 @@ test('chatgpt openapi includes all core API routes', () => {
     '/v1/context/construct',
     '/v1/context/evaluate',
     '/v1/context/provenance',
-    '/v1/intake/workflow-sprint',
-    '/v1/intake/workflow-sprint/queue',
-    '/v1/intake/workflow-sprint/advance',
+    '/v1/inquiries',
     '/v1/task-outcomes',
     '/v1/task-outcomes/metrics',
     '/v1/task-outcomes/monitor',
@@ -95,9 +93,7 @@ test('canonical openapi includes monetization and funnel analytics routes', () =
     '/v1/decisions/outcome',
     '/v1/decisions/metrics',
     '/v1/settings/status',
-    '/v1/intake/workflow-sprint',
-    '/v1/intake/workflow-sprint/queue',
-    '/v1/intake/workflow-sprint/advance',
+    '/v1/inquiries',
   ];
 
   for (const route of monetizationRoutes) {
@@ -172,9 +168,7 @@ test('chatgpt adapter preserves core endpoint parity with canonical openapi', ()
     '/v1/decisions/outcome',
     '/v1/decisions/metrics',
     '/v1/settings/status',
-    '/v1/intake/workflow-sprint',
-    '/v1/intake/workflow-sprint/queue',
-    '/v1/intake/workflow-sprint/advance',
+    '/v1/inquiries',
   ];
   for (const route of coreRoutes) {
     const escaped = new RegExp(route.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
@@ -225,7 +219,7 @@ test('human escalation OpenAPI contracts bind decisions to reviewer authenticati
 });
 
 
-test('product inquiry schema is additive and byte-identical in the ChatGPT adapter', () => {
+test('active inquiry schema stays byte-identical while retired routes are absent and historical schemas remain', () => {
   const canonical = fs.readFileSync(path.join(root, 'openapi/openapi.yaml'), 'utf8');
   assert.equal(fs.readFileSync(path.join(root, 'adapters/chatgpt/openapi.yaml'), 'utf8'), canonical);
   const document = typeof yaml.load === 'function' ? yaml.load(canonical) : yaml.parse(canonical);
@@ -235,6 +229,8 @@ test('product inquiry schema is additive and byte-identical in the ChatGPT adapt
   assert.deepEqual(document.components.schemas.ProductInquiryRequest.required, ['email', 'workflow']);
   assert.equal(operation.requestBody.content['application/json'].schema.$ref, '#/components/schemas/ProductInquiryRequest');
   assert.equal(operation.requestBody.content['application/x-www-form-urlencoded'].schema.$ref, '#/components/schemas/ProductInquiryRequest');
-  assert.ok(document.paths['/v1/intake/workflow-sprint'].post);
+  for (const route of ['/v1/intake/workflow-sprint', '/v1/intake/workflow-sprint/queue', '/v1/intake/workflow-sprint/advance']) {
+    assert.equal(document.paths[route], undefined);
+  }
   assert.deepEqual(document.components.schemas.WorkflowSprintIntakeRequest.required, ['email', 'workflow', 'owner', 'blocker', 'runtime']);
 });
