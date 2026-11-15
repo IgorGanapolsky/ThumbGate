@@ -355,19 +355,9 @@ async function main() {
   check(/href="\/checkout\/pro"/.test(landingHtml), 'homepage links to Pro checkout');
   check(landingHtml.includes('__PRO_PRICE_DOLLARS__') && landingHtml.includes('__PRO_PRICE_LABEL__'), 'homepage renders configured Pro pricing');
   check(!/\$499|Setup Sprint|workflow-sprint|diagnostic-pay/i.test(landingHtml.replace('id="workflow-sprint-intake"', '')), 'homepage does not advertise the retired offer');
-  check(
-    /action="\/go\/diagnostic-pay"[^>]*method="POST"/i.test(pricingHtml),
-    'public/pricing.html must use the same canonical managed-gate checkout route'
-  );
-  check(
-    // Single-offer experiment: Pro is not promoted on the public buying path.
-    true,
-    'public/pricing.html Pro check skipped during single-offer experiment'
-  );
-  check(
-    !/\/go\/sprint|workflow-sprint-intake/i.test(pricingHtml),
-    'public/pricing.html must not reintroduce retired sprint intake cash paths'
-  );
+  check(/href="\/checkout\/pro"/.test(pricingHtml), 'pricing links to Pro checkout');
+  check(pricingHtml.includes('__PRO_PRICE_DOLLARS__') && pricingHtml.includes('__PRO_PRICE_LABEL__'), 'pricing renders configured Pro pricing');
+  check(!/\$499|Setup Sprint|workflow-sprint|diagnostic-pay/i.test(pricingHtml), 'pricing does not advertise the retired offer');
   check(
     /ThumbGate Pre-Action Checks/i.test(githubAbout.githubDescription),
     'config/github-about.json githubDescription must lead with ThumbGate Pre-Action Checks'

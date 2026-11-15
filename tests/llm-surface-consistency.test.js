@@ -456,11 +456,11 @@ test('the price sweep reaches the surfaces that carry a commercial call to actio
   }
   assert.ok(covered.size > 10, `the price sweep collapsed to ${covered.size} surfaces`);
 
-  // Single-offer experiment: the pricing page states the $499 gate, not a monthly Pro price.
-  // The matcher itself is still exercised by the markup-split fixture above.
-  const pricingClaims = claimText('public/pricing.html');
-  assert.match(pricingClaims, /\$499/);
-  assert.doesNotMatch(pricingClaims, /\$19\s*\/\s*mo/);
+  const pricing = readText('public/pricing.html');
+  assert.match(pricing, /\$__PRO_PRICE_DOLLARS__/);
+  assert.match(pricing, /href="\/checkout\/pro"/);
+  assert.match(pricing, /data-plan-id="pro"/);
+  assert.doesNotMatch(pricing, /\$499|Setup Sprint|Workflow Sprint/i);
 });
 
 test('every AI-discovery surface describes the promoted paid offer', () => {

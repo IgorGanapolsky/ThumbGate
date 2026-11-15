@@ -25,7 +25,7 @@ function listFiles(dir, out = []) {
   return out;
 }
 
-for (const page of ['public/diagnostic.html', 'public/pricing.html']) {
+for (const page of ['public/diagnostic.html']) {
   test(`${page} opens with the Setup Sprint promise, criteria and refund`, () => {
     const html = fs.readFileSync(path.join(ROOT, page), 'utf8');
     const match = html.match(/<div class="offer-promise" data-offer-promise>([\s\S]*?)<\/div>/);
@@ -51,4 +51,13 @@ test('the public site and AI-discovery files use only the name Setup Sprint', ()
     }
   }
   assert.deepEqual(hits, []);
+});
+
+
+test('pricing replaces the Setup Sprint promise with configured Pro checkout', () => {
+  const html = fs.readFileSync(path.join(ROOT, 'public/pricing.html'), 'utf8');
+  assert.match(html, /__PRO_PRICE_DOLLARS__/);
+  assert.match(html, /__PRO_PRICE_LABEL__/);
+  assert.match(html, /href="\/checkout\/pro"/);
+  assert.doesNotMatch(html, /\$499|Setup Sprint|data-offer-promise|diagnostic-pay/);
 });
