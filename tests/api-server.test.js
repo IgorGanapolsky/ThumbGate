@@ -1399,7 +1399,7 @@ test('public MCP skills and applications are machine-readable for agent onboardi
 
   const skills = await skillsRes.json();
   const applications = await applicationsRes.json();
-  assert.ok(skills.skills.some((skill) => skill.name === 'workflow-hardening-sprint'));
+  assert.ok(skills.skills.some((skill) => skill.name === 'pro'));
   assert.ok(skills.skills.some((skill) => skill.name === 'visual-proof-retrieval'));
   assert.ok(skills.skills.some((skill) => skill.name === 'context-footprint-optimizer'));
   assert.ok(skills.skills.some((skill) => skill.name === 'agent-design-governance'));
@@ -1408,7 +1408,7 @@ test('public MCP skills and applications are machine-readable for agent onboardi
   assert.ok(skills.skills.some((skill) => skill.name === 'oss-pr-opportunity-scout'));
   assert.ok(skills.skills.some((skill) => skill.name === 'chatgpt-ads-readiness-pack'));
   assert.ok(skills.skills.every((skill) => Array.isArray(skill.recommendedFlow)));
-  assert.ok(applications.applications.some((app) => app.name === 'workflow-sprint-intake'));
+  assert.ok(applications.applications.some((app) => app.name === 'pro'));
   assert.ok(applications.applications.every((app) => app.url.startsWith('https://app.example.com/')));
 });
 
@@ -2016,20 +2016,17 @@ test('cancel page serves retry message and records first-party telemetry', async
   assert.match(body, /data-reason="too_expensive"/);
   assert.match(body, /sendTelemetry\('checkout_cancelled'\)/);
   assert.match(body, /sendTelemetry\('reason_not_buying'/);
-  assert.match(body, /Send workflow first/);
-  assert.match(body, /id="send-workflow-first"/);
-  assert.match(body, /data-recovery-offer="workflow_sprint_intake"/);
-  assert.match(body, /checkout_cancel_workflow_intake_clicked/);
-  assert.match(body, /checkout_cancel_workflow_sprint_intake/);
-  assert.match(body, /utm_medium', 'checkout_cancel_recovery'/);
-  assert.match(body, /href="https:\/\/app\.example\.com\/diagnostic"/);
-  assert.match(body, /href="https:\/\/app\.example\.com\/go\/sprint"/);
-  assert.match(body, /Review \$499 diagnostic/);
-  assert.match(body, /Scope \$1500 sprint/);
+  assert.match(body, /Install the free CLI/);
+  assert.match(body, /data-recovery-offer="playbook_999"/);
+  assert.match(body, /data-recovery-offer="bundle_49"/);
+  assert.match(body, /data-recovery-offer="pro_direct"/);
+  assert.match(body, /utm_campaign=playbook_999/);
+  assert.match(body, /utm_campaign=bundle_49/);
+  assert.match(body, /href="\/pricing"/);
+  assert.match(body, /href="\/checkout\/pro"/);
   assert.match(body, /Restart \$19 Pro checkout/);
   assert.match(body, /data-recovery-offer="pro_pay_now_retry"/);
-  assert.match(body, /data-recovery-offer="sprint_diagnostic"/);
-  assert.match(body, /data-recovery-offer="workflow_sprint"/);
+  assert.doesNotMatch(body, /\$499|\$1500|workflow_sprint|sprint_diagnostic|Send workflow first/);
   assert.doesNotMatch(body, /https:\/\/buy\.stripe\.com\//);
   assert.doesNotMatch(body, /https:\/\/www\.paypal\.com\/ncp\/payment\//);
   assert.doesNotMatch(body, /Pay \$(?:1|19|99) (?:first rule|quick read|teardown)/);

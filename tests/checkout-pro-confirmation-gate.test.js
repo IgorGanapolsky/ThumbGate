@@ -76,6 +76,23 @@ describe('/checkout/pro confirmation gate (closes 0/50 conversion leak)', () => 
     }
   });
 
+  it('renders the configured monthly price without a service intake pitch', async () => {
+    const previous = process.env.THUMBGATE_PRO_PRICE_DOLLARS;
+    process.env.THUMBGATE_PRO_PRICE_DOLLARS = '37';
+    try {
+      const res = await fetch(`${origin}/checkout/pro`, {
+        headers: { 'user-agent': BROWSER_UA, accept: BROWSER_ACCEPT },
+      });
+      assert.equal(res.status, 200);
+      const body = await res.text();
+      assert.match(body, /Pay \$37\/mo with Stripe/);
+      assert.doesNotMatch(body, /\$19|Enterprise service work|qualified after intake/);
+    } finally {
+      if (previous === undefined) delete process.env.THUMBGATE_PRO_PRICE_DOLLARS;
+      else process.env.THUMBGATE_PRO_PRICE_DOLLARS = previous;
+    }
+  });
+
   it('real-browser GET without confirm renders the email-backed intent form', async () => {
     clearTelemetry();
     const res = await fetch(`${origin}/checkout/pro`, {

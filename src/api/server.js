@@ -1318,16 +1318,16 @@ function getMcpSkillManifests(hostedConfig) {
       proofUrl: VERIFICATION_EVIDENCE_URL,
     },
     {
-      name: 'workflow-hardening-sprint',
-      title: 'Setup Sprint',
-      description: 'Turn one repeated agent failure into an enforced gate with proof and rollout evidence.',
+      name: 'pro',
+      title: 'ThumbGate Pro',
+      description: 'Personal recall, dashboard, adapters, and exports.',
       triggers: ['workflow hardening', 'team rollout', 'agent governance', 'approval boundary', 'audit trail'],
       recommendedFlow: [
-        'Pick one costly repeated failure.',
-        'Import the policy or runbook.',
-        'Ship the gate with dashboard proof.',
+        'Compare the free local CLI and Pro on the pricing page.',
+        'Choose Pro for recall, dashboard, adapters, and exports.',
+        'Continue through the self-serve checkout.',
       ],
-      intakeUrl: buildPublicUrl(hostedConfig, '/#workflow-sprint-intake'),
+      intakeUrl: buildPublicUrl(hostedConfig, '/pricing'),
       proofUrl: VERIFICATION_EVIDENCE_URL,
     },
     {
@@ -1423,7 +1423,7 @@ function getMcpSkillManifests(hostedConfig) {
       recommendedFlow: [
         'Submit advertiser interest when eligible.',
         'Cluster high-intent conversational queries around agent governance and repeated workflow failures.',
-        'Route self-serve intent to the guide and team pain to Setup Sprint intake.',
+        'Route self-serve intent to the guide and plan comparisons to /pricing.',
         'Block unsupported ad and landing-page claims before spend scales.',
       ],
       contextUrl: buildPublicUrl(hostedConfig, '/llm-context.md'),
@@ -1456,10 +1456,10 @@ function getMcpApplications(hostedConfig) {
       useWhen: 'Need setup without searching the repo.',
     },
     {
-      name: 'workflow-sprint-intake',
-      title: 'Setup Sprint Intake',
-      description: 'Submit a repeated agent failure for a proof-backed sprint.',
-      url: buildPublicUrl(hostedConfig, '/#workflow-sprint-intake'),
+      name: 'pro',
+      title: 'ThumbGate Pro',
+      description: 'Compare the free local CLI and self-serve Pro.',
+      url: buildPublicUrl(hostedConfig, '/pricing'),
       useWhen: 'Ready to convert mistakes into gates.',
     },
   ];
@@ -2942,7 +2942,7 @@ function getOauthAuthorizeParamsFromForm(form, hostedConfig) {
   };
 }
 
-function resolveCheckoutIntentPlanView(parsed) {
+function resolveCheckoutIntentPlanView(parsed, runtimeConfig) {
   const requestedCycle = String(parsed?.searchParams?.get('billing_cycle') || 'monthly').trim().toLowerCase();
   if (requestedCycle === 'annual') {
     return {
@@ -2955,10 +2955,10 @@ function resolveCheckoutIntentPlanView(parsed) {
   }
   return {
     title: 'Start ThumbGate Pro',
-    price: '$19',
+    price: `$${runtimeConfig.proPriceDollars}`,
     unit: '/mo',
     directHref: '/go/pro-direct?utm_source=website&amp;utm_medium=checkout_interstitial&amp;utm_campaign=pro_upgrade&amp;utm_content=skip_form&amp;cta_id=pro_checkout_direct_stripe&amp;cta_placement=checkout_interstitial',
-    ctaLabel: 'Pay $19/mo with Stripe →',
+    ctaLabel: `Pay $${runtimeConfig.proPriceDollars}/mo with Stripe →`,
   };
 }
 
@@ -2968,7 +2968,7 @@ function renderCheckoutIntentPage(prefilledEmail = '', parsed = null, options = 
   const hiddenInputs = includeHiddenAttribution
     ? buildCheckoutHiddenAttributionInputs(parsed)
     : '';
-  const planView = resolveCheckoutIntentPlanView(parsed);
+  const planView = resolveCheckoutIntentPlanView(parsed, options.runtimeConfig || resolveHostedBillingConfig());
   return `<!doctype html>
 <html lang="en">
 <head>
@@ -3015,7 +3015,7 @@ ${hiddenInputs}
 <p class="choice-note">If a monthly plan is not the buy, these are one-time.</p>
 <a class="secondary" data-i="pro_checkout_playbook_999" rel="nofollow" href="/go/playbook-999?utm_source=website&amp;utm_medium=checkout_interstitial&amp;utm_campaign=playbook_999&amp;cta_id=pro_checkout_playbook_999&amp;cta_placement=checkout_interstitial">Buy the $9.99 playbook, once</a>
 <a class="secondary" data-i="pro_checkout_bundle_49" rel="nofollow" href="/go/bundle-49?utm_source=website&amp;utm_medium=checkout_interstitial&amp;utm_campaign=bundle_49&amp;cta_id=pro_checkout_bundle_49&amp;cta_placement=checkout_interstitial">Buy the $49 bundle, once</a>
-<a class="secondary" data-i="workflow_sprint_intake" href="/#workflow-sprint-intake">Not sure yet? Send the workflow first</a>
+<a class="secondary" data-i="view_pricing" href="/pricing">Compare free and Pro</a>
 <p class="choice-note">Cancel anytime. 7-day refund, no questions.</p>
 <details class="objection-box" aria-label="Checkout feedback">
 <summary style="cursor:pointer;font-weight:600;color:#cbd5e1">Not buying today? Tell us what to fix (optional)</summary>
@@ -3028,7 +3028,7 @@ ${hiddenInputs}
 </div>
 <div class="feedback-saved" id="feedback-saved">Feedback saved.</div>
 </details>
-<div class="trust"><div class="trust-item">Personal recall and proof exports without free-tier caps</div><div class="trust-item">Adapter matrix kept current for Claude Code, Cursor, Codex, Gemini, Amp, Cline, OpenCode</div><div class="trust-item">Personal dashboard: gate stats, rule evidence, DPO export</div><div class="trust-item">Enterprise service work is qualified after intake; hosted team sync and a hosted org dashboard are not generally available</div></div>
+<div class="trust"><div class="trust-item">Personal recall and proof exports without free-tier caps</div><div class="trust-item">Adapter matrix kept current for Claude Code, Cursor, Codex, Gemini, Amp, Cline, OpenCode</div><div class="trust-item">Personal dashboard: gate stats, rule evidence, DPO export</div><div class="trust-item">Hosted team sync and a hosted org dashboard are not generally available</div></div>
 <p class="back"><a href="/">← Back to thumbgate.ai</a></p>
 </main>
 <script>
@@ -5349,26 +5349,21 @@ function renderCheckoutSuccessPage(runtimeConfig) {
 }
 
 function renderCheckoutCancelledPage(runtimeConfig) {
-  const sprintDiagnosticPriceDollars = runtimeConfig.sprintDiagnosticPriceDollars || 499;
-  const workflowSprintPriceDollars = runtimeConfig.workflowSprintPriceDollars || 1500;
+  const proPriceDollars = runtimeConfig.proPriceDollars;
   const proDirectUrl = escapeHtmlAttribute(new URL('/go/pro-direct?utm_source=website&utm_medium=checkout_cancel_recovery&utm_campaign=pro_upgrade', runtimeConfig.appOrigin).toString());
   const playbookUrl = escapeHtmlAttribute(new URL('/go/playbook-999?utm_source=website&utm_medium=checkout_cancel_recovery&utm_campaign=playbook_999', runtimeConfig.appOrigin).toString());
   const bundle49Url = escapeHtmlAttribute(new URL('/go/bundle-49?utm_source=website&utm_medium=checkout_cancel_recovery&utm_campaign=bundle_49', runtimeConfig.appOrigin).toString());
-  const diagnosticUrl = escapeHtmlAttribute(new URL('/diagnostic', runtimeConfig.appOrigin).toString());
-  const workflowSprintUrl = escapeHtmlAttribute(new URL('/go/sprint', runtimeConfig.appOrigin).toString());
-  const workflowSprintIntakeUrl = escapeHtmlAttribute(new URL('/#workflow-sprint-intake', runtimeConfig.appOrigin).toString());
   const recoveryOfferLinks = [
     `<a href="${playbookUrl}" data-recovery-offer="playbook_999" data-offer-price="9.99">Buy $9.99 Playbook (One-Time, No Subscription)</a>`,
     `<a href="${bundle49Url}" data-recovery-offer="bundle_49" data-offer-price="49">Buy $49 Production Bundle (One-Time Expense)</a>`,
-    `<a href="${proDirectUrl}" data-recovery-offer="pro_direct" data-offer-price="19">1-Click Stripe Pro ($19/mo)</a>`,
-    `<a id="send-workflow-first" href="${workflowSprintIntakeUrl}" data-recovery-offer="workflow_sprint_intake" data-offer-price="0">Send workflow first</a>`,
-    `<a href="${diagnosticUrl}" data-recovery-offer="sprint_diagnostic" data-offer-price="${sprintDiagnosticPriceDollars}">Review $${sprintDiagnosticPriceDollars} diagnostic</a>`,
-    `<a href="${workflowSprintUrl}" data-recovery-offer="workflow_sprint" data-offer-price="${workflowSprintPriceDollars}">Scope $${workflowSprintPriceDollars} sprint</a>`,
+    `<a href="${proDirectUrl}" data-recovery-offer="pro_direct" data-offer-price="${proPriceDollars}">1-Click Stripe Pro ($${proPriceDollars}/mo)</a>`,
+    `<a href="/install" data-recovery-offer="free_cli" data-offer-price="0">Install the free CLI</a>`,
+    `<a href="/pricing" data-recovery-offer="compare_plans">Compare current plans</a>`,
   ].join('\n        ');
   const recoveryOfferCard = recoveryOfferLinks
     ? `<div class="card recovery-card">
       <h2>Need help deciding?</h2>
-      <p>If Pro is not the right next step, start smaller or send the workflow first. We can qualify the blocker, confirm the proof plan, and route you to the diagnostic or sprint only when the scope is real.</p>
+      <p>If a subscription is not the right next step, choose a one-time playbook or production bundle.</p>
       <div class="actions">
         ${recoveryOfferLinks}
       </div>
@@ -5490,7 +5485,7 @@ function renderCheckoutCancelledPage(runtimeConfig) {
       </div>
       <div class="actions">
         <button type="button" id="submit-reason">Send feedback</button>
-        <a id="retry-checkout" href="/checkout/pro" class="secondary" data-recovery-offer="pro_pay_now_retry" data-offer-price="19">Restart $19 Pro checkout</a>
+        <a id="retry-checkout" href="/checkout/pro" class="secondary" data-recovery-offer="pro_pay_now_retry" data-offer-price="${proPriceDollars}">Restart $${proPriceDollars} Pro checkout</a>
         <a href="${runtimeConfig.appOrigin}" class="secondary">Return to Context Gateway</a>
       </div>
       <p class="note" id="status">No feedback sent yet.</p>
@@ -5502,7 +5497,6 @@ function renderCheckoutCancelledPage(runtimeConfig) {
         const statusEl = document.getElementById('status');
         const noteEl = document.getElementById('buyer-note');
         const retryLink = document.getElementById('retry-checkout');
-        const workflowIntakeLink = document.getElementById('send-workflow-first');
         let selectedReason = null;
 
         function sendTelemetry(eventType, extra) {
@@ -5555,19 +5549,6 @@ function renderCheckoutCancelledPage(runtimeConfig) {
         });
         retryLink.href = retryUrl.toString();
 
-        if (workflowIntakeLink) {
-          const intakeUrl = new URL(workflowIntakeLink.href, window.location.origin);
-          ['trace_id', 'acquisition_id', 'visitor_id', 'session_id', 'visitor_session_id', 'install_id', 'utm_source', 'utm_campaign', 'utm_content', 'utm_term', 'creator', 'community', 'post_id', 'comment_id', 'campaign_variant', 'offer_code', 'landing_path', 'referrer_host'].forEach(function (key) {
-            const value = params.get(key);
-            if (value) intakeUrl.searchParams.set(key, value);
-          });
-          intakeUrl.searchParams.set('utm_medium', 'checkout_cancel_recovery');
-          intakeUrl.searchParams.set('cta_id', 'checkout_cancel_workflow_sprint_intake');
-          intakeUrl.searchParams.set('cta_placement', 'checkout_cancel_recovery');
-          intakeUrl.searchParams.set('plan_id', 'team');
-          workflowIntakeLink.href = intakeUrl.toString();
-        }
-
         sendTelemetry('checkout_cancelled');
 
         document.querySelectorAll('[data-reason]').forEach(function (button) {
@@ -5604,16 +5585,6 @@ function renderCheckoutCancelledPage(runtimeConfig) {
 
         document.querySelectorAll('[data-recovery-offer]').forEach(function (link) {
           link.addEventListener('click', function () {
-            if (link.getAttribute('data-recovery-offer') === 'workflow_sprint_intake') {
-              sendTelemetry('checkout_cancel_workflow_intake_clicked', {
-                ctaId: 'checkout_cancel_workflow_sprint_intake',
-                ctaPlacement: 'checkout_cancel_recovery',
-                offerCode: 'workflow_sprint_intake',
-                planId: 'team',
-                reasonCode: selectedReason || null
-              });
-              return;
-            }
             sendTelemetry('checkout_recovery_offer_clicked', {
               ctaId: link.getAttribute('data-recovery-offer'),
               ctaPlacement: 'checkout_cancel_recovery',
@@ -9171,6 +9142,7 @@ async function addContext(){
         const prefilledEmail = parsed?.searchParams?.get('customer_email') || '';
         const html = renderCheckoutIntentPage(prefilledEmail, parsed, {
           includeHiddenAttribution: !botClassification.isBot,
+          runtimeConfig: hostedConfig,
         });
         sendHtml(res, 200, html, responseHeaders);
         return;

@@ -92,8 +92,8 @@ describe('/checkout/pro bot guard', () => {
     assert.equal(res.status, 200);
     const body = await res.text();
     assert.match(body, /Start ThumbGate Pro/);
-    assert.match(body, /Not sure yet\? Send the workflow first/);
-    assert.match(body, /href="\/#workflow-sprint-intake"/);
+    assert.match(body, /Compare free and Pro/);
+    assert.match(body, /href="\/pricing"/);
     assert.match(body, /checkout_interstitial_cta_clicked/);
     assert.match(body, /aria-label="Checkout feedback"/);
     assert.match(body, /data-reason="price_unclear"/);
@@ -132,7 +132,7 @@ describe('/checkout/pro bot guard', () => {
     assert.doesNotMatch(body, /name="cta_id" value="pricing_pro"/);
     assert.doesNotMatch(body, /name="billing_cycle" value="annual"/);
     assert.doesNotMatch(body, /name="landing_path" value="\/pricing"/);
-    assert.match(body, /href="\/#workflow-sprint-intake"/);
+    assert.match(body, /href="\/pricing"/);
     assert.doesNotMatch(body, /checkout_interstitial_first_failure_rule_checkout/);
     assert.doesNotMatch(body, /checkout_interstitial_quick_read_checkout/);
     assert.doesNotMatch(body, /checkout_interstitial_workflow_teardown_checkout/);
@@ -167,7 +167,7 @@ describe('/checkout/pro bot guard', () => {
       assert.equal(res.status, 200);
       const body = await res.text();
       assert.match(body, /Pay \$19\/mo with Stripe/);
-      assert.match(body, /Not sure yet\? Send the workflow first/);
+      assert.match(body, /Compare free and Pro/);
       assert.doesNotMatch(body, /https:\/\/buy\.stripe\.com\/28E00j3Uge1E2dzgWL3sI2J/);
       assert.doesNotMatch(body, /https:\/\/buy\.stripe\.com\/6oU00j8aw2iWdWh9uj3sI2K/);
       assert.doesNotMatch(body, /href=""/);
