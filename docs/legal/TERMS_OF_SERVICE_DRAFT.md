@@ -1,5 +1,7 @@
 # ThumbGate Terms of Service (Draft for Product Counsel Review)
 
+> Historical record — retired service offer. Do not distribute the drafts or checkout links below, create new service orders, or interpret historical figures as current traction. Current software plans: https://thumbgate.ai/pricing. Existing signed scopes, refund rights, payment attribution, and evidence controls remain applicable.
+
 **Last Updated**: August 12, 2026
 
 These Terms of Service ("**Terms**" or "**Agreement**") govern access to and use of the software, services, cloud runners, APIs, web applications, and professional services provided by ThumbGate ("**ThumbGate**", "**we**", "**us**", or "**our**"), including the local engine (`thumbgate` npm package), the hosted platform (`thumbgate.app`), and custom workflow implementation services.

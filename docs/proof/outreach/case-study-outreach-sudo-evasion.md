@@ -1,5 +1,7 @@
 # Outreach pack — A guardrail you could walk past with sudo
 
+> Historical planning/evidence snapshot. Service offers and associated drafts below are retired and must not be distributed. Current software plans: https://thumbgate.ai/pricing. Historical outcomes and provider evidence are unchanged.
+
 Case id: `sudo-evasion`
 
 ## Links (tracked)

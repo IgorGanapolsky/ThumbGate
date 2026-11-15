@@ -1,5 +1,7 @@
 # ThumbGate — Verification Evidence
 
+> The managed diagnostic and sprint offers are retired. Amounts, catalog IDs, commands, and dated receipts below describe historical reconciliation or verification contracts; they are not current offers. Current plans: https://thumbgate.ai/pricing.
+
 > Every feature ships with proof. This document is the complete audit trail of verification runs, test output, and deployment evidence.
 
 > Revenue note: dated log entries below record what the admin billing endpoint returned on specific dates, including a historical `$20.00 / 2 paid orders` figure. Those charges are internal/test Stripe charges and do **not** represent external customer revenue. As of this audit there are **0 external paying customers and 0 external paid orders**. See [`COMMERCIAL_TRUTH.md`](./COMMERCIAL_TRUTH.md) for the authoritative commercial state.

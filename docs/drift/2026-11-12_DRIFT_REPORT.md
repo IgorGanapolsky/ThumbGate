@@ -1,5 +1,7 @@
 # Drift report 2026-11-12
 
+> Historical planning/evidence snapshot. Service offers and associated drafts below are retired and must not be distributed. Current software plans: https://thumbgate.ai/pricing. Historical outcomes and provider evidence are unchanged.
+
 Scope: `docs/COMMERCIAL_TRUTH.md`, `docs/specs/`, `docs/guides/`, `README.md`, plus live `curl` of `https://thumbgate.ai/`, `/pricing`, `/pro`, and `/operator-framework`. No Stripe links opened. Pricing pages were not edited; rows were sent to `w1:pN`.
 
 ## docs/COMMERCIAL_TRUTH.md

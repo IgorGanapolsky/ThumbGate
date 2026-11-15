@@ -1,5 +1,7 @@
 # Outreach pack — Agent memory crowded by near-duplicate lessons
 
+> Historical planning/evidence snapshot. Service offers and associated drafts below are retired and must not be distributed. Current software plans: https://thumbgate.ai/pricing. Historical outcomes and provider evidence are unchanged.
+
 Case id: `memory-compaction`
 
 ## Links (tracked)

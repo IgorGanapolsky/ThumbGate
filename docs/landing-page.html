@@ -6,7 +6,7 @@
   <title>ThumbGate | Team agent governance for AI coding workflows</title>
   <meta
     name='description'
-    content='CLI-first agent governance for AI coding workflows. Use the Setup Sprint to prove one blocker, then expand into shared enforcement, approval boundaries, proof-ready rollout, and isolated execution guidance.'
+    content='Free local CLI for configured pre-action checks. Pro adds recall, dashboard, adapters, and exports.'
   />
   <script type='application/ld+json'>
   {
@@ -16,11 +16,11 @@
     "url": "__APP_ORIGIN__",
     "operatingSystem": "Node.js, Cross-platform",
     "applicationCategory": "DeveloperApplication",
-    "description": "CLI-first agent governance for coding teams. ThumbGate turns repeated failures into shared enforcement, blocks dangerous tool calls with Pre-Action Checks, and adds approval boundaries, workflow governance, and isolated execution guidance for risky autonomy.",
+    "description": "Free local feedback capture and configured pre-action checks for AI coding workflows. Pro adds recall, dashboard, adapters, and exports.",
     "keywords": "ThumbGate, AI reliability system, DPO, KTO, AI agent reliability, context engineering, prevention rules, Pre-Action Checks",
     "offers": {
       "@type": "Offer",
-      "price": "19",
+      "price": "__PRO_PRICE_DOLLARS__",
       "priceCurrency": "USD"
     },
     "sameAs": [
@@ -32,7 +32,6 @@
       "Pre-Action Checks",
       "Workflow Sentinel blast-radius scoring",
       "Docker Sandboxes routing guidance for high-risk local runs",
-      "Signed hosted sandbox dispatch",
       "Thumbs-up/down feedback capture",
       "MCP reusable memories and prompts",
       "Auto-prevention rules from failures",
@@ -64,56 +63,15 @@
         "expectsAcceptanceOf": {
           "@type": "Offer",
           "name": "ThumbGate Pro",
-          "price": "19",
+          "price": "__PRO_PRICE_DOLLARS__",
           "priceCurrency": "USD",
           "url": "__APP_ORIGIN__/checkout/pro"
-        }
-      },
-      {
-        "@type": "CommunicateAction",
-        "name": "Start Setup Sprint intake",
-        "target": {
-          "@type": "EntryPoint",
-          "urlTemplate": "__APP_ORIGIN__/#workflow-sprint-intake",
-          "actionPlatform": [
-            "https://schema.org/DesktopWebPlatform"
-          ]
         }
       }
     ]
   }
   </script>
-  <script type='application/ld+json'>
-  {
-    "@context": "https://schema.org",
-    "@type": "Service",
-    "name": "ThumbGate Setup Sprint",
-    "serviceType": "AI-agent workflow hardening sprint",
-    "provider": {
-      "@type": "Organization",
-      "name": "ThumbGate",
-      "url": "__APP_ORIGIN__"
-    },
-    "url": "__APP_ORIGIN__/#workflow-sprint-intake",
-    "description": "Founder-led workflow hardening for one AI-agent workflow that needs approval boundaries, rollback safety, and rollout proof before wider team rollout.",
-    "offers": {
-      "@type": "Offer",
-      "name": "Setup Sprint intake",
-      "url": "__APP_ORIGIN__/#workflow-sprint-intake"
-    },
-    "potentialAction": {
-      "@type": "CommunicateAction",
-      "name": "Book a workflow hardening intake",
-      "target": {
-        "@type": "EntryPoint",
-        "urlTemplate": "__APP_ORIGIN__/#workflow-sprint-intake",
-        "actionPlatform": [
-          "https://schema.org/DesktopWebPlatform"
-        ]
-      }
-    }
-  }
-  </script>
+
   <script type='application/ld+json'>
   {
     "@context": "https://schema.org",
@@ -124,7 +82,7 @@
         "name": "What is ThumbGate for AI agents?",
         "acceptedAnswer": {
           "@type": "Answer",
-          "text": "ThumbGate is a CLI-first agent governance system for AI coding workflows. It captures thumbs-up/down signals, generates prevention rules from repeated failures, blocks dangerous tool calls before execution, and helps teams carry approval boundaries, proof, and isolated execution into rollout."
+          "text": "ThumbGate is a CLI-first agent governance system for AI coding workflows. It captures thumbs-up/down signals, generates prevention rules from repeated failures, checks proposed tool calls in supported hook integrations, and provides inspectable local evidence. Matching destructive actions warn by default; advisory integrations do not guarantee blocking."
         }
       },
       {
@@ -148,7 +106,7 @@
         "name": "How does ThumbGate reduce host blast radius for high-risk runs?",
         "acceptedAnswer": {
           "@type": "Answer",
-          "text": "ThumbGate combines pre-action checks with execution guidance. Workflow Sentinel predicts risky local actions before they execute, and those runs can be routed into Docker Sandboxes instead of running directly on the host. Team workflows also have a signed hosted sandbox lane for isolated automation dispatch."
+          "text": "ThumbGate combines pre-action checks with execution guidance. Workflow Sentinel predicts risky local actions before they execute, and those runs can be routed into Docker Sandboxes instead of running directly on the host. Hosted team execution is not included in the self-serve plans."
         }
       },
       {
@@ -161,18 +119,18 @@
       },
       {
         "@type": "Question",
-        "name": "What does the Workflow Hardening Fit Checker do?",
+        "name": "How do I compare the free CLI and Pro?",
         "acceptedAnswer": {
           "@type": "Answer",
-          "text": "It qualifies whether a workflow is a better fit for the Setup Sprint, Team rollout, Solo Pro, or the free OSS path by checking for a repeated blocker, a workflow owner, proof requirements, rollout stage, and cross-machine sync needs."
+          "text": "Start with the free local CLI for feedback capture and configured pre-action checks. Pro adds recall, dashboard, adapters, and exports. Compare the current plans at /pricing."
         }
       },
       {
         "@type": "Question",
-        "name": "When should I choose the Setup Sprint instead of Solo Pro?",
+        "name": "What does self-serve Pro include?",
         "acceptedAnswer": {
           "@type": "Answer",
-          "text": "Choose the Setup Sprint when one workflow already matters, one owner can carry rollout, and a repeated blocker needs proof before a wider team launch. Choose Solo Pro only after a real caught repeat when one operator wants the personal dashboard, export-ready evidence, and more capture depth without the team rollout motion."
+          "text": "Pro adds recall, dashboard, adapters, and exports. Users install and configure the software themselves; it does not include managed implementation or a service proof review."
         }
       },
       {
@@ -691,7 +649,7 @@
     <div class='nav-inner'>
       <div class='brand'>ThumbGate <span>Control Plane</span></div>
       <div class='nav-links'>
-        <a href='#fit-checker'>Fit check</a>
+        <a href='#fit-checker'>Compare plans</a>
         <a href='#chatgpt-actions'>ChatGPT</a>
         <a href='#claude-desktop'>Claude Desktop</a>
         <a href='#why'>Why buy</a>
@@ -709,34 +667,34 @@
     <section class='hero'>
       <div class='hero-inner'>
         <div class='panel hero-copy'>
-          <span class='eyebrow'>Setup Sprint for engineering teams</span>
+          <span class='eyebrow'>Free local CLI and self-serve Pro</span>
           <h1>Make one AI coding workflow safe enough to ship team-wide.</h1>
           <p>ThumbGate is a CLI-first control plane for AI coding workflows. It captures thumbs-up/down signals from every run, converts repeated failures into prevention rules, and checks dangerous actions before they cause damage.</p>
-          <p>The business story is enterprise-first: use the Setup Sprint to prove one blocker, one owner, and one proof review before a wider rollout. The local CLI stays free as the adoption wedge, while Pro remains the solo side lane.</p>
+          <p>Start with the free local CLI. Pro adds recall, dashboard, adapters, and exports. Users install, configure, and verify the software themselves.</p>
           <div class='hero-proof'>
             <span class='proof-pill'>North Star: one workflow live and auditable</span>
-            <span class='proof-pill'>Primary buying motion: Setup Sprint</span>
+            <span class='proof-pill'>Self-serve Pro software</span>
             <span class='proof-pill'>Versioned proof: v__PACKAGE_VERSION__</span>
             <span class='proof-pill'>Hosted onboarding at https://thumbgate-production.up.railway.app</span>
           </div>
           <div class='cta-row'>
-            <a class='button primary' href='https://thumbgate-production.up.railway.app/#workflow-sprint-intake' target='_blank' rel='noreferrer'>Start Setup Sprint</a>
-            <a class='button secondary' href='#fit-checker'>Run fit checker</a>
+            <a class="button primary" href="/checkout/pro" data-cta-id="homepage_pro_checkout">Get Pro — $__PRO_PRICE_DOLLARS__/month</a>
+            <a class='button secondary' href='#fit-checker'>Compare software features</a>
             <a class='button secondary' href='https://thumbgate-production.up.railway.app/guide' target='_blank' rel='noreferrer'>Install Free CLI</a>
             <a class='button secondary' href='https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md'>Current commercial truth</a>
             <a class='button secondary' href='https://thumbgate-production.up.railway.app'>View hosted demo</a>
           </div>
-          <p class='note'>Early-stage product. Engineering proof is real, but GitHub stars, npm downloads, and solo-maintainer activity are not customer proof.</p>
-          <p class='note'>The public commercial motion starts with the Setup Sprint, then can expand after proof into a $15,000 30-day Enterprise pilot for up to three local workflows and $10,000/month for those workflows after a completed pilot. Pro at $19/mo or $149/yr stays available for solo operators who want a personal dashboard.</p>
+          <p class='note'>Early-stage product. Engineering proof is real, but GitHub stars, npm downloads, and solo-maintainer activity are not customer proof. No paid customers are claimed here.</p>
+          <p class='note'>Compare the free CLI and individual Pro at /pricing. Managed service delivery, team subscriptions, and enterprise rollout are not included in self-serve Pro.</p>
         </div>
 
         <div class='panel hero-card'>
           <h2>Why teams evaluate it, not just install it</h2>
-          <p>Most teams can use the OSS package first. The CLI is the wedge. Paid rollout starts when one workflow needs to survive handoffs, approvals, isolated execution boundaries, and multiple operators instead of living in scattered local files.</p>
+          <p>Start with local feedback capture and configured pre-action checks. Choose Pro for recall, dashboard, adapters, and exports; you operate and verify the software yourself.</p>
           <ul>
             <li>Give every licensed operator a personal local dashboard without extra setup friction.</li>
-            <li>Run the same workflow with shared memory, prevention rules, and optional hosted keys when the team actually needs them.</li>
-            <li>Route the riskiest local autonomy into Docker Sandboxes or the hosted sandbox lane before it touches shared workflow state.</li>
+            <li>Retain local workflow evidence and inspect configured prevention rules before adoption.</li>
+            <li>Review Docker Sandboxes routing guidance for risky local runs; verify your own isolation boundary.</li>
             <li>Link rollout decisions to verification evidence instead of gut feel.</li>
           </ul>
           <div class='mini-grid'>
@@ -754,7 +712,7 @@
             </div>
             <div class='mini'>
               <strong>What is public today</strong>
-              OSS remains free with 5 built-in checks. Team starts intake-first via the Setup Sprint. Pro is the solo side lane for a personal local dashboard and exports.
+              The free local CLI includes 5 built-in checks. Pro adds recall, dashboard, adapters, and exports.
             </div>
           </div>
         </div>
@@ -766,7 +724,7 @@
         <div class='section-head'>
           <span class='eyebrow'>Check in action</span>
           <h2>See what gets blocked. See what gets through.</h2>
-          <p>ThumbGate intercepts agent tool calls before execution. Blocked operations never run. Passing operations leave an auditable trace.</p>
+          <p>In supported hook integrations, ThumbGate checks proposed tool calls before execution. Matching destructive actions warn by default; execution blocking requires the supported enforcement configuration. Advisory integrations do not guarantee blocking.</p>
         </div>
         <div class='steps'>
           <h3>Terminal</h3>
@@ -782,12 +740,12 @@
       <div class='section-inner'>
         <div class='section-head'>
           <span class='eyebrow'>Action query</span>
-          <h2>Workflow Hardening Fit Checker</h2>
-          <p>Use the same AI-search filter that matters commercially: can AI fully satisfy this query without a click? For workflow hardening, the answer is no. The buyer still has to qualify blocker, owner, proof need, and sync scope.</p>
+          <h2>Compare software features</h2>
+          <p>Choose software features for the workflow you run. Install the free local CLI first, then compare Pro when you need recall, dashboard, adapters, or exports.</p>
         </div>
         <div class='grid-2'>
           <div class='card'>
-            <h3>What the checker evaluates</h3>
+            <h3>What to evaluate locally</h3>
             <ul>
               <li>Whether the workflow is already running, in pilot, or still exploratory.</li>
               <li>Whether there is a repeated blocker instead of a one-off annoyance.</li>
@@ -798,12 +756,12 @@
           <div class='card'>
             <h3>How it routes the buyer</h3>
             <ul>
-              <li><strong>Sprint:</strong> repeated blocker, one owner, and proof needed before wider rollout.</li>
-              <li><strong>Team:</strong> the workflow already proved value and now needs shared memory, synced rules, approvals, and auditability across operators.</li>
+              <li><strong>Free CLI:</strong> local feedback capture and configured pre-action checks.</li>
+              <li><strong>Team:</strong> hosted team sync and enterprise rollout are not included in the self-serve plans.</li>
               <li><strong>Solo Pro:</strong> one operator wants a personal dashboard and export-ready evidence without the team rollout motion.</li>
               <li><strong>Free OSS:</strong> the workflow is still educational or too early for a paid path.</li>
             </ul>
-            <p><a href='__APP_ORIGIN__/#fit-checker'>Run the hosted fit checker</a> and use the result to decide whether to sell the Sprint, expand into Team, point to Solo Pro, or keep the user on the OSS path first.</p>
+            <p><a href='/pricing'>Compare current software plans</a> before choosing Pro or staying with the free CLI.</p>
           </div>
         </div>
         <p class='note'>Qualification aid only. It does not claim measured savings, buyer validation, or conversion evidence.</p>
@@ -819,37 +777,37 @@
         </div>
         <div class='grid-3'>
           <div class='card'>
-            <h3>Setup Sprint</h3>
-            <p>Use this path when one workflow already matters, one owner can carry it, and one repeated blocker needs proof before the team rolls it out wider.</p>
+            <h3>Verification evidence</h3>
+            <p>Inspect versioned engineering evidence while evaluating the software in your own workflow.</p>
             <ul>
               <li>Best for approvals, rollback risk, review churn, or fragile handoffs.</li>
-              <li>Start with one workflow, one owner, and one proof review.</li>
+              <li>Run your own workflow checks and inspect the results.</li>
               <li>Use commercial truth and verification evidence after the buyer confirms pain.</li>
             </ul>
-            <p><a href='https://thumbgate-production.up.railway.app/#workflow-sprint-intake' target='_blank' rel='noreferrer'>Start Setup Sprint intake</a></p>
+            <p><a href='__VERIFICATION_URL__'>Read verification evidence</a></p>
           </div>
           <div class='card'>
-            <h3>Solo Pro</h3>
+            <h3>Pro</h3>
             <p>Use this path only after one operator hits a real caught repeat and wants the personal dashboard, export-ready evidence, and deeper capture without the team rollout motion.</p>
             <ul>
               <li>Best for one operator evaluating the self-serve lane first.</li>
               <li>Install the guide, validate the local path, then move to checkout.</li>
-              <li>Keep Sprint as the escalation path when the blocker is bigger than one seat.</li>
+              <li>Self-serve Pro does not include a managed implementation or a human proof review.</li>
             </ul>
-            <p><a href='https://thumbgate-production.up.railway.app/checkout/pro?utm_source=landing_page&utm_medium=path_card&utm_campaign=pro_pack&utm_content=solo_pro_path' target='_blank' rel='noreferrer'>See Solo Pro checkout</a></p>
+            <p><a href='https://thumbgate.ai/checkout/pro?utm_source=landing_page&amp;utm_medium=cta_button&amp;utm_campaign=pro_pack' target='_blank' rel='noreferrer'>See Solo Pro checkout</a></p>
           </div>
           <div class='card'>
             <h3>Free OSS</h3>
             <p>Use this path when the workflow is still exploratory, educational, or too early for a paid motion. Install the local CLI, capture one lesson, and prove the workflow deserves more.</p>
             <ul>
               <li>Best for first install, early experiments, and solo evaluation.</li>
-              <li>Use the hosted fit checker once a real blocker appears.</li>
-              <li>Move to Solo Pro or Sprint only when the workflow earns it.</li>
+              <li>Compare the current plans once a real blocker appears.</li>
+              <li>Compare Pro when you need its software features.</li>
             </ul>
             <p><a href='https://thumbgate-production.up.railway.app/guide' target='_blank' rel='noreferrer'>Install the free CLI</a></p>
           </div>
         </div>
-        <p class='note'>Routing language is aligned with COMMERCIAL_TRUTH.md, FIRST_DOLLAR_PLAYBOOK.md, and the hosted fit checker. It is offer guidance, not proof of buyer conversion.</p>
+        <p class='note'>Routing language is aligned with COMMERCIAL_TRUTH.md, FIRST_DOLLAR_PLAYBOOK.md, and the current pricing page. It is plan guidance, not proof of buyer conversion.</p>
       </div>
     </section>
 
@@ -920,15 +878,15 @@
         <div class='grid-3'>
           <div class='card'>
             <h3>Shared memory</h3>
-            <p>Local-only feedback logs are useful for one operator. Teams pay when those learnings need to survive handoffs, shifts, and multiple agent surfaces.</p>
+            <p>Local-only feedback logs are useful for one operator. Pro provides recall, dashboard, adapters, and exports for individual operators.</p>
           </div>
           <div class='card'>
             <h3>Hosted guardrails</h3>
-            <p>Provisioned API keys, usage metering, and centralized prevention rules let you run the same workflow across repos and operators without duct tape.</p>
+            <p>Self-serve Pro adds recall, dashboard, adapters, and exports. Hosted team sync and org-wide administration are not part of this plan.</p>
           </div>
           <div class='card'>
             <h3>Isolated execution</h3>
-            <p>Workflow Sentinel can route the riskiest local autonomy toward Docker Sandboxes, while hosted team automations use a signed sandbox dispatch lane instead of running directly on the host.</p>
+            <p>Workflow Sentinel can route the riskiest local autonomy toward Docker Sandboxes, with the operator configuring and verifying the execution boundary.</p>
           </div>
           <div class='card'>
             <h3>Proof-ready runs</h3>
@@ -946,12 +904,12 @@
             <li><strong>Choose one workflow.</strong> Lead intake, enrichment, drafting, approval, CRM sync.</li>
             <li><strong>Run through ThumbGate.</strong> Every step can capture feedback and produce evidence.</li>
             <li><strong>Use the feedback loop.</strong> Repeat failures become prevention rules instead of recurring incidents.</li>
-            <li><strong>Roll out team-wide.</strong> Shared API keys and hosted memory remove the single-laptop bottleneck.</li>
+            <li><strong>Verify your setup.</strong> Inspect local evidence before expanding your own use.</li>
           </ol>
         </div>
         <div class='card'>
           <h3>North Star</h3>
-          <p>One workflow is live, bought by a team, and backed by proof links that survive handoffs.</p>
+          <p>Evaluation goal: one workflow has locally verified checks and inspectable proof links. This is not a claim of a paid customer deployment.</p>
           <ul>
             <li>One workflow outcome is clearly defined and in production.</li>
             <li>Every rollout step can point to verification evidence.</li>
@@ -1006,23 +964,23 @@
             <tbody>
               <tr>
                 <td><strong>Can one workflow survive handoffs?</strong></td>
-                <td>Hosted API keys, shared memory, and prevention rules replace single-laptop tribal knowledge.</td>
+                <td>Local feedback and configured prevention rules make workflow constraints inspectable.</td>
                 <td>Verification evidence, auditable runs, and machine-readable reports.</td>
               </tr>
 	              <tr>
 	                <td><strong>Can we trust the rollout?</strong></td>
-	                <td>ThumbGate adds hosted guardrails and explicit feedback handling so drift is visible instead of hidden.</td>
+	                <td>ThumbGate provides local checks and inspectable feedback so users can verify their own configuration.</td>
 	                <td>Proof-ready runs plus versioned verification artifacts.</td>
 	              </tr>
 	              <tr>
 	                <td><strong>How do we limit host blast radius?</strong></td>
-	                <td>Workflow Sentinel predicts risky local actions and can route them into Docker Sandboxes or the hosted sandbox lane before shared systems are exposed.</td>
+	                <td>Workflow Sentinel provides blast-radius scoring and Docker Sandboxes routing guidance for high-risk local runs.</td>
 	                <td>Sentinel reports, sandbox routing plans, and versioned proof artifacts.</td>
 	              </tr>
 	              <tr>
 	                <td><strong>Why not stay on the OSS package?</strong></td>
-	                <td>OSS is great for a single builder. ThumbGate is for a team that needs one workflow to run consistently.</td>
-                <td>Hosted onboarding, shared state, and team-safe workflow execution.</td>
+	                <td>The free CLI provides local capture and configured gates. Pro adds recall, dashboard, adapters, and exports.</td>
+                <td>Compare current software features at /pricing.</td>
               </tr>
             </tbody>
           </table>
@@ -1040,7 +998,7 @@
         <div class='grid-2'>
           <div class='card'>
             <h3>Who should buy ThumbGate?</h3>
-            <p>Teams running agentic workflows who need hosted API keys, shared memory, and auditable runs without self-hosting the feedback and guardrail layer.</p>
+            <p>Individual operators who need Pro recall, dashboard, adapters, and exports. Start with the free local CLI and verify your own workflow.</p>
           </div>
           <div class='card'>
             <h3>Who uses it every day?</h3>
@@ -1110,13 +1068,13 @@
           </div>
           <div class='card'>
             <h3>Team lead managing multiple agents</h3>
-            <p>Your team runs different agents across different repos. Rules learned in one repo need to apply everywhere. ThumbGate Enterprise carries shared enforcement, approvals, and proof so one bad pattern cannot surface in two different repos on the same day.</p>
-            <p><strong style='color:var(--accent-dark);'>Setup Sprint, then Team.</strong> Start with one blocker, one workflow owner, and one proof review.</p>
+            <p>Your team runs different agents across different repos. Rules learned in one repo need to apply everywhere. Use the local CLI to test configured rules in each supported environment. Self-serve Pro adds individual software features; it does not provide an enterprise rollout.</p>
+            <p><strong style='color:var(--accent-dark);'>Evaluate locally.</strong> Self-serve Pro does not include hosted team sync or managed rollout.</p>
           </div>
           <div class='card'>
             <h3>Engineering manager wanting CI integration</h3>
             <p>You want agent failures to feed back into the pipeline automatically — not live in someone's local notes. ThumbGate's CI webhook auto-ingest and machine-readable proof reports make agent reliability auditable without extra tooling.</p>
-            <p><strong style='color:var(--accent-dark);'>Enterprise tier.</strong> Shared rollout proof, CI integration, and approval boundaries for engineering workflows.</p>
+            <p><strong style='color:var(--accent-dark);'>Local CI evaluation.</strong> Inspect machine-readable engineering evidence and verify your own CI integration; managed delivery is not included.</p>
           </div>
         </div>
       </div>
@@ -1126,10 +1084,10 @@
       <div class='section-inner'>
         <div class='section-head'>
           <span class='eyebrow'>Pricing</span>
-          <h2>Install free. Buy with the Setup Sprint. Keep Pro as the solo side lane.</h2>
-          <p>The OSS core is free and always will be. Enterprise services stay intake-first and proposal-only: a $15,000 30-day pilot for up to three local workflows and $10,000/month after a completed pilot. Pro is $19/mo or $149/yr for individual operators.</p>
+          <h2>Install free. Choose Pro for individual software features.</h2>
+          <p>The local CLI is free. Pro adds recall, dashboard, adapters, and exports at $__PRO_PRICE_DOLLARS__/month. Compare current plan details before checkout.</p>
         </div>
-        <div class='pricing-grid'>
+        <div class='grid-2'>
           <div class='card'>
             <h3>Free</h3>
             <p style='margin:0 0 8px;font-size:15px;color:var(--muted);font-style:italic;'>CLI-first local enforcement for a solo developer proving the need.</p>
@@ -1143,34 +1101,10 @@
             </ul>
             <a class='button secondary' href='__GITHUB_URL__'>Use the open-source package</a>
           </div>
-          <div class='card featured'>
-            <span class='badge'>Primary motion</span>
-            <h3>Enterprise</h3>
-            <div class='price'>Custom <small>scoped after intake</small></div>
-          <p style='margin:0 0 8px;font-size:15px;color:var(--muted);font-style:italic;'>Start with one workflow, one owner, and one repeated blocker. Expand into shared governance after proof.</p>
-            <ul>
-              <li>Setup Sprint intake</li>
-              <li>Shared enforcement memory</li>
-              <li>Team lesson export/import — one team's lessons become every team's checks</li>
-              <li>Approval boundaries and audit trail</li>
-              <li>Org dashboard and proof-ready exports</li>
-              <li>Isolated execution guidance for risky autonomy</li>
-            </ul>
-            <a class='button primary' href='https://thumbgate-production.up.railway.app/#workflow-sprint-intake' target='_blank' rel='noreferrer'>Start Setup Sprint</a>
-            <div style='margin-top:16px;padding:14px;border:1px solid var(--line);border-radius:10px;background:rgba(255,255,255,0.5);'>
-              <strong style='font-size:13px;color:var(--accent-dark);text-transform:uppercase;letter-spacing:0.06em;'>How it works</strong>
-              <ol style='margin:8px 0 0;padding-left:20px;font-size:14px;color:var(--muted);'>
-                <li style='margin-bottom:4px;'>Qualify one workflow and one repeated blocker</li>
-                <li style='margin-bottom:4px;'>Run the Setup Sprint</li>
-                <li style='margin-bottom:4px;'>Attach proof and verification evidence</li>
-                <li>Expand into Team seats when shared rollout is justified</li>
-              </ol>
-            </div>
-          </div>
           <div class='card'>
-            <h3>Solo Pro</h3>
-            <div class='price'>$19 <small>/ mo</small></div>
-            <p style='margin:0 0 8px;font-size:15px;color:var(--muted);font-style:italic;'>Self-serve side lane for one operator who wants a personal local dashboard and exports.</p>
+            <h3>Pro</h3>
+            <div class='price'>$__PRO_PRICE_DOLLARS__ <small>/ mo</small></div>
+            <p style='margin:0 0 8px;font-size:15px;color:var(--muted);font-style:italic;'>Self-serve software for an individual operator who needs recall, dashboard, adapters, and exports.</p>
             <ul>
               <li>Personal local dashboard on localhost</li>
               <li>DPO export and proof-ready data</li>
@@ -1178,10 +1112,10 @@
               <li>Unlimited custom checks</li>
               <li>Priority support</li>
             </ul>
-            <a class='button secondary' href='https://thumbgate-production.up.railway.app/checkout/pro?utm_source=landing_page&utm_medium=cta_button&utm_campaign=pro_pack' target='_blank' rel='noreferrer'>See Solo Pro</a>
+            <a class='button secondary' href='https://thumbgate.ai/checkout/pro?utm_source=landing_page&amp;utm_medium=cta_button&amp;utm_campaign=pro_pack' target='_blank' rel='noreferrer'>See Solo Pro</a>
           </div>
         </div>
-        <p class='note'>Need shared workflows? Start with the sprint. Need a personal dashboard only? Solo Pro stays available.</p>
+        <p class='note'>Team and enterprise subscriptions are not available through self-serve checkout. Pro is individual software, without a managed implementation.</p>
       </div>
     </section>
   </main>

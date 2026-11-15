@@ -1,6 +1,6 @@
 # First Dollar Playbook
 
-Status: current  
+Status: software activation playbook; historical revenue snapshot below is dated  
 Updated: April 14, 2026
 
 Use [COMMERCIAL_TRUTH.md](COMMERCIAL_TRUTH.md) for live pricing and traction claims. Use [VERIFICATION_EVIDENCE.md](VERIFICATION_EVIDENCE.md) and [RELEASE_CONFIDENCE.md](RELEASE_CONFIDENCE.md) for engineering and package-publish proof.
@@ -12,9 +12,9 @@ ThumbGate has **no external paying customer and no external customer revenue yet
 The shortest honest path is:
 
 1. qualify one painful workflow
-2. sell the **Setup Sprint**
+2. demonstrate a configured local check with the free CLI
 3. attach the proof pack
-4. expand into Team rollout only after the first workflow proves out
+4. offer individual Pro only when the operator needs its software features
 
 ## Why broad launch activity did not create paying customers
 
@@ -33,14 +33,14 @@ The first-dollar motion therefore has one job: move a cold user from curiosity t
 2. **Typed feedback:** have them type `thumbs down:` or `thumbs up:` with one concrete sentence. Do not claim ChatGPT's native rating buttons feed ThumbGate.
 3. **Local enforcement:** install with `npx thumbgate init` where the agent executes, then show the saved lesson, generated rule, or caught repeat.
 4. **Solo Pro trigger:** upgrade only after a real caught repeat when the buyer needs more captures, the dashboard, DPO export, or proof-ready evidence.
-5. **Team trigger:** if there is a shared repo, review queue, deploy workflow, migration process, or release approval problem, convert to the Setup Sprint.
+5. **Capability boundary:** managed implementation and hosted team sync are not included; users own configuration and rollout.
 
 ## Operating thesis
 
 - Do not rely on low-intent self-serve traffic to produce the first repeatable revenue.
 - Do not lead with "agent memory" or generic developer-tool subscriptions.
 - Lead with one workflow that is not safe enough to ship or defend today.
-- Sell proof, enforcement, and rollout confidence around that workflow.
+- Demonstrate user-configured checks and their limits; do not sell a hardened-workflow deliverable.
 
 ## Best buyers
 
@@ -50,15 +50,15 @@ The first-dollar motion therefore has one job: move a cold user from curiosity t
 
 ## What to say
 
-> We are not pitching another agent platform. We harden one workflow that already matters, so it becomes safe enough to ship team-wide. The offer is a Setup Sprint: one workflow, one owner, one proof review.
+> We are not pitching another agent platform. Operators configure and verify local checks for their own workflow. Start with the free local CLI, inspect the evidence, and compare individual Pro at https://thumbgate.ai/pricing.
 
 ## 14-day execution loop
 
 ### Days 1-2
 
-- Send the four warm outreach messages from [marketing/team-outreach-messages.md](marketing/team-outreach-messages.md).
+- Draft relevant software outreach using current pricing and verified capabilities; do not reuse retired service-sales templates.
 - Add ten more qualified targets from consultancies, platform teams, and AI product teams.
-- Use [OUTREACH_TARGETS.md](OUTREACH_TARGETS.md) to reject weak-fit calls early.
+- Qualify current software needs; historical outreach targets and offers are not a current send list.
 
 ### Days 3-7
 
@@ -68,18 +68,17 @@ The first-dollar motion therefore has one job: move a cold user from curiosity t
   - the repeated failure or rollout blocker
   - the buyer or champion
   - the runtime already in use
-- Send the sprint brief and proof pack the same day.
+- Send the installation guide, current pricing, and verification evidence.
 
 ### Days 8-14
 
 - Turn every qualified call into one of two outcomes:
-  - a paid sprint proposal
-  - a named pilot agreement
+  - an individual Pro plan comparison
+  - a user-configured evaluation with the free local CLI
 - If a lead wants "more info" but cannot name a workflow, push them back to the free path, guides, or Pro page instead of dragging the sales cycle.
 
 ## Required proof pack
 
-- [WORKFLOW_HARDENING_SPRINT.md](WORKFLOW_HARDENING_SPRINT.md)
 - [VERIFICATION_EVIDENCE.md](VERIFICATION_EVIDENCE.md)
 - [RELEASE_CONFIDENCE.md](RELEASE_CONFIDENCE.md)
 - `proof/compatibility/report.md`
@@ -89,12 +88,11 @@ The first-dollar motion therefore has one job: move a cold user from curiosity t
 
 - Do not count traffic, stars, installs, directory listings, or compliments as revenue proof.
 - Do not promise ROI before the buyer names the workflow and the blocker.
-- Do not let Team pricing outrun [COMMERCIAL_TRUTH.md](COMMERCIAL_TRUTH.md).
+- Keep individual Pro pricing and capability claims aligned with [COMMERCIAL_TRUTH.md](COMMERCIAL_TRUTH.md).
 - Do not let package-publish claims outrun [RELEASE_CONFIDENCE.md](RELEASE_CONFIDENCE.md).
 
 ## Definition of done
 
-- one booked workflow hardening sprint
-- or one named paid pilot agreement
+- one provider-confirmed external Pro subscription
 
-Anything weaker than that is still pipeline, not revenue.
+An agreement, evaluation, or checkout initiation without a provider-confirmed external payment is still pipeline, not revenue.

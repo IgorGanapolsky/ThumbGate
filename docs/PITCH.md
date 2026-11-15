@@ -1,17 +1,17 @@
 # One-Line Pitch
 
-Make one Claude workflow safe enough to sell and ship team-wide.
+Configure local pre-action checks for repeated AI-agent mistakes.
 
 # Positioning
 
-ThumbGate is the AI reliability system behind one workflow with business value. It is not another horizontal agent platform. The front-line offer is a **Setup Sprint** that gives teams shared memory, guardrails, and proof-ready runs so one workflow can be deployed, audited, and improved over time.
+ThumbGate is the AI reliability system behind one workflow with business value. It is not another horizontal agent platform. Start with the free local CLI. Individual Pro adds recall, dashboard, adapters, and exports; users configure and verify their own workflow. Managed setup and hosted team sync are not included.
 
 - **Primary Goal:** Turn "vibe coding" into a controlled rollout for one sharp agent.
 - **Secondary Goal:** Convert real operator feedback into prevention rules, Thompson Sampling signals, and ThumbGate-ready datasets such as KTO/DPO pairs.
 
 # Buyer Promise
 
-We make one workflow measurable enough to justify and safe enough to roll out.
+Inspect local feedback and configured checks before expanding your own rollout.
 
 - Harden one Claude-first workflow without adding orchestration tax.
 - Turn operator complaints into reusable prevention rules instead of repeated incidents.
@@ -34,19 +34,19 @@ We make one workflow measurable enough to justify and safe enough to roll out.
 
 Start with one workflow, not a platform migration or generic "AI employee" pitch.
 
-- Best first offer: **Setup Sprint**.
+- Start free; compare individual Pro features at https://thumbgate.ai/pricing.
 - Best fit: code modernization, PR review hardening, and internal ops automation.
 - Qualification: one workflow owner, one repeated failure pattern, one proof review.
 - Technical engine stays the same: feedback capture, context engineering, Thompson Sampling, and DPO export.
 
 # Commercial Motion
 
-- Start with the sprint, not the subscription pitch.
-- The first repeatable next dollar should come from a booked workflow hardening sprint or named pilot agreement, not from hoping low-intent self-serve traffic converts.
+- Start with local installation and a reproducible check.
+- Only provider-confirmed external payments count as revenue; checkout and local activation do not.
 - Keep the local CLI free as the adoption wedge and proof surface.
-- Expand into Team seats when the buyer needs synced memory, shared rules, approval boundaries, auditability, and usage analytics across operators.
-- Keep Pro as the solo self-serve side lane, not the headline offer.
-- Use [WORKFLOW_HARDENING_SPRINT.md](WORKFLOW_HARDENING_SPRINT.md), [FIRST_DOLLAR_PLAYBOOK.md](FIRST_DOLLAR_PLAYBOOK.md), and [VERIFICATION_EVIDENCE.md](VERIFICATION_EVIDENCE.md) in every sales conversation.
+- Operators configure and verify checks in each supported local environment; individual Pro does not include hosted team sync or managed rollout.
+- Offer individual Pro when its recall, dashboard, adapters, or exports meet the operator's needs.
+- Use current pricing, [FIRST_DOLLAR_PLAYBOOK.md](FIRST_DOLLAR_PLAYBOOK.md), and [VERIFICATION_EVIDENCE.md](VERIFICATION_EVIDENCE.md) in software conversations. Historical service scopes are not current offers.
 
 # Academic Validation
 

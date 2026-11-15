@@ -11,8 +11,8 @@ For the next 30 days, the goal is not vanity reach or speculative marketplace po
 
 The goal is:
 
-- booked pilots
-- named pilot agreements
+- verified local software activation
+- attributable self-serve Pro subscriptions
 - weekly proof-backed workflow runs
 
 Anthropic partner acceptance is a support lane for that revenue motion, not the primary KPI.
@@ -21,7 +21,7 @@ Anthropic partner acceptance is a support lane for that revenue motion, not the 
 
 We are not selling a generic "AI employee."
 
-We are selling **Claude workflow hardening**:
+ThumbGate supports **Claude workflow hardening** through software operators configure and verify:
 
 - one workflow with business value
 - Pre-Action Checks
@@ -33,7 +33,7 @@ The product remains broad enough to work with Codex, Gemini, Amp, and Cursor, bu
 ## Primary 30-Day Motion
 
 - Primary channel: founder-led outbound
-- Front-line offer: [Setup Sprint](WORKFLOW_HARDENING_SPRINT.md)
+- Current software paths: free local CLI and individual Pro at https://thumbgate.ai/pricing; no managed implementation included.
 - Support assets: landing page, proof pack, pitch, and outreach sequence
 - Target accounts: Claude-first consultancies, platform engineering leaders, and AI product teams with one workflow owner
 
@@ -47,7 +47,9 @@ Our angle:
 2. **Code modernization guardrails** for long-running migration and refactor work where context loss and repeated mistakes are expensive.
 3. **Proof-ready rollout** for buyers who need recall, prevention rules, Pre-Action Checks, and machine-readable evidence before they widen adoption.
 
-## Packaged Offers
+## Historical packaged service concepts (retired)
+
+Do not sell or distribute the concepts in this section. They remain here as strategy history, not current capabilities or customer evidence.
 
 ### 1. Setup Sprint
 
@@ -149,10 +151,10 @@ Always include:
 
 ## Recommended Distribution Sequence
 
-1. Tighten the public landing page around the Setup Sprint.
+1. Keep the public landing page aligned with free local CLI and individual Pro.
 2. Use the proof pack in direct outreach to consultancies, platform teams, and Claude-first engineering leaders.
 3. Support the outreach with the generated Claude workflow hardening pack plus role-based LinkedIn, Reddit, or Bluesky follow-ups.
-4. Keep the ask narrow: one workflow, one pilot, one proof review.
+4. Keep the ask narrow: one local workflow, one configured check, one proof review.
 5. Use partner-network status only as supporting credibility once it is real.
 
 ## GTM Signals Reinforced This Week

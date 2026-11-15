@@ -56,9 +56,32 @@ describe('thumbgate-skill', () => {
     assert.ok(content.includes('Multi-hop recall'), 'mentions multi-hop recall');
     assert.ok(content.includes('Synthetic DPO'), 'mentions synthetic DPO');
     assert.match(content, /https:\/\/thumbgate-production\.up\.railway\.app\/go\/pro[^\s)]*/, 'has attributed checkout link');
-    assert.ok(content.includes('$19/mo or $149/yr'), 'mentions current Pro pricing');
-    assert.ok(content.includes('$49/seat/mo'), 'mentions current Team pricing');
+    assert.ok(content.includes('https://thumbgate.ai/pricing'), 'links to configured Pro pricing');
+    assert.match(content, /self-serve software and does not include implementation services/, 'states the Pro service boundary');
+    assert.doesNotMatch(content, /\$499|\$1,500|Setup Sprint|workflow hardening sprint/i, 'does not advertise retired services');
     assert.doesNotMatch(content, /founder[- ]license/i, 'does not mention retired founder-license positioning');
+  });
+
+  test('agent rulebooks and harnesses do not sell retired services', () => {
+    const root = path.join(__dirname, '..');
+    const files = [
+      '.agents/skills/thumbgate/SKILL.md',
+      '.agents/skills/snapchat-abm-playbook-steal/SKILL.md',
+      'skills/snapchat-abm-playbook-steal/SKILL.md',
+      '.agents/skills/supporter-compute-lane-not-clone/SKILL.md',
+      '.agents/skills/zero-outbound-spend-they-pay-us/SKILL.md',
+      'harnesses/creator-partnership-review.md',
+      'harnesses/workflow-hardening-sprint.md'
+    ];
+    for (const file of files) {
+      const text = fs.readFileSync(path.join(root, file), 'utf8');
+      assert.doesNotMatch(text, /\$499|\$1,500|Setup Sprint|qualified workflow sprint leads/i, file);
+    }
+    const harness = fs.readFileSync(path.join(root, 'harnesses/workflow-hardening-sprint.md'), 'utf8');
+    const metadata = JSON.parse(harness.split('---')[1]);
+    assert.equal(metadata.id, 'workflow-hardening-sprint', 'preserves the harness identifier');
+    assert.equal(metadata.title, 'Local workflow verification');
+    assert.match(harness, /# Local workflow verification/);
   });
 
   test('SKILL.md links to reference files that exist', () => {

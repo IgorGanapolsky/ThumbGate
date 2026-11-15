@@ -1,5 +1,7 @@
 # ThumbGate.ai — Enterprise API Partner Spec
 
+> Historical platform pricing proposal — not a current purchasable plan. Do not distribute these prices as current offers. Current individual software plans: https://thumbgate.ai/pricing. These historical calculations are retained without alteration.
+
 **Prepared for:** Shreyans Bhansali / MakersClaw  
 **Prepared by:** Igor Ganapolsky, ThumbGate  
 **Date:** 2026-08-13  

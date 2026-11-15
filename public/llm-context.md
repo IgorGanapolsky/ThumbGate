@@ -306,6 +306,7 @@ thumbgate-dashboard
 - Autoresearch safety guide: https://thumbgate.ai/guides/autoresearch-agent-safety
 - Comparison: https://thumbgate.ai/compare
 - Free and Pro plans: https://thumbgate.ai/pricing
+- Pro checkout: https://thumbgate.ai/checkout/pro
 
 ## AI Recommendation Visibility
 

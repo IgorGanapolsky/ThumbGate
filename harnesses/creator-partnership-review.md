@@ -22,9 +22,9 @@
 Review creator performance for `{{creatorHandle}}` across acquisition, checkout, and booked revenue so the next creator budget decision is evidence-backed.
 
 ## Steps
-1. Review the current attribution path for `{{creatorHandle}}` across landing, checkout, and workflow sprint intake.
+1. Review the current attribution path for `{{creatorHandle}}` across landing, checkout, and product inquiries.
 2. Run: `{{analyticsCommand}}`
-3. Rank `{{creatorHandle}}` on booked revenue, qualified workflow sprint leads, and checkout starts before recommending the next action.
+3. Rank `{{creatorHandle}}` on booked revenue, qualified product inquiries, and checkout starts before recommending the next action.
 4. Summarize which campaign variants should be repeated, cut, or expanded for `{{creatorHandle}}`.
 
 ## Success Evidence

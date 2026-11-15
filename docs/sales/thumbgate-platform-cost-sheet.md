@@ -1,5 +1,7 @@
 # ThumbGate.ai — Platform Partner Cost Sheet
 
+> Historical platform pricing proposal — not a current purchasable plan. Do not distribute these prices as current offers. Current individual software plans: https://thumbgate.ai/pricing. These historical calculations are retained without alteration.
+
 **For:** Shreyans Bhansali / MakersClaw  
 **Date:** 2026-08-13  
 **Currency:** USD

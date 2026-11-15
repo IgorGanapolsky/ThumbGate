@@ -1,5 +1,7 @@
 # Account-Based Marketing (ABM) Playbook: Autonomous Gaming Agents & Virtual Economies
 
+> Historical record — retired service offer. Do not distribute the drafts or checkout links below, create new service orders, or interpret historical figures as current traction. Current software plans: https://thumbgate.ai/pricing. Existing signed scopes, refund rights, payment attribution, and evidence controls remain applicable.
+
 > **Stolen From:** Snapchat for Business Industry Playbook ABM DemandGen Framework (`GamingPlaybook` / `RetailPlaybook`)  
 > **Adaptation:** ThumbGate Pre-Action Infrastructure Firewall for Gaming Studios & Autonomous NPC Harnesses (Unity, Unreal Engine, Web3).  
 > **Target Persona:** VP of Engineering, Lead AI Gameplay Programmer, Head of Studio Infrastructure at AI Game Studios (e.g., Inworld AI, Convai, Ubisoft La Forge, CCP Games, Krafton, Roblox creators).

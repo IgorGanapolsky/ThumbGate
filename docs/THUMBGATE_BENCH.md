@@ -113,7 +113,7 @@ Every evaluated scenario emits a deterministic SHA-256 chained arena receipt. Th
 
 Failed attempts can be converted into receipt-linked DPO candidates when the fixture supplies explicit preferred and rejected responses. Advancement and export both fail closed: later levels stay locked after a failure, and passing attempts are not mislabeled as preference corrections.
 
-This provides a customer-specific evaluation path for Setup Sprints: start with safe simulated workflows, increase difficulty, prove that useful work still proceeds, and preserve machine-readable governance evidence before any consequential integration is considered.
+This provides a user-configured local evaluation path: start with safe simulated workflows, increase difficulty, prove that useful work still proceeds, and preserve machine-readable governance evidence before any consequential integration is considered.
 
 ## ProgramBench-Style Smoke Lane
 
@@ -141,6 +141,6 @@ ThumbGate Bench gives teams a concrete evaluation story:
 - It proves safe work still proceeds.
 - It proves unsafe work gets intercepted.
 - It produces machine-readable JSON and markdown reports.
-- It can be extended with customer-specific workflow scenarios during a Setup Sprint.
+- It can be extended with customer-specific workflow scenarios by the operator during local evaluation.
 
 For enterprise buyers, this is the bridge from a clever local tool to an auditable rollout artifact.

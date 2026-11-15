@@ -1,6 +1,8 @@
 # ThumbGate Revenue Offer Ladder
 
-Status: operating model, not traction proof
+Status: current software paths with a historical service catalog; not traction proof
+
+Current acquisition: free local CLI at https://thumbgate.ai/install and individual Pro at https://thumbgate.ai/checkout/pro. Service offers below are retired; do not sell or distribute their old checkout paths. Existing contracts, refunds, and evidence controls remain binding.
 
 This document turns the user-set `$1,000/hour`, 24/7 revenue target into a measurable offer system. It does not claim that ThumbGate has reached that rate. Live payment and subscription truth must come from provider evidence.
 
@@ -14,18 +16,18 @@ An average gross revenue rate of `$1,000/hour` across every hour equals:
 - about `$730,000` in an average 365-day/12 month
 - `$8,760,000/year`
 
-At the current promoted public price, the cash path would require approximately:
+Historical scenario arithmetic (service scenarios are no longer acquisition plans):
 
 - `49` paid `$499` diagnostics per day, or
 - `16` paid `$1,500` internal sprint scopes per day, or
-- `38,422` active `$19/month` legacy subscriptions to produce about `$730,000` MRR
+- `38,422` active `$19/month` self-serve subscriptions to produce about `$730,000` MRR
 - `244` active `$3,000/month` Workflow Reliability Operations scopes, or
 - `49` paid `$15,000` Enterprise Governance Pilots per average month, or
 - `73` active `$10,000/month` Enterprise Reliability Operations scopes
 
 These are arithmetic requirements, not forecasts. They show why founder-delivered diagnostics and sprints can validate demand but cannot alone support the target without productization, recurring revenue, and Enterprise expansion.
 
-## Offer 1: Setup Sprint
+## Historical offer 1 (retired): Setup Sprint
 
 ```text
 buyer: one accountable owner with one repeated AI-agent workflow failure
@@ -38,10 +40,10 @@ price: $499 one-time
 proof: repository verification evidence and workflow-specific artifacts produced by the diagnostic
 risk_reducer: submit the workflow first when fit is unclear; refund a paid order that cannot be reduced to one supported gate
 boundaries: no multi-system implementation, legal/compliance certification, savings guarantee, incident-prevention guarantee, or uncontracted hosted-team capability
-next_step: /diagnostic or /go/diagnostic after fit is clear
+next_step: retired; no new service checkout
 ```
 
-## Offer 2: Setup Sprint (internal catalog; hidden during the single-offer experiment)
+## Historical offer 2 (retired): Setup Sprint (internal catalog; hidden during the single-offer experiment)
 
 ```text
 buyer: a diagnostic-qualified workflow owner ready to implement the first gate set
@@ -65,7 +67,7 @@ boundary: Pro is not a team-hosting or compliance product
 next_step: /checkout/pro
 ```
 
-## Offer 4: Workflow Reliability Operations
+## Historical offer 4 (retired): Workflow Reliability Operations
 
 ```text
 status: qualified_proposal_only; no public checkout
@@ -75,10 +77,10 @@ deliverables: one 45-minute monthly evidence review; up to two small gate or reg
 price: $3,000/month after signed recurring scope
 proof: signed recurring scope plus a current provider-paid recurring invoice; an expired invoice is historical only
 boundaries: one existing workflow; no new integration, 24/7 monitoring, incident-response SLA, compliance certification, hosted team sync, or hosted org dashboard
-next_step: /#workflow-sprint-intake
+next_step: retired; preserve existing contract evidence only
 ```
 
-## Offer 5: Enterprise Governance Pilot
+## Historical offer 5 (retired): Enterprise Governance Pilot
 
 ```text
 status: qualified_proposal_only; no public checkout
@@ -88,10 +90,10 @@ deliverables: cross-workflow risk/owner map; local gate implementation and regre
 price: $15,000 one-time for a 30-day pilot
 proof: signed pilot scope plus provider-confirmed payment; delivery and customer outcome remain separate proof states
 boundaries: maximum three local workflows; no hosted team sync, hosted org dashboard, SSO, SIEM, data-residency, certification, or unlimited changes
-next_step: /#workflow-sprint-intake
+next_step: retired; preserve existing contract evidence only
 ```
 
-## Offer 6: Enterprise Reliability Operations
+## Historical offer 6 (retired): Enterprise Reliability Operations
 
 ```text
 status: qualified_proposal_only; no public checkout
@@ -101,16 +103,14 @@ deliverables: one monthly portfolio evidence review; up to six small gate or reg
 price: $10,000/month after signed recurring scope
 proof: exact same-buyer completed-pilot workflow ID and canonical evidence digest, signed recurring scope, and a current provider-paid recurring invoice; an expired invoice is historical only
 boundaries: maximum three existing pilot workflows; no 24/7 monitoring, incident-response SLA, compliance certification, unlimited changes, or unverified hosted team features
-next_step: /#workflow-sprint-intake
+next_step: retired; preserve existing contract evidence only
 ```
 
 ## Qualification gate
 
 Expansion is not offered merely because a buyer asks for Enterprise. The deterministic operator route in `scripts/revenue-offer-system.js` requires the workflow, owner, repeated failure, bounded workflow count, proof state, authority, urgency, and full-price budget fit. A requirement for an unavailable hosted feature is `not_fit_unavailable_capability`; a seller-paid lead fee or revenue-share obligation is `discarded_paid_requirement`.
 
-The authenticated intake queue now emits a qualification card for every returned lead. It separates known facts from unknowns, limits the next discovery step to the top three material questions, scores evidence completeness, applies the 14-day warm-signal and five-minute future-skew gates, preserves the buyer's requested fixed offer, and never authorizes contact or recognizes revenue. For a current `new` lead with a valid email and at least one material unknown, it also prepares a separate discovery draft with an opt-out, no payment request, an opaque per-lead approval phrase, and receipt/reply verification steps. Stale, non-new, invalid-contact, disqualified, and questionless records receive no discovery draft or approval phrase. Advancing a lead to `qualified` still requires the operator to persist the full evidence-based review, an actual evidence reference, and `zeroSpendStatus=proceed_zero_cost`. A draft, send, stale label, or admin click without that review does not count as a qualified lead.
-
-`GET /v1/intake/workflow-sprint/queue` is the authenticated, no-store operator handoff. A reviewed current intake receives an exact offer draft, fixed price, public-checkout or scope-first rule, opaque approval phrase, and receipt-to-payment verification sequence. Sparse Diagnostic intakes can be qualified from the full review without fabricating missing form fields or being silently upsold. Unreviewed, stale, future-dated, internally inconsistent, or materially incomplete records receive a hold packet with no draft or approval phrase. Every packet keeps `externalActionAuthorized=false` and `revenueRecognized=false`; approval, send receipt, buyer reply, scope acceptance, checkout, and provider payment remain separate states.
+The authenticated intake queue now handles product inquiries without a paid service offer, checkout draft, or send authority. Historical service qualification and payment records are retained for reconciliation; a new inquiry is not a qualified service engagement or revenue.
 
 Run `npm run revenue:intake-queue -- --json` for the redacted operator view. The command exposes aggregate close-ready and discovery-ready counts plus allowlisted hold reasons while withholding contact data, message drafts, approval tokens, and raw lead IDs. An operator can deliberately create a non-overwriting mode-`0600` local handoff with `--export-private=/absolute/path/private.json`; that file is sensitive, must stay uncommitted, and conveys no send authority.
 
@@ -190,7 +190,7 @@ The accepted scope must also name the exact offer, catalog value or documented `
 
 Organic direct outreach and direct ThumbGate checkout are the current zero-spend paths. Any marketplace, lead database, community, or partner path that requires listing fees, credits, a subscription, seller commission, revenue share, or another future financial obligation is discarded. If downstream terms cannot be verified, its status is `hold_unverified_cost` and it cannot receive checkout traffic.
 
-Every active buyer-facing link must land on `thumbgate.ai` first. Pro routes through `/go/pro` and the email-backed intent form; the diagnostic routes through `/diagnostic`; the sprint routes through `/go/sprint` for scope-first intake. Raw provider Payment Links are server-side plumbing only. The Aiventyx campaign remains `hold_unverified_cost`, and retired kit catalogs remain archived rather than being distributed as alternate offers.
+Every active buyer-facing link must land on `thumbgate.ai` first. Pro routes through `/checkout/pro`; plan comparisons use `/pricing`. Retired service routes must not be distributed for acquisition. Raw provider Payment Links are server-side plumbing only. The Aiventyx campaign remains `hold_unverified_cost`, and retired kit catalogs remain archived rather than being distributed as alternate offers.
 
 ## Live verification
 

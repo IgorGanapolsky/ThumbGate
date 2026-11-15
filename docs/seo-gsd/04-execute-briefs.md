@@ -326,7 +326,7 @@ Framework: GSD
 - Page type: guide
 - Opportunity score: 83
 - CTA: Start the governance sprint
-- Summary: ThumbGate turns one repeated AI-agent failure into approval boundaries, pre-action checks, rollback safety, and rollout proof in a focused 48-hour Setup Sprint.
+- Summary: Use the free local CLI to configure and verify pre-action checks for a repeated workflow failure. Pro adds individual recall, dashboard, adapters, and exports.
 ### 28. How to Stop AI Coding Agents From Repeating Mistakes | ThumbGate
 
 - Path: /guides/stop-repeated-ai-agent-mistakes

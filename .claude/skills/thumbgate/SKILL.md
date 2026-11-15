@@ -105,15 +105,14 @@ When the MCP server is running, these tools are available to your agent:
 
 ## Pro Features
 
-Pro users ($19/mo or $149/yr) unlock:
+Pro users (see https://thumbgate.ai/pricing for current configured pricing) unlock:
 
 - **Visual gate debugger** — see every blocked action and the gate that fired
 - **Multi-hop recall** — chain related lessons across hops for deeper context
 - **Synthetic DPO augmentation** — expand real feedback into larger training datasets
-- **Gate wiring support** — help enforcing your riskiest flows in the first week
+- **Adapters** — configure supported local integrations
 
-Team rollout ($49/seat/mo, 3-seat minimum after intake) adds the shared hosted lesson DB,
-org dashboard, approval boundaries, and proof-backed workflow hardening sprint.
+Hosted team rollout and organization dashboards are not generally available. Pro is self-serve software and does not include implementation services.
 
 Upgrade: https://thumbgate-production.up.railway.app/go/pro?utm_source=skill
 

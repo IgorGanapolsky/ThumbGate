@@ -1,5 +1,7 @@
 # ThumbGate Product Counsel Checklist & Legal Architecture Framework
 
+> Current acquisition is limited to the free local CLI and individual Pro: https://thumbgate.ai/pricing. Managed setup and workflow services are retired from new sales. Any service scope, data-handling obligation, acceptance term, or refund right below remains applicable to historical purchases; this notice does not modify an existing agreement.
+
 > **Notice & Disclaimer**: This document serves as a Product Counsel Checklist and legal architecture blueprint for ThumbGate engineering, product, and commercial operations. It outlines contract terms, risk allocations, privacy boundaries, IP disclosures, and marketing claim substantiations. It is intended for review and finalization by qualified startup/product legal counsel prior to enterprise outreach and commercial scaling.
 
 ---

@@ -1,5 +1,7 @@
 # Revenue Pipeline Outreach Targets
 
+> Historical record — retired service offer. Do not distribute the drafts or checkout links below, create new service orders, or interpret historical figures as current traction. Current software plans: https://thumbgate.ai/pricing. Existing signed scopes, refund rights, payment attribution, and evidence controls remain applicable.
+
 Status: current
 Updated: 2026-05-04T15:13:16.404Z
 

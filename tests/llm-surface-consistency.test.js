@@ -367,29 +367,10 @@ test('the version sweep reaches every served page, and exempts only real evidenc
 // Commercial terms: the Stripe revenue catalog is the source of truth
 // ---------------------------------------------------------------------------
 
-test('the promoted one-time offer is stated at the canonical amount wherever it appears', () => {
-  const offer = currentOffer('workflow_hardening_diagnostic');
-  const dollars = wholeDollars(offer);
-  assert.equal(offer.cadence, 'one_time');
-
-  // Any three-or-four figure amount presented as a one-time/diagnostic/managed
-  // gate price must be THE amount. Catches "$599 Diagnostic" drift on one page.
-  const oneTimeContext = /\$(\d{3,4})(?=\s*(?:one-time|once|Diagnostic|diagnostic|managed|Setup Sprint|enterprise gate))/g;
-
-  let statedSomewhere = false;
-
+test('published pricing surfaces do not promote the retired setup offer', () => {
   for (const file of priceBearingSurfaces()) {
-    for (const match of claimText(file).matchAll(oneTimeContext)) {
-      assert.equal(
-        Number(match[1]),
-        dollars,
-        `${file} states the one-time offer as $${match[1]} but the canonical catalog says $${dollars}`,
-      );
-      statedSomewhere = true;
-    }
+    assert.doesNotMatch(claimText(file), /\$499|Setup Sprint|Workflow Sprint|workflow-sprint-intake|diagnostic-pay/i, file);
   }
-
-  assert.ok(statedSomewhere, 'no published surface states the promoted one-time offer amount');
 });
 
 test('the recurring subscription prices agree with the canonical catalog', () => {
@@ -463,34 +444,15 @@ test('the price sweep reaches the surfaces that carry a commercial call to actio
   assert.doesNotMatch(pricing, /\$499|Setup Sprint|Workflow Sprint/i);
 });
 
-test('every AI-discovery surface describes the promoted paid offer', () => {
-  // An llms.txt/llm-context.md that lists tiers but silently omits the promoted
-  // offer teaches retrieval engines an incomplete answer. Both must name it and
-  // point at the canonical terms page.
-  const offerName = /Setup Sprint/;
+test('every AI-discovery surface describes current free and Pro software', () => {
   const termsUrl = `${CANONICAL.appOrigin}/pricing`;
-  const canonicalDollars = wholeDollars(currentOffer('workflow_hardening_diagnostic'));
-
-  const context = readText('public/llm-context.md');
-  assert.match(context, /Pro/);
-  assert.match(context, /free/i);
-  assert.ok(context.includes(termsUrl));
-  assert.doesNotMatch(context, /\$499|Setup Sprint|Workflow Sprint/i);
-
-  // Preserve coverage for the discovery file until its separate migration.
-  for (const file of ['.well-known/llms.txt']) {
+  for (const file of ['public/llm-context.md', '.well-known/llms.txt']) {
     const text = readText(file);
-    assert.match(text, offerName, `${file} never names the promoted paid offer`);
-
-    // Terms must be resolvable from the surface itself: either it states the
-    // canonical amount inline, or it links to the canonical terms page.
-    const statesAmount = text.includes(`$${canonicalDollars}`);
-    const linksTerms = text.includes(termsUrl);
-    assert.ok(
-      statesAmount || linksTerms,
-      `${file} names the promoted paid offer but gives no way to resolve its terms — ` +
-        `state the canonical amount inline or link ${termsUrl}`,
-    );
+    assert.match(text, /Pro/, file);
+    assert.match(text, /free/i, file);
+    assert.ok(text.includes(termsUrl), `${file} links to current pricing`);
+    assert.ok(text.includes(`${CANONICAL.appOrigin}/checkout/pro`), `${file} links to Pro checkout`);
+    assert.doesNotMatch(text, /\$499|Setup Sprint|Workflow Sprint/i, file);
   }
 });
 

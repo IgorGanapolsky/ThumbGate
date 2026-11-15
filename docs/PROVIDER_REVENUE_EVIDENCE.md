@@ -1,5 +1,7 @@
 # Provider Revenue Evidence
 
+> The managed diagnostic and sprint offers are retired. Amounts, catalog IDs, commands, and dated receipts below describe historical reconciliation or verification contracts; they are not current offers. Current plans: https://thumbgate.ai/pricing.
+
 Status: current
 Updated: July 16, 2026
 

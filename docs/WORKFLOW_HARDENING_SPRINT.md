@@ -1,5 +1,7 @@
 # Setup Sprint
 
+> Historical record — retired service offer. Do not distribute the drafts or checkout links below, create new service orders, or interpret historical figures as current traction. Current software plans: https://thumbgate.ai/pricing. Existing signed scopes, refund rights, payment attribution, and evidence controls remain applicable.
+
 Status: current  
 Updated: April 9, 2026
 

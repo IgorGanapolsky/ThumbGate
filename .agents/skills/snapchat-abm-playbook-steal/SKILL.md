@@ -3,7 +3,7 @@ name: snapchat-abm-playbook-steal
 description: >
   Account-Based Marketing (ABM) Industry Playbook demand generation framework stolen from Snapchat for Business.
   Converts generic AI governance features into high-converting, vertical-specific playbooks (Gaming NPCs, Healthcare receptionists,
-  FinTech API dispatch) with interactive diagnostic gates, sub-0.5ms proof, and multi-tier monetization rails ($19 Pro, $499 Audit, $1,500 Sprint).
+  FinTech API dispatch) with interactive diagnostic gates, sub-0.5ms proof, and free CLI and self-serve Pro plans.
 ---
 
 # Snapchat ABM Industry Playbook Steal — Vertical Demand Generation
@@ -24,9 +24,9 @@ They buy **vertical risk elimination and runaway loop prevention** for high-cons
 
 | Vertical | Un-Gated Agent Risk | The Playbook Angle | Monetization On-Ramp |
 | :--- | :--- | :--- | :--- |
-| **Gaming & NPCs** (`/gaming-playbook`) | Runaway multi-turn tool loops ($4–$10/session), virtual economy weapon duplication. | Sub-0.5ms in-engine pre-action firewall (Unity/Unreal). Zero frame drops. | $499 Game Agent Audit / $19/mo Pro |
-| **Dental / Healthcare Receptionists** | Booking double-allocation, unauthorized medical advice, PII leak outside HIPAA. | In-country deterministic pre-tool diode. Zero plaintext egress. | $499 Clinic Workflow Audit |
-| **Cloud & FinTech Ops** | Unbounded production terraform destroy or duplicate payout retries. | Deterministic PreToolUse blast-radius and idempotency diodes. | $19/mo Pro / $499 Audit |
+| **Gaming & NPCs** (`/gaming-playbook`) | Runaway multi-turn tool loops ($4–$10/session), virtual economy weapon duplication. | Sub-0.5ms in-engine pre-action firewall (Unity/Unreal). Zero frame drops. | Free CLI / self-serve Pro |
+| **Dental / Healthcare Receptionists** | Booking double-allocation, unauthorized medical advice, PII leak outside HIPAA. | In-country deterministic pre-tool diode. Zero plaintext egress. | Free CLI / self-serve Pro |
+| **Cloud & FinTech Ops** | Unbounded production terraform destroy or duplicate payout retries. | Deterministic PreToolUse blast-radius and idempotency diodes. | Free CLI / self-serve Pro |
 
 ## The 4 Rules of a High-Converting ABM Industry Playbook
 
@@ -47,9 +47,10 @@ npx thumbgate check --tool UnityNPC_Trade --input '{"action":"give_item","goldRe
 Don't hide everything behind a form. Give the visitor an interactive slider or dropdown that calculates:
 - Monthly estimated token loss from runaway loops.
 - Vulnerability risk score (Critical vs. High vs. Moderate).
-- Direct CTAs to buy the fix ($499 audit or $19 Pro).
+- Direct CTAs to current /pricing or /checkout/pro; Pro is self-serve software, not an audit or implementation service.
 
-### 4. Provide Three Non-Overlapping Price Points
-1. **$19/mo (Pro Self-Serve):** Instant checkout link for individual developers.
-2. **$499 (Diagnostic Audit):** 48-hour penetration test and loop vulnerability report.
-3. **$1,500 (Integration Sprint):** Dedicated hands-on pairing with the ThumbGate core engineering team.
+### 4. Offer Current Software Plans
+1. **Free CLI:** Start locally with the documented checks.
+2. **Pro Self-Serve:** Link to `/checkout/pro` and use the configured price shown on `/pricing`.
+
+Managed diagnostic audits and integration sprints are retired. Do not quote or promise hands-on implementation with Pro.

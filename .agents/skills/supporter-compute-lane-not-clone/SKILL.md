@@ -31,7 +31,7 @@ Keep those two lanes separate in product notes, accounting, and budget checks so
 
 ## Public pricing stays unchanged
 
-No new price, no new Stripe product, no new checkout link. Public prices stay Pro at $19 a month or $149 a year, and the Setup Sprint at $499 at `https://thumbgate.ai/diagnostic`.
+No new price, no new Stripe product, no new checkout link. Use canonical configured Pro pricing and current plans at `https://thumbgate.ai/pricing`. The managed setup service is retired; do not advertise it.
 
 ## Verification
 

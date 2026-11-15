@@ -20,11 +20,12 @@ const commercialTruth = read('docs/COMMERCIAL_TRUTH.md');
 const ladder = read('docs/REVENUE_OFFER_LADDER.md');
 const diagnostic = read('public/diagnostic.html');
 
-test('commercial truth names one promoted public service offer', () => {
-  assert.match(commercialTruth, /only promoted public offer.*Setup Sprint.*\$499 one-time/is);
-  assert.match(commercialTruth, /\/go\/diagnostic-pay/);
-  assert.match(commercialTruth, /\$1,500.*internal catalog\/scoping rail/i);
-  assert.match(commercialTruth, /\$499.*only currently promoted public one-time service offer/i);
+test('commercial truth promotes software while retaining historical contract controls', () => {
+  assert.match(commercialTruth, /current public paths are the free local CLI and self-serve/i);
+  assert.match(commercialTruth, /`\/checkout\/pro`/);
+  assert.match(commercialTruth, /Historical service catalog — retired from new sales/);
+  assert.match(commercialTruth, /Existing signed scopes and refund rights remain applicable/);
+  assert.doesNotMatch(commercialTruth, /only promoted public offer.*Setup Sprint/is);
 });
 
 test('retired service page replaces the implementation contract with software plans', () => {

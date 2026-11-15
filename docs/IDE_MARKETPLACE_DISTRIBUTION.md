@@ -66,6 +66,6 @@ Every IDE listing should use the same conversion ladder:
 
 1. Free install for one visible caught repeat.
 2. Pro checkout for ongoing local enforcement and proof export.
-3. Setup Sprint when a team names one risky workflow.
+3. Operators configure and verify their own workflow rules; managed setup is not included.
 
 Use UTM sources: `vscode`, `open_vsx`, `antigravity`, `jetbrains`.

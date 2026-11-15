@@ -1,5 +1,7 @@
 # ThumbGate product and data-flow map
 
+> Current acquisition is limited to the free local CLI and individual Pro: https://thumbgate.ai/pricing. Managed setup and workflow services are retired from new sales. Any service scope, data-handling obligation, acceptance term, or refund right below remains applicable to historical purchases; this notice does not modify an existing agreement.
+
 > Draft for product counsel. Describes technical reality as of 2026-08-12.
 > Update when a paid surface starts processing a new data class.
 

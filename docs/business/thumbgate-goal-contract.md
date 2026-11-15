@@ -1,4 +1,6 @@
 # ThumbGate Autonomous Business Goal Contract & Revenue Scorecard
+
+> Historical planning/evidence snapshot. Service offers and associated drafts below are retired and must not be distributed. Current software plans: https://thumbgate.ai/pricing. Historical outcomes and provider evidence are unchanged.
 **Version:** 4.0  
 **Effective Date:** 2026-11-11  
 **Accountable Owner:** Poolside (w1:pS) — Autonomous Business Operating Intelligence  

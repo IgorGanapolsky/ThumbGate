@@ -1,5 +1,7 @@
 # Gaetano Franco Inbound Monetization Reply
 
+> Historical record — retired service offer. Do not distribute the drafts or checkout links below, create new service orders, or interpret historical figures as current traction. Current software plans: https://thumbgate.ai/pricing. Existing signed scopes, refund rights, payment attribution, and evidence controls remain applicable.
+
 **Recipient**: Gaetano Franco <gtnfrnc@gmail.com>  
 **Sender**: Igor Ganapolsky <igor@igorganapolsky.com>  
 **Subject**: Re: Agent Reliability — Your private trial token  

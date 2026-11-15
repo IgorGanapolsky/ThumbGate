@@ -100,18 +100,18 @@ test('public docs render the current package version', () => {
   assert.match(landingPage, /ThumbGate/);
   assert.match(landingPage, /AI agent reliability/i);
   assert.match(landingPage, /Claude Desktop extension/i);
-  assert.match(landingPage, /\$19\/mo/);
-  assert.match(landingPage, /\$149\/yr/);
+  assert.match(landingPage, /\$__PRO_PRICE_DOLLARS__\/month/);
+  assert.match(landingPage, /Pro adds recall, dashboard, adapters, and exports/);
   assert.match(landingPage, /Reliability Studio/i);
   assert.match(landingPage, /Compare and Deploy/i);
   assert.match(landingPage, /No model fine-tuning required/i);
-  assert.match(landingPage, /Workflow Hardening Fit Checker/i);
+  assert.match(landingPage, /Compare software features/i);
   assert.match(landingPage, /Claude Desktop extension path/i);
   assert.match(landingPage, /ChatGPT GPT Actions path/i);
   assert.match(landingPage, /https:\/\/chatgpt\.com\/g\/g-69dcfd1cd5f881918ae31874631d6f08-thumbgate/);
   assert.match(landingPage, /adapters\/chatgpt\/openapi\.yaml/i);
-  assert.match(landingPage, /can AI fully satisfy this query without a click\?/i);
-  assert.match(landingPage, /Run the hosted fit checker/i);
+  assert.match(landingPage, /Users configure and verify|verify your own workflow/i);
+  assert.match(landingPage, /Compare current software plans/i);
   assert.match(claudePluginReadme, /Claude Desktop/i);
   assert.match(claudePluginReadme, /Privacy Policy/i);
   assert.match(claudePluginReadme, /Data Collection/i);
@@ -436,7 +436,7 @@ test('commercial truth sources stay aligned across public and historical docs', 
   // const directoryGuide = ...; // docs/marketing/mcp-directories.md removed 2026-06-06
 
   assert.match(commercialTruth, /Pro at \$19\/mo or \$149\/yr/);
-  assert.match(commercialTruth, /Recurring and Enterprise service work is proposal-only after qualification/i);
+  assert.match(commercialTruth, /Historical service catalog \(retired; retained for existing contract reconciliation\)/i);
   assert.match(commercialTruth, /\$15,000 30-day Enterprise Governance Pilot/i);
   assert.match(commercialTruth, /Enterprise Reliability Operations at \$10,000\/month/i);
   assert.match(commercialTruth, /auto-promotion into prevention rules/);
@@ -452,7 +452,7 @@ test('commercial truth sources stay aligned across public and historical docs', 
 
   assert.match(anthropicStrategy, /Status: current/i);
   assert.match(anthropicStrategy, /Claude workflow hardening/i);
-  assert.match(anthropicStrategy, /booked pilots/i);
+  assert.match(anthropicStrategy, /attributable self-serve Pro subscriptions/i);
   assert.match(anthropicStrategy, /founder-led outbound/i);
   assert.match(anthropicStrategy, /COMMERCIAL_TRUTH\.md/);
   assert.doesNotMatch(anthropicStrategy, /^We are an official Anthropic partner\b/m);

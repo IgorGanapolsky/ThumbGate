@@ -1,5 +1,7 @@
 # Outreach pack — Production failure: a firewall enforcing nothing
 
+> Historical planning/evidence snapshot. Service offers and associated drafts below are retired and must not be distributed. Current software plans: https://thumbgate.ai/pricing. Historical outcomes and provider evidence are unchanged.
+
 Case id: `fail-open`
 
 ## Links (tracked)
