@@ -275,7 +275,9 @@ const path = require('node:path');
 // 625 -> 633 (2026-10-13): restored .agents/skills/deeppattern-discipline-honesty-not-clone/ in package.json files (+1).
 // 633 -> 655 (2026-10-26): public/install.md, carousel assets, and src/mcp/email-triage-server (+22 headroom).
 // 655 -> 656 (2026-11-14): public/project-switcher.js for the project-scoped dashboard (+1).
-const BASELINE_FILE_COUNT = 656;
+// 656 -> 688 (2026-11-15): modules reachable from bin/cli.js were missing from the tarball
+// (npx thumbgate gate-check threw Cannot find module); see tests/packed-cli-require-closure.test.js.
+const BASELINE_FILE_COUNT = 688;
 function readBundleSnapshot() {
   const repoRoot = path.resolve(__dirname, '..');
   const stdout = execSync('npm pack --dry-run --json', {
