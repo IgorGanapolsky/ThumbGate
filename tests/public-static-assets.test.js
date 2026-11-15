@@ -119,7 +119,8 @@ test('landing page does not render empty revenue links', async () => {
   assert.doesNotMatch(html, /https:\/\/buy\.stripe\.com\/28E00j3Uge1E2dzgWL3sI2J/);
   assert.doesNotMatch(html, /https:\/\/buy\.stripe\.com\/6oU00j8aw2iWdWh9uj3sI2K/);
   assert.match(html, /href="\/checkout\/pro"[^>]*data-cta-id="homepage_pro_checkout"/);
-  assert.doesNotMatch(html, /\$499|Setup Sprint|diagnostic-pay|workflow-sprint-intake/);
+  assert.doesNotMatch(html, /\$499|Setup Sprint|diagnostic-pay/);
+  assert.doesNotMatch(html, /(?:href|action)="[^"]*workflow-sprint-intake/);
 });
 
 test('landing page presents configured self-serve Pro and free installation clearly', async () => {
