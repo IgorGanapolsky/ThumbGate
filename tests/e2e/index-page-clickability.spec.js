@@ -1,8 +1,10 @@
 const { test, expect } = require('@playwright/test');
 const { mockDashboardApis } = require('./helpers/mock-api');
+const { checkoutJourneyTests, isolateCheckout, proPrice } = require('./helpers/pro-checkout');
 
 test.describe('/ free and Pro conversion path', () => {
   test.beforeEach(async ({ page }) => {
+    await isolateCheckout(page);
     await mockDashboardApis(page);
   });
 
@@ -12,6 +14,7 @@ test.describe('/ free and Pro conversion path', () => {
     await expect(page.locator('[data-primary-checkout]')).toBeVisible();
     await expect(page.locator('[data-primary-checkout] .price')).toContainText('$' + (process.env.THUMBGATE_PRO_PRICE_DOLLARS || '19'));
     await expect(page.locator('.hero [data-cta-id="homepage_pro_checkout"]')).toHaveAttribute('href', '/checkout/pro');
+    await expect(page.locator('.hero [data-cta-id="homepage_pro_checkout"]')).toContainText(`$${proPrice}/month`);
     await expect(page.locator('[data-primary-checkout] a.button-primary')).toHaveAttribute('href', '/checkout/pro');
     await expect(page.locator('.loop-step')).toHaveCount(4);
     await expect(page.locator('.decision')).toHaveText(['ALLOW', 'WARN', 'DENY']);
@@ -83,5 +86,24 @@ test.describe('/ free and Pro conversion path', () => {
     await button.click();
     await expect(secondItem.locator('.faq-a')).toBeVisible();
     await expect(button).toHaveAttribute('aria-expanded', 'true');
+  });
+  checkoutJourneyTests({
+    path: '/',
+    selectors: {
+      hero: '.hero [data-cta-id="homepage_pro_checkout"]',
+      primary: '[data-primary-checkout] a.button-primary',
+      navigation: 'nav [data-cta-id="nav_pro_checkout"]',
+      final: '.final [data-cta-id="final_pro_checkout"]',
+    },
+    expectedEvents: [
+      { event: 'checkout_start', ctaId: 'homepage_pro_checkout', placement: 'offers' },
+      { event: 'cta_click', ctaId: 'final_pro_checkout', placement: 'page_anchor' },
+    ],
+    // Hero/nav currently navigate without click instrumentation; cover their
+    // GET journeys above and preserve the two existing instrumented placements.
+    trackedSelectors: [
+      '[data-primary-checkout] a.button-primary',
+      '.final [data-cta-id="final_pro_checkout"]',
+    ],
   });
 });
