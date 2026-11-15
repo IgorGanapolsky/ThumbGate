@@ -31,7 +31,7 @@
     ],
     "requiredContext": [
       "ThumbGate turns thumbs-up/down feedback into pre-action checks.",
-      "Every buyer-facing page needs a concrete next step: Pro checkout, workflow sprint intake, or a proof-backed guide.",
+      "Start with the free local CLI. Choose self-serve Pro for recall, dashboard, adapters, and exports. Compare current plans at https://thumbgate.ai/pricing.",
       "Every generated page must include verification evidence, automation proof, llm-context, FAQPage, and TechArticle schema."
     ]
   }

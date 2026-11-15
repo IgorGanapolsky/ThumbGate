@@ -37,7 +37,7 @@ Aligned with `docs/COMMERCIAL_TRUTH.md`:
 | Local-only CLI, no hosted account | Usually customer-controlled processing; DPA often unnecessary for ThumbGate as processor |
 | Pro checkout + license email only | Limited processor role (account/billing); short DPA may still be requested |
 | Hosted API, pairing, cloud runners | DPA often required for EU/UK business buyers |
-| Customer sends production logs for $499 gate | Treat shared samples as customer-instructed processing; prefer non-secret redacted samples |
+| Customer sends production logs for $19/mo gate | Treat shared samples as customer-instructed processing; prefer non-secret redacted samples |
 
 ## Controller / processor sketch (for counsel)
 

@@ -41,7 +41,7 @@ test('primary buyer pages state the hosted Enterprise availability boundary', ()
 test('capability generators and runtime receipts preserve the same boundary', () => {
   assert.match(read('src/api/server.js'), /hosted team sync and a hosted org dashboard are not generally available/i);
   assert.match(read('scripts/seo-gsd.js'), /shared hosted lessons are not generally available/i);
-  assert.match(read('bin/cli.js'), /hosted team sync and org dashboard are not GA/i);
+  assert.match(read('bin/cli.js'), /hosted team sync and organization dashboard are not generally available/i);
   assert.match(read('public/llm-context.md'), /org-wide hosted rule library and hosted dashboard are not generally available/i);
 });
 
@@ -73,16 +73,17 @@ test('proposal-only expansion prices remain internal catalog truth', () => {
   assert.equal(pilot.priceCents, 1500000);
   assert.equal(enterpriseOps.priceCents, 1000000);
   assert.doesNotMatch(pricing, /\$3,000|\$15,000|\$10,000/);
-  assert.match(pricing, /Enforcement that pays for itself|Two paid paths · one product/i);
-  // Pro removed from public buying path
-  assert.match(pricing, /\$499/);
+  assert.match(pricing, /Free local CLI, or self-serve Pro/i);
+  assert.match(pricing, /href="\/checkout\/pro"/);
+  assert.match(pricing, /__PRO_PRICE_DOLLARS__/);
+  assert.doesNotMatch(pricing, /\$499|Setup Sprint/);
 });
 
 test('public pricing hides proposal-only Enterprise expansion', () => {
   const pricing = read('public/pricing.html');
   assert.doesNotMatch(pricing, /Enterprise Governance Pilot|Enterprise Reliability Operations/i);
   assert.doesNotMatch(pricing, /workflow-sprint-intake|checkout\/enterprise|checkout\/team/i);
-  assert.match(pricing, /Hosted Enterprise capabilities are not generally available/i);
+  assert.match(pricing, /Shared hosting, SSO, compliance packaging, and organization-wide rollout are not generally available/i);
 });
 
 test('proposal-only service copy does not make guarantees or fake urgency claims', () => {

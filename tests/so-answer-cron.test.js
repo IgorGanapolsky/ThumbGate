@@ -50,13 +50,16 @@ test('selectTemplate and buildAnswer cover safety, branch_review, and devops tem
   assert.equal(branchTpl, ANSWER_TEMPLATES.branch_review);
   assert.match(getShortAnswer({}, branchTpl), /buffer changes/);
   assert.match(getTemplateBody({}, branchTpl, examples), /security-central/);
-  assert.match(getMonetization(branchTpl), /Enterprise:/);
+  assert.match(getMonetization(branchTpl), /Pro:/);
 
   const devopsTpl = selectTemplate(['ci-cd', 'mcp']);
   assert.equal(devopsTpl, ANSWER_TEMPLATES.devops);
   assert.match(getShortAnswer({}, devopsTpl), /shift left/);
   assert.match(getTemplateBody({}, devopsTpl, examples), /agent-loop --health --json/);
-  assert.match(getMonetization({ file: 'DevOps pipeline guardrails' }), /\$499 Workflow Gate Diagnostic/);
+  assert.match(getMonetization({ file: 'DevOps pipeline guardrails' }), /free local CLI and self-serve Pro/);
+  for (const template of [safetyTpl, branchTpl, devopsTpl]) {
+    assert.doesNotMatch(getMonetization(template), /\$499|Setup Sprint|Workflow Gate Diagnostic|Enterprise:/);
+  }
 });
 
 test('rankQuestions filters answered, old, low-score, closed, and wiki items and sorts by ROI', () => {

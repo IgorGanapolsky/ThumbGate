@@ -35,7 +35,7 @@
     },
     {
       "id": "team_workflow_sprint_to_analytics",
-      "title": "E2E: workflow sprint intake progresses to paid team and surfaces in dashboard analytics"
+      "title": "E2E: retired services reject payment progression while free inquiries remain visible"
     },
     {
       "id": "promoted_lesson_http_crud",

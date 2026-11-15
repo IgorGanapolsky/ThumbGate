@@ -149,37 +149,7 @@ const TIERS = [
       { lookupKey: 'thumbgate_workflow_teardown', unitAmount: 9900, interval: null, nickname: 'Workflow Teardown — $99 one-time' },
     ],
   },
-  {
-    tier: 'sprint_diagnostic',
-    name: 'ThumbGate — Sprint Diagnostic',
-    description: 'Two-day diagnostic on your AI-agent workflow: failure-trace analysis, top-5 prevention rules, and a Pre-Action Check pack scoped to your stack.',
-    imageUrl: `${PUBLIC_ORIGIN}/assets/brand/thumbgate-icon-pro-512.png`,
-    marketingFeatures: [
-      { name: 'Two-day diagnostic on your AI-agent workflow' },
-      { name: 'Top-5 prevention rules ranked by impact' },
-      { name: 'Scoped Pre-Action Check pack delivered as a PR' },
-      { name: '60-minute findings review call' },
-    ],
-    prices: [
-      { lookupKey: 'thumbgate_sprint_diagnostic', unitAmount: 49900, interval: null, nickname: 'Sprint Diagnostic — $499 one-time' },
-    ],
-  },
-  {
-    tier: 'workflow_sprint',
-    name: 'ThumbGate — Workflow Sprint',
-    description: 'Full-week workflow hardening sprint: end-to-end teardown, prevention-rule synthesis, Pre-Action Check rollout, and a paired engineering session.',
-    imageUrl: `${PUBLIC_ORIGIN}/assets/brand/thumbgate-icon-team-512.png`,
-    marketingFeatures: [
-      { name: 'Full-week workflow hardening sprint' },
-      { name: 'End-to-end teardown + prevention-rule synthesis' },
-      { name: 'Pre-Action Check rollout against your repo' },
-      { name: 'Paired engineering session with the founder' },
-      { name: '30-day async follow-up window' },
-    ],
-    prices: [
-      { lookupKey: 'thumbgate_workflow_sprint', unitAmount: 150000, interval: null, nickname: 'Workflow Sprint — $1,500 one-time' },
-    ],
-  },
+
 ];
 
 const STRIPE_API = 'https://api.stripe.com/v1';

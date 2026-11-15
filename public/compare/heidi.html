@@ -117,52 +117,7 @@
           <p>Not a direct competitor. HEIDI answers "is this package vulnerable?" ThumbGate answers "did the AI just repeat a mistake we already saw?" Different threat surfaces. Both local-first. Both free at base tier. Run both if you ship AI-generated code to production.</p>
         </div>
 
-        <div class="detail-section">
-          <h2>Comparison table</h2>
-          <table class="comparison-table">
-            <tr><th>Dimension</th><th>HEIDI (Meterian)</th><th>ThumbGate</th></tr>
-            <tr>
-              <td>Question it answers</td>
-              <td>Is this package vulnerable?</td>
-              <td>Did the AI just repeat a mistake?</td>
-            </tr>
-            <tr>
-              <td>Surface scanned</td>
-              <td>Manifest files (package.json, requirements.txt, etc.)</td>
-              <td>AI agent tool calls (Bash, Edit, Write, etc.)</td>
-            </tr>
-            <tr>
-              <td>Integration model</td>
-              <td>Passive — AI assistant queries HEIDI via MCP for vuln data</td>
-              <td>Active — PreToolUse hook intercepts tool call before execution</td>
-            </tr>
-            <tr>
-              <td>Threat category</td>
-              <td>Supply chain (CVE-driven)</td>
-              <td>Behavioral (lesson-DB-driven from your thumbs-up/down)</td>
-            </tr>
-            <tr>
-              <td>IDE / agent support</td>
-              <td>VS Code, JetBrains, Cursor, Windsurf, Claude Code, Copilot, Gemini CLI, Codex CLI</td>
-              <td>Claude Code, Cursor, Codex, Gemini, Amp, Cline, OpenCode (via MCP / PreToolUse hooks)</td>
-            </tr>
-            <tr>
-              <td>Source code stance</td>
-              <td>Scans only manifest files; source stays on-machine</td>
-              <td>Local-first; lesson DB stays on-machine; no source uploaded</td>
-            </tr>
-            <tr>
-              <td>Pricing</td>
-              <td>Free</td>
-              <td>Free CLI (3 active rules, 2 captures/day) → $499 one-time Setup Sprint</td>
-            </tr>
-            <tr>
-              <td>Maker</td>
-              <td>Meterian (established supply-chain security firm)</td>
-              <td>ThumbGate (open-source devtool)</td>
-            </tr>
-          </table>
-        </div>
+        <p>ThumbGate offers a free local CLI and self-serve Pro for recall, dashboard, adapters, and exports. Compare current plans at /pricing.</p>
 
         <div class="detail-section">
           <h2>When to install HEIDI</h2>

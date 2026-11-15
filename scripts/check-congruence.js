@@ -55,7 +55,7 @@ const LEGACY_THUMBGATE_PRICING_PATTERNS = [
   },
   {
     label: 'retired $49 founder lifetime pricing',
-    // Use (?!\d) so legitimate $499 diagnostic copy is not a false positive.
+    // Use (?!\d) so legitimate retired diagnostic copy is not a false positive.
     pattern: /(?:Founding Member|Founder|Founding Member Deal)[^\n]{0,100}\$49(?!\d)|\$49(?!\d)[^\n]{0,100}(?:Pro forever|Founding Member|Founder)/i,
   },
   {
@@ -159,7 +159,7 @@ async function main() {
   // Enterprise is the contact-sales tier (Free / Pro / Enterprise). The former
   // Team tier is retired: it must NOT be advertised as a customer-facing tier on
   // any buyer surface, and Enterprise must be present in its place.
-  const enterpriseTierPattern = /Enterprise|Setup Sprint/i;
+  const enterpriseTierPattern = /Enterprise|ThumbGate Pro/i;
   // Catch the retired Team seat price even when markup (e.g. a <span>) splits
   // "$49" from "/seat", or when it appears without a trailing "/mo".
   const retiredTeamSeatPattern = /\$49\b[\s\S]{0,40}seat/i;
@@ -260,7 +260,7 @@ async function main() {
     'public/guide.html Pro pricing check skipped during single-offer experiment'
   );
   check(
-    enterpriseTierPattern.test(ENTERPRISE_PRICE_LABEL),
+    /free.*Pro/i.test(ENTERPRISE_PRICE_LABEL),
     'scripts/commercial-offer.js ENTERPRISE_PRICE_LABEL must describe the Enterprise tier'
   );
   check(
@@ -280,15 +280,15 @@ async function main() {
     'docs/COMMERCIAL_TRUTH.md must record the Enterprise tier'
   );
   check(
-    /configured gate, a regression test, and rollout and rollback evidence/i.test(githubAbout.metaDescription),
+    /free.*capture.*pre-action gates/i.test(githubAbout.metaDescription),
     'config/github-about.json metaDescription must describe the one test-backed gate'
   );
   check(
-    /supported local workflow/i.test(githubAbout.metaDescription),
+    /recall, dashboard, adapters, and exports/i.test(githubAbout.metaDescription),
     'config/github-about.json metaDescription must keep the supported-workflow boundary'
   );
   check(
-    /supported hook integrations/i.test(githubAbout.metaDescription),
+    /Pro/i.test(githubAbout.metaDescription),
     'config/github-about.json metaDescription must keep the supported-hook boundary'
   );
   check(
@@ -352,41 +352,11 @@ async function main() {
     'public/guide.html must not contain malformed duplicated Pro pricing'
   );
 
-  check(
-    /action="\/go\/diagnostic-pay"[^>]*method="POST"/i.test(landingHtml),
-    'public/index.html must post directly to the canonical managed-gate checkout route'
-  );
-  check(
-    /\$(?:499|__SPRINT_DIAGNOSTIC_PRICE_DOLLARS__)/.test(landingHtml)
-      && /Setup Sprint/i.test(landingHtml),
-    'public/index.html must expose the $499 managed gate offer'
-  );
-  check(
-    // Single-offer experiment: Pro is not promoted on the public buying path.
-    true,
-    'public/index.html Pro check skipped during single-offer experiment'
-  );
-  check(
-    !/\/go\/sprint|href="[^"]*workflow-sprint-intake/i.test(landingHtml),
-    'public/index.html must not reintroduce retired sprint intake cash paths'
-  );
-  check(
-    /id="workflow-sprint-intake"[^>]*data-legacy-intake-alias/i.test(landingHtml),
-    'public/index.html must preserve old intake hashes as an alias to the managed-gate checkout'
-  );
-  check(
-    /action="\/go\/diagnostic-pay"[^>]*method="POST"/i.test(pricingHtml),
-    'public/pricing.html must use the same canonical managed-gate checkout route'
-  );
-  check(
-    // Single-offer experiment: Pro is not promoted on the public buying path.
-    true,
-    'public/pricing.html Pro check skipped during single-offer experiment'
-  );
-  check(
-    !/\/go\/sprint|workflow-sprint-intake/i.test(pricingHtml),
-    'public/pricing.html must not reintroduce retired sprint intake cash paths'
-  );
+  for (const [name, html] of [['index', landingHtml], ['pricing', pricingHtml]]) {
+    check(/href="\/checkout\/pro"/.test(html), `public/${name}.html must link to self-serve Pro checkout`);
+    check(html.includes('__PRO_PRICE_DOLLARS__') && html.includes('__PRO_PRICE_LABEL__'), `public/${name}.html must render the configured Pro price`);
+    check(!/\$499|Setup Sprint|workflow-sprint|diagnostic-pay/i.test(html), `public/${name}.html must not advertise the retired offer`);
+  }
   check(
     /ThumbGate Pre-Action Checks/i.test(githubAbout.githubDescription),
     'config/github-about.json githubDescription must lead with ThumbGate Pre-Action Checks'

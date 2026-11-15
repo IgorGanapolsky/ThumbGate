@@ -61,9 +61,9 @@ npx thumbgate init --agent claude-code
 - Free GPT: advice, checkpointing, and setup help in ChatGPT
 - Codex Plugin: https://thumbgate.ai/codex-plugin
 - Free local CLI: 2 captures/day, 10 total captures, up to 3 active auto-promoted prevention rules, and local Pre-Action Checks after install (recall and lesson search are Pro-only)
-- Setup Sprint: $499 one-time for one supported workflow. Free CLI for evaluation. Custom scope after proof.
-- Setup Sprint: one-time engagement covering one supported workflow — a 60-minute review, one configured local gate, its regression test, and written rollout/rollback proof within two business days. Current terms: https://thumbgate.ai/pricing
-- Enterprise: custom pricing, scoped after intake — shared hosted lesson database, org-wide dashboard, GCP/DFCX guardrails, VPC gating, and white-glove workflow hardening sprints
+ThumbGate offers a free local CLI and self-serve Pro for recall, dashboard, adapters, and exports. Current plans: https://thumbgate.ai/pricing
+ThumbGate offers a free local CLI and self-serve Pro for recall, dashboard, adapters, and exports. Current plans: https://thumbgate.ai/pricing
+Hosted team sync and organization dashboards are not generally available. Compare current free and Pro plans at https://thumbgate.ai/pricing.
 
 ## Links
 

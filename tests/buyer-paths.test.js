@@ -39,9 +39,10 @@ test('buyer-path builders route every active offer through ThumbGate first', () 
   assert.equal(monthly.searchParams.get('billing_cycle'), 'monthly');
   assert.equal(annual.pathname, '/go/pro');
   assert.equal(annual.searchParams.get('billing_cycle'), 'annual');
-  assert.equal(diagnostic.pathname, '/diagnostic');
-  assert.equal(sprint.pathname, '/go/sprint');
-  assert.equal(enterprise.hash, '#workflow-sprint-intake');
+  assert.equal(diagnostic.pathname, '/pricing');
+  assert.equal(sprint.pathname, '/pricing');
+  assert.equal(enterprise.pathname, '/pricing');
+  assert.equal(enterprise.hash, '');
   assert.throws(
     () => buildBuyerUrl('https://buy.stripe.com/unsafe'),
     /must remain on the configured first-party origin/,

@@ -5,21 +5,12 @@ const path = require('node:path');
 
 const sprintBriefPath = path.join(__dirname, '..', 'docs', 'WORKFLOW_HARDENING_SPRINT.md');
 
-test('workflow hardening sprint brief stays current, proof-backed, and commercially honest', () => {
+test('former service brief explicitly retires managed setup without relabeling it Pro', () => {
   const brief = fs.readFileSync(sprintBriefPath, 'utf8');
-
-  assert.match(brief, /Status: current/i);
-  assert.match(brief, /one workflow/i);
-  assert.match(brief, /one owner/i);
-  assert.match(brief, /one proof review/i);
-  assert.match(brief, /Public paid checkout/i);
-  assert.match(brief, /\$499|Diagnostic: \$499/);
-  assert.match(brief, /\$1,500|Sprint: \$1,500/);
-  assert.match(brief, /first-dollar path/i);
-  assert.match(brief, /igor\.ganapolsky@gmail\.com/i);
-  assert.match(brief, /workflow-sprint-intake/i);
-  assert.match(brief, /COMMERCIAL_TRUTH\.md/);
-  assert.match(brief, /VERIFICATION_EVIDENCE\.md/);
-  assert.match(brief, /same-day next step/i);
-  assert.doesNotMatch(brief, /^We are an official Anthropic partner\b/m);
+  assert.match(brief, /retired and is no longer available for purchase/);
+  assert.match(brief, /Historical engagements do not describe the Pro subscription/);
+  assert.match(brief, /free MIT local CLI/i);
+  assert.match(brief, /Self-serve Pro adds recall, dashboard, adapters, and exports/);
+  assert.match(brief, /https:\/\/thumbgate.ai\/checkout\/pro/);
+  assert.doesNotMatch(brief, /Status: current|Public paid checkout|workflow-sprint-intake|same-day next step/i);
 });

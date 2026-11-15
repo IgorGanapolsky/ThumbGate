@@ -169,7 +169,7 @@ Soft block by default at "warn" severity for new rules; hard block at "critical.
 Honest answer per `docs/COMMERCIAL_TRUTH.md`: "We don't claim sub-processor coverage, SOC 2, HIPAA eligibility, or GDPR DPA terms until those legal artifacts are actually in place." For the pilot we ship as a local install inside your tenant, which sidesteps most of those questions until the hosted Team contract.
 
 **"What if your company disappears?"**
-The gate engine is MIT-licensed and your gates are flat-file JSON. Worst case, you keep running it. We make money on hosted state management, adapter compatibility against the underlying agent platforms (Claude, GPT-5, Cursor, Gemini), and the workflow-hardening sprint expertise. None of those lock the firm in.
+The gate engine is MIT-licensed and your gates are flat-file JSON. Worst case, you keep running it. We make money on hosted state management, adapter compatibility against the underlying agent platforms (Claude, GPT-5, Cursor, Gemini), and self-serve Pro recall, dashboard, and exports. None of those lock the firm in.
 
 ---
 

@@ -100,18 +100,14 @@ test('public docs render the current package version', () => {
   assert.match(landingPage, /ThumbGate/);
   assert.match(landingPage, /AI agent reliability/i);
   assert.match(landingPage, /Claude Desktop extension/i);
-  assert.match(landingPage, /\$19\/mo/);
-  assert.match(landingPage, /\$149\/yr/);
-  assert.match(landingPage, /Reliability Studio/i);
-  assert.match(landingPage, /Compare and Deploy/i);
+  assert.match(landingPage, /__PRO_PRICE_DOLLARS__/);
+  assert.match(landingPage, /href="\/checkout\/pro"/);
   assert.match(landingPage, /No model fine-tuning required/i);
-  assert.match(landingPage, /Workflow Hardening Fit Checker/i);
   assert.match(landingPage, /Claude Desktop extension path/i);
   assert.match(landingPage, /ChatGPT GPT Actions path/i);
   assert.match(landingPage, /https:\/\/chatgpt\.com\/g\/g-69dcfd1cd5f881918ae31874631d6f08-thumbgate/);
   assert.match(landingPage, /adapters\/chatgpt\/openapi\.yaml/i);
-  assert.match(landingPage, /can AI fully satisfy this query without a click\?/i);
-  assert.match(landingPage, /Run the hosted fit checker/i);
+  assert.doesNotMatch(landingPage, /Workflow Hardening Fit Checker|\$499|\$1,500/);
   assert.match(claudePluginReadme, /Claude Desktop/i);
   assert.match(claudePluginReadme, /Privacy Policy/i);
   assert.match(claudePluginReadme, /Data Collection/i);
@@ -250,7 +246,7 @@ test('landing page keeps GTM and schema assets wired', () => {
 
   assert.match(landingPage, /"@type": "SoftwareApplication"/);
   assert.match(landingPage, /"@type": "FAQPage"/);
-  assert.match(landingPage, /<section id='faq'>/);
+  assert.match(landingPage, /<section id="faq">/);
   assert.match(landingPage, /\/terms/);
   assert.match(landingPage, /__COMPATIBILITY_REPORT_URL__/);
   assert.match(landingPage, /__AUTOMATION_REPORT_URL__/);
@@ -274,9 +270,9 @@ test('hosted origin and repository metadata stay canonical across live-facing ar
 
   assert.match(publicLanding, new RegExp(CURRENT_REPOSITORY_URL.replaceAll('.', '\\.')));
   assert.match(publicLanding, /thumbgate/i);
-  assert.match(publicLanding, /\$__SPRINT_DIAGNOSTIC_PRICE_DOLLARS__/);
-  assert.match(publicLanding, /Setup Sprint/);
-  assert.match(publicLanding, /action="\/go\/diagnostic-pay" method="POST"/);
+  assert.match(publicLanding, /\$__PRO_PRICE_DOLLARS__/);
+  assert.match(publicLanding, /ThumbGate Pro/);
+  assert.match(publicLanding, /href="\/checkout\/pro"/);
   assert.doesNotMatch(publicLanding, /\$19/);
   assert.doesNotMatch(publicLanding, /\$149/);
   assert.doesNotMatch(publicLanding, /\/go\/pro-direct/);
@@ -285,7 +281,7 @@ test('hosted origin and repository metadata stay canonical across live-facing ar
   assert.match(publicLanding, /One repeated agent mistake\. One configured gate\./i);
   assert.match(publicLanding, /test-backed verification evidence/i);
   assert.match(publicLanding, /strict-mode deny example/i);
-  assert.match(publicLanding, /configured local gate and its regression test/i);
+  assert.match(publicLanding, /Pro adds recall, dashboard, adapters, and exports/i);
   assert.doesNotMatch(publicLanding, /billingDuration/);
   assert.doesNotMatch(publicLanding, /P1M/);
   assert.doesNotMatch(publicLanding, /mcp-gateway\.vercel\.app/);
@@ -452,18 +448,20 @@ test('commercial truth sources stay aligned across public and historical docs', 
 
   assert.match(anthropicStrategy, /Status: current/i);
   assert.match(anthropicStrategy, /Claude workflow hardening/i);
-  assert.match(anthropicStrategy, /booked pilots/i);
+  assert.match(anthropicStrategy, /verified free CLI activation/i);
+  assert.match(anthropicStrategy, /attributable self-serve Pro subscriptions/i);
+  assert.match(anthropicStrategy, /Users install, configure, test, and operate the software themselves/i);
+  assert.match(anthropicStrategy, /Neither plan includes a managed implementation, pilot delivery, or a proof review performed by ThumbGate/);
+  assert.doesNotMatch(anthropicStrategy, /booked pilots|Setup Sprint|implementation-led delivery/i);
   assert.match(anthropicStrategy, /founder-led outbound/i);
   assert.match(anthropicStrategy, /COMMERCIAL_TRUTH\.md/);
   assert.doesNotMatch(anthropicStrategy, /^We are an official Anthropic partner\b/m);
 
-  assert.match(workflowSprint, /Status: current/i);
-  assert.match(workflowSprint, /Public paid checkout/i);
-  assert.match(workflowSprint, /\$499|Diagnostic: \$499/);
-  assert.match(workflowSprint, /\$1,500|Sprint: \$1,500/);
-  assert.match(workflowSprint, /one workflow/i);
-  assert.match(workflowSprint, /VERIFICATION_EVIDENCE\.md/);
-  assert.doesNotMatch(workflowSprint, /^We are an official Anthropic partner\b/m);
+  assert.match(workflowSprint, /retired/i);
+  assert.match(workflowSprint, /free MIT local CLI/i);
+  assert.match(workflowSprint, /self-serve Pro/i);
+  assert.match(workflowSprint, /https:\/\/thumbgate.ai\/pricing/);
+  assert.doesNotMatch(workflowSprint, /\$499|\$1,500|Public paid checkout/);
 
   // directoryGuide assertion removed 2026-06-06 with the docs/marketing/ deletion.
 });

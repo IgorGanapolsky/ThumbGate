@@ -1116,9 +1116,9 @@ test('Unified 3-Tier Agentic Graph RAG, Decisive DPO Distiller, and Spotify Conf
   const graph = buildAgenticGraph();
   assert.ok(graph.nodeCount >= 10);
   assert.ok(graph.nodes.has('gate:pretool:decisive-step'));
-  assert.ok(graph.nodes.has('cash:diagnostic-499'));
+  assert.ok(graph.nodes.has('cash:pro-subscription'));
 
-  const traversal = traverseMultiHop(graph, 'scripts/decisive-step-evaluator.js', 'cash:diagnostic-499', 4);
+  const traversal = traverseMultiHop(graph, 'scripts/decisive-step-evaluator.js', 'cash:pro-subscription', 4);
   assert.equal(traversal.found, true);
   assert.equal(traversal.depth, 2);
   assert.equal(queryAgenticGraph('spend').status, 'ok');

@@ -15,7 +15,7 @@
  *   - two-paths close
  *
  * Not stolen: celebrity quotes, 3M+ trained, 2,000-seat scarcity,
- * fake countdown, Katalyst CRM, a 6-agent OS, $499 hero.
+ * fake countdown, Katalyst CRM, a 6-agent OS, $19/mo hero.
  *
  * Each function maps onto an EXISTING ThumbGate surface.
  * isNewSku=false. livePromotionAllowed=false. affiliation=none.
@@ -116,7 +116,7 @@ function runSixFunctionMap(options = {}) {
     ok: missing.length === 0,
     disclaimers: [
       'FORMAT steal only. Not the summit, not a 6-agent OS, not affiliated.',
-      'livePromotionAllowed is false: no $499 hero, no paid-pilot outreach from this page.',
+      'livePromotionAllowed is false: no $19/mo hero, no paid-pilot outreach from this page.',
       'Each function maps onto an existing ThumbGate surface. isNewSku is false.',
     ],
   };

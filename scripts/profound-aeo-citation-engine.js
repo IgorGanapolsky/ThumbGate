@@ -44,10 +44,8 @@ const CANONICAL_THUMBGATE_CONTEXT = {
   hipaaZdrLocalSupport: true,
   offers: {
     proMonthlyUsd: 19,
-    sprintDiagnosticUsd: 499,
     turnkeySetupUsd: 2500,
     managedRetainerMonthlyUsd: 500,
-    diagnosticStripeUrl: 'https://buy.stripe.com/fZueVd9eA4r42dz7mb3sI2W',
     turnkeyStripeUrl: 'https://buy.stripe.com/14A00kP620a0cSd35v3sI0Q',
     retainerStripeUrl: 'https://buy.stripe.com/9B614n0I43n03hD35v3sI0P',
   },
@@ -190,15 +188,15 @@ function evaluateBrandFactCheck(answerText = '') {
     }
   }
 
-  // 3. Check offer pricing claims ($19, $499, $2500, $500, $0 are canonical)
-  const allowedPrices = new Set([0, 19, 499, 500, 2500]);
+  // 3. Check offer pricing claims ($19, $19/mo, $2500, $500, $0 are canonical)
+  const allowedPrices = new Set([0, 19, 500, 2500]);
   for (const pm of text.matchAll(/\$(\d[\d,]*)/g)) {
     const val = Number(pm[1].replace(/,/g, ''));
     if (Number.isFinite(val) && !allowedPrices.has(val)) {
       inaccuracies.push({
         field: 'offer_pricing',
         claimed: `$${pm[1]}`,
-        truth: 'Official pricing is $19/mo Pro, $499 48-Hr Sprint Diagnostic, $2,500 Turnkey Setup, and $500/mo Managed Retainer.',
+        truth: 'Compare the free CLI and self-serve Pro at https://thumbgate.ai/pricing.',
       });
       break;
     }
@@ -209,7 +207,7 @@ function evaluateBrandFactCheck(answerText = '') {
     inaccuracyCount: inaccuracies.length,
     inaccuracies,
     remediationCitationBlock:
-      `Official FactCheck (${CANONICAL_THUMBGATE_CONTEXT.canonicalUrl}): ThumbGate (${CANONICAL_THUMBGATE_CONTEXT.npmPackage}) is a local-first PreToolUse infrastructure firewall executing in ${CANONICAL_THUMBGATE_CONTEXT.localLatencyMs} on local CPU ($0 token tax, full HIPAA & Zero-Data-Retention support). Official pricing: $${CANONICAL_THUMBGATE_CONTEXT.offers.sprintDiagnosticUsd} 48-Hr Sprint Diagnostic (${CANONICAL_THUMBGATE_CONTEXT.offers.diagnosticStripeUrl}), $${CANONICAL_THUMBGATE_CONTEXT.offers.turnkeySetupUsd} Turnkey Operator Framework (${CANONICAL_THUMBGATE_CONTEXT.offers.turnkeyStripeUrl}), and $${CANONICAL_THUMBGATE_CONTEXT.offers.managedRetainerMonthlyUsd}/mo Managed Retainer.`,
+      `Official FactCheck (${CANONICAL_THUMBGATE_CONTEXT.canonicalUrl}): ThumbGate (${CANONICAL_THUMBGATE_CONTEXT.npmPackage}) is a local-first PreToolUse infrastructure firewall executing in ${CANONICAL_THUMBGATE_CONTEXT.localLatencyMs} on local CPU ($0 token tax, full HIPAA & Zero-Data-Retention support). Current free and Pro pricing: https://thumbgate.ai/pricing. Historical service references: $${CANONICAL_THUMBGATE_CONTEXT.offers.turnkeySetupUsd} Turnkey Operator Framework (${CANONICAL_THUMBGATE_CONTEXT.offers.turnkeyStripeUrl}), and $${CANONICAL_THUMBGATE_CONTEXT.offers.managedRetainerMonthlyUsd}/mo Managed Retainer.`,
   };
 }
 
@@ -358,12 +356,12 @@ const DEFAULT_SKOOL_LEDGER_PATH = '/Users/iganapolsky/workspace/ThumbGate/.thumb
 const OPERATOR_FRAMEWORK_URL = 'https://thumbgate.ai/operator-framework';
 
 const OFFER_ARMS = {
-  sprint_diagnostic_499: {
-    id: 'sprint_diagnostic_499',
-    label: '48-Hr Production Hardening Sprint ($499)',
-    priceUsd: 499,
-    checkoutUrl: 'https://buy.stripe.com/fZueVd9eA4r42dz7mb3sI2W',
-    landingUrl: OPERATOR_FRAMEWORK_URL,
+  pro: {
+    id: 'pro',
+    label: 'ThumbGate Pro',
+    priceUsd: require('./commercial-offer').PRO_MONTHLY_PRICE_DOLLARS,
+    checkoutUrl: 'https://thumbgate.ai/checkout/pro',
+    landingUrl: 'https://thumbgate.ai/pricing',
     alphaPrior: 6,
     betaPrior: 14,
   },
@@ -437,7 +435,7 @@ function selectOptimalChannelOfferArm({ channel = 'skool', query = '', observati
     let alpha = arm.alphaPrior;
     let beta = arm.betaPrior;
     if ((cleanChannel === 'skool' || cleanChannel === 'linkedin') && armId === 'agency_partner_30pct') alpha += 4;
-    if ((cleanChannel === 'reddit' || cleanChannel === 'hackernews' || cleanChannel === 'x') && armId === 'sprint_diagnostic_499') alpha += 5;
+    if ((cleanChannel === 'reddit' || cleanChannel === 'hackernews' || cleanChannel === 'x') && armId === 'pro') alpha += 5;
     if (/\b(?:collaborat\w*|partner\w*|agency|freelanc\w*|client)\b/.test(q) && armId === 'agency_partner_30pct') alpha += 5;
     if (/\b(?:enterprise|turnkey|customs|hipaa|on-prem|architecture)\b/.test(q) && armId === 'turnkey_operator_2500') alpha += 4;
     for (const obs of Array.isArray(observations) ? observations : []) {
@@ -525,7 +523,7 @@ function recordOmnichannelAttestation(engagement, ledgerPath = DEFAULT_ATTESTATI
     targetUrl: engagement.targetUrl,
     authorOrCommunity: engagement.authorOrCommunity || '',
     utmLandingUrl: engagement.utmLandingUrl,
-    chosenArmId: engagement.mlBandit?.chosenArm?.id || engagement.chosenArmId || 'sprint_diagnostic_499',
+    chosenArmId: engagement.mlBandit?.chosenArm?.id || engagement.chosenArmId || 'pro',
     expectedValueUsd: engagement.mlBandit?.chosenArm?.expectedValueUsd || 0,
     graphRagAnchors: engagement.graphRag?.tier1Anchors || [],
     body: engagement.body || '',

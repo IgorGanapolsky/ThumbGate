@@ -10,7 +10,7 @@
  *   2. Compare like-for-like (same fixtures, same budgets, same host)
  *   3. Do not grade your own homework (status-quo heuristic vs solver)
  *
- * ECI: existing-surface maintenance. No enterprise SKU, no $499 pitch,
+ * ECI: existing-surface maintenance. No enterprise SKU, no $19/mo pitch,
  * no captured cash, no Gurobi affiliation.
  *
  * Usage:

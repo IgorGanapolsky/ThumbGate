@@ -365,9 +365,9 @@ async function fetchWorkflowIntakeQueue(options = {}, config = resolveHostedQueu
     timeoutMs: Number.isInteger(options.timeoutMs) ? options.timeoutMs : DEFAULT_TIMEOUT_MS,
   };
   const hosted = validateHostedConfig(config);
-  const url = new URL('/v1/intake/workflow-sprint/queue', hosted.apiBaseUrl);
-  url.searchParams.set('status', effectiveOptions.statuses.join(','));
-  url.searchParams.set('limit', String(effectiveOptions.limit));
+  const url = new URL('/v1/billing/summary?window=today&include_intake_queue=1', hosted.apiBaseUrl);
+  url.searchParams.set('intake_status', effectiveOptions.statuses.join(','));
+  url.searchParams.set('intake_limit', String(effectiveOptions.limit));
   const response = await fetchWithTimeout(fetchImpl, url, {
     method: 'GET',
     headers: {
@@ -411,7 +411,7 @@ async function fetchWorkflowIntakeQueue(options = {}, config = resolveHostedQueu
     throw queueError('intake_queue_http_error', `Hosted intake queue returned HTTP ${response.status}.`, response.status);
   }
   assertPrivateResponse(response);
-  const payload = validateQueuePayload(await response.json());
+  const payload = validateQueuePayload((await response.json()).intakeQueue);
   return { payload, summary: summarizeQueue(payload, hosted.apiBaseUrl) };
 }
 

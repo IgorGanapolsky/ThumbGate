@@ -367,29 +367,13 @@ test('the version sweep reaches every served page, and exempts only real evidenc
 // Commercial terms: the Stripe revenue catalog is the source of truth
 // ---------------------------------------------------------------------------
 
-test('the promoted one-time offer is stated at the canonical amount wherever it appears', () => {
-  const offer = currentOffer('workflow_hardening_diagnostic');
-  const dollars = wholeDollars(offer);
-  assert.equal(offer.cadence, 'one_time');
-
-  // Any three-or-four figure amount presented as a one-time/diagnostic/managed
-  // gate price must be THE amount. Catches "$599 Diagnostic" drift on one page.
-  const oneTimeContext = /\$(\d{3,4})(?=\s*(?:one-time|once|Diagnostic|diagnostic|managed|Setup Sprint|enterprise gate))/g;
-
-  let statedSomewhere = false;
-
+test('published buyer surfaces do not promote the retired service', () => {
+  // The revenue catalog retains immutable historical price identities for receipts.
+  // Published buyer copy must not turn those records into a current offer.
   for (const file of priceBearingSurfaces()) {
-    for (const match of claimText(file).matchAll(oneTimeContext)) {
-      assert.equal(
-        Number(match[1]),
-        dollars,
-        `${file} states the one-time offer as $${match[1]} but the canonical catalog says $${dollars}`,
-      );
-      statedSomewhere = true;
-    }
+    assert.doesNotMatch(claimText(file), /\$499\b|Setup Sprint|Workflow Sprint/i,
+      `${file} promotes the retired service`);
   }
-
-  assert.ok(statedSomewhere, 'no published surface states the promoted one-time offer amount');
 });
 
 test('the recurring subscription prices agree with the canonical catalog', () => {
@@ -456,24 +440,26 @@ test('the price sweep reaches the surfaces that carry a commercial call to actio
   }
   assert.ok(covered.size > 10, `the price sweep collapsed to ${covered.size} surfaces`);
 
-  // Single-offer experiment: the pricing page states the $499 gate, not a monthly Pro price.
-  // The matcher itself is still exercised by the markup-split fixture above.
-  const pricingClaims = claimText('public/pricing.html');
-  assert.match(pricingClaims, /\$499/);
-  assert.doesNotMatch(pricingClaims, /\$19\s*\/\s*mo/);
+  const pricing = readText('public/pricing.html');
+  assert.match(pricing, /\$__PRO_PRICE_DOLLARS__/);
+  assert.match(pricing, /href="\/checkout\/pro"/);
+  assert.match(pricing, /data-plan-id="pro"/);
+  assert.doesNotMatch(pricing, /\$499|Setup Sprint|Workflow Sprint/i);
 });
 
 test('every AI-discovery surface describes the promoted paid offer', () => {
   // An llms.txt/llm-context.md that lists tiers but silently omits the promoted
   // offer teaches retrieval engines an incomplete answer. Both must name it and
   // point at the canonical terms page.
-  const offerName = /Setup Sprint/;
+  const offerName = /Pro/;
   const termsUrl = `${CANONICAL.appOrigin}/pricing`;
-  const canonicalDollars = wholeDollars(currentOffer('workflow_hardening_diagnostic'));
+  const canonicalDollars = wholeDollars(currentOffer('pro_monthly'));
 
   for (const file of ['public/llm-context.md', '.well-known/llms.txt']) {
     const text = readText(file);
     assert.match(text, offerName, `${file} never names the promoted paid offer`);
+    assert.match(text, /free.*CLI/i);
+    assert.doesNotMatch(text, /\$499|Setup Sprint|Workflow Sprint/i);
 
     // Terms must be resolvable from the surface itself: either it states the
     // canonical amount inline, or it links to the canonical terms page.

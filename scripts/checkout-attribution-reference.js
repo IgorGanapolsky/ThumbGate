@@ -2,7 +2,7 @@
 
 // Attribution survival for EXTERNAL Stripe Payment Links.
 //
-// The $499 diagnostic and the sprint check out via raw `buy.stripe.com` Payment
+// The retired diagnostic and the sprint check out via raw `buy.stripe.com` Payment
 // Links. Payment Links DROP appended utm_* query params and carry NO session
 // metadata — but they DO preserve `client_reference_id` into
 // `checkout.session.completed`. Without packing attribution into that field, a

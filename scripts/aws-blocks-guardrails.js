@@ -222,15 +222,17 @@ function buildAwsBlocksHardeningOffer(input = {}) {
     buyer,
     workflow,
     headline: 'AWS Blocks helps agents build the backend. ThumbGate stops them before unsafe cloud actions run.',
-    offer: 'AWS Blocks Agent Safety Review',
-    diagnosticPrice: '$499',
+    offer: 'Self-serve ThumbGate Pro',
+    pricingUrl: 'https://thumbgate.ai/pricing',
+    checkoutUrl: 'https://thumbgate.ai/checkout/pro',
+    fulfillment: 'Software subscription; configuration, testing, and rollout remain the operator responsibility',
     proofPlan: [
-      'map one AWS Blocks local-to-cloud workflow',
-      'install ThumbGate against the agent running that workflow',
-      'add gates for deploy, destroy, data mutation, IAM, Bedrock Agent, and cost-blast-radius actions',
-      'produce a receipt showing the first blocked repeat and the evidence required to allow it',
+      'Identify your AWS Blocks local-to-cloud action boundaries',
+      'Install the free CLI yourself on a supported agent path',
+      'Configure and test your gates for deploy, destroy, data mutation, IAM, Bedrock Agent, and cost-blast-radius actions',
+      'Inspect local receipts to verify your configured policy behavior',
     ],
-    cta: 'Send one AWS Blocks workflow that is about to deploy, mutate data, or call Bedrock tools.',
+    cta: 'Start with the free CLI; compare Pro for recall, dashboard, adapters, and exports.',
   };
 }
 

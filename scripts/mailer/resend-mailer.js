@@ -563,22 +563,22 @@ function resolvePublicOrigin(appOrigin) {
 function renderSignupWelcomeBodies({ customerName, appOrigin } = {}) {
   const origin = resolvePublicOrigin(appOrigin);
   const installUrl = `${origin}/#install`;
-  const diagnosticUrl = `${origin}/diagnostic`;
+  const diagnosticUrl = `${origin}/pricing`;
   const greeting = firstName(customerName) ? `Hi ${firstName(customerName)},` : 'Hi there,';
   const footer = getFooterContext();
   const { unsubscribeEmail, businessName, businessAddress } = footer;
   const intro = 'ThumbGate blocks leaked secrets and repeated AI coding mistakes at PreToolUse before a tool call runs.';
   const text = [
     greeting, '', 'Welcome to ThumbGate.', intro, '',
-    `1. Install free in 30 seconds (npx thumbgate init): ${installUrl}`,
-    `2. Want one workflow wired with you? Book the $499 diagnostic: ${diagnosticUrl}`, '',
+    `1. Install the free local CLI (npx thumbgate init): ${installUrl}`,
+    `2. Compare Pro for recall, dashboard, adapters, and exports: ${diagnosticUrl}`, '',
     '— Igor, founder of ThumbGate', '', '---',
     `You signed up on thumbgate.ai. Don't want these emails? Unsubscribe: ${unsubscribeEmail}`,
     `${businessName} · ${businessAddress}`,
   ].join('\n');
   const html = renderEmailShell({
     headline: 'Welcome to ThumbGate.',
-    bodyRowsHtml: `<tr><td style="padding:24px 28px 18px;"><p style="margin:0 0 12px;font-size:15px;">${escapeHtml(greeting)}</p><p style="margin:0 0 20px;font-size:15px;color:#344451;">${escapeHtml(intro)} Run <code>npx thumbgate init</code> locally, or have us wire one workflow end-to-end with you.</p><p style="margin:0 0 22px;"><a href="${escapeHtml(installUrl)}" style="${PRIMARY_CTA_STYLE}margin:0 10px 8px 0;">Install ThumbGate free</a><a href="${escapeHtml(diagnosticUrl)}" style="display:inline-block;background:#0f172a;color:#fff;text-decoration:none;font-weight:700;padding:12px 20px;border-radius:6px;font-size:14px;margin:0 0 8px 0;">Book the $499 diagnostic</a></p><p style="margin:0;font-size:14px;">— Igor, founder of ThumbGate</p></td></tr>`,
+    bodyRowsHtml: `<tr><td style="padding:24px 28px 18px;"><p style="margin:0 0 12px;font-size:15px;">${escapeHtml(greeting)}</p><p style="margin:0 0 20px;font-size:15px;color:#344451;">${escapeHtml(intro)} Run <code>npx thumbgate init</code> locally, or compare Pro for recall, dashboard, adapters, and exports.</p><p style="margin:0 0 22px;"><a href="${escapeHtml(installUrl)}" style="${PRIMARY_CTA_STYLE}margin:0 10px 8px 0;">Install ThumbGate free</a><a href="${escapeHtml(diagnosticUrl)}" style="display:inline-block;background:#0f172a;color:#fff;text-decoration:none;font-weight:700;padding:12px 20px;border-radius:6px;font-size:14px;margin:0 0 8px 0;">Compare free and Pro</a></p><p style="margin:0;font-size:14px;">— Igor, founder of ThumbGate</p></td></tr>`,
     footerReason: 'You signed up on thumbgate.ai.',
     footer,
   });

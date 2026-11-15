@@ -52,22 +52,23 @@ test('public surfaces lead with outcomes instead of infrastructure abstractions'
   assert.match(readme, /evaluate the proposed tool call before execution/i);
   assert.match(landingPage, /One repeated agent mistake\. One configured gate\./i);
   assert.match(landingPage, /allowed, warned, or denied/i);
-  assert.match(landingPage, /one configured local gate/i);
+  assert.match(landingPage, /configured gates/i);
   assert.match(gptInstructions, /Sell outcomes before infrastructure/i);
   assert.doesNotMatch(landingPage, /Global enforcement/i);
   assert.doesNotMatch(readme, /Behavior control system/i);
 });
 
-test('README keeps the business sprint-first while preserving the Pro side lane', () => {
+test('README preserves free activation and self-serve Pro buying paths', () => {
   const readme = readText('README.md');
 
-  assert.match(readme, /Enterprise intake path/i);
+  assert.match(readme, /free local CLI/i);
   assert.match(readme, /Local technical path/i);
   assert.match(readme, /First-dollar activation path/i);
   assert.match(readme, /what repeated AI mistake would be worth catching before the tool executes/i);
   assert.match(readme, /Native ChatGPT rating buttons are not the ThumbGate capture path/i);
   assert.match(readme, /install the CLI and use `init` plus the documented setup/i);
-  assert.match(readme, /Setup Sprint/i);
+  assert.match(readme, /self-serve Pro/i);
+  assert.doesNotMatch(readme, /Setup Sprint|\$499|\/go\/(?:sprint|diagnostic)/i);
   assert.match(readme, /Paid path for individual operators/i);
   assert.match(readme, /self-serve side lane/i);
   assert.match(readme, /https:\/\/thumbgate\.ai\/go\/pro-direct\?utm_source=github&utm_medium=readme&utm_campaign=pro_page/);
@@ -77,7 +78,8 @@ test('README keeps the business sprint-first while preserving the Pro side lane'
 test('README exposes prompt-shaped buyer questions with tracked guide links', () => {
   const readme = readText('README.md');
 
-  assert.match(readme, /Setup Sprint/i);
+  assert.match(readme, /self-serve Pro/i);
+  assert.doesNotMatch(readme, /Setup Sprint|\$499|\/go\/(?:sprint|diagnostic)/i);
   assert.match(readme, /Popular buyer questions/i);
   assert.match(readme, /guides\/ai-search-topical-presence\?utm_source=github&utm_medium=readme&utm_campaign=buyer_questions/);
   assert.match(readme, /guides\/relational-knowledge-ai-recommendations\?utm_source=github&utm_medium=readme&utm_campaign=buyer_questions/);
@@ -97,8 +99,7 @@ test('README exposes prompt-shaped buyer questions with tracked guide links', ()
   assert.match(readme, /guides\/roo-code-alternative-cline\?utm_source=github&utm_medium=readme&utm_campaign=buyer_questions/);
   assert.match(readme, /https:\/\/thumbgate\.ai/);
   assert.doesNotMatch(readme, /https:\/\/usethumbgate\.com/i);
-  assert.match(readme, /\/go\/diagnostic\?utm_source=github&utm_medium=readme&utm_campaign=top_cta/);
-  assert.match(readme, /\/go\/diagnostic\?utm_source=github&utm_medium=readme&utm_campaign=team_rollout/);
+  assert.match(readme, /https:\/\/thumbgate\.ai\/pricing/);
   assert.match(readme, /First Dollar Playbook/i);
 });
 
@@ -127,11 +128,9 @@ test('README keeps lesson search on Pro instead of the Free tier', () => {
 test('LLM context keeps the promoted offer and CLI positioning aligned with commercial truth', () => {
   const context = readText(path.join('public', 'llm-context.md'));
 
-  assert.match(context, /\$499 Setup Sprint/i);
-  assert.match(context, /one supported workflow/i);
-  assert.match(context, /60-minute working review/i);
-  assert.match(context, /regression test/i);
-  assert.match(context, /within two business days/i);
+  assert.match(context, /free local CLI/i);
+  assert.match(context, /self-serve Pro/i);
+  assert.doesNotMatch(context, /\$499|Setup Sprint|60-minute working review|within two business days/i);
   assert.match(context, /Autoresearch Safety Pack/i);
   assert.match(context, /native-messaging-audit/i);
   assert.match(context, /background-governance/i);
@@ -229,7 +228,7 @@ test('continuity guide frames the gateway as downstream reliability, not a new o
 // part of the post-Reddit credibility cleanup (file admitted "$0 revenue"
 // publicly and read as launch-theater).
 
-test('public landing copy stays vendor-neutral while offering Pro and Enterprise cash paths', () => {
+test('public landing copy stays vendor-neutral while offering free and Pro paths', () => {
   const congruence = readText(path.join('docs', 'MARKETING_COPY_CONGRUENCE.md'));
   const landingPage = readText(path.join('public', 'index.html'));
 
@@ -239,10 +238,9 @@ test('public landing copy stays vendor-neutral while offering Pro and Enterprise
   assert.match(landingPage, /Cursor/i);
   assert.match(landingPage, /Codex/i);
   assert.match(landingPage, /or similar agents/i);
-  assert.match(landingPage, /Setup Sprint/i);
-  assert.match(landingPage, /\$499/);
-  // Pro removed from public buying path
-  // Pro removed from public buying path
+  assert.match(landingPage, /free local CLI/i);
+  assert.match(landingPage, /href="\/checkout\/pro"/);
+  assert.doesNotMatch(landingPage, /Setup Sprint|\$499/i);
   assert.doesNotMatch(landingPage, /Enterprise pilot|\/enterprise/i);
   assert.doesNotMatch(landingPage, /auto-detects supported local agent installs/i);
   assert.doesNotMatch(landingPage, /claude --mcp thumbgate/i);
@@ -253,7 +251,8 @@ test('GEO demand engine prioritizes action queries and proof-backed fan-out surf
 
   assert.match(geoDemandEngine, /Workflow Hardening Fit Checker/i);
   assert.match(geoDemandEngine, /Can AI fully satisfy this query without a click\?/i);
-  assert.match(geoDemandEngine, /Setup Sprint/i);
+  assert.match(geoDemandEngine, /self-serve Pro/i);
+  assert.doesNotMatch(geoDemandEngine, /Sprint|\$499|\/diagnostic/i);
   assert.match(geoDemandEngine, /Pro at \$19\/mo or \$149\/yr/i);
   assert.match(geoDemandEngine, /VERIFICATION_EVIDENCE\.md/);
   assert.match(geoDemandEngine, /COMMERCIAL_TRUTH\.md/);
@@ -266,20 +265,15 @@ test('GEO demand engine prioritizes action queries and proof-backed fan-out surf
   assert.doesNotMatch(geoDemandEngine, /customer proof/i);
 });
 
-test('first dollar playbook keeps the sales motion sprint-first and proof-backed', () => {
+test('first dollar playbook promotes current plans and preserves historical attribution', () => {
   const playbook = readText(path.join('docs', 'FIRST_DOLLAR_PLAYBOOK.md'));
 
-  assert.match(playbook, /Status: current/i);
-  assert.match(playbook, /first real external dollar/i);
-  assert.match(playbook, /First-dollar activation ladder/i);
-  assert.match(playbook, /move a cold user from curiosity to one caught repeat/i);
-  assert.match(playbook, /Do not claim ChatGPT's native rating buttons feed ThumbGate/i);
-  assert.match(playbook, /Setup Sprint/i);
-  assert.match(playbook, /proof pack/i);
-  assert.match(playbook, /named pilot agreement/i);
-  assert.match(playbook, /COMMERCIAL_TRUTH\.md/);
-  assert.match(playbook, /VERIFICATION_EVIDENCE\.md/);
-  assert.match(playbook, /RELEASE_CONFIDENCE\.md/);
+  assert.match(playbook, /free local CLI/i);
+  assert.match(playbook, /self-serve Pro/i);
+  assert.match(playbook, /https:\/\/thumbgate\.ai\/pricing/);
+  assert.match(playbook, /Retired managed setup offers are unavailable/i);
+  assert.match(playbook, /Historical payment and fulfillment records/i);
+  assert.doesNotMatch(playbook, /Book.*Sprint|\$499|60-minute/i);
 });
 
 // REMOVED 2026-06-06: this test read docs/marketing/team-outreach-messages.md

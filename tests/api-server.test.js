@@ -559,7 +559,7 @@ test('/partner-intake serves an attributed form without a price or payment path'
   assert.match(res.headers.get('content-type') || '', /text\/html/);
   const html = await res.text();
   assert.match(html, /Send one failing AI-agent workflow/);
-  assert.match(html, /action="\/v1\/intake\/workflow-sprint"/);
+  assert.match(html, /action="\/v1\/inquiries"/);
   assert.match(html, /name="page" value="\/partner-intake"/);
   assert.match(html, /name="source" value="aiventyx"/);
   assert.match(html, /name="utmSource" value="aiventyx"/);
@@ -579,40 +579,21 @@ test('/partner-intake escapes server-rendered attribution values', async () => {
   assert.match(html, /value="aiventyx&quot;&gt;&lt;script&gt;window\.partnerPwned=true&lt;\/script&gt;"/);
 });
 
-test('/diagnostic serves the managed workflow gate checkout and fit page', async () => {
-  const res = await fetch(apiUrl('/diagnostic?utm_source=reddit&utm_campaign=workflow_diagnostic'), { redirect: 'manual' });
-  assert.equal(res.status, 200);
-  assert.match(res.headers.get('content-type') || '', /text\/html/);
-  const html = await res.text();
-  assert.match(html, /Setup Sprint/);
-  assert.match(html, /Submit for fit check/);
-  assert.match(html, /action="\/v1\/intake\/workflow-sprint"/);
-  assert.match(html, /name="planId" value="diagnostic"/);
-  assert.match(html, /name="ctaId" value="diagnostic_page_intake"/);
-  assert.match(html, /workflow_sprint_intake_submit_attempted/);
-  assert.match(html, /Book the \$499 setup/);
-  assert.match(html, /Exactly what the \$499 Setup Sprint includes/);
-  assert.match(html, /one 60-minute working review/i);
-  assert.match(html, /one configured local gate and regression test/i);
-  assert.match(html, /rollout and rollback proof within two business days/i);
-  assert.match(html, /order is refunded instead of being silently converted/i);
-  assert.doesNotMatch(html, /\$1500|public Setup Sprint/i);
-  assert.doesNotMatch(html, /__WORKFLOW_SPRINT_PRICE_DOLLARS__|__SPRINT_DIAGNOSTIC_PRICE_DOLLARS__/);
-  assert.match(html, /action="\/go\/diagnostic-pay" method="POST"/);
-  assert.match(html, /name="customer_email"[^>]*required/);
-  assert.match(html, /No Stripe session is created until you submit this form/);
-  assert.match(html, /data-cta-id="diagnostic_hero_paid"/);
-  assert.doesNotMatch(html, /No cold payment link/);
+test('/diagnostic is retired', async () => {
+  for (const method of ['GET', 'POST', 'OPTIONS']) {
+    const res = await fetch(apiUrl('/diagnostic'), { method, redirect: 'manual', headers: authHeader });
+    assert.equal(res.status, 410);
+    assert.equal(res.headers.get('location'), null);
+    assert.equal((await res.json()).pricingUrl, '/pricing');
+  }
 });
 
 test('/workflow-hardening-sprint and diagnostic aliases serve the focused diagnostic page', async () => {
-  for (const route of ['/workflow-diagnostic', '/sprint', '/workflow-hardening-sprint']) {
-    const res = await fetch(apiUrl(route), { redirect: 'manual' });
-    assert.equal(res.status, 200, `${route} should render`);
-    assert.match(res.headers.get('content-type') || '', /text\/html/);
-    const html = await res.text();
-    assert.match(html, /Setup Sprint/);
-    assert.match(html, /<link rel="canonical" href="https:\/\/app\.example\.com\/diagnostic"/);
+  for (const method of ['GET', 'POST', 'OPTIONS']) {
+    const res = await fetch(apiUrl('/diagnostic'), { method, redirect: 'manual', headers: authHeader });
+    assert.equal(res.status, 410);
+    assert.equal(res.headers.get('location'), null);
+    assert.equal((await res.json()).pricingUrl, '/pricing');
   }
 });
 
@@ -904,21 +885,10 @@ test('root serves the landing page by default', async () => {
 
   const body = await res.text();
   assert.match(body, /ThumbGate/);
-  assert.match(body, /One repeated agent mistake\. One configured gate\./i);
-  assert.match(body, /Setup Sprint/i);
-  assert.match(body, /action="\/go\/diagnostic-pay" method="POST"/);
-  assert.match(body, /Book the \$499 setup/i);
-  assert.match(body, /\$499/);
-  assert.doesNotMatch(body, /Start Pro — \$19\/mo|\/go\/pro-direct/);
-  assert.match(body, /One configured local gate and its regression test/i);
-  assert.match(body, /warn by default/i);
-  assert.match(body, /strict mode/i);
-  assert.doesNotMatch(body, /learns from every mistake/i);
-  assert.doesNotMatch(body, /Thompson Sampling|LanceDB|MemAlign|FTS5/i);
-  assert.doesNotMatch(body, /\/go\/sprint|href="[^"]*workflow-sprint-intake/i);
-  assert.match(body, /id="workflow-sprint-intake"[^>]*data-legacy-intake-alias/);
-  assert.match(body, /FAQPage/);
-  assert.match(body, /SoftwareApplication/);
+  assert.match(body, /ThumbGate Pro/);
+  assert.match(body, /href="\/checkout\/pro"/);
+  assert.match(body, /\$19/);
+  assert.doesNotMatch(body, /\$499|Setup Sprint|diagnostic-pay/);
   assert.match(body, /plausible\.io\/js\/script\.tagged-events\.js/);
   assert.match(body, /data-domain="app\.example\.com"/);
   assert.match(body, /googletagmanager\.com\/gtag\/js\?id=G-TEST1234/);
@@ -1003,109 +973,38 @@ test('/go/pro falls back to default UTM attribution when no params are supplied'
 });
 
 test('/go/diagnostic opens the diagnostic confirmation page with attribution preserved', async () => {
-  const res = await fetch(apiUrl('/go/diagnostic?utm_source=audit&utm_medium=codex&offer_code=VERIFY'), { redirect: 'manual' });
-  assert.equal(res.status, 302);
-  assert.equal(res.headers.get('x-thumbgate-link-slug'), 'diagnostic');
-  assert.equal(res.headers.get('cache-control'), 'no-store');
-  assert.equal(res.headers.get('x-robots-tag'), 'noindex,nofollow');
-
-  const url = new URL(res.headers.get('location'));
-  assert.equal(url.origin + url.pathname, 'https://app.example.com/diagnostic');
-  assert.equal(url.searchParams.get('utm_source'), 'audit');
-  assert.equal(url.searchParams.get('utm_medium'), 'codex');
-  assert.equal(url.searchParams.get('utm_campaign'), 'sprint_diagnostic');
-  assert.equal(url.searchParams.get('plan_id'), 'sprint_diagnostic');
-  assert.equal(url.searchParams.get('offer_code'), 'VERIFY');
-  assert.equal(url.searchParams.get('cta_id'), 'go_diagnostic');
-  assert.equal(url.searchParams.get('landing_path'), '/go/diagnostic');
-  assert.equal(url.searchParams.get('client_reference_id'), null);
+  for (const method of ['GET', 'POST', 'OPTIONS']) {
+    const res = await fetch(apiUrl('/diagnostic'), { method, redirect: 'manual', headers: authHeader });
+    assert.equal(res.status, 410);
+    assert.equal(res.headers.get('location'), null);
+    assert.equal((await res.json()).pricingUrl, '/pricing');
+  }
 });
 
 test('/go/diagnostic-pay requires POST plus a valid buyer email before Stripe', async () => {
-  const getRes = await fetch(apiUrl('/go/diagnostic-pay'), { redirect: 'manual' });
-  assert.equal(getRes.status, 405);
-
-  const missingEmail = await fetch(apiUrl('/go/diagnostic-pay'), {
-    method: 'POST',
-    redirect: 'manual',
-    headers: { 'content-type': 'application/x-www-form-urlencoded' },
-    body: new URLSearchParams({ utm_source: 'audit' }),
-  });
-  assert.equal(missingEmail.status, 400);
-
-  const res = await fetch(apiUrl('/go/diagnostic-pay'), {
-    method: 'POST',
-    redirect: 'manual',
-    headers: { 'content-type': 'application/x-www-form-urlencoded' },
-    body: new URLSearchParams({
-      customer_email: 'buyer@example.com',
-      utm_source: 'audit',
-      utm_medium: 'codex',
-      utm_campaign: 'value_packaging_v1',
-      campaign_variant: 'regulated_team',
-      offer_code: 'VERIFY',
-    }),
-  });
-  assert.equal(res.status, 303);
-  assert.equal(res.headers.get('x-thumbgate-link-slug'), 'diagnostic-pay');
-  const url = new URL(res.headers.get('location'));
-  assert.equal(url.origin + url.pathname, 'https://buy.stripe.com/diagnostic-test');
-  assert.equal(url.searchParams.get('prefilled_email'), 'buyer@example.com');
-  assert.equal(url.searchParams.get('customer_email'), null);
-  assert.equal(url.searchParams.get('utm_source'), 'audit');
-  assert.equal(url.searchParams.get('utm_medium'), 'codex');
-  assert.equal(url.searchParams.get('utm_campaign'), 'value_packaging_v1');
-  assert.equal(url.searchParams.get('campaign_variant'), 'regulated_team');
-  assert.equal(url.searchParams.get('offer_code'), 'VERIFY');
-  assert.equal(url.searchParams.get('cta_id'), 'go_diagnostic_pay');
-  assert.equal(url.searchParams.get('landing_path'), '/go/diagnostic-pay');
-  const reference = parseCheckoutReference(url.searchParams.get('client_reference_id'));
-  assert.equal(reference.source, 'audit');
-  assert.equal(reference.planId, 'sprint_diagnostic');
-  assert.ok(reference.acquisitionId, 'carries the acquisition id into Stripe');
-
-  const telemetryEvents = readJsonl(path.join(tmpFeedbackDir, 'telemetry-pings.jsonl'));
-  const confirmed = telemetryEvents.find((entry) => (
-    entry.eventType === 'diagnostic_checkout_confirmed'
-    && entry.ctaId === 'go_diagnostic_pay'
-    && entry.source === 'audit'
-    && entry.utmMedium === 'codex'
-    && entry.utmCampaign === 'value_packaging_v1'
-  ));
-  assert.ok(confirmed, 'records the buyer-confirmed Payment Link redirect');
-  assert.equal(confirmed.planId, 'sprint_diagnostic');
-  assert.equal(confirmed.linkSlug, 'diagnostic-pay');
-  assert.equal(confirmed.clientType, 'web');
-  assert.equal(confirmed.segment, 'regulated_team');
-  assert.equal(confirmed.experimentId, 'value_packaging_v1');
-  assert.equal(confirmed.customerEmail, undefined, 'telemetry must not retain the receipt email');
+  for (const method of ['GET', 'POST', 'OPTIONS']) {
+    const res = await fetch(apiUrl('/go/diagnostic-pay'), { method, redirect: 'manual', headers: authHeader });
+    assert.equal(res.status, 410);
+    assert.equal(res.headers.get('location'), null);
+    assert.equal((await res.json()).pricingUrl, '/pricing');
+  }
 });
 
 test('/go/sprint opens the scoped sprint path without exposing a provider checkout', async () => {
-  const res = await fetch(apiUrl('/go/sprint'), { redirect: 'manual' });
-  assert.equal(res.status, 302);
-  assert.equal(res.headers.get('x-thumbgate-link-slug'), 'sprint');
-
-  const url = new URL(res.headers.get('location'));
-  assert.equal(url.origin + url.pathname, 'https://app.example.com/diagnostic');
-  assert.equal(url.searchParams.get('utm_source'), 'website');
-  assert.equal(url.searchParams.get('utm_medium'), 'link_router');
-  assert.equal(url.searchParams.get('utm_campaign'), 'workflow_sprint');
-  assert.equal(url.searchParams.get('plan_id'), 'workflow_sprint');
-  assert.equal(url.searchParams.get('cta_id'), 'go_sprint');
-  assert.equal(url.searchParams.get('landing_path'), '/go/sprint');
-  assert.equal(url.searchParams.get('client_reference_id'), null);
+  for (const method of ['GET', 'POST', 'OPTIONS']) {
+    const res = await fetch(apiUrl('/go/sprint'), { method, redirect: 'manual', headers: authHeader });
+    assert.equal(res.status, 410);
+    assert.equal(res.headers.get('location'), null);
+    assert.equal((await res.json()).pricingUrl, '/pricing');
+  }
 });
 
 test('/go/diagnostic-499 and /go/diagnostic-direct route README and newsletter buyers to /diagnostic without 404', async () => {
-  for (const slug of ['diagnostic-499', 'diagnostic-direct']) {
-    const res = await fetch(apiUrl(`/go/${slug}?utm_source=github&utm_medium=readme`), { redirect: 'manual' });
-    assert.equal(res.status, 302);
-    const url = new URL(res.headers.get('location'));
-    assert.equal(url.pathname, '/diagnostic');
-    assert.equal(url.searchParams.get('plan_id'), 'sprint_diagnostic');
-    assert.equal(url.searchParams.get('utm_source'), 'github');
-    assert.equal(url.searchParams.get('landing_path'), `/go/${slug}`);
+  for (const method of ['GET', 'POST', 'OPTIONS']) {
+    const res = await fetch(apiUrl('/diagnostic'), { method, redirect: 'manual', headers: authHeader });
+    assert.equal(res.status, 410);
+    assert.equal(res.headers.get('location'), null);
+    assert.equal((await res.json()).pricingUrl, '/pricing');
   }
 });
 
@@ -1146,25 +1045,14 @@ test('terms of service route covers payment, refunds, acceptable use, and limita
   assert.match(body, /href="\/support"/);
 });
 
-test('pricing page is the single source of truth for what ThumbGate sells', async () => {
+test('pricing page offers the free CLI and self-serve Pro', async () => {
   const res = await fetch(apiUrl('/pricing'));
   assert.equal(res.status, 200);
-  assert.match(String(res.headers.get('content-type')), /text\/html/);
   const body = await res.text();
-  assert.match(body, /Setup Sprint/i);
-  assert.match(body, /\$499/);
-  assert.doesNotMatch(body, /\$19\/mo|\$149\/yr|>Start Pro<\/a>|\/checkout\/pro/);
-  assert.match(body, /Subscriber login/);
-  assert.match(body, /action="\/go\/diagnostic-pay" method="POST"/);
-  assert.match(body, /name="customer_email"[^>]*required/);
-  assert.match(body, /one configured local pre-action gate/i);
-  assert.match(body, /regression test/i);
-  assert.match(body, /rollout and rollback proof/i);
-  assert.doesNotMatch(body, /\$1,500|\$3,000|\$10,000|\$15,000/);
-  assert.doesNotMatch(body, /buy\.stripe\.com/);
-  assert.doesNotMatch(body, /mailto:igor\.ganapolsky@gmail\.com/);
-  assert.doesNotMatch(body, /\/go\/sprint|workflow-sprint-intake/);
-  assert.match(body, /href="\/support"/);
+  assert.match(body, /href="\/checkout\/pro"/);
+  assert.match(body, /\$19/);
+  assert.match(body, /free local CLI/i);
+  assert.doesNotMatch(body, /\$499|Setup Sprint|diagnostic-pay|buy\.stripe\.com/);
 });
 
 test('support page exposes email, GitHub issues, status, and refund paths', async () => {
@@ -1486,7 +1374,7 @@ test('public MCP skills and applications are machine-readable for agent onboardi
 
   const skills = await skillsRes.json();
   const applications = await applicationsRes.json();
-  assert.ok(skills.skills.some((skill) => skill.name === 'workflow-hardening-sprint'));
+  assert.ok(skills.skills.some((skill) => skill.name === 'pro'));
   assert.ok(skills.skills.some((skill) => skill.name === 'visual-proof-retrieval'));
   assert.ok(skills.skills.some((skill) => skill.name === 'context-footprint-optimizer'));
   assert.ok(skills.skills.some((skill) => skill.name === 'agent-design-governance'));
@@ -1495,7 +1383,7 @@ test('public MCP skills and applications are machine-readable for agent onboardi
   assert.ok(skills.skills.some((skill) => skill.name === 'oss-pr-opportunity-scout'));
   assert.ok(skills.skills.some((skill) => skill.name === 'chatgpt-ads-readiness-pack'));
   assert.ok(skills.skills.every((skill) => Array.isArray(skill.recommendedFlow)));
-  assert.ok(applications.applications.some((app) => app.name === 'workflow-sprint-intake'));
+  assert.ok(applications.applications.some((app) => app.name === 'pro'));
   assert.ok(applications.applications.every((app) => app.url.startsWith('https://app.example.com/')));
 });
 
@@ -2101,20 +1989,14 @@ test('cancel page serves retry message and records first-party telemetry', async
   assert.match(body, /data-reason="too_expensive"/);
   assert.match(body, /sendTelemetry\('checkout_cancelled'\)/);
   assert.match(body, /sendTelemetry\('reason_not_buying'/);
-  assert.match(body, /Send workflow first/);
-  assert.match(body, /id="send-workflow-first"/);
-  assert.match(body, /data-recovery-offer="workflow_sprint_intake"/);
-  assert.match(body, /checkout_cancel_workflow_intake_clicked/);
-  assert.match(body, /checkout_cancel_workflow_sprint_intake/);
-  assert.match(body, /utm_medium', 'checkout_cancel_recovery'/);
-  assert.match(body, /href="https:\/\/app\.example\.com\/diagnostic"/);
-  assert.match(body, /href="https:\/\/app\.example\.com\/go\/sprint"/);
-  assert.match(body, /Review \$499 diagnostic/);
-  assert.match(body, /Scope \$1500 sprint/);
+  assert.match(body, /Install the free CLI/);
+  assert.match(body, /data-recovery-offer="playbook_999"/);
+  assert.match(body, /data-recovery-offer="bundle_49"/);
+  assert.match(body, /href="\/pricing"/);
+  assert.match(body, /href="\/checkout\/pro"/);
   assert.match(body, /Restart \$19 Pro checkout/);
   assert.match(body, /data-recovery-offer="pro_pay_now_retry"/);
-  assert.match(body, /data-recovery-offer="sprint_diagnostic"/);
-  assert.match(body, /data-recovery-offer="workflow_sprint"/);
+  assert.doesNotMatch(body, /\$499|\$1500|workflow_sprint|sprint_diagnostic|Send workflow first/);
   assert.doesNotMatch(body, /https:\/\/buy\.stripe\.com\//);
   assert.doesNotMatch(body, /https:\/\/www\.paypal\.com\/ncp\/payment\//);
   assert.doesNotMatch(body, /Pay \$(?:1|19|99) (?:first rule|quick read|teardown)/);
@@ -3212,223 +3094,6 @@ test('product feedback reason chips require a reason and keep the detail on the 
   }
 });
 
-test('workflow sprint intake endpoint captures a contactable lead', async () => {
-  const res = await fetch(apiUrl('/v1/intake/workflow-sprint'), {
-    method: 'POST',
-    headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({
-      email: 'buyer@example.com',
-      company: 'Example Co',
-      workflow: 'PR review hardening',
-      owner: 'Platform Lead',
-      blocker: 'The same CI and review regressions keep resurfacing across agent runs.',
-      runtime: 'Claude Code',
-      note: 'Need proof before rolling this out team-wide.',
-      utmSource: 'linkedin',
-      utmMedium: 'organic_social',
-      utmCampaign: 'claude_workflow_hardening_march_2026',
-      creator: 'reach_vb',
-      ctaId: 'workflow_sprint_intake',
-      ctaPlacement: 'workflow_sprint',
-      planId: 'sprint',
-    }),
-  });
-
-  assert.equal(res.status, 201);
-  assert.equal(res.headers.get('access-control-allow-origin'), '*');
-  const body = await res.json();
-  assert.equal(body.ok, true);
-  assert.match(body.leadId, /^lead_/);
-  assert.equal(body.status, 'new');
-  assert.match(body.proofPackUrl, /VERIFICATION_EVIDENCE\.md/);
-
-  const leads = readJsonl(path.join(tmpFeedbackDir, 'workflow-sprint-leads.jsonl'));
-  assert.equal(leads.length, 1);
-  assert.equal(leads[0].contact.email, 'buyer@example.com');
-  assert.equal(leads[0].qualification.workflow, 'PR review hardening');
-  assert.equal(leads[0].attribution.planId, 'sprint');
-  assert.equal(leads[0].attribution.source, 'linkedin');
-  assert.equal(leads[0].attribution.utmMedium, 'organic_social');
-  assert.equal(leads[0].attribution.creator, 'reach_vb');
-
-  const telemetry = readJsonl(path.join(tmpFeedbackDir, 'telemetry-pings.jsonl'));
-  assert.ok(telemetry.some((entry) => entry.eventType === 'workflow_sprint_lead_submitted'));
-});
-
-test('workflow sprint intake falls back to journey cookies when IDs are omitted from the payload', async () => {
-  const cookieHeader = [
-    'thumbgate_visitor_id=visitor_cookie_lead',
-    'thumbgate_session_id=session_cookie_lead',
-    'thumbgate_acquisition_id=acq_cookie_lead',
-  ].join('; ');
-
-  const res = await fetch(apiUrl('/v1/intake/workflow-sprint'), {
-    method: 'POST',
-    headers: {
-      'content-type': 'application/json',
-      cookie: cookieHeader,
-      referer: 'https://www.google.com/search?q=claude+workflow+hardening',
-    },
-    body: JSON.stringify({
-      email: 'ops@example.com',
-      company: 'North Star Systems',
-      workflow: 'Bug triage',
-      owner: 'Platform lead',
-      runtime: 'Claude Code',
-      blocker: 'Unsafe rollout reviews keep stalling the queue.',
-    }),
-  });
-
-  assert.equal(res.status, 201);
-  const leads = readJsonl(path.join(tmpFeedbackDir, 'workflow-sprint-leads.jsonl'));
-  const lead = leads.find((entry) => entry.contact.email === 'ops@example.com');
-  assert.ok(lead);
-  assert.equal(lead.attribution.acquisitionId, 'acq_cookie_lead');
-  assert.equal(lead.attribution.visitorId, 'visitor_cookie_lead');
-  assert.equal(lead.attribution.sessionId, 'session_cookie_lead');
-
-  const telemetry = readJsonl(path.join(tmpFeedbackDir, 'telemetry-pings.jsonl'));
-  const submitted = telemetry.find((entry) => (
-    entry.eventType === 'workflow_sprint_lead_submitted' &&
-    entry.acquisitionId === 'acq_cookie_lead' &&
-    entry.visitorId === 'visitor_cookie_lead' &&
-    entry.sessionId === 'session_cookie_lead'
-  ));
-  assert.ok(submitted);
-});
-
-test('workflow sprint intake accepts form posts, seeds journey cookies, and returns an HTML confirmation page', async () => {
-  const body = new URLSearchParams({
-    email: 'formbuyer@example.com',
-    company: 'HTML Forms Co',
-    workflow: 'Release triage',
-    owner: 'CTO',
-    runtime: 'Claude Code',
-    blocker: 'No-JS buyers need a real intake path.',
-  }).toString();
-
-  const res = await fetch(apiUrl('/v1/intake/workflow-sprint'), {
-    method: 'POST',
-    headers: {
-      'content-type': 'application/x-www-form-urlencoded',
-      referer: 'https://app.example.com/?utm_source=reddit&utm_medium=organic_social&utm_campaign=workflow_hardening_launch&creator=reach_vb&community=ClaudeCode&post_id=1rsudq0&offer_code=EARLY',
-    },
-    body,
-  });
-
-  assert.equal(res.status, 201);
-  assert.match(String(res.headers.get('content-type')), /text\/html/);
-  const setCookies = typeof res.headers.getSetCookie === 'function'
-    ? res.headers.getSetCookie()
-    : [];
-  const visitorId = extractCookieValue(setCookies, 'thumbgate_visitor_id');
-  const sessionId = extractCookieValue(setCookies, 'thumbgate_session_id');
-  const acquisitionId = extractCookieValue(setCookies, 'thumbgate_acquisition_id');
-  assert.match(String(visitorId), /^visitor_/);
-  assert.match(String(sessionId), /^session_/);
-  assert.match(String(acquisitionId), /^acq_/);
-
-  const html = await res.text();
-  assert.match(html, /Workflow sprint intake received/);
-  assert.match(html, /Review Proof Pack/);
-  assert.match(html, /Review Sprint Brief/);
-  assert.doesNotMatch(html, /\$\s*\d|Stripe|checkout|payment/i);
-
-  const leads = readJsonl(path.join(tmpFeedbackDir, 'workflow-sprint-leads.jsonl'));
-  const lead = leads.find((entry) => entry.contact.email === 'formbuyer@example.com');
-  assert.ok(lead);
-  assert.equal(lead.attribution.source, 'reddit');
-  assert.equal(lead.attribution.utmCampaign, 'workflow_hardening_launch');
-  assert.equal(lead.attribution.creator, 'reach_vb');
-  assert.equal(lead.attribution.community, 'ClaudeCode');
-  assert.equal(lead.attribution.postId, '1rsudq0');
-  assert.equal(lead.attribution.offerCode, 'EARLY');
-  assert.equal(lead.attribution.visitorId, visitorId);
-  assert.equal(lead.attribution.sessionId, sessionId);
-  assert.equal(lead.attribution.acquisitionId, acquisitionId);
-
-  const telemetry = readJsonl(path.join(tmpFeedbackDir, 'telemetry-pings.jsonl'));
-  const submitted = telemetry.find((entry) => (
-    entry.eventType === 'workflow_sprint_lead_submitted' &&
-    entry.acquisitionId === acquisitionId &&
-    entry.visitorId === visitorId &&
-    entry.sessionId === sessionId
-  ));
-  assert.ok(submitted);
-});
-
-test('diagnostic page form posts create a contactable lead instead of failing shared intake validation', async () => {
-  const body = new URLSearchParams({
-    name: 'Ada Lovelace',
-    email: 'ada@example.com',
-    company: 'Analytical Engines',
-    workflow: 'The release agent repeatedly deploys without approval evidence.',
-    urgency: 'Repeated failure already cost us time',
-    planId: 'diagnostic',
-    ctaId: 'diagnostic_page_intake',
-    ctaPlacement: 'diagnostic_page',
-    utm_source: 'aiventyx',
-    utm_medium: 'partner',
-    utm_campaign: 'hosted_listing',
-  }).toString();
-
-  const res = await fetch(apiUrl('/v1/intake/workflow-sprint'), {
-    method: 'POST',
-    headers: {
-      'content-type': 'application/x-www-form-urlencoded',
-      referer: 'https://thumbgate.ai/diagnostic?utm_source=aiventyx&utm_medium=partner&utm_campaign=hosted_listing',
-    },
-    body,
-  });
-
-  assert.equal(res.status, 201);
-  assert.match(String(res.headers.get('content-type')), /text\/html/);
-  assert.match(await res.text(), /Workflow sprint intake received/);
-
-  const leads = readJsonl(path.join(tmpFeedbackDir, 'workflow-sprint-leads.jsonl'));
-  const lead = leads.find((entry) => entry.contact.email === 'ada@example.com');
-  assert.ok(lead);
-  assert.equal(lead.contact.name, 'Ada Lovelace');
-  assert.equal(lead.offer, 'workflow_hardening_diagnostic');
-  assert.equal(lead.qualification.owner, null);
-  assert.equal(lead.qualification.blocker, null);
-  assert.equal(lead.qualification.runtime, null);
-  assert.equal(lead.qualification.urgency, 'Repeated failure already cost us time');
-  assert.equal(lead.attribution.planId, 'diagnostic');
-  assert.equal(lead.attribution.utmSource, 'aiventyx');
-});
-
-test('workflow sprint intake validation failure records failure telemetry and writes no lead', async () => {
-  const leadsBefore = readJsonl(path.join(tmpFeedbackDir, 'workflow-sprint-leads.jsonl')).length;
-  const res = await fetch(apiUrl('/v1/intake/workflow-sprint'), {
-    method: 'POST',
-    headers: {
-      'content-type': 'application/json',
-      referer: 'https://app.example.com/?utm_source=linkedin&utm_campaign=workflow_hardening&token=sk_test_1234567890abcdef',
-    },
-    body: JSON.stringify({
-      email: 'invalid-email',
-      workflow: '',
-      owner: 'CTO',
-      runtime: 'Claude Code',
-      blocker: 'Missing required lead fields should fail.',
-    }),
-  });
-
-  assert.equal(res.status, 400);
-  const leadsAfter = readJsonl(path.join(tmpFeedbackDir, 'workflow-sprint-leads.jsonl')).length;
-  assert.equal(leadsAfter, leadsBefore);
-
-  const telemetry = readJsonl(path.join(tmpFeedbackDir, 'telemetry-pings.jsonl'));
-  const failure = [...telemetry].reverse().find((entry) => entry.eventType === 'workflow_sprint_lead_failed');
-  assert.ok(failure);
-  assert.equal(failure.utmSource, 'linkedin');
-  assert.equal(failure.utmCampaign, 'workflow_hardening');
-  assert.equal(failure.ctaId, 'workflow_sprint_intake');
-  assert.match(failure.referrer, /\[REDACTED:stripe_test_secret\]/);
-  assert.doesNotMatch(JSON.stringify(failure), /sk_test_1234567890abcdef/);
-});
-
 test('removed real-estate /broker-audit and /v1/intake/broker-audit routes return 404', async () => {
   const pageRes = await fetch(apiUrl('/broker-audit'));
   assert.equal(pageRes.status, 404);
@@ -3449,164 +3114,6 @@ test('removed real-estate /broker-audit and /v1/intake/broker-audit routes retur
     body: JSON.stringify({ email: 'test@example.com' }),
   });
   assert.equal(authIntakeRes.status, 404);
-});
-
-test('workflow sprint advance endpoint requires the static admin key', async () => {
-  const intakeRes = await fetch(apiUrl('/v1/intake/workflow-sprint'), {
-    method: 'POST',
-    headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({
-      email: 'advance-auth@example.com',
-      workflow: 'Release hardening',
-      owner: 'Platform lead',
-      blocker: 'Need an admin-only transition path.',
-      runtime: 'Claude Code',
-    }),
-  });
-  assert.equal(intakeRes.status, 201);
-  const intakeBody = await intakeRes.json();
-
-  const billingKey = billing.provisionApiKey('cus_sprint_non_admin', {
-    installId: 'inst_sprint_non_admin',
-    source: 'stripe_webhook_checkout_completed',
-  }).key;
-
-  const res = await fetch(apiUrl('/v1/intake/workflow-sprint/advance'), {
-    method: 'POST',
-    headers: {
-      'content-type': 'application/json',
-      authorization: `Bearer ${billingKey}`,
-    },
-    body: JSON.stringify({
-      leadId: intakeBody.leadId,
-      status: 'qualified',
-    }),
-  });
-
-  assert.equal(res.status, 403);
-});
-
-test('workflow sprint advance endpoint appends pipeline snapshots and workflow run evidence', async () => {
-  const intakeRes = await fetch(apiUrl('/v1/intake/workflow-sprint'), {
-    method: 'POST',
-    headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({
-      email: 'advance@example.com',
-      company: 'North Star Systems',
-      workflow: 'PR review hardening',
-      owner: 'Platform lead',
-      blocker: 'Need proof-backed pilot promotion.',
-      runtime: 'Claude Code',
-      utmSource: 'linkedin',
-    }),
-  });
-  assert.equal(intakeRes.status, 201);
-  const intakeBody = await intakeRes.json();
-
-  const qualifiedRes = await fetch(apiUrl('/v1/intake/workflow-sprint/advance'), {
-    method: 'POST',
-    headers: {
-      'content-type': 'application/json',
-      ...authHeader,
-    },
-    body: JSON.stringify({
-      leadId: intakeBody.leadId,
-      status: 'qualified',
-      actor: 'ops',
-      note: 'Qualified for pilot review.',
-      reviewedBy: 'ops@example.com',
-      qualificationReview: {
-        severityAndFrequency: 'The approval failure repeated in the current workflow.',
-        measurableImpact: 'The team must re-review and repair unsafe retries.',
-        urgencyAndTrigger: 'The failure recurred this week and blocks rollout.',
-        decisionAuthority: 'The workflow owner can approve the next scoped step.',
-        budgetMechanism: 'The fixed price will be reviewed before checkout.',
-        offerFit: 'One bounded workflow fits the Setup Sprint.',
-        proofRequired: 'The buyer requires regression proof and an approval runbook.',
-        nextStep: 'Review a fixed one-workflow scope.',
-        evidenceReferences: ['intake:api-server-test'],
-        zeroSpendStatus: 'proceed_zero_cost',
-        priceUnderstandingConfirmed: true,
-        workflowCount: 1,
-        authorityConfirmed: true,
-        urgencyDays: 14,
-        budgetCents: 150000,
-        readyToImplement: true,
-      },
-    }),
-  });
-  assert.equal(qualifiedRes.status, 200);
-  const qualifiedBody = await qualifiedRes.json();
-  assert.equal(qualifiedBody.ok, true);
-  assert.equal(qualifiedBody.lead.status, 'qualified');
-  assert.equal(qualifiedBody.lead.qualificationReview.evidenceBased, true);
-  assert.equal(qualifiedBody.lead.qualificationReview.decision, 'scope_sprint');
-  assert.equal(qualifiedBody.lead.qualificationReview.recommendedOfferId, 'workflow_hardening_sprint');
-  assert.equal(qualifiedBody.workflowRun, null);
-
-  const pilotRes = await fetch(apiUrl('/v1/intake/workflow-sprint/advance'), {
-    method: 'POST',
-    headers: {
-      'content-type': 'application/json',
-      ...authHeader,
-    },
-    body: JSON.stringify({
-      leadId: intakeBody.leadId,
-      status: 'named_pilot',
-      actor: 'ops',
-      workflowId: 'pr_review_hardening',
-      teamId: 'north_star_systems',
-      agreementSource: 'docusign',
-      agreementRef: 'envelope_api_signed',
-      agreementSignedBy: 'buyer@example.com',
-      agreementSignedAt: '2026-07-15T12:00:00.000Z',
-      agreementDigest: `sha256:${'b'.repeat(64)}`,
-      agreementOfferId: 'workflow_hardening_sprint',
-      agreementAmountCents: 150000,
-      agreementWorkflowCount: 1,
-    }),
-  });
-  assert.equal(pilotRes.status, 200);
-  const pilotBody = await pilotRes.json();
-  assert.equal(pilotBody.lead.status, 'named_pilot');
-  assert.ok(pilotBody.workflowRun);
-  assert.equal(pilotBody.workflowRun.customerType, 'named_pilot');
-
-  const proofRes = await fetch(apiUrl('/v1/intake/workflow-sprint/advance'), {
-    method: 'POST',
-    headers: {
-      'content-type': 'application/json',
-      ...authHeader,
-    },
-    body: JSON.stringify({
-      leadId: intakeBody.leadId,
-      status: 'proof_backed_run',
-      actor: 'ops',
-      reviewedBy: 'buyer@example.com',
-      proofArtifacts: ['docs/VERIFICATION_EVIDENCE.md'],
-    }),
-  });
-  assert.equal(proofRes.status, 200);
-  const proofBody = await proofRes.json();
-  assert.equal(proofBody.lead.status, 'proof_backed_run');
-  assert.ok(proofBody.workflowRun);
-  assert.equal(proofBody.workflowRun.proofBacked, true);
-
-  const leads = readJsonl(path.join(tmpFeedbackDir, 'workflow-sprint-leads.jsonl'));
-  assert.equal(leads.filter((entry) => entry.leadId === intakeBody.leadId).length, 3 + 1);
-  assert.equal(leads.at(-1).status, 'proof_backed_run');
-  assert.equal(leads.at(-1).statusHistory.length, 4);
-
-  const runs = readJsonl(path.join(tmpFeedbackDir, 'workflow-runs.jsonl'));
-  assert.equal(runs.length >= 2, true);
-  assert.equal(runs.at(-1).proofBacked, true);
-  assert.equal(runs.at(-1).metadata.leadId, intakeBody.leadId);
-
-  const telemetry = readJsonl(path.join(tmpFeedbackDir, 'telemetry-pings.jsonl'));
-  assert.ok(telemetry.some((entry) => (
-    entry.eventType === 'workflow_sprint_lead_advanced' &&
-    entry.pipelineStatus === 'proof_backed_run'
-  )));
 });
 
 test('private-core API endpoints return 503 when hosted/private modules are absent', async () => {
@@ -3660,13 +3167,13 @@ test('private-core API endpoints return 503 when hosted/private modules are abse
       headers: { ...authHeader, 'x-admin-key': 'thumbgate-admin-key', 'content-type': 'application/json' },
       body: JSON.stringify({ leadId: 'lead_123', status: 'qualified' }),
     });
-    assert.equal(advanceRes.status, 503);
+    assert.equal(advanceRes.status, 410);
 
     const intakeQueueRes = await fetch(apiUrl('/v1/intake/workflow-sprint/queue'), {
       headers: { ...authHeader, 'x-admin-key': 'thumbgate-admin-key' },
     });
-    assert.equal(intakeQueueRes.status, 503);
-    assert.match(await intakeQueueRes.text(), /private core|hosted runtime/i);
+    assert.equal(intakeQueueRes.status, 410);
+    assert.equal((await intakeQueueRes.json()).pricingUrl, "/pricing");
 
     const lessonsRes = await fetch(apiUrl('/v1/lessons/search?q=rollback&limit=5'), { headers: authHeader });
     assert.equal(lessonsRes.status, 503);
@@ -4775,159 +4282,34 @@ test('billing summary rejects billing keys', async () => {
 });
 
 test('billing summary batch reuses one authenticated response and exposes an explicit no-cache intake queue', async () => {
-  const intakeRes = await fetch(apiUrl('/v1/intake/workflow-sprint'), {
-    method: 'POST',
-    headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({
-      name: 'Queue Buyer',
-      email: 'queue-buyer@example.com',
-      company: 'Queue Buyer Co',
-      workflow: 'Customer-email approval hardening',
-      owner: 'Operations lead',
-      blocker: 'A send can happen before the approved draft is bound.',
-      runtime: 'Claude Code',
-      urgency: 'Repeated failure already cost us time',
-      utmSource: 'aiventyx',
-    }),
+  const inquiry = await fetch(apiUrl('/v1/inquiries'), {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email: 'queue-inquiry@example.com', workflow: 'Free-tier dashboard limit', planId: 'diagnostic' }),
   });
-  assert.equal(intakeRes.status, 201);
-  const intake = await intakeRes.json();
-
-  const res = await fetch(apiUrl(
-    '/v1/billing/summary?window=all&timezone=UTC&now=2026-07-16T12:00:00.000Z' +
-    '&include_intake_queue=1&intake_status=new,qualified&intake_limit=100'
-  ), { headers: authHeader });
+  assert.equal(inquiry.status, 201);
+  const lead = await inquiry.json();
+  assert.equal(lead.offer, 'product_inquiry');
+  const res = await fetch(apiUrl('/v1/billing/summary?window=all&include_intake_queue=1'), { headers: authHeader });
   assert.equal(res.status, 200);
-  assert.match(res.headers.get('cache-control') || '', /private/);
-  assert.match(res.headers.get('cache-control') || '', /no-store/);
+  assert.match(res.headers.get('cache-control'), /private.*no-store/);
   assert.equal(res.headers.get('pragma'), 'no-cache');
-  assert.match(res.headers.get('vary') || '', /Authorization/i);
-
+  assert.match(res.headers.get('vary'), /Authorization/i);
   const body = await res.json();
   assert.deepEqual(body.windows, ['today', '30d', 'lifetime']);
-  assert.equal(body.summaries.today.window.window, 'today');
-  assert.equal(body.summaries['30d'].window.window, '30d');
-  assert.equal(body.summaries.lifetime.window.window, 'lifetime');
-  assert.ok(body.intakeQueue.eligibleTotal >= 1);
-  const queued = body.intakeQueue.leads.find((lead) => lead.leadId === intake.leadId);
-  assert.ok(queued);
-  assert.equal(queued.contact.email, 'queue-buyer@example.com');
-  assert.equal(queued.qualification.workflow, 'Customer-email approval hardening');
-  assert.equal(queued.nextOperatorStep, 'request_action_time_approval_for_discovery');
-  assert.equal(queued.qualificationCard.status, 'evidence_based_operator_recommendation_not_buyer_intent_or_revenue');
-  assert.equal(queued.qualificationCard.route, 'diagnostic');
-  assert.equal(queued.qualificationCard.fitBand, 'strong_evidence_for_review');
-  assert.equal(queued.qualificationCard.priorityBand, 'review_now');
-  assert.ok(Number.isInteger(queued.priorityRank) && queued.priorityRank >= 1);
-  assert.equal(queued.qualificationCard.recommendedOffer.offerId, 'workflow_hardening_sprint');
-  assert.equal(queued.qualificationCard.recommendedOffer.priceCents, 150000);
-  assert.equal(queued.qualificationCard.chronology.freshness, 'same_day');
-  assert.equal(queued.qualificationCard.approvalPhrase, null);
-  assert.equal(queued.qualificationCard.checkoutEligible, false);
-  assert.equal(queued.qualificationCard.externalActionAuthorized, false);
-  assert.equal(queued.qualificationCard.revenueRecognized, false);
-  assert.equal(queued.discoveryPacket.status, 'approval_ready_not_authorized');
-  assert.equal(queued.discoveryPacket.destination.address, 'queue-buyer@example.com');
-  assert.equal(queued.discoveryPacket.evidence.questionCount, 3);
-  assert.equal(queued.discoveryPacket.evidence.sellerAccessCostStatus, 'proceed_zero_cost');
-  assert.match(queued.discoveryPacket.draft.body, /No payment or commitment is requested/i);
-  assert.match(queued.discoveryPacket.approvalPhrase, /^APPROVE SEND THUMBGATE DISCOVERY QUESTIONS TO /);
-  assert.equal(queued.discoveryPacket.externalActionAuthorized, false);
-  assert.equal(queued.discoveryPacket.revenueRecognized, false);
-  assert.equal(queued.closePacket.status, 'hold_not_approval_ready');
-  assert.equal(queued.closePacket.draft, null);
-  assert.equal(queued.closePacket.approvalPhrase, null);
-  assert.equal(queued.closePacket.externalActionAuthorized, false);
-  assert.equal(queued.commercialProof, undefined);
-  assert.ok(body.intakeQueue.discoveryReadyTotal >= 1);
-  assert.ok(body.intakeQueue.primaryDiscoveryAction);
-
-  const single = await fetch(apiUrl('/v1/billing/summary?window=30d'), {
-    headers: authHeader,
-  });
-  assert.equal(single.status, 200);
-  assert.match(single.headers.get('cache-control') || '', /private/);
-  assert.match(single.headers.get('cache-control') || '', /no-store/);
+  for (const window of body.windows) assert.ok(body.summaries[window]);
+  const captured = body.intakeQueue.leads.find((entry) => entry.leadId === lead.leadId);
+  assert.ok(captured, 'captured product inquiry remains visible to the operator');
+  assert.equal(captured.offer, 'product_inquiry');
+  assert.notEqual(captured.closePacket?.status, 'approval_ready_not_authorized');
 });
 
-test('dedicated intake queue emits one exact approval-ready diagnostic action after evidence review', async () => {
-  const intakeRes = await fetch(apiUrl('/v1/intake/workflow-sprint'), {
-    method: 'POST',
-    headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({
-      email: 'diagnostic-close@example.com',
-      workflow: 'Release approval workflow',
-      urgency: 'A repeated approval failure happened this week.',
-      planId: 'diagnostic',
-      ctaId: 'diagnostic_page_intake',
-    }),
-  });
-  assert.equal(intakeRes.status, 201);
-  const intake = await intakeRes.json();
-
-  const qualifiedRes = await fetch(apiUrl('/v1/intake/workflow-sprint/advance'), {
-    method: 'POST',
-    headers: { 'content-type': 'application/json', ...authHeader },
-    body: JSON.stringify({
-      leadId: intake.leadId,
-      status: 'qualified',
-      reviewedBy: 'ops@example.com',
-      qualificationReview: {
-        severityAndFrequency: 'An unapproved action repeated twice this week.',
-        measurableImpact: 'Each failure requires two hours of re-review.',
-        urgencyAndTrigger: 'The latest release is blocked.',
-        decisionAuthority: 'The workflow owner can approve the diagnostic.',
-        budgetMechanism: 'The fixed $499 price is understood.',
-        offerFit: 'The requested bounded diagnostic is the appropriate first step.',
-        proofRequired: 'A failure map and approval matrix are required.',
-        nextStep: 'Review the diagnostic scope and checkout.',
-        evidenceReferences: ['intake:api-diagnostic-close'],
-        zeroSpendStatus: 'proceed_zero_cost',
-        priceUnderstandingConfirmed: true,
-        workflowCount: 1,
-        authorityConfirmed: true,
-        urgencyDays: 7,
-        budgetCents: 49900,
-        readyToImplement: false,
-      },
-    }),
-  });
-  assert.equal(qualifiedRes.status, 200);
-
-  const queueRes = await fetch(apiUrl(
-    '/v1/intake/workflow-sprint/queue?status=qualified&limit=100'
-  ), { headers: authHeader });
-  assert.equal(queueRes.status, 200);
-  assert.match(queueRes.headers.get('cache-control') || '', /private/);
-  assert.match(queueRes.headers.get('cache-control') || '', /no-store/);
-  assert.equal(queueRes.headers.get('pragma'), 'no-cache');
-  const queue = await queueRes.json();
-  const queued = queue.leads.find((lead) => lead.leadId === intake.leadId);
-  assert.ok(queued);
-  assert.equal(queued.nextOperatorStep, 'request_action_time_approval');
-  assert.equal(queued.qualificationCard.knownFacts.operatorQualified, true);
-  assert.equal(queued.qualificationCard.evidence.qualificationReviewVerified, true);
-  assert.equal(queued.discoveryPacket.status, 'hold_not_approval_ready');
-  assert.ok(queued.discoveryPacket.blockers.includes('lifecycle_not_new'));
-  assert.equal(queued.discoveryPacket.draft, null);
-  assert.equal(queued.discoveryPacket.approvalPhrase, null);
-  assert.equal(queued.closePacket.status, 'approval_ready_not_authorized');
-  assert.equal(queued.closePacket.offer.priceCents, 49900);
-  assert.equal(queued.closePacket.offer.checkoutUrl, 'https://app.example.com/diagnostic');
-  assert.match(queued.closePacket.approvalPhrase, /WORKFLOW_HARDENING_DIAGNOSTIC/);
-  assert.match(queued.closePacket.draft.body, /no follow-up is required/i);
-  assert.equal(queued.closePacket.externalActionAuthorized, false);
-  assert.equal(queued.closePacket.revenueRecognized, false);
-  assert.ok(queue.approvalReadyTotal >= 1);
-  assert.ok(queue.primaryApprovalAction);
-  assert.equal(queue.discoveryReadyTotal, 0);
-  assert.equal(queue.primaryDiscoveryAction, null);
-
-  const billingKey = billing.provisionApiKey('cus_queue_billing_key').key;
-  const forbidden = await fetch(apiUrl('/v1/intake/workflow-sprint/queue'), {
-    headers: { authorization: `Bearer ${billingKey}` },
-  });
-  assert.equal(forbidden.status, 403);
+test('retired dedicated intake queue returns 410 for every method', async () => {
+  for (const method of ['GET', 'POST', 'OPTIONS']) {
+    const res = await fetch(apiUrl('/v1/intake/workflow-sprint/queue'), { method, redirect: 'manual', headers: authHeader });
+    assert.equal(res.status, 410);
+    assert.equal(res.headers.get('location'), null);
+    assert.equal((await res.json()).pricingUrl, '/pricing');
+  }
 });
 
 test('billing summary intake queue rejects invalid filters and billing-customer keys', async () => {
@@ -5334,3 +4716,15 @@ test('/leash-beta returns 500 problem-json when static asset is missing', async 
 });
 
                }
+
+ test('retired intake and advancement reject all methods before authentication', async () => {
+  for (const route of ['/v1/intake/workflow-sprint', '/v1/intake/workflow-sprint/advance']) {
+    for (const method of ['GET', 'POST', 'OPTIONS']) {
+      const res = await fetch(apiUrl(route), { method, redirect: 'manual' });
+      assert.equal(res.status, 410, `${method} ${route}`);
+      assert.equal(res.headers.get('location'), null);
+      assert.match(res.headers.get('cache-control'), /no-store/);
+      assert.equal((await res.json()).pricingUrl, '/pricing');
+    }
+  }
+});

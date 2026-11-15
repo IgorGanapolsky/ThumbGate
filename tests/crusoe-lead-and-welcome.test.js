@@ -84,16 +84,16 @@ test('day-0 signup welcome email renders two CTA buttons, postal address, and op
     const anchorHrefs = [...rendered.html.matchAll(/<a\s+href="([^"]+)"/gi)].map((m) => m[1]);
     assert.deepEqual(anchorHrefs, [
       'https://thumbgate.ai/#install',
-      'https://thumbgate.ai/diagnostic',
+      'https://thumbgate.ai/pricing',
       'mailto:igor@igorganapolsky.com?subject=unsubscribe&amp;body=Please%20remove%20me%20from%20ThumbGate%20emails.',
     ]);
     assert.match(rendered.html, /Install ThumbGate free/);
-    assert.match(rendered.html, /Book the \$499 diagnostic/);
+    assert.match(rendered.html, /Compare free and Pro/);
     assert.match(rendered.html, /2261 Market Street #4242, San Francisco, CA 94114/);
     assert.match(rendered.html, /Unsubscribe/);
     assert.doesNotMatch(rendered.html, /checkout\.stripe\.com/i);
     assert.match(rendered.text, /npx thumbgate init/);
-    assert.match(rendered.text, /https:\/\/thumbgate\.ai\/diagnostic/);
+    assert.match(rendered.text, /https:\/\/thumbgate\.ai\/pricing/);
     assert.match(rendered.text, /Unsubscribe: igor@igorganapolsky\.com/);
     assert.match(rendered.text, /2261 Market Street #4242, San Francisco, CA 94114/);
 
@@ -224,13 +224,13 @@ test('free-tier limit Talk to us button writes lead into operator intake queue (
       .find((c) => c.startsWith('thumbgate_auth_session='));
     assert.ok(sessionCookie, 'expected thumbgate_auth_session cookie from SSO callback');
 
-    const ssoIntakeRes = await fetch(`${origin}/v1/intake/workflow-sprint`, {
+    const ssoIntakeRes = await fetch(`${origin}/v1/inquiries`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Cookie: sessionCookie, 'x-forwarded-for': '203.0.113.88' },
       body: JSON.stringify({
         workflow: 'Free-tier dashboard sign-in (Talk to us)',
         urgency: 'Hit free-tier limit on /dashboard',
-        ctaId: 'workflow_sprint_intake',
+        ctaId: 'inquiry',
         ctaPlacement: 'free_tier_limit',
         page: '/dashboard',
       }),
@@ -238,18 +238,18 @@ test('free-tier limit Talk to us button writes lead into operator intake queue (
     assert.equal(ssoIntakeRes.status, 201);
 
     // Anonymous free-tier click without SSO cookie returns 400 so the UI reveals the email input, then 201 once submitted.
-    const missingEmailRes = await fetch(`${origin}/v1/intake/workflow-sprint`, {
+    const missingEmailRes = await fetch(`${origin}/v1/inquiries`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'x-forwarded-for': '203.0.113.89' },
       body: JSON.stringify({
-        ctaId: 'workflow_sprint_intake',
+        ctaId: 'inquiry',
         ctaPlacement: 'free_tier_limit',
         page: '/lessons',
       }),
     });
     assert.equal(missingEmailRes.status, 400);
 
-    const intakeRes = await fetch(`${origin}/v1/intake/workflow-sprint`, {
+    const intakeRes = await fetch(`${origin}/v1/inquiries`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -257,7 +257,7 @@ test('free-tier limit Talk to us button writes lead into operator intake queue (
         workflow: 'Free-tier dashboard limit (Talk to us)',
         urgency: 'Hit free-tier limit on /dashboard',
         planId: 'diagnostic',
-        ctaId: 'workflow_sprint_intake',
+        ctaId: 'inquiry',
         ctaPlacement: 'free_tier_limit',
         page: '/dashboard',
       }),
@@ -266,7 +266,7 @@ test('free-tier limit Talk to us button writes lead into operator intake queue (
     const intakeBody = await intakeRes.json();
     assert.equal(intakeBody.ok, true);
     assert.equal(intakeBody.status, 'new');
-    assert.equal(intakeBody.offer, 'workflow_hardening_diagnostic');
+    assert.equal(intakeBody.offer, 'product_inquiry');
 
     const summaryRes = await fetch(`${origin}/v1/billing/summary?window=30d&include_intake_queue=1`, {
       headers: { Authorization: 'Bearer tg_op_crusoe_test' },
@@ -278,12 +278,12 @@ test('free-tier limit Talk to us button writes lead into operator intake queue (
     assert.equal(summary.intakeQueue.byStatus.new, 2);
     assert.equal(summary.ctas.checkoutInterstitialWorkflowIntakeClicks, 2);
 
-    const queueRes = await fetch(`${origin}/v1/intake/workflow-sprint/queue`, {
+    const queueRes = await fetch(`${origin}/v1/billing/summary?window=30d&include_intake_queue=1`, {
       headers: { Authorization: 'Bearer tg_op_crusoe_test' },
     });
     assert.equal(queueRes.status, 200);
     const queuePayload = await queueRes.json();
-    const normalizedQueue = normalizeWorkflowIntakeQueue(queuePayload);
+    const normalizedQueue = normalizeWorkflowIntakeQueue(queuePayload.intakeQueue);
     assert.equal(normalizedQueue.eligibleTotal, 2);
 
     const normalized30d = normalizeWindowSummary(200, summary);

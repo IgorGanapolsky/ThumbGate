@@ -29,7 +29,7 @@ function parseNumber(value, fallback = 0) {
 
 function normalizeOptions(raw = {}) {
   return {
-    offer: normalizeText(raw.offer) || 'ThumbGate Pro and Setup Sprint',
+    offer: normalizeText(raw.offer) || 'Free ThumbGate CLI and self-serve ThumbGate Pro',
     audience: normalizeText(raw.audience) || 'AI coding teams and developers comparing agent governance tools',
     budget: parseNumber(raw.budget || raw['test-budget'], 500),
     keywords: splitList(raw.keywords || raw.queries).length
@@ -60,16 +60,16 @@ function buildAdGroups(options) {
       primaryCta: 'Install the proof-backed guide',
     },
     {
-      id: 'workflow-hardening-intent',
+      id: 'self-serve-pro-intent',
       theme: 'teams describing repeated autonomous-agent workflow failures',
       keywords: [
         'AI agent made same mistake again',
         'coding agent opened bad PR',
         'agent changed production without approval',
-        'AI workflow hardening sprint',
+        'AI agent local guardrails',
       ],
-      landingPage: 'https://thumbgate.ai/?utm_source=chatgpt_ads&utm_medium=paid_ai&utm_campaign=workflow_hardening_intent#workflow-sprint-intake',
-      primaryCta: 'Book one workflow hardening sprint',
+      landingPage: 'https://thumbgate.ai/pricing?utm_source=chatgpt_ads&utm_medium=paid_ai&utm_campaign=self_serve_pro_intent',
+      primaryCta: 'Compare self-serve Pro plans',
     },
   ];
 }
@@ -83,8 +83,8 @@ function buildCreative(options) {
       proofRequired: options.proofLinks,
     },
     {
-      id: 'workflow-sprint',
-      headline: 'One repeated agent failure. One hardened workflow.',
+      id: 'self-serve-pro',
+      headline: 'Configure local gates for repeated agent failures.',
       body: 'Use ThumbGate to capture the mistake, retrieve the lesson, enforce the gate, and show verification evidence before the next autonomous change.',
       proofRequired: options.proofLinks,
     },
@@ -94,17 +94,17 @@ function buildCreative(options) {
 function buildMeasurementPlan(options) {
   return {
     budget: options.budget,
-    primaryConversion: 'workflow_sprint_intake_or_pro_checkout_start',
+    primaryConversion: 'pro_checkout_start',
     guardrailMetrics: [
       { id: 'landing_claim_proof_rate', target: '1.00' },
-      { id: 'cost_per_qualified_intake', target: '<= budget / 2' },
+      { id: 'cost_per_pro_checkout_start', target: '<= budget / 2' },
       { id: 'proof_link_click_rate', target: '>= 0.05' },
       { id: 'unsupported_ad_claims', target: '0' },
     ],
     attributionParams: {
       utm_source: 'chatgpt_ads',
       utm_medium: 'paid_ai',
-      utm_campaign: 'agent_governance_or_workflow_hardening',
+      utm_campaign: 'agent_governance_or_self_serve_pro',
     },
   };
 }
@@ -121,7 +121,7 @@ function buildChatgptAdsReadinessPack(rawOptions = {}) {
     strategy: {
       channelThesis: 'If ChatGPT Ads Manager becomes self-serve, high-intent conversational queries can capture developers at the moment they are asking how to trust or govern AI agents.',
       trustBoundary: 'OpenAI states ads are separate from answers and clearly labeled, so the campaign must win with proof-backed landing pages rather than implying answer influence.',
-      firstMove: 'Submit advertiser interest, prepare exact-match intent clusters, and route traffic to guide or workflow sprint pages with proof links.',
+      firstMove: 'Start with the free local CLI. Choose self-serve Pro for recall, dashboard, adapters, and exports. Compare current plans at https://thumbgate.ai/pricing.',
     },
     adGroups,
     creative: buildCreative(options),
@@ -130,14 +130,14 @@ function buildChatgptAdsReadinessPack(rawOptions = {}) {
       'Submit interest at openai.com/advertisers.',
       'Create a ChatGPT ads UTM namespace before first spend.',
       'Use guide landing page for self-serve developer intent.',
-      'Use workflow sprint intake for high-risk team workflow pain.',
+      'Start with the free local CLI. Choose self-serve Pro for recall, dashboard, adapters, and exports. Compare current plans at https://thumbgate.ai/pricing.',
       'Block unsupported claims in ad copy and landing pages.',
       'Compare paid AI traffic against organic AI-search visibility before scaling budget.',
     ],
     marketingAngle: {
       headline: 'ChatGPT ads are a paid surface for the exact moment developers ask how to trust agents.',
       subhead: 'ThumbGate should be ready with proof-backed copy, intent clusters, and conversion routes before self-serve inventory gets crowded.',
-      replyDraft: 'If ChatGPT Ads Manager becomes self-serve, ThumbGate should test it early but stay evidence-first: bid on agent-governance pain, route to the setup guide or workflow sprint, and never imply ads influence ChatGPT answers. The wedge is proof-backed trust at the moment someone asks how to make agents safer.',
+      replyDraft: 'Start with the free local CLI. Choose self-serve Pro for recall, dashboard, adapters, and exports. Compare current plans at https://thumbgate.ai/pricing.',
     },
   };
 }

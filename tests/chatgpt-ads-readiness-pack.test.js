@@ -11,7 +11,7 @@ const {
 
 test('ChatGPT ads readiness pack prepares proof-backed ad groups and measurement', () => {
   const report = buildChatgptAdsReadinessPack({
-    offer: 'Setup Sprint',
+    offer: 'ThumbGate Pro',
     keywords: ['AI agent verification before PR', 'agent governance for coding teams'],
     budget: 750,
   });
@@ -32,4 +32,20 @@ test('ChatGPT ads readiness pack writes marketing artifacts', () => {
   assert.equal(fs.existsSync(jsonPath), true);
   assert.equal(fs.existsSync(markdownPath), true);
   assert.match(fs.readFileSync(markdownPath, 'utf8'), /ChatGPT Ads Readiness Pack/);
+});
+
+test('generated ads promote current self-serve paths without retired service pitches', () => {
+  const report = buildChatgptAdsReadinessPack();
+  assert.equal(report.offer, 'Free ThumbGate CLI and self-serve ThumbGate Pro');
+  assert.equal(report.measurement.primaryConversion, 'pro_checkout_start');
+  assert.ok(report.adGroups.some((group) => new URL(group.landingPage).pathname === '/pricing' && /self-serve Pro/.test(group.primaryCta)));
+  assert.doesNotMatch(JSON.stringify(report), /sprint|diagnostic|book one|one hardened workflow/i);
+});
+
+test('directory pack generated offers contain current self-serve paths without retired service pitches', () => {
+  const { buildMcpDirectoryRevenuePack, renderMcpDirectoryRevenuePackMarkdown } = require('../scripts/mcp-directory-revenue-pack');
+  const report = buildMcpDirectoryRevenuePack();
+  const output = JSON.stringify(report) + renderMcpDirectoryRevenuePackMarkdown(report);
+  assert.match(output, /Pro/);
+  assert.doesNotMatch(output, /workflow-sprint conversation|Book.*sprint|\$499|\$1,500|one workflow.*proof review/i);
 });

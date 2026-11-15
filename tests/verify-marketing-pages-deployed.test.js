@@ -367,13 +367,7 @@ test('manifest contract: shipped config/post-deploy-marketing-pages.json is vali
     homeHtml.includes(home.sentinel),
     'home-page sentinel must match shipped public/index.html before deployment',
   );
-  const diagnostic = m.pages.find((p) => p.route === '/diagnostic');
-  assert.ok(diagnostic, 'manifest must include /diagnostic');
-  const diagnosticHtml = fs.readFileSync(path.resolve(__dirname, '..', 'public', 'diagnostic.html'), 'utf8');
-  assert.ok(
-    diagnosticHtml.includes(diagnostic.sentinel),
-    'diagnostic sentinel must match shipped public/diagnostic.html before deployment',
-  );
+  assert.ok(!m.pages.some((p) => /diagnostic|sprint/.test(p.route)), 'retired 410 pages must not be advertised as healthy acquisition paths');
   const checkout = m.pages.find((p) => p.route === '/checkout/pro');
   assert.ok(checkout, 'manifest must include the revenue-critical Pro checkout route');
   assert.match(checkout.sentinel, /attributable buyer intent/);

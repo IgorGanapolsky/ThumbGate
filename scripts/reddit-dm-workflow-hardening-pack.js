@@ -141,7 +141,7 @@ function buildCanonicalIdentity(about = readGitHubAbout()) {
 function buildEvidenceSurfaces(links = buildRevenueLinks(), about = readGitHubAbout()) {
   return [
     {
-      name: 'Setup Sprint intake',
+      name: 'self-serve Pro plans',
       url: buildTrackedRedditLink(links.sprintLink, {
         utmCampaign: 'reddit_sprint_intake',
         utmContent: 'workflow_sprint',
@@ -183,20 +183,6 @@ function buildEvidenceSurfaces(links = buildRevenueLinks(), about = readGitHubAb
 function buildFollowOnOffers(links = buildRevenueLinks()) {
   return [
     {
-      label: 'Setup Sprint',
-      pricing: 'Discovery-led sprint, then Team at $49/seat/mo with a 3-seat minimum after qualification',
-      buyer: 'Warm buyers who already named a repeated workflow failure and want one proof-backed fix loop.',
-      cta: buildTrackedRedditLink(links.sprintLink, {
-        utmCampaign: 'reddit_follow_on_sprint',
-        utmContent: 'workflow_sprint',
-        campaignVariant: 'team_follow_on',
-        offerCode: 'REDDIT-FOLLOW_ON_SPRINT',
-        ctaId: 'reddit_follow_on_sprint',
-        ctaPlacement: 'post_reply',
-        surface: 'reddit_dm_follow_on',
-      }),
-    },
-    {
       label: 'ThumbGate Pro',
       pricing: links.proPriceLabel,
       buyer: 'Warm solo operators who asked for the self-serve path after the workflow discussion.',
@@ -228,8 +214,8 @@ function buildOperatorQueue(links = buildRevenueLinks(), report = {}) {
       proofTrigger: normalizeText(target.proofPackTrigger) || 'Use proof links only after the buyer confirms pain.',
       proofAsset: `Commercial truth: ${COMMERCIAL_TRUTH_LINK} | Verification evidence: ${VERIFICATION_EVIDENCE_LINK}`,
       nextAsk,
-      recommendedMotion: `${normalizeText(target.motionLabel) || 'Setup Sprint'} -> pain-confirmed proof -> diagnostic`,
-      subject: normalizeText(target.subject) || 'Workflow hardening diagnostic',
+      recommendedMotion: 'Free install -> inspect configured gates -> compare self-serve Pro',
+      subject: normalizeText(target.subject) || 'ThumbGate free and Pro plans',
       contactUrl: normalizeText(target.contactUrl),
       firstTouchDraft: normalizeText(target.firstTouchDraft || target.message),
       painConfirmedFollowUpDraft: normalizeText(target.painConfirmedFollowUpDraft),
@@ -247,7 +233,7 @@ function buildOutreachDrafts(report = {}) {
       key: normalizeText(target.pipelineLeadId || username.toLowerCase()),
       channel: `Reddit DM -> u/${username}`,
       audience: normalizeText(target.accountName) || 'Warm workflow-risk lead',
-      subject: normalizeText(target.subject) || 'Workflow hardening diagnostic',
+      subject: normalizeText(target.subject) || 'ThumbGate free and Pro plans',
       contactUrl: normalizeText(target.contactUrl),
       firstTouchDraft: normalizeText(target.firstTouchDraft || target.message),
       painConfirmedFollowUpDraft: normalizeText(target.painConfirmedFollowUpDraft),
@@ -255,7 +241,7 @@ function buildOutreachDrafts(report = {}) {
       checkoutCloseDraft: normalizeText(target.checkoutCloseDraft),
       trackAfterSend: normalizeText(target.salesCommands?.markContacted),
       draft: [
-        `Subject: ${normalizeText(target.subject) || 'Workflow hardening diagnostic'}`,
+        `Subject: ${normalizeText(target.subject) || 'ThumbGate free and Pro plans'}`,
         '',
         normalizeText(target.firstTouchDraft || target.message),
         '',
@@ -273,7 +259,7 @@ function buildMeasurementPlan() {
     northStar: 'reddit_warm_dm_to_paid_intent',
     policy: 'Warm Reddit discovery first, proof only after pain confirmation, no fake revenue or install claims.',
     minimumUsefulSignal: 'One warm Reddit lead moves from targeted to replied with a named workflow failure.',
-    strongSignal: 'One warm Reddit lead books a diagnostic or enters sprint intake.',
+    strongSignal: 'One warm Reddit lead confirms starting self-serve Pro checkout.',
     metrics: [
       'Warm Reddit DMs sent',
       'Warm Reddit replies',
@@ -296,7 +282,7 @@ function buildMeasurementPlan() {
       },
       {
         window: 'Days 31-60',
-        goal: 'Book diagnostics or sprint intakes from the warm Reddit lane.',
+        goal: 'Help warm Reddit buyers evaluate free software and current self-serve Pro plans.',
         decisionRule: 'If replies arrive but no diagnostics book, rewrite the follow-up and CTA sequence using the buyer language collected.',
       },
       {
@@ -320,7 +306,7 @@ function buildRedditDmWorkflowHardeningPack(report = readRevenueLoopReport()) {
 
   return {
     generatedAt: normalizeText(report.generatedAt) || new Date().toISOString(),
-    objective: 'Convert the current warm Reddit workflow-risk queue into replied conversations, diagnostics, and the first paid Setup Sprint.',
+    objective: 'Convert the current warm Reddit workflow-risk queue into replied conversations, diagnostics, and the first paid ThumbGate Pro.',
     state: normalizeText(report.directive?.state) || 'cold-start',
     headline: CANONICAL_HEADLINE,
     shortDescription: CANONICAL_SHORT_DESCRIPTION,

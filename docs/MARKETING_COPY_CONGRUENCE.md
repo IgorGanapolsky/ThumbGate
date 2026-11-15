@@ -14,7 +14,7 @@
 > Pre-action checks that flag repeated risky actions before execution and block matching actions when strict policy is enabled. Accepted feedback becomes local lessons; repeated failures can become prevention rules.
 
 ### Public Landing Page (thumbgate-production.up.railway.app)
-> ThumbGate checks proposed tool calls before execution in supported hook integrations. The $499 Setup Sprint turns one recurring failure in a supported local workflow into a configured gate, a regression test, and rollout and rollback evidence.
+ThumbGate offers a free local CLI and self-serve Pro for recall, dashboard, adapters, and exports. Current plans: https://thumbgate.ai/pricing
 
 ### NPM package.json
 > ThumbGate Pre-Action Checks self-improve from ranked lessons and repeated failures, hard-block detected secret leaks, and block matches in strict mode.
@@ -27,7 +27,7 @@
 
 ### Stripe Pro Offer
 **Title:** ThumbGate Pro — Personal Local Dashboard + DPO Export
-**Description:** ThumbGate Pro gives individual operators a personal local dashboard, DPO export, advanced data exports, and review-ready workflow support. Enterprise remains intake-first for scoped shared-governance requirements; hosted team lesson sync and a hosted org dashboard are not general-availability runtime features.
+ThumbGate offers a free local CLI and self-serve Pro for recall, dashboard, adapters, and exports. Compare current plans at /pricing. https://thumbgate.ai/pricing
 
 ### DEV.TO Blog Post
 **Title:** I built pre-action checks that flag Claude Code's repeat mistakes — and hard-block secret exfiltration by default
@@ -98,3 +98,5 @@
 - Promote shipped surfaces explicitly: Claude Code, Cursor plugin, Codex, Gemini CLI, Amp, OpenCode, and any MCP-compatible agent.
 - Mention history-aware lesson distillation when the surface is describing vague thumbs feedback, linked follow-up notes, or rule proposals from conversation history.
 - Do not claim a standalone VS Code extension. Say VS Code works through the MCP-compatible agent running inside the editor.
+
+Canonical landing description: The firewall for AI agents. Free local capture and pre-action gates. Choose Pro for recall, dashboard, adapters, and exports.

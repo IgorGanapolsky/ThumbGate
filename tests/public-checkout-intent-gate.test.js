@@ -32,20 +32,39 @@ test('public sources cannot expose raw Stripe Payment Links or pre-confirmed che
   assert.deepEqual(violations, [], violations.join('\n'));
 });
 
-test('public diagnostic and pricing paths require explicit intent surfaces', () => {
+test('retired diagnostic has no payment form and current plans preserve checkout confirmation', () => {
   const diagnostic = fs.readFileSync(path.join(PUBLIC_DIR, 'diagnostic.html'), 'utf8');
   const pricing = fs.readFileSync(path.join(PUBLIC_DIR, 'pricing.html'), 'utf8');
   const founders = fs.readFileSync(path.join(PUBLIC_DIR, 'founders.html'), 'utf8');
   const buyerIntent = fs.readFileSync(path.join(PUBLIC_DIR, 'js', 'buyer-intent.js'), 'utf8');
-
-  assert.match(diagnostic, /action="\/go\/diagnostic-pay" method="POST"/);
-  assert.match(diagnostic, /name="customer_email"[^>]*required/);
-  assert.match(pricing, /action="\/go\/diagnostic-pay" method="POST"/);
-  assert.match(pricing, /name="customer_email"[^>]*required/);
-  assert.match(pricing, /name="plan_id" value="sprint_diagnostic"/);
-  assert.match(founders, /action="\/go\/diagnostic-pay" method="POST"/);
-  assert.match(founders, /name="customer_email"[^>]*required/);
-  assert.match(founders, /name="plan_id" value="sprint_diagnostic"/);
-  assert.doesNotMatch(pricing, /\/checkout\/pro\?confirm=1/);
+  assert.match(diagnostic, /offer has been retired/i);
+  assert.match(diagnostic, /href="\/pricing"/);
+  assert.doesNotMatch(diagnostic, /<form|diagnostic-pay/);
+  assert.match(pricing, /href="\/checkout\/pro"/);
+  assert.match(founders, /href="\/pricing"/);
+  for (const source of [pricing, founders]) assert.doesNotMatch(source, /diagnostic-pay|sprint_diagnostic|\/checkout\/pro\?confirm=1/);
   assert.doesNotMatch(buyerIntent, /proHref[^;]+confirm\s*:\s*['"]1['"]/s);
+});
+
+test('public marketing forms never POST to the read-only pricing page', () => {
+  const violations = [];
+  for (const file of publicSourceFiles()) {
+    const source = fs.readFileSync(file, 'utf8');
+    for (const form of source.matchAll(/<form\b[^>]*>/gi)) {
+      if (/action=["']\/pricing(?:[?#["']|$)/i.test(form[0]) && /method=["']post["']/i.test(form[0])) {
+        violations.push(path.relative(PUBLIC_DIR, file));
+      }
+    }
+  }
+  assert.deepEqual(violations, []);
+});
+
+test('secondary acquisition pages offer actual self-serve Pro checkout without service delivery promises', () => {
+  for (const name of ['founders.html', 'peter.html', 'operator-framework.html', 'blog/inside-your-boundary.html']) {
+    const source = fs.readFileSync(path.join(PUBLIC_DIR, name), 'utf8');
+    assert.match(source, /href="\/checkout\/pro"/, name);
+    assert.doesNotMatch(source, /two business days|we install (?:and configure|the gate)|managed delivery|one configured (?:local|pre-action) gate|Buy the Pro enterprise gate/i, name);
+  }
+  const comparison = fs.readFileSync(path.join(PUBLIC_DIR, 'compare/agentix-labs.html'), 'utf8');
+  assert.doesNotMatch(comparison, /fixed-price managed workflow gate|A configured local gate, a regression test|Get the managed workflow gate/);
 });

@@ -66,46 +66,8 @@
   "mainEntityOfPage": "https://thumbgate.ai/compare/claude-code-hooks"
 }
   </script>
-  <script type="application/ld+json">
-{
-  "@context": "https://schema.org",
-  "@type": "FAQPage",
-  "mainEntity": [
-    {
-      "@type": "Question",
-      "name": "Is claude-code-hooks a direct ThumbGate competitor?",
-      "acceptedAnswer": {
-        "@type": "Answer",
-        "text": "Same category, different scope. karanb192/claude-code-hooks is a curated GitHub repository of bash scripts you copy into ~/.claude/hooks and edit by hand. ThumbGate ships PreToolUse enforcement plus personal recall, a maintained adapter matrix, dashboard proof, and an Enterprise rollout path. If you only run one agent on one laptop and like bash, claude-code-hooks is great. If governance must work across agents or teammates, ThumbGate fits."
-      }
-    },
-    {
-      "@type": "Question",
-      "name": "Can I use both?",
-      "acceptedAnswer": {
-        "@type": "Answer",
-        "text": "Yes. claude-code-hooks runs at the Claude Code hooks layer; ThumbGate's runtime runs at the same PreToolUse boundary but is agent-agnostic and persists lessons across reinstalls. They don't fight each other. The most common pattern is: borrow a few well-written hooks from claude-code-hooks for ideas, then let ThumbGate generalize them across every agent runtime you use."
-      }
-    },
-    {
-      "@type": "Question",
-      "name": "What does ThumbGate Pro add that the free tier and claude-code-hooks don't?",
-      "acceptedAnswer": {
-        "@type": "Answer",
-        "text": "Personal recall/search, managed adapters, a dashboard with gate hit rates, and DPO/HuggingFace export. Enterprise service work is qualified after intake; shared hosted lessons and a hosted org dashboard are not generally available. claude-code-hooks stays intentionally local-only."
-      }
-    },
-    {
-      "@type": "Question",
-      "name": "Is ThumbGate's local CLI free?",
-      "acceptedAnswer": {
-        "@type": "Answer",
-        "text": "Yes. npx thumbgate init gives you the runtime, 2 feedback captures per day (10 total), 3 active prevention rules, 5 built-in checks, and PreToolUse blocking across supported agents. MIT licensed. The $499 one-time Setup Sprint configures one supported workflow with rollout and rollback proof."
-      }
-    }
-  ]
-}
-  </script>
+
+<script type="application/ld+json">{"@context": "https://schema.org", "@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": "Is claude-code-hooks a direct ThumbGate competitor?", "acceptedAnswer": {"@type": "Answer", "text": "Same category, different scope. claude-code-hooks is a copy-paste bash hook collection for one laptop running Claude Code. ThumbGate packages PreToolUse enforcement with personal recall, multi-agent adapters, dashboard proof, and an Enterprise rollout path. If you only need static rules on one machine, claude-code-hooks is fine. If governance must work across agents or teammates, ThumbGate fits."}}, {"@type": "Question", "name": "Is ThumbGate's free CLI as capable as claude-code-hooks?", "acceptedAnswer": {"@type": "Answer", "text": "For the basic blocklist use case, comparable. ThumbGate's free tier ships 5 built-in checks plus the feedback loop and PreToolUse hook across 8 agent runtimes. claude-code-hooks ships more pre-written bash scripts you can install on day one. If you want to start with curated hand-written rules, install both \u2014 start with claude-code-hooks for the seed library, run ThumbGate alongside it to learn from your thumbs-down reactions."}}, {"@type": "Question", "name": "What does ThumbGate Pro add over both the free tier and claude-code-hooks?", "acceptedAnswer": {"@type": "Answer", "text": "Start with the free local CLI. Pro adds recall, dashboard, adapters, and exports. Compare plans."}}, {"@type": "Question", "name": "Where do I start?", "acceptedAnswer": {"@type": "Answer", "text": "If you want the smallest possible install: npx thumbgate init. If you want a curated set of hand-written hook examples to read: karanb192/claude-code-hooks. The two are complementary."}}]}</script>
 </head>
 <body>
   <div class="topbar">
@@ -185,7 +147,7 @@
             <tr>
               <td>Cost</td>
               <td>$0 forever</td>
-              <td>$0 local CLI; $499 one-time Setup Sprint for one supported workflow; custom scope after proof</td>
+              <td>Start with the free local CLI. Choose self-serve Pro for recall, dashboard, adapters, and exports. Compare current plans at https://thumbgate.ai/pricing.</td>
             </tr>
           </tbody>
         </table>
@@ -230,14 +192,15 @@
         </details>
         <details class="faq-item">
           <summary>What does ThumbGate Pro add over both the free tier and claude-code-hooks?</summary>
-          <p>The free CLI runs locally on your machine. When you want done-with-you setup for one repeated failure, the $499 one-time Setup Sprint delivers a failure map, configured local gate, and regression test. Enterprise service work is qualified after intake; shared hosted lessons and a hosted org dashboard are not generally available.</p>
+          <p>Start with the free local CLI. Pro adds recall, dashboard, adapters, and exports. <a href="/pricing">Compare plans</a>.</p>
         </details>
         <details class="faq-item">
           <summary>Where do I start?</summary>
           <p>If you want the smallest possible install: <code>npx thumbgate init</code>. If you want a curated set of hand-written hook examples to read: <a href="https://github.com/karanb192/claude-code-hooks" target="_blank" rel="noopener">karanb192/claude-code-hooks</a>. The two are complementary.</p>
         </details>
       </article>
-    </main>
+    <p>Hosted team sync and organization dashboards are not generally available. Free and Pro are software you configure and operate yourself.</p>
+</main>
 
     <aside class="sidebar">
       <div class="sidebar-card">

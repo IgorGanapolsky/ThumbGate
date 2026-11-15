@@ -92,7 +92,7 @@ Framework: GSD
 - Page type: comparison
 - Opportunity score: 100
 - CTA: Go Pro — $19/mo
-- Summary: SpecLock starts from manually written constraints. ThumbGate starts from thumbs-up/down feedback and turns it into pre-action checks that catch repeated mistakes.
+- Summary: SpecLock starts from manually written constraints. ThumbGate starts from thumbs-up/down feedback and turns it into pre-action checks that block repeated mistakes.
 ### 2. ThumbGate vs Mem0 | Enforcement vs Memory for AI Agents
 
 - Path: /compare/mem0
@@ -101,7 +101,7 @@ Framework: GSD
 - Page type: comparison
 - Opportunity score: 100
 - CTA: Go Pro — $19/mo
-- Summary: Mem0 is memory. ThumbGate is memory plus enforcement. It captures thumbs-up/down feedback, promotes the signal into rules, and catches repeat failures with pre-action checks.
+- Summary: Mem0 is memory. ThumbGate is memory plus enforcement. It captures thumbs-up/down feedback, promotes the signal into rules, and blocks repeat failures with pre-action checks.
 ### 3. ThumbGate vs Fallow | Static Analysis vs Agent Action Enforcement
 
 - Path: /compare/fallow
@@ -318,15 +318,15 @@ Framework: GSD
 - Opportunity score: 83
 - CTA: Go Pro — $19/mo
 - Summary: Background agents can draft changes while humans work elsewhere, but review becomes the bottleneck. ThumbGate adds pre-dispatch checks, run reports, isolated task lanes, and evidence-backed review routing before unattended agent work piles up.
-### 27. AI Agent Governance Sprint | 48-Hour Workflow Hardening
+### 27. AI Agent Governance Sprint | Local Workflow Checks
 
 - Path: /guides/ai-agent-governance-sprint
 - Primary query: ai agent governance sprint
 - Persona: engineering-lead
 - Page type: guide
 - Opportunity score: 83
-- CTA: Start the governance sprint
-- Summary: ThumbGate turns one repeated AI-agent failure into approval boundaries, pre-action checks, rollback safety, and rollout proof in a focused 48-hour Setup Sprint.
+- CTA: Compare current plans
+- Summary: Evaluate approval boundaries and pre-action checks with the free ThumbGate CLI. The former managed sprint is retired; Pro is a self-serve software subscription.
 ### 28. How to Stop AI Coding Agents From Repeating Mistakes | ThumbGate
 
 - Path: /guides/stop-repeated-ai-agent-mistakes
@@ -397,8 +397,8 @@ Framework: GSD
 - Persona: ai-engineer
 - Page type: guide
 - Opportunity score: 80
-- CTA: Start deployment readiness intake
-- Summary: Deployment-company demand proves the buyer problem: teams need help moving AI into real workflows. ThumbGate is the governance and proof layer that makes one priority workflow ready for production with pre-action gates, rollout evidence, and paid sprint paths.
+- CTA: Compare current plans
+- Summary: Deployment-company demand proves the buyer problem: teams need help moving AI into real workflows. ThumbGate provides configurable pre-action gates and inspectable local evidence. Free and Pro plans do not include workflow implementation services.
 ### 36. Long-Running Agent Context Management | Director Journals and Critic Reviews
 
 - Path: /guides/long-running-agent-context-management

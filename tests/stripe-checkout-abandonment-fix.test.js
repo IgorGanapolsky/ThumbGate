@@ -229,7 +229,7 @@ describe('Stripe checkout conversion & Payment Link / Annual routing fixes', () 
     assert.equal(guard.hit(null, 40002), false);
   });
 
-  it('renders annual $149/yr view on /checkout/pro?billing_cycle=annual and routes /pricing Pro CTAs to 1-click /go/pro-direct', async () => {
+  it('renders annual $149/yr view on /checkout/pro?billing_cycle=annual and routes the primary /pricing Pro CTA to /checkout/pro', async () => {
     const annualIntent = await rawBrowserGet(`${origin}/checkout/pro?plan_id=pro&billing_cycle=annual`);
     assert.equal(annualIntent.status, 200);
     assert.match(annualIntent.body, /Start ThumbGate Pro Annual/);
@@ -241,6 +241,7 @@ describe('Stripe checkout conversion & Payment Link / Annual routing fixes', () 
     const pricingHtml = fs.readFileSync(path.join(__dirname, '..', 'public', 'pricing.html'), 'utf8');
     assert.doesNotMatch(pricingHtml, /href="\/go\/pro-direct/);
     assert.doesNotMatch(pricingHtml, /href="\/go\/pro-annual/);
-    assert.match(pricingHtml, /action="\/go\/diagnostic-pay" method="POST"/);
+    assert.match(pricingHtml, /<a[^>]*href="\/checkout\/pro"[^>]*data-cta-id="pricing_pro_checkout"/);
+    assert.doesNotMatch(pricingHtml, /action="\/go\/diagnostic-pay"/);
   });
 });

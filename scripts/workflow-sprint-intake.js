@@ -632,7 +632,7 @@ function buildWorkflowSprintLead(payload = {}) {
     submittedAt,
     updatedAt: submittedAt,
     status: 'new',
-    offer: diagnosticIntake ? 'workflow_hardening_diagnostic' : 'workflow_hardening_sprint',
+    offer: payload.productInquiry === true ? 'product_inquiry' : (diagnosticIntake ? 'workflow_hardening_diagnostic' : 'workflow_hardening_sprint'),
     contact: {
       name,
       email,

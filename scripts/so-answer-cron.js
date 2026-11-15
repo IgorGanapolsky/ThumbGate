@@ -57,13 +57,13 @@ const ANSWER_TEMPLATES = {
     name: 'Shift-left review for branch PRs',
     file: 'so-answer-template-branch-review.md',
     tags: ['claude-code', 'cursor-ide', 'code-review', 'git'],
-    monetization: '$19/mo Pro, $49 Rule-Pack Kit, $499 diagnostic'
+    monetization: 'Free local CLI and self-serve Pro'
   },
   devops: {
     name: 'DevOps pipeline guardrails',
     file: 'DevOps pipeline guardrails for AI agents',
     tags: ['automation', 'mcp', 'ai-agent', 'ci-cd'],
-    monetization: '$499 Workflow Gate Diagnostic'
+    monetization: 'Self-serve ThumbGate Pro'
   }
 };
 
@@ -265,9 +265,9 @@ function getMonetization(template) {
     return 'The core gate is free and MIT-licensed at https://github.com/IgorGanapolsky/ThumbGate. For the dashboard and 150+ pre-built rules, ThumbGate Pro is `$19/mo` or `$149/yr`: https://thumbgate.ai/go/pro-direct';
   }
   if (template.file === 'DevOps pipeline guardrails') {
-    return 'For enterprise workflow gate diagnostics (root-cause one repeated team failure), the $499 Workflow Gate Diagnostic: https://thumbgate.ai/diagnostic';
+    return 'Compare the free local CLI and self-serve Pro: https://thumbgate.ai/pricing';
   }
-  return 'Free core at https://github.com/IgorGanapolsky/ThumbGate. Pro: https://thumbgate.ai/go/pro-direct. Enterprise: https://thumbgate.ai/diagnostic';
+  return 'Free core at https://github.com/IgorGanapolsky/ThumbGate. Pro: https://thumbgate.ai/go/pro-direct. Plans: https://thumbgate.ai/pricing';
 }
 
 // ---- Anti-slop verification ----

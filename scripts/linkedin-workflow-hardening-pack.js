@@ -33,7 +33,7 @@ const COMMENT_MEDIUM = 'linkedin_comment';
 const LINKEDIN_SURFACE = 'linkedin_workflow_hardening';
 const PROOF_LINKS = [COMMERCIAL_TRUTH_LINK, VERIFICATION_EVIDENCE_LINK];
 const CANONICAL_HEADLINE = 'Turn LinkedIn workflow-risk conversations into sprint-qualified paid intent.';
-const CANONICAL_SHORT_DESCRIPTION = 'ThumbGate gives founder-led LinkedIn outreach one honest offer: harden one AI-agent workflow with approval boundaries, rollback safety, and proof before wider rollout.';
+const CANONICAL_SHORT_DESCRIPTION = 'ThumbGate offers a free local CLI and self-serve Pro software for configurable AI-agent pre-action checks.';
 const CANONICAL_FIELDS = [
   { label: 'Display name', key: 'displayName', fallback: 'ThumbGate' },
   { label: 'Repository', key: 'repositoryUrl' },
@@ -128,7 +128,7 @@ function buildEvidenceSurfaces(links = buildRevenueLinks(), about = readGitHubAb
   return [
     {
       key: 'workflow_sprint_intake',
-      name: 'Setup Sprint intake',
+      name: 'self-serve Pro plans',
       url: buildTrackedLinkedinLink(links.sprintLink, {
         utmCampaign: 'linkedin_sprint_intake',
         utmContent: 'workflow_sprint',
@@ -196,21 +196,6 @@ function buildEvidenceSurfaces(links = buildRevenueLinks(), about = readGitHubAb
 function buildFollowOnOffers(links = buildRevenueLinks()) {
   return [
     {
-      key: 'sprint',
-      label: 'Setup Sprint',
-      pricing: 'Intake-led sprint, then Team at $49/seat/mo with a 3-seat minimum after qualification',
-      buyer: 'Teams that already named one repeated workflow failure, one owner, and one approval boundary.',
-      cta: buildTrackedLinkedinLink(links.sprintLink, {
-        utmCampaign: 'linkedin_follow_on_sprint',
-        utmContent: 'workflow_sprint',
-        campaignVariant: 'team_follow_on',
-        offerCode: 'LINKEDIN-FOLLOW_ON_SPRINT',
-        ctaId: 'linkedin_follow_on_sprint',
-        ctaPlacement: 'post_install',
-        surface: 'linkedin_follow_on',
-      }),
-    },
-    {
       key: 'pro',
       label: 'ThumbGate Pro',
       pricing: links.proPriceLabel,
@@ -269,10 +254,10 @@ function buildOperatorQueue(links = buildRevenueLinks(), report = {}) {
       key: 'warm_workflow_owner',
       audience: 'Warm workflow owner who already named repeated rollout pain',
       evidence: `${backstop.warmTargetCount} warm target(s) already named ${painSignals}.`,
-      proofTrigger: 'The buyer confirms the workflow is active now and wants one founder-led diagnostic instead of more generic AI tooling.',
+      proofTrigger: 'The buyer confirms the workflow is active and wants to evaluate configurable local checks.',
       proofAsset: VERIFICATION_EVIDENCE_LINK,
       nextAsk: sprintLink,
-      recommendedMotion: 'Setup Sprint first. Use proof only after pain is confirmed.',
+      recommendedMotion: 'ThumbGate Pro first. Use proof only after pain is confirmed.',
     },
     {
       key: 'business_system_operator',
@@ -281,7 +266,7 @@ function buildOperatorQueue(links = buildRevenueLinks(), report = {}) {
       proofTrigger: 'They can name one approval boundary, rollback risk, or bad handoff that blocks broader rollout.',
       proofAsset: COMMERCIAL_TRUTH_LINK,
       nextAsk: sprintLink,
-      recommendedMotion: 'Discovery DM -> sprint intake -> proof pack once the workflow risk is explicit.',
+      recommendedMotion: 'Free CLI guide -> local evaluation -> compare self-serve Pro plans.',
     },
     {
       key: 'self_serve_follow_on',
@@ -340,13 +325,13 @@ function buildOutreachDrafts(links = buildRevenueLinks(), report = {}) {
       key: 'warm_dm',
       channel: 'LinkedIn DM',
       audience: 'Pain-aware buyer who already named one workflow risk',
-      draft: `The strongest signals in this week’s queue are not generic AI interest. They are repeated workflow failures like ${painSignals}. I am not selling a generic agent platform into that. I am offering to harden one workflow end-to-end with prevention rules, approval boundaries, and a proof run. If that maps to one workflow on your side, start here: ${sprintLink} .`,
+      draft: `The strongest signals in this week’s queue are not generic AI interest. They are repeated workflow failures like ${painSignals}. ThumbGate lets you configure prevention rules and inspect pre-action checks locally. Start with the free CLI, or compare self-serve Pro plans here: ${sprintLink} .`,
     },
     {
       key: 'proof_after_pain',
       channel: 'Pain-confirmed follow-up',
       audience: 'Buyer who asked for proof or the self-serve path',
-      draft: `Now that the workflow failure is concrete, move from pitch to evidence. Send Verification Evidence plus Commercial Truth first: ${VERIFICATION_EVIDENCE_LINK} and ${COMMERCIAL_TRUTH_LINK} . If they want founder-led help, route them to ${sprintLink} . If they only want the install path, use ${guideLink} and then ${proLink} .`,
+      draft: `Now that the workflow failure is concrete, move from pitch to evidence. Send Verification Evidence plus Commercial Truth first: ${VERIFICATION_EVIDENCE_LINK} and ${COMMERCIAL_TRUTH_LINK} . Use the setup guide ${guideLink} for local evaluation and compare self-serve Pro at ${proLink} .`,
     },
   ];
 }
@@ -393,7 +378,7 @@ function buildChannelDrafts(links = buildRevenueLinks(), report = {}) {
       evidenceSummary: `${backstop.warmTargetCount} warm target(s) plus ${backstop.productionTargetCount} production-style target(s) show the strongest LinkedIn motion is workflow hardening, not generic AI hype.`,
       cta: guideLink,
       proofTiming: 'Keep the public post workflow-first and guide-first. Hold proof links for comments or DMs after the buyer names the workflow risk.',
-      draft: `The strongest AI workflow conversations I am seeing right now are not about replacing engineers. They are about one workflow that still is not safe enough to roll out. The repeated pain shows up as ${painSignals}. Once agents touch repos, approvals, or customer systems, the real question becomes: what stops the same mistake from running again? My answer is one workflow hardening lane: feedback, prevention rules, approval boundaries, rollback safety, and proof. If that is the problem you are evaluating, start with the proof-backed guide here: ${guideLink} .`,
+      draft: `The strongest AI workflow conversations I am seeing right now are not about replacing engineers. They are about one workflow that still is not safe enough to roll out. The repeated pain shows up as ${painSignals}. Once agents touch repos, approvals, or customer systems, the real question becomes: what stops the same mistake from running again? ThumbGate provides configurable local prevention rules and inspectable pre-action checks; operators own their rollout and verification. If that is the problem you are evaluating, start with the proof-backed guide here: ${guideLink} .`,
     },
     {
       key: 'linkedin_first_comment',
@@ -402,8 +387,8 @@ function buildChannelDrafts(links = buildRevenueLinks(), report = {}) {
       audience: 'Buyer who engages with the public post',
       evidenceSummary: 'The first comment should keep one CTA live without turning the post into a proof dump.',
       cta: sprintLink,
-      proofTiming: 'Comment can carry the sprint CTA, but keep Commercial Truth and Verification Evidence in reserve until pain is confirmed.',
-      draft: `If you already have one workflow where approval boundaries, rollback safety, or repeated tool-call mistakes are blocking rollout, use the Setup Sprint intake here: ${sprintLink} .`,
+      proofTiming: 'Comment can link current free and Pro plans, but keep Commercial Truth and Verification Evidence in reserve until pain is confirmed.',
+      draft: `Start with the free local CLI. Choose self-serve Pro for recall, dashboard, adapters, and exports. Compare current plans at https://thumbgate.ai/pricing.`,
     },
     {
       key: 'linkedin_reply_follow_up',
@@ -442,12 +427,12 @@ function buildMeasurementPlan() {
     milestones: [
       {
         window: 'days_0_30',
-        goal: 'Run founder-post plus comment and DM follow-up using one workflow-hardening offer with tracked CTAs.',
+        goal: 'Run founder-post plus comment and DM follow-up using accurate free and self-serve Pro software copy with tracked CTAs.',
         decisionRule: 'If LinkedIn clicks exist without qualified replies, tighten the post around one explicit workflow pain instead of broad AI-governance framing.',
       },
       {
         window: 'days_31_60',
-        goal: 'Promote the better-converting LinkedIn path: sprint-first or guide-first.',
+        goal: 'Start with the free local CLI. Choose self-serve Pro for recall, dashboard, adapters, and exports. Compare current plans at https://thumbgate.ai/pricing.',
         decisionRule: 'Only move proof earlier if replies show clear pain but stall before a tracked intake or guide click.',
       },
       {

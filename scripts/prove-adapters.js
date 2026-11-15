@@ -188,10 +188,12 @@ async function runProof(options = {}) {
   }
 
   const tmpFeedbackDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-proof-'));
+  const previousNoTelemetry = process.env.THUMBGATE_NO_TELEMETRY;
   const previousFeedbackDir = process.env.THUMBGATE_FEEDBACK_DIR;
   const previousApiKey = process.env.THUMBGATE_API_KEY;
   const previousMcpProfile = process.env.THUMBGATE_MCP_PROFILE;
   const previousCodegraphStub = process.env.THUMBGATE_CODEGRAPH_STUB_RESPONSE;
+  process.env.THUMBGATE_NO_TELEMETRY = '1';
   process.env.THUMBGATE_FEEDBACK_DIR = tmpFeedbackDir;
   process.env.THUMBGATE_API_KEY = 'proof-key';
   process.env.THUMBGATE_MCP_PROFILE = 'default';
@@ -821,6 +823,8 @@ async function runProof(options = {}) {
     await new Promise((resolve) => server.close(resolve));
     await waitForBackgroundSideEffects();
     fs.rmSync(tmpFeedbackDir, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
+    if (previousNoTelemetry === undefined) delete process.env.THUMBGATE_NO_TELEMETRY;
+    else process.env.THUMBGATE_NO_TELEMETRY = previousNoTelemetry;
     if (previousFeedbackDir === undefined) delete process.env.THUMBGATE_FEEDBACK_DIR;
     else process.env.THUMBGATE_FEEDBACK_DIR = previousFeedbackDir;
     if (previousApiKey === undefined) delete process.env.THUMBGATE_API_KEY;

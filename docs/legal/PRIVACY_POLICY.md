@@ -11,7 +11,7 @@ how we process information across:
 - Local software (`thumbgate` npm package / CLI / MCP hooks)
 - Marketing and docs sites (`thumbgate.ai` and related pages)
 - Hosted API and product surfaces (`thumbgate.app`, production Railway host)
-- Professional services (including the $499 Setup Sprint)
+- Professional services (including the $19/mo ThumbGate Pro)
 
 ---
 

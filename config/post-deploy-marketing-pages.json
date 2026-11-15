@@ -22,11 +22,6 @@
       "description": "Pro checkout interstitial must require attributable buyer email before Stripe"
     },
     {
-      "route": "/diagnostic",
-      "sentinel": "Exactly what the $499 Setup Sprint includes",
-      "description": "Managed gate checkout and fit-check page for high-intent warm traffic"
-    },
-    {
       "route": "/dashboard",
       "sentinel": "ThumbGate Dashboard",
       "description": "Dashboard demo (already enforced by /dashboard step; included here for symmetry with PR comment surface)"

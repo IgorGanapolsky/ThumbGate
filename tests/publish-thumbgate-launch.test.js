@@ -76,41 +76,17 @@ test('buildPlatformPost can create Skool operator lab copy', () => {
   assert.match(xPost, /utm_content=operator_lab_twitter/);
 });
 
-test('buildPlatformPost can create paid voice-agent diagnostic copy', () => {
-  const linkedinPost = buildPlatformPost('linkedin', 'voice-agent-diagnostic');
-  const threadsPost = buildPlatformPost('threads', 'voice-agent-diagnostic');
-
-  assert.match(linkedinPost, /voice-agent reliability diagnostics/);
-  assert.match(linkedinPost, /\$499 diagnostic/);
-  assert.ok(linkedinPost.includes(DIAGNOSTIC_CHECKOUT_URL));
-  assert.match(linkedinPost, /utm_medium=paid_service/);
-  assert.match(linkedinPost, /utm_campaign=voice_agent_reliability_diagnostic/);
-  assert.match(linkedinPost, /utm_content=voice_agent_diagnostic_linkedin/);
-  assert.match(threadsPost, /Opening 3 paid voice-agent reliability diagnostics/);
-  assert.match(threadsPost, /utm_content=voice_agent_diagnostic_threads/);
-});
-
-test('buildPlatformPost creates paid sprint copy with first-party intent links', () => {
-  const linkedInPost = buildPlatformPost('linkedin', 'paid-sprint');
-  const xPost = buildPlatformPost('twitter', 'paid-sprint');
-  const threadsPost = buildPlatformPost('threads', 'paid-sprint');
-  const links = buildPaidSprintCheckoutUrls('linkedin', 'paid_sprint_linkedin');
-
-  assert.match(linkedInPost, /\$499 diagnostic/);
-  assert.match(linkedInPost, /\$1500 sprint/);
-  assert.ok(linkedInPost.includes(PAID_SPRINT_DIAGNOSTIC_PAYMENT_URL));
-  assert.ok(linkedInPost.includes(PAID_SPRINT_IMPLEMENTATION_PAYMENT_URL));
-  assert.ok(linkedInPost.includes(links.diagnostic));
-  assert.ok(linkedInPost.includes(links.sprint));
-  assert.match(linkedInPost, /utm_campaign=paid_workflow_sprint/);
-  assert.match(linkedInPost, /utm_content=paid_sprint_linkedin_diagnostic/);
-  assert.doesNotMatch(linkedInPost, /buy\.stripe\.com/);
-  assert.match(xPost, /thumbgate\.ai/);
-  assert.doesNotMatch(xPost, /buy\.stripe\.com/);
-  assert.ok(xPost.length <= 280, `X paid-sprint post should fit 280 chars; got ${xPost.length}`);
-  assert.match(threadsPost, /thumbgate\.ai/);
-  assert.doesNotMatch(threadsPost, /buy\.stripe\.com/);
-  assert.ok(threadsPost.length <= 500, `Threads paid-sprint post should fit 500 chars; got ${threadsPost.length}`);
+test('legacy service campaign arguments emit current software plans without retired pitches', () => {
+  for (const offer of ['voice-agent-diagnostic', 'paid-sprint']) {
+    for (const platform of ['linkedin', 'twitter', 'threads']) {
+      const post = buildPlatformPost(platform, offer);
+      assert.match(post, /free local CLI/);
+      assert.match(post, /Pro adds recall, dashboard, adapters, and exports/);
+      assert.match(post, /https:\/\/[^ ]+\/pricing/);
+      assert.doesNotMatch(post, /\$499|\$1500|diagnostic|sprint|buy\.stripe\.com/i);
+      assert.ok(post.length <= (platform === 'threads' ? 500 : 280));
+    }
+  }
 });
 
 test('publishLaunchCampaign previews default platforms in dry run mode', async () => {
@@ -202,8 +178,8 @@ test('publishLaunchCampaign uses paid voice-agent diagnostic UTM settings when r
   assert.equal(calls[0].options.utm.source, 'linkedin');
   assert.equal(calls[0].options.utm.medium, 'paid_service');
   assert.equal(calls[0].options.utm.campaign, VOICE_AGENT_DIAGNOSTIC_CAMPAIGN);
-  assert.match(calls[0].content, /Checkout:/);
-  assert.match(calls[0].content, /\$499 diagnostic/);
+  assert.match(calls[0].content, /free local CLI/);
+  assert.doesNotMatch(calls[0].content, /\$499|diagnostic|sprint/i);
 });
 
 test('publishLaunchCampaign uses paid sprint UTM settings when requested', async () => {
@@ -230,9 +206,9 @@ test('publishLaunchCampaign uses paid sprint UTM settings when requested', async
   assert.equal(calls[0].options.utm.source, 'linkedin');
   assert.equal(calls[0].options.utm.medium, 'organic_social');
   assert.equal(calls[0].options.utm.campaign, PAID_SPRINT_CAMPAIGN);
-  assert.match(calls[0].content, /thumbgate\.ai/);
+  assert.match(calls[0].content, /https:\/\/[^ ]+\/pricing/);
   assert.doesNotMatch(calls[0].content, /buy\.stripe\.com/);
-  assert.match(calls[0].content, /utm_campaign=paid_workflow_sprint/);
+  assert.doesNotMatch(calls[0].content, /\$499|\$1500|diagnostic|sprint/i);
 });
 
 test('publishLaunchCampaign publishes requested platforms with per-platform UTM settings', async () => {

@@ -7,7 +7,7 @@ Case id: `sudo-evasion`
 - Case study: https://thumbgate.ai/case-studies?utm_source=case_study_outreach&utm_medium=case_study&utm_campaign=case_sudo_evasion&cta_id=case_sudo_evasion_case_study#sudo-evasion
 - Scorecard: https://thumbgate.ai/eval-scorecard?utm_source=case_study_outreach&utm_medium=scorecard&utm_campaign=case_sudo_evasion&cta_id=case_sudo_evasion_scorecard
 - White paper: https://thumbgate.ai/whitepaper?utm_source=case_study_outreach&utm_medium=whitepaper&utm_campaign=case_sudo_evasion&cta_id=case_sudo_evasion_whitepaper
-- Diagnostic $499: https://thumbgate.ai/diagnostic?utm_source=case_study_outreach&utm_medium=diagnostic&utm_campaign=case_sudo_evasion&cta_id=case_sudo_evasion_diagnostic
+Free local CLI and self-serve Pro for recall, dashboard, adapters, and exports. Current plans: https://thumbgate.ai/pricing
 - Pro: https://thumbgate.ai/checkout/pro?utm_source=case_study_outreach&utm_medium=pro&utm_campaign=case_sudo_evasion&cta_id=case_sudo_evasion_pro
 
 ## LinkedIn
@@ -20,7 +20,7 @@ Canonicalization + an adversarial grid (14 commands × 9 transforms) closed the 
 Full write-up (no fabricated logos): https://thumbgate.ai/case-studies?utm_source=case_study_outreach&utm_medium=case_study&utm_campaign=case_sudo_evasion&cta_id=case_sudo_evasion_case_study#sudo-evasion
 Live bench scorecard: https://thumbgate.ai/eval-scorecard?utm_source=case_study_outreach&utm_medium=scorecard&utm_campaign=case_sudo_evasion&cta_id=case_sudo_evasion_scorecard
 
-If one repeated AI-agent failure is already costing you, the $499 Diagnostic installs one hard gate with regression proof: https://thumbgate.ai/diagnostic?utm_source=case_study_outreach&utm_medium=diagnostic&utm_campaign=case_sudo_evasion&cta_id=case_sudo_evasion_diagnostic
+Free local CLI and self-serve Pro for recall, dashboard, adapters, and exports. Current plans: https://thumbgate.ai/pricing
 
 ## Email
 
@@ -39,7 +39,7 @@ Case study: https://thumbgate.ai/case-studies?utm_source=case_study_outreach&utm
 Scorecard: https://thumbgate.ai/eval-scorecard?utm_source=case_study_outreach&utm_medium=scorecard&utm_campaign=case_sudo_evasion&cta_id=case_sudo_evasion_scorecard
 White paper: https://thumbgate.ai/whitepaper?utm_source=case_study_outreach&utm_medium=whitepaper&utm_campaign=case_sudo_evasion&cta_id=case_sudo_evasion_whitepaper
 
-If you want this on one painful workflow this week: https://thumbgate.ai/diagnostic?utm_source=case_study_outreach&utm_medium=diagnostic&utm_campaign=case_sudo_evasion&cta_id=case_sudo_evasion_diagnostic
+If you want this on one painful workflow this week: https://thumbgate.ai/pricing?utm_source=case_study_outreach&utm_medium=diagnostic&utm_campaign=case_sudo_evasion&cta_id=case_sudo_evasion_diagnostic
 Self-serve Pro: https://thumbgate.ai/checkout/pro?utm_source=case_study_outreach&utm_medium=pro&utm_campaign=case_sudo_evasion&cta_id=case_sudo_evasion_pro
 
 — Igor

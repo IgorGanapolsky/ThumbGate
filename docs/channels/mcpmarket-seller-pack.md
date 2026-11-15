@@ -16,8 +16,8 @@ Source checked: https://mcpmarket.com/sell-skills
 - Category: Developer Tools / AI Agent Governance
 - Buyer: solo developers, staff engineers, platform teams, and AI consultancies running coding agents
 - Promise: turn repeated AI-agent mistakes into local pre-action checks before the next tool call runs
-- Price test: $49 one-time skill pack, with Pro upsell at $19/mo or $149/yr
-- Team path: workflow hardening sprint for buyers with one repeated production-risk workflow and an accountable owner
+ThumbGate offers a free local CLI and self-serve Pro for recall, dashboard, adapters, and exports. Current plans: https://thumbgate.ai/pricing
+- Team path: Pro plan for buyers with one repeated production-risk workflow and an accountable owner
 - Fulfillment: existing ThumbGate CLI, MCP server, and skills; no custom consulting required for the first purchase
 
 ## What Buyers Get
@@ -79,7 +79,7 @@ Use it when your agent keeps making the same mistake: force-pushing before revie
 
 - Listing install: https://thumbgate.ai/go/pro?utm_source=mcpmarket&utm_medium=skill_listing&utm_campaign=agent_failure_firewall&utm_content=install&cta_id=mcpmarket_skill_install
 - Pro upgrade: https://thumbgate.ai/checkout/pro?utm_source=mcpmarket&utm_medium=skill_listing&utm_campaign=agent_failure_firewall&utm_content=pro_upgrade&cta_id=mcpmarket_skill_pro
-- Workflow sprint: https://thumbgate.ai/?utm_source=mcpmarket&utm_medium=skill_listing&utm_campaign=agent_failure_firewall&utm_content=workflow_sprint&cta_id=mcpmarket_skill_sprint#workflow-sprint-intake
+Free local CLI and self-serve Pro for recall, dashboard, adapters, and exports. Current plans: https://thumbgate.ai/pricing
 
 ## Early Access Submission Note
 
@@ -98,12 +98,12 @@ Repo: https://github.com/IgorGanapolsky/ThumbGate
 1. Submit early access with the note above.
 2. Post one LinkedIn/X thread: "Agent skills should not just remember mistakes; they should catch the repeat before the next tool call."
 3. DM MCP/agent developers who publish skills: offer a free wiring audit and point them to the paid pack when they name one repeated failure.
-4. Track `utm_source=mcpmarket` visits, checkout starts, and sprint intake submissions.
+4. Track `utm_source=mcpmarket` visits, buyer-confirmed Pro checkout starts, and product inquiries.
 5. If any buyer asks for marketplace-native packaging, convert `skills/thumbgate-doctor`, `skills/thumbgate-guard`, `skills/thumbgate-protect`, and `.claude/skills/evidence-first-answer` into the exact MCPMarket upload format once MCPMarket publishes it.
 
 ## Guardrails
 
 - Do not claim MCPMarket approval until it is granted.
 - Do not claim marketplace revenue until Stripe or marketplace payout evidence exists.
-- Do not promise hosted enforcement; position ThumbGate as local-first with paid Pro and sprint upsells.
+- Do not promise hosted enforcement; position ThumbGate as local-first with self-serve Pro.
 - Do not give away private-core implementation details in the listing.

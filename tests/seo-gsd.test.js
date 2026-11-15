@@ -191,7 +191,7 @@ test('prompt tricks to workflow rules page is discoverable and commercially clas
   assert.equal(page.pageType, 'guide');
   assert.equal(page.pillar, 'pre-action-checks');
   assert.match(html, /Prompt Tricks Are Table Stakes/);
-  assert.match(html, /clear rules, examples, and pre-action checks/);
+  assert.match(html, /reviewed rules and configured pre-action checks/);
   assert.match(html, /Do not rely on politeness, threats, flattery, or roleplay/);
   assert.deepEqual(sitemapEntry, {
     path: '/guides/prompt-tricks-to-workflow-rules',
@@ -355,9 +355,9 @@ test('AI agent governance sprint page routes bottom-funnel buyers into Team inta
     priority: '0.8',
   });
   assert.match(html, /AI Agent Governance Sprint/);
-  assert.match(html, /48-hour Setup Sprint/);
+  assert.match(html, /Compare current plans/);
   assert.match(html, /npx thumbgate background-governance --check --json/);
-  assert.match(html, /workflow-sprint-intake/);
+  assert.doesNotMatch(html, /workflow-sprint-intake|Workflow Hardening Diagnostic|48-hour Setup Sprint|\$1500/);
 });
 
 test('AI deployment readiness page turns deployment demand into sprint intake', () => {
@@ -377,10 +377,10 @@ test('AI deployment readiness page turns deployment demand into sprint intake', 
   });
   assert.match(html, /AI Deployment Readiness/);
   assert.match(html, /deployment companies/i);
-  assert.match(html, /governance and proof layer/i);
+  assert.match(html, /configurable pre-action gates/i);
   assert.match(html, /npx thumbgate background-governance --check --json/);
-  assert.match(html, /workflow-sprint-intake/);
-  assert.match(html, /Workflow Hardening Diagnostic/);
+  assert.doesNotMatch(html, /workflow-sprint-intake|Workflow Hardening Diagnostic|48-hour Setup Sprint|\$1500/);
+  assert.match(html, /Free local CLI or self-serve Pro/);
 });
 
 test('GPT-5.5 model evaluation page is discoverable and commercially classified', () => {

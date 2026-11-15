@@ -22,7 +22,10 @@ function getCheck(name) {
 
 test('adapter proof harness setup', async () => {
   tmpProofDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-proof-test-'));
+  const previousNoTelemetry = process.env.THUMBGATE_NO_TELEMETRY;
   report = await runProof({ proofDir: tmpProofDir, port: 0 });
+  assert.equal(process.env.THUMBGATE_NO_TELEMETRY, previousNoTelemetry,
+    'proof harness must restore the caller telemetry preference');
 });
 
 test('adapter proof: zero failures', () => {

@@ -41,20 +41,20 @@ test('Unified Agentic Graph RAG: builds 3-tier graph with AST, gates, and cash p
   assert.ok(graph.nodes.has('gate:pretool:spend-cap'));
 
   // Tier 3 Cash path nodes exist
-  assert.ok(graph.nodes.has('cash:diagnostic-499'));
+  assert.ok(graph.nodes.has('cash:pro-subscription'));
   assert.ok(graph.nodes.has('cash:pro-subscription'));
 });
 
 test('Unified Agentic Graph RAG: traverses multi-hop path from code symbol to $499 Diagnostic', () => {
   const graph = buildAgenticGraph();
-  const traversal = traverseMultiHop(graph, 'scripts/decisive-step-evaluator.js', 'cash:diagnostic-499', 4);
+  const traversal = traverseMultiHop(graph, 'scripts/decisive-step-evaluator.js', 'cash:pro-subscription', 4);
 
   assert.equal(traversal.found, true);
   assert.equal(traversal.depth, 2);
   assert.deepEqual(traversal.path, [
     'scripts/decisive-step-evaluator.js',
     'gate:pretool:decisive-step',
-    'cash:diagnostic-499',
+    'cash:pro-subscription',
   ]);
 });
 
@@ -62,7 +62,7 @@ test('Unified Agentic Graph RAG: queryAgenticGraph returns linked cash paths and
   const res = queryAgenticGraph('spend');
   assert.equal(res.status, 'ok');
   assert.ok(res.totalGraphNodes >= 10);
-  assert.ok(res.monetizationTiers.some((m) => m.id === 'cash:diagnostic-499'));
+  assert.ok(res.monetizationTiers.some((m) => m.id === 'cash:pro-subscription'));
 });
 
 test('Decisive DPO Distiller: extracts high-signal preference triple from fail->pass flip', () => {
@@ -135,4 +135,26 @@ test('Stack Diagnostic Doctors: All 3 ML & Harness doctors return PASS', () => {
 
   const rrsiDoc = auditRRSI();
   assert.equal(rrsiDoc.status, 'PASS');
+});
+
+ test('current graph monetization output excludes the retired diagnostic', () => {
+  const result = queryAgenticGraph('gate');
+  assert.ok(result.monetizationTiers.some((tier) => tier.id === 'cash:pro-subscription'));
+  assert.ok(result.monetizationTiers.every((tier) => tier.id !== 'cash:diagnostic-499'));
+  assert.doesNotMatch(JSON.stringify(result.monetizationTiers), /Workflow Hardening Diagnostic|\$499/);
+});
+
+test('warm outreach drafts offer self-serve tooling without service delivery promises', () => {
+  const { getWarmOutboundTargets, buildWarmRedditMessages } = require('../scripts/warm-outreach-targets');
+  const targets = getWarmOutboundTargets('https://thumbgate.ai/pricing');
+  assert.equal(targets.length, 4);
+  assert.ok(targets.every((target) => target.selectedMotion.key === 'pro'));
+  const drafts = buildWarmRedditMessages('https://thumbgate.ai/pricing');
+  assert.equal(drafts.length, 4);
+  for (const draft of drafts) {
+    assert.match(draft.text, /I build ThumbGate/);
+    assert.match(draft.text, /Self-serve Pro/);
+    assert.match(draft.text, /https:\/\/thumbgate\.ai\/pricing/);
+    assert.doesNotMatch(draft.text, /paid.*diagnostic today|same-day kickoff|I trace the failure|I will turn it/);
+  }
 });

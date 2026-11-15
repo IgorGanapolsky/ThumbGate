@@ -775,10 +775,10 @@ function buildMarketingAgencyGtmPlan(input = {}) {
 
   return {
     name: 'thumbgate-marketing-agency-gtm-plan',
-    status: ready ? 'ready-to-sell-workflow-sprint' : 'build-gtm-proof-first',
+    status: ready ? 'ready-to-promote-self-serve-pro' : 'build-gtm-proof-first',
     channels,
     monthlyRetainer,
-    offer: 'AI Agent Governance Setup Sprint',
+    offer: 'Self-serve ThumbGate Pro',
     gates: [
       'target lead generation around one expensive repeated AI-agent mistake, not generic AI automation',
       'use CRM automation only after consent, attribution, and unsubscribe paths are configured',

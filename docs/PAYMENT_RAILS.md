@@ -8,15 +8,12 @@ ThumbGate uses three payment rails so buyers can pay with the least practical fr
 ## Rails
 
 1. **Stripe primary**
-   - Use for the live Pro checkout and the existing paid service checkout links.
+   - Use the current self-serve Pro checkout at `/checkout/pro`.
    - Keep it first when the buyer is comfortable with card checkout.
-   - Current verified service offers in code:
-     - `$499` Workflow Hardening Diagnostic
-     - `$1500` Setup Sprint
+   - Managed diagnostic and sprint service offers are retired. Historical catalog IDs remain solely for payment reconciliation; do not create or distribute checkout links for them.
 
 2. **PayPal fallback**
-   - Use when the buyer hesitates on card entry, asks for PayPal, or needs the fastest trust shortcut.
-   - Close copy should say: `Pay by Stripe or PayPal, whichever is easier.`
+   - Retain historical capture, refund, and webhook reconciliation. Do not advertise a retired service payment path or imply that self-serve Pro supports an unverified payment method.
    - Configure with:
      - `THUMBGATE_PAYPAL_DIAGNOSTIC_CHECKOUT_URL`
      - `THUMBGATE_PAYPAL_WORKFLOW_SPRINT_CHECKOUT_URL`
@@ -36,7 +33,7 @@ ThumbGate uses three payment rails so buyers can pay with the least practical fr
 
 North-star target: `$1,000/hour`, represented as at least `$24,000` gross and current refund-adjusted charge-cohort net on every one of 30 consecutive local calendar days. That is a control threshold, not a forecast or a traction claim.
 
-The first operating milestone remains one provider-confirmed external `$499` Diagnostic payment. One payment validates the close path; it does not prove the north-star target. Pro remains useful as a self-serve trust path, but it is not the daily cash engine.
+Only provider-confirmed external payments validate a payment path. Current buyers can evaluate the free CLI or choose self-serve Pro. Retired diagnostic and sprint payments remain historical evidence, not current sales offers. One payment does not prove the north-star target.
 
 Run `node scripts/revenue-target-control.js` for the fail-closed target verdict. Stripe is reconciled through its product-attributed API audit. PayPal is probed through its read-only API when configured. With all webhook settings present, the probe also authenticates the webhook registration and recent event history, then reconciles current capture/order, attribution, payer ownership, and refund state. That closes the reporting-delay gap for individual payment milestones but not for global arithmetic: the event lane does not enumerate every balance-affecting movement or prove subscriptions, so PayPal `revenue` remains unknown. Any distinct Merchant-of-Record processor and GitHub Marketplace enter through fresh provider-origin financial evidence documented in `docs/PROVIDER_REVENUE_EVIDENCE.md`. GitHub signed plan-change webhooks are retained and re-verifiable but do not replace its official Transactions CSV. The control validates and date-aligns every processor's USD gross, refund-adjusted net, and recurring slice before summing global revenue. Collection roles sharing one processor reuse its audit but never duplicate its dollars. A missing provider audit is `evidence_incomplete`, never zero revenue.
 
@@ -46,9 +43,9 @@ When an exact external ThumbGate payment appears in an authenticated audit, cred
 
 Use the smallest paid path that matches buyer intent:
 
-- Buyer has a concrete repeated workflow failure but scope is unclear: sell the `$499` Diagnostic.
-- Buyer has an owner, a workflow, and urgency: sell the `$1500` Sprint.
-- Buyer wants DIY tooling: send Pro.
+- Buyer wants local tooling: start with the free CLI.
+- Buyer needs recall, dashboard, adapters, and exports: compare self-serve Pro at `/pricing`.
+- Buyer requests the former managed diagnostic or sprint: explain that it is retired; Pro does not include implementation services.
 - Buyer wants a small proof artifact first: send the `$97` Snapshot on the MoR rail.
 
-Do not send a payment link cold. First confirm the failure mode, then offer Stripe or PayPal.
+Do not send a payment link cold. First confirm the failure mode, then use only a verified current payment path.

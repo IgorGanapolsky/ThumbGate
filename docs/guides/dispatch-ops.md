@@ -33,7 +33,7 @@ npx thumbgate dispatch
 - Read dashboard health, gate trends, and proof-backed workflow status.
 - Recall prior mistakes and review prevention rules.
 - Diagnose blocked or failing runs.
-- Plan the next workflow-hardening sprint without executing changes.
+- Plan the next workflow review without executing changes.
 
 ## What Dispatch must not do
 
@@ -48,7 +48,7 @@ When a task needs edits, open a dedicated worktree and switch back to `THUMBGATE
 
 - `Summarize revenue, funnel, gates, and proof-backed workflow health for the last 7d.`
 - `Explain the top blocked gate and the repeated mistake it is preventing.`
-- `Plan the next workflow-hardening sprint for this repo without executing any changes.`
+- `Plan the next workflow review for this repo without executing any changes.`
 - `Recall the last repeated failure pattern before I start the next migration session.`
 
 ## Workflow pattern

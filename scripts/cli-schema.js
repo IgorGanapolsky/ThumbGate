@@ -328,7 +328,7 @@ const CLI_COMMANDS = [
     mcpTool: 'plan_chatgpt_ads_readiness',
     flags: [
       jsonFlag(),
-      { name: 'offer', type: 'string', description: 'Offer to advertise, such as Pro or Setup Sprint' },
+      { name: 'offer', type: 'string', description: 'Offer to advertise, such as Pro' },
       { name: 'audience', type: 'string', description: 'Audience segment to target' },
       { name: 'budget', type: 'number', description: 'Initial test budget' },
       { name: 'keywords', type: 'string', description: 'Comma-separated high-intent conversational queries' },
@@ -971,7 +971,7 @@ const CLI_COMMANDS = [
   {
     name: 'diagnostic',
     aliases: ['workflow-diagnostic', 'sprint-diagnostic'],
-    description: '$499 Workflow Hardening Diagnostic for one repeated AI-agent workflow failure',
+    description: 'Retired managed service; compare current free and Pro plans at https://thumbgate.ai/pricing',
     group: 'ops',
     flags: [],
   },

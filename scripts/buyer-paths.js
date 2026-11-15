@@ -51,8 +51,8 @@ function buildDiagnosticBuyerUrl({
   campaign = null,
   content = null,
 } = {}) {
-  return buildBuyerUrl('/diagnostic', {
-    plan_id: 'sprint_diagnostic',
+  return buildBuyerUrl('/pricing', {
+    plan_id: 'pro',
     utm_source: source,
     utm_medium: medium,
     utm_campaign: campaign,
@@ -67,8 +67,8 @@ function buildSprintBuyerUrl({
   campaign = null,
   content = null,
 } = {}) {
-  return buildBuyerUrl('/go/sprint', {
-    plan_id: 'workflow_sprint',
+  return buildBuyerUrl('/pricing', {
+    plan_id: 'pro',
     utm_source: source,
     utm_medium: medium,
     utm_campaign: campaign,
@@ -78,7 +78,7 @@ function buildSprintBuyerUrl({
 
 function buildEnterpriseBuyerUrl({ appOrigin = DEFAULT_APP_ORIGIN } = {}) {
   const url = new URL('/', `${normalizeAppOrigin(appOrigin)}/`);
-  url.hash = 'workflow-sprint-intake';
+  url.pathname = '/pricing';
   return url.toString();
 }
 

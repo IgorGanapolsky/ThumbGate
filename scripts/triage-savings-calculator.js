@@ -20,7 +20,6 @@ const {
 const PRICING_TIERS = Object.freeze({
   free: { name: 'Community', monthlyCost: 0, annualCost: 0 },
   pro: { name: 'Pro Firewall', monthlyCost: 19, annualCost: 149 },
-  managed: { name: 'Setup Sprint', monthlyCost: 499, annualCost: 499 },
   enterprise: { name: 'Enterprise Gateway', monthlyCost: 2500, annualCost: 27000 },
 });
 

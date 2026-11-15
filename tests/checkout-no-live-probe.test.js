@@ -523,8 +523,9 @@ test('/go/pro-direct deflects ?probe=1 and blocked synthetic emails to /checkout
       },
       body: new URLSearchParams({ customer_email: 'mkjkjuwj@formtests.info' }),
     });
-    assert.equal(liveDiagnosticRes.status, 302);
-    assert.match(liveDiagnosticRes.headers.get('location') || '', /\/checkout\/pro\b/);
+    assert.equal(liveDiagnosticRes.status, 410);
+    assert.equal(liveDiagnosticRes.headers.get('location'), null);
+    assert.match(await liveDiagnosticRes.text(), /\/pricing/);
     assert.doesNotMatch(liveDiagnosticRes.headers.get('location') || '', /stripe\.com/i);
 
     const gptRes = await getRedirect('/go/gpt?customer_email=e2e-probe%40example.com');
@@ -552,9 +553,11 @@ test('/go/pro-direct deflects ?probe=1 and blocked synthetic emails to /checkout
       },
       body: new URLSearchParams({ customer_email: 'buyer@example.com' }),
     });
-    assert.equal(testModeDiagnosticRes.status, 303);
-    assert.match(testModeDiagnosticRes.headers.get('location') || '', /^https:\/\/buy\.stripe\.com\//);
-    assert.match(testModeDiagnosticRes.headers.get('location') || '', /prefilled_email=buyer%40example\.com/i);
+    assert.equal(testModeDiagnosticRes.status, 410);
+    assert.equal(testModeDiagnosticRes.headers.get('location'), null);
+    const retiredBody = await testModeDiagnosticRes.text();
+    assert.match(retiredBody, /\/pricing/);
+    assert.doesNotMatch(retiredBody, /stripe\.com|buyer@example\.com/);
   } finally {
     await new Promise((resolve) => handle.server.close(resolve));
     billing.CONFIG.STRIPE_SECRET_KEY = savedStripeKey;

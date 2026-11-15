@@ -12,7 +12,7 @@
 | Profound Architecture (`2026-10-16`) | ThumbGate Implementation (`scripts/profound-aeo-citation-engine.js`) |
 | :--- | :--- |
 | **1. ChatGPT Intelligent UI Missing-UTM Dark Referral Recovery** (*Josh Blyskal Oct 14, 2026: tagged ChatGPT answer samples fell from 98% on Oct 8 to 66% on Oct 14 — 34% untagged answer share — as Intelligent UI reached 35% of answers*) | `attributeIntelligentUiVisit()` correlates untagged Direct visits on `/operator-framework` with preceding eligible answer-engine fetches (`OAI-SearchBot`, `ChatGPT-User`, `PerplexityBot`, `Claude-SearchBot`, `Applebot-Extended`) within a `120s` pre-visit window (`0 <= deltaMs <= windowMs`). |
-| **2. Answer Engine `FactCheck` & Remediation Diode** (*Profound AEI `FactCheck` tab + Accuracy & Sentiment Alerts*) | `evaluateBrandFactCheck()` audits AI responses against canonical ground truth (`<0.5ms` local CPU latency, `$0` token tax, HIPAA/ZDR compliance, `$19/mo` / `$499` / `$2,500` / `$500/mo` pricing) while respecting negations (`not cloud-only`). |
+| **2. Answer Engine `FactCheck` & Remediation Diode** (*Profound AEI `FactCheck` tab + Accuracy & Sentiment Alerts*) | `evaluateBrandFactCheck()` audits AI responses against canonical ground truth (`<0.5ms` local CPU latency, `$0` token tax, HIPAA/ZDR compliance, `$19/mo` / `$19/mo` / `$2,500` / `$500/mo` pricing) while respecting negations (`not cloud-only`). |
 | **3. `Topics × Competitors × Engines` Visibility & Citation Share Matrix** (*Profound AEI `Visibility Score` + `Citation Share`*) | `computeAeoVisibilityMatrix()` reports `byTopic`, `byEngine` (`chatgpt`, `perplexity`, `claude`, `google_ai_mode`), and `competitorMentions`, keeping explicit empty observations (`[]`) distinct from demo fixtures. |
 
 ---

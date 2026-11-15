@@ -1318,16 +1318,16 @@ function getMcpSkillManifests(hostedConfig) {
       proofUrl: VERIFICATION_EVIDENCE_URL,
     },
     {
-      name: 'workflow-hardening-sprint',
-      title: 'Setup Sprint',
-      description: 'Turn one repeated agent failure into an enforced gate with proof and rollout evidence.',
+      name: 'pro',
+      title: 'ThumbGate Pro',
+      description: 'Personal recall, dashboard, adapters, and exports.',
       triggers: ['workflow hardening', 'team rollout', 'agent governance', 'approval boundary', 'audit trail'],
       recommendedFlow: [
         'Pick one costly repeated failure.',
         'Import the policy or runbook.',
         'Ship the gate with dashboard proof.',
       ],
-      intakeUrl: buildPublicUrl(hostedConfig, '/#workflow-sprint-intake'),
+      intakeUrl: buildPublicUrl(hostedConfig, '/pricing'),
       proofUrl: VERIFICATION_EVIDENCE_URL,
     },
     {
@@ -1423,7 +1423,7 @@ function getMcpSkillManifests(hostedConfig) {
       recommendedFlow: [
         'Submit advertiser interest when eligible.',
         'Cluster high-intent conversational queries around agent governance and repeated workflow failures.',
-        'Route self-serve intent to the guide and team pain to Setup Sprint intake.',
+        'Route self-serve intent to the guide and plan comparisons to /pricing.',
         'Block unsupported ad and landing-page claims before spend scales.',
       ],
       contextUrl: buildPublicUrl(hostedConfig, '/llm-context.md'),
@@ -1456,10 +1456,10 @@ function getMcpApplications(hostedConfig) {
       useWhen: 'Need setup without searching the repo.',
     },
     {
-      name: 'workflow-sprint-intake',
-      title: 'Setup Sprint Intake',
-      description: 'Submit a repeated agent failure for a proof-backed sprint.',
-      url: buildPublicUrl(hostedConfig, '/#workflow-sprint-intake'),
+      name: 'pro',
+      title: 'ThumbGate Pro',
+      description: 'Compare the free local CLI and self-serve Pro.',
+      url: buildPublicUrl(hostedConfig, '/pricing'),
       useWhen: 'Ready to convert mistakes into gates.',
     },
   ];
@@ -3015,7 +3015,7 @@ ${hiddenInputs}
 <p class="choice-note">If a monthly plan is not the buy, these are one-time.</p>
 <a class="secondary" data-i="pro_checkout_playbook_999" rel="nofollow" href="/go/playbook-999?utm_source=website&amp;utm_medium=checkout_interstitial&amp;utm_campaign=playbook_999&amp;cta_id=pro_checkout_playbook_999&amp;cta_placement=checkout_interstitial">Buy the $9.99 playbook, once</a>
 <a class="secondary" data-i="pro_checkout_bundle_49" rel="nofollow" href="/go/bundle-49?utm_source=website&amp;utm_medium=checkout_interstitial&amp;utm_campaign=bundle_49&amp;cta_id=pro_checkout_bundle_49&amp;cta_placement=checkout_interstitial">Buy the $49 bundle, once</a>
-<a class="secondary" data-i="workflow_sprint_intake" href="/#workflow-sprint-intake">Not sure yet? Send the workflow first</a>
+<a class="secondary" data-i="view_pricing" href="/pricing">Compare free and Pro</a>
 <p class="choice-note">Cancel anytime. 7-day refund, no questions.</p>
 <details class="objection-box" aria-label="Checkout feedback">
 <summary style="cursor:pointer;font-weight:600;color:#cbd5e1">Not buying today? Tell us what to fix (optional)</summary>
@@ -4762,11 +4762,10 @@ function renderRobotsTxt(runtimeConfig) {
 function renderSitemapXml(runtimeConfig) {
   const entries = [
     { path: '/', changefreq: 'weekly', priority: '1.0' },
-    { path: '/diagnostic', changefreq: 'weekly', priority: '0.9' },
     { path: '/founders', changefreq: 'weekly', priority: '0.95' },
+    { path: '/pricing', changefreq: 'weekly', priority: '0.9' },
     { path: '/operator-framework', changefreq: 'weekly', priority: '0.9' },
     { path: '/peter', changefreq: 'weekly', priority: '0.9' },
-    { path: '/workflow-hardening-sprint', changefreq: 'weekly', priority: '0.9' },
     { path: '/install', changefreq: 'weekly', priority: '0.9' },
     { path: '/terms', changefreq: 'monthly', priority: '0.7' },
     { path: '/privacy', changefreq: 'monthly', priority: '0.7' },
@@ -5350,31 +5349,13 @@ function renderCheckoutSuccessPage(runtimeConfig) {
 }
 
 function renderCheckoutCancelledPage(runtimeConfig) {
-  const sprintDiagnosticPriceDollars = runtimeConfig.sprintDiagnosticPriceDollars || 499;
-  const workflowSprintPriceDollars = runtimeConfig.workflowSprintPriceDollars || 1500;
-  const proDirectUrl = escapeHtmlAttribute(new URL('/go/pro-direct?utm_source=website&utm_medium=checkout_cancel_recovery&utm_campaign=pro_upgrade', runtimeConfig.appOrigin).toString());
-  const playbookUrl = escapeHtmlAttribute(new URL('/go/playbook-999?utm_source=website&utm_medium=checkout_cancel_recovery&utm_campaign=playbook_999', runtimeConfig.appOrigin).toString());
-  const bundle49Url = escapeHtmlAttribute(new URL('/go/bundle-49?utm_source=website&utm_medium=checkout_cancel_recovery&utm_campaign=bundle_49', runtimeConfig.appOrigin).toString());
-  const diagnosticUrl = escapeHtmlAttribute(new URL('/diagnostic', runtimeConfig.appOrigin).toString());
-  const workflowSprintUrl = escapeHtmlAttribute(new URL('/go/sprint', runtimeConfig.appOrigin).toString());
-  const workflowSprintIntakeUrl = escapeHtmlAttribute(new URL('/#workflow-sprint-intake', runtimeConfig.appOrigin).toString());
-  const recoveryOfferLinks = [
-    `<a href="${playbookUrl}" data-recovery-offer="playbook_999" data-offer-price="9.99">Buy $9.99 Playbook (One-Time, No Subscription)</a>`,
-    `<a href="${bundle49Url}" data-recovery-offer="bundle_49" data-offer-price="49">Buy $49 Production Bundle (One-Time Expense)</a>`,
-    `<a href="${proDirectUrl}" data-recovery-offer="pro_direct" data-offer-price="19">1-Click Stripe Pro ($19/mo)</a>`,
-    `<a id="send-workflow-first" href="${workflowSprintIntakeUrl}" data-recovery-offer="workflow_sprint_intake" data-offer-price="0">Send workflow first</a>`,
-    `<a href="${diagnosticUrl}" data-recovery-offer="sprint_diagnostic" data-offer-price="${sprintDiagnosticPriceDollars}">Review $${sprintDiagnosticPriceDollars} diagnostic</a>`,
-    `<a href="${workflowSprintUrl}" data-recovery-offer="workflow_sprint" data-offer-price="${workflowSprintPriceDollars}">Scope $${workflowSprintPriceDollars} sprint</a>`,
-  ].join('\n        ');
-  const recoveryOfferCard = recoveryOfferLinks
-    ? `<div class="card recovery-card">
-      <h2>Need help deciding?</h2>
-      <p>If Pro is not the right next step, start smaller or send the workflow first. We can qualify the blocker, confirm the proof plan, and route you to the diagnostic or sprint only when the scope is real.</p>
-      <div class="actions">
-        ${recoveryOfferLinks}
-      </div>
-    </div>`
-    : '';
+  const proPriceDollars = runtimeConfig.proPriceDollars;
+  const recoveryOfferCard = `<div class="card recovery-card">
+      <h2>Choose the plan that fits</h2>
+      <p>If Pro is not the right next step, choose a one-time playbook or production bundle.</p>
+      <p>The free local CLI captures feedback and runs configured gates. Pro adds recall, dashboard, adapters, and exports.</p>
+      <div class="actions"><a href="/go/playbook-999?utm_source=website&amp;utm_medium=checkout_cancel_recovery" data-recovery-offer="playbook_999" data-offer-price="9.99">Buy $9.99 Playbook (One-Time, No Subscription)</a><a href="/go/bundle-49?utm_source=website&amp;utm_medium=checkout_cancel_recovery" data-recovery-offer="bundle_49" data-offer-price="49">Buy $49 Production Bundle (One-Time Expense)</a><a href="/install" data-recovery-offer="free_cli" data-offer-price="0">Install the free CLI</a><a href="/pricing" data-recovery-offer="compare_plans">Compare current plans</a></div>
+    </div>`;
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -5491,7 +5472,7 @@ function renderCheckoutCancelledPage(runtimeConfig) {
       </div>
       <div class="actions">
         <button type="button" id="submit-reason">Send feedback</button>
-        <a id="retry-checkout" href="/checkout/pro" class="secondary" data-recovery-offer="pro_pay_now_retry" data-offer-price="19">Restart $19 Pro checkout</a>
+        <a id="retry-checkout" href="/checkout/pro" class="secondary" data-recovery-offer="pro_pay_now_retry" data-offer-price="${proPriceDollars}">Restart $${proPriceDollars} Pro checkout</a>
         <a href="${runtimeConfig.appOrigin}" class="secondary">Return to Context Gateway</a>
       </div>
       <p class="note" id="status">No feedback sent yet.</p>
@@ -5503,7 +5484,6 @@ function renderCheckoutCancelledPage(runtimeConfig) {
         const statusEl = document.getElementById('status');
         const noteEl = document.getElementById('buyer-note');
         const retryLink = document.getElementById('retry-checkout');
-        const workflowIntakeLink = document.getElementById('send-workflow-first');
         let selectedReason = null;
 
         function sendTelemetry(eventType, extra) {
@@ -5556,19 +5536,6 @@ function renderCheckoutCancelledPage(runtimeConfig) {
         });
         retryLink.href = retryUrl.toString();
 
-        if (workflowIntakeLink) {
-          const intakeUrl = new URL(workflowIntakeLink.href, window.location.origin);
-          ['trace_id', 'acquisition_id', 'visitor_id', 'session_id', 'visitor_session_id', 'install_id', 'utm_source', 'utm_campaign', 'utm_content', 'utm_term', 'creator', 'community', 'post_id', 'comment_id', 'campaign_variant', 'offer_code', 'landing_path', 'referrer_host'].forEach(function (key) {
-            const value = params.get(key);
-            if (value) intakeUrl.searchParams.set(key, value);
-          });
-          intakeUrl.searchParams.set('utm_medium', 'checkout_cancel_recovery');
-          intakeUrl.searchParams.set('cta_id', 'checkout_cancel_workflow_sprint_intake');
-          intakeUrl.searchParams.set('cta_placement', 'checkout_cancel_recovery');
-          intakeUrl.searchParams.set('plan_id', 'team');
-          workflowIntakeLink.href = intakeUrl.toString();
-        }
-
         sendTelemetry('checkout_cancelled');
 
         document.querySelectorAll('[data-reason]').forEach(function (button) {
@@ -5605,16 +5572,6 @@ function renderCheckoutCancelledPage(runtimeConfig) {
 
         document.querySelectorAll('[data-recovery-offer]').forEach(function (link) {
           link.addEventListener('click', function () {
-            if (link.getAttribute('data-recovery-offer') === 'workflow_sprint_intake') {
-              sendTelemetry('checkout_cancel_workflow_intake_clicked', {
-                ctaId: 'checkout_cancel_workflow_sprint_intake',
-                ctaPlacement: 'checkout_cancel_recovery',
-                offerCode: 'workflow_sprint_intake',
-                planId: 'team',
-                reasonCode: selectedReason || null
-              });
-              return;
-            }
             sendTelemetry('checkout_recovery_offer_clicked', {
               ctaId: link.getAttribute('data-recovery-offer'),
               ctaPlacement: 'checkout_cancel_recovery',
@@ -7172,6 +7129,26 @@ function createUnscopedApiServer({ ownerAdminDependencies = {} } = {}) {
   return http.createServer(async (req, res) => {
     const parsed = new URL(req.url, 'http://localhost');
     const pathname = parsed.pathname;
+    const retiredOfferPages = new Set([
+      '/diagnostic', '/workflow-diagnostic', '/sprint', '/workflow-hardening',
+      '/workflow-hardening-sprint', '/workflow-sprint',
+    ]);
+    const retiredPath = pathname.replace(/\.html$/, '').replace(/\/$/, '');
+    if (retiredOfferPages.has(retiredPath)
+      || /^\/go\/(?:diagnostic(?:-499|-direct|-pay)?|sprint|operator-diagnostic)$/.test(retiredPath)
+      || /^\/checkout\/(?:sprint|diagnostic|workflow-sprint)$/.test(retiredPath)
+      || /^\/v1\/intake\/workflow-sprint(?:\/|$)/.test(pathname)) {
+      res.writeHead(410, {
+        'Content-Type': 'application/json; charset=utf-8',
+        'Cache-Control': 'no-store',
+        Link: '</pricing>; rel="alternate"',
+      });
+      res.end(req.method === 'HEAD' ? undefined : JSON.stringify({
+        error: 'This offer has been retired.', pricingUrl: '/pricing',
+      }));
+      return;
+    }
+
     const privatePath = ownerAdmin.adminPath(pathname);
     const category = privatePath.matched ? 'admin' : pathname === '/v1/telemetry/ping' ? 'telemetry'
       : pathname === '/health' ? 'health' : pathname.startsWith('/v1/') ? 'api' : 'page';
@@ -8447,7 +8424,7 @@ async function addContext(){
 
     if (isGetLikeRequest && (pathname === '/services' || pathname === '/services.html')) {
       res.writeHead(302, {
-        Location: '/#workflow-sprint-intake',
+        Location: '/pricing',
         'Cache-Control': 'no-store',
       });
       res.end();
@@ -10296,14 +10273,14 @@ a{color:#8b9}</style></head><body><form class="card" method="post" action="/oaut
       return;
     }
 
-    if (req.method === 'OPTIONS' && pathname === '/v1/intake/workflow-sprint') {
+    if (req.method === 'OPTIONS' && pathname === '/v1/inquiries') {
       sendPublicBillingPreflight(res);
       return;
     }
 
-    if (req.method === 'POST' && pathname === '/v1/intake/workflow-sprint') {
+    if (req.method === 'POST' && pathname === '/v1/inquiries') {
       const { FEEDBACK_DIR } = getFeedbackPaths();
-      const traceId = createTraceId('sprint_intake');
+      const traceId = createTraceId('inquiry');
       const journeyState = resolveJourneyState(req, parsed);
       const referrerAttribution = buildReferrerAttribution(req);
       const contentType = String(req.headers['content-type'] || '').toLowerCase();
@@ -10319,6 +10296,7 @@ a{color:#8b9}</style></head><body><form class="card" method="post" action="/oaut
         const isFreeTierLimitLead = body.ctaPlacement === 'free_tier_limit' || body.freeTierLimit === true || body.freeTierLimit === '1';
         const leadPayload = {
           ...body,
+          productInquiry: true,
           email: body.email || ssoEntry?.ssoEmail || undefined,
           name: body.name || ssoEntry?.ssoName || undefined,
           workflow: body.workflow || (isFreeTierLimitLead ? 'Free-tier limit inquiry (Talk to us)' : undefined),
@@ -10326,15 +10304,15 @@ a{color:#8b9}</style></head><body><form class="card" method="post" action="/oaut
           acquisitionId: body.acquisitionId || journeyState.acquisitionId,
           visitorId: body.visitorId || journeyState.visitorId,
           sessionId: body.sessionId || journeyState.sessionId,
-          page: body.page || referrerAttribution.page || '/#workflow-sprint-intake',
+          page: body.page || referrerAttribution.page || '/pricing',
           landingPath: body.landingPath || referrerAttribution.landingPath || '/',
-          ctaId: body.ctaId || 'workflow_sprint_intake',
-          ctaPlacement: body.ctaPlacement || 'workflow_sprint',
-          planId: body.planId || (isFreeTierLimitLead ? 'diagnostic' : 'sprint'),
+          ctaId: body.ctaId || 'inquiry',
+          ctaPlacement: body.ctaPlacement || 'inquiry',
+          planId: body.planId || (isFreeTierLimitLead ? 'diagnostic' : 'inquiry'),
           source: body.source || body.utmSource || referrerAttribution.source || 'website',
           utmSource: body.utmSource || body.source || referrerAttribution.utmSource || 'website',
-          utmMedium: body.utmMedium || referrerAttribution.utmMedium || 'workflow_sprint_intake',
-          utmCampaign: body.utmCampaign || referrerAttribution.utmCampaign || 'workflow_hardening_sprint',
+          utmMedium: body.utmMedium || referrerAttribution.utmMedium || 'inquiry',
+          utmCampaign: body.utmCampaign || referrerAttribution.utmCampaign || 'inquiry',
           utmContent: body.utmContent || referrerAttribution.utmContent || null,
           utmTerm: body.utmTerm || referrerAttribution.utmTerm || null,
           creator: body.creator || referrerAttribution.creator || null,
@@ -10394,8 +10372,8 @@ a{color:#8b9}</style></head><body><form class="card" method="post" action="/oaut
           referrer: lead.attribution.referrer,
         };
         appendBestEffortTelemetry(FEEDBACK_DIR, { eventType: 'workflow_sprint_lead_submitted', ...leadTelemetryBase }, req.headers, 'workflow_sprint_lead_submitted');
-        if (isFreeTierLimitLead && lead.attribution.ctaId === 'workflow_sprint_intake') {
-          appendBestEffortTelemetry(FEEDBACK_DIR, { eventType: 'checkout_interstitial_cta_clicked', ...leadTelemetryBase, ctaId: 'workflow_sprint_intake' }, req.headers, 'checkout_interstitial_cta_clicked');
+        if (isFreeTierLimitLead && lead.attribution.ctaId === 'inquiry') {
+          appendBestEffortTelemetry(FEEDBACK_DIR, { eventType: 'checkout_interstitial_cta_clicked', ...leadTelemetryBase, ctaId: 'inquiry' }, req.headers, 'checkout_interstitial_cta_clicked');
         }
         const leadNotification = await workflowSprintIntake.notifyWorkflowSprintLead(lead, {
           sendEmailImpl: resendMailer.sendEmail,
@@ -10407,8 +10385,8 @@ a{color:#8b9}</style></head><body><form class="card" method="post" action="/oaut
             res,
             201,
             renderWorkflowSprintIntakeResultPage(hostedConfig, {
-              title: 'Workflow sprint intake received',
-              detail: 'The workflow is now queued for review. Check the proof pack and sprint brief while we qualify the rollout blocker.',
+              title: 'Inquiry received',
+              detail: 'Your inquiry is queued for review. Compare the free local CLI and Pro at /pricing.',
               leadId: lead.leadId,
             }),
             journeyState.setCookieHeaders.length ? { 'Set-Cookie': journeyState.setCookieHeaders } : {}
@@ -10420,12 +10398,12 @@ a{color:#8b9}</style></head><body><form class="card" method="post" action="/oaut
           ok: true,
           leadId: lead.leadId,
           status: lead.status,
-          offer: lead.offer,
-          nextStep: 'review_proof_pack',
+          offer: 'product_inquiry',
+          nextStep: 'review_inquiry',
           operatorAlertSent: leadNotification.sent === true,
           operatorAlertReason: leadNotification.reason || null,
           proofPackUrl: 'https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md',
-          sprintBriefUrl: 'https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/WORKFLOW_HARDENING_SPRINT.md',
+          pricingUrl: buildPublicUrl(hostedConfig, '/pricing'),
         }, {
           ...getPublicBillingHeaders(lead.attribution.traceId),
           ...(journeyState.setCookieHeaders.length ? { 'Set-Cookie': journeyState.setCookieHeaders } : {}),
@@ -10440,18 +10418,18 @@ a{color:#8b9}</style></head><body><form class="card" method="post" action="/oaut
           sessionId: journeyState.sessionId,
           source: referrerAttribution.source || 'website',
           utmSource: referrerAttribution.utmSource || 'website',
-          utmMedium: referrerAttribution.utmMedium || 'workflow_sprint_intake',
-          utmCampaign: referrerAttribution.utmCampaign || 'workflow_hardening_sprint',
+          utmMedium: referrerAttribution.utmMedium || 'inquiry',
+          utmCampaign: referrerAttribution.utmCampaign || 'inquiry',
           creator: referrerAttribution.creator,
           community: referrerAttribution.community,
           postId: referrerAttribution.postId,
           commentId: referrerAttribution.commentId,
           campaignVariant: referrerAttribution.campaignVariant,
           offerCode: referrerAttribution.offerCode,
-          ctaId: 'workflow_sprint_intake',
-          ctaPlacement: 'workflow_sprint',
-          planId: 'sprint',
-          page: referrerAttribution.page || '/#workflow-sprint-intake',
+          ctaId: 'inquiry',
+          ctaPlacement: 'inquiry',
+          planId: 'inquiry',
+          page: referrerAttribution.page || '/pricing',
           landingPath: referrerAttribution.landingPath || '/',
           referrerHost: referrerAttribution.referrerHost,
           referrer: redactSecrets(referrerAttribution.referrer),

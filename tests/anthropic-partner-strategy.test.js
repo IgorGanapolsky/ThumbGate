@@ -12,9 +12,11 @@ test('Anthropic partner strategy stays proof-backed and avoids false membership 
   const strategy = fs.readFileSync(strategyPath, 'utf8');
 
   assert.match(strategy, /Claude workflow hardening/i);
-  assert.match(strategy, /Setup Sprint/i);
+  assert.match(strategy, /self-serve ThumbGate Pro/i);
+  assert.match(strategy, /Neither plan includes a managed implementation, pilot delivery, or a proof review performed by ThumbGate/);
+  assert.doesNotMatch(strategy, /Setup Sprint|one workflow, one pilot, one proof review|implementation-led delivery/i);
   assert.match(strategy, /founder-led outbound/i);
-  assert.match(strategy, /booked pilots/i);
+  assert.match(strategy, /attributable self-serve Pro subscriptions/i);
   assert.match(strategy, /code modernization/i);
   assert.match(strategy, /VERIFICATION_EVIDENCE\.md/);
   assert.match(strategy, /COMMERCIAL_TRUTH\.md/);

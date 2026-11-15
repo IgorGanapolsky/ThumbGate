@@ -146,7 +146,7 @@ function buildOpenClawGovernancePack(options = {}) {
       'Use OpenClaw-compatible or OpenClaw-style unless the exact upstream runtime has been tested for that kit.',
       'Promise prevention of known repeated failure modes, not absolute safety or unsupervised autonomy.',
       'These retired kit prices are catalog history, not current public offers.',
-      'Route qualified buyers through the current $499 diagnostic or scope-first $1,500 sprint path.',
+      'Start with the free local CLI. Choose self-serve Pro for recall, dashboard, adapters, and exports. Compare current plans at https://thumbgate.ai/pricing.',
     ],
   };
 }

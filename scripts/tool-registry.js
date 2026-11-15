@@ -593,7 +593,7 @@ const TOOLS = [
     inputSchema: {
       type: 'object',
       properties: {
-        offer: { type: 'string', description: 'Offer to advertise, such as Pro or Setup Sprint.' },
+        offer: { type: 'string', description: 'Offer to advertise, such as Pro.' },
         audience: { type: 'string', description: 'Audience segment to target.' },
         budget: { type: 'number', description: 'Initial test budget.' },
         keywords: { type: 'array', items: { type: 'string' }, description: 'High-intent conversational queries.' },

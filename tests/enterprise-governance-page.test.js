@@ -14,7 +14,7 @@ test('enterprise-governance: HTML file exists and is valid', () => {
   assert.doesNotMatch(html, /__GOOGLE_SITE_VERIFICATION_META__|__GA_BOOTSTRAP__/);
 });
 
-test('enterprise-governance: accurately bounds the approved local-workflow offer', () => {
+test('enterprise-governance: accurately bounds the local software and its supported integration boundaries', () => {
  const html = fs.readFileSync(PAGE_PATH, 'utf8');
  assert.match(html, /supported hook integrations/);
  assert.match(html, /No enterprise rollout, SSO, hosted team sync or org-wide audit dashboard/);
@@ -23,6 +23,8 @@ test('enterprise-governance: accurately bounds the approved local-workflow offer
  const schemas = [...html.matchAll(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/g)];
  assert.equal(schemas.length, 1);
  const schema = JSON.parse(schemas[0][1]);
- assert.equal(schema.offers.price, '499.00');
- assert.equal(schema.offers.name, 'Setup Sprint');
+ assert.equal(schema.offers.price, '0');
+ assert.equal(schema.offers.name, 'Free local CLI');
+ assert.match(html, /href="\/checkout\/pro">Get self-serve Pro/);
+ assert.doesNotMatch(html, /\$499|Setup Sprint|\/pricing#intake/);
 });

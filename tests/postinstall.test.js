@@ -4,7 +4,6 @@ const { describe, it } = require('node:test');
 const assert = require('node:assert/strict');
 const { spawnSync } = require('child_process');
 const path = require('path');
-const { PRO_MONTHLY_PAYMENT_LINK } = require('../scripts/commercial-offer');
 
 const POSTINSTALL = path.join(__dirname, '..', 'bin', 'postinstall.js');
 
@@ -37,19 +36,23 @@ describe('postinstall banner', () => {
     assert.equal(stdout, '', 'stdout should be empty');
   });
 
-  it('includes trial banner and the single managed-gate cash path in stderr output', () => {
+  it('includes trial banner and attributed self-serve Pro plans in stderr output', () => {
     const { stderr, exitCode } = runPostinstall();
     assert.equal(exitCode, 0);
     assert.ok(stderr.includes('ThumbGate'), 'should mention ThumbGate');
     assert.ok(stderr.includes('npx thumbgate'), 'should include quick start');
-    assert.match(stderr, /full features for 7 days/i, 'should mention the trial without promoting a second paid offer');
+    assert.match(stderr, /full features for 7 days/i, 'should mention the trial');
     assert.match(stderr, /thumbgate\.ai\/dashboard/i, 'should include dashboard URL');
     assert.match(stderr, /unlimited rules/i, 'should list trial features');
     assert.match(stderr, /Lesson search/i, 'should mention lesson search');
     assert.match(stderr, /DPO export/i, 'should mention DPO export');
-    assert.match(stderr, /thumbgate\.ai\/diagnostic/i, 'should include managed-gate URL');
-    assert.match(stderr, /\$499 one-time/i, 'should name the single promoted offer');
-    assert.doesNotMatch(stderr, /\$19|Keep Pro/i);
+    const plans = extractHttpUrls(stderr).map((url) => new URL(url)).find((url) => url.pathname === '/pricing');
+    assert.ok(plans, 'should link to current plans');
+    assert.equal(plans.searchParams.get('utm_source'), 'npm');
+    assert.equal(plans.searchParams.get('utm_medium'), 'postinstall');
+    assert.equal(plans.searchParams.get('utm_campaign'), 'self_serve_pro');
+    assert.match(stderr, /Pro adds recall, dashboard, adapters, exports/);
+    assert.doesNotMatch(stderr, /\/diagnostic|\$499|managed.gate|Setup Sprint/i);
     assert.doesNotMatch(stderr, /optional hosted API key/i);
   });
 

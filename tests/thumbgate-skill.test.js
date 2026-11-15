@@ -57,7 +57,9 @@ describe('thumbgate-skill', () => {
     assert.ok(content.includes('Synthetic DPO'), 'mentions synthetic DPO');
     assert.match(content, /https:\/\/thumbgate-production\.up\.railway\.app\/go\/pro[^\s)]*/, 'has attributed checkout link');
     assert.ok(content.includes('$19/mo or $149/yr'), 'mentions current Pro pricing');
-    assert.ok(content.includes('$49/seat/mo'), 'mentions current Team pricing');
+    assert.match(content, /Hosted team rollout and organization dashboards are not generally available/i);
+    assert.match(content, /Pro is self-serve software and does not include implementation services/);
+    assert.doesNotMatch(content, /\$49\/seat\/mo|\$499|Setup Sprint/);
     assert.doesNotMatch(content, /founder[- ]license/i, 'does not mention retired founder-license positioning');
   });
 

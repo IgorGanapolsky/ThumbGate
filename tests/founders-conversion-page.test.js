@@ -30,35 +30,27 @@ test.after(async () => {
   await new Promise((resolve) => handle.server.close(resolve));
 });
 
-test('founders page is an Oceans-style cash-path landing with intent checkout', () => {
-  assert.match(foundersHtml, /action="\/go\/diagnostic-pay" method="POST"/);
-  assert.match(foundersHtml, /name="customer_email"[^>]*required/);
-  assert.match(foundersHtml, /name="plan_id" value="sprint_diagnostic"/);
-  assert.match(foundersHtml, /utm_campaign" value="oceans_inspired_conversion"/);
-  assert.match(foundersHtml, /cta_id" value="founders_hero_paid"/);
-  assert.match(foundersHtml, /landing_path" value="\/founders"/);
-  assert.match(foundersHtml, /Scale agent impact/);
+test('founders page offers self-serve Pro with local installation and attributed checkout', () => {
+  assert.match(foundersHtml, /href="\/checkout\/pro"[^>]*data-cta-id="founders_hero_pro"/);
+  assert.match(foundersHtml, /__PRO_PRICE_DOLLARS__/);
   assert.match(foundersHtml, /data-founders-offer/);
-  assert.match(foundersHtml, /table class="compare"/);
-  assert.match(foundersHtml, /we refund|Refund if not a supported fit/i);
+  assert.match(foundersHtml, /does not include implementation services/);
+  assert.match(foundersHtml, /href="\/#install"/);
+  assert.match(foundersHtml, /aria-expanded="false"/);
   assert.match(foundersHtml, /no affiliation with Oceans Talent/i);
-  assert.match(foundersHtml, /"@type": "FAQPage"/);
-  assert.match(foundersHtml, /"@type": "SoftwareApplication"/);
-  assert.match(foundersHtml, /isAiventyxTraffic/);
+  assert.match(foundersHtml, /privacySignalOptOut/);
+  assert.match(foundersHtml, /navigator.globalPrivacyControl/);
+  assert.match(foundersHtml, /navigator.doNotTrack/);
   assert.match(foundersHtml, /founders_cta_click/);
   assert.match(foundersHtml, /\/v1\/telemetry\/ping/);
-  assert.doesNotMatch(foundersHtml, /buy\.stripe\.com/);
+  assert.doesNotMatch(foundersHtml, /buy\.stripe\.com|<form|\$499|sprint_diagnostic|we refund/i);
 });
 
-test('diagnostic page steals high-ROI Oceans conversion blocks without raw Stripe links', () => {
-  assert.match(diagnosticHtml, /data-oceans-pain/);
-  assert.match(diagnosticHtml, /data-oceans-process/);
-  assert.match(diagnosticHtml, /data-oceans-compare/);
-  assert.match(diagnosticHtml, /data-oceans-faq/);
-  assert.match(diagnosticHtml, /You didn't hire AI agents to manage calendars of incidents/);
-  assert.match(diagnosticHtml, /wrong fit|we refund/i);
-  assert.match(diagnosticHtml, /href="\/founders/);
-  assert.doesNotMatch(diagnosticHtml, /buy\.stripe\.com/);
+test('diagnostic static artifact points to current plans without collecting payment', () => {
+  assert.match(diagnosticHtml, /offer has been retired/i);
+  assert.match(diagnosticHtml, /href="\/pricing"/);
+  assert.match(diagnosticHtml, /name="robots" content="noindex"/);
+  assert.doesNotMatch(diagnosticHtml, /<form|buy\.stripe\.com/);
 });
 
 test('GET /founders and aliases serve filled conversion HTML', async () => {
@@ -67,11 +59,11 @@ test('GET /founders and aliases serve filled conversion HTML', async () => {
     assert.equal(res.status, 200, `${route} should be 200`);
     assert.match(res.headers.get('content-type') || '', /text\/html/);
     const html = await res.text();
-    assert.match(html, /\$499/);
-    assert.match(html, /action="\/go\/diagnostic-pay" method="POST"/);
-    assert.match(html, /founders_hero_paid/);
+    assert.match(html, /\$\d+(?:\.\d+)?\/mo/);
+    assert.match(html, /href="\/checkout\/pro"[^>]*data-cta-id="founders_hero_pro"/);
+    assert.match(html, /founders_hero_pro/);
     assert.match(html, /canonical" href="[^"]+\/founders"/);
-    assert.doesNotMatch(html, /__SPRINT_DIAGNOSTIC_PRICE_DOLLARS__/);
+    assert.doesNotMatch(html, /__PRO_PRICE_DOLLARS__|\$499|<form/);
   }
 });
 
@@ -82,12 +74,11 @@ test('GET /sitemap.xml includes /founders', async () => {
   assert.match(body, /\/founders<\/loc>/);
 });
 
-test('GET /diagnostic still checkout-ready after Oceans blocks', async () => {
+test('GET /diagnostic returns a retired offer response with current pricing', async () => {
   const res = await fetch(`${origin}/diagnostic`);
-  assert.equal(res.status, 200);
+  assert.equal(res.status, 410);
   const html = await res.text();
-  assert.match(html, /action="\/go\/diagnostic-pay" method="POST"/);
-  assert.match(html, /data-oceans-pain/);
-  assert.match(html, /data-oceans-process/);
-  assert.match(html, /Book the \$499 setup/);
+  assert.match(html, /retired/i);
+  assert.match(html, /\/pricing/);
+  assert.doesNotMatch(html, /<form|buy\.stripe\.com/);
 });

@@ -190,7 +190,7 @@ function buildFollowOnOffers(links = buildRevenueLinks()) {
     },
     {
       key: 'sprint',
-      label: 'Setup Sprint',
+      label: 'ThumbGate Pro',
       pricing: 'Intake-led sprint, then Team at $49/seat/mo with 3-seat minimum after qualification',
       buyer: 'Teams that already named one repeated workflow failure, one owner, and one approval boundary.',
       cta: buildTrackedGeminiLink(links.sprintLink, {
@@ -243,7 +243,7 @@ function buildOperatorQueue(links = buildRevenueLinks(), report = {}) {
         ctaPlacement: 'operator_queue',
         surface: 'gemini_workflow_queue',
       }),
-      recommendedMotion: 'Qualify one high-risk workflow for the Setup Sprint.',
+      recommendedMotion: 'Qualify one high-risk workflow for the ThumbGate Pro.',
     },
     {
       key: 'gemini_enterprise_governance_owner',
@@ -261,7 +261,7 @@ function buildOperatorQueue(links = buildRevenueLinks(), report = {}) {
         ctaPlacement: 'operator_queue',
         surface: 'gemini_enterprise_queue',
       }),
-      recommendedMotion: 'Lead with governance fit, then qualify one partner-agent workflow for the Setup Sprint.',
+      recommendedMotion: 'Lead with governance fit, then qualify one partner-agent workflow for the ThumbGate Pro.',
     },
     {
       key: 'local_first_evaluator',
@@ -332,7 +332,7 @@ function buildOutreachDrafts(links = buildRevenueLinks()) {
       key: 'cloud_workflow',
       channel: 'Founder note',
       audience: 'Data or platform team owner',
-      draft: `Google turned BigQuery, Spanner, AlloyDB, and Cloud SQL into MCP-call surfaces for Gemini CLI. If one of those workflows already has a repeated failure or approval-boundary risk, I am not pitching a generic plugin. I am pitching one workflow hardening sprint with proof: ${sprintLink} .`,
+      draft: `Start with the free local CLI. Choose self-serve Pro for recall, dashboard, adapters, and exports. Compare current plans at https://thumbgate.ai/pricing.`,
     },
   ];
 }
@@ -441,7 +441,7 @@ function buildChannelDrafts(links = buildRevenueLinks(), report = {}) {
       audience: 'Enterprise IT or platform owner evaluating Gemini Enterprise partner agents',
       evidenceSummary: 'Google is making partner-built agents discoverable inside Gemini Enterprise with centralized request, approval, identity, and audit controls. The adjacent gap is workflow-specific learned enforcement after real mistakes.',
       cta: enterpriseCta,
-      proofTiming: 'Do not claim Google partner status or Agent Gallery approval. Use the Google announcement as market context, then route concrete workflow risk to the GCP guardrails guide or sprint intake.',
+      proofTiming: 'Do not claim Google partner status or Agent Gallery approval. Use the Google announcement as market context, then route concrete workflow risk to the GCP guardrails guide or current software pricing.',
       draft: `Gemini Enterprise Agent Gallery changes the buyer question from “can employees find agents?” to “how do we keep specialized agents safe after they start taking actions?” Centralized approval, identity, and audit are table stakes. The next layer is learned pre-action enforcement: when one workflow mistake happens, the repeat gets blocked before the next tool call. ThumbGate fits that governance gap without claiming to be a Google partner agent. Start with the GCP guardrails angle: ${enterpriseCta} .`,
     },
   ];
@@ -450,9 +450,9 @@ function buildChannelDrafts(links = buildRevenueLinks(), report = {}) {
 function buildMeasurementPlan() {
   return {
     northStar: 'gemini_guide_to_paid_intent',
-    policy: 'Treat Gemini guide visits as acquisition evidence only after a tracked proof click, Pro checkout start, or qualified sprint conversation exists.',
+    policy: 'Treat Gemini guide visits as acquisition evidence only after a tracked proof click, Pro checkout start, or qualified product inquiry exists.',
     minimumUsefulSignal: 'One tracked Pro checkout start or one qualified team conversation sourced from a Gemini-tagged surface.',
-    strongSignal: 'Three tracked paid-intent events across Pro checkout starts or workflow sprint conversations.',
+    strongSignal: 'Start with the free local CLI. Choose self-serve Pro for recall, dashboard, adapters, and exports. Compare current plans at https://thumbgate.ai/pricing.',
     metrics: [
       'gemini_memory_guide_views',
       'gcp_guardrails_guide_views',
@@ -476,7 +476,7 @@ function buildMeasurementPlan() {
       },
       {
         window: 'days_31_60',
-        goal: 'Promote whichever Gemini lane converts best: solo Pro or workflow sprint.',
+        goal: 'Start with the free local CLI. Choose self-serve Pro for recall, dashboard, adapters, and exports. Compare current plans at https://thumbgate.ai/pricing.',
         decisionRule: 'If guide traffic exists without paid intent, move proof and follow-on offers higher in the guide and follow-up copy.',
       },
       {

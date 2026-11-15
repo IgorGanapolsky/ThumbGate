@@ -240,8 +240,8 @@ test('buildMarketingAgencyGtmPlan packages ThumbGate as a proof-led lead-gen off
     qualityReview: true,
   });
 
-  assert.equal(plan.status, 'ready-to-sell-workflow-sprint');
-  assert.equal(plan.offer, 'AI Agent Governance Setup Sprint');
+  assert.equal(plan.status, 'ready-to-promote-self-serve-pro');
+  assert.equal(plan.offer, 'Self-serve ThumbGate Pro');
   assert.ok(plan.gates.some((gate) => /not generic AI automation/.test(gate)));
 });
 

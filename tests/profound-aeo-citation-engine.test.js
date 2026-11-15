@@ -60,7 +60,7 @@ test('evaluateBrandFactCheck: respects negation and flags inaccurate latency or 
   assert.equal(bad.accurate, false);
   assert.equal(bad.inaccuracyCount, 3);
 
-  const negatedGood = evaluateBrandFactCheck('ThumbGate is not cloud-only and runs locally in <0.5ms for $499.');
+  const negatedGood = evaluateBrandFactCheck('ThumbGate is not cloud-only and runs locally in <0.5ms for $19.');
   assert.equal(negatedGood.accurate, true);
 });
 

@@ -34,7 +34,7 @@ const DISPATCH_BLOCKED_TASKS = [
 const DISPATCH_PROMPTS = [
   'Summarize revenue, funnel, gates, and proof-backed workflow health for the last 7d.',
   'Explain the top blocked gate and the repeated mistake it is preventing.',
-  'Plan the next workflow-hardening sprint for this repo without executing any changes.',
+  'Plan the next workflow review for this repo without executing any changes.',
 ];
 
 function buildDispatchBrief(data, options = {}) {

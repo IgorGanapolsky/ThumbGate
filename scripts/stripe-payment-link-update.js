@@ -40,30 +40,6 @@ const path = require('node:path');
 // Slugs map to plink_* IDs via the Stripe API. The script resolves IDs from URLs.
 const TARGETS = [
   {
-    urlSlug: '3cI7sLgH25v8dWh5e33sI0o',
-    label: 'Sprint Diagnostic',
-    expectedPriceUsd: 499,
-    customText: 'Two-day diagnostic on one AI-agent workflow. Refund within 7 days if we cannot extract a prevention rule from your failure trace. Sent within 48 hours of payment.',
-    metadata: {
-      utm_source: 'thumbgate.ai',
-      cta_id: 'sprint_diagnostic_499',
-      attribution_version: '2026-05-18',
-      offer_kind: 'one_time_consulting',
-    },
-  },
-  {
-    urlSlug: '8x25kDcqMaPs9G15e33sI0p',
-    label: 'Setup Sprint',
-    expectedPriceUsd: 1500,
-    customText: 'Full Setup Sprint — diagnostic + applied prevention rules + deployed PreToolUse hooks + rollout review. Two weeks calendar time. Refund within 7 days.',
-    metadata: {
-      utm_source: 'thumbgate.ai',
-      cta_id: 'workflow_sprint_1500',
-      attribution_version: '2026-05-18',
-      offer_kind: 'one_time_consulting',
-    },
-  },
-  {
     urlSlug: 'bJe14naiE9Lo7xT49Z3sI12',
     label: 'OpenClaw Agent Governance Kit',
     expectedPriceUsd: 97,

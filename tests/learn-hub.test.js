@@ -351,13 +351,13 @@ test('persistent-memory article has install CTA', () => {
   assert.match(html, /npx thumbgate init/);
 });
 
-test('persistent-memory article routes high-intent readers to the single paid offer', () => {
+test('persistent-memory article routes high-intent readers to attributed self-serve plans', () => {
   const html = readFile(path.join(learnDir, 'ai-agent-persistent-memory.html'));
-  assert.match(html, /Get the \$499 managed workflow gate/);
-  assert.match(html, /\/diagnostic\?utm_source=learn&amp;utm_medium=persistent_memory_article/);
-  assert.match(html, /cta_id=learn_persistent_memory_managed_gate/);
+  assert.match(html, /Choose self-serve Pro for recall, dashboard, adapters, and exports/);
+  assert.match(html, /\/pricing\?utm_source=learn&amp;utm_medium=persistent_memory_article/);
+  assert.match(html, /cta_id=learn_persistent_memory_pro/);
   assert.doesNotMatch(html, /buy\.stripe\.com|paypal\.com\/ncp\/payment/);
-  assert.doesNotMatch(html, /\/checkout\/pro|#workflow-sprint-intake/);
+  assert.doesNotMatch(html, /\$499|managed workflow gate|Managed gate|\/diagnostic|#workflow-sprint-intake/);
 });
 
 test('persistent-memory article has breadcrumb back to learn hub', () => {

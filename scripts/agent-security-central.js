@@ -527,7 +527,7 @@ function buildSecurityCentralReport(options = {}) {
     findings,
     remediation: buildRemediation(findings),
     commercialCta: {
-      // Soft self-serve only — no $499 pilot language (ECI-safe)
+      // Soft self-serve only — no $19/mo pilot language (ECI-safe)
       free: 'npx thumbgate init && npx thumbgate security-central',
       softPro: 'https://thumbgate.ai/?utm_source=security_central&utm_medium=cli&utm_campaign=oracle_free_posture&cta_id=security_central_free',
     },

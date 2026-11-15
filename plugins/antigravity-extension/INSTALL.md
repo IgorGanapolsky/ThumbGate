@@ -34,4 +34,4 @@ The Antigravity lane should route serious users to the same conversion stack:
 
 - Setup guide: `https://thumbgate-production.up.railway.app/guide?utm_source=antigravity&utm_medium=vsix&utm_campaign=setup`
 - Pro checkout: `https://thumbgate.ai/checkout/pro?utm_source=antigravity&utm_medium=vsix&utm_campaign=pro_follow_on&plan_id=pro`
-- Setup Sprint: `https://thumbgate.ai/?utm_source=antigravity&utm_medium=vsix&utm_campaign=workflow_sprint#workflow-sprint-intake`
+- ThumbGate Pro: `https://thumbgate.ai/?utm_source=antigravity&utm_medium=vsix&utm_campaign=workflow_sprint#pro-intake`

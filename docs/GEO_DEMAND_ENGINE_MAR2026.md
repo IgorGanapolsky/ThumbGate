@@ -3,7 +3,7 @@
 Status: current  
 Updated: March 18, 2026
 
-This document turns the current AI-search playbook into a repeatable demand engine for `thumbgate`, the `Setup Sprint`, and Pro at `$19/mo or $149/yr`.
+This document turns the current AI-search playbook into a repeatable demand engine for the free `thumbgate` CLI and self-serve Pro at `$19/mo or $149/yr`.
 
 Commercial guardrails:
 
@@ -16,7 +16,7 @@ Commercial guardrails:
 Primary brands and offers:
 
 - `thumbgate`
-- `Setup Sprint`
+- `ThumbGate Pro`
 - `Pro at $19/mo or $149/yr`
 - `Reliability Studio`
 - `Workflow Hardening Fit Checker`
@@ -88,11 +88,11 @@ Use the “Can AI fully satisfy this query without a click?” test on every tar
 
 | Query Cluster | Can AI Fully Satisfy? | Priority | Asset To Push | Revenue Path |
 | --- | --- | --- | --- | --- |
-| `workflow hardening sprint` | No | High | Sprint intake + proof pack | Sprint |
-| `workflow hardening checker` | No | High | Hosted fit checker | Sprint or Pro |
-| `ai agent reliability checker` | No | High | Hosted fit checker | Sprint or Pro |
+| `local agent guardrails` | No | High | Install guide + pricing | Free CLI or self-serve Pro |
+| `workflow hardening checker` | No | High | Hosted fit checker | self-serve Pro |
+| `ai agent reliability checker` | No | High | Hosted fit checker | self-serve Pro |
 | `ai agent guardrails tool` | No | High | Landing page + pricing + proof pack | Pro |
-| `Claude Desktop extension` | No | High | Claude extension guide + landing page + proof pack | Pro or Sprint |
+| `Claude Desktop extension` | No | High | Claude extension guide + landing page + proof pack | self-serve Pro |
 | `claude code persistent memory` | Partially | Medium | Landing page + comparison content | Pro or free |
 | `best MCP servers for Claude Code` | Partially | Medium | Fan-out inclusion + directory presence | Awareness into Pro |
 | `what is ai agent memory` | Yes | Low | Support content only | Indirect |
@@ -113,7 +113,7 @@ Why this asset is the right first move:
 
 - It turns a vague category query into a qualification workflow.
 - It gives search and AI-assistant traffic something to do besides read a definition.
-- It routes buyers into the correct motion: Sprint, Pro, or free OSS.
+- It routes buyers into the correct motion: self-serve Pro or free OSS.
 - It stays honest because it qualifies fit instead of faking ROI.
 
 ## Content Fan-Out Plan
@@ -129,7 +129,7 @@ Current canonical assets:
 
 - Hosted landing page: `https://thumbgate-production.up.railway.app`
 - Proof pack: [VERIFICATION_EVIDENCE.md](VERIFICATION_EVIDENCE.md)
-- Sprint brief: [WORKFLOW_HARDENING_SPRINT.md](WORKFLOW_HARDENING_SPRINT.md)
+- Current plans: https://thumbgate.ai/pricing
 - Commercial truth: [COMMERCIAL_TRUTH.md](COMMERCIAL_TRUTH.md)
 
 ## Outreach Operating Rules
@@ -146,7 +146,7 @@ Monthly:
 - Refresh the competitor and discovery-surface list.
 - Re-check the target fan-out pages.
 - Add new inclusion and outreach targets.
-- Review landing telemetry for `fit_check_completed`, sprint intake volume, and buyer-loss reasons.
+- Review landing telemetry for `fit_check_completed`, Pro checkout starts, and buyer-loss reasons.
 
 Quarterly:
 
@@ -156,7 +156,7 @@ Quarterly:
 
 Continuous:
 
-- Keep brand names stable: `thumbgate`, `Setup Sprint`, `Reliability Studio`.
+- Keep brand names stable: `thumbgate`, `ThumbGate Pro`, `Reliability Studio`.
 - Link authority claims back to [VERIFICATION_EVIDENCE.md](VERIFICATION_EVIDENCE.md).
 - Keep pricing and traction aligned with [COMMERCIAL_TRUTH.md](COMMERCIAL_TRUTH.md).
 

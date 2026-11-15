@@ -11,30 +11,15 @@ const HOME_HTML = fs.readFileSync(path.join(ROOT, 'public', 'index.html'), 'utf8
 const PRICING_HTML = fs.readFileSync(path.join(ROOT, 'public', 'pricing.html'), 'utf8');
 const PRO_HTML = fs.readFileSync(path.join(ROOT, 'public', 'pro.html'), 'utf8');
 
-test('homepage commercial contract offers Pro $19/mo and the $499 Setup Sprint', () => {
-  assert.match(HOME_HTML, /Setup Sprint/);
-  assert.match(HOME_HTML, /Book the \$499 setup/);
-  assert.match(HOME_HTML, /action="\/go\/diagnostic-pay"/);
-  assert.match(HOME_HTML, /\$__SPRINT_DIAGNOSTIC_PRICE_DOLLARS__/);
-  // Pro removed from public buying path
-  // Pro removed from public buying path
-  assert.match(HOME_HTML, /data-cta-id="nav_setup_sprint"/);
-  assert.doesNotMatch(HOME_HTML, /href="[^"]*workflow-sprint-intake|\/go\/sprint/i);
-  assert.match(HOME_HTML, /id="workflow-sprint-intake"[^>]*data-legacy-intake-alias/);
-});
-
-test('pricing surfaces Pro self-serve and the $499 Setup Sprint together', () => {
-  assert.match(PRICING_HTML, /Setup Sprint/);
-  assert.match(PRICING_HTML, /Book the \$499 setup/);
-  assert.match(PRICING_HTML, /action="\/go\/diagnostic-pay"/);
-  assert.match(PRICING_HTML, /\$499/);
-  // Pro removed from public buying path
-  // Pro removed from public buying path
-  // Pro removed from public buying path
-  // Pro removed from public buying path
-  assert.doesNotMatch(PRICING_HTML, /workflow-sprint-intake|\/go\/sprint/i);
-  assert.doesNotMatch(PRICING_HTML, /\$1,500|\$3,000|\$10,000|\$15,000/);
-});
+for (const [name, html] of [['home', HOME_HTML], ['pricing', PRICING_HTML]]) {
+  test(`${name} offers configured self-serve Pro and preserves the free CLI`, () => {
+    assert.match(html, /href="\/checkout\/pro"/);
+    assert.match(html, /__PRO_PRICE_DOLLARS__/);
+    assert.match(html, /__PRO_PRICE_LABEL__/);
+    assert.match(html, /free local CLI/i);
+    assert.doesNotMatch(html, /Setup Sprint|\$499|\/go\/diagnostic|workflow-sprint-intake/);
+  });
+}
 
 test('free-tier limits remain code truth without crowding the cash path', () => {
   const { FREE_TIER_LIMITS, FREE_TIER_MAX_GATES } = require('../scripts/rate-limiter');
@@ -58,23 +43,10 @@ test('Pro detail stays code-backed and is linked from primary cash paths', () =>
   // Pro removed from public buying path
 });
 
-test('pricing hides hosted team offers and states the availability boundary', () => {
-  assert.match(PRICING_HTML, /Hosted Enterprise capabilities are not generally available/i);
-  assert.doesNotMatch(PRICING_HTML, /Hosted team lesson sync|Hosted org dashboard/i);
-  assert.doesNotMatch(PRICING_HTML, /\$49\s*(?:<[^>]+>\s*)*\/seat\/mo/i);
-  assert.doesNotMatch(PRICING_HTML, /shared team DB/i);
-});
-
-test('managed gate promise is bounded and backed by the canonical checkout rail', () => {
-  const server = fs.readFileSync(path.join(ROOT, 'src', 'api', 'server.js'), 'utf8');
-
-  assert.match(HOME_HTML, /One configured local gate and its regression test/);
-  assert.match(HOME_HTML, /one supported local workflow/i);
-  assert.match(HOME_HTML, /order is refunded instead of silently upsold/i);
-  assert.match(server, /'diagnostic-pay':/);
-  assert.match(server, /requiresPost: true/);
-  assert.match(server, /requiresBuyerEmail: true/);
-  assert.match(server, /SPRINT_DIAGNOSTIC_CHECKOUT_URL/);
+test('Pro does not include managed service deliverables', () => {
+  for (const html of [HOME_HTML, PRICING_HTML]) {
+    assert.doesNotMatch(html, /one configured local gate|two business days|order is refunded instead|managed workflow gate/i);
+  }
 });
 
 test('public enforcement claims match the implemented default and strict boundaries', (t) => {

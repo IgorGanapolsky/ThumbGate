@@ -1,12 +1,12 @@
 ---
 {
   "id": "workflow-hardening-sprint",
-  "title": "Setup Sprint",
+  "title": "Local workflow verification",
   "description": "Run a focused hardening pass for one workflow and summarize prevention evidence.",
   "tags": ["workflow", "hardening", "reliability"],
   "inputs": {
     "targetWorkflow": {
-      "default": "workflow-sprint-intake",
+      "default": "pro-intake",
       "description": "Workflow or surface to harden."
     },
     "lessonQuery": {
@@ -20,7 +20,7 @@
   }
 }
 ---
-# Setup Sprint
+# ThumbGate Pro
 
 ## Purpose
 Use the latest lessons for `{{lessonQuery}}` to harden `{{targetWorkflow}}`, then prove the workflow stays green under focused verification.

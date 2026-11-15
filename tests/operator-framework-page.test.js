@@ -27,32 +27,18 @@ test.after(async () => {
   await new Promise((resolve) => handle.server.close(resolve));
 });
 
-const OFFER_ROUTES = {
-  '/go/operator-diagnostic': 'https://buy.stripe.com/fZueVd9eA4r42dz7mb3sI2W', // $499 Sprint Diagnostic
-};
-
-test('GET /operator-framework serves the offers, partner program, and FAQ schema', async () => {
+test('GET /operator-framework offers free CLI and self-serve Pro without retired services', async () => {
   const res = await fetch(`${origin}/operator-framework`);
   assert.equal(res.status, 200);
   assert.match(res.headers.get('content-type') || '', /text\/html/);
   const html = await res.text();
-
   assert.match(html, /Operator Framework/);
-  for (const route of Object.keys(OFFER_ROUTES)) {
-    assert.ok(html.includes(`href="${route}"`), `missing checkout link ${route}`);
-  }
-  assert.doesNotMatch(html, /buy\.stripe\.com/, 'payment links stay behind /go/ redirects');
-  assert.match(html, /\$499/);
-  assert.match(html, /VERIFICATION_EVIDENCE\.md/);
-  assert.match(html, /30% revenue share/);
-  assert.match(html, /mailto:igor@igorganapolsky\.com/);
-  assert.match(html, /"@type":\s*"FAQPage"/);
-  assert.doesNotMatch(html, /__APP_ORIGIN__/, 'template placeholders must be filled');
-  assert.doesNotMatch(html, /\$2,500/);
-  assert.doesNotMatch(html, /\$500/);
-  assert.doesNotMatch(html, /\$19\/mo/);
-  assert.match(html, /"@type":\s*"FAQPage"/);
-  assert.doesNotMatch(html, /__APP_ORIGIN__/, 'template placeholders must be filled');
+  assert.match(html, /href="\/checkout\/pro"/);
+  assert.match(html, /href="\/#install"/);
+  assert.match(html, /Recall, dashboard, adapters, and exports/);
+  assert.match(html, /configuration|configure/);
+  assert.doesNotMatch(html, /buy\.stripe\.com|\$499|30% revenue share|We install and configure|one regression test/i);
+  assert.doesNotMatch(html, /__APP_ORIGIN__|__PRO_PRICE_DOLLARS__/);
 });
 
 test('operator framework page avoids unverified product claims', () => {
@@ -74,24 +60,11 @@ test('pricing page links to the operator framework', async () => {
   assert.match(html, /href="\/operator-framework"/);
 });
 
-test('operator offer routes redirect humans to the live Stripe Payment Links', async () => {
-  for (const [route, stripeUrl] of Object.entries(OFFER_ROUTES)) {
-    // Raw request: Node's fetch overwrites Sec-Fetch-Mode, which this route checks.
-    const routeUrl = new URL(route, origin);
-    const res = await new Promise((resolve, reject) => {
-      require('node:http').get(routeUrl, {
-        headers: {
-          'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 14_0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0 Safari/537.36',
-          accept: 'text/html,*/*;q=0.8',
-          'sec-fetch-mode': 'navigate',
-          'sec-fetch-dest': 'document',
-        },
-      }, (r) => { r.resume(); resolve({ status: r.statusCode, location: r.headers.location }); }).on('error', reject);
-    });
-    assert.equal(res.status, 302, `${route} must redirect`);
-    const location = new URL(res.location);
-    assert.equal(location.origin + location.pathname, stripeUrl, `${route} must land on ${stripeUrl}`);
-  }
+test('retired operator diagnostic returns 410 with current pricing instead of payment dispatch', async () => {
+  const res = await fetch(`${origin}/go/operator-diagnostic`, { redirect: 'manual' });
+  assert.equal(res.status, 410);
+  assert.equal(res.headers.get('location'), null);
+  assert.match(await res.text(), /\/pricing/);
 });
 
 test('operator offer routes deflect bots back to the page', async () => {

@@ -21,7 +21,7 @@
 | Tier | Monthly minimum | Included | Overage | Reseller margin |
 |------|----------------:|----------|--------:|----------------:|
 | Starter | $25 | 12,500 evals + 25K gate calls | billable units at table above | 20% |
-| Pro | $499 | 500K evals + 1M gate calls + DPO export | 50% discount on unit rates | 30% |
+| Pro | $19/mo | 500K evals + 1M gate calls + DPO export | 50% discount on unit rates | 30% |
 | Enterprise | custom | custom commit | custom | 30% |
 
 ## Settlement
@@ -40,5 +40,5 @@ A 50-agent HVAC automation shop:
 - 10K feedback captures/mo = $5
 - 500 rule promotions/mo = $2.50
 - Total billable: ~$407.50
-- Pro plan ($499) covers it; no overage.
+- Pro plan ($19/mo) covers it; no overage.
 - MakersClaw margin @ 30% = $149.70/mo.

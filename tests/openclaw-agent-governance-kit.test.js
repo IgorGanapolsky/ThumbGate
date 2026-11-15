@@ -33,18 +33,18 @@ test('OpenClaw governance kits retain research context without exposing retired 
   ]);
   assert.deepEqual(kits.map((kit) => kit.priceCents), [4900, 9700, 14900, 14900]);
   assert.ok(kits.every((kit) => kit.catalog.status === 'retired_not_public'));
-  assert.ok(kits.every((kit) => /^https:\/\/thumbgate\.ai\/diagnostic/.test(kit.catalog.buyerPath)));
+  assert.ok(kits.every((kit) => /^https:\/\/thumbgate\.ai\/pricing/.test(kit.catalog.buyerPath)));
   assert.ok(kits.every((kit) => kit.buyer.length > 40));
   assert.ok(kits.every((kit) => kit.codexPrompt.includes('ThumbGate')));
   assert.ok(kits.every((kit) => !/guaranteed safe|fully autonomous|gumroad sales/i.test(kit.promise)));
 });
 
-test('retired catalog IDs remain auditable but route buyers to current scope-first paths', () => {
+test('retired catalog IDs remain auditable but route buyers to current plan comparison', () => {
   assert.ok(Object.values(RETIRED_CATALOG_RECORDS).every((offer) => offer.status === 'retired_not_public'));
   assert.ok(Object.values(RETIRED_CATALOG_RECORDS).every((offer) => /^prod_/.test(offer.stripeProductId)));
   assert.ok(Object.values(RETIRED_CATALOG_RECORDS).every((offer) => /^price_/.test(offer.stripePriceId)));
   assert.ok(Object.values(RETIRED_CATALOG_RECORDS).every((offer) => /^plink_/.test(offer.stripePaymentLinkId)));
-  assert.ok(Object.values(RETIRED_CATALOG_RECORDS).every((offer) => /^https:\/\/thumbgate\.ai\/diagnostic/.test(offer.buyerPath)));
+  assert.ok(Object.values(RETIRED_CATALOG_RECORDS).every((offer) => /^https:\/\/thumbgate\.ai\/pricing/.test(offer.buyerPath)));
 });
 
 test('organic draft calendar creates two value-first drafts per concept', () => {
@@ -60,7 +60,7 @@ test('organic draft calendar creates two value-first drafts per concept', () => 
     const checkoutUrl = new URL(rawUrls[0]);
     assert.equal(checkoutUrl.protocol, 'https:');
     assert.equal(checkoutUrl.hostname, 'thumbgate.ai');
-    assert.equal(checkoutUrl.pathname, '/diagnostic');
+    assert.equal(checkoutUrl.pathname, '/pricing');
     assert.ok(currentBuyerPaths.has(checkoutUrl.href));
   }
 });
@@ -78,7 +78,7 @@ test('rendered pack is explicitly archived without unsupported traction claims',
   assert.match(markdown, /ThumbGate Prevention Rule Library for OpenClaw/);
   assert.match(markdown, /OpenClaw \+ ThumbGate Restaurant Ops Starter Kit/);
   assert.match(markdown, /Hardened Multi-Agent Governance Workflow Kit/);
-  assert.match(markdown, /https:\/\/thumbgate\.ai\/diagnostic/);
+  assert.match(markdown, /https:\/\/thumbgate\.ai\/pricing/);
   assert.doesNotMatch(markdown, /buy\.stripe\.com/);
   assert.doesNotMatch(markdown, /guaranteed safe|fully autonomous|proven Gumroad sales/i);
   assert.equal(json.kits.length, 4);

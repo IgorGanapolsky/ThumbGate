@@ -50,7 +50,7 @@ the markdown package and the HTML routes in the same PR.
 | Surface | Offer | Contract module |
 | --- | --- | --- |
 | Local engine + Pro | MIT CLI; Pro $19/mo or $149/yr self-serve | Module A |
-| Setup Sprint | $499 one-time, one supported workflow | Module B |
+ThumbGate offers a free local CLI and self-serve Pro for recall, dashboard, adapters, and exports. Current plans: https://thumbgate.ai/pricing
 | Hosted / ThumbGate.app | Pairing, mobile, cloud runners, leases | Module C |
 
 ## Hard product truths (do not dilute)
@@ -59,7 +59,7 @@ the markdown package and the HTML routes in the same PR.
   is detected or blocked.
 - Hard deny vs warning behavior depends on configuration, strict mode,
   supported integrations, and customer testing.
-- The public $499 refund fence is **full refund if not a supported fit** —
+ThumbGate offers a free local CLI and self-serve Pro for recall, dashboard, adapters, and exports. Current plans: https://thumbgate.ai/pricing
   contract language must match the site exactly.
 - Local workspace code stays local unless the customer routes work through
   hosted surfaces. “No workspace telemetry” is narrower than full privacy

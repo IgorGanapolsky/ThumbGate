@@ -12,7 +12,7 @@ By installing, accessing, or using any part of the Services, you ("**Customer**"
 
 This Agreement consists of these Core Terms and the following Product-Specific Modules:
 * **Module 1**: Local Software Engine & Pro License Terms
-* **Module 2**: Professional Services Statement of Work ($499 Hardened Workflow Gate)
+* **Module 2**: Professional Services Statement of Work ($19/mo Hardened Workflow Gate)
 * **Module 3**: Hosted Cloud Runners & Mobile Pairing (`thumbgate.app`)
 
 ---
@@ -32,7 +32,7 @@ Free tiers, open-source local binaries, and promotional trials are provided stri
 
 ### 2.4 Refund Policy
 * **General Subscriptions**: All recurring subscription fees are non-refundable except as required by law or explicitly stated herein.
-* **$499 Workflow Gate Refund Boundary**: Refund conditions for $499 Workflow Gate purchases are strictly defined in **Module 2, Section 2.4**.
+ThumbGate offers a free local CLI and self-serve Pro for recall, dashboard, adapters, and exports. Current plans: https://thumbgate.ai/pricing
 
 ### 2.5 Acceptable Use Policy (AUP)
 You shall NOT:
@@ -115,10 +115,10 @@ Customer acknowledges that modifying rule configurations, disabling strict mode,
 
 ---
 
-### MODULE 2: $499 HARDENED WORKFLOW GATE (STATEMENT OF WORK)
+### MODULE 2: $19/mo HARDENED WORKFLOW GATE (STATEMENT OF WORK)
 
 #### 2.1 Scope & Narrow Deliverable Definition
-For the one-time fee of $499, ThumbGate agrees to deliver:
+ThumbGate offers a free local CLI and self-serve Pro for recall, dashboard, adapters, and exports. Current plans: https://thumbgate.ai/pricing
 1. **One (1) Supported Workflow Integration**: HARDENING for one (1) specific customer agent workflow (e.g., GitHub PR review gate, database write guardrail, or email dispatch barrier).
 2. **One (1) Configured Gate**: Production rule specification file tailored to customer's target environment.
 3. **Regression Evidence Package**: Standardized evaluation evidence showing zero-regression performance on customer-provided golden test cases.
@@ -132,8 +132,8 @@ Acceptance occurs upon the earlier of: (a) Customer's written confirmation; (b) 
 
 #### 2.4 Refund Boundary & Out-of-Scope Contract Terms
 If during technical discovery ThumbGate determines that Customer's target workflow cannot be reduced to a supported gate due to unsupported protocols or custom un-exposed customer APIs:
-* **Refund Boundary**: ThumbGate will issue a full refund of the $499 fee minus a $99 non-refundable diagnostic/discovery fee, OR at Customer's option, convert the full $499 into service credit for future feature releases.
-* Once the Regression Evidence Package is delivered and accepted, the $499 fee is strictly non-refundable.
+ThumbGate offers a free local CLI and self-serve Pro for recall, dashboard, adapters, and exports. Current plans: https://thumbgate.ai/pricing
+ThumbGate offers a free local CLI and self-serve Pro for recall, dashboard, adapters, and exports. Current plans: https://thumbgate.ai/pricing
 
 ---
 

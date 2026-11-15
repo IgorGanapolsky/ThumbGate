@@ -29,7 +29,7 @@ The natural commercial opportunity here isn't me testing another dashboard. It's
 Two ways we can monetize this together immediately:
 
 Option A — Verified Integration & Catalog Listing:
-We list Agent Reliability in ThumbGate's Verified Adapters Directory (https://thumbgate.ai/connectors) and recommend your scoring layer to our enterprise deployment pilots ($499–$2,500/mo tiers) in exchange for mutual co-marketing and rev-share.
+We list Agent Reliability in ThumbGate's Verified Adapters Directory (https://thumbgate.ai/connectors) and recommend your scoring layer to our enterprise deployment pilots ($19/mo–$2,500/mo tiers) in exchange for mutual co-marketing and rev-share.
 
 Option B — Joint Enterprise Hardening Diagnostic:
 We package a joint "Agent Pre-Action Firewall + Reliability Audit" for teams deploying autonomous coding and operational agents.

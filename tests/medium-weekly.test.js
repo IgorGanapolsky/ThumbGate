@@ -58,7 +58,8 @@ test('buildMediumDraft creates a manual-publish article with tracked CTAs', () =
   assert.equal(draft.publicationTarget.name, CONVERSATIONAL_AI_WEEKLY_TARGET.name);
   assert.match(draft.body, /passive observability becomes active enforcement/i);
   assert.match(draft.body, /utm_source=medium/);
-  assert.match(draft.body, /Setup Sprint intake/);
+  assert.match(draft.body, /self-serve Pro/);
+  assert.doesNotMatch(draft.body, /Setup Sprint|\$499|workflow hardening sprint/i);
   assert.ok(draft.publishChecklist.some((item) => /canonical link/i.test(item)));
   assert.ok(draft.publishChecklist.some((item) => /publish|Medium/i.test(item)));
 });

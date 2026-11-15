@@ -63,7 +63,7 @@ test('privacy policy route covers collection, sharing, retention, and contact de
   assert.match(body, /do not sell customer data/i);
 });
 
-test('terms of service route covers payment, refunds, control layer, and workflow gate fence', async () => {
+test('terms of service route covers payment, refunds, control layer, and historical purchase rights', async () => {
   const res = await fetch(apiUrl('/terms'));
   assert.equal(res.status, 200);
   assert.match(String(res.headers.get('content-type')), /text\/html/);
@@ -78,7 +78,11 @@ test('terms of service route covers payment, refunds, control layer, and workflo
   assert.match(body, /href="\/support"/);
   assert.match(body, /Control layer, not a guarantee/i);
   assert.match(body, /strict mode/i);
-  assert.match(body, /refunded in full/i);
+  assert.match(body, /agreed service fee is <strong>refunded in full/i);
+  assert.doesNotMatch(body, /\$499|Setup Sprint|Workflow Sprint/);
+  assert.match(body, /retired, no new sales/i);
+  assert.match(body, /Retirement does not cancel existing delivery commitments/i);
+  assert.match(body, /full refund within 7 days of the first charge/i);
   assert.match(body, /One supported workflow/i);
   assert.match(body, /One configured local pre-action gate/i);
   assert.match(body, /Rollout and rollback/i);

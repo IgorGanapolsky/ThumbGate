@@ -10,7 +10,7 @@ const INTAKE_FUTURE_SKEW_MS = 5 * 60 * 1000;
 
 const OFFER_CATALOG = Object.freeze({
   workflow_hardening_diagnostic: Object.freeze({
-    status: 'live_public',
+    status: 'retired',
     buyer: 'An accountable owner with a repeated AI-agent workflow failure.',
     outcome: 'A packet defining blocks, warnings, and approvals.',
     deliverables: Object.freeze([
@@ -23,8 +23,8 @@ const OFFER_CATALOG = Object.freeze({
     timeToValue: 'Within two business days after review and receipt of agreed materials.',
     priceCents: 49900,
     billing: 'one_time',
-    publicCheckout: true,
-    nextStep: '/diagnostic',
+    publicCheckout: false,
+    nextStep: '/pricing',
     proofToCountRevenue: 'Provider-confirmed payment for the diagnostic.',
     boundaries: Object.freeze([
       'No implementation.',
@@ -33,7 +33,7 @@ const OFFER_CATALOG = Object.freeze({
     ]),
   }),
   workflow_hardening_sprint: Object.freeze({
-    status: 'live_public_scope_first',
+    status: 'retired',
     buyer: 'A diagnostic-qualified workflow owner ready to implement the first gate set.',
     outcome: 'One agreed workflow has local gates and reviewable proof.',
     deliverables: Object.freeze([
@@ -47,7 +47,7 @@ const OFFER_CATALOG = Object.freeze({
     priceCents: 150000,
     billing: 'one_time',
     publicCheckout: false,
-    nextStep: '/go/sprint',
+    nextStep: '/pricing',
     proofToCountRevenue: 'Provider-confirmed payment for the scoped sprint.',
     boundaries: Object.freeze([
       'One workflow only.',
@@ -93,7 +93,7 @@ const OFFER_CATALOG = Object.freeze({
     priceCents: 300000,
     billing: 'monthly',
     publicCheckout: false,
-    nextStep: '/#workflow-sprint-intake',
+    nextStep: '/pricing',
     proofToCountRevenue: 'Signed recurring scope plus an active provider subscription or paid recurring invoice.',
     boundaries: Object.freeze([
       'One existing workflow only.',
@@ -116,7 +116,7 @@ const OFFER_CATALOG = Object.freeze({
     priceCents: 1500000,
     billing: 'one_time',
     publicCheckout: false,
-    nextStep: '/#workflow-sprint-intake',
+    nextStep: '/pricing',
     proofToCountRevenue: 'Signed pilot scope plus provider-confirmed payment; delivered work and customer outcome remain separate proof states.',
     boundaries: Object.freeze([
       'Maximum three local workflows.',
@@ -139,7 +139,7 @@ const OFFER_CATALOG = Object.freeze({
     priceCents: 1000000,
     billing: 'monthly',
     publicCheckout: false,
-    nextStep: '/#workflow-sprint-intake',
+    nextStep: '/pricing',
     proofToCountRevenue: 'Signed recurring scope plus an active provider subscription or paid recurring invoice.',
     boundaries: Object.freeze([
       'Maximum three existing pilot workflows.',
@@ -451,11 +451,19 @@ function buildIntakeQualificationCard(lead = {}, {
     route = 'nurture';
     recommendedNextStep = `Ask for the missing qualification evidence: ${coreMissing.join(', ')}.`;
   } else if (lead.status === 'qualified' && recommendedOfferId === 'workflow_hardening_diagnostic') {
-    recommendedNextStep = 'Prepare a transparent $499 diagnostic offer and exact draft for action-time approval; do not send automatically.';
+    recommendedNextStep = 'The diagnostic offer is retired. Compare free and self-serve Pro at /pricing.';
   } else if (lead.status === 'qualified' && recommendedOfferId === 'workflow_hardening_sprint') {
-    recommendedNextStep = 'Prepare the fixed one-workflow sprint scope questions; send no checkout until scope is accepted.';
+    recommendedNextStep = 'The sprint offer is retired. Compare free and self-serve Pro at /pricing.';
   } else {
     recommendedNextStep = 'Review the evidence, ask at most three material questions, and advance to qualified only when the operator verifies fit.';
+  }
+
+  const retiredOffer = recommendedOffer?.status === 'retired';
+  const productInquiry = lead.offer === 'product_inquiry';
+  if (retiredOffer || productInquiry) {
+    recommendedNextStep = productInquiry
+      ? 'Answer the product inquiry using current free and self-serve Pro documentation at /pricing.'
+      : 'This service offer is retired. Retain the historical record; current free and self-serve Pro plans are at /pricing.';
   }
 
   const questionCatalog = {
@@ -476,7 +484,7 @@ function buildIntakeQualificationCard(lead = {}, {
     ? 15
     : chronology.freshness === 'warm' ? 5 : chronology.freshness === 'stale' ? -20 : -30;
   const priorityScore = Math.max(0, Math.min(120, score + freshnessWeight));
-  const checkoutEligible = chronology.valid && chronology.freshness !== 'stale'
+  const checkoutEligible = !retiredOffer && !productInquiry && chronology.valid && chronology.freshness !== 'stale'
     && coreMissing.length === 0
     && knownFacts.operatorQualified
     && review.priceUnderstandingConfirmed === true
@@ -513,7 +521,7 @@ function buildIntakeQualificationCard(lead = {}, {
       qualificationReviewVerified: reviewVerified,
     },
     disqualifiers,
-    questionsToAsk: qualificationUnknowns.slice(0, 3).map((key) => questionCatalog[key]),
+    questionsToAsk: productInquiry ? [] : qualificationUnknowns.slice(0, 3).map((key) => questionCatalog[key]),
     recommendedNextStep,
     approvalRequiredBeforeExternalAction: true,
     approvalPhrase: null,
@@ -532,6 +540,7 @@ function buildIntakeDiscoveryPacket(lead = {}, {
   const contactEmail = normalizeText(lead.contact?.email, 320);
   const questions = card.questionsToAsk.filter(hasText).slice(0, 3);
   const blockers = [];
+  if (lead.offer === 'product_inquiry') blockers.push('product_inquiry_not_a_service_offer');
 
   if (card.lifecycleStatus !== 'new') blockers.push('lifecycle_not_new');
   if (!card.chronology.valid || card.chronology.freshness === 'stale') blockers.push('intake_not_current');
@@ -598,6 +607,8 @@ function buildIntakeClosePacket(lead = {}, {
   const offerId = card.recommendedOffer?.offerId || null;
   const offer = offerId ? OFFER_CATALOG[offerId] : null;
   const blockers = [];
+  if (offer?.status === 'retired') blockers.push('offer_retired');
+  if (lead.offer === 'product_inquiry') blockers.push('product_inquiry_not_a_service_offer');
   if (qualificationReviewVerified !== true) blockers.push('qualification_review_unverified');
   if (!card.knownFacts.operatorQualified) blockers.push('lifecycle_not_evidence_qualified');
   if (!card.chronology.valid || card.chronology.freshness === 'stale') blockers.push('intake_not_current');

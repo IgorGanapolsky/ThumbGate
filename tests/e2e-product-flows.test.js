@@ -424,136 +424,30 @@ test('E2E: learn hub and article pages serve live over HTTP', async (t) => {
   assert.match(articleHtml, /npx thumbgate init/);
 });
 
-test('E2E: workflow sprint intake progresses to paid team and surfaces in dashboard analytics', async (t) => {
-  const { tmpDir, port, adminHeaders } = await startIsolatedServer(t, 'thumbgate-e2e-sprint-');
-
-  const intakeRes = await fetch(apiUrl(port, '/v1/intake/workflow-sprint'), {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      email: 'pilot@example.com',
-      company: 'North Star Systems',
-      workflow: 'PR review hardening',
-      owner: 'Platform lead',
-      blocker: 'Review regressions keep repeating across agent rollouts.',
-      runtime: 'Claude Code',
-      note: 'Need proof before team rollout.',
-      utmSource: 'linkedin',
-      creator: 'reach_vb',
-      ctaId: 'workflow_sprint_intake',
-    }),
-  });
-  assert.equal(intakeRes.status, 201);
-  const intakeBody = await intakeRes.json();
-  assert.equal(intakeBody.ok, true);
-  assert.ok(intakeBody.leadId);
-
-  addSalesLead({
-    leadId: 'sales_e2e_paid_team',
-    source: 'direct',
-    email: 'pilot@example.com',
-  }, { feedbackDir: tmpDir });
-  const paidSalesLead = await reconcileProviderPayment({
-    leadId: 'sales_e2e_paid_team',
-    paymentId: 'capture_e2e_paid_team',
-    force: true,
-  }, {
-    feedbackDir: tmpDir,
-    auditPayPalLiveEvidence: async () => ({
-      individualPayments: [{
-        provider: 'paypal',
-        id: 'capture_e2e_paid_team',
-        createdAt: '2026-07-16T12:00:00.000Z',
-        status: 'completed',
-        grossCents: 150000,
-        refundedCents: 0,
-        netCents: 150000,
-        currency: 'usd',
-        customerClassification: 'external',
-        ownerTest: false,
-        buyerEmailDigest: digestBuyerEmail('pilot@example.com'),
-        productAttribution: { verified: true, product: 'thumbgate' },
-        evidenceVerified: true,
-        evidenceSource: 'provider_api_live:test-e2e-reconciliation',
-        evidenceDigest: `sha256:${'a'.repeat(64)}`,
-      }],
-    }),
-  });
-
-  const transitions = [
-    {
-      status: 'qualified',
-      actor: 'ops',
-      reviewedBy: 'ops@example.com',
-      qualificationReview: {
-        severityAndFrequency: 'The approval failure repeats in the current workflow.',
-        measurableImpact: 'The team must repeat review work after each regression.',
-        urgencyAndTrigger: 'The latest rollout is blocked until the workflow is hardened.',
-        decisionAuthority: 'The named platform lead can approve the scoped sprint.',
-        budgetMechanism: 'The buyer reviews the fixed price before accepting scope.',
-        offerFit: 'One bounded workflow fits the Setup Sprint.',
-        proofRequired: 'Regression evidence and an approval runbook are required.',
-        nextStep: 'Review the fixed one-workflow scope.',
-        evidenceReferences: ['intake:e2e-paid-team'],
-        zeroSpendStatus: 'proceed_zero_cost',
-        priceUnderstandingConfirmed: true,
-        workflowCount: 1,
-        authorityConfirmed: true,
-        urgencyDays: 14,
-        budgetCents: 150000,
-        readyToImplement: true,
-      },
-    },
-    {
-      status: 'named_pilot',
-      actor: 'ops',
-      workflowId: 'pr_review_hardening',
-      teamId: 'north_star_systems',
-      agreementSource: 'docusign',
-      agreementRef: 'envelope_e2e_signed',
-      agreementSignedBy: 'buyer@example.com',
-      agreementSignedAt: '2026-07-15T12:00:00.000Z',
-      agreementDigest: `sha256:${'b'.repeat(64)}`,
-      agreementOfferId: 'workflow_hardening_sprint',
-      agreementAmountCents: 150000,
-      agreementWorkflowCount: 1,
-    },
-    {
-      status: 'proof_backed_run',
-      actor: 'ops',
-      reviewedBy: 'buyer@example.com',
-      proofArtifacts: ['docs/VERIFICATION_EVIDENCE.md'],
-    },
-    { status: 'paid_team', actor: 'ops', salesLeadId: paidSalesLead.leadId },
-  ];
-
-  for (const transition of transitions) {
-    const advanceRes = await fetch(apiUrl(port, '/v1/intake/workflow-sprint/advance'), {
-      method: 'POST',
-      headers: adminHeaders,
-      body: JSON.stringify({
-        leadId: intakeBody.leadId,
-        ...transition,
-      }),
-    });
-    assert.equal(advanceRes.status, 200);
-    const advanceBody = await advanceRes.json();
-    assert.equal(advanceBody.ok, true);
-    assert.equal(advanceBody.lead.status, transition.status);
+test('E2E: retired services reject payment progression while free inquiries remain visible', async (t) => {
+  const { tmpDir, port, adminHeaders } = await startIsolatedServer(t, 'thumbgate-e2e-inquiry-');
+  for (const route of ['/v1/intake/workflow-sprint', '/v1/intake/workflow-sprint/advance', '/v1/intake/workflow-sprint/queue', '/checkout/sprint', '/checkout/diagnostic']) {
+    const res = await fetch(apiUrl(port, route), { method: 'POST', headers: adminHeaders, body: JSON.stringify({ email: 'pilot@example.com' }), redirect: 'manual' });
+    assert.equal(res.status, 410, route);
+    assert.equal(res.headers.get('location'), null);
+    assert.equal((await res.json()).pricingUrl, '/pricing');
   }
-
-  const dashboardRes = await fetch(apiUrl(port, '/v1/dashboard?window=lifetime'), {
-    headers: adminHeaders,
+  const inquiry = await fetch(apiUrl(port, '/v1/inquiries'), {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email: 'pilot@example.com', workflow: 'Free-tier dashboard limit', planId: 'diagnostic' }),
   });
-  assert.equal(dashboardRes.status, 200);
-  const dashboardBody = await dashboardRes.json();
-  assert.ok(dashboardBody.analytics.northStar.namedPilotAgreements >= 1);
-  assert.ok(dashboardBody.analytics.northStar.paidTeamRuns >= 1);
-  assert.equal(dashboardBody.analytics.northStar.customerProofReached, true);
-
-  const workflowRuns = readJsonl(path.join(tmpDir, 'workflow-runs.jsonl'));
-  assert.equal(workflowRuns.length, 3);
-  assert.deepEqual(workflowRuns.map((entry) => entry.customerType), ['named_pilot', 'named_pilot', 'paid_team']);
+  assert.equal(inquiry.status, 201);
+  const lead = await inquiry.json();
+  assert.equal(lead.offer, 'product_inquiry');
+  const summaryRes = await fetch(apiUrl(port, '/v1/billing/summary?window=lifetime&include_intake_queue=1'), { headers: adminHeaders });
+  assert.equal(summaryRes.status, 200);
+  assert.match(summaryRes.headers.get('cache-control'), /private.*no-store/);
+  const summary = await summaryRes.json();
+  assert.equal(summary.intakeQueue.total, 1);
+  assert.equal(summary.intakeQueue.leads[0].leadId, lead.leadId);
+  assert.equal(summary.intakeQueue.leads[0].offer, 'product_inquiry');
+  assert.equal(summary.intakeQueue.approvalReadyTotal, 0);
+  assert.equal(readJsonl(path.join(tmpDir, 'workflow-runs.jsonl')).length, 0);
 });
 
 test('E2E: promoted lesson can be viewed, updated, searched, and deleted through the HTTP surface', async (t) => {

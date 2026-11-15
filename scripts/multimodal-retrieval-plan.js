@@ -105,7 +105,7 @@ function buildMultimodalRetrievalPlan(args = {}) {
     },
     thumbgateUseCases: [
       'Find the exact screenshot or proof artifact behind a completion claim.',
-      'Retrieve visual evidence before approving a workflow-hardening sprint.',
+      'Retrieve visual evidence before approving a workflow review.',
       'Rank dashboard captures and PDF runbook pages for GEO/SEO evidence pages.',
       'Attach visual hard negatives to Autoresearch loops so agents cannot reward-hack by deleting hard cases.',
     ],
@@ -117,7 +117,7 @@ function buildMultimodalRetrievalPlan(args = {}) {
     ],
     nextActions: [
       'Create a small visual proof corpus from existing public dashboard screenshots and proof artifacts.',
-      'Log query -> correct artifact -> hard negative triples during workflow sprint reviews.',
+      'Log query -> correct artifact -> hard negative triples during workflow reviews.',
       'Use Autoresearch to optimize NDCG@10 and latency only after the baseline corpus exists.',
     ],
   };

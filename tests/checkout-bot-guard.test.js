@@ -92,8 +92,8 @@ describe('/checkout/pro bot guard', () => {
     assert.equal(res.status, 200);
     const body = await res.text();
     assert.match(body, /Start ThumbGate Pro/);
-    assert.match(body, /Not sure yet\? Send the workflow first/);
-    assert.match(body, /href="\/#workflow-sprint-intake"/);
+    assert.match(body, /Compare free and Pro/);
+    assert.match(body, /href="\/pricing"/);
     assert.match(body, /checkout_interstitial_cta_clicked/);
     assert.match(body, /aria-label="Checkout feedback"/);
     assert.match(body, /data-reason="price_unclear"/);
@@ -132,7 +132,7 @@ describe('/checkout/pro bot guard', () => {
     assert.doesNotMatch(body, /name="cta_id" value="pricing_pro"/);
     assert.doesNotMatch(body, /name="billing_cycle" value="annual"/);
     assert.doesNotMatch(body, /name="landing_path" value="\/pricing"/);
-    assert.match(body, /href="\/#workflow-sprint-intake"/);
+    assert.match(body, /href="\/pricing"/);
     assert.doesNotMatch(body, /checkout_interstitial_first_failure_rule_checkout/);
     assert.doesNotMatch(body, /checkout_interstitial_quick_read_checkout/);
     assert.doesNotMatch(body, /checkout_interstitial_workflow_teardown_checkout/);
@@ -167,7 +167,7 @@ describe('/checkout/pro bot guard', () => {
       assert.equal(res.status, 200);
       const body = await res.text();
       assert.match(body, /Pay \$19\/mo with Stripe/);
-      assert.match(body, /Not sure yet\? Send the workflow first/);
+      assert.match(body, /Compare free and Pro/);
       assert.doesNotMatch(body, /https:\/\/buy\.stripe\.com\/28E00j3Uge1E2dzgWL3sI2J/);
       assert.doesNotMatch(body, /https:\/\/buy\.stripe\.com\/6oU00j8aw2iWdWh9uj3sI2K/);
       assert.doesNotMatch(body, /href=""/);
@@ -177,38 +177,17 @@ describe('/checkout/pro bot guard', () => {
     }
   });
 
-  it('requires an email-backed POST before the diagnostic Payment Link', async () => {
-    const diagnosticCheckoutUrl = process.env.THUMBGATE_SPRINT_DIAGNOSTIC_CHECKOUT_URL;
-    delete process.env.THUMBGATE_SPRINT_DIAGNOSTIC_CHECKOUT_URL;
-    try {
-      const landing = await fetch(`${origin}/go/diagnostic?utm_source=aiventyx`, {
-        redirect: 'manual',
+  it('retired service routes return 410 without a payment redirect, even with buyer email', async () => {
+    for (const [route, method] of [['/go/diagnostic?utm_source=aiventyx', 'GET'], ['/go/diagnostic-pay', 'GET'], ['/go/diagnostic-pay', 'POST']]) {
+      const res = await fetch(`${origin}${route}`, {
+        method, redirect: 'manual',
+        ...(method === 'POST' ? { headers: { 'content-type': 'application/x-www-form-urlencoded' }, body: new URLSearchParams({ customer_email: 'buyer@example.com' }) } : {}),
       });
-      assert.equal(landing.status, 302);
-      assert.equal(new URL(landing.headers.get('location')).pathname, '/diagnostic');
-
-      const getPay = await fetch(`${origin}/go/diagnostic-pay`, { redirect: 'manual' });
-      assert.equal(getPay.status, 405);
-
-      const res = await fetch(`${origin}/go/diagnostic-pay`, {
-        method: 'POST',
-        redirect: 'manual',
-        headers: { 'content-type': 'application/x-www-form-urlencoded' },
-        body: new URLSearchParams({
-          customer_email: 'buyer@example.com',
-          utm_source: 'direct',
-        }),
-      });
-      assert.equal(res.status, 303);
-      const destination = new URL(res.headers.get('location'));
-      assert.equal(destination.origin + destination.pathname, 'https://buy.stripe.com/9B69ATbmI4r4aK5eOD3sI3k');
-      assert.equal(destination.searchParams.get('utm_source'), 'direct');
-      assert.equal(destination.searchParams.get('prefilled_email'), 'buyer@example.com');
-      const reference = destination.searchParams.get('client_reference_id');
-      assert.match(reference, /^tg2/);
-      assert.equal(require('../scripts/checkout-attribution-reference').parseCheckoutReference(reference).source, 'direct');
-    } finally {
-      process.env.THUMBGATE_SPRINT_DIAGNOSTIC_CHECKOUT_URL = diagnosticCheckoutUrl;
+      assert.equal(res.status, 410, `${method} ${route}`);
+      assert.equal(res.headers.get('location'), null);
+      const body = await res.text();
+      assert.match(body, /\/pricing/);
+      assert.doesNotMatch(body, /stripe\.com|buyer@example\.com/);
     }
   });
 

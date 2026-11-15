@@ -58,9 +58,7 @@ test('chatgpt openapi includes all core API routes', () => {
     '/v1/context/construct',
     '/v1/context/evaluate',
     '/v1/context/provenance',
-    '/v1/intake/workflow-sprint',
-    '/v1/intake/workflow-sprint/queue',
-    '/v1/intake/workflow-sprint/advance',
+    '/v1/inquiries',
     '/v1/task-outcomes',
     '/v1/task-outcomes/metrics',
     '/v1/task-outcomes/monitor',
@@ -75,6 +73,9 @@ test('chatgpt openapi includes all core API routes', () => {
   }
 
   assert.ok(normalize(adapter).length > 50);
+  assert.equal(adapter, canonical, 'GPT Actions schema must remain byte-identical to its canonical source');
+  assert.match(canonical, /description: Product inquiry accepted/);
+  assert.doesNotMatch(canonical, /Setup Sprint lead accepted|Invalid sprint intake request/);
 });
 
 test('canonical openapi includes monetization and funnel analytics routes', () => {
@@ -95,9 +96,7 @@ test('canonical openapi includes monetization and funnel analytics routes', () =
     '/v1/decisions/outcome',
     '/v1/decisions/metrics',
     '/v1/settings/status',
-    '/v1/intake/workflow-sprint',
-    '/v1/intake/workflow-sprint/queue',
-    '/v1/intake/workflow-sprint/advance',
+    '/v1/inquiries',
   ];
 
   for (const route of monetizationRoutes) {
@@ -172,9 +171,7 @@ test('chatgpt adapter preserves core endpoint parity with canonical openapi', ()
     '/v1/decisions/outcome',
     '/v1/decisions/metrics',
     '/v1/settings/status',
-    '/v1/intake/workflow-sprint',
-    '/v1/intake/workflow-sprint/queue',
-    '/v1/intake/workflow-sprint/advance',
+    '/v1/inquiries',
   ];
   for (const route of coreRoutes) {
     const escaped = new RegExp(route.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));

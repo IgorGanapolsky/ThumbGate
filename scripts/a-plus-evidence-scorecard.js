@@ -62,8 +62,8 @@ function collectRepositoryEvidence(root = ROOT) {
       'self-improving-thumbs-loop.svg',
       'Is it really self-improving?',
     ]),
-    landingBuyerRoutes: hasAll(landing, ['/checkout/pro', '/go/diagnostic-pay'])
-      && hasAll(buyerPaths, ['/go/pro', '/go/sprint', '/diagnostic']),
+    landingBuyerRoutes: hasAll(landing, ['/checkout/pro', '/pricing'])
+      && hasAll(buyerPaths, ['/go/pro', '/pricing']),
     feedbackRewardReachable: feedback.includes('scoreFeedbackReward('),
     feedbackPromotionReachable: promotion.includes('promote') && hook.includes('retrieveWithRerankingSync'),
     preventionChangePromoted: feedback.includes('whatToChange')

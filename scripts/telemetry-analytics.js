@@ -1151,7 +1151,7 @@ function getTelemetrySummary(feedbackDir, options = {}) {
         checkoutInterstitialClicks += 1;
         if (entry.ctaId === 'pro_checkout_confirmed') {
           checkoutInterstitialProConfirms += 1;
-        } else if (entry.ctaId === 'workflow_sprint_intake') {
+        } else if (['workflow_sprint_intake', 'inquiry'].includes(entry.ctaId)) {
           checkoutInterstitialWorkflowIntakeClicks += 1;
         } else if (entry.ctaId === 'team_paid_path') {
           checkoutInterstitialTeamPathClicks += 1;

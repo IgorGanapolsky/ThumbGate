@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 300" role="img" aria-labelledby="t d">
   <title id="t">Which ThumbGate path to pick</title>
-  <desc id="d">Free try, $499 workflow gate, custom scope after proof.</desc>
+  <desc id="d">Free try, Pro recall and exports, compare current plans.</desc>
   <rect width="960" height="300" fill="#0a0a0b"/>
   <g font-family="system-ui,sans-serif">
     <text x="480" y="36" text-anchor="middle" fill="#f5f5f7" font-size="17" font-weight="800">Pick the path that matches the pain</text>
@@ -18,11 +18,11 @@
     <text x="363" y="160" text-anchor="middle" fill="#9ca3af" font-size="13">Unlimited solo</text>
     <text x="363" y="190" text-anchor="middle" fill="#e5e7eb" font-size="13">Dashboard · exports</text>
     <text x="363" y="230" text-anchor="middle" fill="#22d3ee" font-size="12" font-weight="700">checkout today</text>
-    <!-- Diagnostic $499 - HIGHLIGHT -->
+    <!-- Pro Pro - HIGHLIGHT -->
     <rect x="488" y="58" width="220" height="210" rx="16" fill="#0d1b14" stroke="#4ade80" stroke-width="2.5"/>
     <text x="598" y="95" text-anchor="middle" fill="#4ade80" font-size="12" font-weight="700">ONE WORKFLOW · PAY TODAY</text>
-    <text x="598" y="130" text-anchor="middle" fill="#f5f5f7" font-size="22" font-weight="900">$499</text>
-    <text x="598" y="160" text-anchor="middle" fill="#9ca3af" font-size="13">Diagnostic</text>
+    <text x="598" y="130" text-anchor="middle" fill="#f5f5f7" font-size="22" font-weight="900">Pro</text>
+    <text x="598" y="160" text-anchor="middle" fill="#9ca3af" font-size="13">Pro</text>
     <text x="598" y="190" text-anchor="middle" fill="#e5e7eb" font-size="13">Map block / warn / review</text>
     <text x="598" y="230" text-anchor="middle" fill="#4ade80" font-size="12" font-weight="700">not Enterprise</text>
     <!-- Sprint -->

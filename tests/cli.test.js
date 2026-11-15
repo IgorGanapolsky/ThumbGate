@@ -1063,7 +1063,8 @@ describe('bin/cli.js', () => {
     assert.match(result.stdout, /Pro \(\$19\/mo or \$149\/yr\)/);
     assert.match(result.stdout, /Personal recall: search lessons, rules, and proof/);
     assert.match(result.stdout, /Managed adapters: Claude Code, Cursor, Codex, Gemini, Amp, Cline, OpenCode/);
-    assert.match(result.stdout, /Setup Sprint: \$499 for one supported workflow; hosted team sync and org dashboard are not GA/);
+    assert.match(result.stdout, /Hosted team sync and organization dashboard are not generally available/);
+    assert.doesNotMatch(result.stdout, /Setup Sprint|\$499|side lane/);
     assert.match(result.stdout, /personal local dashboard/i);
     assert.match(result.stdout, /Launch dashboard\s*:\s*npx thumbgate pro/);
     assert.match(result.stdout, /Activate \+ run\s*:\s*npx thumbgate pro --activate --key=YOUR_KEY/);
@@ -1363,7 +1364,9 @@ describe('bin/cli.js', () => {
     assert.equal(checkoutUrl, PRO_MONTHLY_PAYMENT_LINK, 'Pro command should include the attributed Pro checkout URL');
     assert.ok(result.stdout.includes('$19/mo or $149/yr'), 'Pro command should include current pricing');
     assert.ok(result.stdout.includes('Personal recall: search lessons, rules, and proof'), 'Pro command should lead with personal recall');
-    assert.ok(result.stdout.includes('Setup Sprint: $499 for one supported workflow; hosted team sync and org dashboard are not GA'), 'Pro command should separate the individual product from unavailable hosted team features');
+    assert.ok(result.stdout.includes('Hosted team sync and organization dashboard are not generally available'), 'Pro command must disclose unavailable hosted team features');
+    assert.match(result.stdout, /Self-serve ThumbGate Pro/);
+    assert.doesNotMatch(result.stdout, /Setup Sprint|\$499|side lane/);
     assert.ok(result.stdout.includes('Launch dashboard: npx thumbgate pro'), 'Pro command should include the local dashboard launcher');
     assert.ok(result.stdout.includes('Private core    : ThumbGate-Core (private repo)'), 'Pro command should describe the current private-core split');
   });

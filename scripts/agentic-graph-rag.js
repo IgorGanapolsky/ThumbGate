@@ -103,7 +103,6 @@ function buildAgenticGraph(options = {}) {
 
   // Tier 3: Economic Outcome Nodes
   const CASH_PATHS = [
-    { id: 'cash:diagnostic-499', label: 'Workflow Hardening Diagnostic ($499)', priceUsd: 499, type: GRAPH_ENTITY_TYPES.CASH_PATH },
     { id: 'cash:pro-subscription', label: 'ThumbGate Pro ($19/mo)', priceUsd: 19, type: GRAPH_ENTITY_TYPES.CASH_PATH },
     { id: 'cash:enterprise-diode', label: 'Enterprise Safety Diode ($3,000/mo)', priceUsd: 3000, type: GRAPH_ENTITY_TYPES.CASH_PATH },
   ];
@@ -118,9 +117,9 @@ function buildAgenticGraph(options = {}) {
   addEdge('scripts/decisive-step-evaluator.js', 'gate:pretool:decisive-step', GRAPH_RELATIONS.GATED_BY);
   addEdge('scripts/harness-ceiling-doctor.js', 'gate:pretool:harness-ceiling', GRAPH_RELATIONS.GATED_BY);
 
-  addEdge('gate:pretool:spend-cap', 'cash:diagnostic-499', GRAPH_RELATIONS.MONETIZED_VIA);
+  addEdge('gate:pretool:spend-cap', 'cash:pro-subscription', GRAPH_RELATIONS.MONETIZED_VIA);
   addEdge('gate:pretool:checkout-lease', 'cash:pro-subscription', GRAPH_RELATIONS.MONETIZED_VIA);
-  addEdge('gate:pretool:decisive-step', 'cash:diagnostic-499', GRAPH_RELATIONS.MONETIZED_VIA);
+  addEdge('gate:pretool:decisive-step', 'cash:pro-subscription', GRAPH_RELATIONS.MONETIZED_VIA);
   addEdge('gate:pretool:harness-ceiling', 'cash:enterprise-diode', GRAPH_RELATIONS.MONETIZED_VIA);
 
   return {

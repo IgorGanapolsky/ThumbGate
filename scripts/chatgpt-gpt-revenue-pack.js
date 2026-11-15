@@ -167,7 +167,7 @@ function buildFollowOnOffers(links = buildRevenueLinks()) {
     },
     {
       key: 'sprint',
-      label: 'Setup Sprint',
+      label: 'ThumbGate Pro',
       pricing: 'Intake-led sprint, then Team at $49/seat/mo with 3-seat minimum after qualification',
       buyer: 'Teams that already use ChatGPT for discovery or checkpointing and need a real execution boundary before risky workflows run.',
       cta: buildTrackedChatgptLink(links.sprintLink, {
@@ -226,7 +226,7 @@ function buildOperatorQueue(links = buildRevenueLinks()) {
         ctaPlacement: 'operator_queue',
         surface: 'chatgpt_workflow_queue',
       }),
-      recommendedMotion: 'Trust guide -> workflow intake -> Setup Sprint.',
+      recommendedMotion: 'Trust guide -> workflow intake -> ThumbGate Pro.',
     },
   ];
 }
@@ -281,7 +281,7 @@ function buildOutreachDrafts(links = buildRevenueLinks()) {
       key: 'trust_boundary_team',
       channel: 'Founder note',
       audience: 'Platform, ops, or AI product lead',
-      draft: `I am not pitching ChatGPT as the execution surface. I am pitching a cleaner boundary between ChatGPT discovery and the risky workflow that follows. If your team already has one owner and one approval-boundary failure tied to AI-assisted work, the next useful step is the Setup Sprint intake: ${sprintLink} .`,
+      draft: `Start with the free local CLI. Choose self-serve Pro for recall, dashboard, adapters, and exports. Compare current plans at https://thumbgate.ai/pricing.`,
     },
   ];
 }
@@ -291,7 +291,7 @@ function buildMeasurementPlan() {
     northStar: 'chatgpt_gpt_to_paid_intent',
     policy: 'Treat ChatGPT GPT opens as acquisition evidence only after a tracked proof click, Pro checkout start, or qualified workflow conversation exists.',
     minimumUsefulSignal: 'One tracked Pro checkout start or one qualified team conversation sourced from the ChatGPT GPT lane.',
-    strongSignal: 'Three tracked paid-intent events across Pro checkout starts or workflow sprint conversations.',
+    strongSignal: 'Start with the free local CLI. Choose self-serve Pro for recall, dashboard, adapters, and exports. Compare current plans at https://thumbgate.ai/pricing.',
     metrics: [
       'chatgpt_gpt_opens',
       'chatgpt_actions_setup_doc_clicks',
@@ -316,7 +316,7 @@ function buildMeasurementPlan() {
       },
       {
         window: 'days_31_60',
-        goal: 'Promote whichever ChatGPT follow-on motion converts better: solo Pro or workflow sprint.',
+        goal: 'Start with the free local CLI. Choose self-serve Pro for recall, dashboard, adapters, and exports. Compare current plans at https://thumbgate.ai/pricing.',
         decisionRule: 'If GPT opens rise without proof clicks or checkout starts, move proof and local-enforcement handoff higher in the GPT and guide surfaces.',
       },
       {

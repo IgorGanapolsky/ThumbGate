@@ -13,13 +13,13 @@
 |---|---|---|---|
 | **Business Name & Model** | **ThumbGate** — Deterministic pre-action approval gate and security firewall for autonomous AI coding agents (Claude Code, Cursor, Codex, OpenCode, Hermes, Herdr). Hybrid SaaS + developer tooling (open-core CLI + hosted telemetry & policy engine). | **VERIFIED** | `package.json`, `README.md`, `https://thumbgate.ai` |
 | **Target Customer** | Engineering leaders, platform teams, security architects, and AI developers running autonomous agent swarms who require hard boundary protection against production outages, unauthorized shell execution, and secret egress. | **VERIFIED** | Public documentation, developer guide surfaces (`public/guides/`) |
-| **Product & Offer Ladder** | 1. **ThumbGate Open Core**: Free MIT npm package (`npx thumbgate@latest init`)<br>2. **ThumbGate Pro**: $19/mo or $149/yr recurring SaaS (`https://thumbgate.ai/go/pro-direct`)<br>3. **Production Rule-Pack Kit**: $49 one-time bundle (`https://thumbgate.ai/go/bundle-49`)<br>4. **Setup Sprint Diagnostic**: $499 one-time audit (`https://thumbgate.ai/diagnostic`) | **VERIFIED** | `AGENTS.md`, `COMMERCIAL_TRUTH.md`, Stripe payment rails |
+ThumbGate offers a free local CLI and self-serve Pro for recall, dashboard, adapters, and exports. Current plans: https://thumbgate.ai/pricing
 | **Revenue Targets** | • **Daily**: $100.00 gross booked revenue<br>• **Weekly**: $700.00 gross booked revenue<br>• **Monthly**: $3,000.00 gross booked revenue ($1,500 MRR from subscriptions + $1,500 from diagnostics & rule packs)<br>• **Annual**: $36,000.00 gross booked revenue | **ASSUMPTION** | Provisional operating growth targets; user has not set explicit alternate quota. Baseline today: $0.00. |
 | **Profit Targets** | • **Contribution Margin Target**: ≥85.0% across all revenue streams.<br>• **Net Operating Margin Target**: ≥70.0% after infrastructure (Railway, Stripe fees, compute).<br>• **Delivery Cost per Outcome**: ≤$2.50 in compute, storage, and telemetry per active subscriber. | **ASSUMPTION** | Software-only delivery model with minimal incremental inference cost per user. |
 | **Customer Targets** | • **New Paid Customers**: 15 Pro subscribers/mo, 2 Diagnostic audits/mo, 10 Rule-Pack purchasers/mo.<br>• **Active Retention**: ≥90% monthly retention rate on Pro subscriptions.<br>• **Churn Target**: ≤10% monthly voluntary churn. | **ASSUMPTION** | Standard B2B developer tool SaaS cohort targets. |
 | **Acquisition Channels & Budget** | • **Permitted Organic Channels**: Developer documentation, GitHub SEO, npm package discoverability, technical deep-dives (Bluesky, Substack, Hackernews), organic search.<br>• **Paid Advertising Budget**: **$0.00 / month** (strictly disallowed until checkout conversion pipeline is repaired and verified). | **VERIFIED** | `AGENTS.md` Standing Guardrails, zero paid ad spend currently active. |
 | **Conversion Funnel Targets** | • **Visitor → Signup**: ≥2.0% (Current 30d baseline: 1.49%)<br>• **Signup → Paid Order**: ≥5.0% (Current 30d baseline: 0.00%)<br>• **Checkout Start → Paid Order**: ≥10.0% (Current 30d baseline: 0.00%) | **ASSUMPTION** | Realistic developer tool benchmarks based on observed traffic. |
-| **Fulfillment Protocols** | • **ThumbGate Pro**: Immediate automated API key generation and hosted telemetry activation upon Stripe `checkout.session.completed` webhook.<br>• **Rule-Pack Kit**: Instant digital download delivery via Gumroad.<br>• **Enterprise Diagnostic**: 48-hour automated telemetry analysis + structured remediation scorecard delivered to client. | **VERIFIED** | Webhook handlers in `src/api/server.js`, Gumroad webhook routing. |
+ThumbGate offers a free local CLI and self-serve Pro for recall, dashboard, adapters, and exports. Current plans: https://thumbgate.ai/pricing
 | **Retention & Expansion** | Automated weekly risk reports, token consumption audits, policy pack updates, and direct CLI upgrade paths for active developers. | **VERIFIED** | `scripts/agent-risk-scorecard.js`, `scripts/billing.js` |
 | **Operating Constraints** | • **Host**: macOS Darwin arm64 execution environment.<br>• **Production**: Railway deployment (`thumbgate-production.up.railway.app`).<br>• **Guardrails**: No unreviewed cold outreach to corporate domains; never approve PRs with owner credentials; never force push or bypass branch protection. | **VERIFIED** | `AGENTS.md`, repository security policies. |
 | **Authority Boundaries** | • **Level 1 (Autonomous)**: Documentation, code improvements, tests, local telemetry diagnostics, and draft staging.<br>• **Level 2 (Safeguarded Autonomous)**: Non-breaking PR creation, staging deployments, non-destructive telemetry instrumentation.<br>• **Level 3 (Approval Required)**: Financial transfers, refunds, corporate outreach, credential alteration. | **VERIFIED** | Autonomous Business Constitution Part IX. |
@@ -97,17 +97,17 @@ $$\text{Priority Score} = \frac{\text{Expected Incremental Profit} \times \text{
 
 ---
 
-### Rank 2: Setup Sprint Diagnostic ($499 One-Time) High-Intent Outreach
+ThumbGate offers a free local CLI and self-serve Pro for recall, dashboard, adapters, and exports. Current plans: https://thumbgate.ai/pricing
 
 - **Problem / Gap**: High-traffic comparison guides (CrowdStrike Falcon Guardian, Fiddler, Palo Alto Clutch, prompt injection post-mortems) attract enterprise platform engineers and security leads, but direct self-service SaaS ($19/mo) does not match enterprise procurement behavior.
 - **Intervention**:
-  1. Prominently position the **ThumbGate Setup Sprint Diagnostic ($499)** (`https://thumbgate.ai/diagnostic`) as the primary CTA on high-intent comparison and incident pages.
+ThumbGate offers a free local CLI and self-serve Pro for recall, dashboard, adapters, and exports. Compare current plans at /pricing. https://thumbgate.ai/pricing
   2. The offer delivers a comprehensive automated audit of the organization's agent harnesses, MCP tool policies, and LLM-as-judge failure boundaries, packaged into an executive risk scorecard within 48 hours.
   3. Wire direct checkout link (`https://buy.stripe.com/9B69ATbmI4r4aK5eOD3sI3k`) and inbound lead intake form.
 - **Unit Economics & Expected Incremental Profit**:
   - Addressable Audience: ~2,500 monthly enterprise visitors to security and comparison guides.
   - Target Conversion: 0.1% = 2 to 3 diagnostic sales per month.
-  - Gross Attributable Revenue: 2 × $499.00 = $998.00/month ($11,976.00/year).
+  - Gross Attributable Revenue: 2 × $19/mo.00 = $998.00/month ($11,976.00/year).
   - Attributable Variable Cost: $20.00/audit (automated trace run + PDF generation) = $40.00/month.
   - **Expected Incremental Contribution Profit**: **$958.00/month** ($11,496.00/year).
 - **Evaluation Scores**:
@@ -126,7 +126,7 @@ $$\text{Priority Score} = \frac{\text{Expected Incremental Profit} \times \text{
 - **Problem / Gap**: 81 unique visitors reached the checkout cancellation page (`/cancel`) in the trailing 30 days, and 373 started checkout without completing payment. Many developers object to recurring monthly SaaS commitments ($19/mo or $149/yr) but still need production-grade policy rules.
 - **Intervention**:
   1. Add a non-intrusive, high-value downsell banner on the `/cancel` page:
-     > *"Not ready for monthly monitoring? Grab the standalone **ThumbGate Production Rule-Pack Kit** for a one-time $49 payment — 50+ pre-built security and compliance rules for your local agent harness."*
+ThumbGate offers a free local CLI and self-serve Pro for recall, dashboard, adapters, and exports. Current plans: https://thumbgate.ai/pricing
   2. Link directly to the one-time Gumroad checkout (`https://thumbgate.ai/go/bundle-49`).
   3. Include the $49 downsell in the automated email follow-up for abandoned checkout sessions.
 - **Unit Economics & Expected Incremental Profit**:

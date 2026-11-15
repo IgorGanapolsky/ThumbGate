@@ -261,7 +261,7 @@
       cta_placement: placement,
       plan_id: 'pro',
     });
-    var intakeHref = appendCampaignParams(settings.intakeHref || '/#workflow-sprint-intake', {
+    var intakeHref = appendCampaignParams(settings.intakeHref || '/pricing', {
       utm_source: 'owned_site',
       utm_medium: 'sticky_cta',
       utm_campaign: campaign,

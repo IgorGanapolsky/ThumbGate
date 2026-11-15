@@ -1435,7 +1435,7 @@ paths:
           description: Unauthorized
         '403':
           description: Forbidden
-  /v1/intake/workflow-sprint:
+  /v1/inquiries:
     post:
       operationId: submitWorkflowSprintIntake
       requestBody:
@@ -1446,63 +1446,13 @@ paths:
               $ref: '#/components/schemas/WorkflowSprintIntakeRequest'
       responses:
         '201':
-          description: Setup Sprint lead accepted
+          description: Product inquiry accepted
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/WorkflowSprintIntakeResponse'
         '400':
-          description: Invalid sprint intake request
-  /v1/intake/workflow-sprint/queue:
-    get:
-      operationId: getWorkflowSprintCloseQueue
-      parameters:
-        - in: query
-          name: status
-          description: Comma-separated workflow lifecycle statuses or all.
-          schema:
-            type: string
-            default: new,qualified
-        - in: query
-          name: limit
-          schema:
-            type: integer
-            minimum: 1
-            maximum: 100
-            default: 50
-      responses:
-        '200':
-          description: Private no-store intake queue with fail-closed approval packets
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/WorkflowIntakeQueueResponse'
-        '400':
-          description: Invalid queue filter
-        '403':
-          description: Forbidden
-        '503':
-          description: Workflow intake capability is unavailable in this runtime
-  /v1/intake/workflow-sprint/advance:
-    post:
-      operationId: advanceWorkflowSprintLead
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/WorkflowSprintAdvanceRequest'
-      responses:
-        '200':
-          description: Setup Sprint lead advanced to the next state
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/WorkflowSprintAdvanceResponse'
-        '400':
-          description: Invalid sprint advancement request
-        '403':
-          description: Forbidden
+          description: Invalid product inquiry request
   /v1/intents/catalog:
     get:
       operationId: listIntentCatalog

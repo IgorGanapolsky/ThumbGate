@@ -45,7 +45,7 @@ We built ThumbGate as an in-engine pre-action firewall for Unity & Unreal:
 
 We published our 2026 Gaming AI Agent Playbook here: https://thumbgate.ai/gaming-playbook
 
-If you want an objective audit of where your agent harness can be jailbroken or looped, we run a 48-hour Game Agent Exploit & Reliability Audit ($499):
+If you want an objective audit of where your agent harness can be jailbroken or looped, we run a 48-hour Game Agent Exploit & Reliability Audit ($19/mo):
 https://buy.stripe.com/9B69ATbmI4r4aK5eOD3sI3k
 
 Or if you just want to test the local gate yourself:
@@ -100,6 +100,6 @@ Igor
 | Tier | Price | Conversion Path | Target ICP |
 | :--- | :--- | :--- | :--- |
 | **Playbook Free Ingestion** | $0 | `/gaming-playbook` interactive self-assessment | Top-of-Funnel AI game devs & studios |
-| **Pro Developer** | $19/mo | Direct Stripe link (`https://buy.stripe.com/8x2dR91M84r4cSd9uj3sI3f`) | Solo game developers, indie studios |
-| **Studio Diagnostic Audit** | $499 | Direct Stripe link (`https://buy.stripe.com/9B69ATbmI4r4aK5eOD3sI3k`) | Mid-sized studios shipping beta NPC agents |
-| **Studio Integration Sprint**| $1,500 | Direct PayPal link (`https://www.paypal.com/ncp/payment/LTQFR7P9AR3QG`) | AAA studios needing custom C++/C# engine diodes |
+| **Self-serve Pro** | Current subscription price at `/pricing` | `/checkout/pro` | Developers who need recall, dashboard, adapters, and exports |
+
+The former studio audit and integration sprint are retired. Pro does not include an audit, custom engine integration, or implementation services.

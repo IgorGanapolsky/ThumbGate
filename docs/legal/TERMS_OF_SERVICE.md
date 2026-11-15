@@ -7,8 +7,7 @@
 These Terms of Service (“**Terms**”) govern access to and use of software and
 services provided under the ThumbGate brand (“**ThumbGate**,” “**we**,” “**us**”),
 including the local engine (`thumbgate` npm package), hosted services
-(`thumbgate.app` and related APIs), and professional services (including the
-$499 Setup Sprint).
+(`thumbgate.app` and related APIs).
 
 By installing, accessing, purchasing, or using the Services, you (“**Customer**”
 or “**you**”) agree to these Terms. If you accept on behalf of an entity, you
@@ -23,7 +22,6 @@ These Terms are a master agreement with product modules:
 | Module | Surface |
 | --- | --- |
 | **A** | Local software engine and Pro subscription |
-| **B** | $499 Setup Sprint (professional services SOW) |
 | **C** | Hosted platform, pairing, mobile, and cloud runners (`thumbgate.app`) |
 
 If a module conflicts with the core terms on a scoped topic (refund fence,
@@ -45,7 +43,6 @@ and are responsible for activity under your account.
   as shown at checkout (Stripe and any other documented payment rail).
 - Recurring subscriptions (e.g., Pro monthly/annual) **auto-renew** until
   canceled through the documented cancellation path before renewal.
-- One-time purchases (including the $499 Workflow Gate) are charged once.
 - You authorize us and our payment processors to charge the payment method
   you provide.
 
@@ -60,8 +57,9 @@ we publish for community channels.
 | Product | Refund rule |
 | --- | --- |
 | **Pro / Team-style subscriptions** | Cancel anytime. Full refund within **7 days** of the first charge on request; thereafter access continues through the paid period unless required by law. |
-| **$499 Setup Sprint** | If the repeated failure **cannot be reduced to one supported ThumbGate gate**, the order is **refunded in full** instead of being converted into open-ended consulting. After delivery and acceptance of the regression evidence package, the fee is non-refundable except as required by law. |
 | **Other one-off purchases** | Refund on request if we cannot deliver the scoped artifact described at purchase. |
+
+Historical professional-services purchases are retired and unavailable for new sales. Retirement does not cancel delivery commitments or refund rights agreed at purchase. Existing service purchasers retain the one-workflow integration, configured local pre-action gate, regression evidence, and rollout/rollback documentation obligations. If discovery determined before implementation that the workflow could not be reduced to a supported gate, the historical $499 payment is refundable in full, minus only a separately disclosed diagnostic fee agreed in advance, or convertible to service credit at the customer's option.
 
 ### 2.5 Acceptable use
 
@@ -79,7 +77,7 @@ You may not:
 ### 2.6 Support boundaries
 
 - Community / GitHub Issues: open-source CLI bugs and docs.  
-- Email support: billing, Pro, Workflow Gate delivery, hosted access.  
+- Email support: billing, Pro, hosted access.
 - Support does **not** include unlimited debugging of custom agent code,
   unrelated infrastructure, or workflows outside the configured gate scope
   unless purchased separately.
@@ -167,60 +165,6 @@ constitutes acceptance, except where law requires consent.
 4. Optional CLI telemetry (install/usage metadata, not workspace source) may
    run unless disabled (`THUMBGATE_NO_TELEMETRY=1` or `DO_NOT_TRACK=1`).  
 5. Module A is subject to §2.10 (control layer is not a perfect firewall).
-
----
-
-## Module B — $499 Setup Sprint (SOW)
-
-### B.1 Narrow deliverable
-
-For the one-time fee published on the diagnostic/pricing pages (currently
-**$499**), ThumbGate will deliver:
-
-1. **One (1) supported workflow** — a single defined agent workflow failure
-   pattern agreed in intake.  
-2. **One (1) configured local pre-action gate** — ALLOW / WARN / DENY (or
-   approval) behavior wired for a supported integration.  
-3. **Regression evidence** — verification that the gate catches the agreed
-   bad path(s) without regressing the agreed safe path(s).  
-4. **Rollout and rollback proof** — written steps to enable and reverse the
-   gate.  
-5. **Schedule** — target delivery within **two business days** after you
-   provide required access and materials.
-
-### B.2 Customer-provided materials
-
-Within a reasonable time after order (target five business days), you provide:
-
-- Accountable workflow owner and technical contact  
-- Non-secret examples, logs, or traces showing the repeated failure  
-- Access needed to install or configure the supported integration  
-- Golden cases for safe vs unsafe actions (recommended minimum: six)
-
-Delays in customer materials pause the delivery clock.
-
-### B.3 Acceptance
-
-Acceptance occurs on the earlier of: (a) your written confirmation;
-(b) delivery of the regression evidence package meeting agreed cases; or
-(c) three business days after delivery without a written material-deficiency
-notice.
-
-### B.4 Refund boundary (matches public site)
-
-If during discovery we determine the workflow **cannot be reduced to one
-supported ThumbGate gate**, we **refund the $499 order in full** rather than
-expanding into open consulting. We will not silently convert the order into
-a larger engagement.
-
-After acceptance under B.3, fees are non-refundable except as required by law.
-
-### B.5 Out of scope
-
-Unless a separate signed order says otherwise: multi-workflow rollout,
-org-wide policy programs, hosted team SSO/sync, compliance certifications
-(SOC 2 packaging, HIPAA, etc.), 24/7 monitoring, guaranteed incident
-prevention, guaranteed savings, and legal opinions.
 
 ---
 

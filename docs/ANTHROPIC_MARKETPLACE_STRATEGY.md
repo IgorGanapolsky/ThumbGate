@@ -11,9 +11,9 @@ For the next 30 days, the goal is not vanity reach or speculative marketplace po
 
 The goal is:
 
-- booked pilots
-- named pilot agreements
-- weekly proof-backed workflow runs
+- verified free CLI activation
+- attributable self-serve Pro subscriptions
+- reproducible local workflow checks
 
 Anthropic partner acceptance is a support lane for that revenue motion, not the primary KPI.
 
@@ -21,25 +21,24 @@ Anthropic partner acceptance is a support lane for that revenue motion, not the 
 
 We are not selling a generic "AI employee."
 
-We are selling **Claude workflow hardening**:
+ThumbGate supports **Claude workflow hardening** through software users configure and verify:
 
-- one workflow with business value
-- Pre-Action Checks
-- one proof pack
-- one delivery story a buyer can defend
+- local feedback capture and configured Pre-Action Checks in the free CLI
+- recall, dashboard, adapters, and exports in self-serve Pro
+- inspectable local evidence from the user’s own workflow
 
-The product remains broad enough to work with Codex, Gemini, Amp, and Cursor, but the sharpest partner-facing story is Claude-first delivery for consultancies, platform teams, and code modernization work.
+The product remains broad enough to work with Codex, Gemini, Amp, and Cursor, but the sharpest partner-facing story is Claude-first software use by consultancies, platform teams, and code modernization work.
 
 ## Primary 30-Day Motion
 
 - Primary channel: founder-led outbound
-- Front-line offer: [Setup Sprint](WORKFLOW_HARDENING_SPRINT.md)
+Free local CLI and self-serve Pro for recall, dashboard, adapters, and exports. Current plans: https://thumbgate.ai/pricing
 - Support assets: landing page, proof pack, pitch, and outreach sequence
 - Target accounts: Claude-first consultancies, platform engineering leaders, and AI product teams with one workflow owner
 
 ## Why This Fits Anthropic's Current Motion
 
-Anthropic is publicly investing in services partners, technical certification, joint market development, and code modernization. That makes our best fit a services-and-governance layer around Claude delivery, not a generic marketplace listing.
+Anthropic is publicly investing in services partners, technical certification, joint market development, and code modernization. This is partner-market context, not evidence of membership or a ThumbGate implementation service. Our offer remains free local software and self-serve Pro.
 
 Our angle:
 
@@ -47,48 +46,13 @@ Our angle:
 2. **Code modernization guardrails** for long-running migration and refactor work where context loss and repeated mistakes are expensive.
 3. **Proof-ready rollout** for buyers who need recall, prevention rules, Pre-Action Checks, and machine-readable evidence before they widen adoption.
 
-## Packaged Offers
+## Current Product Offer
 
-### 1. Setup Sprint
+The free local CLI provides feedback capture and configured pre-action gates. Self-serve ThumbGate Pro adds recall, dashboard, adapters, and exports. Users install, configure, test, and operate the software themselves. Neither plan includes a managed implementation, pilot delivery, or a proof review performed by ThumbGate.
 
-Outcome:
+Code modernization is a use case: users can retain repository constraints and check risky refactors in their own environment. It is not a separately packaged consulting engagement.
 
-- one Claude-first workflow made safer to ship team-wide
-- repeated failures converted into prevention rules
-- recall and gates wired into the existing agent loop
-
-Best fit:
-
-- platform engineering
-- AI-heavy product teams
-- consultancies delivering one production workflow
-
-### 2. Code Modernization Guardrails
-
-Outcome:
-
-- migration notes and repository constraints stay durable across long sessions
-- validation checks are attached to the work, not left in tribal memory
-- refactor delivery has a proof trail instead of vibe-based trust
-
-Best fit:
-
-- consultancies
-- transformation partners
-- internal modernization programs
-
-### 3. Proof-Ready Rollout Pilot
-
-Outcome:
-
-- one workflow with buyer-facing diagnostics
-- verification evidence published
-- rollout risk reduced before broader deployment
-
-Best fit:
-
-- Claude-first accounts evaluating broader adoption
-- buyers with compliance, platform, or audit concerns
+Compare [current plans](https://thumbgate.ai/pricing) or use [Pro checkout](https://thumbgate.ai/checkout/pro).
 
 ## Buyer Story
 
@@ -105,7 +69,7 @@ Anthropic's partner motion helps us if it amplifies a sale that already works:
 
 1. Claude-first credibility for outreach and buyer conversations
 2. stronger positioning for code modernization and workflow-hardening work
-3. better support for consultancies and implementation-led delivery
+3. feedback from consultancies using the software in their own delivery work
 
 It does not replace founder-led outbound, proof, or a real offer.
 
@@ -149,10 +113,10 @@ Always include:
 
 ## Recommended Distribution Sequence
 
-1. Tighten the public landing page around the Setup Sprint.
+1. Tighten the public landing page around the free CLI and self-serve ThumbGate Pro.
 2. Use the proof pack in direct outreach to consultancies, platform teams, and Claude-first engineering leaders.
 3. Support the outreach with the generated Claude workflow hardening pack plus role-based LinkedIn, Reddit, or Bluesky follow-ups.
-4. Keep the ask narrow: one workflow, one pilot, one proof review.
+4. Keep the ask narrow: install locally, verify a configured gate, and compare Pro features.
 5. Use partner-network status only as supporting credibility once it is real.
 
 ## GTM Signals Reinforced This Week

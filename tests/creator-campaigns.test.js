@@ -19,7 +19,7 @@ test('buildCreatorOfferCode creates stable creator-oriented codes', () => {
   assert.equal(buildCreatorOfferCode('reach_vb', 'team'), 'REACH-VB-TEAM');
 });
 
-test('buildCreatorCampaignLinks generates tracked landing, Pro, Team, and sprint links', () => {
+test('buildCreatorCampaignLinks preserves attributed links and sends the retired sprint alias to current pricing', () => {
   const result = buildCreatorCampaignLinks({
     creator: '@reach_vb',
     source: 'x',
@@ -51,7 +51,9 @@ test('buildCreatorCampaignLinks generates tracked landing, Pro, Team, and sprint
   assert.equal(teamCheckoutUrl.searchParams.get('seat_count'), '3');
 
   const sprintUrl = new URL(result.links.sprintUrl);
-  assert.equal(sprintUrl.hash, '#workflow-sprint-intake');
+  assert.equal(sprintUrl.pathname, '/pricing');
+  assert.equal(sprintUrl.hash, '');
+  assert.equal(sprintUrl.searchParams.get('creator'), 'reach_vb');
 });
 
 test('summarizeCreatorPerformance ranks creators by revenue before traffic', () => {

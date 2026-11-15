@@ -68,7 +68,7 @@ High-level:
 | Tier | Monthly minimum | Included volume | Overage | Best for |
 |------|----------------:|----------------:|--------:|----------|
 | Starter | $25 | first 12,500 evaluations | $0.002 / eval | Single-agent products |
-| Pro | $499 | 500,000 evaluations | $0.001 / eval | Multi-agent teams, DPO export |
+| Pro | $19/mo | 500,000 evaluations | $0.001 / eval | Multi-agent teams, DPO export |
 | Enterprise | custom | custom | custom | Resellers / claw-style agent fleets |
 
 MakersClaw resale terms:

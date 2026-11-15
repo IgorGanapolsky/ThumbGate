@@ -20,38 +20,26 @@ const commercialTruth = read('docs/COMMERCIAL_TRUTH.md');
 const ladder = read('docs/REVENUE_OFFER_LADDER.md');
 const diagnostic = read('public/diagnostic.html');
 
-test('commercial truth names one promoted public service offer', () => {
-  assert.match(commercialTruth, /only promoted public offer.*Setup Sprint.*\$499 one-time/is);
-  assert.match(commercialTruth, /\/go\/diagnostic-pay/);
-  assert.match(commercialTruth, /\$1,500.*internal catalog\/scoping rail/i);
-  assert.match(commercialTruth, /\$499.*only currently promoted public one-time service offer/i);
+test('commercial truth promotes self-serve Pro and retires implementation services', () => {
+  assert.match(commercialTruth, /Pro at \$19\/mo or \$149\/yr/);
+  assert.match(commercialTruth, /primary paid CTA is `\/checkout\/pro`/);
+  assert.match(commercialTruth, /Pro is a software subscription and includes no implementation/);
+  assert.equal(OFFER_CATALOG.workflow_hardening_diagnostic.status, 'retired');
+  assert.equal(OFFER_CATALOG.workflow_hardening_sprint.status, 'retired');
+  assert.equal(OFFER_CATALOG.workflow_hardening_diagnostic.publicCheckout, false);
+  assert.equal(OFFER_CATALOG.workflow_hardening_sprint.publicCheckout, false);
 });
 
-test('managed-gate page states a complete fixed-scope implementation contract', () => {
-  assert.match(diagnostic, /Exactly what the \$499 Setup Sprint includes/);
-  assert.match(diagnostic, /one 60-minute working review/i);
-  assert.match(diagnostic, /within two business days/i);
-  assert.match(diagnostic, /workflow and failure map/i);
-  assert.match(diagnostic, /one configured local gate/i);
-  assert.match(diagnostic, /regression test/i);
-  assert.match(diagnostic, /rollout, rollback, and verification proof/i);
-  assert.match(diagnostic, /does not include multi-system implementation/i);
-  assert.match(diagnostic, /guaranteed savings/i);
-  assert.match(diagnostic, /order is refunded instead of being silently converted/i);
+test('retired service artifact directs buyers to current plans without service commitments', () => {
+  assert.match(diagnostic, /retired/i);
+  assert.match(diagnostic, /href="\/pricing"/);
+  assert.doesNotMatch(diagnostic, /60-minute|two business days|configured local gate|order is refunded/);
 });
 
-test('managed-gate fit mechanics prevent an open-ended upsell', () => {
-  assert.match(diagnostic, /data-diagnostic-fit-terms/);
-  assert.match(diagnostic, /order is refunded instead of being silently converted/i);
-  assert.doesNotMatch(diagnostic, /public Setup Sprint is/i);
-  assert.match(commercialTruth, /refunded instead of silently upsold/i);
-});
-
-test('unverified marketplace obligations cannot receive a payment diversion', () => {
-  assert.match(diagnostic, /Aiventyx payment path is paused/i);
-  assert.match(diagnostic, /seller fees and downstream obligations remain unverified/i);
-  assert.match(diagnostic, /without entering a marketplace payment or revenue-share commitment/i);
-  assert.doesNotMatch(diagnostic, /Aiventyx will collect payment/);
+test('unverified marketplace obligations remain blocked before sending or payment routing', () => {
+  const { CAMPAIGNS } = require('../scripts/revenue-email-dispatch');
+  assert.equal(CAMPAIGNS.aiventyx_marketplace_followup.status, 'hold_unverified_cost');
+  assert.match(CAMPAIGNS.aiventyx_marketplace_followup.blockedReason, /fees and downstream obligations are not verified/);
 });
 
 test('offer ladder prices match the runtime catalog defaults', () => {
@@ -59,8 +47,8 @@ test('offer ladder prices match the runtime catalog defaults', () => {
   assert.equal(DEFAULT_WORKFLOW_SPRINT_PRICE_DOLLARS, 1500);
   assert.equal(PRO_MONTHLY_PRICE_DOLLARS, 19);
   assert.equal(PRO_ANNUAL_PRICE_DOLLARS, 149);
-  assert.match(ladder, /price: \$499 one-time/);
-  assert.match(ladder, /price: \$1,500 one-time/);
+  assert.match(ladder, /diagnostic and workflow sprint are retired/i);
+  assert.equal(OFFER_CATALOG.workflow_hardening_sprint.priceCents, 150000);
   assert.match(ladder, /price: \$19\/month or \$149\/year/);
   assert.equal(OFFER_CATALOG.workflow_reliability_operations.priceCents, 300000);
   assert.equal(OFFER_CATALOG.enterprise_governance_pilot.priceCents, 1500000);
@@ -76,8 +64,8 @@ test('offer ladder prices match the runtime catalog defaults', () => {
 test('revenue target is explicit math and never presented as achieved traction', () => {
   assert.match(ladder, /\$24,000\/day/);
   assert.match(ladder, /\$8,760,000\/year/);
-  assert.match(ladder, /49.*paid.*\$499.*diagnostics per day/i);
-  assert.match(ladder, /16.*paid.*\$1,500.*internal sprint scopes per day/i);
+
+
   assert.match(ladder, /38,422.*active.*\$19\/month.*subscriptions/i);
   assert.match(ladder, /244.*active.*\$3,000\/month.*Workflow Reliability Operations/i);
   assert.match(ladder, /49.*paid.*\$15,000.*Enterprise Governance Pilots/i);
@@ -97,7 +85,7 @@ test('offer ladder keeps proof stages and Enterprise boundaries distinct', () =>
   assert.match(ladder, /cannot advance to `paid_team` until the linked sales-pipeline record/i);
   assert.match(ladder, /Stripe Checkout Session, Payment Link, price, product, or raw PayPal checkout URL is not payment evidence/i);
   assert.match(ladder, /exact offer, catalog value or documented.*SHA-256 agreement digest/i);
-  assert.match(ladder, /same buyer's separate provider-paid `\$499` diagnostic/i);
+
   assert.match(ladder, /cannot be reused across multiple workflow contracts/i);
   assert.match(ladder, /generic Pro subscription.*cannot become recurring or Enterprise proof/i);
   assert.match(ladder, /completed-pilot reference and digest/i);

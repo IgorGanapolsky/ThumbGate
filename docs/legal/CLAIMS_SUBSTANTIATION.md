@@ -15,7 +15,7 @@ performance warranty.
 | **Proof** | Verification evidence, golden tests, receipts | `docs/VERIFICATION_EVIDENCE.md`, prove scripts | Proof is for named suites/versions | Link evidence; don’t use “proof” as vibes |
 | **Self-improving** | Local feedback → lessons → prevention rules | Feedback-to-rules tests; memory lifecycle | **Not** model weight training; not silent autonomous policy without human signal path | Always clarify: local rules from feedback, not LLM retrain |
 | **Zero workspace telemetry** | Local engine doesn’t upload workspace source by default | Local path defaults; privacy docs | Account/billing/device/runner metadata still processed on hosted paths | Keep narrow wording from privacy policy |
-| **$499 two-business-day delivery** | Service schedule after access + materials | Diagnostic page + Module B terms | Clock starts after customer materials | Don’t promise calendar-day delivery from payment alone |
+ThumbGate offers a free local CLI and self-serve Pro for recall, dashboard, adapters, and exports. Current plans: https://thumbgate.ai/pricing
 
 ## Phrases to prefer
 

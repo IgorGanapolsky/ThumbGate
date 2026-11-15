@@ -55,7 +55,7 @@ test('proposal-only recurring and Enterprise offers never expose public checkout
   assert.equal(proposalOnly.length, 3);
   for (const offer of proposalOnly) {
     assert.equal(offer.publicCheckout, false);
-    assert.equal(offer.nextStep, '/#workflow-sprint-intake');
+    assert.equal(offer.nextStep, '/pricing');
     assert.match(offer.proofToCountRevenue, /signed/i);
   }
 });
@@ -261,6 +261,8 @@ test('complete first-party sprint intake gets a bounded evidence-based qualifica
   assert.equal(card.requestedOfferId, 'workflow_hardening_sprint');
   assert.equal(card.recommendedOffer.offerId, 'workflow_hardening_sprint');
   assert.equal(card.recommendedOffer.priceCents, 150000);
+  assert.match(card.recommendedNextStep, /retired/i);
+  assert.doesNotMatch(card.recommendedNextStep, /send.*checkout|scope questions/i);
   assert.equal(card.questionsToAsk.length, 3);
   assert.equal(card.approvalPhrase, null);
   assert.equal(card.checkoutEligible, false);
@@ -336,8 +338,8 @@ test('reviewed diagnostic becomes checkout-eligible without authorizing a send o
   assert.equal(card.fitScore, 100);
   assert.equal(card.priorityScore, 115);
   assert.equal(card.unknowns.length, 0);
-  assert.equal(card.checkoutEligible, true);
-  assert.equal(card.checkoutPath, '/diagnostic');
+  assert.equal(card.checkoutEligible, false);
+  assert.equal(card.checkoutPath, null);
   assert.equal(card.approvalPhrase, null);
   assert.equal(card.externalActionAuthorized, false);
   assert.equal(card.revenueRecognized, false);
@@ -365,7 +367,7 @@ test('current new intake gets a bounded zero-spend discovery packet without paym
 
   assert.equal(packet.type, 'discovery_questions');
   assert.equal(packet.status, 'approval_ready_not_authorized');
-  assert.equal(packet.destination.address, 'buyer@example.com');
+  assert.deepEqual(packet.destination, { channel: 'email', address: 'buyer@example.com' });
   assert.equal(packet.evidence.questionCount, 3);
   assert.equal(packet.evidence.sellerAccessCostStatus, 'proceed_zero_cost');
   assert.match(packet.draft.subject, /Quick clarification/i);
@@ -449,14 +451,15 @@ test('verified diagnostic close packet is exact and approval-ready but never pre
     qualificationReviewVerified: true,
     publicOrigin: 'https://thumbgate.ai',
   });
-  assert.equal(packet.status, 'approval_ready_not_authorized');
+  assert.equal(packet.status, 'hold_not_approval_ready');
+  assert.ok(packet.blockers.includes('offer_retired'));
   assert.equal(packet.offer.offerId, 'workflow_hardening_diagnostic');
   assert.equal(packet.offer.price, '$499.00');
-  assert.equal(packet.offer.checkoutUrl, 'https://thumbgate.ai/diagnostic');
-  assert.equal(packet.offer.scopeFirst, false);
-  assert.equal(packet.destination.address, 'buyer@example.com');
-  assert.match(packet.draft.body, /no follow-up is required/i);
-  assert.match(packet.approvalPhrase, /^APPROVE SEND THUMBGATE WORKFLOW_HARDENING_DIAGNOSTIC OFFER TO LEAD_EXAMPLE_1234$/);
+  assert.equal(packet.offer.checkoutUrl, null);
+  assert.equal(packet.offer.scopeFirst, true);
+  assert.equal(packet.destination, null);
+  assert.equal(packet.draft, null);
+  assert.equal(packet.approvalPhrase, null);
   assert.equal(packet.externalActionAuthorized, false);
   assert.equal(packet.revenueRecognized, false);
 });
@@ -508,7 +511,7 @@ test('close packet fails closed for stale, forged, or unsafe-checkout inputs', (
     qualificationReviewVerified: true,
     publicOrigin: 'javascript:alert(1)',
   });
-  assert.ok(unsafe.blockers.includes('checkout_url_unavailable'));
+  assert.ok(unsafe.blockers.includes('offer_retired'));
   assert.equal(unsafe.draft, null);
 });
 
@@ -539,10 +542,11 @@ test('scope-first sprint packet contains no checkout or payment request before a
     now: '2026-07-16T12:00:00.000Z',
     qualificationReviewVerified: true,
   });
-  assert.equal(packet.status, 'approval_ready_not_authorized');
+  assert.equal(packet.status, 'hold_not_approval_ready');
+  assert.ok(packet.blockers.includes('offer_retired'));
   assert.equal(packet.offer.price, '$1,500.00');
   assert.equal(packet.offer.scopeFirst, true);
   assert.equal(packet.offer.checkoutUrl, null);
-  assert.match(packet.draft.body, /no payment link or invoice will be sent before written scope acceptance/i);
+  assert.equal(packet.draft, null);
   assert.ok(packet.verificationPlan.some((item) => /written scope acceptance/i.test(item)));
 });

@@ -199,18 +199,6 @@ function buildListingCopy(links = buildRevenueLinks()) {
     marketplaceNote: 'Official directory review is separate. Use the repo marketplace path and review packet honestly while approval is pending.',
     followOnOffers: [
       {
-        label: 'Setup Sprint',
-        url: buildTrackedClaudeLink(links.sprintLink, {
-          utmCampaign: 'claude_listing_sprint',
-          utmContent: 'workflow_sprint',
-          campaignVariant: 'team_follow_on',
-          offerCode: 'CLAUDE-LISTING_SPRINT',
-          ctaId: 'claude_listing_sprint',
-          ctaPlacement: 'listing_copy',
-          surface: 'claude_post_install',
-        }),
-      },
-      {
         label: 'ThumbGate Pro',
         url: buildTrackedClaudeLink(links.proCheckoutLink, {
           utmCampaign: 'claude_listing_pro',
@@ -229,21 +217,6 @@ function buildListingCopy(links = buildRevenueLinks()) {
 
 function buildFollowOnOffers(links = buildRevenueLinks()) {
   return [
-    {
-      key: 'sprint',
-      label: 'Setup Sprint',
-      pricing: 'Intake-led sprint, then Team at $49/seat/mo with a 3-seat minimum after qualification',
-      buyer: 'Teams that already named one repeated Claude workflow failure, one owner, and one approval boundary.',
-      cta: buildTrackedClaudeLink(links.sprintLink, {
-        utmCampaign: 'claude_workflow_team_follow_on',
-        utmContent: 'workflow_sprint',
-        campaignVariant: 'team_follow_on',
-        offerCode: 'CLAUDE-TEAMS_FOLLOW_ON',
-        ctaId: 'claude_team_follow_on',
-        ctaPlacement: 'post_install',
-        surface: 'claude_post_install',
-      }),
-    },
     {
       key: 'pro',
       label: 'ThumbGate Pro',
@@ -272,7 +245,7 @@ function buildProspectQueue(report = {}) {
       ? `${normalizeText(target.username)}/${normalizeText(target.repoName)}`
       : `@${normalizeText(target.username) || 'unknown'}`,
     temperature: normalizeText(target.temperature) || 'cold',
-    motion: normalizeText(target.motionLabel || target.motion) || 'Setup Sprint',
+    motion: normalizeText(target.motionLabel || target.motion) || 'ThumbGate Pro',
     reason: normalizeText(target.motionReason || target.outreachAngle || target.description) || 'No motion reason recorded.',
     evidence: Array.isArray(target.evidence) && target.evidence.length
       ? target.evidence.map((entry) => normalizeText(entry)).filter(Boolean).join(', ')
@@ -326,7 +299,7 @@ function buildOutreachDrafts(links = buildRevenueLinks()) {
       key: 'pain_confirmed_sprint',
       channel: 'Pain-confirmed follow-up',
       audience: 'Team owner who confirmed one repeated Claude workflow failure',
-      draft: `Once the failure pattern is real, the next useful step is one workflow hardening sprint with proof, not another generic governance conversation. Use the sprint intake first, then attach Commercial Truth and Verification Evidence so the rollout stays inspectable: ${sprintLink} then ${COMMERCIAL_TRUTH_LINK} and ${VERIFICATION_EVIDENCE_LINK} .`,
+      draft: `Start with the free local CLI. Choose self-serve Pro for recall, dashboard, adapters, and exports. Compare current plans at https://thumbgate.ai/pricing.`,
     },
     {
       key: 'solo_pro_follow_up',
@@ -391,7 +364,7 @@ function buildChannelDrafts(report = {}, links = buildRevenueLinks()) {
       evidenceSummary: `${warmClaudeTargetCount} warm Claude-flavored target(s) in the current report already named context risk, rollback risk, or brittle review boundaries.`,
       cta: redditSprintLink,
       proofTiming: 'Do not attach Commercial Truth or Verification Evidence until the buyer confirms the failure pattern.',
-      draft: `You already called out the risky part of Claude workflows: the same failure keeps coming back when context shifts or review boundaries get blurry. I am not trying to sell you another agent platform. I am offering to harden one workflow end-to-end so the repeated failure becomes a Pre-Action Check with proof behind it. If you want to pick one workflow, start here: ${redditSprintLink} .`,
+      draft: `You already called out the risky part of Claude workflows: the same failure keeps coming back when context shifts or review boundaries get blurry. ThumbGate provides a free local CLI for configuring prevention rules and inspecting pre-action checks. Compare free and self-serve Pro software plans here: ${redditSprintLink} .`,
     },
     {
       key: 'linkedin_platform_post',
@@ -429,9 +402,9 @@ function buildChannelDrafts(report = {}, links = buildRevenueLinks()) {
 function buildMeasurementPlan() {
   return {
     northStar: 'claude_install_to_paid_intent',
-    policy: 'Treat Claude installs as useful only when they produce a tracked sprint intake, Pro checkout start, or qualified team conversation.',
-    minimumUsefulSignal: 'One tracked Setup Sprint intake or Pro checkout start sourced from a Claude-tagged surface.',
-    strongSignal: 'Three tracked paid-intent events across sprint intakes, Pro checkout starts, or qualified team conversations.',
+    policy: 'Treat Claude installs as useful only when they produce a tracked product inquiry, Pro checkout start, or qualified team conversation.',
+    minimumUsefulSignal: 'Start with the free local CLI. Choose self-serve Pro for recall, dashboard, adapters, and exports. Compare current plans at https://thumbgate.ai/pricing.',
+    strongSignal: 'Three tracked paid-intent events across product inquiries, Pro checkout starts, or qualified team conversations.',
     metrics: [
       'claude_desktop_guide_views',
       'claude_code_repeat_mistakes_views',
@@ -456,7 +429,7 @@ function buildMeasurementPlan() {
       },
       {
         window: 'days_31_60',
-        goal: 'Promote whichever Claude lane converts best: install-first Pro or workflow-hardening sprint.',
+        goal: 'Start with the free local CLI. Choose self-serve Pro for recall, dashboard, adapters, and exports. Compare current plans at https://thumbgate.ai/pricing.',
         decisionRule: 'If install demand exists without paid intent, move the sprint CTA and proof path closer to the highest-intent Claude surface.',
       },
       {
@@ -467,7 +440,7 @@ function buildMeasurementPlan() {
     ],
     doNotCountAsSuccess: [
       'bundle downloads without paid-intent events',
-      'proof clicks without sprint intake or Pro checkout starts',
+      'proof clicks without product inquiry or Pro checkout starts',
       'unverified directory approval or revenue claims',
     ],
   };
@@ -489,7 +462,7 @@ function buildClaudeWorkflowHardeningPack(report = {}, links = buildRevenueLinks
   return {
     generatedAt: normalizeText(report.generatedAt) || new Date().toISOString(),
     state: normalizeText(report?.directive?.state) || 'cold-start',
-    objective: 'Turn Claude install demand and workflow-hardening pain into tracked sprint intakes, proof clicks, and Pro checkout starts without making approval or revenue claims the repo cannot verify.',
+    objective: 'Turn Claude install demand and workflow-hardening pain into tracked product inquiries, proof clicks, and Pro checkout starts without making approval or revenue claims the repo cannot verify.',
     headline: CANONICAL_HEADLINE,
     shortDescription: CANONICAL_SHORT_DESCRIPTION,
     summary: buildPackSummary(report),

@@ -16,8 +16,8 @@ test('unverified-cost revenue email is paused and contains only first-party buye
   assert.equal(message.to, 'qaisermehdi3@gmail.com');
   assert.equal(CAMPAIGNS.aiventyx_marketplace_followup.status, 'hold_unverified_cost');
   assert.match(message.text, /payment routing remains paused/i);
-  assert.match(message.text, /https:\/\/thumbgate\.ai\/diagnostic/);
-  assert.match(message.text, /https:\/\/thumbgate\.ai\/go\/sprint/);
+  assert.match(message.text, /https:\/\/thumbgate\.ai\/pricing/);
+  assert.doesNotMatch(message.text, /\/diagnostic|\/go\/sprint|\$499|\$1,500/);
   assert.doesNotMatch(message.text, /buy\.stripe\.com|paypal\.com\/ncp\/payment/);
   assert.match(message.text, /Max Smith KDP LLC/);
   assert.match(message.text, /Unsubscribe:/);

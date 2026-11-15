@@ -4,7 +4,7 @@ Scope: `docs/COMMERCIAL_TRUTH.md`, `docs/specs/`, `docs/guides/`, `README.md`, p
 
 ## docs/COMMERCIAL_TRUTH.md
 
-- The doc says the only promoted public offer is the `$499` Managed AI Agent Workflow Gate, and that Pro `$19/mo` or `$149/yr` is not promoted on `/` or `/pricing`. Live `/` and `/pricing` show Pro `$19/mo` (`$149/yr`) beside a `$499` Setup Sprint. The live name is not Managed AI Agent Workflow Gate.
+- The doc says the only promoted public offer is the `$19/mo` Managed AI Agent Workflow Gate, and that Pro `$19/mo` or `$149/yr` is not promoted on `/` or `/pricing`. Live `/` and `/pricing` show Pro `$19/mo` (`$149/yr`) beside a `$19/mo` ThumbGate Pro. The live name is not Managed AI Agent Workflow Gate.
 - Live `/operator-framework` shows `$2,500` Turnkey Setup, `$500/mo` Managed Retainer, and `iganapolsky@gmail.com`. None of those are the promoted public offer in this doc.
 - Live `/pro` shows `$19/mo`, `$149/yr`, a `$15,000` 30-day pilot, and `$10,000/month` after a completed pilot. The doc treats the last two as proposal-only, with no public checkout.
 

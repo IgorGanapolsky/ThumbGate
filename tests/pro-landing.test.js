@@ -35,7 +35,7 @@ test('pro landing page uses checkout routes for monthly and annual conversions',
   assert.match(proPage, /pro_page_nav/);
   assert.match(proPage, /pricing_pro/);
   assert.match(proPage, /billing_cycle=annual/);
-  assert.match(proPage, /\$19\/mo/);
+  assert.match(proPage, /__PRO_PRICE_DOLLARS__/);
   assert.match(proPage, /\$149\/yr/);
   assert.doesNotMatch(proPage, /Pay \$19 quick read/i);
   assert.doesNotMatch(proPage, /pro_page_hero_quick_read_checkout/);
@@ -50,7 +50,7 @@ test('pro landing page keeps the pricing section focused on the $19 Pro checkout
   assert.match(pricingSection, /Start Pro Now/);
   assert.match(pricingSection, /billed today/i);
   assert.match(pricingSection, /Restart|Start|Choose annual/);
-  assert.match(pricingSection, /Book an Enterprise Pilot Call/);
+  assert.match(pricingSection, /Explore the free CLI/);
   assert.doesNotMatch(pricingSection, /<h3>ThumbGate Team/);
 });
 
@@ -95,8 +95,8 @@ test('pro landing page tracks paid CTAs without unsupported claims', () => {
 test('pro landing page keeps services out of the Pro buyer path', () => {
   const proPage = readProPage();
 
-  assert.match(proPage, /Enterprise diagnostics and custom services are handled through intake, not this buyer path/);
-  assert.match(proPage, /Book an Enterprise Pilot Call/);
+  assert.match(proPage, /Choose the free CLI or a self-serve Pro subscription/);
+  assert.match(proPage, /Explore the free CLI/);
   assert.doesNotMatch(proPage, /data-pro-paid-recovery/);
   assert.doesNotMatch(proPage, /data-first-rule-link/);
   assert.doesNotMatch(proPage, /data-quick-read-link/);
@@ -142,7 +142,7 @@ test('pro landing page keeps team pilot attribution ahead of the intake anchor',
 
   assert.match(
     proPage,
-    /href="\/#workflow-sprint-intake"/
+    /href="\/pricing"/
   );
   assert.doesNotMatch(proPage, /href="\/#workflow-sprint-intake\?utm_source=website/);
 });

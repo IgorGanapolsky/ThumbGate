@@ -8,7 +8,7 @@
 ```
                         ThumbGate commercial surfaces
   ┌────────────────────┬──────────────────────────┬────────────────────────┐
-  │ A. Local engine    │ B. $499 Workflow Gate    │ C. Hosted / .app       │
+  │ A. Local engine    │ B. $19/mo Workflow Gate    │ C. Hosted / .app       │
   │ npm `thumbgate`    │ Professional service     │ thumbgate.app + API    │
   │ MIT CLI / MCP      │ One workflow, one gate   │ Pairing, runners, Pro  │
   └────────────────────┴──────────────────────────┴────────────────────────┘
@@ -18,7 +18,7 @@
 | --- | --- | --- | --- |
 | A Local Free | Operators installing CLI | $0 | Public MIT repo / npm |
 | A Pro | Solo operators | Stripe Pro $19/mo or $149/yr | Hosted license + local engine |
-| B Workflow Gate | Teams with one repeated failure | Stripe $499 Payment Link | Service delivery, not SaaS seats |
+ThumbGate offers a free local CLI and self-serve Pro for recall, dashboard, adapters, and exports. Current plans: https://thumbgate.ai/pricing
 | C Hosted / app | Paired devices, cloud work | Pro / Continuity / future hosted | Railway API, app pairing, runners |
 
 Marketing domains:
@@ -33,7 +33,7 @@ recommends otherwise.
 
 ## 2. Data-flow matrix (what leaves the machine)
 
-| Data class | Local CLI (default) | Hosted API / Pro | $499 service | ThumbGate.app runners |
+| Data class | Local CLI (default) | Hosted API / Pro | $19/mo service | ThumbGate.app runners |
 | --- | --- | --- | --- | --- |
 | Workspace source code / diffs | Stays on disk under project / `~/.thumbgate` / `.claude` | Not transmitted by local engine | Only if customer voluntarily shares samples for gate design | Only if customer routes that work to a runner |
 | Feedback / lessons / prevention rules | Local JSONL / SQLite / vectors | Hosted only if customer uses hosted key / sync (not GA for team sync) | May receive non-secret examples for gate design | Runner metadata, not full workspace by default |
@@ -67,7 +67,7 @@ Outcomes include allow, warn / checkpoint, require human approval, or hard
 deny. **Absence of a deny is not proof the action is safe** — only that no
 matching gate fired under current config and integrations.
 
-## 4. $499 Setup Sprint — deliverable fence
+ThumbGate offers a free local CLI and self-serve Pro for recall, dashboard, adapters, and exports. Current plans: https://thumbgate.ai/pricing
 
 Narrow deliverable (must match site and Module B of Terms):
 

@@ -16,7 +16,7 @@ ThumbGate operates across three distinct commercial and technical surfaces:
       ┌────────────────────────────┼────────────────────────────┐
       ▼                            ▼                            ▼
 ┌──────────────┐          ┌──────────────────┐        ┌──────────────────┐
-│  LOCAL ENGINE│          │ $499 WORKFLOW    │        │ THUMBGATE.APP    │
+│  LOCAL ENGINE│          │ $19/mo WORKFLOW    │        │ THUMBGATE.APP    │
 │  (npm/MCP)   │          │ GATE IMPLEMENT.  │        │ (Cloud / Mobile) │
 └──────────────┘          └──────────────────┘        └──────────────────┘
 • Local CLI & MCP Server  • One-time service SOW    • Device pairing & VPS
@@ -31,7 +31,7 @@ ThumbGate operates across three distinct commercial and technical surfaces:
 ### A. Structure: Master Services Agreement (MSA) + Product-Specific Modules
 We recommend a unified **Master Services Agreement (MSA)** with three modular schedules:
 - **Schedule A**: Local Software License & Pro Tier Terms
-- **Schedule B**: Professional Services SOW ($499 Hardened Workflow Gate)
+Free local CLI and self-serve Pro for recall, dashboard, adapters, and exports. Current plans: https://thumbgate.ai/pricing
 - **Schedule C**: Hosted Platform & Cloud Runner Terms (`thumbgate.app`)
 
 ---
@@ -58,7 +58,7 @@ We recommend a unified **Master Services Agreement (MSA)** with three modular sc
 
 ---
 
-### D. Surface 2 Specifics: $499 Hardened Workflow Gate (Professional Service)
+Free local CLI and self-serve Pro for recall, dashboard, adapters, and exports. Current plans: https://thumbgate.ai/pricing
 * **Narrow Deliverable Definition**:
   1. **One (1) Supported Workflow**: Scope limited to a single defined agent workflow (e.g., GitHub PR review gate, database write interdiction, or email dispatch barrier).
   2. **One (1) Configured Gate**: Production-ready ThumbGate rule configuration file and integration hook.
