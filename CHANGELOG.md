@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.40.1
+
+### Patch Changes
+
+- Publish the 1.40.0 changes to npm as 1.40.1. The v1.40.0 tag was already used by an older commit, so 1.40.0 could not be published.
+
 ## 1.40.0
 
 ### Minor Changes
