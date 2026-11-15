@@ -15,13 +15,14 @@
  * 5. Generates public canonical HTML page under public/blog/ ensuring valid canonical target.
  * 6. Coordinates fleet lease before writing to shared Obsidian Vault.
  * 7. Acquires atomic run lock to prevent duplicate execution across cron and launchd.
- * 8. Dispatches to Dev.to with canonical_url, holding ambiguous attempts until their outcome is reconciled.
+ * 8. Dispatches to Dev.to with canonical_url unless --stage-only is set.
  * 9. Records idempotent receipts to .thumbgate/daily-discoveries-ledger.jsonl.
  *
  * Usage:
  *   node scripts/thumbgate-daily-discoveries-publish.js --dry-run
  *   node scripts/thumbgate-daily-discoveries-publish.js --json
  *   node scripts/thumbgate-daily-discoveries-publish.js --force
+ *   node scripts/thumbgate-daily-discoveries-publish.js --stage-only
  */
 
 const fs = require('node:fs');
@@ -262,6 +263,7 @@ function getPublicationStatus(dateStr) {
     if (!item || item.date !== dateStr) continue;
     if (item.status === 'publication_unknown') status = 'publication_unknown';
     if (item.status === 'published' && hasPublicationReceipt(item.devto)) status = 'published';
+    if (item.status === 'staged' && status === null) status = 'staged';
   }
   return status;
 }
@@ -280,6 +282,7 @@ async function runDailyPublish(options = {}) {
   const dateStr = getFormattedDate(now);
   const dryRun = options.dryRun === true;
   const force = options.force === true;
+  const stageOnly = options.stageOnly === true;
   const topic = selectTopicForDay(now);
   const gitCommit = getRecentGitCommit();
   const content = generatePostContent(topic, dateStr, gitCommit);
@@ -331,6 +334,18 @@ async function runDailyPublish(options = {}) {
         date: dateStr,
       };
     }
+    if (stageOnly && !force && publicationStatus === 'staged') {
+      return {
+        status: 'already_staged',
+        date: dateStr,
+        topic: topic.slug,
+        title: topic.title,
+        canonicalUrl,
+        stagedPath,
+        publicBlogHtmlPath,
+        stageOnly: true,
+      };
+    }
 
     // 1. Stage local marketing markdown
     fs.mkdirSync(MARKETING_DIR, { recursive: true });
@@ -357,7 +372,7 @@ async function runDailyPublish(options = {}) {
 
     // 4. Attempt Dev.to publish if API key is present
     let devtoResult = null;
-    if (process.env.DEVTO_API_KEY) {
+    if (!stageOnly && process.env.DEVTO_API_KEY) {
       const { publishArticle } = require('./social-analytics/publishers/devto');
       recordLedgerEntry({
         date: dateStr,
@@ -406,6 +421,7 @@ async function runDailyPublish(options = {}) {
       canonicalUrl,
       stagedPath,
       publicBlogHtmlPath,
+      stageOnly,
       dryRun: false,
     };
   } finally {
@@ -418,9 +434,10 @@ async function main() {
   const dryRun = args.has('--dry-run');
   const json = args.has('--json');
   const force = args.has('--force');
+  const stageOnly = args.has('--stage-only');
 
   try {
-    const result = await runDailyPublish({ dryRun, force });
+    const result = await runDailyPublish({ dryRun, force, stageOnly });
     if (json) {
       process.stdout.write(JSON.stringify(result, null, 2) + '\n');
     } else {

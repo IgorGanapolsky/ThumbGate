@@ -190,6 +190,9 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
     'scripts/content-engine/',
   ];
   const forbiddenFiles = [
+    'scripts/thumbgate-daily-discoveries-publish.js',
+    'scripts/thumbgate-daily-discoveries-publish.sh',
+    'scripts/install-thumbgate-daily-publish-launchd.sh',
     'bin/memory.sh',
     'bin/obsidian-sync.sh',
     'scripts/autonomous-workflow.js',
