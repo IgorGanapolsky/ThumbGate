@@ -1,5 +1,119 @@
 # Changelog
 
+## 1.40.0
+
+### Minor Changes
+
+- 0196377: Add Google Gemini Decisions API (`gemini-decision-1`) single-pass zero-output-token PreToolUse safety gate (`/v1/gates/decide`) and calibrated checkout objection-to-Stripe offer closer (`/v1/billing/recommend-offer`).
+- 8540834: feat(doctor): recommend progressive sign-off removal for approval gates with 20+ clean runs
+- 76d070b: Add stable repository identities, a project catalog and attribution evidence, and project filters on lesson readers.
+- 37fad13: Add an offline migration that attributes historical feedback rows to projects with recorded evidence.
+- 33af84e: Stamp the project key at capture time and scope gate enforcement and the audit trail by project.
+- 1e0c53e: Add stable repository identities and an account-scoped project switcher for Dashboard and Lessons. Scope signal storage, search, exports, gate enforcement, review state and historical attribution, with an offline migration and isolated behavioral coverage.
+
+### Patch Changes
+
+- 285969e: feat(governance): add brand standards and voice PreToolUse gate for outbound copy and Adobe Creative Cloud local MCP file protection
+- 785176a: Expose the agentic prompt pipelines as MCP tools: `graphrag_traverse` (schema-first, read-only Neo4j ReAct loop; reports `unavailable` without NEO4J_URI, neo4j-driver or model credentials), `route_workload` (Claude/Gemini routing decision) and `trim_context` (just-in-time context compaction). Routing and trimming stay deterministic unless `useModel` is true.
+- ce55de7: Add `scripts/agentic-prompt-pipelines.js`: an executable GraphRAG ReAct traversal loop (schema-first, read-only Cypher guard, READ-session Neo4j adapter, 3-attempt fail-safe), a Claude/Gemini expert router with deterministic pre-routing and validated JSON decisions, and just-in-time context trimming with verbatim anchor retention.
+- 65e2a48: Harden Apple and Google SSO login CSRF checks (`Origin`/`Sec-Fetch-Site` + `thumbgate_sso_state` cookie binding), tighten AST design self-correction path/CSS confinement, and add `POST /v1/boost/evaluate` plus `POST /v1/decisions/subq-snap` (`subq-snap-1.2` SystemOne zero-overspend decision routing).
+- 060a90b: Billing portal routes (`GET /portal`, `/billing`, `POST /v1/billing/portal`) now open a Stripe portal only with proof of ownership (API key or checkout session id). A bare email or customer id, and a caller-supplied return URL, are ignored.
+- 194e117: Add 30-day agent governance register (`thumbgate agents --json`, editable owner, unregistered agent detection, and dashboard card).
+- 84c234a: fix(checkout): send a requester that opens a second checkout link within 20 seconds to the no-session confirm page, tag every Stripe session with its server entry route, and break the Stripe checkout diagnostic down by site, CTA and entry route for the last 30 days
+- 98a89cf: Turn the signed-in dashboard `#upNextCard` into a single `Finish setup` bar shown until the user's first PreToolUse gate block is recorded, linking to `npx thumbgate quickstart` (`/install#quickstart`) with the built-in safety rule pack + Free-tier block rules reward, and hiding automatically once the first block is recorded.
+- a637424: Add free-tier limit "Talk to us" operator intake queue lead button and day-0 two-button signup welcome email behind the Resend mailer with test/owner recipient filtering.
+- 9147914: Make dashboard gate rows and flow steps explain their behavior, and show honest local-data guidance when hosted activity is missing.
+- 69d0161: Keep signed-in dashboard feedback totals and review activity on the same human feedback scope. Explain empty hosted feedback, link to the supported local dashboard command, and show the actual data refresh time.
+- 0a24e85: Hide the dashboard sign-in button and sign-in helper copy once authenticated while preserving email, `Log Out`, and `Connected` state, and add Dayglass Today-style `Up next` card, real `blocked today / warned today / active gates` status chips, per-reply chat model & privacy route badges, and real on-device lesson storage size footer.
+- d3e5ebc: `dispatchWorkload` in `scripts/agentic-prompt-pipelines.js` now fails over across providers (Claude <-> Gemini) when an expert call errors or its output fails an optional `validateOutput` schema check (`requireJsonObject(keys)` helper included). Fallback hops are capped per dispatch (default 2, hard max 3) and skipped when the prompt won't fit the fallback expert's context; every attempt is returned in `attempts`.
+- 7ce26a8: fix(doctor): a host (non-container) runtime is now an advisory instead of a readiness warning, so `npx thumbgate doctor` exits 0 on a fully wired developer machine
+- 28378ca: Record the 2026-11-12 design-doc drift report and correct three stale non-pricing docs. The goldfish gate fix is in PR 5028.
+- 22c5a8c: Require a fresh reviewer session before an Elephant-Goldfish pass. Host instructions and lesson logs stay out of that packet. A second re-audit, an unranked finding, a write tool, a skipped stage, or a comprehension read of anything but the target fails closed.
+- 58104fc: Call the six strategies from the October 28 self-sent notes on every pre-tool check. A normal tool call is allowed. A payload that carries a raw secret, a production table change without an ephemeral branch, a service-role key, disabled row-level security, an unbounded destructive command, or an unbound assume-role is denied.
+- 6e77323: Replace unsupported enterprise guarantees with the approved supported-workflow scope and enforcement limits.
+- bdd9d44: Remove unexpanded template placeholders from the static enterprise page.
+- 874e7ac: Restrict financial-control detection so browser/computer-use clicks and form actions are economic only when the page/tab URL (including recorded BrowserOS navigate/tabs-new page IDs in the ThumbGate runtime dir) or control text indicates a spend surface or purchase, and keep Bash commands non-economic across both `financial-control-plane` and `workflow-sentinel` unless invoking a payment/billing API or CLI.
+- 1615f2a: Fix hosted dashboard "Finish setup" false positive for Pro/Team accounts and CLI-activated accounts, report one-time `first_block` activation events from CLI/hooks to `/v1/activation/first-block`, and backfill existing telemetry CLI activations and owner accounts.
+- 0663b46: feat(finops): add 90d analytics window, scale bounded telemetry tail budgets (8MB-64MB), hydrate missing journey IDs from HttpOnly cookies, and infer deterministic campaignVariant on checkout starts
+- f6baec7: Let CFO reports finish writing to stdout before the CLI exits so piped JSON remains complete.
+- 313ea87: Fix checkout conversion telemetry by distinguishing unpaid handoff clicks from paid order confirmations, and expose self-serve customer billing portal routes.
+- ebcfbdf: Extend `workflow-sentinel` destructive-delete detection (`destructive_delete`, warn by default) to cover `find ... -delete`, `find ... -exec rm`, Windows `rmdir /s` / `del /s` / `rd /s`, PowerShell `Remove-Item -Recurse`, `git clean -fdx`, and delete commands targeting unset or empty variables (`$T`, `${T}`, `"$T/"`), plus Codex/Windows shell tool-name and argv canonicalization in `gate_check`.
+- f663728: Route `/go/diagnostic-499` and `/go/diagnostic-direct` to `/diagnostic` instead of returning HTTP 404 for README and newsletter `$499` Setup Sprint links.
+- 6072c59: Stop classifying ordinary/OAuth browser clicks and quoted Bash prompts as economic actions in `financial-control-plane.js`, while keeping payment/checkout controls and payment provider CLI/API charges fail-closed.
+- f862e92: Restrict `self-protect-config` and `self-protect-hooks-disable` Bash matching to actual file mutations (redirects, `sed -i`, `cp`/`mv`/`rm`/`tee`/`truncate` targeting protected paths) and `Edit`/`Write`/`MultiEdit`/`NotebookEdit` protected targets, allowing read-only commands (`ls`, `cat`, `grep`, `git diff`) and heredocs writing to unrelated files.
+- f9f336f: fix(checkout): replace static Pro Payment Links with dynamic $19/mo & $149/yr Stripe Checkout Sessions, route /pricing self-serve Pro CTAs to 1-click /go/pro-direct, clarify Pro line-item value copy, and block phantom emailless/bot sessions on the Cloudflare Worker /billing/checkout route
+- dd6211f: Publish the founder-only 30-day gate audit at /guides/founder-30-day-proof. It counts 15 real blocked tool calls and does not present them as a customer case study.
+- 8b02c9a: Add `thumbgate proof --days 30 --json` so the 30-day blocked-action count is reproducible and excludes test, cron, and diagnostic noise.
+- 66dc48e: Add Capital One Databolt / Gartner 2026 AI risk & business-value governance controls: Luhn-valid and referential source format-preserving tokenization (`tokenizeDeepAtSource`, DPO `tokenizeAtSource`, field-level detokenization audit trail), Inference-Paradox & public cost-exhaustion circuit breaker (`evaluateInferenceParadoxGuard`), and anti-bypass Agentic Governance System of Record with Shadow AI, Dark AI, AI Custodian, and NIST 2030/2035 PQC countdown (`evaluateGartnerAgenticGovernanceRecord`).
+- 1095cb2: Add the `evals/graphrag-moe-jit` eval: the existing GraphRAG ReAct loop, Claude/Gemini router and JIT context trimmer run with a schema-first Cypher gate and the stdio MCP `gate_check` in front of every graph query. Registers `npm run test:graphrag-moe-jit-evals`; no change to the published package contents.
+- 28e4a91: Make /guide match the homepage and COMMERCIAL_TRUTH.md single-offer pricing. The guide no longer promotes the $1,500 sprint or the $3k/$15k/$10k service prices; its paid next step is the $499 Setup Sprint, named the same way as on the homepage.
+- 15e1ec5: perf(hooks): inject recent-corrections and recurring-pattern context once per session unless it changed, cutting repeated hook input tokens
+- 4bad799: Confine hosted customer feedback, learned rules, searches, team metrics, exports, jobs, and live events to the authenticated tenant. Preserve local and administrator storage defaults.
+- 6895d14: Update `scripts/thumbgate-inbox-sentinel.js` and `AGENTS.md` to classify inbox threads into six exhaustive dispositions (`REPLIED`, `DRAFTED_FOR_APPROVAL`, `NO_REPLY_NEEDED`, `WAITING_FOR_INFORMATION`, `BLOCKED`, `OPTED_OUT`) with send-by-default for ordinary business correspondence, approval-exception rules, mail-provider send confirmation tracking, runtime JSONL disposition ledger, and end-of-cycle reporting.
+- 0816198: Harden inbox disposition sentinel with recipient-scoped threadKey dedup, external CC/BCC thread-participant validation, opt-out precedence over non-corporate blocks, and sendEligible clearing on confirmed sends.
+- 3fb1416: Queue Mac dispatch with invisible issue-body markers instead of the ready-for-agent, agent-done, agent-claimed, and agent-blocked labels.
+- aa304ed: Recall a ThumbGate lesson when the call is in this repo and either the tool name or a command term matches. A push, a merge, and a health check can surface the branch-protection and deploy lessons again.
+- 5ac616c: Inject a prior lesson only when it matches the current tool call and repo, and stop storing raw transcript fragments as lessons.
+- 6550e57: Refuse live Stripe Checkout for fixture emails, including plus-tags and every acme.io or acme.com mailbox, and do not send those addresses to a Payment Link.
+- a017c43: Lead the homepage and dashboard Log in views with "Continue with Google" (and "Continue with Apple" right below when configured), remove the "ProKey" label, and move manual Pro/API license key entry behind a collapsible "Have a Pro license key?" link.
+- 7d78494: Wire Lovable active self-correcting AST design engine (HTML/JSX state-machine + CSS AST, HSL hue-preserving WCAG solver, hash-anchored inline edits, CSS overrides, and Tailwind adjustments) across ThumbGate's PreToolUse hook pipeline, MCP `gate_check` & `suggest_fix`, enterprise guardrails, and hosted `POST /v1/design/self-correct` on `thumbgate.ai`.
+- 28f4ecd: Add a cloud-to-Mac dispatch loop (`scripts/mac-dispatch-loop.js`) that runs open `ready-for-agent` GitHub issues through `claude -p` on a Mac under the owner's own permission settings, with cross-machine claim locking, allow-listed authors and folders, redacted evidence comments, and `agent-done`/`agent-blocked` labels. Adds a launchd installer, an optional Working directory field on the Ready for Agent issue template, and docs/guides/mac-dispatch-loop.md.
+- 0e7a111: feat(rrsi): the Elephant/Goldfish sanctuary spec gate now runs the McKinsey AI-coding operating model audit (1-2 day loops, P90 golden references, skill cap, WCAG AA and air-gap DLP, token ROI, $0 outbound spend) and blocks on its finding codes
+- 2762712: feat(governance): add static MCP database config lint script (not wired into the CLI)
+- 1b2f15b: Refuse to open a live Stripe Checkout session for probe, audit or health-check requests, so automated runs no longer show up as abandoned checkouts.
+- 7d292a7: Sell the $499 diagnostic under one name, Setup Sprint, with the promise, supported-failure criteria and refund condition at the top of the pricing and diagnostic pages.
+- e460f03: Add interactive 1-click first-block onboarding sandbox on /dashboard, stateless POST /v1/onboarding/try-block endpoint, and first_blocked_tool_call activation telemetry to eliminate the onboarding-to-aha activation drop-off.
+- 2729660: Add NVIDIA OpenShell formal policy boundary prover & proposal risk advisor, Adobe Creative/GenStudio non-destructive layer and cross-brand adherence guards, and Lovable inline CSS/Tailwind self-correcting design engine (`thumbgate policy-prove` and `thumbgate design-fix`).
+- 76b8d1c: Add the owner-only read-only admin API and route (part 2 of the owner admin split).
+- d424212: Add the owner-only read-only admin page (part 3 of the owner admin split).
+- 8d8a6b4: Add an owner-only read-only administration page using verified SSO sessions, bounded data and Stripe reads, and shared classified revenue summaries.
+- 5b6196e: Grant Enterprise operator/admin session entitlement via `THUMBGATE_OWNER_EMAILS` on Google and Apple SSO sign-in, and suppress "Get Pro" / upgrade upsells across `buyer-intent.js`, `/lessons`, and `/dashboard` for authenticated Pro and Enterprise sessions.
+- 375a2b0: Add a paid-user `Log in` navbar drawer on `public/index.html` that exchanges a Pro or operator API key once via `/v1/auth/session` for an opaque `HttpOnly; Secure; SameSite=Lax` session cookie and restores `/dashboard` sessions from that cookie without browser storage.
+- aa50db7: Add `pr-size` required check workflow (<= 1,000 changed lines excluding `package-lock.json` and generated files) and wire it into `config/main-branch-ruleset.json`.
+- b1da76d: Add daily stale PR sweeper workflow and `pr:manage --sweep-stale [--dry-run]` mode to close non-draft PRs with required checks red >24h and drafts idle >3d while preserving branches and skipping `dependabot/*` and `trunk-merge/*`.
+- e014bc6: When a free capture or rule cap is hit, the CLI and dashboard name the repeat Pro would have blocked.
+- b868620: Remove the $15,000 / $10,000 public pilot pitch from /pro so the page shows the same offers as the rest of the site: Free, Pro $19/mo, and the $499 sprint.
+- 6837b42: Block pasted passwords, private keys, and API keys in `UserPromptSubmit` prompts (`scripts/prompt-guard.js` and `hook-auto-capture`) with a plain-English Keychain warning, `THUMBGATE_PROMPT_SECRET_GUARD=off` opt-out, redacted runtime ledger telemetry (`type`, `serviceGuess`, `time`, zero secret values) surfaced on the dashboard, and prompt-hook parity across Codex/Forge/Claude adapter configs.
+- c06f091: docs(readme): route Pro CTAs through /go/pro-direct and Workflow Hardening Sprint CTAs through /go/diagnostic, keeping existing utm params
+- 701acea: Write each thumb as one scrubbed sentence, with the claim it corrected, into a private recent-thumbs file a fresh run can read. The public repo keeps only the pointer.
+- 044147b: Release checks now verify thumbgate.ai, the host customers use, instead of thumbgate-production.up.railway.app, which is a separate Railway deployment that rebuilds at a different time.
+- d04d085: Apply approved supported-workflow headline, fit-first links and illustrative example labels while preserving the current single-offer site.
+- 3c5dfee: Remove the deprecated `/broker-audit` static page and `/v1/intake/broker-audit` API intake route so ThumbGate serves only AI agent governance surfaces.
+- ab6750f: Remove all real-estate and tax-deed offers, routes, and references from ThumbGate, and add hard-blocking PreToolUse and social publisher guardrails plus regression tests so outbound ThumbGate channels never emit real-estate content.
+- c71bccc: Renew Chrome WebMCP Origin Trial tokens for https://thumbgate.app and https://www.thumbgate.app through 2027-03-30 and emit the Origin-Trial HTTP response header on HTML GET/HEAD responses.
+- 07056dc: Gate Google and Apple SSO buttons on configured OAuth client IDs, add `/v1/cloud/sso/callback` Google OIDC verification, persist auth sessions across redeploys, and fix dashboard Log Out to await session deletion and navigate to `/dashboard?noauto=1`.
+- 579c5d0: Route one-time `/go/playbook-999`, `/go/playbook-10`, and `/go/bundle-49` checkouts directly to Stripe Payment Links with instant credit-pack provisioning on `/checkout/success`.
+- b54cf9c: Scope PreToolUse lesson retrieval to current repository and drop transport transcripts
+  
+  - Enforce fixed-schema scope at capture time with repo/project resolution from `cwd` and git remote
+  - Add repo-aware project filtering in PreToolUse hook and lesson retrieval, preventing cross-project context pollution (StockService/Dayglass/etc.)
+  - Reject and demote transport transcript blobs carrying XML task runner tokens (`<task-notification>`, `<tool-use-id>`, etc.)
+  - Add `scripts/project-scope.js` and `scripts/backfill-lesson-scopes.js` to backfill project scopes on existing memory logs
+- 633ff63: Stop the revenue status from calling anonymous checkout sessions signups, and count email accounts separately.
+- a655480: Single public price list: $499 one-time Managed Workflow Gate is the only promoted offer. Pro ($19/mo, $149/yr) removed from public buying path. /numbers marked noindex. Personal Gmail replaced with igor@igorganapolsky.com.
+- 56f03da: Slim `CLAUDE.md` from 29,973 bytes (`origin/main`) / 34,163 bytes (working tree) to 6,905 bytes (`< 8 KB`) and extract detailed reference runbooks into `docs/agents/claude-reference-pack.md`.
+- e8123e4: gate stats normalise the distinct-blocked count before printing; so-answer-cron writes the tracker header again.
+- 1aaba04: Scan main with SonarCloud again, so pull requests are compared with current code instead of a June baseline.
+- 7cc064e: Make 1-click SSO primary on the landing page and dashboard (tucking headless CLI/CI API keys into a secondary disclosure when OAuth is configured), complete Apple Sign-In OIDC `form_post` + ES256 client-secret + JWKS verification on `/v1/cloud/sso/callback`, and harden the AST design self-correction pipeline against untrusted file-path reads and oversized inputs.
+- 20e761a: Add standard specification template (`docs/specs/TEMPLATE.md`) with the four Elephant sections (Problem, Technical Plan, Alternatives Rejected, Enumerated Files) plus Acceptance Checks, and add regression test enforcing standard structure on new specs.
+- a9d5225: Show only the owner's own thumbs-up and thumbs-down counts in the status line, not feedback recorded by agents.
+- 6521dd1: Fix statusline-meta.js personal tier resolution when operator.json is present and prevent secret-scanner generic_assignment false positives on code property accesses and function calls.
+- 2f20d50: Label operator/creator license tier in `scripts/statusline-meta.js` as `TG Enterprise` instead of bare `Enterprise` so the Claude Code status line is clearly identifiable as the ThumbGate plan.
+- dba8c3a: Stop agent and headless crawler checkout session creation on live `/go/*` redirect routes, block synthetic/probe/owner checkout emails on live Stripe keys, and exclude synthetic/agent/bot/sweep checkout sessions from funnel analytics.
+- ea26b1f: Stop phantom Stripe checkout sessions from automated link scanners by requiring top-level navigation headers, and add abandoned checkout recovery consent.
+- a331ed3: fix(diagnostic): explain why recent Stripe payment attempts did not finish (Payment Link, product, PaymentIntent error, charge outcome) with buyer emails masked for public CI logs
+- 33c5acc: Upgrade pre-action decision, context curation, and document passage grounding to SubQ Snap 1.2 (`/v1/systemone`, `$0.04/1M` input, `$0` output, `384K` multimodal context, single-pass option-order invariance, and zero-outbound-spend free-credit guard) alongside the SaaS Business Mastery 10-10-10 geometric growth and Opt-and-Max value-chain gate.
+- 0ea4c37: Refactor SubQ Snap 1.2 decision and module-router helpers to keep SonarCloud Cognitive Complexity below 15 and eliminate nested ternaries.
+- 50cee15: Remove four unused content and social analytics scripts and lower the orphan-script ceiling to catch future unwired capabilities.
+- e7d873c: Establish version 4.0 business goal contract and revenue scorecard in `docs/business/thumbgate-goal-contract.md`, establishing verified baselines from hosted telemetry, explicit assumptions for growth targets, and expected profit ranking for post-checkout interventions.
+- 10b019e: Remove the broken "Landing Page" nav link from `/dashboard`, `/lessons`, and `/lessons/:id`, unify all three signed-in headers behind one shared `renderSignedInAppNav` renderer (logo linking cleanly to `/`, active `Dashboard`/`Lessons` tabs, GitHub icon), and prevent `preserveProjectQueryParams()` from rewriting `href="/"` links.
+- d8343f4: Implement Stack Overflow for Agents (SOFA) verified lessons architecture:
+  - Verification lifecycle tracking (verificationStatus, verificationCount, lastVerifiedAt, verifications array).
+  - Verification-weighted lesson ranking and human-readable badges in retrieve_lessons.
+  - Up/down community voting on lessons with demotion when downVotes > upVotes until re-verified.
+  - Stale lesson marking (>30 days marked stale: true, formatted [STALE], never deleted).
+  - Search-before-solving exact error text lookup seeded with E2E_BASE_URL fix.
+
 ## 1.39.1
 
 ### Patch Changes
