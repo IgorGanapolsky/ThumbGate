@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.40.2
+
+### Patch Changes
+
+- c04d58e: Stage daily social content for review, queue engagement checks, and exclude repository-only publishing scripts from the npm package.
+- Fix npm package missing modules. Versions 1.39.0 through 1.40.1 omitted 35 files that `bin/cli.js` requires (including `scripts/third-author-governance.js`), so `npx thumbgate gate-check` failed with "Cannot find module". Added them to the `package.json` `files` list and added `tests/packed-cli-require-closure.test.js`, which packs the repo, checks every module reachable from `bin/cli.js` is in the tarball, requires each one from the unpacked package, and runs `gate-check` from the unpacked package. Because `cli.js` requires these modules and `npx gate-check` errors without them, two limits were raised: the file-count ceilings 656 to 688 (public-bundle-ratchet, public-core-boundary, package-boundary tests) and the unpacked size cap 10,110,000 to 10,296,000 bytes (measured 10,246,404, about 50 KB headroom).
+- 5f6c072: Restore homepage links to self-serve Pro and remove the setup offer from homepage copy.
+
 ## 1.40.1
 
 ### Patch Changes
