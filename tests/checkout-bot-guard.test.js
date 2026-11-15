@@ -177,38 +177,17 @@ describe('/checkout/pro bot guard', () => {
     }
   });
 
-  it('requires an email-backed POST before the diagnostic Payment Link', async () => {
-    const diagnosticCheckoutUrl = process.env.THUMBGATE_SPRINT_DIAGNOSTIC_CHECKOUT_URL;
-    delete process.env.THUMBGATE_SPRINT_DIAGNOSTIC_CHECKOUT_URL;
-    try {
-      const landing = await fetch(`${origin}/go/diagnostic?utm_source=aiventyx`, {
-        redirect: 'manual',
+  it('retired service routes return 410 without a payment redirect, even with buyer email', async () => {
+    for (const [route, method] of [['/go/diagnostic?utm_source=aiventyx', 'GET'], ['/go/diagnostic-pay', 'GET'], ['/go/diagnostic-pay', 'POST']]) {
+      const res = await fetch(`${origin}${route}`, {
+        method, redirect: 'manual',
+        ...(method === 'POST' ? { headers: { 'content-type': 'application/x-www-form-urlencoded' }, body: new URLSearchParams({ customer_email: 'buyer@example.com' }) } : {}),
       });
-      assert.equal(landing.status, 302);
-      assert.equal(new URL(landing.headers.get('location')).pathname, '/diagnostic');
-
-      const getPay = await fetch(`${origin}/go/diagnostic-pay`, { redirect: 'manual' });
-      assert.equal(getPay.status, 405);
-
-      const res = await fetch(`${origin}/go/diagnostic-pay`, {
-        method: 'POST',
-        redirect: 'manual',
-        headers: { 'content-type': 'application/x-www-form-urlencoded' },
-        body: new URLSearchParams({
-          customer_email: 'buyer@example.com',
-          utm_source: 'direct',
-        }),
-      });
-      assert.equal(res.status, 303);
-      const destination = new URL(res.headers.get('location'));
-      assert.equal(destination.origin + destination.pathname, 'https://buy.stripe.com/9B69ATbmI4r4aK5eOD3sI3k');
-      assert.equal(destination.searchParams.get('utm_source'), 'direct');
-      assert.equal(destination.searchParams.get('prefilled_email'), 'buyer@example.com');
-      const reference = destination.searchParams.get('client_reference_id');
-      assert.match(reference, /^tg2/);
-      assert.equal(require('../scripts/checkout-attribution-reference').parseCheckoutReference(reference).source, 'direct');
-    } finally {
-      process.env.THUMBGATE_SPRINT_DIAGNOSTIC_CHECKOUT_URL = diagnosticCheckoutUrl;
+      assert.equal(res.status, 410, `${method} ${route}`);
+      assert.equal(res.headers.get('location'), null);
+      const body = await res.text();
+      assert.match(body, /\/pricing/);
+      assert.doesNotMatch(body, /stripe\.com|buyer@example\.com/);
     }
   });
 
