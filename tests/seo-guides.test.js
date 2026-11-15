@@ -128,15 +128,22 @@ describe('SEO guide and comparison pages', () => {
 
       it('mentions a current commercial path', () => {
         html = html || fs.readFileSync(path.join(PUBLIC_DIR, file), 'utf-8');
-        const hasSingleOfferPath = html.includes('$499')
-          && (html.includes('Setup Sprint') || html.includes('Setup Sprint') || html.includes('managed'));
-        const hasManagedGatePath = html.includes('$499')
-          && html.includes('Setup Sprint')
-          && html.includes('/diagnostic');
-        assert.ok(
-          hasSingleOfferPath || hasManagedGatePath,
-          `${file} missing a current commercial path`
-        );
+        if (GUIDE_FILES.includes(file)) {
+          assert.match(html, /free (?:local )?CLI/i, `${file} must describe the free CLI`);
+          assert.match(html, /(?:self-serve Pro|Pro adds recall, dashboard, adapters, and exports)/i, `${file} must describe self-serve Pro`);
+          assert.match(html, /href="\/(?:pricing|checkout\/pro)(?:[?"#])/, `${file} must link to current plans`);
+          assert.doesNotMatch(html, /\$(?:499|1500)|sprint_diagnostic|workflow-sprint-intake|href="[^" ]*\/diagnostic/i);
+        } else {
+          const hasSingleOfferPath = html.includes('$499')
+            && (html.includes('Setup Sprint') || html.includes('Setup Sprint') || html.includes('managed'));
+          const hasManagedGatePath = html.includes('$499')
+            && html.includes('Setup Sprint')
+            && html.includes('/diagnostic');
+          assert.ok(
+            hasSingleOfferPath || hasManagedGatePath,
+            `${file} missing a current commercial path`
+          );
+        }
       });
     });
   }
@@ -202,54 +209,43 @@ describe('SEO guide and comparison pages', () => {
     assert.ok(html.includes('npx thumbgate background-governance --json'));
     assert.ok(html.includes('pre-dispatch governance check'));
     assert.ok(html.includes('risk-tiered review'));
-    assert.ok(html.includes('Setup Sprint'));
+    assert.match(html, /(?:self-serve Pro|Pro adds recall, dashboard, adapters, and exports)/i);
+    assert.doesNotMatch(html, /Setup Sprint|\$499|href="[^"]*\/diagnostic/i);
   });
 
-  it('AI agent workflow migration checklist routes buyers into the paid diagnostic', () => {
+  it('AI agent workflow migration checklist routes readers into free CLI and self-serve Pro', () => {
     const html = fs.readFileSync(
       path.join(PUBLIC_DIR, 'guides/ai-agent-workflow-migration-checklist.html'),
       'utf-8'
     );
 
     assert.ok(html.includes('AI Agent Workflow Migration Checklist'));
-    assert.ok(html.includes('$499 Agent Workflow Migration Diagnostic'));
+    assert.ok(html.includes('Free CLI and self-serve Pro'));
     assert.ok(html.includes('Use the free CLI first'));
-    assert.ok(html.includes('Use the free CLI first'));
-    assert.ok(html.includes('Start $499 diagnostic'));
-    assert.doesNotMatch(html, /href="\/checkout\/pro\?/);
-    assert.ok(html.includes('href="/guide?'));
-    assert.ok(html.includes('href="/diagnostic?'));
+    assert.ok(html.includes('href="/pricing"'));
+    assert.ok(html.includes('href="/guide"'));
     assert.equal(htmlHasBuyStripeHost(html), false, 'migration checklist must not hard-link buy.stripe.com');
-    assert.ok(html.includes('workflow-sprint-intake'));
-    assert.ok(html.includes('Free CLI + $499 one-time Setup Sprint'));
+    assert.doesNotMatch(html, /\$499|workflow-sprint-intake|href="[^" ]*\/diagnostic/);
     assert.ok(html.includes('pre-action rule that stops the already-rejected mistake'));
   });
 
-  it('AI agent governance sprint guide routes buyers into the Team intake', () => {
+  it('AI agent governance sprint guide explains retirement and links to software plans', () => {
     const html = fs.readFileSync(
       path.join(PUBLIC_DIR, 'guides/ai-agent-governance-sprint.html'),
       'utf-8'
     );
 
     assert.ok(html.includes('AI Agent Governance Sprint'));
-    assert.ok(html.includes('48-hour Setup Sprint'));
     assert.ok(html.includes('npx thumbgate background-governance --check --json'));
-    assert.ok(html.includes('workflow-sprint-intake'));
-    assert.ok(html.includes('Ready to scope the sprint?'));
-    const paidOfferHrefs = Array.from(
-      html.matchAll(/<a class="paid-offer [^"]+" href="([^"]+)"/g),
-      (match) => match[1]
-    );
-    assert.deepEqual(paidOfferHrefs, [
-      '/diagnostic?utm_source=website&amp;utm_medium=seo_page&amp;utm_campaign=ai_agent_governance_sprint&amp;utm_content=diagnostic',
-      '/diagnostic?utm_source=website&amp;utm_medium=seo_page&amp;utm_campaign=ai_agent_governance_sprint&amp;utm_content=sprint#intake',
-    ]);
+    assert.ok(html.includes('managed diagnostic and sprint offers are retired'));
+    assert.ok(html.includes('Pro is a software subscription'));
+    assert.ok(html.includes('You configure and validate your workflow checks'));
+    assert.ok(html.includes('href="/pricing"'));
+    assert.doesNotMatch(html, /48-hour|workflow-sprint-intake|Ready to scope the sprint|class="paid-offer |\$(?:499|1500)|href="[^" ]*\/diagnostic/);
     assert.equal(htmlHasBuyStripeHost(html), false, 'governance sprint guide must not hard-link buy.stripe.com');
-    assert.ok(html.includes('$499'));
-    assert.ok(html.includes('$1500'));
   });
 
-  it('AI deployment readiness guide converts production rollout demand into one managed gate', () => {
+  it('AI deployment readiness guide routes production rollout demand into software plans', () => {
     const html = fs.readFileSync(
       path.join(PUBLIC_DIR, 'guides/ai-deployment-readiness.html'),
       'utf-8'
@@ -259,10 +255,9 @@ describe('SEO guide and comparison pages', () => {
     assert.ok(html.includes('deployment companies'));
     assert.ok(html.includes('governance and proof layer'));
     assert.ok(html.includes('npx thumbgate background-governance --check --json'));
-    assert.ok(html.includes('Setup Sprint'));
-    assert.ok(html.includes('$499'));
-    assert.ok(html.includes('/diagnostic?utm_source=website'));
-    assert.ok(html.includes('utm_content=diagnostic'));
+    assert.match(html, /(?:self-serve Pro|Pro adds recall, dashboard, adapters, and exports)/i);
+    assert.match(html, /href="\/pricing[?"]/);
+    assert.doesNotMatch(html, /Setup Sprint|\$499|href="[^"]*\/diagnostic/i);
     assert.ok(!html.includes('workflow-sprint-intake'));
     assert.ok(!html.includes('Ready to scope the sprint?'));
     assert.ok(!html.includes('utm_content=sprint#intake'));
@@ -418,7 +413,12 @@ describe('SEO guide and comparison pages', () => {
     assert.ok(html.includes('compression saves tokens; ThumbGate prevents the repeated mistake from executing'));
     assert.ok(html.includes('Run compression before model context assembly. Run ThumbGate before execution.'));
     assert.ok(html.includes('utm_source=headroom_guide'));
-    assert.ok(html.includes('Free CLI + $499 one-time Setup Sprint'));
+    const header = html.match(/<header>([\s\S]*?)<\/header>/)[1];
+    assert.match(header, /href="\/"/);
+    assert.match(header, /href="\/pricing"/);
+    assert.match(html, /free (?:local )?CLI/i);
+    assert.match(html, /(?:self-serve Pro|Pro adds recall, dashboard, adapters, and exports)/i);
+    assert.doesNotMatch(html, /\$499|Setup Sprint/);
   });
 
   it('sovereign coding model guide routes Cohere North Mini Code demand into local gates', () => {
@@ -432,7 +432,12 @@ describe('SEO guide and comparison pages', () => {
     assert.ok(html.includes('Local coding models are cheaper to run. They are not safer by default.'));
     assert.ok(html.includes('Use North Mini Code, OpenCode, vLLM, or other self-hosted runtimes for generation. Use ThumbGate for deterministic pre-action enforcement.'));
     assert.ok(html.includes('utm_source=cohere_north_guide'));
-    assert.ok(html.includes('Free CLI + $499 one-time Setup Sprint'));
+    const header = html.match(/<header>([\s\S]*?)<\/header>/)[1];
+    assert.match(header, /href="\/"/);
+    assert.match(header, /href="\/pricing"/);
+    assert.match(html, /free (?:local )?CLI/i);
+    assert.match(html, /(?:self-serve Pro|Pro adds recall, dashboard, adapters, and exports)/i);
+    assert.doesNotMatch(html, /\$499|Setup Sprint/);
   });
 
   it('DeepSeek V4 runtime guide exposes sparse-attention guardrails', () => {
@@ -458,7 +463,9 @@ describe('SEO guide and comparison pages', () => {
     assert.ok(html.includes('prefix caching'));
     assert.ok(html.includes('npx thumbgate model-runtime-guardrails --runtime=vllm'));
     assert.ok(html.includes('cache-isolation proof'));
-    assert.ok(html.includes('Free CLI + $499 one-time Setup Sprint'));
+    assert.match(html, /free (?:local )?CLI/i);
+    assert.match(html, /(?:self-serve Pro|Pro adds recall, dashboard, adapters, and exports)/i);
+    assert.doesNotMatch(html, /\$499|Setup Sprint/);
   });
 
   it('Fallow comparison positions static analysis as complementary context', () => {
