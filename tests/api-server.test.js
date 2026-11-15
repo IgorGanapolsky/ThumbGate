@@ -5245,4 +5245,67 @@ test('/leash-beta returns 500 problem-json when static asset is missing', async 
   }
 });
 
-               }
+               
+
+test('product inquiries preserve public validation, deduplication, attribution and generic confirmation', async () => {
+  const endpoint = apiUrl('/v1/inquiries');
+  const preflight = await fetch(endpoint, { method: 'OPTIONS', headers: { origin: 'https://app.example.com' } });
+  assert.equal(preflight.status, 204);
+  const ledger = path.join(tmpFeedbackDir, 'workflow-sprint-leads.jsonl');
+  const count = () => readJsonl(ledger).length;
+  const before = count();
+  const post = (body) => fetch(endpoint, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) });
+  for (const body of [{ email: 'invalid', workflow: 'Question' }, { email: 'missing-context@example.com' }]) {
+    assert.equal((await post(body)).status, 400);
+  }
+  assert.equal(count(), before);
+  const invalidForm = await fetch(endpoint, { method: 'POST', headers: { 'content-type': 'application/x-www-form-urlencoded', accept: 'text/html' },
+    body: new URLSearchParams({ email: 'invalid', workflow: 'Can I use local gates?' }) });
+  assert.equal(invalidForm.status, 400);
+  const invalidHtml = await invalidForm.text();
+  assert.match(invalidHtml, /inquiry was not received/i);
+  assert.match(invalidHtml, /Correct the details and submit it again/);
+  assert.doesNotMatch(invalidHtml, /queued|inquiry received/i);
+  assert.equal(count(), before);
+  const payload = { email: 'generic-product@example.com', workflow: 'Explain free local gates', productInquiry: false,
+    freeTierLimit: true, planId: 'diagnostic', utmSource: 'inquiry-test', creator: 'inquiry-creator' };
+  const response = await post(payload);
+  assert.equal(response.status, 201);
+  const body = await response.json();
+  assert.equal(body.offer, 'product_inquiry');
+  assert.equal(body.nextStep, 'review_inquiry');
+  assert.equal(body.pricingUrl, 'https://app.example.com/pricing');
+  assert.equal(body.sprintBriefUrl, undefined);
+  assert.equal(body.operatorAlertSent, false);
+  const lead = readJsonl(ledger).find((entry) => entry.leadId === body.leadId);
+  assert.equal(lead.offer, 'product_inquiry');
+  assert.equal(lead.attribution.planId, 'inquiry');
+  assert.equal(lead.attribution.utmSource, 'inquiry-test');
+  assert.equal(lead.attribution.creator, 'inquiry-creator');
+  assert.equal(lead.attribution.ctaId, 'inquiry');
+  assert.ok(response.headers.get('set-cookie'));
+  assert.equal((await post(payload)).status, 429);
+  assert.equal(count(), before + 1);
+  const queueUrl = apiUrl('/v1/billing/summary?include_intake_queue=1');
+  assert.equal((await fetch(queueUrl)).status, 401);
+  const queueResponse = await fetch(queueUrl, { headers: authHeader });
+  assert.equal(queueResponse.status, 200);
+  assert.match(queueResponse.headers.get('cache-control'), /no-store/);
+  const queued = (await queueResponse.json()).intakeQueue.leads.find((entry) => entry.leadId === body.leadId);
+  assert.equal(queued.offer, 'product_inquiry');
+  assert.equal(queued.qualificationCard.checkoutEligible, false);
+  assert.equal(queued.discoveryPacket.draft, null);
+  assert.equal(queued.closePacket.draft, null);
+  const oversized = await post({ email: 'large-inquiry@example.com', workflow: 'x'.repeat(25 * 1024) });
+  assert.equal(oversized.status, 413);
+  assert.equal(count(), before + 1);
+  const form = await fetch(endpoint, { method: 'POST', headers: { 'content-type': 'application/x-www-form-urlencoded', accept: 'text/html' },
+    body: new URLSearchParams({ email: 'generic-form@example.com', workflow: 'Can I use local gates?' }) });
+  assert.equal(form.status, 201);
+  const html = await form.text();
+  assert.match(html, /Inquiry received/);
+  assert.match(html, /Compare free and Pro/);
+  assert.doesNotMatch(html, /sprint|diagnostic|\$499/i);
+});
+
+}

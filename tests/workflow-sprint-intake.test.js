@@ -1553,3 +1553,25 @@ test('paid team revalidates inherited signed scope after durable-state tampering
     salesLeadId: paid.leadId,
   }, { feedbackDir: tmpDir }), /re-verifiable signed-scope evidence/);
 });
+
+
+test('product inquiries accept minimal context, validate contact, and notify without service pitches', async () => {
+  const payload = { productInquiry: true, email: 'question@example.com', workflow: 'How do local gates work?', planId: 'inquiry' };
+  for (const invalid of [{ ...payload, email: 'invalid' }, { ...payload, workflow: '' }]) {
+    assert.throws(() => appendWorkflowSprintLead(invalid, { feedbackDir: tmpDir }), { statusCode: 400 });
+  }
+  const lead = appendWorkflowSprintLead(payload, { feedbackDir: tmpDir });
+  assert.equal(lead.offer, 'product_inquiry');
+  assert.equal(loadWorkflowSprintLeads(tmpDir)[0].offer, 'product_inquiry');
+  const messages = [];
+  const options = {
+    env: { THUMBGATE_OPERATOR_ALERT_EMAIL: 'owner@example.com' },
+    sendEmailImpl: async (message) => { messages.push(message); return { sent: true }; },
+  };
+  assert.equal((await notifyWorkflowSprintLead(lead, options)).sent, true);
+  assert.equal((await notifyWorkflowSprintLead(lead, options)).reason, 'duplicate_intake_alert');
+  assert.equal(messages.length, 1);
+  assert.match(messages[0].subject, /^ThumbGate inquiry:/);
+  assert.match(messages[0].text, /New ThumbGate product inquiry/);
+  assert.doesNotMatch(JSON.stringify(messages), /sprint|diagnostic|\$499/i);
+});

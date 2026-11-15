@@ -590,7 +590,8 @@ function reserveWorkflowSprintIntake(payload = {}, {
 }
 
 function buildWorkflowSprintLead(payload = {}) {
-  const diagnosticIntake = isDiagnosticIntake(payload);
+  const productInquiry = payload.productInquiry === true;
+  const diagnosticIntake = productInquiry || isDiagnosticIntake(payload);
   const name = normalizeSafeText(payload.name, 160);
   const urgency = normalizeSafeText(payload.urgency, 1000);
   const email = normalizeEmail(payload.email);
@@ -632,7 +633,7 @@ function buildWorkflowSprintLead(payload = {}) {
     submittedAt,
     updatedAt: submittedAt,
     status: 'new',
-    offer: diagnosticIntake ? 'workflow_hardening_diagnostic' : 'workflow_hardening_sprint',
+    offer: productInquiry ? 'product_inquiry' : diagnosticIntake ? 'workflow_hardening_diagnostic' : 'workflow_hardening_sprint',
     contact: {
       name,
       email,
@@ -1328,7 +1329,7 @@ function renderWorkflowSprintLeadAlert(lead = {}) {
   const contact = lead.contact || {};
   const qualification = lead.qualification || {};
   const text = [
-    'New ThumbGate workflow intake.',
+    lead.offer === 'product_inquiry' ? 'New ThumbGate product inquiry.' : 'New ThumbGate workflow intake.',
     '',
     `Lead ID: ${lead.leadId || 'unknown'}`,
     `Plan: ${attribution.planId || 'unknown'}`,
@@ -1343,7 +1344,7 @@ function renderWorkflowSprintLeadAlert(lead = {}) {
     `Source: ${attribution.utmSource || attribution.source || 'unknown'}`,
   ].join('\n');
   return {
-    subject: `ThumbGate intake: ${contact.company || contact.email || lead.leadId || 'new lead'}`,
+    subject: `ThumbGate ${lead.offer === 'product_inquiry' ? 'inquiry' : 'intake'}: ${contact.company || contact.email || lead.leadId || 'new lead'}`,
     text,
   };
 }

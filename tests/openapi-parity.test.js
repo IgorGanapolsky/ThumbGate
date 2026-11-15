@@ -223,3 +223,18 @@ test('human escalation OpenAPI contracts bind decisions to reviewer authenticati
     }
   }
 });
+
+
+test('product inquiry schema is additive and byte-identical in the ChatGPT adapter', () => {
+  const canonical = fs.readFileSync(path.join(root, 'openapi/openapi.yaml'), 'utf8');
+  assert.equal(fs.readFileSync(path.join(root, 'adapters/chatgpt/openapi.yaml'), 'utf8'), canonical);
+  const document = typeof yaml.load === 'function' ? yaml.load(canonical) : yaml.parse(canonical);
+  const operation = document.paths['/v1/inquiries'].post;
+  assert.equal(operation.operationId, 'submitProductInquiry');
+  assert.deepEqual(operation.security, []);
+  assert.deepEqual(document.components.schemas.ProductInquiryRequest.required, ['email', 'workflow']);
+  assert.equal(operation.requestBody.content['application/json'].schema.$ref, '#/components/schemas/ProductInquiryRequest');
+  assert.equal(operation.requestBody.content['application/x-www-form-urlencoded'].schema.$ref, '#/components/schemas/ProductInquiryRequest');
+  assert.ok(document.paths['/v1/intake/workflow-sprint'].post);
+  assert.deepEqual(document.components.schemas.WorkflowSprintIntakeRequest.required, ['email', 'workflow', 'owner', 'blocker', 'runtime']);
+});

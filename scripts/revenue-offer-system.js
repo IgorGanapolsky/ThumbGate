@@ -416,6 +416,7 @@ function buildIntakeQualificationCard(lead = {}, {
     owner: qualification.owner || (reviewVerified ? review.decisionAuthority : null),
     repeatedFailure: qualification.blocker || (reviewVerified ? review.severityAndFrequency : null),
   });
+  const productInquiry = lead.offer === 'product_inquiry';
   const requestedOfferId = OFFER_CATALOG[lead.offer] ? lead.offer : null;
   const reviewedOfferId = reviewVerified && OFFER_CATALOG[review.recommendedOfferId]
     ? review.recommendedOfferId
@@ -425,7 +426,7 @@ function buildIntakeQualificationCard(lead = {}, {
       ? requestedOfferId
       : offerDecision.offerId
   );
-  const recommendedOffer = recommendedOfferId ? OFFER_CATALOG[recommendedOfferId] : null;
+  const recommendedOffer = !productInquiry && recommendedOfferId ? OFFER_CATALOG[recommendedOfferId] : null;
   const disqualifiers = [];
   let route = reviewVerified && ['diagnostic', 'close'].includes(review.route)
     ? review.route
@@ -493,8 +494,8 @@ function buildIntakeQualificationCard(lead = {}, {
     fitBand: score >= 80 ? 'strong_evidence_for_review' : score >= 55 ? 'partial_evidence' : 'incomplete_evidence',
     priorityScore,
     priorityBand: priorityScore >= 100 ? 'review_now' : priorityScore >= 70 ? 'review_next' : 'hold_or_nurture',
-    route,
-    offerDecision: offerDecision.decision,
+    route: productInquiry ? 'nurture' : route,
+    offerDecision: productInquiry ? 'product_inquiry' : offerDecision.decision,
     requestedOfferId,
     recommendedOffer: recommendedOffer ? {
       offerId: recommendedOfferId,
@@ -513,8 +514,8 @@ function buildIntakeQualificationCard(lead = {}, {
       qualificationReviewVerified: reviewVerified,
     },
     disqualifiers,
-    questionsToAsk: qualificationUnknowns.slice(0, 3).map((key) => questionCatalog[key]),
-    recommendedNextStep,
+    questionsToAsk: productInquiry ? [] : qualificationUnknowns.slice(0, 3).map((key) => questionCatalog[key]),
+    recommendedNextStep: productInquiry ? 'Answer the product inquiry using current free and self-serve Pro documentation at /pricing.' : recommendedNextStep,
     approvalRequiredBeforeExternalAction: true,
     approvalPhrase: null,
     checkoutEligible,
@@ -532,6 +533,7 @@ function buildIntakeDiscoveryPacket(lead = {}, {
   const contactEmail = normalizeText(lead.contact?.email, 320);
   const questions = card.questionsToAsk.filter(hasText).slice(0, 3);
   const blockers = [];
+  if (lead.offer === 'product_inquiry') blockers.push('product_inquiry_not_a_service_offer');
 
   if (card.lifecycleStatus !== 'new') blockers.push('lifecycle_not_new');
   if (!card.chronology.valid || card.chronology.freshness === 'stale') blockers.push('intake_not_current');
@@ -598,6 +600,7 @@ function buildIntakeClosePacket(lead = {}, {
   const offerId = card.recommendedOffer?.offerId || null;
   const offer = offerId ? OFFER_CATALOG[offerId] : null;
   const blockers = [];
+  if (lead.offer === 'product_inquiry') blockers.push('product_inquiry_not_a_service_offer');
   if (qualificationReviewVerified !== true) blockers.push('qualification_review_unverified');
   if (!card.knownFacts.operatorQualified) blockers.push('lifecycle_not_evidence_qualified');
   if (!card.chronology.valid || card.chronology.freshness === 'stale') blockers.push('intake_not_current');

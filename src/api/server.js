@@ -5759,7 +5759,7 @@ function renderManageSubscriptionPage(runtimeConfig = {}, { error, enteredKey } 
 </html>`;
 }
 
-function renderWorkflowSprintIntakeResultPage(runtimeConfig, { title, detail, leadId = null }) {
+function renderWorkflowSprintIntakeResultPage(runtimeConfig, { title, detail, leadId = null, productInquiry = false }) {
   const safeTitle = escapeHtmlAttribute(title || 'Sprint intake received');
   const safeDetail = escapeHtmlAttribute(detail || 'We have your workflow details and will review the proof path next.');
   const proofPackUrl = 'https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md';
@@ -5828,12 +5828,12 @@ function renderWorkflowSprintIntakeResultPage(runtimeConfig, { title, detail, le
     <h1>${safeTitle}</h1>
     <p>${safeDetail}</p>
     <div class="card">
-      <p>Your workflow intake is now in the sprint queue. Review the proof pack and sprint scope while we assess the rollout blocker.</p>
+      <p>${productInquiry ? (leadId ? 'Your product inquiry is queued for review. Compare current free and self-serve Pro plans.' : 'Your inquiry was not received. Correct the details and submit it again.') : 'Your workflow intake is now in the sprint queue. Review the proof pack and sprint scope while we assess the rollout blocker.'}</p>
       ${safeLeadId}
       <div class="actions">
         <a href="${proofPackUrl}">Review Proof Pack</a>
-        <a class="secondary" href="${sprintBriefUrl}">Review Sprint Brief</a>
-        <a class="secondary" href="${runtimeConfig.appOrigin}/#workflow-sprint-intake">Return to Context Gateway</a>
+        ${productInquiry ? `<a class="secondary" href="${runtimeConfig.appOrigin}/pricing">Compare free and Pro</a>` : `<a class="secondary" href="${sprintBriefUrl}">Review Sprint Brief</a>
+        <a class="secondary" href="${runtimeConfig.appOrigin}/#workflow-sprint-intake">Return to Context Gateway</a>`}
       </div>
     </div>
   </main>
@@ -10286,14 +10286,15 @@ a{color:#8b9}</style></head><body><form class="card" method="post" action="/oaut
       return;
     }
 
-    if (req.method === 'OPTIONS' && pathname === '/v1/intake/workflow-sprint') {
+    if (req.method === 'OPTIONS' && (pathname === '/v1/intake/workflow-sprint' || pathname === '/v1/inquiries')) {
       sendPublicBillingPreflight(res);
       return;
     }
 
-    if (req.method === 'POST' && pathname === '/v1/intake/workflow-sprint') {
+    if (req.method === 'POST' && (pathname === '/v1/intake/workflow-sprint' || pathname === '/v1/inquiries')) {
       const { FEEDBACK_DIR } = getFeedbackPaths();
-      const traceId = createTraceId('sprint_intake');
+      const productInquiry = pathname === '/v1/inquiries';
+      const traceId = createTraceId(productInquiry ? 'inquiry' : 'sprint_intake');
       const journeyState = resolveJourneyState(req, parsed);
       const referrerAttribution = buildReferrerAttribution(req);
       const contentType = String(req.headers['content-type'] || '').toLowerCase();
@@ -10303,12 +10304,13 @@ a{color:#8b9}</style></head><body><form class="card" method="post" action="/oaut
         const body = isFormSubmission
           ? await parseFormBody(req, 24 * 1024)
           : await readProjectBody(req, 24 * 1024);
-        const workflowSprintIntake = requirePrivateApiModule('workflowSprintIntake', 'Workflow sprint intake');
+        const workflowSprintIntake = requirePrivateApiModule('workflowSprintIntake', productInquiry ? 'Product inquiries' : 'Workflow sprint intake');
         const reqCookies = parseCookies(req?.headers?.cookie || '');
         const ssoEntry = getPaidAuthSessionEntry(reqCookies[PAID_AUTH_COOKIE_NAME], expectedApiKey, expectedOperatorKey);
         const isFreeTierLimitLead = body.ctaPlacement === 'free_tier_limit' || body.freeTierLimit === true || body.freeTierLimit === '1';
         const leadPayload = {
           ...body,
+          productInquiry,
           email: body.email || ssoEntry?.ssoEmail || undefined,
           name: body.name || ssoEntry?.ssoName || undefined,
           workflow: body.workflow || (isFreeTierLimitLead ? 'Free-tier limit inquiry (Talk to us)' : undefined),
@@ -10316,15 +10318,17 @@ a{color:#8b9}</style></head><body><form class="card" method="post" action="/oaut
           acquisitionId: body.acquisitionId || journeyState.acquisitionId,
           visitorId: body.visitorId || journeyState.visitorId,
           sessionId: body.sessionId || journeyState.sessionId,
-          page: body.page || referrerAttribution.page || '/#workflow-sprint-intake',
+          page: body.page || referrerAttribution.page || (productInquiry ? '/pricing' : '/#workflow-sprint-intake'),
           landingPath: body.landingPath || referrerAttribution.landingPath || '/',
-          ctaId: body.ctaId || 'workflow_sprint_intake',
-          ctaPlacement: body.ctaPlacement || 'workflow_sprint',
-          planId: body.planId || (isFreeTierLimitLead ? 'diagnostic' : 'sprint'),
+          ctaId: body.ctaId || (productInquiry ? 'inquiry' : 'workflow_sprint_intake'),
+          ctaPlacement: body.ctaPlacement || (productInquiry ? 'inquiry' : 'workflow_sprint'),
+          planId: productInquiry
+            ? (['diagnostic', 'sprint_diagnostic', 'sprint'].includes(String(body.planId || '').trim().toLowerCase()) ? 'inquiry' : body.planId || 'inquiry')
+            : body.planId || (isFreeTierLimitLead ? 'diagnostic' : 'sprint'),
           source: body.source || body.utmSource || referrerAttribution.source || 'website',
           utmSource: body.utmSource || body.source || referrerAttribution.utmSource || 'website',
-          utmMedium: body.utmMedium || referrerAttribution.utmMedium || 'workflow_sprint_intake',
-          utmCampaign: body.utmCampaign || referrerAttribution.utmCampaign || 'workflow_hardening_sprint',
+          utmMedium: body.utmMedium || referrerAttribution.utmMedium || (productInquiry ? 'inquiry' : 'workflow_sprint_intake'),
+          utmCampaign: body.utmCampaign || referrerAttribution.utmCampaign || (productInquiry ? 'inquiry' : 'workflow_hardening_sprint'),
           utmContent: body.utmContent || referrerAttribution.utmContent || null,
           utmTerm: body.utmTerm || referrerAttribution.utmTerm || null,
           creator: body.creator || referrerAttribution.creator || null,
@@ -10350,7 +10354,7 @@ a{color:#8b9}</style></head><body><form class="card" method="post" action="/oaut
           rateLimitKey: buildIntakeAlertRateLimitKey(req),
         });
         if (!intakeReservation.allowed) {
-          const error = new Error('Too many workflow-intake submissions. Try again later.');
+          const error = new Error(productInquiry ? 'Too many inquiry submissions. Try again later.' : 'Too many workflow-intake submissions. Try again later.');
           error.statusCode = intakeReservation.statusCode || 429;
           throw error;
         }
@@ -10384,8 +10388,8 @@ a{color:#8b9}</style></head><body><form class="card" method="post" action="/oaut
           referrer: lead.attribution.referrer,
         };
         appendBestEffortTelemetry(FEEDBACK_DIR, { eventType: 'workflow_sprint_lead_submitted', ...leadTelemetryBase }, req.headers, 'workflow_sprint_lead_submitted');
-        if (isFreeTierLimitLead && lead.attribution.ctaId === 'workflow_sprint_intake') {
-          appendBestEffortTelemetry(FEEDBACK_DIR, { eventType: 'checkout_interstitial_cta_clicked', ...leadTelemetryBase, ctaId: 'workflow_sprint_intake' }, req.headers, 'checkout_interstitial_cta_clicked');
+        if (isFreeTierLimitLead && lead.attribution.ctaId === (productInquiry ? 'inquiry' : 'workflow_sprint_intake')) {
+          appendBestEffortTelemetry(FEEDBACK_DIR, { eventType: 'checkout_interstitial_cta_clicked', ...leadTelemetryBase, ctaId: (productInquiry ? 'inquiry' : 'workflow_sprint_intake') }, req.headers, 'checkout_interstitial_cta_clicked');
         }
         const leadNotification = await workflowSprintIntake.notifyWorkflowSprintLead(lead, {
           sendEmailImpl: resendMailer.sendEmail,
@@ -10397,8 +10401,9 @@ a{color:#8b9}</style></head><body><form class="card" method="post" action="/oaut
             res,
             201,
             renderWorkflowSprintIntakeResultPage(hostedConfig, {
-              title: 'Workflow sprint intake received',
-              detail: 'The workflow is now queued for review. Check the proof pack and sprint brief while we qualify the rollout blocker.',
+              productInquiry,
+              title: productInquiry ? 'Inquiry received' : 'Workflow sprint intake received',
+              detail: productInquiry ? 'Your product inquiry has been received.' : 'The workflow is now queued for review. Check the proof pack and sprint brief while we qualify the rollout blocker.',
               leadId: lead.leadId,
             }),
             journeyState.setCookieHeaders.length ? { 'Set-Cookie': journeyState.setCookieHeaders } : {}
@@ -10411,11 +10416,13 @@ a{color:#8b9}</style></head><body><form class="card" method="post" action="/oaut
           leadId: lead.leadId,
           status: lead.status,
           offer: lead.offer,
-          nextStep: 'review_proof_pack',
+          nextStep: productInquiry ? 'review_inquiry' : 'review_proof_pack',
           operatorAlertSent: leadNotification.sent === true,
           operatorAlertReason: leadNotification.reason || null,
           proofPackUrl: 'https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md',
-          sprintBriefUrl: 'https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/WORKFLOW_HARDENING_SPRINT.md',
+          ...(productInquiry ? { pricingUrl: buildPublicUrl(hostedConfig, '/pricing') } : {
+            sprintBriefUrl: 'https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/WORKFLOW_HARDENING_SPRINT.md',
+          }),
         }, {
           ...getPublicBillingHeaders(lead.attribution.traceId),
           ...(journeyState.setCookieHeaders.length ? { 'Set-Cookie': journeyState.setCookieHeaders } : {}),
@@ -10430,18 +10437,18 @@ a{color:#8b9}</style></head><body><form class="card" method="post" action="/oaut
           sessionId: journeyState.sessionId,
           source: referrerAttribution.source || 'website',
           utmSource: referrerAttribution.utmSource || 'website',
-          utmMedium: referrerAttribution.utmMedium || 'workflow_sprint_intake',
-          utmCampaign: referrerAttribution.utmCampaign || 'workflow_hardening_sprint',
+          utmMedium: referrerAttribution.utmMedium || (productInquiry ? 'inquiry' : 'workflow_sprint_intake'),
+          utmCampaign: referrerAttribution.utmCampaign || (productInquiry ? 'inquiry' : 'workflow_hardening_sprint'),
           creator: referrerAttribution.creator,
           community: referrerAttribution.community,
           postId: referrerAttribution.postId,
           commentId: referrerAttribution.commentId,
           campaignVariant: referrerAttribution.campaignVariant,
           offerCode: referrerAttribution.offerCode,
-          ctaId: 'workflow_sprint_intake',
-          ctaPlacement: 'workflow_sprint',
-          planId: 'sprint',
-          page: referrerAttribution.page || '/#workflow-sprint-intake',
+          ctaId: (productInquiry ? 'inquiry' : 'workflow_sprint_intake'),
+          ctaPlacement: (productInquiry ? 'inquiry' : 'workflow_sprint'),
+          planId: productInquiry ? 'inquiry' : 'sprint',
+          page: referrerAttribution.page || (productInquiry ? '/pricing' : '/#workflow-sprint-intake'),
           landingPath: referrerAttribution.landingPath || '/',
           referrerHost: referrerAttribution.referrerHost,
           referrer: redactSecrets(referrerAttribution.referrer),
@@ -10453,8 +10460,9 @@ a{color:#8b9}</style></head><body><form class="card" method="post" action="/oaut
             res,
             err.statusCode || 500,
             renderWorkflowSprintIntakeResultPage(hostedConfig, {
-              title: 'Workflow sprint intake failed',
-              detail: err.message || 'Unable to capture workflow sprint intake.',
+              productInquiry,
+              title: productInquiry ? 'Inquiry failed' : 'Workflow sprint intake failed',
+              detail: err.message || (productInquiry ? 'Unable to capture inquiry.' : 'Unable to capture workflow sprint intake.'),
             }),
             journeyState.setCookieHeaders.length ? { 'Set-Cookie': journeyState.setCookieHeaders } : {}
           );
@@ -10464,7 +10472,7 @@ a{color:#8b9}</style></head><body><form class="card" method="post" action="/oaut
           type: !err.statusCode || err.statusCode >= 500 ? PROBLEM_TYPES.INTERNAL : PROBLEM_TYPES.BAD_REQUEST,
           title: !err.statusCode || err.statusCode >= 500 ? 'Internal Server Error' : 'Request Error',
           status: err.statusCode || 500,
-          detail: err.message || 'Unable to capture workflow sprint intake.',
+          detail: err.message || (productInquiry ? 'Unable to capture inquiry.' : 'Unable to capture workflow sprint intake.'),
         }, getPublicBillingHeaders(traceId));
       }
       return;

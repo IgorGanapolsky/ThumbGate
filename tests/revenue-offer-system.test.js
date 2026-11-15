@@ -546,3 +546,30 @@ test('scope-first sprint packet contains no checkout or payment request before a
   assert.match(packet.draft.body, /no payment link or invoice will be sent before written scope acceptance/i);
   assert.ok(packet.verificationPlan.some((item) => /written scope acceptance/i.test(item)));
 });
+
+
+test('product inquiries cannot become service sales drafts even with verified qualification', () => {
+  for (const status of ['new', 'qualified', 'paid_team']) {
+    const lead = intake({ offer: 'product_inquiry', status, qualificationReview: {
+      route: 'close', recommendedOfferId: 'workflow_hardening_diagnostic',
+      priceUnderstandingConfirmed: true, evidenceReferences: ['review:example'],
+      measurableImpact: 'Repeated failures', decisionAuthority: 'Owner', budgetMechanism: 'Approved',
+      urgencyAndTrigger: 'Now', proofRequired: 'Local tests',
+    } });
+    const options = { now: '2026-07-16T12:00:00.000Z', qualificationReviewVerified: true };
+    const card = buildIntakeQualificationCard(lead, options);
+    assert.equal(card.offerDecision, 'product_inquiry');
+    assert.equal(card.recommendedOffer, null);
+    assert.equal(card.checkoutEligible, false);
+    assert.equal(card.checkoutPath, null);
+    assert.deepEqual(card.questionsToAsk, []);
+    assert.match(card.recommendedNextStep, /free and self-serve Pro.*\/pricing/);
+    for (const packet of [buildIntakeDiscoveryPacket(lead, options), buildIntakeClosePacket(lead, options)]) {
+      assert.ok(packet.blockers.includes('product_inquiry_not_a_service_offer'));
+      assert.equal(packet.draft, null);
+      assert.equal(packet.destination, null);
+      assert.equal(packet.approvalPhrase, null);
+      assert.equal(packet.externalActionAuthorized, false);
+    }
+  }
+});

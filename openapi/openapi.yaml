@@ -399,6 +399,89 @@ components:
           type: string
         installId:
           type: string
+    ProductInquiryRequest:
+      type: object
+      required: [email, workflow]
+      properties:
+        email:
+          type: string
+          format: email
+        company:
+          type: string
+        workflow:
+          type: string
+        owner:
+          type: string
+        blocker:
+          type: string
+        runtime:
+          type: string
+        note:
+          type: string
+        acquisitionId:
+          type: string
+        visitorId:
+          type: string
+        sessionId:
+          type: string
+        traceId:
+          type: string
+        installId:
+          type: string
+        source:
+          type: string
+        utmSource:
+          type: string
+        utmMedium:
+          type: string
+        utmCampaign:
+          type: string
+        utmContent:
+          type: string
+        utmTerm:
+          type: string
+        community:
+          type: string
+        postId:
+          type: string
+        commentId:
+          type: string
+        campaignVariant:
+          type: string
+        offerCode:
+          type: string
+        ctaId:
+          type: string
+        ctaPlacement:
+          type: string
+        planId:
+          type: string
+        page:
+          type: string
+        landingPath:
+          type: string
+        referrerHost:
+          type: string
+        referrer:
+          type: string
+    ProductInquiryResponse:
+      type: object
+      properties:
+        ok:
+          type: boolean
+        leadId:
+          type: string
+        status:
+          type: string
+        offer:
+          type: string
+          enum: [product_inquiry]
+        nextStep:
+          type: string
+          enum: [review_inquiry]
+        pricingUrl:
+          type: string
+          format: uri
     WorkflowSprintIntakeRequest:
       type: object
       required: [email, workflow, owner, blocker, runtime]
@@ -1435,6 +1518,30 @@ paths:
           description: Unauthorized
         '403':
           description: Forbidden
+  /v1/inquiries:
+    post:
+      operationId: submitProductInquiry
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProductInquiryRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ProductInquiryRequest'
+      responses:
+        '201':
+          description: Product inquiry accepted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductInquiryResponse'
+        '400':
+          description: Invalid product inquiry
+        '429':
+          description: Inquiry submission rate limit exceeded
   /v1/intake/workflow-sprint:
     post:
       operationId: submitWorkflowSprintIntake
