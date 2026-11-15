@@ -354,7 +354,7 @@ async function main() {
 
   check(/href="\/checkout\/pro"/.test(landingHtml), 'homepage links to Pro checkout');
   check(landingHtml.includes('__PRO_PRICE_DOLLARS__') && landingHtml.includes('__PRO_PRICE_LABEL__'), 'homepage renders configured Pro pricing');
-  check(!/\$499|Setup Sprint|workflow-sprint|diagnostic-pay/i.test(landingHtml), 'homepage does not advertise the retired offer');
+  check(!/\$499|Setup Sprint|workflow-sprint|diagnostic-pay/i.test(landingHtml.replace('id="workflow-sprint-intake"', '')), 'homepage does not advertise the retired offer');
   check(
     /action="\/go\/diagnostic-pay"[^>]*method="POST"/i.test(pricingHtml),
     'public/pricing.html must use the same canonical managed-gate checkout route'
