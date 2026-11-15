@@ -143,11 +143,11 @@ test('index.html and pricing.html load the WebMCP script and carry the readiness
   }
 });
 
-test('the payment form carries no WebMCP tool attributes', () => {
+test('the primary checkout remains human initiated without WebMCP tool attributes', () => {
   const body = fs.readFileSync(path.join(root, 'public', 'index.html'), 'utf8');
-  const formMatch = body.match(/<form[^>]*data-primary-checkout[^>]*>/);
-  assert.ok(formMatch, 'primary payment form must exist');
-  assert.equal(/toolname|toolautosubmit/i.test(formMatch[0]), false, 'payment form must stay human-only');
+  const formMatch = body.match(/<aside[^>]*data-primary-checkout[^>]*>[\s\S]*?<\/aside>/);
+  assert.ok(formMatch, 'primary checkout card must exist');
+  assert.equal(/toolname|toolautosubmit/i.test(formMatch[0]), false, 'checkout must stay human-only');
 });
 
 test('the server exposes a route for /js/webmcp.js', () => {

@@ -14,9 +14,9 @@
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:image" content="https://thumbgate.ai/og.png">
   <title>ThumbGate — One repeated agent mistake. One configured gate</title>
-  <meta name="description" content="ThumbGate checks proposed tool calls before execution in supported hook integrations. The $499 Setup Sprint turns one recurring failure in a supported local workflow into a configured gate, a regression test, and rollout and rollback evidence.">
+  <meta name="description" content="The firewall for AI agents. Free local capture and pre-action gates. Choose Pro for recall, dashboard, adapters, and exports.">
   <meta property="og:title" content="ThumbGate — One repeated agent mistake. One configured gate">
-  <meta property="og:description" content="ThumbGate checks proposed tool calls before execution in supported hook integrations. The $499 Setup Sprint turns one recurring failure in a supported local workflow into a configured gate, a regression test, and rollout and rollback evidence.">
+  <meta property="og:description" content="The firewall for AI agents. Free local capture and pre-action gates. Choose Pro for recall, dashboard, adapters, and exports.">
   <meta property="og:type" content="website">
   <meta property="og:url" content="__APP_ORIGIN__/">
   <script defer data-domain="thumbgate.ai" src="https://plausible.io/js/script.tagged-events.js"></script>
@@ -31,27 +31,7 @@
     "sameAs": ["https://github.com/IgorGanapolsky/ThumbGate"]
   }
   </script>
-  <script type="application/ld+json">
-  {
-    "@context": "https://schema.org",
-    "@type": "SoftwareApplication",
-    "name": "ThumbGate",
-    "applicationCategory": "DeveloperApplication",
-    "operatingSystem": "macOS, Linux, Windows",
-    "url": "__APP_ORIGIN__",
-    "description": "Self-improving firewall for AI coding agents. ThumbGate captures feedback as local lessons, re-ranks relevant lessons for each action, promotes repeated negative patterns into warning or blocking gates, expires stale auto-promoted gates, and runs pre-action checks before shell, file, git, deploy, or API tool calls. Detected secret exfiltration and process-kill/environment-override self-disable commands (gate-process bypass) are denied by default; strict mode blocks matching destructive-action rules.",
-    "codeRepository": "https://github.com/IgorGanapolsky/ThumbGate",
-    "featureList": [
-      "Pre-action PreToolUse checks for coding agents",
-      "Thumbs-up/down feedback becomes reviewable local lessons",
-      "Relevant lessons are re-ranked for the proposed action",
-      "Repeated negative patterns can promote from warning to blocking gates",
-      "Stale auto-promoted gates expire and stale lessons archive",
-      "Setup Sprint for one supported local workflow",
-      "Local-first install. Hosted team features, SSO, and an org-wide audit log are not generally available."
-    ]
-  }
-  </script>
+
   <script type="application/ld+json">
   {
     "@context": "https://schema.org",
@@ -86,70 +66,8 @@
     ]
   }
   </script>
-  <script type="application/ld+json">
-  {
-    "@context": "https://schema.org",
-    "@type": "Service",
-    "name": "Setup Sprint",
-    "description": "ThumbGate's $499 one-time Setup Sprint for one repeated AI-agent workflow failure, including a failure map, configured local gate, regression test, and rollout proof. It is not an enterprise contract.",
-    "provider": { "@type": "Organization", "name": "ThumbGate" },
-    "offers": {
-      "@type": "Offer",
-      "price": "__SPRINT_DIAGNOSTIC_PRICE_DOLLARS__",
-      "priceCurrency": "USD",
-      "availability": "https://schema.org/InStock",
-      "url": "__APP_ORIGIN__/#buy"
-    }
-  }
-  </script>
-  <script type="application/ld+json">
-  {
-    "@context": "https://schema.org",
-    "@type": "FAQPage",
-    "mainEntity": [
-      {
-        "@type": "Question",
-        "name": "What do I get for $499?",
-        "acceptedAnswer": {
-          "@type": "Answer",
-          "text": "One 60-minute working review for one repeated AI-agent workflow failure, one configured local gate for a supported workflow, its regression test, and a written rollout and rollback proof within two business days after access and the agreed materials are available."
-        }
-      },
-      {
-        "@type": "Question",
-        "name": "Does ThumbGate block every risky command by default?",
-        "acceptedAnswer": {
-          "@type": "Answer",
-          "text": "No. Detected secret exfiltration and gate-process bypass attempts are denied by default. Matching destructive actions warn unless strict enforcement is enabled. The managed gate defines the right boundary for your workflow instead of pretending every warning is a firewall."
-        }
-      },
-      {
-        "@type": "Question",
-        "name": "Is this the enterprise option?",
-        "acceptedAnswer": {
-          "@type": "Answer",
-          "text": "No. The $499 Setup Sprint configures one supported workflow with you. Shared hosting, SSO, compliance packaging, an org-wide audit log, and multi-workflow rollout are not included and are not generally available."
-        }
-      },
-      {
-        "@type": "Question",
-        "name": "Does self-improving mean ThumbGate retrains my model?",
-        "acceptedAnswer": {
-          "@type": "Answer",
-          "text": "No. ThumbGate does not change model weights and does not silently rewrite production policy. Self-improving under your control means explicit approvals and feedback teach the local control layer what to allow, block, or escalate next time: lessons are stored and re-ranked, repeated negative patterns can promote into gates, and stale auto-promoted gates expire."
-        }
-      },
-      {
-        "@type": "Question",
-        "name": "Is the self-improving logic a black box I have to trust blindly?",
-        "acceptedAnswer": {
-          "@type": "Answer",
-          "text": "No. The promotion, demotion, and lesson-ranking logic ships in the public npm bundle under an MIT license — run npm pack thumbgate and read it yourself. Your lessons live in a local SQLite file you own, not a server you can't query. The $499 Setup Sprint adds a done-with-you failure map, one configured gate, and its regression proof, not access to intelligence withheld from the free install."
-        }
-      }
-    ]
-  }
-  </script>
+
+
   <style>
     :root {
       color-scheme: dark;
@@ -741,6 +659,8 @@
   <meta http-equiv="origin-trial" content="AzcKU1rE0e4sfmh97XzN75yRFS+xFzZJrUJWswxGr6RahQWDNupKLhkVvdQZQayA/s4FLwcKpPntqUZgclhDjgoAAAB0eyJvcmlnaW4iOiJodHRwczovL3RodW1iZ2F0ZS5hcHA6NDQzIiwiZmVhdHVyZSI6IldlYk1DUCIsImV4cGlyeSI6MTgwNjM2NDgwMCwiaXNTdWJkb21haW4iOnRydWUsImlzVGhpcmRQYXJ0eSI6dHJ1ZX0=" />
   <meta http-equiv="origin-trial" content="A06wj3yXAwOhT5Cd5WYdVQotlYa/OID3SW099ZQB+cs9eHeJmtH1yHudLwqDKZ7y43tQvLB4TfM/pjmUa7aJNQsAAAB4eyJvcmlnaW4iOiJodHRwczovL3d3dy50aHVtYmdhdGUuYXBwOjQ0MyIsImZlYXR1cmUiOiJXZWJNQ1AiLCJleHBpcnkiOjE4MDYzNjQ4MDAsImlzU3ViZG9tYWluIjp0cnVlLCJpc1RoaXJkUGFydHkiOnRydWV9" />
   <script src="/js/webmcp.js" defer></script>
+<script type="application/ld+json">{"@context": "https://schema.org", "@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": "What is free?", "acceptedAnswer": {"@type": "Answer", "text": "The MIT local CLI captures feedback and runs configured gates. Install it with npx thumbgate init."}}, {"@type": "Question", "name": "What does Pro add?", "acceptedAnswer": {"@type": "Answer", "text": "Pro adds recall, dashboard, adapters, and exports. Compare current subscription details at /pricing."}}, {"@type": "Question", "name": "Does ThumbGate block every risky command by default?", "acceptedAnswer": {"@type": "Answer", "text": "No. Detected secret exfiltration and gate-process bypass attempts are denied by default. Matching destructive actions warn by default and deny in strict mode."}}, {"@type": "Question", "name": "Is it really self-improving?", "acceptedAnswer": {"@type": "Answer", "text": "Thumbs teach. The gate enforces. Feedback refines the control layer, not the LLM. Reviewed outcomes can become prevention rules under your control."}}, {"@type": "Question", "name": "Which integrations enforce gates?", "acceptedAnswer": {"@type": "Answer", "text": "Supported hook integrations can enforce configured gates. Advisory integrations do not guarantee execution blocking."}}]}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"SoftwareApplication","name":"ThumbGate","applicationCategory":"DeveloperApplication","operatingSystem":"Cross-platform","url":"__APP_ORIGIN__/","offers":{"@type":"Offer","name":"ThumbGate Pro","price":"__PRO_PRICE_DOLLARS__","priceCurrency":"USD","url":"__APP_ORIGIN__/checkout/pro"}}</script>
 </head>
 <body data-revenue-assist="off">
   <nav class="site-nav" aria-label="Primary navigation">
@@ -755,7 +675,7 @@
         <a href="#proof">Proof</a>
         <button type="button" id="navPaidLoginBtn" data-cta-id="nav_paid_login" aria-expanded="false" aria-controls="paidLoginBar" onclick="window.tgTogglePaidLogin()" style="display:inline-flex;align-items:center;min-height:44px;min-width:44px;padding:8px 13px;border-radius:8px;border:1px solid rgba(56,215,255,0.45);background:rgba(56,215,255,0.08);color:var(--cyan);font:800 13px/1 inherit;">Log in</button>
         <a id="navPaidDashboardLink" href="/dashboard" data-cta-id="nav_paid_dashboard" style="display:none;align-items:center;min-height:44px;min-width:44px;padding:8px 13px;border-radius:8px;border:1px solid rgba(86,227,159,0.45);background:rgba(86,227,159,0.12);color:var(--green);font:800 13px/1 inherit;text-decoration:none;">Dashboard →</a>
-        <a class="nav-buy" href="#buy" data-cta-id="nav_setup_sprint">Setup Sprint · $499</a>
+        <a class="nav-buy" href="/checkout/pro" data-cta-id="nav_pro_checkout">Get Pro</a>
       </div>
     </div>
     <div id="paidLoginBar" hidden style="border-top:1px solid var(--line);background:rgba(12,17,26,0.98);padding:14px 0;">
@@ -794,9 +714,9 @@
             <button type="button" class="down" id="hero-thumb-down" aria-label="Record a thumbs-down for the selected command"><svg class="hero-thumb-down" viewBox="0 0 32 32" aria-hidden="true"><use href="#thumb-glyph"/></svg></button>
           </div>
           <h1>One repeated agent mistake. One configured gate.</h1>
-          <p class="hero-lede">ThumbGate checks proposed tool calls before execution in supported hook integrations. The $499 Setup Sprint turns one recurring failure in a supported local workflow into a configured gate, a regression test, and rollout and rollback evidence.</p>
+          <p class="hero-lede">Start with the free local CLI and supported hook integrations. Pro adds recall, dashboard, adapters, and exports.</p>
           <div class="actions" style="display:flex;gap:12px;flex-wrap:wrap;margin:0 0 24px;">
-            <a class="button-primary" href="/diagnostic#intake" data-cta-id="homepage_workflow_fit">Check my workflow fit</a>
+            <a class="button-primary" href="/checkout/pro" data-cta-id="homepage_pro_checkout">Get Pro — $__PRO_PRICE_DOLLARS__/month</a>
             <a class="button-pro" style="background:transparent;color:var(--text) !important;border:1px solid var(--border);box-shadow:none;" href="#install" data-cta-id="homepage_free_evaluation">Evaluate the free local runtime</a>
           </div>
           <div class="hero-terminal" id="hero-gate-demo" aria-label="Illustrative tool-call decisions">
@@ -830,33 +750,21 @@
     </section>
 
     <section id="offers">
-      <div class="shell">
+      <div class="shell" id="workflow-sprint-intake">
         <div class="trust-strip" aria-label="Where the gate runs">
           <span>7 CLIs · local gate</span>
         </div>
         <p class="install-hint">Claude Code, Cursor, Codex, or similar agents.</p>
         <p class="install-hint" id="thumbgate-dashboard-command" style="margin-top:10px;">Dashboard: <code>npx thumbgate dashboard --open</code> · <code>/thumbgate-dashboard</code> · <code>thumbgate-dashboard</code> · <a href="/dashboard#insights">demo</a> · <a class="proof-link" href="#proof">strict-mode deny example ↓</a></p>
         <div class="offer-stack" style="grid-template-columns: 1fr; max-width: 480px; margin: 0 auto;">
-          <form id="buy" class="checkout-card" action="/go/diagnostic-pay" method="POST" data-primary-checkout style="border-color:rgba(0,110,82,.35);box-shadow:0 18px 50px rgba(0,110,82,.12);">
-            <span id="workflow-sprint-intake" data-legacy-intake-alias aria-hidden="true"></span>
-            <span id="enterprise-gate"></span>
-            <input type="hidden" name="utm_source" value="website">
-            <input type="hidden" name="utm_medium" value="homepage_checkout">
-            <input type="hidden" name="utm_campaign" value="rally_style_gtm">
-            <input type="hidden" name="utm_content" value="hero_direct_checkout">
-            <input type="hidden" name="cta_id" value="homepage_diagnostic_buy">
-            <input type="hidden" name="cta_placement" value="offers">
-            <input type="hidden" name="plan_id" value="sprint_diagnostic">
-            <input type="hidden" name="landing_path" value="/">
-            <div class="price"><strong>$__SPRINT_DIAGNOSTIC_PRICE_DOLLARS__</strong><span>one time · done-with-you setup</span></div>
-            <h2>Setup Sprint</h2>
-            <p>One 60-minute working review, one supported local workflow, one configured gate and regression test, plus written rollout and rollback proof. Delivery within two business days after access and agreed materials are available, subject to confirmed scheduling. If it cannot be reduced to a supported gate, the existing refund boundary applies. No enterprise rollout, SSO, hosted team sync or org-wide audit dashboard.</p>
-            <label for="buyer-email">Work email for receipt &amp; onboarding</label>
-            <input id="buyer-email" type="email" name="customer_email" autocomplete="email" required placeholder="you@company.com">
-            <button class="button-primary" type="submit" data-revenue-cta data-cta-id="homepage_diagnostic_buy" data-cta-placement="offers">Book the $499 setup</button>
-            <p class="checkout-note">Prefer a call? <a href="/support" style="color:var(--cyan);font-weight:750;">Book a 15-min triage call →</a></p>
-            <ul class="offer-points"><li>One configured local gate and its regression test</li></ul>
-          </form>
+          <aside id="enterprise-gate" class="checkout-card" data-primary-checkout>
+            <h2>ThumbGate Pro</h2>
+            <div class="price">$__PRO_PRICE_DOLLARS__<span>/month</span></div>
+            <p>__PRO_PRICE_LABEL__</p>
+            <p>Pro adds recall, dashboard, adapters, and exports. The free local CLI includes local capture and pre-action gates.</p>
+            <a class="button button-primary" href="/checkout/pro" data-revenue-cta data-cta-id="index_pro_checkout" data-cta-placement="offers" data-plan-id="pro">Get Pro</a>
+            <p><a href="/install">Start with the free CLI</a></p>
+          </aside>
         </div>
       </div>
     </section>
@@ -962,14 +870,7 @@
       </div>
     </section>
 
-    <section id="deliverables">
-      <div class="shell">
-        <div class="section-kicker">What the $499 setup buys</div>
-        <h2 class="section-title">A managed gate for one painful workflow.</h2>
 
-        <div class="boundary"><strong>Boundary:</strong> the offer covers one supported local workflow. If the workflow cannot be reduced to one supported gate, the order is refunded instead of silently upsold.</div>
-      </div>
-    </section>
 
     <section id="proof">
       <div class="shell">
@@ -1020,26 +921,11 @@ next      decision recorded before execution</pre>
         <div class="section-kicker">Before you buy</div>
         <h2 class="section-title">Five questions, answered plainly.</h2>
         <div class="faq-list">
-          <div class="faq-item open">
-            <button class="faq-q" type="button" aria-expanded="true">What do I get for $499?</button>
-            <div class="faq-a">One 60-minute working review for one repeated AI-agent workflow failure, one configured local gate for a supported workflow, its regression test, and a written rollout and rollback proof within two business days after access and the agreed materials are available.</div>
-          </div>
-          <div class="faq-item">
-            <button class="faq-q" type="button" aria-expanded="false">Does ThumbGate block every risky command by default?</button>
-            <div class="faq-a">No. Detected secret exfiltration and gate-process bypass attempts are denied by default. Matching destructive actions warn unless strict enforcement is enabled. The managed gate defines the right boundary for your workflow instead of pretending every warning is a firewall.</div>
-          </div>
-          <div class="faq-item">
-            <button class="faq-q" type="button" aria-expanded="false">Is this the enterprise option?</button>
-            <div class="faq-a">No. The $499 Setup Sprint configures one supported workflow with you. Shared hosting, SSO, compliance packaging, an org-wide audit log, and multi-workflow rollout are not included and are not generally available.</div>
-          </div>
-          <div class="faq-item">
-            <button class="faq-q" type="button" aria-expanded="false">Does self-improving mean ThumbGate retrains my model?</button>
-            <div class="faq-a">No. ThumbGate does not change model weights and does not silently rewrite production policy. Self-improving under your control means explicit approvals and feedback teach the local control layer what to allow, block, or escalate next time: lessons are stored and re-ranked, repeated negative patterns can promote into gates, and stale auto-promoted gates expire.</div>
-          </div>
-          <div class="faq-item">
-            <button class="faq-q" type="button" aria-expanded="false">Is the self-improving logic a black box I have to trust blindly?</button>
-            <div class="faq-a">No. The promotion, demotion, and lesson-ranking logic ships in the public npm bundle under an MIT license — run <code>npm pack thumbgate</code> and read it yourself. Your lessons live in a local SQLite file you own, not a server you can't query. The $499 Setup Sprint adds a done-with-you failure map, one configured gate, and its regression proof, not access to intelligence withheld from the free install.</div>
-          </div>
+<div class="faq-item"><button class="faq-q" type="button" aria-expanded="false">What is free?</button><div class="faq-a">The MIT local CLI captures feedback and runs configured gates. Install it with npx thumbgate init.</div></div>
+<div class="faq-item"><button class="faq-q" type="button" aria-expanded="false">What does Pro add?</button><div class="faq-a">Pro adds recall, dashboard, adapters, and exports. Compare current subscription details at /pricing.</div></div>
+<div class="faq-item"><button class="faq-q" type="button" aria-expanded="false">Does ThumbGate block every risky command by default?</button><div class="faq-a">No. Detected secret exfiltration and gate-process bypass attempts are denied by default. Matching destructive actions warn by default and deny in strict mode.</div></div>
+<div class="faq-item"><button class="faq-q" type="button" aria-expanded="false">Is it really self-improving?</button><div class="faq-a">Thumbs teach. The gate enforces. Feedback refines the control layer, not the LLM. Reviewed outcomes can become prevention rules under your control.</div></div>
+<div class="faq-item"><button class="faq-q" type="button" aria-expanded="false">Which integrations enforce gates?</button><div class="faq-a">Supported hook integrations can enforce configured gates. Advisory integrations do not guarantee execution blocking.</div></div>
         </div>
       </div>
     </section>
@@ -1051,7 +937,7 @@ next      decision recorded before execution</pre>
           <li>Does not retrain model weights or silently rewrite production policy.</li>
           <li>Does not contain the blast radius — that is a sandbox's job.</li>
           <li>Default install warns on destructive actions; hard deny needs strict mode (<code>THUMBGATE_STRICT_ENFORCEMENT=1</code>).</li>
-          <li>The $499 Setup Sprint covers one supported local workflow. Multi-system implementation, SSO, a hosted audit log, and compliance packaging require separate scope and are not generally available.</li>
+          <p>Start with the free local CLI. Pro adds recall, dashboard, adapters, and exports. <a href="/pricing">Compare plans</a>.</p>
         </ul>
       </div>
     </section>
@@ -1060,10 +946,10 @@ next      decision recorded before execution</pre>
       <div class="shell">
         <div class="section-kicker">Start free today</div>
         <h2 class="section-title">Block the mistake your agent made last week.</h2>
-        <p class="section-lede">Run <code>npx thumbgate init</code> (MIT), or book a <strong style="color:var(--text)">$499 setup</strong>.</p>
+        <p class="section-lede">Run <code>npx thumbgate init</code> (MIT), or choose <strong style="color:var(--text)">self-serve Pro</strong>.</p>
         <div style="display:flex;flex-wrap:wrap;gap:12px;justify-content:center;margin-top:22px">
           <a class="nav-buy" href="#install" data-cta-id="final_install_free">Install free</a>
-          <a class="nav-enterprise" href="#enterprise-gate" data-offer-link data-cta-id="final_diagnostic_buy">See the $499 setup</a>
+          <a class="nav-enterprise" href="/checkout/pro" data-offer-link data-cta-id="final_pro_checkout">Get Pro</a>
         </div>
       </div>
     </section>
@@ -1167,17 +1053,17 @@ next      decision recorded before execution</pre>
     function captureOfferInterest(ctaId, placement) {
       if (privacySignalOptOut()) return;
       const props = {
-        ctaId: ctaId || 'homepage_diagnostic_buy',
+        ctaId: ctaId || 'homepage_pro_checkout',
         ctaPlacement: placement || 'homepage',
-        planId: 'sprint_diagnostic',
-        value: 499,
+        planId: 'pro',
+        value: Number('__PRO_PRICE_DOLLARS__'),
         currency: 'USD',
       };
-      window.plausible('diagnostic_offer_click', { props: props });
+      window.plausible('pro_offer_click', { props: props });
       sendFirstPartyTelemetry('cta_click', props);
       try {
         if (window.posthog && typeof window.posthog.capture === 'function') {
-          window.posthog.capture('diagnostic_offer_click', props);
+          window.posthog.capture('pro_offer_click', props);
         }
       } catch (_) {}
     }
@@ -1190,13 +1076,13 @@ next      decision recorded before execution</pre>
 
     const checkoutForm = document.querySelector('[data-primary-checkout]');
     if (checkoutForm) {
-      checkoutForm.addEventListener('submit', function () {
+      checkoutForm.querySelector('a[href="/checkout/pro"]').addEventListener('click', function () {
         if (privacySignalOptOut()) return;
         const props = {
-          ctaId: 'homepage_diagnostic_buy',
+          ctaId: 'homepage_pro_checkout',
           ctaPlacement: 'offers',
-          planId: 'sprint_diagnostic',
-          value: 499,
+          planId: 'pro',
+          value: Number('__PRO_PRICE_DOLLARS__'),
           currency: 'USD',
         };
         window.plausible('checkout_start', { props: props });

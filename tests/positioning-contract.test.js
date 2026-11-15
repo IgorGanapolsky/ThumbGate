@@ -52,7 +52,7 @@ test('public surfaces lead with outcomes instead of infrastructure abstractions'
   assert.match(readme, /evaluate the proposed tool call before execution/i);
   assert.match(landingPage, /One repeated agent mistake\. One configured gate\./i);
   assert.match(landingPage, /allowed, warned, or denied/i);
-  assert.match(landingPage, /one configured local gate/i);
+  assert.match(landingPage, /free local CLI and supported hook integrations/i);
   assert.match(gptInstructions, /Sell outcomes before infrastructure/i);
   assert.doesNotMatch(landingPage, /Global enforcement/i);
   assert.doesNotMatch(readme, /Behavior control system/i);
@@ -239,8 +239,8 @@ test('public landing copy stays vendor-neutral while offering Pro and Enterprise
   assert.match(landingPage, /Cursor/i);
   assert.match(landingPage, /Codex/i);
   assert.match(landingPage, /or similar agents/i);
-  assert.match(landingPage, /Setup Sprint/i);
-  assert.match(landingPage, /\$499/);
+  assert.match(landingPage, /free local CLI/i);
+  assert.match(landingPage, /href="\/checkout\/pro"/);
   // Pro removed from public buying path
   // Pro removed from public buying path
   assert.doesNotMatch(landingPage, /Enterprise pilot|\/enterprise/i);

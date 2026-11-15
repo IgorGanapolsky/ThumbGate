@@ -11,16 +11,12 @@ const HOME_HTML = fs.readFileSync(path.join(ROOT, 'public', 'index.html'), 'utf8
 const PRICING_HTML = fs.readFileSync(path.join(ROOT, 'public', 'pricing.html'), 'utf8');
 const PRO_HTML = fs.readFileSync(path.join(ROOT, 'public', 'pro.html'), 'utf8');
 
-test('homepage commercial contract offers Pro $19/mo and the $499 Setup Sprint', () => {
-  assert.match(HOME_HTML, /Setup Sprint/);
-  assert.match(HOME_HTML, /Book the \$499 setup/);
-  assert.match(HOME_HTML, /action="\/go\/diagnostic-pay"/);
-  assert.match(HOME_HTML, /\$__SPRINT_DIAGNOSTIC_PRICE_DOLLARS__/);
-  // Pro removed from public buying path
-  // Pro removed from public buying path
-  assert.match(HOME_HTML, /data-cta-id="nav_setup_sprint"/);
-  assert.doesNotMatch(HOME_HTML, /href="[^"]*workflow-sprint-intake|\/go\/sprint/i);
-  assert.match(HOME_HTML, /id="workflow-sprint-intake"[^>]*data-legacy-intake-alias/);
+test('homepage offers configured self-serve Pro and the free CLI', () => {
+  assert.match(HOME_HTML, /href="\/checkout\/pro"/);
+  assert.match(HOME_HTML, /__PRO_PRICE_DOLLARS__/);
+  assert.match(HOME_HTML, /__PRO_PRICE_LABEL__/);
+  assert.match(HOME_HTML, /free local CLI/i);
+  assert.doesNotMatch(HOME_HTML, /Setup Sprint|\$499|diagnostic-pay/);
 });
 
 test('pricing surfaces Pro self-serve and the $499 Setup Sprint together', () => {
@@ -65,12 +61,12 @@ test('pricing hides hosted team offers and states the availability boundary', ()
   assert.doesNotMatch(PRICING_HTML, /shared team DB/i);
 });
 
-test('managed gate promise is bounded and backed by the canonical checkout rail', () => {
+test('homepage Pro promise excludes managed services while legacy checkout remains email gated', () => {
   const server = fs.readFileSync(path.join(ROOT, 'src', 'api', 'server.js'), 'utf8');
 
-  assert.match(HOME_HTML, /One configured local gate and its regression test/);
-  assert.match(HOME_HTML, /one supported local workflow/i);
-  assert.match(HOME_HTML, /order is refunded instead of silently upsold/i);
+  assert.match(HOME_HTML, /Pro adds recall, dashboard, adapters, and exports/);
+  assert.doesNotMatch(HOME_HTML, /managed implementation|two business days/i);
+  assert.doesNotMatch(HOME_HTML, /order is refunded/i);
   assert.match(server, /'diagnostic-pay':/);
   assert.match(server, /requiresPost: true/);
   assert.match(server, /requiresBuyerEmail: true/);

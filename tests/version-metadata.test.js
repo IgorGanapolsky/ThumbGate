@@ -274,9 +274,9 @@ test('hosted origin and repository metadata stay canonical across live-facing ar
 
   assert.match(publicLanding, new RegExp(CURRENT_REPOSITORY_URL.replaceAll('.', '\\.')));
   assert.match(publicLanding, /thumbgate/i);
-  assert.match(publicLanding, /\$__SPRINT_DIAGNOSTIC_PRICE_DOLLARS__/);
-  assert.match(publicLanding, /Setup Sprint/);
-  assert.match(publicLanding, /action="\/go\/diagnostic-pay" method="POST"/);
+  assert.match(publicLanding, /\$__PRO_PRICE_DOLLARS__/);
+  assert.match(publicLanding, /ThumbGate Pro/);
+  assert.match(publicLanding, /href="\/checkout\/pro"/);
   assert.doesNotMatch(publicLanding, /\$19/);
   assert.doesNotMatch(publicLanding, /\$149/);
   assert.doesNotMatch(publicLanding, /\/go\/pro-direct/);
@@ -285,7 +285,7 @@ test('hosted origin and repository metadata stay canonical across live-facing ar
   assert.match(publicLanding, /One repeated agent mistake\. One configured gate\./i);
   assert.match(publicLanding, /test-backed verification evidence/i);
   assert.match(publicLanding, /strict-mode deny example/i);
-  assert.match(publicLanding, /configured local gate and its regression test/i);
+  assert.match(publicLanding, /Pro adds recall, dashboard, adapters, and exports/i);
   assert.doesNotMatch(publicLanding, /billingDuration/);
   assert.doesNotMatch(publicLanding, /P1M/);
   assert.doesNotMatch(publicLanding, /mcp-gateway\.vercel\.app/);
