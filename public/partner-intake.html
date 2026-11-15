@@ -142,12 +142,12 @@ footer { padding: 28px 0 40px; border-top: 1px solid var(--line); color: var(--m
         <li><strong>One proof target:</strong> state what must be true before the action runs again.</li>
       </ul>
     </section>
-    <form class="intake-card" action="/v1/intake/workflow-sprint" method="POST" data-partner-intake-form>
+    <form class="intake-card" action="/v1/inquiries" method="POST" data-partner-intake-form>
       <h2>Submit workflow</h2>
       <p>Use a work email so we can return the fit review to the right owner.</p>
-      <input type="hidden" name="ctaId" value="partner_intake_submit">
+      <input type="hidden" name="ctaId" value="partner_inquiry_submit">
       <input type="hidden" name="ctaPlacement" value="partner_intake">
-      <input type="hidden" name="planId" value="diagnostic">
+      <input type="hidden" name="planId" value="inquiry">
       <input type="hidden" name="page" value="/partner-intake">
       <input type="hidden" name="source" value="__SERVER_ATTRIBUTION_SOURCE__">
       <input type="hidden" name="utmSource" value="__SERVER_UTM_SOURCE__">

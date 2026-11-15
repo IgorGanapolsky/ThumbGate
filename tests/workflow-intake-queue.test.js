@@ -234,10 +234,10 @@ test('fetchWorkflowIntakeQueue sends credentials only in the authorization heade
   }, async (url, options) => {
     capturedUrl = String(url);
     capturedOptions = options;
-    return response(sampleQueue());
+    return response({ intakeQueue: sampleQueue() });
   });
 
-  assert.equal(capturedUrl, 'https://thumbgate.ai/v1/intake/workflow-sprint/queue?status=new%2Cqualified&limit=25');
+  assert.equal(capturedUrl, 'https://thumbgate.ai/v1/billing/summary?window=today&include_intake_queue=1&intake_status=new%2Cqualified&intake_limit=25');
   assert.equal(capturedUrl.includes('operator_secret'), false);
   assert.equal(capturedOptions.headers.authorization, 'Bearer operator_secret');
   assert.equal(result.summary.leads[0].ref.length, 12);
@@ -250,9 +250,9 @@ test('fetchWorkflowIntakeQueue applies safe defaults for library callers', async
     apiKey: 'operator_secret',
   }, async (url) => {
     capturedUrl = String(url);
-    return response(sampleQueue());
+    return response({ intakeQueue: sampleQueue() });
   });
-  assert.equal(capturedUrl, 'https://thumbgate.ai/v1/intake/workflow-sprint/queue?status=new%2Cqualified&limit=50');
+  assert.equal(capturedUrl, 'https://thumbgate.ai/v1/billing/summary?window=today&include_intake_queue=1&intake_status=new%2Cqualified&intake_limit=50');
 });
 
 test('fetchWorkflowIntakeQueue fails closed on old releases, credentials, and unsafe caching', async () => {
@@ -268,17 +268,17 @@ test('fetchWorkflowIntakeQueue fails closed on old releases, credentials, and un
   );
   await assert.rejects(
     fetchWorkflowIntakeQueue(options, config, async (url) =>
-      String(url).includes('/v1/billing/summary')
+      !new URL(url).searchParams.has('include_intake_queue')
         ? response({ revenue: {} })
         : response({}, { status: 401 })),
     (error) => error.code === 'release_required' && error.status === 401
   );
   await assert.rejects(
-    fetchWorkflowIntakeQueue(options, config, async () => response(sampleQueue(), { cacheControl: 'public, max-age=60' })),
+    fetchWorkflowIntakeQueue(options, config, async () => response({ intakeQueue: sampleQueue() }, { cacheControl: 'public, max-age=60' })),
     (error) => error.code === 'unsafe_cache_policy'
   );
   await assert.rejects(
-    fetchWorkflowIntakeQueue(options, config, async () => response(sampleQueue(), { vary: 'Accept-Encoding' })),
+    fetchWorkflowIntakeQueue(options, config, async () => response({ intakeQueue: sampleQueue() }, { vary: 'Accept-Encoding' })),
     (error) => error.code === 'unsafe_cache_policy'
   );
 });
@@ -299,4 +299,29 @@ test('private export is explicit, complete, mode 0600, and never overwrites', ()
   } finally {
     fs.rmSync(dir, { recursive: true, force: true });
   }
+});
+
+
+test('billing queue envelope and nested payload validation fail closed', async () => {
+  const config = { apiBaseUrl: 'https://thumbgate.ai', apiKey: 'operator_secret' };
+  for (const body of [sampleQueue(), {}, { intakeQueue: { leads: [] } }]) {
+    await assert.rejects(fetchWorkflowIntakeQueue({}, config, async () => response(body)),
+      (error) => error.code === 'invalid_queue_payload');
+  }
+});
+
+test('generic inquiry hold reasons remain visible without exposing contact or sales drafts', () => {
+  const queue = sampleQueue();
+  for (const lead of queue.leads) {
+    lead.qualificationCard.recommendedOffer = null;
+    lead.qualificationCard.route = 'nurture';
+    lead.discoveryPacket = { status: 'hold_not_approval_ready', blockers: ['product_inquiry_not_a_service_offer'], draft: null };
+    lead.closePacket = { status: 'hold_not_approval_ready', blockers: ['product_inquiry_not_a_service_offer'], draft: null };
+  }
+  const summary = summarizeQueue(queue, 'https://thumbgate.ai');
+  assert.deepEqual(summary.leads[0].closeBlockers, ['product_inquiry_not_a_service_offer']);
+  assert.deepEqual(summary.leads[0].discoveryBlockers, ['product_inquiry_not_a_service_offer']);
+  assert.equal(summary.leads[0].offerId, null);
+  assert.equal(summary.leads[0].priceCents, null);
+  assert.doesNotMatch(JSON.stringify(summary), /buyer@example.com|private workflow|private draft/);
 });

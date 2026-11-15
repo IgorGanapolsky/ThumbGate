@@ -151,6 +151,7 @@ test('free-tier limit Talk to us button writes lead into operator intake queue (
     'THUMBGATE_ALLOW_INSECURE',
     'THUMBGATE_OPERATOR_KEY',
     'RESEND_API_KEY',
+    'THUMBGATE_RESEND_API_KEY',
     'STRIPE_SECRET_KEY',
     'STRIPE_PRICE_ID',
     'GOOGLE_CLIENT_ID',
@@ -161,6 +162,7 @@ test('free-tier limit Talk to us button writes lead into operator intake queue (
   process.env.THUMBGATE_API_KEY = 'tg_admin_crusoe_test';
   process.env.THUMBGATE_OPERATOR_KEY = 'tg_op_crusoe_test';
   process.env.RESEND_API_KEY = '';
+  process.env.THUMBGATE_RESEND_API_KEY = '';
   process.env.STRIPE_SECRET_KEY = '';
   process.env.STRIPE_PRICE_ID = '';
   process.env._TEST_API_KEYS_PATH = path.join(tmpDir, 'api-keys.json');
@@ -180,6 +182,40 @@ test('free-tier limit Talk to us button writes lead into operator intake queue (
     assert.match(dashboardHtml, /data-talk-to-us/);
     assert.match(dashboardHtml, /submitDashboardTalkToUs/);
     assert.match(dashboardHtml, /Talk to us/);
+
+    for (const html of [lessonsHtml, dashboardHtml]) {
+      assert.match(html, /projectFetch\('\/v1\/inquiries'/);
+      assert.match(html, /credentials: 'same-origin'/);
+      assert.match(html, /planId: 'inquiry', ctaId: 'inquiry'/);
+      assert.doesNotMatch(html, /\/v1\/intake\/workflow-sprint/);
+    }
+
+    // Execute the actual served button functions against this local HTTP server.
+    async function clickTalkToUs(html, functionName, email = '', cookie = '') {
+      const source = html.match(new RegExp('async function ' + functionName + '\\(btn\\) \\{[\\s\\S]*?\\n\\}'))?.[0];
+      assert.ok(source, `served ${functionName} is present`);
+      const emailEl = { value: email, style: { display: 'none' }, focus() { this.focused = true; } };
+      const statusEl = { textContent: '' };
+      const btn = { disabled: false, textContent: 'Talk to us', getAttribute: () => '',
+        closest: () => ({ querySelector: (selector) => selector === '[data-talk-email]' ? emailEl : statusEl }) };
+      let response;
+      const context = require('node:vm').createContext({
+        projectFetch: async (endpoint, options) => {
+          assert.equal(endpoint, '/v1/inquiries');
+          assert.equal(options.credentials, 'same-origin');
+          const payload = JSON.parse(options.body);
+          assert.equal(payload.planId, 'inquiry');
+          assert.equal(payload.ctaId, 'inquiry');
+          assert.equal(payload.ctaPlacement, 'free_tier_limit');
+          response = await fetch(`${origin}${endpoint}`, { ...options,
+            headers: { ...options.headers, ...(cookie ? { Cookie: cookie } : {}) } });
+          return response.clone();
+        },
+      });
+      require('node:vm').runInContext(source, context);
+      await context[functionName](btn);
+      return { response, btn, emailEl, statusEl };
+    }
 
     // Newsletter signup exercises server.js dispatchSignupWelcomeEmail path (skips send cleanly when RESEND_API_KEY is unset).
     const nlRes = await fetch(`${origin}/api/newsletter`, {
@@ -224,49 +260,25 @@ test('free-tier limit Talk to us button writes lead into operator intake queue (
       .find((c) => c.startsWith('thumbgate_auth_session='));
     assert.ok(sessionCookie, 'expected thumbgate_auth_session cookie from SSO callback');
 
-    const ssoIntakeRes = await fetch(`${origin}/v1/intake/workflow-sprint`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Cookie: sessionCookie, 'x-forwarded-for': '203.0.113.88' },
-      body: JSON.stringify({
-        workflow: 'Free-tier dashboard sign-in (Talk to us)',
-        urgency: 'Hit free-tier limit on /dashboard',
-        ctaId: 'workflow_sprint_intake',
-        ctaPlacement: 'free_tier_limit',
-        page: '/dashboard',
-      }),
-    });
-    assert.equal(ssoIntakeRes.status, 201);
+    const signedIn = await clickTalkToUs(dashboardHtml, 'submitDashboardTalkToUs', '', sessionCookie);
+    assert.equal(signedIn.response.status, 201);
+    assert.equal(signedIn.btn.textContent, 'Request sent');
 
-    // Anonymous free-tier click without SSO cookie returns 400 so the UI reveals the email input, then 201 once submitted.
-    const missingEmailRes = await fetch(`${origin}/v1/intake/workflow-sprint`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'x-forwarded-for': '203.0.113.89' },
-      body: JSON.stringify({
-        ctaId: 'workflow_sprint_intake',
-        ctaPlacement: 'free_tier_limit',
-        page: '/lessons',
-      }),
-    });
-    assert.equal(missingEmailRes.status, 400);
-
-    const intakeRes = await fetch(`${origin}/v1/intake/workflow-sprint`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        email: 'alex@cloudteam.io',
-        workflow: 'Free-tier dashboard limit (Talk to us)',
-        urgency: 'Hit free-tier limit on /dashboard',
-        planId: 'diagnostic',
-        ctaId: 'workflow_sprint_intake',
-        ctaPlacement: 'free_tier_limit',
-        page: '/dashboard',
-      }),
-    });
+    // Anonymous users see the email input after 400, then can send their question.
+    const anonymous = await clickTalkToUs(lessonsHtml, 'submitLessonsTalkToUs');
+    assert.equal(anonymous.response.status, 400);
+    assert.equal(anonymous.emailEl.style.display, 'inline-block');
+    assert.equal(anonymous.emailEl.focused, true);
+    assert.equal(anonymous.btn.disabled, false);
+    assert.match(anonymous.statusEl.textContent, /Enter work email/);
+    const withEmail = await clickTalkToUs(lessonsHtml, 'submitLessonsTalkToUs', 'alex@cloudteam.io');
+    const intakeRes = withEmail.response;
     assert.equal(intakeRes.status, 201);
+    assert.equal(withEmail.btn.textContent, 'Request sent');
     const intakeBody = await intakeRes.json();
     assert.equal(intakeBody.ok, true);
     assert.equal(intakeBody.status, 'new');
-    assert.equal(intakeBody.offer, 'workflow_hardening_diagnostic');
+    assert.equal(intakeBody.offer, 'product_inquiry');
 
     const summaryRes = await fetch(`${origin}/v1/billing/summary?window=30d&include_intake_queue=1`, {
       headers: { Authorization: 'Bearer tg_op_crusoe_test' },
@@ -278,12 +290,32 @@ test('free-tier limit Talk to us button writes lead into operator intake queue (
     assert.equal(summary.intakeQueue.byStatus.new, 2);
     assert.equal(summary.ctas.checkoutInterstitialWorkflowIntakeClicks, 2);
 
-    const queueRes = await fetch(`${origin}/v1/intake/workflow-sprint/queue`, {
+    const queueRes = await fetch(`${origin}/v1/billing/summary?window=today&include_intake_queue=1&intake_status=new%2Cqualified&intake_limit=25`, {
       headers: { Authorization: 'Bearer tg_op_crusoe_test' },
     });
     assert.equal(queueRes.status, 200);
+    assert.match(queueRes.headers.get('cache-control'), /no-store/);
+    assert.match(queueRes.headers.get('vary'), /Authorization/i);
     const queuePayload = await queueRes.json();
-    const normalizedQueue = normalizeWorkflowIntakeQueue(queuePayload);
+    assert.equal(queuePayload.intakeQueue.leads.length, 2);
+    for (const lead of queuePayload.intakeQueue.leads) {
+      assert.equal(lead.offer, 'product_inquiry');
+      assert.equal(lead.qualificationCard.checkoutEligible, false);
+      assert.equal(lead.discoveryPacket.draft, null);
+      assert.equal(lead.closePacket.draft, null);
+    }
+    assert.ok(queuePayload.intakeQueue.leads.some((lead) => lead.contact.email === 'ssofree@cloudteam.io'));
+    const unauthorized = await fetch(`${origin}/v1/billing/summary?include_intake_queue=1`);
+    assert.equal(unauthorized.status, 401);
+    const cliQueue = await require('../scripts/workflow-intake-queue').fetchWorkflowIntakeQueue(
+      { statuses: ['new'], limit: 1 }, { apiBaseUrl: origin, apiKey: 'tg_op_crusoe_test' });
+    assert.deepEqual(cliQueue.payload.filters, { statuses: ['new'], limit: 1 });
+    assert.equal(cliQueue.payload.returned, 1);
+    assert.equal(cliQueue.payload.eligibleTotal, 2);
+    assert.equal(cliQueue.summary.leads[0].offerId, null);
+    assert.ok(cliQueue.summary.leads[0].closeBlockers.includes('product_inquiry_not_a_service_offer'));
+    assert.doesNotMatch(JSON.stringify(cliQueue.summary), /ssofree@cloudteam.io|alex@cloudteam.io/);
+    const normalizedQueue = normalizeWorkflowIntakeQueue(queuePayload.intakeQueue);
     assert.equal(normalizedQueue.eligibleTotal, 2);
 
     const normalized30d = normalizeWindowSummary(200, summary);

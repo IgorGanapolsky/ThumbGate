@@ -1151,3 +1151,15 @@ test('appendTelemetryEvent hydrates missing journey IDs and campaignVariant from
   assert.equal(summary30d.telemetrySource.tailBytes, 32 * 1024 * 1024);
   assert.equal(summary90d.telemetrySource.tailBytes, 64 * 1024 * 1024);
 });
+
+
+test('generic product inquiries retain intake click attribution without changing historical counters', () => {
+  for (const ctaId of ['inquiry', 'workflow_sprint_intake']) {
+    appendTelemetryEvent(tmpDir, { eventType: 'checkout_interstitial_cta_clicked', clientType: 'web',
+      ctaId, ctaPlacement: 'free_tier_limit', page: '/dashboard', planId: 'inquiry' });
+  }
+  const analytics = getTelemetryAnalytics(tmpDir);
+  assert.equal(analytics.ctas.checkoutInterstitialWorkflowIntakeClicks, 2);
+  assert.equal(analytics.ctas.byId.inquiry, 1);
+  assert.equal(analytics.ctas.byId.workflow_sprint_intake, 1);
+});

@@ -1047,7 +1047,7 @@ async function submitDashboardTalkToUs(btn) {
   var wrap = btn.closest('[data-talk-wrap]'), emailEl = wrap && wrap.querySelector('[data-talk-email]'), statusEl = wrap && wrap.querySelector('[data-talk-status]');
   btn.disabled = true;
   try {
-    var res = await projectFetch('/v1/intake/workflow-sprint', { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: (emailEl && emailEl.value.trim()) || undefined, workflow: btn.getAttribute('data-workflow') || 'Free-tier dashboard limit (Talk to us)', urgency: 'Hit free-tier limit on /dashboard', planId: 'diagnostic', ctaId: 'workflow_sprint_intake', ctaPlacement: 'free_tier_limit', page: '/dashboard' }) });
+    var res = await projectFetch('/v1/inquiries', { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: (emailEl && emailEl.value.trim()) || undefined, workflow: btn.getAttribute('data-workflow') || 'Free-tier dashboard limit (Talk to us)', urgency: 'Hit free-tier limit on /dashboard', planId: 'inquiry', ctaId: 'inquiry', ctaPlacement: 'free_tier_limit', page: '/dashboard' }) });
     if (res.status === 400 && emailEl && emailEl.style.display === 'none') {
       emailEl.style.display = 'inline-block'; emailEl.focus();
       if (statusEl) statusEl.textContent = 'Enter work email, then click Talk to us.';

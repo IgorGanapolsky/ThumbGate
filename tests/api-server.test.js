@@ -559,7 +559,9 @@ test('/partner-intake serves an attributed form without a price or payment path'
   assert.match(res.headers.get('content-type') || '', /text\/html/);
   const html = await res.text();
   assert.match(html, /Send one failing AI-agent workflow/);
-  assert.match(html, /action="\/v1\/intake\/workflow-sprint"/);
+  assert.match(html, /action="\/v1\/inquiries"/);
+  assert.match(html, /name="planId" value="inquiry"/);
+  assert.match(html, /name="ctaId" value="partner_inquiry_submit"/);
   assert.match(html, /name="page" value="\/partner-intake"/);
   assert.match(html, /name="source" value="aiventyx"/);
   assert.match(html, /name="utmSource" value="aiventyx"/);
@@ -567,6 +569,22 @@ test('/partner-intake serves an attributed form without a price or payment path'
   assert.match(html, /name="utmCampaign" value="hosted_listing"/);
   assert.match(html, /search\.get\('utm_source'\)/);
   assert.doesNotMatch(html, /\$\s*\d|Stripe|checkout|payment|data-revenue-cta/i);
+  const formBody = new URLSearchParams({ name: 'Partner visitor', email: 'partner-inquiry@example.com', workflow: 'How do local rules work?' });
+  for (const input of html.matchAll(/<input type="hidden" name="([^"]+)" value="([^"]*)"/g)) {
+    formBody.set(input[1], input[2]);
+  }
+  const submitted = await fetch(apiUrl('/v1/inquiries'), { method: 'POST',
+    headers: { 'content-type': 'application/x-www-form-urlencoded', accept: 'text/html' }, body: formBody });
+  assert.equal(submitted.status, 201);
+  assert.match(await submitted.text(), /Inquiry received/);
+  const lead = readJsonl(path.join(tmpFeedbackDir, 'workflow-sprint-leads.jsonl'))
+    .find((entry) => entry.contact.email === 'partner-inquiry@example.com');
+  assert.equal(lead.offer, 'product_inquiry');
+  assert.equal(lead.attribution.planId, 'inquiry');
+  assert.equal(lead.attribution.ctaId, 'partner_inquiry_submit');
+  assert.equal(lead.attribution.utmSource, 'aiventyx');
+  assert.equal(lead.attribution.utmMedium, 'partner');
+  assert.equal(lead.attribution.utmCampaign, 'hosted_listing');
 });
 
 test('/partner-intake escapes server-rendered attribution values', async () => {

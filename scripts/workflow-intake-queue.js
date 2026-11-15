@@ -45,6 +45,7 @@ const ALLOWED_UNKNOWNS = new Set([
   'proofRequiredToDecide',
 ]);
 const ALLOWED_CLOSE_BLOCKERS = new Set([
+  'product_inquiry_not_a_service_offer',
   'qualification_review_unverified',
   'lifecycle_not_evidence_qualified',
   'intake_not_current',
@@ -57,6 +58,7 @@ const ALLOWED_CLOSE_BLOCKERS = new Set([
   'checkout_url_unavailable',
 ]);
 const ALLOWED_DISCOVERY_BLOCKERS = new Set([
+  'product_inquiry_not_a_service_offer',
   'lifecycle_not_new',
   'intake_not_current',
   'contact_path_missing',
@@ -365,9 +367,11 @@ async function fetchWorkflowIntakeQueue(options = {}, config = resolveHostedQueu
     timeoutMs: Number.isInteger(options.timeoutMs) ? options.timeoutMs : DEFAULT_TIMEOUT_MS,
   };
   const hosted = validateHostedConfig(config);
-  const url = new URL('/v1/intake/workflow-sprint/queue', hosted.apiBaseUrl);
-  url.searchParams.set('status', effectiveOptions.statuses.join(','));
-  url.searchParams.set('limit', String(effectiveOptions.limit));
+  const url = new URL('/v1/billing/summary', hosted.apiBaseUrl);
+  url.searchParams.set('window', 'today');
+  url.searchParams.set('include_intake_queue', '1');
+  url.searchParams.set('intake_status', effectiveOptions.statuses.join(','));
+  url.searchParams.set('intake_limit', String(effectiveOptions.limit));
   const response = await fetchWithTimeout(fetchImpl, url, {
     method: 'GET',
     headers: {
@@ -411,7 +415,7 @@ async function fetchWorkflowIntakeQueue(options = {}, config = resolveHostedQueu
     throw queueError('intake_queue_http_error', `Hosted intake queue returned HTTP ${response.status}.`, response.status);
   }
   assertPrivateResponse(response);
-  const payload = validateQueuePayload(await response.json());
+  const payload = validateQueuePayload((await response.json())?.intakeQueue);
   return { payload, summary: summarizeQueue(payload, hosted.apiBaseUrl) };
 }
 
