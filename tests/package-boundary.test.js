@@ -522,8 +522,9 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
     // 650 -> 652 (2026-11-11): scripts/project-scope.js (required by the PreToolUse hook and lesson retrieval) and scripts/backfill-lesson-scopes.js (tags existing lessons with their repo) (+2).
     // 652 -> 653 (2026-11-11): src/openshell-lovable-engine.js (+1).
     // 653 -> 655 (2026-11-12): scripts/brand-standards-gate.js + config/brand-standards.json for Adobe MAX Brand Intelligence and voice gating (+2).
-    manifest.fileCount <= 655,
-    `npm package should stay <= 655 files, got ${manifest.fileCount}`
+    // 655 -> 656 (2026-11-14): public/project-switcher.js for the project-scoped dashboard (+1).
+    manifest.fileCount <= 656,
+    `npm package should stay <= 656 files, got ${manifest.fileCount}`
   );
   // Ceiling bumped from 2.75 MB → 2.85 MB (2026-04-16) to accommodate the
   // incremental review-delta demo content in public/dashboard.html landing

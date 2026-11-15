@@ -52,7 +52,7 @@ test('dashboard gate details retain the configured explanation and source eviden
 
   const result = generateDashboard(dir).gates.find((item) => item.id === gate.id);
 
-  assert.deepEqual(result, { ...gate, name: gate.id, layer: 'Execution' });
+  assert.deepEqual(result, { ...gate, name: gate.id, layer: 'Execution', scope: 'global', scopeLabel: 'Global' });
 });
 
 test('dashboard gate details leave absent provenance unknown', () => {
@@ -76,6 +76,8 @@ test('dashboard gate details leave absent provenance unknown', () => {
     sourceFeedbackId: null,
     createdAt: null,
     promotedAt: null,
+    scope: 'global',
+    scopeLabel: 'Global',
   });
 });
 

@@ -124,9 +124,9 @@ test('tenant dashboard never fetches merchant-wide provider billing or global co
   assert.equal(JSON.stringify(result.body).includes('987654321'), false);
 });
 
-async function subscribe(key) {
+async function subscribe(key, projectKey) {
   const controller = new AbortController();
-  const response = await fetch(origin + '/v1/events', { headers: { authorization: 'Bearer ' + key }, signal: controller.signal });
+  const response = await fetch(origin + '/v1/events' + (projectKey ? '?project=' + projectKey : ''), { headers: { authorization: 'Bearer ' + key }, signal: controller.signal });
   assert.equal(response.status, 200);
   const reader = response.body.getReader();
   const messages = [];
@@ -155,7 +155,7 @@ async function subscribe(key) {
 }
 
 test('SSE subscription ownership is captured independently of the event publisher context', async () => {
-  const streams = await Promise.all([credentials[0], credentials[0], credentials[1], admin].map(subscribe));
+  const streams = await Promise.all([credentials[0], credentials[0], credentials[1], admin].map((key) => subscribe(key)));
   try {
     const captured = await request('/v1/feedback/capture', credentials[0], { signal: 'up', context: 'synthetic SSE owner marker', whatWorked: 'Only subscribers for this tenant receive the event.' });
     assert.equal(captured.status, 200);
@@ -203,7 +203,9 @@ test('a verified customer cannot rebind storage through a project selector and l
   const before = readRows(dirs[0], 'feedback-log.jsonl').length;
   const siblingBefore = readRows(dirs[1], 'feedback-log.jsonl').length;
   const headers = { authorization: 'Bearer ' + credentials[0], 'content-type': 'application/json', Host: 'localhost', 'x-forwarded-host': 'localhost', 'x-thumbgate-project-dir': project };
-  const query = '?project=' + encodeURIComponent(project);
+  const query = '?projectDir=' + encodeURIComponent(project);
+  const invalidProject = await fetch(origin + '/v1/feedback/stats?project=' + encodeURIComponent(project), { headers });
+  assert.equal(invalidProject.status, 400);
   const captured = await fetch(origin + '/v1/feedback/capture' + query, { method: 'POST', headers, body: JSON.stringify({ signal: 'up', context: 'verified-owner-spoof-canary', whatWorked: 'Authenticated scope won over the supplied project path.' }) });
   assert.equal(captured.status, 200);
   const stats = await fetch(origin + '/v1/feedback/stats' + query, { headers });
@@ -293,4 +295,33 @@ test('request dispatch clears inherited scope, binds the authenticated customer 
     inherited.server.closeAllConnections();
     await new Promise((resolve) => inherited.server.close(resolve));
   }
+});
+
+test('one tenant has independent project streams, lesson access and gate satisfaction', async () => {
+  const { projectFromRemote } = require('../scripts/project-identity');
+  const a = projectFromRemote('https://github.com/tenant-fixture/a'); const b = projectFromRemote('https://github.com/tenant-fixture/b');
+  const streams = await Promise.all([subscribe(credentials[0], a.projectKey), subscribe(credentials[0], b.projectKey), subscribe(credentials[1], a.projectKey)]);
+  try {
+    const captured = await request('/v1/feedback/capture', credentials[0], { ...a, signal: 'up', context: 'TENANT_PROJECT_A marker', whatWorked: 'Project scoped result was verified before delivery.' });
+    assert.equal(captured.status, 200);
+    for (let attempt = 0; attempt < 30 && !streams[0].messages.length; attempt++) await new Promise((resolve) => setTimeout(resolve, 20));
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    assert.deepEqual(streams.map((stream) => stream.messages.length), [1, 0, 0]);
+    assert.equal(streams[0].messages[0].data.projectKey, a.projectKey);
+    assert.equal((await request('/v1/feedback/stats?project=' + a.projectKey, credentials[0])).body.total, 1);
+    assert.equal((await request('/v1/feedback/stats?project=' + b.projectKey, credentials[0])).body.total, 0);
+    assert.equal((await request('/v1/feedback/stats?project=' + a.projectKey, credentials[1])).body.total, 0);
+    const row = readRows(dirs[0], 'feedback-log.jsonl').find((row) => row.context === 'TENANT_PROJECT_A marker');
+    const detail = await fetch(origin + '/lessons/' + row.id + '?project=' + a.projectKey, { headers: { authorization: 'Bearer ' + credentials[0] } });
+    assert.equal(detail.status, 200); assert((await detail.text()).includes('TENANT_PROJECT_A'));
+    const foreign = await fetch(origin + '/lessons/' + row.id + '?project=' + a.projectKey, { headers: { authorization: 'Bearer ' + credentials[1] } }); assert.equal(foreign.status, 404);
+    const wrong = await request('/lessons/' + row.id + '/update?project=' + b.projectKey, credentials[0], { content: 'wrong' }); assert.equal(wrong.status, 404);
+    const edited = await request('/lessons/' + row.id + '/update?project=' + a.projectKey, credentials[0], { content: 'TENANT_PROJECT_A_EDITED' }); assert.equal(edited.status, 200);
+    assert.equal((await request('/v1/gates/satisfy?project=' + a.projectKey, credentials[0], { gateId: 'fixture-ready', evidence: 'verified' })).status, 200);
+    const { withDataScope } = require('../scripts/feedback-scope'); const gates = require('../scripts/gates-engine');
+    withDataScope({ kind: 'tenant', tenantId: 'fixture', feedbackDir: dirs[0] }, () => {
+      assert.equal(gates.isConditionSatisfied('fixture-ready', a), true); assert.equal(gates.isConditionSatisfied('fixture-ready', b), false);
+    });
+    withDataScope({ kind: 'tenant', tenantId: 'other', feedbackDir: dirs[1] }, () => assert.equal(gates.isConditionSatisfied('fixture-ready', a), false));
+  } finally { streams.forEach((stream) => stream.close()); }
 });

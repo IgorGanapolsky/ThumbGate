@@ -66,3 +66,22 @@ test('recordToolCall inside a hosted tenant scope never adopts the server checko
   assert.equal(rows.at(-1).projectKey, UNASSIGNED.projectKey);
   fs.rmSync(kpiDir, { recursive: true, force: true });
 });
+
+test('recordTaskOutcome on a hosted runtime never adopts the server checkout as the project', () => {
+  const dir2 = fs.mkdtempSync(path.join(os.tmpdir(), 'tg-outcome-'));
+  const old = process.env.RAILWAY_PROJECT_ID;
+  process.env.RAILWAY_PROJECT_ID = 'proj-test';
+  try {
+    const { recordTaskOutcome } = require('../scripts/task-outcomes');
+    const res = recordTaskOutcome({
+      taskId: 'task-hosted', taskType: 'code-change', goal: 'g', status: 'completed', cwd: process.cwd(),
+      verification: { performed: true, passed: true, verifier: 'node-test', evidence: ['ok'], unsupportedClaims: 0 },
+      toolCalls: [], policy: { violations: 0, unsafeEscapes: 0, falseBlocks: 0 },
+      efficiency: { latencyMs: 1, costUsd: 0, firstAttempt: true }, idempotencyKey: 'task-hosted',
+    }, { feedbackDir: dir2, recordTrace: false });
+    assert.equal(res.receipt.projectKey, UNASSIGNED.projectKey);
+  } finally {
+    if (old === undefined) delete process.env.RAILWAY_PROJECT_ID; else process.env.RAILWAY_PROJECT_ID = old;
+    fs.rmSync(dir2, { recursive: true, force: true });
+  }
+});

@@ -274,7 +274,8 @@ const path = require('node:path');
 // 622 -> 625 (2026-10-13): scripts/decisive-step-evaluator.js + scripts/decisive-step-doctor.js + decisive-step-evaluator skill (+3).
 // 625 -> 633 (2026-10-13): restored .agents/skills/deeppattern-discipline-honesty-not-clone/ in package.json files (+1).
 // 633 -> 655 (2026-10-26): public/install.md, carousel assets, and src/mcp/email-triage-server (+22 headroom).
-const BASELINE_FILE_COUNT = 655;
+// 655 -> 656 (2026-11-14): public/project-switcher.js for the project-scoped dashboard (+1).
+const BASELINE_FILE_COUNT = 656;
 function readBundleSnapshot() {
   const repoRoot = path.resolve(__dirname, '..');
   const stdout = execSync('npm pack --dry-run --json', {
