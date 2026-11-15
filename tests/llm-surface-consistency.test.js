@@ -471,7 +471,14 @@ test('every AI-discovery surface describes the promoted paid offer', () => {
   const termsUrl = `${CANONICAL.appOrigin}/pricing`;
   const canonicalDollars = wholeDollars(currentOffer('workflow_hardening_diagnostic'));
 
-  for (const file of ['public/llm-context.md', '.well-known/llms.txt']) {
+  const context = readText('public/llm-context.md');
+  assert.match(context, /Pro/);
+  assert.match(context, /free/i);
+  assert.ok(context.includes(termsUrl));
+  assert.doesNotMatch(context, /\$499|Setup Sprint|Workflow Sprint/i);
+
+  // Preserve coverage for the discovery file until its separate migration.
+  for (const file of ['.well-known/llms.txt']) {
     const text = readText(file);
     assert.match(text, offerName, `${file} never names the promoted paid offer`);
 

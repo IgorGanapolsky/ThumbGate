@@ -254,8 +254,9 @@ test('GET /install serves the verified distribution and buyer path page', async 
     assert.match(html, /id="hermes"/);
     assert.match(html, /grok mcp add thumbgate/);
     assert.match(html, /hermes-gate/);
-    assert.match(html, /\/diagnostic\?utm_source=install_page/);
-    assert.match(html, /Setup Sprint/);
+    assert.match(html, /\/pricing\?utm_source=install_page/);
+    assert.match(html, /self-serve Pro/);
+    assert.doesNotMatch(html, /\$499|Setup Sprint/);
   }
 });
 

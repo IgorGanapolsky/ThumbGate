@@ -261,7 +261,7 @@
       cta_placement: placement,
       plan_id: 'pro',
     });
-    var intakeHref = appendCampaignParams(settings.intakeHref || '/#workflow-sprint-intake', {
+    var intakeHref = appendCampaignParams(settings.intakeHref || '/pricing', {
       utm_source: 'owned_site',
       utm_medium: 'sticky_cta',
       utm_campaign: campaign,
@@ -275,10 +275,10 @@
     panel.setAttribute('aria-label', 'ThumbGate paid help');
     panel.innerHTML = [
       '<strong>Stop the repeated agent failure?</strong>',
-      '<p>Use Pro for self-serve proof, or send the workflow first when one failure is already costing time.</p>',
+      '<p>Use the free local CLI, or compare Pro for recall, dashboard, adapters, and exports.</p>',
       '<nav>',
       '<a data-assist-cta="assist_pro_checkout" href="' + proHref + '">Get Pro</a>',
-      '<a data-assist-cta="assist_workflow_intake" href="' + intakeHref + '">Send workflow first</a>',
+      '<a data-assist-cta="assist_workflow_intake" href="' + intakeHref + '">Compare plans</a>',
       '<button type="button" data-assist-dismiss>Not now</button>',
       '</nav>'
     ].join('');

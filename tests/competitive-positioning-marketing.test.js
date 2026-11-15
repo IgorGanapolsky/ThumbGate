@@ -57,7 +57,8 @@ test('Agentix comparison page frames agency services as adjacent competition', (
   assert.match(agentixHtml, /adjacent competition/i);
   assert.match(agentixHtml, /custom AI agent and automation services/i);
   assert.match(agentixHtml, /productized enforcement layer/i);
-  assert.match(agentixHtml, /\$499 one-time Setup Sprint/i);
+  assert.match(agentixHtml, /self-serve/i);
+  assert.doesNotMatch(agentixHtml, /\$499|Setup Sprint/i);
   assert.doesNotMatch(agentixHtml, /Pro \$19|\$149/i);
 });
 
@@ -71,7 +72,8 @@ test('FAR.AI comparison keeps research, evaluation, and runtime enforcement sepa
   assert.match(farAiHtml, /https:\/\/www\.far\.ai\/research/);
   assert.match(farAiHtml, /utm_source=far_ai_comparison/);
   assert.equal((farAiHtml.match(/When should I use ThumbGate\?/g) || []).length, 2);
-  assert.match(farAiHtml, /\$499 Setup Sprint/);
+  assert.match(farAiHtml, /self-serve/i);
+  assert.doesNotMatch(farAiHtml, /\$499|Setup Sprint/i);
   assert.doesNotMatch(farAiHtml, /managed workflow hardening sprint/i);
   assert.match(compareHtml, /href="\/compare\/far-ai"/);
 });
@@ -103,7 +105,8 @@ test('EdotEnv comparison keeps RSI train/eval and runtime enforcement separate',
   assert.match(edotenvHtml, /No affiliation with EdotEnv/i);
   assert.match(edotenvHtml, /https:\/\/edotenv\.com\//);
   assert.match(edotenvHtml, /utm_source=edotenv_comparison/);
-  assert.match(edotenvHtml, /\$499 Setup Sprint/);
+  assert.match(edotenvHtml, /self-serve/i);
+  assert.doesNotMatch(edotenvHtml, /\$499|Setup Sprint/i);
   assert.doesNotMatch(edotenvHtml, /we are affiliated|official EdotEnv/i);
   assert.match(compareHtml, /href="\/compare\/edotenv"/);
 });
@@ -112,8 +115,9 @@ test('platform-team use case page exists with rollout language', () => {
   assert.match(platformTeamsHtml, /ThumbGate for platform teams/i);
   assert.match(platformTeamsHtml, /one repo, one owner, and one repeated AI failure/i);
   assert.match(platformTeamsHtml, /shared lessons/i);
-  assert.match(platformTeamsHtml, /managed workflow gate/i);
-  assert.match(platformTeamsHtml, /href="\/diagnostic"/i);
+  assert.match(platformTeamsHtml, /Compare self-serve plans/i);
+  assert.match(platformTeamsHtml, /href="\/pricing"/i);
+  assert.doesNotMatch(platformTeamsHtml, /\$499|managed workflow gate/i);
 });
 
 test('regulated workflow page exists without fake compliance claims', () => {
@@ -123,11 +127,11 @@ test('regulated workflow page exists without fake compliance claims', () => {
   assert.match(regulatedHtml, /does not market itself as a compliance badge/i);
 });
 
-test('deployment readiness guide converts OpenAI-style deployment demand into one managed gate', () => {
+test('deployment readiness guide routes demand to self-serve plans', () => {
   assert.match(deploymentReadinessHtml, /AI Deployment Readiness/i);
   assert.match(deploymentReadinessHtml, /deployment companies/i);
   assert.match(deploymentReadinessHtml, /governance and proof layer/i);
-  assert.match(deploymentReadinessHtml, /Setup Sprint/);
-  assert.match(deploymentReadinessHtml, /\$499 one-time/i);
-  assert.doesNotMatch(deploymentReadinessHtml, /\$1500|workflow-sprint-intake|Pro \$19|\$149/i);
+  assert.match(deploymentReadinessHtml, /Pro/);
+  assert.doesNotMatch(deploymentReadinessHtml, /\$499|Setup Sprint/i);
+  assert.doesNotMatch(deploymentReadinessHtml, /\$1500|workflow-sprint-intake/i);
 });

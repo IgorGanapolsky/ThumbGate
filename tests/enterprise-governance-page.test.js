@@ -23,6 +23,8 @@ test('enterprise-governance: accurately bounds the approved local-workflow offer
  const schemas = [...html.matchAll(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/g)];
  assert.equal(schemas.length, 1);
  const schema = JSON.parse(schemas[0][1]);
- assert.equal(schema.offers.price, '499.00');
- assert.equal(schema.offers.name, 'Setup Sprint');
+ assert.equal(schema.offers.price, '0');
+ assert.equal(schema.offers.name, 'Free local CLI');
+ assert.match(html, /href="\/checkout\/pro"/);
+ assert.doesNotMatch(html, /\$499|Setup Sprint|diagnostic-pay/);
 });

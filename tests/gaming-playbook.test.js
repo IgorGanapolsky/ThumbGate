@@ -50,9 +50,9 @@ describe('Gaming AI Agent Playbook Delivery & Route Verification', () => {
     assert.ok(html.includes('Economy Prompt Exploits'), 'Must address economy exploits');
 
     // Monetization Rails
-    assert.ok(html.includes('8x2dR91M84r4cSd9uj3sI3f'), 'Must include Pro Stripe checkout link slug');
-    assert.ok(html.includes('9B69ATbmI4r4aK5eOD3sI3k'), 'Must include $499 audit Stripe checkout link slug');
-    assert.ok(html.includes('LTQFR7P9AR3QG'), 'Must include sprint checkout link slug');
+    assert.match(html, /href="\/checkout\/pro\?plan_id=pro&amp;utm_source=gaming_playbook"/);
+    assert.match(html, /href="\/install"/);
+    assert.doesNotMatch(html, /9B69ATbmI4r4aK5eOD3sI3k|LTQFR7P9AR3QG|\$499|Setup Sprint/);
 
     // Security Invariants: No innerHTML usage
     assert.equal(html.includes('.innerHTML'), false, 'gaming-playbook.html must not use innerHTML');

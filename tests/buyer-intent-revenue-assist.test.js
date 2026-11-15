@@ -43,10 +43,11 @@ test('abandon survey requires a prior checkout visit and never fires on generic 
   assert.doesNotMatch(BUYER_INTENT, /showAbandonSurvey\('cta_dismiss'\)/);
 });
 
-test('revenue assist routes workflow help through intake, not blind diagnostic checkout', () => {
-  const intakeLinkTemplate = BUYER_INTENT.match(/<a data-assist-cta="assist_workflow_intake"[^;]+Send workflow first<\/a>/);
+test('revenue assist routes plan comparisons to pricing without retired service checkout', () => {
+  const intakeLinkTemplate = BUYER_INTENT.match(/<a data-assist-cta="assist_workflow_intake"[^;]+Compare plans<\/a>/);
 
-  assert.ok(intakeLinkTemplate, 'workflow intake CTA template should exist');
+  assert.ok(intakeLinkTemplate, 'plan comparison CTA template should exist');
+  assert.match(BUYER_INTENT, /settings\.intakeHref \|\| '\/pricing'/);
   assert.match(intakeLinkTemplate[0], /href="'\s*\+\s*intakeHref\s*\+\s*'"/);
   assert.doesNotMatch(BUYER_INTENT, /Pay \$499 diagnostic/);
   assert.doesNotMatch(BUYER_INTENT, /assist_workflow_diagnostic/);

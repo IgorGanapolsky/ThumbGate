@@ -14,11 +14,10 @@ test('public/peter.html renders co-branded partner hero, comparison table, and p
   assert.match(content, /How ThumbGate Stacks Up/);
   assert.match(content, /<50ms \(Local PreToolUse\)/);
   assert.match(content, /Install free CLI/);
-  assert.match(content, /Get \$499 Diagnostic Gate/);
+  assert.match(content, /Get self-serve Pro/);
   assert.match(content, /FAQPage/);
-  // Diagnostic checkout requires email-backed POST (GET /go/diagnostic-pay is 405).
-  assert.match(content, /action="\/go\/diagnostic-pay"[^>]*method="POST"/);
-  assert.match(content, /name="customer_email"/);
+  assert.match(content, /href="\/checkout\/pro"/);
+  assert.doesNotMatch(content, /\$499|Setup Sprint|diagnostic-pay/);
   // Honesty: not a claimed third-party endorsement.
   assert.match(content, /not a (claimed )?third-party endorsement|not a claimed personal endorsement/i);
   assert.doesNotMatch(content, /Peter Yang trusts ThumbGate/);

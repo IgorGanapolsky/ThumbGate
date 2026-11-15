@@ -50,7 +50,8 @@ test('pro landing page keeps the pricing section focused on the $19 Pro checkout
   assert.match(pricingSection, /Start Pro Now/);
   assert.match(pricingSection, /billed today/i);
   assert.match(pricingSection, /Restart|Start|Choose annual/);
-  assert.match(pricingSection, /Book an Enterprise Pilot Call/);
+  assert.match(pricingSection, /Compare plans/);
+  assert.doesNotMatch(pricingSection, /Enterprise Pilot Call/);
   assert.doesNotMatch(pricingSection, /<h3>ThumbGate Team/);
 });
 
@@ -79,7 +80,7 @@ test('pro landing page keeps JSON-LD and FAQ structure for SEO and GEO', () => {
   assert.match(proPage, /How is Pro different from the free install\?/);
   assert.match(proPage, /Does Pro require a cloud account\?/);
   assert.match(proPage, /What happens after checkout\?/);
-  assert.match(proPage, /When should I choose Enterprise instead of Pro\?/);
+  assert.match(proPage, /Does Pro include a managed rollout\?/);
 });
 
 test('pro landing page tracks paid CTAs without unsupported claims', () => {
@@ -95,8 +96,8 @@ test('pro landing page tracks paid CTAs without unsupported claims', () => {
 test('pro landing page keeps services out of the Pro buyer path', () => {
   const proPage = readProPage();
 
-  assert.match(proPage, /Enterprise diagnostics and custom services are handled through intake, not this buyer path/);
-  assert.match(proPage, /Book an Enterprise Pilot Call/);
+  assert.match(proPage, /Pro is self-serve software/);
+  assert.doesNotMatch(proPage, /Book an Enterprise Pilot Call|workflow-sprint-intake/);
   assert.doesNotMatch(proPage, /data-pro-paid-recovery/);
   assert.doesNotMatch(proPage, /data-first-rule-link/);
   assert.doesNotMatch(proPage, /data-quick-read-link/);
@@ -137,12 +138,12 @@ test('pro landing page captures buyer email and reuses it for checkout', () => {
   assert.doesNotMatch(proPage, /props:\s*\{\s*email:/);
 });
 
-test('pro landing page keeps team pilot attribution ahead of the intake anchor', () => {
+test('pro landing page links to current plans without the retired intake anchor', () => {
   const proPage = readProPage();
 
   assert.match(
     proPage,
-    /href="\/#workflow-sprint-intake"/
+    /href="\/pricing"/
   );
-  assert.doesNotMatch(proPage, /href="\/#workflow-sprint-intake\?utm_source=website/);
+  assert.doesNotMatch(proPage, /href="[^"]*#workflow-sprint-intake/);
 });

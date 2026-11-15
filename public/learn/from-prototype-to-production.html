@@ -148,7 +148,7 @@
 <ul>
   <li><strong>npm package <code>thumbgate</code></strong> — the public shell. CLI, hook installer, adapter configs, JSON schemas. Node ≥18.18, MIT.</li>
   <li><strong>Railway-hosted API</strong> at <code>thumbgate.ai</code> — health, dashboard, checkout intent, billing summary. Docker rebuild on every push to <code>main</code> (2–5 min). Verified post-deploy by curling <code>/health</code> and grepping the version string.</li>
-  <li><strong>Stripe</strong> — 15 active products (Free CLI + $499 one-time; Enterprise; plus 13 funnel/diagnostic SKUs from $1 to $1,500). All carry the canonical ThumbGate logo. Checkout sessions verified to mint live <code>cs_live_</code> IDs.</li>
+  <li><strong>Checkout</strong> — compare current self-serve Pro plans at <a href="/pricing">/pricing</a>. Historical checkout tests are not evidence of current provider inventory or customer revenue.</li>
   <li><strong>SQLite + FTS5 lesson DB</strong> — ships in the package, runs on-device, never phones home.</li>
   <li><strong>LanceDB vector index</strong> — for semantic lesson recall.</li>
   <li><strong>Plausible analytics</strong> — privacy-respecting, no cookie banner, no IP logging.</li>
@@ -190,7 +190,7 @@
 <ol>
   <li><strong>Friction-free first-gate-fires.</strong> If <code>npx thumbgate init</code> doesn't surface a real, named gate inside 60 seconds on a real codebase, install-to-aha is broken. Measuring this with anonymous telemetry on the install flow.</li>
   <li><strong>Story-driven distribution.</strong> Build logs (like this one) and gate-of-the-week posts. Specific war stories beat feature lists. Verified by Plausible referrer reports, not vibes.</li>
-  <li><strong>Refund-rate triage on the funnel SKUs.</strong> The $1, $5, $19, $49 quick-read tier exists to validate willingness-to-pay at low friction. If those convert, the $1,500 Setup Sprint becomes a real consulting funnel.</li>
+  <li><strong>Self-serve adoption.</strong> Start with the free local CLI and compare Pro features at <a href="/pricing">/pricing</a>.</li>
 </ol>
 
 <h2>The tools I shipped this on</h2>
@@ -207,7 +207,7 @@
 
 <p>You'll have a working pre-action gate in your AI coding agent inside 60 seconds, or the install is broken and I want to hear about it.</p>
 
-<p>If you've been burned by an AI agent doing something it shouldn't have, the <a href="/pricing">$499 Setup Sprint</a> and adds the dashboard, recall, and lesson search. Or just install the free version, get a feel for it, and decide later. The whole thing is MIT.</p>
+<p>If you've been burned by an AI agent doing something it shouldn't have, <a href="/pricing">ThumbGate Pro</a> adds the dashboard, recall, and lesson search. Or just install the free version, get a feel for it, and decide later. The free local CLI is MIT licensed.</p>
 
 <p>I'll write the next build log at v2.0.0 — or when the first cold-traffic customer pays, whichever comes first.</p>
 
