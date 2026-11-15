@@ -772,6 +772,7 @@ test('homepage features thumbs branding and self-improving diagrams above the fo
   assert.match(landingPage, /Matching destructive actions warn by default/);
   assert.match(landingPage, /deny only in strict mode/);
   assert.match(landingPage, /data-cta-placement="offers"/);
+  assert.match(landingPage, /<section id="offers">\s*<div class="shell" id="workflow-sprint-intake">/);
   assert.match(landingPage, /data-plan-id="pro"/);
   assert.match(landingPage, /scroll-margin-top: 92px/);
   assert.doesNotMatch(landingPage, /0\.4ms/);
