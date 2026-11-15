@@ -21,17 +21,19 @@ test('README keeps the enterprise story tied to control-plane language and proof
   assert.match(readme, /exact `main` merge commit/i);
 });
 
-test('public landing page exposes the $499 setup without calling it an enterprise contract', () => {
-  const landing = read(path.join('public', 'index.html'));
-
-  assert.match(landing, /Setup Sprint/i);
-  assert.match(landing, /not an enterprise contract/i);
-  assert.match(landing, /one supported local workflow/i);
-  assert.match(landing, /regression test/i);
-  assert.match(landing, /rollout and rollback proof/i);
-  assert.doesNotMatch(landing, /Docker Sandboxes/i);
-  assert.doesNotMatch(landing, /signed hosted sandbox dispatch/i);
-  assert.doesNotMatch(landing, /Changeset/i);
+test('homepage promotes free and self-serve Pro without retired managed service promises', () => {
+  for (const file of ['public/index.html']) {
+    const landing = read(file);
+    assert.match(landing, /free local CLI/i);
+    assert.match(landing, /Pro adds recall, dashboard, adapters, and exports/i);
+    assert.match(landing, /href="\/checkout\/pro"[^>]*data-cta-id="homepage_pro_checkout"/);
+    assert.match(landing, /__PRO_PRICE_DOLLARS__/);
+    assert.match(landing, /proof/i);
+    assert.doesNotMatch(landing, /Setup Sprint|\$499|60-minute working review|within two business days/i);
+    assert.doesNotMatch(landing, /Docker Sandboxes/i);
+    assert.doesNotMatch(landing, /Changeset/i);
+    assert.doesNotMatch(landing, /signed hosted sandbox dispatch/i);
+  }
 });
 
 test('docs landing page carries the enterprise story across buyer-facing copy', () => {

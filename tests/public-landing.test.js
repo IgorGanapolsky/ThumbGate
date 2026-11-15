@@ -52,23 +52,12 @@ function visibleFaqAnswers(html) {
   ]));
 }
 
-test('homepage exposes Pro $19/mo and the $499 Setup Sprint', () => {
-  const visibleText = visibleBodyText(landingPage);
-  const prices = [...visibleText.matchAll(/\$\d[\d,]*/g)].map((match) => match[0]);
-  const uniquePrices = [...new Set(prices)];
-
-  // Pro removed from public buying path
-  assert.ok(uniquePrices.includes('$499'), `expected $499 among ${uniquePrices.join(', ')}`);
-  assert.equal((landingPage.match(/data-primary-checkout/g) || []).length, 2); // form attr + querySelector
-  assert.equal((landingPage.match(/<form[^>]+action="\/go\/diagnostic-pay"/g) || []).length, 1);
-  assert.match(landingPage, /method="POST"/);
-  assert.match(landingPage, /name="customer_email"[^>]*required/);
-  assert.match(landingPage, /name="plan_id" value="sprint_diagnostic"/);
-  // Pro removed from public buying path
-  // Pro removed from public buying path
-  assert.match(landingPage, /Book the \$499 setup/);
-  assert.match(landingPage, /data-cta-id="nav_setup_sprint"[^>]*>Setup Sprint/);
-  assert.match(landingPage, /See the \$499 setup/);
+test('homepage exposes configured Pro checkout and the free installer', () => {
+  assert.match(landingPage, /href="\/checkout\/pro"/);
+  assert.match(landingPage, /__PRO_PRICE_DOLLARS__/);
+  assert.match(landingPage, /__PRO_PRICE_LABEL__/);
+  assert.match(landingPage, /href="#install"/);
+  assert.doesNotMatch(visibleBodyText(landingPage), /\$499|Setup Sprint|Workflow Sprint/);
 });
 
 test('homepage navbar exposes paid-user Log in drawer and exchanges keys for an HttpOnly session cookie without browser storage', async () => {
@@ -619,7 +608,7 @@ test('visible text filtering consumes the complete script and style end tags', (
 });
 
 test('homepage keeps conversion noise off while offering both paid paths', () => {
-  assert.match(landingPage, /id="workflow-sprint-intake"[^>]*data-legacy-intake-alias/);
+  assert.match(landingPage, /href="\/checkout\/pro"/);
   assert.doesNotMatch(landingPage, /Enterprise pilot|newsletter/i);
   assert.doesNotMatch(landingPage, /offer-router|sticky-cta|buyer-intent\.js|revenue-assist-panel/i);
   assert.match(landingPage, /<body data-revenue-assist="off">/);
@@ -673,7 +662,7 @@ test('hero states the approved workflow scope with fit-first and free paths', ()
   assert.match(hero, /<h1>One repeated agent mistake\. One configured gate\.<\/h1>/i);
   assert.match(hero, /Not a prompt · Not a postmortem/i);
   assert.match(hero, /supported hook integrations/i);
-  assert.match(hero, /Check my workflow fit/i);
+  assert.match(hero, /Get Pro/i);
   assert.match(hero, /Illustrative example, not a recorded result/i);
   assert.match(hero, /Illustrative tool-call decisions/i);
   assert.match(hero, /advisory integrations do not guarantee execution blocking/i);
@@ -721,13 +710,9 @@ test('homepage explains the product with one four-stage self-improving loop', ()
   assert.doesNotMatch(landingPage, /<button[^>]*class="loop-step"/);
 });
 
-test('paid wedge includes managed implementation, regression, and rollout proof', () => {
-  assert.match(landingPage, /Setup Sprint/);
-  assert.match(landingPage, /Book the \$499 setup/);
-  assert.match(landingPage, /One configured local gate \+ regression test|One configured local gate and its regression test/);
-  assert.match(landingPage, /Delivery within two business days after access and agreed materials are available, subject to confirmed scheduling/);
-  assert.match(landingPage, /If the workflow cannot be reduced to one supported gate, the order is refunded/);
-  assert.match(landingPage, /Multi-system implementation[\s\S]*require separate scope/);
+test('paid plan describes self-serve Pro features truthfully', () => {
+  assert.match(landingPage, /Pro adds recall, dashboard, adapters, and exports/);
+  assert.doesNotMatch(landingPage, /Delivery within two business days|order is refunded|managed implementation/);
 });
 
 test('enforcement promise distinguishes default denies from strict-mode blocks', () => {
@@ -743,7 +728,7 @@ test('FAQPage JSON-LD matches the five visible buyer questions', () => {
   const visibleFaq = visibleFaqAnswers(landingPage);
 
   assert.ok(jsonLd.some((document) => document['@type'] === 'SoftwareApplication'));
-  assert.ok(jsonLd.some((document) => document['@type'] === 'Service'));
+  assert.ok(!jsonLd.some((document) => document['@type'] === 'Service'));
   assert.ok(faqSchema);
   assert.equal(faqSchema.mainEntity.length, 5);
   assert.equal(visibleFaq.size, 5);
@@ -761,7 +746,7 @@ test('checkout intent keeps first-party, Plausible, and optional GA4 telemetry',
   assert.match(landingPage, /window\.plausible\('checkout_start'/);
   assert.match(landingPage, /sendGa4Event\('begin_checkout'/);
   assert.match(landingPage, /sendFirstPartyTelemetry\('checkout_start'/);
-  assert.match(landingPage, /planId: 'sprint_diagnostic'/);
+  assert.match(landingPage, /planId: 'pro'/);
   assert.match(landingPage, /const serverTelemetryCaptured = '__SERVER_TELEMETRY_CAPTURED__' === 'true'/);
 });
 
@@ -787,7 +772,8 @@ test('homepage features thumbs branding and self-improving diagrams above the fo
   assert.match(landingPage, /Matching destructive actions warn by default/);
   assert.match(landingPage, /deny only in strict mode/);
   assert.match(landingPage, /data-cta-placement="offers"/);
-  assert.match(landingPage, /name="cta_placement" value="offers"/);
+  assert.match(landingPage, /<section id="offers">\s*<div class="shell" id="workflow-sprint-intake">/);
+  assert.match(landingPage, /data-plan-id="pro"/);
   assert.match(landingPage, /scroll-margin-top: 92px/);
   assert.doesNotMatch(landingPage, /0\.4ms/);
   assert.match(heroSvg, /\+1 ALLOW/);

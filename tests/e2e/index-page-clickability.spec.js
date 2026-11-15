@@ -1,24 +1,22 @@
 const { test, expect } = require('@playwright/test');
 const { mockDashboardApis } = require('./helpers/mock-api');
 
-test.describe('/ dual-offer conversion path', () => {
+test.describe('/ free and Pro conversion path', () => {
   test.beforeEach(async ({ page }) => {
     await mockDashboardApis(page);
   });
 
-  test('renders Pro $19/mo and Enterprise $499 offers plus the enforcement loop', async ({ page }) => {
+  test('renders self-serve Pro and preserves the free enforcement loop', async ({ page }) => {
     await page.goto('/');
-
     await expect(page.locator('.hero h1')).toHaveText('One repeated agent mistake. One configured gate.');
     await expect(page.locator('[data-primary-checkout]')).toBeVisible();
-    await expect(page.locator('[data-primary-checkout] .price')).toContainText('$499');
-    await expect(page.locator('[data-primary-checkout]')).toContainText('Setup Sprint');
-    await expect(page.locator('[data-primary-checkout]')).toContainText('Book the $499 setup');
-    // Pro removed from public buying path
-    // Pro removed from public buying path
+    await expect(page.locator('[data-primary-checkout] .price')).toContainText('$' + (process.env.THUMBGATE_PRO_PRICE_DOLLARS || '19'));
+    await expect(page.locator('.hero [data-cta-id="homepage_pro_checkout"]')).toHaveAttribute('href', '/checkout/pro');
+    await expect(page.locator('[data-primary-checkout] a.button-primary')).toHaveAttribute('href', '/checkout/pro');
     await expect(page.locator('.loop-step')).toHaveCount(4);
     await expect(page.locator('.decision')).toHaveText(['ALLOW', 'WARN', 'DENY']);
-    await expect(page.locator('#workflow-sprint-intake[data-legacy-intake-alias]')).toHaveCount(1);
+    await expect(page.locator('body')).not.toContainText('$499');
+    await expect(page.locator('form[action="/go/diagnostic-pay"]')).toHaveCount(0);
   });
 
   test('loop cards open under-the-hood demos with default vs strict gate modes', async ({ page }) => {
@@ -46,59 +44,24 @@ test.describe('/ dual-offer conversion path', () => {
     await expect(panel).toBeHidden();
   });
 
-  test('Setup Sprint is the nav button; install free stays on the page', async ({ page }) => {
+  test('navigation and final Pro buttons use canonical checkout', async ({ page }) => {
     await page.goto('/');
-
-    await expect(page.locator('nav [data-cta-id="nav_setup_sprint"]')).toHaveAttribute('href', '#buy');
-    await page.locator('nav [data-cta-id="nav_setup_sprint"]').click();
-    await expect(page).toHaveURL(/#buy$/);
-    await expect(page.locator('#buy')).toBeVisible();
-
-    await page.locator('.final [data-cta-id="final_diagnostic_buy"]').click();
-    await expect(page).toHaveURL(/#enterprise-gate$/);
-    await expect(page.locator('form[action="/go/diagnostic-pay"]')).toHaveCount(1);
+    await expect(page.locator('nav [data-cta-id="nav_pro_checkout"]')).toHaveAttribute('href', '/checkout/pro');
+    await expect(page.locator('.final [data-cta-id="final_pro_checkout"]')).toHaveAttribute('href', '/checkout/pro');
+    await expect(page.locator('a[href="/install"]').first()).toBeVisible();
   });
 
-  test('valid buyer email posts directly to the canonical $499 checkout route', async ({ page }) => {
-    let capturedRequest = null;
-    await page.route('**/go/diagnostic-pay', async (route) => {
-      capturedRequest = route.request();
-      await route.fulfill({
-        status: 200,
-        contentType: 'text/html',
-        body: '<html><body>secure checkout handoff</body></html>',
-      });
+  test('primary Pro button navigates with GET and never posts a retired checkout', async ({ page }) => {
+    let request;
+    await page.route('**/checkout/pro', async (route) => {
+      request = route.request();
+      await route.fulfill({ status: 200, contentType: 'text/html', body: '<h1>Pro checkout confirmation</h1>' });
     });
     await page.goto('/');
-    await page.locator('#buyer-email').fill('buyer@company.com');
-
-    await Promise.all([
-      page.waitForURL(/\/go\/diagnostic-pay$/),
-      page.locator('[data-primary-checkout] button[type="submit"]').click(),
-    ]);
-
-    expect(capturedRequest).not.toBeNull();
-    expect(capturedRequest.method()).toBe('POST');
-    const form = new URLSearchParams(capturedRequest.postData());
-    expect(form.get('customer_email')).toBe('buyer@company.com');
-    expect(form.get('plan_id')).toBe('sprint_diagnostic');
-    expect(form.get('utm_campaign')).toBe('rally_style_gtm');
-    expect(form.get('cta_id')).toBe('homepage_diagnostic_buy');
-  });
-
-  test('invalid email is stopped by native form validation before checkout', async ({ page }) => {
-    let checkoutRequests = 0;
-    await page.route('**/go/diagnostic-pay', async (route) => {
-      checkoutRequests += 1;
-      await route.abort();
-    });
-    await page.goto('/');
-    await page.locator('#buyer-email').fill('not-an-email');
-    await page.locator('[data-primary-checkout] button[type="submit"]').click();
-
-    await expect(page.locator('#buyer-email')).toBeFocused();
-    expect(checkoutRequests).toBe(0);
-    await expect(page).toHaveURL(/\/$/);
+    await page.locator('[data-primary-checkout] a.button-primary').click();
+    await expect(page).toHaveURL(/\/checkout\/pro$/);
+    expect(request.method()).toBe('GET');
+    expect(request.postData()).toBeNull();
   });
 
   test('proof link lands on the honest strict-mode boundary', async ({ page }) => {
