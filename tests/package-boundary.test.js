@@ -189,6 +189,7 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
     'scripts/social-analytics/',
     'scripts/content-engine/',
   ];
+  // 2026-11-15: 15 scripts left this list because bin/cli.js requires them; without them npx gate-check errors (see tests/packed-cli-require-closure.test.js).
   const forbiddenFiles = [
     'scripts/thumbgate-daily-discoveries-publish.js',
     'scripts/thumbgate-daily-discoveries-publish.sh',
@@ -207,29 +208,14 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
     'scripts/perplexity-marketing.js',
     'scripts/build-claude-mcpb.js',
     'scripts/build-codex-plugin.js',
-    'scripts/analytics-report.js',
-    'scripts/billing-setup.js',
-    'scripts/creator-campaigns.js',
-    'scripts/daemon-manager.js',
-    'scripts/dispatch-brief.js',
-    'scripts/distribution-surfaces.js',
-    'scripts/funnel-analytics.js',
-    'scripts/operational-dashboard.js',
-    'scripts/operational-summary.js',
-    'scripts/optimize-context.js',
-    'scripts/pulse.js',
     'scripts/session-episode-store.js',
     'scripts/session-health-sensor.js',
     'scripts/webhook-delivery.js',
     'scripts/managed-lesson-agent.js',
-    'scripts/operator-artifacts.js',
     'scripts/org-dashboard.js',
     'scripts/reflector-agent.js',
-    'scripts/session-report.js',
     'scripts/swarm-coordinator.js',
-    'scripts/delegation-runtime.js',
     'scripts/hosted-job-launcher.js',
-    'scripts/intent-router.js',
     'scripts/workflow-sprint-intake.js',
     // Repository-only GitHub preview; no npm runtime or hosted page references it.
     'public/assets/brand/github-social-preview.png',
@@ -526,8 +512,8 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
     // 652 -> 653 (2026-11-11): src/openshell-lovable-engine.js (+1).
     // 653 -> 655 (2026-11-12): scripts/brand-standards-gate.js + config/brand-standards.json for Adobe MAX Brand Intelligence and voice gating (+2).
     // 655 -> 656 (2026-11-14): public/project-switcher.js for the project-scoped dashboard (+1).
-    manifest.fileCount <= 656,
-    `npm package should stay <= 656 files, got ${manifest.fileCount}`
+    manifest.fileCount <= 688,
+    `npm package should stay <= 688 files, got ${manifest.fileCount}`
   );
   // Ceiling bumped from 2.75 MB → 2.85 MB (2026-04-16) to accommodate the
   // incremental review-delta demo content in public/dashboard.html landing
@@ -793,8 +779,10 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // Bumped 10.065 MB -> 10.08 MB (2026-11-12): SubQ Snap 1.2 (/v1/systemone) engine, order-invariance, context curation & passage grounding in mcp-writeguard.js + lesson-retrieval.js + server.js.
   // Bumped 10.08 MB -> 10.09 MB (2026-11-12, PR #4975): signed-in dashboard state + Today overview on top of main (measured 10,080,993 unpacked).
   // Bumped 10.09 MB -> 10.11 MB (2026-11-12, PR #4978): UserPromptSubmit secret guard in scripts/prompt-guard.js + adapter pre-hook configs on top of #4975 (measured 10,098,256 unpacked; file count stays 655).
-  manifest.unpackedSize <= 10_110_000,
-  `npm package should stay <= 10.11 MB unpacked, got ${manifest.unpackedSize}`
+  // Bumped 10.11 MB -> 10.296 MB (2026-11-15): 35 modules bin/cli.js requires were missing from the
+  // tarball (npx gate-check threw Cannot find module). Measured 10,246,404 unpacked, +50 KB headroom.
+  manifest.unpackedSize <= 10_296_000,
+  `npm package should stay <= 10.296 MB unpacked, got ${manifest.unpackedSize}`
 );
 
   for (const file of requiredRuntimeFiles) {

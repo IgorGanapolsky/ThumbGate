@@ -18,7 +18,6 @@ const PRIVATE_CORE_MODULES = [
   'scripts/managed-lesson-agent.js',
   'scripts/org-dashboard.js',
   'scripts/partner-orchestration.js',
-  'scripts/predictive-insights.js',
   'scripts/reflector-agent.js',
 ];
 const REQUIRED_PUBLIC_CAPABILITY_MODULES = [
