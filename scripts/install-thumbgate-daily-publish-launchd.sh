@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # install-thumbgate-daily-publish-launchd.sh — Daily ThumbGate News & Technical Discoveries LaunchAgent.
 #
-# Default: every day at 09:00 AM EST (local).
+# Default: every day at 09:00 AM local time.
 #
 # Usage:
 #   bash scripts/install-thumbgate-daily-publish-launchd.sh
