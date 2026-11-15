@@ -9,6 +9,9 @@ const path = require('node:path');
 const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-founders-test-'));
 process.env.THUMBGATE_FEEDBACK_DIR = tmp;
 process.env.THUMBGATE_API_KEY = 'test-api-key';
+process.env.THUMBGATE_PRO_PRICE_DOLLARS = '37';
+// A stale descriptive label must not override the configured checkout amount.
+process.env.THUMBGATE_PRO_PRICE_LABEL = '$19/month or $149/year';
 process.env._TEST_API_KEYS_PATH = path.join(tmp, 'api-keys.json');
 
 const { startServer } = require('../src/api/server');
@@ -30,20 +33,21 @@ test.after(async () => {
   await new Promise((resolve) => handle.server.close(resolve));
 });
 
-test('founders page is an Oceans-style cash-path landing with intent checkout', () => {
-  assert.match(foundersHtml, /action="\/go\/diagnostic-pay" method="POST"/);
-  assert.match(foundersHtml, /name="customer_email"[^>]*required/);
-  assert.match(foundersHtml, /name="plan_id" value="sprint_diagnostic"/);
-  assert.match(foundersHtml, /utm_campaign" value="oceans_inspired_conversion"/);
-  assert.match(foundersHtml, /cta_id" value="founders_hero_paid"/);
-  assert.match(foundersHtml, /landing_path" value="\/founders"/);
-  assert.match(foundersHtml, /Scale agent impact/);
+test('founders page offers configured self-serve Pro with attributable checkout', () => {
+  assert.match(foundersHtml, /href="\/checkout\/pro"/);
+  assert.match(foundersHtml, /__PRO_PRICE_DOLLARS__/);
+  assert.match(foundersHtml, /\$__PRO_PRICE_DOLLARS__\/mo/);
+  assert.match(foundersHtml, /utm_campaign', 'oceans_inspired_conversion'/);
+  assert.match(foundersHtml, /founders_hero_pro/);
+  assert.match(foundersHtml, /landing_path', '\/founders'/);
+  assert.match(foundersHtml, /Put checks before your agents act/);
   assert.match(foundersHtml, /data-founders-offer/);
-  assert.match(foundersHtml, /table class="compare"/);
-  assert.match(foundersHtml, /we refund|Refund if not a supported fit/i);
+  assert.match(foundersHtml, /Configure, verify, then use/);
+  assert.match(foundersHtml, /this subscription does not include implementation services/i);
+  assert.doesNotMatch(foundersHtml, /sprint_diagnostic|diagnostic-pay|\$499/);
   assert.match(foundersHtml, /no affiliation with Oceans Talent/i);
-  assert.match(foundersHtml, /"@type": "FAQPage"/);
-  assert.match(foundersHtml, /"@type": "SoftwareApplication"/);
+  assert.match(foundersHtml, /"@type":\s*"FAQPage"/);
+  assert.match(foundersHtml, /"@type":\s*"SoftwareApplication"/);
   assert.match(foundersHtml, /isAiventyxTraffic/);
   assert.match(foundersHtml, /founders_cta_click/);
   assert.match(foundersHtml, /\/v1\/telemetry\/ping/);
@@ -63,11 +67,17 @@ test('GET /founders and aliases serve filled conversion HTML', async () => {
     assert.equal(res.status, 200, `${route} should be 200`);
     assert.match(res.headers.get('content-type') || '', /text\/html/);
     const html = await res.text();
-    assert.match(html, /\$499/);
-    assert.match(html, /action="\/go\/diagnostic-pay" method="POST"/);
-    assert.match(html, /founders_hero_paid/);
+    assert.match(html, /self-serve/i);
+    assert.match(html, /href="\/checkout\/pro"/);
+    assert.match(html, /founders_hero_pro/);
+    const visibleHtml = html.replace(/<script[\s\S]*?<\/script>/g, '');
+    assert.ok((visibleHtml.match(/\$37\/mo/g) || []).length >= 3,
+      'nav, hero, and bottom CTA must use the configured monthly amount');
+    assert.doesNotMatch(visibleHtml, /\$19|\$149/);
+    const schema = JSON.parse(html.match(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/)[1]);
+    assert.equal(schema['@graph'].find((item) => item['@type'] === 'SoftwareApplication').offers.price, '37');
     assert.match(html, /canonical" href="[^"]+\/founders"/);
-    assert.doesNotMatch(html, /__SPRINT_DIAGNOSTIC_PRICE_DOLLARS__/);
+    assert.doesNotMatch(html, /__PRO_PRICE_DOLLARS__|__PRO_PRICE_LABEL__|__SPRINT_DIAGNOSTIC_PRICE_DOLLARS__/);
   }
 });
 

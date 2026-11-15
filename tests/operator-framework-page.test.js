@@ -9,6 +9,9 @@ const path = require('node:path');
 const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-operator-framework-test-'));
 process.env.THUMBGATE_FEEDBACK_DIR = tmp;
 process.env.THUMBGATE_API_KEY = 'test-api-key';
+process.env.THUMBGATE_PRO_PRICE_DOLLARS = '37';
+// A stale descriptive label must not override the configured checkout amount.
+process.env.THUMBGATE_PRO_PRICE_LABEL = '$19/month or $149/year';
 process.env._TEST_API_KEYS_PATH = path.join(tmp, 'api-keys.json');
 
 const { startServer } = require('../src/api/server');
@@ -27,30 +30,31 @@ test.after(async () => {
   await new Promise((resolve) => handle.server.close(resolve));
 });
 
-const OFFER_ROUTES = {
-  '/go/operator-diagnostic': 'https://buy.stripe.com/fZueVd9eA4r42dz7mb3sI2W', // $499 Sprint Diagnostic
-};
-
-test('GET /operator-framework serves the offers, partner program, and FAQ schema', async () => {
+test('GET /operator-framework serves free CLI, self-serve Pro, and FAQ schema', async () => {
   const res = await fetch(`${origin}/operator-framework`);
   assert.equal(res.status, 200);
   assert.match(res.headers.get('content-type') || '', /text\/html/);
   const html = await res.text();
 
   assert.match(html, /Operator Framework/);
-  for (const route of Object.keys(OFFER_ROUTES)) {
-    assert.ok(html.includes(`href="${route}"`), `missing checkout link ${route}`);
-  }
+  assert.match(html, /href="\/checkout\/pro"/);
+  assert.match(html, /Free CLI/);
+  assert.match(html, /Self-serve software/);
+  const visibleHtml = html.replace(/<script[\s\S]*?<\/script>/g, '');
+  assert.match(visibleHtml, /Get Pro · \$37\/mo/);
+  assert.doesNotMatch(visibleHtml, /\$19|\$149/);
+  const schema = JSON.parse(html.match(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/)[1]);
+  assert.equal(schema['@graph'].find((item) => item['@type'] === 'SoftwareApplication').offers.price, '37');
   assert.doesNotMatch(html, /buy\.stripe\.com/, 'payment links stay behind /go/ redirects');
-  assert.match(html, /\$499/);
+  assert.doesNotMatch(html, /\$499|Setup Sprint|operator-diagnostic|sprint_diagnostic/);
   assert.match(html, /VERIFICATION_EVIDENCE\.md/);
-  assert.match(html, /30% revenue share/);
+  assert.doesNotMatch(html, /30% revenue share/);
   assert.match(html, /mailto:igor@igorganapolsky\.com/);
   assert.match(html, /"@type":\s*"FAQPage"/);
   assert.doesNotMatch(html, /__APP_ORIGIN__/, 'template placeholders must be filled');
   assert.doesNotMatch(html, /\$2,500/);
   assert.doesNotMatch(html, /\$500/);
-  assert.doesNotMatch(html, /\$19\/mo/);
+  assert.doesNotMatch(html, /__PRO_PRICE_DOLLARS__|__PRO_PRICE_LABEL__/);
   assert.match(html, /"@type":\s*"FAQPage"/);
   assert.doesNotMatch(html, /__APP_ORIGIN__/, 'template placeholders must be filled');
 });
@@ -74,8 +78,8 @@ test('pricing page links to the operator framework', async () => {
   assert.match(html, /href="\/operator-framework"/);
 });
 
-test('operator offer routes redirect humans to the live Stripe Payment Links', async () => {
-  for (const [route, stripeUrl] of Object.entries(OFFER_ROUTES)) {
+test('retired operator diagnostic route cannot redirect humans to payment', async () => {
+  for (const route of ['/go/operator-diagnostic']) {
     // Raw request: Node's fetch overwrites Sec-Fetch-Mode, which this route checks.
     const routeUrl = new URL(route, origin);
     const res = await new Promise((resolve, reject) => {
@@ -88,9 +92,8 @@ test('operator offer routes redirect humans to the live Stripe Payment Links', a
         },
       }, (r) => { r.resume(); resolve({ status: r.statusCode, location: r.headers.location }); }).on('error', reject);
     });
-    assert.equal(res.status, 302, `${route} must redirect`);
-    const location = new URL(res.location);
-    assert.equal(location.origin + location.pathname, stripeUrl, `${route} must land on ${stripeUrl}`);
+    assert.equal(res.status, 410, `${route} must be retired`);
+    assert.equal(res.location, undefined, `${route} must not redirect to payment`);
   }
 });
 

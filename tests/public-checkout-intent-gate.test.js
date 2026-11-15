@@ -43,9 +43,8 @@ test('retired diagnostic offers no checkout while active paths require explicit 
   assert.doesNotMatch(diagnostic, /<form|\/go\/diagnostic-pay|sprint_diagnostic|buy\.stripe\.com/);
   assert.match(pricing, /href="\/checkout\/pro"/);
   assert.doesNotMatch(pricing, /diagnostic-pay|sprint_diagnostic/);
-  assert.match(founders, /action="\/go\/diagnostic-pay" method="POST"/);
-  assert.match(founders, /name="customer_email"[^>]*required/);
-  assert.match(founders, /name="plan_id" value="sprint_diagnostic"/);
+  assert.match(founders, /href="\/checkout\/pro"/);
+  assert.doesNotMatch(founders, /diagnostic-pay|sprint_diagnostic|\/checkout\/pro\?confirm=1/);
   assert.doesNotMatch(pricing, /\/checkout\/pro\?confirm=1/);
   assert.doesNotMatch(buyerIntent, /proHref[^;]+confirm\s*:\s*['"]1['"]/s);
 });

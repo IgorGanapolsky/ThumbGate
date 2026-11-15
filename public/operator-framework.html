@@ -3,11 +3,11 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Operator Framework — ThumbGate deployed and operated for your agents | ThumbGate</title>
-  <meta name="description" content="ThumbGate deployed and operated for your AI coding agents: Free local CLI (MIT), $499 one-time Setup Sprint, and custom multi-workflow scope after proof. Agencies earn a 30% revenue share.">
+  <title>Operator Framework — Configure local checks for your agents | ThumbGate</title>
+  <meta name="description" content="Free local capture and pre-action gates. Choose Pro for recall, dashboard, adapters, and exports.">
   <link rel="canonical" href="__APP_ORIGIN__/operator-framework">
   <meta property="og:title" content="ThumbGate Operator Framework">
-  <meta property="og:description" content="Pre-action checks for your AI agents, installed and operated for you. $499 one-time Sprint Diagnostic, custom scope after proof, and a 30% Agency Partner Program.">
+  <meta property="og:description" content="Free local capture and pre-action gates. Choose Pro for recall, dashboard, adapters, and exports.">
   <meta property="og:url" content="__APP_ORIGIN__/operator-framework">
   <meta property="og:type" content="website">
   <script defer data-domain="thumbgate.ai" src="https://plausible.io/js/script.js"></script>
@@ -110,85 +110,11 @@
     .card { min-width:0; }
     @media (max-width:900px) { .offers { grid-template-columns:1fr; } .card { padding:20px; } }
   </style>
-  <script type="application/ld+json">
-{
-  "@context": "https://schema.org",
-  "@type": "Service",
-  "name": "ThumbGate Operator Framework",
-  "description": "ThumbGate pre-action checks deployed and operated for your AI coding agents: $499 one-time Sprint Diagnostic for one supported workflow, plus custom multi-workflow scope after proof.",
-  "provider": {
-    "@type": "Organization",
-    "name": "ThumbGate",
-    "url": "__APP_ORIGIN__/"
-  },
-  "offers": [
-    {
-      "@type": "Offer",
-      "name": "Setup Sprint",
-      "price": "499",
-      "priceCurrency": "USD",
-      "url": "__APP_ORIGIN__/go/operator-diagnostic",
-      "availability": "https://schema.org/InStock"
-    }
-  ]
-}
-  </script>
-  <script type="application/ld+json">
-{
-  "@context": "https://schema.org",
-  "@type": "FAQPage",
-  "mainEntity": [
-    {
-      "@type": "Question",
-      "name": "Who is the Operator Framework for?",
-      "acceptedAnswer": {
-        "@type": "Answer",
-        "text": "Teams and solo operators running AI coding agents (Claude Code, Cursor, Codex, Gemini CLI, Amp, Cline, OpenCode, or other MCP agents) who want pre-action checks installed and maintained for them instead of wiring hooks themselves. It is also for agencies that build agent workflows for clients and want a governance layer they can offer."
-      }
-    },
-    {
-      "@type": "Question",
-      "name": "What exactly is included?",
-      "acceptedAnswer": {
-        "@type": "Answer",
-        "text": "Only what ThumbGate actually does today: the PreToolUse hook that evaluates a proposed tool call before it executes, default hard-blocks for detected secret leaks and ThumbGate self-disable commands, warn-and-log (or deny in strict mode) for other high-risk classes such as rm -rf and force-push, and local lessons that turn repeated, concrete failures into prevention rules. ThumbGate does not update model weights, and hosted Enterprise features (SSO, hosted audit dashboard, org-wide hosted policy) are not generally available. The exact scope of each engagement is confirmed by email before work starts."
-      }
-    },
-    {
-      "@type": "Question",
-      "name": "Which offer should I start with?",
-      "acceptedAnswer": {
-        "@type": "Answer",
-        "text": "Start free with npx thumbgate init, or book the $499 one-time Setup Sprint if you have one repeated agent failure you can name. Multi-workflow rollout and ongoing maintenance are scoped by email only after one workflow proves fit."
-      }
-    },
-    {
-      "@type": "Question",
-      "name": "What if my workflow is not a fit?",
-      "acceptedAnswer": {
-        "@type": "Answer",
-        "text": "If the failure cannot be reduced to a supported ThumbGate gate, the Diagnostic is refunded instead of turning into open-ended consulting. Email first if you are unsure."
-      }
-    },
-    {
-      "@type": "Question",
-      "name": "How does the Agency Partner Program pay out?",
-      "acceptedAnswer": {
-        "@type": "Answer",
-        "text": "Partners earn a 30% revenue share on collected managed workflow engagement revenue from clients they bring. Under ThumbGate's partner terms, the share is paid monthly on collected revenue, so you are paid on what the client has actually paid. Email to join and get your referral terms in writing."
-      }
-    },
-    {
-      "@type": "Question",
-      "name": "How do I book or ask a question?",
-      "acceptedAnswer": {
-        "@type": "Answer",
-        "text": "Email igor@igorganapolsky.com with a short description of your agents and the failure you want stopped. You will get a reply from Igor Ganapolsky, the founder."
-      }
-    }
-  ]
-}
-  </script>
+
+
+<script type="application/ld+json">
+{"@context":"https://schema.org","@graph":[{"@type":"SoftwareApplication","name":"ThumbGate","applicationCategory":"DeveloperApplication","operatingSystem":"Cross-platform","url":"__APP_ORIGIN__/","offers":{"@type":"Offer","name":"ThumbGate Pro","price":"__PRO_PRICE_DOLLARS__","priceCurrency":"USD","url":"__APP_ORIGIN__/checkout/pro"}},{"@type":"FAQPage","mainEntity":[{"@type":"Question","name":"What does ThumbGate check?","acceptedAnswer":{"@type":"Answer","text":"Local PreToolUse checks deny detected secret leaks and gate bypass attempts by default; other risk classes warn unless strict mode is enabled."}},{"@type":"Question","name":"Does Pro include implementation services?","acceptedAnswer":{"@type":"Answer","text":"No. Configure and validate your own workflow checks. Pro adds recall, dashboard, adapters, and exports."}}]}]}
+</script>
 </head>
 <body>
   <nav>
@@ -198,133 +124,20 @@
         <a href="/pricing">Pricing</a>
         <a href="/guide">Technical setup</a>
         <a href="https://github.com/IgorGanapolsky/ThumbGate" target="_blank" rel="noopener">GitHub</a>
-        <a href="#partners">Agency partners</a>
+        <a href="#contact">Contact</a>
         <a class="nav-buy" href="#offers" data-cta-id="operator_nav_offers">See the offers</a>
       </div>
     </div>
   </nav>
 
   <main class="shell">
-    <div class="hero">
-      <div>
-        <div class="eyebrow">Operator Framework</div>
-        <h1>ThumbGate, deployed and operated for your agents.</h1>
-        <p class="lede">ThumbGate is a pre-action firewall for AI coding agents. It runs in the PreToolUse hook and evaluates each proposed tool call <strong>before it executes</strong>. The Operator Framework is how we install it, configure it for the failures you actually have, and keep it working, for your own agents or your clients'.</p>
-        <div class="outcome">
-          <div class="outcome-row"><span class="tick">✓</span><span><strong>Checked before it runs:</strong> risky tool calls are caught at the hook, before the agent acts. A prompt doesn't do that.</span></div>
-          <div class="outcome-row"><span class="tick">✓</span><span><strong>Safe defaults:</strong> detected secret leaks and ThumbGate self-disable commands are hard-blocked by default.</span></div>
-          <div class="outcome-row"><span class="tick">✓</span><span><strong>Learns from feedback:</strong> repeated, concrete failures become local prevention rules. No model retraining.</span></div>
-          <div class="outcome-row"><span class="tick">✓</span><span><strong>Local-first:</strong> no cloud is required for the enforcement path.</span></div>
-        </div>
-      </div>
-      <aside class="card">
-        <div class="eyebrow">Default verdicts (from the open-source README)</div>
-        <table class="verdicts">
-          <thead><tr><th>Verdict</th><th>Default behavior</th></tr></thead>
-          <tbody>
-            <tr><td>⛔ Hard-block</td><td>Detected secret leaks; commands that kill the gate process or enable its bypass override</td></tr>
-            <tr><td>👎 Warn + log</td><td><code>rm -rf</code>, <code>git push --force</code>, fetch-and-run, direct guardrail edits. These become hard denies with <code>THUMBGATE_STRICT_ENFORCEMENT=1</code></td></tr>
-            <tr><td>👍 Allow</td><td>Everything else</td></tr>
-          </tbody>
-        </table>
-        <p class="fine">Works with Claude Code, Cursor, Codex, Gemini CLI, Amp, Cline, OpenCode, and other MCP agents. ThumbGate does not update model weights. It intercepts tool calls at runtime. Source: <a href="https://github.com/IgorGanapolsky/ThumbGate#what-it-does" target="_blank" rel="noopener">github.com/IgorGanapolsky/ThumbGate</a>. Evidence: <a href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md" target="_blank" rel="noopener">verification evidence</a> · <a href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/VERIFICATION_EVIDENCE.md" target="_blank" rel="noopener">proof reports</a>.</p>
-      </aside>
-    </div>
-
-    <section id="offers">
-      <div class="eyebrow">One price list across ThumbGate</div>
-      <h2>Start free, prove one $499 gate, scope more only after proof.</h2>
-      <p class="section-lede">Every engagement matches <a href="/pricing">/pricing</a> and is confirmed before work begins. No vague strategy decks. You get configured gates and the evidence that they fire.</p>
-      <div class="offers">
-        <article class="offer">
-          <div class="eyebrow">Evaluate locally</div>
-          <h3>Free CLI (MIT)</h3>
-          <div class="price">$0</div>
-          <p class="price-note">Open-source local PreToolUse hook.</p>
-          <ul>
-            <li>Install with <code>npx thumbgate init</code> and verify with <code>npx thumbgate doctor</code></li>
-            <li>Hard-blocks detected secret leaks and gate-process bypass commands by default</li>
-            <li>Warns and logs on <code>rm -rf</code> and <code>git push --force</code> (or denies with <code>THUMBGATE_STRICT_ENFORCEMENT=1</code>)</li>
-            <li>Up to 3 active auto-promoted local prevention rules</li>
-          </ul>
-          <a class="button" href="/#install" data-cta-id="operator_free_install">Install free CLI</a>
-        </article>
-        <article class="offer recommended">
-          <div class="eyebrow">Promoted public offer</div>
-          <h3>Setup Sprint</h3>
-          <div class="price">$499</div>
-          <p class="price-note">One-time. One supported local workflow.</p>
-          <ul>
-            <li>60-minute review of one repeated agent failure</li>
-            <li>One configured pre-action gate for that failure</li>
-            <li>One regression test proving the gate fires</li>
-            <li>Rollout and rollback proof within two business days</li>
-            <li>Refunded if the failure can't be reduced to a supported gate</li>
-          </ul>
-          <a class="button" href="/go/operator-diagnostic" rel="nofollow" data-offer-link data-cta-id="operator_diagnostic_buy" data-plan-id="sprint_diagnostic" data-value="499">Buy the $499 Diagnostic</a>
-        </article>
-        <article class="offer">
-          <div class="eyebrow">After one workflow proves fit</div>
-          <h3>Custom Multi-Workflow Scope</h3>
-          <div class="price" style="font-size:2rem;">Custom</div>
-          <p class="price-note">Scoped by email after proof. No public checkout.</p>
-          <ul>
-            <li>Rollout across two or more local agent workflows</li>
-            <li>Approval boundaries, rollback evidence, and ongoing rule reviews</li>
-            <li>Hosted team sync, SSO, and a hosted org dashboard are not generally available</li>
-            <li>Direct founder access for scoped engagements</li>
-          </ul>
-          <a class="button" href="mailto:igor@igorganapolsky.com?subject=ThumbGate%20Multi-Workflow%20Scope" data-cta-id="operator_custom_scope">Scope after proof</a>
-        </article>
-      </div>
-    </section>
-
-    <section id="how">
-      <div class="eyebrow">How it works</div>
-      <h2>Three steps from "it happened again" to enforced.</h2>
-      <div class="steps">
-        <div class="step"><span class="step-num">01</span><h3>Tell us what went wrong</h3><p>Email or buy an offer. Name the command, tool call, file, or destination your agent shouldn't touch.</p></div>
-        <div class="step"><span class="step-num">02</span><h3>We install and configure</h3><p>We wire ThumbGate's PreToolUse hook and set allow, warn, or deny for your failure classes.</p></div>
-        <div class="step"><span class="step-num">03</span><h3>Prove it, then keep it current</h3><p>Regression tests show the gates fire. On the retainer we turn new incidents into new rules.</p></div>
-      </div>
-    </section>
-
-    <section id="partners">
-      <div class="eyebrow">Agency Partner Program</div>
-      <h2>Build agents for clients? Earn a 30% revenue share.</h2>
-      <div class="partner">
-        <div class="share">30%</div>
-        <p><strong>revenue share on collected managed workflow engagement revenue you bring.</strong></p>
-        <p>For agencies and freelancers building with n8n, LangGraph, CrewAI, Make, Voiceflow, and similar tools. Your clients' agents take real actions. ThumbGate gives you a pre-action check you can offer alongside the build.</p>
-        <ul>
-          <li><strong>Refer:</strong> introduce a client by email. We scope, deliver, and support.</li>
-          <li><strong>Resell:</strong> include a managed workflow gate or scoped rollout in your own proposal.</li>
-          <li><strong>Payouts:</strong> 30% of collected managed engagement revenue from your clients, paid monthly.</li>
-        </ul>
-        <a class="button" style="width:auto" href="mailto:igor@igorganapolsky.com?subject=ThumbGate%20Agency%20Partner%20Program" data-cta-id="operator_partner_apply">Join the partner program</a>
-      </div>
-    </section>
-
-    <section id="faq">
-      <div class="eyebrow">Questions</div>
-      <h2>FAQ</h2>
-      <div class="faq">
-        <div class="faq-item"><button class="faq-q" type="button" aria-expanded="false">Who is the Operator Framework for?</button><div class="faq-a">Teams and solo operators running AI coding agents (Claude Code, Cursor, Codex, Gemini CLI, Amp, Cline, OpenCode, or other MCP agents) who want pre-action checks installed and maintained for them instead of wiring hooks themselves. It is also for agencies that build agent workflows for clients and want a governance layer they can offer.</div></div>
-        <div class="faq-item"><button class="faq-q" type="button" aria-expanded="false">What exactly is included?</button><div class="faq-a">Only what ThumbGate actually does today: the PreToolUse hook that evaluates a proposed tool call before it executes, default hard-blocks for detected secret leaks and ThumbGate self-disable commands, warn-and-log (or deny in strict mode) for other high-risk classes such as rm -rf and force-push, and local lessons that turn repeated, concrete failures into prevention rules. ThumbGate does not update model weights, and hosted Enterprise features (SSO, hosted audit dashboard, org-wide hosted policy) are not generally available. The exact scope of each engagement is confirmed by email before work starts.</div></div>
-        <div class="faq-item"><button class="faq-q" type="button" aria-expanded="false">Which offer should I start with?</button><div class="faq-a">Start free with npx thumbgate init, or book the $499 one-time Setup Sprint if you have one repeated agent failure you can name. Multi-workflow rollout and ongoing maintenance are scoped by email only after one workflow proves fit.</div></div>
-        <div class="faq-item"><button class="faq-q" type="button" aria-expanded="false">What if my workflow is not a fit?</button><div class="faq-a">If the failure cannot be reduced to a supported ThumbGate gate, the Diagnostic is refunded instead of turning into open-ended consulting. Email first if you are unsure.</div></div>
-        <div class="faq-item"><button class="faq-q" type="button" aria-expanded="false">How does the Agency Partner Program pay out?</button><div class="faq-a">Partners earn a 30% revenue share on collected managed workflow engagement revenue from clients they bring. Under ThumbGate&#x27;s partner terms, the share is paid monthly on collected revenue, so you are paid on what the client has actually paid. Email to join and get your referral terms in writing.</div></div>
-        <div class="faq-item"><button class="faq-q" type="button" aria-expanded="false">How do I book or ask a question?</button><div class="faq-a">Email igor@igorganapolsky.com with a short description of your agents and the failure you want stopped. You will get a reply from Igor Ganapolsky, the founder.</div></div>
-      </div>
-    </section>
-
-    <section id="contact">
-      <div class="cta-band">
-        <h2>Ready to stop the repeat?</h2>
-        <p>Email <strong>igor@igorganapolsky.com</strong> with your agent stack and the failure you want blocked. We'll reply with a time to start. Or buy the $499 Diagnostic now and we'll schedule by email.</p>
-        <a class="button" href="mailto:igor@igorganapolsky.com?subject=ThumbGate%20Operator%20Framework" data-cta-id="operator_contact_email">Email igor@igorganapolsky.com</a>
-      </div>
-    </section>
+    <section id="offers"><h1>Local checks for the agents you operate.</h1><p>ThumbGate is software you configure and verify in your own environment.</p><div class="offers">
+      <article class="offer"><h2>Free CLI (MIT)</h2><p>Install with <code>npx thumbgate init</code> and verify with <code>npx thumbgate doctor</code>. Local PreToolUse checks deny detected secret leaks and gate bypass attempts by default; other risk classes warn unless strict mode is enabled.</p><a class="button" href="/#install" data-cta-id="operator_free_install">Install free CLI</a></article>
+      <article class="offer recommended"><h2>ThumbGate Pro</h2><p>Recall, dashboard, adapters, and exports. Self-serve software; implementation and managed rollout services are not included.</p><a class="button" href="/checkout/pro" data-cta-id="operator_pro_buy" data-plan-id="pro" data-value="__PRO_PRICE_DOLLARS__">Get Pro · $__PRO_PRICE_DOLLARS__/mo</a></article>
+    </div></section>
+    <section id="how"><h2>Install, configure, verify.</h2><p>Set policies for your supported local agent path, test expected allowed and blocked actions, and review decision receipts. You control rollout and remain responsible for your environment.</p></section>
+    <section id="faq"><h2>Questions before you start</h2><h3>What does ThumbGate check?</h3><p>Local PreToolUse checks deny detected secret leaks and gate bypass attempts by default; other risk classes warn unless strict mode is enabled.</p><h3>Does Pro include implementation services?</h3><p>No. Configure and validate your own workflow checks. Pro adds recall, dashboard, adapters, and exports.</p></section>
+    <section id="contact"><h2>Questions about the software?</h2><p><a href="/pricing">Compare current plans</a> or <a href="/support">visit support</a>. You can also <a href="mailto:igor@igorganapolsky.com">email Igor</a>. Review the <a href="__VERIFICATION_URL__">verification evidence</a>. Hosted team sync, SSO, and a hosted organization dashboard are not generally available.</p></section>
   </main>
 
   <footer>

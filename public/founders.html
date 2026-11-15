@@ -3,12 +3,12 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>ThumbGate for Founders — Stop Agent Mistakes Before They Cost | $499 Diagnostic</title>
-<meta name="description" content="You didn't hire AI agents to babysit them. Turn one repeated agent failure into a proved gate in two business days. $499 managed diagnostic. Refund if not a fit.">
+<title>ThumbGate for Founders — Stop Agent Mistakes Before They Cost | Self-serve Pro</title>
+<meta name="description" content="Free local capture and pre-action gates. Choose Pro for recall, dashboard, adapters, and exports.">
 <link rel="canonical" href="__APP_ORIGIN__/founders">
 <link rel="alternate" type="text/markdown" title="ThumbGate LLM context" href="__APP_ORIGIN__/llm-context.md">
-<meta property="og:title" content="ThumbGate for Founders — $499 Diagnostic Gate">
-<meta property="og:description" content="Scale agent impact without the babysitting. One workflow, one gate, proof in two business days.">
+<meta property="og:title" content="ThumbGate for Founders">
+<meta property="og:description" content="Configure and verify local agent checks. Choose self-serve Pro for recall, dashboard, adapters, and exports.">
 <meta property="og:url" content="__APP_ORIGIN__/founders">
 <meta property="og:type" content="website">
 <style>
@@ -227,78 +227,9 @@ footer {
   h1 { font-size: 2.3rem; }
 }
 </style>
+
 <script type="application/ld+json">
-{
-  "@context": "https://schema.org",
-  "@graph": [
-    {
-      "@type": "SoftwareApplication",
-      "name": "ThumbGate",
-      "applicationCategory": "DeveloperApplication",
-      "operatingSystem": "Cross-platform",
-      "url": "__APP_ORIGIN__/",
-      "offers": {
-        "@type": "Offer",
-        "name": "Managed workflow diagnostic",
-        "price": "__SPRINT_DIAGNOSTIC_PRICE_DOLLARS__",
-        "priceCurrency": "USD",
-        "url": "__APP_ORIGIN__/founders",
-        "availability": "https://schema.org/InStock"
-      }
-    },
-    {
-      "@type": "Service",
-      "name": "ThumbGate Managed Workflow Diagnostic",
-      "description": "Managed implementation that turns one repeated AI-agent failure into a configured pre-action gate with regression and rollout proof.",
-      "provider": { "@type": "Organization", "name": "ThumbGate", "url": "__APP_ORIGIN__/" },
-      "offers": {
-        "@type": "Offer",
-        "name": "Managed workflow diagnostic",
-        "price": "__SPRINT_DIAGNOSTIC_PRICE_DOLLARS__",
-        "priceCurrency": "USD",
-        "url": "__APP_ORIGIN__/founders",
-        "availability": "https://schema.org/InStock"
-      }
-    },
-    {
-      "@type": "FAQPage",
-      "mainEntity": [
-        {
-          "@type": "Question",
-          "name": "How fast can I get started?",
-          "acceptedAnswer": {
-            "@type": "Answer",
-            "text": "Buy or submit fit check today. Managed delivery is two business days after access and the agreed workflow materials are available. Free local evaluate is minutes via npx thumbgate init."
-          }
-        },
-        {
-          "@type": "Question",
-          "name": "What if the workflow is not a fit?",
-          "acceptedAnswer": {
-            "@type": "Answer",
-            "text": "If the repeated failure cannot be reduced to one supported ThumbGate gate, the managed diagnostic order is refunded. We do not silently expand into open consulting."
-          }
-        },
-        {
-          "@type": "Question",
-          "name": "Is this a long-term contract?",
-          "acceptedAnswer": {
-            "@type": "Answer",
-            "text": "No. The diagnostic is one-time. Pro is monthly and cancels anytime. Multi-workflow or enterprise scope is separate after proof."
-          }
-        },
-        {
-          "@type": "Question",
-          "name": "How is this different from Upwork or hiring an ops person?",
-          "acceptedAnswer": {
-            "@type": "Answer",
-            "text": "Marketplaces give you a human. ThumbGate hardens the agents already in your stack with a pre-action gate, regression proof, and a written fence. Humans stay for exceptions; the repeat failure does not."
-          }
-        }
-      ]
-    }
-  ]
-}
+{"@context":"https://schema.org","@graph":[{"@type":"SoftwareApplication","name":"ThumbGate","applicationCategory":"DeveloperApplication","operatingSystem":"Cross-platform","url":"__APP_ORIGIN__/","offers":{"@type":"Offer","name":"ThumbGate Pro","price":"__PRO_PRICE_DOLLARS__","priceCurrency":"USD","url":"__APP_ORIGIN__/checkout/pro"}},{"@type":"FAQPage","mainEntity":[{"@type":"Question","name":"How do I get started?","acceptedAnswer":{"@type":"Answer","text":"Install the free CLI with npx thumbgate init, then verify your local configuration. Pro is an optional self-serve subscription."}},{"@type":"Question","name":"Does Pro include someone installing gates for me?","acceptedAnswer":{"@type":"Answer","text":"No. Pro provides software features. You remain responsible for configuration, testing, and rollout in your environment."}}]}]}
 </script>
 </head>
 <body>
@@ -307,244 +238,47 @@ footer {
     <a class="brand" href="/">ThumbGate</a>
     <div class="nav-actions">
       <a class="btn" href="/pricing">Pricing</a>
-      <a class="btn primary" href="#buy" data-revenue-cta data-cta-id="founders_nav_buy" data-cta-placement="nav">Get started · $__SPRINT_DIAGNOSTIC_PRICE_DOLLARS__</a>
+      <a class="btn primary" href="#buy" data-revenue-cta data-cta-id="founders_nav_buy" data-cta-placement="nav">Get started · $__PRO_PRICE_DOLLARS__/mo</a>
     </div>
   </div>
 </header>
 
 <main class="shell">
-  <div class="hero">
-    <div>
-      <div class="eyebrow">For founders running AI agents in production</div>
-      <h1>Scale agent impact.<br>Stop babysitting the failures.</h1>
-      <p class="lede">You have agents running lead gen, content, sales follow-up, and ops. One of them keeps doing the same wrong thing — the outbound that should never have sent, the write that should never have landed, the deploy, the charge — and you are the one who catches it. That is not delegation, that is a second job. Your agent team needs a firewall: one check that fires before the tool call, so you can hand work off the way a CEO does instead of reading every diff.</p>
-      <div class="trust" aria-label="Proof points">
-        <span>Local-first PreToolUse gates</span>
-        <span>Fixed $__SPRINT_DIAGNOSTIC_PRICE_DOLLARS__ diagnostic</span>
-        <span>Two business days after access</span>
-        <span>Refund if not a supported fit</span>
-      </div>
+  <section class="hero">
+    <div><div class="eyebrow">For founders running AI agents</div>
+      <h1>Put checks before your agents act.</h1>
+      <p class="lede">Configure local PreToolUse gates for the commands, files, and destinations your agents can access. Start with the free local CLI and verify the behavior in your own environment.</p>
+      <div class="trust"><span>Local-first checks</span><span>Self-serve software</span></div>
     </div>
 
     <aside class="card" id="buy" data-founders-offer>
-      <div class="eyebrow">Cash path · recommended</div>
-      <div class="price">$__SPRINT_DIAGNOSTIC_PRICE_DOLLARS__</div>
-      <p class="price-note">One-time managed diagnostic. One supported local workflow. No subscription required.</p>
-      <form action="/go/diagnostic-pay" method="POST" data-founders-pay-form>
-        <label for="founders-email">Work email for the receipt</label>
-        <input id="founders-email" type="email" name="customer_email" autocomplete="email" required placeholder="you@company.com">
-        <input type="hidden" name="plan_id" value="sprint_diagnostic">
-        <input type="hidden" name="utm_source" value="founders">
-        <input type="hidden" name="utm_medium" value="direct_checkout">
-        <input type="hidden" name="utm_campaign" value="oceans_inspired_conversion">
-        <input type="hidden" name="utm_content" value="hero_paid_diagnostic">
-        <input type="hidden" name="cta_id" value="founders_hero_paid">
-        <input type="hidden" name="cta_placement" value="hero">
-        <input type="hidden" name="landing_path" value="/founders">
-        <button class="btn primary block" type="submit" data-revenue-cta data-cta-id="founders_hero_paid" data-cta-placement="hero">Gate my worst agent failure · $__SPRINT_DIAGNOSTIC_PRICE_DOLLARS__</button>
-      </form>
-      <ul class="checks">
-        <li>One configured local gate for the agreed failure</li>
-        <li>Regression test + rollout and rollback proof</li>
-        <li>60-minute working review included</li>
-        <li>If it is not a supported fit, we refund</li>
-      </ul>
-      <p class="fine" data-founders-payment-hint>No Stripe session until you submit. Secure checkout. Fit boundary is explicit.</p>
-      <a class="fine" style="display:block;margin-top:12px;text-align:center;" href="/diagnostic#intake" data-revenue-cta data-cta-id="founders_hero_fit" data-cta-placement="hero">Not sure it fits? Send us the failure first</a>
+      <div class="eyebrow">ThumbGate Pro</div><div class="price">$__PRO_PRICE_DOLLARS__/mo</div>
+      <p>Pro adds recall, dashboard, adapters, and exports. You configure and operate the software; this subscription does not include implementation services.</p>
+      <a class="btn primary block" href="/checkout/pro" data-revenue-cta data-cta-id="founders_hero_pro" data-cta-placement="hero">Get Pro · $__PRO_PRICE_DOLLARS__/mo</a>
+      <a class="btn block" href="/#install">Install free CLI</a>
+      <p class="fine"><a href="/pricing">Compare current plans</a> before checkout.</p>
     </aside>
-  </div>
-
-  <section id="pain">
-    <div class="eyebrow">Why founders buy this</div>
-    <h2>You didn't hire AI agents to manage damage control.</h2>
-    <p class="section-lede">The cost is rarely the one bad run. It is the review loop you now own: every send, write, deploy, and charge gets a human read before it ships, and that human is you.</p>
-    <div class="pain-grid">
-      <article class="pain">
-        <h3>Drowning in repeat agent failures</h3>
-        <p>The same bad write, PR, deploy, or outbound keeps happening. Every incident burns founder or senior engineer hours.</p>
-      </article>
-      <article class="pain">
-        <h3>Tried prompts and docs — still drifts</h3>
-        <p>CLAUDE.md and Cursor rules help until the agent looks competent and skips them. You need a check before the tool call.</p>
-      </article>
-      <article class="pain">
-        <h3>US platform hire is slow and expensive</h3>
-        <p>Fully loaded platform or GRC work takes weeks and often ships dashboards instead of a gate on the exact failure.</p>
-      </article>
-    </div>
   </section>
-
-  <section id="fit">
-    <div class="eyebrow">Before you pay</div>
-    <h2>Who this is for, and who it is not for.</h2>
-    <p class="section-lede">We would rather lose the order than take one we cannot close in two business days.</p>
-    <div class="pain-grid">
-      <article class="pain">
-        <h3>This is for you if</h3>
-        <ul class="checks">
-          <li>Your agents take real actions — outbound, publishing, code writes, deploys, spend</li>
-          <li>One specific failure has happened more than once and you can name it</li>
-          <li>You or a senior engineer are currently the safety net</li>
-          <li>The agents run on a supported local path you can give us access to</li>
-          <li>You want the rule enforced before the tool call, not caught in review</li>
-        </ul>
-      </article>
-      <article class="pain">
-        <h3>This is not for you if</h3>
-        <ul style="margin:14px 0 0; padding-left:20px; color:var(--muted); font-size:.92rem;">
-          <li>You want a general audit of everything your agents do</li>
-          <li>The failure is a one-off you cannot describe as a repeatable pattern</li>
-          <li>You need SOC 2, HIPAA, or any compliance certification — this is not that</li>
-          <li>You need rollout across several systems or teams in this engagement</li>
-          <li>You are trying to hire a person; this hardens the agents you already run</li>
-        </ul>
-      </article>
-      <article class="pain">
-        <h3>Not sure yet?</h3>
-        <p>Run the free local evaluate first. <code>npx thumbgate init</code> takes minutes, runs on your machine, and needs no card, no account, and no access to your repo. If it shows you the failure at the tool call, the managed diagnostic is just us doing the rest for you.</p>
-        <p style="margin-top:10px;"><a href="#buy" data-revenue-cta data-cta-id="founders_fit_buy" data-cta-placement="fit_section"><strong>Or skip ahead and gate my worst failure · $__SPRINT_DIAGNOSTIC_PRICE_DOLLARS__</strong></a></p>
-      </article>
-    </div>
-  </section>
-
-  <section id="process">
-    <div class="eyebrow">From first call to proved gate</div>
-    <h2>Two business days after access — not a multi-month program.</h2>
-    <p class="section-lede">We will tell you if ThumbGate is the wrong fit. No silent conversion into open-ended consulting.</p>
-    <div class="steps">
-      <article class="step">
-        <div class="step-num">01 · 15–60 MIN</div>
-        <h3>Discovery / fit</h3>
-        <p>Share the repeated failure. We map the tool call boundary. If it cannot become one supported gate, we say so — and refund if you already paid.</p>
-      </article>
-      <article class="step">
-        <div class="step-num">02 · SAME ENGAGEMENT</div>
-        <h3>We install the gate</h3>
-        <p>Configure ALLOW / WARN / DENY for the agreed workflow on your supported local agent path.</p>
-      </article>
-      <article class="step">
-        <div class="step-num">03 · TWO BUSINESS DAYS</div>
-        <h3>Proof handoff</h3>
-        <p>Regression test plus written rollout and rollback evidence so the next similar action is caught before execution.</p>
-      </article>
-    </div>
-  </section>
-
-  <section id="what-you-get">
-    <div class="eyebrow">What you walk away with</div>
-    <h2>Four things exist when we are done that do not exist today.</h2>
-    <p class="section-lede">Deliverables, not features. Multi-workflow scope opens after proof, not before.</p>
-    <div class="feature-grid">
-      <article class="feature">
-        <h3>The failure can no longer execute</h3>
-        <p>One configured ALLOW / WARN / DENY gate on the agreed workflow, firing before the agent writes, sends, deploys, or spends — not in the postmortem.</p>
-      </article>
-      <article class="feature">
-        <h3>Proof that it holds</h3>
-        <p>A regression test that replays the failure and shows it blocked, plus written rollout and rollback steps you can hand to whoever is on call.</p>
-      </article>
-      <article class="feature">
-        <h3>A written fence</h3>
-        <p>Exactly what the gate covers and what it does not, so nobody on your team assumes coverage that is not there.</p>
-      </article>
-      <article class="feature">
-        <h3>A rule that outlives the session</h3>
-        <p>Thumbs-down and lessons promote into rules the agent cannot casually skip, so the next similar action is caught without you watching.</p>
-      </article>
-    </div>
-    <p class="fine">Not included at $__SPRINT_DIAGNOSTIC_PRICE_DOLLARS__: multi-system implementation, compliance certification, or guaranteed savings.</p>
-  </section>
-
-  <section id="compare">
-    <div class="eyebrow">How it stacks up</div>
-    <h2>What the alternatives actually cost you.</h2>
-    <p class="section-lede">Ranges below are market ballparks for orientation, not quotes. The ThumbGate column is the offer on this page, at the price on this page.</p>
-    <div class="table-wrap">
-      <table class="compare">
-        <thead>
-          <tr>
-            <th></th>
-            <th>DIY prompts / CLAUDE.md</th>
-            <th>US platform hire</th>
-            <th>Typical VA / freelance ops</th>
-            <th>ThumbGate diagnostic</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td>Cash outlay</td>
-            <td>Model + review time</td>
-            <td>$5.5k–7k+/mo loaded</td>
-            <td>$2.5k–5k/mo varies</td>
-            <td>$__SPRINT_DIAGNOSTIC_PRICE_DOLLARS__ once</td>
-          </tr>
-          <tr>
-            <td>Time to first hard gate</td>
-            <td>Manual upkeep</td>
-            <td>Weeks–months</td>
-            <td>1–5 weeks, high churn</td>
-            <td>Minutes free / 2 business days managed</td>
-          </tr>
-          <tr>
-            <td>When agent “looks competent”</td>
-            <td>Prompt may be skipped</td>
-            <td>Custom glue</td>
-            <td>Human judgment only</td>
-            <td>Configured gate at tool call</td>
-          </tr>
-          <tr>
-            <td>If it is the wrong fit</td>
-            <td>You keep thrashing</td>
-            <td>Costly to reverse</td>
-            <td>Restart search</td>
-            <td>Refund boundary written up front</td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-  </section>
-
-  <section id="faq">
-    <div class="eyebrow">Questions before you pay</div>
-    <h2>Objections we hear from founders</h2>
-    <div class="faq">
-      <div class="faq-item">
-        <button class="faq-q" type="button" aria-expanded="false">How fast can I get started?</button>
-        <div class="faq-a">Buy or submit fit check today. Managed delivery is two business days after access and the agreed workflow materials are available. Free local evaluate is minutes: <code>npx thumbgate init</code>.</div>
-      </div>
-      <div class="faq-item">
-        <button class="faq-q" type="button" aria-expanded="false">What if the workflow is not a fit?</button>
-        <div class="faq-a">If the repeated failure cannot be reduced to one supported ThumbGate gate, the $__SPRINT_DIAGNOSTIC_PRICE_DOLLARS__ order is refunded. We do not silently expand into open consulting.</div>
-      </div>
-      <div class="faq-item">
-        <button class="faq-q" type="button" aria-expanded="false">Is this a long-term contract?</button>
-        <div class="faq-a">No. The diagnostic is one-time. Multi-workflow or enterprise scope is separate after proof.</div>
-      </div>
-      <div class="faq-item">
-        <button class="faq-q" type="button" aria-expanded="false">How is this different from Upwork or hiring an ops person?</button>
-        <div class="faq-a">Marketplaces give you a human and a prayer. ThumbGate hardens the agents already in your stack with a pre-action gate, regression proof, and a written fence. Humans stay in the loop for exceptions; the repeat failure does not.</div>
-      </div>
-    </div>
-    <div class="cta-band">
-      <div>
-        <h2>Two paths from here.</h2>
-        <p><strong>Path one:</strong> nothing changes. The same failure runs again next week and you catch it — or you don't, and a customer does.<br>
-        <strong>Path two:</strong> you name the failure today, and in two business days it is a gate with a regression test behind it and a fence written down.</p>
-        <p class="fine">Fixed $__SPRINT_DIAGNOSTIC_PRICE_DOLLARS__, one time · refunded if it is not a supported fit · gates run locally on your machine</p>
-      </div>
-      <div class="nav-actions" style="flex-direction:column; align-items:stretch;">
-        <a class="btn primary" href="#buy" data-revenue-cta data-cta-id="founders_bottom_buy" data-cta-placement="bottom_band">Gate my worst agent failure · $__SPRINT_DIAGNOSTIC_PRICE_DOLLARS__</a>
-        <a class="btn" href="/#install" data-cta-id="founders_bottom_free">Install free CLI</a>
-      </div>
-    </div>
-  </section>
+  <section id="process"><h2>Configure, verify, then use.</h2><div class="steps">
+    <article class="step"><h3>Install locally</h3><p>Run <code>npx thumbgate init</code> on a supported agent path.</p></article>
+    <article class="step"><h3>Set your boundaries</h3><p>Choose rules for your environment. Detected secret leaks and gate bypass attempts are denied by default; other risk classes may warn unless strict enforcement is enabled.</p></article>
+    <article class="step"><h3>Verify your configuration</h3><p>Run <code>npx thumbgate doctor</code> and test the actions your policy should allow or block before relying on it.</p></article>
+  </div></section>
+  <section id="what-you-get"><h2>Choose the software features you need.</h2><div class="feature-grid">
+    <article class="feature"><h3>Free local CLI</h3><p>Inspect proposed tool calls and record local lessons. No account or card is needed to get started.</p></article>
+    <article class="feature"><h3>Self-serve Pro</h3><p>Add recall, dashboard, adapters, and exports. Review the current feature and plan details on <a href="/pricing">pricing</a>.</p></article>
+  </div></section>
+  <section id="faq"><h2>Questions before you start</h2><div class="faq">
+    <div class="faq-item"><button class="faq-q" type="button" aria-expanded="false">How do I get started?</button><div class="faq-a">Install the free CLI with <code>npx thumbgate init</code>, then verify your local configuration. Pro is an optional self-serve subscription.</div></div>
+    <div class="faq-item"><button class="faq-q" type="button" aria-expanded="false">Does Pro include someone installing gates for me?</button><div class="faq-a">No. Pro provides software features. You remain responsible for configuration, testing, and rollout in your environment.</div></div>
+  </div><div class="cta-band"><a class="btn primary" href="/checkout/pro" data-revenue-cta data-cta-id="founders_bottom_pro" data-cta-placement="bottom_band">Get Pro · $__PRO_PRICE_DOLLARS__/mo</a><a class="btn" href="/#install">Install free CLI</a></div></section>
 </main>
 
 <footer>
   <div class="shell footer-inner">
     <span>ThumbGate · Local-first agent governance. Not a talent marketplace; no affiliation with Oceans Talent.</span>
     <div>
-      <a href="/diagnostic">Diagnostic</a> ·
+      <a href="/support">Support</a> ·
       <a href="/pricing">Pricing</a> ·
       <a href="__VERIFICATION_URL__">Proof</a> ·
       <a href="/llm-context.md">LLM context</a>
@@ -564,33 +298,27 @@ document.querySelectorAll('.faq-q').forEach((button) => {
 
 (function () {
   const search = new URLSearchParams(window.location.search);
-  const paidForm = document.querySelector('[data-founders-pay-form]');
   const inboundSource = search.get('utm_source') || search.get('source');
   const isAiventyxTraffic = String(inboundSource || '').trim().toLowerCase() === 'aiventyx';
-  if (paidForm && isAiventyxTraffic) {
-    paidForm.remove();
-    const paymentHint = document.querySelector('[data-founders-payment-hint]');
-    if (paymentHint) {
-      paymentHint.textContent = 'The Aiventyx payment path is paused while seller fees and downstream obligations remain unverified. Use Check workflow fit first without entering a marketplace payment or revenue-share commitment.';
+  const passthrough = /^(utm_(source|medium|campaign|content|term)|source|acquisition_id|visitor_id|session_id|visitor_session_id|install_id|trace_id|creator|community|post_id|comment_id|campaign_variant|offer_code|referrer_host)$/i;
+  document.querySelectorAll('a[href="/checkout/pro"]').forEach((link) => {
+    if (isAiventyxTraffic) {
+      link.href = '/support';
+      link.textContent = 'Contact support — marketplace payment path paused';
+      return;
     }
-  } else if (paidForm) {
-    const passthrough = /^(utm_(source|medium|campaign|content|term)|source|acquisition_id|visitor_id|session_id|visitor_session_id|install_id|trace_id|creator|community|post_id|comment_id|campaign_variant|offer_code|referrer_host)$/i;
+    const checkout = new URL('/checkout/pro', window.location.origin);
+    checkout.searchParams.set('utm_source', 'website');
+    checkout.searchParams.set('utm_medium', 'website');
+    checkout.searchParams.set('utm_campaign', 'oceans_inspired_conversion');
+    checkout.searchParams.set('landing_path', '/founders');
+    checkout.searchParams.set('cta_id', link.getAttribute('data-cta-id'));
     for (const [key, value] of search.entries()) {
-      if (!passthrough.test(key) || !value.trim()) continue;
-      let input = paidForm.querySelector(`input[name="${CSS.escape(key)}"]`);
-      if (!input) {
-        input = document.createElement('input');
-        input.type = 'hidden';
-        input.name = key;
-        paidForm.appendChild(input);
-      }
-      input.value = value.trim();
+      if (passthrough.test(key) && value.trim()) checkout.searchParams.set(key, value.trim());
     }
-    if (inboundSource && inboundSource.trim()) {
-      const sourceInput = paidForm.querySelector('input[name="utm_source"]');
-      if (sourceInput) sourceInput.value = inboundSource.trim();
-    }
-  }
+    if (inboundSource && inboundSource.trim()) checkout.searchParams.set('utm_source', inboundSource.trim());
+    link.href = checkout.pathname + checkout.search;
+  });
 
   function privacySignalOptOut() {
     try {
@@ -620,19 +348,10 @@ document.querySelectorAll('.faq-q').forEach((button) => {
     telemetry('founders_cta_click', {
       ctaId: cta.getAttribute('data-cta-id') || '',
       ctaPlacement: cta.getAttribute('data-cta-placement') || '',
-      planId: cta.getAttribute('data-plan-id') || 'sprint_diagnostic'
+      planId: cta.getAttribute('data-plan-id') || 'pro'
     });
   });
 
-  if (paidForm) {
-    paidForm.addEventListener('submit', function () {
-      telemetry('founders_checkout_submit', {
-        ctaId: 'founders_hero_paid',
-        ctaPlacement: 'hero',
-        planId: 'sprint_diagnostic'
-      });
-    });
-  }
 })();
 </script>
 </body>
