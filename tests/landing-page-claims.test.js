@@ -19,16 +19,12 @@ test('homepage offers configured self-serve Pro and the free CLI', () => {
   assert.doesNotMatch(HOME_HTML, /Setup Sprint|\$499|diagnostic-pay/);
 });
 
-test('pricing surfaces Pro self-serve and the $499 Setup Sprint together', () => {
-  assert.match(PRICING_HTML, /Setup Sprint/);
-  assert.match(PRICING_HTML, /Book the \$499 setup/);
-  assert.match(PRICING_HTML, /action="\/go\/diagnostic-pay"/);
-  assert.match(PRICING_HTML, /\$499/);
-  // Pro removed from public buying path
-  // Pro removed from public buying path
-  // Pro removed from public buying path
-  // Pro removed from public buying path
-  assert.doesNotMatch(PRICING_HTML, /workflow-sprint-intake|\/go\/sprint/i);
+test('pricing offers configured self-serve Pro and the free CLI', () => {
+  assert.match(PRICING_HTML, /href="\/checkout\/pro"/);
+  assert.match(PRICING_HTML, /__PRO_PRICE_DOLLARS__/);
+  assert.match(PRICING_HTML, /__PRO_PRICE_LABEL__/);
+  assert.match(PRICING_HTML, /free local CLI/i);
+  assert.doesNotMatch(PRICING_HTML, /Setup Sprint|\$499|diagnostic-pay|workflow-sprint-intake|\/go\/sprint/i);
   assert.doesNotMatch(PRICING_HTML, /\$1,500|\$3,000|\$10,000|\$15,000/);
 });
 
@@ -55,7 +51,7 @@ test('Pro detail stays code-backed and is linked from primary cash paths', () =>
 });
 
 test('pricing hides hosted team offers and states the availability boundary', () => {
-  assert.match(PRICING_HTML, /Hosted Enterprise capabilities are not generally available/i);
+  assert.match(PRICING_HTML, /Shared hosting, SSO, compliance packaging, and organization-wide rollout are not generally available/i);
   assert.doesNotMatch(PRICING_HTML, /Hosted team lesson sync|Hosted org dashboard/i);
   assert.doesNotMatch(PRICING_HTML, /\$49\s*(?:<[^>]+>\s*)*\/seat\/mo/i);
   assert.doesNotMatch(PRICING_HTML, /shared team DB/i);
