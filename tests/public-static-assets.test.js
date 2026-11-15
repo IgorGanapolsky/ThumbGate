@@ -118,27 +118,18 @@ test('landing page does not render empty revenue links', async () => {
   assert.doesNotMatch(html, /__SPRINT_DIAGNOSTIC_CHECKOUT_URL__|__WORKFLOW_SPRINT_CHECKOUT_URL__/);
   assert.doesNotMatch(html, /https:\/\/buy\.stripe\.com\/28E00j3Uge1E2dzgWL3sI2J/);
   assert.doesNotMatch(html, /https:\/\/buy\.stripe\.com\/6oU00j8aw2iWdWh9uj3sI2K/);
-  assert.match(html, /action="\/go\/diagnostic-pay" method="POST"/);
-  assert.match(html, /Book the \$499 setup/);
-  // Pro removed from public buying path
-  // Pro removed from public buying path
-  assert.doesNotMatch(html, /\/go\/sprint|href="[^"]*workflow-sprint-intake/i);
-  assert.match(html, /id="workflow-sprint-intake"[^>]*data-legacy-intake-alias/);
+  assert.match(html, /href="\/checkout\/pro"[^>]*data-cta-id="homepage_pro_checkout"/);
+  assert.doesNotMatch(html, /\$499|Setup Sprint|diagnostic-pay|workflow-sprint-intake/);
 });
 
-test('landing page presents Pro self-serve and fixed-price managed offer clearly', async () => {
+test('landing page presents configured self-serve Pro and free installation clearly', async () => {
   const res = await fetch(`${origin}/`);
   assert.equal(res.status, 200);
   const html = await res.text();
-
-  assert.match(html, /Setup Sprint/);
-  assert.match(html, /One configured local gate and its regression test/);
-  assert.match(html, /Delivery within two business days after access and agreed materials are available, subject to confirmed scheduling/);
-  assert.match(html, /one supported local workflow/i);
-  assert.match(html, /\$499/);
-  assert.doesNotMatch(html, /\$19\/mo|\$149\/yr/);
-  // Pro removed from public buying path
-  assert.doesNotMatch(html, /\$1,500|\$3,000|\$10,000|\$15,000/);
+  assert.match(html, /Pro adds recall, dashboard, adapters, and exports/);
+  assert.match(html, /href="\/checkout\/pro"/);
+  assert.match(html, /free local CLI/i);
+  assert.doesNotMatch(html, /\$499|Setup Sprint|two business days/);
 });
 
 test('landing page explains pre-action enforcement instead of passive logging', async () => {

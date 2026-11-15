@@ -280,16 +280,16 @@ async function main() {
     'docs/COMMERCIAL_TRUTH.md must record the Enterprise tier'
   );
   check(
-    /configured gate, a regression test, and rollout and rollback evidence/i.test(githubAbout.metaDescription),
-    'config/github-about.json metaDescription must describe the one test-backed gate'
+    /free.*capture.*pre-action gates/i.test(githubAbout.metaDescription),
+    'config/github-about.json metaDescription must describe free capture and pre-action gates'
   );
   check(
-    /supported local workflow/i.test(githubAbout.metaDescription),
-    'config/github-about.json metaDescription must keep the supported-workflow boundary'
+    /recall, dashboard, adapters, and exports/i.test(githubAbout.metaDescription),
+    'config/github-about.json metaDescription must describe the recall, dashboard, adapters, and exports features'
   );
   check(
-    /supported hook integrations/i.test(githubAbout.metaDescription),
-    'config/github-about.json metaDescription must keep the supported-hook boundary'
+    /Pro/i.test(githubAbout.metaDescription),
+    'config/github-about.json metaDescription must describe Pro'
   );
   check(
     /\$19\/mo or \$149\/yr/i.test(readmeMd),
@@ -352,28 +352,9 @@ async function main() {
     'public/guide.html must not contain malformed duplicated Pro pricing'
   );
 
-  check(
-    /action="\/go\/diagnostic-pay"[^>]*method="POST"/i.test(landingHtml),
-    'public/index.html must post directly to the canonical managed-gate checkout route'
-  );
-  check(
-    /\$(?:499|__SPRINT_DIAGNOSTIC_PRICE_DOLLARS__)/.test(landingHtml)
-      && /Setup Sprint/i.test(landingHtml),
-    'public/index.html must expose the $499 managed gate offer'
-  );
-  check(
-    // Single-offer experiment: Pro is not promoted on the public buying path.
-    true,
-    'public/index.html Pro check skipped during single-offer experiment'
-  );
-  check(
-    !/\/go\/sprint|href="[^"]*workflow-sprint-intake/i.test(landingHtml),
-    'public/index.html must not reintroduce retired sprint intake cash paths'
-  );
-  check(
-    /id="workflow-sprint-intake"[^>]*data-legacy-intake-alias/i.test(landingHtml),
-    'public/index.html must preserve old intake hashes as an alias to the managed-gate checkout'
-  );
+  check(/href="\/checkout\/pro"/.test(landingHtml), 'homepage links to Pro checkout');
+  check(landingHtml.includes('__PRO_PRICE_DOLLARS__') && landingHtml.includes('__PRO_PRICE_LABEL__'), 'homepage renders configured Pro pricing');
+  check(!/\$499|Setup Sprint|workflow-sprint|diagnostic-pay/i.test(landingHtml), 'homepage does not advertise the retired offer');
   check(
     /action="\/go\/diagnostic-pay"[^>]*method="POST"/i.test(pricingHtml),
     'public/pricing.html must use the same canonical managed-gate checkout route'
