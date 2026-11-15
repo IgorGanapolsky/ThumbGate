@@ -27,31 +27,22 @@ test('commercial truth names one promoted public service offer', () => {
   assert.match(commercialTruth, /\$499.*only currently promoted public one-time service offer/i);
 });
 
-test('managed-gate page states a complete fixed-scope implementation contract', () => {
-  assert.match(diagnostic, /Exactly what the \$499 Setup Sprint includes/);
-  assert.match(diagnostic, /one 60-minute working review/i);
-  assert.match(diagnostic, /within two business days/i);
-  assert.match(diagnostic, /workflow and failure map/i);
-  assert.match(diagnostic, /one configured local gate/i);
-  assert.match(diagnostic, /regression test/i);
-  assert.match(diagnostic, /rollout, rollback, and verification proof/i);
-  assert.match(diagnostic, /does not include multi-system implementation/i);
-  assert.match(diagnostic, /guaranteed savings/i);
-  assert.match(diagnostic, /order is refunded instead of being silently converted/i);
+test('retired service page replaces the implementation contract with software plans', () => {
+  assert.match(diagnostic, /This offer has been retired/);
+  assert.match(diagnostic, /free local CLI and self-serve Pro/);
+  assert.match(diagnostic, /Configure and validate your own workflow checks/);
+  assert.match(diagnostic, /href="\/pricing"/);
+  assert.doesNotMatch(diagnostic, /\$499|60-minute|two business days|configured local gate|data-diagnostic-fit-terms/);
 });
 
-test('managed-gate fit mechanics prevent an open-ended upsell', () => {
-  assert.match(diagnostic, /data-diagnostic-fit-terms/);
-  assert.match(diagnostic, /order is refunded instead of being silently converted/i);
-  assert.doesNotMatch(diagnostic, /public Setup Sprint is/i);
+test('retired service page cannot accept new orders or upsell an unsupported failure', () => {
+  assert.doesNotMatch(diagnostic, /<form|\/go\/diagnostic-pay|workflow-sprint|customer_email|public Setup Sprint is/i);
   assert.match(commercialTruth, /refunded instead of silently upsold/i);
 });
 
-test('unverified marketplace obligations cannot receive a payment diversion', () => {
-  assert.match(diagnostic, /Aiventyx payment path is paused/i);
-  assert.match(diagnostic, /seller fees and downstream obligations remain unverified/i);
-  assert.match(diagnostic, /without entering a marketplace payment or revenue-share commitment/i);
-  assert.doesNotMatch(diagnostic, /Aiventyx will collect payment/);
+test('retired service page cannot divert payment to an unverified marketplace', () => {
+  assert.doesNotMatch(diagnostic, /Aiventyx will collect payment|buy\.stripe\.com|paypal\.com|revenue-share commitment|<form/i);
+  assert.match(diagnostic, /href="\/pricing"/);
 });
 
 test('offer ladder prices match the runtime catalog defaults', () => {

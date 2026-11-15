@@ -32,14 +32,15 @@ test('public sources cannot expose raw Stripe Payment Links or pre-confirmed che
   assert.deepEqual(violations, [], violations.join('\n'));
 });
 
-test('public diagnostic and pricing paths require explicit intent surfaces', () => {
+test('retired diagnostic offers no checkout while active paths require explicit intent', () => {
   const diagnostic = fs.readFileSync(path.join(PUBLIC_DIR, 'diagnostic.html'), 'utf8');
   const pricing = fs.readFileSync(path.join(PUBLIC_DIR, 'pricing.html'), 'utf8');
   const founders = fs.readFileSync(path.join(PUBLIC_DIR, 'founders.html'), 'utf8');
   const buyerIntent = fs.readFileSync(path.join(PUBLIC_DIR, 'js', 'buyer-intent.js'), 'utf8');
 
-  assert.match(diagnostic, /action="\/go\/diagnostic-pay" method="POST"/);
-  assert.match(diagnostic, /name="customer_email"[^>]*required/);
+  assert.match(diagnostic, /This offer has been retired/);
+  assert.match(diagnostic, /href="\/pricing"/);
+  assert.doesNotMatch(diagnostic, /<form|\/go\/diagnostic-pay|sprint_diagnostic|buy\.stripe\.com/);
   assert.match(pricing, /href="\/checkout\/pro"/);
   assert.doesNotMatch(pricing, /diagnostic-pay|sprint_diagnostic/);
   assert.match(founders, /action="\/go\/diagnostic-pay" method="POST"/);

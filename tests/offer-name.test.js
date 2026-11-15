@@ -6,7 +6,6 @@ const fs = require('node:fs');
 const path = require('node:path');
 
 const ROOT = path.join(__dirname, '..');
-const PROMISE = 'One workflow gate, configured and regression-tested. $499 once. Delivered in two business days after access, for a supported failure.';
 const RETIRED_NAMES = [
   'Enterprise Workflow Gate',
   'Managed AI Agent Workflow Gate',
@@ -26,14 +25,14 @@ function listFiles(dir, out = []) {
 }
 
 for (const page of ['public/diagnostic.html']) {
-  test(`${page} opens with the Setup Sprint promise, criteria and refund`, () => {
+  test(`${page} retires the offer and links to current software plans`, () => {
     const html = fs.readFileSync(path.join(ROOT, page), 'utf8');
-    const match = html.match(/<div class="offer-promise" data-offer-promise>([\s\S]*?)<\/div>/);
-    assert.ok(match, 'offer-promise block present');
-    const text = match[1].split('<').map((part) => part.slice(part.indexOf('>') + 1)).join(' ').replace(/\s+/g, ' ').trim();
-    assert.ok(text.startsWith(PROMISE), 'promise sentence comes first');
-    assert.match(text, /Supported failure: one repeated agent mistake in one local workflow/);
-    assert.match(text, /Refund: if the failure cannot be reduced to one supported gate, we refund the \$499 order\./);
+    assert.match(html, /This offer has been retired/);
+    assert.match(html, /free local CLI and self-serve Pro/);
+    assert.match(html, /href="\/install"/);
+    assert.match(html, /href="\/pricing"/);
+    assert.match(html, /name="robots" content="noindex"/);
+    assert.doesNotMatch(html, /\$499|Setup Sprint|data-offer-promise|<form|\/go\/diagnostic-pay/);
   });
 }
 

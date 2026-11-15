@@ -50,15 +50,11 @@ test('founders page is an Oceans-style cash-path landing with intent checkout', 
   assert.doesNotMatch(foundersHtml, /buy\.stripe\.com/);
 });
 
-test('diagnostic page steals high-ROI Oceans conversion blocks without raw Stripe links', () => {
-  assert.match(diagnosticHtml, /data-oceans-pain/);
-  assert.match(diagnosticHtml, /data-oceans-process/);
-  assert.match(diagnosticHtml, /data-oceans-compare/);
-  assert.match(diagnosticHtml, /data-oceans-faq/);
-  assert.match(diagnosticHtml, /You didn't hire AI agents to manage calendars of incidents/);
-  assert.match(diagnosticHtml, /wrong fit|we refund/i);
-  assert.match(diagnosticHtml, /href="\/founders/);
-  assert.doesNotMatch(diagnosticHtml, /buy\.stripe\.com/);
+test('diagnostic page offers current plans without service sales or raw Stripe links', () => {
+  assert.match(diagnosticHtml, /This offer has been retired/);
+  assert.match(diagnosticHtml, /free local CLI and self-serve Pro/);
+  assert.match(diagnosticHtml, /href="\/pricing"/);
+  assert.doesNotMatch(diagnosticHtml, /<form|\/go\/diagnostic-pay|\$499|data-oceans-|buy\.stripe\.com/);
 });
 
 test('GET /founders and aliases serve filled conversion HTML', async () => {
@@ -82,12 +78,11 @@ test('GET /sitemap.xml includes /founders', async () => {
   assert.match(body, /\/founders<\/loc>/);
 });
 
-test('GET /diagnostic still checkout-ready after Oceans blocks', async () => {
+test('GET /diagnostic returns retirement without a checkout surface', async () => {
   const res = await fetch(`${origin}/diagnostic`);
-  assert.equal(res.status, 200);
-  const html = await res.text();
-  assert.match(html, /action="\/go\/diagnostic-pay" method="POST"/);
-  assert.match(html, /data-oceans-pain/);
-  assert.match(html, /data-oceans-process/);
-  assert.match(html, /Book the \$499 setup/);
+  assert.equal(res.status, 410);
+  assert.deepEqual(await res.json(), {
+    error: 'This offer has been retired.',
+    pricingUrl: '/pricing',
+  });
 });
