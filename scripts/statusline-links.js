@@ -134,7 +134,11 @@ function buildLinkState({
   booting,
   origin,
   canBootstrap,
+  projectDir,
 }) {
+  // The thumb links carry the project so a click is recorded for the project the
+  // status line shows, not for whichever directory the local server started in.
+  const projectParam = projectDir ? `&projectDir=${encodeURIComponent(projectDir)}` : '';
   if (ready) {
     return {
       state: 'ready',
@@ -144,8 +148,8 @@ function buildLinkState({
       downLabel: '👎',
       dashboardUrl: `${origin}/dashboard`,
       lessonsUrl: `${origin}/lessons`,
-      upUrl: `${origin}/feedback/quick?signal=up`,
-      downUrl: `${origin}/feedback/quick?signal=down`,
+      upUrl: `${origin}/feedback/quick?signal=up${projectParam}`,
+      downUrl: `${origin}/feedback/quick?signal=down${projectParam}`,
     };
   }
 
@@ -194,7 +198,13 @@ async function getStatuslineLinks(options = {}) {
 
   const ready = allowLocalBootstrap ? await probe(origin, options) : false;
   if (ready) {
-    return buildLinkState({ ready: true, booting: false, origin, canBootstrap });
+    return buildLinkState({
+      ready: true,
+      booting: false,
+      origin,
+      canBootstrap,
+      projectDir: resolveProjectDir({ env, cwd: options.cwd || process.cwd() }),
+    });
   }
 
   const state = readRuntimeState({ env, home: homeDir });

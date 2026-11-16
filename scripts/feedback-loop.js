@@ -2446,7 +2446,10 @@ function analyzeFeedback(logPath, options = {}) {
   if (options.projectKey != null) entries = require('./project-catalog').readProjectRows(feedbackDir, 'feedback-log.jsonl', options);
   const rawTotal = entries.length;
   if (options.humanOnly) {
-    entries = entries.filter((entry) => normalizeReviewOrigin(entry.reviewOrigin) === 'human');
+    // strictHuman (status line) also drops entries scraped from prompt text.
+    entries = options.strictHuman
+      ? entries.filter((entry) => require('./human-feedback').isCountedHumanFeedback(entry))
+      : entries.filter((entry) => normalizeReviewOrigin(entry.reviewOrigin) === 'human');
   }
   const fallback = getSQLiteFallback(useSQLite, entries);
   if (fallback) return fallback;

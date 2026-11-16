@@ -81,6 +81,8 @@ test('statusline stats aggregate active project, parent workspace, and global st
     USERPROFILE: home,
     THUMBGATE_PROJECT_DIR: project,
     THUMBGATE_NO_NUDGE: '1',
+    // Project scope is the default; the cross-store sum is opt-in.
+    THUMBGATE_STATUSLINE_SCOPE: 'global',
   };
   const output = execFileSync(process.execPath, [LOCAL_STATS_PATH], {
     encoding: 'utf8',

@@ -633,6 +633,27 @@ test('capture_feedback tool can be called', async () => {
   assert.equal(Array.isArray(result.content), true);
   assert.match(result.content[0].text, /accepted|Feedback/i);
   const payload = JSON.parse(result.content[0].text);
+  assert.equal(payload.feedbackEvent.reviewOrigin, 'human', 'a capture_feedback call is a person\'s thumb');
+});
+
+test('capture_feedback keeps an explicit automated origin from script callers', async () => {
+  const result = await handleRequest({
+    jsonrpc: '2.0',
+    id: 3,
+    method: 'tools/call',
+    params: {
+      name: 'capture_feedback',
+      arguments: {
+        signal: 'down',
+        context: 'Automated check flagged a regression in the deploy script',
+        whatWentWrong: 'Deploy script skipped the health check',
+        whatToChange: 'Always run the health check before reporting success',
+        reviewOrigin: 'automated',
+        tags: ['verification'],
+      },
+    },
+  });
+  const payload = JSON.parse(result.content[0].text);
   assert.equal(payload.feedbackEvent.reviewOrigin, 'automated');
 });
 

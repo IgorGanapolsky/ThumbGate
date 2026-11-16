@@ -7881,7 +7881,13 @@ function createUnscopedApiServer({ ownerAdminDependencies = {} } = {}) {
           feedbackDir: requestSafeDataDir,
           limit: 10,
         });
+        // Attribute the click to the project the status line was showing.
+        const quickProject = projectForCapture({}, {
+          hosted: !isLoopbackHost(getRequestHostHeader(req)),
+          cwd: resolveRequestProjectDir(req, parsed),
+        });
         const result = captureFeedback({
+          ...quickProject,
           signal,
           context: 'Quick capture from Claude Code statusline',
           chatHistory,

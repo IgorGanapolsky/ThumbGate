@@ -65,6 +65,12 @@ function runStatusline(cachePayload, extraEnv = {}) {
         THUMBGATE_STATUSLINE_VERBOSE: '1',
         THUMBGATE_OPERATOR_KEY: '',
         THUMBGATE_API_KEY: '',
+        // Thumbs on the line come from human, project-scoped counts, not the cache.
+        _TEST_THUMBGATE_STATUSLINE_HUMAN_JSON: JSON.stringify({
+          up: Number(cachePayload.thumbs_up || 0),
+          down: Number(cachePayload.thumbs_down || 0),
+          label: 'this project',
+        }),
         ...extraEnv,
       },
       timeout: STATUSLINE_PROCESS_TIMEOUT_MS,
@@ -156,7 +162,7 @@ test('statusline shows "no feedback yet" when cache has zeros', () => {
     })),
   });
   assert.ok(out.includes(`ThumbGate v${PKG_VERSION}`), 'should show package version');
-  assert.ok(out.includes('no feedback yet'), 'should show no-data message');
+  assert.ok(out.includes('no human feedback this project'), 'should show no-data message');
   assert.match(out, /Dash: thumbgate pro/);
   assert.doesNotMatch(out, /Learn: thumbgate lessons/);
 });
@@ -238,10 +244,12 @@ test('statusline rebuilds counters from Claude history when the prompt hook miss
       },
       timeout: STATUSLINE_PROCESS_TIMEOUT_MS,
     });
-    assert.ok(out.includes('1'), 'should show the synced negative count');
+    // History-sync entries are scraped from prompt text, not a deliberate thumb,
+    // so they are logged but never counted on the status line.
+    assert.ok(out.includes('no human feedback this project'), 'synced history entries must not count');
 
     const cache = JSON.parse(fs.readFileSync(path.join(feedbackDir, 'statusline_cache.json'), 'utf8'));
-    assert.equal(cache.thumbs_down, '1');
+    assert.equal(cache.thumbs_down, '0');
     assert.ok(fs.existsSync(path.join(feedbackDir, 'feedback-log.jsonl')), 'feedback log should be created from Claude history');
   } finally {
     fs.rmSync(tmpDir, { recursive: true, force: true });
@@ -336,7 +344,7 @@ test('local stats syncs Claude history for the persisted active project from tra
       timeout: STATUSLINE_PROCESS_TIMEOUT_MS,
     });
     const payload = JSON.parse(out);
-    assert.equal(payload.thumbs_up, '1');
+    assert.equal(payload.thumbs_up, '0', 'history-synced entries are not human thumbs');
     assert.equal(payload.thumbs_down, '0');
     assert.ok(fs.existsSync(path.join(feedbackDir, 'feedback-log.jsonl')), 'feedback log should be created in the active project');
   } finally {

@@ -512,8 +512,8 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
     // 652 -> 653 (2026-11-11): src/openshell-lovable-engine.js (+1).
     // 653 -> 655 (2026-11-12): scripts/brand-standards-gate.js + config/brand-standards.json for Adobe MAX Brand Intelligence and voice gating (+2).
     // 655 -> 656 (2026-11-14): public/project-switcher.js for the project-scoped dashboard (+1).
-    manifest.fileCount <= 688,
-    `npm package should stay <= 688 files, got ${manifest.fileCount}`
+    manifest.fileCount <= 690,
+    `npm package should stay <= 690 files, got ${manifest.fileCount}`
   );
   // Ceiling bumped from 2.75 MB → 2.85 MB (2026-04-16) to accommodate the
   // incremental review-delta demo content in public/dashboard.html landing

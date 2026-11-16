@@ -90,6 +90,21 @@ if [ "$UP" = "0" ] && [ "$DOWN" = "0" ] || [ $(( _NOW - ${CACHE_TS:-0} )) -gt 12
   fi
 fi
 
+# Thumb counts shown on the line are human feedback for this project only. The
+# caches above are global sums that include automated entries, so they feed
+# lessons and trend, never the thumbs.
+SCOPE_LABEL="this project"
+_HUMAN_JSON="${_TEST_THUMBGATE_STATUSLINE_HUMAN_JSON:-$(node "${SCRIPT_DIR}/statusline-human-counts.js" 2>/dev/null)}"
+if [ -n "$_HUMAN_JSON" ]; then
+  eval "$(echo "$_HUMAN_JSON" | jq -r '
+    @sh "UP=\(.up // 0)",
+    @sh "DOWN=\(.down // 0)",
+    @sh "SCOPE_LABEL=\(.label // "this project")"
+  ' 2>/dev/null)"
+else
+  UP="0"; DOWN="0"
+fi
+
 # Background refresh from REST API when cache is stale (>120s)
 if [ $(( _NOW - ${CACHE_TS:-0} )) -gt 120 ]; then
   (
@@ -217,7 +232,7 @@ LINE=""
 [[ -n "$WORK_ITEM_LABEL" ]] && LINE="${LINE:+${LINE} · }${WORK_ITEM_LABEL}"
 LINE="${LINE:+${LINE} · }ThumbGate v${TG_VERSION} · ${TG_TIER}"
 if [[ "$UP" = "0" && "$DOWN" = "0" ]]; then
-  LINE="${D}${LINE}${RST} · no feedback yet"
+  LINE="${D}${LINE}${RST} · ${UP_LINK} ${DOWN_LINK} ${D}no human feedback ${SCOPE_LABEL}${RST}"
   [[ -n "$PR_LABEL" ]] && LINE="${LINE} · ${D}${PR_LABEL}${RST}"
   
   LINE="${LINE} · ${C}${DASHBOARD_LINK}${RST}"
@@ -225,7 +240,7 @@ if [[ "$UP" = "0" && "$DOWN" = "0" ]]; then
   
   printf '%b\n' "$LINE"
 else
-  LINE="${LINE} · ${G}${BD}${UP}${RST}${UP_LINK} ${R}${BD}${DOWN}${RST}${DOWN_LINK} ${ARROW}"
+  LINE="${LINE} · ${G}${BD}${UP}${RST}${UP_LINK} ${R}${BD}${DOWN}${RST}${DOWN_LINK} ${D}${SCOPE_LABEL}${RST}"
 
   # Control Tower alerts (if any)
   [[ "${SLO_V:-0}" -gt 0 ]] && LINE="${LINE} ${R}${SLO_V} SLO${RST}"
