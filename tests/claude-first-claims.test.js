@@ -47,12 +47,16 @@ test('the hero does not claim rm -rf on a project folder is denied', () => {
 });
 
 test('pricing Free vs Pro rows match the limits in the code', () => {
-  const { FREE_TIER_MAX_GATES, FREE_TIER_DAILY_BLOCKS, FREE_TIER_LIMITS } = require('../scripts/rate-limiter');
+  const rateLimiter = require('../scripts/rate-limiter');
+  const { FREE_TIER_MAX_GATES, FREE_TIER_LIMITS } = rateLimiter;
   const table = pricing.slice(pricing.indexOf('id="free-vs-pro"'));
   assert.equal(FREE_TIER_MAX_GATES, 3);
   assert.match(table, new RegExp(`Learned rules[^<]*</th><td>${FREE_TIER_MAX_GATES}</td><td>All</td>`));
-  assert.equal(FREE_TIER_DAILY_BLOCKS, 2);
-  assert.match(table, new RegExp(`First ${FREE_TIER_DAILY_BLOCKS}, then warn`));
+  // No daily block quota exists in the code, so neither plan may promise or imply one.
+  assert.equal('FREE_TIER_DAILY_BLOCKS' in rateLimiter, false);
+  assert.match(table, /Gate blocks per day \(strict mode\)<\/th><td>Unlimited<\/td><td>Unlimited<\/td>/);
+  assert.doesNotMatch(table, /then warn|daily cap/i);
+  assert.doesNotMatch(index, /then warns|daily cap/i);
   assert.equal(FREE_TIER_LIMITS.recall.lifetime, 0);
   assert.equal(FREE_TIER_LIMITS.search_lessons.lifetime, 0);
   assert.match(table, /Recall of past lessons<\/th><td>No<\/td><td>Yes/);
@@ -62,7 +66,7 @@ test('pricing Free vs Pro rows match the limits in the code', () => {
   }
 });
 
-test('catastrophic gates stay outside the free daily cap, as the pricing table says', () => {
+test('catastrophic gates are hard floors in the engine, as the pricing table says', () => {
   const engine = fs.readFileSync(path.join(ROOT, 'scripts', 'gates-engine.js'), 'utf8');
   for (const id of ['force-push', 'git-reset-hard', 'git-clean-force', 'rm-rf-home-or-root']) {
     assert.match(engine.slice(engine.indexOf('CATASTROPHIC_DECLARATIVE_GATE_IDS')), new RegExp(`['"]${id}['"]`), id);
