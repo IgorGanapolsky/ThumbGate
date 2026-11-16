@@ -201,6 +201,10 @@ jobs:
             --max-attempts=12 \
             --retry-delay-ms=10000 \
             --json
+      - name: Verify every pinned thumbgate@version in public surfaces exists on npm (strict)
+        # Post-publish: no allowance for package.json's version, it is on npm now.
+        if: ((github.event_name == 'push' || github.event_name == 'workflow_dispatch') && steps.plan.outputs.publish_npm == 'true') || (github.event_name == 'release' && steps.npm.outputs.published == 'false')
+        run: node scripts/check-npm-published-versions.js
       - name: Resolve npm publish receipt
         id: receipt
         if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && steps.plan.outputs.ensure_release == 'true'

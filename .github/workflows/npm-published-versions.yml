@@ -1,0 +1,36 @@
+name: npm published versions
+
+# Fails a PR when a pinned `thumbgate@x.y.z` in public surfaces (site, plugins,
+# adapters, server cards, docs, README) is not a version that exists on npm.
+# package.json's own version is allowed only while it is an unreleased bump
+# (strictly greater than the latest published). The publish workflow re-runs
+# this strictly after `npm publish`.
+
+on:
+  pull_request:
+    branches: [main]
+  merge_group:
+    branches: [main]
+    types: [checks_requested]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: npm-published-versions-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
+jobs:
+  npm-published-versions:
+    name: Pinned thumbgate versions exist on npm
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '24.x'
+      - name: Check pinned versions against npm
+        run: node scripts/check-npm-published-versions.js --allow-unreleased-package-version
