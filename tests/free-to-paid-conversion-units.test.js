@@ -4,9 +4,8 @@
  * Unit tests for the free-to-paid conversion feature additions:
  *
  *   - scripts/rate-limiter.js: getInstallAgeDays, isInTrialPeriod,
- *     trialDaysRemaining, FREE_TIER_DAILY_BLOCKS, todayKey
- *   - scripts/gates-engine.js: getTodayBlockCount, incrementTodayBlockCount,
- *     applyDailyBlockCap, buildBlockActionProCta
+ *     trialDaysRemaining, todayKey
+ *   - scripts/gates-engine.js: buildBlockActionProCta
  *   - scripts/cli-telemetry.js: SESSION_ID export shape, payload assembly
  *     (clientType, sessionId)
  *
@@ -152,105 +151,6 @@ test('rate-limiter.todayKey returns ISO YYYY-MM-DD', () => {
   const rl = require('../scripts/rate-limiter');
   const key = rl.todayKey();
   assert.match(key, /^\d{4}-\d{2}-\d{2}$/);
-});
-
-test('rate-limiter exports FREE_TIER_DAILY_BLOCKS as a sane integer', () => {
-  const rl = require('../scripts/rate-limiter');
-  assert.equal(typeof rl.FREE_TIER_DAILY_BLOCKS, 'number');
-  assert.ok(Number.isInteger(rl.FREE_TIER_DAILY_BLOCKS));
-  assert.ok(rl.FREE_TIER_DAILY_BLOCKS >= 1 && rl.FREE_TIER_DAILY_BLOCKS <= 100);
-});
-
-// ---------------------------------------------------------------------------
-// gates-engine: daily block cap helpers
-// ---------------------------------------------------------------------------
-
-test('gates-engine.getTodayBlockCount returns 0 when no stats file', () => {
-  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'tg-blocks-'));
-  try {
-    process.env.THUMBGATE_FEEDBACK_DIR = tmpDir;
-    delete require.cache[require.resolve('../scripts/gates-engine')];
-    const ge = require('../scripts/gates-engine');
-    ge.STATS_PATH = path.join(tmpDir, 'gate-stats.json');
-    assert.equal(ge.getTodayBlockCount(), 0);
-  } finally {
-    fs.rmSync(tmpDir, { recursive: true, force: true });
-    delete process.env.THUMBGATE_FEEDBACK_DIR;
-  }
-});
-
-test('gates-engine.incrementTodayBlockCount writes today entry and prunes old dates', () => {
-  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'tg-blocks-'));
-  try {
-    process.env.THUMBGATE_FEEDBACK_DIR = tmpDir;
-    delete require.cache[require.resolve('../scripts/gates-engine')];
-    const ge = require('../scripts/gates-engine');
-    const statsPath = path.join(tmpDir, 'gate-stats.json');
-    ge.STATS_PATH = statsPath;
-
-    // Seed with 8 days of stale daily-block entries so the >7 prune fires
-    const seed = { blocked: 0, warned: 0, passed: 0, byGate: {}, dailyBlocks: {} };
-    for (let i = 0; i < 8; i++) {
-      const d = new Date(Date.now() - (i + 30) * 86400000).toISOString().slice(0, 10);
-      seed.dailyBlocks[d] = i + 1;
-    }
-    fs.writeFileSync(statsPath, JSON.stringify(seed));
-
-    const after1 = ge.incrementTodayBlockCount();
-    assert.equal(after1, 1, 'first increment should land at 1');
-    const after2 = ge.incrementTodayBlockCount();
-    assert.equal(after2, 2);
-
-    const stats = JSON.parse(fs.readFileSync(statsPath, 'utf8'));
-    const today = new Date().toISOString().slice(0, 10);
-    assert.equal(stats.dailyBlocks[today], 2);
-    const keys = Object.keys(stats.dailyBlocks);
-    assert.ok(keys.length <= 7, `daily-block ledger should be pruned to <=7 keys, got ${keys.length}`);
-    assert.ok(keys.includes(today));
-  } finally {
-    fs.rmSync(tmpDir, { recursive: true, force: true });
-    delete process.env.THUMBGATE_FEEDBACK_DIR;
-  }
-});
-
-test('gates-engine.applyDailyBlockCap increments under-limit blocks and returns null', () => {
-  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'tg-cap-'));
-  const home = freshHome();
-  const savedHome = process.env.HOME;
-  process.env.HOME = home;
-  process.env.THUMBGATE_FEEDBACK_DIR = tmpDir;
-  process.env.THUMBGATE_NO_TRIAL = '1';
-  delete process.env.THUMBGATE_API_KEY;
-  delete process.env.THUMBGATE_NO_RATE_LIMIT;
-  delete process.env.CI;
-  delete process.env.GITHUB_ACTIONS;
-  try {
-    delete require.cache[require.resolve('../scripts/cli-telemetry')];
-    delete require.cache[require.resolve('../scripts/rate-limiter')];
-    delete require.cache[require.resolve('../scripts/gates-engine')];
-    const rl = require('../scripts/rate-limiter');
-    if (rl.isProTier()) {
-      // Creator-dev or license bypass — skip gracefully
-      return;
-    }
-    const ge = require('../scripts/gates-engine');
-    const statsPath = path.join(tmpDir, 'gate-stats.json');
-    ge.STATS_PATH = statsPath;
-    fs.writeFileSync(statsPath, JSON.stringify({ blocked: 0, warned: 0, passed: 0, byGate: {}, dailyBlocks: {} }));
-
-    const denyResult = { decision: 'deny', gate: 'g', message: 'm', severity: 'high', reasoning: [] };
-    const result = ge.applyDailyBlockCap(denyResult);
-    assert.equal(result, null, 'under limit should return null and increment');
-    const stats = JSON.parse(fs.readFileSync(statsPath, 'utf8'));
-    const today = new Date().toISOString().slice(0, 10);
-    assert.equal(stats.dailyBlocks[today], 1, 'increment counter on under-limit block');
-  } finally {
-    if (savedHome != null) process.env.HOME = savedHome; else delete process.env.HOME;
-    fs.rmSync(tmpDir, { recursive: true, force: true });
-    fs.rmSync(home, { recursive: true, force: true });
-    delete process.env.THUMBGATE_FEEDBACK_DIR;
-    delete process.env.THUMBGATE_NO_TRIAL;
-  }
 });
 
 // ---------------------------------------------------------------------------

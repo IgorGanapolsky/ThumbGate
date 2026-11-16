@@ -16,7 +16,7 @@ const crypto = require('crypto');
 const { execFileSync, spawnSync } = require('child_process');
 const { loadOptionalModule } = require('./private-core-boundary');
 
-const { isProTier, isInTrialPeriod, FREE_TIER_MAX_GATES, FREE_TIER_DAILY_BLOCKS, todayKey } = require('./rate-limiter');
+const { isProTier, isInTrialPeriod, FREE_TIER_MAX_GATES } = require('./rate-limiter');
 const {
   DEFAULT_BASE_BRANCH,
   evaluateOperationalIntegrity,
@@ -186,10 +186,9 @@ const SELF_PROTECT_HARD_FLOOR_GATE_IDS = new Set([
   'self-protect-hooks-disable',
 ]);
 // An expired task-scope lease gets its OWN gate id so it can be exempted from the two downgrade
-// paths without touching ordinary task-scope denials. Without this the fail-closed guarantee is
-// cosmetic: applyEnforcementPosture turns denials into warnings by default, and applyDailyBlockCap
-// does the same for capped free-tier users — so an edit under a lapsed lease would execute anyway.
-// A lease that stops binding when you are busy or over quota is not a lease.
+// posture downgrade without touching ordinary task-scope denials. Without this the fail-closed
+// guarantee is cosmetic: applyEnforcementPosture turns denials into warnings by default, so an
+// edit under a lapsed lease would execute anyway. A lease that stops binding is not a lease.
 const TASK_SCOPE_LEASE_EXPIRED_GATE_ID = 'task-scope-lease-expired';
 
 const UNCONDITIONAL_HARD_FLOOR_GATE_IDS = new Set([
@@ -217,16 +216,10 @@ const UNCONDITIONAL_HARD_FLOOR_GATE_IDS = new Set([
   TASK_SCOPE_LEASE_EXPIRED_GATE_ID,
   ...SELF_PROTECT_HARD_FLOOR_GATE_IDS,
 ]);
-// Issue #2782 (reported by Andy Martin, 2026-07-08): after the free-tier daily
-// block cap is hit, applyDailyBlockCap() downgraded EVERY config-declared
-// "block" gate to a warning — including these catastrophic, effectively
-// irreversible commands — with no THUMBGATE_STRICT_ENFORCEMENT check at all.
-// A free-tier user past their daily cap could have `rm -rf ~`, a force push,
-// `git reset --hard`, or `git clean -f` silently allowed through. These four
-// map directly to CLAUDE.md's own hard-block list and must never be subject
-// to the daily cap discount, regardless of tier or strict-mode setting.
-// financial-control is included for the same reason: a daily-cap discount on
-// checkout/subscription spends would re-open the never-spend interlock.
+// Catastrophic, effectively irreversible commands (issue #2782): `rm -rf ~`, a
+// force push, `git reset --hard`, `git clean -f`, spend paths. These are
+// evaluated before posture and are never downgraded to a warning, regardless
+// of tier or strict-mode setting.
 const CATASTROPHIC_DECLARATIVE_GATE_IDS = new Set([
   TASK_SCOPE_LEASE_EXPIRED_GATE_ID,
   'force-push',
@@ -238,7 +231,7 @@ const CATASTROPHIC_DECLARATIVE_GATE_IDS = new Set([
   'financial-control',
   'oneshot-control',
   'oneshot-goal-done',
-  // Never daily-cap discount a denied autonomous email send (same class as force-push).
+  // A denied autonomous email send is the same class as force-push.
   'outbound-email-send',
   'outbound-off-brand-vertical-block',
   'swarm-claim-exit-3-write-after-loss',
@@ -1146,75 +1139,6 @@ function recordStat(gateId, action, gate, options = {}) {
       db.close();
     } catch (_) { /* lesson DB may not be available */ }
   }
-}
-
-// ---------------------------------------------------------------------------
-// Free-tier daily block cap
-// ---------------------------------------------------------------------------
-
-/**
- * Count today's gate blocks from stats. Free tier gets FREE_TIER_DAILY_BLOCKS
- * blocks/day. After the limit, deny → warn + upgrade CTA so the action proceeds
- * but the user sees they lost protection.
- */
-function getTodayBlockCount() {
-  const stats = loadStats();
-  const today = todayKey();
-  if (!stats.dailyBlocks || !stats.dailyBlocks[today]) return 0;
-  return stats.dailyBlocks[today];
-}
-
-function incrementTodayBlockCount() {
-  const stats = loadStats();
-  const today = todayKey();
-  if (!stats.dailyBlocks) stats.dailyBlocks = {};
-  // Clean old dates (keep only last 7 days to prevent unbounded growth)
-  const keys = Object.keys(stats.dailyBlocks);
-  if (keys.length > 7) {
-    keys.sort();
-    for (const k of keys.slice(0, keys.length - 7)) {
-      delete stats.dailyBlocks[k];
-    }
-  }
-  stats.dailyBlocks[today] = (stats.dailyBlocks[today] || 0) + 1;
-  saveStats(stats);
-  return stats.dailyBlocks[today];
-}
-
-/**
- * If the user is free-tier and has exceeded daily block limit, downgrade
- * a deny result to a warn with an upgrade CTA. Returns null if no cap applies.
- */
-function applyDailyBlockCap(denyResult) {
-  if (process.env.THUMBGATE_SANDBOX_EVAL === '1') return null;
-  // Catastrophic/irreversible commands (force-push, git reset --hard, git
-  // clean -f, rm -rf on home/root) never get the free-tier daily-cap
-  // discount — see issue #2782. Checked first, before any tier/CI shortcut,
-  // so nothing can accidentally exempt a catastrophic gate from this floor.
-  if (denyResult && CATASTROPHIC_DECLARATIVE_GATE_IDS.has(denyResult.gate)) return null;
-  // Pro, trial, CI, and THUMBGATE_NO_RATE_LIMIT users are uncapped
-  if (isProTier()) return null;
-  if (process.env.CI || process.env.GITHUB_ACTIONS) return null;
-
-  const todayCount = getTodayBlockCount();
-  if (todayCount < FREE_TIER_DAILY_BLOCKS) {
-    // Under limit: allow the block, increment counter
-    incrementTodayBlockCount();
-    return null;
-  }
-
-  // Over limit: downgrade deny → warn with upgrade CTA
-  const remaining = 0;
-  return {
-    decision: 'warn',
-    gate: denyResult.gate,
-    message: `⚠️ ${denyResult.message}\n\n🔓 Daily protection limit reached (${FREE_TIER_DAILY_BLOCKS}/${FREE_TIER_DAILY_BLOCKS} blocks used). This action was allowed through. Upgrade for unlimited protection: https://thumbgate.ai/go/pro`,
-    severity: denyResult.severity,
-    reasoning: (denyResult.reasoning || []).concat([
-      `Free-tier daily block limit (${FREE_TIER_DAILY_BLOCKS}) exceeded — deny downgraded to warn`,
-    ]),
-    dailyBlockCapApplied: true,
-  };
 }
 
 // ---------------------------------------------------------------------------
@@ -2464,8 +2388,8 @@ function recordStructuralGateBlock(toolName, toolInput, result, options = {}) {
  * Config order is useful for normal policy routing, but it must not let a broad
  * rule mask a narrower irreversible-action rule. For example, the generic
  * `push-without-thread-check` gate also matches `git push --force`; selecting it
- * first allowed the free-tier daily cap to downgrade the action to a warning
- * before the exempt `force-push` gate was ever evaluated.
+ * first let a downgrade path turn the action into a warning before the
+ * `force-push` gate was ever evaluated.
  *
  * Catastrophic gates are deliberately limited to the audited allowlist above.
  * Metric-backed gates are excluded because their condition is asynchronous and
@@ -3885,14 +3809,6 @@ async function evaluateGatesAsyncInner(toolName, toolInput, configPath, options 
         reasoning,
         ...(adminOverride ? { requiresAdminOverride: true, adminOverride } : {}),
       };
-      // Free-tier daily block cap: after N blocks/day, deny → warn + upgrade CTA
-      const cappedResult = applyDailyBlockCap(denyResult);
-      if (cappedResult) {
-        recordStat(gate.id, 'warn', gate, { ...execution, toolName, toolInput });
-        const auditRecord = recordAuditEvent({ ...execution, toolName, toolInput, decision: 'warn', gateId: gate.id, message: cappedResult.message, severity: gate.severity, source: 'gates-engine', dailyBlockCapApplied: true });
-        auditToFeedback(auditRecord, execution);
-        return cappedResult;
-      }
       recordStat(gate.id, 'block', gate, { ...execution, toolName, toolInput });
       const auditRecord = recordAuditEvent({ ...execution, toolName, toolInput, decision: 'deny', gateId: gate.id, message: overrideMessage, severity: gate.severity, source: 'gates-engine' });
       auditToFeedback(auditRecord, execution);
@@ -4206,14 +4122,6 @@ function evaluateGatesInner(toolName, toolInput, configPath, options = {}) {
         reasoning,
         ...(adminOverride ? { requiresAdminOverride: true, adminOverride } : {}),
       };
-      // Free-tier daily block cap: after N blocks/day, deny → warn + upgrade CTA
-      const cappedResult = applyDailyBlockCap(denyResult);
-      if (cappedResult) {
-        recordStat(gate.id, 'warn', gate, { ...execution, toolName, toolInput });
-        const auditRecord = recordAuditEvent({ ...execution, toolName, toolInput, decision: 'warn', gateId: gate.id, message: cappedResult.message, severity: gate.severity, source: 'gates-engine', dailyBlockCapApplied: true });
-        auditToFeedback(auditRecord, execution);
-        return cappedResult;
-      }
       recordStat(gate.id, 'block', gate, { ...execution, toolName, toolInput });
       const auditRecord = recordAuditEvent({ ...execution, toolName, toolInput, decision: 'deny', gateId: gate.id, message: overrideMessage, severity: gate.severity, source: 'gates-engine' });
       auditToFeedback(auditRecord, execution);
@@ -6213,9 +6121,6 @@ module.exports = {
   PR_THREAD_RESOLUTION_ACTION,
   HELPER_BYPASS_ACTION,
   buildBlockActionProCta,
-  applyDailyBlockCap,
-  getTodayBlockCount,
-  incrementTodayBlockCount,
   effectiveCommandCwd,
   resolveRepoRoot,
 };
