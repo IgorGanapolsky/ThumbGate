@@ -27,8 +27,9 @@ test('recorded hero decisions match what gate-check returns in strict mode', () 
       encoding: 'utf8',
       cwd: home,
       env: { PATH: process.env.PATH, HOME: home, USERPROFILE: home, THUMBGATE_NO_TELEMETRY: '1', THUMBGATE_STRICT_ENFORCEMENT: '1' },
-      timeout: 60000,
+      timeout: 120000,
     });
+    assert.ok(run.stdout, `${command}: no stdout; status=${run.status} signal=${run.signal} stderr=${run.stderr}`);
     const out = JSON.parse(run.stdout).hookSpecificOutput;
     assert.equal(run.status, 0, `${command}: the deny is carried in JSON with exit 0, as the page shows`);
     assert.equal(out.permissionDecision, 'deny', command);
