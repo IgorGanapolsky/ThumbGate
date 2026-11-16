@@ -277,7 +277,9 @@ const path = require('node:path');
 // 655 -> 656 (2026-11-14): public/project-switcher.js for the project-scoped dashboard (+1).
 // 656 -> 688 (2026-11-15): modules reachable from bin/cli.js were missing from the tarball
 // (npx thumbgate gate-check threw Cannot find module); see tests/packed-cli-require-closure.test.js.
-const BASELINE_FILE_COUNT = 688;
+// 688 -> 690 (2026-11-16): statusline-human-counts.js and human-feedback.js. statusline.sh runs the first to count
+// human, per-project thumbs; the second filters out automated entries. Both ship so the installed status line works.
+const BASELINE_FILE_COUNT = 690;
 function readBundleSnapshot() {
   const repoRoot = path.resolve(__dirname, '..');
   const stdout = execSync('npm pack --dry-run --json', {

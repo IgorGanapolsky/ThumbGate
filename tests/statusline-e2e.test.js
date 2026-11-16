@@ -109,7 +109,7 @@ test('statusline e2e: aggregates feedback across all stores, deduped by id', () 
     writeLog(path.join(home, '.thumbgate', 'projects', 'projB'), PROJ_B_ENTRIES);
     writeLog(path.join(projectRoot, '.thumbgate'), ACTIVE_PROJECT_ENTRIES);
 
-    const result = runStatusline({ home, projectDir: projectRoot });
+    const result = runStatusline({ home, projectDir: projectRoot, extraEnv: { THUMBGATE_STATUSLINE_SCOPE: 'global' } });
 
     assert.equal(result.status, 0, `script must exit 0; stderr=${result.stderr}`);
     const payload = JSON.parse(result.stdout);
