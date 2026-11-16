@@ -273,11 +273,16 @@ test('statusline follows the persisted active project when Claude is running fro
     trend: 'stable',
     updated_at: String(Math.floor(Date.now() / 1000)),
   }));
-  // Thumbs come from the project's own human feedback, not the cache.
+  // Thumbs come from the project's own human feedback, not the cache. The key
+  // is computed under the same HOME the status line runs with.
+  const { projectKey } = JSON.parse(execFileSync(process.execPath, ['-e',
+    'console.log(JSON.stringify(require(process.argv[1]).resolveLocalProject(process.argv[2])))',
+    path.join(__dirname, '..', 'scripts', 'project-identity.js'), projectDir,
+  ], { encoding: 'utf8', env: { ...process.env, HOME: homeDir, USERPROFILE: homeDir } }));
   const humanRows = [
     ...Array.from({ length: 7 }, (_, i) => ({ id: `up-${i}`, signal: 'positive' })),
     ...Array.from({ length: 3 }, (_, i) => ({ id: `down-${i}`, signal: 'negative' })),
-  ].map((row) => JSON.stringify({ ...row, reviewOrigin: 'human', timestamp: '2026-04-08T10:00:00.000Z', context: 'person gave this' }));
+  ].map((row) => JSON.stringify({ ...row, projectKey, reviewOrigin: 'human', timestamp: '2026-04-08T10:00:00.000Z', context: 'person gave this' }));
   fs.writeFileSync(path.join(feedbackDir, 'feedback-log.jsonl'), humanRows.join('\n') + '\n');
   writeActiveProjectState(projectDir, {
     home: homeDir,
@@ -298,7 +303,7 @@ test('statusline follows the persisted active project when Claude is running fro
       timeout: STATUSLINE_PROCESS_TIMEOUT_MS,
     });
     const plain = stripStatuslineFormatting(out);
-    assert.match(plain, /7\S* 3\S* this project/, 'should show the active project thumbs up and down, labelled');
+    assert.match(plain, /7\S* 3\S* this project/, `should show the active project thumbs up and down, labelled; got: ${plain}`);
     assert.ok(/(^|\D)7\D/.test(plain) && /(^|\D)3\D/.test(plain), 'should show both counts as standalone numbers');
     assert.ok(out.includes(`ThumbGate v${PKG_VERSION}`), 'should show package version');
   } finally {
