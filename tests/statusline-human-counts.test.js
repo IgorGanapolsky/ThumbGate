@@ -30,7 +30,9 @@ test('orchestrator with 1 human negative and 50 automated entries renders 0 up, 
   const home = fs.mkdtempSync(path.join(os.tmpdir(), 'tg-statusline-home-'));
   const project = path.join(home, 'orchestrator');
   fs.mkdirSync(project, { recursive: true });
-  const childEnv = { ...process.env, HOME: home, USERPROFILE: home, THUMBGATE_FEEDBACK_DIR: '', THUMBGATE_PROJECT_DIR: '' };
+  // Start from a clean environment: CI and developer shells set project and
+  // feedback-dir variables that would redirect the child to another store.
+  const childEnv = { PATH: process.env.PATH, HOME: home, USERPROFILE: home, TMPDIR: process.env.TMPDIR || os.tmpdir() };
   // The key must come from the same HOME the status line runs with: a local
   // project key hashes a per-HOME machine identity.
   const { projectKey } = JSON.parse(spawnSync(process.execPath, ['-e',
@@ -59,7 +61,7 @@ test('orchestrator with 1 human negative and 50 automated entries renders 0 up, 
   assert.equal(run.status, 0, run.stderr);
   const out = JSON.parse(run.stdout);
   assert.equal(out.up, 0);
-  assert.equal(out.down, 1);
+  assert.equal(out.down, 1, `stdout=${run.stdout} stderr=${run.stderr} key=${projectKey}`);
   assert.equal(out.label, 'this project');
   fs.rmSync(home, { recursive: true, force: true });
 });
