@@ -95,3 +95,12 @@ test('PR mode does not allow package.json version that is already behind latest'
   }, ['1.2.3', '1.2.1']);
   assert.equal(runScript(dir, publishedFile, ['--allow-unreleased-package-version']).code, 1);
 });
+
+test('captures hyphens inside prerelease identifiers', () => {
+  const { collectPins } = require(SCRIPT);
+  const { dir, publishedFile } = makeFixture({
+    'README.md': 'npx thumbgate@1.41.0-beta-1\nnpx thumbgate@2.0.0-rc.1-x.2 init\n',
+  }, ['1.41.0-beta-1', '2.0.0-rc.1-x.2']);
+  assert.deepEqual(collectPins(dir, ['README.md']).map((p) => p.version), ['1.41.0-beta-1', '2.0.0-rc.1-x.2']);
+  assert.equal(runScript(dir, publishedFile).code, 0);
+});

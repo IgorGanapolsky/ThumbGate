@@ -18,7 +18,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const { execFileSync } = require('node:child_process');
 
-const PIN_RE = /(?<![\w/.-])thumbgate@(\d+\.\d+\.\d+(?:-[0-9A-Za-z]+(?:\.[0-9A-Za-z]+)*)?)(?![\w@])/g;
+const PIN_RE = /(?<![\w/.-])thumbgate@(\d+\.\d+\.\d+(?:-[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?)(?![\w@])/g;
 const DIR_PREFIXES = ['public/', '.claude-plugin/', '.cursor-plugin/', 'plugins/', 'adapters/', '.well-known/', 'docs/'];
 const EXACT_FILES = new Set(['mcpize.yaml', 'README.md', 'server.json']);
 const BINARY_EXT = new Set(['.png', '.jpg', '.jpeg', '.gif', '.webp', '.ico', '.pdf', '.zip', '.gz', '.tgz', '.woff', '.woff2', '.ttf', '.mp4', '.mov', '.mp3', '.wasm']);
