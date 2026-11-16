@@ -23,6 +23,28 @@ const DIR_PREFIXES = ['public/', '.claude-plugin/', '.cursor-plugin/', 'plugins/
 const EXACT_FILES = new Set(['mcpize.yaml', 'README.md', 'server.json']);
 const BINARY_EXT = new Set(['.png', '.jpg', '.jpeg', '.gif', '.webp', '.ico', '.pdf', '.zip', '.gz', '.tgz', '.woff', '.woff2', '.ttf', '.mp4', '.mov', '.mp3', '.wasm']);
 const MAX_BYTES = 5 * 1024 * 1024;
+const DEFAULT_IO = { log: console.log, error: console.error };
+
+// Fixed absolute binaries instead of a bare PATH lookup (Sonar S4036).
+function firstExisting(candidates, fallback) {
+  return candidates.find((c) => {
+    try { return fs.existsSync(c); } catch { return false; }
+  }) || fallback;
+}
+
+function resolveGitBinary() {
+  return firstExisting(['/usr/bin/git', '/opt/homebrew/bin/git', '/usr/local/bin/git'], '/usr/bin/git');
+}
+
+// npm ships next to the running node binary (setup-node, Homebrew, nvm).
+function resolveNpmBinary() {
+  return firstExisting([
+    path.join(path.dirname(process.execPath), 'npm'),
+    '/opt/homebrew/bin/npm',
+    '/usr/local/bin/npm',
+    '/usr/bin/npm',
+  ], path.join(path.dirname(process.execPath), 'npm'));
+}
 
 function isInScope(file) {
   if (EXACT_FILES.has(file)) return true;
@@ -32,7 +54,7 @@ function isInScope(file) {
 }
 
 function listTrackedFiles(root) {
-  const out = execFileSync('git', ['ls-files', '-z'], { cwd: root, encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 });
+  const out = execFileSync(resolveGitBinary(), ['ls-files', '-z'], { cwd: root, encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 });
   return out.split('\0').filter(Boolean)
     .filter((f) => !f.split('/').includes('node_modules'))
     .filter(isInScope)
@@ -67,18 +89,22 @@ function parseSemver(v) {
   return { core: [Number(m[1]), Number(m[2]), Number(m[3])], pre: m[4] ? m[4].split('.') : [] };
 }
 
+function compareIdentifier(p, q) {
+  if (p === q) return 0;
+  const pn = /^\d+$/.test(p);
+  const qn = /^\d+$/.test(q);
+  if (pn && qn) return Number(p) > Number(q) ? 1 : -1;
+  if (pn !== qn) return pn ? -1 : 1;
+  return p > q ? 1 : -1;
+}
+
 function comparePrerelease(a, b) {
-  for (let i = 0; i < Math.max(a.length, b.length); i++) {
-    const p = a[i];
-    const q = b[i];
-    if (p === undefined) return -1;
-    if (q === undefined) return 1;
-    if (p === q) continue;
-    const pn = /^\d+$/.test(p);
-    const qn = /^\d+$/.test(q);
-    if (pn && qn) return Number(p) > Number(q) ? 1 : -1;
-    if (pn !== qn) return pn ? -1 : 1;
-    return p > q ? 1 : -1;
+  const len = Math.max(a.length, b.length);
+  for (let i = 0; i < len; i++) {
+    if (a[i] === undefined) return -1;
+    if (b[i] === undefined) return 1;
+    const c = compareIdentifier(a[i], b[i]);
+    if (c !== 0) return c;
   }
   return 0;
 }
@@ -98,7 +124,7 @@ function compareSemver(a, b) {
 function loadPublishedVersions({ publishedFile } = {}) {
   const raw = publishedFile
     ? fs.readFileSync(publishedFile, 'utf8')
-    : execFileSync('npm', ['view', 'thumbgate', 'versions', '--json'], { encoding: 'utf8', maxBuffer: 16 * 1024 * 1024 });
+    : execFileSync(resolveNpmBinary(), ['view', 'thumbgate', 'versions', '--json'], { encoding: 'utf8', maxBuffer: 16 * 1024 * 1024 });
   const parsed = JSON.parse(raw);
   const list = Array.isArray(parsed) ? parsed : [parsed];
   if (!list.length || !list.every((v) => typeof v === 'string')) {
@@ -129,7 +155,7 @@ function parseArgs(argv) {
   return opts;
 }
 
-function run(argv, io = { log: console.log, error: console.error }) {
+function run(argv, io = DEFAULT_IO) {
   const opts = parseArgs(argv);
   const files = listTrackedFiles(opts.root);
   const pins = collectPins(opts.root, files);
