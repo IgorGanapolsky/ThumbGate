@@ -4,7 +4,7 @@
   "pages": [
     {
       "route": "/",
-      "sentinel": "One repeated agent mistake. One configured gate.",
+      "sentinel": "Stop Claude Code from repeating the same mistake.",
       "description": "Home page hero (lifeblood \u2014 never regress)"
     },
     {
