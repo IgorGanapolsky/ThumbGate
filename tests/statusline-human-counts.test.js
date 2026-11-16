@@ -96,6 +96,22 @@ test('MCP captures in the global store count for the project named in scope.proj
   fs.rmSync(home, { recursive: true, force: true });
 });
 
+test('rows without a project key count in the project own feedback dir but never from the global store', () => {
+  const home = fs.mkdtempSync(path.join(os.tmpdir(), 'tg-statusline-unkeyed-'));
+  const project = path.join(home, 'orchestrator');
+  fs.mkdirSync(project, { recursive: true });
+  const childEnv = { PATH: process.env.PATH, HOME: home, USERPROFILE: home, TMPDIR: process.env.TMPDIR || os.tmpdir() };
+  const row = (id, signal) => ({ id, signal, reviewOrigin: 'human', timestamp: new Date().toISOString() });
+  writeJsonl(path.join(project, '.thumbgate', 'feedback-log.jsonl'), [row('own_1', 'positive'), row('own_2', 'negative')]);
+  writeJsonl(path.join(home, '.thumbgate', 'feedback-log.jsonl'), [row('global_1', 'positive'), row('global_2', 'negative')]);
+
+  const run = spawnSync(process.execPath, [SCRIPT], { cwd: project, encoding: 'utf8', env: childEnv });
+  assert.equal(run.status, 0, run.stderr);
+  const out = JSON.parse(run.stdout);
+  assert.deepEqual({ up: out.up, down: out.down }, { up: 1, down: 1 }, `stdout=${run.stdout}`);
+  fs.rmSync(home, { recursive: true, force: true });
+});
+
 test('only deliberate human entries count', () => {
   assert.equal(isCountedHumanFeedback({ reviewOrigin: 'human', tags: ['statusline', 'quick-capture'] }), true);
   assert.equal(isCountedHumanFeedback({ reviewOrigin: 'human', tags: [] }), true);

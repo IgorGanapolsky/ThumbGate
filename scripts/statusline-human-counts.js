@@ -36,9 +36,15 @@ function computeHumanCounts(options = {}) {
   const seen = new Set();
   let up = 0;
   let down = 0;
-  for (const dir of new Set([feedbackDir, globalDir].map((d) => path.resolve(d)))) {
+  const ownDir = path.resolve(feedbackDir);
+  for (const dir of new Set([ownDir, path.resolve(globalDir)])) {
+    // Rows written before project tracking carry no key. In the project's own
+    // feedback dir they are this project's; in the shared global store they are not.
+    const ownsUnassigned = dir === ownDir && dir !== path.resolve(globalDir);
     for (const row of readProjectRows(dir, 'feedback-log.jsonl', {})) {
-      if (row.projectKey !== projectKey && row.projectKey !== aliasKey) continue;
+      const mine = row.projectKey === projectKey || row.projectKey === aliasKey
+        || (ownsUnassigned && row.projectKey === 'unassigned');
+      if (!mine) continue;
       if (!isCountedHumanFeedback(row)) continue;
       if (row.id) {
         if (seen.has(row.id)) continue;

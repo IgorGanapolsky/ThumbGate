@@ -197,7 +197,7 @@ test('statusline rebuilds counters from local feedback logs when cache is empty'
       },
       timeout: STATUSLINE_PROCESS_TIMEOUT_MS,
     });
-    assert.match(out, /1\S* 2\S* this project/, 'should show reconstructed 1 up, 2 down');
+    assert.match(out.replace(/\x1b\]8;;[^\x07]*\x07/g, '').replace(/\x1b\[[0-9;]*m/g, ''), /1👍 2👎 this project/, 'should show reconstructed 1 up, 2 down');
     assert.doesNotMatch(out, /no human feedback/, 'should not fall back to the empty label');
 
     const cache = JSON.parse(fs.readFileSync(path.join(tmpDir, 'statusline_cache.json'), 'utf8'));
@@ -399,7 +399,7 @@ test('statusline resolves project feedback from Claude cwd instead of the runtim
       timeout: STATUSLINE_PROCESS_TIMEOUT_MS,
     });
 
-    assert.match(out, /2\S* 1\S* this project/, 'should show project 2 up, 1 down from Claude cwd');
+    assert.match(out.replace(/\x1b\]8;;[^\x07]*\x07/g, '').replace(/\x1b\[[0-9;]*m/g, ''), /2👍 1👎 this project/, 'should show project 2 up, 1 down from Claude cwd');
     assert.doesNotMatch(out, /no human feedback/, 'should not fall back to the empty label');
 
     const cache = JSON.parse(fs.readFileSync(path.join(feedbackDir, 'statusline_cache.json'), 'utf8'));
