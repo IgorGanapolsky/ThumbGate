@@ -191,6 +191,13 @@ negotiable, a named few are not. Worth noting the comment on that constant still
 `3 gate blocks/day` while the value is `2` — a small documentation drift that shows how easily
 a commercial dial gets adjusted without the surrounding reasoning being updated.
 
+**Update (2026-11-16).** The daily block quota is gone. `FREE_TIER_DAILY_BLOCKS` and
+`applyDailyBlockCap()` were removed, so a configured rule that denies now denies on the 1st and
+the 1,000th call of the day for every tier. Free-tier limits apply only to how many
+auto-promoted rules load (`FREE_TIER_MAX_GATES`) and how many feedback captures a free user can
+make. The warn-by-default posture (`THUMBGATE_STRICT_ENFORCEMENT`) is a separate setting and
+is unchanged.
+
 ---
 
 ## 5. Built from scratch — an evasion matrix, because "we fixed it" wasn't checkable
