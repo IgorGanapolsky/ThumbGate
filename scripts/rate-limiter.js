@@ -29,7 +29,6 @@ const FREE_TIER_LIMITS = {
 };
 
 const FREE_TIER_MAX_GATES = 3; // 3 active prevention rules on free; Pro is unlimited
-const FREE_TIER_DAILY_BLOCKS = 2; // 3 gate blocks/day on free; after limit, deny → warn + upgrade CTA
 
 const UPGRADE_MESSAGE = `Pro: ${PRO_PRICE_LABEL} — unlimited rules, recall, lesson search, dashboard, and exports: ${PRO_MONTHLY_PAYMENT_LINK}\n  Enterprise: ${ENTERPRISE_PRICE_LABEL} after workflow qualification.`;
 
@@ -268,7 +267,6 @@ module.exports = {
   todayKey,
   FREE_TIER_LIMITS,
   FREE_TIER_MAX_GATES,
-  FREE_TIER_DAILY_BLOCKS,
   TRIAL_DAYS,
   UPGRADE_MESSAGE,
   PAYWALL_MESSAGES,

@@ -4,12 +4,12 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Pricing — ThumbGate Pro | ThumbGate</title>
-  <meta name="description" content="Free local capture and pre-action gates. Choose Pro for recall, dashboard, adapters, and exports.">
+  <meta name="description" content="Free local capture and PreToolUse gates for Claude Code. Choose Pro for recall, dashboard, and exports.">
   <link rel="canonical" href="__APP_ORIGIN__/pricing">
   <link rel="alternate" type="text/markdown" title="ThumbGate LLM context" href="__APP_ORIGIN__/llm-context.md">
   <meta property="og:title" content="ThumbGate Pricing — ThumbGate Pro">
-  <meta property="og:description" content="Free local capture and pre-action gates. Choose Pro for recall, dashboard, adapters, and exports.">
-  <meta name="twitter:description" content="Free local capture and pre-action gates. Choose Pro for recall, dashboard, adapters, and exports.">
+  <meta property="og:description" content="Free local capture and PreToolUse gates for Claude Code. Choose Pro for recall, dashboard, and exports.">
+  <meta name="twitter:description" content="Free local capture and PreToolUse gates for Claude Code. Choose Pro for recall, dashboard, and exports.">
   <meta property="og:url" content="__APP_ORIGIN__/pricing">
   <meta property="og:type" content="product">
   <script type="application/ld+json">
@@ -64,6 +64,9 @@
     .fine { margin:12px 0 0; color:var(--muted); font-size:.79rem; }
     .boundary { margin-top:18px; padding:14px 16px; border-left:4px solid var(--red); background:#fff5f2; color:#63332d; font-size:.9rem; }
     section { padding-top:76px; }
+    table.compare { width:100%; border-collapse:collapse; margin:16px 0; font-size:.95rem; }
+    table.compare th, table.compare td { border:1px solid var(--line, rgba(128,128,128,.35)); padding:10px 12px; text-align:left; vertical-align:top; }
+    table.compare caption { text-align:left; color:var(--muted, #6b7280); padding-bottom:6px; }
     h2 { margin:0 0 14px; font-size:clamp(1.8rem,3.5vw,2.8rem); letter-spacing:-.035em; }
     .section-lede { max-width:680px; color:var(--muted); }
     .steps { display:grid; grid-template-columns:repeat(3,1fr); gap:14px; margin-top:28px; }
@@ -137,12 +140,12 @@
   <main class="shell">
     <div class="hero">
       <div>
-        <div class="eyebrow">Free local gates. Optional Pro features.</div>
-        <h1>Stop paying for the same AI mistake twice.</h1>
-        <p class="lede">Free local CLI, or self-serve Pro. Choose the plan that fits your workflow.</p>
+        <div class="eyebrow">Claude Code guardrails. Free local gates, optional Pro.</div>
+        <h1>Stop paying for the same Claude Code mistake twice.</h1>
+        <p class="lede">Free local gates for Claude Code, or self-serve Pro. Choose the plan that fits your workflow.</p>
 
         <div class="outcome">
-          <div class="outcome-row"><span class="tick">✓</span><span>Pro: recall, dashboard, adapters, and exports.</span></div>
+          <div class="outcome-row"><span class="tick">✓</span><span>Pro: Claude Code recall, dashboard, and exports.</span></div>
           <div class="outcome-row"><span class="tick">✓</span><span><strong>Free local evaluate:</strong> <code>npx thumbgate init</code> — first hard gate usually minutes after install.</span></div>
           <div class="outcome-row"><span class="tick">✓</span><span>Team and enterprise subscriptions are not available through self-serve checkout. Compare the free CLI and individual Pro software features before choosing.</span></div>
         </div>
@@ -153,15 +156,34 @@
             <h2>ThumbGate Pro</h2>
             <div class="price">$__PRO_PRICE_DOLLARS__<span>/month</span></div>
             <p>__PRO_PRICE_LABEL__</p>
-            <p>Pro adds recall, dashboard, adapters, and exports. The free local CLI includes local capture and pre-action gates.</p>
+            <p>Pro adds recall, dashboard, and exports for Claude Code. The free local CLI includes local capture and PreToolUse gates.</p>
             <a class="button button-primary" href="/checkout/pro" data-offer-link data-value="__PRO_PRICE_DOLLARS__" data-revenue-cta data-cta-id="pricing_pro_checkout" data-cta-placement="offers" data-plan-id="pro">Get Pro</a>
             <p><a href="/install">Start with the free CLI</a></p>
           </aside>
       </div>
     </div>
 
+    <section id="free-vs-pro"><h2>Free vs Pro</h2>
+      <p>Strict blocking of catastrophic commands is free. Pro is about memory.</p>
+      <table class="compare">
+        <caption>Free and Pro, from the license checks in the code</caption>
+        <thead><tr><th>Feature</th><th>Free</th><th>Pro</th></tr></thead>
+        <tbody>
+          <tr><th>Block force-push, <code>git reset --hard</code>, <code>git clean -f</code>, <code>rm -rf</code> on home or root (strict mode)</th><td>Yes</td><td>Yes</td></tr>
+          <tr><th>Gate blocks per day (strict mode)</th><td>Unlimited</td><td>Unlimited</td></tr>
+          <tr><th>Learned rules from your thumbs-down that are enforced</th><td>3</td><td>All</td></tr>
+          <tr><th>Recall of past lessons</th><td>No</td><td>Yes</td></tr>
+          <tr><th>Lesson search</th><td>No</td><td>Yes</td></tr>
+          <tr><th>Multi-hop recall, synthetic DPO pairs</th><td>No</td><td>Yes</td></tr>
+          <tr><th>Team-shared rules</th><td>Coming</td><td>Coming</td></tr>
+          <tr><th>Lessons synced across machines</th><td>Coming</td><td>Coming</td></tr>
+          <tr><th>Audit history for managers</th><td>Coming</td><td>Coming</td></tr>
+        </tbody>
+      </table>
+    </section>
+
     <section id="value"><h2>Free local protection. Pro recall.</h2>
-      <p>Install the free CLI with <code>npx thumbgate init</code>. Upgrade when you need recall, dashboard, adapters, and exports.</p>
+      <p>Install the Claude Code plugin, then run <code>npx thumbgate init --agent claude</code>. Upgrade when you need recall, dashboard, and exports.</p>
       <p>Pro: __PRO_PRICE_LABEL__. <a href="/checkout/pro">Get Pro</a>.</p>
       <p><a href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md">Read verification evidence</a>.</p>
       <p>Shared hosting, SSO, compliance packaging, and organization-wide rollout are not generally available.</p>

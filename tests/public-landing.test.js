@@ -616,8 +616,10 @@ test('homepage keeps conversion noise off while offering both paid paths', () =>
 
 test('homepage names the installers that ship', () => {
   const installPage = fs.readFileSync(path.join(__dirname, '..', 'public', 'install.html'), 'utf8');
-  assert.match(landingPage, /aria-label="Install ThumbGate"/);
-  assert.match(landingPage, /title="npx thumbgate init --agent claude">Claude</);
+  assert.match(landingPage, /aria-label="Install ThumbGate for other agents"/);
+  assert.match(landingPage, /\/plugin marketplace add IgorGanapolsky\/ThumbGate/);
+  assert.match(landingPage, /\/plugin install thumbgate@thumbgate-marketplace/);
+  assert.match(landingPage, /npx thumbgate init --agent claude/);
   assert.match(landingPage, /href="\/install" title="[^"]*init --agent cursor[^"]*">Cursor</);
   assert.match(landingPage, /marketplace\.visualstudio\.com\/items\?itemName=igorganapolsky\.thumbgate/);
   assert.match(landingPage, /title="npx thumbgate init --agent codex">Codex</);
@@ -640,7 +642,8 @@ test('homepage stays human-scannable instead of becoming a product monorepo', ()
   const h2Count = (landingPage.match(/<h2\b/g) || []).length;
   const h3Count = (landingPage.match(/<h3\b/g) || []).length;
 
-  assert.ok(words.length <= 1200, `visible homepage is ${words.length} words`);
+  // 1450: the Claude-first rework adds the 3-step loop, the hooks comparison and Why Pro (16 Nov 2026).
+  assert.ok(words.length <= 1450, `visible homepage is ${words.length} words`);
   assert.ok(h2Count <= 8, `homepage has ${h2Count} H2 headings`);
   assert.ok(h3Count <= 10, `homepage has ${h3Count} H3 headings`);
   for (const jargon of ['Thompson Sampling', 'DPO', 'LanceDB', 'ContextFS', 'MemAlign', 'FTS5']) {
@@ -657,15 +660,24 @@ test('hero states the approved workflow scope with fit-first and free paths', ()
   );
   const lede = normalizeHtmlText((hero.match(/<p class="hero-lede">([\s\S]*?)<\/p>/) || [])[1]);
 
-  assert.match(landingPage, /One repeated agent mistake\. One configured gate/i);
-  assert.match(landingPage, /ThumbGate — One repeated agent mistake\. One configured gate/i);
-  assert.match(hero, /<h1>One repeated agent mistake\. One configured gate\.<\/h1>/i);
-  assert.match(hero, /Not a prompt · Not a postmortem/i);
-  assert.match(hero, /supported hook integrations/i);
-  assert.match(hero, /Get Pro/i);
-  assert.match(hero, /Illustrative example, not a recorded result/i);
-  assert.match(hero, /Illustrative tool-call decisions/i);
-  assert.match(hero, /advisory integrations do not guarantee execution blocking/i);
+  assert.match(landingPage, /Stop Claude Code from repeating the same mistake/i);
+  assert.match(landingPage, /ThumbGate — Stop Claude Code from repeating the same mistake/i);
+  assert.match(hero, /<h1>Stop Claude Code from repeating the same mistake\. Thumbs-down it once, and ThumbGate blocks it next time\.<\/h1>/i);
+  assert.match(hero, /PreToolUse gate for Claude Code/i);
+  assert.match(hero, /Safe YOLO mode for Claude Code/i);
+  assert.match(hero, /data-recorded-deny/);
+  assert.match(hero, /permissionDecision":"deny/);
+  assert.match(hero, /THUMBGATE_STRICT_ENFORCEMENT=1/);
+  assert.doesNotMatch(hero, /Illustrative example|0\.5ms|0\.4ms/);
+  assert.match(hero, /Set up the status line/i);
+  assert.match(hero, /data-statusline-capture/);
+  assert.match(hero, /0👍/);
+  assert.match(hero, /this project/);
+  assert.match(hero, /Latest success/);
+  assert.doesNotMatch(hero, /Cursor|Codex|Gemini|Cline|OpenCode|Amp\b/, 'other agents live under Also works with');
+  assert.match(hero, /Upgrade to Pro/i);
+  assert.match(hero, /Recorded PreToolUse decisions/i);
+  assert.match(landingPage, /advisory ones do not guarantee blocking/i, 'the advisory caveat lives in the FAQ');
   assert.match(hero, /npx thumbgate init/);
   assert.doesNotMatch(hero, /id="offers"|Start Pro/);
   assert.match(landingPage, /id="thumbgate-dashboard-command"/);
@@ -674,6 +686,11 @@ test('hero states the approved workflow scope with fit-first and free paths', ()
   assert.match(landingPage, /npx thumbgate dashboard --open/);
   // Static hook comparison table replaced by enforcement table
   assert.match(landingPage, /Enforcement by agent and mode/);
+  const alsoStart = landingPage.indexOf('id="also-works-with"');
+  assert.ok(alsoStart > landingPage.indexOf('id="faq"'), 'Also works with sits below the FAQ, near the footer');
+  assert.ok(landingPage.indexOf('Enforcement by agent and mode') > alsoStart, 'enforcement table moved into Also works with');
+  assert.match(landingPage.slice(alsoStart), /Claude Code, Codex, Gemini CLI<\/th><td>Blocks before tool runs<\/td><td>DENY<\/td><td>WARN<\/td><td>DENY/);
+  assert.match(landingPage.slice(alsoStart), /Amp<\/th><td>Feedback only/);
   assert.ok(lede.split(/\s+/).length <= 45, `hero lede is ${lede.split(/\s+/).length} words`);
 });
 
@@ -768,9 +785,8 @@ test('homepage features thumbs branding and self-improving diagrams above the fo
   assert.match(landingPage, /id="thumb-glyph"/);
   assert.match(landingPage, /class="hero-thumb-up"/);
   assert.match(landingPage, /id="hero-thumb-down"/);
-  assert.match(landingPage, /Illustrative example, not a recorded result/);
-  assert.match(landingPage, /Matching destructive actions warn by default/);
-  assert.match(landingPage, /deny only in strict mode/);
+  assert.match(landingPage, /strict mode, one env var/);
+  assert.match(landingPage, /warn and are logged/);
   assert.match(landingPage, /data-cta-placement="offers"/);
   assert.match(landingPage, /<section id="offers">\s*<div class="shell" id="workflow-sprint-intake">/);
   assert.match(landingPage, /data-plan-id="pro"/);
@@ -779,7 +795,6 @@ test('homepage features thumbs branding and self-improving diagrams above the fo
   assert.match(heroSvg, /\+1 ALLOW/);
   assert.match(heroSvg, /-1 DENY/);
   assert.doesNotMatch(heroSvg, /👍|👎/);
-  assert.match(landingPage, /\/assets\/diagrams\/hero-thumbs\.svg/);
   assert.match(landingPage, /\/assets\/diagrams\/before-after\.svg/);
   assert.match(landingPage, /\/assets\/diagrams\/loop\.svg/);
   assert.match(landingPage, /\/assets\/diagrams\/self-improving-thumbs-loop\.svg/);
@@ -790,9 +805,11 @@ test('homepage features thumbs branding and self-improving diagrams above the fo
   const heroStart = landingPage.indexOf('<!-- HERO -->');
   const howStart = landingPage.indexOf('id="how-it-works"');
   const heroBlock = landingPage.slice(heroStart, howStart);
-  assert.ok(heroBlock.includes('hero-thumbs.svg'), 'hero diagram must appear before how-it-works');
+  assert.ok(heroBlock.includes('data-statusline-capture'), 'status line capture must appear before how-it-works');
   assert.ok(heroBlock.includes('class="hero-thumbs"'), 'big thumbs must appear in hero');
-  assert.doesNotMatch(heroBlock, /👍|👎/, 'hero art uses vector thumbs, not stock emoji');
+  // The status line capture is real terminal output and legitimately contains the emoji; the art itself does not.
+  const heroArt = heroBlock.replace(/<figure class="hero-visual hero-statusline">[\s\S]*?<\/figure>/, '');
+  assert.doesNotMatch(heroArt, /👍|👎/, 'hero art uses vector thumbs, not stock emoji');
 });
 
 test('THUMBGATE_OWNER_EMAILS grants Enterprise tier on Google and Apple SSO while leaving other emails unchanged', async () => {

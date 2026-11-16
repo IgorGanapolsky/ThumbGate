@@ -875,10 +875,8 @@ test('OneShot pretool binds a flat approval to the action, not the wrapper', () 
   assert.equal(nested, null);
 });
 
-test('OneShot deny stays a deny under sidecar and the daily block cap', () => {
-  const { run, applyDailyBlockCap } = require('../scripts/gates-engine');
-  assert.equal(applyDailyBlockCap({ decision: 'deny', gate: 'oneshot-control', message: 'held' }), null);
-  assert.equal(applyDailyBlockCap({ decision: 'deny', gate: 'oneshot-goal-done', message: 'held' }), null);
+test('OneShot deny stays a deny under sidecar', () => {
+  const { run } = require('../scripts/gates-engine');
 
   const previousMode = process.env.THUMBGATE_GOVERNANCE_MODE;
   const previousStrict = process.env.THUMBGATE_STRICT_ENFORCEMENT;

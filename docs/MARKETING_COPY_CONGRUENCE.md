@@ -94,9 +94,9 @@ ThumbGate offers a free local CLI and self-serve Pro for recall, dashboard, adap
 - Anthropic Academy lessons: workflows are easier to evaluate and more reliable; agents are more flexible but harder to instrument, test, evaluate, and budget.
 
 ## Surface Rules
-- Root landing page stays vendor-neutral. Claude-first positioning belongs only on Claude-specific distribution pages, extension docs, and Anthropic-facing partner assets.
+- Root landing page leads with Claude Code (decided 16 Nov 2026): hero, install, pricing, FAQ and proof speak to Claude Code. Every other agent is named only in the short "Also works with" section near the footer, with the per-agent enforcement table unchanged.
 - Promote shipped surfaces explicitly: Claude Code, Cursor plugin, Codex, Gemini CLI, Amp, OpenCode, and any MCP-compatible agent.
 - Mention history-aware lesson distillation when the surface is describing vague thumbs feedback, linked follow-up notes, or rule proposals from conversation history.
 - Do not claim a standalone VS Code extension. Say VS Code works through the MCP-compatible agent running inside the editor.
 
-Canonical landing description: The firewall for AI agents. Free local capture and pre-action gates. Choose Pro for recall, dashboard, adapters, and exports.
+Canonical landing description: Thumbs-down Claude Code once and ThumbGate blocks it next time. Free local PreToolUse gates; Pro adds recall and every learned rule.

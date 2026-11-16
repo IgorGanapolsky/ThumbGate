@@ -8,7 +8,7 @@ test.describe('/ free and Pro conversion path', () => {
 
   test('renders self-serve Pro and preserves the free enforcement loop', async ({ page }) => {
     await page.goto('/');
-    await expect(page.locator('.hero h1')).toHaveText('One repeated agent mistake. One configured gate.');
+    await expect(page.locator('.hero h1')).toHaveText('Stop Claude Code from repeating the same mistake. Thumbs-down it once, and ThumbGate blocks it next time.');
     await expect(page.locator('[data-primary-checkout]')).toBeVisible();
     await expect(page.locator('[data-primary-checkout] .price')).toContainText('$' + (process.env.THUMBGATE_PRO_PRICE_DOLLARS || '19'));
     await expect(page.locator('.hero [data-cta-id="homepage_pro_checkout"]')).toHaveAttribute('href', '/checkout/pro');
