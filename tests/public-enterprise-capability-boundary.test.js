@@ -73,7 +73,7 @@ test('proposal-only expansion prices remain internal catalog truth', () => {
   assert.equal(pilot.priceCents, 1500000);
   assert.equal(enterpriseOps.priceCents, 1000000);
   assert.doesNotMatch(pricing, /\$3,000|\$15,000|\$10,000/);
-  assert.match(pricing, /Free local gates\. Optional Pro features\./i);
+  assert.match(pricing, /Free local gates, optional Pro\./i);
   assert.match(pricing, /href="\/checkout\/pro"/);
   assert.match(pricing, /__PRO_PRICE_DOLLARS__/);
   assert.doesNotMatch(pricing, /\$499|Setup Sprint/);

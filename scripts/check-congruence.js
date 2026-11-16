@@ -280,12 +280,12 @@ async function main() {
     'docs/COMMERCIAL_TRUTH.md must record the Enterprise tier'
   );
   check(
-    /free.*capture.*pre-action gates/i.test(githubAbout.metaDescription),
-    'config/github-about.json metaDescription must describe free capture and pre-action gates'
+    /free.*PreToolUse gates/i.test(githubAbout.metaDescription),
+    'config/github-about.json metaDescription must describe free local PreToolUse gates'
   );
   check(
-    /recall, dashboard, adapters, and exports/i.test(githubAbout.metaDescription),
-    'config/github-about.json metaDescription must describe the recall, dashboard, adapters, and exports features'
+    /Pro adds recall and every learned rule/i.test(githubAbout.metaDescription),
+    'config/github-about.json metaDescription must describe what Pro adds: recall and every learned rule'
   );
   check(
     /Pro/i.test(githubAbout.metaDescription),
