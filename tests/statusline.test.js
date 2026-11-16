@@ -273,6 +273,12 @@ test('statusline follows the persisted active project when Claude is running fro
     trend: 'stable',
     updated_at: String(Math.floor(Date.now() / 1000)),
   }));
+  // Thumbs come from the project's own human feedback, not the cache.
+  const humanRows = [
+    ...Array.from({ length: 7 }, (_, i) => ({ id: `up-${i}`, signal: 'positive' })),
+    ...Array.from({ length: 3 }, (_, i) => ({ id: `down-${i}`, signal: 'negative' })),
+  ].map((row) => JSON.stringify({ ...row, reviewOrigin: 'human', timestamp: '2026-04-08T10:00:00.000Z', context: 'person gave this' }));
+  fs.writeFileSync(path.join(feedbackDir, 'feedback-log.jsonl'), humanRows.join('\n') + '\n');
   writeActiveProjectState(projectDir, {
     home: homeDir,
     env: { ...process.env, HOME: homeDir },
@@ -291,8 +297,9 @@ test('statusline follows the persisted active project when Claude is running fro
       },
       timeout: STATUSLINE_PROCESS_TIMEOUT_MS,
     });
-    assert.ok(out.includes('7'), 'should show the active project thumbs up count');
-    assert.ok(out.includes('3'), 'should show the active project thumbs down count');
+    const plain = stripStatuslineFormatting(out);
+    assert.match(plain, /7\S* 3\S* this project/, 'should show the active project thumbs up and down, labelled');
+    assert.ok(/(^|\D)7\D/.test(plain) && /(^|\D)3\D/.test(plain), 'should show both counts as standalone numbers');
     assert.ok(out.includes(`ThumbGate v${PKG_VERSION}`), 'should show package version');
   } finally {
     fs.rmSync(tmpDir, { recursive: true, force: true });

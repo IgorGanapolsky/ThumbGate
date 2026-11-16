@@ -9,7 +9,6 @@ const path = require('node:path');
 
 const { isCountedHumanFeedback } = require('../scripts/human-feedback');
 const { buildLinkState } = require('../scripts/statusline-links');
-const { resolveLocalProject } = require('../scripts/project-identity');
 
 const SCRIPT = path.join(__dirname, '..', 'scripts', 'statusline-human-counts.js');
 
@@ -31,7 +30,13 @@ test('orchestrator with 1 human negative and 50 automated entries renders 0 up, 
   const home = fs.mkdtempSync(path.join(os.tmpdir(), 'tg-statusline-home-'));
   const project = path.join(home, 'orchestrator');
   fs.mkdirSync(project, { recursive: true });
-  const { projectKey } = resolveLocalProject(project);
+  const childEnv = { ...process.env, HOME: home, USERPROFILE: home, THUMBGATE_FEEDBACK_DIR: '', THUMBGATE_PROJECT_DIR: '' };
+  // The key must come from the same HOME the status line runs with: a local
+  // project key hashes a per-HOME machine identity.
+  const { projectKey } = JSON.parse(spawnSync(process.execPath, ['-e',
+    'console.log(JSON.stringify(require(process.argv[1]).resolveLocalProject(process.argv[2])))',
+    path.join(__dirname, '..', 'scripts', 'project-identity.js'), project,
+  ], { encoding: 'utf8', env: childEnv }).stdout);
   const otherKey = 'local_' + 'b'.repeat(64);
 
   const rows = [entry(projectKey, 0, { signal: 'negative', reviewOrigin: 'human', tags: ['statusline', 'quick-capture'] })];
@@ -49,7 +54,7 @@ test('orchestrator with 1 human negative and 50 automated entries renders 0 up, 
   const run = spawnSync(process.execPath, [SCRIPT], {
     cwd: project,
     encoding: 'utf8',
-    env: { ...process.env, HOME: home, USERPROFILE: home, THUMBGATE_FEEDBACK_DIR: '', THUMBGATE_PROJECT_DIR: '' },
+    env: childEnv,
   });
   assert.equal(run.status, 0, run.stderr);
   const out = JSON.parse(run.stdout);
