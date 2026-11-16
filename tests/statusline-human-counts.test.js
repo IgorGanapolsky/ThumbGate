@@ -66,6 +66,36 @@ test('orchestrator with 1 human negative and 50 automated entries renders 0 up, 
   fs.rmSync(home, { recursive: true, force: true });
 });
 
+test('MCP captures in the global store count for the project named in scope.projectId', () => {
+  const home = fs.mkdtempSync(path.join(os.tmpdir(), 'tg-statusline-mcp-'));
+  const project = path.join(home, 'orchestrator');
+  fs.mkdirSync(project, { recursive: true });
+  const childEnv = { PATH: process.env.PATH, HOME: home, USERPROFILE: home, TMPDIR: process.env.TMPDIR || os.tmpdir() };
+  const mcp = (id, projectId, extra = {}) => ({
+    id,
+    signal: 'negative',
+    reviewOrigin: 'human',
+    tags: [],
+    scope: { entityId: 'person', projectId, processId: 'agent', sessionId: `session_${id}` },
+    timestamp: new Date().toISOString(),
+    ...extra,
+  });
+  writeJsonl(path.join(home, '.thumbgate', 'feedback-log.jsonl'), [
+    mcp('fb_mcp_1', 'orchestrator'),
+    mcp('fb_mcp_2', 'orchestrator'),
+    mcp('fb_mcp_other_project', 'dayglass'),
+    mcp('fb_mcp_automated', 'orchestrator', { reviewOrigin: 'automated' }),
+    mcp('fb_mcp_history_sync', 'orchestrator', { tags: ['claude-history-sync'] }),
+  ]);
+
+  const run = spawnSync(process.execPath, [SCRIPT], { cwd: project, encoding: 'utf8', env: childEnv });
+  assert.equal(run.status, 0, run.stderr);
+  const out = JSON.parse(run.stdout);
+  assert.equal(out.down, 2, `stdout=${run.stdout} stderr=${run.stderr}`);
+  assert.equal(out.up, 0);
+  fs.rmSync(home, { recursive: true, force: true });
+});
+
 test('only deliberate human entries count', () => {
   assert.equal(isCountedHumanFeedback({ reviewOrigin: 'human', tags: ['statusline', 'quick-capture'] }), true);
   assert.equal(isCountedHumanFeedback({ reviewOrigin: 'human', tags: [] }), true);
