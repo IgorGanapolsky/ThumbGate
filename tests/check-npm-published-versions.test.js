@@ -104,3 +104,57 @@ test('captures hyphens inside prerelease identifiers', () => {
   assert.deepEqual(collectPins(dir, ['README.md']).map((p) => p.version), ['1.41.0-beta-1', '2.0.0-rc.1-x.2']);
   assert.equal(runScript(dir, publishedFile).code, 0);
 });
+
+test('compareSemver follows semver precedence, including prereleases', () => {
+  const { compareSemver } = require(SCRIPT);
+  const ordered = ['1.0.0-alpha', '1.0.0-alpha.1', '1.0.0-alpha.beta', '1.0.0-beta', '1.0.0-beta.2', '1.0.0-beta.11', '1.0.0-rc.1', '1.0.0', '1.0.1', '1.1.0', '2.0.0'];
+  for (let i = 0; i < ordered.length - 1; i++) {
+    assert.equal(compareSemver(ordered[i], ordered[i + 1]), -1, `${ordered[i]} < ${ordered[i + 1]}`);
+    assert.equal(compareSemver(ordered[i + 1], ordered[i]), 1, `${ordered[i + 1]} > ${ordered[i]}`);
+  }
+  assert.equal(compareSemver('1.0.0-rc.1', '1.0.0-rc.1'), 0);
+  assert.equal(compareSemver('1.0.0', '1.0.0'), 0);
+});
+
+test('run in-process: --flag=value forms, binary files skipped, output goes to io', () => {
+  const { run } = require(SCRIPT);
+  const { dir, publishedFile } = makeFixture({
+    'README.md': 'npx thumbgate@1.0.0\n',
+    'public/logo.svgz': Buffer.from([0x00, 0x74, 0x68]).toString() + 'thumbgate@9.9.9',
+  }, ['1.0.0']);
+  const logs = [];
+  const errors = [];
+  const io = { log: (m) => logs.push(m), error: (m) => errors.push(m) };
+  assert.equal(run([`--root=${dir}`, `--published-file=${publishedFile}`], io), 0);
+  assert.match(logs.join('\n'), /OK: 1 pinned/);
+  assert.deepEqual(errors, []);
+
+  fs.writeFileSync(path.join(dir, 'README.md'), 'npx thumbgate@1.0.0\nnpx thumbgate@7.7.7\n');
+  assert.equal(run(['--root', dir, '--published-file', publishedFile], io), 1);
+  assert.match(errors.join('\n'), /README\.md:2 thumbgate@7\.7\.7/);
+});
+
+test('rejects unknown arguments and malformed published lists', () => {
+  const { parseArgs, loadPublishedVersions } = require(SCRIPT);
+  assert.throws(() => parseArgs(['--nope']), /unknown argument: --nope/);
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'npm-versions-bad-'));
+  const empty = path.join(dir, 'empty.json');
+  fs.writeFileSync(empty, '[]');
+  assert.throws(() => loadPublishedVersions({ publishedFile: empty }), /empty or malformed/);
+  const single = path.join(dir, 'single.json');
+  fs.writeFileSync(single, '"1.2.3"');
+  assert.deepEqual(loadPublishedVersions({ publishedFile: single }), ['1.2.3']);
+});
+
+test('CLI exits 2 with a message on bad input', () => {
+  const { dir, publishedFile } = makeFixture({ 'README.md': 'x\n' }, ['1.0.0']);
+  const res = runScript(dir, publishedFile, ['--nope']);
+  assert.equal(res.code, 2);
+  assert.match(res.out, /unknown argument: --nope/);
+});
+
+test('git and npm resolve to absolute paths, not a PATH lookup', () => {
+  const { resolveGitBinary, resolveNpmBinary } = require(SCRIPT);
+  assert.ok(path.isAbsolute(resolveGitBinary()));
+  assert.ok(path.isAbsolute(resolveNpmBinary()));
+});

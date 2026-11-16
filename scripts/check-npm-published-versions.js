@@ -181,4 +181,4 @@ if (path.resolve(process.argv[1] || '') === path.resolve(__filename)) {
   }
 }
 
-module.exports = { run, collectPins, listTrackedFiles, checkPins, compareSemver, PIN_RE };
+module.exports = { run, collectPins, listTrackedFiles, checkPins, compareSemver, loadPublishedVersions, parseArgs, resolveGitBinary, resolveNpmBinary, PIN_RE };
