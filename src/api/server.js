@@ -4762,11 +4762,10 @@ function renderRobotsTxt(runtimeConfig) {
 function renderSitemapXml(runtimeConfig) {
   const entries = [
     { path: '/', changefreq: 'weekly', priority: '1.0' },
-    { path: '/diagnostic', changefreq: 'weekly', priority: '0.9' },
     { path: '/founders', changefreq: 'weekly', priority: '0.95' },
+    { path: '/pricing', changefreq: 'weekly', priority: '0.9' },
     { path: '/operator-framework', changefreq: 'weekly', priority: '0.9' },
     { path: '/peter', changefreq: 'weekly', priority: '0.9' },
-    { path: '/workflow-hardening-sprint', changefreq: 'weekly', priority: '0.9' },
     { path: '/install', changefreq: 'weekly', priority: '0.9' },
     { path: '/terms', changefreq: 'monthly', priority: '0.7' },
     { path: '/privacy', changefreq: 'monthly', priority: '0.7' },
@@ -7172,6 +7171,25 @@ function createUnscopedApiServer({ ownerAdminDependencies = {} } = {}) {
   return http.createServer(async (req, res) => {
     const parsed = new URL(req.url, 'http://localhost');
     const pathname = parsed.pathname;
+    const retiredOfferPages = new Set([
+      '/diagnostic', '/workflow-diagnostic', '/sprint', '/workflow-hardening',
+      '/workflow-hardening-sprint', '/workflow-sprint',
+    ]);
+    const retiredPath = pathname.replace(/\/$/, '').replace(/\.html$/, '');
+    if (retiredOfferPages.has(retiredPath)
+      || /^\/go\/(?:diagnostic(?:-499|-direct|-pay)?|sprint|operator-diagnostic)$/.test(retiredPath)
+      || /^\/checkout\/(?:sprint|diagnostic|workflow-sprint)$/.test(retiredPath)) {
+      res.writeHead(410, {
+        'Content-Type': 'application/json; charset=utf-8',
+        'Cache-Control': 'no-store',
+        Link: '</pricing>; rel="alternate"',
+      });
+      res.end(req.method === 'HEAD' ? undefined : JSON.stringify({
+        error: 'This offer has been retired.', pricingUrl: '/pricing',
+      }));
+      return;
+    }
+
     const privatePath = ownerAdmin.adminPath(pathname);
     const category = privatePath.matched ? 'admin' : pathname === '/v1/telemetry/ping' ? 'telemetry'
       : pathname === '/health' ? 'health' : pathname.startsWith('/v1/') ? 'api' : 'page';
@@ -8453,7 +8471,7 @@ async function addContext(){
 
     if (isGetLikeRequest && (pathname === '/services' || pathname === '/services.html')) {
       res.writeHead(302, {
-        Location: '/#workflow-sprint-intake',
+        Location: '/pricing',
         'Cache-Control': 'no-store',
       });
       res.end();

@@ -579,41 +579,23 @@ test('/partner-intake escapes server-rendered attribution values', async () => {
   assert.match(html, /value="aiventyx&quot;&gt;&lt;script&gt;window\.partnerPwned=true&lt;\/script&gt;"/);
 });
 
-test('/diagnostic serves the managed workflow gate checkout and fit page', async () => {
-  const res = await fetch(apiUrl('/diagnostic?utm_source=reddit&utm_campaign=workflow_diagnostic'), { redirect: 'manual' });
-  assert.equal(res.status, 200);
-  assert.match(res.headers.get('content-type') || '', /text\/html/);
-  const html = await res.text();
-  assert.match(html, /Setup Sprint/);
-  assert.match(html, /Submit for fit check/);
-  assert.match(html, /action="\/v1\/intake\/workflow-sprint"/);
-  assert.match(html, /name="planId" value="diagnostic"/);
-  assert.match(html, /name="ctaId" value="diagnostic_page_intake"/);
-  assert.match(html, /workflow_sprint_intake_submit_attempted/);
-  assert.match(html, /Book the \$499 setup/);
-  assert.match(html, /Exactly what the \$499 Setup Sprint includes/);
-  assert.match(html, /one 60-minute working review/i);
-  assert.match(html, /one configured local gate and regression test/i);
-  assert.match(html, /rollout and rollback proof within two business days/i);
-  assert.match(html, /order is refunded instead of being silently converted/i);
-  assert.doesNotMatch(html, /\$1500|public Setup Sprint/i);
-  assert.doesNotMatch(html, /__WORKFLOW_SPRINT_PRICE_DOLLARS__|__SPRINT_DIAGNOSTIC_PRICE_DOLLARS__/);
-  assert.match(html, /action="\/go\/diagnostic-pay" method="POST"/);
-  assert.match(html, /name="customer_email"[^>]*required/);
-  assert.match(html, /No Stripe session is created until you submit this form/);
-  assert.match(html, /data-cta-id="diagnostic_hero_paid"/);
-  assert.doesNotMatch(html, /No cold payment link/);
-});
-
-test('/workflow-hardening-sprint and diagnostic aliases serve the focused diagnostic page', async () => {
-  for (const route of ['/workflow-diagnostic', '/sprint', '/workflow-hardening-sprint']) {
-    const res = await fetch(apiUrl(route), { redirect: 'manual' });
-    assert.equal(res.status, 200, `${route} should render`);
-    assert.match(res.headers.get('content-type') || '', /text\/html/);
-    const html = await res.text();
-    assert.match(html, /Setup Sprint/);
-    assert.match(html, /<link rel="canonical" href="https:\/\/app\.example\.com\/diagnostic"/);
+test('retired service pages return 410 across methods and aliases without capturing a lead', async () => {
+  const leadPath = path.join(tmpFeedbackDir, 'workflow-sprint-leads.jsonl');
+  const beforeLeads = fs.existsSync(leadPath) ? fs.readFileSync(leadPath, 'utf8') : '';
+  for (const route of ['/diagnostic', '/workflow-diagnostic', '/sprint', '/workflow-hardening', '/workflow-hardening-sprint', '/workflow-sprint']) {
+    for (const suffix of ['', '/', '.html', '.html/']) {
+      for (const method of ['GET', 'HEAD', 'POST', 'OPTIONS']) {
+        const res = await fetch(apiUrl(`${route}${suffix}?utm_source=retirement_test`), { method, redirect: 'manual' });
+        assert.equal(res.status, 410, `${method} ${route}${suffix}`);
+        assert.equal(res.headers.get('location'), null);
+        assert.equal(res.headers.get('cache-control'), 'no-store');
+        assert.equal(res.headers.get('link'), '</pricing>; rel="alternate"');
+        if (method === 'HEAD') assert.equal(await res.text(), '');
+        else assert.deepEqual(await res.json(), { error: 'This offer has been retired.', pricingUrl: '/pricing' });
+      }
+    }
   }
+  assert.equal(fs.existsSync(leadPath) ? fs.readFileSync(leadPath, 'utf8') : '', beforeLeads);
 });
 
 test('startServer accepts an explicit bind host', async () => {
@@ -998,110 +980,49 @@ test('/go/pro falls back to default UTM attribution when no params are supplied'
   assert.equal(url.searchParams.get('plan_id'), 'pro');
 });
 
-test('/go/diagnostic opens the diagnostic confirmation page with attribution preserved', async () => {
-  const res = await fetch(apiUrl('/go/diagnostic?utm_source=audit&utm_medium=codex&offer_code=VERIFY'), { redirect: 'manual' });
-  assert.equal(res.status, 302);
-  assert.equal(res.headers.get('x-thumbgate-link-slug'), 'diagnostic');
-  assert.equal(res.headers.get('cache-control'), 'no-store');
-  assert.equal(res.headers.get('x-robots-tag'), 'noindex,nofollow');
-
-  const url = new URL(res.headers.get('location'));
-  assert.equal(url.origin + url.pathname, 'https://app.example.com/diagnostic');
-  assert.equal(url.searchParams.get('utm_source'), 'audit');
-  assert.equal(url.searchParams.get('utm_medium'), 'codex');
-  assert.equal(url.searchParams.get('utm_campaign'), 'sprint_diagnostic');
-  assert.equal(url.searchParams.get('plan_id'), 'sprint_diagnostic');
-  assert.equal(url.searchParams.get('offer_code'), 'VERIFY');
-  assert.equal(url.searchParams.get('cta_id'), 'go_diagnostic');
-  assert.equal(url.searchParams.get('landing_path'), '/go/diagnostic');
-  assert.equal(url.searchParams.get('client_reference_id'), null);
-});
-
-test('/go/diagnostic-pay requires POST plus a valid buyer email before Stripe', async () => {
-  const getRes = await fetch(apiUrl('/go/diagnostic-pay'), { redirect: 'manual' });
-  assert.equal(getRes.status, 405);
-
-  const missingEmail = await fetch(apiUrl('/go/diagnostic-pay'), {
-    method: 'POST',
-    redirect: 'manual',
-    headers: { 'content-type': 'application/x-www-form-urlencoded' },
-    body: new URLSearchParams({ utm_source: 'audit' }),
-  });
-  assert.equal(missingEmail.status, 400);
-
-  const res = await fetch(apiUrl('/go/diagnostic-pay'), {
-    method: 'POST',
-    redirect: 'manual',
-    headers: { 'content-type': 'application/x-www-form-urlencoded' },
-    body: new URLSearchParams({
-      customer_email: 'buyer@example.com',
-      utm_source: 'audit',
-      utm_medium: 'codex',
-      utm_campaign: 'value_packaging_v1',
-      campaign_variant: 'regulated_team',
-      offer_code: 'VERIFY',
-    }),
-  });
-  assert.equal(res.status, 303);
-  assert.equal(res.headers.get('x-thumbgate-link-slug'), 'diagnostic-pay');
-  const url = new URL(res.headers.get('location'));
-  assert.equal(url.origin + url.pathname, 'https://buy.stripe.com/diagnostic-test');
-  assert.equal(url.searchParams.get('prefilled_email'), 'buyer@example.com');
-  assert.equal(url.searchParams.get('customer_email'), null);
-  assert.equal(url.searchParams.get('utm_source'), 'audit');
-  assert.equal(url.searchParams.get('utm_medium'), 'codex');
-  assert.equal(url.searchParams.get('utm_campaign'), 'value_packaging_v1');
-  assert.equal(url.searchParams.get('campaign_variant'), 'regulated_team');
-  assert.equal(url.searchParams.get('offer_code'), 'VERIFY');
-  assert.equal(url.searchParams.get('cta_id'), 'go_diagnostic_pay');
-  assert.equal(url.searchParams.get('landing_path'), '/go/diagnostic-pay');
-  const reference = parseCheckoutReference(url.searchParams.get('client_reference_id'));
-  assert.equal(reference.source, 'audit');
-  assert.equal(reference.planId, 'sprint_diagnostic');
-  assert.ok(reference.acquisitionId, 'carries the acquisition id into Stripe');
-
-  const telemetryEvents = readJsonl(path.join(tmpFeedbackDir, 'telemetry-pings.jsonl'));
-  const confirmed = telemetryEvents.find((entry) => (
-    entry.eventType === 'diagnostic_checkout_confirmed'
-    && entry.ctaId === 'go_diagnostic_pay'
-    && entry.source === 'audit'
-    && entry.utmMedium === 'codex'
-    && entry.utmCampaign === 'value_packaging_v1'
-  ));
-  assert.ok(confirmed, 'records the buyer-confirmed Payment Link redirect');
-  assert.equal(confirmed.planId, 'sprint_diagnostic');
-  assert.equal(confirmed.linkSlug, 'diagnostic-pay');
-  assert.equal(confirmed.clientType, 'web');
-  assert.equal(confirmed.segment, 'regulated_team');
-  assert.equal(confirmed.experimentId, 'value_packaging_v1');
-  assert.equal(confirmed.customerEmail, undefined, 'telemetry must not retain the receipt email');
-});
-
-test('/go/sprint opens the scoped sprint path without exposing a provider checkout', async () => {
-  const res = await fetch(apiUrl('/go/sprint'), { redirect: 'manual' });
-  assert.equal(res.status, 302);
-  assert.equal(res.headers.get('x-thumbgate-link-slug'), 'sprint');
-
-  const url = new URL(res.headers.get('location'));
-  assert.equal(url.origin + url.pathname, 'https://app.example.com/diagnostic');
-  assert.equal(url.searchParams.get('utm_source'), 'website');
-  assert.equal(url.searchParams.get('utm_medium'), 'link_router');
-  assert.equal(url.searchParams.get('utm_campaign'), 'workflow_sprint');
-  assert.equal(url.searchParams.get('plan_id'), 'workflow_sprint');
-  assert.equal(url.searchParams.get('cta_id'), 'go_sprint');
-  assert.equal(url.searchParams.get('landing_path'), '/go/sprint');
-  assert.equal(url.searchParams.get('client_reference_id'), null);
-});
-
-test('/go/diagnostic-499 and /go/diagnostic-direct route README and newsletter buyers to /diagnostic without 404', async () => {
-  for (const slug of ['diagnostic-499', 'diagnostic-direct']) {
-    const res = await fetch(apiUrl(`/go/${slug}?utm_source=github&utm_medium=readme`), { redirect: 'manual' });
+test('/services redirects to current pricing without offering a retired service', async () => {
+  for (const route of ['/services', '/services.html']) {
+    const res = await fetch(apiUrl(route), { redirect: 'manual' });
     assert.equal(res.status, 302);
-    const url = new URL(res.headers.get('location'));
-    assert.equal(url.pathname, '/diagnostic');
-    assert.equal(url.searchParams.get('plan_id'), 'sprint_diagnostic');
-    assert.equal(url.searchParams.get('utm_source'), 'github');
-    assert.equal(url.searchParams.get('landing_path'), `/go/${slug}`);
+    assert.equal(res.headers.get('location'), '/pricing');
+    assert.equal(res.headers.get('cache-control'), 'no-store');
+  }
+});
+
+test('retired service checkout routes fail closed before billing or intake dispatch', async () => {
+  const leadPath = path.join(tmpFeedbackDir, 'workflow-sprint-leads.jsonl');
+  const beforeLeads = fs.existsSync(leadPath) ? fs.readFileSync(leadPath, 'utf8') : '';
+  const originalFetch = global.fetch;
+  const outbound = [];
+  global.fetch = async (input, options) => {
+    const url = String(input);
+    if (!url.startsWith(apiUrl('/'))) {
+      outbound.push(url);
+      throw new Error('Retired checkout must not call a provider');
+    }
+    return originalFetch(input, options);
+  };
+  try {
+    for (const route of ['/go/diagnostic', '/go/diagnostic-pay', '/go/diagnostic-499', '/go/diagnostic-direct', '/go/sprint', '/go/operator-diagnostic', '/checkout/diagnostic', '/checkout/sprint', '/checkout/workflow-sprint']) {
+      for (const method of ['GET', 'HEAD', 'POST', 'OPTIONS']) {
+        const res = await fetch(apiUrl(`${route}?utm_source=retirement_test`), {
+          method, redirect: 'manual',
+          ...(method === 'POST' ? { headers: { 'content-type': 'application/x-www-form-urlencoded' }, body: new URLSearchParams({ customer_email: 'buyer@example.com' }) } : {}),
+        });
+        assert.equal(res.status, 410, `${method} ${route}`);
+        assert.equal(res.headers.get('location'), null);
+        assert.equal(res.headers.get('cache-control'), 'no-store');
+        assert.equal(res.headers.get('link'), '</pricing>; rel="alternate"');
+        const body = await res.text();
+        if (method === 'HEAD') assert.equal(body, '');
+        else assert.equal(JSON.parse(body).pricingUrl, '/pricing');
+        assert.doesNotMatch(body, /stripe\.com|buyer@example\.com/);
+      }
+    }
+    assert.deepEqual(outbound, []);
+    assert.equal(fs.existsSync(leadPath) ? fs.readFileSync(leadPath, 'utf8') : '', beforeLeads);
+  } finally {
+    global.fetch = originalFetch;
   }
 });
 
@@ -1964,6 +1885,8 @@ test('robots and sitemap endpoints publish crawl metadata for the canonical app 
   assert.match(sitemapBody, /<loc>https:\/\/app\.example\.com\/guides\/pre-action-checks<\/loc>/);
   assert.match(sitemapBody, /<loc>https:\/\/app\.example\.com\/guides\/claude-code-feedback<\/loc>/);
   assert.match(sitemapBody, /<loc>https:\/\/app\.example\.com\/guides\/autoresearch-agent-safety<\/loc>/);
+  assert.match(sitemapBody, /<loc>https:\/\/app\.example\.com\/pricing<\/loc>/);
+  assert.doesNotMatch(sitemapBody, /<loc>[^<]*\/(?:diagnostic|workflow-hardening-sprint)<\/loc>/);
   assert.match(sitemapBody, /<changefreq>weekly<\/changefreq>/);
   assert.match(sitemapBody, /<priority>0\.9<\/priority>/);
   assert.match(sitemapBody, /<priority>0\.8<\/priority>/);

@@ -82,12 +82,10 @@ test('GET /sitemap.xml includes /founders', async () => {
   assert.match(body, /\/founders<\/loc>/);
 });
 
-test('GET /diagnostic still checkout-ready after Oceans blocks', async () => {
-  const res = await fetch(`${origin}/diagnostic`);
-  assert.equal(res.status, 200);
-  const html = await res.text();
-  assert.match(html, /action="\/go\/diagnostic-pay" method="POST"/);
-  assert.match(html, /data-oceans-pain/);
-  assert.match(html, /data-oceans-process/);
-  assert.match(html, /Book the \$499 setup/);
+test('GET /diagnostic is retired even while other founder content remains available', async () => {
+  const res = await fetch(`${origin}/diagnostic`, { redirect: 'manual' });
+  assert.equal(res.status, 410);
+  assert.equal(res.headers.get('location'), null);
+  assert.equal(res.headers.get('cache-control'), 'no-store');
+  assert.equal((await res.json()).pricingUrl, '/pricing');
 });

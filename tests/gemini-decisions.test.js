@@ -155,8 +155,11 @@ describe('Gemini Decisions API (gemini-decision-1) engine & server integration',
       reasonCode: 'need_team_plan',
       apiKey: '',
     });
-    assert.equal(fallbackTeam.offerId, 'diagnostic_499');
-    assert.match(fallbackTeam.checkoutPath, /^\/diagnostic\?/);
+    assert.equal(fallbackTeam.offerId, 'compare_plans');
+    assert.equal(fallbackTeam.checkoutPath, '/pricing');
+    assert.equal(fallbackTeam.billingType, 'none');
+    assert.match(fallbackTeam.rationale, /not available through self-serve checkout/);
+    assert.ok(!Object.hasOwn(STRIPE_OFFER_CATALOG, 'diagnostic_499'));
 
     const geminiBundle = await recommendCheckoutOfferDecision({
       reasonCode: 'price_unclear',
@@ -173,7 +176,7 @@ describe('Gemini Decisions API (gemini-decision-1) engine & server integration',
                 type: 'choice',
                 choice: 'bundle_49',
                 confidence: 0.93,
-                probabilities: { bundle_49: 0.93, playbook_999: 0.04, pro_19: 0.02, diagnostic_499: 0.01 },
+                probabilities: { bundle_49: 0.93, playbook_999: 0.04, pro_19: 0.02, compare_plans: 0.01 },
               },
               buyer_intent: { type: 'score', score: 2.4, confidence: 0.82 },
             },
@@ -477,7 +480,7 @@ describe('Gemini Decisions API (gemini-decision-1) engine & server integration',
               answers: {
                 subscription_aversion: { type: 'noul', noul: 0.8 },
                 recommended_offer: { type: 'choice', choice: 'playbook_999', confidence: 0.91 },
-                recommended_offer__rev: { type: 'choice', choice: 'diagnostic_499', confidence: 0.89 },
+                recommended_offer__rev: { type: 'choice', choice: 'compare_plans', confidence: 0.89 },
                 buyer_intent: { type: 'score', score: 2.8, confidence: 0.9 },
               },
               usage: { input_tokens: 220, output_tokens: 0 },
@@ -486,7 +489,7 @@ describe('Gemini Decisions API (gemini-decision-1) engine & server integration',
         }),
       });
       assert.equal(flippedOffer.orderFlipAbstained, true);
-      assert.equal(flippedOffer.offerId, 'diagnostic_499');
+      assert.equal(flippedOffer.offerId, 'compare_plans');
       assert.equal(flippedOffer.source, 'deterministic_fallback');
     });
 
