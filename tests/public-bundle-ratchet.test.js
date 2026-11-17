@@ -279,7 +279,9 @@ const path = require('node:path');
 // (npx thumbgate gate-check threw Cannot find module); see tests/packed-cli-require-closure.test.js.
 // 688 -> 690 (2026-11-16): statusline-human-counts.js and human-feedback.js. statusline.sh runs the first to count
 // human, per-project thumbs; the second filters out automated entries. Both ship so the installed status line works.
-const BASELINE_FILE_COUNT = 690;
+// 690 -> 696 (2026-11-17): shared MCP daemon. bin/cli.js `serve` now loads scripts/mcp-shim.js, mcp-daemon.js,
+// mcp-runtime.js, mcp-framing.js, mcp-session-context.js and mcp-standalone.js, so all six ship (+6).
+const BASELINE_FILE_COUNT = 696;
 function readBundleSnapshot() {
   const repoRoot = path.resolve(__dirname, '..');
   const stdout = execSync('npm pack --dry-run --json', {

@@ -3,6 +3,20 @@
 
 'use strict';
 
+// `serve`/`mcp` start before the rest of this file loads: the shim must stay a
+// few MB, and the shared daemon loads the server itself. Set
+// THUMBGATE_SERVE_MODE=standalone for the old one-process-per-client server.
+const SERVE_ARGS = process.argv.slice(2);
+if ((SERVE_ARGS[0] === 'serve' || SERVE_ARGS[0] === 'mcp')
+  && !SERVE_ARGS.includes('--help') && !SERVE_ARGS.includes('-h')) {
+  if (SERVE_ARGS.includes('--daemon')) {
+    require('../scripts/mcp-daemon').run().then((started) => { if (!started) process.exit(0); });
+  } else {
+    require('../scripts/mcp-shim').main();
+  }
+  return;
+}
+
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
@@ -3455,19 +3469,7 @@ function cleanup() {
 }
 
 function serve() {
-  try {
-    const { repairCodexHooks } = require(path.join(PKG_ROOT, 'scripts', 'codex-self-heal'));
-    repairCodexHooks();
-  } catch (_) { /* self-heal is best-effort */ }
-  // Start MCP server over stdio
-  const mcpServer = path.join(PKG_ROOT, 'adapters', 'mcp', 'server-stdio.js');
-  const { startStdioServer } = require(mcpServer);
-  startStdioServer();
-  // Start watcher as a background daemon alongside MCP server
-  try {
-    const { watch } = require(path.join(PKG_ROOT, 'scripts', 'jsonl-watcher'));
-    watch();
-  } catch (_) { /* watcher is non-critical */ }
+  require(path.join(PKG_ROOT, 'scripts', 'mcp-standalone')).runStandalone();
 }
 
 function install() {
