@@ -2034,14 +2034,17 @@ test('journey cookies are marked secure on forwarded HTTPS requests', async () =
 });
 
 test('success page serves hosted onboarding shell and records first-party telemetry', async () => {
-  // session_id uses the Stripe `cs_test_` prefix so the post-2026-05-19
-  // /success noise gate counts this as a verified conversion. A
-  // synthetic placeholder like `test_checkout_success` would emit
-  // `checkout_success_page_view_unverified` and not satisfy the
-  // canonical-event assertion below. The cs_test_ prefix is exactly
-  // what Stripe appends on its post-payment redirect in test mode, so
-  // this fixture is also closer to production behavior.
-  const res = await fetch(apiUrl('/success?session_id=cs_test_checkout_success&trace_id=trace_success_page&acquisition_id=acq_success_page&visitor_id=visitor_success_page&visitor_session_id=session_success_page&install_id=inst_success_page&utm_source=reddit&utm_medium=organic_social&utm_campaign=success_launch&community=ClaudeCode&cta_id=pricing_pro&cta_placement=pricing&plan_id=pro&landing_path=%2Fpricing&referrer_host=www.reddit.com'));
+  // /success counts a page view only when the session_id belongs to a session
+  // Stripe reports as paid. Local mode reads the same shape from the local
+  // checkout session store, so seed one paid session for this visit.
+  const sessionsPath = process.env._TEST_LOCAL_CHECKOUT_SESSIONS_PATH;
+  const seededSessions = fs.existsSync(sessionsPath) ? JSON.parse(fs.readFileSync(sessionsPath, 'utf8')) : { sessions: {} };
+  seededSessions.sessions = {
+    ...(seededSessions.sessions || {}),
+    cs_test_checkoutsuccess1234: { id: 'cs_test_checkoutsuccess1234', payment_status: 'paid', status: 'complete', mode: 'payment' },
+  };
+  fs.writeFileSync(sessionsPath, JSON.stringify(seededSessions));
+  const res = await fetch(apiUrl('/success?session_id=cs_test_checkoutsuccess1234&trace_id=trace_success_page&acquisition_id=acq_success_page&visitor_id=visitor_success_page&visitor_session_id=session_success_page&install_id=inst_success_page&utm_source=reddit&utm_medium=organic_social&utm_campaign=success_launch&community=ClaudeCode&cta_id=pricing_pro&cta_placement=pricing&plan_id=pro&landing_path=%2Fpricing&referrer_host=www.reddit.com'));
   assert.equal(res.status, 200);
   assert.match(String(res.headers.get('content-type')), /text\/html/);
 
@@ -2077,6 +2080,24 @@ test('success page serves hosted onboarding shell and records first-party teleme
   assert.equal(successPageView.sessionId, 'session_success_page');
   assert.equal(successPageView.ctaId, 'pricing_pro');
   assert.equal(successPageView.landingPath, '/pricing');
+});
+
+test('success page does not count a bare or unpaid visit as a success', async () => {
+  const bare = await fetch(apiUrl('/success?trace_id=trace_success_bare'));
+  assert.equal(bare.status, 200);
+  const unknown = await fetch(apiUrl('/success?session_id=cs_live_notarealsession1&trace_id=trace_success_unknown'));
+  assert.equal(unknown.status, 200);
+
+  const telemetryEvents = readJsonl(path.join(tmpFeedbackDir, 'telemetry-pings.jsonl'));
+  for (const traceId of ['trace_success_bare', 'trace_success_unknown']) {
+    assert.ok(!telemetryEvents.some((entry) => entry.eventType === 'checkout_success_page_view' && entry.traceId === traceId), `${traceId} must not count as a success`);
+  }
+  const bareEvent = telemetryEvents.find((entry) => entry.eventType === 'checkout_success_unverified' && entry.traceId === 'trace_success_bare');
+  assert.ok(bareEvent);
+  assert.equal(bareEvent.reasonCode, 'missing_session_id');
+  const unknownEvent = telemetryEvents.find((entry) => entry.eventType === 'checkout_success_unverified' && entry.traceId === 'trace_success_unknown');
+  assert.ok(unknownEvent);
+  assert.equal(unknownEvent.reasonCode, 'unknown_session');
 });
 
 test('dashboard auto-bootstraps local Pro auth only for localhost requests', async () => {

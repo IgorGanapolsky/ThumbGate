@@ -2412,6 +2412,144 @@ async function listStripeReconciledRevenueEvents({ signal, deadline = Infinity }
   return result(reconciled, diagnostics.complete ? 'ok' : 'partial');
 }
 
+// How far a Stripe Checkout session got. A raw session (nobody typed an email,
+// no payment attempt) is what crawlers and probes create, so it is not a
+// qualified checkout start.
+function classifyCheckoutSessionDepth(session) {
+  if (!session || typeof session !== 'object') return 'raw';
+  if (session.payment_status === 'paid' || session.status === 'complete') return 'paid';
+  if (normalizeText(session.payment_intent) || normalizeText(session.setup_intent)) return 'payment_attempt';
+  const email = normalizeText(session.customer_details?.email) || normalizeText(session.customer_email);
+  if (email && !isSyntheticOrOwnerCheckoutEmail(email)) return 'identified';
+  return 'raw';
+}
+
+const CHECKOUT_DEPTH_CACHE_MS = 5 * 60 * 1000;
+const CHECKOUT_DEPTH_PARTIAL_CACHE_MS = 60 * 1000;
+const CHECKOUT_DEPTH_LOOKBACK_SECONDS = 35 * 24 * 60 * 60;
+let checkoutDepthCache = null;
+
+async function listStripeCheckoutSessionDepth({
+  signal, deadline = Date.now() + 6000, stripeClient = null, maxPages = 12, nowMs = Date.now(),
+} = {}) {
+  const empty = (status) => ({ status, complete: false, byId: {} });
+  if (!stripeClient && !CONFIG.STRIPE_SECRET_KEY) return empty('unconfigured');
+  const sinceEpochSeconds = Math.floor(nowMs / 1000) - CHECKOUT_DEPTH_LOOKBACK_SECONDS;
+  if (!stripeClient && checkoutDepthCache && nowMs < checkoutDepthCache.expiresAt) return checkoutDepthCache.value;
+  let stripe = stripeClient;
+  if (!stripe) {
+    try {
+      stripe = getStripeClient();
+    } catch {
+      return empty('unavailable');
+    }
+  }
+  const byId = {};
+  let complete = true;
+  let startingAfter = null;
+  try {
+    for (let page = 0; page < maxPages; page += 1) {
+      if (signal?.aborted || Date.now() >= deadline) { complete = false; break; }
+      const timeout = Math.max(1, Math.min(8000, deadline - Date.now()));
+      const params = { limit: 100, created: { gte: sinceEpochSeconds } };
+      if (startingAfter) params.starting_after = startingAfter;
+      const listed = await withTimeout(withStripeReadSlot(
+        () => stripe.checkout.sessions.list(params, { timeout, maxNetworkRetries: 0 }),
+        { signal }
+      ), timeout);
+      const rows = Array.isArray(listed?.data) ? listed.data : [];
+      for (const row of rows) {
+        if (row?.id) byId[row.id] = classifyCheckoutSessionDepth(row);
+      }
+      if (!listed?.has_more || rows.length === 0) break;
+      startingAfter = rows[rows.length - 1].id;
+      if (page === maxPages - 1) complete = false;
+    }
+  } catch {
+    complete = false;
+  }
+  const value = { status: complete ? 'ok' : 'partial', complete, byId };
+  if (!stripeClient) {
+    checkoutDepthCache = {
+      value,
+      expiresAt: nowMs + (complete ? CHECKOUT_DEPTH_CACHE_MS : CHECKOUT_DEPTH_PARTIAL_CACHE_MS),
+    };
+  }
+  return value;
+}
+
+// Counts the window's checkout_session_created rows by how far each Stripe
+// session got. Only when every session was found does it replace the
+// telemetry-based count of qualified checkout starts.
+function summarizeCheckoutSessionDepth(acquisitionEvents = [], depthLookup = null) {
+  const counts = { raw: 0, identified: 0, payment_attempt: 0, paid: 0 };
+  const byId = depthLookup && typeof depthLookup.byId === 'object' ? depthLookup.byId : null;
+  let sessionsCreated = 0;
+  let unresolved = 0;
+  for (const entry of acquisitionEvents) {
+    if (!entry || entry.event !== 'checkout_session_created') continue;
+    sessionsCreated += 1;
+    const depth = byId ? byId[normalizeText(entry.evidence)] : null;
+    if (depth && Object.hasOwn(counts, depth)) counts[depth] += 1;
+    else unresolved += 1;
+  }
+  const available = Boolean(byId) && unresolved === 0;
+  return {
+    basis: available ? 'stripe_session_lookup' : 'telemetry_heuristic',
+    lookupStatus: depthLookup?.status || 'not_requested',
+    sessionsCreated,
+    raw: counts.raw,
+    identified: counts.identified,
+    paymentAttempt: counts.payment_attempt,
+    paid: counts.paid,
+    unresolved,
+    qualifiedCheckoutStarts: counts.identified + counts.payment_attempt + counts.paid,
+  };
+}
+
+// Read-only check that a /success visit carries a real, paid Checkout session.
+// Bots, probes and our own agents can GET /success with any query string, so a
+// visit only counts when Stripe says the session id is paid.
+const SUCCESS_VERIFY_CACHE_MS = 5 * 60 * 1000;
+const SUCCESS_VERIFY_FAIL_CACHE_MS = 60 * 1000;
+const SUCCESS_VERIFY_CACHE_MAX = 500;
+const successVerifyCache = new Map();
+
+async function verifyPaidCheckoutSession(sessionId, { stripeClient = null } = {}) {
+  const id = normalizeText(sessionId);
+  if (!id) return { verified: false, reason: 'missing_session_id' };
+  if (!/^cs_(?:live|test)_[A-Za-z0-9]{8,}$/.test(id)) return { verified: false, reason: 'malformed_session_id' };
+  const cached = !stripeClient ? successVerifyCache.get(id) : null;
+  if (cached && Date.now() < cached.expiresAt) return cached.result;
+  let session = null;
+  let result;
+  try {
+    if (!stripeClient && LOCAL_MODE()) {
+      session = loadLocalCheckoutSessions().sessions[id] || null;
+    } else {
+      const stripe = stripeClient || getStripeClient();
+      session = await withTimeout(withStripeReadSlot(() => stripe.checkout.sessions.retrieve(id)));
+    }
+    if (!session) {
+      result = { verified: false, reason: 'unknown_session' };
+    } else {
+      const paid = session.payment_status === 'paid'
+        || (session.mode === 'subscription' && session.payment_status === 'no_payment_required');
+      result = paid ? { verified: true, reason: 'paid' } : { verified: false, reason: 'not_paid' };
+    }
+  } catch (error) {
+    result = { verified: false, reason: /no such/i.test(error?.message || '') ? 'unknown_session' : 'lookup_failed' };
+  }
+  if (!stripeClient) {
+    if (successVerifyCache.size >= SUCCESS_VERIFY_CACHE_MAX) successVerifyCache.clear();
+    successVerifyCache.set(id, {
+      result,
+      expiresAt: Date.now() + (result.verified ? SUCCESS_VERIFY_CACHE_MS : SUCCESS_VERIFY_FAIL_CACHE_MS),
+    });
+  }
+  return result;
+}
+
 function getFunnelAnalytics(options = {}) {
   const analyticsWindow = resolveAnalyticsWindow(options);
   const extraRevenueEvents = Array.isArray(options.extraRevenueEvents) ? options.extraRevenueEvents : [];
@@ -2802,12 +2940,19 @@ function getBusinessAnalytics(options = {}) {
     return !paidEventsGross.some((order) => resolveRevenueEventKey(order) === eventKey);
   }).length;
 
+  const checkoutSessionDepth = summarizeCheckoutSessionDepth(acquisitionEvents, options.checkoutSessionDepth);
+  const telemetryCheckoutStarts = telemetry.ctas ? (telemetry.ctas.qualifiedCheckoutStarts ?? telemetry.ctas.checkoutStarts ?? 0) : 0;
   const trafficMetrics = {
     visitors: telemetry.visitors ? telemetry.visitors.uniqueVisitors || 0 : 0,
     sessions: telemetry.visitors ? telemetry.visitors.uniqueSessions || 0 : 0,
     pageViews: telemetry.visitors ? telemetry.visitors.pageViews || 0 : 0,
     ctaClicks: telemetry.ctas ? telemetry.ctas.totalClicks || 0 : 0,
-    checkoutStarts: telemetry.ctas ? (telemetry.ctas.qualifiedCheckoutStarts ?? telemetry.ctas.checkoutStarts ?? 0) : 0,
+    // Qualified = the Stripe session got past raw (an email entered or a payment
+    // attempted). Falls back to the telemetry heuristic when Stripe was not asked.
+    checkoutStarts: checkoutSessionDepth.basis === 'stripe_session_lookup'
+      ? checkoutSessionDepth.qualifiedCheckoutStarts
+      : telemetryCheckoutStarts,
+    checkoutStartsBasis: checkoutSessionDepth.basis,
     checkoutSuccessPageViews: telemetry.ctas ? telemetry.ctas.successPageViews || 0 : 0,
     checkoutCancelPageViews: telemetry.ctas ? (telemetry.ctas.qualifiedCancelPageViews ?? telemetry.ctas.cancelPageViews ?? 0) : 0,
     checkoutPaidConfirmations: telemetry.ctas ? telemetry.ctas.paidConfirmations || 0 : 0,
@@ -2991,6 +3136,7 @@ function getBusinessAnalytics(options = {}) {
       conversionByOfferCode,
     },
     trafficMetrics,
+    checkoutSessionDepth,
     ctas: telemetry.ctas || {},
     operatorGeneratedAcquisition,
     dataQuality,
@@ -3078,6 +3224,7 @@ function getBillingSummary(options = {}) {
     newsletter: business.newsletter,
     attribution: business.attribution,
     trafficMetrics: business.trafficMetrics,
+    checkoutSessionDepth: business.checkoutSessionDepth,
     ctas: business.ctas,
     operatorGeneratedAcquisition: business.operatorGeneratedAcquisition,
     dataQuality: business.dataQuality,
@@ -3110,6 +3257,7 @@ function buildBillingSummaryFailure(error) {
 
 async function getBillingSummariesLive(optionsByWindow = {}, {
   listStripeReconciledRevenueEventsFn = listStripeReconciledRevenueEvents,
+  listStripeCheckoutSessionDepthFn = listStripeCheckoutSessionDepth,
   signal,
 } = {}) {
   const entries = Object.entries(optionsByWindow || {});
@@ -3122,6 +3270,9 @@ async function getBillingSummariesLive(optionsByWindow = {}, {
   if (signal?.aborted) abort();
   let extraRevenueEvents = [];
   let reconciliation = { status: 'ok', complete: true };
+  const depthPromise = Promise.resolve()
+    .then(() => listStripeCheckoutSessionDepthFn({ signal: controller.signal }))
+    .catch(() => null);
   try {
     extraRevenueEvents = await withTimeout(listStripeReconciledRevenueEventsFn({
       signal: controller.signal, deadline: Date.now() + reconciliationTimeoutMs,
@@ -3129,6 +3280,10 @@ async function getBillingSummariesLive(optionsByWindow = {}, {
     reconciliation = extraRevenueEvents.reconciliation || reconciliation;
   } catch (error) {
     reconciliation = { status: /timeout/i.test(error?.message || '') ? 'timeout' : 'unavailable', complete: false };
+  }
+  let checkoutSessionDepth = null;
+  try {
+    checkoutSessionDepth = await depthPromise;
   } finally {
     controller.abort();
     signal?.removeEventListener('abort', abort);
@@ -3136,7 +3291,7 @@ async function getBillingSummariesLive(optionsByWindow = {}, {
   if (signal?.aborted) throw Object.assign(new Error('Collection stopped'), { code: 'collection_timeout' });
   try {
     return Object.fromEntries(entries.map(([key, options]) => [key, {
-      ...getBillingSummary({ ...options, extraRevenueEvents }), reconciliation,
+      ...getBillingSummary({ ...options, extraRevenueEvents, checkoutSessionDepth }), reconciliation,
     }]));
   } catch (error) {
     return Object.fromEntries(entries.map(([key]) => [key, { ...buildBillingSummaryFailure(error), reconciliation }]));
@@ -4974,7 +5129,7 @@ module.exports = {
   withStripeReadSlot, getBillingAnalyticsReadPaths,
   _mergeRevenueEvents: mergeRevenueEvents,
   _buildStripeReconciledRevenueEvent: buildStripeReconciledRevenueEvent,
-  CONFIG, createCheckoutSession, isAutomatedCheckoutRequest, isSyntheticOrOwnerCheckoutEmail, createBillingPortalSession, getCheckoutSessionStatus, provisionApiKey, resolvePaidEntitlementForEmail, rotateApiKey, validateApiKey, recordUsage, recordAccountFirstBlock, disableCustomerKeys, handleWebhook, verifyWebhookSignature, verifyGithubWebhookSignature, verifyPayPalWebhookSignature, recordGithubMarketplaceWebhookDelivery, recordPayPalWebhookDelivery, handleGithubWebhook, loadKeyStore, appendFunnelEvent, appendRevenueEvent, loadFunnelLedger, loadRevenueLedger, loadGithubMarketplaceWebhookLedger, loadPayPalWebhookLedger, loadNewsletterSubscribers, loadResolvedRevenueEvents, getFunnelAnalytics, getBusinessAnalytics, getBillingSummary, getBillingSummaryLive, getBillingSummariesLive, listStripeReconciledRevenueEvents, repairGithubMarketplaceRevenueLedger,
+  CONFIG, createCheckoutSession, isAutomatedCheckoutRequest, isSyntheticOrOwnerCheckoutEmail, createBillingPortalSession, getCheckoutSessionStatus, provisionApiKey, resolvePaidEntitlementForEmail, rotateApiKey, validateApiKey, recordUsage, recordAccountFirstBlock, disableCustomerKeys, handleWebhook, verifyWebhookSignature, verifyGithubWebhookSignature, verifyPayPalWebhookSignature, recordGithubMarketplaceWebhookDelivery, recordPayPalWebhookDelivery, handleGithubWebhook, loadKeyStore, appendFunnelEvent, appendRevenueEvent, loadFunnelLedger, loadRevenueLedger, loadGithubMarketplaceWebhookLedger, loadPayPalWebhookLedger, loadNewsletterSubscribers, loadResolvedRevenueEvents, getFunnelAnalytics, getBusinessAnalytics, getBillingSummary, getBillingSummaryLive, getBillingSummariesLive, listStripeReconciledRevenueEvents, listStripeCheckoutSessionDepth, classifyCheckoutSessionDepth, summarizeCheckoutSessionDepth, verifyPaidCheckoutSession, repairGithubMarketplaceRevenueLedger,
   _buildCheckoutSessionPayload: buildCheckoutSessionPayload,
   _filterQualifiedCheckoutFunnelEvents: filterQualifiedCheckoutFunnelEvents,
   _createSessionDroppingRejectedOptionals: createSessionDroppingRejectedOptionals,

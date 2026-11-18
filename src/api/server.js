@@ -163,6 +163,7 @@ const {
   getBillingSummary,
   getBillingSummaryLive,
   getBillingSummariesLive,
+  verifyPaidCheckoutSession,
 } = require('../../scripts/billing');
 const {
   ensureProductionSearchCorpus,
@@ -9394,10 +9395,15 @@ async function addContext(){
 
       const { FEEDBACK_DIR } = getFeedbackPaths();
       const journeyState = resolveJourneyState(req, parsed);
+      // Any GET reaches this page (bots, probes, our own agents). It only counts
+      // as a success when Stripe reports the session_id as paid.
+      const successCheck = await verifyPaidCheckoutSession(parsed.searchParams.get('session_id'));
+      const successEventType = successCheck.verified ? 'checkout_success_page_view' : 'checkout_success_unverified';
       appendBestEffortTelemetry(FEEDBACK_DIR, {
-        eventType: 'checkout_success_page_view',
+        eventType: successEventType,
         ...buildCheckoutPageTelemetryMetadata(parsed, req, journeyState, '/success'),
-      }, req.headers, 'checkout_success_page_view');
+        ...(successCheck.verified ? {} : { reasonCode: successCheck.reason }),
+      }, req.headers, successEventType);
       sendHtml(
         res,
         200,
