@@ -60,8 +60,8 @@ test('capUpgradeLine names the rule that cannot be enforced, in one plain line',
   assert.ok(line, 'expected a line');
   assert.equal(line.includes('\n'), false, 'one line only');
   assert.match(line, /agent deployed without tests/);
-  assert.match(line, /3 rules/);
-  assert.match(line, /https:\/\/thumbgate\.ai\/pro/);
+  assert.match(line, /but Free enforces 3\. Pro enforces all of them: https:\/\/thumbgate\.ai\/pro$/);
+  assert.equal(line, 'ThumbGate learned a 4th rule (agent deployed without tests), but Free enforces 3. Pro enforces all of them: https://thumbgate.ai/pro');
 });
 
 test('capUpgradeLine redacts secrets and returns null for empty text', () => {
@@ -82,7 +82,7 @@ test('promote on the free tier reports a cap-hit for the 4th rule only, with the
   assert.equal(capHits[0].cap, 3);
   assert.equal(capHits[0].activeGates, 4);
   assert.ok(result.upgradeLine, 'result should carry the upgrade line');
-  assert.match(result.upgradeLine, /3 rules/);
+  assert.match(result.upgradeLine, /^ThumbGate learned a 4th rule \(.*suite-3.*\), but Free enforces 3\. Pro enforces all of them: https:\/\/thumbgate\.ai\/pro$/);
   assert.match(result.upgradeLine, /suite-3/);
 });
 
@@ -140,7 +140,7 @@ test('capturing a 4th learned rule prints the upgrade line once on stderr (end t
     })();`;
   const env = { PATH: process.env.PATH, HOME: dir, THUMBGATE_FEEDBACK_DIR: dir, THUMBGATE_NO_TRIAL: '1', THUMBGATE_NO_TELEMETRY: '1' };
   const run = spawnSync(process.execPath, ['-e', script], { env, cwd: dir, encoding: 'utf8', timeout: 90000 });
-  const lines = run.stderr.split('\n').filter((l) => l.startsWith('Free keeps 3 rules'));
+  const lines = run.stderr.split('\n').filter((l) => l.startsWith('ThumbGate learned a 4th rule'));
   assert.equal(lines.length, 1, `expected one upgrade line, stderr was:\n${run.stderr.slice(-600)}`);
   assert.match(lines[0], /suite-3/);
 });

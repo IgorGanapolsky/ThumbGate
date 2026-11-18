@@ -245,7 +245,7 @@ function proWouldHaveBlockedSentence(mistake) {
 function capUpgradeLine(rule, maxActive = FREE_TIER_MAX_GATES) {
   const clean = scrubRepeatText(rule);
   if (!clean) return null;
-  return `Free keeps ${maxActive} rules, so ThumbGate can't enforce this new one: ${clean}. Pro keeps them all: ${PRO_REPEAT_URL}`;
+  return `ThumbGate learned a ${maxActive + 1}th rule (${clean}), but Free enforces ${maxActive}. Pro enforces all of them: ${PRO_REPEAT_URL}`;
 }
 
 function droppedRepeatFromRulesMarkdown(markdown, maxActive = FREE_TIER_MAX_GATES) {

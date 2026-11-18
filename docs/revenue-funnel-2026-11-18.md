@@ -42,9 +42,9 @@ Not queried: Plausible, GitHub traffic, Zernio and the `~/.thumbgate` telemetry 
 
 The line, as printed in an end-to-end run with four distinct rules on the free tier:
 
-`Free keeps 3 rules, so ThumbGate can't enforce this new one: npm test -- suite-3. Pro keeps them all: https://thumbgate.ai/pro`
+`ThumbGate learned a 4th rule (npm test -- suite-3), but Free enforces 3. Pro enforces all of them: https://thumbgate.ai/pro`
 
-Only the 4th rule triggers it. Pro and trial installs never see it. The link target `thumbgate.ai/pro` is the one already used in `proWouldHaveBlockedSentence`. I did not check what that page says today. The wording needs the lead's review before release.
+Only the 4th rule triggers it. Pro and trial installs never see it. The link target `thumbgate.ai/pro` is the one already used in `proWouldHaveBlockedSentence`. The lead set this wording and checked the page: 200, shows $19.
 
 ## Tests
 
