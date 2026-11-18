@@ -13,6 +13,7 @@ const {
   classifyCheckoutFunnel,
   runDiagnostic,
   renderMarkdown,
+  collectCompletedSessions,
 } = require('../scripts/stripe-checkout-diagnostic');
 
 test('parseArgs reads --json and --limit', () => {
@@ -482,4 +483,19 @@ test('payment-attempt forensics survive Stripe lookup failures and render in mar
   assert.match(md, /Payment attempts in the last 30 days/);
   assert.match(md, /plink_9/);
   assert.match(md, /requires_action/);
+});
+
+test('collectCompletedSessions lists only paid sessions with masked buyers', async () => {
+  const sessions = [
+    { id: 'cs_1', created: 1787000000, status: 'complete', payment_status: 'paid', mode: 'subscription', livemode: true, amount_total: 1900, currency: 'usd', success_url: 'https://thumbgate.ai/success', customer_details: { email: 'buyer@example.com' }, metadata: { source: 'website', planId: 'pro' } },
+    { id: 'cs_2', created: 1787000100, status: 'expired', payment_status: 'unpaid', amount_total: 1900, currency: 'usd' },
+  ];
+  const stripe = { checkout: { sessions: { listLineItems: async () => ({ data: [{ description: 'ThumbGate Pro' }] }) } } };
+  const out = await collectCompletedSessions(stripe, sessions);
+  assert.equal(out.length, 1);
+  assert.equal(out[0].amount, '19.00 USD');
+  assert.equal(out[0].successHost, 'thumbgate.ai');
+  assert.deepEqual(out[0].products, ['ThumbGate Pro']);
+  assert.equal(out[0].buyer, 'b***@e***.com');
+  assert.ok(!JSON.stringify(out).includes('buyer@example.com'));
 });
