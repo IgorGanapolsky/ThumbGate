@@ -55,12 +55,12 @@ Lightweight visuals for how agents fail without a pre-action gate:
 
 
 
-It **hard-blocks detected secret leaks and two direct self-disable command classes by default** — commands that terminate the ThumbGate gate process or enable its bypass environment override. Other high-risk classes (`rm -rf`, force-push, fetch-and-run, direct guardrail edits) **warn and log by default**. Set `THUMBGATE_STRICT_ENFORCEMENT=1` for strict enforcement (warnings become hard denies).
+It **hard-blocks detected secret leaks and two direct self-disable command classes by default** — commands that terminate the ThumbGate gate process or enable its bypass environment override. It also denies catastrophic commands by default: force-push, `git reset --hard`, `git clean -f`, `rm -rf` on home or root, and `DROP TABLE`. Other high-risk classes (fetch-and-run, direct guardrail edits, other matching rules) **warn and log by default**. Set `THUMBGATE_STRICT_ENFORCEMENT=1` for strict enforcement (warnings become hard denies).
 
 | Verdict | Default behavior |
 |---------|------------------|
 | ⛔ **Hard-block** | Detected secret leaks; process-kill/environment-override self-disable |
-| 👎 **Warn + log** | `rm -rf`, `git push --force`, fetch-and-run, direct guardrail edits — **warn by default** |
+| 👎 **Warn + log** | fetch-and-run, direct guardrail edits, other matching rules — **warn by default** (force-push, `git reset --hard`, `git clean -f`, `rm -rf` on home or root and `DROP TABLE` are denied by default) |
 | 👍 **Allow** | Everything else |
 
 **Accepted feedback is stored as local lessons.** Repeated concrete failures can become prevention rules that promote from warnings to blocking gates. The firewall improves from operations without retraining the model. Prompt evaluation (`npx thumbgate eval`) turns accepted feedback into reusable eval cases and local proof reports.

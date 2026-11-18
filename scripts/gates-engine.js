@@ -213,6 +213,13 @@ const UNCONDITIONAL_HARD_FLOOR_GATE_IDS = new Set([
   'teams-single-reply-per-message',
   'az-repos-pr-publish-requires-cross-review',
   'mabl-failure-honesty',
+  // Catastrophic, effectively irreversible commands (issue #2782). A default install
+  // (no THUMBGATE_* variables) must deny these, same as secret exfiltration.
+  'force-push',
+  'git-reset-hard',
+  'git-clean-force',
+  'rm-rf-home-or-root',
+  'db-drop-table-production',
   TASK_SCOPE_LEASE_EXPIRED_GATE_ID,
   ...SELF_PROTECT_HARD_FLOOR_GATE_IDS,
 ]);
@@ -238,6 +245,7 @@ const CATASTROPHIC_DECLARATIVE_GATE_IDS = new Set([
   'teams-single-reply-per-message',
   'az-repos-pr-publish-requires-cross-review',
   'mabl-failure-honesty',
+  'db-drop-table-production',
 ]);
 const SELF_PROTECT_CONFIG_TARGET_PATTERN = /(?:^|\/)(?:config\/gates\/|config\/(?:budget|enforcement|mcp-allowlists)\.json$|\.thumbgate\/config\.json$|thumbgate\.json$)/i;
 const SELF_PROTECT_HOOK_TARGET_PATTERN = /(?:^|\/)(?:\.claude\/settings(?:\.local)?\.json|\.codex\/config\.toml|scripts\/hook-[^/]+\.(?:js|sh))$/i;
@@ -278,6 +286,11 @@ function alignmentLayerForResult(result) {
   return 'business';
 }
 
+// A downgraded gate warns and the action runs, so its text must not say "blocked".
+function describeAsFlagged(message) {
+  return String(message || '').replace(/\bblocked\b/gi, 'flagged');
+}
+
 function applyEnforcementPosture(result) {
   if (!result || (result.decision !== 'deny' && result.decision !== 'approve')) return result;
   const mode = resolveGovernanceMode();
@@ -297,7 +310,7 @@ function applyEnforcementPosture(result) {
         governanceMode: mode,
         alignmentLayer,
         simulated: true,
-        message: `${result.message}\n\n⚠️ ThumbGate governance mode=${mode} — flagged and logged, not blocked.`,
+        message: `${describeAsFlagged(result.message)}\n\n⚠️ ThumbGate governance mode=${mode} — flagged and logged, not blocked.`,
       };
     }
     return { ...result, governanceMode: mode, alignmentLayer, simulated: true };
@@ -318,7 +331,7 @@ function applyEnforcementPosture(result) {
     warnByDefault: true,
     governanceMode: 'sidecar',
     alignmentLayer,
-    message: `${result.message}\n\n⚠️ ThumbGate is in warn-by-default mode (sidecar) — this was flagged and logged, not blocked. Set THUMBGATE_STRICT_ENFORCEMENT=1 or THUMBGATE_GOVERNANCE_MODE=live to hard-block other flagged actions.`,
+    message: `${describeAsFlagged(result.message)}\n\n⚠️ ThumbGate is in warn-by-default mode (sidecar) — this was flagged and logged, not blocked. Set THUMBGATE_STRICT_ENFORCEMENT=1 or THUMBGATE_GOVERNANCE_MODE=live to hard-block other flagged actions.`,
   };
 }
 const BREAK_GLASS_CONDITION = 'thumbgate_break_glass';

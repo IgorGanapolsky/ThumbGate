@@ -689,7 +689,7 @@
   <meta http-equiv="origin-trial" content="AzcKU1rE0e4sfmh97XzN75yRFS+xFzZJrUJWswxGr6RahQWDNupKLhkVvdQZQayA/s4FLwcKpPntqUZgclhDjgoAAAB0eyJvcmlnaW4iOiJodHRwczovL3RodW1iZ2F0ZS5hcHA6NDQzIiwiZmVhdHVyZSI6IldlYk1DUCIsImV4cGlyeSI6MTgwNjM2NDgwMCwiaXNTdWJkb21haW4iOnRydWUsImlzVGhpcmRQYXJ0eSI6dHJ1ZX0=" />
   <meta http-equiv="origin-trial" content="A06wj3yXAwOhT5Cd5WYdVQotlYa/OID3SW099ZQB+cs9eHeJmtH1yHudLwqDKZ7y43tQvLB4TfM/pjmUa7aJNQsAAAB4eyJvcmlnaW4iOiJodHRwczovL3d3dy50aHVtYmdhdGUuYXBwOjQ0MyIsImZlYXR1cmUiOiJXZWJNQ1AiLCJleHBpcnkiOjE4MDYzNjQ4MDAsImlzU3ViZG9tYWluIjp0cnVlLCJpc1RoaXJkUGFydHkiOnRydWV9" />
   <script src="/js/webmcp.js" defer></script>
-<script type="application/ld+json">{"@context": "https://schema.org", "@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": "What is free?", "acceptedAnswer": {"@type": "Answer", "text": "The MIT local CLI captures feedback and runs configured gates. Install the Claude Code plugin, then run npx thumbgate init --agent claude."}}, {"@type": "Question", "name": "What does Pro add?", "acceptedAnswer": {"@type": "Answer", "text": "Pro adds memory: every learned rule stays active, plus recall and lesson search. Strict blocking of catastrophic commands stays free. Compare current subscription details at /pricing."}}, {"@type": "Question", "name": "What does ThumbGate not do?", "acceptedAnswer": {"@type": "Answer", "text": "Hard deny needs strict mode (THUMBGATE_STRICT_ENFORCEMENT=1); by default matching destructive actions warn and are logged. Detected secret exfiltration and gate-process bypass attempts are denied by default. It does not retrain model weights, does not rewrite policy silently, and does not contain the blast radius, which is a sandbox job. Only the agents in Also works with are supported, and advisory ones do not guarantee blocking."}}, {"@type": "Question", "name": "Is it really self-improving?", "acceptedAnswer": {"@type": "Answer", "text": "Thumbs teach. The gate enforces. Feedback refines the control layer, not the LLM. Reviewed outcomes can become prevention rules under your control."}}, {"@type": "Question", "name": "Which integrations enforce gates?", "acceptedAnswer": {"@type": "Answer", "text": "Claude Code enforces gates through PreToolUse hooks. Other agents are listed under Also works with; advisory integrations do not guarantee execution blocking."}}]}</script>
+<script type="application/ld+json">{"@context": "https://schema.org", "@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": "What is free?", "acceptedAnswer": {"@type": "Answer", "text": "The MIT local CLI captures feedback and runs configured gates. Install the Claude Code plugin, then run npx thumbgate init --agent claude."}}, {"@type": "Question", "name": "What does Pro add?", "acceptedAnswer": {"@type": "Answer", "text": "Pro adds memory: every learned rule stays active, plus recall and lesson search. Strict blocking of catastrophic commands stays free. Compare current subscription details at /pricing."}}, {"@type": "Question", "name": "What does ThumbGate not do?", "acceptedAnswer": {"@type": "Answer", "text": "Force-push, git reset --hard, git clean -f, rm -rf on home or root and DROP TABLE are denied by default; hard deny for every other matching action needs strict mode (THUMBGATE_STRICT_ENFORCEMENT=1), otherwise they warn and are logged. Detected secret exfiltration and gate-process bypass attempts are denied by default. It does not retrain model weights, does not rewrite policy silently, and does not contain the blast radius, which is a sandbox job. Only the agents in Also works with are supported, and advisory ones do not guarantee blocking."}}, {"@type": "Question", "name": "Is it really self-improving?", "acceptedAnswer": {"@type": "Answer", "text": "Thumbs teach. The gate enforces. Feedback refines the control layer, not the LLM. Reviewed outcomes can become prevention rules under your control."}}, {"@type": "Question", "name": "Which integrations enforce gates?", "acceptedAnswer": {"@type": "Answer", "text": "Claude Code enforces gates through PreToolUse hooks. Other agents are listed under Also works with; advisory integrations do not guarantee execution blocking."}}]}</script>
 <script type="application/ld+json">{"@context":"https://schema.org","@type":"SoftwareApplication","name":"ThumbGate","applicationCategory":"DeveloperApplication","operatingSystem":"Cross-platform","url":"__APP_ORIGIN__/","offers":{"@type":"Offer","name":"ThumbGate Pro","price":"__PRO_PRICE_DOLLARS__","priceCurrency":"USD","url":"__APP_ORIGIN__/checkout/pro"}}</script>
 </head>
 <body data-revenue-assist="off">
@@ -744,7 +744,7 @@
             <button type="button" class="down" id="hero-thumb-down" aria-label="Record a thumbs-down for the selected command"><svg class="hero-thumb-down" viewBox="0 0 32 32" aria-hidden="true"><use href="#thumb-glyph"/></svg></button>
           </div>
           <h1>Thumbs-down a Claude Code mistake once, and ThumbGate warns the next time it tries that command. After three thumbs-downs on the same command, strict mode blocks it.</h1>
-          <p class="hero-lede">Run Claude Code with bypass permissions and ThumbGate checks every call: secret leaks are denied, other flagged actions warn, strict mode blocks them.</p>
+          <p class="hero-lede">Run Claude Code with bypass permissions and ThumbGate checks every call: secret leaks and catastrophic commands are denied, other flagged actions warn, strict mode blocks them.</p>
           <p class="hero-audience" id="hero-audience"><strong>Who it's for:</strong> Claude Code users whose agent has already broken something once. The local CLI is free.</p>
           <div class="actions"style="display:flex;gap:12px;flex-wrap:wrap;align-items:center;margin:0 0 24px;">
             <button type="button" class="button-primary" data-copy-install data-cta-id="hero_install_copy_primary">Copy free install: npx thumbgate init --agent claude</button>
@@ -772,7 +772,7 @@ $ ... "git reset --hard HEAD~5"
 $ ... "rm -rf ~/"
  "permissionDecisionReason":"[GATE:rm-rf-home-or-root] Broad rm -rf against root or home is blocked. Use a narrow, reviewed path ..."</pre>
           </div>
-          <p class="hero-note">Recorded from <code>thumbgate gate-check</code> v1.40.3. Claude reads the <code>permissionDecisionReason</code> and changes course. Hard deny is <strong>strict mode, one env var</strong>: <code>THUMBGATE_STRICT_ENFORCEMENT=1</code>. Without it these actions warn and are logged.</p>
+          <p class="hero-note">Recorded from <code>thumbgate gate-check</code> v1.40.3. Claude reads the <code>permissionDecisionReason</code> and changes course. These three deny by default. Hard deny for every other flagged action is <strong>strict mode, one env var</strong>: <code>THUMBGATE_STRICT_ENFORCEMENT=1</code>.</p>
           <p class="hero-note" id="adoption-line" hidden></p>
           <div class="cc-install" id="install">
             <p class="cc-step"><strong>1 · Install the plugin</strong> <span class="cc-where">inside Claude Code</span></p>
@@ -853,7 +853,7 @@ $ ... "rm -rf ~/"
         <div class="offer-stack" style="grid-template-columns: 1fr; max-width: 480px; margin: 0 auto;">
           <div class="why-pro" id="why-pro">
           <h3 class="section-title" style="font-size:1.6rem;">Why Pro is worth $__PRO_PRICE_DOLLARS__</h3>
-          <p class="install-hint">Free already blocks force-push, <code>git reset --hard</code>, <code>git clean -f</code> and <code>rm -rf</code> on home or root, in strict mode. Pro is about memory.</p>
+          <p class="install-hint">Free blocks force-push, <code>git reset --hard</code>, <code>git clean -f</code>, <code>rm -rf</code> on home or root and <code>DROP TABLE</code> by default. Pro is about memory.</p>
           <ul class="offer-points">
             <li><strong>Every learned rule stays active.</strong> Free keeps your first 3 learned rules active. Pro keeps all of them.</li>
             <li><strong>Recall.</strong> Ask what Claude got wrong before, and search past lessons. Both are Pro only.</li>
@@ -999,7 +999,7 @@ next      decision recorded before execution</pre>
             </div>
           </div>
           <div class="proof-copy">
-            <p><strong>Why not a static hook?</strong> Prompts compact away; static bash hooks don't learn from 👍/👎. Detected secret exfiltration and gate-process bypass attempts are denied by default. Matching destructive actions warn by default and deny in strict mode. This is a managed strict-mode example, not a claim that every free install blocks every risky command automatically.</p>
+            <p><strong>Why not a static hook?</strong> Prompts compact away; static bash hooks don't learn from 👍/👎. Detected secret exfiltration and gate-process bypass attempts are denied by default. Catastrophic commands (force-push, <code>reset --hard</code>, <code>rm -rf</code> on home or root, <code>DROP TABLE</code>) are denied by default. Other matching destructive actions warn by default and deny in strict mode. This is a managed strict-mode example, not a claim that every free install blocks every risky command automatically.</p>
             <a href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md" target="_blank" rel="noopener">Read the test-backed verification evidence →</a>
             <p style="margin-top:12px;"><a href="/whitepaper">White paper</a> · <a href="/eval-scorecard">Scorecard</a> · <a href="/architecture">Architecture</a> · <a href="/case-studies">How we use it</a></p>
           </div>
@@ -1015,7 +1015,7 @@ next      decision recorded before execution</pre>
         <div class="faq-list">
 <div class="faq-item"><button class="faq-q" type="button" aria-expanded="false">What is free?</button><div class="faq-a">The MIT local CLI captures feedback and runs configured gates. Install the Claude Code plugin, then run npx thumbgate init --agent claude.</div></div>
 <div class="faq-item"><button class="faq-q" type="button" aria-expanded="false">What does Pro add?</button><div class="faq-a">Pro adds memory: every learned rule stays active, plus recall and lesson search. Strict blocking of catastrophic commands stays free. Compare current subscription details at /pricing.</div></div>
-<div class="faq-item"><button class="faq-q" type="button" aria-expanded="false">What does ThumbGate not do?</button><div class="faq-a">Hard deny needs strict mode (THUMBGATE_STRICT_ENFORCEMENT=1); by default matching destructive actions warn and are logged. Detected secret exfiltration and gate-process bypass attempts are denied by default. It does not retrain model weights, does not rewrite policy silently, and does not contain the blast radius, which is a sandbox job. Only the agents in Also works with are supported, and advisory ones do not guarantee blocking.</div></div>
+<div class="faq-item"><button class="faq-q" type="button" aria-expanded="false">What does ThumbGate not do?</button><div class="faq-a">Force-push, git reset --hard, git clean -f, rm -rf on home or root and DROP TABLE are denied by default; hard deny for every other matching action needs strict mode (THUMBGATE_STRICT_ENFORCEMENT=1), otherwise they warn and are logged. Detected secret exfiltration and gate-process bypass attempts are denied by default. It does not retrain model weights, does not rewrite policy silently, and does not contain the blast radius, which is a sandbox job. Only the agents in Also works with are supported, and advisory ones do not guarantee blocking.</div></div>
 <div class="faq-item"><button class="faq-q" type="button" aria-expanded="false">Is it really self-improving?</button><div class="faq-a">Thumbs teach. The gate enforces. Feedback refines the control layer, not the LLM. Reviewed outcomes can become prevention rules under your control.</div></div>
 <div class="faq-item"><button class="faq-q" type="button" aria-expanded="false">Which integrations enforce gates?</button><div class="faq-a">Claude Code enforces gates through PreToolUse hooks. Other agents are listed under Also works with; advisory integrations do not guarantee execution blocking.</div></div>
         </div>
@@ -1052,7 +1052,7 @@ next      decision recorded before execution</pre>
             <tr><th>Agent</th><th>Enforcement</th><th>Default (secrets)</th><th>Default (destructive)</th><th>Strict mode</th></tr>
           </thead>
           <tbody>
-            <tr><th>Claude Code</th><td>Blocks before tool runs</td><td>DENY</td><td>WARN</td><td>DENY</td></tr>
+            <tr><th>Claude Code</th><td>Blocks before tool runs</td><td>DENY</td><td>DENY catastrophic, WARN other</td><td>DENY</td></tr>
             <tr><th>Cursor, Cline, OpenCode</th><td>Advisory</td><td>DENY</td><td>WARN</td><td>DENY</td></tr>
             <tr><th>Amp</th><td>Feedback only</td><td>Logged</td><td>Logged</td><td>Logged</td></tr>
           </tbody>
@@ -1324,9 +1324,9 @@ next      decision recorded before execution</pre>
           facts: [
             'PreToolUse hooks check Bash / Edit / Write before the tool runs',
             'Outcomes: allowed, warned, or denied (ALLOW / WARN / DENY)',
-            'Default install is warn + audit; hard deny needs strict mode (plus secret floors)',
+            'Default install denies secret leaks, force-push, reset --hard, clean -f, rm -rf on home or root and DROP TABLE; other flagged actions warn until strict mode',
           ],
-          honest: 'Default is not “block everything.” Default warns. Strict mode denies matching high-risk actions. Secrets/exfil still hard-deny.',
+          honest: 'Default is not “block everything.” Catastrophic commands and secret leaks are denied by default; other flagged actions warn. Strict mode denies those too.',
           cmd: 'export THUMBGATE_STRICT_ENFORCEMENT=1  # opt into hard deny',
           showModes: true,
         },
@@ -1459,8 +1459,8 @@ next      decision recorded before execution</pre>
       let selected = 'secret';
       const notes = {
         secret: "Illustrative example, not a recorded result. Matching destructive actions warn by default; advisory integrations do not guarantee execution blocking.",
-        force: "Illustrative example, not a recorded result. Matching destructive actions warn by default; advisory integrations do not guarantee execution blocking.",
-        rm: "Illustrative example, not a recorded result. Matching destructive actions warn by default; advisory integrations do not guarantee execution blocking.",
+        force: "Illustrative example, not a recorded result. In Claude Code this command is denied by default; advisory integrations do not guarantee execution blocking.",
+        rm: "Illustrative example, not a recorded result. In Claude Code this command is denied by default; advisory integrations do not guarantee execution blocking.",
       };
       rows.forEach(function (row) {
         row.addEventListener('click', function () {

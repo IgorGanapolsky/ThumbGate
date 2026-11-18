@@ -62,7 +62,32 @@ test('hermes-gate fails OPEN on malformed stdin (never wedges Hermes)', () => {
   assert.notEqual(decision.decision, 'block', `malformed input must not block: ${JSON.stringify(decision)}`);
 });
 
+// An ordinary flagged action: strict enforcement denies it, advisory modes let it through.
+// Catastrophic commands (force-push, reset --hard, ...) are hard-floor denies in every mode.
+const ORDINARY_FLAGGED_COMMAND = 'npm publish';
+
+test('hermes-gate blocks an ordinary flagged action under its default strict enforcement', () => {
+  const decision = runHermesGate({
+    hook_event_name: 'pre_tool_call',
+    tool_name: 'terminal',
+    tool_input: { command: ORDINARY_FLAGGED_COMMAND },
+  });
+  assert.equal(decision.decision, 'block', JSON.stringify(decision));
+});
+
 test('hermes-gate honors THUMBGATE_HERMES_WARN_ONLY (advisory mode never blocks)', () => {
+  const decision = runHermesGate(
+    {
+      hook_event_name: 'pre_tool_call',
+      tool_name: 'terminal',
+      tool_input: { command: ORDINARY_FLAGGED_COMMAND },
+    },
+    { THUMBGATE_HERMES_WARN_ONLY: '1' },
+  );
+  assert.notEqual(decision.decision, 'block', `warn-only mode must not block: ${JSON.stringify(decision)}`);
+});
+
+test('hermes-gate keeps force-push denied even in warn-only mode (catastrophic hard floor)', () => {
   const decision = runHermesGate(
     {
       hook_event_name: 'pre_tool_call',
@@ -71,7 +96,7 @@ test('hermes-gate honors THUMBGATE_HERMES_WARN_ONLY (advisory mode never blocks)
     },
     { THUMBGATE_HERMES_WARN_ONLY: '1' },
   );
-  assert.notEqual(decision.decision, 'block', `warn-only mode must not block: ${JSON.stringify(decision)}`);
+  assert.equal(decision.decision, 'block', JSON.stringify(decision));
 });
 
 for (const [label, payload] of [
@@ -103,12 +128,12 @@ for (const [label, payload] of [
   });
 }
 
-test('Hermes operator bypass still allows an ordinary force-push gate', () => {
+test('Hermes operator bypass still allows an ordinary flagged gate', () => {
   const decision = runHermesGate(
     {
       hook_event_name: 'pre_tool_call',
       tool_name: 'terminal',
-      tool_input: { command: 'git push --force origin main' },
+      tool_input: { command: ORDINARY_FLAGGED_COMMAND },
     },
     { THUMBGATE_HOTFIX_BYPASS: '1' },
   );

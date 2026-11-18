@@ -1238,7 +1238,10 @@ test('workflow sentinel and gate_check warn on destructive-delete variants witho
       tool_input: { command },
     });
     const verdict = JSON.parse(mcpResult.content[0].text);
-    assert.equal(verdict.decision, 'warn', `gate_check should warn (not allow or block) on: ${command}`);
+    // The catastrophic clean-force command is a hard floor: gate_check blocks it by default.
+    // Every other variant here still warns.
+    const expected = /^git clean\b/.test(command) ? 'block' : 'warn';
+    assert.equal(verdict.decision, expected, `gate_check should ${expected} (not allow) on: ${command}`);
     assert.equal(verdict.flagged, true, `gate_check should set flagged=true on: ${command}`);
   }
   const harnessVariants = [

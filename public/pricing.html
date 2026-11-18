@@ -158,7 +158,7 @@
 
         <div class="outcome">
           <div class="outcome-row"><span class="tick">✓</span><span>Pro: Claude Code recall, dashboard, and exports.</span></div>
-          <div class="outcome-row"><span class="tick">✓</span><span><strong>Free local evaluate:</strong> <code>npx thumbgate init</code>. Secret leaks are denied from the start; other flagged actions warn.</span></div>
+          <div class="outcome-row"><span class="tick">✓</span><span><strong>Free local evaluate:</strong> <code>npx thumbgate init</code>. Secret leaks and catastrophic commands (force-push, reset --hard, rm -rf on home or root, DROP TABLE) are denied from the start; other flagged actions warn.</span></div>
           <div class="outcome-row"><span class="tick">✓</span><span>Team and enterprise subscriptions are not available through self-serve checkout. Compare the free CLI and individual Pro software features before choosing.</span></div>
         </div>
       </div>
@@ -181,7 +181,7 @@
         <caption>Free and Pro, from the license checks in the code</caption>
         <thead><tr><th>Feature</th><th>Free</th><th>Pro</th></tr></thead>
         <tbody>
-          <tr><th>Block force-push, <code>git reset --hard</code>, <code>git clean -f</code>, <code>rm -rf</code> on home or root (strict mode)</th><td>Yes</td><td>Yes</td></tr>
+          <tr><th>Blocked by default: force-push, <code>git reset --hard</code>, <code>git clean -f</code>, <code>rm -rf</code> on home or root, <code>DROP TABLE</code></th><td>Yes</td><td>Yes</td></tr>
           <tr><th>Gate blocks per day (strict mode)</th><td>Unlimited</td><td>Unlimited</td></tr>
           <tr><th>Learned rules from your thumbs-down that stay active (warn; block in strict mode)</th><td>3</td><td>All</td></tr>
           <tr><th>Recall of past lessons</th><td>No</td><td>Yes</td></tr>

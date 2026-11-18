@@ -168,7 +168,7 @@ test('landing page explains pre-action enforcement instead of passive logging', 
   assert.match(html, />WARN</);
   assert.match(html, />DENY</);
   assert.match(html, /Detected secret exfiltration and gate-process bypass attempts are denied by default/);
-  assert.match(html, /Matching destructive actions warn by default and deny in strict mode/);
+  assert.match(html, /Other matching destructive actions warn by default and deny in strict mode/);
 });
 
 test('homepage and pricing surfaces expose canonical and LLM context links', async () => {

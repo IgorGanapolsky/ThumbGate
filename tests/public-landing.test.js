@@ -643,7 +643,8 @@ test('homepage stays human-scannable instead of becoming a product monorepo', ()
   const h3Count = (landingPage.match(/<h3\b/g) || []).length;
 
   // 1450: the Claude-first rework adds the 3-step loop, the hooks comparison and Why Pro (16 Nov 2026).
-  assert.ok(words.length <= 1450, `visible homepage is ${words.length} words`);
+  // 1520: catastrophic commands are denied by default, which the page now has to say (18 Nov 2026).
+  assert.ok(words.length <= 1520, `visible homepage is ${words.length} words`);
   assert.ok(h2Count <= 8, `homepage has ${h2Count} H2 headings`);
   assert.ok(h3Count <= 10, `homepage has ${h3Count} H3 headings`);
   for (const jargon of ['Thompson Sampling', 'DPO', 'LanceDB', 'ContextFS', 'MemAlign', 'FTS5']) {
@@ -664,7 +665,7 @@ test('hero states the approved workflow scope with fit-first and free paths', ()
   assert.match(landingPage, /ThumbGate — Warn Claude Code before it repeats a mistake/i);
   assert.match(hero, /<h1>Thumbs-down a Claude Code mistake once, and ThumbGate warns the next time it tries that command\. After three thumbs-downs on the same command, strict mode blocks it\.<\/h1>/i);
   assert.match(hero, /PreToolUse gate for Claude Code/i);
-  assert.match(hero, /ThumbGate checks every call: secret leaks are denied, other flagged actions warn, strict mode blocks them/i);
+  assert.match(hero, /ThumbGate checks every call: secret leaks and catastrophic commands are denied, other flagged actions warn, strict mode blocks them/i);
   assert.match(hero, /data-recorded-deny/);
   assert.match(hero, /permissionDecision":"deny/);
   assert.match(hero, /THUMBGATE_STRICT_ENFORCEMENT=1/);
@@ -689,7 +690,7 @@ test('hero states the approved workflow scope with fit-first and free paths', ()
   const alsoStart = landingPage.indexOf('id="also-works-with"');
   assert.ok(alsoStart > landingPage.indexOf('id="faq"'), 'Also works with sits below the FAQ, near the footer');
   assert.ok(landingPage.indexOf('Enforcement by agent and mode') > alsoStart, 'enforcement table moved into Also works with');
-  assert.match(landingPage.slice(alsoStart), /Claude Code<\/th><td>Blocks before tool runs<\/td><td>DENY<\/td><td>WARN<\/td><td>DENY/);
+  assert.match(landingPage.slice(alsoStart), /Claude Code<\/th><td>Blocks before tool runs<\/td><td>DENY<\/td><td>DENY catastrophic, WARN other<\/td><td>DENY/);
   assert.match(landingPage.slice(alsoStart), /Amp<\/th><td>Feedback only/);
   assert.ok(lede.split(/\s+/).length <= 45, `hero lede is ${lede.split(/\s+/).length} words`);
 });
@@ -734,7 +735,8 @@ test('paid plan describes self-serve Pro features truthfully', () => {
 
 test('enforcement promise distinguishes default denies from strict-mode blocks', () => {
   assert.match(landingPage, /Detected secret exfiltration[\s\S]*denied by default/i);
-  assert.match(landingPage, /Matching destructive actions warn by default and deny in strict mode/i);
+  assert.match(landingPage, /Catastrophic commands \([^)]*\)[\s\S]*denied by default/i);
+  assert.match(landingPage, /Other matching destructive actions warn by default and deny in strict mode/i);
   assert.match(landingPage, /not a claim that every free install blocks every risky command automatically/i);
   assert.match(landingPage, /mode\s+strict enforcement[\s\S]*decision\s+<span class="red">DENY<\/span>/i);
 });

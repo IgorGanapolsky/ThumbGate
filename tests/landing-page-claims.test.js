@@ -99,10 +99,23 @@ test('public enforcement claims match the implemented default and strict boundar
   };
 
   assert.equal(runGate(`echo ghp_${'a'.repeat(36)}`), 'deny');
-  assert.equal(runGate('git push --force origin main'), 'allow');
-  assert.equal(runGate('git push --force origin main', { THUMBGATE_STRICT_ENFORCEMENT: '1' }), 'deny');
+  // Catastrophic commands are hard-floor denies on a default install.
+  for (const command of [
+    'git push --force origin main',
+    'git reset --hard HEAD~5',
+    'git clean -fd',
+    'rm -rf ~/',
+    'rm -rf /',
+    'psql -c "DROP TABLE users"',
+  ]) {
+    assert.equal(runGate(command), 'deny', command);
+  }
+  // Ordinary flagged actions still warn by default and deny in strict mode.
+  assert.equal(runGate('npm publish'), 'allow');
+  assert.equal(runGate('npm publish', { THUMBGATE_STRICT_ENFORCEMENT: '1' }), 'deny');
   assert.match(HOME_HTML, /secret exfiltration[\s\S]*denied by default/i);
-  assert.match(HOME_HTML, /Matching destructive actions warn by default and deny in strict mode/i);
+  assert.match(HOME_HTML, /denied by default\. Other matching destructive actions warn by default and deny in strict mode/i);
+  assert.match(PRICING_HTML, /Blocked by default: force-push/i);
 });
 
 test('founder 30-day proof page stays a founder audit, not a customer story', () => {
