@@ -148,3 +148,6 @@ graphify-out/
 !.hermes/skills/
 !.hermes/skills/**
 docs/demo/gate-demo/.run/
+
+# plugin eval scratch output
+evals/plugin/results/

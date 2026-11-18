@@ -119,13 +119,23 @@ function validatePropertyCount(schema, keys, path, errors) {
   }
 }
 
+// Name the allowed values and any keys the caller sent that the schema does not define, so the
+// caller can fix the next attempt from the error text alone (e.g. `feedback` sent for `signal`).
+function missingParameterHint(schema, value, required) {
+  const properties = schema.properties || {};
+  const allowed = properties[required] && Array.isArray(properties[required].enum) ? properties[required].enum : null;
+  const unrecognized = Object.keys(value).filter((key) => !Object.hasOwn(properties, key));
+  let hint = allowed && allowed.length ? ` (allowed values: ${allowed.join(', ')})` : '';
+  if (unrecognized.length) hint += `. Received unrecognized: ${unrecognized.map((key) => `'${key}'`).join(', ')}.`;
+  return hint;
+}
+
 function validateRequiredProperties(schema, value, path, errors) {
   for (const required of schema.required || []) {
     if (value[required] === undefined || value[required] === null || value[required] === '') {
       const requiredPath = joinPath(path, required);
-      errors.push(path
-        ? `Parameter '${path}': Missing required parameter: '${required}'`
-        : `Missing required parameter: '${required}'`);
+      const message = `Missing required parameter: '${required}'${missingParameterHint(schema, value, required)}`;
+      errors.push(path ? `Parameter '${path}': ${message}` : message);
       if (path && requiredPath === path) break;
     }
   }

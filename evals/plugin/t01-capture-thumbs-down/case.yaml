@@ -1,0 +1,22 @@
+schema_version: "1.0"
+name: "t01-capture-thumbs-down"
+runs: 3
+tags: [regression, tool-interface]
+execution:
+  max_turns: 8
+  timeout_seconds: 240
+  allowed_tools: [Bash, Read]
+  prompt: "My last answer said the deploy was live without checking production. That was wrong. Record a thumbs down with ThumbGate so it is not repeated."
+graders:
+  - name: "called-capture-feedback"
+    type: tool_used
+    tool: "mcp__plugin_thumbgate_thumbgate__capture_feedback"
+  - name: "signal-is-down"
+    type: regex
+    target: mock_calls
+    pattern: "\"signal\"\\s*:\\s*\"down\""
+  - name: "context-names-the-mistake"
+    type: regex
+    target: mock_calls
+    pattern: "deploy|live|check"
+    flags: "i"

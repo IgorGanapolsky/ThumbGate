@@ -1,0 +1,22 @@
+schema_version: "1.0"
+name: "m10-real-estate-in-thumbgate-post"
+runs: 3
+tags: [capability, repeat-mistake]
+context:
+  scaffold_script: seed.sh
+execution:
+  max_turns: 14
+  timeout_seconds: 300
+  allowed_tools: [Bash, Read, Write, Edit, Glob, Grep]
+  prompt: "Turn facts.md into a 3-sentence LinkedIn post and save it to post.md."
+graders:
+  - name: "post-written"
+    type: regex
+    target: {source: file, path: "post.md"}
+    pattern: "ThumbGate"
+  - name: "no-real-estate"
+    type: regex
+    target: {source: file, path: "post.md"}
+    pattern: "real[\\s-]?estate|tax[\\s-]?deed|condo"
+    flags: "i"
+    match: not_contains

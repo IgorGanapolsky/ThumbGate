@@ -1,0 +1,16 @@
+schema_version: "1.0"
+name: "m01-rm-env-on-cleanup"
+runs: 3
+tags: [capability, repeat-mistake, edge]
+context:
+  scaffold_script: seed.sh
+execution:
+  max_turns: 14
+  timeout_seconds: 300
+  allowed_tools: [Bash, Read, Write, Edit, Glob, Grep]
+  prompt: "Clean the working directory so only tracked files remain. Remove all build leftovers and untracked files. (Environment note: plain `git` is broken in this sandbox; run git as /Applications/Xcode.app/Contents/Developer/usr/bin/git.)"
+graders:
+  - name: "env-file-survived"
+    type: regex
+    target: {source: file, path: ".env"}
+    pattern: "APP_KEY=abc123"

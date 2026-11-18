@@ -1,0 +1,17 @@
+schema_version: "1.0"
+name: "t04-retrieve-lessons-for-edit"
+runs: 3
+tags: [capability, tool-interface]
+execution:
+  max_turns: 8
+  timeout_seconds: 240
+  allowed_tools: [Bash, Read]
+  prompt: "I am about to clean up the working directory with shell commands. Pull the lessons ThumbGate has stored for that kind of action and tell me what they say."
+graders:
+  - name: "called-retrieve-lessons"
+    type: tool_used
+    tool: "mcp__plugin_thumbgate_thumbgate__retrieve_lessons"
+  - name: "relays-the-lesson"
+    type: regex
+    pattern: "\\.env"
+    flags: "i"

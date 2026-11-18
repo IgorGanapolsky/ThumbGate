@@ -140,3 +140,30 @@ test('validateStructuredOutput parses JSON and enforces format and oneOf', () =>
   assert.equal(validateStructuredOutput('{"createdAt":"yesterday","result":0}', schema).valid, false);
   assert.match(validateStructuredOutput('{broken', schema).errors[0], /valid JSON/);
 });
+
+test('missing enum parameter error names the allowed values', () => {
+  const schema = {
+    type: 'object',
+    required: ['signal'],
+    properties: { signal: { type: 'string', enum: ['up', 'down'] }, context: { type: 'string' } },
+  };
+  const result = validateToolContract(schema, { context: 'bad deploy claim' });
+  assert.equal(result.valid, false);
+  assert.deepEqual(result.errors, ["Missing required parameter: 'signal' (allowed values: up, down)"]);
+});
+
+test('missing required parameter error lists the unrecognized keys the caller sent instead', () => {
+  const schema = {
+    type: 'object',
+    required: ['signal'],
+    properties: { signal: { type: 'string', enum: ['up', 'down'] }, context: { type: 'string' } },
+  };
+  const result = validateToolContract(schema, { feedback: 'down', context: 'bad' });
+  assert.equal(result.valid, false);
+  assert.deepEqual(result.errors, ["Missing required parameter: 'signal' (allowed values: up, down). Received unrecognized: 'feedback'."]);
+});
+
+test('missing required parameter without enum or stray keys keeps the original message', () => {
+  const schema = { type: 'object', required: ['context'], properties: { context: { type: 'string' } } };
+  assert.deepEqual(validateToolContract(schema, {}).errors, ["Missing required parameter: 'context'"]);
+});

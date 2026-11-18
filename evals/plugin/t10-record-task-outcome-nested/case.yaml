@@ -1,0 +1,17 @@
+schema_version: "1.0"
+name: "t10-record-task-outcome-nested"
+runs: 3
+tags: [capability, tool-interface, edge]
+execution:
+  max_turns: 8
+  timeout_seconds: 240
+  allowed_tools: [Bash, Read]
+  prompt: "I just finished migrating the users table. All 42 tests passed and it took about 3 minutes with no policy blocks. Record the task outcome in ThumbGate."
+graders:
+  - name: "called-record-task-outcome"
+    type: tool_used
+    tool: "mcp__plugin_thumbgate_thumbgate__record_task_outcome"
+  - name: "all-required-fields-present"
+    type: regex
+    target: mock_calls
+    pattern: "(?=[\\s\\S]*\"taskId\")(?=[\\s\\S]*\"goal\")(?=[\\s\\S]*\"status\"\\s*:\\s*\"completed\")(?=[\\s\\S]*\"verification\")(?=[\\s\\S]*\"toolCalls\")(?=[\\s\\S]*\"policy\")(?=[\\s\\S]*\"efficiency\")"

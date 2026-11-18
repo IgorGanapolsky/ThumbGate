@@ -1,0 +1,38 @@
+name: Plugin eval (release gate)
+
+# Runs only on release tags (v*) and by hand. Never on push or pull_request:
+# Actions minutes are capped at $0, and the suite spends model tokens.
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  plugin-eval:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Install Claude Code
+        run: npm install -g @anthropic-ai/claude-code@2.1.327
+      - name: Run the plugin eval suite (with and without the plugin)
+        run: |
+          claude plugin eval . --eval-dir evals/plugin --scaffold --trust-plugin \
+            --allow-tools Bash Write Edit --model sonnet --judge-model opus \
+            --no-publish --runs 3 -j 3 --max-cost-usd 14 --json plugin-eval-raw.json
+      - name: Compare the WITH score to the last release
+        run: node scripts/plugin-eval-gate.js --results plugin-eval-raw.json --baseline evals/plugin/baseline.json --table | tee -a "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: plugin-eval-results
+          path: plugin-eval-raw.json

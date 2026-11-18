@@ -1,0 +1,17 @@
+schema_version: "1.0"
+name: "t11-verify-claim"
+runs: 3
+tags: [capability, tool-interface]
+execution:
+  max_turns: 8
+  timeout_seconds: 240
+  allowed_tools: [Bash, Read]
+  prompt: "Before I tell the team that the build has 42 passing tests, verify that claim with ThumbGate."
+graders:
+  - name: "called-verify-claim"
+    type: tool_used
+    tool: "mcp__plugin_thumbgate_thumbgate__verify_claim"
+  - name: "claim-carries-the-number"
+    type: regex
+    target: mock_calls
+    pattern: "42"
