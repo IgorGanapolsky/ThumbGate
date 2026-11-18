@@ -528,8 +528,25 @@ async function collectCompletedSessions(stripe, sessions = []) {
     } catch {
       products = [];
     }
+    let subscriptionStatus = null;
+    let invoicesPaid = null;
+    try {
+      if (typeof session.subscription === 'string' && stripe.subscriptions?.retrieve) {
+        const sub = await stripe.subscriptions.retrieve(session.subscription);
+        subscriptionStatus = sub?.status || null;
+        if (stripe.invoices?.list) {
+          const inv = await stripe.invoices.list({ subscription: session.subscription, limit: 20 });
+          invoicesPaid = (inv?.data || []).filter((i) => i.status === 'paid' && Number(i.amount_paid) > 0)
+            .map((i) => `${(Number(i.amount_paid) / 100).toFixed(2)} ${String(i.currency || '').toUpperCase()} ${new Date(i.created * 1000).toISOString().slice(0, 10)}`);
+        }
+      }
+    } catch {
+      subscriptionStatus = subscriptionStatus || 'lookup_failed';
+    }
     const attribution = extractSessionAttribution(session);
     return {
+      subscriptionStatus,
+      invoicesPaid,
       createdAt: new Date(session.created * 1000).toISOString(),
       status: session.status,
       paymentStatus: session.payment_status,
@@ -969,10 +986,10 @@ function renderMarkdown(report) {
   if (!report.completedSessions || report.completedSessions.length === 0) {
     lines.push('_None._');
   } else {
-    lines.push('| Created | Mode | Live | Amount | Success host | Payment link | Products | Source | Plan | Buyer |');
-    lines.push('| --- | --- | --- | ---: | --- | --- | --- | --- | --- | --- |');
+    lines.push('| Created | Mode | Live | Amount | Success host | Payment link | Products | Source | Plan | Buyer | Subscription | Paid invoices |');
+    lines.push('| --- | --- | --- | ---: | --- | --- | --- | --- | --- | --- | --- | --- |');
     for (const c of report.completedSessions) {
-      lines.push(`| ${c.createdAt} | ${c.mode || '—'} | ${c.livemode ? 'yes' : 'no'} | ${c.amount} | ${c.successHost} | ${c.paymentLink || '—'} | ${(c.products || []).join('; ') || '—'} | ${c.source || '—'} | ${c.plan || '—'} | ${c.buyer || '—'} |`);
+      lines.push(`| ${c.createdAt} | ${c.mode || '—'} | ${c.livemode ? 'yes' : 'no'} | ${c.amount} | ${c.successHost} | ${c.paymentLink || '—'} | ${(c.products || []).join('; ') || '—'} | ${c.source || '—'} | ${c.plan || '—'} | ${c.buyer || '—'} | ${c.subscriptionStatus || '—'} | ${(c.invoicesPaid || []).join('; ') || '—'} |`);
     }
   }
   lines.push('');
