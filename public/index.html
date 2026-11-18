@@ -603,7 +603,7 @@
     }
     .hero-audience { max-width: 650px; margin: 0 0 20px; color: #e6ebf2; font-size: 16px; line-height: 1.5; }
     .gate-demo { margin: 0 0 22px; max-width: 100%; }
-    .gate-demo video { display: block; width: 100%; height: auto; aspect-ratio: 1104 / 832; border: 1px solid #303b50; border-radius: 14px; background: #090d14; }
+    .gate-demo video { display: block; width: 100%; height: auto; aspect-ratio: 960 / 722; border: 1px solid #303b50; border-radius: 14px; background: #090d14; }
     .gate-demo figcaption { margin-top: 10px; color: var(--muted); font-size: 14px; line-height: 1.45; }
     .hero-terminal {
       margin: 18px 0;
@@ -751,7 +751,7 @@
             <a class="button-pro" style="background:transparent;color:var(--text) !important;border:1px solid var(--border);box-shadow:none;font-size:14px;min-height:40px;padding:0 14px;" href="/pricing" data-cta-id="homepage_upgrade_pricing">Upgrade to Pro, $__PRO_PRICE_DOLLARS__/mo</a>
           </div>
           <figure class="gate-demo" id="gate-demo">
-            <video id="gate-demo-video" width="1104" height="832" controls autoplay muted loop playsinline preload="auto" poster="/media/thumbgate-gate-demo-poster.jpg" aria-label="Recording: Claude Code deletes a folder, gets thumbs-down three times, and the fourth session is blocked by the gate">
+            <video id="gate-demo-video" width="960" height="722" controls autoplay muted loop playsinline preload="auto" poster="/media/thumbgate-gate-demo-poster.jpg" aria-label="Recording: Claude Code deletes a folder, gets thumbs-down three times, and the fourth session is blocked by the gate">
               <source src="/media/thumbgate-gate-demo.mp4" type="video/mp4">
             </video>
             <figcaption>Real run, 58 seconds, nothing mocked. Claude Code deletes a folder outside the repo three times. After three thumbs-downs for that command, a fourth session is denied before it runs. A reworded delete is not caught. Hard deny needs <code>THUMBGATE_STRICT_ENFORCEMENT=1</code>. <a href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/demo/gate-demo/README.md" target="_blank" rel="noopener">How it was recorded</a>.</figcaption>
