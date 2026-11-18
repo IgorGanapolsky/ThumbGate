@@ -51,6 +51,10 @@
     @media (max-width:900px) { .offer-grid { grid-template-columns:1fr; } }
     .eyebrow { color:var(--green); font-size:.76rem; font-weight:850; letter-spacing:.14em; text-transform:uppercase; }
     h1 { max-width:760px; margin:14px 0 18px; font-size:clamp(2.5rem,6vw,5.15rem); line-height:.96; letter-spacing:-.055em; }
+    .audience { max-width:660px; margin:0 0 14px; color:var(--ink); font-size:1.05rem; }
+    .gate-demo { margin:0 0 8px; max-width:100%; }
+    .gate-demo video { display:block; width:100%; height:auto; aspect-ratio:1104 / 832; border:1px solid var(--line); border-radius:14px; background:#090d14; }
+    .gate-demo figcaption { margin-top:10px; color:var(--muted); font-size:.86rem; line-height:1.45; }
     .lede { max-width:660px; margin:0 0 28px; color:var(--muted); font-size:1.13rem; }
     .outcome { display:grid; gap:12px; margin-top:34px; }
     .outcome-row { display:flex; gap:13px; align-items:flex-start; }
@@ -142,7 +146,15 @@
       <div>
         <div class="eyebrow">Claude Code guardrails. Free local gates, optional Pro.</div>
         <h1>Stop paying for the same Claude Code mistake twice.</h1>
+        <p class="audience" id="pricing-audience"><strong>Who it's for:</strong> Claude Code and Codex users whose agent has already broken something once. The local CLI is free and stays free.</p>
         <p class="lede">Free local gates for Claude Code, or self-serve Pro. Choose the plan that fits your workflow.</p>
+
+        <figure class="gate-demo" id="gate-demo">
+          <video id="gate-demo-video" width="1104" height="832" controls autoplay muted loop playsinline preload="auto" poster="/media/thumbgate-gate-demo-poster.jpg" aria-label="Recording: Claude Code deletes a folder, gets thumbs-down three times, and the fourth session is blocked by the gate">
+            <source src="/media/thumbgate-gate-demo.mp4" type="video/mp4">
+          </video>
+          <figcaption>Real run, 58 seconds, nothing mocked. Claude Code deletes a folder outside the repo three times. After three thumbs-downs for that command, a fourth session is denied before it runs. A reworded delete is not caught. Hard deny needs <code>THUMBGATE_STRICT_ENFORCEMENT=1</code>. <a href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/demo/gate-demo/README.md" target="_blank" rel="noopener">How it was recorded</a>.</figcaption>
+        </figure>
 
         <div class="outcome">
           <div class="outcome-row"><span class="tick">✓</span><span>Pro: Claude Code recall, dashboard, and exports.</span></div>

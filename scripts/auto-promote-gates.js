@@ -659,6 +659,10 @@ function promote(feedbackLogPath, options) {
       }
       // Update occurrence count even if no action change
       data.gates[existingIdx].occurrences = group.count;
+      // The deny text quotes the count; keep it in step so a block does not say "1 occurrences".
+      if (String(data.gates[existingIdx].message || '').startsWith('Auto-promoted ')) {
+        data.gates[existingIdx].message = buildGateRule(group, data.gates[existingIdx].action).message;
+      }
       continue;
     }
 

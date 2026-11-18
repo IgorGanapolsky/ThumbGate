@@ -91,6 +91,28 @@ test('GET /media/thumbgate-demo.gif serves the animated demo GIF without an API 
   assert.ok(Number(res.headers.get('content-length')) > 0);
 });
 
+test('GET /media/thumbgate-gate-demo.mp4 serves video/mp4 and answers Range requests (iOS Safari needs 206)', async () => {
+  const full = await fetch(`${origin}/media/thumbgate-gate-demo.mp4`, { method: 'HEAD' });
+  assert.equal(full.status, 200);
+  assert.equal(full.headers.get('content-type'), 'video/mp4');
+  assert.equal(full.headers.get('accept-ranges'), 'bytes');
+  const size = Number(full.headers.get('content-length'));
+  assert.ok(size > 1000);
+
+  const part = await fetch(`${origin}/media/thumbgate-gate-demo.mp4`, { headers: { Range: 'bytes=0-99' } });
+  assert.equal(part.status, 206);
+  assert.equal(part.headers.get('content-range'), `bytes 0-99/${size}`);
+  assert.equal((await part.arrayBuffer()).byteLength, 100);
+
+  const tail = await fetch(`${origin}/media/thumbgate-gate-demo.mp4`, { headers: { Range: 'bytes=-10' } });
+  assert.equal(tail.status, 206);
+  assert.equal((await tail.arrayBuffer()).byteLength, 10);
+
+  const bad = await fetch(`${origin}/media/thumbgate-gate-demo.mp4`, { headers: { Range: `bytes=${size + 5}-` } });
+  assert.equal(bad.status, 416);
+  assert.equal(bad.headers.get('content-range'), `bytes */${size}`);
+});
+
 test('GET /media/does-not-exist.gif returns 404', async () => {
   const res = await fetch(`${origin}/media/does-not-exist.gif`);
   assert.equal(res.status, 404);

@@ -237,6 +237,7 @@ test('promote: block threshold upgrades gate from warn to block', (t) => {
   const gate = data.gates.find((g) => (g.pattern || '').includes('git push --force'));
   assert.ok(gate);
   assert.strictEqual(gate.action, 'block');
+  assert.match(gate.message, new RegExp(`\\(${BLOCK_THRESHOLD} occurrences in `), 'deny text must quote the current count, not the count at first promotion');
 });
 
 // -- promote: deduplication --

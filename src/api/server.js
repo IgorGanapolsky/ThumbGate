@@ -483,7 +483,26 @@ function deleteLessonJsonlRecord(filePath, recordId, options) {
   return getLessonSynthesisModule().deleteRecordFromJsonl(filePath, recordId, options);
 }
 
-function serveStaticFile(res, filePath, { headOnly = false, cacheSeconds = 86400 } = {}) {
+// Single-range "bytes=a-b" only; iOS Safari will not play a <video> unless the server answers 206.
+function parseByteRange(header, size) {
+  const match = /^bytes=(\d*)-(\d*)$/.exec(String(header || '').trim());
+  if (!match || (match[1] === '' && match[2] === '')) return null;
+  let start;
+  let end;
+  if (match[1] === '') {
+    const suffix = Number(match[2]);
+    if (suffix === 0) return 'invalid';
+    start = Math.max(size - suffix, 0);
+    end = size - 1;
+  } else {
+    start = Number(match[1]);
+    end = match[2] === '' ? size - 1 : Math.min(Number(match[2]), size - 1);
+  }
+  if (start >= size || start > end) return 'invalid';
+  return { start, end };
+}
+
+function serveStaticFile(res, filePath, { headOnly = false, cacheSeconds = 86400, rangeHeader = null } = {}) {
   const ext = path.extname(filePath).toLowerCase();
   const contentType = STATIC_MIME_BY_EXT[ext] || 'application/octet-stream';
   let stat;
@@ -501,11 +520,30 @@ function serveStaticFile(res, filePath, { headOnly = false, cacheSeconds = 86400
     res.end(JSON.stringify({ error: 'Not found' }));
     return;
   }
-  res.statusCode = 200;
   res.setHeader('Content-Type', contentType);
-  res.setHeader('Content-Length', stat.size);
   res.setHeader('Cache-Control', `public, max-age=${cacheSeconds}, immutable`);
   res.setHeader('Referrer-Policy', 'same-origin');
+  res.setHeader('Accept-Ranges', 'bytes');
+  const range = rangeHeader ? parseByteRange(rangeHeader, stat.size) : null;
+  if (range === 'invalid') {
+    res.statusCode = 416;
+    res.setHeader('Content-Range', `bytes */${stat.size}`);
+    res.end();
+    return;
+  }
+  if (range) {
+    res.statusCode = 206;
+    res.setHeader('Content-Range', `bytes ${range.start}-${range.end}/${stat.size}`);
+    res.setHeader('Content-Length', range.end - range.start + 1);
+    if (headOnly) {
+      res.end();
+      return;
+    }
+    fs.createReadStream(filePath, { start: range.start, end: range.end }).pipe(res);
+    return;
+  }
+  res.statusCode = 200;
+  res.setHeader('Content-Length', stat.size);
   if (headOnly) {
     res.end();
     return;
@@ -8943,7 +8981,7 @@ async function addContext(){
         sendJson(res, 403, { error: 'Forbidden' });
         return;
       }
-      serveStaticFile(res, resolved, { headOnly: isHeadRequest });
+      serveStaticFile(res, resolved, { headOnly: isHeadRequest, rangeHeader: req.headers.range });
       return;
     }
 
