@@ -625,6 +625,7 @@ function promote(feedbackLogPath, options) {
     ...inertRemoved.map((e) => ({ type: 'quarantined-inert-prose', gateId: e.id, pattern: e.pattern })),
   ];
 
+  let upgradeLine;
   for (const group of Object.values(groups)) {
     if (group.count < WARN_THRESHOLD) continue;
 
@@ -721,6 +722,16 @@ function promote(feedbackLogPath, options) {
       occurrences: group.count,
       ...(gate.quarantined ? { falseBlocks: regression.falseBlocks, allowSampleSize: regression.allowSampleSize } : {}),
     });
+
+    // Free tier enforces only the first FREE_TIER_MAX_GATES learned rules (see gates-engine
+    // loadGates). A rule past that is stored but not enforced: count it and say so once.
+    const rateLimiter = require('./rate-limiter');
+    if (data.gates.length > rateLimiter.FREE_TIER_MAX_GATES && !rateLimiter.isProTier()) {
+      const line = rateLimiter.capUpgradeLine(group.latestContext || gate.id);
+      promotions.push({ type: 'cap-hit', gateId: gate.id, enforced: false, cap: rateLimiter.FREE_TIER_MAX_GATES, activeGates: data.gates.length });
+      require('./cap-hit-counter').recordCapHit({ feedbackDir: opts.feedbackDir, cap: rateLimiter.FREE_TIER_MAX_GATES, activeGates: data.gates.length });
+      if (line) upgradeLine = line;
+    }
   }
 
   // Log promotions
@@ -731,7 +742,7 @@ function promote(feedbackLogPath, options) {
 
   saveAutoGates(data, opts);
 
-  return { promotions, totalGates: data.gates.length, data };
+  return { promotions, totalGates: data.gates.length, data, ...(upgradeLine ? { upgradeLine } : {}) };
 }
 
 function runCli(argv = process.argv.slice(2)) {

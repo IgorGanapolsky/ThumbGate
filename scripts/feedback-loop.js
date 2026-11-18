@@ -2079,6 +2079,10 @@ function captureFeedback(params, options = {}) {
     try {
       const autoPromote = require('./auto-promote-gates');
       const promoteResult = autoPromote.promote(FEEDBACK_LOG_PATH, { gateAction: feedbackEvent.gateAction });
+      // Free tier: a 4th learned rule is stored but not enforced. Say so once, in one line.
+      if (promoteResult && promoteResult.upgradeLine && !tenantDataScope()) {
+        process.stderr.write(`${promoteResult.upgradeLine}\n`);
+      }
       // First-rule activation telemetry: anonymous ping the first time
       // a prevention rule auto-promotes for this install. Idempotent —
       // see scripts/activation-tracker.js. Critical for activation funnel

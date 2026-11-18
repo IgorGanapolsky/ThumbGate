@@ -241,6 +241,13 @@ function proWouldHaveBlockedSentence(mistake) {
   return `Pro would have blocked this repeat: ${clean}. ${PRO_REPEAT_URL}`;
 }
 
+// One plain line shown the moment a free install learns a rule it cannot enforce (rule 4 and up).
+function capUpgradeLine(rule, maxActive = FREE_TIER_MAX_GATES) {
+  const clean = scrubRepeatText(rule);
+  if (!clean) return null;
+  return `Free keeps ${maxActive} rules, so ThumbGate can't enforce this new one: ${clean}. Pro keeps them all: ${PRO_REPEAT_URL}`;
+}
+
 function droppedRepeatFromRulesMarkdown(markdown, maxActive = FREE_TIER_MAX_GATES) {
   const mistakes = [];
   for (const section of String(markdown || '').split(/\n## /)) {
@@ -272,6 +279,7 @@ module.exports = {
   PAYWALL_MESSAGES,
   USAGE_FILE,
   proWouldHaveBlockedSentence,
+  capUpgradeLine,
   droppedRepeatFromRulesMarkdown,
   scrubRepeatText,
 };
