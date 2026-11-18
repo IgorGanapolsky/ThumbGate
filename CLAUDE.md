@@ -27,11 +27,16 @@ ThumbGate (`IgorGanapolsky/ThumbGate`, npm `thumbgate`) is a pre-action enforcem
 
 **NEVER approve a pull request. NEVER satisfy, dismiss, or disable a branch-protection requirement on the owner's behalf. NEVER use `--admin`, `--force`, or an owner credential to make a merge possible that would otherwise be blocked.**
 
-Everything merges through PRs under the configured branch protection and the `main governance` repository ruleset (`config/main-branch-ruleset.json`, `npm run rulesets:check`). Keep `bypass_actors` empty (zero `bypass_actors`). Non-mutating diagnosis and a separate policy-change PR are allowed, but stop before any action that mutates review or protection state.
+Since 2026-11-18 (see Direct-Push Policy below) `main` takes direct pushes under the `main governance` repository ruleset (`config/main-branch-ruleset.json`, `npm run rulesets:check`). Keep `bypass_actors` empty (zero `bypass_actors`). Any PR that is opened still needs a human review; agents never approve one. Non-mutating diagnosis and a separate policy-change PR are allowed, but stop before any action that mutates review or protection state. The one exception is a change the owner orders by name, such as the 2026-11-18 direct-push order recorded below.
 
 - **Why:** On 2026-07-10, an agent approved `#2768` with the owner's `gh` credentials to test a hypothesis and flipped `mergeStateStatus` from `BLOCKED` to `CLEAN`, bypassing a control that exists so a human reads the diff.
 
-## PR and CI Protocol
+## Direct-Push Policy (Igor, 2026-11-18; supersedes the PR steps below)
+
+- **Rule:** Push straight to `main` after `git pull --rebase origin main`; never force-push; never `--no-verify`. The `pull_request` and required-status-check rules are off in both classic protection and the `main governance` ruleset. `required_linear_history`, `deletion` (no deletion) and `non_fast_forward` (no force-push) stay on with zero `bypass_actors`; `npm run rulesets:check` and `npm run branch-protection:check` flag either removed rule coming back as drift. `.githooks/pre-push` runs the fast unit tests one file at a time under `nice -n 15`. `ci.yml`, `e2e.yml`, `sonarcloud.yml`, `changeset-check.yml` and `claude-code-review.yml` run on a `v*` tag or `workflow_dispatch` only (`codeql.yml` also keeps its weekly schedule); deploy, publish, rollback, Stripe and scheduled workflows are unchanged.
+- **Why:** Igor, 2026-11-18: "our repos here don't need PRs". The before-state is saved in `docs/ops/branch-protection-before-2026-11-18.json` so it can be restored.
+
+## PR and CI Protocol (legacy; only if PRs are used again)
 
 - **Rule:** Work in an isolated branch/worktree off `origin/main` (`feat/...`, `fix/...`, `chore/...`), include a `.changeset/<slug>.md` when touching release-relevant paths, resolve all review threads (`gh pr view --json reviewDecision,comments,reviewThreads`), and submit only terminal-green PRs via `npm run pr:manage` and `/trunk merge` (never raw `gh pr merge --auto` or `--no-verify`). Update memory and instructions together whenever a rule changes.
 - **Why:** Uncoordinated edits in shared checkouts wipe sibling agent work, and merging before terminal CI or thread resolution breaks `main` and blocks the Trunk queue.

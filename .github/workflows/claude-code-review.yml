@@ -1,10 +1,11 @@
 name: Claude Code Review
 
 on:
-  pull_request:
-    types: [ready_for_review]
-  issue_comment:
-    types: [created]
+  # Direct-push policy (Igor, 2026-11-18): no PRs, so test workflows run on a
+  # release tag or by hand only. Pre-push hook runs the fast unit tests.
+  push:
+    tags: ['v*']
+  workflow_dispatch:
 
 concurrency:
   group: claude-code-review-${{ github.event_name }}-${{ github.event.pull_request.number || github.event.issue.number || github.ref }}

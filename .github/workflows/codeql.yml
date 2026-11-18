@@ -1,15 +1,12 @@
 name: CodeQL
 
 on:
+  # Direct-push policy (Igor, 2026-11-18): no PRs, so test workflows run on a
+  # release tag or by hand only. Pre-push hook runs the fast unit tests.
   push:
-    branches: [main]
-  pull_request:
-    branches: [main]
-  merge_group:
-    branches: [main]
-    types: [checks_requested]
+    tags: ['v*']
   schedule:
-    - cron: '23 6 * * 1'
+    - cron: '23 6 * * 1'  # weekly scan kept: scheduled workflows stay untouched
   workflow_dispatch:
 
 permissions:

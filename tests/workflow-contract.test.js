@@ -67,7 +67,8 @@ test('pull request template includes required proof sections', () => {
 test('Claude Code Review workflow runs once on ready_for_review and skips trunk-merge/* and dependabot', () => {
   const raw = readText(path.join('.github', 'workflows', 'claude-code-review.yml'));
 
-  assert.match(raw, /pull_request:\s*\n\s*types:\s*\[ready_for_review\]/);
+  // Direct-push policy (2026-11-18): tag or dispatch only.
+  assert.match(raw, /push:\s*\n\s*tags:\s*\['v\*'\]\s*\n\s*workflow_dispatch:/);
   assert.doesNotMatch(raw, /types:\s*\[[^\]]*synchronize[^\]]*\]/);
   assert.match(raw, /!startsWith\(github\.head_ref,\s*'trunk-merge\/'\)/);
   assert.match(raw, /!github\.event\.pull_request\.draft/);
