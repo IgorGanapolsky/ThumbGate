@@ -381,6 +381,8 @@ const PUBLIC_ASSETS_DIR = path.resolve(__dirname, '../../public/assets');
 const LEARN_PAGE_PATHS_BY_SLUG = buildPublicHtmlFileMap(LEARN_DIR);
 const GUIDE_PAGE_PATHS_BY_SLUG = buildPublicHtmlFileMap(GUIDES_DIR);
 const COMPARE_PAGE_PATHS_BY_SLUG = buildPublicHtmlFileMap(COMPARE_DIR);
+const REPORTS_DIR = path.resolve(__dirname, '../../public/reports');
+const REPORT_PAGE_PATHS_BY_SLUG = buildPublicHtmlFileMap(REPORTS_DIR);
 const USE_CASE_PAGE_PATHS_BY_SLUG = buildPublicHtmlFileMap(USE_CASES_DIR);
 const BLOG_PAGE_PATHS_BY_SLUG = buildPublicHtmlFileMap(BLOG_DIR);
 const BUYER_INTENT_SCRIPT_PATH = path.resolve(__dirname, '../../public/js/buyer-intent.js');
@@ -4823,6 +4825,7 @@ function renderSitemapXml(runtimeConfig) {
       { dir: 'compare', route: '/compare', priority: '0.85' },
       { dir: 'guides', route: '/guides', priority: '0.85' },
       { dir: 'blog', route: '/blog', priority: '0.8' },
+      { dir: 'reports', route: '/reports', priority: '0.8' },
     ];
     for (const catalog of seoDirectories) {
       const files = fs.readdirSync(path.join(PUBLIC_DIR, catalog.dir)).sort((a, b) => a.localeCompare(b));
@@ -8895,6 +8898,17 @@ async function addContext(){
         const html = normalizePublicMarketingHtml(fs.readFileSync(comparePath, 'utf-8'), hostedConfig, requestHost);
         sendHtml(res, 200, html, {}, { headOnly: isHeadRequest });
       } catch { sendJson(res, 404, { error: 'Comparison not found' }); }
+      return;
+    }
+
+    if (isGetLikeRequest && pathname.startsWith('/reports/')) {
+      try {
+        const reportPath = resolvePublicHtmlFile(REPORT_PAGE_PATHS_BY_SLUG, pathname.replace('/reports/', ''));
+        if (!reportPath) { sendJson(res, 404, { error: 'Report not found' }); return; }
+        const requestHost = getSafePublicRequestHost(req);
+        const html = normalizePublicMarketingHtml(fs.readFileSync(reportPath, 'utf-8'), hostedConfig, requestHost);
+        sendHtml(res, 200, html, {}, { headOnly: isHeadRequest });
+      } catch { sendJson(res, 404, { error: 'Report not found' }); }
       return;
     }
 
