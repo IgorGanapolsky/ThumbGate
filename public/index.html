@@ -13,10 +13,10 @@
   <meta property="og:image" content="https://thumbgate.ai/og.png">
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:image" content="https://thumbgate.ai/og.png">
-  <title>ThumbGate — Stop Claude Code from repeating the same mistake</title>
-  <meta name="description" content="Thumbs-down Claude Code once and ThumbGate blocks it next time. Free local PreToolUse gates; Pro adds recall and every learned rule.">
-  <meta property="og:title" content="ThumbGate — Stop Claude Code from repeating the same mistake">
-  <meta property="og:description" content="Thumbs-down Claude Code once and ThumbGate blocks it next time. Free local PreToolUse gates; Pro adds recall and every learned rule.">
+  <title>ThumbGate — Warn Claude Code before it repeats a mistake</title>
+  <meta name="description" content="Thumbs-down a Claude Code mistake once and ThumbGate warns next time; after three thumbs-downs on the same command, strict mode blocks it. Free local PreToolUse gates; Pro adds recall and every learned rule.">
+  <meta property="og:title" content="ThumbGate — Warn Claude Code before it repeats a mistake">
+  <meta property="og:description" content="Thumbs-down a Claude Code mistake once and ThumbGate warns next time; after three thumbs-downs on the same command, strict mode blocks it. Free local PreToolUse gates; Pro adds recall and every learned rule.">
   <meta property="og:type" content="website">
   <meta property="og:url" content="__APP_ORIGIN__/">
   <script defer data-domain="thumbgate.ai" src="https://plausible.io/js/script.tagged-events.js"></script>
@@ -689,7 +689,7 @@
   <meta http-equiv="origin-trial" content="AzcKU1rE0e4sfmh97XzN75yRFS+xFzZJrUJWswxGr6RahQWDNupKLhkVvdQZQayA/s4FLwcKpPntqUZgclhDjgoAAAB0eyJvcmlnaW4iOiJodHRwczovL3RodW1iZ2F0ZS5hcHA6NDQzIiwiZmVhdHVyZSI6IldlYk1DUCIsImV4cGlyeSI6MTgwNjM2NDgwMCwiaXNTdWJkb21haW4iOnRydWUsImlzVGhpcmRQYXJ0eSI6dHJ1ZX0=" />
   <meta http-equiv="origin-trial" content="A06wj3yXAwOhT5Cd5WYdVQotlYa/OID3SW099ZQB+cs9eHeJmtH1yHudLwqDKZ7y43tQvLB4TfM/pjmUa7aJNQsAAAB4eyJvcmlnaW4iOiJodHRwczovL3d3dy50aHVtYmdhdGUuYXBwOjQ0MyIsImZlYXR1cmUiOiJXZWJNQ1AiLCJleHBpcnkiOjE4MDYzNjQ4MDAsImlzU3ViZG9tYWluIjp0cnVlLCJpc1RoaXJkUGFydHkiOnRydWV9" />
   <script src="/js/webmcp.js" defer></script>
-<script type="application/ld+json">{"@context": "https://schema.org", "@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": "What is free?", "acceptedAnswer": {"@type": "Answer", "text": "The MIT local CLI captures feedback and runs configured gates. Install the Claude Code plugin, then run npx thumbgate init --agent claude."}}, {"@type": "Question", "name": "What does Pro add?", "acceptedAnswer": {"@type": "Answer", "text": "Pro adds memory: every thumbs-down stays an enforced rule, plus recall and lesson search. Strict blocking of catastrophic commands stays free. Compare current subscription details at /pricing."}}, {"@type": "Question", "name": "What does ThumbGate not do?", "acceptedAnswer": {"@type": "Answer", "text": "Hard deny needs strict mode (THUMBGATE_STRICT_ENFORCEMENT=1); by default matching destructive actions warn and are logged. Detected secret exfiltration and gate-process bypass attempts are denied by default. It does not retrain model weights, does not rewrite policy silently, and does not contain the blast radius, which is a sandbox job. Only the agents in Also works with are supported, and advisory ones do not guarantee blocking."}}, {"@type": "Question", "name": "Is it really self-improving?", "acceptedAnswer": {"@type": "Answer", "text": "Thumbs teach. The gate enforces. Feedback refines the control layer, not the LLM. Reviewed outcomes can become prevention rules under your control."}}, {"@type": "Question", "name": "Which integrations enforce gates?", "acceptedAnswer": {"@type": "Answer", "text": "Claude Code enforces gates through PreToolUse hooks. Other agents are listed under Also works with; advisory integrations do not guarantee execution blocking."}}]}</script>
+<script type="application/ld+json">{"@context": "https://schema.org", "@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": "What is free?", "acceptedAnswer": {"@type": "Answer", "text": "The MIT local CLI captures feedback and runs configured gates. Install the Claude Code plugin, then run npx thumbgate init --agent claude."}}, {"@type": "Question", "name": "What does Pro add?", "acceptedAnswer": {"@type": "Answer", "text": "Pro adds memory: every learned rule stays active, plus recall and lesson search. Strict blocking of catastrophic commands stays free. Compare current subscription details at /pricing."}}, {"@type": "Question", "name": "What does ThumbGate not do?", "acceptedAnswer": {"@type": "Answer", "text": "Hard deny needs strict mode (THUMBGATE_STRICT_ENFORCEMENT=1); by default matching destructive actions warn and are logged. Detected secret exfiltration and gate-process bypass attempts are denied by default. It does not retrain model weights, does not rewrite policy silently, and does not contain the blast radius, which is a sandbox job. Only the agents in Also works with are supported, and advisory ones do not guarantee blocking."}}, {"@type": "Question", "name": "Is it really self-improving?", "acceptedAnswer": {"@type": "Answer", "text": "Thumbs teach. The gate enforces. Feedback refines the control layer, not the LLM. Reviewed outcomes can become prevention rules under your control."}}, {"@type": "Question", "name": "Which integrations enforce gates?", "acceptedAnswer": {"@type": "Answer", "text": "Claude Code enforces gates through PreToolUse hooks. Other agents are listed under Also works with; advisory integrations do not guarantee execution blocking."}}]}</script>
 <script type="application/ld+json">{"@context":"https://schema.org","@type":"SoftwareApplication","name":"ThumbGate","applicationCategory":"DeveloperApplication","operatingSystem":"Cross-platform","url":"__APP_ORIGIN__/","offers":{"@type":"Offer","name":"ThumbGate Pro","price":"__PRO_PRICE_DOLLARS__","priceCurrency":"USD","url":"__APP_ORIGIN__/checkout/pro"}}</script>
 </head>
 <body data-revenue-assist="off">
@@ -743,9 +743,9 @@
             <span class="up" aria-hidden="true"><svg class="hero-thumb-up" viewBox="0 0 32 32" aria-hidden="true"><use href="#thumb-glyph"/></svg></span>
             <button type="button" class="down" id="hero-thumb-down" aria-label="Record a thumbs-down for the selected command"><svg class="hero-thumb-down" viewBox="0 0 32 32" aria-hidden="true"><use href="#thumb-glyph"/></svg></button>
           </div>
-          <h1>Stop Claude Code from repeating the same mistake. Thumbs-down it once, and ThumbGate blocks it next time.</h1>
-          <p class="hero-lede">Safe YOLO mode for Claude Code: run with bypass permissions, and ThumbGate stops the bad call and tells Claude the fix.</p>
-          <p class="hero-audience" id="hero-audience"><strong>Who it's for:</strong> Claude Code and Codex users whose agent has already broken something once. The local CLI is free.</p>
+          <h1>Thumbs-down a Claude Code mistake once, and ThumbGate warns the next time it tries that command. After three thumbs-downs on the same command, strict mode blocks it.</h1>
+          <p class="hero-lede">Run Claude Code with bypass permissions and ThumbGate checks every call: secret leaks are denied, other flagged actions warn, strict mode blocks them.</p>
+          <p class="hero-audience" id="hero-audience"><strong>Who it's for:</strong> Claude Code users whose agent has already broken something once. The local CLI is free.</p>
           <div class="actions"style="display:flex;gap:12px;flex-wrap:wrap;align-items:center;margin:0 0 24px;">
             <button type="button" class="button-primary" data-copy-install data-cta-id="hero_install_copy_primary">Copy free install: npx thumbgate init --agent claude</button>
             <a class="button-pro" style="background:transparent;color:var(--text) !important;border:1px solid var(--border);box-shadow:none;font-size:14px;min-height:40px;padding:0 14px;" href="/pricing" data-cta-id="homepage_upgrade_pricing">Upgrade to Pro, $__PRO_PRICE_DOLLARS__/mo</a>
@@ -754,7 +754,7 @@
             <video id="gate-demo-video" width="960" height="722" controls autoplay muted loop playsinline preload="auto" poster="/media/thumbgate-gate-demo-poster.jpg" aria-label="Recording: Claude Code deletes a folder, gets thumbs-down three times, and the fourth session is blocked by the gate">
               <source src="/media/thumbgate-gate-demo.mp4" type="video/mp4">
             </video>
-            <figcaption>Real run, 58 seconds, nothing mocked. Claude Code deletes a folder outside the repo three times. After three thumbs-downs for that command, a fourth session is denied before it runs. A reworded delete is not caught. Hard deny needs <code>THUMBGATE_STRICT_ENFORCEMENT=1</code>. <a href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/demo/gate-demo/README.md" target="_blank" rel="noopener">How it was recorded</a>.</figcaption>
+            <figcaption>Real 58-second run with <code>THUMBGATE_STRICT_ENFORCEMENT=1</code>: three thumbs-downs, then the fourth attempt is denied. A reworded delete is not caught. <a href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/demo/gate-demo/README.md" target="_blank" rel="noopener">How it was recorded</a>.</figcaption>
           </figure>
           <div class="hero-terminal" id="hero-recorded-deny" aria-label="Recorded PreToolUse decisions">
             <div class="terminal-chrome" aria-hidden="true">
@@ -810,7 +810,7 @@ $ ... "rm -rf ~/"
         <ol class="loop-3">
           <li><strong>1 · Catch</strong> Claude tries something you rejected before, like <code>npm publish</code> from the wrong branch, or mocking the database in an end-to-end test.</li>
           <li><strong>2 · Signal</strong> One thumbs-down with the reason: <code>npx thumbgate capture --feedback=down --context="mocked the DB in an e2e test"</code></li>
-          <li><strong>3 · Enforce</strong> A local PreToolUse gate checks every future tool call in every Claude Code session, and denies a match with your reason as the correction.</li>
+          <li><strong>3 · Enforce</strong> A local PreToolUse gate checks every future tool call in every Claude Code session in that project. A match warns Claude with your reason; in strict mode, after three thumbs-downs, it is denied.</li>
         </ol>
         <h3 style="margin-top:28px;font-size:1.1rem;">What <code>init</code> adds to your Claude Code settings</h3>
 <pre class="cc-cmd settings-block"><code>{
@@ -834,9 +834,9 @@ $ ... "rm -rf ~/"
           <caption>Hand-written PreToolUse hooks and settings.json deny rules versus ThumbGate</caption>
           <thead><tr><th></th><th>Own hooks + deny rules</th><th>ThumbGate</th></tr></thead>
           <tbody>
-            <tr><th>Where a rule comes from</th><td>You write the pattern by hand</td><td>One thumbs-down with a reason becomes a rule</td></tr>
+            <tr><th>Where a rule comes from</th><td>You write the pattern by hand</td><td>One thumbs-down with a reason becomes a warning rule</td></tr>
             <tr><th>Across sessions</th><td>Whatever you saved in settings</td><td>Learned rules live on disk and load every session</td></tr>
-            <tr><th>What Claude is told</th><td>Whatever message you wrote</td><td>Your own reason is returned as the correction</td></tr>
+            <tr><th>What Claude is told</th><td>Whatever message you wrote</td><td>Your own reason is shown to Claude in the warning</td></tr>
             <tr><th>Visible in <code>/hooks</code></th><td>Yes</td><td>Yes</td></tr>
           </tbody>
         </table>
@@ -855,7 +855,7 @@ $ ... "rm -rf ~/"
           <h3 class="section-title" style="font-size:1.6rem;">Why Pro is worth $__PRO_PRICE_DOLLARS__</h3>
           <p class="install-hint">Free already blocks force-push, <code>git reset --hard</code>, <code>git clean -f</code> and <code>rm -rf</code> on home or root, in strict mode. Pro is about memory.</p>
           <ul class="offer-points">
-            <li><strong>Every thumbs-down stays a rule.</strong> Free enforces your first 3 learned rules. Pro enforces all of them.</li>
+            <li><strong>Every learned rule stays active.</strong> Free keeps your first 3 learned rules active. Pro keeps all of them.</li>
             <li><strong>Recall.</strong> Ask what Claude got wrong before, and search past lessons. Both are Pro only.</li>
             <li><strong>Coming, not shipped yet:</strong> team-shared rules, lessons synced across machines, audit history.</li>
           </ul>
@@ -920,7 +920,7 @@ $ ... "rm -rf ~/"
             <span class="loop-number">3</span>
             <div class="thumb-icon" aria-hidden="true">📈</div>
             <h3>Rank and refine</h3>
-            <p>Re-rank lessons for the action. Repeated negatives can promote to blocking gates; stale gates expire.</p>
+            <p>Re-rank lessons for the action. Repeated negatives become gates that warn, or block in strict mode; stale gates expire.</p>
             <span class="loop-hint">Under the hood ↓</span>
           </div>
           <div class="loop-step" role="tab" tabindex="0" id="loop-tab-4" data-loop-step="4" aria-selected="false" aria-controls="loop-panel" aria-expanded="false">
@@ -1014,7 +1014,7 @@ next      decision recorded before execution</pre>
         <h2 class="section-title">Five questions, answered plainly.</h2>
         <div class="faq-list">
 <div class="faq-item"><button class="faq-q" type="button" aria-expanded="false">What is free?</button><div class="faq-a">The MIT local CLI captures feedback and runs configured gates. Install the Claude Code plugin, then run npx thumbgate init --agent claude.</div></div>
-<div class="faq-item"><button class="faq-q" type="button" aria-expanded="false">What does Pro add?</button><div class="faq-a">Pro adds memory: every thumbs-down stays an enforced rule, plus recall and lesson search. Strict blocking of catastrophic commands stays free. Compare current subscription details at /pricing.</div></div>
+<div class="faq-item"><button class="faq-q" type="button" aria-expanded="false">What does Pro add?</button><div class="faq-a">Pro adds memory: every learned rule stays active, plus recall and lesson search. Strict blocking of catastrophic commands stays free. Compare current subscription details at /pricing.</div></div>
 <div class="faq-item"><button class="faq-q" type="button" aria-expanded="false">What does ThumbGate not do?</button><div class="faq-a">Hard deny needs strict mode (THUMBGATE_STRICT_ENFORCEMENT=1); by default matching destructive actions warn and are logged. Detected secret exfiltration and gate-process bypass attempts are denied by default. It does not retrain model weights, does not rewrite policy silently, and does not contain the blast radius, which is a sandbox job. Only the agents in Also works with are supported, and advisory ones do not guarantee blocking.</div></div>
 <div class="faq-item"><button class="faq-q" type="button" aria-expanded="false">Is it really self-improving?</button><div class="faq-a">Thumbs teach. The gate enforces. Feedback refines the control layer, not the LLM. Reviewed outcomes can become prevention rules under your control.</div></div>
 <div class="faq-item"><button class="faq-q" type="button" aria-expanded="false">Which integrations enforce gates?</button><div class="faq-a">Claude Code enforces gates through PreToolUse hooks. Other agents are listed under Also works with; advisory integrations do not guarantee execution blocking.</div></div>
@@ -1026,7 +1026,7 @@ next      decision recorded before execution</pre>
     <section class="final">
       <div class="shell">
         <div class="section-kicker">Start free today</div>
-        <h2 class="section-title">Block the mistake your agent made last week.</h2>
+        <h2 class="section-title">Get warned before your agent repeats last week's mistake.</h2>
         <p class="section-lede">Run <code>npx thumbgate init</code> (MIT), or choose <strong style="color:var(--text)">self-serve Pro</strong>.</p>
         <div style="display:flex;flex-wrap:wrap;gap:12px;justify-content:center;margin-top:22px">
           <a class="nav-buy" href="#install" data-cta-id="final_install_free">Install free</a>
@@ -1052,7 +1052,7 @@ next      decision recorded before execution</pre>
             <tr><th>Agent</th><th>Enforcement</th><th>Default (secrets)</th><th>Default (destructive)</th><th>Strict mode</th></tr>
           </thead>
           <tbody>
-            <tr><th>Claude Code, Codex, Gemini CLI</th><td>Blocks before tool runs</td><td>DENY</td><td>WARN</td><td>DENY</td></tr>
+            <tr><th>Claude Code</th><td>Blocks before tool runs</td><td>DENY</td><td>WARN</td><td>DENY</td></tr>
             <tr><th>Cursor, Cline, OpenCode</th><td>Advisory</td><td>DENY</td><td>WARN</td><td>DENY</td></tr>
             <tr><th>Amp</th><td>Feedback only</td><td>Logged</td><td>Logged</td><td>Logged</td></tr>
           </tbody>

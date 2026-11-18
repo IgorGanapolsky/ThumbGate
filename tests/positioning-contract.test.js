@@ -50,7 +50,7 @@ test('public surfaces lead with outcomes instead of infrastructure abstractions'
 
   assert.match(readme, /AI coding agents repeat mistakes/i);
   assert.match(readme, /evaluate the proposed tool call before execution/i);
-  assert.match(landingPage, /Stop Claude Code from repeating the same mistake\. Thumbs-down it once, and ThumbGate blocks it next time/i);
+  assert.match(landingPage, /Thumbs-down a Claude Code mistake once, and ThumbGate warns the next time it tries that command\. After three thumbs-downs on the same command, strict mode blocks it/i);
   assert.match(landingPage, /allowed, warned, or denied/i);
   assert.match(landingPage, /Free local PreToolUse gates/i);
   assert.match(gptInstructions, /Sell outcomes before infrastructure/i);

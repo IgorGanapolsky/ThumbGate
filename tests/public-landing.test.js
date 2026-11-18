@@ -660,11 +660,11 @@ test('hero states the approved workflow scope with fit-first and free paths', ()
   );
   const lede = normalizeHtmlText((hero.match(/<p class="hero-lede">([\s\S]*?)<\/p>/) || [])[1]);
 
-  assert.match(landingPage, /Stop Claude Code from repeating the same mistake/i);
-  assert.match(landingPage, /ThumbGate — Stop Claude Code from repeating the same mistake/i);
-  assert.match(hero, /<h1>Stop Claude Code from repeating the same mistake\. Thumbs-down it once, and ThumbGate blocks it next time\.<\/h1>/i);
+  assert.match(landingPage, /Thumbs-down a Claude Code mistake once/i);
+  assert.match(landingPage, /ThumbGate — Warn Claude Code before it repeats a mistake/i);
+  assert.match(hero, /<h1>Thumbs-down a Claude Code mistake once, and ThumbGate warns the next time it tries that command\. After three thumbs-downs on the same command, strict mode blocks it\.<\/h1>/i);
   assert.match(hero, /PreToolUse gate for Claude Code/i);
-  assert.match(hero, /Safe YOLO mode for Claude Code/i);
+  assert.match(hero, /ThumbGate checks every call: secret leaks are denied, other flagged actions warn, strict mode blocks them/i);
   assert.match(hero, /data-recorded-deny/);
   assert.match(hero, /permissionDecision":"deny/);
   assert.match(hero, /THUMBGATE_STRICT_ENFORCEMENT=1/);
@@ -689,7 +689,7 @@ test('hero states the approved workflow scope with fit-first and free paths', ()
   const alsoStart = landingPage.indexOf('id="also-works-with"');
   assert.ok(alsoStart > landingPage.indexOf('id="faq"'), 'Also works with sits below the FAQ, near the footer');
   assert.ok(landingPage.indexOf('Enforcement by agent and mode') > alsoStart, 'enforcement table moved into Also works with');
-  assert.match(landingPage.slice(alsoStart), /Claude Code, Codex, Gemini CLI<\/th><td>Blocks before tool runs<\/td><td>DENY<\/td><td>WARN<\/td><td>DENY/);
+  assert.match(landingPage.slice(alsoStart), /Claude Code<\/th><td>Blocks before tool runs<\/td><td>DENY<\/td><td>WARN<\/td><td>DENY/);
   assert.match(landingPage.slice(alsoStart), /Amp<\/th><td>Feedback only/);
   assert.ok(lede.split(/\s+/).length <= 45, `hero lede is ${lede.split(/\s+/).length} words`);
 });

@@ -4,7 +4,7 @@
   "pages": [
     {
       "route": "/",
-      "sentinel": "Stop Claude Code from repeating the same mistake.",
+      "sentinel": "Thumbs-down a Claude Code mistake once, and ThumbGate warns the next time it tries that command.",
       "description": "Home page hero (lifeblood \u2014 never regress)"
     },
     {

@@ -20,3 +20,7 @@ agg --font-size 18 --speed 1.25 --theme github-dark gate-demo.cast gate-demo.gif
 ```
 
 The agent's wording differs between runs. The deny in session 4 is deterministic once three thumbs-downs exist. `docs/demo/gate-demo.cast` is the recording the MP4 was made from.
+
+## What a default install does
+
+`default-install-check.sh` runs the same sandbox with no `THUMBGATE_*` variables set (telemetry off) and prints the hook decision after 0, 1, 2 and 3 thumbs-downs on one command, for the built-in gates, and for secret exfiltration. `MODE=strict` repeats it with `THUMBGATE_STRICT_ENFORCEMENT=1`; `MODE=free` repeats it past the 7-day Pro trial; `RUN_AGENT=1` adds one real Claude Code session after three thumbs-downs. Result on 18 Nov 2026 (v1.40.3): by default every learned rule and every destructive built-in gate warns and lets the action run; only secret exfiltration is denied. Strict mode denies them, and a learned rule is denied only on the third thumbs-down.

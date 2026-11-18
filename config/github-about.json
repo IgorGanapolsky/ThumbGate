@@ -23,5 +23,5 @@
     "thompson-sampling",
     "self-improving-agents"
   ],
-  "metaDescription": "Thumbs-down Claude Code once and ThumbGate blocks it next time. Free local PreToolUse gates; Pro adds recall and every learned rule."
+  "metaDescription": "Thumbs-down a Claude Code mistake once and ThumbGate warns next time; after three thumbs-downs on the same command, strict mode blocks it. Free local PreToolUse gates; Pro adds recall and every learned rule."
 }

@@ -904,7 +904,7 @@ test('root serves the landing page by default', async () => {
 
   const body = await res.text();
   assert.match(body, /ThumbGate/);
-  assert.match(body, /Stop Claude Code from repeating the same mistake\. Thumbs-down it once, and ThumbGate blocks it next time/i);
+  assert.match(body, /Thumbs-down a Claude Code mistake once, and ThumbGate warns the next time it tries that command\. After three thumbs-downs on the same command, strict mode blocks it/i);
   assert.match(body, /warn by default/i);
   assert.match(body, /strict mode/i);
   assert.doesNotMatch(body, /learns from every mistake/i);
