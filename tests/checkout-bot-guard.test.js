@@ -308,7 +308,7 @@ describe('/checkout/pro bot guard', () => {
     }
   });
 
-  it('keeps email-backed direct-to-Stripe bypass for unsampled human traffic when bypass is enabled', async () => {
+  it('never redirects a GET straight to Stripe for unsampled human traffic, even with the legacy bypass flag set', async () => {
     const previousBypass = process.env.THUMBGATE_CHECKOUT_INTERSTITIAL_BYPASS;
     const previousSampleRate = process.env.THUMBGATE_CHECKOUT_INTERSTITIAL_SAMPLE_RATE;
     const previousProStripeUrl = process.env.THUMBGATE_CHECKOUT_PRO_STRIPE_URL;
@@ -325,15 +325,15 @@ describe('/checkout/pro bot guard', () => {
           accept: BROWSER_ACCEPT,
         },
       });
-      assert.equal(res.status, 302);
-      assert.match(res.headers.get('location') || '', /^https:\/\/buy\.stripe\.com\/test-pro/);
+      assert.equal(res.status, 200);
+      assert.equal(res.headers.get('location'), null);
 
       const events = readFunnelEvents();
       const event = events.find((entry) =>
-        entry.eventType === 'checkout_interstitial_bypass_redirect' &&
+        entry.eventType === 'checkout_interstitial_view' &&
         entry.visitorId === 'visitor_unsampled'
       );
-      assert.ok(event, 'expected bypass redirect telemetry for unsampled human traffic');
+      assert.ok(event, 'expected confirm-page view telemetry, not a bypass redirect');
       assert.equal(event.interstitialSampleRate, 0);
     } finally {
       if (previousBypass === undefined) delete process.env.THUMBGATE_CHECKOUT_INTERSTITIAL_BYPASS;
@@ -444,7 +444,7 @@ describe('/checkout/pro bot guard', () => {
     }
   });
 
-  it('treats invalid checkout interstitial sample rates as zero', async () => {
+  it('treats invalid checkout interstitial sample rates as zero and still shows the page, not Stripe', async () => {
     const previousBypass = process.env.THUMBGATE_CHECKOUT_INTERSTITIAL_BYPASS;
     const previousSampleRate = process.env.THUMBGATE_CHECKOUT_INTERSTITIAL_SAMPLE_RATE;
     const previousProStripeUrl = process.env.THUMBGATE_CHECKOUT_PRO_STRIPE_URL;
@@ -461,15 +461,15 @@ describe('/checkout/pro bot guard', () => {
           accept: BROWSER_ACCEPT,
         },
       });
-      assert.equal(res.status, 302);
-      assert.match(res.headers.get('location') || '', /^https:\/\/buy\.stripe\.com\/test-pro/);
+      assert.equal(res.status, 200);
+      assert.equal(res.headers.get('location'), null);
 
       const events = readFunnelEvents();
       const event = events.find((entry) =>
-        entry.eventType === 'checkout_interstitial_bypass_redirect' &&
+        entry.eventType === 'checkout_interstitial_view' &&
         entry.visitorId === 'visitor_invalid_sample_rate'
       );
-      assert.ok(event, 'expected bypass telemetry for invalid sampling');
+      assert.ok(event, 'expected confirm-page view telemetry for invalid sampling');
       assert.equal(event.interstitialSampleRate, 0);
     } finally {
       if (previousBypass === undefined) delete process.env.THUMBGATE_CHECKOUT_INTERSTITIAL_BYPASS;
@@ -595,7 +595,7 @@ describe('/checkout/pro bot guard', () => {
     );
   });
 
-  it('human /go/pro-direct redirects to live Stripe Payment Link', async () => {
+  it('human GET /go/pro-direct goes to the confirm page, never to a live Stripe Payment Link', async () => {
     const res = await rawGet(`${origin}/go/pro-direct?utm_content=skip_form`, {
       'user-agent': BROWSER_UA,
       accept: BROWSER_ACCEPT,
@@ -603,7 +603,8 @@ describe('/checkout/pro bot guard', () => {
       'sec-fetch-dest': 'document',
     });
     assert.equal(res.status, 302);
-    assert.match(res.location, /buy\.stripe\.com\//);
+    assert.match(res.location, /\/checkout\/pro/);
+    assert.doesNotMatch(res.location, /buy\.stripe\.com\//);
   });
 
   it('browser-shaped /go/pro-direct without navigation headers is deflected (link scanners)', async () => {
@@ -616,14 +617,15 @@ describe('/checkout/pro bot guard', () => {
     assert.equal(loc.pathname, '/checkout/pro');
   });
 
-  it('/go/pro-direct from our own page passes without Sec-Fetch (older browsers)', async () => {
+  it('/go/pro-direct from our own page (older browsers) still goes to the confirm page, not a Payment Link', async () => {
     const res = await rawGet(`${origin}/go/pro-direct?utm_content=skip_form`, {
       'user-agent': BROWSER_UA,
       accept: BROWSER_ACCEPT,
       referer: new URL('/checkout/pro', origin).toString(),
     });
     assert.equal(res.status, 302);
-    assert.match(res.location, /buy\.stripe\.com\//);
+    assert.match(res.location, /\/checkout\/pro/);
+    assert.doesNotMatch(res.location, /buy\.stripe\.com\//);
   });
 
   it('/go/pro-direct loaded inside an iframe is deflected', async () => {

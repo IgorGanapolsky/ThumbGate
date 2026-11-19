@@ -479,8 +479,26 @@ test('/go/pro-direct deflects ?probe=1 and blocked synthetic emails to /checkout
         'sec-fetch-user': '?1',
       },
     });
-    assert.equal(confirmRes.status, 403);
+    // A GET never creates a session any more, so a synthetic email on a GET only sees the page.
+    assert.equal(confirmRes.status, 200);
     assert.equal(confirmRes.headers.get('location'), null);
+
+    // The POST path with a valid click token still refuses a synthetic email before any Stripe call.
+    const base = `http://127.0.0.1:${handle.port}`;
+    const tokenRes = await fetch(`${base}/v1/checkout/click-token`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', origin: base, accept: '*/*' },
+      body: JSON.stringify({ buttonId: 'pro_checkout_confirmed', landingPage: '/pricing' }),
+    });
+    const { token } = await tokenRes.json();
+    const syntheticPost = await fetch(`${base}/checkout/pro`, {
+      method: 'POST',
+      redirect: 'manual',
+      headers: { 'content-type': 'application/x-www-form-urlencoded', accept: 'text/html,*/*' },
+      body: new URLSearchParams({ confirm: '1', customer_email: 'mkjkjuwj@formtests.info', click_token: token }),
+    });
+    assert.equal(syntheticPost.status, 403);
+    assert.equal(syntheticPost.headers.get('location'), null);
     const plusConfirm = await fetch(`http://127.0.0.1:${handle.port}/checkout/pro?confirm=1&customer_email=buyer%2Btag%40acme.com&plan_id=pro&billing_cycle=monthly`, {
       redirect: 'manual',
       headers: {
@@ -492,7 +510,7 @@ test('/go/pro-direct deflects ?probe=1 and blocked synthetic emails to /checkout
         'sec-fetch-user': '?1',
       },
     });
-    assert.equal(plusConfirm.status, 403);
+    assert.equal(plusConfirm.status, 200);
     assert.equal(plusConfirm.headers.get('location'), null);
 
     const bundleRes = await getRedirect('/go/bundle-49?customer_email=dev%40acme.io');

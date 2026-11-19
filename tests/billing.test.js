@@ -807,6 +807,7 @@ describe('billing.js — funnel ledger', () => {
         installId: 'inst_live_checkout',
         customerEmail: 'buyer@example.com',
         appOrigin: 'https://thumbgate-production.up.railway.app',
+        humanClick: { admitted: true, metadata: {} },
       });
 
       assert.equal(result.localMode, false);
@@ -2021,9 +2022,16 @@ describe('API server — /v1/billing/* routes', () => {
   });
 
   test('POST /v1/billing/checkout returns sessionId', async () => {
+    // The human-click gate: a same-origin page fetches a single-use token first.
+    const tokenRes = await fetch(`http://localhost:${port}/v1/checkout/click-token`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Origin: `http://localhost:${port}` },
+      body: JSON.stringify({ buttonId: 'api_test', landingPage: '/pricing' })
+    });
+    const { token } = await tokenRes.json();
     const res = await fetch(`http://localhost:${port}/v1/billing/checkout`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', 'X-ThumbGate-Click-Token': token },
       body: JSON.stringify({ installId: 'inst_api', customerEmail: 'buyer@example.com' })
     });
     assert.equal(res.status, 200);

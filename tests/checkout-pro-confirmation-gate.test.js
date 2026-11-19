@@ -103,9 +103,9 @@ describe('/checkout/pro confirmation gate (closes 0/50 conversion leak)', () => 
     const directAt = body.indexOf('data-i="pro_checkout_direct_stripe"');
     const formAt = body.indexOf('<form action="/checkout/pro"');
     assert.ok(directAt > -1 && directAt < formAt, 'direct Stripe link must render before the email form');
-    assert.match(body, /<a class="primary"[^>]*data-i="pro_checkout_direct_stripe"/);
-    assert.match(body, /a\.primary\{[^}]*background:#22d3ee/);
-    assert.match(body, /skipLink\.addEventListener\('click'/);
+    assert.match(body, /<form action="\/go\/pro-direct" method="POST"[^>]*data-i="pro_checkout_direct_stripe"/);
+    assert.match(body, /button\.primary,[^{]*\{[^}]*background:#22d3ee/);
+    assert.match(body, /guardForm\(directForm,/);
     assert.doesNotMatch(body, /\/\^\[\^s@\]\+/);
     const literal = body.match(/\/\^\[\^\\s@\]\+@\[\^\\s@\]\+\\\.\[\^\\s@\]\+\$\//);
     assert.ok(literal, 'served email regex must keep \\\\s and \\\\.');
@@ -134,25 +134,31 @@ describe('/checkout/pro confirmation gate (closes 0/50 conversion leak)', () => 
     assert.equal(events.filter((e) => e.eventType === 'checkout_bootstrap').length, 0);
   });
 
-  it('real-browser GET WITH ?confirm=1 and email → 302 toward checkout', async () => {
+  it('real-browser GET WITH ?confirm=1 and email still only shows the page (no session on a GET)', async () => {
     clearTelemetry();
     const res = await fetch(`${origin}/checkout/pro?confirm=1&customer_email=buyer%40example.com`, {
       redirect: 'manual',
       headers: { 'user-agent': BROWSER_UA, accept: BROWSER_ACCEPT },
     });
-    assert.ok(res.status >= 300 && res.status < 400, `confirmed checkout with email must 302, got ${res.status}`);
-    const location = res.headers.get('location') || '';
-    assert.ok(/\/success\?/.test(location) || /checkout\.stripe\.com/.test(location), `confirmed checkout must redirect to Stripe or success, got ${location}`);
+    assert.equal(res.status, 200, 'a GET must never confirm checkout');
+    assert.equal(res.headers.get('location'), null);
 
     const events = readTelemetry();
-    assert.ok(
-      events.some((e) => e.eventType === 'checkout_bootstrap'),
-      'confirmed checkout with email should reach the bootstrap path',
+    assert.equal(
+      events.filter((e) => e.eventType === 'checkout_bootstrap').length,
+      0,
+      'a GET must not reach the bootstrap path',
     );
   });
 
-  it('real-browser form POST with email creates an attributable checkout', async () => {
+  it('real-browser form POST with email and a click token creates an attributable checkout', async () => {
     clearTelemetry();
+    const tokenRes = await fetch(`${origin}/v1/checkout/click-token`, {
+      method: 'POST',
+      headers: { 'user-agent': BROWSER_UA, accept: '*/*', 'content-type': 'application/json', origin },
+      body: JSON.stringify({ buttonId: 'pro_checkout_confirmed', landingPage: '/pricing' }),
+    });
+    const { token } = await tokenRes.json();
     const res = await fetch(`${origin}/checkout/pro`, {
       method: 'POST',
       redirect: 'manual',
@@ -163,6 +169,7 @@ describe('/checkout/pro confirmation gate (closes 0/50 conversion leak)', () => 
       },
       body: new URLSearchParams({
         confirm: '1',
+        click_token: token,
         customer_email: 'buyer@example.com',
         utm_source: 'intent_form',
         cta_id: 'pro_checkout_confirmed',

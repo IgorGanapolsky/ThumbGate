@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### Patch Changes
+
+- Checkout opens a Stripe session only after a confirmed human click. The Pro buttons post to the server with a short-lived single-use token that page JavaScript fetches after a real pointer or keyboard event. A bare GET, a request without a token, or more than 2 a minute from one IP gets no session, and `/go/pro*` GET links go to the confirm page instead of a payment link. Every session records landing page, referrer, browser class and button id. The npm package now ships `scripts/checkout-human-gate.js` and `scripts/cap-hit-counter.js` (+2 files, bundle baseline 690 -> 692).
+
 ## 1.40.3
 
 ### Patch Changes

@@ -38,6 +38,9 @@ delete process.env.GOOGLE_API_KEY;
 process.env.THUMBGATE_FEEDBACK_DIR = tmpFeedbackDir;
 process.env.THUMBGATE_PROOF_DIR = tmpProofDir;
 process.env.THUMBGATE_API_KEY = 'test-api-key';
+// Many tests share one server and one address, so lift the human-click gate's per-minute burst limit.
+process.env.THUMBGATE_CHECKOUT_BURST_MAX = '10000';
+process.env.THUMBGATE_CHECKOUT_GLOBAL_MAX = '10000';
 process.env._TEST_API_KEYS_PATH = path.join(tmpFeedbackDir, 'api-keys.json');
 process.env._TEST_FUNNEL_LEDGER_PATH = path.join(tmpFeedbackDir, 'funnel-events.jsonl');
 process.env._TEST_REVENUE_LEDGER_PATH = path.join(tmpFeedbackDir, 'revenue-events.jsonl');
@@ -142,6 +145,39 @@ test('intake rate-limit identity trusts Railway ingress but ignores spoofed head
     'malformed ingress values fall back to the transport peer'
   );
 });
+
+// The human-click gate (scripts/checkout-human-gate.js): a same-origin page fetches a
+// single-use token first, then sends it with the checkout request.
+async function checkoutHeaders(extra = {}) {
+  const tokenRes = await fetch(apiUrl('/v1/checkout/click-token'), {
+    method: 'POST',
+    headers: { 'content-type': 'application/json', origin: new URL(apiOrigin).origin },
+    body: JSON.stringify({ buttonId: 'api_server_test', landingPage: '/pricing' }),
+  });
+  const { token } = await tokenRes.json();
+  return { 'content-type': 'application/json', 'x-thumbgate-click-token': token, ...extra };
+}
+
+// A confirmed checkout is a form POST carrying a click token (the human-click gate). The
+// query string of the old GET URL becomes the form body, so each test keeps its attribution.
+async function confirmCheckoutPost(url, { headers = {} } = {}) {
+  const target = new URL(url);
+  const tokenRes = await fetch(apiUrl('/v1/checkout/click-token'), {
+    method: 'POST',
+    // The token is bound to the user agent, as it is for one browser doing both requests.
+    headers: { 'content-type': 'application/json', origin: new URL(apiOrigin).origin, ...(headers['user-agent'] ? { 'user-agent': headers['user-agent'] } : {}) },
+    body: JSON.stringify({ buttonId: 'pro_checkout_confirmed', landingPage: '/pricing' }),
+  });
+  const { token } = await tokenRes.json();
+  const form = new URLSearchParams(target.searchParams);
+  form.set('click_token', token);
+  return fetch(apiUrl(target.pathname), {
+    method: 'POST',
+    redirect: 'manual',
+    headers: { 'content-type': 'application/x-www-form-urlencoded', ...headers },
+    body: form,
+  });
+}
 
 function apiUrl(pathname = '/') {
   return new URL(pathname, apiOrigin).toString();
@@ -2199,7 +2235,7 @@ test('checkout fallback URLs preserve Stripe session placeholders while carrying
 });
 
 test('checkout bootstrap route preserves attribution and records first-party telemetry in local mode', async () => {
-  const res = await fetch(
+  const res = await confirmCheckoutPost(
     apiUrl('/checkout/pro?confirm=1&acquisition_id=acq_bootstrap&visitor_id=visitor_bootstrap&session_id=session_bootstrap&install_id=inst_bootstrap&customer_email=buyer%40example.com&utm_source=reddit&utm_medium=organic_social&utm_campaign=reddit_launch&utm_term=agentic+feedback&creator=reach_vb&community=ClaudeCode&post_id=1rsudq0&comment_id=oa9mqjf&campaign_variant=comment_problem_solution&offer_code=REDDIT-EARLY&cta_id=pricing_pro&cta_placement=pricing&plan_id=pro&landing_path=%2Fpricing'),
     {
       redirect: 'manual',
@@ -2280,8 +2316,15 @@ test('checkout interstitial: GET without confirm=1 requires email-backed confirm
   assert.doesNotMatch(html, /<form action="https:\/\/buy\.stripe\.com\//);
 });
 
-test('checkout interstitial: GET with confirm=1 (human UA) bypasses interstitial and proceeds to Stripe redirect', async () => {
-  const res = await fetch(
+test('checkout interstitial: a GET with confirm=1 only shows the page, the confirming POST proceeds to the Stripe redirect', async () => {
+  const bareGet = await fetch(apiUrl('/checkout/pro?confirm=1&plan_id=pro&billing_cycle=monthly&customer_email=buyer%40example.com'), {
+    redirect: 'manual',
+    headers: {
+      'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+    },
+  });
+  assert.equal(bareGet.status, 200, 'a GET must never create a Stripe session');
+  const res = await confirmCheckoutPost(
     apiUrl('/checkout/pro?confirm=1&plan_id=pro&billing_cycle=monthly&customer_email=buyer%40example.com&utm_source=test_interstitial_bypass'),
     {
       redirect: 'manual',
@@ -2290,7 +2333,7 @@ test('checkout interstitial: GET with confirm=1 (human UA) bypasses interstitial
       },
     }
   );
-  assert.equal(res.status, 302, 'confirm=1 must still trigger Stripe-session creation + 302');
+  assert.equal(res.status, 302, 'the confirming POST must still trigger Stripe-session creation + 302');
   const location = res.headers.get('location');
   assert.ok(location, 'confirm=1 must return a Location header');
 });
@@ -2301,7 +2344,7 @@ test('checkout bootstrap falls back to seeded journey cookies when query IDs are
     'thumbgate_session_id=session_cookie_checkout',
     'thumbgate_acquisition_id=acq_cookie_checkout',
   ].join('; ');
-  const res = await fetch(
+  const res = await confirmCheckoutPost(
     apiUrl('/checkout/pro?confirm=1&customer_email=buyer%40example.com&utm_source=reddit&utm_medium=organic_social&utm_campaign=reddit_launch&cta_id=pricing_pro&cta_placement=pricing&plan_id=pro'),
     {
       redirect: 'manual',
@@ -3111,7 +3154,7 @@ test('unauthorized without bearer token', async () => {
 test('billing checkout endpoint is public', async () => {
   const res = await fetch(apiUrl('/v1/billing/checkout'), {
     method: 'POST',
-    headers: { 'content-type': 'application/json' },
+    headers: await checkoutHeaders(),
     body: JSON.stringify({
       customerEmail: 'buyer@example.com',
       installId: 'inst_public_checkout_test',
@@ -3146,7 +3189,7 @@ test('billing checkout refuses requests without a valid customer email', async (
 test('public billing checkout cannot choose Stripe trial duration through metadata', async () => {
   const res = await fetch(apiUrl('/v1/billing/checkout'), {
     method: 'POST',
-    headers: { 'content-type': 'application/json' },
+    headers: await checkoutHeaders(),
     body: JSON.stringify({
       customerEmail: 'buyer@example.com',
       installId: 'inst_public_trial_injection',
@@ -3731,7 +3774,7 @@ test('private-core API endpoints return 503 when hosted/private modules are abse
 
     const checkoutRes = await fetch(apiUrl('/v1/billing/checkout'), {
       method: 'POST',
-      headers: { 'content-type': 'application/json' },
+      headers: await checkoutHeaders(),
       body: JSON.stringify({
         customerEmail: 'buyer@example.com',
         installId: 'inst_private_offer_boundary',
@@ -3745,7 +3788,7 @@ test('private-core API endpoints return 503 when hosted/private modules are abse
 test('billing session endpoint returns provisioned local checkout details', async () => {
   const checkoutRes = await fetch(apiUrl('/v1/billing/checkout'), {
     method: 'POST',
-    headers: { 'content-type': 'application/json' },
+    headers: await checkoutHeaders(),
     body: JSON.stringify({
       customerEmail: 'buyer@example.com',
       installId: 'inst_public_checkout_lookup',
@@ -3818,7 +3861,7 @@ test('billing session endpoint returns diagnostic fulfillment without a Pro key'
 test('billing checkout supports annual Pro and Team seat selection', async () => {
   const annualRes = await fetch(apiUrl('/v1/billing/checkout'), {
     method: 'POST',
-    headers: { 'content-type': 'application/json' },
+    headers: await checkoutHeaders(),
     body: JSON.stringify({
       customerEmail: 'buyer@example.com',
       planId: 'pro',
@@ -3834,7 +3877,7 @@ test('billing checkout supports annual Pro and Team seat selection', async () =>
 
   const teamRes = await fetch(apiUrl('/v1/billing/checkout'), {
     method: 'POST',
-    headers: { 'content-type': 'application/json' },
+    headers: await checkoutHeaders(),
     body: JSON.stringify({
       customerEmail: 'buyer@example.com',
       planId: 'team',
@@ -5237,7 +5280,7 @@ test('rejects external output path by default', async () => {
 test('funnel analytics returns counts and conversion rates', async () => {
   const checkoutRes = await fetch(apiUrl('/v1/billing/checkout'), {
     method: 'POST',
-    headers: { 'content-type': 'application/json', ...authHeader },
+    headers: await checkoutHeaders(authHeader),
     body: JSON.stringify({
       customerEmail: 'buyer@example.com',
       installId: 'inst_api_server_test',

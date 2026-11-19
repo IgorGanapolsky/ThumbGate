@@ -22,6 +22,9 @@ const TEST_ENV = {
   THUMBGATE_API_KEY: 'tg_test_abandonment_fix_key',
   THUMBGATE_PUBLIC_APP_ORIGIN: 'https://thumbgate.ai',
   THUMBGATE_PLAUSIBLE_DISABLE: '1',
+  // This file opens many sessions from one address; the burst limit itself is tested in checkout-human-gate.test.js.
+  THUMBGATE_CHECKOUT_BURST_MAX: '1000',
+  THUMBGATE_CHECKOUT_GLOBAL_MAX: '1000',
   STRIPE_SECRET_KEY: 'sk_test_mock_abandonment_fix',
 };
 
@@ -106,6 +109,53 @@ function rawBrowserGet(url, extraHeaders = {}) {
   });
 }
 
+function rawRequest(method, url, { headers = {}, body = null } = {}) {
+  return new Promise((resolve, reject) => {
+    const req = http.request(url, { method, headers }, (res) => {
+      const chunks = [];
+      res.on('data', (chunk) => chunks.push(chunk));
+      res.on('end', () => {
+        resolve({
+          status: res.statusCode,
+          location: res.headers.location || '',
+          body: Buffer.concat(chunks).toString('utf8'),
+        });
+      });
+    });
+    req.on('error', reject);
+    req.end(body);
+  });
+}
+
+function fetchClickToken(origin) {
+  return rawRequest('POST', `${origin}/v1/checkout/click-token`, {
+    headers: { 'content-type': 'application/json', origin, accept: '*/*', 'user-agent': BROWSER_UA },
+    body: JSON.stringify({ buttonId: 'pro_checkout_direct_stripe', landingPage: '/pricing' }),
+  }).then((res) => JSON.parse(res.body).token);
+}
+
+// A person clicks the Pro button: page JS fetches a single-use token, then the form POSTs it.
+async function rawBrowserPost(origin, pathAndQuery, form = {}, extraHeaders = {}) {
+  const token = await fetchClickToken(origin);
+  return rawBrowserPostWithToken(origin, pathAndQuery, { ...form, click_token: token }, extraHeaders);
+}
+
+function rawBrowserPostWithToken(origin, pathAndQuery, form, extraHeaders = {}) {
+  const body = new URLSearchParams(form).toString();
+  return rawRequest('POST', `${origin}${pathAndQuery}`, {
+    headers: {
+      'user-agent': BROWSER_UA,
+      accept: BROWSER_ACCEPT,
+      'sec-fetch-mode': 'navigate',
+      'sec-fetch-dest': 'document',
+      'content-type': 'application/x-www-form-urlencoded',
+      'content-length': Buffer.byteLength(body),
+      ...extraHeaders,
+    },
+    body,
+  });
+}
+
 describe('Stripe checkout conversion & Payment Link / Annual routing fixes', () => {
   let handle;
   let origin = '';
@@ -157,10 +207,8 @@ describe('Stripe checkout conversion & Payment Link / Annual routing fixes', () 
   it('creates dynamic $19/mo and $149/yr Stripe Checkout Sessions with /success and /cancel URLs on human /go/pro-direct and /go/pro-annual', async () => {
     const startIdx = createdStripePayloads.length;
 
-    const monthlyRes = await rawBrowserGet(
-      `${origin}/go/pro-direct?utm_source=homepage&prefilled_email=buyer%40acme.io`,
-    );
-    assert.equal(monthlyRes.status, 302);
+    const monthlyRes = await rawBrowserPost(origin, '/go/pro-direct', { utm_source: 'homepage', customer_email: 'buyer@acme.io' });
+    assert.equal(monthlyRes.status, 303);
     assert.match(monthlyRes.location, /^https:\/\/checkout\.stripe\.com\/c\/pay\/cs_test_fix_/);
     const monthlyCreated = createdStripePayloads[startIdx];
     assert.equal(monthlyCreated.line_items[0].price_data.unit_amount, 1900);
@@ -169,51 +217,56 @@ describe('Stripe checkout conversion & Payment Link / Annual routing fixes', () 
     assert.match(monthlyCreated.success_url, /\/success\?session_id=\{CHECKOUT_SESSION_ID\}/);
     assert.match(monthlyCreated.cancel_url, /\/cancel\?/);
 
-    const annualRes = await rawBrowserGet(`${origin}/go/pro-annual?utm_source=pricing`);
-    assert.equal(annualRes.status, 302);
+    const annualRes = await rawBrowserPost(origin, '/go/pro-annual', { utm_source: 'pricing' });
+    assert.equal(annualRes.status, 303);
     assert.match(annualRes.location, /^https:\/\/checkout\.stripe\.com\/c\/pay\/cs_test_fix_/);
     const annualCreated = createdStripePayloads[startIdx + 1];
     assert.equal(annualCreated.line_items[0].price_data.unit_amount, 14900);
     assert.equal(annualCreated.line_items[0].price_data.recurring.interval, 'year');
 
-    const annualQueryRes = await rawBrowserGet(`${origin}/go/pro-direct?plan_id=pro&billing_cycle=annual`);
-    assert.equal(annualQueryRes.status, 302);
+    const annualQueryRes = await rawBrowserPost(origin, '/go/pro-direct', { plan_id: 'pro', billing_cycle: 'annual' });
+    assert.equal(annualQueryRes.status, 303);
     assert.equal(annualCreated.metadata.utmCampaign, 'pro_annual_149');
     assert.equal(annualCreated.metadata.ctaId, 'pro_checkout_annual_stripe');
     assert.equal(createdStripePayloads[startIdx + 2].line_items[0].price_data.unit_amount, 14900);
     assert.equal(createdStripePayloads[startIdx + 2].line_items[0].price_data.recurring.interval, 'year');
 
     const beforeProbe = createdStripePayloads.length;
-    const probeRes = await rawBrowserGet(`${origin}/go/pro-direct?probe=1`);
+    const probeRes = await rawBrowserPost(origin, '/go/pro-direct?probe=1');
     assert.equal(probeRes.status, 302);
     assert.equal(createdStripePayloads.length, beforeProbe, 'probe=1 must not mint a dynamic Stripe session');
 
     forceNextStripeError = new Error('Stripe network down');
-    const fallbackRes = await rawBrowserGet(`${origin}/go/pro-direct`);
+    const fallbackRes = await rawBrowserPost(origin, '/go/pro-direct');
     assert.equal(fallbackRes.status, 302);
-    assert.match(fallbackRes.location, /^https:\/\/buy\.stripe\.com\//);
+    assert.match(fallbackRes.location, /\/checkout\/pro/, 'a Stripe failure sends the visitor to the confirm page');
+    assert.doesNotMatch(fallbackRes.location, /buy\.stripe\.com/, 'never to a static Payment Link');
+
+    const bareGet = await rawBrowserGet(`${origin}/go/pro-direct`);
+    assert.equal(bareGet.status, 302);
+    assert.match(bareGet.location, /\/checkout\/pro/, 'a bare GET never opens a session');
   });
 
-  it('tags direct sessions with their entry route and deflects a requester that opens a second checkout within seconds', async () => {
+  it('tags direct sessions with their entry route and refuses a replayed click token', async () => {
     const startIdx = createdStripePayloads.length;
-    const agentHeaders = { 'x-forwarded-for': '203.0.113.77, 10.0.0.2' };
 
-    const first = await rawBrowserGet(`${origin}/go/pro-direct?utm_source=pricing`, agentHeaders);
-    assert.equal(first.status, 302);
+    const first = await rawBrowserPost(origin, '/go/pro-direct', { utm_source: 'pricing' });
+    assert.equal(first.status, 303);
     assert.match(first.location, /^https:\/\/checkout\.stripe\.com\//);
     assert.equal(createdStripePayloads.length, startIdx + 1);
     assert.equal(createdStripePayloads[startIdx].metadata.entryRoute, 'go:pro-direct');
+    assert.equal(createdStripePayloads[startIdx].metadata.uaClass, 'browser');
+    assert.equal(createdStripePayloads[startIdx].metadata.buttonId, 'pro_checkout_direct_stripe');
+    assert.equal(createdStripePayloads[startIdx].metadata.landingPage, '/pricing');
 
-    const second = await rawBrowserGet(`${origin}/go/pro-annual?utm_source=pricing`, agentHeaders);
-    assert.equal(second.status, 302);
-    assert.match(second.location, /\/checkout\/pro/);
-    assert.equal(createdStripePayloads.length, startIdx + 1, 'a rapid second checkout must not open another Stripe session');
-
-    const otherVisitor = await rawBrowserGet(`${origin}/go/pro-annual?utm_source=pricing`, {
-      'x-forwarded-for': '198.51.100.9',
-    });
-    assert.match(otherVisitor.location, /^https:\/\/checkout\.stripe\.com\//);
-    assert.equal(createdStripePayloads.length, startIdx + 2);
+    // Reusing the same single-use token (a double click, or a replay) opens nothing.
+    const token = await fetchClickToken(origin);
+    const once = await rawBrowserPostWithToken(origin, '/go/pro-annual', { utm_source: 'pricing', click_token: token });
+    assert.equal(once.status, 303);
+    const replay = await rawBrowserPostWithToken(origin, '/go/pro-annual', { utm_source: 'pricing', click_token: token });
+    assert.equal(replay.status, 302);
+    assert.match(replay.location, /\/checkout\/pro/);
+    assert.equal(createdStripePayloads.length, startIdx + 2, 'a replayed token must not open another Stripe session');
   });
 
   it('rapid checkout guard flags only repeat hits from one requester inside the window', () => {
@@ -235,7 +288,7 @@ describe('Stripe checkout conversion & Payment Link / Annual routing fixes', () 
     assert.match(annualIntent.body, /Start ThumbGate Pro Annual/);
     assert.match(annualIntent.body, /\$149<small>\/yr<\/small>/);
     assert.match(annualIntent.body, /Pay \$149\/yr with Stripe/);
-    assert.match(annualIntent.body, /\/go\/pro-annual\?/);
+    assert.match(annualIntent.body, /<form action="\/go\/pro-annual" method="POST"/);
     assert.match(annualIntent.body, /<details class="objection-box"/);
 
     const pricingHtml = fs.readFileSync(path.join(__dirname, '..', 'public', 'pricing.html'), 'utf8');

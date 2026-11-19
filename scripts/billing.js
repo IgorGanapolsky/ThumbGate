@@ -155,6 +155,11 @@ function getStripeConstructor() {
   }
 }
 
+// Test seam: lets tests inject a fake Stripe client (null restores the real one).
+function setStripeClientForTests(client) {
+  _stripeClient = client || null;
+}
+
 function getStripeClient() {
   if (!_stripeClient) {
     if (!CONFIG.STRIPE_SECRET_KEY) {
@@ -3542,10 +3547,25 @@ function isLiveStripeKey(key) {
   return /^(sk|rk)_live_/.test(String(key || ''));
 }
 
-async function createCheckoutSession({ successUrl, cancelUrl, customerEmail, installId, traceId, packId = null, metadata = {}, appOrigin } = {}) {
+// Where a session came from. Always present on a session our server creates; a
+// missing value is the word "unknown" so the key is never absent.
+const CLICK_METADATA_KEYS = ['landingPage', 'referrer', 'uaClass', 'buttonId'];
+
+function resolveClickMetadata(humanClick) {
+  const given = humanClick && typeof humanClick.metadata === 'object' && humanClick.metadata ? humanClick.metadata : {};
+  const resolved = {};
+  for (const key of CLICK_METADATA_KEYS) {
+    const value = String(given[key] == null ? '' : given[key]).trim();
+    resolved[key] = value ? value.slice(0, 200) : 'unknown';
+  }
+  return resolved;
+}
+
+async function createCheckoutSession({ successUrl, cancelUrl, customerEmail, installId, traceId, packId = null, metadata = {}, appOrigin, humanClick = null } = {}) {
   const resolvedTraceId = traceId || metadata.traceId || createTraceId('checkout');
   const baseCheckoutMetadata = sanitizeMetadata({
     ...metadata,
+    ...resolveClickMetadata(humanClick),
     installId: installId || metadata.installId || 'unknown',
     traceId: resolvedTraceId,
   });
@@ -3594,6 +3614,15 @@ async function createCheckoutSession({ successUrl, cancelUrl, customerEmail, ins
     blockedErr.statusCode = 403;
     blockedErr.code = 'AUTOMATED_CHECKOUT_BLOCKED';
     throw blockedErr;
+  }
+
+  // A Stripe session opens only for a request the human-click gate admitted
+  // (scripts/checkout-human-gate.js). Refused before any Stripe call.
+  if (!(humanClick && humanClick.admitted === true)) {
+    const refused = new Error('Refusing to open a Stripe Checkout session without a confirmed human click.');
+    refused.statusCode = 403;
+    refused.code = 'HUMAN_CLICK_REQUIRED';
+    throw refused;
   }
 
   const stripe = getStripeClient();
@@ -5131,6 +5160,7 @@ module.exports = {
   _buildStripeReconciledRevenueEvent: buildStripeReconciledRevenueEvent,
   CONFIG, createCheckoutSession, isAutomatedCheckoutRequest, isSyntheticOrOwnerCheckoutEmail, createBillingPortalSession, getCheckoutSessionStatus, provisionApiKey, resolvePaidEntitlementForEmail, rotateApiKey, validateApiKey, recordUsage, recordAccountFirstBlock, disableCustomerKeys, handleWebhook, verifyWebhookSignature, verifyGithubWebhookSignature, verifyPayPalWebhookSignature, recordGithubMarketplaceWebhookDelivery, recordPayPalWebhookDelivery, handleGithubWebhook, loadKeyStore, appendFunnelEvent, appendRevenueEvent, loadFunnelLedger, loadRevenueLedger, loadGithubMarketplaceWebhookLedger, loadPayPalWebhookLedger, loadNewsletterSubscribers, loadResolvedRevenueEvents, getFunnelAnalytics, getBusinessAnalytics, getBillingSummary, getBillingSummaryLive, getBillingSummariesLive, listStripeReconciledRevenueEvents, listStripeCheckoutSessionDepth, classifyCheckoutSessionDepth, summarizeCheckoutSessionDepth, verifyPaidCheckoutSession, repairGithubMarketplaceRevenueLedger,
   _buildCheckoutSessionPayload: buildCheckoutSessionPayload,
+  _setStripeClient: setStripeClientForTests,
   _filterQualifiedCheckoutFunnelEvents: filterQualifiedCheckoutFunnelEvents,
   _createSessionDroppingRejectedOptionals: createSessionDroppingRejectedOptionals,
   _buildTrialActivationEmail: buildTrialActivationEmail,

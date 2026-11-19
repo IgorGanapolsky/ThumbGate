@@ -121,6 +121,66 @@ const {
 } = require('../../scripts/bot-detection');
 
 const rapidCheckoutGuard = createRapidCheckoutGuard();
+
+const { createHumanGate } = require('../../scripts/checkout-human-gate');
+
+// A stable signing value keeps click tokens valid across instances and restarts:
+// THUMBGATE_CHECKOUT_TOKEN_SECRET, else derived from THUMBGATE_API_KEY, else random per process.
+function resolveCheckoutTokenSecret(env = process.env) {
+  if (env.THUMBGATE_CHECKOUT_TOKEN_SECRET) return env.THUMBGATE_CHECKOUT_TOKEN_SECRET;
+  if (env.THUMBGATE_API_KEY) {
+    return crypto.createHmac('sha256', env.THUMBGATE_API_KEY).update('checkout-click-token-v1').digest('hex');
+  }
+  return crypto.randomBytes(32).toString('hex');
+}
+
+// THUMBGATE_CHECKOUT_BURST_MAX (default 2 per minute per IP) and
+// THUMBGATE_CHECKOUT_GLOBAL_MAX (default 60 per hour, whole site) are only for tests
+// and load checks; production leaves them unset.
+function positiveIntFromEnv(name, env = process.env) {
+  const value = Number.parseInt(String(env[name] || ''), 10);
+  return Number.isFinite(value) && value > 0 ? value : undefined;
+}
+
+function buildHumanGate() {
+  return createHumanGate({
+    secret: resolveCheckoutTokenSecret(),
+    max: positiveIntFromEnv('THUMBGATE_CHECKOUT_BURST_MAX'),
+    globalMax: positiveIntFromEnv('THUMBGATE_CHECKOUT_GLOBAL_MAX'),
+  });
+}
+
+// Replaced on each createApiServer() so every server starts with empty limits.
+let humanGate = buildHumanGate();
+
+function admitCheckoutClick(req, token) {
+  return humanGate.admit({
+    method: req.method,
+    headers: req.headers,
+    remoteAddress: req.socket && req.socket.remoteAddress,
+    token,
+  });
+}
+
+function checkoutClickTokenFrom(req, form = null) {
+  const headerToken = req.headers['x-thumbgate-click-token'];
+  return String((form && form.click_token) || (Array.isArray(headerToken) ? headerToken[0] : headerToken) || '').trim();
+}
+
+function isSameOriginCheckoutRequest(req, appOrigin) {
+  const origin = String(req.headers.origin || '').trim();
+  if (origin) {
+    try {
+      const host = new URL(origin).host.toLowerCase();
+      const allowed = new Set([String(req.headers.host || '').toLowerCase()]);
+      if (appOrigin) allowed.add(new URL(appOrigin).host.toLowerCase());
+      return allowed.has(host);
+    } catch {
+      return false;
+    }
+  }
+  return String(req.headers['sec-fetch-site'] || '').toLowerCase() === 'same-origin';
+}
 const {
   recordCheckoutFunnelEvent,
 } = require('../../scripts/plausible-server-events');
@@ -2990,7 +3050,11 @@ function resolveCheckoutIntentPlanView(parsed) {
       title: 'Start ThumbGate Pro Annual',
       price: '$149',
       unit: '/yr',
-      directHref: '/go/pro-annual?utm_source=website&amp;utm_medium=checkout_interstitial&amp;utm_campaign=pro_annual_149&amp;utm_content=skip_form&amp;cta_id=pro_checkout_direct_stripe&amp;cta_placement=checkout_interstitial&amp;plan_id=pro&amp;billing_cycle=annual',
+      directAction: '/go/pro-annual',
+      directFields: {
+        utm_source: 'website', utm_medium: 'checkout_interstitial', utm_campaign: 'pro_annual_149', utm_content: 'skip_form',
+        cta_id: 'pro_checkout_direct_stripe', cta_placement: 'checkout_interstitial',
+      },
       ctaLabel: 'Pay $149/yr with Stripe →',
     };
   }
@@ -2998,7 +3062,11 @@ function resolveCheckoutIntentPlanView(parsed) {
     title: 'Start ThumbGate Pro',
     price: '$19',
     unit: '/mo',
-    directHref: '/go/pro-direct?utm_source=website&amp;utm_medium=checkout_interstitial&amp;utm_campaign=pro_upgrade&amp;utm_content=skip_form&amp;cta_id=pro_checkout_direct_stripe&amp;cta_placement=checkout_interstitial',
+    directAction: '/go/pro-direct',
+    directFields: {
+      utm_source: 'website', utm_medium: 'checkout_interstitial', utm_campaign: 'pro_upgrade', utm_content: 'skip_form',
+      cta_id: 'pro_checkout_direct_stripe', cta_placement: 'checkout_interstitial',
+    },
     ctaLabel: 'Pay $19/mo with Stripe →',
   };
 }
@@ -3045,8 +3113,16 @@ a{display:block;text-decoration:none}a.secondary,button.secondary{box-sizing:bor
 <h1>${planView.title}</h1>
 <div class="price">${planView.price}<small>${planView.unit}</small></div>
 <p>The npm package runs your gates locally. <strong>Pro</strong> removes solo caps and adds personal recall, proof, exports, and adapter maintenance. Your Pro API key is provisioned on the next screen immediately after payment.</p>
-<a class="primary" data-i="pro_checkout_direct_stripe" rel="nofollow" href="${planView.directHref}">${planView.ctaLabel}</a>
+<form action="${planView.directAction}" method="POST" class="direct" data-i="pro_checkout_direct_stripe">
+${Object.entries(planView.directFields).map(([k, v]) => `<input type="hidden" name="${k}" value="${escapeHtmlAttribute(v)}">`).join('')}
+<input type="hidden" name="customer_email" value="">
+<input type="hidden" name="click_token" value="">
+<button type="submit" class="primary" rel="nofollow">${planView.ctaLabel}</button>
+</form>
+<p class="gate-note" id="gate-note" role="status" style="display:none"></p>
+<noscript><p class="gate-note">Checkout needs JavaScript so we can tell a person from a crawler.</p></noscript>
 <form action="/checkout/pro" method="POST" data-i="pro_checkout_confirmed">
+<input type="hidden" name="click_token" value="">
 ${hiddenInputs}
 <input type="hidden" name="confirm" value="1">
 <input type="email" name="customer_email" value="${escapeHtmlAttribute(prefilledEmail)}" placeholder="you@company.com" autocomplete="email" required>
@@ -3115,44 +3191,76 @@ ${hiddenInputs}
     }
     fetch('/v1/telemetry/ping', { method:'POST', headers:{ 'content-type':'application/json' }, body: body, keepalive: true }).catch(function(){});
   }
-  var emailInput = document.querySelector('input[name=customer_email]');
-  var skipLink = document.querySelector('a[data-i=pro_checkout_direct_stripe]');
-  function updateSkipLink() {
-    if (!skipLink) return;
-    try {
-      var u = new URL(skipLink.href, window.location.origin);
-      var email = emailInput ? emailInput.value.trim() : '';
-      if (email && email.length <= 320 && /^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email)) {
-        u.searchParams.set('customer_email', email);
-      } else {
-        u.searchParams.delete('customer_email');
-      }
-      skipLink.href = u.toString();
-    } catch(_) {}
+  var emailInput = document.querySelector('form[data-i=pro_checkout_confirmed] input[name=customer_email]');
+  var directForm = document.querySelector('form[data-i=pro_checkout_direct_stripe]');
+  var confirmForm = document.querySelector('form[data-i=pro_checkout_confirmed]');
+  var gateNote = document.getElementById('gate-note');
+  var gestureSeen = false;
+  function markGesture(ev) { if (ev && ev.isTrusted) gestureSeen = true; }
+  document.addEventListener('pointerdown', markGesture, true);
+  document.addEventListener('keydown', markGesture, true);
+  function syncDirectEmail() {
+    if (!directForm) return;
+    var email = emailInput ? emailInput.value.trim() : '';
+    var field = directForm.querySelector('input[name=customer_email]');
+    if (!field) return;
+    field.value = (email && email.length <= 320 && /^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email)) ? email : '';
   }
   if (emailInput) {
-    emailInput.addEventListener('input', updateSkipLink);
-    emailInput.addEventListener('change', updateSkipLink);
-    updateSkipLink();
+    emailInput.addEventListener('input', syncDirectEmail);
+    emailInput.addEventListener('change', syncDirectEmail);
+    syncDirectEmail();
   }
-  if (skipLink) {
-    skipLink.addEventListener('click', function(){
+  function showGateNote(text) {
+    if (!gateNote) return;
+    gateNote.style.display = 'block';
+    gateNote.textContent = text;
+  }
+  // A checkout session opens only after a trusted pointer or keyboard event and a
+  // single-use token from the server. The submit button is disabled after the first
+  // submit so a double click cannot spend a second token.
+  function guardForm(form, buttonId, telemetry) {
+    if (!form) return;
+    form.addEventListener('submit', function(ev) {
+      if (form.getAttribute('data-ready') === '1') return;
+      ev.preventDefault();
+      if (!gestureSeen) {
+        showGateNote('Please click or press a key on the page, then try again.');
+        return;
+      }
+      if (form.getAttribute('data-busy') === '1') return;
+      form.setAttribute('data-busy', '1');
       submitted = true;
-      sendTelemetry('checkout_interstitial_cta_clicked', {
-        ctaId: 'pro_checkout_direct_stripe',
-        ctaPlacement: 'checkout_interstitial'
+      if (form === directForm) syncDirectEmail();
+      sendTelemetry('checkout_interstitial_cta_clicked', telemetry(form));
+      var buttons = form.querySelectorAll('button[type=submit]');
+      buttons.forEach(function(btn) { btn.disabled = true; });
+      fetch('/v1/checkout/click-token', {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ buttonId: buttonId, landingPage: pick('landing_path') || window.location.pathname })
+      }).then(function(r) {
+        if (!r.ok) throw new Error('token ' + r.status);
+        return r.json();
+      }).then(function(data) {
+        form.querySelector('input[name=click_token]').value = data.token;
+        form.setAttribute('data-ready', '1');
+        form.submit();
+      }).catch(function() {
+        form.removeAttribute('data-busy');
+        buttons.forEach(function(btn) { btn.disabled = false; });
+        showGateNote('Could not confirm the click. Please try again.');
       });
     });
   }
-  document.querySelector('form').addEventListener('submit', function(){
-    submitted = true;
-    var emailInput = document.querySelector('input[name=customer_email]');
-    sendTelemetry('checkout_interstitial_cta_clicked', {
-      ctaId: 'pro_checkout_confirmed',
-      ctaPlacement: 'checkout_interstitial',
-      customerEmail: emailInput ? emailInput.value : null
-    });
+  guardForm(directForm, 'pro_checkout_direct_stripe', function() {
+    return { ctaId: 'pro_checkout_direct_stripe', ctaPlacement: 'checkout_interstitial' };
+  });
+  guardForm(confirmForm, 'pro_checkout_confirmed', function() {
+    var field = confirmForm.querySelector('input[name=customer_email]');
     try { window.plausible && window.plausible('Checkout Pro Email Submitted', { props: { page:'/checkout/pro', source:'interstitial' } }); } catch(_) {}
+    return { ctaId: 'pro_checkout_confirmed', ctaPlacement: 'checkout_interstitial', customerEmail: field ? field.value : null };
   });
   document.querySelectorAll('[data-reason]').forEach(function(button) {
     button.addEventListener('click', function(){
@@ -3201,6 +3309,7 @@ ${hiddenInputs}
       }).catch(function(){
         if (saved) saved.textContent = 'Feedback saved.';
       });
+    });
   });
   window.addEventListener('pagehide', function(){
     if (!submitted && !feedbackSent) {
@@ -3443,6 +3552,12 @@ function isDirectProSessionSlug(slug) {
   return slug === 'pro-direct' || slug === 'pro-annual' || slug === 'founding-100';
 }
 
+// Pro subscription links never send a bare GET to a Stripe payment link: a
+// payment link creates a live session the moment it is opened.
+function isProSubscriptionSlug(slug) {
+  return isDirectProSessionSlug(slug) || slug === 'operator-pro';
+}
+
 /**
  * Creates an attributable dynamic Stripe Checkout Session for human 1-click Pro
  * redirects (`/go/pro-direct`, `/go/pro-annual`, `/go/founding-100`) when live
@@ -3456,6 +3571,7 @@ async function tryCreateDirectProCheckoutRedirect({
   hostedConfig,
   journeyState,
   feedbackDir,
+  humanClick,
 }) {
   if (!isDirectProSessionSlug(target.slug) || !process.env.STRIPE_SECRET_KEY || isSyntheticProbeQuery(parsed)) {
     return null;
@@ -3491,6 +3607,7 @@ async function tryCreateDirectProCheckoutRedirect({
     traceId,
     metadata: analyticsMetadata,
     appOrigin: hostedConfig.appOrigin,
+    humanClick,
   });
   if (!sessionResult || !sessionResult.url) {
     return null;
@@ -3512,7 +3629,7 @@ async function tryCreateDirectProCheckoutRedirect({
   return sessionResult.url;
 }
 
-async function serveTrackedLinkRedirect({ req, res, parsed, hostedConfig, isHeadRequest, slug }) {
+async function serveTrackedLinkRedirect({ req, res, parsed, hostedConfig, isHeadRequest, slug, clickToken = '' }) {
   const target = getTrackedLinkTarget(slug);
   if (!target) {
     sendJson(res, 404, {
@@ -3560,6 +3677,7 @@ async function serveTrackedLinkRedirect({ req, res, parsed, hostedConfig, isHead
       : { isBot: true, reason: 'no_browser_navigation' });
   if (
     target.botDeflectPath
+    && !isProSubscriptionSlug(target.slug) // these never open a session on GET; the human-click gate limits POSTs
     && !botClassification.isBot
     && !isHeadRequest
     && rapidCheckoutGuard.hit(checkoutRequesterKey(req.headers))
@@ -3597,6 +3715,45 @@ async function serveTrackedLinkRedirect({ req, res, parsed, hostedConfig, isHead
     res.end();
     return;
   }
+  let proHumanClick = null;
+  if (isProSubscriptionSlug(target.slug)) {
+    const admission = !isHeadRequest && isDirectProSessionSlug(target.slug)
+      ? admitCheckoutClick(req, clickToken)
+      : { ok: false, status: 405, reason: 'method_not_post' };
+    if (admission.ok) {
+      proHumanClick = admission.humanClick;
+    } else {
+      const confirmUrl = new URL('/checkout/pro', hostedConfig.appOrigin);
+      appendTrackedLinkQueryParams(confirmUrl, parsed, { ...target, allowCustomerEmail: false });
+      if (!isHeadRequest && req.method === 'POST') {
+        appendBestEffortTelemetry(
+          FEEDBACK_DIR,
+          {
+            eventType: 'checkout_human_gate_refused',
+            clientType: 'web',
+            page: `/go/${target.slug}`,
+            reason: admission.reason,
+            destinationSlug: target.slug,
+            acquisitionId: journeyState.acquisitionId,
+            visitorId: journeyState.visitorId,
+            sessionId: journeyState.sessionId,
+          },
+          req.headers,
+          `tracked_link_human_gate_refused:${target.slug}`
+        );
+      }
+      res.writeHead(302, {
+        ...(journeyState.setCookieHeaders.length ? { 'Set-Cookie': journeyState.setCookieHeaders } : {}),
+        'Cache-Control': 'no-store',
+        'X-Robots-Tag': 'noindex,nofollow',
+        'X-ThumbGate-Link-Slug': target.slug,
+        'X-ThumbGate-Gate-Reason': String(admission.reason || '').replace(/[^a-z_]/g, ''),
+        Location: confirmUrl.toString(),
+      });
+      res.end();
+      return;
+    }
+  }
   if (!isHeadRequest && isDirectProSessionSlug(target.slug) && process.env.STRIPE_SECRET_KEY) {
     try {
       const dynamicSessionUrl = await tryCreateDirectProCheckoutRedirect({
@@ -3606,6 +3763,7 @@ async function serveTrackedLinkRedirect({ req, res, parsed, hostedConfig, isHead
         hostedConfig,
         journeyState,
         feedbackDir: FEEDBACK_DIR,
+        humanClick: proHumanClick,
       });
       if (dynamicSessionUrl) {
         res.writeHead(req.method === 'POST' ? 303 : 302, {
@@ -3633,8 +3791,24 @@ async function serveTrackedLinkRedirect({ req, res, parsed, hostedConfig, isHead
         res.end();
         return;
       }
-      // Fall back cleanly to static Payment Link if dynamic session creation fails
+      // Dynamic session creation failed: Pro slugs go to the confirm page below.
+      console.warn('[checkout] dynamic session creation failed', target.slug, err && (err.code || err.message));
     }
+  }
+  if (isProSubscriptionSlug(target.slug)) {
+    // Admitted, but no session could be made (no key, or Stripe refused): send
+    // the visitor to the confirm page, never to a payment link.
+    const confirmUrl = new URL('/checkout/pro', hostedConfig.appOrigin);
+    appendTrackedLinkQueryParams(confirmUrl, parsed, { ...target, allowCustomerEmail: false });
+    res.writeHead(302, {
+      ...(journeyState.setCookieHeaders.length ? { 'Set-Cookie': journeyState.setCookieHeaders } : {}),
+      'Cache-Control': 'no-store',
+      'X-Robots-Tag': 'noindex,nofollow',
+      'X-ThumbGate-Link-Slug': target.slug,
+      Location: confirmUrl.toString(),
+    });
+    res.end();
+    return;
   }
   const destinationUrl = buildTrackedLinkDestination(target, hostedConfig, parsed);
   if (
@@ -7190,6 +7364,7 @@ function resolveDocumentImportFilePath(inputPath, options = {}) {
 const CONTINUE_DATA_SCOPE = Symbol('trustedDataScopeContinuation');
 
 function createApiServer({ ownerAdminDependencies = {} } = {}) {
+  humanGate = buildHumanGate();
   const server = withoutDataScope(() => createUnscopedApiServer({ ownerAdminDependencies }));
   const [listener] = server.listeners('request');
   server.removeListener('request', listener);
@@ -7801,9 +7976,10 @@ function createUnscopedApiServer({ ownerAdminDependencies = {} } = {}) {
     const trackedLinkMatch = pathname.match(/^\/go\/([^/]+)$/);
     if ((isGetLikeRequest || req.method === 'POST') && trackedLinkMatch) {
       let trackedParsed = parsed;
+      let trackedClickToken = '';
       if (req.method === 'POST') {
         const target = getTrackedLinkTarget(trackedLinkMatch[1]);
-        if (!target?.requiresPost) {
+        if (!target?.requiresPost && !(target && isDirectProSessionSlug(target.slug))) {
           sendJson(res, target ? 405 : 404, target
             ? { error: 'POST is not supported for this tracked link' }
             : { error: 'Tracked link not found', allowed: Object.keys(TRACKED_LINK_TARGETS) }, {
@@ -7820,6 +7996,7 @@ function createUnscopedApiServer({ ownerAdminDependencies = {} } = {}) {
           return;
         }
         const form = await parseFormBody(req, 16 * 1024);
+        trackedClickToken = checkoutClickTokenFrom(req, form);
         trackedParsed = new URL(parsed.toString());
         for (const [key, value] of Object.entries(form)) {
           if (key === 'customer_email' || TRACKED_LINK_QUERY_KEYS.has(key)) {
@@ -7834,6 +8011,7 @@ function createUnscopedApiServer({ ownerAdminDependencies = {} } = {}) {
         hostedConfig,
         isHeadRequest,
         slug: trackedLinkMatch[1],
+        clickToken: trackedClickToken,
       });
       return;
     }
@@ -9041,6 +9219,7 @@ async function addContext(){
         return;
       }
 
+      let postedClickToken = '';
       if (req.method === 'POST') {
         const contentType = String(req.headers['content-type'] || '').toLowerCase();
         if (!contentType.includes('application/x-www-form-urlencoded')) {
@@ -9050,6 +9229,7 @@ async function addContext(){
           return;
         }
         const form = await parseFormBody(req, 16 * 1024);
+        postedClickToken = checkoutClickTokenFrom(req, form);
         for (const [key, value] of Object.entries(form)) {
           if (
             key === 'confirm'
@@ -9090,15 +9270,11 @@ async function addContext(){
       // confirmation and form POST. This prevents browser-shaped monitors
       // from minting anonymous sessions while preserving a one-field path to
       // Stripe for real buyers.
-      const isConfirmedCheckout = (
-        (req.method === 'POST' && hasValidCustomerEmailHint)
-        || (hasConfirmFlag && hasValidCustomerEmailHint)
-      ) && botShouldBypass;
-      // Legacy env-gated bypass. It is default-off and still requires a valid
-      // email plus a non-bot request; enabling it must never re-open anonymous
-      // Stripe-session creation. Attribution is preserved via
-      // buildCheckoutFallbackUrl.
-      const interstitialBypassEnabled = process.env.THUMBGATE_CHECKOUT_INTERSTITIAL_BYPASS === '1';
+      // Only a POST can confirm. A GET, even with confirm=1 and an email, shows
+      // the page: a session opens only after a confirmed human click.
+      const isConfirmedCheckout = (req.method === 'POST' && hasValidCustomerEmailHint) && botShouldBypass;
+      // The old env-gated interstitial bypass (a 302 straight to a Stripe payment
+      // link on a GET) is removed: a bare GET must never reach Stripe.
       const interstitialSampleRate = normalizeCheckoutInterstitialSampleRate(
         process.env.THUMBGATE_CHECKOUT_INTERSTITIAL_SAMPLE_RATE
       );
@@ -9107,47 +9283,6 @@ async function addContext(){
         traceId,
         analyticsMetadata,
       });
-      if (
-        !isConfirmedCheckout
-        && interstitialBypassEnabled
-        && req.method !== 'POST'
-        && botShouldBypass
-        && hasValidCustomerEmailHint
-        && !interstitialSampled
-      ) {
-        // Always target the pro Stripe Payment Link directly. The
-        // hostedConfig.checkoutFallbackUrl (e.g. https://thumbgate.ai/go/pro)
-        // is a router that 302s back to /checkout/pro, which would create a
-        // redirect loop when bypass is on. Env override via
-        // THUMBGATE_CHECKOUT_PRO_STRIPE_URL is supported for future
-        // price-link rotation without a redeploy.
-        const bypassTarget = process.env.THUMBGATE_CHECKOUT_PRO_STRIPE_URL
-          || PRO_CHECKOUT_URL;
-        appendBestEffortTelemetry(FEEDBACK_DIR, {
-          eventType: 'checkout_interstitial_bypass_redirect',
-          clientType: 'web',
-          traceId,
-          acquisitionId: analyticsMetadata.acquisitionId,
-          visitorId: analyticsMetadata.visitorId,
-          sessionId: analyticsMetadata.sessionId,
-          utmSource: analyticsMetadata.utmSource,
-          utmMedium: analyticsMetadata.utmMedium,
-          utmCampaign: analyticsMetadata.utmCampaign,
-          utmContent: analyticsMetadata.utmContent,
-          utmTerm: analyticsMetadata.utmTerm,
-          referrer: analyticsMetadata.referrer,
-          referrerHost: analyticsMetadata.referrerHost,
-          page: '/checkout/pro',
-          planId: analyticsMetadata.planId,
-          interstitialSampleRate,
-        }, req.headers, 'checkout_interstitial_bypass_redirect');
-        res.writeHead(302, {
-          ...responseHeaders,
-          Location: buildCheckoutFallbackUrl(bypassTarget, analyticsMetadata),
-        });
-        res.end();
-        return;
-      }
       // Plausible funnel event #1 of 3: page view. Fired before interstitial
       // deflection so we get the full top-of-funnel count, with isBot as a
       // prop so the dashboard can filter human vs. crawler traffic. Fire-and-forget.
@@ -9214,6 +9349,27 @@ async function addContext(){
           includeHiddenAttribution: !botClassification.isBot,
         });
         sendHtml(res, 200, html, responseHeaders);
+        return;
+      }
+
+      const checkoutAdmission = admitCheckoutClick(req, postedClickToken);
+      if (!checkoutAdmission.ok) {
+        appendBestEffortTelemetry(FEEDBACK_DIR, {
+          eventType: 'checkout_human_gate_refused',
+          clientType: 'web',
+          traceId,
+          page: '/checkout/pro',
+          reason: checkoutAdmission.reason,
+          planId: analyticsMetadata.planId,
+        }, req.headers, 'checkout_human_gate_refused');
+        const refusedHtml = renderCheckoutIntentPage(normalizedCheckoutEmail || '', parsed, {
+          includeHiddenAttribution: true,
+        });
+        sendHtml(res, checkoutAdmission.status, refusedHtml, {
+          ...responseHeaders,
+          'Cache-Control': 'no-store',
+          ...(checkoutAdmission.status === 429 ? { 'Retry-After': '60' } : {}),
+        });
         return;
       }
 
@@ -9286,6 +9442,7 @@ async function addContext(){
           traceId,
           metadata: analyticsMetadata,
           appOrigin: hostedConfig.appOrigin,
+          humanClick: checkoutAdmission.humanClick,
         });
 
         if (result.url) {
@@ -11107,6 +11264,38 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
       return;
     }
 
+    // Short-lived single-use token for the human-click gate. Page JS calls this
+    // only after a trusted pointer or keyboard event (see renderCheckoutIntentPage).
+    if (pathname === '/v1/checkout/click-token') {
+      const tokenHeaders = { 'Cache-Control': 'no-store', 'X-Robots-Tag': 'noindex,nofollow' };
+      if (req.method !== 'POST') {
+        sendJson(res, 405, { error: 'POST required' }, { ...tokenHeaders, Allow: 'POST' });
+        return;
+      }
+      if (!isSameOriginCheckoutRequest(req, hostedConfig.appOrigin)) {
+        sendJson(res, 403, { error: 'Same-origin request required', code: 'HUMAN_CLICK_REQUIRED' }, tokenHeaders);
+        return;
+      }
+      let tokenBody = {};
+      try {
+        tokenBody = await readProjectBody(req);
+      } catch {
+        tokenBody = {};
+      }
+      const token = humanGate.issueToken({
+        headers: req.headers,
+        remoteAddress: req.socket && req.socket.remoteAddress,
+        buttonId: tokenBody && tokenBody.buttonId,
+        landingPage: tokenBody && tokenBody.landingPage,
+      });
+      if (!token) {
+        sendJson(res, 403, { error: 'Browser request required', code: 'HUMAN_CLICK_REQUIRED' }, tokenHeaders);
+        return;
+      }
+      sendJson(res, 200, { token, expiresInSeconds: 120 }, tokenHeaders);
+      return;
+    }
+
     // Public checkout session creation for top-of-funnel acquisition.
     if (req.method === 'POST' && pathname === '/v1/billing/checkout') {
       try {
@@ -11125,6 +11314,14 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
           throw createHttpError(400, 'customerEmail must be a valid email address');
         }
 
+        // Checked after the cheap validation so a typo does not burn the token.
+        const admission = admitCheckoutClick(req, checkoutClickTokenFrom(req, { click_token: body.clickToken }));
+        if (!admission.ok) {
+          const err = createHttpError(admission.status === 405 ? 403 : admission.status, `A confirmed human click is required (${admission.reason}).`);
+          err.code = 'HUMAN_CLICK_REQUIRED';
+          throw err;
+        }
+
         const result = await createCheckoutSession({
           successUrl: body.successUrl || buildCheckoutFallbackUrl(
             buildHostedSuccessUrl(hostedConfig.appOrigin, traceId),
@@ -11139,6 +11336,7 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
           traceId,
           metadata: analyticsMetadata,
           appOrigin: hostedConfig.appOrigin,
+          humanClick: admission.humanClick,
         });
         sendJson(res, 200, {
           ...result,
@@ -11157,6 +11355,7 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
           title: !err.statusCode || err.statusCode >= 500 ? 'Internal Server Error' : 'Request Error',
           status: err.statusCode || 500,
           detail: err.message || 'An unexpected error occurred.',
+          ...(err.code === 'HUMAN_CLICK_REQUIRED' ? { code: 'HUMAN_CLICK_REQUIRED' } : {}),
         }, getPublicBillingHeaders(fallbackTraceId));
       }
       return;

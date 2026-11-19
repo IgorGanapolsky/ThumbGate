@@ -96,12 +96,23 @@ function apiUrl(port, pathname) {
   return `http://localhost:${port}${pathname}`;
 }
 
+// The human-click gate: a same-origin page fetches a single-use token before it asks for a session.
+async function checkoutHeaders(port) {
+  const tokenRes = await fetch(apiUrl(port, '/v1/checkout/click-token'), {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Origin: `http://localhost:${port}` },
+    body: JSON.stringify({ buttonId: 'e2e_checkout', landingPage: '/pricing' }),
+  });
+  const { token } = await tokenRes.json();
+  return { 'Content-Type': 'application/json', 'X-ThumbGate-Click-Token': token };
+}
+
 test('E2E: public checkout -> paid local session -> usable dashboard key -> admin billing summary', async (t) => {
   const { tmpDir, port, adminHeaders } = await startIsolatedServer(t, 'thumbgate-e2e-checkout-');
 
   const checkoutRes = await fetch(apiUrl(port, '/v1/billing/checkout'), {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: await checkoutHeaders(port),
     body: JSON.stringify({
       planId: 'team',
       seatCount: 4,
@@ -200,7 +211,7 @@ test('E2E: rotated billing key disables the old key and keeps dashboard access a
 
   const checkoutRes = await fetch(apiUrl(port, '/v1/billing/checkout'), {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: await checkoutHeaders(port),
     body: JSON.stringify({
       planId: 'pro_monthly',
       customerEmail: 'pro@example.com',

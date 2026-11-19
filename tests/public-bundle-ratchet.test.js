@@ -279,7 +279,9 @@ const path = require('node:path');
 // (npx thumbgate gate-check threw Cannot find module); see tests/packed-cli-require-closure.test.js.
 // 688 -> 690 (2026-11-16): statusline-human-counts.js and human-feedback.js. statusline.sh runs the first to count
 // human, per-project thumbs; the second filters out automated entries. Both ship so the installed status line works.
-const BASELINE_FILE_COUNT = 690;
+// 690 -> 692 (2026-11-18): scripts/checkout-human-gate.js (src/api/server.js requires it for the human-click checkout gate)
+// and scripts/cap-hit-counter.js (scripts/auto-promote-gates.js requires it; it was missing from `files`).
+const BASELINE_FILE_COUNT = 692;
 function readBundleSnapshot() {
   const repoRoot = path.resolve(__dirname, '..');
   const stdout = execSync('npm pack --dry-run --json', {
