@@ -1,0 +1,68 @@
+name: Retire legacy MCP Registry entry
+
+# The product was renamed from "MCP Memory Gateway" to ThumbGate. The old
+# registry entry (io.github.IgorGanapolsky/mcp-memory-gateway, last 0.7.4)
+# is still "active" in the official MCP registry, so directories that mirror
+# the registry (for example mcp.market) keep listing it under the old name.
+# This manual workflow marks every version of the old entry deprecated and
+# points people at io.github.IgorGanapolsky/thumbgate. It changes public
+# registry state, so it only runs when someone dispatches it by hand.
+
+on:
+  workflow_dispatch:
+    inputs:
+      server_name:
+        description: Registry name of the legacy server to retire
+        required: true
+        default: io.github.IgorGanapolsky/mcp-memory-gateway
+      status:
+        description: New status (deprecated keeps history visible; deleted hides it)
+        required: true
+        default: deprecated
+        type: choice
+        options:
+          - deprecated
+          - deleted
+          - active
+      message:
+        description: Message shown with the status change
+        required: true
+        default: "Renamed to ThumbGate. Use io.github.IgorGanapolsky/thumbgate (npm: thumbgate)."
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  retire:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Refuse to touch the canonical ThumbGate entry
+        env:
+          SERVER_NAME: ${{ inputs.server_name }}
+        run: |
+          if [ "$SERVER_NAME" = "io.github.IgorGanapolsky/thumbgate" ]; then
+            echo "Refusing to change the canonical ThumbGate entry"; exit 1
+          fi
+
+      - name: Download mcp-publisher
+        run: |
+          curl -sL https://github.com/modelcontextprotocol/registry/releases/download/v1.7.9/mcp-publisher_linux_amd64.tar.gz | tar xz
+          chmod +x mcp-publisher
+
+      - name: Login via GitHub OIDC
+        run: ./mcp-publisher login github-oidc
+
+      - name: Update status of all versions
+        env:
+          SERVER_NAME: ${{ inputs.server_name }}
+          NEW_STATUS: ${{ inputs.status }}
+          MESSAGE: ${{ inputs.message }}
+        run: ./mcp-publisher status --status "$NEW_STATUS" --all-versions --message "$MESSAGE" "$SERVER_NAME"
+
+      - name: Show the registry entry afterwards
+        env:
+          SERVER_NAME: ${{ inputs.server_name }}
+        run: |
+          curl -s "https://registry.modelcontextprotocol.io/v0/servers?search=${SERVER_NAME#*/}&limit=50" \
+            | jq -r '.servers[] | [.server.name, .server.version, (._meta["io.modelcontextprotocol.registry/official"].status)] | @tsv'
