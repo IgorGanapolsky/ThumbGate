@@ -94,12 +94,16 @@ fi
 # caches above are global sums that include automated entries, so they feed
 # lessons and trend, never the thumbs.
 SCOPE_LABEL="this project"
+LD_TS=""; LD_LABEL=""; LD_TEXT=""
 _HUMAN_JSON="${_TEST_THUMBGATE_STATUSLINE_HUMAN_JSON:-$(node "${SCRIPT_DIR}/statusline-human-counts.js" 2>/dev/null)}"
 if [ -n "$_HUMAN_JSON" ]; then
   eval "$(echo "$_HUMAN_JSON" | jq -r '
     @sh "UP=\(.up // 0)",
     @sh "DOWN=\(.down // 0)",
-    @sh "SCOPE_LABEL=\(.label // "this project")"
+    @sh "SCOPE_LABEL=\(.label // "this project")",
+    @sh "LD_TS=\(.latestDown.timestamp // "")",
+    @sh "LD_LABEL=\(.latestDown.label // "")",
+    @sh "LD_TEXT=\(.latestDown.text // "")"
   ' 2>/dev/null)"
 else
   UP="0"; DOWN="0"
@@ -180,8 +184,17 @@ if [[ -n "$_LESSON_JSON" ]]; then
     @sh "LESSON_TEXT=\(.text // "")",
     @sh "LESSON_ID=\(.lessonId // "")",
     @sh "LESSON_LABEL=\(.label // "")",
-    @sh "LESSON_LINK=\(.link // "")"
+    @sh "LESSON_LINK=\(.link // "")",
+    @sh "LESSON_CREATED=\(.createdAt // "")"
   ' 2>/dev/null)"
+fi
+# "Latest mistake" is the newest thumbs-down a person gave this project. The
+# lesson store only fills when a lesson is inferred, so it can lag far behind;
+# the thumb log is the fresher record. Both are ISO UTC, so a string compare orders them.
+LESSON_CREATED="${LESSON_CREATED:-}"
+if [[ -n "$LD_TS" ]] && [[ -z "$LESSON_CREATED" || ! "$LD_TS" < "$LESSON_CREATED" ]]; then
+  LESSON_LABEL="$LD_LABEL"; LESSON_TEXT="$LD_TEXT"
+  if [[ "$LD_TS" != "$LESSON_CREATED" ]]; then LESSON_ID=""; LESSON_LINK=""; fi
 fi
 
 # ── Colors ────────────────────────────────────────────────────────

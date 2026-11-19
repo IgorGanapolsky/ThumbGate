@@ -13,13 +13,27 @@ const path = require('node:path');
 const { readProjectRows } = require('./project-catalog');
 const { resolveLocalProject, hash } = require('./project-identity');
 const { resolveProjectDir, resolveFeedbackDir, getHomeDir } = require('./feedback-paths');
-const { isCountedHumanFeedback } = require('./human-feedback');
+const { isCountedHumanFeedback, isLegacyMcpCapture } = require('./human-feedback');
 
 function normalizeSignal(entry) {
   const raw = String(entry.signal || entry.feedback || '').toLowerCase();
   if (raw === 'positive' || raw === 'up' || raw === 'thumbs_up') return 'up';
   if (raw === 'negative' || raw === 'down' || raw === 'thumbs_down') return 'down';
   return null;
+}
+
+// The agent records a thumb within seconds of the message that carried it.
+const CORROBORATION_MS = 90 * 1000;
+
+function rowTime(row) {
+  const at = Date.parse(row.timestamp || row.createdAt || '');
+  return Number.isFinite(at) ? at : null;
+}
+
+function isScrapedHumanThumb(row) {
+  if (String(row.reviewOrigin || '').toLowerCase() !== 'human') return false;
+  const tags = Array.isArray(row.tags) ? row.tags : [];
+  return tags.includes('claude-history-sync');
 }
 
 function computeHumanCounts(options = {}) {
@@ -34,8 +48,7 @@ function computeHumanCounts(options = {}) {
   const globalDir = path.join(getHomeDir({ env }), '.thumbgate');
 
   const seen = new Set();
-  let up = 0;
-  let down = 0;
+  const mineRows = [];
   const ownDir = path.resolve(feedbackDir);
   for (const dir of new Set([ownDir, path.resolve(globalDir)])) {
     // Rows written before project tracking carry no key. In the project's own
@@ -45,17 +58,64 @@ function computeHumanCounts(options = {}) {
       const mine = row.projectKey === projectKey || row.projectKey === aliasKey
         || (ownsUnassigned && row.projectKey === 'unassigned');
       if (!mine) continue;
-      if (!isCountedHumanFeedback(row)) continue;
       if (row.id) {
         if (seen.has(row.id)) continue;
         seen.add(row.id);
       }
-      const signal = normalizeSignal(row);
-      if (signal === 'up') up += 1;
-      if (signal === 'down') down += 1;
+      mineRows.push(row);
     }
   }
-  return { up, down, label: 'this project', project: projectName };
+
+  // A thumb the history sync scraped from the person's own message is evidence
+  // that the person gave one at that moment. An MCP capture that an older server
+  // labelled automated counts when such evidence sits next to it; without it the
+  // row is a lesson the agent logged on its own judgment.
+  const scraped = { up: [], down: [] };
+  for (const row of mineRows) {
+    const signal = normalizeSignal(row);
+    const at = rowTime(row);
+    if (signal && at !== null && isScrapedHumanThumb(row)) scraped[signal].push(at);
+  }
+  const corroborated = (row) => {
+    const signal = normalizeSignal(row);
+    const at = rowTime(row);
+    return Boolean(signal) && at !== null && scraped[signal].some((t) => Math.abs(t - at) <= CORROBORATION_MS);
+  };
+
+  let up = 0;
+  let down = 0;
+  let latestDown = null;
+  for (const row of mineRows) {
+    if (!(isCountedHumanFeedback(row) || (isLegacyMcpCapture(row) && corroborated(row)))) continue;
+    const signal = normalizeSignal(row);
+    if (signal === 'up') up += 1;
+    if (signal === 'down') {
+      down += 1;
+      const at = rowTime(row);
+      if (at !== null && (!latestDown || at > latestDown.at)) latestDown = { at, row };
+    }
+  }
+  return { up, down, label: 'this project', project: projectName, latestDown: describeLatestDown(latestDown) };
+}
+
+function pad(n) { return String(n).padStart(2, '0'); }
+
+// Same shape the status line already prints for a lesson: MM/DD/YYYY HH:MM:SS in UTC.
+function formatStamp(ms) {
+  const d = new Date(ms);
+  return `${pad(d.getUTCMonth() + 1)}/${pad(d.getUTCDate())}/${d.getUTCFullYear()} ${pad(d.getUTCHours())}:${pad(d.getUTCMinutes())}:${pad(d.getUTCSeconds())}`;
+}
+
+function describeLatestDown(found) {
+  if (!found) return null;
+  const { at, row } = found;
+  const raw = String(row.whatWentWrong || row.whatToChange || row.context || '').replace(/\s+/g, ' ').trim();
+  return {
+    id: row.id || null,
+    timestamp: new Date(at).toISOString(),
+    label: `Latest mistake ${formatStamp(at)}`,
+    text: raw.length > 60 ? `${raw.slice(0, 57)}...` : raw,
+  };
 }
 
 if (process.argv[1] && path.resolve(process.argv[1]) === path.resolve(__filename)) {

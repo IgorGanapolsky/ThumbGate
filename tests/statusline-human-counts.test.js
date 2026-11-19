@@ -7,7 +7,7 @@ const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
 
-const { isCountedHumanFeedback } = require('../scripts/human-feedback');
+const { isCountedHumanFeedback, isLegacyMcpCapture } = require('../scripts/human-feedback');
 const { buildLinkState } = require('../scripts/statusline-links');
 
 const SCRIPT = path.join(__dirname, '..', 'scripts', 'statusline-human-counts.js');
@@ -94,6 +94,89 @@ test('MCP captures in the global store count for the project named in scope.proj
   assert.equal(out.down, 2, `stdout=${run.stdout} stderr=${run.stderr}`);
   assert.equal(out.up, 0);
   fs.rmSync(home, { recursive: true, force: true });
+});
+
+test('thumbs the agent recorded through MCP count as human even when an older server labelled them automated', () => {
+  const home = fs.mkdtempSync(path.join(os.tmpdir(), 'tg-statusline-legacy-mcp-'));
+  const project = path.join(home, 'orchestrator');
+  fs.mkdirSync(project, { recursive: true });
+  const childEnv = { PATH: process.env.PATH, HOME: home, USERPROFILE: home, TMPDIR: process.env.TMPDIR || os.tmpdir() };
+  // Shape of a real capture_feedback row from the pre-#5119 server: origin automated,
+  // an action type, an agent session, no key and no source marker.
+  const captured = (id, signal, projectId, timestamp, extra = {}) => ({
+    id,
+    signal,
+    reviewOrigin: 'automated',
+    actionType: signal === 'positive' ? 'store-learning' : 'store-mistake',
+    context: `context for ${id}`,
+    whatWentWrong: signal === 'negative' ? `went wrong in ${id}` : undefined,
+    tags: ['dayglass', 'owner-console'],
+    memorySource: null,
+    scope: { entityId: 'iganapolsky', projectId, processId: 'agent', sessionId: `session_${id}` },
+    timestamp,
+    ...extra,
+  });
+  writeJsonl(path.join(home, '.thumbgate', 'feedback-log.jsonl'), [
+    captured('mcp_up_1', 'positive', 'orchestrator', '2026-11-19T20:38:52.915Z'),
+    captured('mcp_down_old', 'negative', 'orchestrator', '2026-11-18T19:01:35.000Z'),
+    captured('mcp_down_new', 'negative', 'orchestrator', '2026-11-19T20:37:40.941Z'),
+    // Must not count: a lesson the agent logged with no thumb beside it, another project,
+    // a script row without a session, a scraped row, a row with a source marker, a no-action row.
+    captured('mcp_lesson_no_thumb', 'negative', 'orchestrator', '2026-11-19T20:50:00.000Z'),
+    captured('mcp_other_project', 'negative', 'dayglass', '2026-11-19T20:37:41.000Z'),
+    captured('script_no_session', 'negative', 'orchestrator', '2026-11-19T20:37:42.000Z', { scope: { projectId: 'orchestrator' } }),
+    captured('with_source', 'negative', 'orchestrator', '2026-11-19T20:37:43.000Z', { memorySource: { kind: 'import' } }),
+    captured('no_action_type', 'negative', 'orchestrator', '2026-11-19T20:37:44.000Z', { actionType: 'no-action' }),
+  ]);
+  // The history sync scraped the person's own messages into the project log: one
+  // thumb just before each corroborated MCP row, and an up that matches no capture.
+  const scraped = (id, signal, timestamp) => ({
+    id, signal, reviewOrigin: 'human', tags: ['claude-history-sync', 'auto-capture-fallback'], context: 'thumbs', timestamp,
+  });
+  writeJsonl(path.join(project, '.thumbgate', 'feedback-log.jsonl'), [
+    scraped('scr_up', 'positive', '2026-11-19T20:38:41.000Z'),
+    scraped('scr_down_old', 'negative', '2026-11-18T19:01:14.000Z'),
+    scraped('scr_down_new', 'negative', '2026-11-19T20:37:40.000Z'),
+    scraped('scr_up_unmatched', 'positive', '2026-11-19T10:00:00.000Z'),
+  ]);
+
+  const run = spawnSync(process.execPath, [SCRIPT], { cwd: project, encoding: 'utf8', env: childEnv });
+  assert.equal(run.status, 0, run.stderr);
+  const out = JSON.parse(run.stdout);
+  assert.deepEqual({ up: out.up, down: out.down }, { up: 1, down: 2 }, `stdout=${run.stdout}`);
+  assert.equal(out.latestDown.id, 'mcp_down_new');
+  assert.equal(out.latestDown.timestamp, '2026-11-19T20:37:40.941Z');
+  assert.equal(out.latestDown.label, 'Latest mistake 11/19/2026 20:37:40');
+  assert.equal(out.latestDown.text, 'went wrong in mcp_down_new');
+  fs.rmSync(home, { recursive: true, force: true });
+});
+
+test('latestDown is null when the project has no counted thumbs-down', () => {
+  const home = fs.mkdtempSync(path.join(os.tmpdir(), 'tg-statusline-nodown-'));
+  const project = path.join(home, 'orchestrator');
+  fs.mkdirSync(project, { recursive: true });
+  const childEnv = { PATH: process.env.PATH, HOME: home, USERPROFILE: home, TMPDIR: process.env.TMPDIR || os.tmpdir() };
+  writeJsonl(path.join(project, '.thumbgate', 'feedback-log.jsonl'), [
+    { id: 'only_up', signal: 'positive', reviewOrigin: 'human', timestamp: new Date().toISOString() },
+  ]);
+  const run = spawnSync(process.execPath, [SCRIPT], { cwd: project, encoding: 'utf8', env: childEnv });
+  const out = JSON.parse(run.stdout);
+  assert.equal(out.up, 1);
+  assert.equal(out.latestDown, null);
+  fs.rmSync(home, { recursive: true, force: true });
+});
+
+test('legacy MCP capture recognition is narrow', () => {
+  const base = { reviewOrigin: 'automated', actionType: 'store-mistake', scope: { sessionId: 'session_1' }, tags: [] };
+  assert.equal(isLegacyMcpCapture(base), true);
+  assert.equal(isLegacyMcpCapture({ ...base, scope: { sessionId: 'not-an-agent-session' } }), false);
+  assert.equal(isCountedHumanFeedback(base), false);
+  assert.equal(isLegacyMcpCapture({ ...base, reviewOrigin: 'imported' }), false);
+  assert.equal(isLegacyMcpCapture({ ...base, actionType: 'no-action' }), false);
+  assert.equal(isLegacyMcpCapture({ ...base, scope: {} }), false);
+  assert.equal(isLegacyMcpCapture({ ...base, source: 'cron' }), false);
+  assert.equal(isLegacyMcpCapture({ ...base, tags: ['auto-hook'] }), false);
+  assert.equal(isLegacyMcpCapture(null), false);
 });
 
 test('rows without a project key count in the project own feedback dir but never from the global store', () => {
