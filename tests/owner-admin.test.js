@@ -324,14 +324,63 @@ test('provider slots survive response timeout and block repeated refresh and sha
   assert.equal(available, 'settled');
 });
 
-test('oversized analytics source does not invoke shared synchronous collector', async () => {
+// A 50 MB telemetry log: 125,000 events spread over 45 days, so about a third of it is older than the 30-day window.
+function writeLargeTelemetry(target, lines = 125000) {
+  const pad = 'x'.repeat(300);
+  const fd = fs.openSync(target, 'w');
+  try {
+    const now = Date.now();
+    let batch = [];
+    for (let i = 0; i < lines; i += 1) {
+      const ageMs = (1 - i / lines) * 45 * 86400000;
+      const type = i % 40 === 0 ? 'checkout_start' : i % 7 === 0 ? 'cta_click' : 'landing_page_view';
+      batch.push(JSON.stringify({ receivedAt: new Date(now - ageMs).toISOString(), clientType: 'web', eventType: type, visitorId: 'v' + (i % 5000), sessionId: 's' + (i % 9000), source: 'reddit', page: '/', audience: 'external', pad }));
+      if (batch.length === 5000) { fs.writeSync(fd, batch.join('\n') + '\n'); batch = []; }
+    }
+    if (batch.length) fs.writeSync(fd, batch.join('\n') + '\n');
+  } finally { fs.closeSync(fd); }
+  return fs.statSync(target).size;
+}
+
+test('a 50 MB telemetry log is streamed from its newest end: analytics and money return numbers in under 3 seconds', async () => {
   const target = path.join(root, 'telemetry-pings.jsonl');
   const prior = fs.existsSync(target) ? fs.readFileSync(target) : null;
-  fs.writeFileSync(target, ' '.repeat(8 * 1024 * 1024 + 1));
-  let calls = 0;
+  const size = writeLargeTelemetry(target);
+  const extra = { getBillingSummaryLive: async () => ({}), telemetryCacheMs: 0, moneyCacheMs: 0, getStripeClient: () => { throw new Error('STRIPE_SECRET_KEY is missing. Stripe client cannot be initialized.'); } };
   try {
-    const result = await admin.collectAdminSection({ section: 'analytics' }, deps({ getBillingSummaryLive: async () => { calls++; return {}; } }));
-    assert.equal(result.status, 'unavailable'); assert.equal(calls, 0); assert.deepEqual(result.warnings, ['analytics_source_budget']);
+    assert.ok(size > 45 * 1024 * 1024, 'the fixture is about 50 MB, got ' + size);
+    const startedAnalytics = Date.now();
+    const analytics = await admin.collectAdminSection({ section: 'analytics' }, deps(extra));
+    const analyticsMs = Date.now() - startedAnalytics;
+    const startedMoney = Date.now();
+    const money = await admin.collectAdminSection({ section: 'money' }, deps(extra));
+    const moneyMs = Date.now() - startedMoney;
+    assert.ok(analyticsMs < 3000, 'analytics took ' + analyticsMs + ' ms');
+    assert.ok(moneyMs < 3000, 'money took ' + moneyMs + ' ms');
+    assert.notEqual(analytics.status, 'unavailable');
+    assert.ok(!analytics.warnings.includes('analytics_source_budget'));
+    const traffic = analytics.data.trafficMetrics;
+    assert.equal(traffic.visitors, 5000);
+    assert.ok(traffic.pageViews > 50000 && traffic.checkoutStarts > 1000 && traffic.ctaClicks > 5000, 'counts come from the in-window two thirds');
+    assert.ok(analytics.data.daily.length >= 29 && analytics.data.daily.length <= 31, 'one entry per day in the window, got ' + analytics.data.daily.length);
+    assert.equal(analytics.data.dataQuality.telemetryWindowComplete, true, 'the window edge was reached before the byte cap');
+    assert.ok(analytics.data.dataQuality.telemetryBytesRead < size, 'the older third of the file was never read');
+    assert.equal(money.data.traffic30d.visitors, 5000);
+    assert.equal(money.data.reasons.visitors, null);
+    assert.equal(money.data.reasons.payingCustomers, 'Stripe key missing');
+  } finally { if (prior) fs.writeFileSync(target, prior); else fs.rmSync(target); }
+});
+
+test('a byte cap below the window edge returns partial numbers, never a refusal', async () => {
+  const target = path.join(root, 'telemetry-pings.jsonl');
+  const prior = fs.existsSync(target) ? fs.readFileSync(target) : null;
+  writeLargeTelemetry(target, 20000);
+  try {
+    const result = await admin.collectAdminSection({ section: 'analytics' }, deps({ getBillingSummaryLive: async () => ({}), telemetryCacheMs: 0, telemetryMaxBytes: 2 * 1024 * 1024 }));
+    assert.notEqual(result.status, 'unavailable');
+    assert.ok(result.data.trafficMetrics.visitors > 0);
+    assert.equal(result.data.dataQuality.telemetryWindowComplete, false);
+    assert.ok(result.warnings.includes('telemetry_incomplete'));
   } finally { if (prior) fs.writeFileSync(target, prior); else fs.rmSync(target); }
 });
 
@@ -440,14 +489,15 @@ test('shared read-path inventory includes enabled legacy merging and trial fallb
     const paths = billing.getBillingAnalyticsReadPaths();
     assert.ok(paths.includes(path.join(legacy, 'revenue-events.jsonl')));
     assert.ok(paths.includes(path.join(legacy, 'trial-emails.jsonl')));
+    // Large ledgers no longer block the owner console: telemetry is streamed and billing totals come from a worker.
     let calls = 0;
-    const result = await admin.collectAdminSection({ section: 'analytics' }, deps({ getBillingSummaryLive: async () => { calls++; return {}; } }));
-    assert.equal(calls, 0); assert.equal(result.status, 'unavailable');
-    assert.deepEqual(result.warnings, ['analytics_source_budget']);
+    const result = await admin.collectAdminSection({ section: 'analytics' }, deps({ telemetryCacheMs: 0, getBillingSummaryLive: async () => { calls++; return {}; } }));
+    assert.equal(calls, 1); assert.notEqual(result.status, 'unavailable');
+    assert.ok(!result.warnings.includes('analytics_source_budget'));
     fs.rmSync(path.join(legacy, 'revenue-events.jsonl'));
     fs.writeFileSync(path.join(legacy, 'trial-emails.jsonl'), ' '.repeat(8 * 1024 * 1024 + 1));
-    const trial = await admin.collectAdminSection({ section: 'analytics' }, deps({ getBillingSummaryLive: async () => { calls++; return {}; } }));
-    assert.equal(calls, 0); assert.deepEqual(trial.warnings, ['analytics_source_budget']);
+    const trial = await admin.collectAdminSection({ section: 'analytics' }, deps({ telemetryCacheMs: 0, getBillingSummaryLive: async () => { calls++; return {}; } }));
+    assert.equal(calls, 2); assert.ok(!trial.warnings.includes('analytics_source_budget'));
   } finally {
     if (saved.merge === undefined) delete process.env._TEST_INCLUDE_LEGACY_BILLING_DATA; else process.env._TEST_INCLUDE_LEGACY_BILLING_DATA = saved.merge;
     if (saved.fallback === undefined) delete process.env._TEST_THUMBGATE_FALLBACK_FEEDBACK_DIR; else process.env._TEST_THUMBGATE_FALLBACK_FEEDBACK_DIR = saved.fallback;

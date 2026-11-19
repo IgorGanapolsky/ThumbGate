@@ -276,7 +276,28 @@
       function label(value) {
         return String(value)
           .replace(/([a-z])([A-Z])/g, '$1 $2')
+          .replace(/([a-zA-Z])(\d)/g, '$1 $2')
           .replaceAll('_', ' ');
+      }
+      // Money tab wording: plain words, never field names.
+      const CHECKOUT_WORDS = {
+        started: 'Started',
+        human: 'Started by people',
+        completedHuman: 'Completed by people',
+        paidHuman: 'Paid by people',
+        bot: 'Started by bots',
+        notClassified: 'Not classified (no bot check on record)',
+        internal: 'Owner and test checkouts',
+      };
+      const BASIS_WORDS = {
+        stripe_paid_and_active: 'people with a paid, unrefunded ThumbGate checkout in the past year, plus active subscribers, counted once each; owner and test purchases excluded',
+        stripe_paid_and_active_partial: 'people with a paid, unrefunded ThumbGate checkout in the past year, plus active subscribers (only the first records Stripe returned were counted), counted once each; owner and test purchases excluded',
+        stripe_active_subscriptions_excluding_owner: 'active Stripe subscriptions, owner excluded',
+        stripe_active_subscriptions_first_100_only: 'active Stripe subscriptions (first 100 only), owner excluded',
+        unavailable: 'not available right now',
+      };
+      function basis(value) {
+        return BASIS_WORDS[value] || 'not available right now';
       }
       function date(value) {
         if (!value) return 'Unknown';
@@ -338,7 +359,7 @@
         });
         return button;
       }
-      function cards(parent, values) {
+      function cards(parent, values, named = false) {
         const grid = element('div', undefined, 'cards');
         for (const [key, value] of Object.entries(values)) {
           const card = element('div', undefined, 'card');
@@ -348,7 +369,7 @@
               value === null || value === undefined ? 'Unknown' : value,
               'value',
             ),
-            element('div', label(key), 'label'),
+            element('div', named ? key : label(key), 'label'),
           );
           grid.append(card);
         }
@@ -382,11 +403,11 @@
         wrap.append(t);
         parent.append(wrap);
       }
-      function detail(parent, title, value) {
+      function detail(parent, title, value, words = {}) {
         const block = element('details');
         block.append(element('summary', title));
         const rows = Object.entries(value || {}).map(([key, val]) => ({
-          key: label(key),
+          key: words[key] || label(key),
           value: typeof val === 'object' ? JSON.stringify(val) : val,
         }));
         table(
@@ -407,46 +428,63 @@
       function render(parent, section, data) {
         if (section === 'money') {
           const checkouts = data.checkouts7d;
-          cards(parent, {
-            payingCustomers: data.payingCustomers,
-            activePro: data.activePro,
-            checkoutsStarted7d: checkouts ? checkouts.started : null,
-            humanCheckoutStarts7d: checkouts ? checkouts.human : null,
-            humanCheckoutsCompleted7d: checkouts ? checkouts.completedHuman : null,
-            botCheckouts7d: checkouts ? checkouts.bot : null,
-            visitors30d: data.traffic30d ? data.traffic30d.visitors : null,
-            checkoutStarts30d: data.traffic30d ? data.traffic30d.checkoutStarts : null,
-          });
-          parent.append(element('h3', 'Revenue · past 30 days'));
-          table(
+          const traffic = data.traffic30d;
+          const why = data.reasons || {};
+          // A card never shows a bare "Unknown": a missing number shows the reason the source gave.
+          const shown = (value, reason, suffix = '') =>
+            value === null || value === undefined
+              ? reason || 'Source not available right now'
+              : String(value) + suffix;
+          cards(
             parent,
-            [
-              ['Currency', (r) => r.currency],
-              ['Booked revenue', (r) => money(r.amount, r.currency)],
-            ],
-            Object.entries(data.revenueLast30Days || {}).map(
-              ([currency, amount]) => ({ currency, amount }),
-            ),
+            {
+              'Paying customers': shown(data.payingCustomers, why.payingCustomers, ' · from Stripe'),
+              'Active Pro subscriptions': shown(data.activePro, why.activePro, ' · from Stripe'),
+              'Checkouts started (7 days)': shown(checkouts ? checkouts.started : null, why.checkouts),
+              'Real people (7 days)': shown(checkouts ? checkouts.human : null, why.checkouts),
+              'Bots (7 days)': shown(checkouts ? checkouts.bot : null, why.checkouts),
+              'Not classified (7 days)': shown(checkouts ? checkouts.notClassified : null, why.checkouts),
+              'Owner and test (7 days)': shown(checkouts ? checkouts.internal : null, why.checkouts),
+              'Visitors (30 days)': shown(traffic ? traffic.visitors : null, why.visitors),
+              'Page views (30 days)': shown(traffic ? traffic.pageViews : null, why.visitors),
+              'Checkout starts seen on the site (30 days)': shown(traffic ? traffic.checkoutStarts : null, why.visitors),
+            },
+            true,
           );
+          parent.append(element('h3', 'Revenue · past 30 days'));
+          if (data.revenueLast30Days === null || data.revenueLast30Days === undefined)
+            parent.append(element('p', why.revenue || 'Source not available right now', 'notice'));
+          else
+            table(
+              parent,
+              [
+                ['Currency', (r) => r.currency],
+                ['Booked revenue', (r) => money(r.amount, r.currency)],
+              ],
+              Object.entries(data.revenueLast30Days).map(
+                ([currency, amount]) => ({ currency, amount }),
+              ),
+            );
           parent.append(
             element(
               'p',
-              'Paying customers counts external paid orders (' +
-                label(data.payingCustomersBasis) +
-                '). Active Pro: ' +
-                label(data.activeProBasis) +
-                '. Revenue reconciliation: ' +
-                label(data.revenueReconciliation || 'unavailable') +
-                '.',
+              'Paying customers: ' +
+                basis(data.payingCustomersBasis) +
+                '. Active Pro: ' +
+                basis(data.activeProBasis) +
+                '. Revenue is the total of those payments after refunds.',
               'muted',
             ),
           );
-          if (data.checkouts7d) detail(parent, 'Checkout sessions, last 7 days', data.checkouts7d);
+          if (data.checkouts7d) detail(parent, 'Checkout sessions, last 7 days', data.checkouts7d, CHECKOUT_WORDS);
+          if (data.checkouts30d) detail(parent, 'Checkout sessions, last 30 days', data.checkouts30d, CHECKOUT_WORDS);
           const leads = data.leadsBySource;
           if (leads) {
             detail(parent, 'Signups by source', leads.signups);
             detail(parent, 'Setup Sprint leads by source', leads.workflowSprint?.bySource);
             detail(parent, 'Newsletter by source', leads.newsletter?.bySource);
+          } else {
+            parent.append(element('p', 'Signups and leads: ' + (why.leads || 'source not available right now'), 'notice'));
           }
           for (const note of data.notes || [])
             parent.append(element('p', note, 'muted'));
@@ -600,12 +638,63 @@
         }
         if (section === 'analytics') {
           const external = data.revenue?.external || {};
-          cards(parent, {
-            visitors: data.trafficMetrics?.visitors,
-            checkoutStarts: data.trafficMetrics?.checkoutStarts,
-            emailSignups: data.signups?.emailSignups,
-            externalPaidOrders: external.paidOrders,
-          });
+          const traffic = data.trafficMetrics;
+          const waiting = 'Billing totals still calculating, refresh in a minute';
+          const shown = (value, fallback) =>
+            value === null || value === undefined ? fallback : String(value);
+          cards(
+            parent,
+            {
+              'Visitors (30 days)': shown(traffic?.visitors, 'Telemetry store empty'),
+              'Page views (30 days)': shown(traffic?.pageViews, 'Telemetry store empty'),
+              'Call to action clicks (30 days)': shown(traffic?.ctaClicks, 'Telemetry store empty'),
+              'Checkout starts (30 days)': shown(traffic?.checkoutStarts, 'Telemetry store empty'),
+              'Paid confirmations (30 days)': shown(traffic?.checkoutPaidConfirmations, 'Telemetry store empty'),
+              'Email signups': shown(data.signups?.emailSignups, waiting),
+              'External paid orders': shown(external.paidOrders, waiting),
+            },
+            true,
+          );
+          if (Array.isArray(data.daily) && data.daily.length) {
+            parent.append(element('h3', 'Visitors per day · past 30 days'));
+            const peak = Math.max(1, ...data.daily.map((d) => d.visitors));
+            const width = 600;
+            const height = 120;
+            const step = width / data.daily.length;
+            const ns = 'http://www.w3.org/2000/svg';
+            const chart = document.createElementNS(ns, 'svg');
+            chart.setAttribute('viewBox', '0 0 ' + width + ' ' + height);
+            chart.setAttribute('role', 'img');
+            chart.setAttribute('aria-label', 'Visitors per day for the past 30 days');
+            chart.style.width = '100%';
+            chart.style.maxHeight = '160px';
+            data.daily.forEach((d, i) => {
+              const bar = document.createElementNS(ns, 'rect');
+              const h = Math.max(1, Math.round((d.visitors / peak) * (height - 4)));
+              bar.setAttribute('x', String(i * step + 1));
+              bar.setAttribute('y', String(height - h));
+              bar.setAttribute('width', String(Math.max(1, step - 2)));
+              bar.setAttribute('height', String(h));
+              bar.setAttribute('fill', 'currentColor');
+              const tip = document.createElementNS(ns, 'title');
+              tip.textContent = d.date + ': ' + d.visitors + ' visitors, ' + d.pageViews + ' page views';
+              bar.append(tip);
+              chart.append(bar);
+            });
+            parent.append(chart);
+            table(
+              parent,
+              [
+                ['Day', (r) => r.date],
+                ['Visitors', (r) => r.visitors],
+                ['Page views', (r) => r.pageViews],
+                ['Call to action clicks', (r) => r.ctaClicks],
+                ['Checkout starts', (r) => r.checkoutStarts],
+                ['Paid confirmations', (r) => r.checkoutPaidConfirmations],
+              ],
+              [...data.daily].reverse(),
+            );
+          }
           parent.append(
             element('h3', 'External booked revenue · past 30 days'),
           );
@@ -637,7 +726,7 @@
             detail(parent, label(key), data[key]);
           detail(
             parent,
-            'Internal, test and unknown exclusions',
+            'Internal, test and unidentified exclusions',
             external.excluded,
           );
           detail(
@@ -807,12 +896,12 @@
           loading.className = 'notice';
         }
       }
-      document.getElementById('logout').addEventListener('click', async () => {
-        const response = await fetch('/v1/auth/session', {
-          method: 'DELETE',
-          credentials: 'same-origin',
-        });
-        if (response.ok) location.assign('/');
+      document.getElementById('logout').addEventListener('click', () => {
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = '/logout';
+        document.body.append(form);
+        form.submit();
       });
       controls();
       load();

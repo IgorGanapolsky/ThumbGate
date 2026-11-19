@@ -5,6 +5,7 @@ const path = require('node:path');
 const crypto = require('node:crypto');
 const readline = require('node:readline');
 const billing = require('./billing');
+const ownerTelemetry = require('./owner-telemetry');
 
 const JSON_LIMIT = 8 * 1024 * 1024;
 const LOG_LIMIT = 16 * 1024 * 1024;
@@ -282,17 +283,6 @@ function projectAnalytics(summary) {
   };
 }
 
-async function preflightAnalytics(root) {
-  let total = 0;
-  for (const source of billing.getBillingAnalyticsReadPaths()) {
-    try {
-      const stat = await fs.promises.stat(guardPath(root, source));
-      total += stat.size;
-      if (!stat.isFile() || total > JSON_LIMIT) throw failure('analytics_source_budget');
-    } catch (error) { if (error.code !== 'ENOENT') throw error; }
-  }
-}
-
 async function collectObservability(deps, signal) {
   stopped(signal);
   let disk = null;
@@ -317,66 +307,223 @@ function deadline(promise, ms, signal) {
 
 const countMap = (value) => Object.fromEntries(Object.entries(object(value) ? value : {}).filter(([, n]) => Number.isFinite(n)).slice(0, 50).map(([key, n]) => [String(key).slice(0, 64), n]));
 
-// Money board. Each block fails alone and reports null, never an invented zero.
+// The shared billing summary reads about 97 MB of ledgers on the hosted volume, so it never runs in the request:
+// a child process computes it, the result is cached, and tabs that need it say "refreshing" until it lands.
+// Telemetry (visitors, page views, clicks, checkouts) never waits for it: it is streamed from the log tail.
+const SUMMARY_TTL_MS = 10 * 60 * 1000;
+const TELEMETRY_CACHE_MS = 60000;
+const SUMMARY_WORKER = `
+const admin = require(process.argv[1]);
+const billing = require(process.argv[2]);
+billing.getBillingSummaryLive({ window: '30d', stripeReconciliationTimeoutMs: 3000 }, { signal: AbortSignal.timeout(60000) }).then((s) => {
+  if (!s || s.error) process.exit(2);
+  process.stdout.write(JSON.stringify(admin.summaryParts(s)));
+  process.exit(0);
+}).catch(() => process.exit(3));
+`;
+let summarySnapshot = { at: 0, value: null, inflight: null, failed: false };
+const trafficCache = new Map();
+
+function summaryParts(summary) {
+  return {
+    analytics: projectAnalytics(summary),
+    leads: {
+      signups: countMap(summary.signups?.bySource),
+      workflowSprint: { total: number(summary.pipeline?.workflowSprintLeads?.total), bySource: countMap(summary.pipeline?.workflowSprintLeads?.bySource) },
+      newsletter: { total: number(summary.newsletter?.total), bySource: countMap(summary.newsletter?.bySource) },
+      emailSignups: number(summary.signups?.emailSignups),
+    },
+  };
+}
+
+function startSummaryWorker() {
+  if (summarySnapshot.inflight) return;
+  summarySnapshot.inflight = new Promise((resolve) => {
+    require('node:child_process').execFile(process.execPath, ['-e', SUMMARY_WORKER, require.resolve('./owner-admin'), require.resolve('./billing')], { timeout: 90000, maxBuffer: 4 * 1024 * 1024, env: process.env }, (error, stdout) => {
+      summarySnapshot.failed = Boolean(error);
+      if (!error) { try { summarySnapshot.value = JSON.parse(stdout); summarySnapshot.at = Date.now(); } catch { summarySnapshot.failed = true; } }
+      resolve();
+    });
+  }).finally(() => { summarySnapshot.inflight = null; });
+}
+
+async function readSummary(deps, signal) {
+  if (deps.getBillingSummaryLive) {
+    const injected = await deps.getBillingSummaryLive({ window: '30d', stripeReconciliationTimeoutMs: 8000 }, { signal });
+    if (!injected || injected.error) throw failure('analytics_unavailable');
+    return { value: summaryParts(injected), state: 'ok' };
+  }
+  const fresh = summarySnapshot.value && Date.now() - summarySnapshot.at < SUMMARY_TTL_MS;
+  if (!fresh) startSummaryWorker();
+  // First visit after a restart: wait for the worker a few seconds instead of answering "not ready".
+  if (!summarySnapshot.value && summarySnapshot.inflight) {
+    await Promise.race([summarySnapshot.inflight, new Promise((resolve) => { const timer = setTimeout(resolve, 7000); timer.unref?.(); })]);
+  }
+  const state = summarySnapshot.value ? (fresh ? 'ok' : 'stale') : (summarySnapshot.failed ? 'failed' : 'refreshing');
+  return { value: summarySnapshot.value, state };
+}
+
+// 30 days of site traffic, streamed from the newest end of the telemetry log. Cached for a minute.
+async function readTraffic(deps, signal) {
+  const ttl = deps.telemetryCacheMs ?? TELEMETRY_CACHE_MS;
+  const key = String(deps.feedbackDir);
+  const hit = trafficCache.get(key);
+  if (ttl > 0 && hit && Date.now() - hit.at < ttl) return hit.value;
+  const value = await ownerTelemetry.readTrafficWindow({ feedbackDir: guardPath(deps.feedbackDir, deps.feedbackDir), days: 30, signal, maxBytes: deps.telemetryMaxBytes });
+  if (ttl > 0) trafficCache.set(key, { at: Date.now(), value });
+  return value;
+}
+
+async function listCompleteSessions({ stripe, days, nowMs = Date.now(), maxRows = 1000 }) {
+  const rows = [];
+  let seen = 0;
+  const since = Math.floor(nowMs / 1000) - days * 86400;
+  for await (const row of stripe.checkout.sessions.list({ status: 'complete', created: { gte: since }, limit: 100, expand: ['data.payment_intent.latest_charge'] })) {
+    seen += 1;
+    if (row.status === 'complete' && /thumbgate/i.test(String(row.success_url || ''))) rows.push(row);
+    if (seen >= maxRows) return { rows, complete: false };
+  }
+  return { rows, complete: true };
+}
+
+// Why a Stripe source failed, in words a person can act on. Never a bare "Unknown".
+function stripeReason(error) {
+  if (/STRIPE_SECRET_KEY is missing/i.test(String(error?.message || ''))) return 'Stripe key missing';
+  if (error?.code === 'collection_timeout') return 'Stripe did not answer in time';
+  if (error?.code === 'provider_busy') return 'Stripe is busy, refresh in a moment';
+  return 'Stripe unavailable';
+}
+
+const attempt = async (work, reasonOf) => {
+  try { return { ok: true, value: await work(), reason: null }; } catch (error) { return { ok: false, value: null, reason: reasonOf(error) }; }
+};
+const telemetryReason = (error) => (error?.code === 'collection_timeout' ? 'telemetry read timed out' : 'telemetry read failed');
+
+const trafficFields = (read) => ({ visitors: read.traffic.visitors, realVisitors: read.traffic.realVisitors, botOrInternalVisitors: read.traffic.botOrInternalVisitors, sessions: read.traffic.sessions, pageViews: read.traffic.pageViews, ctaClicks: read.traffic.ctaClicks, checkoutStarts: read.traffic.checkoutStarts, checkoutPaidConfirmations: read.traffic.checkoutPaidConfirmations });
+
+// Money board. Each block fails alone: its fields are null and a plain-words reason is returned beside them.
+// Stripe answers paying customers, revenue and checkouts; our own page-view telemetry answers visitors.
 async function collectMoney(deps, signal) {
   const ttl = deps.moneyCacheMs ?? MONEY_CACHE_MS;
   if (ttl > 0 && moneyCache && Date.now() - moneyCache.at < ttl) return moneyCache.value;
-  const attempt = async (work) => { try { return { ok: true, value: await work() }; } catch { return { ok: false, value: null }; } };
   const ownerEmails = (deps.getOwnerEmails || require('./bot-detection').getOwnerEmails)();
   const stripe = () => (deps.getStripeClient || billing.getStripeClient)();
+  const { listSessions, countSessions, classifySession } = require('./checkout-session-count');
+  const nowSeconds = Math.floor(Date.now() / 1000);
 
-  const [summaryRun, checkoutRun, proRun] = await Promise.all([
-    attempt(async () => {
-      await preflightAnalytics(deps.feedbackDir);
-      const summary = await (deps.getBillingSummaryLive || billing.getBillingSummaryLive)({ window: '30d', stripeReconciliationTimeoutMs: 8000 }, { signal });
-      if (summary.error) throw failure('analytics_unavailable');
-      return summary;
-    }),
-    attempt(async () => {
-      const { listSessions, countSessions } = require('./checkout-session-count');
-      const sessions = await deadline(billing.withStripeReadSlot(() => listSessions({ days: 7, stripe: stripe() }), { signal }), 8000, signal);
-      return countSessions(sessions, { ownerEmails });
-    }),
-    attempt(async () => {
+  // Stripe allows two reads at once: one lane lists paid checkouts then subscriptions, the other lists checkout sessions.
+  const paidAndProLane = (async () => {
+    const paidResult = await attempt(async () => {
+      const result = await deadline(billing.withStripeReadSlot(() => listCompleteSessions({ stripe: stripe(), days: 365 }), { signal }), 8000, signal);
+      // Paid and not refunded in full, owner and test purchases excluded. A partial refund comes off the revenue.
+      const charge = (row) => (object(row.payment_intent) && object(row.payment_intent.latest_charge) ? row.payment_intent.latest_charge : null);
+      const paid = result.rows.filter((row) => row.payment_status === 'paid' && classifySession(row, { ownerEmails }) !== 'internal' && charge(row)?.refunded !== true);
+      const customers = new Set(paid.map((row) => id(row.customer) || String(row.customer_details?.email || row.customer_email || row.id).toLowerCase()));
+      const revenue = {};
+      for (const row of paid) {
+        if (!(row.created >= nowSeconds - 30 * 86400) || !Number.isSafeInteger(row.amount_total) || !/^[a-z]{3}$/i.test(row.currency || '')) continue;
+        const code = row.currency.toUpperCase();
+        const refunded = Number.isSafeInteger(charge(row)?.amount_refunded) ? charge(row).amount_refunded : 0;
+        revenue[code] = (revenue[code] || 0) + row.amount_total - refunded;
+      }
+      return { customers, revenue, complete: result.complete };
+    }, stripeReason);
+    const proResult = await attempt(async () => {
       const result = await deadline(billing.withStripeReadSlot(() => stripe().subscriptions.list({ status: 'active', limit: 100, expand: ['data.customer'] }, { timeout: 8000, maxNetworkRetries: 0 }), { signal }), 8000, signal);
       if (!Array.isArray(result?.data)) throw failure('provider_unavailable');
       const external = result.data.filter((row) => {
         const email = String(row.customer?.email || '').toLowerCase();
         return !(email && ownerEmails.some((owner) => email === String(owner).toLowerCase()));
       });
-      return { count: external.length, complete: result.has_more !== true };
-    }),
+      const customers = new Set(external.map((row) => id(row.customer) || String(row.customer?.email || row.id).toLowerCase()));
+      return { count: external.length, customers, complete: result.has_more !== true };
+    }, stripeReason);
+    return [paidResult, proResult];
+  })();
+  const [[paidRun, proRun], sessionRun, trafficRun, summaryRun] = await Promise.all([
+    paidAndProLane,
+    attempt(async () => {
+      const rows = await deadline(billing.withStripeReadSlot(() => listSessions({ days: 30, stripe: stripe() }), { signal }), 8000, signal);
+      const since7 = nowSeconds - 7 * 86400;
+      return { d30: countSessions(rows, { ownerEmails }), d7: countSessions(rows.filter((row) => !row.created || row.created >= since7), { ownerEmails }) };
+    }, stripeReason),
+    attempt(() => readTraffic(deps, signal), telemetryReason),
+    attempt(() => readSummary(deps, signal), () => 'lead ledgers failed'),
   ]);
 
-  const summary = summaryRun.value;
-  const external = summary?.revenue?.external;
-  const checkouts = checkoutRun.value;
+  const parts = summaryRun.value?.value || null;
+  const leadsReason = parts ? null : summaryRun.ok && summaryRun.value.state === 'refreshing' ? 'lead ledgers still calculating, refresh in a minute' : 'lead ledgers failed';
+  const trafficRead = trafficRun.value;
+  const trafficReason = !trafficRun.ok ? trafficRun.reason : trafficRead.empty ? 'telemetry store empty' : null;
+  const paid = paidRun.value;
+  const sessions = sessionRun.value;
+  const sessionBuckets = (counts) => (counts ? {
+    started: counts.started,
+    human: counts.nonCrawlerStarted,
+    completedHuman: counts.nonCrawlerCompleted,
+    paidHuman: counts.nonCrawlerPaid,
+    bot: counts.excluded.bot,
+    notClassified: counts.excluded.unclassified + counts.excluded.unknownUa,
+    internal: counts.excluded.internal,
+  } : null);
+  const bothStripe = paid && proRun.value;
   const data = {
     windows: { revenue: '30d', checkouts: '7d', traffic: '30d', leads: '30d' },
-    payingCustomers: summary ? number(external?.paidOrders) : null,
-    payingCustomersBasis: 'external_paid_orders_30d',
+    // Counted straight from Stripe: people with a paid, unrefunded checkout in the past year plus active subscribers, once each.
+    payingCustomers: bothStripe ? new Set([...paid.customers, ...proRun.value.customers]).size : null,
+    payingCustomersSource: 'stripe',
+    payingCustomersBasis: bothStripe ? (paid.complete && proRun.value.complete ? 'stripe_paid_and_active' : 'stripe_paid_and_active_partial') : 'unavailable',
     activePro: proRun.value ? proRun.value.count : null,
     activeProBasis: proRun.value ? (proRun.value.complete ? 'stripe_active_subscriptions_excluding_owner' : 'stripe_active_subscriptions_first_100_only') : 'unavailable',
-    revenueLast30Days: summary ? currencies(external?.bookedRevenueByCurrency) : null,
-    revenueReconciliation: summary ? (['ok', 'partial', 'timeout', 'unavailable', 'unconfigured'].includes(summary.reconciliation?.status) ? summary.reconciliation.status : 'unavailable') : null,
-    checkouts7d: checkouts ? { started: checkouts.started, human: checkouts.nonCrawlerStarted, completedHuman: checkouts.nonCrawlerCompleted, paidHuman: checkouts.nonCrawlerPaid, bot: checkouts.excluded.bot, unclassified: checkouts.excluded.unclassified, unknownUserAgent: checkouts.excluded.unknownUa, internal: checkouts.excluded.internal } : null,
-    traffic30d: summary ? numericFields(summary.trafficMetrics, ['visitors', 'sessions', 'pageViews', 'ctaClicks', 'checkoutStarts', 'checkoutPaidConfirmations']) : null,
-    leadsBySource: summary ? {
-      signups: countMap(summary.signups?.bySource),
-      workflowSprint: { total: number(summary.pipeline?.workflowSprintLeads?.total), bySource: countMap(summary.pipeline?.workflowSprintLeads?.bySource) },
-      newsletter: { total: number(summary.newsletter?.total), bySource: countMap(summary.newsletter?.bySource) },
-      emailSignups: number(summary.signups?.emailSignups),
-    } : null,
-    notes: ['Crawler checkouts are refused before Stripe since the human gate, so the bot count is small by design.', 'Sessions created before the gate carry no user-agent class and are counted under unclassified, not human.'],
+    revenueLast30Days: paid ? paid.revenue : null,
+    revenueBasis: 'stripe_paid_checkouts_after_refunds',
+    checkouts7d: sessionBuckets(sessions?.d7),
+    checkouts30d: sessionBuckets(sessions?.d30),
+    traffic30d: trafficReason ? null : { ...trafficFields(trafficRead), partial: trafficRead.partial },
+    leadsBySource: parts ? parts.leads : null,
+    reasons: {
+      payingCustomers: bothStripe ? null : (paidRun.reason || proRun.reason),
+      activePro: proRun.value ? null : proRun.reason,
+      revenue: paid ? null : paidRun.reason,
+      checkouts: sessions ? null : sessionRun.reason,
+      visitors: trafficReason,
+      leads: leadsReason,
+    },
+    notes: ['Every started checkout is counted once: real people, bots, not classified, or owner and test.', 'Sessions created before the bot check carry no browser class, so they are counted as not classified.'],
   };
   const warnings = [];
-  if (!summaryRun.ok) warnings.push('billing_summary_unavailable');
-  if (!checkoutRun.ok) warnings.push('checkout_list_unavailable');
+  if (!paidRun.ok) warnings.push('paid_checkout_list_unavailable');
+  if (!sessionRun.ok) warnings.push('checkout_list_unavailable');
   if (!proRun.ok) warnings.push('subscription_list_unavailable');
-  if (summary && data.revenueReconciliation !== 'ok') warnings.push('stripe_reconciliation_' + data.revenueReconciliation);
-  const value = envelope('billing_summary_and_stripe', data, warnings, warnings.length === 3 ? 'unavailable' : warnings.length ? 'partial' : 'ok');
+  if (trafficReason) warnings.push('telemetry_unavailable');
+  if (leadsReason) warnings.push('leads_unavailable');
+  const failed = [paidRun, sessionRun, proRun].filter((run) => !run.ok).length;
+  const value = envelope('stripe_and_telemetry', data, warnings, failed === 3 && trafficReason ? 'unavailable' : warnings.length ? 'partial' : 'ok');
   if (ttl > 0 && warnings.length === 0) moneyCache = { at: Date.now(), value };
   return value;
+}
+
+// Analytics: 30 days of traffic streamed from the telemetry tail (never refused for size), a daily series, and the
+// billing totals from the cached child-process summary when it is ready.
+async function collectAnalytics(deps, signal) {
+  const [trafficRun, summaryRun] = await Promise.all([
+    attempt(() => readTraffic(deps, signal), telemetryReason),
+    attempt(() => readSummary(deps, signal), () => 'billing totals failed'),
+  ]);
+  const parts = summaryRun.value?.value || null;
+  const trafficRead = trafficRun.value;
+  if (!trafficRun.ok && !parts) throw Object.assign(new Error('analytics_unavailable'), { code: trafficRun.reason === 'telemetry read timed out' ? 'collection_timeout' : 'analytics_unavailable' });
+  const data = parts?.analytics ? { ...parts.analytics } : { window: '30d' };
+  const hasTraffic = trafficRun.ok && !trafficRead.empty;
+  data.trafficMetrics = hasTraffic ? trafficFields(trafficRead) : (data.trafficMetrics || null);
+  data.daily = hasTraffic ? trafficRead.daily : [];
+  data.dataQuality = { ...(data.dataQuality || {}), telemetryWindowComplete: hasTraffic ? !trafficRead.partial : false, telemetryBytesRead: trafficRead ? trafficRead.bytesRead : 0, telemetrySizeBytes: trafficRead ? trafficRead.size : 0 };
+  const warnings = [];
+  if (data.reconciliation && (data.reconciliation.status !== 'ok' || !data.reconciliation.complete)) warnings.push('stripe_reconciliation_' + data.reconciliation.status);
+  if (!parts) warnings.push(summaryRun.ok && summaryRun.value.state === 'refreshing' ? 'billing_totals_refreshing' : 'billing_totals_unavailable');
+  if (!hasTraffic) warnings.push(trafficRun.ok ? 'telemetry_store_empty' : 'telemetry_unavailable');
+  else if (trafficRead.partial) warnings.push('telemetry_incomplete');
+  return envelope('telemetry_tail_and_billing_summary_30d', data, warnings);
 }
 
 async function collectAdminSection(route, deps, externalSignal) {
@@ -395,23 +542,14 @@ async function collectAdminSection(route, deps, externalSignal) {
       if (route.section === 'stripe') return collectStripe(route, deps, controller.signal);
       if (route.section === 'data') return collectData(route, deps, controller.signal);
       if (route.section === 'observability') return collectObservability(deps, controller.signal);
-      await preflightAnalytics(deps.feedbackDir);
-      stopped(controller.signal);
-      const summary = await (deps.getBillingSummaryLive || billing.getBillingSummaryLive)({ window: '30d', stripeReconciliationTimeoutMs: 8000 }, { signal: controller.signal });
-      stopped(controller.signal);
-      if (summary.error) throw failure('analytics_unavailable');
-      const data = projectAnalytics(summary);
-      const warnings = data.reconciliation.status !== 'ok' || !data.reconciliation.complete ? ['stripe_reconciliation_' + data.reconciliation.status] : [];
-      if (summary.sourceDiagnostics?.warnings?.length) warnings.push('source_quality_warning');
-      if (!data.dataQuality.telemetryWindowComplete) warnings.push('telemetry_incomplete');
-      return envelope('shared_billing_summary_30d', data, warnings);
+      return collectAnalytics(deps, controller.signal);
     };
     return await deadline(operation(), deps.sectionTimeoutMs || 10000, controller.signal);
   } catch (error) {
-    return envelope(route.section, null, [error.code === 'collection_timeout' ? 'collection_timeout' : error.code === 'analytics_source_budget' ? 'analytics_source_budget' : 'source_unavailable'], 'unavailable');
+    return envelope(route.section, null, [error.code === 'collection_timeout' ? 'collection_timeout' : 'source_unavailable'], 'unavailable');
   } finally {
     abort(); clearTimeout(timer); externalSignal?.removeEventListener('abort', abort); activeCollections -= 1;
   }
 }
 
-module.exports = { PRIVATE_HEADERS, RESPONSE_LIMIT, adminPath, parseAdminRoute, readOwnerIdentity, readSessionState, collectMoney, collectAdminSection, createRuntimeObservations, projectAnalytics, projectStripe, readObject, countRecords, guardPath };
+module.exports = { PRIVATE_HEADERS, RESPONSE_LIMIT, adminPath, parseAdminRoute, readOwnerIdentity, readSessionState, collectMoney, collectAnalytics, summaryParts, collectAdminSection, createRuntimeObservations, projectAnalytics, projectStripe, readObject, countRecords, guardPath };

@@ -1801,4 +1801,7 @@ module.exports = {
   getTelemetryAnalytics,
   getTelemetrySummary,
   inferTrafficChannel,
+  isMarketingClickEvent,
+  isCheckoutStartEvent,
+  isDirectStripeBeacon,
 };
