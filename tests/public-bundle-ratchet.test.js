@@ -284,7 +284,9 @@ const path = require('node:path');
 // and scripts/cap-hit-counter.js (scripts/auto-promote-gates.js requires it; it was missing from `files`).
 // 693 -> 695 (2026-11-19): public/preview.html (free preview page) and public/js/connect-panel.js (connect panel, preview rules, safety score)
 // 695 -> 696 (2026-11-19): scripts/first-block-upsell.js (required by scripts/gates-engine.js, first-block upgrade line)
-const BASELINE_FILE_COUNT = 696;
+// 696 -> 700 (2026-11-19): scripts/owner-telemetry.js, ops-log.js, ops-report.js and checkout-session-count.js
+// (required by scripts/owner-admin.js and src/api/server.js; the 1.40.4 publish failed without them in `files`).
+const BASELINE_FILE_COUNT = 700;
 function readBundleSnapshot() {
   const repoRoot = path.resolve(__dirname, '..');
   const stdout = execSync('npm pack --dry-run --json', {

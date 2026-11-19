@@ -517,8 +517,9 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
     // and scripts/cap-hit-counter.js (required by scripts/auto-promote-gates.js; it was missing from `files`) (+2).
     // 693 -> 695 (2026-11-19): public/preview.html and public/js/connect-panel.js (free preview, connect panel) (+2).
     // 695 -> 696 (2026-11-19): scripts/first-block-upsell.js (required by scripts/gates-engine.js, first-block upgrade line) (+1).
-    manifest.fileCount <= 696,
-    `npm package should stay <= 696 files, got ${manifest.fileCount}`
+    // 696 -> 700 (2026-11-19): scripts/owner-telemetry.js, ops-log.js, ops-report.js, checkout-session-count.js (required by owner-admin.js and server.js) (+4).
+    manifest.fileCount <= 700,
+    `npm package should stay <= 700 files, got ${manifest.fileCount}`
   );
   // Ceiling bumped from 2.75 MB → 2.85 MB (2026-04-16) to accommodate the
   // incremental review-delta demo content in public/dashboard.html landing
@@ -786,8 +787,11 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // Bumped 10.09 MB -> 10.11 MB (2026-11-12, PR #4978): UserPromptSubmit secret guard in scripts/prompt-guard.js + adapter pre-hook configs on top of #4975 (measured 10,098,256 unpacked; file count stays 655).
   // Bumped 10.11 MB -> 10.296 MB (2026-11-15): 35 modules bin/cli.js requires were missing from the
   // tarball (npx gate-check threw Cannot find module). Measured 10,246,404 unpacked, +50 KB headroom.
-  manifest.unpackedSize <= 10_296_000,
-  `npm package should stay <= 10.296 MB unpacked, got ${manifest.unpackedSize}`
+  // Bumped 10.296 MB -> 10.45 MB (2026-11-19): the owner console shipped without the modules it requires
+  // (scripts/owner-admin.js -> owner-telemetry.js, ops-log.js, ops-report.js, checkout-session-count.js), which
+  // failed the 1.40.4 publish. Adding those four (+26 KB) on top of the console and Money/Observability work.
+  manifest.unpackedSize <= 10_450_000,
+  `npm package should stay <= 10.45 MB unpacked, got ${manifest.unpackedSize}`
 );
 
   for (const file of requiredRuntimeFiles) {
