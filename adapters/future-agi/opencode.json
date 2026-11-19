@@ -2,7 +2,7 @@
   "mcpServers": {
     "thumbgate": {
       "command": "npx",
-      "args": ["--yes", "--package", "thumbgate@1.40.4", "thumbgate", "serve"]
+      "args": ["--yes", "--package", "thumbgate@1.40.5", "thumbgate", "serve"]
     }
   }
 }

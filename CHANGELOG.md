@@ -7,6 +7,12 @@
 - Attribution: a LinkedIn referrer (linkedin.com, lnkd.in) is named `linkedin`. The landing visit's `utm_source`, `utm_medium`, `utm_campaign`, `utm_content` and `utm_term` are kept in a 30-day first-party cookie and flow into the checkout form and the Stripe session metadata, so a buyer from a LinkedIn post shows up as `linkedin`, not `website`. New read-only `GET /v1/analytics/sources` (admin or operator key) groups visits, installs and checkout starts by `utm_source` for the last 7 and 30 days. The About page links the correct LinkedIn profile.
 - Checkout opens a Stripe session only after a confirmed human click. The Pro buttons post to the server with a short-lived single-use token that page JavaScript fetches after a real pointer or keyboard event. A bare GET, a request without a token, or more than 2 a minute from one IP gets no session, and `/go/pro*` GET links go to the confirm page instead of a payment link. Every session records landing page, referrer, browser class and button id. The npm package now ships `scripts/checkout-human-gate.js` and `scripts/cap-hit-counter.js` (+2 files, bundle baseline 690 -> 692).
 
+## 1.40.5
+
+### Patch Changes
+
+- 0015671: The status line's "Latest mistake" time is now in the reader's local time, 12-hour with AM/PM ("Nov 19, 3:37 PM"), instead of UTC 24-hour. Also ships the modules the owner console requires (`owner-telemetry.js`, `ops-log.js`, `ops-report.js`, `checkout-session-count.js`), which were missing from the npm package and blocked the 1.40.4 publish.
+
 ## 1.40.4
 
 ### Patch Changes
