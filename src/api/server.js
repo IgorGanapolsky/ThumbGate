@@ -123,6 +123,7 @@ const {
 const rapidCheckoutGuard = createRapidCheckoutGuard();
 
 const { createHumanGate } = require('../../scripts/checkout-human-gate');
+const { getUtmSourceSummary } = require('../../scripts/utm-source-summary');
 
 // A stable signing value keeps click tokens valid across instances and restarts:
 // THUMBGATE_CHECKOUT_TOKEN_SECRET, else derived from THUMBGATE_API_KEY, else random per process.
@@ -613,6 +614,9 @@ function serveStaticFile(res, filePath, { headOnly = false, cacheSeconds = 86400
 const VISITOR_COOKIE_NAME = 'thumbgate_visitor_id';
 const SESSION_COOKIE_NAME = 'thumbgate_session_id';
 const ACQUISITION_COOKIE_NAME = 'thumbgate_acquisition_id';
+const UTM_COOKIE_NAME = 'thumbgate_utm';
+const UTM_COOKIE_MAX_AGE_SECONDS = 60 * 60 * 24 * 30;
+const LANDING_UTM_KEYS = ['utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term'];
 const VISITOR_COOKIE_MAX_AGE_SECONDS = 60 * 60 * 24 * 90;
 const BUILD_METADATA = resolveBuildMetadata();
 const TERMINAL_JOB_STATUSES = new Set(['completed', 'failed', 'cancelled']);
@@ -1727,7 +1731,13 @@ function inferSearchSurface(referrerHost) {
   return null;
 }
 
+function isLinkedInHost(referrerHost) {
+  const host = String(normalizeNullableText(referrerHost) || '').toLowerCase();
+  return /(^|\.)linkedin\.com$/.test(host) || host === 'lnkd.in';
+}
+
 function inferSource(referrerHost) {
+  if (isLinkedInHost(referrerHost)) return 'linkedin';
   const surface = inferSearchSurface(referrerHost);
   if (surface === 'reddit') return 'reddit';
   if (surface && /_search$/.test(surface)) return 'organic_search';
@@ -1803,6 +1813,39 @@ function isSecureRequest(req) {
   return forwardedProto === 'https' || Boolean(req.socket && req.socket.encrypted);
 }
 
+function sanitizeUtmValue(value) {
+  const text = String(value ?? '').trim().slice(0, 100);
+  return /^[\w.\-:+~ /]+$/.test(text) ? text : '';
+}
+
+function readLandingUtm(source) {
+  const out = {};
+  for (const key of LANDING_UTM_KEYS) {
+    const value = sanitizeUtmValue(typeof source.get === 'function' ? source.get(key) : source[key]);
+    if (value) out[key] = value;
+  }
+  return out.utm_source ? out : {};
+}
+
+function parseLandingUtmCookie(raw) {
+  try {
+    const decoded = JSON.parse(String(raw || ''));
+    return decoded && typeof decoded === 'object' ? readLandingUtm(decoded) : {};
+  } catch {
+    return {};
+  }
+}
+
+// The landing visit's utm_* survive to checkout in a first-party cookie, so the
+// Stripe session can say which post or campaign brought the buyer.
+function applyLandingUtm(parsed, journeyState) {
+  const params = parsed?.searchParams;
+  if (!params || params.get('utm_source') || !journeyState?.landingUtm) return;
+  for (const [key, value] of Object.entries(journeyState.landingUtm)) {
+    if (!params.get(key)) params.set(key, value);
+  }
+}
+
 function resolveJourneyState(req, parsed) {
   const params = parsed ? parsed.searchParams : new URLSearchParams();
   const cookies = parseCookies(req.headers.cookie);
@@ -1836,10 +1879,21 @@ function resolveJourneyState(req, parsed) {
     setCookieHeaders.push(serializeCookie(ACQUISITION_COOKIE_NAME, acquisitionId, { secure }));
   }
 
+  const queryUtm = readLandingUtm(params);
+  const cookieUtm = parseLandingUtmCookie(cookies[UTM_COOKIE_NAME]);
+  const landingUtm = queryUtm.utm_source ? queryUtm : cookieUtm;
+  if (queryUtm.utm_source && JSON.stringify(queryUtm) !== JSON.stringify(cookieUtm)) {
+    setCookieHeaders.push(serializeCookie(UTM_COOKIE_NAME, JSON.stringify(queryUtm), {
+      maxAge: UTM_COOKIE_MAX_AGE_SECONDS,
+      secure,
+    }));
+  }
+
   return {
     visitorId,
     sessionId,
     acquisitionId,
+    landingUtm,
     setCookieHeaders,
   };
 }
@@ -3043,7 +3097,19 @@ function getOauthAuthorizeParamsFromForm(form, hostedConfig) {
   };
 }
 
-function resolveCheckoutIntentPlanView(parsed) {
+function withLandingUtm(directFields, parsed, includeAttribution) {
+  const params = parsed?.searchParams;
+  // Crawler-visible HTML never carries attribution values.
+  if (!includeAttribution || !params || !params.get('utm_source')) return directFields;
+  const out = { ...directFields };
+  for (const key of LANDING_UTM_KEYS) {
+    const value = sanitizeUtmValue(params.get(key));
+    if (value) out[key] = value;
+  }
+  return out;
+}
+
+function resolveCheckoutIntentPlanView(parsed, includeAttribution = false) {
   const requestedCycle = String(parsed?.searchParams?.get('billing_cycle') || 'monthly').trim().toLowerCase();
   if (requestedCycle === 'annual') {
     return {
@@ -3051,10 +3117,10 @@ function resolveCheckoutIntentPlanView(parsed) {
       price: '$149',
       unit: '/yr',
       directAction: '/go/pro-annual',
-      directFields: {
+      directFields: withLandingUtm({
         utm_source: 'website', utm_medium: 'checkout_interstitial', utm_campaign: 'pro_annual_149', utm_content: 'skip_form',
         cta_id: 'pro_checkout_direct_stripe', cta_placement: 'checkout_interstitial',
-      },
+      }, parsed, includeAttribution),
       ctaLabel: 'Pay $149/yr with Stripe →',
     };
   }
@@ -3063,10 +3129,10 @@ function resolveCheckoutIntentPlanView(parsed) {
     price: '$19',
     unit: '/mo',
     directAction: '/go/pro-direct',
-    directFields: {
+    directFields: withLandingUtm({
       utm_source: 'website', utm_medium: 'checkout_interstitial', utm_campaign: 'pro_upgrade', utm_content: 'skip_form',
       cta_id: 'pro_checkout_direct_stripe', cta_placement: 'checkout_interstitial',
-    },
+    }, parsed, includeAttribution),
     ctaLabel: 'Pay $19/mo with Stripe →',
   };
 }
@@ -3077,7 +3143,7 @@ function renderCheckoutIntentPage(prefilledEmail = '', parsed = null, options = 
   const hiddenInputs = includeHiddenAttribution
     ? buildCheckoutHiddenAttributionInputs(parsed)
     : '';
-  const planView = resolveCheckoutIntentPlanView(parsed);
+  const planView = resolveCheckoutIntentPlanView(parsed, includeHiddenAttribution);
   return `<!doctype html>
 <html lang="en">
 <head>
@@ -3668,6 +3734,7 @@ async function serveTrackedLinkRedirect({ req, res, parsed, hostedConfig, isHead
 
   const { FEEDBACK_DIR } = getFeedbackPaths();
   const journeyState = resolveJourneyState(req, parsed);
+  applyLandingUtm(parsed, journeyState);
   const isProbeQuery = isSyntheticProbeQuery(parsed);
   const requesterClassification = classifyRequester(req.headers);
   let botClassification = isProbeQuery
@@ -7197,6 +7264,7 @@ function isBillingSummaryAuthorized(req, expectedAdminKey, expectedOperatorKey) 
 const OPERATOR_READONLY_GET_PATHS = new Set([
   '/v1/billing/summary',
   '/v1/analytics/funnel',
+  '/v1/analytics/sources',
   '/v1/dashboard',
   '/v1/dashboard/render-spec',
   '/v1/dashboard/ai-inventory',
@@ -9243,6 +9311,7 @@ async function addContext(){
 
       const { FEEDBACK_DIR } = getFeedbackPaths();
       const journeyState = resolveJourneyState(req, parsed);
+      applyLandingUtm(parsed, journeyState);
       const bootstrapBody = buildCheckoutBootstrapBody(parsed, req, journeyState);
       const traceId = bootstrapBody.traceId || createJourneyId('checkout');
       const analyticsMetadata = buildCheckoutAttributionMetadata(bootstrapBody, req, traceId);
@@ -13235,6 +13304,13 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
         return;
       }
 
+      // GET /v1/analytics/sources -- visits, installs and checkout starts by utm_source, last 7 and 30 days
+      if (req.method === 'GET' && pathname === '/v1/analytics/sources') {
+        if (!isBillingSummaryAuthorized(req, expectedApiKey, expectedOperatorKey)) throw createHttpError(403, 'Admin or operator API key required for this endpoint.');
+        sendJson(res, 200, getUtmSourceSummary(requestFeedbackDir), { 'Cache-Control': 'no-store' });
+        return;
+      }
+
       // GET /v1/analytics/losses -- explain where buyer dollars are falling out of the funnel
       if (req.method === 'GET' && pathname === '/v1/analytics/losses') {
         const dashboardResult = await loadLiveDashboardDataOrRespondProblem(
@@ -13856,6 +13932,7 @@ module.exports = {
   createApiServer,
   startServer,
   __test__: {
+    inferSource,
     PRO_CHECKOUT_URL,
     escapeHtmlAttribute,
     renderCheckoutIntentPage,

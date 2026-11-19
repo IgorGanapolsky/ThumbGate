@@ -1789,6 +1789,7 @@ const appendTelemetryPing = appendTelemetryEvent;
 
 module.exports = {
   TELEMETRY_FILE_NAME,
+  CHECKOUT_START_EVENT_TYPES,
   sanitizeTelemetryPayload,
   classifyTelemetryAudience,
   headerHasPrivacyOptOut,
