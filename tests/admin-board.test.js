@@ -61,6 +61,7 @@ let summaryCalls = 0;
 let failProviders = false;
 let summaryFails = false;
 let stripeKeyMissing = false;
+const listCalls = [];
 const session = (id, metadata, extra = {}) => ({ id, success_url: 'https://thumbgate.ai/success', metadata, status: 'open', payment_status: 'unpaid', ...extra });
 const nowSec = Math.floor(Date.now() / 1000);
 const sessions = [
@@ -79,7 +80,15 @@ const sessions = [
   session('cs_6', { uaClass: 'browser' }, { status: 'complete', payment_status: 'paid', customer: 'cus_owner', customer_email: OWNER, amount_total: 100, currency: 'usd', created: nowSec - 40 * 86400 }),
 ];
 const stripe = {
-  checkout: { sessions: { list: (params = {}) => { stripeCalls += 1; if (failProviders) throw new Error('provider failure'); return (async function* () { for (const row of sessions) { if (params.status && row.status !== params.status) continue; if (params.created?.gte && row.created && row.created < params.created.gte) continue; yield row; } })(); } } },
+  // Like Stripe's list: newest first, `limit` rows a page, the next page starts after `starting_after`.
+  checkout: { sessions: { list: async (params = {}) => {
+    stripeCalls += 1; listCalls.push(params);
+    if (failProviders) throw new Error('provider failure');
+    const rows = sessions.filter((row) => !(params.status && row.status !== params.status) && !(params.created?.gte && row.created && row.created < params.created.gte));
+    const start = params.starting_after ? rows.findIndex((row) => row.id === params.starting_after) + 1 : 0;
+    const limit = params.limit || 10;
+    return { data: rows.slice(start, start + limit), has_more: start + limit < rows.length };
+  } } },
   subscriptions: { list: async () => { stripeCalls += 1; if (failProviders) throw new Error('provider failure'); return { has_more: false, data: [{ id: 'sub_1', customer: { email: MEMBER } }, { id: 'sub_2', customer: { email: OWNER } }] }; } },
 };
 const summary = {
@@ -103,6 +112,7 @@ test.before(async () => {
     },
     getOwnerEmails: () => [OWNER],
     moneyCacheMs: 0,
+    lastGoodMs: 0,
     telemetryCacheMs: 0,
     getBillingSummaryLive: async () => { summaryCalls += 1; if (failProviders || summaryFails) return { error: 'unavailable' }; return summary; },
   } });
@@ -170,6 +180,24 @@ test('owner: the page loads and the money board returns the numbers', async () =
   assert.equal(d.leadsBySource.workflowSprint.total, 1);
   assert.ok(!/sk_(live|test)|card|cus_/.test(text), 'no secret, card or customer id in the response');
   assert.deepEqual(Object.values(d.reasons).filter(Boolean), [], 'no reason is needed when every source answers');
+});
+
+test('?product= (and any other query) never changes the page: the ThumbGate board, never an "Invalid query" error', async () => {
+  const plain = await (await request('/admin', { token: ownerToken })).text();
+  for (const query of ['?product=dayglass', '?product=macyolo', '?product=thumbgate', '?product=evil', '?product=%00', '?product=a&product=b', '?x=1']) {
+    const res = await request('/admin' + query, { token: ownerToken });
+    assert.equal(res.status, 200, query);
+    assert.match(res.headers.get('content-type'), /text\/html/, query);
+    const html = await res.text();
+    assert.ok(!html.includes('Invalid query'), query);
+    assert.match(html, /<title>[^<]*ThumbGate[^<]*<\/title>/, query);
+    assert.equal(html.replace(/nonce-[A-Za-z0-9+/=]+|nonce="[^"]*"/g, ''), plain.replace(/nonce-[A-Za-z0-9+/=]+|nonce="[^"]*"/g, ''), query + ' serves the same page');
+    for (const name of ['Dayglass', 'Mac YOLO']) assert.ok(!html.includes(name), query + ' mentions ' + name);
+  }
+  const signedOut = await request('/admin?product=dayglass');
+  assert.equal(signedOut.status, 302);
+  assert.equal(signedOut.headers.get('location'), '/signin?next=%2Fadmin');
+  assert.equal((await request('/admin?product=dayglass', { token: memberToken })).status, 403);
 });
 
 test('owner: paying customers come from Stripe and visitors from telemetry even when the billing summary fails', async () => {

@@ -34,7 +34,7 @@ function adminPath(raw) {
 
 function parseAdminRoute(pathname, params) {
   if (pathname === '/admin' || pathname === '/admin/' || pathname === '/admin.html') {
-    if ([...params].length) throw failure('invalid_query');
+    // The page takes no options: any query string (for example ?product=dayglass) is ignored and the ThumbGate board is served.
     return { page: true };
   }
   const match = /^\/v1\/admin\/([^/]+)(?:\/([^/]+))?$/.exec(pathname || '');
@@ -438,17 +438,46 @@ async function readTraffic(deps, signal) {
   return value;
 }
 
-async function listCompleteSessions({ stripe, days, nowMs = Date.now(), maxRows = 1000 }) {
-  const rows = [];
-  let seen = 0;
-  const since = Math.floor(nowMs / 1000) - days * 86400;
-  for await (const row of stripe.checkout.sessions.list({ status: 'complete', created: { gte: since }, limit: 100, expand: ['data.payment_intent.latest_charge'] })) {
-    seen += 1;
-    if (row.status === 'complete' && /thumbgate/i.test(String(row.success_url || ''))) rows.push(row);
-    if (seen >= maxRows) return { rows, complete: false };
+// Why the Money board used to say "Stripe is busy": every list held one of the account's two read slots for its whole run
+// (a 30-day checkout list is about six pages), a read that found both taken failed at once, and a read that timed out kept
+// running and kept its slot. Now each page waits for a slot until one shared deadline, a stopped list stops between pages,
+// and a block that still fails shows its last good result for five minutes.
+const STRIPE_DEADLINE_MS = 8500;
+const LAST_GOOD_MS = 5 * 60 * 1000;
+const lastGood = new Map();
+const pause = (ms, signal) => new Promise((resolve) => {
+  const timer = setTimeout(resolve, ms);
+  timer.unref?.();
+  signal?.addEventListener('abort', () => { clearTimeout(timer); resolve(); }, { once: true });
+});
+
+async function withSlot(work, signal) {
+  for (;;) {
+    stopped(signal);
+    try { return await billing.withStripeReadSlot(work, { signal }); } catch (error) {
+      if (error?.code !== 'provider_busy') throw error;
+      await pause(100, signal);
+    }
   }
-  return { rows, complete: true };
 }
+
+// Pages a Stripe list with starting_after, 100 rows at a time, newest first. `complete` is false when the page cap was hit.
+async function listAll({ list, params, keep = () => true, maxPages = 40, signal, until }) {
+  const rows = [];
+  let after = null;
+  for (let page = 0; ; page += 1) {
+    stopped(signal);
+    if (page >= maxPages) return { rows, complete: false };
+    const left = Math.max(1, until - Date.now());
+    const result = await deadline(withSlot(() => list({ ...params, limit: 100, ...(after ? { starting_after: after } : {}) }, { timeout: Math.min(8000, left), maxNetworkRetries: 0 }), signal), left, signal);
+    if (!Array.isArray(result?.data)) throw failure('provider_unavailable');
+    for (const row of result.data) if (keep(row)) rows.push(row);
+    if (result.has_more !== true || !result.data.length) return { rows, complete: true };
+    after = result.data.at(-1).id;
+  }
+}
+
+const thumbgateSession = (row) => /thumbgate/i.test(String(row.success_url || ''));
 
 // Why a Stripe source failed, in words a person can act on. Never a bare "Unknown".
 function stripeReason(error) {
@@ -472,13 +501,35 @@ async function collectMoney(deps, signal) {
   if (ttl > 0 && moneyCache && Date.now() - moneyCache.at < ttl) return moneyCache.value;
   const ownerEmails = (deps.getOwnerEmails || require('./bot-detection').getOwnerEmails)();
   const stripe = () => (deps.getStripeClient || billing.getStripeClient)();
-  const { listSessions, countSessions, classifySession } = require('./checkout-session-count');
+  const { countSessions, classifySession } = require('./checkout-session-count');
   const nowSeconds = Math.floor(Date.now() / 1000);
 
-  // Stripe allows two reads at once: one lane lists paid checkouts then subscriptions, the other lists checkout sessions.
+  // One deadline for all of Stripe's reads, shared by every block below.
+  const stripeMs = deps.stripeDeadlineMs ?? STRIPE_DEADLINE_MS;
+  const until = Date.now() + stripeMs;
+  const shared = new AbortController();
+  const stopShared = () => shared.abort();
+  signal?.addEventListener('abort', stopShared, { once: true });
+  const sharedTimer = setTimeout(stopShared, stripeMs);
+  if (signal?.aborted) stopShared();
+  const keepMs = deps.lastGoodMs ?? LAST_GOOD_MS;
+  const staleBlocks = {};
+  // A block that fails shows its last good result when that is under five minutes old, and says so.
+  const withLastGood = async (key, work) => {
+    const run = await attempt(work, stripeReason);
+    if (run.ok) { if (keepMs > 0) lastGood.set(key, { at: Date.now(), value: run.value }); return run; }
+    const kept = keepMs > 0 ? lastGood.get(key) : null;
+    if (kept && Date.now() - kept.at < keepMs) { staleBlocks[key] = kept.at; return { ok: true, value: kept.value, reason: null }; }
+    return run;
+  };
+  const listIt = (list, params, keep, maxPages) => listAll({ list, params, keep, maxPages, signal: shared.signal, until });
+
+  // Two lanes: one lists paid checkouts then subscriptions, the other lists checkout sessions. Each page waits for a free slot.
   const paidAndProLane = (async () => {
-    const paidResult = await attempt(async () => {
-      const result = await deadline(billing.withStripeReadSlot(() => listCompleteSessions({ stripe: stripe(), days: 365 }), { signal }), 8000, signal);
+    const paidResult = await withLastGood('paid', async () => {
+      const result = await listIt((params, options) => stripe().checkout.sessions.list(params, options),
+        { status: 'complete', created: { gte: nowSeconds - 365 * 86400 }, expand: ['data.payment_intent.latest_charge'] },
+        (row) => row.status === 'complete' && thumbgateSession(row), 10);
       // Paid and not refunded in full, owner and test purchases excluded. A partial refund comes off the revenue.
       const charge = (row) => (object(row.payment_intent) && object(row.payment_intent.latest_charge) ? row.payment_intent.latest_charge : null);
       const paid = result.rows.filter((row) => row.payment_status === 'paid' && classifySession(row, { ownerEmails }) !== 'internal' && charge(row)?.refunded !== true);
@@ -491,29 +542,36 @@ async function collectMoney(deps, signal) {
         revenue[code] = (revenue[code] || 0) + row.amount_total - refunded;
       }
       return { customers, revenue, complete: result.complete };
-    }, stripeReason);
-    const proResult = await attempt(async () => {
-      const result = await deadline(billing.withStripeReadSlot(() => stripe().subscriptions.list({ status: 'active', limit: 100, expand: ['data.customer'] }, { timeout: 8000, maxNetworkRetries: 0 }), { signal }), 8000, signal);
-      if (!Array.isArray(result?.data)) throw failure('provider_unavailable');
-      const external = result.data.filter((row) => {
+    });
+    const proResult = await withLastGood('subscriptions', async () => {
+      const result = await listIt((params, options) => stripe().subscriptions.list(params, options), { status: 'active', expand: ['data.customer'] }, () => true, 5);
+      const external = result.rows.filter((row) => {
         const email = String(row.customer?.email || '').toLowerCase();
         return !(email && ownerEmails.some((owner) => email === String(owner).toLowerCase()));
       });
       const customers = new Set(external.map((row) => id(row.customer) || String(row.customer?.email || row.id).toLowerCase()));
-      return { count: external.length, customers, complete: result.has_more !== true };
-    }, stripeReason);
+      return { count: external.length, customers, complete: result.complete };
+    });
     return [paidResult, proResult];
   })();
-  const [[paidRun, proRun], sessionRun, trafficRun, summaryRun] = await Promise.all([
-    paidAndProLane,
-    attempt(async () => {
-      const rows = await deadline(billing.withStripeReadSlot(() => listSessions({ days: 30, stripe: stripe() }), { signal }), 8000, signal);
-      const since7 = nowSeconds - 7 * 86400;
-      return { d30: countSessions(rows, { ownerEmails }), d7: countSessions(rows.filter((row) => !row.created || row.created >= since7), { ownerEmails }) };
-    }, stripeReason),
-    attempt(() => readTraffic(deps, signal), telemetryReason),
-    attempt(() => readSummary(deps, signal), () => 'lead ledgers failed'),
-  ]);
+  let paidAndPro; let sessionRun; let trafficRun; let summaryRun;
+  try {
+    [paidAndPro, sessionRun, trafficRun, summaryRun] = await Promise.all([
+      paidAndProLane,
+      withLastGood('checkouts', async () => {
+        const result = await listIt((params, options) => stripe().checkout.sessions.list(params, options), { created: { gte: nowSeconds - 30 * 86400 } }, thumbgateSession, 40);
+        const since7 = nowSeconds - 7 * 86400;
+        return { d30: countSessions(result.rows, { ownerEmails }), d7: countSessions(result.rows.filter((row) => !row.created || row.created >= since7), { ownerEmails }), complete: result.complete };
+      }),
+      attempt(() => readTraffic(deps, signal), telemetryReason),
+      attempt(() => readSummary(deps, signal), () => 'lead ledgers failed'),
+    ]);
+  } finally {
+    clearTimeout(sharedTimer);
+    signal?.removeEventListener('abort', stopShared);
+    stopShared();
+  }
+  const [paidRun, proRun] = paidAndPro;
 
   const parts = summaryRun.value?.value || null;
   const leadsReason = parts ? null : summaryRun.ok && summaryRun.value.state === 'refreshing' ? 'lead ledgers still calculating, refresh in a minute' : 'lead ledgers failed';
@@ -555,7 +613,15 @@ async function collectMoney(deps, signal) {
     },
     notes: ['Every started checkout is counted once: real people, bots, not classified, or owner and test.', 'Sessions created before the bot check carry no browser class, so they are counted as not classified.'],
   };
+  const staleLabel = { paid: 'paying customers and revenue', subscriptions: 'active subscriptions', checkouts: 'checkout counts' };
+  for (const [key, at] of Object.entries(staleBlocks)) {
+    const minutes = Math.max(1, Math.round((Date.now() - at) / 60000));
+    data.notes.push(`Showing the last good ${staleLabel[key]} from ${minutes} minute${minutes === 1 ? '' : 's'} ago, because Stripe did not answer this time.`);
+  }
+  if (sessions && sessions.complete === false) data.notes.push('The 30-day checkout list was cut short at 4,000 sessions, so the 30-day counts are a lower bound.');
   const warnings = [];
+  if (Object.keys(staleBlocks).length) warnings.push('showing_last_good_stripe_numbers');
+  if (sessions && sessions.complete === false) warnings.push('checkout_list_partial');
   if (!paidRun.ok) warnings.push('paid_checkout_list_unavailable');
   if (!sessionRun.ok) warnings.push('checkout_list_unavailable');
   if (!proRun.ok) warnings.push('subscription_list_unavailable');

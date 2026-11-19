@@ -346,7 +346,7 @@ test('a 50 MB telemetry log is streamed from its newest end: analytics and money
   const target = path.join(root, 'telemetry-pings.jsonl');
   const prior = fs.existsSync(target) ? fs.readFileSync(target) : null;
   const size = writeLargeTelemetry(target);
-  const extra = { getBillingSummaryLive: async () => ({}), telemetryCacheMs: 0, moneyCacheMs: 0, getStripeClient: () => { throw new Error('STRIPE_SECRET_KEY is missing. Stripe client cannot be initialized.'); } };
+  const extra = { getBillingSummaryLive: async () => ({}), telemetryCacheMs: 0, moneyCacheMs: 0, lastGoodMs: 0, getStripeClient: () => { throw new Error('STRIPE_SECRET_KEY is missing. Stripe client cannot be initialized.'); } };
   try {
     assert.ok(size > 45 * 1024 * 1024, 'the fixture is about 50 MB, got ' + size);
     const startedAnalytics = Date.now();
