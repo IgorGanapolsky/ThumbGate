@@ -47,18 +47,28 @@ const deps = (extra = {}) => ({ feedbackDir: root, health: () => ({ version: 'fi
 test.before(async () => { server = createApiServer({ ownerAdminDependencies: { getStripeClient: () => stripe } }); await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve)); origin = 'http://127.0.0.1:' + server.address().port; });
 test.after(async () => { await new Promise((resolve) => server.close(resolve)); fs.rmSync(root, { recursive: true, force: true }); });
 
-test('anonymous, non-owner and expired sessions receive identical private 404 without collection or writes', async () => {
+test('anonymous and expired sessions get a sign-in redirect on the page and a private 404 elsewhere; a non-owner session gets 403; none collect or write', async () => {
   const before = fs.readFileSync(sessionPath, 'utf8');
   const count = providerCalls;
+  const pages = ['/admin', '/admin/', '/admin.html', '/%61dmin'];
   for (const token of [null, otherToken, expiredToken]) {
-    for (const url of ['/admin', '/admin/', '/admin.html', '/admin/customers', '/%61dmin', '/v1/admin', '/v1/admin/stripe/customers', '/v1/%61dmin/stripe/customers']) {
+    for (const url of [...pages, '/admin/customers', '/v1/admin', '/v1/admin/stripe/customers', '/v1/%61dmin/stripe/customers']) {
       for (const method of ['GET', 'HEAD', 'OPTIONS', 'POST']) {
-        const response = await request(url, { token, method });
-        assert.equal(response.status, 404);
+        const response = await request(url, { token, method, redirect: 'manual' });
         assert.equal(response.headers.get('cache-control'), 'private, no-store');
         assert.equal(response.headers.get('access-control-allow-origin'), null);
         assert.equal(response.headers.get('www-authenticate'), null);
-        assert.equal(await response.text(), method === 'HEAD' ? '' : '{"error":"Not found"}');
+        if (token === otherToken) {
+          assert.equal(response.status, 403);
+          assert.equal(await response.text(), method === 'HEAD' ? '' : '{"error":"Forbidden"}');
+        } else if (pages.includes(url) && ['GET', 'HEAD'].includes(method)) {
+          assert.equal(response.status, 302);
+          assert.equal(response.headers.get('location'), '/signin?next=%2Fadmin');
+          assert.equal(await response.text(), '');
+        } else {
+          assert.equal(response.status, 404);
+          assert.equal(await response.text(), method === 'HEAD' ? '' : '{"error":"Not found"}');
+        }
       }
     }
   }
@@ -93,12 +103,12 @@ test('owner page has restrictive CSP and no extra login; HEAD and forbidden meth
 test('durable deletion and allowlist changes revoke a warmed session immediately', async () => {
   assert.equal((await request('/admin')).status, 200);
   fs.writeFileSync(sessionPath, '{}');
-  assert.equal((await request('/admin')).status, 404);
+  assert.equal((await request('/admin', { redirect: 'manual' })).status, 302);
   writeSessions();
   process.env.THUMBGATE_OWNER_EMAILS = '';
-  assert.equal((await request('/admin')).status, 404);
+  assert.equal((await request('/admin')).status, 403);
   process.env.THUMBGATE_OWNER_EMAILS = 'other@example.invalid';
-  assert.equal((await request('/admin')).status, 404);
+  assert.equal((await request('/admin')).status, 403);
   process.env.THUMBGATE_OWNER_EMAILS = 'owner@example.invalid';
   assert.equal((await request('/admin')).status, 200);
 });

@@ -10,7 +10,9 @@ const JSON_LIMIT = 8 * 1024 * 1024;
 const LOG_LIMIT = 16 * 1024 * 1024;
 const RESPONSE_LIMIT = 1024 * 1024;
 const RESOURCES = Object.freeze({ customers: 'cus', subscriptions: 'sub', payments: 'ch', refunds: 're', products: 'prod', prices: 'price', 'subscription-items': 'si' });
-const SECTIONS = new Set(['overview', 'data', 'analytics', 'observability']);
+const SECTIONS = new Set(['overview', 'money', 'data', 'analytics', 'observability']);
+const MONEY_CACHE_MS = 60000;
+let moneyCache = null;
 const PRIVATE_HEADERS = Object.freeze({ 'Cache-Control': 'private, no-store', Vary: 'Cookie', 'X-Robots-Tag': 'noindex, nofollow', 'Referrer-Policy': 'no-referrer', 'X-Content-Type-Options': 'nosniff' });
 let activeCollections = 0;
 const text = (value, max = 256) => typeof value === 'string' ? value.slice(0, max) : null;
@@ -95,6 +97,18 @@ function readOwnerIdentity({ feedbackDir, token, isOwner, now = Date.now() }) {
   if (!object(entry) || !['apple', 'google'].includes(entry.ssoProvider) || !Number.isFinite(entry.expiresAt)
     || entry.expiresAt <= now || !isOwner(entry.ssoEmail)) return null;
   return { provider: entry.ssoProvider };
+}
+
+// Three states: no usable session, a valid session that is not the owner (any provider, API-key sessions included), or the owner.
+function readSessionState({ feedbackDir, token, isOwner, now = Date.now() }) {
+  if (typeof token !== 'string' || !/^[a-f0-9]{64}$/.test(token)) return { state: 'none' };
+  const store = readObject(feedbackDir, 'auth-sessions.json');
+  if (store.state !== 'ok') return { state: 'none' };
+  const entry = store.value[crypto.createHash('sha256').update(token).digest('hex')];
+  if (!object(entry) || !Number.isFinite(entry.expiresAt) || entry.expiresAt <= now) return { state: 'none' };
+  const provider = ['apple', 'google'].includes(entry.ssoProvider) ? entry.ssoProvider : 'key';
+  if (provider !== 'key' && isOwner(entry.ssoEmail)) return { state: 'owner', provider };
+  return { state: 'non_owner', provider };
 }
 
 function envelope(source, data, warnings = [], status = warnings.length ? 'partial' : 'ok') {
@@ -301,6 +315,70 @@ function deadline(promise, ms, signal) {
   });
 }
 
+const countMap = (value) => Object.fromEntries(Object.entries(object(value) ? value : {}).filter(([, n]) => Number.isFinite(n)).slice(0, 50).map(([key, n]) => [String(key).slice(0, 64), n]));
+
+// Money board. Each block fails alone and reports null, never an invented zero.
+async function collectMoney(deps, signal) {
+  const ttl = deps.moneyCacheMs ?? MONEY_CACHE_MS;
+  if (ttl > 0 && moneyCache && Date.now() - moneyCache.at < ttl) return moneyCache.value;
+  const attempt = async (work) => { try { return { ok: true, value: await work() }; } catch { return { ok: false, value: null }; } };
+  const ownerEmails = (deps.getOwnerEmails || require('./bot-detection').getOwnerEmails)();
+  const stripe = () => (deps.getStripeClient || billing.getStripeClient)();
+
+  const [summaryRun, checkoutRun, proRun] = await Promise.all([
+    attempt(async () => {
+      await preflightAnalytics(deps.feedbackDir);
+      const summary = await (deps.getBillingSummaryLive || billing.getBillingSummaryLive)({ window: '30d', stripeReconciliationTimeoutMs: 8000 }, { signal });
+      if (summary.error) throw failure('analytics_unavailable');
+      return summary;
+    }),
+    attempt(async () => {
+      const { listSessions, countSessions } = require('./checkout-session-count');
+      const sessions = await deadline(billing.withStripeReadSlot(() => listSessions({ days: 7, stripe: stripe() }), { signal }), 8000, signal);
+      return countSessions(sessions, { ownerEmails });
+    }),
+    attempt(async () => {
+      const result = await deadline(billing.withStripeReadSlot(() => stripe().subscriptions.list({ status: 'active', limit: 100, expand: ['data.customer'] }, { timeout: 8000, maxNetworkRetries: 0 }), { signal }), 8000, signal);
+      if (!Array.isArray(result?.data)) throw failure('provider_unavailable');
+      const external = result.data.filter((row) => {
+        const email = String(row.customer?.email || '').toLowerCase();
+        return !(email && ownerEmails.some((owner) => email === String(owner).toLowerCase()));
+      });
+      return { count: external.length, complete: result.has_more !== true };
+    }),
+  ]);
+
+  const summary = summaryRun.value;
+  const external = summary?.revenue?.external;
+  const checkouts = checkoutRun.value;
+  const data = {
+    windows: { revenue: '30d', checkouts: '7d', traffic: '30d', leads: '30d' },
+    payingCustomers: summary ? number(external?.paidOrders) : null,
+    payingCustomersBasis: 'external_paid_orders_30d',
+    activePro: proRun.value ? proRun.value.count : null,
+    activeProBasis: proRun.value ? (proRun.value.complete ? 'stripe_active_subscriptions_excluding_owner' : 'stripe_active_subscriptions_first_100_only') : 'unavailable',
+    revenueLast30Days: summary ? currencies(external?.bookedRevenueByCurrency) : null,
+    revenueReconciliation: summary ? (['ok', 'partial', 'timeout', 'unavailable', 'unconfigured'].includes(summary.reconciliation?.status) ? summary.reconciliation.status : 'unavailable') : null,
+    checkouts7d: checkouts ? { started: checkouts.started, human: checkouts.nonCrawlerStarted, completedHuman: checkouts.nonCrawlerCompleted, paidHuman: checkouts.nonCrawlerPaid, bot: checkouts.excluded.bot, unclassified: checkouts.excluded.unclassified, unknownUserAgent: checkouts.excluded.unknownUa, internal: checkouts.excluded.internal } : null,
+    traffic30d: summary ? numericFields(summary.trafficMetrics, ['visitors', 'sessions', 'pageViews', 'ctaClicks', 'checkoutStarts', 'checkoutPaidConfirmations']) : null,
+    leadsBySource: summary ? {
+      signups: countMap(summary.signups?.bySource),
+      workflowSprint: { total: number(summary.pipeline?.workflowSprintLeads?.total), bySource: countMap(summary.pipeline?.workflowSprintLeads?.bySource) },
+      newsletter: { total: number(summary.newsletter?.total), bySource: countMap(summary.newsletter?.bySource) },
+      emailSignups: number(summary.signups?.emailSignups),
+    } : null,
+    notes: ['Crawler checkouts are refused before Stripe since the human gate, so the bot count is small by design.', 'Sessions created before the gate carry no user-agent class and are counted under unclassified, not human.'],
+  };
+  const warnings = [];
+  if (!summaryRun.ok) warnings.push('billing_summary_unavailable');
+  if (!checkoutRun.ok) warnings.push('checkout_list_unavailable');
+  if (!proRun.ok) warnings.push('subscription_list_unavailable');
+  if (summary && data.revenueReconciliation !== 'ok') warnings.push('stripe_reconciliation_' + data.revenueReconciliation);
+  const value = envelope('billing_summary_and_stripe', data, warnings, warnings.length === 3 ? 'unavailable' : warnings.length ? 'partial' : 'ok');
+  if (ttl > 0 && warnings.length === 0) moneyCache = { at: Date.now(), value };
+  return value;
+}
+
 async function collectAdminSection(route, deps, externalSignal) {
   if (activeCollections >= 2) throw failure('collection_busy');
   activeCollections += 1;
@@ -313,6 +391,7 @@ async function collectAdminSection(route, deps, externalSignal) {
     const operation = async () => {
       stopped(controller.signal);
       if (route.section === 'overview') return envelope('current_process', { health: deps.health(), sections: ['stripe', 'data', 'analytics', 'observability'] });
+      if (route.section === 'money') return collectMoney(deps, controller.signal);
       if (route.section === 'stripe') return collectStripe(route, deps, controller.signal);
       if (route.section === 'data') return collectData(route, deps, controller.signal);
       if (route.section === 'observability') return collectObservability(deps, controller.signal);
@@ -335,4 +414,4 @@ async function collectAdminSection(route, deps, externalSignal) {
   }
 }
 
-module.exports = { PRIVATE_HEADERS, RESPONSE_LIMIT, adminPath, parseAdminRoute, readOwnerIdentity, collectAdminSection, createRuntimeObservations, projectAnalytics, projectStripe, readObject, countRecords, guardPath };
+module.exports = { PRIVATE_HEADERS, RESPONSE_LIMIT, adminPath, parseAdminRoute, readOwnerIdentity, readSessionState, collectMoney, collectAdminSection, createRuntimeObservations, projectAnalytics, projectStripe, readObject, countRecords, guardPath };

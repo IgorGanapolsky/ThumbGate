@@ -247,6 +247,7 @@
       'use strict';
       const content = document.getElementById('content');
       const sections = [
+        'money',
         'overview',
         'stripe',
         'data',
@@ -254,13 +255,14 @@
         'observability',
       ];
       const titles = {
+        money: 'Money',
         overview: 'Overview',
         stripe: 'Stripe records',
         data: 'Hosted data',
         analytics: 'Analytics',
         observability: 'Observability',
       };
-      let current = 'overview';
+      let current = 'money';
       let resource = 'customers';
       let subscriptionId = null;
       let nextCursor = null;
@@ -403,6 +405,52 @@
           : String(v.total) + (v.complete ? '' : ' (partial)');
       }
       function render(parent, section, data) {
+        if (section === 'money') {
+          const checkouts = data.checkouts7d;
+          cards(parent, {
+            payingCustomers: data.payingCustomers,
+            activePro: data.activePro,
+            checkoutsStarted7d: checkouts ? checkouts.started : null,
+            humanCheckoutStarts7d: checkouts ? checkouts.human : null,
+            humanCheckoutsCompleted7d: checkouts ? checkouts.completedHuman : null,
+            botCheckouts7d: checkouts ? checkouts.bot : null,
+            visitors30d: data.traffic30d ? data.traffic30d.visitors : null,
+            checkoutStarts30d: data.traffic30d ? data.traffic30d.checkoutStarts : null,
+          });
+          parent.append(element('h3', 'Revenue · past 30 days'));
+          table(
+            parent,
+            [
+              ['Currency', (r) => r.currency],
+              ['Booked revenue', (r) => money(r.amount, r.currency)],
+            ],
+            Object.entries(data.revenueLast30Days || {}).map(
+              ([currency, amount]) => ({ currency, amount }),
+            ),
+          );
+          parent.append(
+            element(
+              'p',
+              'Paying customers counts external paid orders (' +
+                label(data.payingCustomersBasis) +
+                '). Active Pro: ' +
+                label(data.activeProBasis) +
+                '. Revenue reconciliation: ' +
+                label(data.revenueReconciliation || 'unavailable') +
+                '.',
+              'muted',
+            ),
+          );
+          if (data.checkouts7d) detail(parent, 'Checkout sessions, last 7 days', data.checkouts7d);
+          const leads = data.leadsBySource;
+          if (leads) {
+            detail(parent, 'Signups by source', leads.signups);
+            detail(parent, 'Setup Sprint leads by source', leads.workflowSprint?.bySource);
+            detail(parent, 'Newsletter by source', leads.newsletter?.bySource);
+          }
+          for (const note of data.notes || [])
+            parent.append(element('p', note, 'muted'));
+        }
         if (section === 'overview') {
           cards(parent, {
             version: data.health?.version,
@@ -706,7 +754,9 @@
           if (request !== activeLoad) return;
           if (!response.ok)
             throw new Error(
-              response.status === 404
+              response.status === 403
+                ? 'This account is not on the owner list.'
+                : response.status === 404
                 ? 'This page is unavailable. Sign in through the usual ThumbGate login and try again.'
                 : response.status === 429
                   ? 'Another collection is running. Try again shortly.'

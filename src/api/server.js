@@ -6749,7 +6749,39 @@ async function completeSsoSessionAndRedirect(res, { provider, email, ssoName = n
   res.end();
 }
 
-const DEFAULT_HOSTED_OWNER_EMAILS = ['iganapolsky@gmail.com', 'igor.ganapolsky@gmail.com', 'igor@thumbgate.ai'];
+// Plain sign-in page for owner-only pages. Kept inline so it adds no file to the npm bundle.
+const SIGNIN_PAGE_HTML = `<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Sign in - ThumbGate</title>
+<style>
+  :root { color-scheme: light dark; --bg: #0b1220; --fg: #e6edf7; --muted: #9fb0c8; --card: #121b2e; --line: #243049; --accent: #22d3ee; }
+  @media (prefers-color-scheme: light) { :root { --bg: #f6f8fb; --fg: #0f172a; --muted: #475569; --card: #fff; --line: #d6dde8; --accent: #0e7490; } }
+  body { margin: 0; min-height: 100vh; display: grid; place-items: center; background: var(--bg); color: var(--fg); font: 16px/1.5 system-ui, -apple-system, Segoe UI, sans-serif; }
+  main { width: min(420px, calc(100vw - 32px)); background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 28px; }
+  h1 { margin: 0 0 6px; font-size: 22px; }
+  p { margin: 0 0 18px; color: var(--muted); }
+  a.btn { display: flex; align-items: center; justify-content: center; min-height: 44px; margin-top: 10px; border-radius: 8px; border: 1px solid var(--line); color: var(--fg); text-decoration: none; font-weight: 600; }
+  a.btn:focus-visible, a.btn:hover { border-color: var(--accent); outline: none; }
+  small { display: block; margin-top: 18px; color: var(--muted); }
+</style>
+</head>
+<body>
+<main>
+  <h1>Sign in to ThumbGate</h1>
+  <p>Use your Google or Apple account. ThumbGate never asks for a typed email address.</p>
+  <a class="btn" id="signinGoogle" href="/v1/cloud/sso/authorize?provider=google">Continue with Google</a>
+  <a class="btn" id="signinApple" href="/v1/cloud/sso/authorize?provider=apple">Continue with Apple</a>
+  <small>After you sign in, open the page you were trying to reach again.</small>
+</main>
+</body>
+</html>
+`;
+
+const DEFAULT_HOSTED_OWNER_EMAILS =['iganapolsky@gmail.com', 'igor.ganapolsky@gmail.com', 'igor@thumbgate.ai'];
 
 function ensureHostedActivationsReady(baseFeedbackDir, extraOpts = {}) {
   const { backfillHostedAccountActivations } = require('../../scripts/dashboard');
@@ -7482,8 +7514,20 @@ function createUnscopedApiServer({ ownerAdminDependencies = {} } = {}) {
       };
       const feedbackDir = withoutDataScope(() => getFeedbackPaths().FEEDBACK_DIR);
       const cookies = parseCookies(req.headers?.cookie || '');
-      const identity = ownerAdmin.readOwnerIdentity({ feedbackDir, token: cookies[PAID_AUTH_COOKIE_NAME], isOwner: isConfiguredOwnerEmail });
-      if (!identity || !privatePath.pathname) { respond(404, { error: 'Not found' }); return; }
+      const session = ownerAdmin.readSessionState({ feedbackDir, token: cookies[PAID_AUTH_COOKIE_NAME], isOwner: isConfiguredOwnerEmail });
+      const identity = session.state === 'owner' ? { provider: session.provider } : null;
+      if (!privatePath.pathname) { respond(404, { error: 'Not found' }); return; }
+      if (!identity && session.state === 'non_owner') {
+        console.warn(`[admin] 403 signed-in session is not on THUMBGATE_OWNER_EMAILS (provider=${session.provider})`);
+        respond(403, { error: 'Forbidden' });
+        return;
+      }
+      if (!identity && ['/admin', '/admin/', '/admin.html'].includes(privatePath.pathname) && ['GET', 'HEAD'].includes(req.method)) {
+        res.writeHead(302, { ...headers, Location: '/signin?next=%2Fadmin' });
+        res.end();
+        return;
+      }
+      if (!identity) { respond(404, { error: 'Not found' }); return; }
       let route;
       try { route = ownerAdmin.parseAdminRoute(privatePath.pathname, parsed.searchParams); }
       catch { respond(400, { error: 'Invalid query' }); return; }
@@ -10874,6 +10918,11 @@ a{color:#8b9}</style></head><body><form class="card" method="post" action="/oaut
     // Public terms of service — required by Stripe / Stripe Checkout for the
     // "Terms of service URL" field in Business → Public details. Mirrors the
     // /privacy + /support pages: thin HTML, no external deps, no DB hit.
+    if (isGetLikeRequest && (pathname === '/signin' || pathname === '/signin.html')) {
+      sendHtml(res, 200, SIGNIN_PAGE_HTML, { 'Cache-Control': 'no-store', 'X-Robots-Tag': 'noindex, nofollow' }, { headOnly: isHeadRequest });
+      return;
+    }
+
     if (isGetLikeRequest && (pathname === '/terms' || pathname === '/terms.html' || pathname === '/eula' || pathname === '/eula.html')) {
       try {
         const termsHtml = fs.readFileSync(path.join(PUBLIC_DIR, 'terms.html'), 'utf-8');
