@@ -282,7 +282,8 @@ const path = require('node:path');
 // 692 -> 693 (2026-11-18): scripts/utm-source-summary.js (GET /v1/analytics/sources, utm_source report)
 // 690 -> 692 (2026-11-18): scripts/checkout-human-gate.js (src/api/server.js requires it for the human-click checkout gate)
 // and scripts/cap-hit-counter.js (scripts/auto-promote-gates.js requires it; it was missing from `files`).
-const BASELINE_FILE_COUNT = 693;
+// 693 -> 695 (2026-11-19): public/preview.html (free preview page) and public/js/connect-panel.js (connect panel, preview rules, safety score)
+const BASELINE_FILE_COUNT = 695;
 function readBundleSnapshot() {
   const repoRoot = path.resolve(__dirname, '..');
   const stdout = execSync('npm pack --dry-run --json', {

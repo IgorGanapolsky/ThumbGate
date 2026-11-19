@@ -432,6 +432,8 @@ const FOUNDERS_PAGE_PATH = path.resolve(__dirname, '../../public/founders.html')
 const PARTNER_INTAKE_PAGE_PATH = path.resolve(__dirname, '../../public/partner-intake.html');
 const PETER_PAGE_PATH = path.resolve(__dirname, '../../public/peter.html');
 const INSTALL_PAGE_PATH = path.resolve(__dirname, '../../public/install.html');
+const PREVIEW_PAGE_PATH = path.resolve(__dirname, '../../public/preview.html');
+const CONNECT_PANEL_SCRIPT_PATH = path.resolve(__dirname, '../../public/js/connect-panel.js');
 const ONBOARDING_PAGE_PATH = path.resolve(__dirname, '../../public/onboarding.html');
 const LEARN_DIR = path.resolve(__dirname, '../../public/learn');
 const GUIDES_DIR = path.resolve(__dirname, '../../public/guides');
@@ -4363,6 +4365,10 @@ function loadInstallPageHtml(runtimeConfig, pageContext = {}) {
   return loadPublicMarketingTemplateHtml(INSTALL_PAGE_PATH, runtimeConfig, pageContext);
 }
 
+function loadPreviewPageHtml(runtimeConfig, pageContext = {}) {
+  return loadPublicMarketingTemplateHtml(PREVIEW_PAGE_PATH, runtimeConfig, pageContext);
+}
+
 function loadPricingPageHtml(runtimeConfig, pageContext = {}) {
   return loadPublicMarketingTemplateHtml(PRICING_PAGE_PATH, runtimeConfig, pageContext);
 }
@@ -7788,6 +7794,43 @@ function createUnscopedApiServer({ ownerAdminDependencies = {} } = {}) {
         });
       });
       proxyReq.on('error', () => sendJson(res, 502, { error: 'Analytics proxy failed' }));
+      return;
+    }
+
+    if (isGetLikeRequest && pathname === '/js/connect-panel.js') {
+      try {
+        const script = fs.readFileSync(CONNECT_PANEL_SCRIPT_PATH, 'utf-8');
+        res.writeHead(200, {
+          'Content-Type': 'application/javascript; charset=utf-8',
+          'Cache-Control': 'public, max-age=300',
+        });
+        if (!isHeadRequest) {
+          res.end(script);
+        } else {
+          res.end();
+        }
+      } catch {
+        sendJson(res, 404, { error: 'Connect panel script not found' });
+      }
+      return;
+    }
+
+    if (isGetLikeRequest && (pathname === '/preview' || pathname === '/preview.html')) {
+      try {
+        servePublicMarketingPage({
+          req,
+          res,
+          parsed,
+          hostedConfig,
+          isHeadRequest,
+          renderHtml: loadPreviewPageHtml,
+          extraTelemetry: {
+            pageType: 'preview',
+          },
+        });
+      } catch (err) {
+        sendText(res, 500, err.message || 'Preview page unavailable');
+      }
       return;
     }
 

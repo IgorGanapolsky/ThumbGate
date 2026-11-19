@@ -122,6 +122,7 @@
   <meta http-equiv="origin-trial" content="A06wj3yXAwOhT5Cd5WYdVQotlYa/OID3SW099ZQB+cs9eHeJmtH1yHudLwqDKZ7y43tQvLB4TfM/pjmUa7aJNQsAAAB4eyJvcmlnaW4iOiJodHRwczovL3d3dy50aHVtYmdhdGUuYXBwOjQ0MyIsImZlYXR1cmUiOiJXZWJNQ1AiLCJleHBpcnkiOjE4MDYzNjQ4MDAsImlzU3ViZG9tYWluIjp0cnVlLCJpc1RoaXJkUGFydHkiOnRydWV9" />
   <script src="/js/webmcp.js" defer></script>
   <script src="/js/buyer-intent.js" defer></script>
+  <script src="/js/connect-panel.js" defer></script>
 </head>
 <body>
   <nav>
@@ -163,6 +164,8 @@
         </div>
       </div>
 
+      <div id="connect-panel" aria-label="Connect ThumbGate to your agent"></div>
+
       <div class="offer-grid" id="buy">
         <aside id="enterprise-gate" class="card pro-card" data-primary-checkout>
             <h2>ThumbGate Pro</h2>
@@ -170,6 +173,7 @@
             <p>__PRO_PRICE_LABEL__</p>
             <p>Pro adds recall, dashboard, and exports for Claude Code. The free local CLI includes local capture and PreToolUse gates.</p>
             <a class="button button-primary" href="/checkout/pro" data-offer-link data-value="__PRO_PRICE_DOLLARS__" data-revenue-cta data-cta-id="pricing_pro_checkout" data-cta-placement="offers" data-plan-id="pro">Get Pro</a>
+            <p class="annual-option" id="pro-annual">Or pay yearly: <strong>$149/year</strong> (about $12.42/month, saves $79 against twelve monthly payments). <a href="/checkout/pro?billing_cycle=annual" data-offer-link data-value="149" data-revenue-cta data-cta-id="pricing_pro_annual_checkout" data-cta-placement="offers" data-plan-id="pro_annual">Get Pro yearly</a></p>
             <p><a href="/install">Start with the free CLI</a></p>
           </aside>
       </div>
