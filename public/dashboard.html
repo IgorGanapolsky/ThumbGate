@@ -1031,12 +1031,13 @@ function disconnectKey() {
   document.getElementById('dashboardContent').style.display = 'none';
   var onboardingEl = document.getElementById('firstBlockOnboarding');
   if (onboardingEl) onboardingEl.style.display = 'none';
-  return projectFetch('/v1/auth/session', { method: 'DELETE', credentials: 'same-origin' })
-    .catch(function() {})
-    .finally(function() {
-      if (disconnectEl) disconnectEl.disabled = false;
-      window.location.assign('/dashboard?noauto=1');
-    });
+  // The server ends the session, clears the cookie and answers with a redirect to the landing page.
+  var logoutForm = document.createElement('form');
+  logoutForm.method = 'POST';
+  logoutForm.action = '/logout';
+  document.body.appendChild(logoutForm);
+  logoutForm.submit();
+  return Promise.resolve();
 }
 
 function renderFreeTierTalkToUsHtml(workflow) {

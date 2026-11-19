@@ -6335,13 +6335,29 @@ function pruneSsoPendingStates(nowMs = Date.now()) {
   }
 }
 
-function issueSsoPendingState(provider, redirectUri, nowMs = Date.now()) {
+// Where to send someone after sign-in. Only a same-site path that starts with exactly one "/" is accepted;
+// anything else (//host, https://host, /\host, control characters) falls back, so it can never be an open redirect.
+function safeNextPath(raw, fallback = '/dashboard') {
+  const value = typeof raw === 'string' ? raw.trim() : '';
+  if (!value || value.length > 300 || !value.startsWith('/') || value.startsWith('//') || /[\\\u0000-\u001f\u007f]/.test(value)) return fallback;
+  let parsedNext;
+  try {
+    const decoded = decodeURIComponent(value);
+    if (decoded.startsWith('//') || /[\\\u0000-\u001f\u007f]/.test(decoded)) return fallback;
+    parsedNext = new URL(value, 'https://next.invalid');
+  } catch { return fallback; }
+  if (parsedNext.origin !== 'https://next.invalid') return fallback;
+  return parsedNext.pathname + parsedNext.search;
+}
+
+function issueSsoPendingState(provider, redirectUri, nowMs = Date.now(), next = '/dashboard') {
   pruneSsoPendingStates(nowMs);
   const stateNonce = `st_${crypto.randomBytes(24).toString('hex')}`;
   const oidcNonce = `nc_${crypto.randomBytes(16).toString('hex')}`;
   ssoPendingStates.set(stateNonce, {
     provider,
     redirectUri,
+    next: safeNextPath(next),
     nonce: oidcNonce,
     createdAt: nowMs,
     expiresAt: nowMs + SSO_OAUTH_STATE_TTL_MS,
@@ -6691,7 +6707,7 @@ function resolveOwnerEnterpriseSessionAuth() {
   return { apiKey: 'tg_op_dev_session', subjectType: 'dev_enterprise' };
 }
 
-async function completeSsoSessionAndRedirect(res, { provider, email, ssoName = null, redirectStatus = 302 }) {
+async function completeSsoSessionAndRedirect(res, { provider, email, ssoName = null, redirectStatus = 302, next = '/dashboard' }) {
   const isOwner = isConfiguredOwnerEmail(email);
   const entitlement = isOwner ? null : await resolvePaidEntitlementForEmail(email);
   const hasPaidKey = !isOwner && Boolean(entitlement?.entitled && entitlement?.apiKey);
@@ -6744,13 +6760,17 @@ async function completeSsoSessionAndRedirect(res, { provider, email, ssoName = n
     'X-Content-Type-Options': 'nosniff',
     'Cache-Control': 'no-store',
     'Set-Cookie': provider === 'google' ? [setCookie, clearStateCookie] : setCookie,
-    Location: '/dashboard',
+    Location: safeNextPath(next),
   });
   res.end();
 }
 
 // Plain sign-in page for owner-only pages. Kept inline so it adds no file to the npm bundle.
-const SIGNIN_PAGE_HTML = `<!doctype html>
+function renderSigninPage(nextPath, ssoError) {
+  const next = encodeURIComponent(safeNextPath(nextPath));
+  const reason = /^[a-z0-9_]{1,48}$/.test(String(ssoError || '')) ? String(ssoError).replaceAll('_', ' ') : '';
+  const notice = reason ? `<p role="alert" style="color:#f87171">Sign-in did not finish (${reason}). Please try again.</p>` : '';
+  return `<!doctype html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
@@ -6773,13 +6793,14 @@ const SIGNIN_PAGE_HTML = `<!doctype html>
 <main>
   <h1>Sign in to ThumbGate</h1>
   <p>Use your Google or Apple account. ThumbGate never asks for a typed email address.</p>
-  <a class="btn" id="signinGoogle" href="/v1/cloud/sso/authorize?provider=google">Continue with Google</a>
-  <a class="btn" id="signinApple" href="/v1/cloud/sso/authorize?provider=apple">Continue with Apple</a>
-  <small>After you sign in, open the page you were trying to reach again.</small>
+  ${notice}
+  <a class="btn" id="signinGoogle" href="/v1/cloud/sso/authorize?provider=google&amp;next=${next}">Continue with Google</a>
+  <a class="btn" id="signinApple" href="/v1/cloud/sso/authorize?provider=apple&amp;next=${next}">Continue with Apple</a>
 </main>
 </body>
 </html>
 `;
+}
 
 const DEFAULT_HOSTED_OWNER_EMAILS =['iganapolsky@gmail.com', 'igor.ganapolsky@gmail.com', 'igor@thumbgate.ai'];
 
@@ -7018,6 +7039,7 @@ async function handleAppleSsoCallback(req, res) {
       email: claims.email,
       ssoName: firstSignInUser?.name || null,
       redirectStatus: 303,
+      next: stateEntry.next,
     });
   } catch (err) {
     redirectSsoError(res, err?.ssoReason || 'callback_failed', 303);
@@ -8379,7 +8401,23 @@ async function addContext(){
 
     if (isGetLikeRequest && (pathname === '/dashboard' || pathname === '/cloud')) {
       try {
-        const html = loadDashboardPageHtml(req, expectedApiKey);
+        const dashCookies = parseCookies(req.headers?.cookie || '');
+        const dashSession = getPaidAuthSessionEntry(dashCookies[PAID_AUTH_COOKIE_NAME], expectedApiKey, expectedOperatorKey);
+        const dashProviders = getConfiguredSsoProviders();
+        const dashForwarded = req.headers['x-forwarded-host'];
+        const dashHost = Array.isArray(dashForwarded) ? dashForwarded[0] : dashForwarded || req.headers.host || '';
+        // One sign-in page only: a signed-out visitor on the hosted site goes to /signin. Local dashboards
+        // (loopback host, bootstrap key) and servers with no sign-in provider keep serving the dashboard.
+        if (!dashSession && !isLoopbackHost(dashHost) && !resolveLocalPageBootstrap(req, expectedApiKey).bootstrapActive && (dashProviders.google || dashProviders.apple)) {
+          const ssoErr = parsed.searchParams.get('sso_error');
+          const errPart = /^[a-z0-9_]{1,48}$/.test(String(ssoErr || '')) ? `&sso_error=${ssoErr}` : '';
+          res.writeHead(302, { 'X-Content-Type-Options': 'nosniff', 'Cache-Control': 'no-store', Location: `/signin?next=${encodeURIComponent(pathname)}${errPart}` });
+          res.end();
+          return;
+        }
+        let html = loadDashboardPageHtml(req, expectedApiKey);
+        const dashOwner = ownerAdmin.readSessionState({ feedbackDir: withoutDataScope(() => getFeedbackPaths().FEEDBACK_DIR), token: dashCookies[PAID_AUTH_COOKIE_NAME], isOwner: isConfiguredOwnerEmail }).state === 'owner';
+        if (dashOwner) html = html.replace(/(<a href="\/lessons"[^>]*>Lessons<\/a>)/, '$1<a href="/admin" class="nav-tab" id="navAdmin">Admin</a>');
         sendHtml(res, 200, html, {}, { headOnly: isHeadRequest });
       } catch {
         sendJson(res, 404, { error: 'Dashboard page not found' });
@@ -8392,10 +8430,11 @@ async function addContext(){
       const provider = ['google', 'apple'].includes(rawProvider) ? rawProvider : 'invalid';
       const appOrigin = hostedConfig.appOrigin || 'https://thumbgate.ai';
       const callbackUrl = `${appOrigin}/v1/cloud/sso/callback?provider=${encodeURIComponent(provider)}`;
+      const nextPath = safeNextPath(parsed.searchParams.get('next'));
       const googleClientId = String(process.env.GOOGLE_CLIENT_ID || '').trim();
       const appleClientId = String(process.env.APPLE_CLIENT_ID || '').trim();
       if (provider === 'google' && googleClientId) {
-        const stateNonce = issueSsoPendingState('google', callbackUrl);
+        const stateNonce = issueSsoPendingState('google', callbackUrl, Date.now(), nextPath);
         const googleAuthUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${encodeURIComponent(googleClientId)}&redirect_uri=${encodeURIComponent(callbackUrl)}&response_type=code&scope=openid%20email%20profile&state=${encodeURIComponent(stateNonce)}`;
         const ssoStateCookie = serializeCookie(SSO_STATE_COOKIE_NAME, stateNonce, {
           maxAge: Math.floor(SSO_OAUTH_STATE_TTL_MS / 1000),
@@ -8414,7 +8453,7 @@ async function addContext(){
       }
       if (provider === 'apple' && appleClientId) {
         const appleCallbackUrl = `${appOrigin.replace(/^http:\/\//i, 'https://')}/v1/cloud/sso/apple/callback`;
-        const stateNonce = issueSsoPendingState('apple', appleCallbackUrl);
+        const stateNonce = issueSsoPendingState('apple', appleCallbackUrl, Date.now(), nextPath);
         const pendingNonce = ssoPendingStates.get(stateNonce)?.nonce || stateNonce;
         const appleAuthUrl = `https://appleid.apple.com/auth/authorize?client_id=${encodeURIComponent(appleClientId)}&redirect_uri=${encodeURIComponent(appleCallbackUrl)}&response_type=code&scope=name%20email&response_mode=form_post&state=${encodeURIComponent(stateNonce)}&nonce=${encodeURIComponent(pendingNonce)}`;
         if (parsed.searchParams.get('format') === 'json') {
@@ -8505,6 +8544,7 @@ async function addContext(){
           provider: 'google',
           email: claims.email,
           redirectStatus: 302,
+          next: stateEntry.next,
         });
       } catch (err) {
         redirectSsoError(res, err?.ssoReason || 'callback_failed');
@@ -9354,7 +9394,9 @@ async function addContext(){
           parsed,
           hostedConfig,
           isHeadRequest,
-          renderHtml: loadLandingPageHtml,
+          renderHtml: parsed.searchParams.get('signed_out') === '1'
+            ? (...renderArgs) => String(loadLandingPageHtml(...renderArgs)).replace(/(<body[^>]*>)/i, '$1<p role="status" id="signedOutNote" style="margin:0;padding:10px 16px;text-align:center;font:14px system-ui,sans-serif;background:#0f172a;color:#e2e8f0">You\'re signed out.</p>')
+            : loadLandingPageHtml,
           extraTelemetry: {
             pageType: 'homepage',
           },
@@ -10919,7 +10961,21 @@ a{color:#8b9}</style></head><body><form class="card" method="post" action="/oaut
     // "Terms of service URL" field in Business → Public details. Mirrors the
     // /privacy + /support pages: thin HTML, no external deps, no DB hit.
     if (isGetLikeRequest && (pathname === '/signin' || pathname === '/signin.html')) {
-      sendHtml(res, 200, SIGNIN_PAGE_HTML, { 'Cache-Control': 'no-store', 'X-Robots-Tag': 'noindex, nofollow' }, { headOnly: isHeadRequest });
+      sendHtml(res, 200, renderSigninPage(parsed.searchParams.get('next'), parsed.searchParams.get('sso_error')), { 'Cache-Control': 'no-store', 'X-Robots-Tag': 'noindex, nofollow' }, { headOnly: isHeadRequest });
+      return;
+    }
+
+    // Log out: end the session, clear the cookie, and land on the public landing page with a short note.
+    if (req.method === 'POST' && pathname === '/logout') {
+      const logoutCookies = parseCookies(req.headers?.cookie || '');
+      if (logoutCookies[PAID_AUTH_COOKIE_NAME]) deletePaidAuthSession(logoutCookies[PAID_AUTH_COOKIE_NAME]);
+      res.writeHead(303, {
+        'X-Content-Type-Options': 'nosniff',
+        'Cache-Control': 'no-store',
+        'Set-Cookie': serializeCookie(PAID_AUTH_COOKIE_NAME, '', { maxAge: 0, httpOnly: true, sameSite: 'Lax', secure: true }),
+        Location: '/?signed_out=1',
+      });
+      res.end();
       return;
     }
 
