@@ -3172,6 +3172,7 @@ a{display:block;text-decoration:none}a.secondary,button.secondary{box-sizing:bor
 .objection-grid button{border:1px solid #374151;background:#111827;color:#e5e7eb;border-radius:8px;padding:10px 12px;text-align:left;cursor:pointer}
 .objection-grid button:hover,.objection-grid button:focus{border-color:#22d3ee;outline:none}
 .feedback-saved{display:none;color:#22d3ee;font-size:13px;margin-top:10px}
+.more-options{margin:16px 0 0}.more-options>summary{cursor:pointer;color:#94a3b8;font-size:13px;text-align:center}
 .back{text-align:center;color:#64748b;font-size:12px;margin-top:24px}.back a{color:#64748b;display:inline}
 </style>
 </head>
@@ -3189,6 +3190,9 @@ ${Object.entries(planView.directFields).map(([k, v]) => `<input type="hidden" na
 </form>
 <p class="gate-note" id="gate-note" role="status" style="display:none"></p>
 <noscript><p class="gate-note">Checkout needs JavaScript so we can tell a person from a crawler.</p></noscript>
+<p class="choice-note">Stripe asks for your email and card on the next page. Cancel anytime. 7-day refund, no questions.</p>
+<details class="more-options" data-i="pro_checkout_more_options">
+<summary>Other ways to buy</summary>
 <form action="/checkout/pro" method="POST" data-i="pro_checkout_confirmed">
 <input type="hidden" name="click_token" value="">
 ${hiddenInputs}
@@ -3201,7 +3205,7 @@ ${hiddenInputs}
 <a class="secondary" data-i="pro_checkout_playbook_999" rel="nofollow" href="/go/playbook-999?utm_source=website&amp;utm_medium=checkout_interstitial&amp;utm_campaign=playbook_999&amp;cta_id=pro_checkout_playbook_999&amp;cta_placement=checkout_interstitial">Buy the $9.99 playbook, once</a>
 <a class="secondary" data-i="pro_checkout_bundle_49" rel="nofollow" href="/go/bundle-49?utm_source=website&amp;utm_medium=checkout_interstitial&amp;utm_campaign=bundle_49&amp;cta_id=pro_checkout_bundle_49&amp;cta_placement=checkout_interstitial">Buy the $49 bundle, once</a>
 <a class="secondary" data-i="workflow_sprint_intake" href="/#workflow-sprint-intake">Not sure yet? Send the workflow first</a>
-<p class="choice-note">Cancel anytime. 7-day refund, no questions.</p>
+</details>
 <details class="objection-box" aria-label="Checkout feedback">
 <summary style="cursor:pointer;font-weight:600;color:#cbd5e1">Not buying today? Tell us what to fix (optional)</summary>
 <p class="objection-note">Tap one reason so we know what to fix. This does not sign you up.</p>
