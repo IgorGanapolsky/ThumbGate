@@ -139,4 +139,4 @@ async function readTrafficWindow(options) {
   };
 }
 
-module.exports = { scanTelemetry, readTrafficWindow, DEFAULT_MAX_BYTES };
+module.exports = { scanFile, scanTelemetry, readTrafficWindow, DEFAULT_MAX_BYTES };

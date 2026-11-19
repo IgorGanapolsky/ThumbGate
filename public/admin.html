@@ -101,6 +101,30 @@
         background: var(--accent);
         color: var(--bg);
       }
+      .banner {
+        font-size: 18px;
+        padding: 14px 18px;
+        margin: 0 0 20px;
+        border: 1px solid var(--line);
+        border-left-width: 8px;
+        border-radius: 10px;
+      }
+      .banner.green {
+        border-left-color: #4ade80;
+      }
+      .banner.amber {
+        border-left-color: #fbbf24;
+      }
+      .banner.red {
+        border-left-color: #f87171;
+      }
+      .block {
+        margin: 0 0 22px;
+      }
+      .block h3 {
+        margin: 0 0 6px;
+        font-size: 16px;
+      }
       .panel {
         background: var(--panel);
         border: 1px solid var(--line);
@@ -425,6 +449,152 @@
           ? 'Unknown'
           : String(v.total) + (v.complete ? '' : ' (partial)');
       }
+      // Observability tab: plain sentences, times in the owner's own clock, every number labelled or explained.
+      function when(value) {
+        const d = new Date(value);
+        if (!value || Number.isNaN(d.getTime())) return null;
+        const clock = { hour: 'numeric', minute: '2-digit', hour12: true };
+        const sameDay = d.toDateString() === new Date().toDateString();
+        return sameDay
+          ? d.toLocaleTimeString([], clock)
+          : d.toLocaleString([], { month: 'short', day: 'numeric', ...clock });
+      }
+      function spanWords(seconds) {
+        const unit = (n, word) => n + ' ' + word + (n === 1 ? '' : 's');
+        if (seconds < 60) return 'under a minute';
+        if (seconds < 3600) return unit(Math.floor(seconds / 60), 'minute');
+        if (seconds < 86400) {
+          const h = Math.floor(seconds / 3600);
+          const m = Math.floor((seconds % 3600) / 60);
+          return unit(h, 'hour') + (m ? ' ' + unit(m, 'minute') : '');
+        }
+        const d = Math.floor(seconds / 86400);
+        const h = Math.floor((seconds % 86400) / 3600);
+        return unit(d, 'day') + (h ? ' ' + unit(h, 'hour') : '');
+      }
+      function renderObservability(parent, data) {
+        const r = data && data.report;
+        if (!r) {
+          parent.append(
+            element('p', 'This server did not send an observability report.', 'empty'),
+          );
+          return;
+        }
+        const block = (title) => {
+          const box = element('div', undefined, 'block');
+          box.append(element('h3', title));
+          parent.append(box);
+          return box;
+        };
+        const note = (box, words) => box.append(element('p', words, 'muted'));
+        const facts = (box, values) => cards(box, values, true);
+        const since = (stamp) => (when(stamp) ? ' since ' + when(stamp) : '');
+        parent.append(element('p', r.headline.sentence, 'banner ' + r.headline.level));
+
+        const running = block('Running');
+        if (r.runningFor.seconds === null) note(running, r.runningFor.reason);
+        else
+          running.append(
+            element(
+              'p',
+              'Running for ' + spanWords(r.runningFor.seconds) + since(r.runningFor.since) + '.',
+            ),
+          );
+
+        const up = block('Uptime');
+        if (r.uptime.percent === null) {
+          note(up, r.uptime.reason + (r.uptime.since ? ' Heartbeat started' + since(r.uptime.since) + '.' : ''));
+        } else {
+          facts(up, { 'Up over the last 30 days': r.uptime.percent + '%' });
+          note(up, 'Measured over ' + r.uptime.observedDays + ' days' + since(r.uptime.since) + ', from the ' + r.uptime.source + '.');
+          if (r.uptime.lastOutage)
+            facts(up, {
+              'Last outage': when(r.uptime.lastOutage.startedAt) + ', for ' + spanWords(r.uptime.lastOutage.minutes * 60),
+            });
+          else note(up, 'No outage recorded since measuring began.');
+        }
+
+        const errs = block('Errors');
+        if (r.errors.reason) note(errs, r.errors.reason);
+        else {
+          facts(errs, {
+            'Errors in the last hour': r.errors.lastHour,
+            'Errors in the last 24 hours': r.errors.last24Hours,
+          });
+          note(errs, 'Counted' + since(r.errors.since) + ', from the ' + r.errors.source + '.');
+          table(
+            errs,
+            [
+              ['What went wrong', (e) => e.what + (e.status ? ' (HTTP ' + e.status + ')' : '')],
+              ['Times in 24 hours', (e) => e.count],
+              ['Last seen', (e) => when(e.lastSeenAt) || 'time not recorded'],
+            ],
+            r.errors.top,
+          );
+        }
+
+        const speed = block('Speed');
+        if (r.speed.reason) note(speed, r.speed.reason);
+        else {
+          table(
+            speed,
+            [
+              ['Area', (g) => g.name],
+              ['Typical response', (g) => g.typicalMs + ' ms'],
+              ['Slowest 5% of responses', (g) => g.slowestFivePercentMs + ' ms'],
+              ['Requests measured', (g) => g.samples],
+            ],
+            r.speed.groups,
+          );
+          note(speed, 'Measured' + since(r.speed.since) + ' by this server; the numbers restart at each deploy.');
+        }
+
+        const deploy = block('Last deploy');
+        const deployLine = element('p');
+        const deployWhen = when(r.lastDeploy.startedAt);
+        deployLine.append(
+          document.createTextNode(
+            (deployWhen ? 'Deployed ' + deployWhen : 'Deploy time not reported') +
+              (r.lastDeploy.commitTitle ? ': ' + r.lastDeploy.commitTitle + ' ' : '. '),
+          ),
+        );
+        if (r.lastDeploy.shortSha) {
+          const link = element('a', r.lastDeploy.shortSha);
+          if (r.lastDeploy.commitUrl) {
+            link.href = r.lastDeploy.commitUrl;
+            link.rel = 'noopener noreferrer';
+            link.target = '_blank';
+          }
+          deployLine.append(link);
+        }
+        deploy.append(deployLine);
+        if (r.lastDeploy.reason) note(deploy, r.lastDeploy.reason);
+
+        const pay = block('Payments plumbing');
+        if (r.webhooks.failures24h !== null)
+          facts(pay, { 'Failed Stripe notifications in 24 hours': r.webhooks.failures24h });
+        if (r.webhooks.lastArrivedAt)
+          facts(pay, { 'Last Stripe notification arrived': when(r.webhooks.lastArrivedAt) });
+        if (r.webhooks.reason) note(pay, r.webhooks.reason);
+
+        const sign = block('Sign-in');
+        if (r.signIn.reason) note(sign, r.signIn.reason);
+        else {
+          facts(sign, { 'Failed sign-ins in 24 hours': r.signIn.failed24h });
+          if (r.signIn.reasons.length)
+            note(
+              sign,
+              'Most common: ' + r.signIn.reasons.map((x) => x.words + ' (' + x.count + ')').join('; ') + '.',
+            );
+        }
+
+        const disk = block('Disk');
+        if (r.disk.reason) note(disk, r.disk.reason);
+        else
+          facts(disk, {
+            'Data disk': r.disk.usedGb + ' GB of ' + r.disk.capacityGb + ' GB used (' + r.disk.percent + '%)',
+          });
+      }
       function render(parent, section, data) {
         if (section === 'money') {
           const checkouts = data.checkouts7d;
@@ -736,34 +906,7 @@
           );
         }
         if (section === 'observability') {
-          cards(parent, {
-            version: data.version,
-            build: data.buildSha,
-            uptimeSeconds: Math.floor(data.uptime || 0),
-            persistedTelemetryLastMinute: data.telemetry?.events,
-          });
-          parent.append(
-            element(
-              'p',
-              'Telemetry observed for ' +
-                (data.telemetry?.windowSeconds ?? 0) +
-                ' seconds; one-second precision. Process start ' +
-                date(data.processStartedAt) +
-                '. Deployment time unavailable. Error retention resets on restart.',
-              'muted',
-            ),
-          );
-          detail(parent, 'Deployment identity', data.deployment);
-          detail(parent, 'Volume filesystem bytes', data.disk);
-          table(
-            parent,
-            [
-              ['Time', (r) => date(r.timestamp)],
-              ['Status', (r) => r.status],
-              ['Route category', (r) => r.route],
-            ],
-            data.recentErrors || [],
-          );
+          renderObservability(parent, data);
         }
       }
       function controls() {

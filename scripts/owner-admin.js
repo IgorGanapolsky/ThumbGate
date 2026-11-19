@@ -6,6 +6,8 @@ const crypto = require('node:crypto');
 const readline = require('node:readline');
 const billing = require('./billing');
 const ownerTelemetry = require('./owner-telemetry');
+const opsLog = require('./ops-log');
+const opsReport = require('./ops-report');
 
 const JSON_LIMIT = 8 * 1024 * 1024;
 const LOG_LIMIT = 16 * 1024 * 1024;
@@ -120,7 +122,25 @@ function createRuntimeObservations(now = Date.now()) {
   const errors = [];
   const buckets = new Map();
   const trim = (stamp) => { for (const key of buckets.keys()) if (key < Math.floor(stamp / 1000) - 59) buckets.delete(key); };
+  const timings = new Map();
+  const percentile = (sorted, p) => sorted[Math.min(sorted.length - 1, Math.max(0, Math.ceil(p * sorted.length) - 1))];
   return {
+    // Response time per route category, kept for the newest 1,000 requests of each. Resets when the server restarts.
+    recordTiming(route, ms) {
+      if (!Number.isFinite(ms) || ms < 0) return;
+      const list = timings.get(route) || [];
+      list.push(ms);
+      if (list.length > 1000) list.shift();
+      timings.set(route, list);
+    },
+    speed() {
+      const out = {};
+      for (const [route, list] of timings) {
+        const sorted = list.slice().sort((a, b) => a - b);
+        out[route] = { samples: sorted.length, p50: Math.round(percentile(sorted, 0.5)), p95: Math.round(percentile(sorted, 0.95)) };
+      }
+      return out;
+    },
     recordResponse(status, route, stamp = Date.now()) {
       if (status < 500 || status > 599) return;
       errors.push({ timestamp: new Date(stamp).toISOString(), status, route: ['admin', 'telemetry', 'health', 'api', 'page'].includes(route) ? route : 'other' });
@@ -291,7 +311,51 @@ async function collectObservability(deps, signal) {
     const stats = await fs.promises.statfs(guardPath(deps.feedbackDir, deps.feedbackDir));
     disk = { capacityBytes: stats.blocks * stats.bsize, freeBytes: stats.bavail * stats.bsize, usedBytes: (stats.blocks - stats.bfree) * stats.bsize, scope: 'volume_filesystem' };
   } catch { warnings.push('disk_unavailable'); }
-  return envelope('current_process', { ...deps.health(), ...deps.runtime.snapshot(), deployment: { id: text(process.env.RAILWAY_DEPLOYMENT_ID, 128), commit: text(process.env.RAILWAY_GIT_COMMIT_SHA, 64), deployedAt: null, deploymentTimeStatus: 'unavailable', buildGeneratedAt: text(deps.buildMetadata?.generatedAt, 64) }, disk }, warnings);
+  const health = deps.health();
+  const snapshot = deps.runtime.snapshot();
+  const now = Date.now();
+  let events = [];
+  let beats = [];
+  try {
+    events = (await opsLog.readLog(deps.feedbackDir, opsLog.EVENTS_FILE, { now, days: 30, signal })).rows;
+    beats = (await opsLog.readLog(deps.feedbackDir, opsLog.HEARTBEAT_FILE, { now, days: 30, signal })).rows.map((row) => row.time);
+  } catch (error) { if (error.code === 'collection_timeout') throw error; warnings.push('ops_log_unavailable'); }
+  const sha = text(deps.buildMetadata?.buildSha, 64) || text(health.buildSha, 64);
+  let commitTitle = null;
+  let commitTitleReason = null;
+  if (sha && typeof deps.lookupCommitTitle === 'function') {
+    try { commitTitle = (await deps.lookupCommitTitle(sha, signal)) || null; } catch { commitTitle = null; }
+    if (!commitTitle) commitTitleReason = 'GitHub did not return the commit title.';
+  } else if (sha) commitTitleReason = 'The commit title lookup is not set up on this server.';
+  const report = opsReport.buildReport({
+    now, events, beats, disk,
+    speed: typeof deps.runtime.speed === 'function' ? deps.runtime.speed() : null,
+    startedAt: snapshot.processStartedAt,
+    uptimeSeconds: health.uptime,
+    sha, commitTitle, commitTitleReason,
+    repo: deps.githubRepo === undefined ? 'IgorGanapolsky/ThumbGate' : deps.githubRepo,
+  });
+  return envelope('current_process', { ...health, ...snapshot, deployment: { id: text(process.env.RAILWAY_DEPLOYMENT_ID, 128), commit: text(process.env.RAILWAY_GIT_COMMIT_SHA, 64), deployedAt: null, deploymentTimeStatus: 'unavailable', buildGeneratedAt: text(deps.buildMetadata?.generatedAt, 64) }, disk, report }, warnings);
+}
+
+const commitTitleCache = new Map();
+// The first line of a commit message from GitHub's public API, cached an hour. Returns null on any failure.
+async function githubCommitTitle(sha, signal, repo = 'IgorGanapolsky/ThumbGate') {
+  if (!/^[0-9a-f]{7,64}$/i.test(sha)) return null;
+  const cached = commitTitleCache.get(sha);
+  if (cached && Date.now() - cached.at < 3600000) return cached.title;
+  try {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 3000);
+    signal?.addEventListener?.('abort', () => controller.abort(), { once: true });
+    const response = await fetch('https://api.github.com/repos/' + repo + '/commits/' + sha, { headers: { Accept: 'application/vnd.github+json', 'User-Agent': 'thumbgate-owner-console' }, signal: controller.signal });
+    clearTimeout(timer);
+    if (!response.ok) return null;
+    const body = await response.json();
+    const title = text(String(body?.commit?.message || '').split('\n')[0], 200);
+    if (title) commitTitleCache.set(sha, { at: Date.now(), title });
+    return title;
+  } catch { return null; }
 }
 
 function deadline(promise, ms, signal) {
@@ -552,4 +616,4 @@ async function collectAdminSection(route, deps, externalSignal) {
   }
 }
 
-module.exports = { PRIVATE_HEADERS, RESPONSE_LIMIT, adminPath, parseAdminRoute, readOwnerIdentity, readSessionState, collectMoney, collectAnalytics, summaryParts, collectAdminSection, createRuntimeObservations, projectAnalytics, projectStripe, readObject, countRecords, guardPath };
+module.exports = { PRIVATE_HEADERS, RESPONSE_LIMIT, adminPath, parseAdminRoute, readOwnerIdentity, readSessionState, collectMoney, collectAnalytics, summaryParts, collectAdminSection, createRuntimeObservations, githubCommitTitle, collectObservability, projectAnalytics, projectStripe, readObject, countRecords, guardPath };

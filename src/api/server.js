@@ -3,6 +3,7 @@ const { withDataScope, withoutDataScope, currentDataScope, tenantDataScope, asse
 const { parseProjectSelection, projectForCapture, projectForRecord, matchesProject, validProjectKey } = require('../../scripts/project-identity');
 const { readProjectRows, buildProjectCatalog } = require('../../scripts/project-catalog');
 const ownerAdmin = require('../../scripts/owner-admin');
+const opsLog = require('../../scripts/ops-log');
 const http = require('http');
 const https = require('https');
 const fs = require('fs');
@@ -6383,6 +6384,7 @@ function ssoError(ssoReason, message) {
 function redirectSsoError(res, reason, statusCode = 302) {
   const raw = String(reason || '').trim().toLowerCase();
   const safeReason = /^[a-z0-9_]{1,48}$/.test(raw) ? raw : 'sso_failed';
+  opsLog.recordSignInFailure(safeReason);
   res.writeHead(statusCode, { 'X-Content-Type-Options': 'nosniff', 'Cache-Control': 'no-store', Location: `/dashboard?sso_error=${safeReason}` });
   res.end();
 }
@@ -7498,6 +7500,8 @@ const CONTINUE_DATA_SCOPE = Symbol('trustedDataScopeContinuation');
 function createApiServer({ ownerAdminDependencies = {} } = {}) {
   humanGate = buildHumanGate();
   const server = withoutDataScope(() => createUnscopedApiServer({ ownerAdminDependencies }));
+  // The once-a-minute heartbeat the owner console's uptime figure counts gaps in. Not under the test runner.
+  if (!process.env.NODE_TEST_CONTEXT) server.once('listening', () => opsLog.startHeartbeat(withoutDataScope(() => getFeedbackPaths().FEEDBACK_DIR)));
   const [listener] = server.listeners('request');
   server.removeListener('request', listener);
   server.on('request', (req, res) => {
@@ -7526,7 +7530,12 @@ function createUnscopedApiServer({ ownerAdminDependencies = {} } = {}) {
       : pathname === '/health' ? 'health' : pathname.startsWith('/v1/') ? 'api' : 'page';
     if (!observedRequests.has(req)) {
       observedRequests.add(req);
-      res.once('finish', () => adminRuntime.recordResponse(res.statusCode, category));
+      const startedNs = process.hrtime.bigint();
+      res.once('finish', () => {
+        adminRuntime.recordResponse(res.statusCode, category);
+        adminRuntime.recordTiming(category, Number(process.hrtime.bigint() - startedNs) / 1e6);
+        if (res.statusCode >= 500 && res.statusCode <= 599) opsLog.recordError(pathname, res.statusCode);
+      });
     }
     if (privatePath.matched) {
       const headers = ownerAdmin.PRIVATE_HEADERS;
@@ -7572,6 +7581,8 @@ function createUnscopedApiServer({ ownerAdminDependencies = {} } = {}) {
           feedbackDir, buildMetadata: BUILD_METADATA, runtime: adminRuntime,
           hashDataIdentity, buildHostedTenantIdentity,
           health: () => ({ version: pkg.version, buildSha: BUILD_METADATA.buildSha, uptime: process.uptime() }),
+          // The commit title comes from GitHub's public API; tests never reach the network.
+          lookupCommitTitle: process.env.NODE_TEST_CONTEXT ? undefined : (sha, signal) => ownerAdmin.githubCommitTitle(sha, signal),
           ...ownerAdminDependencies,
         }, cancellation.signal));
         const body = JSON.stringify(result);
@@ -11222,6 +11233,7 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
 
         const sig = req.headers['stripe-signature'] || '';
         if (!verifyWebhookSignature(rawBody, sig)) {
+          opsLog.recordWebhook(false, 400);
           sendProblem(res, {
             type: PROBLEM_TYPES.WEBHOOK_INVALID,
             title: 'Invalid webhook signature',
@@ -11232,6 +11244,7 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
         }
 
         const result = await handleWebhook(rawBody, sig);
+        opsLog.recordWebhook(!(result && (result.reason === 'invalid_signature' || result.retryable === true)), result?.retryable === true ? 503 : result?.reason === 'invalid_signature' ? 400 : 200);
         if (result && result.reason === 'invalid_signature') {
           sendProblem(res, {
             type: PROBLEM_TYPES.WEBHOOK_INVALID,
@@ -11253,6 +11266,7 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
         sendJson(res, 200, result);
 
       } catch (err) {
+        opsLog.recordWebhook(false, err.statusCode || 500);
         sendProblem(res, {
           type: !err.statusCode || err.statusCode >= 500 ? PROBLEM_TYPES.INTERNAL : PROBLEM_TYPES.BAD_REQUEST,
           title: !err.statusCode || err.statusCode >= 500 ? 'Internal Server Error' : 'Request Error',
