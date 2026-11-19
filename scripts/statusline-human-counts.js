@@ -98,12 +98,15 @@ function computeHumanCounts(options = {}) {
   return { up, down, label: 'this project', project: projectName, latestDown: describeLatestDown(latestDown) };
 }
 
-function pad(n) { return String(n).padStart(2, '0'); }
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
-// Same shape the status line already prints for a lesson: MM/DD/YYYY HH:MM:SS in UTC.
+// The reader's own clock, 12-hour: "Nov 19, 3:37 PM". Built by hand because
+// toLocaleString puts a narrow no-break space before AM/PM on newer ICU builds.
 function formatStamp(ms) {
   const d = new Date(ms);
-  return `${pad(d.getUTCMonth() + 1)}/${pad(d.getUTCDate())}/${d.getUTCFullYear()} ${pad(d.getUTCHours())}:${pad(d.getUTCMinutes())}:${pad(d.getUTCSeconds())}`;
+  const hour = d.getHours() % 12 || 12;
+  const minute = String(d.getMinutes()).padStart(2, '0');
+  return `${MONTHS[d.getMonth()]} ${d.getDate()}, ${hour}:${minute} ${d.getHours() < 12 ? 'AM' : 'PM'}`;
 }
 
 function describeLatestDown(found) {

@@ -100,7 +100,8 @@ test('thumbs the agent recorded through MCP count as human even when an older se
   const home = fs.mkdtempSync(path.join(os.tmpdir(), 'tg-statusline-legacy-mcp-'));
   const project = path.join(home, 'orchestrator');
   fs.mkdirSync(project, { recursive: true });
-  const childEnv = { PATH: process.env.PATH, HOME: home, USERPROFILE: home, TMPDIR: process.env.TMPDIR || os.tmpdir() };
+  // The label is in the reader's own time zone; pin one so the expected text is stable.
+  const childEnv = { PATH: process.env.PATH, HOME: home, USERPROFILE: home, TMPDIR: process.env.TMPDIR || os.tmpdir(), TZ: 'America/New_York' };
   // Shape of a real capture_feedback row from the pre-#5119 server: origin automated,
   // an action type, an agent session, no key and no source marker.
   const captured = (id, signal, projectId, timestamp, extra = {}) => ({
@@ -146,9 +147,29 @@ test('thumbs the agent recorded through MCP count as human even when an older se
   assert.deepEqual({ up: out.up, down: out.down }, { up: 1, down: 2 }, `stdout=${run.stdout}`);
   assert.equal(out.latestDown.id, 'mcp_down_new');
   assert.equal(out.latestDown.timestamp, '2026-11-19T20:37:40.941Z');
-  assert.equal(out.latestDown.label, 'Latest mistake 11/19/2026 20:37:40');
+  assert.equal(out.latestDown.label, 'Latest mistake Nov 19, 3:37 PM');
   assert.equal(out.latestDown.text, 'went wrong in mcp_down_new');
   fs.rmSync(home, { recursive: true, force: true });
+});
+
+test('latest mistake time is local, 12-hour, with AM/PM', () => {
+  const labelIn = (tz, timestamp) => {
+    const home = fs.mkdtempSync(path.join(os.tmpdir(), 'tg-statusline-tz-'));
+    const project = path.join(home, 'orchestrator');
+    fs.mkdirSync(project, { recursive: true });
+    writeJsonl(path.join(project, '.thumbgate', 'feedback-log.jsonl'), [
+      { id: 'tz_down', signal: 'negative', reviewOrigin: 'human', timestamp },
+    ]);
+    const env = { PATH: process.env.PATH, HOME: home, USERPROFILE: home, TMPDIR: process.env.TMPDIR || os.tmpdir(), TZ: tz };
+    const run = spawnSync(process.execPath, [SCRIPT], { cwd: project, encoding: 'utf8', env });
+    fs.rmSync(home, { recursive: true, force: true });
+    return JSON.parse(run.stdout).latestDown.label;
+  };
+  assert.equal(labelIn('America/New_York', '2026-11-19T20:37:40.941Z'), 'Latest mistake Nov 19, 3:37 PM');
+  assert.equal(labelIn('Asia/Kolkata', '2026-11-19T20:37:40.941Z'), 'Latest mistake Nov 20, 2:07 AM');
+  assert.equal(labelIn('UTC', '2026-11-19T00:05:00.000Z'), 'Latest mistake Nov 19, 12:05 AM');
+  assert.equal(labelIn('UTC', '2026-11-19T12:00:00.000Z'), 'Latest mistake Nov 19, 12:00 PM');
+  assert.equal(labelIn('UTC', '2026-12-03T09:09:00.000Z'), 'Latest mistake Dec 3, 9:09 AM');
 });
 
 test('latestDown is null when the project has no counted thumbs-down', () => {
