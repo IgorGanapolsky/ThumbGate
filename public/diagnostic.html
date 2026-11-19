@@ -3,11 +3,11 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>ThumbGate Setup Sprint — $499 | Self-Improving Firewall</title>
-<meta name="description" content="Self-improving firewall for AI agents. Managed implementation for one repeated AI-agent workflow failure: one configured local gate, one regression test, and rollout and rollback proof.">
+<title>Stop Your AI Coding Agent Repeating Mistakes — $499 Setup Sprint | ThumbGate</title>
+<meta name="description" content="Your coding agent keeps making the same mistake. The $499 Setup Sprint blocks it before the tool runs, with a regression test that proves it. One repeated mistake, one local workflow, rollout and rollback proof.">
 <link rel="canonical" href="__APP_ORIGIN__/diagnostic">
 <link rel="alternate" type="text/markdown" title="ThumbGate LLM context" href="__APP_ORIGIN__/llm-context.md">
-<meta property="og:title" content="ThumbGate Setup Sprint — $499">
+<meta property="og:title" content="Stop Your AI Coding Agent Repeating Mistakes — $499 Setup Sprint">
 <meta property="og:description" content="Send one repeated AI-agent workflow failure. Get one configured gate, a regression test, and rollout and rollback proof.">
 <meta property="og:url" content="__APP_ORIGIN__/diagnostic">
 <meta property="og:type" content="website">
@@ -26,6 +26,8 @@
   --white: #ffffff;
 }
 * { box-sizing: border-box; }
+.offer-points { margin: 16px 0; padding-left: 20px; }
+.offer-points li { margin: 6px 0; }
 body {
   margin: 0;
   min-height: 100vh;
@@ -289,13 +291,14 @@ footer { padding: 32px 0 44px; color: var(--muted); }
   <div class="hero">
     <div>
       <div class="eyebrow">Setup Sprint · $499 one-time for one workflow</div>
-      <h1>One repeated agent mistake. One configured gate.</h1>
-      <p class="lede">ThumbGate checks proposed tool calls before execution in supported hook integrations. The $499 Setup Sprint turns one recurring failure in a supported local workflow into a configured gate, a regression test, and rollout and rollback evidence.</p>
-      <div class="offer-promise" data-offer-promise>
-        <p><strong>One workflow gate, configured and regression-tested. $499 once. Delivered in two business days after access, for a supported failure.</strong></p>
-        <p>Supported failure: one repeated agent mistake in one local workflow, in a supported hook integration, that can be reduced to one ThumbGate gate and one regression test.</p>
-        <p>Refund: if the failure cannot be reduced to one supported gate, we refund the $499 order.</p>
-      </div>
+      <h1>Your coding agent keeps making the same mistake. We make it stop.</h1>
+      <p class="lede">ThumbGate checks each tool call your agent proposes before it runs. The $499 Setup Sprint turns one repeated mistake in one local workflow, on a <a href="/install#install">supported integration</a>, into a configured gate and a regression test.</p>
+      <ul class="offer-promise offer-points" data-offer-promise>
+        <li><strong>The outcome:</strong> that mistake is blocked before the tool runs, with a regression test that proves it.</li>
+        <li><strong>The guarantee:</strong> if we can't turn it into a gate, you get the $499 back.</li>
+        <li><strong>The speed:</strong> two business days, counted from when we have access and your workflow materials.</li>
+        <li><strong>Your part:</strong> a short intake and one 60-minute working review.</li>
+      </ul>
       <div class="actions">
         <form class="diagnostic-pay-form" action="/go/diagnostic-pay" method="POST" data-diagnostic-pay-form>
           <input type="hidden" name="utm_source" value="diagnostic_page">
@@ -320,7 +323,7 @@ footer { padding: 32px 0 44px; color: var(--muted); }
     </div>
     <form id="intake" class="intake-card" action="/v1/intake/workflow-sprint" method="POST" data-team-intake-form data-diagnostic-intake-form>
       <h2>Check workflow fit</h2>
-      <p>Use this before checkout if you are unsure the repeated action can be reduced to one supported local gate.</p>
+      <p>Use this before checkout if you are unsure the repeated action can be reduced to one local gate.</p>
       <input type="hidden" name="ctaId" value="diagnostic_page_intake">
       <input type="hidden" name="ctaPlacement" value="diagnostic_page">
       <input type="hidden" name="utmMedium" value="diagnostic_intake">
@@ -342,7 +345,7 @@ footer { padding: 32px 0 44px; color: var(--muted); }
         <option>We need an independent proof checklist first</option>
       </select>
       <button type="submit" data-revenue-cta data-cta-id="diagnostic_page_submit" data-cta-placement="intake">Submit for fit check</button>
-      <p class="hint" data-diagnostic-payment-hint>Ready to pay now? Use the $499 managed-gate checkout above. If the workflow is not a supported fit, we refund the order instead of opening a larger consulting scope.</p>
+      <p class="hint" data-diagnostic-payment-hint>Ready to pay now? Use the $499 managed-gate checkout above. If the workflow is not a fit, we refund the order instead of opening a larger consulting scope.</p>
     </form>
   </div>
   <section data-oceans-pain>
