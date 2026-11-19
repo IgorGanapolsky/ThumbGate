@@ -5434,7 +5434,18 @@ function buildDesignSelfCorrectionContext(toolName, toolInput = {}) {
   }
 }
 
+// Hook-facing entry. The first real block (then at most once per 7 days) carries one upgrade line in
+// the host-shown `systemMessage`; the reason the model reads is untouched. See first-block-upsell.js.
 async function runAsync(rawInput) {
+  const output = await runAsyncCore(rawInput);
+  try {
+    return require('./first-block-upsell').withFirstBlockUpsell(output);
+  } catch {
+    return output;
+  }
+}
+
+async function runAsyncCore(rawInput) {
   const input = canonicalizeHookInput(rawInput);
   const { hardFloor, securityScan } = evaluateUnconditionalHardFloor(input);
   if (hardFloor) return formatOutput(hardFloor);

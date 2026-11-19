@@ -516,8 +516,9 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
     // 690 -> 692 (2026-11-18): scripts/checkout-human-gate.js (required by src/api/server.js, the human-click checkout gate)
     // and scripts/cap-hit-counter.js (required by scripts/auto-promote-gates.js; it was missing from `files`) (+2).
     // 693 -> 695 (2026-11-19): public/preview.html and public/js/connect-panel.js (free preview, connect panel) (+2).
-    manifest.fileCount <= 695,
-    `npm package should stay <= 695 files, got ${manifest.fileCount}`
+    // 695 -> 696 (2026-11-19): scripts/first-block-upsell.js (required by scripts/gates-engine.js, first-block upgrade line) (+1).
+    manifest.fileCount <= 696,
+    `npm package should stay <= 696 files, got ${manifest.fileCount}`
   );
   // Ceiling bumped from 2.75 MB → 2.85 MB (2026-04-16) to accommodate the
   // incremental review-delta demo content in public/dashboard.html landing
