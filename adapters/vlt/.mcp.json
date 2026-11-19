@@ -2,7 +2,7 @@
   "mcpServers": {
     "thumbgate": {
       "command": "npx",
-      "args": ["--yes", "--package", "thumbgate@1.40.3", "thumbgate", "serve"]
+      "args": ["--yes", "--package", "thumbgate@1.40.4", "thumbgate", "serve"]
     }
   },
   "hooks": {
@@ -11,7 +11,7 @@
       "args": [
         "--yes",
         "--package",
-        "thumbgate@1.40.3",
+        "thumbgate@1.40.4",
         "thumbgate",
         "gate-check"
       ]
@@ -21,11 +21,11 @@
       "args": [
         "--yes",
         "--package",
-        "thumbgate@1.40.3",
+        "thumbgate@1.40.4",
         "thumbgate",
         "hook-auto-capture"
       ]
     }
   },
-  "notes": "Claude Code MCP config with vlt registry governance. PreToolUse hook gates vlt install/add/publish, registry config overrides, and dependency version pinning. See adapters/vlt/VLT.md for gate templates and feedback capture patterns. All configs pin thumbgate@1.40.3."
+  "notes": "Claude Code MCP config with vlt registry governance. PreToolUse hook gates vlt install/add/publish, registry config overrides, and dependency version pinning. See adapters/vlt/VLT.md for gate templates and feedback capture patterns. All configs pin thumbgate@1.40.4."
 }

@@ -2,17 +2,17 @@
   "mcpServers": {
     "thumbgate": {
       "command": "npx",
-      "args": ["--yes", "--package", "thumbgate@1.40.3", "thumbgate", "serve"]
+      "args": ["--yes", "--package", "thumbgate@1.40.4", "thumbgate", "serve"]
     }
   },
   "hooks": {
     "preToolUse": {
       "command": "npx",
-      "args": ["--yes", "--package", "thumbgate@1.40.3", "thumbgate", "gate-check"]
+      "args": ["--yes", "--package", "thumbgate@1.40.4", "thumbgate", "gate-check"]
     },
     "userPromptSubmit": {
       "command": "npx",
-      "args": ["--yes", "--package", "thumbgate@1.40.3", "thumbgate", "hook-auto-capture"]
+      "args": ["--yes", "--package", "thumbgate@1.40.4", "thumbgate", "hook-auto-capture"]
     }
   }
 }
