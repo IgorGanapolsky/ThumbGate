@@ -52,6 +52,23 @@ One reproduced defect: when the gate refuses a press (third press in a minute fr
 - Whether any real person is pressing the button is unknown; `checkout_interstitial_cta_clicked` has 0 rows in 7 days and the cause is not established.
 - The change reaches production only after Railway rebuilds `main`; check `/health` for the commit.
 
+## Why 0 presses: follow-up (Nov 20, about 10:30 AM ET)
+
+Checked in headless Chromium against production (button never pressed, stripe.com aborted, URL tagged `utm_source=probe` so the rows are audience `test`):
+
+- Button above the fold at iPhone 390x664 (top 339 px, bottom 389 px), iPhone SE 375x548 (354 to 404) and desktop 1280x720 (296 to 346). Nothing covers it. Label "Pay $19/mo with Stripe →", price $19/mo. Page load 355 to 643 ms.
+- 0 console errors or warnings, 0 failed requests at all three sizes.
+- The press beacon reaches telemetry: a `checkout_interstitial_cta_clicked` beacon sent from the production page with the page's own `sendBeacon` call was in `telemetry-pings.jsonl` 0.4 s later (read back through the container, audience `test`). The press itself ran only on the local fake-Stripe server: one press, one telemetry row, one session (new test).
+- The page's leave beacon works in a real browser (local run: view, then `checkout_interstitial_abandoned` on navigating away).
+
+What the data says: in the last 7 days, 156 human-class visitors (181 views, scanner sweeps removed) viewed the confirm page. Only 1 of them ever sent an event from the page's own script (2 `checkout_interstitial_abandoned` rows, 0 presses, 0 reasons). A browser that loads this page and leaves sends that row, so about 155 of 156 either never ran the script or blocked the beacon. Views are logged by the server on every GET, so a crawler or link scanner with a browser user agent counts as a human view (UA mix of the 181: Windows 81, Mac 43, iOS 27, Linux 22, Android 5, other 3). That is the most likely reason for 0 presses. It is an inference, not a measurement of who they were.
+
+Not ruled out: visitors who send `Sec-GPC: 1` or `DNT: 1` are dropped from telemetry silently by design (`headerHasPrivacyOptOut`), so a real person with a privacy browser looks the same as a crawler here.
+
+Change: the page now sends `checkout_interstitial_shown` when its script has run, with `sectionId` `cta_above_fold` or `cta_below_fold` and the viewport in `sectionLabel`. From the next deploy, "viewed and ran the page" is countable apart from "was fetched", and the fold is measured on real devices. This does not make anyone press the button. Tests: `tests/checkout-interstitial-shown-beacon.test.js` (4; with the beacon call removed, 2 fail).
+
+The probe added 3 `checkout_interstitial_view` rows and 1 `cta_clicked` row to production telemetry (visitor `ck-probe-1120`, audience `test`, outside every human-class count above).
+
 ## Reproduce
 
 ```

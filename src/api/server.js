@@ -3356,6 +3356,23 @@ ${hiddenInputs}
     try { window.plausible && window.plausible('Checkout Pro Email Submitted', { props: { page:'/checkout/pro', source:'interstitial' } }); } catch(_) {}
     return { ctaId: 'pro_checkout_confirmed', ctaPlacement: 'checkout_interstitial', customerEmail: field ? field.value : null };
   });
+  // The server logs checkout_interstitial_view for every GET, including link scanners and
+  // crawlers that never run this script. This beacon fires only when a browser executed it,
+  // so views that ran the page are countable apart from views that did not.
+  function reportShown() {
+    try {
+      var b = directForm && directForm.querySelector('button[type=submit]');
+      var r = b ? b.getBoundingClientRect() : null;
+      var inView = !!(r && r.top >= 0 && r.bottom <= window.innerHeight);
+      sendTelemetry('checkout_interstitial_shown', {
+        ctaId: 'pro_checkout_direct_stripe',
+        sectionId: inView ? 'cta_above_fold' : 'cta_below_fold',
+        sectionLabel: window.innerWidth + 'x' + window.innerHeight
+      });
+    } catch (_) {}
+  }
+  if (document.readyState === 'complete') reportShown();
+  else window.addEventListener('load', reportShown);
   document.querySelectorAll('[data-reason]').forEach(function(button) {
     button.addEventListener('click', function(){
       var reason = button.getAttribute('data-reason');
