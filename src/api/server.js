@@ -5104,6 +5104,7 @@ function renderSitemapXml(runtimeConfig) {
     { path: '/peter', changefreq: 'weekly', priority: '0.9' },
     { path: '/workflow-hardening-sprint', changefreq: 'weekly', priority: '0.9' },
     { path: '/install', changefreq: 'weekly', priority: '0.9' },
+    { path: '/connectors', changefreq: 'weekly', priority: '0.85' },
     { path: '/terms', changefreq: 'monthly', priority: '0.7' },
     { path: '/privacy', changefreq: 'monthly', priority: '0.7' },
     { path: '/support', changefreq: 'monthly', priority: '0.7' },
@@ -5135,7 +5136,6 @@ function renderSitemapXml(runtimeConfig) {
     { path: '/learn/codex-role-plugins-need-governance', changefreq: 'weekly', priority: '0.85' },
     { path: '/learn/agentic-os-team-governance', changefreq: 'weekly', priority: '0.85' },
     { path: '/learn/cost-aware-agent-gate-routing', changefreq: 'weekly', priority: '0.85' },
-    { path: '/learn/pretix-stripe-connect-marketplaces', changefreq: 'weekly', priority: '0.9' },
     { path: '/learn/netflix-oci-actor-critic-process-audits', changefreq: 'weekly', priority: '0.85' },
     { path: '/learn/future-agi-self-healing-agent-firewall', changefreq: 'weekly', priority: '0.85' },
     { path: '/learn/five-walls-enterprise-agent-deployment', changefreq: 'weekly', priority: '0.85' },
@@ -11251,6 +11251,17 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
         });
       } catch (err) {
         sendText(res, 500, err.message || 'Pricing page unavailable');
+      }
+      return;
+    }
+
+    // Public connectors page (linked from /pricing and the site nav).
+    if (isGetLikeRequest && (pathname === '/connectors' || pathname === '/connectors/' || pathname === '/connectors.html')) {
+      try {
+        const connectorsPageHtml = fs.readFileSync(path.join(PUBLIC_DIR, 'connectors.html'), 'utf-8');
+        sendHtml(res, 200, connectorsPageHtml, {}, { headOnly: isHeadRequest });
+      } catch {
+        sendText(res, 404, 'Connectors page not found');
       }
       return;
     }
