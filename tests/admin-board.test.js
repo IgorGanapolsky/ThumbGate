@@ -297,6 +297,10 @@ test('summary: the owner gets every number the Money and Analytics tabs show, ea
   assert.equal(fields['money.paying_customers'].value, money.data.payingCustomers);
   assert.equal(fields['money.active_pro'].value, money.data.activePro);
   assert.deepEqual(fields['money.revenue_30d'].value, money.data.revenueLast30Days);
+  assert.match(fields['money.revenue_30d'].label, /One-time checkout revenue/);
+  assert.equal(fields['money.subscription_invoices_30d'].status, 'unresolved');
+  assert.equal(fields['money.subscription_invoices_30d'].value, null);
+  assert.deepEqual(body.data.knownGaps, ['money.subscription_invoices_30d']);
   for (const [window, block] of [['7d', money.data.checkouts7d], ['30d', money.data.checkouts30d]]) {
     for (const name of ['started', 'human', 'bot', 'notClassified', 'internal']) assert.equal(fields[`money.checkouts_${window}.${name}`].value, block[name], window + ' ' + name);
   }

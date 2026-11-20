@@ -450,6 +450,162 @@
         );
         parent.append(block);
       }
+      // How long a measurement has really run, in words ("about 1 day"), never a fixed window the data does not cover.
+      function periodWords(days) {
+        if (!Number.isFinite(days)) return 'length not measured';
+        if (days < 1) return 'less than 1 day';
+        const n = Math.round(days * 10) / 10;
+        return 'about ' + n + (n === 1 ? ' day' : ' days');
+      }
+      // A conversion rate with no denominator is not zero; it is not applicable.
+      function conversionRows(funnel) {
+        const stages = funnel?.stageCounts || {};
+        const rates = funnel?.conversionRates || {};
+        const row = (name, rate, denominator, none) => ({
+          name,
+          value:
+            !Number.isFinite(denominator) || denominator === 0
+              ? 'N/A, ' + none
+              : Number.isFinite(rate)
+                ? Math.round(rate * 1000) / 10 + '%'
+                : 'N/A, not reported',
+        });
+        return [
+          row('Acquisition to activation', rates.acquisitionToActivation, stages.acquisition, 'no measured acquisition events'),
+          row('Activation to paid', rates.activationToPaid, stages.activation, 'no measured activations'),
+          row('Acquisition to paid', rates.acquisitionToPaid, stages.acquisition, 'no measured acquisition events'),
+        ];
+      }
+      function funnelTable(parent, funnel) {
+        if (!funnel) return;
+        parent.append(element('h3', 'Funnel conversion'));
+        table(parent, [['Step', (r) => r.name], ['Rate', (r) => r.value]], conversionRows(funnel));
+        parent.append(
+          element(
+            'p',
+            'A lead is one distinct acquisition event identity (an acquisition, trace, visitor, session or install id) from a real checkout step; synthetic checkout sessions are excluded. ' +
+              'An activation is the first call made with an API key. Free local use without a key is not measured, so a 0 here means none observed, not none happened.',
+            'muted',
+          ),
+        );
+      }
+      const STATE_WORDS = {
+        ok: 'Verified',
+        verified_zero: 'Verified zero',
+        partial: 'Partial',
+        stale: 'Last verified value',
+        unavailable: 'Unavailable, the source failed',
+        unresolved: 'Unresolved, not collected yet',
+      };
+      function freshnessTable(parent, fresh) {
+        if (!fresh) return;
+        const names = {
+          paid: 'Paid checkouts (Stripe)',
+          subscriptions: 'Active subscriptions (Stripe)',
+          checkouts: 'Checkout sessions (Stripe)',
+          traffic: 'Site visits (telemetry)',
+          leads: 'Signups and leads (ledgers)',
+        };
+        const rows = Object.entries(names)
+          .filter(([key]) => fresh[key])
+          .map(([key, name]) => ({
+            name,
+            observed: when(fresh[key].collectedAt) || 'not collected',
+            state: fresh[key].stale ? 'Last verified value, the source did not answer' : 'Current',
+          }));
+        parent.append(element('h3', 'Source freshness'));
+        table(parent, [['Source', (r) => r.name], ['Source observed', (r) => r.observed], ['State', (r) => r.state]], rows);
+        parent.append(
+          element(
+            'p',
+            'Display refreshed ' + (when(fresh.displayRefreshedAt) || 'just now') +
+              (Number.isFinite(fresh.telemetryCacheSeconds) && Number.isFinite(fresh.billingSummaryCacheSeconds)
+                ? '. Site visits are cached for ' + fresh.telemetryCacheSeconds + ' seconds and the billing summary for ' + fresh.billingSummaryCacheSeconds / 60 + ' minutes.'
+                : '.'),
+            'muted',
+          ),
+        );
+      }
+      // One sentence naming the first stage that is stuck, with the numbers that show it and what they cannot show.
+      function describeObstacle(fields, funnel) {
+        const paying = fields?.['money.paying_customers']?.value;
+        const panel = fields?.['money.checkout_bot_check']?.value;
+        const since = panel?.sinceBotCheck;
+        const stages = funnel?.stageCounts || {};
+        const leads = funnel?.uniqueAcquisitionLeads;
+        if (!Number.isFinite(paying)) return 'Paying customers could not be read right now, so no obstacle is named without evidence.';
+        if (paying > 0) return 'Money is arriving: ' + paying + ' paying customers.';
+        const parts = [];
+        if (Number.isFinite(leads) && leads > 0 && stages.activation === 0)
+          parts.push(leads + ' acquisition leads and 0 measured activations: no lead has made a first API-key call (free local use is not measured).');
+        if (since && since.human === 0)
+          parts.push('Since the bot check on ' + (panel.botCheckBeganLabel || 'its start date') + ', ' + since.started + ' checkout sessions started and 0 are classified as a browser (' + since.bot + ' bot-classified, ' + since.internal + ' owner or test).');
+        else if (since && since.human > 0)
+          parts.push(since.human + ' browser-classified checkout sessions since the bot check, and 0 paying customers.');
+        return parts.length ? parts.join(' ') : 'There is not enough classified evidence yet to name an obstacle.';
+      }
+      function metricValue(m) {
+        if (!m) return 'Not reported';
+        if (m.value === null || m.value === undefined) return m.reason || 'Unavailable';
+        if (typeof m.value === 'object') {
+          const entries = Object.entries(m.value);
+          return entries.length ? entries.map(([c, a]) => money(a, c)).join(', ') : 'None in this window';
+        }
+        return String(m.value);
+      }
+      function metricRows(fields, keys) {
+        return keys.filter((key) => fields?.[key]).map((key) => {
+          const m = fields[key];
+          return {
+            name: m.label,
+            value: metricValue(m),
+            state: STATE_WORDS[m.status] || label(m.status),
+            observed: when(m.status === 'stale' ? m.lastVerifiedAt : m.collectedAt) || 'not collected',
+          };
+        });
+      }
+      // First screen: verified money, measured activation and the biggest evidenced obstacle, read from the same JSON an agent reads.
+      function renderOverview(parent, data) {
+        const mine = activeLoad;
+        const box = element('div');
+        parent.append(box);
+        box.append(element('p', 'Loading verified money and measured activation…', 'muted'));
+        const read = (url) =>
+          fetch(url, { credentials: 'same-origin', cache: 'no-store' }).then((r) => (r.ok ? r.json() : null)).catch(() => null);
+        Promise.all([read('/v1/admin/summary'), read('/v1/admin/analytics')]).then(([summary, analytics]) => {
+          if (mine !== activeLoad) return;
+          box.replaceChildren();
+          const fields = summary?.data?.fields;
+          const funnel = analytics?.data?.funnel;
+          box.append(element('h3', 'Verified external money'));
+          if (fields)
+            table(
+              box,
+              [['Metric', (r) => r.name], ['Value', (r) => r.value], ['State', (r) => r.state], ['Source observed', (r) => r.observed]],
+              metricRows(fields, ['money.paying_customers', 'money.active_pro', 'money.revenue_30d', 'money.subscription_invoices_30d']),
+            );
+          else box.append(element('p', 'The money summary is unavailable right now. No zero is inferred.', 'notice'));
+          box.append(element('h3', 'Measured activation'));
+          if (funnel) {
+            cards(
+              box,
+              {
+                'Unique acquisition leads': funnel.uniqueAcquisitionLeads,
+                'Acquisition events': funnel.stageCounts?.acquisition,
+                'Measured activations': funnel.stageCounts?.activation,
+                'Paid customers': funnel.uniquePaidCustomers,
+                'Excluded synthetic checkout sessions': funnel.excludedSyntheticCheckoutSessions,
+              },
+              true,
+            );
+            funnelTable(box, funnel);
+          } else box.append(element('p', 'The funnel is unavailable right now. No zero is inferred.', 'notice'));
+          box.append(element('h3', 'Biggest evidenced obstacle'));
+          box.append(element('p', describeObstacle(fields, funnel)));
+          if (summary?.data?.freshness)
+            box.append(element('p', 'Display refreshed ' + (when(summary.data.freshness.displayRefreshedAt) || 'just now') + '.', 'muted'));
+        });
+      }
       function count(v) {
         return v?.total === null || v?.total === undefined
           ? 'Unknown'
@@ -511,7 +667,7 @@
         if (r.uptime.percent === null) {
           note(up, r.uptime.reason + (r.uptime.since ? ' Heartbeat started' + since(r.uptime.since) + '.' : ''));
         } else {
-          facts(up, { 'Up over the last 30 days': r.uptime.percent + '%' });
+          facts(up, { ['Up during the observed period, ' + periodWords(r.uptime.observedDays)]: r.uptime.percent + '%' });
           note(up, 'Measured over ' + r.uptime.observedDays + ' days' + since(r.uptime.since) + ', from the ' + r.uptime.source + '.');
           if (r.uptime.lastOutage)
             facts(up, {
@@ -664,7 +820,7 @@
               detail(parent, 'Site checkout starts by kind', gap.siteStartsByType, SITE_START_WORDS);
             }
           }
-          parent.append(element('h3', 'Revenue · past 30 days'));
+          parent.append(element('h3', 'One-time checkout revenue · past 30 days'));
           if (data.revenueLast30Days === null || data.revenueLast30Days === undefined)
             parent.append(element('p', why.revenue || 'Source not available right now', 'notice'));
           else
@@ -672,7 +828,7 @@
               parent,
               [
                 ['Currency', (r) => r.currency],
-                ['Booked revenue', (r) => money(r.amount, r.currency)],
+                ['Checkout revenue after refunds', (r) => money(r.amount, r.currency)],
               ],
               Object.entries(data.revenueLast30Days).map(
                 ([currency, amount]) => ({ currency, amount }),
@@ -685,10 +841,12 @@
                 basis(data.payingCustomersBasis) +
                 '. Active Pro: ' +
                 basis(data.activeProBasis) +
-                '. Revenue is the total of those payments after refunds.',
+                '. Revenue is the total of completed Checkout Sessions created in the last 30 days, after refunds. ' +
+                'Subscription renewal invoices are not read, so recurring revenue is not included: subscription invoices are not collected yet.',
               'muted',
             ),
           );
+          freshnessTable(parent, data.freshness);
           if (data.checkouts7d) detail(parent, 'Checkout sessions, last 7 days', data.checkouts7d, CHECKOUT_WORDS);
           if (data.checkouts30d) detail(parent, 'Checkout sessions, last 30 days', data.checkouts30d, CHECKOUT_WORDS);
           const leads = data.leadsBySource;
@@ -703,15 +861,16 @@
             parent.append(element('p', note, 'muted'));
         }
         if (section === 'overview') {
-          cards(parent, {
+          renderOverview(parent, data);
+          detail(parent, 'Build and runtime', {
             version: data.health?.version,
             build: data.health?.buildSha,
-            uptimeSeconds: Math.floor(data.health?.uptime || 0),
+            runningFor: spanWords(Math.floor(data.health?.uptime || 0)),
           });
           parent.append(
             element(
               'p',
-              'Select a section to load its current source. Stripe resources are fetched one page at a time.',
+              'This console is read-only. The same numbers are available as JSON at /v1/admin/summary. Select a section to load its current source; Stripe resources are fetched one page at a time.',
               'muted',
             ),
           );
@@ -939,6 +1098,7 @@
               'muted',
             ),
           );
+          funnelTable(parent, data.funnel);
           for (const key of [
             'funnel',
             'signups',

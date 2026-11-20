@@ -264,6 +264,8 @@ async function collectData(route, deps, signal) {
     const key = joined || 'sso:' + email;
     if (!accounts.has(key)) accounts.set(key, { customerId: null, email, createdAt: Number.isFinite(session.createdAt) ? new Date(session.createdAt).toISOString() : null, hasActiveKey: false, hasCurrentSession: true, possibleDuplicate: Boolean(matches?.size > 1), freeEmails: new Set() });
     accounts.get(key).hasCurrentSession = true;
+    // A paid key can carry no email of its own; the signed-in session's email is the identity that joined it.
+    (accounts.get(key).sessionEmails ||= new Set()).add(email);
     if (!session.customerId || session.subjectType === 'sso_free') accounts.get(key).freeEmails.add(email);
   }
   const ordered = [...accounts.entries()].sort(([a], [b]) => a.localeCompare(b));
@@ -278,7 +280,7 @@ async function collectData(route, deps, signal) {
     const counts = [];
     for (const partition of partitions) counts.push(await countPartition(root, partition, signal));
     if (counts.some((row) => row.state === 'partial')) warnings.push('account_counts_partial');
-    records.push({ accountId: account.customerId ? text(account.customerId, 128) : [...partitions][0], email: text(account.email, 320), createdAt: account.createdAt, hasActiveKey: account.hasActiveKey, hasCurrentSession: account.hasCurrentSession, possibleDuplicate: account.possibleDuplicate === true, classification: billing.classifyRevenueRecord({ email: account.email }), partitions: counts });
+    records.push({ accountId: account.customerId ? text(account.customerId, 128) : [...partitions][0], email: text(account.email, 320), createdAt: account.createdAt, hasActiveKey: account.hasActiveKey, hasCurrentSession: account.hasCurrentSession, possibleDuplicate: account.possibleDuplicate === true, classification: billing.classifyRevenueRecord({ email: account.email, identityEmails: [...(account.sessionEmails || [])] }), partitions: counts });
   }
   stopped(signal);
   const feedback = await countRecords(root, path.join(root, 'feedback-log.jsonl'), signal);
@@ -639,6 +641,8 @@ async function collectMoney(deps, signal) {
     traffic: { collectedAt: trafficRead?.collectedAt || null, stale: false },
     leads: { collectedAt: summaryRun.value?.collectedAt || null, stale: summaryRun.value?.state === 'stale' },
     displayRefreshedAt: new Date().toISOString(),
+    telemetryCacheSeconds: Math.round((deps.telemetryCacheMs ?? TELEMETRY_CACHE_MS) / 1000),
+    billingSummaryCacheSeconds: SUMMARY_TTL_MS / 1000,
   };
   const data = {
     windows: { revenue: '30d', checkouts: '7d', traffic: '30d', leads: '30d' },
@@ -752,7 +756,9 @@ async function collectSummary(deps, signal) {
   if (money) {
     add('money.paying_customers', 'Paying customers', money.payingCustomers, { ...stripeOpts('paid', why.payingCustomers), partial: money.payingCustomersBasis === 'stripe_paid_and_active_partial' });
     add('money.active_pro', 'Active Pro subscriptions', money.activePro, { ...stripeOpts('subscriptions', why.activePro), partial: money.activeProBasis === 'stripe_active_subscriptions_first_100_only' });
-    add('money.revenue_30d', 'Booked revenue, past 30 days, by currency', money.revenueLast30Days, stripeOpts('paid', why.revenue));
+    // collectMoney reads completed Checkout Sessions only, so this is first-charge revenue; renewal invoices never appear in it.
+    add('money.revenue_30d', 'One-time checkout revenue, past 30 days, by currency (completed Checkout Sessions after refunds)', money.revenueLast30Days, stripeOpts('paid', why.revenue));
+    add('money.subscription_invoices_30d', 'Subscription invoices, past 30 days', null, { source: 'stripe', unresolved: true, reason: 'Not collected yet: renewal invoices are not read, so recurring revenue is not in any revenue number here' });
     buckets('money.checkouts_7d', '7 days', money.checkouts7d);
     buckets('money.checkouts_30d', '30 days', money.checkouts30d);
     const panel = money.checkoutBotCheck;
@@ -775,10 +781,12 @@ async function collectSummary(deps, signal) {
   add('analytics.external_paid_orders', 'External paid orders', analytics?.revenue?.external?.paidOrders ?? null, billingOpts);
   add('analytics.external_booked_revenue_30d', 'External booked revenue, past 30 days, by currency', analytics?.revenue?.external?.bookedRevenueByCurrency ?? null, billingOpts);
 
-  const states = Object.values(fields).map((entry) => entry.status);
+  // A permanent, stated gap is listed apart so the overall state reflects sources that failed, not a feature not built yet.
+  const knownGaps = ['money.subscription_invoices_30d'];
+  const states = Object.entries(fields).filter(([key]) => !knownGaps.includes(key)).map(([, entry]) => entry.status);
   const bad = states.filter((state) => state === 'unavailable').length;
   const overall = !money && !analytics ? 'unavailable' : states.every((state) => state === 'ok' || state === 'verified_zero') ? 'ok' : 'partial';
-  return envelope('owner_console_summary', { generatedAt: refreshed, readOnly: true, windows: { checkouts: '7d and 30d', traffic: '30d', revenue: '30d' }, freshness: { displayRefreshedAt: refreshed, stripeCollectedAt: fresh.checkouts?.collectedAt || null, telemetryCollectedAt: fresh.traffic?.collectedAt || null, leadsCollectedAt: fresh.leads?.collectedAt || null, telemetryCacheSeconds: Math.round((deps.telemetryCacheMs ?? TELEMETRY_CACHE_MS) / 1000), billingSummaryCacheSeconds: Math.round(SUMMARY_TTL_MS / 1000) }, fields, unavailableFields: bad }, [], overall);
+  return envelope('owner_console_summary', { generatedAt: refreshed, readOnly: true, windows: { checkouts: '7d and 30d', traffic: '30d', revenue: '30d' }, freshness: { displayRefreshedAt: refreshed, stripeCollectedAt: fresh.checkouts?.collectedAt || null, telemetryCollectedAt: fresh.traffic?.collectedAt || null, leadsCollectedAt: fresh.leads?.collectedAt || null, telemetryCacheSeconds: Math.round((deps.telemetryCacheMs ?? TELEMETRY_CACHE_MS) / 1000), billingSummaryCacheSeconds: Math.round(SUMMARY_TTL_MS / 1000) }, fields, knownGaps, unavailableFields: bad }, [], overall);
 }
 
 async function collectAdminSection(route, deps, externalSignal) {

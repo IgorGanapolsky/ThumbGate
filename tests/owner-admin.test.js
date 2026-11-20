@@ -287,6 +287,25 @@ test('nonwriting data inventory maps joined accounts, counts scoped files, pagin
   assert.equal(fs.readFileSync(path.join(fixture, 'api-keys.json'), 'utf8'), before);
 });
 
+test('the same owner is "internal" in Hosted data when the paid key carries no email but the joined session does', async () => {
+  const fixture = fs.mkdtempSync(path.join(root, 'identity-'));
+  const d = deps({ feedbackDir: fixture });
+  fs.writeFileSync(path.join(fixture, 'api-keys.json'), JSON.stringify({ keys: {
+    'synthetic-owner-key': { customerId: 'customer_owner', active: true },
+    'synthetic-buyer-key': { customerId: 'customer_buyer', customerEmail: 'buyer@example.invalid', active: true },
+    'synthetic-keyless': { customerId: 'customer_noemail', active: true },
+  } }));
+  fs.writeFileSync(path.join(fixture, 'auth-sessions.json'), JSON.stringify({
+    one: { ...baseSession, ssoEmail: 'owner@example.invalid', customerId: 'customer_owner', subjectType: 'paid' },
+  }));
+  const result = await admin.collectAdminSection({ section: 'data', limit: 50, offset: 0 }, d);
+  const byId = Object.fromEntries(result.data.records.map((r) => [r.accountId, r.classification]));
+  assert.equal(byId.customer_owner, 'internal', 'owner joined by session is internal, matching the Stripe class');
+  assert.equal(byId.customer_buyer, 'external');
+  assert.equal(byId.customer_noemail, 'unknown', 'an account with no identity at all stays unknown');
+  assert.equal(billing.classifyRevenueRecord({ customerEmail: 'owner@example.invalid' }), 'internal', 'Stripe-side class of the same address');
+});
+
 test('data readers reject symlinks, corrupt stores and missing files without claiming zero', async () => {
   const fixture = fs.mkdtempSync(path.join(root, 'unsafe-'));
   fs.symlinkSync(sessionPath, path.join(fixture, 'auth-sessions.json'));
