@@ -492,7 +492,7 @@ const attempt = async (work, reasonOf) => {
 };
 const telemetryReason = (error) => (error?.code === 'collection_timeout' ? 'telemetry read timed out' : 'telemetry read failed');
 
-const trafficFields = (read) => ({ visitors: read.traffic.visitors, realVisitors: read.traffic.realVisitors, botOrInternalVisitors: read.traffic.botOrInternalVisitors, identities: read.traffic.identities, checkoutStartsByType: read.traffic.checkoutStartsByType, sessions: read.traffic.sessions, pageViews: read.traffic.pageViews, ctaClicks: read.traffic.ctaClicks, checkoutStarts: read.traffic.checkoutStarts, checkoutPaidConfirmations: read.traffic.checkoutPaidConfirmations });
+const trafficFields = (read) => ({ visitors: read.traffic.visitors, realVisitors: read.traffic.realVisitors, botOrInternalVisitors: read.traffic.botOrInternalVisitors, pageViewers: read.traffic.pageViewers, checkoutStartsByType: read.traffic.checkoutStartsByType, sessions: read.traffic.sessions, pageViews: read.traffic.pageViews, ctaClicks: read.traffic.ctaClicks, checkoutStarts: read.traffic.checkoutStarts, checkoutPaidConfirmations: read.traffic.checkoutPaidConfirmations });
 
 // Money board. Each block fails alone: its fields are null and a plain-words reason is returned beside them.
 // Stripe answers paying customers, revenue and checkouts; our own page-view telemetry answers visitors.
@@ -501,7 +501,10 @@ async function collectMoney(deps, signal) {
   if (ttl > 0 && moneyCache && Date.now() - moneyCache.at < ttl) return moneyCache.value;
   const ownerEmails = (deps.getOwnerEmails || require('./bot-detection').getOwnerEmails)();
   const stripe = () => (deps.getStripeClient || billing.getStripeClient)();
-  const { countSessions, classifySession } = require('./checkout-session-count');
+  const { countSessions, classifySession, BOT_CHECK_BEGAN_AT, BOT_CHECK_BEGAN_LABEL } = require('./checkout-session-count');
+  // A test may move the date; production always uses the date the human-click gate went live.
+  const botCheckBeganAt = deps.botCheckBeganAt || BOT_CHECK_BEGAN_AT;
+  const botCheckBeganLabel = deps.botCheckBeganAt ? deps.botCheckBeganAt : BOT_CHECK_BEGAN_LABEL;
   const nowSeconds = Math.floor(Date.now() / 1000);
 
   // One deadline for all of Stripe's reads, shared by every block below.
@@ -561,7 +564,18 @@ async function collectMoney(deps, signal) {
       withLastGood('checkouts', async () => {
         const result = await listIt((params, options) => stripe().checkout.sessions.list(params, options), { created: { gte: nowSeconds - 30 * 86400 } }, thumbgateSession, 40);
         const since7 = nowSeconds - 7 * 86400;
-        return { d30: countSessions(result.rows, { ownerEmails }), d7: countSessions(result.rows.filter((row) => !row.created || row.created >= since7), { ownerEmails }), complete: result.complete };
+        // Sessions made before the bot check carry no user-agent class, so they are reported apart from the ones after it.
+        const botCheckSeconds = Date.parse(botCheckBeganAt) / 1000;
+        const beforeBotCheck = (row) => Boolean(row.created) && row.created < botCheckSeconds;
+        const classified = result.rows.filter((row) => row.metadata?.uaClass && row.created).map((row) => row.created);
+        return {
+          d30: countSessions(result.rows, { ownerEmails }),
+          d7: countSessions(result.rows.filter((row) => !row.created || row.created >= since7), { ownerEmails }),
+          before: countSessions(result.rows.filter(beforeBotCheck), { ownerEmails }),
+          since: countSessions(result.rows.filter((row) => !beforeBotCheck(row)), { ownerEmails }),
+          firstClassifiedAt: classified.length ? new Date(Math.min(...classified) * 1000).toISOString() : null,
+          complete: result.complete,
+        };
       }),
       attempt(() => readTraffic(deps, signal), telemetryReason),
       attempt(() => readSummary(deps, signal), () => 'lead ledgers failed'),
@@ -589,6 +603,32 @@ async function collectMoney(deps, signal) {
     internal: counts.excluded.internal,
   } : null);
   const bothStripe = paid && proRun.value;
+  // The checkout panel: sessions with no bot check on record come first, then people, bots and owner only for sessions
+  // created after the bot check began, then the gap between the site's own start events and Stripe's sessions.
+  const checkoutBotCheck = (counts, traffic) => {
+    if (!counts) return null;
+    const stripeSessions = counts.d30.started;
+    const siteStarts = traffic ? traffic.traffic.checkoutStarts : null;
+    const difference = siteStarts === null ? null : siteStarts - stripeSessions;
+    return {
+      window: '30d',
+      botCheckBeganAt,
+      botCheckBeganLabel,
+      firstClassifiedAt: counts.firstClassifiedAt,
+      notClassified: sessionBuckets(counts.d30).notClassified,
+      beforeBotCheck: sessionBuckets(counts.before),
+      sinceBotCheck: sessionBuckets(counts.since),
+      siteVersusStripe: siteStarts === null ? null : {
+        siteStarts,
+        siteStartsByType: traffic.traffic.checkoutStartsByType || {},
+        stripeSessions,
+        difference,
+        status: difference === 0 ? 'match' : 'unexplained',
+        reason: difference === 0 ? 'The two counts match.'
+          : 'Unexplained. The site count adds up four kinds of start events (listed here); Stripe counts the sessions it created. They are not matched one to one, so the gap is not itemised.',
+      },
+    };
+  };
   const data = {
     windows: { revenue: '30d', checkouts: '7d', traffic: '30d', leads: '30d' },
     // Counted straight from Stripe: people with a paid, unrefunded checkout in the past year plus active subscribers, once each.
@@ -601,6 +641,7 @@ async function collectMoney(deps, signal) {
     revenueBasis: 'stripe_paid_checkouts_after_refunds',
     checkouts7d: sessionBuckets(sessions?.d7),
     checkouts30d: sessionBuckets(sessions?.d30),
+    checkoutBotCheck: checkoutBotCheck(sessions, trafficReason ? null : trafficRead),
     traffic30d: trafficReason ? null : { ...trafficFields(trafficRead), partial: trafficRead.partial },
     leadsBySource: parts ? parts.leads : null,
     reasons: {

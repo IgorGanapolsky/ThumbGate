@@ -63,6 +63,7 @@ const sample = {
   revenueLast30Days: { USD: 9900 },
   checkouts7d: bucket,
   checkouts30d: bucket,
+  checkoutBotCheck: { window: '30d', botCheckBeganAt: '2026-11-19T00:04:00.000Z', botCheckBeganLabel: '18 Nov 2026, 7:04 PM ET', firstClassifiedAt: '2026-11-20T19:10:05.000Z', notClassified: 437, beforeBotCheck: { ...bucket, started: 437, notClassified: 437, human: 0, bot: 0, internal: 0 }, sinceBotCheck: { ...bucket, started: 1, human: 1, bot: 0, notClassified: 0, internal: 0 }, siteVersusStripe: { siteStarts: 456, siteStartsByType: { pro_checkout_direct_stripe: 339, checkout_start: 98 }, stripeSessions: 438, difference: 18, status: 'unexplained', reason: 'Unexplained. The site count adds up four kinds of start events (listed here); Stripe counts the sessions it created. They are not matched one to one, so the gap is not itemised.' } },
   traffic30d: { visitors: 100, realVisitors: 90, botOrInternalVisitors: 10, sessions: 90, pageViews: 200, ctaClicks: 10, checkoutStarts: 5, checkoutPaidConfirmations: 1 },
   leadsBySource: { signups: { reddit: 3 }, workflowSprint: { total: 1, bySource: { founders: 1 } }, newsletter: { total: 0, bySource: {} }, emailSignups: 4 },
   reasons: reasonsNone,
@@ -70,7 +71,7 @@ const sample = {
 };
 
 // Each source failing in turn: its fields are null and the reason says why.
-const stripeDown = { ...sample, payingCustomers: null, activePro: null, revenueLast30Days: null, checkouts7d: null, checkouts30d: null, payingCustomersBasis: 'unavailable', activeProBasis: 'unavailable', reasons: { ...reasonsNone, payingCustomers: 'Stripe key missing', activePro: 'Stripe key missing', revenue: 'Stripe key missing', checkouts: 'Stripe key missing' } };
+const stripeDown = { ...sample, payingCustomers: null, activePro: null, revenueLast30Days: null, checkouts7d: null, checkouts30d: null, checkoutBotCheck: null, payingCustomersBasis: 'unavailable', activeProBasis: 'unavailable', reasons: { ...reasonsNone, payingCustomers: 'Stripe key missing', activePro: 'Stripe key missing', revenue: 'Stripe key missing', checkouts: 'Stripe key missing' } };
 const telemetryDown = { ...sample, traffic30d: null, reasons: { ...reasonsNone, visitors: 'telemetry store empty' } };
 const leadsDown = { ...sample, leadsBySource: null, reasons: { ...reasonsNone, leads: 'lead ledgers still calculating, refresh in a minute' } };
 const everythingDown = { ...stripeDown, traffic30d: null, leadsBySource: null, reasons: { payingCustomers: 'Stripe unavailable', activePro: 'Stripe unavailable', revenue: 'Stripe unavailable', checkouts: 'Stripe unavailable', visitors: 'telemetry read failed', leads: 'lead ledgers failed' } };
@@ -88,7 +89,7 @@ function offenders(list) {
 test('Money tab card labels are plain words, with and without data', () => {
   for (const data of [sample, stripeDown, telemetryDown, leadsDown, everythingDown]) {
     const labels = textsOf(renderMoney(data)).filter((item) => item.className === 'label');
-    assert.ok(labels.length >= 8, 'the card labels were found');
+    assert.ok(labels.length >= 7, 'the card labels were found');
     assert.deepEqual(offenders(labels), []);
   }
 });
@@ -101,7 +102,7 @@ test('Money tab detail rows and notes are plain words too', () => {
 
 test('Money tab cards use the agreed wording', () => {
   const labels = textsOf(renderMoney(sample)).filter((item) => item.className === 'label').map((item) => item.text);
-  for (const wanted of ['Paying customers', 'Checkouts started (7 days)', 'Real people (7 days)', 'Bots (7 days)', 'Not classified (7 days)', 'Visitors who viewed a page (30 days)']) {
+  for (const wanted of ['Paying customers', 'Checkouts started (7 days)', 'Sessions with insufficient classification evidence (30 days)', 'Browser-classified checkout sessions since the bot check', 'Observed visitor identifiers, excluding bot, internal and test (30 days)', 'All observed visitor identifiers (30 days)', 'Landing page views (30 days)']) {
     assert.ok(labels.includes(wanted), 'missing label: ' + wanted);
   }
 });
@@ -136,7 +137,7 @@ test('Analytics tab renders numbers and the daily chart, and never a bare Unknow
     assert.deepEqual(items.filter((item) => /\bunknown\b/i.test(item.text)).map((item) => item.text), []);
   }
   const labels = textsOf(renderSection('analytics', analytics)).filter((item) => item.className === 'label').map((item) => item.text);
-  assert.ok(labels.includes('Visitors who viewed a page (30 days)') && labels.includes('Paid confirmations (30 days)'));
+  assert.ok(labels.includes('Observed visitor identifiers, excluding bot, internal and test (30 days)') && labels.includes('Landing page views (30 days)') && labels.includes('Paid confirmations (30 days)'));
 });
 
 test('the label checker itself rejects the old code names', () => {

@@ -22,6 +22,10 @@
 
 const { getOwnerEmails } = require('./bot-detection');
 
+// When the human-click gate went live: 2026-11-18 7:04 PM ET. Sessions created before it carry no user-agent class.
+const BOT_CHECK_BEGAN_AT = '2026-11-19T00:04:00.000Z';
+const BOT_CHECK_BEGAN_LABEL = '18 Nov 2026, 7:04 PM ET';
+
 function classifySession(session, { ownerEmails = [] } = {}) {
   const metadata = (session && session.metadata) || {};
   if (metadata.source === 'internal_audit') return 'internal';
@@ -112,4 +116,4 @@ if (require.main === module) {
   });
 }
 
-module.exports = { classifySession, countSessions, listSessions, parseArgs };
+module.exports = { classifySession, countSessions, listSessions, parseArgs, BOT_CHECK_BEGAN_AT, BOT_CHECK_BEGAN_LABEL };

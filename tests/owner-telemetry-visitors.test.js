@@ -1,8 +1,8 @@
 'use strict';
 
-// Visitors and page views come from the same events: a visitor is an identity with at least one page view,
-// so visitors can never exceed page views, in total or on any day. Identities that logged only other web
-// events (CTA clicks, checkout steps) are reported as `identities`, not as visitors.
+// Visitors are distinct visitor identifiers seen on ANY web event; page views are landing_page_view events only, so
+// the two are different measures and identifiers can exceed page views. The headline excludes bot, internal and test
+// identifiers. `pageViewers` is the identifiers with at least one landing page view, which never exceeds page views.
 
 process.env.NODE_ENV = 'test';
 
@@ -22,27 +22,27 @@ function readFixture(lines) {
   return readTrafficWindow({ feedbackDir: dir, days: 30 }).finally(() => fs.rmSync(dir, { recursive: true, force: true }));
 }
 
-test('visitors never exceed page views when many identities log events without a page view', async () => {
+test('identifiers come from any web event, page views from landing_page_view only, and the flagged ones are left out of the headline', async () => {
   const lines = [
     row(50, 'landing_page_view', 'v1'),
     row(49, 'landing_page_view', 'v1'),
     row(30, 'landing_page_view', 'v2'),
-    // Identities that never viewed a page: the old count counted every one of these as a visitor.
     row(29, 'cta_click', 'c1'),
     row(28, 'checkout_start', 'c2'),
-    row(27, 'pro_checkout_direct_stripe', 'c3'),
-    row(26, 'checkout_interstitial_view', 'c4'),
+    row(27, 'pro_checkout_direct_stripe', 'c3', { isInternal: true }),
+    row(26, 'checkout_interstitial_view', 'c4', { isTest: true }),
     row(25, 'section_view', 'c5'),
     row(5, 'landing_page_view', 'v3', { isBotTraffic: true }),
   ];
   const { traffic, daily } = await readFixture(lines);
   assert.equal(traffic.pageViews, 4);
-  assert.equal(traffic.visitors, 3, 'v1, v2 and v3 viewed a page');
-  assert.ok(traffic.visitors <= traffic.pageViews);
-  assert.equal(traffic.identities, 8, 'the five identities with no page view are counted here, not as visitors');
-  assert.equal(traffic.realVisitors, 2);
-  assert.equal(traffic.botOrInternalVisitors, 1);
-  for (const day of daily) assert.ok(day.visitors <= day.pageViews, day.date);
+  assert.equal(traffic.visitors, 8, 'all identifiers: v1, v2, v3 and c1 to c5');
+  assert.ok(traffic.visitors > traffic.pageViews, 'identifiers may exceed page views: they count different events');
+  assert.equal(traffic.realVisitors, 5, 'v3 (bot), c3 (internal) and c4 (test) are left out');
+  assert.equal(traffic.botOrInternalVisitors, 3);
+  assert.equal(traffic.pageViewers, 3);
+  assert.ok(traffic.pageViewers <= traffic.pageViews);
+  for (const day of daily) assert.ok(day.pageViewers <= day.pageViews, day.date);
 });
 
 test('checkout starts are counted per event type so the total can be explained', async () => {

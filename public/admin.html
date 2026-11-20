@@ -306,12 +306,18 @@
       // Money tab wording: plain words, never field names.
       const CHECKOUT_WORDS = {
         started: 'Started',
-        human: 'Started by people',
-        completedHuman: 'Completed by people',
-        paidHuman: 'Paid by people',
-        bot: 'Started by bots',
-        notClassified: 'Not classified (no bot check on record)',
+        human: 'Started, browser-classified',
+        completedHuman: 'Completed, browser-classified',
+        paidHuman: 'Paid, browser-classified',
+        bot: 'Started, bot-classified',
+        notClassified: 'Insufficient classification evidence (no bot check on record)',
         internal: 'Owner and test checkouts',
+      };
+      const SITE_START_WORDS = {
+        pro_checkout_direct_stripe: 'Direct Stripe link opened',
+        checkout_start: 'Checkout started',
+        checkout_bootstrap: 'Checkout page loaded',
+        diagnostic_checkout_confirmed: 'Diagnostic checkout confirmed',
       };
       const BASIS_WORDS = {
         stripe_paid_and_active: 'people with a paid, unrefunded ThumbGate checkout in the past year, plus active subscribers, counted once each; owner and test purchases excluded',
@@ -611,16 +617,53 @@
               'Paying customers': shown(data.payingCustomers, why.payingCustomers, ' · from Stripe'),
               'Active Pro subscriptions': shown(data.activePro, why.activePro, ' · from Stripe'),
               'Checkouts started (7 days)': shown(checkouts ? checkouts.started : null, why.checkouts),
-              'Real people (7 days)': shown(checkouts ? checkouts.human : null, why.checkouts),
-              'Bots (7 days)': shown(checkouts ? checkouts.bot : null, why.checkouts),
-              'Not classified (7 days)': shown(checkouts ? checkouts.notClassified : null, why.checkouts),
-              'Owner and test (7 days)': shown(checkouts ? checkouts.internal : null, why.checkouts),
-              'Visitors who viewed a page (30 days)': shown(traffic ? traffic.visitors : null, why.visitors),
-              'Page views (30 days)': shown(traffic ? traffic.pageViews : null, why.visitors),
+              'Observed visitor identifiers, excluding bot, internal and test (30 days)': shown(traffic ? traffic.realVisitors : null, why.visitors),
+              'All observed visitor identifiers (30 days)': shown(traffic ? traffic.visitors : null, why.visitors),
+              'Landing page views (30 days)': shown(traffic ? traffic.pageViews : null, why.visitors),
               'Checkout starts seen on the site (30 days)': shown(traffic ? traffic.checkoutStarts : null, why.visitors),
             },
             true,
           );
+          parent.append(element('h3', 'Checkout sessions · past 30 days'));
+          const panel = data.checkoutBotCheck;
+          if (!panel) parent.append(element('p', why.checkouts || 'Source not available right now', 'notice'));
+          else {
+            const since = panel.sinceBotCheck;
+            cards(
+              parent,
+              {
+                'Sessions with insufficient classification evidence (30 days)': String(panel.notClassified),
+                'Browser-classified checkout sessions since the bot check': String(since.human),
+                'Bot-classified checkout sessions since the bot check': String(since.bot),
+                'Owner and test since the bot check': String(since.internal),
+              },
+              true,
+            );
+            const first = panel.firstClassifiedAt ? when(panel.firstClassifiedAt) : null;
+            parent.append(
+              element(
+                'p',
+                'The bot check began ' +
+                  panel.botCheckBeganLabel +
+                  '. Sessions created before it carry no classification, so they cannot be called browser or bot. A browser-classified session means the click came from a browser user agent; it is not proof of a person. ' +
+                  (first ? 'The first session with a bot check result was created ' + first + '. ' : 'No session has a bot check result yet. ') +
+                  since.started +
+                  ' sessions were created since the bot check began.',
+                'muted',
+              ),
+            );
+            const gap = panel.siteVersusStripe;
+            if (gap) {
+              parent.append(
+                element(
+                  'p',
+                  'Checkout starts seen on the site (' + gap.siteStarts + ') against checkout sessions in Stripe (' + gap.stripeSessions + '): difference ' + gap.difference + '. ' + gap.reason,
+                  'muted',
+                ),
+              );
+              detail(parent, 'Site checkout starts by kind', gap.siteStartsByType, SITE_START_WORDS);
+            }
+          }
           parent.append(element('h3', 'Revenue · past 30 days'));
           if (data.revenueLast30Days === null || data.revenueLast30Days === undefined)
             parent.append(element('p', why.revenue || 'Source not available right now', 'notice'));
@@ -815,8 +858,9 @@
           cards(
             parent,
             {
-              'Visitors who viewed a page (30 days)': shown(traffic?.visitors, 'Telemetry store empty'),
-              'Page views (30 days)': shown(traffic?.pageViews, 'Telemetry store empty'),
+              'Observed visitor identifiers, excluding bot, internal and test (30 days)': shown(traffic?.realVisitors, 'Telemetry store empty'),
+              'All observed visitor identifiers (30 days)': shown(traffic?.visitors, 'Telemetry store empty'),
+              'Landing page views (30 days)': shown(traffic?.pageViews, 'Telemetry store empty'),
               'Call to action clicks (30 days)': shown(traffic?.ctaClicks, 'Telemetry store empty'),
               'Checkout starts (30 days)': shown(traffic?.checkoutStarts, 'Telemetry store empty'),
               'Paid confirmations (30 days)': shown(traffic?.checkoutPaidConfirmations, 'Telemetry store empty'),
@@ -828,9 +872,9 @@
           parent.append(
             element(
               'p',
-              'A visitor is someone who viewed at least one page, so visitors never exceed page views. ' +
-                (traffic && Number.isFinite(traffic.identities)
-                  ? traffic.identities + ' identities logged any site activity, including ones that never viewed a page.'
+              'A visitor identifier is counted once from any site event (a click, a checkout step, a page view), while landing page views count page-view events only, so identifiers can exceed page views. ' +
+                (traffic && Number.isFinite(traffic.pageViewers)
+                  ? traffic.pageViewers + ' of the identifiers viewed a landing page.'
                   : ''),
               'muted',
             ),
