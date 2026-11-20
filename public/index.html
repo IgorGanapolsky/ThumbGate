@@ -1177,11 +1177,6 @@ next      decision recorded before execution</pre>
       };
       window.plausible('pro_offer_click', { props: props });
       sendFirstPartyTelemetry('cta_click', props);
-      try {
-        if (window.posthog && typeof window.posthog.capture === 'function') {
-          window.posthog.capture('pro_offer_click', props);
-        }
-      } catch (_) {}
     }
 
     document.querySelectorAll('[data-offer-link]').forEach(function (link) {
@@ -1204,11 +1199,6 @@ next      decision recorded before execution</pre>
         window.plausible('checkout_start', { props: props });
         sendGa4Event('begin_checkout', props);
         sendFirstPartyTelemetry('checkout_start', props);
-        try {
-          if (window.posthog && typeof window.posthog.capture === 'function') {
-            window.posthog.capture('checkout_start', props);
-          }
-        } catch (_) {}
       });
     }
 
