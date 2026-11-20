@@ -615,7 +615,7 @@
               'Bots (7 days)': shown(checkouts ? checkouts.bot : null, why.checkouts),
               'Not classified (7 days)': shown(checkouts ? checkouts.notClassified : null, why.checkouts),
               'Owner and test (7 days)': shown(checkouts ? checkouts.internal : null, why.checkouts),
-              'Visitors (30 days)': shown(traffic ? traffic.visitors : null, why.visitors),
+              'Visitors who viewed a page (30 days)': shown(traffic ? traffic.visitors : null, why.visitors),
               'Page views (30 days)': shown(traffic ? traffic.pageViews : null, why.visitors),
               'Checkout starts seen on the site (30 days)': shown(traffic ? traffic.checkoutStarts : null, why.visitors),
             },
@@ -815,7 +815,7 @@
           cards(
             parent,
             {
-              'Visitors (30 days)': shown(traffic?.visitors, 'Telemetry store empty'),
+              'Visitors who viewed a page (30 days)': shown(traffic?.visitors, 'Telemetry store empty'),
               'Page views (30 days)': shown(traffic?.pageViews, 'Telemetry store empty'),
               'Call to action clicks (30 days)': shown(traffic?.ctaClicks, 'Telemetry store empty'),
               'Checkout starts (30 days)': shown(traffic?.checkoutStarts, 'Telemetry store empty'),
@@ -824,6 +824,16 @@
               'External paid orders': shown(external.paidOrders, waiting),
             },
             true,
+          );
+          parent.append(
+            element(
+              'p',
+              'A visitor is someone who viewed at least one page, so visitors never exceed page views. ' +
+                (traffic && Number.isFinite(traffic.identities)
+                  ? traffic.identities + ' identities logged any site activity, including ones that never viewed a page.'
+                  : ''),
+              'muted',
+            ),
           );
           if (Array.isArray(data.daily) && data.daily.length) {
             parent.append(element('h3', 'Visitors per day · past 30 days'));

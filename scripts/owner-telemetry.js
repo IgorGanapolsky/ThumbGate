@@ -103,11 +103,17 @@ const isWeb = (entry) => (entry.clientType || entry.client) === 'web';
 const isFlagged = (entry) => entry.isBotTraffic === true || entry.isInternal === true || entry.isTest === true;
 
 // Visitors, sessions, page views, CTA clicks, checkout starts and paid confirmations, in total and per UTC day.
+//
+// A visitor is an identity that viewed at least one page (a landing_page_view). Page views are counted per event.
+// Visitors are counted from the same events, so visitors can never exceed page views. Identities that only logged
+// other web events (a CTA click, a checkout step, a section view) are counted separately as `identities`.
 async function readTrafficWindow(options) {
   const days = new Map();
   const visitors = new Set();
   const flagged = new Set();
+  const identities = new Set();
   const sessions = new Set();
+  const startsByType = {};
   const totals = { pageViews: 0, ctaClicks: 0, checkoutStarts: 0, checkoutPaidConfirmations: 0, webEvents: 0 };
   const dayOf = (time) => {
     const key = new Date(time).toISOString().slice(0, 10);
@@ -122,19 +128,22 @@ async function readTrafficWindow(options) {
       totals.webEvents += 1;
       const day = dayOf(time);
       const who = entry.visitorId || entry.installId || entry.sessionId || null;
-      if (who) { visitors.add(who); day.visitors.add(who); if (isFlagged(entry)) flagged.add(who); }
+      if (who) identities.add(who);
       if (entry.sessionId) { sessions.add(entry.sessionId); day.sessions.add(entry.sessionId); }
       const type = kind(entry);
-      if (type === 'landing_page_view') { totals.pageViews += 1; day.pageViews += 1; }
+      if (type === 'landing_page_view') {
+        totals.pageViews += 1; day.pageViews += 1;
+        if (who) { visitors.add(who); day.visitors.add(who); if (isFlagged(entry)) flagged.add(who); }
+      }
       if (telemetry.isMarketingClickEvent(type) && !telemetry.isDirectStripeBeacon(entry)) { totals.ctaClicks += 1; day.ctaClicks += 1; }
-      if (telemetry.isCheckoutStartEvent(type)) { totals.checkoutStarts += 1; day.checkoutStarts += 1; }
+      if (telemetry.isCheckoutStartEvent(type)) { totals.checkoutStarts += 1; day.checkoutStarts += 1; startsByType[type] = (startsByType[type] || 0) + 1; }
       if (type === 'checkout_paid_confirmed') { totals.checkoutPaidConfirmations += 1; day.checkoutPaidConfirmations += 1; }
     },
   });
   const daily = [...days.values()].sort((a, b) => a.date.localeCompare(b.date)).map((day) => ({ date: day.date, visitors: day.visitors.size, sessions: day.sessions.size, pageViews: day.pageViews, ctaClicks: day.ctaClicks, checkoutStarts: day.checkoutStarts, checkoutPaidConfirmations: day.checkoutPaidConfirmations }));
   return {
     ...meta,
-    traffic: { visitors: visitors.size, realVisitors: visitors.size - flagged.size, botOrInternalVisitors: flagged.size, sessions: sessions.size, pageViews: totals.pageViews, ctaClicks: totals.ctaClicks, checkoutStarts: totals.checkoutStarts, checkoutPaidConfirmations: totals.checkoutPaidConfirmations },
+    traffic: { visitors: visitors.size, realVisitors: visitors.size - flagged.size, botOrInternalVisitors: flagged.size, identities: identities.size, checkoutStartsByType: startsByType, sessions: sessions.size, pageViews: totals.pageViews, ctaClicks: totals.ctaClicks, checkoutStarts: totals.checkoutStarts, checkoutPaidConfirmations: totals.checkoutPaidConfirmations },
     daily,
   };
 }

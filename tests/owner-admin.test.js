@@ -360,12 +360,14 @@ test('a 50 MB telemetry log is streamed from its newest end: analytics and money
     assert.notEqual(analytics.status, 'unavailable');
     assert.ok(!analytics.warnings.includes('analytics_source_budget'));
     const traffic = analytics.data.trafficMetrics;
-    assert.equal(traffic.visitors, 5000);
+    assert.equal(traffic.identities, 5000, 'every id logged some web event');
+    assert.equal(traffic.visitors, 4875, 'a visitor viewed a page: 125 of the 5000 ids only ever log clicks or checkout starts in this fixture');
+    assert.ok(traffic.visitors <= traffic.pageViews);
     assert.ok(traffic.pageViews > 50000 && traffic.checkoutStarts > 1000 && traffic.ctaClicks > 5000, 'counts come from the in-window two thirds');
     assert.ok(analytics.data.daily.length >= 29 && analytics.data.daily.length <= 31, 'one entry per day in the window, got ' + analytics.data.daily.length);
     assert.equal(analytics.data.dataQuality.telemetryWindowComplete, true, 'the window edge was reached before the byte cap');
     assert.ok(analytics.data.dataQuality.telemetryBytesRead < size, 'the older third of the file was never read');
-    assert.equal(money.data.traffic30d.visitors, 5000);
+    assert.equal(money.data.traffic30d.visitors, 4875);
     assert.equal(money.data.reasons.visitors, null);
     assert.equal(money.data.reasons.payingCustomers, 'Stripe key missing');
   } finally { if (prior) fs.writeFileSync(target, prior); else fs.rmSync(target); }

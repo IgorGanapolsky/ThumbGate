@@ -101,7 +101,7 @@ test('Money tab detail rows and notes are plain words too', () => {
 
 test('Money tab cards use the agreed wording', () => {
   const labels = textsOf(renderMoney(sample)).filter((item) => item.className === 'label').map((item) => item.text);
-  for (const wanted of ['Paying customers', 'Checkouts started (7 days)', 'Real people (7 days)', 'Bots (7 days)', 'Not classified (7 days)', 'Visitors (30 days)']) {
+  for (const wanted of ['Paying customers', 'Checkouts started (7 days)', 'Real people (7 days)', 'Bots (7 days)', 'Not classified (7 days)', 'Visitors who viewed a page (30 days)']) {
     assert.ok(labels.includes(wanted), 'missing label: ' + wanted);
   }
 });
@@ -136,7 +136,7 @@ test('Analytics tab renders numbers and the daily chart, and never a bare Unknow
     assert.deepEqual(items.filter((item) => /\bunknown\b/i.test(item.text)).map((item) => item.text), []);
   }
   const labels = textsOf(renderSection('analytics', analytics)).filter((item) => item.className === 'label').map((item) => item.text);
-  assert.ok(labels.includes('Visitors (30 days)') && labels.includes('Paid confirmations (30 days)'));
+  assert.ok(labels.includes('Visitors who viewed a page (30 days)') && labels.includes('Paid confirmations (30 days)'));
 });
 
 test('the label checker itself rejects the old code names', () => {
