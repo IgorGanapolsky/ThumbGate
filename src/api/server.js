@@ -3140,8 +3140,29 @@ function resolveCheckoutIntentPlanView(parsed, includeAttribution = false) {
   };
 }
 
+// A refused click used to land the buyer on an identical page with no word on
+// why (headless run: third click in a minute from one IP, 302 back, empty
+// note). The refusal reason is mapped to one of three fixed notices; only the
+// code travels in the URL, never free text. Bots and non-browser agents get no
+// notice because they are not the audience.
+const CHECKOUT_GATE_NOTICES = Object.freeze({
+  retry: "We couldn't confirm that click. Press the button again.",
+  network: 'Your connection changed while we confirmed the click. Press the button again.',
+  busy: 'Many checkouts are starting from your network right now. Wait a minute, then press the button again.',
+});
+
+function checkoutGateNoticeCode(reason) {
+  const text = String(reason || '');
+  if (/^token_(ip|ua)_mismatch$/.test(text)) return 'network';
+  if (/^token_(missing|malformed|bad_signature|expired|replayed)$/.test(text)) return 'retry';
+  if (text === 'burst_limit' || text === 'global_ceiling') return 'busy';
+  return null;
+}
+
 function renderCheckoutIntentPage(prefilledEmail = '', parsed = null, options = {}) {
   const plausibleDomain = escapeHtmlAttribute(resolvePlausibleDataDomain({ host: 'thumbgate.ai' }));
+  const noticeCode = String(options.gateNotice || parsed?.searchParams?.get('gate_notice') || '');
+  const gateNoticeText = Object.hasOwn(CHECKOUT_GATE_NOTICES, noticeCode) ? CHECKOUT_GATE_NOTICES[noticeCode] : '';
   const includeHiddenAttribution = options.includeHiddenAttribution === true;
   const hiddenInputs = includeHiddenAttribution
     ? buildCheckoutHiddenAttributionInputs(parsed)
@@ -3189,7 +3210,7 @@ ${Object.entries(planView.directFields).map(([k, v]) => `<input type="hidden" na
 <input type="hidden" name="click_token" value="">
 <button type="submit" class="primary" rel="nofollow">${planView.ctaLabel}</button>
 </form>
-<p class="gate-note" id="gate-note" role="status" style="display:none"></p>
+<p class="gate-note" id="gate-note" role="status"${gateNoticeText ? '' : ' style="display:none"'}>${gateNoticeText}</p>
 <noscript><p class="gate-note">Checkout needs JavaScript so we can tell a person from a crawler.</p></noscript>
 <p class="choice-note">Stripe asks for your email and card on the next page. Cancel anytime. 7-day refund, no questions.</p>
 <details class="more-options" data-i="pro_checkout_more_options">
@@ -3799,6 +3820,8 @@ async function serveTrackedLinkRedirect({ req, res, parsed, hostedConfig, isHead
     } else {
       const confirmUrl = new URL('/checkout/pro', hostedConfig.appOrigin);
       appendTrackedLinkQueryParams(confirmUrl, parsed, { ...target, allowCustomerEmail: false });
+      const refusedNotice = req.method === 'POST' ? checkoutGateNoticeCode(admission.reason) : null;
+      if (refusedNotice) confirmUrl.searchParams.set('gate_notice', refusedNotice);
       if (!isHeadRequest && req.method === 'POST') {
         appendBestEffortTelemetry(
           FEEDBACK_DIR,
@@ -9577,6 +9600,7 @@ async function addContext(){
         }, req.headers, 'checkout_human_gate_refused');
         const refusedHtml = renderCheckoutIntentPage(normalizedCheckoutEmail || '', parsed, {
           includeHiddenAttribution: true,
+          gateNotice: checkoutGateNoticeCode(checkoutAdmission.reason),
         });
         sendHtml(res, checkoutAdmission.status, refusedHtml, {
           ...responseHeaders,

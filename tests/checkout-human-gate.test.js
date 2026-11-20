@@ -545,6 +545,71 @@ describe('server wiring and session creation', () => {
     assert.equal(stripe.calls.length, 0);
   });
 
+  // A refused click used to bounce to an identical page with an empty note.
+  async function noteOnPage(location) {
+    const page = await fetch(new URL(location, origin), { headers: NAV_HEADERS });
+    assert.equal(page.status, 200);
+    const html = await page.text();
+    const note = html.match(/<p class="gate-note" id="gate-note" role="status"([^>]*)>([^<]*)<\/p>/);
+    assert.ok(note, 'gate note element is on the page');
+    return { hidden: /display:none/.test(note[1]), text: note[2] };
+  }
+
+  it('a refused click tells the buyer to press the button again', async () => {
+    const res = await navigationPost('/go/pro-direct', {});
+    assert.equal(res.status, 302);
+    assert.equal(new URL(res.headers.location, origin).searchParams.get('gate_notice'), 'retry');
+    const note = await noteOnPage(res.headers.location);
+    assert.equal(note.hidden, false);
+    assert.match(note.text, /couldn't confirm that click\. Press the button again\./);
+    assert.equal(stripe.calls.length, 0);
+  });
+
+  it('a replayed token gets the same notice and a third click in a minute is told to wait', async () => {
+    const token = await freshToken();
+    assert.equal((await navigationPost('/go/pro-direct', { click_token: token })).status, 303);
+    const replay = await navigationPost('/go/pro-direct', { click_token: token });
+    assert.equal(replay.headers['x-thumbgate-gate-reason'], 'token_replayed');
+    assert.equal(new URL(replay.headers.location, origin).searchParams.get('gate_notice'), 'retry');
+    assert.equal((await navigationPost('/go/pro-direct', { click_token: await freshToken() })).status, 303);
+    const third = await navigationPost('/go/pro-direct', { click_token: await freshToken() });
+    assert.equal(third.headers['x-thumbgate-gate-reason'], 'burst_limit');
+    assert.equal(new URL(third.headers.location, origin).searchParams.get('gate_notice'), 'busy');
+    const note = await noteOnPage(third.headers.location);
+    assert.equal(note.hidden, false);
+    assert.match(note.text, /Wait a minute, then press the button again\./);
+    assert.equal(stripe.calls.length, 2, 'only the two admitted clicks opened a session');
+  });
+
+  it('the confirm form shows the notice on a refused POST as well', async () => {
+    const res = await postConfirm('');
+    assert.equal(res.status, 403);
+    const html = await res.text();
+    assert.match(html, /id="gate-note" role="status">We couldn't confirm that click\. Press the button again\./);
+  });
+
+  it('the notice appears only for the three known codes and is hidden otherwise', async () => {
+    const quiet = await noteOnPage('/checkout/pro');
+    assert.equal(quiet.hidden, true);
+    for (const hostile of ['%3Cscript%3Ealert(1)%3C%2Fscript%3E', '__proto__', 'toString', 'constructor']) {
+      const page = await fetch(`${origin}/checkout/pro?gate_notice=${hostile}`, { headers: NAV_HEADERS });
+      const html = await page.text();
+      assert.doesNotMatch(html, /alert\(1\)/);
+      assert.match(html, /id="gate-note" role="status" style="display:none"><\/p>/, hostile);
+    }
+    const bot = await navigationPost('/go/pro-direct', {});
+    assert.equal(bot.status, 302);
+    const curl = await new Promise((resolve, reject) => {
+      const req = http.request(`${origin}/go/pro-direct`, {
+        method: 'POST',
+        headers: { 'user-agent': 'curl/8.4.0', accept: '*/*', 'content-type': 'application/x-www-form-urlencoded' },
+      }, (r) => { r.resume(); r.on('end', () => resolve({ status: r.statusCode, headers: r.headers })); });
+      req.on('error', reject);
+      req.end('');
+    });
+    assert.ok(![...new URL(curl.headers.location || '/', origin).searchParams.keys()].includes('gate_notice'), 'a non-browser agent gets no notice');
+  });
+
   it('one-time packs and operator links are unchanged', async () => {
     const res = await fetch(`${origin}/go/playbook-999`, { redirect: 'manual', headers: NAV_HEADERS });
     assert.ok(/^https:\/\/buy\.stripe\.com\//.test(res.headers.get('location') || '') || /\/checkout\/pro/.test(res.headers.get('location') || ''), 'playbook keeps its existing behaviour');
