@@ -58,7 +58,8 @@ jobs:
           SERVER_NAME: ${{ inputs.server_name }}
           NEW_STATUS: ${{ inputs.status }}
           MESSAGE: ${{ inputs.message }}
-        run: ./mcp-publisher status --status "$NEW_STATUS" --all-versions --message "$MESSAGE" "$SERVER_NAME"
+        # --all-versions asks "Continue? [y/N]" on stdin; answer it explicitly.
+        run: echo y | ./mcp-publisher status --status "$NEW_STATUS" --all-versions --message "$MESSAGE" "$SERVER_NAME"
 
       - name: Show the registry entry afterwards
         env:
