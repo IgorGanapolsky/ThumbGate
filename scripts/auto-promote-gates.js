@@ -7,7 +7,15 @@ const fs = require('fs');
 const path = require('path');
 const { resolveFeedbackDir } = require('./feedback-paths');
 
+// Free keeps at most this many learned rules on disk (and enforces the first FREE_TIER_MAX_GATES of them). Pro is not capped:
+// the site promises Pro keeps every learned rule active. Stale rules still expire after the rule TTL, which bounds the file.
 const MAX_AUTO_GATES = 10;
+
+// The most auto-promoted gates to keep for this caller. `options.isPro` (boolean or function) lets a test pick the tier.
+function autoGateLimit(options = {}) {
+  const pro = typeof options.isPro === 'function' ? options.isPro() : typeof options.isPro === 'boolean' ? options.isPro : require('./rate-limiter').isProTier();
+  return pro ? Infinity : MAX_AUTO_GATES;
+}
 // 1+ failure auto-promotes to a warning gate. Cold buyers expect "one 👎 → blocked next time"
 // — a 2-capture threshold made first-capture invisible and broke the activation loop. Block
 // escalation still requires 3 captures (BLOCK_THRESHOLD) so noise doesn't auto-hard-block.
@@ -573,8 +581,9 @@ function forcePromote(context, action = 'block', options = {}) {
   data.gates = data.gates.filter((existing) => existing.id !== gateId || existing.projectKey !== project.projectKey);
   data.gates.unshift(gate);
 
-  if (data.gates.length > MAX_AUTO_GATES) {
-    data.gates = data.gates.slice(0, MAX_AUTO_GATES);
+  const keepLimit = autoGateLimit(options);
+  if (data.gates.length > keepLimit) {
+    data.gates = data.gates.slice(0, keepLimit);
   }
 
   data.promotionLog = data.promotionLog || [];
@@ -709,7 +718,7 @@ function promote(feedbackLogPath, options) {
     }
 
     // Enforce max limit — rotate oldest
-    if (data.gates.length >= MAX_AUTO_GATES) {
+    if (data.gates.length >= autoGateLimit(opts)) {
       const removed = data.gates.shift();
       promotions.push({ type: 'rotated', removedGateId: removed.id });
     }
@@ -808,6 +817,7 @@ module.exports = {
   getRuleTtlDays,
   getRuleTtlMs,
   MAX_AUTO_GATES,
+  autoGateLimit,
   WARN_THRESHOLD,
   BLOCK_THRESHOLD,
   WINDOW_DAYS,

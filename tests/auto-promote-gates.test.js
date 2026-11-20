@@ -19,6 +19,7 @@ const {
   normalizeCommandSignature,
   isNegative,
   MAX_AUTO_GATES,
+  autoGateLimit,
   WARN_THRESHOLD,
   BLOCK_THRESHOLD,
   WINDOW_DAYS,
@@ -288,13 +289,70 @@ test('promote: rotates oldest when exceeding MAX_AUTO_GATES', (t) => {
     }
   }
 
-  const result = promote(logPath);
+  const result = promote(logPath, { isPro: false });
   const data = loadAutoGates();
   assert.ok(data.gates.length <= MAX_AUTO_GATES, `should not exceed ${MAX_AUTO_GATES} gates, got ${data.gates.length}`);
 
   // Should have at least one rotation event
   const rotated = result.promotions.filter((p) => p.type === 'rotated');
   assert.ok(rotated.length > 0, 'should have rotated at least one gate');
+});
+
+// -- promote: Pro is not capped, so "every learned rule stays active" is true --
+
+function eachPatternThreeTimes(logPath, count) {
+  for (let p = 0; p < count; p++) {
+    for (let i = 0; i < 3; i++) appendJSONL(logPath, makeNegativeEntry([`cap-${p}`], `npm test -- cap-suite-${p}`, i));
+  }
+}
+
+test('promote: 11 learned rules under a Pro license are all kept and all enforced', (t) => {
+  const tmpDir = makeTmpDir();
+  const logPath = path.join(tmpDir, 'feedback-log.jsonl');
+  process.env.THUMBGATE_FEEDBACK_DIR = tmpDir;
+  const savedKey = process.env.THUMBGATE_API_KEY;
+  process.env.THUMBGATE_API_KEY = 'synthetic-pro-credential';
+  t.after(() => {
+    delete process.env.THUMBGATE_FEEDBACK_DIR;
+    if (savedKey === undefined) delete process.env.THUMBGATE_API_KEY; else process.env.THUMBGATE_API_KEY = savedKey;
+    try { fs.rmSync(tmpDir, { recursive: true, force: true }); } catch {}
+  });
+  eachPatternThreeTimes(logPath, MAX_AUTO_GATES + 1);
+
+  const result = promote(logPath);
+  const stored = loadAutoGates().gates;
+  assert.equal(stored.length, MAX_AUTO_GATES + 1, 'Pro keeps all 11 learned rules');
+  assert.equal(result.promotions.filter((p) => p.type === 'rotated').length, 0, 'nothing is rotated out under Pro');
+
+  const { loadGatesConfig } = require('../scripts/gates-engine');
+  const enforcedIds = new Set(loadGatesConfig().gates.map((g) => g.id));
+  const notEnforced = stored.filter((g) => !enforcedIds.has(g.id));
+  assert.deepEqual(notEnforced.map((g) => g.id), [], 'every stored learned rule is enforced under Pro');
+});
+
+test('promote: the same 11 rules on the free tier keep 10 on disk', (t) => {
+  const tmpDir = makeTmpDir();
+  const logPath = path.join(tmpDir, 'feedback-log.jsonl');
+  process.env.THUMBGATE_FEEDBACK_DIR = tmpDir;
+  t.after(() => {
+    delete process.env.THUMBGATE_FEEDBACK_DIR;
+    try { fs.rmSync(tmpDir, { recursive: true, force: true }); } catch {}
+  });
+  eachPatternThreeTimes(logPath, MAX_AUTO_GATES + 1);
+  promote(logPath, { isPro: false });
+  assert.equal(loadAutoGates().gates.length, MAX_AUTO_GATES);
+});
+
+test('the home page promise matches the behaviour: Pro keeps every learned rule, free keeps the first three active', () => {
+  const html = fs.readFileSync(path.join(__dirname, '..', 'public', 'index.html'), 'utf8');
+  assert.ok(html.includes('Free keeps your first 3 learned rules active. Pro keeps all of them.'));
+  assert.ok(/Pro adds memory: every learned rule stays active/.test(html));
+  assert.equal(require('../scripts/rate-limiter').FREE_TIER_MAX_GATES, 3);
+});
+
+test('autoGateLimit: Pro has no limit, free keeps the cap', () => {
+  assert.equal(autoGateLimit({ isPro: true }), Infinity);
+  assert.equal(autoGateLimit({ isPro: () => false }), MAX_AUTO_GATES);
 });
 
 // -- promote: below warn threshold does not create gate --
