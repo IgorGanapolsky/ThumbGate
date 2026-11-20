@@ -342,7 +342,7 @@ Full index: **[docs/INDEX.md](docs/INDEX.md)**
 
 ## Support ThumbGate
 
-If ThumbGate saves you from a repeated agent mistake, [buy me a coffee](https://buymeacoffee.com/IgorGanapolsky) to support the open-source work.
+If ThumbGate saves you from a repeated agent mistake, you can [buy me a coffee](https://buymeacoffee.com/IgorGanapolsky).
 
 ## License
 
