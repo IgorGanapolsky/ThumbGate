@@ -3212,7 +3212,7 @@ ${Object.entries(planView.directFields).map(([k, v]) => `<input type="hidden" na
 </form>
 <p class="gate-note" id="gate-note" role="status"${gateNoticeText ? '' : ' style="display:none"'}>${gateNoticeText}</p>
 <noscript><p class="gate-note">Checkout needs JavaScript so we can tell a person from a crawler.</p></noscript>
-<p class="choice-note">Stripe asks for your email and card on the next page. Cancel anytime. 7-day refund, no questions.</p>
+<p class="choice-note">Stripe asks for your email and card on the next page. Cancel anytime. Refund within 7 days of the first charge if a documented platform defect makes ThumbGate unusable and we cannot fix it; see <a href="/terms">Terms</a>.</p>
 <details class="more-options" data-i="pro_checkout_more_options">
 <summary>Other ways to buy</summary>
 <form action="/checkout/pro" method="POST" data-i="pro_checkout_confirmed">

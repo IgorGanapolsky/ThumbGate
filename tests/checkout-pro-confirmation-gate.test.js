@@ -97,7 +97,7 @@ describe('/checkout/pro confirmation gate (closes 0/50 conversion leak)', () => 
     assert.doesNotMatch(body, /\$149\/yr/);
     assert.match(body, /<button type="submit" class="secondary">Email a receipt, then pay/);
     assert.match(body, /attributable buyer intent/);
-    assert.match(body, /Cancel anytime\. 7-day refund, no questions\./);
+    assert.match(body, /Cancel anytime\. Refund within 7 days of the first charge if a documented platform defect makes ThumbGate unusable/);
     assert.doesNotMatch(body, /bot-deflects/);
     assert.doesNotMatch(body, /buy\.stripe\.com\//);
     const directAt = body.indexOf('data-i="pro_checkout_direct_stripe"');
