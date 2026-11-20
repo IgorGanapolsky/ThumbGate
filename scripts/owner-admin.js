@@ -13,7 +13,7 @@ const JSON_LIMIT = 8 * 1024 * 1024;
 const LOG_LIMIT = 16 * 1024 * 1024;
 const RESPONSE_LIMIT = 1024 * 1024;
 const RESOURCES = Object.freeze({ customers: 'cus', subscriptions: 'sub', payments: 'ch', refunds: 're', products: 'prod', prices: 'price', 'subscription-items': 'si' });
-const SECTIONS = new Set(['overview', 'money', 'data', 'analytics', 'observability']);
+const SECTIONS = new Set(['overview', 'money', 'data', 'analytics', 'observability', 'summary']);
 const MONEY_CACHE_MS = 60000;
 let moneyCache = null;
 const PRIVATE_HEADERS = Object.freeze({ 'Cache-Control': 'private, no-store', Vary: 'Cookie', 'X-Robots-Tag': 'noindex, nofollow', 'Referrer-Policy': 'no-referrer', 'X-Content-Type-Options': 'nosniff' });
@@ -415,7 +415,7 @@ async function readSummary(deps, signal) {
   if (deps.getBillingSummaryLive) {
     const injected = await deps.getBillingSummaryLive({ window: '30d', stripeReconciliationTimeoutMs: 8000 }, { signal });
     if (!injected || injected.error) throw failure('analytics_unavailable');
-    return { value: summaryParts(injected), state: 'ok' };
+    return { value: summaryParts(injected), state: 'ok', collectedAt: new Date().toISOString() };
   }
   const fresh = summarySnapshot.value && Date.now() - summarySnapshot.at < SUMMARY_TTL_MS;
   if (!fresh) startSummaryWorker();
@@ -424,7 +424,7 @@ async function readSummary(deps, signal) {
     await Promise.race([summarySnapshot.inflight, new Promise((resolve) => { const timer = setTimeout(resolve, 7000); timer.unref?.(); })]);
   }
   const state = summarySnapshot.value ? (fresh ? 'ok' : 'stale') : (summarySnapshot.failed ? 'failed' : 'refreshing');
-  return { value: summarySnapshot.value, state };
+  return { value: summarySnapshot.value, state, collectedAt: summarySnapshot.at ? new Date(summarySnapshot.at).toISOString() : null };
 }
 
 // 30 days of site traffic, streamed from the newest end of the telemetry log. Cached for a minute.
@@ -434,6 +434,7 @@ async function readTraffic(deps, signal) {
   const hit = trafficCache.get(key);
   if (ttl > 0 && hit && Date.now() - hit.at < ttl) return hit.value;
   const value = await ownerTelemetry.readTrafficWindow({ feedbackDir: guardPath(deps.feedbackDir, deps.feedbackDir), days: 30, signal, maxBytes: deps.telemetryMaxBytes });
+  value.collectedAt = new Date().toISOString();
   if (ttl > 0) trafficCache.set(key, { at: Date.now(), value });
   return value;
 }
@@ -629,8 +630,19 @@ async function collectMoney(deps, signal) {
       },
     };
   };
+  // When each source was last read. A block showing its last good value reports that older time and `stale: true`.
+  const blockTime = (key) => ({ collectedAt: new Date(staleBlocks[key] || Date.now()).toISOString(), stale: Object.hasOwn(staleBlocks, key) });
+  const freshness = {
+    paid: blockTime('paid'),
+    subscriptions: blockTime('subscriptions'),
+    checkouts: blockTime('checkouts'),
+    traffic: { collectedAt: trafficRead?.collectedAt || null, stale: false },
+    leads: { collectedAt: summaryRun.value?.collectedAt || null, stale: summaryRun.value?.state === 'stale' },
+    displayRefreshedAt: new Date().toISOString(),
+  };
   const data = {
     windows: { revenue: '30d', checkouts: '7d', traffic: '30d', leads: '30d' },
+    freshness,
     // Counted straight from Stripe: people with a paid, unrefunded checkout in the past year plus active subscribers, once each.
     payingCustomers: bothStripe ? new Set([...paid.customers, ...proRun.value.customers]).size : null,
     payingCustomersSource: 'stripe',
@@ -697,6 +709,78 @@ async function collectAnalytics(deps, signal) {
   return envelope('telemetry_tail_and_billing_summary_30d', data, warnings);
 }
 
+// One metric of the read-only summary: its value, where it came from, when that source was read, and one of these states:
+//   ok            a number from a source that answered in full
+//   verified_zero a zero from a source that answered in full
+//   partial       a number from a source that answered only in part (a lower bound)
+//   stale         the last good value, with lastVerifiedAt; the source failed this time
+//   unavailable   the source failed and there is no earlier value
+//   unresolved    the source answered but the metric cannot be settled yet (still calculating)
+function metric(label, value, { source, collectedAt = null, reason = null, partial = false, stale = false, unresolved = false }) {
+  const missing = value === null || value === undefined;
+  let status = 'ok';
+  if (missing) status = unresolved ? 'unresolved' : 'unavailable';
+  else if (stale) status = 'stale';
+  else if (partial) status = 'partial';
+  else if (value === 0) status = 'verified_zero';
+  const out = { label, value: missing ? null : value, source, collectedAt, status };
+  if (reason && (missing || stale || partial)) out.reason = reason;
+  if (stale && !missing) out.lastVerifiedAt = collectedAt;
+  return out;
+}
+
+// GET /v1/admin/summary: the numbers the Money and Analytics tabs show, as JSON an agent can read instead of scraping HTML.
+async function collectSummary(deps, signal) {
+  const [moneyRun, analyticsRun] = await Promise.all([
+    attempt(() => collectMoney(deps, signal), () => 'Money collection failed'),
+    attempt(() => collectAnalytics(deps, signal), () => 'Analytics collection failed'),
+  ]);
+  const money = moneyRun.ok ? moneyRun.value.data : null;
+  const analytics = analyticsRun.ok ? analyticsRun.value.data : null;
+  const why = money?.reasons || {};
+  const fresh = money?.freshness || {};
+  const refreshed = money?.freshness?.displayRefreshedAt || new Date().toISOString();
+  const stripeOpts = (key, reason) => ({ source: 'stripe', collectedAt: fresh[key]?.collectedAt || null, stale: Boolean(fresh[key]?.stale), reason });
+  const trafficOpts = { source: 'site_telemetry', collectedAt: fresh.traffic?.collectedAt || null, reason: why.visitors, partial: money?.traffic30d?.partial === true };
+  const leadOpts = { source: 'lead_ledgers', collectedAt: fresh.leads?.collectedAt || null, reason: why.leads, stale: Boolean(fresh.leads?.stale), unresolved: /still calculating/i.test(why.leads || '') };
+  const fields = {};
+  const add = (key, label, value, options) => { fields[key] = metric(label, value, options); };
+  const buckets = (prefix, label, block, reason) => {
+    for (const [name, words] of [['started', 'started'], ['human', 'browser-classified'], ['bot', 'bot-classified'], ['notClassified', 'with insufficient classification evidence'], ['internal', 'owner and test']]) add(`${prefix}.${name}`, `Checkout sessions ${words} (${label})`, block ? block[name] : null, stripeOpts('checkouts', why.checkouts));
+  };
+
+  if (money) {
+    add('money.paying_customers', 'Paying customers', money.payingCustomers, { ...stripeOpts('paid', why.payingCustomers), partial: money.payingCustomersBasis === 'stripe_paid_and_active_partial' });
+    add('money.active_pro', 'Active Pro subscriptions', money.activePro, { ...stripeOpts('subscriptions', why.activePro), partial: money.activeProBasis === 'stripe_active_subscriptions_first_100_only' });
+    add('money.revenue_30d', 'Booked revenue, past 30 days, by currency', money.revenueLast30Days, stripeOpts('paid', why.revenue));
+    buckets('money.checkouts_7d', '7 days', money.checkouts7d);
+    buckets('money.checkouts_30d', '30 days', money.checkouts30d);
+    const panel = money.checkoutBotCheck;
+    add('money.checkout_bot_check', 'Checkout sessions split at the bot check (30 days)', panel, stripeOpts('checkouts', why.checkouts));
+    add('money.signups_by_source', 'Signups by source', money.leadsBySource?.signups ?? null, leadOpts);
+    add('money.workflow_sprint_leads', 'Setup Sprint leads', money.leadsBySource?.workflowSprint ?? null, leadOpts);
+    add('money.newsletter', 'Newsletter signups', money.leadsBySource?.newsletter ?? null, leadOpts);
+  }
+  const traffic = analytics?.trafficMetrics || money?.traffic30d || null;
+  const trafficField = (key, label, name) => add(key, label, traffic ? traffic[name] ?? null : null, trafficOpts);
+  trafficField('traffic.visitor_identifiers_all_30d', 'All observed visitor identifiers (30 days)', 'visitors');
+  if (money?.traffic30d) add('traffic.visitor_identifiers_excluding_flagged_30d', 'Observed visitor identifiers, excluding bot, internal and test (30 days)', money.traffic30d.realVisitors, trafficOpts);
+  trafficField('traffic.landing_page_views_30d', 'Landing page views (30 days)', 'pageViews');
+  trafficField('traffic.cta_clicks_30d', 'Call to action clicks (30 days)', 'ctaClicks');
+  trafficField('traffic.checkout_starts_30d', 'Checkout starts seen on the site (30 days)', 'checkoutStarts');
+  trafficField('traffic.paid_confirmations_30d', 'Paid confirmations (30 days)', 'checkoutPaidConfirmations');
+  add('traffic.daily_30d', 'Daily traffic, past 30 days', analytics ? analytics.daily : null, trafficOpts);
+  const billingOpts = { source: 'billing_summary', collectedAt: fresh.leads?.collectedAt || null, reason: analyticsRun.ok ? null : analyticsRun.reason, unresolved: !analytics?.signups };
+  add('analytics.email_signups', 'Email signups', analytics?.signups?.emailSignups ?? null, billingOpts);
+  add('analytics.external_paid_orders', 'External paid orders', analytics?.revenue?.external?.paidOrders ?? null, billingOpts);
+  add('analytics.external_booked_revenue_30d', 'External booked revenue, past 30 days, by currency', analytics?.revenue?.external?.bookedRevenueByCurrency ?? null, billingOpts);
+
+  const states = Object.values(fields).map((entry) => entry.status);
+  const bad = states.filter((state) => state === 'unavailable').length;
+  const overall = !money && !analytics ? 'unavailable' : states.every((state) => state === 'ok' || state === 'verified_zero') ? 'ok' : 'partial';
+  return envelope('owner_console_summary', { generatedAt: refreshed, readOnly: true, windows: { checkouts: '7d and 30d', traffic: '30d', revenue: '30d' }, freshness: { displayRefreshedAt: refreshed, stripeCollectedAt: fresh.checkouts?.collectedAt || null, telemetryCollectedAt: fresh.traffic?.collectedAt || null, leadsCollectedAt: fresh.leads?.collectedAt || null, telemetryCacheSeconds: Math.round((deps.telemetryCacheMs ?? TELEMETRY_CACHE_MS) / 1000), billingSummaryCacheSeconds: Math.round(SUMMARY_TTL_MS / 1000) }, fields, unavailableFields: bad }, [], overall);
+}
+
 async function collectAdminSection(route, deps, externalSignal) {
   if (activeCollections >= 2) throw failure('collection_busy');
   activeCollections += 1;
@@ -710,6 +794,7 @@ async function collectAdminSection(route, deps, externalSignal) {
       stopped(controller.signal);
       if (route.section === 'overview') return envelope('current_process', { health: deps.health(), sections: ['stripe', 'data', 'analytics', 'observability'] });
       if (route.section === 'money') return collectMoney(deps, controller.signal);
+      if (route.section === 'summary') return collectSummary(deps, controller.signal);
       if (route.section === 'stripe') return collectStripe(route, deps, controller.signal);
       if (route.section === 'data') return collectData(route, deps, controller.signal);
       if (route.section === 'observability') return collectObservability(deps, controller.signal);
@@ -723,4 +808,4 @@ async function collectAdminSection(route, deps, externalSignal) {
   }
 }
 
-module.exports = { PRIVATE_HEADERS, RESPONSE_LIMIT, adminPath, parseAdminRoute, readOwnerIdentity, readSessionState, collectMoney, collectAnalytics, summaryParts, collectAdminSection, createRuntimeObservations, githubCommitTitle, collectObservability, projectAnalytics, projectStripe, readObject, countRecords, guardPath };
+module.exports = { PRIVATE_HEADERS, RESPONSE_LIMIT, adminPath, parseAdminRoute, readOwnerIdentity, readSessionState, collectMoney, collectAnalytics, collectSummary, summaryParts, collectAdminSection, createRuntimeObservations, githubCommitTitle, collectObservability, projectAnalytics, projectStripe, readObject, countRecords, guardPath };

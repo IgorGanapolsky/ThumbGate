@@ -267,6 +267,72 @@ test('owner: analytics returns the 30-day traffic and a daily series from the te
   assert.equal(body.data.dataQuality.telemetryWindowComplete, true);
 });
 
+test('summary: same auth as the console (signed out is the private 404, non-owner 403), read-only, and no provider is called without the owner', async () => {
+  const before = stripeCalls + summaryCalls;
+  assert.equal((await request('/v1/admin/summary')).status, 404);
+  assert.equal((await request('/v1/admin/summary', { token: staleToken })).status, 404);
+  for (const token of [memberToken, keyToken]) assert.equal((await request('/v1/admin/summary', { token })).status, 403);
+  for (const method of ['POST', 'PUT', 'PATCH', 'DELETE']) assert.equal((await request('/v1/admin/summary', { token: ownerToken, method })).status, 405, method);
+  assert.equal((await request('/v1/admin/summary?x=1', { token: ownerToken })).status, 400, 'no query options exist');
+  assert.equal(stripeCalls + summaryCalls, before);
+});
+
+test('summary: the owner gets every number the Money and Analytics tabs show, each with source, collected time and a state', async () => {
+  const res = await request('/v1/admin/summary', { token: ownerToken });
+  assert.equal(res.status, 200);
+  assert.equal(res.headers.get('cache-control'), 'private, no-store');
+  const body = await res.json();
+  assert.equal(body.status, 'ok');
+  assert.equal(body.data.readOnly, true);
+  const fields = body.data.fields;
+  const states = new Set(['ok', 'verified_zero', 'partial', 'stale', 'unavailable', 'unresolved']);
+  for (const [key, field] of Object.entries(fields)) {
+    assert.ok(states.has(field.status), key + ' has a known state, got ' + field.status);
+    assert.equal(typeof field.source, 'string', key);
+    assert.equal(typeof field.label, 'string', key);
+    assert.ok(Object.hasOwn(field, 'collectedAt'), key);
+  }
+  // Every value the Money tab shows.
+  const money = await ownerJson('/v1/admin/money');
+  assert.equal(fields['money.paying_customers'].value, money.data.payingCustomers);
+  assert.equal(fields['money.active_pro'].value, money.data.activePro);
+  assert.deepEqual(fields['money.revenue_30d'].value, money.data.revenueLast30Days);
+  for (const [window, block] of [['7d', money.data.checkouts7d], ['30d', money.data.checkouts30d]]) {
+    for (const name of ['started', 'human', 'bot', 'notClassified', 'internal']) assert.equal(fields[`money.checkouts_${window}.${name}`].value, block[name], window + ' ' + name);
+  }
+  assert.deepEqual(fields['money.checkout_bot_check'].value.sinceBotCheck, money.data.checkoutBotCheck.sinceBotCheck);
+  assert.deepEqual(fields['money.signups_by_source'].value, money.data.leadsBySource.signups);
+  assert.equal(fields['traffic.visitor_identifiers_all_30d'].value, money.data.traffic30d.visitors);
+  assert.equal(fields['traffic.visitor_identifiers_excluding_flagged_30d'].value, money.data.traffic30d.realVisitors);
+  assert.equal(fields['traffic.landing_page_views_30d'].value, money.data.traffic30d.pageViews);
+  // Every value the Analytics tab shows.
+  const analytics = await ownerJson('/v1/admin/analytics');
+  assert.equal(fields['traffic.cta_clicks_30d'].value, analytics.data.trafficMetrics.ctaClicks);
+  assert.equal(fields['traffic.checkout_starts_30d'].value, analytics.data.trafficMetrics.checkoutStarts);
+  assert.equal(fields['traffic.paid_confirmations_30d'].value, analytics.data.trafficMetrics.checkoutPaidConfirmations);
+  assert.equal(fields['traffic.daily_30d'].value.length, analytics.data.daily.length);
+  assert.equal(fields['analytics.external_paid_orders'].value, analytics.data.revenue.external.paidOrders);
+  assert.equal(fields['analytics.email_signups'].value, analytics.data.signups.emailSignups);
+  assert.equal(fields['money.paying_customers'].source, 'stripe');
+  assert.equal(fields['money.paying_customers'].status, 'ok');
+  assert.equal(typeof fields['money.paying_customers'].collectedAt, 'string');
+  assert.equal(body.data.freshness.billingSummaryCacheSeconds, 600);
+  assert.ok(!/sk_(live|test)|cus_/.test(JSON.stringify(body)), 'no secret or customer id in the summary');
+});
+
+test('summary: a failed source shows as unavailable with its reason, never as a zero', async () => {
+  failProviders = true;
+  try {
+    const body = await ownerJson('/v1/admin/summary');
+    assert.equal(body.status, 'partial');
+    const fields = body.data.fields;
+    assert.equal(fields['money.paying_customers'].value, null);
+    assert.equal(fields['money.paying_customers'].status, 'unavailable');
+    assert.equal(fields['money.paying_customers'].reason, 'Stripe unavailable');
+    assert.equal(fields['traffic.landing_page_views_30d'].status, 'ok', 'telemetry is unaffected');
+  } finally { failProviders = false; }
+});
+
 test('sign-in page: Google and Apple links, no typed email', async () => {
   const res = await request('/signin');
   assert.equal(res.status, 200);
