@@ -340,6 +340,10 @@ Full index: **[docs/INDEX.md](docs/INDEX.md)**
 
 **Igor Ganapolsky** — payments (Stripe/Connect), AI agent guardrails/MCP, Android + backends. Small number of contract slots: **$120–150/hr, 1099, remote US**. [LinkedIn](https://www.linkedin.com/in/igor-ganapolsky-664324431/) · [thumbgate.ai](https://thumbgate.ai)
 
+## Support ThumbGate
+
+If ThumbGate saves you from a repeated agent mistake, [buy me a coffee](https://buymeacoffee.com/IgorGanapolsky) to support the open-source work.
+
 ## License
 
 MIT — see [LICENSE](LICENSE). Project policy: [SECURITY.md](SECURITY.md) · [THREAT_MODEL.md](THREAT_MODEL.md).
