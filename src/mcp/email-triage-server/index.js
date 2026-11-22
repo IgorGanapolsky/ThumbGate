@@ -21,7 +21,7 @@
 
 const fs = require('fs');
 const path = require('path');
-const { execSync } = require('child_process');
+const { execFileSync } = require('child_process');
 const http = require('http');
 const https = require('https');
 const { z } = require('zod');
@@ -77,7 +77,9 @@ function httpRequest(url, options = {}) {
 
 function runAppleScript(script) {
   try {
-    return execSync('osascript -e ' + JSON.stringify(script), {
+    // argv, not a shell string: no shell layer for a value to reach. The
+    // AppleScript layer is guarded by applescript.js when the script is built.
+    return execFileSync('osascript', ['-e', script], {
       encoding: 'utf-8',
       timeout: 15000,
       env: { ...process.env },
@@ -202,24 +204,68 @@ function parseEmailObject(headers, body, msg) {
 }
 
 // ---- Apple Mail integration via AppleScript ----
+//
+// Tool arguments come from a model and can carry text from an attacker's email.
+// They are placed inside double-quoted AppleScript literals, and AppleScript can
+// run shell commands, so a bare double quote would turn a search term into code.
+// execFileSync('osascript', ['-e', script]) leaves no shell layer; the helpers below
+// guard the AppleScript layer. Every user-controlled value goes through
+// appleScriptStringLiteral().
 
-function readAppleMailMessages(opts = {}) {
-  const { inbox = 'Inbox', senderContains = '', subjectContains = '', limit = 10 } = opts;
+// C0 controls (includes NUL, tab, newline, carriage return), DEL, C1 NEL,
+// and the Unicode line and paragraph separators. AppleScript ends a
+// statement at a line break, so none of these belong in a search term or a
+// mailbox name.
+// eslint-disable-next-line no-control-regex
+const FORBIDDEN_CHARS = new RegExp('[\\u0000-\\u001f\\u007f\\u0085\\u2028\\u2029]');
+
+const DEFAULT_LIMIT = 10;
+const MAX_LIMIT = 1000;
+
+/** Backslash first, then quote, so the added backslashes are not doubled. */
+function escapeAppleScriptString(value) {
+  return String(value).replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+}
+
+/** Throws on control characters or line breaks. Returns the value as a string. */
+function assertSafeAppleScriptField(fieldName, value) {
+  const text = String(value);
+  if (FORBIDDEN_CHARS.test(text)) {
+    throw new Error(`${fieldName} must not contain control characters or line breaks`);
+  }
+  return text;
+}
+
+/** A complete, safely quoted AppleScript string literal for a user value. */
+function appleScriptStringLiteral(fieldName, value) {
+  return `"${escapeAppleScriptString(assertSafeAppleScriptField(fieldName, value))}"`;
+}
+
+/** A whole number for a code position; never lets text reach the script. */
+function boundedInteger(value, fallback = DEFAULT_LIMIT, max = MAX_LIMIT) {
+  const n = Number(value);
+  if (!Number.isFinite(n)) return fallback;
+  return Math.min(Math.max(Math.trunc(n), 0), max);
+}
+
+/** The Apple Mail read script. Throws if a field holds a control character. */
+function buildAppleMailScript(opts = {}) {
+  const { inbox = 'Inbox', senderContains = '', subjectContains = '', limit = DEFAULT_LIMIT } = opts;
 
   let conditions = '';
   if (senderContains) {
-    conditions = `whose sender contains "${senderContains}"`;
+    conditions = `whose sender contains ${appleScriptStringLiteral('senderContains', senderContains)}`;
   } else if (subjectContains) {
-    conditions = `whose subject contains "${subjectContains}"`;
+    conditions = `whose subject contains ${appleScriptStringLiteral('subjectContains', subjectContains)}`;
   }
 
-  const mailboxClause = inbox ? `of mailbox "${inbox}"` : '';
+  const mailboxClause = inbox ? `of mailbox ${appleScriptStringLiteral('mailbox', inbox)}` : '';
 
-  const script = `
+  return `
 tell application "Mail"
   set theMessages to every message ${conditions} ${mailboxClause}
   set output to ""
-  repeat with i from 1 to ${limit}
+  repeat with i from 1 to ${boundedInteger(limit)}
     if i > (count of theMessages) then exit repeat
     set m to item i of theMessages
     set output to output & "MESSAGE-ID: " & (message id of m) & linefeed
@@ -238,7 +284,18 @@ tell application "Mail"
   return output
 end tell
 `;
+}
 
+
+function readAppleMailMessages(opts = {}) {
+  let script;
+  try {
+    script = buildAppleMailScript(opts);
+  } catch (err) {
+    // A field with a control character or line break never reaches osascript.
+    // Same error shape runAppleScript uses, so both callers already handle it.
+    return JSON.stringify({ error: err.message });
+  }
   return runAppleScript(script);
 }
 
@@ -797,7 +854,7 @@ server.tool(
         process.env.HOME || '/Users/iganapolsky',
         'workspace/secure-yolo/scripts/verify-human-paste-anti-slop.sh',
       );
-      execSync(`bash "${verifyScript}" check --file "${filepath}"`, {
+      execFileSync('bash', [verifyScript, 'check', '--file', filepath], {
         encoding: 'utf-8',
         timeout: 5000,
         stdio: ['pipe', 'pipe', 'pipe'],
@@ -966,8 +1023,29 @@ server.tool(
 
 // ---- Start the server ----
 
-const transport = new StdioServerTransport();
-server.connect(transport);
+// Start only when run as the program (including through the npm bin symlink),
+// so tests can require this file for the AppleScript helpers without a server.
+const isEntrypoint = (() => {
+  try {
+    return fs.realpathSync(process.argv[1]) === fs.realpathSync(__filename);
+  } catch {
+    return false;
+  }
+})();
 
-process.on('SIGINT', () => process.exit(0));
-process.on('SIGTERM', () => process.exit(0));
+if (isEntrypoint) {
+  const transport = new StdioServerTransport();
+  server.connect(transport);
+
+  process.on('SIGINT', () => process.exit(0));
+  process.on('SIGTERM', () => process.exit(0));
+}
+
+module.exports = {
+  escapeAppleScriptString,
+  assertSafeAppleScriptField,
+  appleScriptStringLiteral,
+  boundedInteger,
+  buildAppleMailScript,
+  readAppleMailMessages,
+};

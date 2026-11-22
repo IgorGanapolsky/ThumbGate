@@ -46,14 +46,17 @@ tell application "Comet"
 end tell'
 
 # Open or focus a specific URL in Comet
+# The URL is passed as an argument (item 1 of argv), never spliced into the script text.
 open_comet_url() {
-  local target_url="$1"
-  osascript -e "
-  tell application \"Comet\"
+  osascript - "$1" <<'APPLESCRIPT'
+on run argv
+  tell application "Comet"
       activate
       tell front window
-          make new tab with properties {URL:\"${target_url}\"}
+          make new tab with properties {URL:(item 1 of argv)}
       end tell
-  end tell"
+  end tell
+end run
+APPLESCRIPT
 }
 ```
