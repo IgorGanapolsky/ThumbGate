@@ -61,6 +61,12 @@ const {
 
 const AUDIT_TRAIL_TAG = 'audit-trail';
 const FEEDBACK_EVENT_DEDUPE_WINDOW_MS = 5 * 60 * 1000;
+// Two deliveries of the SAME typed thumbs event (live hook plus Claude history
+// sync) carry event timestamps seconds apart. A typed "thumbs down" that
+// arrives later than this is a new prompt and must count, even when the text
+// and session match. (22 Nov 2026: repeats 2 and 4 minutes after the first were
+// swallowed as duplicates and the status-bar counter stayed at 1.)
+const FEEDBACK_EVENT_REPEAT_GAP_MS = 30 * 1000;
 const FEEDBACK_EVENT_CLAIM_STALE_MS = 60 * 1000;
 const FEEDBACK_EVENT_CLAIM_WAIT_MS = 15 * 1000;
 const FEEDBACK_EVENT_CLAIM_POLL_MS = 25;
@@ -257,6 +263,22 @@ function updateStatuslineWithLesson({ accepted, signal, memoryId, feedbackId, le
       /* keep lesson refresh best-effort */
     }
   } catch { /* statusline update is best-effort */ }
+}
+
+/**
+ * Re-count the status-bar thumbs after a capture that was logged but not
+ * promoted (lifecycle block, schema failure). The signal is in the feedback
+ * log, so the counter must include it; without this the cache kept its old
+ * counts until the next accepted capture.
+ */
+function refreshStatuslineCounts() {
+  try {
+    const cachePath = path.join(getFeedbackPaths().FEEDBACK_DIR, 'statusline_cache.json');
+    const { refreshStatuslineCache } = require('./hook-thumbgate-cache-updater');
+    refreshStatuslineCache(analyzeFeedback(undefined, { humanOnly: true }), cachePath);
+  } catch {
+    /* statusline refresh is best-effort */
+  }
 }
 
 function getFeedbackPaths(options = {}) {
@@ -937,7 +959,7 @@ function isDuplicateFeedbackEntry(entry, identity) {
   if (identity.promptIdHash && sourceEvent.promptIdHash === identity.promptIdHash) return true;
 
   const timestamp = parseFeedbackSourceTimestamp(sourceEvent.timestamp || entry.timestamp);
-  return Math.abs(identity.eventTimestampMs - timestamp) <= FEEDBACK_EVENT_DEDUPE_WINDOW_MS;
+  return Math.abs(identity.eventTimestampMs - timestamp) <= FEEDBACK_EVENT_REPEAT_GAP_MS;
 }
 
 function receiptFromFeedbackEntry(entry, paths) {
@@ -976,9 +998,16 @@ function tryCreateFeedbackClaim(claimPath) {
 function existingClaimResult(state, identity, paths) {
   const stateTimestamp = Number(state?.completedAtMs || state?.startedAtMs || 0);
   const ageMs = stateTimestamp > 0 ? Date.now() - stateTimestamp : 0;
-  if (state?.status === 'complete'
-    && (identity.promptIdHash || ageMs <= FEEDBACK_EVENT_DEDUPE_WINDOW_MS)) {
+  if (state?.status === 'complete' && identity.promptIdHash) {
     return duplicateCaptureResult(state, paths);
+  }
+  if (state?.status === 'complete') {
+    // Compare when the prompts were typed, not when the first capture finished.
+    // Claims written before eventTimestampMs existed fall back to capture age.
+    const sameEvent = Number.isFinite(state.eventTimestampMs)
+      ? Math.abs(identity.eventTimestampMs - state.eventTimestampMs) <= FEEDBACK_EVENT_REPEAT_GAP_MS
+      : ageMs <= FEEDBACK_EVENT_DEDUPE_WINDOW_MS;
+    if (sameEvent) return duplicateCaptureResult(state, paths);
   }
   if (state?.status === 'pending' && ageMs <= FEEDBACK_EVENT_CLAIM_STALE_MS) {
     return duplicateCaptureResult(state, paths, { pending: true });
@@ -1010,10 +1039,11 @@ function acquireFeedbackEventClaim(identity, paths) {
   };
 }
 
-function finalizeFeedbackEventClaim(claim, result) {
+function finalizeFeedbackEventClaim(claim, result, identity) {
   if (!claim?.owned) return;
   writeClaimState(claim.claimPath, {
     status: 'complete',
+    eventTimestampMs: identity?.eventTimestampMs ?? null,
     startedAtMs: Date.now(),
     completedAtMs: Date.now(),
     accepted: Boolean(result?.accepted),
@@ -1719,6 +1749,7 @@ function captureFeedback(params, options = {}) {
         };
         appendJSONL(FEEDBACK_LOG_PATH, blockedEvent);
         emitAnonymousFeedbackPing(signal);
+        refreshStatuslineCounts();
         return {
           accepted: true,
           captured: true,
@@ -1751,6 +1782,7 @@ function captureFeedback(params, options = {}) {
       validationIssues: prepared.issues,
     });
     emitAnonymousFeedbackPing(signal);
+    refreshStatuslineCounts();
     try { appendRejectionLedger(feedbackEvent, `Schema validation failed: ${prepared.issues.join('; ')}`, options); } catch { /* non-critical */ }
     try {
       appendSequence(historyEntries, feedbackEvent, getFeedbackPaths(options), { accepted: false });
@@ -2184,7 +2216,7 @@ function captureFeedbackIdempotent(params = {}, options = {}) {
 
   try {
     const result = captureFeedback({ ...params, sourceEvent: identity }, options);
-    finalizeFeedbackEventClaim(claim, result);
+    finalizeFeedbackEventClaim(claim, result, identity);
     return result;
   } catch (error) {
     releaseFeedbackEventClaim(claim);

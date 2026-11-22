@@ -19,7 +19,9 @@ const { refreshStatuslineCache } = require('./hook-thumbgate-cache-updater');
 const SYNC_STATE_FILE = 'claude-feedback-sync-state.json';
 const DEFAULT_RECENT_FEEDBACK_LIMIT = 1000;
 const DEFAULT_PROCESSED_ID_LIMIT = 4096;
-const DUPLICATE_WINDOW_MS = 5 * 60 * 1000;
+// Same typed prompt seen by the live hook and by this history sync: event
+// timestamps are seconds apart. A repeat later than this is a new thumbs-down.
+const DUPLICATE_WINDOW_MS = 30 * 1000;
 // At this length, identical text + signal is a re-surfaced prompt, not a
 // repeated sentiment; shorter bare signals stay window-bound.
 const IDENTICAL_TEXT_DEDUP_MIN_LENGTH = 20;
@@ -229,7 +231,7 @@ function hasMatchingFeedbackEntry(candidate, feedbackEntries) {
       return true;
     }
 
-    const feedbackTimestamp = Date.parse(entry.timestamp || '');
+    const feedbackTimestamp = Date.parse((entry.sourceEvent && entry.sourceEvent.timestamp) || entry.timestamp || '');
     if (!Number.isFinite(feedbackTimestamp) || !Number.isFinite(candidate.timestampMs)) {
       return true;
     }
