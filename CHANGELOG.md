@@ -7,6 +7,13 @@
 - Attribution: a LinkedIn referrer (linkedin.com, lnkd.in) is named `linkedin`. The landing visit's `utm_source`, `utm_medium`, `utm_campaign`, `utm_content` and `utm_term` are kept in a 30-day first-party cookie and flow into the checkout form and the Stripe session metadata, so a buyer from a LinkedIn post shows up as `linkedin`, not `website`. New read-only `GET /v1/analytics/sources` (admin or operator key) groups visits, installs and checkout starts by `utm_source` for the last 7 and 30 days. The About page links the correct LinkedIn profile.
 - Checkout opens a Stripe session only after a confirmed human click. The Pro buttons post to the server with a short-lived single-use token that page JavaScript fetches after a real pointer or keyboard event. A bare GET, a request without a token, or more than 2 a minute from one IP gets no session, and `/go/pro*` GET links go to the confirm page instead of a payment link. Every session records landing page, referrer, browser class and button id. The npm package now ships `scripts/checkout-human-gate.js` and `scripts/cap-hit-counter.js` (+2 files, bundle baseline 690 -> 692).
 
+## 1.40.6
+
+### Patch Changes
+
+- Hardened argument quoting in the bundled email-triage server's Apple Mail tools (`read_apple_mail`, `triage_emails`) and in the Comet skill's `open_comet_url` helper. Mailbox, sender and subject values are now escaped before they reach AppleScript, values with control characters or line breaks are rejected, and `osascript` is run with an argument list. Upgrade if you run the email-triage server on macOS. Thanks to Marcus Still of Still OS for the report.
+- 81a29ae: A typed "thumbs down" now raises the status-bar counter every time. A repeat of the same bare text in the same session used to be dropped as a duplicate for five minutes; the duplicate check now compares when the prompts were typed (30 seconds), so only a second delivery of the same prompt is skipped. A capture that is logged but not promoted (lifecycle block or schema failure) now refreshes the counter too.
+
 ## 1.40.5
 
 ### Patch Changes
