@@ -2,11 +2,13 @@
   'use strict';
   var selected = new URL(window.location.href).searchParams.get('project');
   if (selected === 'all') selected = null;
+  var selectedDir = selected ? new URL(window.location.href).searchParams.get('projectDir') : null;
   var loading = null;
   function url(input) {
     var target = new URL(input, window.location.origin);
     if (target.origin !== window.location.origin) return target.href;
     if (selected) target.searchParams.set('project', selected);
+    if (selected && selectedDir) target.searchParams.set('projectDir', selectedDir);
     return target.pathname + target.search + target.hash;
   }
   function mount() {
@@ -19,9 +21,9 @@
     label.htmlFor = 'projectSwitcher'; label.textContent = 'Project';
     var select = document.createElement('select');
     select.id = 'projectSwitcher'; select.style.cssText = 'margin:0 12px;padding:8px;max-width:100%;background:var(--bg-raised,#18181b);color:var(--text,#fafafa);border:1px solid var(--border,#444);border-radius:6px';
-    var all = document.createElement('option'); all.value = ''; all.textContent = 'All projects'; select.appendChild(all);
+    var all = document.createElement('option'); all.value = ''; all.textContent = 'All projects (account-wide, not one project)'; select.appendChild(all);
     if (selected) { var pending = document.createElement('option'); pending.value = selected; pending.textContent = 'Selected project'; select.appendChild(pending); select.value = selected; }
-    select.addEventListener('change', function () { var next = new URL(window.location.href); if (select.value) next.searchParams.set('project', select.value); else next.searchParams.delete('project'); window.location.assign(next.href); });
+    select.addEventListener('change', function () { var next = new URL(window.location.href); next.searchParams.delete('projectDir'); if (select.value) next.searchParams.set('project', select.value); else next.searchParams.delete('project'); window.location.assign(next.href); });
     var status = document.createElement('span'); status.id = 'projectStatus'; status.setAttribute('role', 'status');
     var cards = document.createElement('div'); cards.id = 'projectCards'; cards.style.cssText = 'display:flex;gap:12px;flex-wrap:wrap;margin-top:12px';
     var sharedGates = document.createElement('p'); sharedGates.id = 'projectGlobalGates';
@@ -40,7 +42,7 @@
       projects.forEach(function (project) { var option = document.createElement('option'); option.value = project.projectKey; option.textContent = project.projectName; select.appendChild(option); });
       select.value = selected || '';
       var current = projects.find(function (project) { return project.projectKey === selected; });
-      document.getElementById('projectStatus').textContent = current ? current.projectName : 'All projects in this account';
+      document.getElementById('projectStatus').textContent = current ? current.projectName : 'Account-wide view: mixes every project and store. Pick a project for its own numbers.';
       document.getElementById('projectGlobalGates').textContent = (data.globalGateCount || 0) + ' global gates shared across projects';
       var cards = document.getElementById('projectCards'); cards.replaceChildren();
       if (!selected) projects.forEach(function (project) {
