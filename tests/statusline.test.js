@@ -109,6 +109,44 @@ test('statusline script reads jq input and outputs ThumbGate line', () => {
   assert.doesNotMatch(out, /Lessons \(http:\/\/localhost:3456\/lessons\)/);
 });
 
+test('the Dashboard word is an OSC 8 hyperlink to the dashboard URL and reads the same without it', () => {
+  const links = linkFixture();
+  const out = runStatusline({
+    thumbs_up: '10', thumbs_down: '5', lessons: '3', trend: 'improving'
+  }, {
+    _TEST_THUMBGATE_STATUSLINE_LINKS_JSON: JSON.stringify(links),
+  });
+  const open = `\u001b]8;;${links.dashboardUrl}\u0007`;
+  const close = '\u001b]8;;\u0007';
+  assert.ok(
+    out.includes(`${open}Dashboard${close}`),
+    `Dashboard must sit between the OSC 8 open for ${links.dashboardUrl} and the close; got ${JSON.stringify(out)}`
+  );
+
+  const plainOut = runStatusline({
+    thumbs_up: '10', thumbs_down: '5', lessons: '3', trend: 'improving'
+  }, {
+    THUMBGATE_STATUSLINE_PLAIN: '1',
+    _TEST_THUMBGATE_STATUSLINE_LINKS_JSON: JSON.stringify(links),
+  });
+  assert.ok(!plainOut.includes('\u001b]8;'), 'plain mode must carry no OSC 8 sequences');
+  assert.equal(
+    stripStatuslineFormatting(out),
+    stripStatuslineFormatting(plainOut),
+    'visible text must be identical with and without hyperlinks'
+  );
+});
+
+test('the Dashboard word stays plain text when no dashboard URL is known', () => {
+  const out = runStatusline({
+    thumbs_up: '10', thumbs_down: '5', lessons: '3', trend: 'improving'
+  }, {
+    _TEST_THUMBGATE_STATUSLINE_LINKS_JSON: JSON.stringify(linkFixture({ dashboardUrl: '' })),
+  });
+  assert.ok(!out.includes('\u001b]8;;http://localhost:3456/dashboard'), 'no link without a URL');
+  assert.match(stripStatuslineFormatting(out), /Dashboard/);
+});
+
 test('statusline is compact by default for Claude chrome', () => {
   const out = runStatusline({
     thumbs_up: '10', thumbs_down: '5', lessons: '3', trend: 'improving'
