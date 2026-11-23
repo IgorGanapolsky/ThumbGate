@@ -23,7 +23,7 @@
     select.id = 'projectSwitcher'; select.style.cssText = 'margin:0 12px;padding:8px;max-width:100%;background:var(--bg-raised,#18181b);color:var(--text,#fafafa);border:1px solid var(--border,#444);border-radius:6px';
     var all = document.createElement('option'); all.value = ''; all.textContent = 'All projects (account-wide, not one project)'; select.appendChild(all);
     if (selected) { var pending = document.createElement('option'); pending.value = selected; pending.textContent = 'Selected project'; select.appendChild(pending); select.value = selected; }
-    select.addEventListener('change', function () { var next = new URL(window.location.href); if (select.value) next.searchParams.set('project', select.value); else next.searchParams.delete('project'); window.location.assign(next.href); });
+    select.addEventListener('change', function () { var next = new URL(window.location.href); next.searchParams.delete('projectDir'); if (select.value) next.searchParams.set('project', select.value); else next.searchParams.delete('project'); window.location.assign(next.href); });
     var status = document.createElement('span'); status.id = 'projectStatus'; status.setAttribute('role', 'status');
     var cards = document.createElement('div'); cards.id = 'projectCards'; cards.style.cssText = 'display:flex;gap:12px;flex-wrap:wrap;margin-top:12px';
     var sharedGates = document.createElement('p'); sharedGates.id = 'projectGlobalGates';

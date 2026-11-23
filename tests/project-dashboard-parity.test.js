@@ -60,6 +60,19 @@ test('project view counts what the status line counts and nothing from other pro
   fs.rmSync(home, { recursive: true, force: true });
 });
 
+test('the requested folder wins over an inherited CLAUDE_PROJECT_DIR or INIT_CWD', () => {
+  const { home, projects, keys } = fixture();
+  const code = `
+    process.env.CLAUDE_PROJECT_DIR = process.argv[2];
+    process.env.INIT_CWD = process.argv[2];
+    const { projectFeedback } = require(process.argv[1]);
+    const rows = projectFeedback([], { projectDir: process.argv[3], projectKey: process.argv[4], env: process.env });
+    console.log(JSON.stringify(rows.map((r) => r.signal)));`;
+  const out = inChild(home, code, path.join(SCRIPTS, 'project-dashboard.js'), projects.alpha, projects.beta, keys.beta);
+  assert.deepEqual(out, ['negative']);
+  fs.rmSync(home, { recursive: true, force: true });
+});
+
 test('a key that does not belong to the named folder falls back to key-only rows, never another project', () => {
   const { home, projects, keys } = fixture();
   const code = `

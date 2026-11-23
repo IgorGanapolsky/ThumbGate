@@ -39,7 +39,7 @@ function isScrapedHumanThumb(row) {
 function collectHumanRows(options = {}) {
   const env = options.env || process.env;
   const cwd = options.cwd || process.cwd();
-  const projectDir = resolveProjectDir({ cwd, env });
+  const projectDir = resolveProjectDir({ cwd, env, projectDir: options.projectDir });
   const feedbackDir = resolveFeedbackDir({ projectDir, env });
   const { projectKey } = resolveLocalProject(projectDir);
   const projectName = path.basename(projectDir);

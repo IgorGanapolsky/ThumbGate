@@ -9,7 +9,7 @@ function projectFeedback(keyedRows, options) {
     const env = { ...(options.env || process.env) };
     delete env.THUMBGATE_FEEDBACK_DIR;
     delete env.THUMBGATE_PROJECT_DIR;
-    const counted = require('./statusline-human-counts').collectHumanRows({ cwd: options.projectDir, env });
+    const counted = require('./statusline-human-counts').collectHumanRows({ cwd: options.projectDir, projectDir: options.projectDir, env });
     if (counted.projectKey === options.projectKey) {
       const isUp = (row) => ['up', 'positive', 'thumbs_up'].includes(String(row.signal || row.feedback).toLowerCase());
       return counted.rows.map((row) => ({ ...row, signal: isUp(row) ? 'positive' : 'negative' }));
