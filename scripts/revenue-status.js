@@ -304,17 +304,11 @@ function buildDiagnosis({ publicProbe, hostedAudit }) {
     )
   );
   const gaRuntimeMissing = runtimePresenceKnown && !runtimePresence.THUMBGATE_GA_MEASUREMENT_ID;
-  const sprintCheckoutRuntimeMissing = runtimePresenceKnown && (
-    !runtimePresence.THUMBGATE_SPRINT_DIAGNOSTIC_CHECKOUT_URL ||
-    !runtimePresence.THUMBGATE_WORKFLOW_SPRINT_CHECKOUT_URL
-  );
 
   let primaryIssue = 'inconclusive';
   if (trackingImplemented && telemetryIngressWorking && hostedSummaryWorking && hostedTrafficObserved) {
     if (gaRuntimeMissing) {
       primaryIssue = 'ga4_runtime_config_gap';
-    } else if (sprintCheckoutRuntimeMissing) {
-      primaryIssue = 'paid_sprint_checkout_config_gap';
     } else if (ownerTestRevenueOnly) {
       primaryIssue = 'owner_test_revenue_only';
     } else if (hostedRevenueObserved) {
@@ -338,10 +332,10 @@ function buildDiagnosis({ publicProbe, hostedAudit }) {
     gaps.push('GA4 runtime env is missing in Railway');
   }
   if (runtimePresenceKnown && !runtimePresence.THUMBGATE_SPRINT_DIAGNOSTIC_CHECKOUT_URL) {
-    gaps.push('Workflow Hardening Diagnostic payment link env is missing in Railway');
+    gaps.push('Workflow Hardening Diagnostic payment link env is not set in Railway (built-in default link is used)');
   }
   if (runtimePresenceKnown && !runtimePresence.THUMBGATE_WORKFLOW_SPRINT_CHECKOUT_URL) {
-    gaps.push('Setup Sprint payment link env is missing in Railway');
+    gaps.push('Setup Sprint payment link env is not set in Railway (built-in default link is used)');
   }
   if (runtimePresenceKnown && !runtimePresence.THUMBGATE_PUBLIC_APP_ORIGIN) {
     gaps.push('THUMBGATE_PUBLIC_APP_ORIGIN is not explicitly set in Railway runtime');
