@@ -128,6 +128,10 @@ function codexStatuslineCommand() {
   return buildCodexPortableHookCommand('statusline-render');
 }
 
+function cursorShellGateHookCommand() {
+  return `node ${shellQuote(path.join(PKG_ROOT, 'scripts', 'cursor-shell-gate.js'))}`;
+}
+
 module.exports = {
   buildPortableHookCommand,
   buildCodexPortableHookCommand,
@@ -148,4 +152,5 @@ module.exports = {
   sessionStartHookCommand,
   statuslineCommand,
   userPromptHookCommand,
+  cursorShellGateHookCommand,
 };
