@@ -11775,7 +11775,8 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
       if (req.method === 'GET' && pathname === '/v1/projects') { sendJson(res, 200, buildProjectCatalog(requestFeedbackDir, projectOptions)); return; }
       if (requestProjectKey != null && req.method === 'GET' && ['/v1/dashboard', '/v1/feedback/stats'].includes(pathname)) {
         const data = generateDashboard(requestFeedbackDir, {
-          projectKey: requestProjectKey, ...projectOptions, humanOnly: true });
+          projectKey: requestProjectKey, ...projectOptions, humanOnly: true,
+          projectDir: getEffectiveRequestedProjectSelection(req, parsed) || undefined });
         const tier = resolvePaidSessionTier(extractApiKey(req), expectedApiKey, expectedOperatorKey) || 'pro';
         if (pathname === '/v1/dashboard') sendJson(res, 200, { ...data, tier });
         else sendJson(res, 200, { ...data.feedbackAnalysis, projectKey: requestProjectKey, tier, gateStats: data.gateStats, activeGateCount: data.gateStats.totalGates, todayOverview: data.todayOverview });

@@ -2,11 +2,27 @@
 
 const { readProjectRows, readProjectGates, buildProjectCatalog } = require('./project-catalog');
 
+// When the caller names the project folder, count feedback exactly as the status line does
+// (same stores, same human filter), so "this project" and the dashboard cannot disagree.
+function projectFeedback(keyedRows, options) {
+  if (options.projectDir && options.projectKey && options.projectKey !== 'unassigned') {
+    const env = { ...(options.env || process.env) };
+    delete env.THUMBGATE_FEEDBACK_DIR;
+    delete env.THUMBGATE_PROJECT_DIR;
+    const counted = require('./statusline-human-counts').collectHumanRows({ cwd: options.projectDir, env });
+    if (counted.projectKey === options.projectKey) {
+      const isUp = (row) => ['up', 'positive', 'thumbs_up'].includes(String(row.signal || row.feedback).toLowerCase());
+      return counted.rows.map((row) => ({ ...row, signal: isUp(row) ? 'positive' : 'negative' }));
+    }
+  }
+  return keyedRows.filter((row) => !options.humanOnly || !row.reviewOrigin || row.reviewOrigin === 'human');
+}
+
 function generateProjectDashboard(feedbackDir, options = {}) {
   const dashboard = require('./dashboard');
   options = { ...options, attribution: options.attribution || require('./project-catalog').accountAttribution(feedbackDir, options) };
   const rows = (file) => readProjectRows(feedbackDir, file, options);
-  const feedback = rows('feedback-log.jsonl').filter((row) => !options.humanOnly || !row.reviewOrigin || row.reviewOrigin === 'human');
+  const feedback = projectFeedback(rows('feedback-log.jsonl'), options);
   const memories = rows('memory-log.jsonl');
   const audit = rows('audit-trail.jsonl');
   const gates = readProjectGates(feedbackDir, options).filter((gate) => gate.active !== false && gate.enabled !== false).map((gate) => ({ ...gate, name: gate.name || gate.id, scopeLabel: gate.scope === 'global' ? 'Global' : 'Project' }));
@@ -41,7 +57,7 @@ function generateProjectDashboard(feedbackDir, options = {}) {
   const unavailableMetrics = ['analytics', 'billing', 'prevention', 'harness', 'health', 'delegation', 'observability', 'instrumentation', 'readiness', 'agentSurfaceInventory', 'backgroundAgents', 'regulatedProof', 'interventionPolicy', 'decisions', 'settingsStatus', 'team', 'templateLibrary', 'predictive', 'tokenSavings'];
   const data = Object.fromEntries(unavailableMetrics.map((name) => [name, null]));
   const today = auditDays.at(-1);
-  const feedbackAnalysis = require('./feedback-loop').analyzeFeedback(require('node:path').join(feedbackDir, 'feedback-log.jsonl'), { ...options, entries: feedback });
+  const feedbackAnalysis = require('./feedback-loop').analyzeFeedback(require('node:path').join(feedbackDir, 'feedback-log.jsonl'), { ...options, entries: feedback, humanOnly: false });
   return {
     ...data, projectKey: options.projectKey, project, unavailableMetrics,
     operational: { source: 'project-records' }, approval: dashboard.computeApprovalStats(feedback), gateStats, gates,
@@ -58,4 +74,4 @@ function generateProjectDashboard(feedbackDir, options = {}) {
     lessonPipeline: { stages: [{ id: 'feedback', label: 'Feedback Signals', count: feedback.length }, { id: 'lessons', label: 'Lessons Distilled', count: memories.length }, { id: 'gates', label: 'Project Gates', count: gateStats.autoCount }, { id: 'blocked', label: 'Actions Blocked', count: gateStats.blocked }], rates: { feedbackToLesson: feedback.length ? Math.round(memories.length / feedback.length * 100) : 0, lessonToGate: memories.length ? Math.round(gateStats.autoCount / memories.length * 100) : 0 } },
   };
 }
-module.exports = { generateProjectDashboard };
+module.exports = { generateProjectDashboard, projectFeedback };

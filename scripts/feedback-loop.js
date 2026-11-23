@@ -2479,7 +2479,7 @@ function analyzeFeedback(logPath, options = {}) {
       maxLines: Number(options.maxLines) > 0 ? Number(options.maxLines) : 20_000,
       maxBytes: Number(options.maxBytes) > 0 ? Number(options.maxBytes) : 4 * 1024 * 1024,
     });
-  if (options.projectKey != null) entries = require('./project-catalog').readProjectRows(feedbackDir, 'feedback-log.jsonl', options);
+  if (options.projectKey != null && !Array.isArray(options.entries)) entries = require('./project-catalog').readProjectRows(feedbackDir, 'feedback-log.jsonl', options);
   const rawTotal = entries.length;
   if (options.humanOnly) {
     // strictHuman (status line) also drops entries scraped from prompt text.

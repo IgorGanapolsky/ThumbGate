@@ -36,7 +36,7 @@ function isScrapedHumanThumb(row) {
   return tags.includes('claude-history-sync');
 }
 
-function computeHumanCounts(options = {}) {
+function collectHumanRows(options = {}) {
   const env = options.env || process.env;
   const cwd = options.cwd || process.cwd();
   const projectDir = resolveProjectDir({ cwd, env });
@@ -86,11 +86,17 @@ function computeHumanCounts(options = {}) {
     return Boolean(signal) && at !== null && scraped[signal].some((t) => Math.abs(t - at) <= CORROBORATION_MS);
   };
 
+  const counted = mineRows.filter((row) => normalizeSignal(row)
+    && (isCountedHumanFeedback(row) || (isLegacyMcpCapture(row) && corroborated(row))));
+  return { rows: counted, projectKey, projectName, projectDir };
+}
+
+function computeHumanCounts(options = {}) {
+  const { rows, projectName } = collectHumanRows(options);
   let up = 0;
   let down = 0;
   let latestDown = null;
-  for (const row of mineRows) {
-    if (!(isCountedHumanFeedback(row) || (isLegacyMcpCapture(row) && corroborated(row)))) continue;
+  for (const row of rows) {
     const signal = normalizeSignal(row);
     if (signal === 'up') up += 1;
     if (signal === 'down') {
@@ -133,4 +139,4 @@ if (process.argv[1] && path.resolve(process.argv[1]) === path.resolve(__filename
   }
 }
 
-module.exports = { computeHumanCounts };
+module.exports = { computeHumanCounts, collectHumanRows };
