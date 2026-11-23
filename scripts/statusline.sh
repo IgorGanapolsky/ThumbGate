@@ -106,7 +106,8 @@ if [ -n "$_HUMAN_JSON" ]; then
     @sh "LD_TEXT=\(.latestDown.text // "")"
   ' 2>/dev/null)"
 else
-  UP="0"; DOWN="0"
+  # The counter printed nothing. That is a failure, not an absence of feedback.
+  UP="0"; DOWN="0"; HUMAN_COUNTS_UNAVAILABLE="1"
 fi
 
 # Background refresh from REST API when cache is stale (>120s)
@@ -245,7 +246,11 @@ LINE=""
 [[ -n "$WORK_ITEM_LABEL" ]] && LINE="${LINE:+${LINE} · }${WORK_ITEM_LABEL}"
 LINE="${LINE:+${LINE} · }ThumbGate v${TG_VERSION} · ${TG_TIER}"
 if [[ "$UP" = "0" && "$DOWN" = "0" ]]; then
-  LINE="${D}${LINE}${RST} · ${UP_LINK} ${DOWN_LINK} ${D}no human feedback ${SCOPE_LABEL}${RST}"
+  if [[ "${HUMAN_COUNTS_UNAVAILABLE:-0}" = "1" ]]; then
+    LINE="${D}${LINE}${RST} · ${UP_LINK} ${DOWN_LINK} ${D}feedback count unavailable${RST}"
+  else
+    LINE="${D}${LINE}${RST} · ${UP_LINK} ${DOWN_LINK} ${D}no human feedback ${SCOPE_LABEL}${RST}"
+  fi
   [[ -n "$PR_LABEL" ]] && LINE="${LINE} · ${D}${PR_LABEL}${RST}"
   
   LINE="${LINE} · ${C}${DASHBOARD_LINK}${RST}"
