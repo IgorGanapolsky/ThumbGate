@@ -13,10 +13,26 @@ STATUSLINE_VERBOSE="${THUMBGATE_STATUSLINE_VERBOSE:-0}"
 eval "$(cat | jq -r '
   def n(f): f // 0;
   @sh "CTX_PCT=\(n(.context_window.used_percentage) | floor)",
-  @sh "PROJECT_CWD=\(.cwd // .working_directory // "")"
+  @sh "PROJECT_CWD=\(.cwd // .working_directory // "")",
+  @sh "CLAUDE_PROJECT_ROOT=\(.workspace.project_dir // "")"
 ' 2>/dev/null)"
 CTX_PCT="${CTX_PCT:-0}"
 PROJECT_CWD="${PROJECT_CWD:-}"
+CLAUDE_PROJECT_ROOT="${CLAUDE_PROJECT_ROOT:-}"
+
+# Feedback is captured against the project root, not whichever subfolder the session
+# has cd'd into. Use the project dir Claude reports, else the git root of the cwd,
+# else the cwd itself, so "this project" counts the same thumbs the captures wrote.
+if [ -n "$PROJECT_CWD" ] && [ -d "$PROJECT_CWD" ]; then
+  if [ -n "$CLAUDE_PROJECT_ROOT" ] && [ -d "$CLAUDE_PROJECT_ROOT" ]; then
+    PROJECT_CWD="$CLAUDE_PROJECT_ROOT"
+  else
+    _GIT_ROOT="$(git -C "$PROJECT_CWD" rev-parse --show-toplevel 2>/dev/null)"
+    if [ -n "$_GIT_ROOT" ] && [ -d "$_GIT_ROOT" ]; then
+      PROJECT_CWD="$_GIT_ROOT"
+    fi
+  fi
+fi
 
 if [ -n "$PROJECT_CWD" ] && [ -d "$PROJECT_CWD" ]; then
   export THUMBGATE_PROJECT_DIR="$PROJECT_CWD"

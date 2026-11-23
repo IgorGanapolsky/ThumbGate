@@ -84,6 +84,57 @@ test('the rendered segment shows the counts, even with the override', () => {
   }
 });
 
+function renderFrom(fixture, sessionJson) {
+  fs.mkdirSync(path.join(fixture.project, 'state'), { recursive: true });
+  return execFileSync('bash', [STATUSLINE], {
+    cwd: fixture.project,
+    encoding: 'utf8',
+    input: JSON.stringify(sessionJson),
+    env: {
+      ...process.env,
+      HOME: fixture.home,
+      THUMBGATE_OPERATOR_KEY: '',
+      THUMBGATE_API_KEY: '',
+    },
+    timeout: 20000,
+  }).replace(/\x1b\][^\x07]*\x07/g, '').replace(/\x1b\[[0-9;]*m/g, '');
+}
+
+test('a session whose cwd is a subfolder shows the project counts when Claude names the project dir', () => {
+  const fixture = makeProject(2, 4);
+  try {
+    const sub = path.join(fixture.project, 'state');
+    const out = renderFrom(fixture, { cwd: sub, workspace: { current_dir: sub, project_dir: fixture.project } });
+    assert.doesNotMatch(out, /no human feedback/);
+    assert.match(out, /\b2\S*\s+4\S*\s+this project/);
+  } finally {
+    fs.rmSync(fixture.root, { recursive: true, force: true });
+  }
+});
+
+test('a session whose cwd is a subfolder of a git repo shows the repo counts', () => {
+  const fixture = makeProject(2, 4);
+  try {
+    execFileSync('git', ['init', '-q'], { cwd: fixture.project });
+    const sub = path.join(fixture.project, 'state');
+    const out = renderFrom(fixture, { cwd: sub });
+    assert.doesNotMatch(out, /no human feedback/);
+    assert.match(out, /\b2\S*\s+4\S*\s+this project/);
+  } finally {
+    fs.rmSync(fixture.root, { recursive: true, force: true });
+  }
+});
+
+test('a project with no logged thumbs still says so', () => {
+  const fixture = makeProject(0, 0);
+  try {
+    const out = renderFrom(fixture, { cwd: fixture.project });
+    assert.match(out, /no human feedback/);
+  } finally {
+    fs.rmSync(fixture.root, { recursive: true, force: true });
+  }
+});
+
 test('a counter that produces nothing is shown as unavailable, never as no feedback', () => {
   const fixture = makeProject(2, 4);
   try {
