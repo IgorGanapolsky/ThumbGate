@@ -50,10 +50,14 @@ function computeHumanCounts(options = {}) {
   const seen = new Set();
   const mineRows = [];
   const ownDir = path.resolve(feedbackDir);
-  for (const dir of new Set([ownDir, path.resolve(globalDir)])) {
+  // THUMBGATE_FEEDBACK_DIR can point the resolved dir at the shared store, which
+  // would hide this project's own log. The project's own .thumbgate folder is always read too.
+  const projectLocalDir = path.resolve(projectDir, '.thumbgate');
+  const ownDirs = new Set([ownDir, projectLocalDir]);
+  for (const dir of new Set([ownDir, projectLocalDir, path.resolve(globalDir)])) {
     // Rows written before project tracking carry no key. In the project's own
     // feedback dir they are this project's; in the shared global store they are not.
-    const ownsUnassigned = dir === ownDir && dir !== path.resolve(globalDir);
+    const ownsUnassigned = ownDirs.has(dir) && dir !== path.resolve(globalDir);
     for (const row of readProjectRows(dir, 'feedback-log.jsonl', {})) {
       const mine = row.projectKey === projectKey || row.projectKey === aliasKey
         || (ownsUnassigned && row.projectKey === 'unassigned');
