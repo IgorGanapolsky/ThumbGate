@@ -277,6 +277,8 @@ async function sendEmail({ to, subject, html, text, from, replyTo, idempotencyKe
       console.warn(`[mailer] Resend returned ${res.status}:`, bodyText);
       return { sent: false, reason: 'api_error', status: res.status, body: bodyJson || bodyText };
     }
+    // Daily send count for the owner console's delivery cost. A count only: nothing about the message is kept.
+    try { require('../cost-meter').recordEmailSend(); } catch { /* best-effort */ }
     return buildSendSuccess({ bodyJson, status: res.status, senderFallback: sender.senderFallback });
   } catch (err) {
     // eslint-disable-next-line no-console

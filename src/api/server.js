@@ -7568,6 +7568,10 @@ function createUnscopedApiServer({ ownerAdminDependencies = {} } = {}) {
     health: () => ({ version: pkg.version, buildSha: BUILD_METADATA.buildSha, uptime: process.uptime() }),
     ...ownerAdminDependencies,
   })));
+  // Cost meter for the owner console's unit economics: hosted deployments only (Railway sets RAILWAY_ENVIRONMENT), never under tests.
+  if (!process.env.NODE_TEST_CONTEXT && (process.env.RAILWAY_ENVIRONMENT || process.env.THUMBGATE_COST_METER === '1')) {
+    try { require('../../scripts/cost-meter').start({ feedbackDir: withoutDataScope(() => getFeedbackPaths().FEEDBACK_DIR) }); } catch { /* best-effort */ }
+  }
   const observedRequests = new WeakSet();
   const eventBus = new EventEmitter();
   eventBus.setMaxListeners(200);
