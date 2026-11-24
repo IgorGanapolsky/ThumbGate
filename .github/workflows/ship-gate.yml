@@ -1,0 +1,190 @@
+name: ship-gate
+
+# Free stand-in for Claude Ship's review + approvals + auto-merge.
+# 1. policy: reads config/ship-policy.json FROM MAIN, posts one sticky review
+#    comment, and labels the PR routine (auto) or needs-igor.
+# 2. test:   runs the fast guards plus the tests that match the changed files.
+# 3. merge:  for routine PRs only, waits for every other check, refuses while a
+#    review thread is open, then squash-merges the exact tested commit.
+# ThumbGate is a public repo, so GitHub-hosted minutes here are free.
+# Nothing in branch protection depends on this workflow: Igor can still push
+# or merge by hand at any time.
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened, ready_for_review, labeled, unlabeled]
+  # An approval or a review reply can unblock a PR the last run left waiting.
+  # (Thread resolution has no Actions event; the daily steward re-dispatches.)
+  pull_request_review:
+    types: [submitted, dismissed]
+  workflow_dispatch:
+    inputs:
+      pr_number:
+        description: PR number to (re)evaluate
+        required: true
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+  checks: read
+  actions: write
+
+concurrency:
+  group: ship-gate-${{ github.event.pull_request.number || inputs.pr_number }}
+  cancel-in-progress: true
+
+env:
+  PR_NUMBER: ${{ github.event.pull_request.number || inputs.pr_number }}
+  GH_REPO: ${{ github.repository }}
+
+jobs:
+  policy:
+    name: policy
+    # Only Igor's control labels re-run the gate; the gate's own labels must not loop it.
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.action != 'labeled' && github.event.action != 'unlabeled') ||
+      github.event.label.name == 'do-not-merge' || github.event.label.name == 'automerge' || github.event.label.name == 'igor-review'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      verdict: ${{ steps.eval.outputs.verdict }}
+      tests: ${{ steps.eval.outputs.tests }}
+      head_sha: ${{ steps.eval.outputs.head_sha }}
+    steps:
+      - name: Checkout trusted main (never the PR's own policy)
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: main
+          persist-credentials: false
+
+      - name: Evaluate ship policy
+        id: eval
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: node scripts/ship-policy.js evaluate --pr "$PR_NUMBER" --review-out "$RUNNER_TEMP/review.md"
+
+      - name: Post sticky review comment and labels
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERDICT: ${{ steps.eval.outputs.verdict }}
+        run: |
+          set -euo pipefail
+          marker='<!-- ship-gate-review -->'
+          id="$(gh api "repos/$GH_REPO/issues/$PR_NUMBER/comments" --paginate \
+            --jq ".[] | select(.user.login == \"github-actions[bot]\" and (.body | startswith(\"$marker\"))) | .id" | head -n 1)"
+          if [ -n "$id" ]; then
+            gh api -X PATCH "repos/$GH_REPO/issues/comments/$id" -F "body=@$RUNNER_TEMP/review.md" >/dev/null
+          else
+            gh api -X POST "repos/$GH_REPO/issues/$PR_NUMBER/comments" -F "body=@$RUNNER_TEMP/review.md" >/dev/null
+          fi
+          gh label create needs-igor --color B60205 --description "Ship gate: waits for Igor" 2>/dev/null || true
+          gh label create routine --color 0E8A16 --description "Ship gate: merges on green" 2>/dev/null || true
+          gh label create igor-review --color 5319E7 --description "Igor: I want to review this one" 2>/dev/null || true
+          # New commits reset the previous needs-fix verdict.
+          if [ "${{ github.event.action }}" = synchronize ]; then
+            gh pr edit "$PR_NUMBER" --remove-label needs-fix 2>/dev/null || true
+          fi
+          case "$VERDICT" in
+            auto)  gh pr edit "$PR_NUMBER" --add-label routine --remove-label needs-igor || true ;;
+            human) gh pr edit "$PR_NUMBER" --add-label needs-igor --remove-label routine || true ;;
+            *)     gh pr edit "$PR_NUMBER" --remove-label routine || true ;;
+          esac
+          cat "$RUNNER_TEMP/review.md" >> "$GITHUB_STEP_SUMMARY"
+
+  test:
+    name: test
+    needs: policy
+    if: needs.policy.outputs.verdict != 'hold'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout PR head
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: ${{ needs.policy.outputs.head_sha }}
+          persist-credentials: false
+
+      - name: Setup Node
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install deps
+        run: npm ci --onnxruntime-node-install-cuda=skip
+
+      - name: Run selected tests one file at a time
+        env:
+          TESTS: ${{ needs.policy.outputs.tests }}
+        run: |
+          set -uo pipefail
+          failed=0
+          for t in $TESTS; do
+            [ -f "$t" ] || { echo "::notice::$t not in this PR, skipped"; continue; }
+            echo "::group::$t"
+            if ! node --test "$t"; then
+              echo "::error file=$t::$t failed"
+              failed=1
+            fi
+            echo "::endgroup::"
+          done
+          node --check scripts/*.js >/dev/null 2>&1 || { echo "::error::syntax error in scripts/"; failed=1; }
+          exit $failed
+
+  merge:
+    name: merge
+    needs: [policy, test]
+    if: needs.policy.outputs.verdict == 'auto' && needs.test.result == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout trusted main
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: main
+          persist-credentials: false
+
+      - name: Wait for other checks, then merge the tested commit
+        env:
+          GH_TOKEN: ${{ secrets.GH_PAT || github.token }}
+          HEAD_SHA: ${{ needs.policy.outputs.head_sha }}
+          USED_PAT: ${{ secrets.GH_PAT != '' }}
+        run: |
+          set -euo pipefail
+          wait_min="$(node -p "require('./config/ship-policy.json').checkWaitMinutes || 12")"
+          deadline=$(( $(date +%s) + wait_min * 60 ))
+          state=pending
+          while [ "$(date +%s)" -lt "$deadline" ]; do
+            state="$(node scripts/ship-policy.js checks --pr "$PR_NUMBER" | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>console.log(JSON.parse(s).state))')"
+            [ "$state" != pending ] && break
+            sleep 30
+          done
+          if [ "$state" != green ]; then
+            echo "::warning::Checks are $state. Not merging. The steward picks this up."
+            gh pr edit "$PR_NUMBER" --add-label needs-fix || true
+            exit 0
+          fi
+
+          open_threads="$(gh api graphql -F owner="${GH_REPO%/*}" -F name="${GH_REPO#*/}" -F n="$PR_NUMBER" -f query='
+            query($owner:String!,$name:String!,$n:Int!){repository(owner:$owner,name:$name){pullRequest(number:$n){
+              reviewDecision reviewThreads(first:100){nodes{isResolved}}}}}' \
+            --jq '[.data.repository.pullRequest.reviewThreads.nodes[] | select(.isResolved == false)] | length')"
+          if [ "$open_threads" != 0 ]; then
+            echo "::warning::$open_threads review thread(s) open. Not merging until they are answered."
+            gh pr edit "$PR_NUMBER" --add-label needs-fix || true
+            exit 0
+          fi
+
+          gh pr edit "$PR_NUMBER" --remove-label needs-fix 2>/dev/null || true
+          gh pr merge "$PR_NUMBER" --squash --delete-branch --match-head-commit "$HEAD_SHA"
+          echo "Merged #$PR_NUMBER at $HEAD_SHA" >> "$GITHUB_STEP_SUMMARY"
+
+          # A merge made with GITHUB_TOKEN does not fire push workflows, so
+          # start the Railway deploy explicitly in that case.
+          if [ "$USED_PAT" != true ]; then
+            gh workflow run deploy-railway.yml --ref main
+            echo "Dispatched deploy-railway.yml (merge used GITHUB_TOKEN)." >> "$GITHUB_STEP_SUMMARY"
+          fi
