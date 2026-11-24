@@ -1,9 +1,16 @@
 # Changelog
 
-## Unreleased
+## 1.40.10
 
 ### Patch Changes
 
+- 0c06a74: Lifetime analytics no longer report fewer visitors than the 30-day window. When the telemetry log passed 64 MB the lifetime window silently read only a 4 MB tail while the 30-day window read 32 MB, so production showed 1,950 lifetime visitors against 13,947 for 30 days. The lifetime window now reads as much as the widest bounded window (64 MB). Counts are still marked partial (`telemetryWindowComplete: false`) when the log is larger than that.
+
+## 1.40.9
+
+### Patch Changes
+
+- Per-project dashboard: opening the dashboard for a project (status-line links now carry `project` and `projectDir`) shows the same up/down counts as the status line's this-project numbers, and the project switcher no longer keeps a stale folder. New `beforeShellExecution` adapter lets Cursor call the ThumbGate gate (`scripts/cursor-shell-gate.js`).
 - Attribution: a LinkedIn referrer (linkedin.com, lnkd.in) is named `linkedin`. The landing visit's `utm_source`, `utm_medium`, `utm_campaign`, `utm_content` and `utm_term` are kept in a 30-day first-party cookie and flow into the checkout form and the Stripe session metadata, so a buyer from a LinkedIn post shows up as `linkedin`, not `website`. New read-only `GET /v1/analytics/sources` (admin or operator key) groups visits, installs and checkout starts by `utm_source` for the last 7 and 30 days. The About page links the correct LinkedIn profile.
 - Checkout opens a Stripe session only after a confirmed human click. The Pro buttons post to the server with a short-lived single-use token that page JavaScript fetches after a real pointer or keyboard event. A bare GET, a request without a token, or more than 2 a minute from one IP gets no session, and `/go/pro*` GET links go to the confirm page instead of a payment link. Every session records landing page, referrer, browser class and button id. The npm package now ships `scripts/checkout-human-gate.js` and `scripts/cap-hit-counter.js` (+2 files, bundle baseline 690 -> 692).
 

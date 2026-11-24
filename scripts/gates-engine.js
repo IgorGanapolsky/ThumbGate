@@ -80,6 +80,7 @@ const {
   redactText,
   isSafeSecretStorageWrite,
   SAFE_SECRET_STORAGE_DIRS,
+  SECRET_FILE_PATTERNS,
 } = require('./secret-scanner');
 const {
   evaluateSecurityScan,
@@ -4250,12 +4251,24 @@ function evaluateGatesInner(toolName, toolInput, configPath, options = {}) {
 // Turn a secret-exfiltration block into actionable guidance that names the
 // safe path, instead of a dead-end that drives agents toward brittle
 // workarounds (e.g. writing secrets to /tmp). The vault dirs referenced here
-// are the SAME constant the scanner whitelists, so the hint can never drift
-// from enforcement.
-function buildSecretRemediation(toolName = '', toolInput = {}) {
-  const vaultDirs = (SAFE_SECRET_STORAGE_DIRS || []).map((dir) => `~/${dir}`);
-  const primaryVault = vaultDirs[0] || '~/.resume_secrets';
-  const vaultList = vaultDirs.join(', ') || primaryVault;
+// come from the SAME constant the scanner whitelists, so the hint can never
+// drift from enforcement. `.resume_secrets` stays whitelisted for existing
+// installs but is a legacy, operator-specific name, so it is not advertised.
+const LEGACY_SECRET_STORAGE_DIRS = new Set(['.resume_secrets']);
+const SECRET_FILE_FINDING_IDS = new Set((SECRET_FILE_PATTERNS || []).map((pattern) => pattern.id));
+
+function listAdvertisedVaultDirs() {
+  const dirs = (SAFE_SECRET_STORAGE_DIRS || []).filter((dir) => !LEGACY_SECRET_STORAGE_DIRS.has(dir));
+  return (dirs.length ? dirs : ['.thumbgate/secrets']).map((dir) => `~/${dir}`);
+}
+
+function isSecretFileReadOnly(findings = []) {
+  return findings.length > 0 && findings.every((finding) => SECRET_FILE_FINDING_IDS.has(finding.id));
+}
+
+function buildSecretRemediation(toolName = '', toolInput = {}, findings = []) {
+  const vaultDirs = listAdvertisedVaultDirs();
+  const vaultList = vaultDirs.join(', ');
 
   if (EDIT_LIKE_TOOLS && EDIT_LIKE_TOOLS.has(toolName)) {
     const target = toolInput.file_path || toolInput.path || toolInput.filePath || toolInput.target_path;
@@ -4263,6 +4276,11 @@ function buildSecretRemediation(toolName = '', toolInput = {}) {
     return `To store this secret safely, write it with the Write/Edit tool to a file under ${vaultList}${where}. `
       + `Those locations are whitelisted for secret storage and will NOT be blocked. `
       + `Do not route around this by writing to /tmp or another path — that leaves the secret in a world-readable location and does not make it safe.`;
+  }
+
+  if (toolName === 'Bash' && isSecretFileReadOnly(findings)) {
+    return `Do not print or send a credentials file — its contents would land in the session transcript and logs. `
+      + `Let the code load those values at runtime (for example from environment variables), or ask the user which specific setting you need.`;
   }
 
   if (toolName === 'Bash') {
@@ -4274,7 +4292,7 @@ function buildSecretRemediation(toolName = '', toolInput = {}) {
 }
 
 function buildSecretGuardResult(scanResult, context = {}) {
-  const remediation = buildSecretRemediation(context.toolName, context.toolInput || {});
+  const remediation = buildSecretRemediation(context.toolName, context.toolInput || {}, scanResult.findings || []);
   const summary = buildSafeSummary(
     scanResult.findings,
     'Blocked because the action appears to expose secret material'

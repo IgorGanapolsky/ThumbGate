@@ -2,11 +2,13 @@
   'use strict';
   var selected = new URL(window.location.href).searchParams.get('project');
   if (selected === 'all') selected = null;
+  var selectedDir = selected ? new URL(window.location.href).searchParams.get('projectDir') : null;
   var loading = null;
   function url(input) {
     var target = new URL(input, window.location.origin);
     if (target.origin !== window.location.origin) return target.href;
     if (selected) target.searchParams.set('project', selected);
+    if (selected && selectedDir) target.searchParams.set('projectDir', selectedDir);
     return target.pathname + target.search + target.hash;
   }
   function mount() {
@@ -14,20 +16,28 @@
     var container = document.createElement('section');
     container.id = 'projectOverview';
     container.className = 'container';
-    container.style.cssText = 'padding:16px 20px;max-width:1200px;margin:auto';
+    container.style.cssText = 'padding:12px 20px;max-width:1200px;margin:auto';
+    var bar = document.createElement('div'); bar.style.cssText = 'display:flex;align-items:center;gap:12px;flex-wrap:wrap';
     var label = document.createElement('label');
-    label.htmlFor = 'projectSwitcher'; label.textContent = 'Project';
+    label.htmlFor = 'projectSwitcher'; label.textContent = 'Project'; label.style.cssText = 'font-weight:600';
     var select = document.createElement('select');
-    select.id = 'projectSwitcher'; select.style.cssText = 'margin:0 12px;padding:8px;max-width:100%;background:var(--bg-raised,#18181b);color:var(--text,#fafafa);border:1px solid var(--border,#444);border-radius:6px';
-    var all = document.createElement('option'); all.value = ''; all.textContent = 'All projects'; select.appendChild(all);
+    select.id = 'projectSwitcher'; select.style.cssText = 'padding:8px;min-width:260px;max-width:100%;background:var(--bg-raised,#18181b);color:var(--text,#fafafa);border:1px solid var(--border,#444);border-radius:6px';
+    var all = document.createElement('option'); all.value = ''; all.textContent = 'All projects (account-wide, not one project)'; select.appendChild(all);
     if (selected) { var pending = document.createElement('option'); pending.value = selected; pending.textContent = 'Selected project'; select.appendChild(pending); select.value = selected; }
-    select.addEventListener('change', function () { var next = new URL(window.location.href); if (select.value) next.searchParams.set('project', select.value); else next.searchParams.delete('project'); window.location.assign(next.href); });
-    var status = document.createElement('span'); status.id = 'projectStatus'; status.setAttribute('role', 'status');
-    var cards = document.createElement('div'); cards.id = 'projectCards'; cards.style.cssText = 'display:flex;gap:12px;flex-wrap:wrap;margin-top:12px';
-    var sharedGates = document.createElement('p'); sharedGates.id = 'projectGlobalGates';
-    container.append(label, select, status, sharedGates, cards);
-    var header = document.querySelector('header');
-    if (header) header.after(container); else document.body.prepend(container);
+    select.addEventListener('change', function () { var next = new URL(window.location.href); next.searchParams.delete('projectDir'); if (select.value) next.searchParams.set('project', select.value); else next.searchParams.delete('project'); window.location.assign(next.href); });
+    var status = document.createElement('span'); status.id = 'projectStatus'; status.setAttribute('role', 'status'); status.style.cssText = 'color:var(--text-muted,#a1a1aa)';
+    var cards = document.createElement('div'); cards.id = 'projectCards'; cards.style.cssText = 'display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px;margin-top:12px';
+    var sharedGates = document.createElement('p'); sharedGates.id = 'projectGlobalGates'; sharedGates.style.cssText = 'margin:8px 0 0;color:var(--text-muted,#a1a1aa);font-size:13px';
+    bar.append(label, select, status);
+    container.append(bar, sharedGates, cards);
+    // The dashboard's top bar is a <nav class="app-top-nav">, not a <header>: anchor under it so the switcher never lands above the site nav.
+    var anchor = document.querySelector('.app-top-nav') || document.querySelector('header');
+    if (anchor) anchor.after(container); else document.body.prepend(container);
+  }
+  function hasActivity(project) {
+    if (project.empty === true) return false;
+    var c = project.counts || {};
+    return Boolean(c.feedback || c.lessons || c.gates || c.blocks || c.warns || c.toolCalls || c.agents);
   }
   function refresh(headers) {
     mount();
@@ -37,17 +47,21 @@
       while (select.options.length > 1) select.remove(1);
       var projects = Array.isArray(data.projects) ? data.projects : [];
       if (selected && !projects.some(function (project) { return project.projectKey === selected; })) projects.push({ projectKey: selected, projectName: 'Project with no recorded activity', counts: {} });
-      projects.forEach(function (project) { var option = document.createElement('option'); option.value = project.projectKey; option.textContent = project.projectName; select.appendChild(option); });
+      // Leftover identities with nothing recorded are not worth a pick: hide them and say how many.
+      var shown = projects.filter(function (project) { return hasActivity(project) || project.projectKey === selected; });
+      var hidden = projects.length - shown.length;
+      shown.forEach(function (project) { var option = document.createElement('option'); option.value = project.projectKey; var f = (project.counts || {}).feedback || 0; option.textContent = project.projectName + ' · ' + f + ' feedback'; select.appendChild(option); });
       select.value = selected || '';
       var current = projects.find(function (project) { return project.projectKey === selected; });
-      document.getElementById('projectStatus').textContent = current ? current.projectName : 'All projects in this account';
+      var hiddenNote = hidden > 0 ? ' ' + hidden + ' project' + (hidden === 1 ? '' : 's') + ' with no recorded activity hidden.' : '';
+      document.getElementById('projectStatus').textContent = current ? current.projectName : 'Account-wide view: mixes every project and store. Pick a project for its own numbers.' + hiddenNote;
       document.getElementById('projectGlobalGates').textContent = (data.globalGateCount || 0) + ' global gates shared across projects';
       var cards = document.getElementById('projectCards'); cards.replaceChildren();
-      if (!selected) projects.forEach(function (project) {
-        var card = document.createElement('a'); card.href = '?project=' + encodeURIComponent(project.projectKey); card.style.cssText = 'display:block;border:1px solid var(--border,#444);border-radius:8px;padding:12px;color:inherit;min-width:180px;text-decoration:none';
+      if (!selected) shown.forEach(function (project) {
+        var card = document.createElement('a'); card.href = '?project=' + encodeURIComponent(project.projectKey); card.style.cssText = 'display:flex;flex-direction:column;gap:4px;border:1px solid var(--border,#444);border-radius:8px;padding:12px;color:inherit;min-width:0;text-decoration:none';
         var title = document.createElement('strong'); title.textContent = project.projectName;
-        var counts = document.createElement('div'); var c = project.counts || {}; counts.textContent = (c.feedback || 0) + ' feedback · ' + (c.lessons || 0) + ' lessons · ' + (c.gates || 0) + ' active gates · ' + (c.blocks || 0) + ' blocks · ' + (c.warns || 0) + ' warnings · ' + (c.toolCalls || 0) + ' tool calls · ' + (c.agents || 0) + ' agents';
-        var activity = document.createElement('small'); activity.textContent = project.lastActivity ? 'Last activity ' + new Date(project.lastActivity).toLocaleString() : 'No recorded activity';
+        var counts = document.createElement('div'); var c = project.counts || {}; counts.style.cssText = 'font-size:13px'; counts.textContent = (c.feedback || 0) + ' feedback · ' + (c.lessons || 0) + ' lessons · ' + (c.gates || 0) + ' active gates · ' + (c.blocks || 0) + ' blocks · ' + (c.warns || 0) + ' warnings · ' + (c.toolCalls || 0) + ' tool calls · ' + (c.agents || 0) + ' agents';
+        var activity = document.createElement('small'); activity.style.cssText = 'color:var(--text-muted,#a1a1aa)'; activity.textContent = project.lastActivity ? 'Last activity ' + new Date(project.lastActivity).toLocaleString() : 'No recorded activity';
         card.append(title, counts, activity); cards.appendChild(card);
       });
     }).catch(function () { document.getElementById('projectStatus').textContent = 'Project list unavailable'; }).finally(function () { loading = null; });

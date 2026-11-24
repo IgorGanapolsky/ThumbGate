@@ -238,6 +238,8 @@ function buildProjectCatalog(root, options = {}) {
       if (stamp && Number.isFinite(Date.parse(stamp)) && (!project.lastActivity || Date.parse(stamp) > Date.parse(project.lastActivity))) project.lastActivity = stamp;
     }
   }
-  return { projects: [...projects.values()].sort((a, b) => a.projectName.localeCompare(b.projectName)), globalGateCount: gates.filter((gate) => gate.scope === 'global' && gate.active !== false && gate.enabled !== false).length };
+  // A project with nothing recorded (no feedback, lessons, gates, blocks, tool calls or agents) is a leftover identity, not something to pick.
+  const withActivity = (project) => ({ ...project, empty: Object.values(project.counts).every((count) => !count) });
+  return { projects: [...projects.values()].map(withActivity).sort((a, b) => a.projectName.localeCompare(b.projectName)), globalGateCount: gates.filter((gate) => gate.scope === 'global' && gate.active !== false && gate.enabled !== false).length };
 }
 module.exports = { attributionForFile, uniqueSourceIndex, iterateRows, SIGNAL_FILES, accountDirectories, signalPaths, readRows, accountAttribution, readProjectRows, readProjectGates, buildProjectCatalog };

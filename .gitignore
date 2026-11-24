@@ -151,3 +151,4 @@ docs/demo/gate-demo/.run/
 
 # plugin eval scratch output
 evals/plugin/results/
+docs/launch/.demo-sandbox/

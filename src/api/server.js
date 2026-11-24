@@ -585,7 +585,10 @@ function serveStaticFile(res, filePath, { headOnly = false, cacheSeconds = 86400
     return;
   }
   res.setHeader('Content-Type', contentType);
-  res.setHeader('Cache-Control', `public, max-age=${cacheSeconds}, immutable`);
+  // Scripts, styles and pages have no content hash in their URL, so a browser that pins them as
+  // immutable keeps running an old build's code after an upgrade. Only media is safe to pin.
+  const revalidate = ['.js', '.mjs', '.css', '.html', '.json'].includes(ext);
+  res.setHeader('Cache-Control', revalidate ? 'no-cache' : `public, max-age=${cacheSeconds}, immutable`);
   res.setHeader('Referrer-Policy', 'same-origin');
   res.setHeader('Accept-Ranges', 'bytes');
   const range = rangeHeader ? parseByteRange(rangeHeader, stat.size) : null;
@@ -5101,6 +5104,7 @@ function renderSitemapXml(runtimeConfig) {
     { path: '/peter', changefreq: 'weekly', priority: '0.9' },
     { path: '/workflow-hardening-sprint', changefreq: 'weekly', priority: '0.9' },
     { path: '/install', changefreq: 'weekly', priority: '0.9' },
+    { path: '/connectors', changefreq: 'weekly', priority: '0.85' },
     { path: '/terms', changefreq: 'monthly', priority: '0.7' },
     { path: '/privacy', changefreq: 'monthly', priority: '0.7' },
     { path: '/support', changefreq: 'monthly', priority: '0.7' },
@@ -5132,7 +5136,6 @@ function renderSitemapXml(runtimeConfig) {
     { path: '/learn/codex-role-plugins-need-governance', changefreq: 'weekly', priority: '0.85' },
     { path: '/learn/agentic-os-team-governance', changefreq: 'weekly', priority: '0.85' },
     { path: '/learn/cost-aware-agent-gate-routing', changefreq: 'weekly', priority: '0.85' },
-    { path: '/learn/pretix-stripe-connect-marketplaces', changefreq: 'weekly', priority: '0.9' },
     { path: '/learn/netflix-oci-actor-critic-process-audits', changefreq: 'weekly', priority: '0.85' },
     { path: '/learn/future-agi-self-healing-agent-firewall', changefreq: 'weekly', priority: '0.85' },
     { path: '/learn/five-walls-enterprise-agent-deployment', changefreq: 'weekly', priority: '0.85' },
@@ -11252,6 +11255,17 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
       return;
     }
 
+    // Public connectors page (linked from /pricing and the site nav).
+    if (isGetLikeRequest && (pathname === '/connectors' || pathname === '/connectors/' || pathname === '/connectors.html')) {
+      try {
+        const connectorsPageHtml = fs.readFileSync(path.join(PUBLIC_DIR, 'connectors.html'), 'utf-8');
+        sendHtml(res, 200, connectorsPageHtml, {}, { headOnly: isHeadRequest });
+      } catch {
+        sendText(res, 404, 'Connectors page not found');
+      }
+      return;
+    }
+
     // Public Remote MCP Connector Documentation.
     if (isGetLikeRequest && (pathname === '/docs/connectors' || pathname === '/docs/connectors/' || pathname === '/docs/connectors.html')) {
       try {
@@ -11775,7 +11789,8 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
       if (req.method === 'GET' && pathname === '/v1/projects') { sendJson(res, 200, buildProjectCatalog(requestFeedbackDir, projectOptions)); return; }
       if (requestProjectKey != null && req.method === 'GET' && ['/v1/dashboard', '/v1/feedback/stats'].includes(pathname)) {
         const data = generateDashboard(requestFeedbackDir, {
-          projectKey: requestProjectKey, ...projectOptions, humanOnly: true });
+          projectKey: requestProjectKey, ...projectOptions, humanOnly: true,
+          projectDir: getEffectiveRequestedProjectSelection(req, parsed) || undefined });
         const tier = resolvePaidSessionTier(extractApiKey(req), expectedApiKey, expectedOperatorKey) || 'pro';
         if (pathname === '/v1/dashboard') sendJson(res, 200, { ...data, tier });
         else sendJson(res, 200, { ...data.feedbackAnalysis, projectKey: requestProjectKey, tier, gateStats: data.gateStats, activeGateCount: data.gateStats.totalGates, todayOverview: data.todayOverview });
