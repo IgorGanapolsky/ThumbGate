@@ -26,12 +26,18 @@ test('a session rooted at the home folder is named as no project, not after the 
   assert.match(resolved.projectKey, /^(repo|local|legacy)_[a-f0-9]{64}$|^unassigned$/);
 });
 
-test('project switcher anchors under the app nav, hides empty projects and uses a grid', () => {
+test('project switcher anchors under the app nav, offers only real projects and uses a grid', () => {
   const source = fs.readFileSync(path.join(__dirname, '..', 'public', 'project-switcher.js'), 'utf8');
   assert.match(source, /\.app-top-nav/);
-  assert.match(source, /function hasActivity/);
+  assert.match(source, /function isRealProject\(project\) \{ return \/\^repo_\/\.test/);
   assert.match(source, /grid-template-columns/);
-  assert.match(source, /with no recorded activity hidden/);
+  assert.doesNotMatch(source, /\(legacy\)|Unassigned \(before/);
+});
+
+test('the status line names the project and its folder, and the catalog reports the server project folder', () => {
+  const source = fs.readFileSync(path.join(__dirname, '..', 'public', 'project-switcher.js'), 'utf8');
+  assert.match(source, /replace\(\/\^\\\/Users\\\/\[\^\/\]\+\/, '~'\)/);
+  assert.match(source, /if \(data\.projectDir\) next\.searchParams\.set\('projectDir', data\.projectDir\)/);
 });
 
 test('dashboard states the scope of its headline feedback numbers', () => {

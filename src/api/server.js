@@ -11775,7 +11775,7 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
       const _token = extractBearerToken(req);
       if (_token && _token !== expectedApiKey) recordUsage(_token);
       Object.assign(projectOptions, { projectKey: requestProjectKey, feedbackDir: requestFeedbackDir }, projectEvidenceForRequest(req, parsed, requestFeedbackDir, requestDataIdentity));
-      if (req.method === 'GET' && pathname === '/v1/projects') { sendJson(res, 200, buildProjectCatalog(requestFeedbackDir, projectOptions)); return; }
+      if (req.method === 'GET' && pathname === '/v1/projects') { sendJson(res, 200, { ...buildProjectCatalog(requestFeedbackDir, projectOptions), projectDir: projectOptions.projectDir || process.env.THUMBGATE_PROJECT_DIR || null }); return; }
       if (requestProjectKey != null && req.method === 'GET' && ['/v1/dashboard', '/v1/feedback/stats'].includes(pathname)) {
         const data = generateDashboard(requestFeedbackDir, {
           projectKey: requestProjectKey, ...projectOptions, humanOnly: true,

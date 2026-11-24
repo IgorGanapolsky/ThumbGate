@@ -40,6 +40,12 @@
     var c = project.counts || {};
     return Boolean(c.feedback || c.lessons || c.gates || c.blocks || c.warns || c.toolCalls || c.agents);
   }
+  // A real project is one identified by its git remote (repo_ key). Legacy, local and unassigned identities are leftovers.
+  function isRealProject(project) { return /^repo_/.test(project.projectKey || ''); }
+  function displayName(project) {
+    if (project.projectKey === selected && selectedDir) return selectedDir.split('/').filter(Boolean).pop();
+    return String(project.projectName || '').split('/').pop();
+  }
   function refresh(headers) {
     mount();
     if (loading) return loading;
@@ -51,16 +57,16 @@
       // Leftover identities with nothing recorded are not worth a pick: hide them and say how many.
       // A bare dashboard URL opens on a project; "All projects" is an explicit pick (project=all).
       if (!explicit) {
-        var recent = projects.filter(function (project) { return hasActivity(project) && project.lastActivity; }).sort(function (a, b) { return new Date(b.lastActivity) - new Date(a.lastActivity); })[0];
-        if (recent) { var next = new URL(window.location.href); next.searchParams.set('project', recent.projectKey); window.location.replace(next.href); return; }
+        var recent = projects.filter(function (project) { return isRealProject(project) && project.lastActivity; }).sort(function (a, b) { return new Date(b.lastActivity) - new Date(a.lastActivity); })[0];
+        if (recent) { var next = new URL(window.location.href); next.searchParams.set('project', recent.projectKey); if (data.projectDir) next.searchParams.set('projectDir', data.projectDir); window.location.replace(next.href); return; }
       }
-      var shown = projects.filter(function (project) { return hasActivity(project) || project.projectKey === selected; });
-      var hidden = projects.length - shown.length;
-      shown.forEach(function (project) { var option = document.createElement('option'); option.value = project.projectKey; var f = (project.counts || {}).feedback || 0; option.textContent = project.projectName + ' · ' + f + ' feedback'; select.appendChild(option); });
+      // Only the selected project and other real projects with feedback are offered; legacy, local and unassigned identities are not.
+      var shown = projects.filter(function (project) { return project.projectKey === selected || isRealProject(project); });
+      shown.forEach(function (project) { var option = document.createElement('option'); option.value = project.projectKey; option.textContent = displayName(project); select.appendChild(option); });
       select.value = selected || '';
       var current = projects.find(function (project) { return project.projectKey === selected; });
-      var hiddenNote = hidden > 0 ? ' ' + hidden + ' project' + (hidden === 1 ? '' : 's') + ' with no recorded activity hidden.' : '';
-      document.getElementById('projectStatus').textContent = current ? current.projectName : 'Account-wide view: mixes every project and store. Pick a project for its own numbers.' + hiddenNote;
+      var where = selectedDir ? selectedDir.replace(/^\/Users\/[^/]+/, '~') : '';
+      document.getElementById('projectStatus').textContent = current ? displayName(current) + (where ? ' · ' + where : '') : 'All projects: account-wide, mixes every project. Pick a project for its own numbers.';
       document.getElementById('projectGlobalGates').textContent = (data.globalGateCount || 0) + ' global gates shared across projects';
       var cards = document.getElementById('projectCards'); cards.replaceChildren();
       if (!selected) shown.forEach(function (project) {
