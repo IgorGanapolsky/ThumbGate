@@ -14,6 +14,7 @@ const { readProjectRows } = require('./project-catalog');
 const { resolveLocalProject, hash } = require('./project-identity');
 const { resolveProjectDir, resolveFeedbackDir, getHomeDir } = require('./feedback-paths');
 const { isCountedHumanFeedback, isLegacyMcpCapture } = require('./human-feedback');
+const { readInjections, computeLessonEffect } = require('./lesson-effect');
 
 function normalizeSignal(entry) {
   const raw = String(entry.signal || entry.feedback || '').toLowerCase();
@@ -133,24 +134,27 @@ function collectHumanRows(options = {}) {
     }
     counted.push(row);
   }
-  return { rows: counted, projectKey, projectName, projectDir, excluded };
+  return { rows: counted, projectKey, projectName, projectDir, excluded, injectionDirs: [...ownDirs] };
 }
 
 function computeHumanCounts(options = {}) {
-  const { rows, projectName, excluded } = collectHumanRows(options);
+  const { rows, projectName, excluded, injectionDirs } = collectHumanRows(options);
   let up = 0;
   let down = 0;
   let latestDown = null;
+  const downs = [];
   for (const row of rows) {
     const signal = normalizeSignal(row);
     if (signal === 'up') up += 1;
     if (signal === 'down') {
       down += 1;
       const at = rowTime(row);
+      if (at !== null) downs.push({ at, tags: row.tags });
       if (at !== null && (!latestDown || at > latestDown.at)) latestDown = { at, row };
     }
   }
-  return { up, down, label: 'this project', project: projectName, latestDown: describeLatestDown(latestDown), notCounted: excluded.unassignedNoEvidence };
+  const lessonEffect = computeLessonEffect(readInjections(injectionDirs), downs);
+  return { up, down, label: 'this project', project: projectName, latestDown: describeLatestDown(latestDown), notCounted: excluded.unassignedNoEvidence, lessonEffect };
 }
 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
