@@ -1124,9 +1124,11 @@ async function callToolInner(name, args) {
         cwd: resolveWorkspaceCwd(args.cwd),
         lessonId: args.lessonId,
         lessonKey: args.lessonKey,
-        // A capture_feedback call carries a person's thumb; callers that are
-        // scripts can pass reviewOrigin 'automated' or 'imported' explicitly.
-        reviewOrigin: ['automated', 'imported'].includes(args.reviewOrigin) ? args.reviewOrigin : 'human',
+        // An agent calling this tool is not a person. A call is a person's thumb only when it carries the
+        // user-prompt hook's tag, which the hook adds when the thumb came from the person's own message.
+        // Everything else is recorded as automated, whatever the caller says.
+        reviewOrigin: args.reviewOrigin === 'imported' ? 'imported'
+          : (args.reviewOrigin === 'human' && Array.isArray(args.tags) && args.tags.includes('user-prompt-thumbs') ? 'human' : 'automated'),
       }));
     }
     case 'feedback_summary':

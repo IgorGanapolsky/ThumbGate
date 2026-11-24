@@ -83,7 +83,7 @@ test('case 3: a thumb whose context names another project never counts, keyed or
   }
 });
 
-test('case 4: an old row whose text says a person gave the thumb still counts, an agent summary does not', () => {
+test('case 4: text that says a person gave the thumb is the agent\'s wording and does not count without the tag', () => {
   const p = makeProject();
   try {
     const old = (id, context, tags = []) => ({ id, signal: 'positive', reviewOrigin: 'human', actionType: 'store-learning', tags, context, timestamp: at(Number(id.slice(-1))) });
@@ -95,8 +95,8 @@ test('case 4: an old row whose text says a person gave the thumb still counts, a
       old('agent_5', 'Positive signal on the turn where I checked the date first'),
     ]);
     const out = collectHumanRows(p.options);
-    assert.deepEqual(out.rows.map((row) => row.id).sort(), ['said_1', 'said_2', 'said_3']);
-    assert.equal(out.excluded.unassignedNoEvidence, 2);
+    assert.deepEqual(out.rows, []);
+    assert.equal(out.excluded.unassignedNoEvidence, 5);
   } finally {
     fs.rmSync(p.home, { recursive: true, force: true });
   }
