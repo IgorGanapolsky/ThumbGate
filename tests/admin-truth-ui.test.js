@@ -94,11 +94,11 @@ test('the Analytics tab shows the conversion table and what qualifies an acquisi
 
 const moneyBase = { payingCustomers: 0, activePro: 0, payingCustomersBasis: 'stripe_paid_and_active', activeProBasis: 'stripe_active_subscriptions_excluding_owner', revenueLast30Days: {}, checkouts7d: null, checkouts30d: null, checkoutBotCheck: null, traffic30d: null, leadsBySource: null, reasons: {}, notes: [] };
 
-test('Money labels checkout revenue as one-time and says renewal invoices are not included', () => {
+test('Money labels checkout revenue as one-time and counts renewals apart', () => {
   const page = renderTexts('money', { ...moneyBase, revenueLast30Days: { USD: 4900 } }).all();
   assert.ok(page.includes('One-time checkout revenue · past 30 days'));
   assert.equal(page.some((text) => /^Revenue · past 30 days$/.test(text)), false);
-  assert.ok(page.some((text) => /Subscription renewal invoices are not read/.test(text) && /not collected yet/.test(text)));
+  assert.ok(page.some((text) => /Renewals are counted apart, as renewal revenue, from paid subscription renewal invoices/.test(text)));
 });
 
 test('Money shows source observed time, state and refresh time per source', () => {

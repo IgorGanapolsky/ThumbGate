@@ -449,6 +449,11 @@ function classifyTelemetryAudience(entry = {}, raw = {}, options = {}) {
     addAudienceReason(reasons, 'internal_host');
   }
 
+  // The CLI and server classifiers label the owner's own machines and build servers; trust that label.
+  if (['owner', 'ci'].includes(String(raw.visitorType || entry.visitorType || '').trim().toLowerCase())) {
+    addAudienceReason(reasons, 'internal_operator_or_ci');
+  }
+
   if (includesAnyToken([userAgent, ...identityValues], [
     'codex',
     'github-actions',
@@ -598,7 +603,8 @@ function sanitizeTelemetryPayload(payload = {}, headers = {}, options = {}) {
       cookies.thumbgate_acquisition_id,
       cookies.tg_aid
     ),
-    version: pickFirstText(raw.version, raw.appVersion),
+    // The CLI sends its package version as `pkgVersion`; without it every CLI ping was stored with no version.
+    version: pickFirstText(raw.version, raw.appVersion, raw.pkgVersion),
     platform: pickFirstText(raw.platform),
     nodeVersion: pickFirstText(raw.nodeVersion),
     page: pickFirstText(raw.page, raw.landingPath, raw.path),
