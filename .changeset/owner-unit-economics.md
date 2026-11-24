@@ -2,4 +2,4 @@
 "thumbgate": patch
 ---
 
-Owner console: Unit economics tab and `/v1/admin/economics`. Measures the hosted container's CPU and memory and counts sent emails for free (`scripts/cost-meter.js`), prices them with a sourced rate card (`config/unit-costs.json`), and shows delivery cost per active install and per paying customer, contribution per plan, a payment-to-access check, and time to first value (first real gate block after install). Adds `docs/ops/decision-log.md`.
+Cost meter and unit-economics arithmetic for the owner console: `scripts/cost-meter.js` measures the hosted container's CPU and memory and counts sent emails for free, `config/unit-costs.json` holds the sourced Railway, Resend and Stripe rates, and `scripts/unit-economics.js` turns them into delivery cost per active install and per paying customer and contribution per plan. The console tab follows in the next PR.
