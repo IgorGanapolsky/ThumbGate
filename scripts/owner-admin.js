@@ -941,6 +941,24 @@ function alertChannels() {
   return out;
 }
 
+// One-shot webhook post for owner alerts. Kept local because scripts/webhook-delivery.js is a dev-only file the npm package must not ship.
+function postOwnerWebhook(platform, webhookUrl, title, message) {
+  const payload = platform === 'teams' ? { '@type': 'MessageCard', '@context': 'http://schema.org/extensions', summary: title, themeColor: '0076D7', title, text: message }
+    : platform === 'discord' ? { embeds: [{ title, description: String(message).substring(0, 4096), color: 0x0076D7 }] }
+      : { text: `*${title}*\n${message}` };
+  const target = new URL(webhookUrl);
+  const body = JSON.stringify(payload);
+  return new Promise((resolve, reject) => {
+    const req = (target.protocol === 'https:' ? require('https') : require('http')).request(target, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(body) }, timeout: 10000 }, (res) => {
+      res.resume();
+      res.on('end', () => (res.statusCode >= 200 && res.statusCode < 300 ? resolve(res.statusCode) : reject(new Error(`Webhook HTTP ${res.statusCode}`))));
+    });
+    req.on('error', reject);
+    req.on('timeout', () => req.destroy(new Error('Webhook timeout')));
+    req.end(body);
+  });
+}
+
 // Checks the alerts every 15 minutes and sends the new ones to the channels above. Does nothing when none is set.
 function startAlertDelivery(makeDeps, { intervalMs = 15 * 60 * 1000, send } = {}) {
   const channels = alertChannels();
@@ -948,7 +966,7 @@ function startAlertDelivery(makeDeps, { intervalMs = 15 * 60 * 1000, send } = {}
   const url = String(process.env.THUMBGATE_OWNER_ALERT_WEBHOOK || '').trim();
   const platform = /discord/i.test(url) ? 'discord' : /office|teams|logic\.azure/i.test(url) ? 'teams' : 'slack';
   const deliver = send || (async ({ title, message }) => {
-    if (channels.includes('webhook')) await require('./webhook-delivery').deliver(platform, url, title, message).catch(() => null);
+    if (channels.includes('webhook')) await postOwnerWebhook(platform, url, title, message).catch(() => null);
     if (channels.includes('email')) {
       const to = require('./bot-detection').getOwnerEmails();
       if (to.length) await require('./mailer/resend-mailer').sendEmail({ to: String(to[0]), subject: title, text: message }).catch(() => null);
