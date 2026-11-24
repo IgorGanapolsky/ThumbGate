@@ -649,7 +649,7 @@ describe('server wiring and session creation', () => {
     assert.match(html, /name="click_token"/);
     assert.match(html, /isTrusted/);
     assert.match(html, /\.disabled\s*=\s*true/);
-    const scripts = [...html.matchAll(/<script>([\s\S]*?)<\/script>/g)].map((m) => m[1]);
+    const scripts = [...html.matchAll(/<script>([\s\S]*?)<\/script\s*>/g)].map((m) => m[1]);
     assert.ok(scripts.length >= 2);
     for (const code of scripts) assert.doesNotThrow(() => new vm.Script(code), 'inline script must be valid JavaScript');
   });

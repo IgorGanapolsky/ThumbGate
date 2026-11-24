@@ -18,8 +18,8 @@ jobs:
     env:
       ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version: '20'
       - name: Install Claude Code
@@ -31,7 +31,7 @@ jobs:
             --no-publish --runs 3 -j 3 --max-cost-usd 14 --json plugin-eval-raw.json
       - name: Compare the WITH score to the last release
         run: node scripts/plugin-eval-gate.js --results plugin-eval-raw.json --baseline evals/plugin/baseline.json --table | tee -a "$GITHUB_STEP_SUMMARY"
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: plugin-eval-results
