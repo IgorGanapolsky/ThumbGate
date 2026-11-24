@@ -501,6 +501,22 @@ const STEWARD_LABELS = {
   needsFix: 'needs-fix',
   needsRebase: 'needs-rebase',
 };
+const STEWARD_LABEL_STYLE = {
+  stale: ['C5DEF5', 'Steward: draft idle over 3 days'],
+  'needs-fix': ['D93F0B', 'Ship gate: red checks or open review threads'],
+  'needs-rebase': ['FBCA04', 'Steward: conflicts with main'],
+};
+
+/** Add a label, creating it first if the repo does not have it yet. */
+function addStewardLabel(number, label, runner) {
+  let res = runner(['pr', 'edit', String(number), '--add-label', label]);
+  if (res.status !== 0 && /not found/i.test(formatGhError(res))) {
+    const [color, description] = STEWARD_LABEL_STYLE[label] || ['EDEDED', 'Steward'];
+    runner(['label', 'create', label, '--color', color, '--description', description]);
+    res = runner(['pr', 'edit', String(number), '--add-label', label]);
+  }
+  return res;
+}
 
 function isProtectedSweepBranch(pr = {}) {
   const headRef = String(pr.headRefName || '').trim();
@@ -669,11 +685,11 @@ function applyStewardAction(pr, verdict, runner) {
     if (merge.status === 0) {
       return { applied: true, via: 'merge' };
     }
-    runner(['pr', 'edit', String(pr.number), '--add-label', STEWARD_LABELS.needsRebase]);
+    addStewardLabel(pr.number, STEWARD_LABELS.needsRebase, runner);
     return { applied: false, via: 'flagged', error: formatGhError(merge) };
   }
   if (verdict.action === 'label') {
-    const labelRes = runner(['pr', 'edit', String(pr.number), '--add-label', verdict.label]);
+    const labelRes = addStewardLabel(pr.number, verdict.label, runner);
     if (labelRes.status !== 0) {
       throw new Error(`Failed to label PR #${pr.number}: ${formatGhError(labelRes)}`);
     }
@@ -698,6 +714,7 @@ function sweepStalePrs(options = {}, runner = runGh) {
   let actedCount = 0;
   let skippedCount = 0;
   let keptCount = 0;
+  let errorCount = 0;
 
   for (const listed of prs) {
     const pr = isProtectedSweepBranch(listed) ? listed : enrichSweepPr(listed, runner);
@@ -723,7 +740,13 @@ function sweepStalePrs(options = {}, runner = runGh) {
     } else {
       actedCount += 1;
       if (!dryRun) {
-        Object.assign(record, applyStewardAction(pr, verdict, runner));
+        // One PR's failure must not stop the sweep for the rest.
+        try {
+          Object.assign(record, applyStewardAction(pr, verdict, runner));
+        } catch (err) {
+          record.error = err.message;
+          errorCount += 1;
+        }
       }
     }
     decisions.push(record);
@@ -736,6 +759,7 @@ function sweepStalePrs(options = {}, runner = runGh) {
     closedCount: 0,
     skippedCount,
     keptCount,
+    errorCount,
     decisions,
   };
 }
@@ -752,10 +776,10 @@ if (require.main === module) {
         console.log(JSON.stringify(summary, null, 2));
       } else {
         console.log(
-          `[PR Steward] dryRun=${summary.dryRun} acted=${summary.actedCount} skipped=${summary.skippedCount} kept=${summary.keptCount} closed=0`,
+          `[PR Steward] dryRun=${summary.dryRun} acted=${summary.actedCount} skipped=${summary.skippedCount} kept=${summary.keptCount} errors=${summary.errorCount} closed=0`,
         );
       }
-      process.exit(0);
+      process.exit(summary.errorCount > 0 ? 1 : 0);
     } catch (err) {
       console.error(err.message);
       process.exit(1);

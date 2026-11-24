@@ -1000,6 +1000,23 @@ test('sweepStalePrs never closes: rebases behind branches, labels red/idle/confl
   assert.equal(byNumber[203].action, 'keep');
   assert.equal(enrichCalls.some((a) => a[0] === 'api' && a.includes('-X')), false, 'enrichment is read-only');
 
+  // A label the repo lacks is created, and one PR's failure does not stop the rest.
+  const labelCalls = [];
+  let created = false;
+  const labelSummary = sweepStalePrs({ dryRun: false, nowMs }, (args) => {
+    labelCalls.push(args);
+    if (args[1] === 'list' && args[0] === 'pr') return { status: 0, stdout: JSON.stringify([prs[6], prs[2]]), stderr: '' };
+    if (args[1] === 'view') return { status: 0, stdout: JSON.stringify({ ...prs.find((p) => String(p.number) === args[2]), state: 'OPEN' }), stderr: '' };
+    if (args[0] === 'label') { created = true; return { status: 0, stdout: '', stderr: '' }; }
+    if (args[1] === 'edit' && args[2] === '107' && !created) return { status: 1, stdout: '', stderr: "'needs-rebase' not found" };
+    if (args[1] === 'comment' && args[2] === '107') return { status: 1, stdout: '', stderr: 'boom' };
+    return { status: 0, stdout: 'ok', stderr: '' };
+  });
+  assert.ok(labelCalls.some((a) => a[0] === 'label' && a[1] === 'create' && a[2] === 'needs-rebase'));
+  assert.equal(labelSummary.errorCount, 1);
+  assert.match(labelSummary.decisions.find((d) => d.number === 107).error, /boom/);
+  assert.equal(labelSummary.decisions.find((d) => d.number === 103).applied, true, 'the next PR is still handled');
+
   const workflowRaw = fs.readFileSync(
     path.join(__dirname, '..', '.github', 'workflows', 'pr-stale-sweeper.yml'),
     'utf8',
