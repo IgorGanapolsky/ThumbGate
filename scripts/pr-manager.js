@@ -482,22 +482,12 @@ async function managePrs(prNumber = '', runner = runGh, options = {}) {
   return { status: 'ok', prs: results };
 }
 
-// Stale-PR steward. It never closes a PR. Claude Ship's PR Steward fixes PRs
-// instead of closing them; the free version here does the mechanical part
-// (rebase a branch that fell behind main) and labels the rest so the daily
-// steward agent session (docs/ops/ship-pipeline.md) can fix the code.
-// History: the old sweeper closed #5131 after 3 days as a draft.
-const SWEEP_PR_FIELDS = 'number,state,isDraft,title,url,headRefName,baseRefName,updatedAt,createdAt,author,statusCheckRollup,mergeStateStatus,mergeable,labels';
+const SWEEP_PR_FIELDS = 'number,state,isDraft,title,url,headRefName,baseRefName,updatedAt,createdAt,author,statusCheckRollup';
 const SWEEP_LIST_LIMIT = '1000';
 const SWEEP_REQUIRED_CHECKS_BASE = 'main';
 const DEFAULT_RED_MAX_AGE_MS = 24 * 60 * 60 * 1000;
 const DEFAULT_DRAFT_IDLE_MAX_AGE_MS = 3 * 24 * 60 * 60 * 1000;
 const REQUIRED_CHECK_SET = new Set(MERGE_QUALITY_CHECKS.requiredStatusCheckContexts || []);
-const STEWARD_LABELS = {
-  stale: 'stale',
-  needsFix: 'needs-fix',
-  needsRebase: 'needs-rebase',
-};
 
 function isProtectedSweepBranch(pr = {}) {
   const headRef = String(pr.headRefName || '').trim();
@@ -524,54 +514,30 @@ function isRequiredCheckFailing(check = {}) {
   return FAILING_CHECK_CONCLUSIONS.has(conclusion) || conclusion === 'ERROR';
 }
 
-function prLabels(pr = {}) {
-  return new Set((pr.labels || []).map((l) => (typeof l === 'string' ? l : l.name)));
-}
-
 function classifyStalePr(pr = {}, options = {}) {
   const nowMs = Number.isFinite(options.nowMs) ? options.nowMs : Date.now();
   const redMaxAgeMs = Number.isFinite(options.redMaxAgeMs) ? options.redMaxAgeMs : DEFAULT_RED_MAX_AGE_MS;
   const draftIdleMaxAgeMs = Number.isFinite(options.draftIdleMaxAgeMs)
     ? options.draftIdleMaxAgeMs
     : DEFAULT_DRAFT_IDLE_MAX_AGE_MS;
-  const labels = prLabels(pr);
 
   if (isProtectedSweepBranch(pr)) {
-    return { action: 'skip', reason: 'protected_branch', headRefName: pr.headRefName || '' };
-  }
-  if (labels.has('do-not-merge')) {
-    return { action: 'skip', reason: 'on_hold' };
-  }
-
-  // A branch behind main is rebased whatever else is going on: that alone
-  // often turns red checks green, and it keeps drafts mergeable.
-  if (String(pr.mergeStateStatus || '').toUpperCase() === 'BEHIND') {
-    return { action: 'update_branch', reason: 'behind_main' };
-  }
-  if (String(pr.mergeStateStatus || '').toUpperCase() === 'DIRTY' || String(pr.mergeable || '').toUpperCase() === 'CONFLICTING') {
-    return labels.has(STEWARD_LABELS.needsRebase)
-      ? { action: 'keep', reason: 'conflict_already_flagged' }
-      : {
-        action: 'label',
-        label: STEWARD_LABELS.needsRebase,
-        reason: 'merge_conflict',
-        comment: `PR #${pr.number} has a merge conflict with \`main\`. Labelled \`${STEWARD_LABELS.needsRebase}\`; the steward session rebases it and resolves the conflict. Nothing was closed.`,
-      };
+    return {
+      action: 'skip',
+      reason: 'protected_branch',
+      headRefName: pr.headRefName || '',
+    };
   }
 
   if (pr.isDraft) {
     const updatedMs = Date.parse(pr.updatedAt || pr.createdAt || '');
     if (Number.isFinite(updatedMs) && (nowMs - updatedMs) > draftIdleMaxAgeMs) {
       const idleDays = Math.floor((nowMs - updatedMs) / (24 * 60 * 60 * 1000));
-      if (labels.has(STEWARD_LABELS.stale)) {
-        return { action: 'keep', reason: 'draft_idle_already_flagged', idleDays };
-      }
       return {
-        action: 'label',
-        label: STEWARD_LABELS.stale,
+        action: 'close',
         reason: 'draft_idle_over_3d',
         idleDays,
-        comment: `Draft PR #${pr.number} has been idle ${idleDays}d. Labelled \`${STEWARD_LABELS.stale}\` so the steward session finishes it (tests, then ready for review). It stays open.`,
+        comment: `Closing draft PR #${pr.number} after ${idleDays}d of inactivity (>3d draft idle threshold). Branch \`${pr.headRefName || 'unknown'}\` is preserved — re-open or open a fresh PR off \`origin/main\` when ready.`,
       };
     }
     return { action: 'keep', reason: 'draft_active' };
@@ -580,6 +546,8 @@ function classifyStalePr(pr = {}, options = {}) {
   const checks = Array.isArray(pr.statusCheckRollup) ? pr.statusCheckRollup : [];
   const failingRequired = checks.filter((check) => isRequiredCheckFailing(check));
   if (failingRequired.length > 0 && String(pr.baseRefName || '') !== SWEEP_REQUIRED_CHECKS_BASE) {
+    // The required-check set is only known for main. For any other base
+    // (or an unknown one) we cannot tell which red checks matter, so never close.
     return { action: 'keep', reason: 'required_checks_unknown_for_base', baseRefName: pr.baseRefName || '' };
   }
   if (failingRequired.length > 0) {
@@ -587,20 +555,19 @@ function classifyStalePr(pr = {}, options = {}) {
       .map((check) => Date.parse(check.completedAt || check.startedAt || ''))
       .filter((ts) => Number.isFinite(ts));
     const fallbackMs = Date.parse(pr.updatedAt || pr.createdAt || '');
-    const redSinceMs = checkTimestamps.length > 0 ? Math.max(...checkTimestamps) : fallbackMs;
+    const redSinceMs = checkTimestamps.length > 0
+      ? Math.max(...checkTimestamps)
+      : fallbackMs;
+
     if (Number.isFinite(redSinceMs) && (nowMs - redSinceMs) > redMaxAgeMs) {
       const redHours = Math.floor((nowMs - redSinceMs) / (60 * 60 * 1000));
       const failingNames = [...new Set(failingRequired.map((c) => c.name || c.context))];
-      if (labels.has(STEWARD_LABELS.needsFix)) {
-        return { action: 'keep', reason: 'red_already_flagged', redHours, failingChecks: failingNames };
-      }
       return {
-        action: 'label',
-        label: STEWARD_LABELS.needsFix,
+        action: 'close',
         reason: 'red_checks_over_24h',
         redHours,
         failingChecks: failingNames,
-        comment: `Required check(s) ${failingNames.join(', ')} on PR #${pr.number} have been red for ${redHours}h. Labelled \`${STEWARD_LABELS.needsFix}\`; the steward session fixes the failure and pushes. It stays open.`,
+        comment: `Closing non-draft PR #${pr.number} because required check(s) (${failingNames.join(', ')}) have been red for ${redHours}h (>24h threshold). Branch \`${pr.headRefName || 'unknown'}\` is preserved — fix locally (` + '`npm test`' + `) and re-open when green.`,
       };
     }
   }
@@ -608,50 +575,22 @@ function classifyStalePr(pr = {}, options = {}) {
   return { action: 'keep', reason: 'active' };
 }
 
-function stillNeedsAction(number, verdict, options, runner) {
+function stillEligibleForClose(number, options, runner) {
   const viewResult = runner(['pr', 'view', String(number), '--json', SWEEP_PR_FIELDS]);
   if (viewResult.status !== 0) {
     return false;
   }
   try {
     const fresh = JSON.parse(viewResult.stdout || '{}');
-    const again = classifyStalePr(fresh, options);
-    return fresh.state === 'OPEN' && again.action === verdict.action && again.reason === verdict.reason;
+    return fresh.state === 'OPEN' && classifyStalePr(fresh, options).action === 'close';
   } catch {
     return false;
   }
 }
 
-function applyStewardAction(pr, verdict, runner) {
-  if (verdict.action === 'update_branch') {
-    const rebase = runner(['pr', 'update-branch', String(pr.number), '--rebase']);
-    if (rebase.status === 0) {
-      return { applied: true, via: 'rebase' };
-    }
-    // Rebase can fail on a conflict that a merge commit would not hit.
-    const merge = runner(['pr', 'update-branch', String(pr.number)]);
-    if (merge.status === 0) {
-      return { applied: true, via: 'merge' };
-    }
-    runner(['pr', 'edit', String(pr.number), '--add-label', STEWARD_LABELS.needsRebase]);
-    return { applied: false, via: 'flagged', error: formatGhError(merge) };
-  }
-  if (verdict.action === 'label') {
-    const labelRes = runner(['pr', 'edit', String(pr.number), '--add-label', verdict.label]);
-    if (labelRes.status !== 0) {
-      throw new Error(`Failed to label PR #${pr.number}: ${formatGhError(labelRes)}`);
-    }
-    const commentRes = runner(['pr', 'comment', String(pr.number), '--body', verdict.comment]);
-    if (commentRes.status !== 0) {
-      throw new Error(`Failed to comment on PR #${pr.number}: ${formatGhError(commentRes)}`);
-    }
-    return { applied: true };
-  }
-  return { applied: false };
-}
-
 function sweepStalePrs(options = {}, runner = runGh) {
   const dryRun = Boolean(options.dryRun);
+  // A high limit makes gh paginate through every open PR, so none are silently skipped.
   const listResult = runner(['pr', 'list', '--state', 'open', '--limit', SWEEP_LIST_LIMIT, '--json', SWEEP_PR_FIELDS]);
   if (listResult.status !== 0) {
     throw new Error(`Failed to list open PRs for sweep: ${formatGhError(listResult)}`);
@@ -659,7 +598,7 @@ function sweepStalePrs(options = {}, runner = runGh) {
 
   const prs = JSON.parse(listResult.stdout || '[]');
   const decisions = [];
-  let actedCount = 0;
+  let closedCount = 0;
   let skippedCount = 0;
   let keptCount = 0;
 
@@ -673,36 +612,44 @@ function sweepStalePrs(options = {}, runner = runGh) {
       ...verdict,
       applied: false,
     };
-    delete record.comment;
 
     if (verdict.action === 'skip') {
       skippedCount += 1;
-    } else if (verdict.action === 'keep') {
-      keptCount += 1;
-    } else if (!dryRun && !stillNeedsAction(pr.number, verdict, options, runner)) {
+    } else if (verdict.action === 'close' && !dryRun && !stillEligibleForClose(pr.number, options, runner)) {
+      // The PR changed after it was listed (new push, checks recovered, undrafted).
       record.action = 'keep';
       record.reason = 'eligibility_changed';
       keptCount += 1;
-    } else {
-      actedCount += 1;
+    } else if (verdict.action === 'close') {
+      closedCount += 1;
       if (!dryRun) {
-        Object.assign(record, applyStewardAction(pr, verdict, runner));
+        const commentRes = runner(['pr', 'comment', String(pr.number), '--body', verdict.comment]);
+        if (commentRes.status !== 0) {
+          throw new Error(`Failed to comment on PR #${pr.number}: ${formatGhError(commentRes)}`);
+        }
+        // Never pass --delete-branch: branches are preserved by policy.
+        const closeRes = runner(['pr', 'close', String(pr.number)]);
+        if (closeRes.status !== 0) {
+          throw new Error(`Failed to close PR #${pr.number}: ${formatGhError(closeRes)}`);
+        }
+        record.applied = true;
       }
+    } else {
+      keptCount += 1;
     }
+
     decisions.push(record);
   }
 
   return {
     status: 'ok',
     dryRun,
-    actedCount,
-    closedCount: 0,
+    closedCount,
     skippedCount,
     keptCount,
     decisions,
   };
 }
-
 
 if (require.main === module) {
   const argv = process.argv.slice(2);
@@ -715,7 +662,7 @@ if (require.main === module) {
         console.log(JSON.stringify(summary, null, 2));
       } else {
         console.log(
-          `[PR Steward] dryRun=${summary.dryRun} acted=${summary.actedCount} skipped=${summary.skippedCount} kept=${summary.keptCount} closed=0`,
+          `[PR Sweeper] dryRun=${summary.dryRun} closed=${summary.closedCount} skipped=${summary.skippedCount} kept=${summary.keptCount}`,
         );
       }
       process.exit(0);

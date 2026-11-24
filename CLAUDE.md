@@ -27,16 +27,11 @@ ThumbGate (`IgorGanapolsky/ThumbGate`, npm `thumbgate`) is a pre-action enforcem
 
 **NEVER approve a pull request. NEVER satisfy, dismiss, or disable a branch-protection requirement on the owner's behalf. NEVER use `--admin`, `--force`, or an owner credential to make a merge possible that would otherwise be blocked.**
 
-Since 2026-11-18 (see Direct-Push Policy below) `main` takes direct pushes under the `main governance` repository ruleset (`config/main-branch-ruleset.json`, `npm run rulesets:check`). Keep `bypass_actors` empty (zero `bypass_actors`). A PR needs a human review unless `config/ship-policy.json` marks it routine (Igor, 2026-11-24); agents never approve one. Non-mutating diagnosis and a separate policy-change PR are allowed, but stop before any action that mutates review or protection state. The one exception is a change the owner orders by name, such as the 2026-11-18 direct-push order recorded below.
+Since 2026-11-18 (see Direct-Push Policy below) `main` takes direct pushes under the `main governance` repository ruleset (`config/main-branch-ruleset.json`, `npm run rulesets:check`). Keep `bypass_actors` empty (zero `bypass_actors`). Any PR that is opened still needs a human review; agents never approve one. Non-mutating diagnosis and a separate policy-change PR are allowed, but stop before any action that mutates review or protection state. The one exception is a change the owner orders by name, such as the 2026-11-18 direct-push order recorded below.
 
 - **Why:** On 2026-07-10, an agent approved `#2768` with the owner's `gh` credentials to test a hypothesis and flipped `mergeStateStatus` from `BLOCKED` to `CLEAN`, bypassing a control that exists so a human reads the diff.
 
-## Ship Policy (Igor, 2026-11-24): `/ship` by default, direct push still allowed
-
-- **Rule:** Land work with `npm run ship` (`.claude/commands/ship.md`): it branches, opens a ready PR, and `.github/workflows/ship-gate.yml` reviews it against `config/ship-policy.json`, runs the matching tests and squash-merges routine PRs on green with zero open review threads. PRs the policy marks `needs-igor` wait for Igor; tell Igor and move on. Never approve a PR and never add or remove `routine`, `needs-igor` or `do-not-merge` yourself. Direct push to `main` (below) stays allowed for hotfixes and when the pipeline itself is broken. Nothing in branch protection requires the gate. Details: `docs/ops/ship-pipeline.md`.
-- **Why:** Igor, 2026-11-24, picked "/ship by default, push still OK" to get Claude Ship's review, approval policy, steward and auto-merge for free without being blocked.
-
-## Direct-Push Policy (Igor, 2026-11-18; still allowed, `/ship` preferred since 2026-11-24)
+## Direct-Push Policy (Igor, 2026-11-18; supersedes the PR steps below)
 
 - **Rule:** Push straight to `main` after `git pull --rebase origin main`; never force-push; never `--no-verify`. The `pull_request` and required-status-check rules are off in both classic protection and the `main governance` ruleset. `required_linear_history`, `deletion` (no deletion) and `non_fast_forward` (no force-push) stay on with zero `bypass_actors`; `npm run rulesets:check` and `npm run branch-protection:check` flag either removed rule coming back as drift. `.githooks/pre-push` runs the fast unit tests one file at a time under `nice -n 15`. `ci.yml`, `e2e.yml`, `sonarcloud.yml`, `changeset-check.yml` and `claude-code-review.yml` run on a `v*` tag or `workflow_dispatch` only (`codeql.yml` also keeps its weekly schedule); deploy, publish, rollback, Stripe and scheduled workflows are unchanged.
 - **Why:** Igor, 2026-11-18: "our repos here don't need PRs". The before-state is saved in `docs/ops/branch-protection-before-2026-11-18.json` so it can be restored.

@@ -1,4 +1,4 @@
-name: Daily Stale PR Steward
+name: Daily Stale PR Sweeper
 
 on:
   schedule:
@@ -6,16 +6,13 @@ on:
   workflow_dispatch:
     inputs:
       dry_run:
-        description: 'Preview steward actions (rebase, label) without mutating GitHub state'
+        description: 'Preview stale PR closures without mutating GitHub state'
         required: false
         default: 'false'
         type: string
 
-# Never closes a PR. Rebases branches that fell behind main and labels
-# red/idle/conflicting PRs (needs-fix, stale, needs-rebase) for the steward
-# agent session. See docs/ops/ship-pipeline.md.
 permissions:
-  contents: write
+  contents: read
   pull-requests: write
   issues: write
 
@@ -38,8 +35,7 @@ jobs:
 
       - name: Run stale PR sweeper
         env:
-          # A PAT push re-triggers ship-gate on the rebased branch; GITHUB_TOKEN pushes do not.
-          GH_TOKEN: ${{ secrets.GH_PAT || secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           DRY_RUN: ${{ github.event.inputs.dry_run || 'false' }}
         run: |
           case "$DRY_RUN" in
