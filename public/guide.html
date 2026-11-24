@@ -110,7 +110,7 @@
       "name": "How does ThumbGate compare to SpecLock?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "SpecLock's own README says it turns rules from your existing AI rule files into checks that run before edits and shell commands. ThumbGate starts from your thumbs-down instead: it saves your reason and shows it back as a warning when a similar command comes up, and its built-in rules deny a short list of catastrophic commands. A thumbs-down alone does not block."
+        "text": "SpecLock's own README says it turns rules from your existing AI rule files into checks that run before edits, shell commands, and commits. ThumbGate starts from your thumbs-down instead: it saves your reason and shows it back as a warning when a similar command comes up, and its built-in rules deny a short list of catastrophic commands. A thumbs-down alone does not block."
       }
     },
     {
@@ -245,6 +245,7 @@ npx thumbgate init --agent claude-code
 npx thumbgate init --agent codex
 npx thumbgate init --agent cursor
 npx thumbgate init --agent gemini</code></pre>
+<p><strong>First run:</strong> a thumbs-down is saved and shown back as a warning on similar commands; it does not block. To make one command block right now, run <code>thumbgate force-gate "&lt;command&gt;"</code>. That gate denies only when strict enforcement is on (<code>THUMBGATE_STRICT_ENFORCEMENT=1</code>); in default mode it warns. Measured 24 Nov 2026 on a throwaway directory: warn in default mode, deny in strict mode, including <code>bash -c "&lt;command&gt;"</code>.</p>
 
 <h3>Install scope: machine-wide vs per-project</h3>
 <p>ThumbGate supports two install scopes. Pick once when you install — you can switch later by re-running with the other flag.</p>
