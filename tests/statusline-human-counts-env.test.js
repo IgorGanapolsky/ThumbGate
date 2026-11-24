@@ -24,6 +24,7 @@ function makeProject(up, down) {
       id: `fb_${i}`,
       signal: i < up ? 'positive' : 'negative',
       reviewOrigin: 'human',
+      tags: ['user-prompt-thumbs'],
       timestamp: new Date(Date.UTC(2026, 10, 23, 15, i)).toISOString(),
       context: 'logged by a person',
     }));
