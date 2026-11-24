@@ -23,7 +23,7 @@
     var select = document.createElement('select');
     select.id = 'projectSwitcher'; select.style.cssText = 'padding:8px;min-width:260px;max-width:100%;background:var(--bg-raised,#18181b);color:var(--text,#fafafa);border:1px solid var(--border,#444);border-radius:6px';
     var all = document.createElement('option'); all.value = ''; all.textContent = 'All projects (account-wide, not one project)'; select.appendChild(all);
-    if (selected) { var pending = document.createElement('option'); pending.value = selected; pending.textContent = 'Selected project'; select.appendChild(pending); select.value = selected; }
+    if (selected) { var pending = document.createElement('option'); pending.value = selected; pending.textContent = selectedDir ? selectedDir.split('/').filter(Boolean).pop() : 'Loading project…'; select.appendChild(pending); select.value = selected; }
     select.addEventListener('change', function () { var next = new URL(window.location.href); next.searchParams.delete('projectDir'); if (select.value) next.searchParams.set('project', select.value); else next.searchParams.delete('project'); window.location.assign(next.href); });
     var status = document.createElement('span'); status.id = 'projectStatus'; status.setAttribute('role', 'status'); status.style.cssText = 'color:var(--text-muted,#a1a1aa)';
     var cards = document.createElement('div'); cards.id = 'projectCards'; cards.style.cssText = 'display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px;margin-top:12px';

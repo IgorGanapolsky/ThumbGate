@@ -40,3 +40,9 @@ test('dashboard states the scope of its headline feedback numbers', () => {
   assert.match(html, /function renderFeedbackScope/);
   assert.match(html, /not counted/);
 });
+
+test('the picker placeholder names the project folder instead of saying "Selected project"', () => {
+  const source = fs.readFileSync(path.join(__dirname, '..', 'public', 'project-switcher.js'), 'utf8');
+  assert.doesNotMatch(source, /textContent = 'Selected project'/);
+  assert.match(source, /selectedDir \? selectedDir\.split\('\/'\)\.filter\(Boolean\)\.pop\(\) : 'Loading project/);
+});
