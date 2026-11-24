@@ -189,7 +189,7 @@ test('gates-engine.buildBlockActionProCta tiered messages at 5, 25, and 100 bloc
     assert.ok(midMsg && midMsg.includes('thumbgate.ai/go/pro'));
     assert.match(midMsg, /\$19\/mo/);
     assert.match(midMsg, /50 actions blocked/);
-    assert.match(midMsg, /recall, dashboard proof, and exports/);
+    assert.match(midMsg, /keeps every learned rule active and adds recall and exports/);
 
     fs.writeFileSync(ge.STATS_PATH, JSON.stringify({ blocked: 250, warned: 0, passed: 0, byGate: {} }));
     const teamMsg = ge.buildBlockActionProCta();
