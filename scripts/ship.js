@@ -25,8 +25,15 @@ const { loadPolicy, summarizeChecks } = require('./ship-policy');
 
 const EXIT = { merged: 0, red: 1, nothing: 2, human: 3, conflict: 4, timeout: 5 };
 
+// Same rule as pr-manager.js buildGhEnv (AGENTS.md): honor GH_TOKEN, fall back to GH_PAT.
+function ghEnv(baseEnv = process.env) {
+  const env = { ...baseEnv };
+  if (!env.GH_TOKEN && !env.GITHUB_TOKEN && env.GH_PAT) env.GH_TOKEN = env.GH_PAT;
+  return env;
+}
+
 function run(cmd, args, { allowFail = false } = {}) {
-  const res = spawnSync(cmd, args, { encoding: 'utf8', maxBuffer: 32 * 1024 * 1024 });
+  const res = spawnSync(cmd, args, { encoding: 'utf8', maxBuffer: 32 * 1024 * 1024, env: ghEnv() });
   if (res.status !== 0 && !allowFail) {
     throw new Error(`${cmd} ${args.join(' ')} failed: ${(res.stderr || res.stdout || '').trim()}`);
   }
@@ -67,6 +74,10 @@ function classifyPrState(view = {}, policy = loadPolicy()) {
   const mergeState = String(view.mergeStateStatus || '').toUpperCase();
   if (mergeState === 'DIRTY') {
     return { done: true, code: EXIT.conflict, message: 'Conflicts with main. Merge origin/main, resolve, commit, and run ship again.' };
+  }
+  if (!(view.statusCheckRollup || []).length) {
+    // Right after a push the new head has no checks yet; that is not "green".
+    return { done: false, message: 'Waiting for checks to start.' };
   }
   const checks = summarizeChecks(view.statusCheckRollup || [], policy);
   if (checks.state === 'red') {
@@ -147,8 +158,8 @@ function ship(argv = process.argv.slice(2)) {
     log(`Opened ${url}`);
   } else {
     if (pr.isDraft) run('gh', ['pr', 'ready', String(pr.number)]);
-    // New commits: the old needs-fix verdict no longer applies.
-    run('gh', ['pr', 'edit', String(pr.number), '--remove-label', policy.labels.needsFix], { allowFail: true });
+    // ship-gate clears needs-fix itself on synchronize. Removing it here would
+    // fire an unlabeled event that cancels the gate run for the new commits.
     log(`Updated ${pr.url}`);
   }
 
@@ -187,4 +198,4 @@ if (require.main === module) {
   }
 }
 
-module.exports = { EXIT, branchNameFor, classifyPrState, slugify };
+module.exports = { EXIT, branchNameFor, classifyPrState, ghEnv, slugify };

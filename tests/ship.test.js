@@ -30,6 +30,15 @@ test('classifyPrState maps PR state to exit codes', () => {
   assert.equal(classifyPrState({ state: 'OPEN', labels: ['needs-fix'], statusCheckRollup: green }, policy).code, EXIT.red);
   assert.equal(classifyPrState({ state: 'OPEN', statusCheckRollup: [{ name: 'test', status: 'IN_PROGRESS' }] }, policy).done, false);
   assert.equal(classifyPrState({ state: 'OPEN', statusCheckRollup: green }, policy).done, false, 'green but unmerged keeps waiting');
+  // A fresh push has no checks yet: a stale needs-fix label must not end the wait.
+  assert.equal(classifyPrState({ state: 'OPEN', labels: ['needs-fix'], statusCheckRollup: [] }, policy).done, false);
+});
+
+test('ghEnv promotes GH_PAT only when no token is set', () => {
+  const { ghEnv } = require('../scripts/ship');
+  assert.equal(ghEnv({ GH_PAT: 'p' }).GH_TOKEN, 'p');
+  assert.equal(ghEnv({ GH_PAT: 'p', GH_TOKEN: 't' }).GH_TOKEN, 't');
+  assert.equal(ghEnv({ GH_PAT: 'p', GITHUB_TOKEN: 'g' }).GH_TOKEN, undefined);
 });
 
 test('ship never force-pushes, never skips hooks, never opens drafts', () => {
@@ -40,4 +49,5 @@ test('ship never force-pushes, never skips hooks, never opens drafts', () => {
   assert.doesNotMatch(src, new RegExp("'--no" + "-verify'"));
   assert.doesNotMatch(src, /'--draft'/);
   assert.doesNotMatch(src, /'--admin'/);
+  assert.doesNotMatch(src, /'--remove-label'/, 'label churn would cancel the gate run');
 });
