@@ -9,12 +9,14 @@ const ownerTelemetry = require('./owner-telemetry');
 const opsLog = require('./ops-log');
 const opsReport = require('./ops-report');
 const ownerAlerts = require('./owner-alerts');
+const costMeter = require('./cost-meter');
+const unitEconomics = require('./unit-economics');
 
 const JSON_LIMIT = 8 * 1024 * 1024;
 const LOG_LIMIT = 16 * 1024 * 1024;
 const RESPONSE_LIMIT = 1024 * 1024;
 const RESOURCES = Object.freeze({ customers: 'cus', subscriptions: 'sub', payments: 'ch', refunds: 're', products: 'prod', prices: 'price', 'subscription-items': 'si' });
-const SECTIONS = new Set(['overview', 'money', 'data', 'analytics', 'observability', 'summary', 'alerts']);
+const SECTIONS = new Set(['overview', 'money', 'data', 'analytics', 'observability', 'summary', 'alerts', 'economics']);
 const MONEY_CACHE_MS = 60000;
 let moneyCache = null;
 const PRIVATE_HEADERS = Object.freeze({ 'Cache-Control': 'private, no-store', Vary: 'Cookie', 'X-Robots-Tag': 'noindex, nofollow', 'Referrer-Policy': 'no-referrer', 'X-Content-Type-Options': 'nosniff' });
@@ -530,7 +532,9 @@ const thumbgateSession = (row) => /thumbgate/i.test(String(row.success_url || ''
 // Why a Stripe source failed, in words a person can act on. Never a bare "Unknown".
 function stripeReason(error) {
   if (/STRIPE_SECRET_KEY is missing/i.test(String(error?.message || ''))) return 'Stripe key missing';
-  if (error?.code === 'collection_timeout') return 'Stripe did not answer in time';
+  // The request's own timeout is set to the time left before the shared deadline, so it can fire first: that is the
+  // same "no answer in time", not an outage.
+  if (error?.code === 'collection_timeout' || error?.code === 'ETIMEDOUT' || /timed? ?out/i.test(String(error?.message || ''))) return 'Stripe did not answer in time';
   if (error?.code === 'provider_busy') return 'Stripe is busy, refresh in a moment';
   return 'Stripe unavailable';
 }
@@ -541,6 +545,53 @@ const attempt = async (work, reasonOf) => {
 const telemetryReason = (error) => (error?.code === 'collection_timeout' ? 'telemetry read timed out' : 'telemetry read failed');
 
 const trafficFields = (read) => ({ visitors: read.traffic.visitors, realVisitors: read.traffic.realVisitors, botOrInternalVisitors: read.traffic.botOrInternalVisitors, pageViewers: read.traffic.pageViewers, checkoutStartsByType: read.traffic.checkoutStartsByType, sessions: read.traffic.sessions, pageViews: read.traffic.pageViews, ctaClicks: read.traffic.ctaClicks, checkoutStarts: read.traffic.checkoutStarts, checkoutPaidConfirmations: read.traffic.checkoutPaidConfirmations });
+
+const attemptSync = (work) => { try { return work(); } catch { return { status: 'unavailable', reason: 'The key store could not be read.' }; } };
+
+// Payment to access: every purchase that still grants access should have a ThumbGate key that works, and every working paid
+// key should trace to a payment. Counts only; no customer id or address leaves this function.
+//   - `entitled` is who should hold access now: credit-pack buyers (one year) and active subscribers. Service orders and
+//     canceled subscriptions grant no key, so they are not expected to have one.
+//   - A key works the way billing.validateApiKey() decides: active, and not a credit pack with no credits left. A used-up
+//     credit pack was provisioned, so it is counted apart (`exhaustedCreditKeys`), never as a provisioning failure.
+//   - A working paid key with no Stripe match is listed for review, not called wrong: GitHub Marketplace, PayPal and manual
+//     grants also make keys.
+const isTrialOrFree = (meta) => /free|trial/i.test(String(meta.plan || '') + ' ' + String(meta.tier || '') + ' ' + String(meta.source || ''));
+const creditsExhausted = (meta) => meta.remainingCredits !== undefined && meta.remainingCredits !== null && meta.remainingCredits <= 0;
+function paymentAccessCheck({ entitled, failing, store, complete = true }) {
+  const active = Object.values(store?.keys || {}).filter((meta) => meta && meta.active === true);
+  const working = active.filter((meta) => !creditsExhausted(meta));
+  const owners = (list) => {
+    const out = new Set();
+    for (const meta of list) {
+      if (meta.customerId) out.add(String(meta.customerId));
+      if (meta.customerEmail) out.add(String(meta.customerEmail).toLowerCase());
+    }
+    return out;
+  };
+  const provisioned = owners(active);
+  const withAccess = owners(working);
+  const has = (set, who) => set.has(String(who)) || set.has(String(who).toLowerCase());
+  const paidKeys = working.filter((meta) => !isTrialOrFree(meta));
+  const paidWithoutAccess = [...entitled].filter((who) => !has(provisioned, who)).length;
+  const accessWithoutStripePayment = paidKeys.filter((meta) => !entitled.has(String(meta.customerId || '')) && !entitled.has(String(meta.customerEmail || '').toLowerCase())).length;
+  const failingIds = Array.isArray(failing) ? failing.map((row) => row.customer).filter(Boolean) : null;
+  const failedPaymentWithAccess = failingIds ? failingIds.filter((who) => has(withAccess, who)).length : null;
+  const problems = paidWithoutAccess + (failedPaymentWithAccess || 0);
+  return {
+    status: problems ? 'needs_review' : accessWithoutStripePayment ? 'review' : 'ok',
+    complete: complete && failingIds !== null,
+    entitledCustomers: entitled.size,
+    activeKeys: working.length,
+    activePaidKeys: paidKeys.length,
+    activeTrialOrFreeKeys: working.length - paidKeys.length,
+    exhaustedCreditKeys: active.length - working.length,
+    paidWithoutAccess,
+    accessWithoutStripePayment,
+    failedPaymentSubscriptions: failingIds ? failingIds.length : null,
+    failedPaymentWithAccess,
+  };
+}
 
 // Money board. Each block fails alone: its fields are null and a plain-words reason is returned beside them.
 // Stripe answers paying customers, revenue and checkouts; our own page-view telemetry answers visitors.
@@ -579,7 +630,7 @@ async function collectMoney(deps, signal) {
   const paidAndProLane = (async () => {
     const paidResult = await withLastGood('paid', async () => {
       const result = await listIt((params, options) => stripe().checkout.sessions.list(params, options),
-        { status: 'complete', created: { gte: nowSeconds - 365 * 86400 }, expand: ['data.payment_intent.latest_charge'] },
+        { status: 'complete', created: { gte: nowSeconds - 365 * 86400 }, expand: ['data.payment_intent.latest_charge.balance_transaction'] },
         (row) => row.status === 'complete' && thumbgateSession(row), 10);
       // Paid and not refunded in full, owner and test purchases excluded. A partial refund comes off the revenue.
       const charge = (row) => (object(row.payment_intent) && object(row.payment_intent.latest_charge) ? row.payment_intent.latest_charge : null);
@@ -594,15 +645,27 @@ async function collectMoney(deps, signal) {
         const who = id(row.customer) || String(row.customer_details?.email || row.customer_email || row.id).toLowerCase();
         if (!counted.has(who)) { counted.add(who); channel(channelOf(row)).paidCustomers += 1; }
       }
+      // Stripe's own fee on each 30-day checkout, read from the charge's balance transaction when Stripe returns it.
+      const fees = { reportedFees: {}, unreportedCharges: 0, unreportedAmount: {}, subscriptionFirstCharges: {} };
       for (const row of paid) {
         if (!(row.created >= nowSeconds - 30 * 86400) || !Number.isSafeInteger(row.amount_total) || !/^[a-z]{3}$/i.test(row.currency || '')) continue;
         const code = row.currency.toUpperCase();
         const refunded = Number.isSafeInteger(charge(row)?.amount_refunded) ? charge(row).amount_refunded : 0;
         revenue[code] = (revenue[code] || 0) + row.amount_total - refunded;
+        const fee = charge(row)?.balance_transaction?.fee;
+        if (Number.isSafeInteger(fee)) {
+          const feeCode = String(charge(row).balance_transaction.currency || row.currency).toUpperCase();
+          fees.reportedFees[feeCode] = (fees.reportedFees[feeCode] || 0) + fee;
+        } else { fees.unreportedCharges += 1; fees.unreportedAmount[code] = (fees.unreportedAmount[code] || 0) + row.amount_total; }
+        if (row.mode === 'subscription') fees.subscriptionFirstCharges[code] = (fees.subscriptionFirstCharges[code] || 0) + row.amount_total;
         const byChannel = channel(channelOf(row)).revenue30d;
         byChannel[code] = (byChannel[code] || 0) + row.amount_total - refunded;
       }
-      return { customers, revenue, channels, complete: result.complete };
+      // Credit-pack buyers keep access for the pack's life; a subscription checkout's access is checked against active
+      // subscriptions instead, and a service order grants no key.
+      const grant = deps.resolveCheckoutProvisioningGrant || billing._resolveCheckoutProvisioningGrant;
+      const creditPackCustomers = new Set(paid.filter((row) => grant(row).kind === 'credit_pack').map((row) => id(row.customer) || String(row.customer_details?.email || row.customer_email || row.id).toLowerCase()));
+      return { customers, creditPackCustomers, revenue, channels, fees, complete: result.complete };
     });
     const proResult = await withLastGood('subscriptions', async () => {
       const result = await listIt((params, options) => stripe().subscriptions.list(params, options), { status: 'active', expand: ['data.customer'] }, () => true, 5);
@@ -630,7 +693,15 @@ async function collectMoney(deps, signal) {
     }
     const cancelled = await listIt((params, options) => stripe().subscriptions.list(params, options), { status: 'canceled', expand: ['data.customer'] },
       (row) => Number(row.canceled_at || row.ended_at) >= since30 && !isOwnerEmail(row.customer?.email), 5);
-    return { renewals, renewalCount: invoices.rows.length, churned: cancelled.rows.length, churnedMrr: monthlyRecurring(cancelled.rows).mrr, complete: invoices.complete && cancelled.complete };
+    // Failed payments: subscriptions Stripe could not charge. Their customer ids feed the payment-to-access check.
+    const failing = [];
+    let failingComplete = true;
+    for (const status of ['past_due', 'unpaid']) {
+      const listed = await listIt((params, options) => stripe().subscriptions.list(params, options), { status }, (row) => row.status === status, 2);
+      failingComplete &&= listed.complete;
+      for (const row of listed.rows) failing.push({ status, customer: id(row.customer) });
+    }
+    return { renewals, renewalCount: invoices.rows.length, churned: cancelled.rows.length, churnedMrr: monthlyRecurring(cancelled.rows).mrr, failing, complete: invoices.complete && cancelled.complete && failingComplete };
   });
   let paidAndPro; let sessionRun; let trafficRun; let summaryRun; let recurringRun;
   try {
@@ -685,6 +756,12 @@ async function collectMoney(deps, signal) {
     internal: counts.excluded.internal,
   } : null);
   const bothStripe = paid && proRun.value;
+  const access = bothStripe ? attemptSync(() => paymentAccessCheck({
+    entitled: new Set([...(paid.creditPackCustomers || []), ...proRun.value.customers]),
+    failing: recurringRun.ok ? recurringRun.value.failing : null,
+    store: (deps.loadKeyStore || billing.loadKeyStore)(),
+    complete: paid.complete && proRun.value.complete,
+  })) : null;
   // The checkout panel: sessions with no bot check on record come first, then people, bots and owner only for sessions
   // created after the bot check began, then the gap between the site's own start events and Stripe's sessions.
   const checkoutBotCheck = (counts, traffic) => {
@@ -741,6 +818,7 @@ async function collectMoney(deps, signal) {
       renewalInvoices: recurringRun.value.renewalCount,
       churnedSubscriptions: recurringRun.value.churned,
       churnedMrr: recurringRun.value.churnedMrr,
+      failedPaymentSubscriptions: recurringRun.value.failing.length,
       churnRate: proRun.value && proRun.value.count + recurringRun.value.churned > 0 ? Math.round((recurringRun.value.churned / (proRun.value.count + recurringRun.value.churned)) * 1000) / 1000 : null,
       complete: recurringRun.value.complete,
     } : null,
@@ -754,6 +832,8 @@ async function collectMoney(deps, signal) {
     weekOverWeek: trafficReason ? null : (trafficRead.weeks || null),
     activeProBasis: proRun.value ? (proRun.value.complete ? 'stripe_active_subscriptions_excluding_owner' : 'stripe_active_subscriptions_first_100_only') : 'unavailable',
     revenueLast30Days: paid ? paid.revenue : null,
+    paymentFees30d: paid ? paid.fees : null,
+    paymentAccess: access,
     revenueBasis: 'stripe_paid_checkouts_after_refunds',
     checkouts7d: sessionBuckets(sessions?.d7),
     checkouts30d: sessionBuckets(sessions?.d30),
@@ -820,6 +900,24 @@ async function collectAnalytics(deps, signal) {
   return envelope('telemetry_tail_and_billing_summary_30d', data, warnings);
 }
 
+// Unit economics: delivery cost per active install and per paying customer, contribution per plan, payment-to-access.
+function economicsFrom(money, deps) {
+  const meter = (deps.readCostMeter || ((options) => costMeter.readWindow(options)))({ feedbackDir: deps.feedbackDir, days: 30 });
+  return unitEconomics.computeUnitEconomics({ money, usage: money?.usage30d || null, meter, costs: deps.unitCosts || unitEconomics.loadUnitCosts() });
+}
+
+async function collectEconomics(deps, signal) {
+  const moneyRun = await attempt(() => collectMoney(deps, signal), () => 'Money collection failed');
+  const money = moneyRun.ok ? moneyRun.value.data : null;
+  const data = economicsFrom(money, deps);
+  data.paymentAccess = money?.paymentAccess || null;
+  data.firstValue = money?.usage30d ? { activeInstalls30d: money.usage30d.activeInstalls30d, initsInWindow: money.usage30d.initsInWindow, firstValueInstalls: money.usage30d.firstValueInstalls ?? null, timeToFirstValue: money.usage30d.timeToFirstValue || null } : null;
+  const warnings = [];
+  if (!money) warnings.push('money_unavailable');
+  if (data.status !== 'ok') warnings.push('costs_partial');
+  return envelope('unit_economics_30d', data, warnings);
+}
+
 // One metric of the read-only summary: its value, where it came from, when that source was read, and one of these states:
 //   ok            a number from a source that answered in full
 //   verified_zero a zero from a source that answered in full
@@ -880,6 +978,14 @@ async function collectSummary(deps, signal) {
     add('money.signups_by_source', 'Signups by source', money.leadsBySource?.signups ?? null, leadOpts);
     add('money.workflow_sprint_leads', 'Setup Sprint leads', money.leadsBySource?.workflowSprint ?? null, leadOpts);
     add('money.newsletter', 'Newsletter signups', money.leadsBySource?.newsletter ?? null, leadOpts);
+    add('money.payment_access', 'Payment to access check: entitled customers (active subscription or credit pack) without a key, working paid keys without a Stripe payment, failed payments still holding a working key', money.paymentAccess || null, stripeOpts('paid', why.payingCustomers));
+    const econ = economicsFrom(money, deps);
+    const econOpts = { source: 'cost_meter_and_stripe', collectedAt: refreshed, partial: econ.status !== 'ok', reason: econ.reasons?.hosting || null };
+    add('economics.delivery_cost_30d_usd', 'Cost to deliver the service, past 30 days, US dollars (hosting, email, payment fees, fixed)', econ.delivery?.totalUsd ?? null, econOpts);
+    add('economics.cost_per_active_install_usd', 'Hosting, email and fixed cost per active CLI install, past 30 days, US dollars', econ.perActiveInstallUsd ?? null, { ...econOpts, reason: econ.reasons?.activeInstalls || econOpts.reason });
+    add('economics.cost_per_paying_customer_usd', 'Delivery cost per paying customer, past 30 days, US dollars', econ.perPayingCustomerUsd ?? null, { ...econOpts, reason: econ.reasons?.payingCustomers || econOpts.reason });
+    add('economics.contribution_30d', 'Revenue minus delivery cost, past 30 days, US dollars', econ.contribution || null, econOpts);
+    add('economics.plans', 'Contribution per sale for each plan, US dollars', econ.plans || null, econOpts);
   }
   const traffic = analytics?.trafficMetrics || money?.traffic30d || null;
   const trafficField = (key, label, name) => add(key, label, traffic ? traffic[name] ?? null : null, trafficOpts);
@@ -895,6 +1001,8 @@ async function collectSummary(deps, signal) {
   usageField('usage.active_installs_30d', 'CLI installs active in the past 30 days (owner and CI excluded)', 'activeInstalls30d');
   usageField('usage.activated_installs_30d', 'Active installs that captured feedback (30 days)', 'activatedInstalls');
   usageField('usage.returning_installs_30d', 'Active installs seen on 2 or more days (30 days)', 'returningInstalls');
+  usageField('usage.first_value_installs_30d', 'Installs whose first real gate block arrived in the past 30 days', 'firstValueInstalls');
+  usageField('usage.time_to_first_value', 'Minutes from install to first real gate block (median and 75th percentile)', 'timeToFirstValue');
   add('usage.install_cohorts_8w', 'Weekly CLI install cohorts and how many came back each later week (8 weeks)', analytics?.cohorts?.cohorts ?? null, { ...trafficOpts, partial: analytics?.cohorts?.partial === true });
   if (money) add('money.channels', 'Checkout starts (30 days), paying customers (first paid checkout, 1 year) and revenue (30 days) by channel', money.channels, stripeOpts('paid', why.revenue));
   add('traffic.week_over_week', 'Past 7 days against the 7 days before', analytics?.weekOverWeek || money?.weekOverWeek || null, trafficOpts);
@@ -911,7 +1019,9 @@ async function collectSummary(deps, signal) {
 
   // A permanent, stated gap is listed apart so the overall state reflects sources that failed, not a feature not built yet.
   const knownGaps = [];
-  const states = Object.entries(fields).filter(([key]) => !knownGaps.includes(key)).map(([, entry]) => entry.status);
+  // Unit economics are estimates at list rates and start empty until the cost meter has samples, so they never decide the
+  // summary's overall state; each one carries its own status.
+  const states = Object.entries(fields).filter(([key]) => !knownGaps.includes(key) && !key.startsWith('economics.')).map(([, entry]) => entry.status);
   const bad = states.filter((state) => state === 'unavailable').length;
   const overall = !money && !analytics ? 'unavailable' : states.every((state) => state === 'ok' || state === 'verified_zero') ? 'ok' : 'partial';
   return envelope('owner_console_summary', { generatedAt: refreshed, readOnly: true, windows: { checkouts: '7d and 30d', traffic: '30d', revenue: '30d' }, freshness: { displayRefreshedAt: refreshed, stripeCollectedAt: fresh.checkouts?.collectedAt || null, telemetryCollectedAt: fresh.traffic?.collectedAt || null, leadsCollectedAt: fresh.leads?.collectedAt || null, telemetryCacheSeconds: Math.round((deps.telemetryCacheMs ?? TELEMETRY_CACHE_MS) / 1000), billingSummaryCacheSeconds: Math.round(SUMMARY_TTL_MS / 1000) }, fields, knownGaps, unavailableFields: bad }, [], overall);
@@ -974,22 +1084,20 @@ function startAlertDelivery(makeDeps, { intervalMs = 15 * 60 * 1000, firstCheckM
     }
   });
   console.log('[owner-alerts] delivery on: ' + (channels.join(', ') || 'custom'));
-  const tracker = ownerAlerts.createAlertTracker();
-  // The first check after delivery is switched on also sends one confirmation, once ever (a marker file on the volume),
-  // so the owner sees the channel works before a real alert depends on it.
-  const confirmOnce = async (deps, count) => {
-    const marker = path.join(deps.feedbackDir, 'owner-alert-delivery.json');
-    if (fs.existsSync(marker)) return;
-    fs.writeFileSync(marker, JSON.stringify({ confirmedAt: new Date().toISOString(), channels }));
-    await deliver({ title: 'ThumbGate: alert delivery is on', message: 'This is the one-time test that owner alerts reach you. New alerts from thumbgate.ai/admin will arrive here, each once, checked every 15 minutes. Firing right now: ' + count + '.\nhttps://thumbgate.ai/admin' });
-  };
+  // State lives on the volume (owner-alert-delivery.json), so a deploy or restart never re-sends an alert that is
+  // still firing. The first check ever also sends one confirmation, so the channel is proven before a real alert needs it.
+  const readState = (deps) => { const read = readObject(deps.feedbackDir, 'owner-alert-delivery.json'); return read.state === 'ok' ? read.value : null; };
+  const writeState = (deps, state) => fs.writeFileSync(path.join(deps.feedbackDir, 'owner-alert-delivery.json'), JSON.stringify(state));
   const run = async () => {
     try {
       const deps = makeDeps();
       const result = await collectAlerts(deps, AbortSignal.timeout(30000));
-      const firing = result.data.alerts.filter((alert) => alert.level !== 'info');
-      await confirmOnce(deps, firing.length).catch(() => null);
-      const added = tracker.fresh(firing);
+      const firing = result.data.alerts.filter(ownerAlerts.isDeliverable);
+      const state = readState(deps);
+      const before = new Set(Array.isArray(state?.firing) ? state.firing : []);
+      const added = firing.filter((alert) => !before.has(alert.id));
+      writeState(deps, { confirmedAt: state?.confirmedAt || new Date().toISOString(), channels, firing: firing.map((alert) => alert.id), checkedAt: new Date().toISOString() });
+      if (!state?.confirmedAt) await deliver({ title: 'ThumbGate: alert delivery is on', message: 'This is the one-time test that owner alerts reach you. New alerts from thumbgate.ai/admin will arrive here, each once, checked every 15 minutes. Firing right now: ' + firing.length + '.\nhttps://thumbgate.ai/admin' });
       console.log('[owner-alerts] checked: ' + firing.length + ' firing, ' + added.length + ' new');
       if (!added.length) return;
       await deliver(ownerAlerts.formatAlertMessage(added));
@@ -1016,6 +1124,7 @@ async function collectAdminSection(route, deps, externalSignal) {
       if (route.section === 'money') return collectMoney(deps, controller.signal);
       if (route.section === 'summary') return collectSummary(deps, controller.signal);
       if (route.section === 'alerts') return collectAlerts(deps, controller.signal);
+      if (route.section === 'economics') return collectEconomics(deps, controller.signal);
       if (route.section === 'stripe') return collectStripe(route, deps, controller.signal);
       if (route.section === 'data') return collectData(route, deps, controller.signal);
       if (route.section === 'observability') return collectObservability(deps, controller.signal);
@@ -1029,4 +1138,4 @@ async function collectAdminSection(route, deps, externalSignal) {
   }
 }
 
-module.exports = { PRIVATE_HEADERS, RESPONSE_LIMIT, monthlyRecurring, collectAlerts, startAlertDelivery,adminPath, parseAdminRoute, readOwnerIdentity, readSessionState, collectMoney, collectAnalytics, collectSummary, summaryParts, collectAdminSection, createRuntimeObservations, githubCommitTitle, collectObservability, projectAnalytics, projectStripe, readObject, countRecords, guardPath };
+module.exports = { paymentAccessCheck, PRIVATE_HEADERS, RESPONSE_LIMIT, monthlyRecurring, collectAlerts, startAlertDelivery,adminPath, parseAdminRoute, readOwnerIdentity, readSessionState, collectMoney, collectAnalytics, collectSummary, summaryParts, collectAdminSection, createRuntimeObservations, githubCommitTitle, collectObservability, projectAnalytics, projectStripe, readObject, countRecords, guardPath };

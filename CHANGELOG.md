@@ -1,5 +1,20 @@
 # Changelog
 
+## 1.40.13
+
+### Patch Changes
+
+- 550323e: Dashboard opened from a folder with no git remote (for example `~/workspace`) now opens on All projects and says "All projects · you are in ~/workspace (not a project)" instead of jumping to the most recent real project. A real project folder still opens on that project.
+- f6d5d8f: New learn page `/learn/ai-finops-agent-spend-guardrails`: AI FinOps for coding agents, with verified 2026 survey figures and what ThumbGate's gates do and do not do about agent spend.
+- 70e2d9c: Owner console: Unit economics tab and `/v1/admin/economics` (delivery cost per active install and per paying customer, contribution per plan), a payment-to-access check (paid without a key, failed payment still holding a key, paid keys with no Stripe payment; counts only), and time to first value from the CLI's first real gate block.
+  
+  The published package now holds 704 files (owner-alerts.js and the three unit-economics files), so the bundle ratchet baseline moves from 700 to 704.
+- f3d907c: Cost meter and unit-economics arithmetic for the owner console: `scripts/cost-meter.js` measures the hosted container's CPU and memory and counts sent emails for free, `config/unit-costs.json` holds the sourced Railway, Resend and Stripe rates, and `scripts/unit-economics.js` turns them into delivery cost per active install and per paying customer and contribution per plan. The console tab follows in the next PR.
+- 06890f1: Ship gate now also runs tests that use a changed file, says when it capped the test list, and labels `needs-fix` as soon as tests go red. The PR steward now finds branches far behind main and real merge conflicts through the REST API, so its update step actually runs.
+- ca12516: Add the ship gate: `config/ship-policy.json` approval policy, `ship-gate` workflow (policy review comment, matching tests, auto-merge of routine PRs on green with no open review threads) and CodeRabbit auto-review.
+- 7748351: Add `npm run ship` and the `/ship` command, and turn the stale-PR sweeper into a steward that rebases and labels PRs instead of closing them.
+- 55721ae: PR steward creates its labels when the repo lacks them and keeps sweeping when one PR fails.
+
 ## 1.40.12
 
 ### Patch Changes

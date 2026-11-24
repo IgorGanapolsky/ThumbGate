@@ -5,6 +5,9 @@
   if (selected === 'all') selected = null;
   var selectedDir = selected ? new URL(window.location.href).searchParams.get('projectDir') : null;
   var loading = null;
+  // The folder this page was opened for, if the URL names one; the server judges that folder (else its own).
+  var pageDir = new URL(window.location.href).searchParams.get('projectDir');
+  var folderQuery = pageDir ? '?projectDir=' + encodeURIComponent(pageDir) : '';
   function url(input) {
     var target = new URL(input, window.location.origin);
     if (target.origin !== window.location.origin) return target.href;
@@ -49,14 +52,17 @@
   function refresh(headers) {
     mount();
     if (loading) return loading;
-    loading = fetch('/v1/projects', { credentials: 'include', headers: headers || {} }).then(function (response) { if (!response.ok) throw new Error('Projects unavailable'); return response.json(); }).then(function (data) {
+    loading = fetch('/v1/projects' + folderQuery, { credentials: 'include', headers: headers || {} }).then(function (response) { if (!response.ok) throw new Error('Projects unavailable'); return response.json(); }).then(function (data) {
       var select = document.getElementById('projectSwitcher');
       while (select.options.length > 1) select.remove(1);
       var projects = Array.isArray(data.projects) ? data.projects : [];
       if (selected && !projects.some(function (project) { return project.projectKey === selected; })) projects.push({ projectKey: selected, projectName: selectedDir ? selectedDir.split('/').filter(Boolean).pop() : 'Project with no recorded activity', counts: {} });
       // Leftover identities with nothing recorded are not worth a pick: hide them and say how many.
       // A bare dashboard URL opens on a project; "All projects" is an explicit pick (project=all).
-      if (!explicit) {
+      // A folder with no git remote (for example ~/workspace) is not a project: stay on All projects instead of jumping to the most recent one.
+      var nonProject = data.projectDirIsProject === false;
+      var inNonProject = nonProject && !explicit;
+      if (!explicit && !inNonProject) {
         var recent = projects.filter(function (project) { return isRealProject(project) && project.lastActivity; }).sort(function (a, b) { return new Date(b.lastActivity) - new Date(a.lastActivity); })[0];
         if (recent) { var next = new URL(window.location.href); next.searchParams.set('project', recent.projectKey); if (data.projectDir) next.searchParams.set('projectDir', data.projectDir); window.location.replace(next.href); return; }
       }
@@ -66,7 +72,8 @@
       select.value = selected || '';
       var current = projects.find(function (project) { return project.projectKey === selected; });
       var where = selectedDir ? selectedDir.replace(/^\/Users\/[^/]+/, '~') : '';
-      document.getElementById('projectStatus').textContent = current ? displayName(current) + (where ? ' · ' + where : '') : 'All projects: account-wide, mixes every project. Pick a project for its own numbers.';
+      var folder = nonProject && data.projectDir ? String(data.projectDir).replace(/^\/Users\/[^/]+/, '~') : '';
+      document.getElementById('projectStatus').textContent = current ? displayName(current) + (where ? ' · ' + where : '') : folder ? 'All projects · you are in ' + folder + ' (not a project)' : 'All projects: account-wide, mixes every project. Pick a project for its own numbers.';
       document.getElementById('projectGlobalGates').textContent = (data.globalGateCount || 0) + ' global gates shared across projects';
       var cards = document.getElementById('projectCards'); cards.replaceChildren();
       if (!selected) shown.forEach(function (project) {

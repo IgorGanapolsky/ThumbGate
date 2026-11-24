@@ -76,4 +76,9 @@ function createAlertTracker() {
   };
 }
 
-module.exports = { evaluateAlerts, formatAlertMessage, createAlertTracker };
+// These alerts compare raw event counts that still include our own agents, tests and bots, and installs counted by
+// anonymous id. They stay on the admin page, but are never sent by email or webhook until the counts are filtered.
+const UNFILTERED_COUNT_ALERTS = new Set(['visitors_drop', 'checkout_drop', 'installs_drop', 'activation_low']);
+const isDeliverable = (alert) => alert.level !== 'info' && !UNFILTERED_COUNT_ALERTS.has(alert.id);
+
+module.exports = { evaluateAlerts, formatAlertMessage, createAlertTracker, UNFILTERED_COUNT_ALERTS, isDeliverable };

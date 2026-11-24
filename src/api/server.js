@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 const { withDataScope, withoutDataScope, currentDataScope, tenantDataScope, assertScopedDataPath, dataScopeKey } = require('../../scripts/feedback-scope');
-const { parseProjectSelection, projectForCapture, projectForRecord, matchesProject, validProjectKey } = require('../../scripts/project-identity');
+const { isProjectFolder, parseProjectSelection, projectForCapture, projectForRecord, matchesProject, validProjectKey } = require('../../scripts/project-identity');
 const { readProjectRows, buildProjectCatalog } = require('../../scripts/project-catalog');
 const ownerAdmin = require('../../scripts/owner-admin');
 const opsLog = require('../../scripts/ops-log');
@@ -3153,6 +3153,7 @@ const CHECKOUT_GATE_NOTICES = Object.freeze({
   retry: "We couldn't confirm that click. Press the button again.",
   network: 'Your connection changed while we confirmed the click. Press the button again.',
   busy: 'Many checkouts are starting from your network right now. Wait a minute, then press the button again.',
+  unavailable: "We couldn't open the Stripe payment page just now. Nothing was charged. Press the button again in a minute.",
 });
 
 function checkoutGateNoticeCode(reason) {
@@ -3872,6 +3873,8 @@ async function serveTrackedLinkRedirect({ req, res, parsed, hostedConfig, isHead
       return;
     }
   }
+  // Set when an admitted click could not get a Stripe session; the visitor is told instead of silently seeing the same page.
+  let sessionFailure = null;
   if (!isHeadRequest && isDirectProSessionSlug(target.slug) && process.env.STRIPE_SECRET_KEY) {
     try {
       const dynamicSessionUrl = await tryCreateDirectProCheckoutRedirect({
@@ -3895,6 +3898,7 @@ async function serveTrackedLinkRedirect({ req, res, parsed, hostedConfig, isHead
         res.end();
         return;
       }
+      sessionFailure = 'no_session_url';
     } catch (err) {
       if (err && err.code === 'AUTOMATED_CHECKOUT_BLOCKED') {
         const deflectUrl = new URL(target.botDeflectPath || '/checkout/pro', hostedConfig.appOrigin);
@@ -3911,6 +3915,8 @@ async function serveTrackedLinkRedirect({ req, res, parsed, hostedConfig, isHead
       }
       // Dynamic session creation failed: Pro slugs go to the confirm page below.
       console.warn('[checkout] dynamic session creation failed', target.slug, err && (err.code || err.message));
+      // Only a short code-shaped value reaches telemetry; any other error text becomes 'error'.
+      sessionFailure = err && typeof err.code === 'string' && /^[A-Za-z0-9_]{1,40}$/.test(err.code) ? err.code : 'error';
     }
   }
   if (isProSubscriptionSlug(target.slug)) {
@@ -3918,6 +3924,16 @@ async function serveTrackedLinkRedirect({ req, res, parsed, hostedConfig, isHead
     // the visitor to the confirm page, never to a payment link.
     const confirmUrl = new URL('/checkout/pro', hostedConfig.appOrigin);
     appendTrackedLinkQueryParams(confirmUrl, parsed, { ...target, allowCustomerEmail: false });
+    if (sessionFailure && req.method === 'POST') {
+      // A real buyer clicked Pay and nothing opened: say so, and count it (the reason code only, never free text).
+      confirmUrl.searchParams.set('gate_notice', 'unavailable');
+      appendBestEffortTelemetry(
+        FEEDBACK_DIR,
+        { eventType: 'checkout_session_failed', clientType: 'web', page: `/go/${target.slug}`, reason: sessionFailure.slice(0, 60), planId: 'pro' },
+        req.headers,
+        'checkout_session_failed'
+      );
+    }
     res.writeHead(302, {
       ...(journeyState.setCookieHeaders.length ? { 'Set-Cookie': journeyState.setCookieHeaders } : {}),
       'Cache-Control': 'no-store',
@@ -5141,6 +5157,7 @@ function renderSitemapXml(runtimeConfig) {
     { path: '/learn/future-agi-self-healing-agent-firewall', changefreq: 'weekly', priority: '0.85' },
     { path: '/learn/five-walls-enterprise-agent-deployment', changefreq: 'weekly', priority: '0.85' },
     { path: '/learn/okta-mcp-governance-per-tool-call-gates', changefreq: 'weekly', priority: '0.85' },
+    { path: '/learn/ai-finops-agent-spend-guardrails', changefreq: 'weekly', priority: '0.85' },
     { path: '/compare/claude-code-hooks', changefreq: 'weekly', priority: '0.85' },
     { path: '/compare/bumblebee', changefreq: 'weekly', priority: '0.85' },
     { path: '/compare/anthropic-containment', changefreq: 'weekly', priority: '0.85' },
@@ -7569,6 +7586,10 @@ function createUnscopedApiServer({ ownerAdminDependencies = {} } = {}) {
     health: () => ({ version: pkg.version, buildSha: BUILD_METADATA.buildSha, uptime: process.uptime() }),
     ...ownerAdminDependencies,
   })));
+  // Cost meter for the owner console's unit economics: hosted deployments only (Railway sets RAILWAY_ENVIRONMENT), never under tests.
+  if (!process.env.NODE_TEST_CONTEXT && (process.env.RAILWAY_ENVIRONMENT || process.env.THUMBGATE_COST_METER === '1')) {
+    try { require('../../scripts/cost-meter').start({ feedbackDir: withoutDataScope(() => getFeedbackPaths().FEEDBACK_DIR) }); } catch { /* best-effort */ }
+  }
   const observedRequests = new WeakSet();
   const eventBus = new EventEmitter();
   eventBus.setMaxListeners(200);
@@ -11825,7 +11846,12 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
       const _token = extractBearerToken(req);
       if (_token && _token !== expectedApiKey) recordUsage(_token);
       Object.assign(projectOptions, { projectKey: requestProjectKey, feedbackDir: requestFeedbackDir }, projectEvidenceForRequest(req, parsed, requestFeedbackDir, requestDataIdentity));
-      if (req.method === 'GET' && pathname === '/v1/projects') { sendJson(res, 200, { ...buildProjectCatalog(requestFeedbackDir, projectOptions), projectDir: projectOptions.projectDir || process.env.THUMBGATE_PROJECT_DIR || null }); return; }
+      if (req.method === 'GET' && pathname === '/v1/projects') {
+        // The folder the dashboard was opened for: the page's own projectDir (loopback only), else the server's.
+        const catalogDir = getEffectiveRequestedProjectSelection(req, parsed) || projectOptions.projectDir || process.env.THUMBGATE_PROJECT_DIR || null;
+        sendJson(res, 200, { ...buildProjectCatalog(requestFeedbackDir, projectOptions), projectDir: catalogDir, projectDirIsProject: catalogDir ? isProjectFolder(catalogDir) : null });
+        return;
+      }
       if (requestProjectKey != null && req.method === 'GET' && ['/v1/dashboard', '/v1/feedback/stats'].includes(pathname)) {
         const data = generateDashboard(requestFeedbackDir, {
           projectKey: requestProjectKey, ...projectOptions, humanOnly: true,
