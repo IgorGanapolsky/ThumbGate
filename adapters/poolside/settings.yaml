@@ -7,6 +7,6 @@ mcp_servers:
         args:
             - --yes
             - --package
-            - thumbgate@1.40.11
+            - thumbgate@1.40.12
             - thumbgate
             - serve

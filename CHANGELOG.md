@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.40.12
+
+### Patch Changes
+
+- 14bc498: Owner console: weekly CLI install retention cohorts on Growth, a "Where buyers come from" table on Today (checkout starts, paying customers and revenue by utm source), and optional alert emails to the owner through the app's existing mail provider (THUMBGATE_OWNER_ALERT_EMAIL=on, off by default).
+- Re-release as 1.40.12: the 1.40.11 publish failed its package safety gate (owner-alerts.js was missing from the package and owner-admin required a dev-only file), so its tag cannot be reused. No code change beyond what 1.40.11 carried.
+
 ## 1.40.11
 
 ### Patch Changes
