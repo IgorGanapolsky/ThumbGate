@@ -161,7 +161,8 @@ test('support route still documents refunds and legal cross-links', async () => 
   const body = await res.text();
   assert.match(body, /Support/i);
   assert.match(body, /Refunds/i);
-  assert.match(body, /7-day/i);
+  // b257500 reworded the policy to "within <strong>7 days</strong> of the initial charge"; the window is unchanged.
+  assert.match(body, /7(?:-|\s|<\/?strong>)*days?\b/i);
   assert.match(body, /href="\/terms"/);
   assert.match(body, /href="\/privacy"/);
   assert.match(body, /privacy@thumbgate\.ai|legal@thumbgate\.ai|support@thumbgate\.ai/i);
