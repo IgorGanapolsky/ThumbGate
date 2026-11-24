@@ -47,7 +47,7 @@
       var select = document.getElementById('projectSwitcher');
       while (select.options.length > 1) select.remove(1);
       var projects = Array.isArray(data.projects) ? data.projects : [];
-      if (selected && !projects.some(function (project) { return project.projectKey === selected; })) projects.push({ projectKey: selected, projectName: 'Project with no recorded activity', counts: {} });
+      if (selected && !projects.some(function (project) { return project.projectKey === selected; })) projects.push({ projectKey: selected, projectName: selectedDir ? selectedDir.split('/').filter(Boolean).pop() : 'Project with no recorded activity', counts: {} });
       // Leftover identities with nothing recorded are not worth a pick: hide them and say how many.
       // A bare dashboard URL opens on a project; "All projects" is an explicit pick (project=all).
       if (!explicit) {
