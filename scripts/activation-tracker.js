@@ -295,6 +295,8 @@ function reportFirstBlockActivation(metadata = {}) {
     clientType: 'cli',
     firstBlockAt,
     installId,
+    // Without this the server classifies the event by User-Agent (node sends none) as a bot.
+    visitorType: (() => { try { return classifyInstall(); } catch { return undefined; } })(),
     ...(gateId ? { gateId: String(gateId).slice(0, 120) } : {}),
   };
 
@@ -434,20 +436,30 @@ function summarizeFirstBlockEvents(entries = []) {
   }
   let count = 0;
   const minutesList = [];
-  const seenInstalls = new Set();
+  // installId -> its timing sample (null until an event for it carries one). The count is per
+  // install, but the timing may arrive on a later event of the same install (first_block carries
+  // none; first_blocked_tool_call carries minutesSinceInstall), so pick it independently.
+  const installTiming = new Map();
   for (const e of entries) {
     // Production CLIs report the activation as `first_block` (reportFirstBlockActivation);
     // older builds sent `first_blocked_tool_call`. Count either, once per install.
     if (!FIRST_BLOCK_EVENT_NAMES.has(e?.eventType || e?.event)) continue;
     if (e.visitorType === 'bot' || e.visitorType === 'ci' || e.visitorType === 'owner') continue;
+    const m = extractEntryBlockMinutes(e);
+    const sample = m !== null && m >= 0 ? m : null;
     if (e.installId) {
-      if (seenInstalls.has(e.installId)) continue;
-      seenInstalls.add(e.installId);
+      if (!installTiming.has(e.installId)) {
+        installTiming.set(e.installId, sample);
+        count += 1;
+      } else if (installTiming.get(e.installId) === null && sample !== null) {
+        installTiming.set(e.installId, sample);
+      }
+      continue;
     }
     count += 1;
-    const m = extractEntryBlockMinutes(e);
-    if (m !== null && m >= 0) minutesList.push(m);
+    if (sample !== null) minutesList.push(sample);
   }
+  for (const sample of installTiming.values()) if (sample !== null) minutesList.push(sample);
   if (count === 0 || minutesList.length === 0) {
     return { count, medianMinutes: null, under5MinutesCount: 0 };
   }

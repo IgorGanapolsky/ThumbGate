@@ -86,6 +86,30 @@ test('summarizeActivationFunnel counts activated -> shown -> checkout, skipping 
   });
 });
 
+test('summarizeFirstBlockEvents keeps a later timing sample for an install already counted', () => {
+  const summary = tracker.summarizeFirstBlockEvents([
+    { eventType: 'first_block', installId: 'a', visitorType: 'real_user' },
+    { eventType: 'first_blocked_tool_call', installId: 'a', visitorType: 'real_user', minutesSinceInstall: 2 },
+    { eventType: 'first_block', installId: 'b', visitorType: 'real_user' },
+  ]);
+  assert.deepEqual(summary, { count: 2, medianMinutes: 2, under5MinutesCount: 1 });
+});
+
+test('the first_block payload carries the CLI visitor classification', async () => {
+  const { server, hits, baseUrl } = await startServer(() => 204);
+  const stateDir = tempStateDir();
+  try {
+    await tracker.reportFirstBlockActivation({
+      awaitDelivery: true, apiBaseUrl: baseUrl, stateDir, env: cleanEnv(), installId: 'inst_v', homeDir: stateDir,
+    });
+    assert.equal(hits[0].path, '/v1/telemetry/ping');
+    assert.ok(['real_user', 'owner', 'ci'].includes(hits[0].body.visitorType), `got ${hits[0].body.visitorType}`);
+  } finally {
+    server.close();
+    fs.rmSync(stateDir, { recursive: true, force: true });
+  }
+});
+
 test('a 401 on the account route falls back to an anonymous ping and stops retrying that key', async () => {
   const { server, hits, baseUrl } = await startServer((req) => (req.url === '/v1/activation/first-block' ? 401 : 204));
   const stateDir = tempStateDir();
