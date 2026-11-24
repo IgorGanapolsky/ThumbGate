@@ -3643,6 +3643,15 @@ function hookAutoCapture() {
       text: prompt,
       source: 'claude_user_prompt',
     });
+    // Before the agent's first tool call, show the top three stored lessons that match this prompt's topic.
+    try {
+      const reminder = require(path.join(PKG_ROOT, 'scripts', 'prompt-lessons')).run({
+        prompt,
+        sessionId: promptEnvelope.sessionId || process.env.CLAUDE_SESSION_ID || '',
+        cwd: promptEnvelope.projectDir || CWD,
+      });
+      if (reminder) process.stdout.write(`${reminder}\n`);
+    } catch { /* a lesson lookup never blocks a prompt */ }
     return;
   }
 
