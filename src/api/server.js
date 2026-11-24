@@ -255,6 +255,7 @@ const {
 } = require('../../scripts/gates-engine');
 const {
   summarizeFirstBlockEvents,
+  summarizeActivationFunnel,
 } = require('../../scripts/activation-tracker');
 const {
   evaluateOperationalIntegrity,
@@ -10511,6 +10512,7 @@ a{color:#8b9}</style></head><body><form class="card" method="post" action="/oaut
           activeInstalls: activeInstalls30d.size,
           uniqueSessions: uniqueSessions30d.size,
           firstBlockedToolCall: summarizeFirstBlockEvents(last30),
+          activationFunnel: summarizeActivationFunnel(last30),
         },
         last7Days: {
           total: recent.length,
@@ -10522,6 +10524,7 @@ a{color:#8b9}</style></head><body><form class="card" method="post" action="/oaut
           activeInstalls: activeInstalls7d.size,
           uniqueSessions: uniqueSessions7d.size,
           firstBlockedToolCall: summarizeFirstBlockEvents(recent),
+          activationFunnel: summarizeActivationFunnel(recent),
         },
         byEventType,
         byVisitorType,

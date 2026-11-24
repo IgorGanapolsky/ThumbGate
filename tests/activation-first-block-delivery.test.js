@@ -58,6 +58,34 @@ test('summarizeFirstBlockEvents counts production first_block events once per in
   assert.equal(summary.medianMinutes, 2);
 });
 
+test('summarizeActivationFunnel counts activated -> shown -> checkout, skipping internal traffic', () => {
+  const funnel = tracker.summarizeActivationFunnel([
+    { eventType: 'cli_init', clientType: 'cli', installId: 'a' },
+    { eventType: 'cli_init', clientType: 'cli', installId: 'b' },
+    { eventType: 'cli_init', clientType: 'cli', installId: 'z', visitorType: 'owner' },
+    { eventType: 'first_block', clientType: 'cli', installId: 'a' },
+    { eventType: 'first_block', clientType: 'cli', installId: 'a' },
+    { eventType: 'first_block', clientType: 'cli', installId: 'z', visitorType: 'owner' },
+    { eventType: 'first_block_upsell_shown', clientType: 'cli', installId: 'a' },
+    { eventType: 'cli_limit_hit', clientType: 'cli', installId: 'b' },
+    { eventType: 'checkout_interstitial_view', clientType: 'web', utmSource: 'cli', utmMedium: 'first_block' },
+    { eventType: 'checkout_interstitial_view', clientType: 'web', utmSource: 'website' },
+    { eventType: 'checkout_interstitial_cta_clicked', clientType: 'web', utmSource: 'cli' },
+    { eventType: 'checkout_success_page_view', clientType: 'web', utmSource: 'cli_nudge' },
+    { eventType: 'checkout_interstitial_view', utmSource: 'cli', visitorType: 'bot' },
+  ]);
+  assert.deepEqual(funnel, {
+    cliInstalls: 2,
+    activatedInstalls: 1,
+    upsellShownInstalls: 1,
+    limitHitInstalls: 1,
+    cliCheckoutViews: 1,
+    cliCheckoutClicks: 1,
+    cliCheckoutPaidPageViews: 1,
+    firstBlockCheckoutViews: 1,
+  });
+});
+
 test('a 401 on the account route falls back to an anonymous ping and stops retrying that key', async () => {
   const { server, hits, baseUrl } = await startServer((req) => (req.url === '/v1/activation/first-block' ? 401 : 204));
   const stateDir = tempStateDir();

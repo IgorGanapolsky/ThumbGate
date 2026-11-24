@@ -381,6 +381,52 @@ function extractEntryBlockMinutes(e) {
 }
 
 const FIRST_BLOCK_EVENT_NAMES = new Set(['first_block', 'first_blocked_tool_call']);
+const CHECKOUT_VIEW_EVENTS = new Set(['checkout_interstitial_view']);
+const CHECKOUT_CLICK_EVENTS = new Set(['checkout_interstitial_cta_clicked', 'stripe_redirect_started', 'checkout_start']);
+const CHECKOUT_PAID_EVENTS = new Set(['checkout_success_page_view']);
+
+function isInternalEntry(e) {
+  return e.visitorType === 'bot' || e.visitorType === 'ci' || e.visitorType === 'owner';
+}
+
+function isCliAttributed(e) {
+  const source = String(e.utmSource || e.source || '').toLowerCase();
+  return source === 'cli' || source.startsWith('cli_');
+}
+
+/**
+ * The activated -> upgrade-shown -> checkout funnel, counted per install (CLI stages) and per
+ * event (web stages that carry utm_source=cli). See docs/decisions/2026-11-24-revenue-funnel-activation.md.
+ */
+function summarizeActivationFunnel(entries = []) {
+  const installs = new Set();
+  const activated = new Set();
+  const upsellShown = new Set();
+  const limitHit = new Set();
+  const funnel = { cliCheckoutViews: 0, cliCheckoutClicks: 0, cliCheckoutPaidPageViews: 0, firstBlockCheckoutViews: 0 };
+  for (const e of Array.isArray(entries) ? entries : []) {
+    if (!e || isInternalEntry(e)) continue;
+    const type = e.eventType || e.event || '';
+    if (e.installId && (e.clientType === 'cli' || e.client === 'cli')) installs.add(e.installId);
+    if (e.installId && FIRST_BLOCK_EVENT_NAMES.has(type)) activated.add(e.installId);
+    if (e.installId && type === 'first_block_upsell_shown') upsellShown.add(e.installId);
+    if (e.installId && type === 'cli_limit_hit') limitHit.add(e.installId);
+    if (!isCliAttributed(e)) continue;
+    if (CHECKOUT_VIEW_EVENTS.has(type)) {
+      funnel.cliCheckoutViews += 1;
+      if (String(e.utmMedium || '').toLowerCase() === 'first_block') funnel.firstBlockCheckoutViews += 1;
+    }
+    if (CHECKOUT_CLICK_EVENTS.has(type)) funnel.cliCheckoutClicks += 1;
+    if (CHECKOUT_PAID_EVENTS.has(type)) funnel.cliCheckoutPaidPageViews += 1;
+  }
+  return {
+    cliInstalls: installs.size,
+    activatedInstalls: activated.size,
+    upsellShownInstalls: upsellShown.size,
+    limitHitInstalls: limitHit.size,
+    ...funnel,
+  };
+}
 
 function summarizeFirstBlockEvents(entries = []) {
   if (!Array.isArray(entries) || entries.length === 0) {
@@ -431,6 +477,7 @@ module.exports = {
   reportFirstBlockActivation,
   resolveActivationAccountAuth,
   summarizeFirstBlockEvents,
+  summarizeActivationFunnel,
   computeDaysSinceInstall,
   computeMinutesSinceInstall,
   readMarker,
