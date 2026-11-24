@@ -970,6 +970,36 @@ test('sweepStalePrs never closes: rebases behind branches, labels red/idle/confl
   assert.equal(recoveredSummary.decisions[0].reason, 'eligibility_changed');
   assert.equal(recoveredCalls.some((args) => ['close', 'comment', 'edit'].includes(args[1])), false);
 
+  // Without an up-to-date rule GitHub never says BEHIND, and the list says
+  // UNKNOWN for conflicts. The steward asks the REST API for both.
+  const listed = [
+    { number: 201, headRefName: 'fix/far-behind', headRefOid: 'aaa', baseRefName: 'main', isDraft: false, mergeStateStatus: 'UNSTABLE', updatedAt: '2026-11-06T12:00:00Z', statusCheckRollup: [] },
+    { number: 202, headRefName: 'fix/conflict-unknown', headRefOid: 'bbb', baseRefName: 'main', isDraft: false, mergeStateStatus: 'UNKNOWN', updatedAt: '2026-11-06T12:00:00Z', statusCheckRollup: [] },
+    { number: 203, headRefName: 'fix/barely-behind', headRefOid: 'ccc', baseRefName: 'main', isDraft: false, mergeStateStatus: 'CLEAN', updatedAt: '2026-11-06T12:00:00Z', statusCheckRollup: [] },
+  ];
+  const api = { 201: ['unstable', '11'], 202: ['dirty', '3'], 203: ['clean', '2'] };
+  const enrichCalls = [];
+  const enrichSummary = sweepStalePrs({ dryRun: false, nowMs }, (args) => {
+    enrichCalls.push(args);
+    if (args[0] === 'api') {
+      const n = (args[1].match(/pulls\/(\d+)$/) || [])[1];
+      if (n) return { status: 0, stdout: api[n][0], stderr: '' };
+      const sha = args[1].split('...')[1];
+      const pr = listed.find((p) => p.headRefOid === sha);
+      return { status: 0, stdout: api[pr.number][1], stderr: '' };
+    }
+    if (args[1] === 'list') return { status: 0, stdout: JSON.stringify(listed), stderr: '' };
+    if (args[1] === 'view') return { status: 0, stdout: JSON.stringify({ ...listed.find((p) => String(p.number) === args[2]), state: 'OPEN' }), stderr: '' };
+    return { status: 0, stdout: 'ok', stderr: '' };
+  });
+  const byNumber = Object.fromEntries(enrichSummary.decisions.map((d) => [d.number, d]));
+  assert.equal(byNumber[201].reason, 'behind_main_by_commits');
+  assert.equal(byNumber[201].via, 'merge', 'far-behind branches get a merge update, never a rebase');
+  assert.equal(enrichCalls.some((a) => a[1] === 'update-branch' && a[2] === '201' && a.includes('--rebase')), false);
+  assert.equal(byNumber[202].label, 'needs-rebase');
+  assert.equal(byNumber[203].action, 'keep');
+  assert.equal(enrichCalls.some((a) => a[0] === 'api' && a.includes('-X')), false, 'enrichment is read-only');
+
   const workflowRaw = fs.readFileSync(
     path.join(__dirname, '..', '.github', 'workflows', 'pr-stale-sweeper.yml'),
     'utf8',

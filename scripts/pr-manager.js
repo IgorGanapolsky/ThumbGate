@@ -487,7 +487,10 @@ async function managePrs(prNumber = '', runner = runGh, options = {}) {
 // (rebase a branch that fell behind main) and labels the rest so the daily
 // steward agent session (docs/ops/ship-pipeline.md) can fix the code.
 // History: the old sweeper closed #5131 after 3 days as a draft.
-const SWEEP_PR_FIELDS = 'number,state,isDraft,title,url,headRefName,baseRefName,updatedAt,createdAt,author,statusCheckRollup,mergeStateStatus,mergeable,labels';
+const SWEEP_PR_FIELDS = 'number,state,isDraft,title,url,headRefName,headRefOid,baseRefName,updatedAt,createdAt,author,statusCheckRollup,mergeStateStatus,mergeable,labels';
+// main has no "require up to date" rule, so GitHub never reports BEHIND here.
+// The steward asks the compare API instead and updates a branch this far back.
+const SWEEP_BEHIND_THRESHOLD = 10;
 const SWEEP_LIST_LIMIT = '1000';
 const SWEEP_REQUIRED_CHECKS_BASE = 'main';
 const DEFAULT_RED_MAX_AGE_MS = 24 * 60 * 60 * 1000;
@@ -547,6 +550,12 @@ function classifyStalePr(pr = {}, options = {}) {
   // often turns red checks green, and it keeps drafts mergeable.
   if (String(pr.mergeStateStatus || '').toUpperCase() === 'BEHIND') {
     return { action: 'update_branch', reason: 'behind_main' };
+  }
+  const behindThreshold = Number.isFinite(options.behindThreshold) ? options.behindThreshold : SWEEP_BEHIND_THRESHOLD;
+  if (Number.isFinite(pr.behindBy) && pr.behindBy >= behindThreshold
+    && String(pr.mergeStateStatus || '').toUpperCase() !== 'DIRTY') {
+    // A merge update, not a rebase: it never rewrites a branch an agent may be working on.
+    return { action: 'update_branch', reason: 'behind_main_by_commits', behindBy: pr.behindBy, rebase: false };
   }
   if (String(pr.mergeStateStatus || '').toUpperCase() === 'DIRTY' || String(pr.mergeable || '').toUpperCase() === 'CONFLICTING') {
     return labels.has(STEWARD_LABELS.needsRebase)
@@ -608,13 +617,38 @@ function classifyStalePr(pr = {}, options = {}) {
   return { action: 'keep', reason: 'active' };
 }
 
+/**
+ * gh pr list often reports mergeable/mergeStateStatus as UNKNOWN (GitHub
+ * computes them lazily), and never reports BEHIND without an up-to-date rule.
+ * Ask the REST API for the real merge state and how far behind the base the
+ * head is. Read-only; skipped when the list gave no head SHA.
+ */
+function enrichSweepPr(pr, runner) {
+  if (!pr || !pr.headRefOid || !pr.baseRefName || !pr.number) {
+    return pr;
+  }
+  const out = { ...pr };
+  const state = runner(['api', `repos/{owner}/{repo}/pulls/${pr.number}`, '--jq', '.mergeable_state']);
+  if (state.status === 0) {
+    const value = String(state.stdout || '').trim().toUpperCase();
+    if (value === 'DIRTY') out.mergeStateStatus = 'DIRTY';
+    else if (value === 'BEHIND') out.mergeStateStatus = 'BEHIND';
+  }
+  const compare = runner(['api', `repos/{owner}/{repo}/compare/${pr.baseRefName}...${pr.headRefOid}`, '--jq', '.behind_by']);
+  if (compare.status === 0) {
+    const behind = Number(String(compare.stdout || '').trim());
+    if (Number.isFinite(behind)) out.behindBy = behind;
+  }
+  return out;
+}
+
 function stillNeedsAction(number, verdict, options, runner) {
   const viewResult = runner(['pr', 'view', String(number), '--json', SWEEP_PR_FIELDS]);
   if (viewResult.status !== 0) {
     return false;
   }
   try {
-    const fresh = JSON.parse(viewResult.stdout || '{}');
+    const fresh = enrichSweepPr(JSON.parse(viewResult.stdout || '{}'), runner);
     const again = classifyStalePr(fresh, options);
     return fresh.state === 'OPEN' && again.action === verdict.action && again.reason === verdict.reason;
   } catch {
@@ -624,9 +658,11 @@ function stillNeedsAction(number, verdict, options, runner) {
 
 function applyStewardAction(pr, verdict, runner) {
   if (verdict.action === 'update_branch') {
-    const rebase = runner(['pr', 'update-branch', String(pr.number), '--rebase']);
-    if (rebase.status === 0) {
-      return { applied: true, via: 'rebase' };
+    if (verdict.rebase !== false) {
+      const rebase = runner(['pr', 'update-branch', String(pr.number), '--rebase']);
+      if (rebase.status === 0) {
+        return { applied: true, via: 'rebase' };
+      }
     }
     // Rebase can fail on a conflict that a merge commit would not hit.
     const merge = runner(['pr', 'update-branch', String(pr.number)]);
@@ -663,7 +699,8 @@ function sweepStalePrs(options = {}, runner = runGh) {
   let skippedCount = 0;
   let keptCount = 0;
 
-  for (const pr of prs) {
+  for (const listed of prs) {
+    const pr = isProtectedSweepBranch(listed) ? listed : enrichSweepPr(listed, runner);
     const verdict = classifyStalePr(pr, options);
     const record = {
       number: pr.number,
@@ -738,6 +775,7 @@ module.exports = {
   assertSafeGhArgs,
   buildGhEnv,
   classifyStalePr,
+  enrichSweepPr,
   getPrStatus,
   getPrChecks,
   isProtectedSweepBranch,
