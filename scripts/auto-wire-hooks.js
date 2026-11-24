@@ -337,11 +337,30 @@ function expandShellToken(token, resolveBase) {
 // missing script file, else null. Anything that doesn't look like a file
 // reference, or contains unresolved $VAR after expansion, returns null —
 // caller treats null as "keep the hook" (err on the side of NOT pruning).
+const SCRIPT_INTERPRETERS = new Set(['node', 'nodejs', 'sh', 'bash', 'zsh', 'python', 'python3']);
+
 function staleHookPath(command, resolveBase) {
   if (!command) return null;
-  const rawFirstToken = command.split(/\s+/)[0];
+  const tokens = command.trim().split(/\s+/);
+  let rawFirstToken = tokens[0];
+  let runsScript = false;
+  // `node /gone/script.js`: the interpreter is never a path, so check the script it runs.
+  // Without this a hook that points at a deleted worktree survives every cleanup and breaks
+  // each tool call (23 Nov 2026, ThumbGate-main-live).
+  if (SCRIPT_INTERPRETERS.has(path.basename(rawFirstToken))) {
+    // -c / -e / -p / --eval / --print run inline code, not a script file.
+    let script = null;
+    for (const token of tokens.slice(1)) {
+      if (/^(-[cep]|--eval|--print)$/.test(token)) return null;
+      if (!token.startsWith('-')) { script = token; break; }
+    }
+    if (!script) return null;
+    rawFirstToken = script;
+    runsScript = true;
+  }
   const firstToken = expandShellToken(rawFirstToken, resolveBase);
   const looksLikePath =
+    runsScript ||
     firstToken.includes('/') ||
     firstToken.includes('\\') ||
     firstToken.endsWith('.sh');
@@ -900,6 +919,7 @@ module.exports = {
   syncClaudeStatusLine,
   forgeConfigPath,
   pruneStaleFileHooks,
+  staleHookPath,
   pruneStaleHooksInFile,
   CLAUDE_HOOKS,
   preToolHookCommand,
