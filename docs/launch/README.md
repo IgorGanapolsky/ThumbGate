@@ -12,7 +12,7 @@ license and upgrade notices), `demo/payload.json` (the tool call), `thumbgate-de
 
 | On screen | Backed by |
 |---|---|
-| Step 1 "default: warns": gate flags the download-and-run command | Real `gate-check` output `[GATE:stateful-helper-script-bypass] WARNING`; the CLI says "warn-by-default mode ... flagged and logged, not blocked" (hidden line, still in the cast) |
+| Step 1 "default: warns": gate flags the download-and-run command | Real `gate-check` output `[GATE:stateful-helper-script-bypass] WARNING`; the CLI says "warn-by-default mode ... flagged and logged, not blocked" (a line the video trims; seen in the untrimmed output when I ran the same command before recording, not in the cast) |
 | Step 2 thumbs-down stored | Real `capture --feedback=down --json` output: `"ok": true, "signal": "down", "actionType": "store-mistake"` |
 | Step 3 "carries your lesson (still warns)" | Real second `gate-check` output adds "Past mistakes relevant to this action" with the lesson text; same warning, no deny |
 | Step 4 "Strict enforcement ON ... blocked" | Command shows `THUMBGATE_STRICT_ENFORCEMENT=1`; real output `decision: DENY` from `THIRD-AUTHOR:untrusted-pipe-to-shell` |
