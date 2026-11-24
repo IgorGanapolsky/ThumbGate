@@ -217,9 +217,12 @@ test('alert delivery sends a one-time confirmation, then each new alert once', a
     assert.match(sent[1].message, /Stripe could not be read: Stripe key missing/);
     assert.ok(fs.existsSync(path.join(dir, 'owner-alert-delivery.json')));
     sent.length = 0;
+    // A restart (every deploy) reads the saved state: no second confirmation, and a still-firing alert is not re-sent.
     const again = startAlertDelivery(makeDeps, { intervalMs: 60000, firstCheckMs: 10, send: async (m) => { sent.push(m); } });
-    for (let i = 0; i < 100 && sent.length < 1; i += 1) await wait(50);
+    const statePath = path.join(dir, 'owner-alert-delivery.json');
+    const firstCheck = JSON.parse(fs.readFileSync(statePath, 'utf8')).checkedAt;
+    for (let i = 0; i < 100 && JSON.parse(fs.readFileSync(statePath, 'utf8')).checkedAt === firstCheck; i += 1) await wait(50);
     clearInterval(again);
-    assert.equal(sent.some((m) => m.title === 'ThumbGate: alert delivery is on'), false, 'the confirmation is sent once ever');
+    assert.deepEqual(sent, [], 'nothing is sent again after a restart');
   } finally { fs.rmSync(dir, { recursive: true, force: true }); }
 });

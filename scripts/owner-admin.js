@@ -1084,22 +1084,20 @@ function startAlertDelivery(makeDeps, { intervalMs = 15 * 60 * 1000, firstCheckM
     }
   });
   console.log('[owner-alerts] delivery on: ' + (channels.join(', ') || 'custom'));
-  const tracker = ownerAlerts.createAlertTracker();
-  // The first check after delivery is switched on also sends one confirmation, once ever (a marker file on the volume),
-  // so the owner sees the channel works before a real alert depends on it.
-  const confirmOnce = async (deps, count) => {
-    const marker = path.join(deps.feedbackDir, 'owner-alert-delivery.json');
-    if (fs.existsSync(marker)) return;
-    fs.writeFileSync(marker, JSON.stringify({ confirmedAt: new Date().toISOString(), channels }));
-    await deliver({ title: 'ThumbGate: alert delivery is on', message: 'This is the one-time test that owner alerts reach you. New alerts from thumbgate.ai/admin will arrive here, each once, checked every 15 minutes. Firing right now: ' + count + '.\nhttps://thumbgate.ai/admin' });
-  };
+  // State lives on the volume (owner-alert-delivery.json), so a deploy or restart never re-sends an alert that is
+  // still firing. The first check ever also sends one confirmation, so the channel is proven before a real alert needs it.
+  const readState = (deps) => { const read = readObject(deps.feedbackDir, 'owner-alert-delivery.json'); return read.state === 'ok' ? read.value : null; };
+  const writeState = (deps, state) => fs.writeFileSync(path.join(deps.feedbackDir, 'owner-alert-delivery.json'), JSON.stringify(state));
   const run = async () => {
     try {
       const deps = makeDeps();
       const result = await collectAlerts(deps, AbortSignal.timeout(30000));
       const firing = result.data.alerts.filter((alert) => alert.level !== 'info');
-      await confirmOnce(deps, firing.length).catch(() => null);
-      const added = tracker.fresh(firing);
+      const state = readState(deps);
+      const before = new Set(Array.isArray(state?.firing) ? state.firing : []);
+      const added = firing.filter((alert) => !before.has(alert.id));
+      writeState(deps, { confirmedAt: state?.confirmedAt || new Date().toISOString(), channels, firing: firing.map((alert) => alert.id), checkedAt: new Date().toISOString() });
+      if (!state?.confirmedAt) await deliver({ title: 'ThumbGate: alert delivery is on', message: 'This is the one-time test that owner alerts reach you. New alerts from thumbgate.ai/admin will arrive here, each once, checked every 15 minutes. Firing right now: ' + firing.length + '.\nhttps://thumbgate.ai/admin' });
       console.log('[owner-alerts] checked: ' + firing.length + ' firing, ' + added.length + ' new');
       if (!added.length) return;
       await deliver(ownerAlerts.formatAlertMessage(added));
