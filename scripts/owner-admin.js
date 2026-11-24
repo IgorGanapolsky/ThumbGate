@@ -49,7 +49,10 @@ function parseAdminRoute(pathname, params) {
   if (limitRaw !== null && (!/^[1-9][0-9]*$/.test(limitRaw) || Number(limitRaw) > max)) throw failure('invalid_query');
   const limit = limitRaw === null ? 25 : Number(limitRaw);
   const cursor = params.get(section === 'data' ? 'cursor' : 'starting_after') || '';
-  if (section === 'stripe' && cursor && !new RegExp(`^${RESOURCES[resource]}_[A-Za-z0-9]{1,120}$`).test(cursor)) throw failure('invalid_query');
+  // Stripe charge lists can return ch_ or py_ identifiers. Accept both only
+  // for payments, so the nextCursor we return is valid for the next request.
+  const cursorPrefix = resource === 'payments' ? '(?:ch|py)' : RESOURCES[resource];
+  if (section === 'stripe' && cursor && !new RegExp(`^${cursorPrefix}_[A-Za-z0-9]{1,120}$`).test(cursor)) throw failure('invalid_query');
   let offset = 0;
   if (section === 'data' && cursor) {
     if (!/^[A-Za-z0-9_-]{1,32}$/.test(cursor)) throw failure('invalid_query');
@@ -296,6 +299,7 @@ function projectAnalytics(summary) {
   return {
     funnel: { ...numericFields(summary.funnel, ['totalEvents', 'uniqueAcquisitionLeads', 'uniquePaidCustomers', 'excludedSyntheticCheckoutSessions']), stageCounts: numericFields(summary.funnel?.stageCounts, ['acquisition', 'activation', 'paid']), conversionRates: numericFields(summary.funnel?.conversionRates, ['acquisitionToActivation', 'activationToPaid', 'acquisitionToPaid']) },
     signups: numericFields(summary.signups, ['total', 'uniqueLeads', 'emailSignups', 'emailRecords', 'checkoutSessionsCreated']),
+    checkoutSessionDepth: { ...numericFields(summary.checkoutSessionDepth, ['sessionsCreated', 'raw', 'identified', 'paymentAttempt', 'paid', 'unresolved', 'qualifiedCheckoutStarts']), basis: summary.checkoutSessionDepth?.basis === 'stripe_session_lookup' ? 'stripe_session_lookup' : 'telemetry_heuristic', lookupStatus: ['ok', 'partial', 'unconfigured', 'unavailable', 'not_requested'].includes(summary.checkoutSessionDepth?.lookupStatus) ? summary.checkoutSessionDepth.lookupStatus : 'unavailable' },
     revenue: { external: { ...numericFields(external, ['paidOrders', 'amountUnknownOrders', 'duplicates']), bookedRevenueByCurrency: currencies(external?.bookedRevenueByCurrency), refundedByCurrency: currencies(external?.refundedByCurrency), excluded: numericFields(external?.excluded, ['internal', 'test', 'unknown']) }, broadAccounting: { ...numericFields(summary.revenue, ['paidOrders', 'paidCustomers', 'amountKnownOrders', 'amountUnknownOrders']), bookedRevenueByCurrency: currencies(summary.revenue?.bookedRevenueByCurrency) } },
     trafficMetrics: numericFields(summary.trafficMetrics, ['visitors', 'sessions', 'pageViews', 'ctaClicks', 'checkoutStarts', 'checkoutPaidConfirmations']),
     attribution: { coverageRate: number(summary.dataQuality?.attributionCoverage) },
@@ -778,8 +782,13 @@ async function collectSummary(deps, signal) {
   add('traffic.daily_30d', 'Daily traffic, past 30 days', analytics ? analytics.daily : null, trafficOpts);
   const billingOpts = { source: 'billing_summary', collectedAt: fresh.leads?.collectedAt || null, reason: analyticsRun.ok ? null : analyticsRun.reason, unresolved: !analytics?.signups };
   add('analytics.email_signups', 'Email signups', analytics?.signups?.emailSignups ?? null, billingOpts);
-  add('analytics.external_paid_orders', 'External paid orders', analytics?.revenue?.external?.paidOrders ?? null, billingOpts);
-  add('analytics.external_booked_revenue_30d', 'External booked revenue, past 30 days, by currency', analytics?.revenue?.external?.bookedRevenueByCurrency ?? null, billingOpts);
+  // Ledger totals remain useful evidence when the provider reconciliation is
+  // incomplete, but a zero must not be promoted to a verified provider zero.
+  const reconciliationComplete = analytics?.reconciliation?.status === 'ok' && analytics.reconciliation.complete === true;
+  const revenueOpts = { ...billingOpts, partial: Boolean(analytics) && !reconciliationComplete,
+    reason: reconciliationComplete || !analytics ? billingOpts.reason : 'Provider reconciliation is incomplete (' + (analytics?.reconciliation?.status || 'not reported') + '); these are partial ledger totals, not a verified payment outcome' };
+  add('analytics.external_paid_orders', 'External paid orders', analytics?.revenue?.external?.paidOrders ?? null, revenueOpts);
+  add('analytics.external_booked_revenue_30d', 'External booked revenue, past 30 days, by currency', analytics?.revenue?.external?.bookedRevenueByCurrency ?? null, revenueOpts);
 
   // A permanent, stated gap is listed apart so the overall state reflects sources that failed, not a feature not built yet.
   const knownGaps = ['money.subscription_invoices_30d'];
