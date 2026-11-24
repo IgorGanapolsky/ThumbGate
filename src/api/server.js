@@ -8802,6 +8802,33 @@ async function addContext(){
       return;
     }
 
+    // Short, typeable route for TikTok: captions and end cards cannot carry a clickable
+    // link, so people type thumbgate.ai/tiktok. Records the hit (the telemetry layer adds
+    // its own human/bot flag from the headers), then 302s to the install page with utms.
+    if (isGetLikeRequest && (pathname === '/tiktok' || pathname === '/tiktok/')) {
+      const tiktokQuery = '?utm_source=tiktok&utm_medium=video&utm_campaign=profile';
+      const journeyState = resolveJourneyState(req, parsed);
+      const tiktokParsed = new URL(`/tiktok${tiktokQuery}`, hostedConfig.appOrigin);
+      const tiktokAttribution = buildLandingAttribution(tiktokParsed, req);
+      appendBestEffortTelemetry(getFeedbackPaths().FEEDBACK_DIR, {
+        eventType: 'landing_page_view',
+        clientType: 'web',
+        visitorId: journeyState.visitorId,
+        sessionId: journeyState.sessionId,
+        acquisitionId: journeyState.acquisitionId,
+        ...tiktokAttribution,
+        pageType: 'tiktok_short_link',
+      }, req.headers, 'tiktok_short_link');
+      res.writeHead(302, {
+        ...(journeyState.setCookieHeaders.length ? { 'Set-Cookie': journeyState.setCookieHeaders } : {}),
+        'Cache-Control': 'no-store',
+        'X-Robots-Tag': 'noindex,nofollow',
+        Location: `/install${tiktokQuery}`,
+      });
+      res.end();
+      return;
+    }
+
     if (isGetLikeRequest && (
       pathname === '/install'
       || pathname === '/install.html'

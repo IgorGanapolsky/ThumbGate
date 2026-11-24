@@ -345,8 +345,7 @@ test('promote: the same 11 rules on the free tier keep 10 on disk', (t) => {
 
 test('the home page promise matches the behaviour: Pro keeps every learned rule, free keeps the first three active', () => {
   const html = fs.readFileSync(path.join(__dirname, '..', 'public', 'index.html'), 'utf8');
-  assert.ok(html.includes('Free keeps your first 3 learned rules active. Pro keeps all of them.'));
-  assert.ok(/Pro adds memory: every learned rule stays active/.test(html));
+  assert.ok(html.includes('<strong>Every learned rule stays active.</strong> Free keeps your first 3.'));
   assert.equal(require('../scripts/rate-limiter').FREE_TIER_MAX_GATES, 3);
 });
 
