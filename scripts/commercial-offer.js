@@ -78,7 +78,7 @@ function buildCaptureReceipt({ signal, feedbackId, memoryId, actionType } = {}) 
     '  Next proof     : npx thumbgate stats',
     '  Cost proof     : npx thumbgate cost',
     '',
-    `  Solo Pro       : ${PRO_PRICE_LABEL} for recall, dashboard, adapters, and exports`,
+    `  Solo Pro       : ${PRO_PRICE_LABEL} for every learned rule, unlimited thumbs, recall, lesson search, and exports`,
     `  Upgrade        : ${trackedProUrl('cli_capture_receipt', actionType || normalizedSignal.toLowerCase())}`,
     `  Enterprise     : ${ENTERPRISE_PRICE_LABEL}; start with one repeated workflow failure`,
     `                   ${ENTERPRISE_ENTRY_URL}`,

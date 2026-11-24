@@ -196,7 +196,7 @@ The high-ROI pattern is progressive disclosure:
 - Keep global files such as AGENTS.md, CLAUDE.md, and GEMINI.md lean enough for a human to review.
 - Put long workflow guidance into skills, guides, CLI help, or ContextFS packs that agents retrieve only when relevant.
 - Publish lightweight MCP indexes with per-tool schema URLs instead of preloading every tool schema into the prompt.
-- Select specialized check harnesses for deploy, code-edit, and database-write workflows instead of loading every check for every tool call.
+- Select specialized check harnesses for deploy, code-edit, and database-write workflows instead of loading every check for each tool call.
 - Capture thumbs-down feedback from harness failures and promote repeated patterns into Pre-Action Checks.
 
 The CLI command `npx thumbgate harness-audit` scores global docs, progressive MCP discovery, and specialized harness coverage so teams can see whether their agent setup is compounding useful context or compounding instruction bloat.
@@ -218,7 +218,7 @@ ThumbGate's architecture maps directly to the enterprise safety framework patter
 
 ThumbGate implements this same pattern for AI coding agents:
 
-- **Safety Framework check** → PreToolUse hooks evaluate every tool call against the lesson database before execution. Known-bad patterns are blocked immediately.
+- **Safety Framework check** → PreToolUse hooks evaluate tool calls against the lesson database before execution. Known-bad patterns are blocked immediately.
 - **Safe → Agentic Workflow** → Tool calls that pass check evaluation proceed normally. The agent operates without interruption.
 - **Unsafe → Canned response** → Blocked tool calls return a descriptive error to the agent explaining why the action was denied and what policy it violated.
 - **Quality Framework** → Post-action audit trail, feedback sessions, and auto-generated prevention rules create a continuous quality improvement loop.
@@ -344,15 +344,14 @@ The core thesis: AI slop happens when agents act without human judgment as a har
 
 In April 2026, Anthropic confirmed the first known AI-agent-driven cyberattack, where state-sponsored hackers used Claude to infiltrate over 30 organizations with only 10-20% human involvement (New York Times, April 6 2026). On the defensive side, Anthropic used its own AI to discover 500+ zero-day vulnerabilities in open-source software. The core conclusion: organizations that do not use AI defensively will be enormously vulnerable.
 
-ThumbGate is AI agent security infrastructure for coding workflows. The same PreToolUse hooks that prevent an agent from repeating a teammate's mistake also prevent an agent from executing a prompt-injected destructive command. The enforcement model is the same — evaluate every tool call against known-bad patterns before execution — whether the threat is an honest mistake or a malicious injection.
+ThumbGate is AI agent security infrastructure for coding workflows. The same PreToolUse hooks that prevent an agent from repeating a teammate's mistake also prevent an agent from executing a prompt-injected destructive command. The enforcement model is the same — evaluate tool calls against known-bad patterns before execution — whether the threat is an honest mistake or a malicious injection.
 
 Security-relevant capabilities in ThumbGate v1.4.0:
 
 - **Self-protection**: 4 checks prevent the governed agent from disabling ThumbGate, modifying check rules, killing governance processes, or overriding enforcement environment variables. A compromised or prompt-injected agent cannot disable its own guardrails.
-- **Budget enforcement**: Action count and wall-clock time limits prevent runaway agent sessions from burning resources. Three profiles (strict/guided/autonomous) cap actions at 500/2000/5000 per session.
 - **Compliance mapping**: 13 check rules carry NIST SP800-53, SOC2 Trust Services, OWASP Top 10, and CWE tags for enterprise security teams that require framework alignment.
 - **Append-only audit trail**: Every check decision (block, approve, log) is recorded with timestamp, tool call, matched check ID, severity, and human override status. The agent cannot modify or delete audit entries.
-- **Shared enforcement memory**: Prevention rules propagate across all team seats via a shared SQLite+FTS5 database. A pattern blocked on one seat is immediately enforced on every seat.
+- **Not shipped**: team-shared rules, lessons synced across machines, and audit history for managers.
 
 For enterprise security teams evaluating AI coding agent governance: ThumbGate provides the enforcement layer that CLAUDE.md rules, prompt engineering, and post-hoc code review cannot — pre-execution blocking with full audit trail and compliance mapping.
 
@@ -365,7 +364,7 @@ In May 2026, Anthropic publicly named the role that owns enterprise Claude Code 
 ThumbGate is the pre-action enforcement runtime that the Agent Manager needs at the tool-call boundary. The job description maps directly onto what ThumbGate already ships:
 
 - **CLAUDE.md hierarchy**: `scripts/feedback-to-rules.js` distills repeated thumbs-down feedback into prevention rules and writes them into CLAUDE.md. Cross-repository consistency currently requires an explicit operator-managed rollout; an org-wide hosted rule library and hosted dashboard are not generally available.
-- **Plugin marketplace**: ThumbGate ships as a Claude Code plugin, a Cursor extension (Cursor Marketplace listing submitted 2026-05-19, currently pending Cursor's manual review; runtime install works today via `npx thumbgate init --agent cursor`), a Codex plugin, and a Gemini CLI hook. One install path covers every blessed runtime; Pro adds managed adapter coverage for individuals, and Enterprise extends that into rollout support so version drift is not the Agent Manager's problem.
+- **Plugin marketplace**: ThumbGate ships as a Claude Code plugin, a Cursor extension (Cursor Marketplace listing submitted 2026-05-19, currently pending Cursor's manual review; runtime install works today via `npx thumbgate init --agent cursor`), a Codex plugin, and a Gemini CLI hook. One install path covers every blessed runtime.
 - **Permissions policy**: PreToolUse hooks at the tool-call boundary are the canonical permissions enforcement layer. Every block carries the rule that fired, the evidence that triggered it, and a reason the agent can use to choose a safer plan. No "tell the model to be more careful."
 - **Which skills ship**: The `adapters/*` directory is the skill ship matrix. Each adapter is version-pinned and CI-checked against the upstream runtime; when Claude Code, Cursor, or Codex ship breaking changes to hooks or plugin APIs, ThumbGate's hosted ops keeps the matrix current in under 24 hours instead of a quarter.
 

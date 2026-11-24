@@ -93,7 +93,7 @@
       <tr class="mapping-row">
         <td>Verification Checks</td>
         <td>Checkpoints that intercept actions before execution</td>
-        <td>PreToolUse hooks — intercept every tool call, match against checks, block or allow</td>
+        <td>PreToolUse hooks — intercept tool calls, match against checks, block or allow</td>
       </tr>
       <tr class="mapping-row">
         <td>Durable State</td>
@@ -147,7 +147,7 @@
 
   <p>That single command sets up:</p>
   <ul>
-    <li>A PreToolUse hook that intercepts every tool call</li>
+    <li>A PreToolUse hook that intercepts tool calls</li>
     <li>A SQLite+FTS5 lesson database for durable state</li>
     <li>Prevention rules generated from your feedback</li>
     <li>Thompson Sampling for probabilistic check decisions</li>
