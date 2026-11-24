@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.40.14
+
+### Patch Changes
+
+- 297d27f: Activated users now get a clickable, one-click path to checkout: the first-block upgrade line links straight to `https://thumbgate.ai/checkout/pro` (with the gate name in `utm_content`) instead of an unclickable `thumbgate.ai/pricing` text. The CLI's capture-limit link goes through `thumbgate.ai/go/pro` like every other upgrade link, instead of a raw Stripe payment link. New `first_block_upsell_shown` and `cli_limit_hit` pings and an `activationFunnel` block on `/v1/metrics/real` make activated → shown → checkout measurable. The public activation count now counts the `first_block` event production CLIs actually send (it read 0 while 109 had happened), and a rejected stored key no longer loses the activation or retries on every gate firing.
+- ae04afc: When a buyer clicks "Pay $19/mo with Stripe" and Stripe cannot open a session, the checkout page now says so ("We couldn't open the Stripe payment page just now. Nothing was charged.") instead of silently reloading the same page, and the failure is counted as a `checkout_session_failed` event with its reason code.
+- c6c692e: The hook's "Stats:" line now uses the same thumb counter as the status line and the dashboard headline, so the three show one number. A thumb counts only when a person gave it: text such as "Explicit user thumbs-up" in a row no longer counts by itself, and the MCP `capture_feedback` tool marks a thumb as human only when it carries the user-prompt hook tag. An end-to-end test now runs the real status line command, the dashboard server, the hook and a headless browser against one fixture log and checks that all four print the same counts.
+- 0536b7f: Owner alert emails and webhooks no longer carry the visitor, checkout-start and install count drops, or the activation rate. Those counts still include our own agents, tests and bots, so they stay on the admin page only until they are filtered.
+- 0688bf7: The status line and dashboard no longer show thumbs nobody gave. A feedback row with no project key now counts only when it shows a person typed the thumb (the user-prompt tag or a history-sync scrape beside it), and a row whose context names another project (for example "[Eci.Psn.StockService]") never counts here. No row is deleted or rewritten.
+
 ## 1.40.13
 
 ### Patch Changes
