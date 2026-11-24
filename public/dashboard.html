@@ -151,6 +151,8 @@ mark{background:#fbbf24;color:#000;font-weight:700;border-radius:2px;padding:0 3
 .export-section{margin-bottom:48px}
 .export-btn{background:var(--bg-raised);border:1px solid var(--border);border-radius:8px;padding:12px 20px;color:var(--text);font-size:14px;cursor:pointer;display:inline-flex;align-items:center;gap:8px;transition:border-color .15s}
 .export-btn:hover{border-color:var(--cyan);color:var(--cyan)}
+.section-sub{margin:4px 0 0;color:var(--text-muted,#a1a1aa);font-size:14px}
+.tab-content{scroll-margin-top:72px}
 .tabs{display:flex;gap:0;border-bottom:1px solid var(--border);margin-bottom:24px}
 .tab{padding:12px 20px;font-size:14px;font-weight:500;color:var(--text-muted);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px}
 .tab:hover{color:var(--text)}.tab.active{color:var(--cyan);border-bottom-color:var(--cyan)}
@@ -396,7 +398,7 @@ h2{font-size:20px;font-weight:700;margin-bottom:16px;letter-spacing:-.02em}
   
   <div class="tab-content" id="tab-gates">
     <div class="gates-section">
-      <h2>Active Pre-Action Checks</h2>
+      <h2>Active Gates</h2><p class="section-sub">Pre-action checks that block or warn before an agent acts</p>
       <div id="gatesTabStatusChips" class="g-chips" style="margin-top:10px">
         <span class="g-chip b"><strong data-chip-count="blocked-today">0</strong> BLOCKED TODAY</span>
         <span class="g-chip w"><strong data-chip-count="warned-today">0</strong> WARNED TODAY</span>
@@ -434,7 +436,7 @@ h2{font-size:20px;font-weight:700;margin-bottom:16px;letter-spacing:-.02em}
   
   <div class="tab-content" id="tab-team">
     <div class="team-section">
-      <h2>Shared Team Reliability</h2>
+      <h2>Team</h2><p class="section-sub">Shared team reliability</p>
       <p class="template-summary">See which agents drift, which gates save the team the most time, and whether the shared workflow is getting safer.</p>
       <div class="team-grid" id="teamSummaryCards"><div class="loading">Loading team metrics...</div></div>
       <div class="team-grid" id="predictiveSummaryCards"><div class="loading">Loading predictive insights...</div></div>
@@ -530,7 +532,7 @@ h2{font-size:20px;font-weight:700;margin-bottom:16px;letter-spacing:-.02em}
   
   <div class="tab-content" id="tab-ai-inventory">
     <div class="templates-section">
-      <h2>AI Component Inventory</h2>
+      <h2>AI Inventory</h2><p class="section-sub">AI components found in your projects</p>
       <p class="template-summary">This API scans the dashboard server’s working directory. On the hosted dashboard it describes the server checkout, not projects on your machine. Run the CLI export below from your project for its inventory.</p>
       <p class="template-summary">Enterprise evidence for AI/ML usage: provider SDKs, agent frameworks, vector databases, Vertex/Gemini/Dialogflow CX references, and local model artifacts. Export this as ML-BOM proof before claiming an AI system is production-ready.</p>
       <div class="inventory-grid" id="aiInventorySummaryCards"><div class="loading">Scanning AI inventory...</div></div>
@@ -554,7 +556,7 @@ h2{font-size:20px;font-weight:700;margin-bottom:16px;letter-spacing:-.02em}
   
   <div class="tab-content" id="tab-generated">
     <div class="templates-section">
-      <h2>Generated Hosted Views</h2>
+      <h2>Generated Views</h2><p class="section-sub">Generated hosted views</p>
       <p class="template-summary" id="generatedViewSummary">A constrained JSON spec builds opinionated review dashboards from approved cards, lists, and callouts.</p>
       <div class="generated-toolbar" id="generatedViewToolbar"><div class="loading">Loading generated views...</div></div>
       <div class="generated-canvas" id="generatedViewCanvas"><div class="loading">Loading generated view...</div></div>
@@ -588,7 +590,7 @@ h2{font-size:20px;font-weight:700;margin-bottom:16px;letter-spacing:-.02em}
   
   <div class="tab-content" id="tab-templates">
     <div class="templates-section">
-      <h2>Curated Gate Templates</h2>
+      <h2>Gate Templates</h2><p class="section-sub">Curated gate templates you can adopt</p>
       <div class="template-summary" id="templateSummary">Loading template library...</div>
       <div class="template-grid" id="templateLibrary"><div class="loading">Loading templates...</div></div>
     </div>
@@ -597,7 +599,7 @@ h2{font-size:20px;font-weight:700;margin-bottom:16px;letter-spacing:-.02em}
   
   <div class="tab-content" id="tab-insights">
     <div class="templates-section">
-      <h2>📊 Feedback Insights &amp; Lesson Pipeline</h2>
+      <h2>Insights</h2><p class="section-sub">Feedback insights and the lesson pipeline</p>
       <p class="template-summary">How your thumbs-up/down signals turn into lessons that prevent repeat mistakes.</p>
 
       
@@ -680,7 +682,7 @@ h2{font-size:20px;font-weight:700;margin-bottom:16px;letter-spacing:-.02em}
   
   <div class="tab-content" id="tab-export">
     <div class="export-section">
-      <h2>Export Training Data (DPO)</h2>
+      <h2>Export</h2><p class="section-sub">Export training data (DPO)</p>
       <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:24px;margin-bottom:24px;max-width:640px;">
         <h3 style="font-size:15px;margin-bottom:8px;">What is DPO?</h3>
         <p style="color:var(--text-muted);font-size:14px;line-height:1.65;margin-bottom:12px;"><strong style="color:var(--text);">Direct Preference Optimization</strong> is a technique for fine-tuning LLMs using human preference data. Your 👍/👎 feedback is converted into training pairs:</p>

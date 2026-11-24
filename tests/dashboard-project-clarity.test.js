@@ -60,6 +60,17 @@ test('a bare dashboard URL opens on a project and All projects is an explicit pr
   assert.match(source, /next\.searchParams\.set\('project', select\.value \|\| 'all'\)/);
 });
 
+test('every dashboard section heading carries its tab name, with the descriptive name as a subtitle', () => {
+  const html = fs.readFileSync(path.join(__dirname, '..', 'public', 'dashboard.html'), 'utf8');
+  const tabs = [...html.matchAll(/switchTab\('([\w-]+)'\)">[^<]*?([A-Za-z][A-Za-z ]+)<\/div>/g)];
+  const expected = { gates: 'Active Gates', team: 'Team', 'ai-inventory': 'AI Inventory', generated: 'Generated Views', templates: 'Gate Templates', insights: 'Insights', export: 'Export' };
+  for (const [id, name] of Object.entries(expected)) {
+    assert.match(html, new RegExp(`id="tab-${id}"[\\s\\S]*?<h2>${name}</h2><p class="section-sub">`), `${id} heading`);
+  }
+  assert.ok(tabs.length >= 7);
+  assert.match(html, /\.tab-content\{scroll-margin-top:\d+px\}/);
+});
+
 test('the picker placeholder names the project folder instead of saying "Selected project"', () => {
   const source = fs.readFileSync(path.join(__dirname, '..', 'public', 'project-switcher.js'), 'utf8');
   assert.doesNotMatch(source, /textContent = 'Selected project'/);
