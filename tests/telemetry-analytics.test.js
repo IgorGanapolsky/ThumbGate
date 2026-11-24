@@ -1151,3 +1151,12 @@ test('appendTelemetryEvent hydrates missing journey IDs and campaignVariant from
   assert.equal(summary30d.telemetrySource.tailBytes, 32 * 1024 * 1024);
   assert.equal(summary90d.telemetrySource.tailBytes, 64 * 1024 * 1024);
 });
+
+test('lifetime window reads at least as much telemetry as the widest bounded window', () => {
+  const { getTelemetrySummary } = require('../scripts/telemetry-analytics');
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-lifetime-tail-'));
+  const lifetime = getTelemetrySummary(dir, { window: 'lifetime' });
+  const days90 = getTelemetrySummary(dir, { window: '90d' });
+  assert.ok(lifetime.telemetrySource.tailBytes >= days90.telemetrySource.tailBytes);
+  fs.rmSync(dir, { recursive: true, force: true });
+});

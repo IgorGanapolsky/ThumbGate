@@ -710,10 +710,16 @@ const WINDOW_TELEMETRY_TAIL_BYTES = Object.freeze({
   '90d': 64 * 1024 * 1024,
 });
 
+// The unbounded (lifetime) window must read at least as much as any bounded window. Left
+// without a budget, readTextTail() fell back to a 4 MB tail on logs over 64 MB, so lifetime
+// visitors (1,950) came out below 30-day visitors (13,947) in production.
+const LIFETIME_TELEMETRY_TAIL_BYTES = Math.max(...Object.values(WINDOW_TELEMETRY_TAIL_BYTES));
+
 function resolveBoundedTelemetryTailBytes(analyticsWindow, options = {}) {
   const explicit = Number(options.telemetryTailBytes);
   if (Number.isFinite(explicit) && explicit > 0) return explicit;
   const windowKey = analyticsWindow?.window;
+  if (windowKey === 'lifetime') return LIFETIME_TELEMETRY_TAIL_BYTES;
   return WINDOW_TELEMETRY_TAIL_BYTES[windowKey] || DEFAULT_BOUNDED_TELEMETRY_TAIL_BYTES;
 }
 
@@ -980,9 +986,7 @@ function summarizeExternalTrafficQuality(events) {
 
 function getTelemetrySummary(feedbackDir, options = {}) {
   const analyticsWindow = resolveAnalyticsWindow(options);
-  const telemetryLoadOptions = analyticsWindow.bounded
-    ? { maxBytes: resolveBoundedTelemetryTailBytes(analyticsWindow, options) }
-    : {};
+  const telemetryLoadOptions = { maxBytes: resolveBoundedTelemetryTailBytes(analyticsWindow, options) };
   // readTextTail() applies an unconditional ceiling even for the unbounded
   // ("lifetime") window, so a large enough telemetry log is read as a tail.
   // Carry that fact through instead of presenting a tail as complete history.
