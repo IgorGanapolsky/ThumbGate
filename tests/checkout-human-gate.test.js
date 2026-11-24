@@ -565,6 +565,41 @@ describe('server wiring and session creation', () => {
     assert.equal(stripe.calls.length, 0);
   });
 
+  function sessionFailedEvents() {
+    try {
+      return fs.readFileSync(path.join(ENV.THUMBGATE_FEEDBACK_DIR, 'telemetry-pings.jsonl'), 'utf8')
+        .split('\n').filter(Boolean).map((line) => JSON.parse(line))
+        .filter((row) => (row.eventType || row.event) === 'checkout_session_failed');
+    } catch {
+      return [];
+    }
+  }
+
+  it('an admitted click whose Stripe session fails tells the buyer and is counted', async () => {
+    stripe = makeFakeStripe({ failFirstWith: 'stripe refused the session' });
+    billing._setStripeClient(stripe);
+    const before = sessionFailedEvents().length;
+    const res = await navigationPost('/go/pro-direct', { click_token: await freshToken() });
+    assert.equal(res.status, 302);
+    const location = new URL(res.headers.location, origin);
+    assert.equal(location.pathname, '/checkout/pro');
+    assert.equal(location.searchParams.get('gate_notice'), 'unavailable');
+    assert.equal(stripe.calls.length, 1, 'Stripe was asked once');
+    const note = await noteOnPage(res.headers.location);
+    assert.equal(note.hidden, false);
+    assert.match(note.text, /couldn't open the Stripe payment page just now\. Nothing was charged\./);
+    const events = sessionFailedEvents();
+    assert.equal(events.length, before + 1, 'one checkout_session_failed event');
+    assert.equal(events[events.length - 1].page, '/go/pro-direct');
+  });
+
+  it('a click that is refused at the gate is not counted as a session failure', async () => {
+    const before = sessionFailedEvents().length;
+    const res = await navigationPost('/go/pro-direct', {});
+    assert.equal(new URL(res.headers.location, origin).searchParams.get('gate_notice'), 'retry');
+    assert.equal(sessionFailedEvents().length, before);
+  });
+
   it('a replayed token gets the same notice and a third click in a minute is told to wait', async () => {
     const token = await freshToken();
     assert.equal((await navigationPost('/go/pro-direct', { click_token: token })).status, 303);
