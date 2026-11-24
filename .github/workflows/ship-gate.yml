@@ -140,6 +140,21 @@ jobs:
           node --check scripts/*.js >/dev/null 2>&1 || { echo "::error::syntax error in scripts/"; failed=1; }
           exit $failed
 
+  flag:
+    name: flag
+    # Red tests get needs-fix right away, so the steward and npm run ship see it.
+    needs: [policy, test]
+    if: always() && needs.test.result == 'failure'
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Label needs-fix
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh label create needs-fix --color D93F0B --description "Ship gate: red checks or open review threads" 2>/dev/null || true
+          gh pr edit "$PR_NUMBER" --add-label needs-fix
+
   merge:
     name: merge
     needs: [policy, test]

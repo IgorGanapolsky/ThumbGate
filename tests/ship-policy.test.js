@@ -118,6 +118,18 @@ test('selectTests: fast guards plus tests matching changed files, capped', () =>
     listTests: () => names,
   });
   assert.deepEqual(out.sort(), ['tests/foo-extra.test.js', 'tests/foo.test.js', 'tests/pr-manager.test.js', 'tests/ship-policy.test.js']);
+  // Tests that require or read the changed file are selected even when their name differs.
+  const bodies = {
+    'uses-foo.test.js': "const foo = require('../scripts/foo');",
+    'reads-cfg.test.js': "path.join(__dirname, '..', 'config', 'ship-policy.json')",
+    'unrelated.test.js': "require('../scripts/bar')",
+  };
+  const refs = selectTests(['scripts/foo.js', 'config/ship-policy.json'], { ...policy, fastTests: [] }, {
+    exists: () => true,
+    listTests: () => Object.keys(bodies),
+    readTest: (n) => bodies[n],
+  });
+  assert.deepEqual(refs.sort(), ['tests/reads-cfg.test.js', 'tests/uses-foo.test.js']);
   // A test the PR adds is selected even though main does not have it yet.
   const added = selectTests(['tests/brand-new.test.js'], { ...policy, fastTests: [] }, { exists: () => false, listTests: () => [] });
   assert.deepEqual(added, ['tests/brand-new.test.js']);
@@ -159,5 +171,6 @@ test('ship-gate workflow reads policy from main and merges only the tested commi
   assert.match(wf, /GH_TOKEN="\$MERGE_TOKEN" gh pr merge/, 'only the merge uses the PAT');
   assert.doesNotMatch(wf, /GH_TOKEN:\s*\$\{\{\s*secrets\.GH_PAT/, 'labels and reads must not use the PAT');
   const sweeper = fs.readFileSync(path.join(__dirname, '..', '.github', 'workflows', 'pr-stale-sweeper.yml'), 'utf8');
+  assert.match(wf, /needs\.test\.result == 'failure'/, 'red tests must label needs-fix right away');
   assert.match(sweeper, /prs="\$\(gh pr list [^\n]*--limit 1000/, 'steward re-dispatch must list every routine PR and fail loudly');
 });
