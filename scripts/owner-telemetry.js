@@ -107,6 +107,10 @@ const isCli = (entry) => (entry.clientType || entry.client) === 'cli';
 const isOwnOrCiInstall = (entry) => isFlagged(entry) || ['owner', 'ci'].includes(String(entry.visitorType || '').toLowerCase());
 // An install counts as activated once it has captured a piece of feedback: that is the first moment ThumbGate does its job.
 const ACTIVATION_EVENT = 'cli_capture';
+// The first value event: a gate really fired and blocked a tool call in the user's own workflow. The CLI sends it once per
+// install with the minutes since install, so time to first value comes from the same ping.
+const FIRST_VALUE_EVENT = 'first_blocked_tool_call';
+const quantile = (sorted, q) => (sorted.length ? sorted[Math.min(sorted.length - 1, Math.floor(q * sorted.length))] : null);
 const topCounts = (counts, limit = 10) => Object.fromEntries(Object.entries(counts).sort((a, b) => b[1] - a[1]).slice(0, limit));
 
 // Visitors, sessions, page views, CTA clicks, checkout starts and paid confirmations, in total and per UTC day.
@@ -148,10 +152,15 @@ async function readTrafficWindow(options) {
         const day = dayOf(time);
         day.activeInstalls.add(install);
         if (week) weeks[week].activeInstalls.add(install);
-        const seen = installs.get(install) || { days: new Set(), lastMs: 0, inited: false, activated: false, version: null, platform: null };
+        const seen = installs.get(install) || { days: new Set(), lastMs: 0, inited: false, activated: false, firstValue: false, firstValueMinutes: null, version: null, platform: null };
         seen.days.add(day.date);
         seen.inited ||= type === 'cli_init';
         seen.activated ||= type === ACTIVATION_EVENT;
+        if (type === FIRST_VALUE_EVENT) {
+          seen.firstValue = true;
+          const minutes = Number(entry.minutesSinceInstall);
+          if (Number.isFinite(minutes) && minutes >= 0 && (seen.firstValueMinutes === null || minutes < seen.firstValueMinutes)) seen.firstValueMinutes = minutes;
+        }
         if (time >= seen.lastMs) { seen.lastMs = time; seen.version = entry.version || entry.pkgVersion || seen.version; seen.platform = entry.platform || seen.platform; }
         installs.set(install, seen);
         return;
@@ -180,12 +189,14 @@ async function readTrafficWindow(options) {
   const daily = [...days.values()].sort((a, b) => a.date.localeCompare(b.date)).map((day) => ({ date: day.date, visitors: day.visitors.size, pageViewers: day.pageViewers.size, sessions: day.sessions.size, activeInstalls: day.activeInstalls.size, pageViews: day.pageViews, ctaClicks: day.ctaClicks, checkoutStarts: day.checkoutStarts, checkoutPaidConfirmations: day.checkoutPaidConfirmations }));
   const byVersion = {};
   const byPlatform = {};
-  let newInstalls = 0; let activated = 0; let returning = 0; let active7 = 0;
+  let newInstalls = 0; let activated = 0; let returning = 0; let active7 = 0; let firstValue = 0;
+  const firstValueMinutes = [];
   for (const seen of installs.values()) {
     byVersion[seen.version || 'unknown'] = (byVersion[seen.version || 'unknown'] || 0) + 1;
     byPlatform[seen.platform || 'unknown'] = (byPlatform[seen.platform || 'unknown'] || 0) + 1;
     if (seen.inited) newInstalls += 1;
     if (seen.activated) activated += 1;
+    if (seen.firstValue) { firstValue += 1; if (seen.firstValueMinutes !== null) firstValueMinutes.push(seen.firstValueMinutes); }
     if (seen.days.size >= 2) returning += 1;
     if (seen.lastMs >= nowMs - 7 * DAY_MS) active7 += 1;
   }
@@ -199,6 +210,12 @@ async function readTrafficWindow(options) {
       initsInWindow: newInstalls,
       activatedInstalls: activated,
       returningInstalls: returning,
+      // Installs whose first real gate block arrived in the window, and how long after install it came.
+      firstValueInstalls: firstValue,
+      timeToFirstValue: (() => {
+        const sorted = firstValueMinutes.sort((a, b) => a - b);
+        return { installs: sorted.length, medianMinutes: quantile(sorted, 0.5), p75Minutes: quantile(sorted, 0.75) };
+      })(),
       excludedInstalls: excludedInstalls.size,
       eventsByType: topCounts(cliEvents, 20),
       byVersion: topCounts(byVersion),
