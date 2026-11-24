@@ -1,5 +1,21 @@
 # Changelog
 
+## 1.40.11
+
+### Patch Changes
+
+- 896b581: Owner console: a "Needs you" alert list at the top of a new Today tab (server errors, failed Stripe notifications, uptime, disk, sign-in failures, week-over-week drops, low activation, pending cancels, churn, unreadable sources), with /v1/admin/alerts for agents and optional delivery of new alerts to the owner's own Slack, Discord or Teams webhook via THUMBGATE_OWNER_ALERT_WEBHOOK. Renewal revenue and churn are now read from Stripe. The duplicate Overview tab left the menu and the evidence tables fold away.
+- 1406eb3: Owner console: show CLI product usage (active installs over 7 and 30 days, activated and returning installs, version mix), list-price MRR and pending cancels from active Stripe subscriptions, and week-over-week changes. Stored CLI pings now keep their package version, and the owner's own and CI CLI runs no longer count as real users.
+- f255662: auto-wire-hooks: --help, -h and --dry-run write nothing; hooks wired from a git worktree call the stable ~/.thumbgate/bin/thumbgate-hook launcher instead of a path inside the worktree.
+- f21333c: The local dashboard no longer pins its scripts, styles and pages in the browser as immutable for 24 hours. A tab kept the previous build's project-switcher.js after an upgrade and showed 0 feedback for a project that had 35. Scripts, styles and pages now revalidate on every load; images and fonts stay cached.
+- 9f6fa22: Dashboard: the headline feedback numbers now say which data folders they merge and how many automated events are excluded, the Project picker hides projects with no recorded activity and shows counts, home-folder sessions are named "Home folder (no project)", and the project block sits under the app nav in an aligned grid.
+- 5325e0f: auto-wire-hooks now prunes hook commands that run a missing script behind node, sh or bash (a deleted worktree path used to survive every cleanup). Adds a test that fails when a tracked .claude/settings.json hook points at a path that does not exist.
+- fe931d5: Serve `/connectors` (linked from `/pricing` but 404 in production), drop the deleted Pretix learn page from `/sitemap.xml`, and add a test that every sitemap URL resolves. README: move Quick Start above the fold and fix the verdict table, which listed the default-denied catastrophic commands under "Warn + log".
+- cd93a78: Thumbs-down lessons no longer quote an old pasted brief or system text as "you previously corrected me". Only the two latest short user messages can count as a correction, and when no specific mistake is known the lesson says so instead of claiming the mistake was repeated.
+- f21527f: Owner admin reporting: payment cursors accept ch_ and py_ ids, incomplete provider reconciliation is labelled partial, completed-but-unpaid checkout sessions no longer count as paid, checkout evidence coverage is shown, and activation labels say what is measured. Written by the Instinct assistant, reviewed and repaired here.
+- 554afb1: The dashboard opens on a project by default (the most recently active one) and loads the project list as soon as the page renders, instead of after a 10 second delay. "All projects" is an explicit choice that stays selected. The picker placeholder names the project folder instead of saying "Selected project".
+- e491efa: secret-exfiltration: reading a credentials file such as `.env` now gets read-specific advice (load values at runtime, or ask the user) instead of inline-literal advice, and deny messages advertise only `~/.thumbgate/secrets` and `~/.config/thumbgate` (`~/.resume_secrets` stays allowed for existing installs).
+
 ## 1.40.10
 
 ### Patch Changes
