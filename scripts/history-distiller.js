@@ -22,6 +22,9 @@ const contextfs = require('./contextfs');
 // ---------------------------------------------------------------------------
 
 
+const MAX_CORRECTION_CHARS = 400;
+const RECENT_USER_MESSAGES = 2;
+
 const ANTI_PATTERNS = [
   { pattern: /\b(?:tailwind|tw-)\b/i, label: 'Tailwind CSS', ruleTemplate: 'NEVER use Tailwind CSS in this project' },
   { pattern: /(?:force[- ]?push|push\s*--force|--force)\b/i, label: 'force push', ruleTemplate: 'NEVER force-push to any branch' },
@@ -56,15 +59,21 @@ function analyzeChatHistory(chatHistory, failedToolCall = null) {
     /\b(?:should(?:n'?t| not)|must not|not supposed to)\b/i,
   ];
 
-  for (const msg of messages) {
-    if (msg.role !== 'user') continue;
-    const text = msg.content || msg.text || '';
-    for (const cp of correctionPatterns) {
-      if (cp.test(text)) {
-        userCorrection = text.slice(0, 200);
-        evidence.push({ type: 'user_correction', text: userCorrection });
-        break;
-      }
+  // Only the person's own latest short messages can be a correction. Pasted briefs,
+  // task notifications and system text contain "never"/"don't" without being feedback,
+  // and an old message in the window says nothing about this thumbs-down.
+  const SYSTEM_TEXT = /<(?:task-notification|pasted_content|system-reminder)\b|\[SYSTEM NOTIFICATION/i;
+  const recentUserTexts = messages
+    .filter((m) => m && m.role === 'user')
+    .map((m) => String(m.content || m.text || ''))
+    .filter((text) => text.length > 0 && text.length <= MAX_CORRECTION_CHARS && !SYSTEM_TEXT.test(text))
+    .slice(-RECENT_USER_MESSAGES)
+    .reverse();
+  for (const text of recentUserTexts) {
+    if (correctionPatterns.some((cp) => cp.test(text))) {
+      userCorrection = text.slice(0, 200);
+      evidence.push({ type: 'user_correction', text: userCorrection });
+      break;
     }
   }
 
@@ -151,7 +160,8 @@ function distillFromHistory({ chatHistory = [], failedToolCall = null, feedbackC
   } else if (analysis.antiPattern) {
     proposedWhatWentWrong = `I detected a ${analysis.antiPattern} anti-pattern in my output that likely caused the issue.`;
   } else if (analysis.correction) {
-    proposedWhatWentWrong = `You previously corrected me: "${analysis.correction.slice(0, 100)}". I may have repeated the same mistake.`;
+    // No anti-pattern was found, so the mistake itself is unknown: say only what the history shows.
+    proposedWhatWentWrong = `Thumbs down right after the instruction "${analysis.correction.slice(0, 100)}". The specific mistake was not stated.`;
   } else if (inference.inferredAction) {
     proposedWhatWentWrong = `The ${inference.inferredAction.type} action on ${inference.inferredAction.target} did not produce the expected result.`;
   } else {
