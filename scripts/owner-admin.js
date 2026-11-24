@@ -8,12 +8,13 @@ const billing = require('./billing');
 const ownerTelemetry = require('./owner-telemetry');
 const opsLog = require('./ops-log');
 const opsReport = require('./ops-report');
+const ownerAlerts = require('./owner-alerts');
 
 const JSON_LIMIT = 8 * 1024 * 1024;
 const LOG_LIMIT = 16 * 1024 * 1024;
 const RESPONSE_LIMIT = 1024 * 1024;
 const RESOURCES = Object.freeze({ customers: 'cus', subscriptions: 'sub', payments: 'ch', refunds: 're', products: 'prod', prices: 'price', 'subscription-items': 'si' });
-const SECTIONS = new Set(['overview', 'money', 'data', 'analytics', 'observability', 'summary']);
+const SECTIONS = new Set(['overview', 'money', 'data', 'analytics', 'observability', 'summary', 'alerts']);
 const MONEY_CACHE_MS = 60000;
 let moneyCache = null;
 const PRIVATE_HEADERS = Object.freeze({ 'Cache-Control': 'private, no-store', Vary: 'Cookie', 'X-Robots-Tag': 'noindex, nofollow', 'Referrer-Policy': 'no-referrer', 'X-Content-Type-Options': 'nosniff' });
@@ -587,9 +588,26 @@ async function collectMoney(deps, signal) {
     });
     return [paidResult, proResult];
   })();
-  let paidAndPro; let sessionRun; let trafficRun; let summaryRun;
+  const isOwnerEmail = (email) => Boolean(email) && ownerEmails.some((owner) => String(email).toLowerCase() === String(owner).toLowerCase());
+  // Third lane: what subscriptions actually brought in and lost in 30 days. Renewal invoices are the recurring cash the
+  // checkout list never sees; cancelled subscriptions are churn.
+  const recurringLane = withLastGood('recurring', async () => {
+    const since30 = nowSeconds - 30 * 86400;
+    const invoices = await listIt((params, options) => stripe().invoices.list(params, options), { status: 'paid', created: { gte: since30 } },
+      (row) => row.billing_reason === 'subscription_cycle' && !isOwnerEmail(row.customer_email), 10);
+    const renewals = {};
+    for (const row of invoices.rows) {
+      if (!Number.isSafeInteger(row.amount_paid) || !/^[a-z]{3}$/i.test(row.currency || '')) continue;
+      const code = row.currency.toUpperCase();
+      renewals[code] = (renewals[code] || 0) + row.amount_paid;
+    }
+    const cancelled = await listIt((params, options) => stripe().subscriptions.list(params, options), { status: 'canceled', expand: ['data.customer'] },
+      (row) => Number(row.canceled_at || row.ended_at) >= since30 && !isOwnerEmail(row.customer?.email), 5);
+    return { renewals, renewalCount: invoices.rows.length, churned: cancelled.rows.length, churnedMrr: monthlyRecurring(cancelled.rows).mrr, complete: invoices.complete && cancelled.complete };
+  });
+  let paidAndPro; let sessionRun; let trafficRun; let summaryRun; let recurringRun;
   try {
-    [paidAndPro, sessionRun, trafficRun, summaryRun] = await Promise.all([
+    [paidAndPro, sessionRun, trafficRun, summaryRun, recurringRun] = await Promise.all([
       paidAndProLane,
       withLastGood('checkouts', async () => {
         const result = await listIt((params, options) => stripe().checkout.sessions.list(params, options), { created: { gte: nowSeconds - 30 * 86400 } }, thumbgateSession, 40);
@@ -609,6 +627,7 @@ async function collectMoney(deps, signal) {
       }),
       attempt(() => readTraffic(deps, signal), telemetryReason),
       attempt(() => readSummary(deps, signal), () => 'lead ledgers failed'),
+      recurringLane,
     ]);
   } finally {
     clearTimeout(sharedTimer);
@@ -665,6 +684,7 @@ async function collectMoney(deps, signal) {
     paid: blockTime('paid'),
     subscriptions: blockTime('subscriptions'),
     checkouts: blockTime('checkouts'),
+    recurring: blockTime('recurring'),
     traffic: { collectedAt: trafficRead?.collectedAt || null, stale: false },
     leads: { collectedAt: summaryRun.value?.collectedAt || null, stale: summaryRun.value?.state === 'stale' },
     displayRefreshedAt: new Date().toISOString(),
@@ -682,6 +702,15 @@ async function collectMoney(deps, signal) {
     mrr: proRun.value ? proRun.value.mrr : null,
     mrrBasis: proRun.value ? (proRun.value.complete && !proRun.value.unpriced ? 'stripe_active_subscription_list_prices' : 'stripe_active_subscription_list_prices_partial') : 'unavailable',
     cancellingAtPeriodEnd: proRun.value ? proRun.value.cancelling : null,
+    // Churn: subscriptions cancelled in 30 days against those plus the ones still active.
+    recurring30d: recurringRun.ok ? {
+      renewalRevenue: recurringRun.value.renewals,
+      renewalInvoices: recurringRun.value.renewalCount,
+      churnedSubscriptions: recurringRun.value.churned,
+      churnedMrr: recurringRun.value.churnedMrr,
+      churnRate: proRun.value && proRun.value.count + recurringRun.value.churned > 0 ? Math.round((recurringRun.value.churned / (proRun.value.count + recurringRun.value.churned)) * 1000) / 1000 : null,
+      complete: recurringRun.value.complete,
+    } : null,
     usage30d: trafficReason ? null : (trafficRead.usage || null),
     weekOverWeek: trafficReason ? null : (trafficRead.weeks || null),
     activeProBasis: proRun.value ? (proRun.value.complete ? 'stripe_active_subscriptions_excluding_owner' : 'stripe_active_subscriptions_first_100_only') : 'unavailable',
@@ -696,6 +725,7 @@ async function collectMoney(deps, signal) {
       payingCustomers: bothStripe ? null : (paidRun.reason || proRun.reason),
       activePro: proRun.value ? null : proRun.reason,
       mrr: proRun.value ? null : proRun.reason,
+      recurring: recurringRun.ok ? null : recurringRun.reason,
       revenue: paid ? null : paidRun.reason,
       checkouts: sessions ? null : sessionRun.reason,
       visitors: trafficReason,
@@ -703,7 +733,7 @@ async function collectMoney(deps, signal) {
     },
     notes: ['Every started checkout is counted once: real people, bots, not classified, or owner and test.', 'Sessions created before the bot check carry no browser class, so they are counted as not classified.'],
   };
-  const staleLabel = { paid: 'paying customers and revenue', subscriptions: 'active subscriptions', checkouts: 'checkout counts' };
+  const staleLabel = { paid: 'paying customers and revenue', subscriptions: 'active subscriptions', checkouts: 'checkout counts', recurring: 'renewals and churn' };
   for (const [key, at] of Object.entries(staleBlocks)) {
     const minutes = Math.max(1, Math.round((Date.now() - at) / 60000));
     data.notes.push(`Showing the last good ${staleLabel[key]} from ${minutes} minute${minutes === 1 ? '' : 's'} ago, because Stripe did not answer this time.`);
@@ -715,6 +745,7 @@ async function collectMoney(deps, signal) {
   if (!paidRun.ok) warnings.push('paid_checkout_list_unavailable');
   if (!sessionRun.ok) warnings.push('checkout_list_unavailable');
   if (!proRun.ok) warnings.push('subscription_list_unavailable');
+  if (!recurringRun.ok) warnings.push('renewal_and_churn_unavailable');
   if (trafficReason) warnings.push('telemetry_unavailable');
   if (leadsReason) warnings.push('leads_unavailable');
   const failed = [paidRun, sessionRun, proRun].filter((run) => !run.ok).length;
@@ -795,7 +826,12 @@ async function collectSummary(deps, signal) {
     add('money.mrr', 'Monthly recurring revenue at list price, by currency (active Stripe subscriptions)', money.mrr, { ...stripeOpts('subscriptions', why.mrr), partial: money.mrrBasis === 'stripe_active_subscription_list_prices_partial' });
     add('money.cancelling_at_period_end', 'Active subscriptions set to cancel at period end', money.cancellingAtPeriodEnd, stripeOpts('subscriptions', why.mrr));
     add('money.revenue_30d', 'One-time checkout revenue, past 30 days, by currency (completed Checkout Sessions after refunds)', money.revenueLast30Days, stripeOpts('paid', why.revenue));
-    add('money.subscription_invoices_30d', 'Subscription invoices, past 30 days', null, { source: 'stripe', unresolved: true, reason: 'Not collected yet: renewal invoices are not read, so recurring revenue is not in any revenue number here' });
+    const recurring = money.recurring30d;
+    const recurringOpts = { ...stripeOpts('recurring', why.recurring), partial: recurring ? recurring.complete === false : false };
+    add('money.subscription_invoices_30d', 'Subscription renewal revenue, past 30 days, by currency (paid renewal invoices)', recurring ? recurring.renewalRevenue : null, recurringOpts);
+    add('money.churned_subscriptions_30d', 'Subscriptions cancelled in the past 30 days', recurring ? recurring.churnedSubscriptions : null, recurringOpts);
+    const noSubscriptions = recurring && recurring.churnRate === null;
+    add('money.churn_rate_30d', 'Subscription churn, past 30 days (cancelled ÷ cancelled plus active)', recurring ? recurring.churnRate : null, noSubscriptions ? { ...recurringOpts, unresolved: true, reason: 'No active or cancelled subscriptions, so there is no rate' } : recurringOpts);
     buckets('money.checkouts_7d', '7 days', money.checkouts7d);
     buckets('money.checkouts_30d', '30 days', money.checkouts30d);
     const panel = money.checkoutBotCheck;
@@ -831,11 +867,47 @@ async function collectSummary(deps, signal) {
   add('analytics.external_booked_revenue_30d', 'External booked revenue, past 30 days, by currency', analytics?.revenue?.external?.bookedRevenueByCurrency ?? null, revenueOpts);
 
   // A permanent, stated gap is listed apart so the overall state reflects sources that failed, not a feature not built yet.
-  const knownGaps = ['money.subscription_invoices_30d'];
+  const knownGaps = [];
   const states = Object.entries(fields).filter(([key]) => !knownGaps.includes(key)).map(([, entry]) => entry.status);
   const bad = states.filter((state) => state === 'unavailable').length;
   const overall = !money && !analytics ? 'unavailable' : states.every((state) => state === 'ok' || state === 'verified_zero') ? 'ok' : 'partial';
   return envelope('owner_console_summary', { generatedAt: refreshed, readOnly: true, windows: { checkouts: '7d and 30d', traffic: '30d', revenue: '30d' }, freshness: { displayRefreshedAt: refreshed, stripeCollectedAt: fresh.checkouts?.collectedAt || null, telemetryCollectedAt: fresh.traffic?.collectedAt || null, leadsCollectedAt: fresh.leads?.collectedAt || null, telemetryCacheSeconds: Math.round((deps.telemetryCacheMs ?? TELEMETRY_CACHE_MS) / 1000), billingSummaryCacheSeconds: Math.round(SUMMARY_TTL_MS / 1000) }, fields, knownGaps, unavailableFields: bad }, [], overall);
+}
+
+// GET /v1/admin/alerts: what needs the owner now, from the Money board and the Health report.
+async function collectAlerts(deps, signal) {
+  const [moneyRun, healthRun] = await Promise.all([
+    attempt(() => collectMoney(deps, signal), () => 'money unavailable'),
+    attempt(() => collectObservability(deps, signal), () => 'health unavailable'),
+  ]);
+  const money = moneyRun.ok ? moneyRun.value.data : null;
+  const report = healthRun.ok ? healthRun.value.data?.report || null : null;
+  const alerts = ownerAlerts.evaluateAlerts({ money, report });
+  if (!money) alerts.push({ id: 'money_unchecked', level: 'amber', text: 'The money checks could not run this time.', action: 'Refresh in a minute.', tab: 'money' });
+  if (!report) alerts.push({ id: 'health_unchecked', level: 'amber', text: 'The health checks could not run this time.', action: 'Refresh in a minute.', tab: 'observability' });
+  const delivery = process.env.THUMBGATE_OWNER_ALERT_WEBHOOK ? 'webhook_on_new_alert' : 'off';
+  return envelope('owner_alerts', { alerts, checked: { money: Boolean(money), health: Boolean(report) }, delivery }, [], money && report ? 'ok' : 'partial');
+}
+
+// Checks the alerts every 15 minutes and posts the new ones to the owner's own incoming webhook. Off without the variable.
+function startAlertDelivery(makeDeps, { intervalMs = 15 * 60 * 1000 } = {}) {
+  const url = String(process.env.THUMBGATE_OWNER_ALERT_WEBHOOK || '').trim();
+  if (!/^https:\/\//.test(url)) return null;
+  const platform = /discord/i.test(url) ? 'discord' : /office|teams|logic\.azure/i.test(url) ? 'teams' : 'slack';
+  const tracker = ownerAlerts.createAlertTracker();
+  const run = async () => {
+    try {
+      const result = await collectAlerts(makeDeps(), AbortSignal.timeout(30000));
+      const added = tracker.fresh(result.data.alerts.filter((alert) => alert.level !== 'info'));
+      if (!added.length) return;
+      const { title, message } = ownerAlerts.formatAlertMessage(added);
+      await require('./webhook-delivery').deliver(platform, url, title, message);
+    } catch { /* an alert check never takes the server down */ }
+  };
+  const timer = setInterval(run, intervalMs);
+  timer.unref?.();
+  setTimeout(run, 60000).unref?.();
+  return timer;
 }
 
 async function collectAdminSection(route, deps, externalSignal) {
@@ -852,6 +924,7 @@ async function collectAdminSection(route, deps, externalSignal) {
       if (route.section === 'overview') return envelope('current_process', { health: deps.health(), sections: ['stripe', 'data', 'analytics', 'observability'] });
       if (route.section === 'money') return collectMoney(deps, controller.signal);
       if (route.section === 'summary') return collectSummary(deps, controller.signal);
+      if (route.section === 'alerts') return collectAlerts(deps, controller.signal);
       if (route.section === 'stripe') return collectStripe(route, deps, controller.signal);
       if (route.section === 'data') return collectData(route, deps, controller.signal);
       if (route.section === 'observability') return collectObservability(deps, controller.signal);
@@ -865,4 +938,4 @@ async function collectAdminSection(route, deps, externalSignal) {
   }
 }
 
-module.exports = { PRIVATE_HEADERS, RESPONSE_LIMIT, monthlyRecurring, adminPath, parseAdminRoute, readOwnerIdentity, readSessionState, collectMoney, collectAnalytics, collectSummary, summaryParts, collectAdminSection, createRuntimeObservations, githubCommitTitle, collectObservability, projectAnalytics, projectStripe, readObject, countRecords, guardPath };
+module.exports = { PRIVATE_HEADERS, RESPONSE_LIMIT, monthlyRecurring, collectAlerts, startAlertDelivery,adminPath, parseAdminRoute, readOwnerIdentity, readSessionState, collectMoney, collectAnalytics, collectSummary, summaryParts, collectAdminSection, createRuntimeObservations, githubCommitTitle, collectObservability, projectAnalytics, projectStripe, readObject, countRecords, guardPath };

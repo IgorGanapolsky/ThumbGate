@@ -122,3 +122,57 @@ test('Analytics shows the weekly comparison, usage and installs per day', () => 
   const page = renderTexts('analytics', { usage, weekOverWeek, daily: [{ date: '2026-11-23', visitors: 3, activeInstalls: 2, pageViews: 4, ctaClicks: 0, checkoutStarts: 0, checkoutPaidConfirmations: 0 }], reconciliation: { status: 'ok', complete: true } });
   for (const wanted of ['Past 7 days against the 7 days before', 'Active installs, past 7 days', 'Active CLI installs']) assert.ok(page.includes(wanted), 'missing: ' + wanted);
 });
+
+const { evaluateAlerts, createAlertTracker, formatAlertMessage } = require('../scripts/owner-alerts');
+
+test('alert rules fire on real trouble, worst first, each with an action', () => {
+  const alerts = evaluateAlerts({
+    report: { errors: { lastHour: 7 }, uptime: { percent: 99.9 }, webhooks: { failures24h: 2 }, disk: { percent: 90 }, signIn: { failed24h: 1 } },
+    money: {
+      reasons: {},
+      weekOverWeek: { last7: { realVisitors: 8, checkoutStarts: 1, activeInstalls: 5 }, prior7: { realVisitors: 40, checkoutStarts: 6, activeInstalls: 6 } },
+      usage30d: { activeInstalls30d: 20, activatedInstalls: 2 },
+      cancellingAtPeriodEnd: 1,
+      recurring30d: { churnedSubscriptions: 0 },
+    },
+  });
+  const ids = alerts.map((a) => a.id);
+  assert.deepEqual(ids.slice(0, 2).sort(), ['server_errors', 'stripe_webhooks']);
+  for (const id of ['disk', 'visitors_drop', 'checkout_drop', 'activation_low', 'cancelling']) assert.ok(ids.includes(id), id);
+  for (const id of ['uptime', 'sign_in', 'installs_drop', 'churned']) assert.ok(!ids.includes(id), id + ' should stay quiet');
+  for (const alert of alerts) assert.ok(alert.text && alert.action, alert.id);
+});
+
+test('small numbers never raise a drop alert, and a healthy console raises nothing', () => {
+  const quiet = evaluateAlerts({
+    report: { errors: { lastHour: 0 }, uptime: { percent: 100 }, webhooks: { failures24h: 0 }, disk: { percent: 20 }, signIn: { failed24h: 0 } },
+    money: { reasons: {}, weekOverWeek: { last7: { realVisitors: 1, checkoutStarts: 0, activeInstalls: 0 }, prior7: { realVisitors: 3, checkoutStarts: 2, activeInstalls: 3 } }, usage30d: { activeInstalls30d: 3, activatedInstalls: 0 }, cancellingAtPeriodEnd: 0 },
+  });
+  assert.deepEqual(quiet, []);
+});
+
+test('an unreadable source is its own alert instead of a quiet zero', () => {
+  const alerts = evaluateAlerts({ money: { reasons: { payingCustomers: 'Stripe did not answer in time', visitors: 'telemetry read failed' } } });
+  assert.deepEqual(alerts.map((a) => a.id), ['stripe_unreadable', 'telemetry_unreadable']);
+});
+
+test('delivery sends an alert once, when it first appears', () => {
+  const tracker = createAlertTracker();
+  const a = { id: 'disk', text: 'x', action: 'y', level: 'amber' };
+  const b = { id: 'server_errors', text: 'z', action: 'w', level: 'red' };
+  assert.deepEqual(tracker.fresh([a]), [a]);
+  assert.deepEqual(tracker.fresh([a]), []);
+  assert.deepEqual(tracker.fresh([a, b]), [b]);
+  assert.deepEqual(tracker.fresh([]), []);
+  assert.deepEqual(tracker.fresh([a]), [a], 'an alert that cleared and came back is new again');
+  assert.match(formatAlertMessage([b]).message, /^\[urgent\] z w/);
+});
+
+test('Today opens with alerts, then this week, renewals and churn, with the detail folded away', () => {
+  const page = renderTexts('money', { mrr: { USD: 1900 }, cancellingAtPeriodEnd: 0, recurring30d: { renewalRevenue: { USD: 3800 }, renewalInvoices: 2, churnedSubscriptions: 1, churnRate: 0.25, complete: true }, usage30d: usage, weekOverWeek, payingCustomers: 0, reasons: {}, notes: [] });
+  const order = ['Needs you', 'This week at a glance', 'Product usage · CLI installs, past 30 days', 'Biggest evidenced obstacle', 'Money detail: customers, checkouts, revenue, traffic and leads'].map((t) => page.indexOf(t));
+  assert.ok(order.every((i) => i >= 0), order.join(','));
+  assert.deepEqual([...order].sort((x, y) => x - y), order, 'in that order');
+  assert.ok(page.includes('$38.00 · 2 renewals'));
+  assert.ok(page.includes('25% · 1 cancelled'));
+});

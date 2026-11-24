@@ -275,29 +275,22 @@
       <div id="content" aria-live="polite"></div>
     </main>
     <footer>
-      Customer data stays in this private view. Payments are charge records.
-      External booked revenue excludes identified internal and test purchases;
-      unknown identities remain excluded. Deployment time is only shown when
-      known.
+      Private and read-only. Owner and test purchases are left out of every
+      revenue number. JSON for agents: /v1/admin/summary and /v1/admin/alerts.
     </footer>
     <script nonce="__ADMIN_NONCE__">
       'use strict';
       const content = document.getElementById('content');
-      const sections = [
-        'money',
-        'overview',
-        'stripe',
-        'data',
-        'analytics',
-        'observability',
-      ];
+      // Today answers "does anything need me, and how did this week go". Overview repeated it, so it left the menu;
+      // its numbers stay in /v1/admin/summary for agents.
+      const sections = ['money', 'analytics', 'observability', 'stripe', 'data'];
       const titles = {
-        money: 'Money',
+        money: 'Today',
         overview: 'Overview',
         stripe: 'Stripe records',
         data: 'Hosted data',
-        analytics: 'Analytics',
-        observability: 'Observability',
+        analytics: 'Growth',
+        observability: 'Health',
       };
       let current = 'money';
       let resource = 'customers';
@@ -516,6 +509,7 @@
           paid: 'Paid checkouts (Stripe)',
           subscriptions: 'Active subscriptions (Stripe)',
           checkouts: 'Checkout sessions (Stripe)',
+          recurring: 'Renewals and cancellations (Stripe)',
           traffic: 'Site visits (telemetry)',
           leads: 'Signups and leads (ledgers)',
         };
@@ -803,6 +797,54 @@
         const entries = Object.entries(mrr);
         return entries.length ? entries.map(([c, a]) => money(a, c)).join(', ') : money(0, 'usd');
       }
+      // "Needs you": the alert rules from /v1/admin/alerts, worst first, each with what to do and a link to its tab.
+      function alertsBlock(parent) {
+        const mine = activeLoad;
+        const box = element('div', undefined, 'block');
+        box.append(element('h3', 'Needs you'));
+        const waiting = element('p', 'Checking alerts…', 'muted');
+        box.append(waiting);
+        parent.append(box);
+        fetch('/v1/admin/alerts', { credentials: 'same-origin', cache: 'no-store' })
+          .then((r) => (r.ok ? r.json() : null))
+          .catch(() => null)
+          .then((result) => {
+            if (mine !== activeLoad) return;
+            waiting.remove();
+            const alerts = result?.data?.alerts;
+            if (!Array.isArray(alerts)) {
+              box.append(element('p', 'Alerts could not be checked right now.', 'notice'));
+              return;
+            }
+            if (!alerts.length) {
+              box.append(element('p', 'Nothing needs you right now. Every alert rule passed.', 'banner green'));
+            }
+            for (const alert of alerts) {
+              const row = element('div', undefined, 'banner ' + (alert.level === 'red' ? 'red' : 'amber'));
+              row.append(element('div', alert.text), element('small', alert.action + ' '));
+              if (alert.tab && titles[alert.tab] && sections.includes(alert.tab)) {
+                const go = element('button', 'Open ' + titles[alert.tab]);
+                go.type = 'button';
+                go.addEventListener('click', () => {
+                  current = alert.tab;
+                  controls();
+                  load();
+                });
+                row.append(go);
+              }
+              box.append(row);
+            }
+            box.append(
+              element(
+                'p',
+                result.data.delivery === 'off'
+                  ? 'Alerts show here only. Set THUMBGATE_OWNER_ALERT_WEBHOOK on Railway to also get new ones in Slack or Discord.'
+                  : 'New alerts are also sent to your webhook, checked every 15 minutes.',
+                'muted',
+              ),
+            );
+          });
+      }
       function usageBlock(parent, usage) {
         parent.append(element('h3', 'Product usage · CLI installs, past 30 days'));
         if (!usage) {
@@ -836,12 +878,24 @@
       }
       function render(parent, section, data) {
         if (section === 'money') {
+          alertsBlock(parent);
           parent.append(element('h3', 'This week at a glance'));
+          const recurring = data.recurring30d;
+          const recurringWhy = data.reasons?.recurring || 'Source not available right now';
           weekCards(parent, data.weekOverWeek, {
             'Monthly recurring revenue (list price)': data.mrr ? mrrWords(data.mrr) : (data.reasons?.mrr || 'Source not available right now'),
+            'Renewal revenue, past 30 days': recurring ? mrrWords(recurring.renewalRevenue) + ' · ' + recurring.renewalInvoices + ' renewals' : recurringWhy,
+            'Churn, past 30 days': recurring ? (Number.isFinite(recurring.churnRate) ? Math.round(recurring.churnRate * 1000) / 10 + '% · ' : 'N/A · ') + recurring.churnedSubscriptions + ' cancelled' : recurringWhy,
             'Subscriptions cancelling at period end': data.cancellingAtPeriodEnd === null || data.cancellingAtPeriodEnd === undefined ? (data.reasons?.mrr || 'Source not available right now') : String(data.cancellingAtPeriodEnd),
           });
           usageBlock(parent, data.usage30d);
+          parent.append(element('h3', 'Biggest evidenced obstacle'));
+          parent.append(element('p', describeObstacle({ 'money.paying_customers': { value: data.payingCustomers }, 'money.checkout_bot_check': { value: data.checkoutBotCheck } }, null)));
+          // Everything below is the evidence behind the headline numbers, folded away until asked for.
+          const outer = parent;
+          parent = element('details');
+          parent.append(element('summary', 'Money detail: customers, checkouts, revenue, traffic and leads'));
+          outer.append(parent);
           parent.append(element('h3', 'Customers and traffic'));
           const checkouts = data.checkouts7d;
           const traffic = data.traffic30d;
@@ -926,7 +980,7 @@
                 '. Active Pro: ' +
                 basis(data.activeProBasis) +
                 '. Revenue is the total of completed Checkout Sessions created in the last 30 days, after refunds. ' +
-                'Subscription renewal invoices are not read, so recurring revenue is not included: subscription invoices are not collected yet.',
+                'Renewals are counted apart, as renewal revenue, from paid subscription renewal invoices.',
               'muted',
             ),
           );
