@@ -65,8 +65,14 @@ test('refreshHookRuntime updates an existing runtime with npm and skips when non
   assert.deepEqual(runs[0].slice(0, 4), ['npm', 'install', '--prefix', dir]);
   assert.equal(runs[0][runs[0].length - 1], 'thumbgate@latest');
 
-  assert.deepEqual(cu.refreshHookRuntime({ dir: fakeRuntime(null), run: () => { throw new Error('must not run'); } }),
+  const missing = path.join(os.tmpdir(), `tg-runtime-missing-${process.pid}-${Date.now()}`);
+  assert.deepEqual(cu.refreshHookRuntime({ dir: missing, run: () => { throw new Error('must not run'); } }),
     { refreshed: false, reason: 'no-runtime' });
+
+  // A runtime folder with a missing or broken manifest is still repaired.
+  const broken = fakeRuntime(null);
+  assert.equal(cu.refreshHookRuntime({ dir: broken, run: (cmd, args) => runs.push([cmd, ...args]) }).refreshed, true);
+  assert.equal(runs[1][3], broken);
 
   const failed = cu.refreshHookRuntime({ dir, run: () => { throw new Error('offline'); } });
   assert.equal(failed.reason, 'install-failed');

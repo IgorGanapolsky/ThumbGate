@@ -272,19 +272,17 @@ function reportSkewOnce({ skew, env = process.env, now = Date.now(), stateDir, t
   }
 }
 
-
-/**
- * Update the cached hook runtime (~/.thumbgate/runtime) when one exists. Hook commands run that
- * copy first (published-cli.js fast path), so without this a self-update left the hooks on the
- * old version. Runs only when the person asked for an update. Returns the outcome; never throws.
- */
+// Hooks run the cached runtime first (published-cli.js), so self-update refreshes it too. Never throws.
 function refreshHookRuntime(options = {}) {
   const dir = options.dir || runtimeDir();
+  if (!fs.existsSync(dir)) return { refreshed: false, reason: 'no-runtime' };
   const before = readRuntimeVersion(dir);
-  if (!before) return { refreshed: false, reason: 'no-runtime' };
-  const run = options.run || ((cmd, args) => execFileSync(cmd, args, { stdio: 'inherit' }));
+  // Windows exposes npm as npm.cmd, which needs cmd.exe; Windows paths cannot contain quotes.
+  const run = options.run || ((cmd, args) => (process.platform === 'win32'
+    ? execSync([cmd, ...args].map((a) => `"${a}"`).join(' '), { stdio: 'inherit' })
+    : execFileSync(cmd, args, { stdio: 'inherit' })));
   try {
-    console.log(`Updating hook runtime in ${dir} (was v${before})`);
+    console.log(`Updating hook runtime in ${dir} (was ${before ? `v${before}` : 'unknown'})`);
     run('npm', ['install', '--prefix', dir, '--no-save', '--omit=dev', '--no-audit', '--no-fund', 'thumbgate@latest']);
     return { refreshed: true, before, after: readRuntimeVersion(dir) };
   } catch (err) {
