@@ -158,7 +158,7 @@ test('latest mistake time is local, 12-hour, with AM/PM', () => {
     const project = path.join(home, 'orchestrator');
     fs.mkdirSync(project, { recursive: true });
     writeJsonl(path.join(project, '.thumbgate', 'feedback-log.jsonl'), [
-      { id: 'tz_down', signal: 'negative', reviewOrigin: 'human', timestamp },
+      { id: 'tz_down', signal: 'negative', reviewOrigin: 'human', tags: ['user-prompt-thumbs'], timestamp },
     ]);
     const env = { PATH: process.env.PATH, HOME: home, USERPROFILE: home, TMPDIR: process.env.TMPDIR || os.tmpdir(), TZ: tz };
     const run = spawnSync(process.execPath, [SCRIPT], { cwd: project, encoding: 'utf8', env });
@@ -178,7 +178,7 @@ test('latestDown is null when the project has no counted thumbs-down', () => {
   fs.mkdirSync(project, { recursive: true });
   const childEnv = { PATH: process.env.PATH, HOME: home, USERPROFILE: home, TMPDIR: process.env.TMPDIR || os.tmpdir() };
   writeJsonl(path.join(project, '.thumbgate', 'feedback-log.jsonl'), [
-    { id: 'only_up', signal: 'positive', reviewOrigin: 'human', timestamp: new Date().toISOString() },
+    { id: 'only_up', signal: 'positive', reviewOrigin: 'human', tags: ['user-prompt-thumbs'], timestamp: new Date().toISOString() },
   ]);
   const run = spawnSync(process.execPath, [SCRIPT], { cwd: project, encoding: 'utf8', env: childEnv });
   const out = JSON.parse(run.stdout);
@@ -200,12 +200,12 @@ test('legacy MCP capture recognition is narrow', () => {
   assert.equal(isLegacyMcpCapture(null), false);
 });
 
-test('rows without a project key count in the project own feedback dir but never from the global store', () => {
+test('rows without a project key count in the project own feedback dir only with person evidence, and never from the global store', () => {
   const home = fs.mkdtempSync(path.join(os.tmpdir(), 'tg-statusline-unkeyed-'));
   const project = path.join(home, 'orchestrator');
   fs.mkdirSync(project, { recursive: true });
   const childEnv = { PATH: process.env.PATH, HOME: home, USERPROFILE: home, TMPDIR: process.env.TMPDIR || os.tmpdir() };
-  const row = (id, signal) => ({ id, signal, reviewOrigin: 'human', timestamp: new Date().toISOString() });
+  const row = (id, signal) => ({ id, signal, reviewOrigin: 'human', tags: ['user-prompt-thumbs'], timestamp: new Date().toISOString() });
   writeJsonl(path.join(project, '.thumbgate', 'feedback-log.jsonl'), [row('own_1', 'positive'), row('own_2', 'negative')]);
   writeJsonl(path.join(home, '.thumbgate', 'feedback-log.jsonl'), [row('global_1', 'positive'), row('global_2', 'negative')]);
 

@@ -36,6 +36,12 @@ function isScrapedHumanThumb(row) {
   return tags.includes('claude-history-sync');
 }
 
+// "[Eci.Psn.StockService] Igor: thumbs up": the prefix names the project the thumb was given in.
+function contextProjectPrefix(row) {
+  const match = String(row.context || '').match(/^\s*\[([^\]]{1,80})\]/);
+  return match ? match[1].trim().toLowerCase() : null;
+}
+
 function collectHumanRows(options = {}) {
   const env = options.env || process.env;
   const cwd = options.cwd || process.cwd();
@@ -49,6 +55,8 @@ function collectHumanRows(options = {}) {
 
   const seen = new Set();
   const mineRows = [];
+  // Rows read but kept out of the headline. Nothing is deleted or rewritten; they are only not counted.
+  const excluded = { otherProject: 0, unassignedNoEvidence: 0 };
   const ownDir = path.resolve(feedbackDir);
   // THUMBGATE_FEEDBACK_DIR can point the resolved dir at the shared store, which
   // would hide this project's own log. The project's own .thumbgate folder is always read too.
@@ -66,7 +74,13 @@ function collectHumanRows(options = {}) {
         if (seen.has(row.id)) continue;
         seen.add(row.id);
       }
-      mineRows.push(row);
+      // A thumb given in another project never counts here, whatever key it carries.
+      const prefix = contextProjectPrefix(row);
+      if (prefix && prefix !== projectName.toLowerCase()) {
+        if (normalizeSignal(row)) excluded.otherProject += 1;
+        continue;
+      }
+      mineRows.push({ row, unassigned: row.projectKey === 'unassigned' });
     }
   }
 
@@ -75,7 +89,7 @@ function collectHumanRows(options = {}) {
   // labelled automated counts when such evidence sits next to it; without it the
   // row is a lesson the agent logged on its own judgment.
   const scraped = { up: [], down: [] };
-  for (const row of mineRows) {
+  for (const { row } of mineRows) {
     const signal = normalizeSignal(row);
     const at = rowTime(row);
     if (signal && at !== null && isScrapedHumanThumb(row)) scraped[signal].push(at);
@@ -86,13 +100,28 @@ function collectHumanRows(options = {}) {
     return Boolean(signal) && at !== null && scraped[signal].some((t) => Math.abs(t - at) <= CORROBORATION_MS);
   };
 
-  const counted = mineRows.filter((row) => normalizeSignal(row)
-    && (isCountedHumanFeedback(row) || (isLegacyMcpCapture(row) && corroborated(row))));
-  return { rows: counted, projectKey, projectName, projectDir };
+  // A row written before project tracking carries no key, so it proves nothing about
+  // which project it belongs to. It counts only when the row itself shows the person
+  // typed the thumb (the user-prompt hook tag, or a history-sync scrape beside it).
+  const hasPersonEvidence = (row) => {
+    const tags = Array.isArray(row.tags) ? row.tags : [];
+    return tags.includes('user-prompt-thumbs') || corroborated(row);
+  };
+  const counted = [];
+  for (const { row, unassigned } of mineRows) {
+    if (!normalizeSignal(row)) continue;
+    if (!(isCountedHumanFeedback(row) || (isLegacyMcpCapture(row) && corroborated(row)))) continue;
+    if (unassigned && !hasPersonEvidence(row)) {
+      excluded.unassignedNoEvidence += 1;
+      continue;
+    }
+    counted.push(row);
+  }
+  return { rows: counted, projectKey, projectName, projectDir, excluded };
 }
 
 function computeHumanCounts(options = {}) {
-  const { rows, projectName } = collectHumanRows(options);
+  const { rows, projectName, excluded } = collectHumanRows(options);
   let up = 0;
   let down = 0;
   let latestDown = null;
@@ -105,7 +134,7 @@ function computeHumanCounts(options = {}) {
       if (at !== null && (!latestDown || at > latestDown.at)) latestDown = { at, row };
     }
   }
-  return { up, down, label: 'this project', project: projectName, latestDown: describeLatestDown(latestDown) };
+  return { up, down, label: 'this project', project: projectName, latestDown: describeLatestDown(latestDown), notCounted: excluded.unassignedNoEvidence };
 }
 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
