@@ -321,7 +321,11 @@ function selfUpdate() {
     console.log('Running: npm install -g thumbgate@latest');
     execSync('npm install -g thumbgate@latest', { stdio: 'inherit' });
     // Hooks run from the cached runtime, not the global install, so update it too.
-    refreshHookRuntime();
+    const runtime = refreshHookRuntime();
+    if (runtime.reason === 'install-failed') {
+      console.error('❌ Self-update incomplete: hooks still run the old runtime.');
+      return false;
+    }
     console.log('✨ Self-update complete! Run `thumbgate version` to verify.');
     return true;
   } catch (err) {
