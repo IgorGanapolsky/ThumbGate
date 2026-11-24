@@ -3633,6 +3633,7 @@ async function createCheckoutSession({ successUrl, cancelUrl, customerEmail, ins
     await verifyActiveProductForPlan(stripe, checkoutSelection.planId);
   }
 
+  const activePriceId = packId ? null : await resolveActiveStripePriceId(stripe, checkoutSelection);
   const sessionPayload = buildCheckoutSessionPayload({
     successUrl,
     cancelUrl,
@@ -3640,6 +3641,7 @@ async function createCheckoutSession({ successUrl, cancelUrl, customerEmail, ins
     checkoutMetadata,
     packId,
     appOrigin,
+    activePriceId,
   });
   const session = await createSessionDroppingRejectedOptionals(stripe, sessionPayload);
 
@@ -3671,7 +3673,29 @@ async function createSessionDroppingRejectedOptionals(stripe, payload) {
   }
 }
 
-function buildCheckoutSessionPayload({ successUrl, cancelUrl, customerEmail, checkoutMetadata, packId = null, appOrigin } = {}) {
+// Returns the configured Stripe price id only when Stripe confirms it is active
+// and matches the amount and interval the page shows. Otherwise null, and the
+// caller falls back to inline price_data so a bad config never blocks checkout.
+async function resolveActiveStripePriceId(stripe, checkoutSelection) {
+  const priceId = checkoutSelection && checkoutSelection.priceId;
+  if (!priceId || !stripe || !stripe.prices || typeof stripe.prices.retrieve !== 'function') return null;
+  try {
+    const price = await stripe.prices.retrieve(priceId);
+    const expectedInterval = checkoutSelection.billingCycle === 'annual' ? 'year' : 'month';
+    const expectedAmount = Math.round(checkoutSelection.unitPriceDollars * 100);
+    const ok = price
+      && price.active === true
+      && String(price.currency || '').toLowerCase() === 'usd'
+      && price.unit_amount === expectedAmount
+      && price.recurring
+      && price.recurring.interval === expectedInterval;
+    return ok ? priceId : null;
+  } catch {
+    return null;
+  }
+}
+
+function buildCheckoutSessionPayload({ successUrl, cancelUrl, customerEmail, checkoutMetadata, packId = null, appOrigin, activePriceId = null } = {}) {
   const pack = packId ? CONFIG.CREDIT_PACKS[packId] : null;
   const checkoutSelection = pack ? null : resolveSubscriptionCheckoutSelection(checkoutMetadata);
   if (!pack && !checkoutSelection.priceId) {
@@ -3690,10 +3714,12 @@ function buildCheckoutSessionPayload({ successUrl, cancelUrl, customerEmail, che
         },
         quantity: 1,
       }]
-    : [{
-        price_data: buildSubscriptionPriceData(checkoutSelection, appOrigin),
-        quantity: checkoutSelection.quantity,
-      }];
+    : [activePriceId
+        ? { price: activePriceId, quantity: checkoutSelection.quantity }
+        : {
+            price_data: buildSubscriptionPriceData(checkoutSelection, appOrigin),
+            quantity: checkoutSelection.quantity,
+          }];
 
   const explicitTrialDays = normalizeInteger(
     checkoutMetadata?.trialPeriodDays
@@ -5162,6 +5188,7 @@ module.exports = {
   _buildStripeReconciledRevenueEvent: buildStripeReconciledRevenueEvent,
   CONFIG, createCheckoutSession, isAutomatedCheckoutRequest, isSyntheticOrOwnerCheckoutEmail, createBillingPortalSession, getCheckoutSessionStatus, provisionApiKey, resolvePaidEntitlementForEmail, rotateApiKey, validateApiKey, recordUsage, recordAccountFirstBlock, disableCustomerKeys, handleWebhook, verifyWebhookSignature, verifyGithubWebhookSignature, verifyPayPalWebhookSignature, recordGithubMarketplaceWebhookDelivery, recordPayPalWebhookDelivery, handleGithubWebhook, loadKeyStore, appendFunnelEvent, appendRevenueEvent, loadFunnelLedger, loadRevenueLedger, loadGithubMarketplaceWebhookLedger, loadPayPalWebhookLedger, loadNewsletterSubscribers, loadResolvedRevenueEvents, getFunnelAnalytics, getBusinessAnalytics, getBillingSummary, getBillingSummaryLive, getBillingSummariesLive, listStripeReconciledRevenueEvents, listStripeCheckoutSessionDepth, classifyCheckoutSessionDepth, summarizeCheckoutSessionDepth, verifyPaidCheckoutSession, repairGithubMarketplaceRevenueLedger,
   _buildCheckoutSessionPayload: buildCheckoutSessionPayload,
+  _resolveActiveStripePriceId: resolveActiveStripePriceId,
   _setStripeClient: setStripeClientForTests,
   _filterQualifiedCheckoutFunnelEvents: filterQualifiedCheckoutFunnelEvents,
   _createSessionDroppingRejectedOptionals: createSessionDroppingRejectedOptionals,
