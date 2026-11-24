@@ -202,3 +202,24 @@ test('Growth shows the cohort table and Today shows where buyers come from', () 
   const today = renderTexts('money', { channels: [{ channel: 'reddit', checkoutStarts30d: 5, paidCustomers: 1, revenue30d: { USD: 1900 } }], reasons: {}, notes: [] });
   for (const wanted of ['Where buyers come from', 'reddit', '$19.00']) assert.ok(today.includes(wanted), 'missing: ' + wanted);
 });
+
+test('alert delivery sends a one-time confirmation, then each new alert once', async () => {
+  const { startAlertDelivery, createRuntimeObservations } = require('../scripts/owner-admin');
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'tg-deliver-'));
+  const sent = [];
+  const makeDeps = () => ({ feedbackDir: dir, runtime: createRuntimeObservations(), health: () => ({ version: 'x', buildSha: null, uptime: 1 }), getStripeClient: () => { throw new Error('STRIPE_SECRET_KEY is missing.'); }, getOwnerEmails: () => [], moneyCacheMs: 0, lastGoodMs: 0, telemetryCacheMs: 0, stripeDeadlineMs: 200, getBillingSummaryLive: async () => ({ error: 'off' }) });
+  const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+  try {
+    const timer = startAlertDelivery(makeDeps, { intervalMs: 60000, firstCheckMs: 10, send: async (m) => { sent.push(m); } });
+    for (let i = 0; i < 100 && sent.length < 2; i += 1) await wait(50);
+    clearInterval(timer);
+    assert.equal(sent[0].title, 'ThumbGate: alert delivery is on');
+    assert.match(sent[1].message, /Stripe could not be read: Stripe key missing/);
+    assert.ok(fs.existsSync(path.join(dir, 'owner-alert-delivery.json')));
+    sent.length = 0;
+    const again = startAlertDelivery(makeDeps, { intervalMs: 60000, firstCheckMs: 10, send: async (m) => { sent.push(m); } });
+    for (let i = 0; i < 100 && sent.length < 1; i += 1) await wait(50);
+    clearInterval(again);
+    assert.equal(sent.some((m) => m.title === 'ThumbGate: alert delivery is on'), false, 'the confirmation is sent once ever');
+  } finally { fs.rmSync(dir, { recursive: true, force: true }); }
+});

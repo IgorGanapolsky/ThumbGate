@@ -960,7 +960,7 @@ function postOwnerWebhook(platform, webhookUrl, title, message) {
 }
 
 // Checks the alerts every 15 minutes and sends the new ones to the channels above. Does nothing when none is set.
-function startAlertDelivery(makeDeps, { intervalMs = 15 * 60 * 1000, send } = {}) {
+function startAlertDelivery(makeDeps, { intervalMs = 15 * 60 * 1000, firstCheckMs = 60000, send } = {}) {
   const channels = alertChannels();
   if (!channels.length && !send) return null;
   const url = String(process.env.THUMBGATE_OWNER_ALERT_WEBHOOK || '').trim();
@@ -969,21 +969,35 @@ function startAlertDelivery(makeDeps, { intervalMs = 15 * 60 * 1000, send } = {}
     if (channels.includes('webhook')) await postOwnerWebhook(platform, url, title, message).catch(() => null);
     if (channels.includes('email')) {
       const to = require('./bot-detection').getOwnerEmails();
-      if (to.length) await require('./mailer/resend-mailer').sendEmail({ to: String(to[0]), subject: title, text: message }).catch(() => null);
+      const sent = to.length ? await require('./mailer/resend-mailer').sendEmail({ to: String(to[0]), subject: title, text: message }).catch(() => null) : null;
+      console.log('[owner-alerts] email ' + (sent && sent.sent !== false ? 'sent' : 'not sent (' + (sent?.reason || (to.length ? 'error' : 'no_owner_address')) + ')'));
     }
   });
+  console.log('[owner-alerts] delivery on: ' + (channels.join(', ') || 'custom'));
   const tracker = ownerAlerts.createAlertTracker();
+  // The first check after delivery is switched on also sends one confirmation, once ever (a marker file on the volume),
+  // so the owner sees the channel works before a real alert depends on it.
+  const confirmOnce = async (deps, count) => {
+    const marker = path.join(deps.feedbackDir, 'owner-alert-delivery.json');
+    if (fs.existsSync(marker)) return;
+    fs.writeFileSync(marker, JSON.stringify({ confirmedAt: new Date().toISOString(), channels }));
+    await deliver({ title: 'ThumbGate: alert delivery is on', message: 'This is the one-time test that owner alerts reach you. New alerts from thumbgate.ai/admin will arrive here, each once, checked every 15 minutes. Firing right now: ' + count + '.\nhttps://thumbgate.ai/admin' });
+  };
   const run = async () => {
     try {
-      const result = await collectAlerts(makeDeps(), AbortSignal.timeout(30000));
-      const added = tracker.fresh(result.data.alerts.filter((alert) => alert.level !== 'info'));
+      const deps = makeDeps();
+      const result = await collectAlerts(deps, AbortSignal.timeout(30000));
+      const firing = result.data.alerts.filter((alert) => alert.level !== 'info');
+      await confirmOnce(deps, firing.length).catch(() => null);
+      const added = tracker.fresh(firing);
+      console.log('[owner-alerts] checked: ' + firing.length + ' firing, ' + added.length + ' new');
       if (!added.length) return;
       await deliver(ownerAlerts.formatAlertMessage(added));
     } catch { /* an alert check never takes the server down */ }
   };
   const timer = setInterval(run, intervalMs);
   timer.unref?.();
-  setTimeout(run, 60000).unref?.();
+  setTimeout(run, firstCheckMs).unref?.();
   return timer;
 }
 
