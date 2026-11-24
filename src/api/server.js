@@ -3914,7 +3914,8 @@ async function serveTrackedLinkRedirect({ req, res, parsed, hostedConfig, isHead
       }
       // Dynamic session creation failed: Pro slugs go to the confirm page below.
       console.warn('[checkout] dynamic session creation failed', target.slug, err && (err.code || err.message));
-      sessionFailure = String((err && (err.code || err.name)) || 'error');
+      // Only a short code-shaped value reaches telemetry; any other error text becomes 'error'.
+      sessionFailure = err && typeof err.code === 'string' && /^[A-Za-z0-9_]{1,40}$/.test(err.code) ? err.code : 'error';
     }
   }
   if (isProSubscriptionSlug(target.slug)) {
