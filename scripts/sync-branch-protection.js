@@ -5,6 +5,13 @@ const fs = require('node:fs');
 const path = require('node:path');
 const { spawnSync } = require('node:child_process');
 const MERGE_QUALITY_CHECKS = require('../config/merge-quality-checks.json');
+const RULESET_POLICY = require('../config/main-branch-ruleset.json');
+
+// Direct-push policy (2026-11-18): when the ruleset policy has no
+// required_status_checks rule, classic protection must not require any either.
+function expectedRequiredContexts(policy = RULESET_POLICY, mergeQuality = MERGE_QUALITY_CHECKS) {
+  return policy?.rules?.required_status_checks ? mergeQuality.requiredStatusCheckContexts : [];
+}
 
 const DEFAULT_REPO = process.env.GITHUB_REPOSITORY || 'IgorGanapolsky/ThumbGate';
 const DEFAULT_BRANCH = process.env.DEFAULT_BRANCH || 'main';
@@ -321,7 +328,7 @@ function updateBranchProtectionRule(ruleId, requiredStatusCheckContexts, runner 
 function syncBranchProtection(options = {}, runner = runGh) {
   const repo = options.repo || DEFAULT_REPO;
   const branch = assertSafeBranchPattern(options.branch || DEFAULT_BRANCH);
-  const expectedContexts = normalizeContexts(MERGE_QUALITY_CHECKS.requiredStatusCheckContexts);
+  const expectedContexts = normalizeContexts(expectedRequiredContexts(options.policy));
   const rules = loadBranchProtectionRule(repo, runner, branch);
   const rule = findBranchProtectionRule(rules, branch);
 
@@ -331,7 +338,8 @@ function syncBranchProtection(options = {}, runner = runGh) {
 
   const actualContexts = normalizeContexts(rule.requiredStatusCheckContexts);
   const diff = diffContexts(actualContexts, expectedContexts);
-  const inSync = diff.missing.length === 0 && diff.unexpected.length === 0 && rule.requiresStatusChecks === true;
+  const inSync = diff.missing.length === 0 && diff.unexpected.length === 0
+    && (expectedContexts.length === 0 ? rule.requiresStatusChecks !== true : rule.requiresStatusChecks === true);
 
   if (options.check) {
     return {
@@ -392,6 +400,7 @@ if (process.argv[1] && path.resolve(process.argv[1]) === __filename) {
 }
 
 module.exports = {
+  expectedRequiredContexts,
   assertSafeBranchPattern,
   assertSafeGhArgs,
   assertSafeRuleId,

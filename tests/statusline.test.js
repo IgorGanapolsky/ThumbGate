@@ -65,6 +65,12 @@ function runStatusline(cachePayload, extraEnv = {}) {
         THUMBGATE_STATUSLINE_VERBOSE: '1',
         THUMBGATE_OPERATOR_KEY: '',
         THUMBGATE_API_KEY: '',
+        // Thumbs on the line come from human, project-scoped counts, not the cache.
+        _TEST_THUMBGATE_STATUSLINE_HUMAN_JSON: JSON.stringify({
+          up: Number(cachePayload.thumbs_up || 0),
+          down: Number(cachePayload.thumbs_down || 0),
+          label: 'this project',
+        }),
         ...extraEnv,
       },
       timeout: STATUSLINE_PROCESS_TIMEOUT_MS,
@@ -101,6 +107,44 @@ test('statusline script reads jq input and outputs ThumbGate line', () => {
   assert.match(out, /Dashboard/);
   assert.doesNotMatch(out, /Dashboard \(http:\/\/localhost:3456\/dashboard\)/);
   assert.doesNotMatch(out, /Lessons \(http:\/\/localhost:3456\/lessons\)/);
+});
+
+test('the Dashboard word is an OSC 8 hyperlink to the dashboard URL and reads the same without it', () => {
+  const links = linkFixture();
+  const out = runStatusline({
+    thumbs_up: '10', thumbs_down: '5', lessons: '3', trend: 'improving'
+  }, {
+    _TEST_THUMBGATE_STATUSLINE_LINKS_JSON: JSON.stringify(links),
+  });
+  const open = `\u001b]8;;${links.dashboardUrl}\u0007`;
+  const close = '\u001b]8;;\u0007';
+  assert.ok(
+    out.includes(`${open}Dashboard${close}`),
+    `Dashboard must sit between the OSC 8 open for ${links.dashboardUrl} and the close; got ${JSON.stringify(out)}`
+  );
+
+  const plainOut = runStatusline({
+    thumbs_up: '10', thumbs_down: '5', lessons: '3', trend: 'improving'
+  }, {
+    THUMBGATE_STATUSLINE_PLAIN: '1',
+    _TEST_THUMBGATE_STATUSLINE_LINKS_JSON: JSON.stringify(links),
+  });
+  assert.ok(!plainOut.includes('\u001b]8;'), 'plain mode must carry no OSC 8 sequences');
+  assert.equal(
+    stripStatuslineFormatting(out),
+    stripStatuslineFormatting(plainOut),
+    'visible text must be identical with and without hyperlinks'
+  );
+});
+
+test('the Dashboard word stays plain text when no dashboard URL is known', () => {
+  const out = runStatusline({
+    thumbs_up: '10', thumbs_down: '5', lessons: '3', trend: 'improving'
+  }, {
+    _TEST_THUMBGATE_STATUSLINE_LINKS_JSON: JSON.stringify(linkFixture({ dashboardUrl: '' })),
+  });
+  assert.ok(!out.includes('\u001b]8;;http://localhost:3456/dashboard'), 'no link without a URL');
+  assert.match(stripStatuslineFormatting(out), /Dashboard/);
 });
 
 test('statusline is compact by default for Claude chrome', () => {
@@ -156,7 +200,7 @@ test('statusline shows "no feedback yet" when cache has zeros', () => {
     })),
   });
   assert.ok(out.includes(`ThumbGate v${PKG_VERSION}`), 'should show package version');
-  assert.ok(out.includes('no feedback yet'), 'should show no-data message');
+  assert.ok(out.includes('no human feedback this project'), 'should show no-data message');
   assert.match(out, /Dash: thumbgate pro/);
   assert.doesNotMatch(out, /Learn: thumbgate lessons/);
 });
@@ -191,8 +235,8 @@ test('statusline rebuilds counters from local feedback logs when cache is empty'
       },
       timeout: STATUSLINE_PROCESS_TIMEOUT_MS,
     });
-    assert.ok(out.includes('1'), 'should show reconstructed positive count');
-    assert.ok(out.includes('2'), 'should show reconstructed negative count');
+    assert.match(out.replace(/\x1b\]8;;[^\x07]*\x07/g, '').replace(/\x1b\[[0-9;]*m/g, ''), /1👍 2👎 this project/, 'should show reconstructed 1 up, 2 down');
+    assert.doesNotMatch(out, /no human feedback/, 'should not fall back to the empty label');
 
     const cache = JSON.parse(fs.readFileSync(path.join(tmpDir, 'statusline_cache.json'), 'utf8'));
     assert.equal(cache.thumbs_up, '1');
@@ -238,10 +282,12 @@ test('statusline rebuilds counters from Claude history when the prompt hook miss
       },
       timeout: STATUSLINE_PROCESS_TIMEOUT_MS,
     });
-    assert.ok(out.includes('1'), 'should show the synced negative count');
+    // History-sync entries are scraped from prompt text, not a deliberate thumb,
+    // so they are logged but never counted on the status line.
+    assert.ok(out.includes('no human feedback this project'), 'synced history entries must not count');
 
     const cache = JSON.parse(fs.readFileSync(path.join(feedbackDir, 'statusline_cache.json'), 'utf8'));
-    assert.equal(cache.thumbs_down, '1');
+    assert.equal(cache.thumbs_down, '0');
     assert.ok(fs.existsSync(path.join(feedbackDir, 'feedback-log.jsonl')), 'feedback log should be created from Claude history');
   } finally {
     fs.rmSync(tmpDir, { recursive: true, force: true });
@@ -265,6 +311,17 @@ test('statusline follows the persisted active project when Claude is running fro
     trend: 'stable',
     updated_at: String(Math.floor(Date.now() / 1000)),
   }));
+  // Thumbs come from the project's own human feedback, not the cache. The key
+  // is computed under the same HOME the status line runs with.
+  const { projectKey } = JSON.parse(execFileSync(process.execPath, ['-e',
+    'console.log(JSON.stringify(require(process.argv[1]).resolveLocalProject(process.argv[2])))',
+    path.join(__dirname, '..', 'scripts', 'project-identity.js'), projectDir,
+  ], { encoding: 'utf8', env: { ...process.env, HOME: homeDir, USERPROFILE: homeDir } }));
+  const humanRows = [
+    ...Array.from({ length: 7 }, (_, i) => ({ id: `up-${i}`, signal: 'positive' })),
+    ...Array.from({ length: 3 }, (_, i) => ({ id: `down-${i}`, signal: 'negative' })),
+  ].map((row) => JSON.stringify({ ...row, projectKey, reviewOrigin: 'human', timestamp: '2026-04-08T10:00:00.000Z', context: 'person gave this' }));
+  fs.writeFileSync(path.join(feedbackDir, 'feedback-log.jsonl'), humanRows.join('\n') + '\n');
   writeActiveProjectState(projectDir, {
     home: homeDir,
     env: { ...process.env, HOME: homeDir },
@@ -283,8 +340,9 @@ test('statusline follows the persisted active project when Claude is running fro
       },
       timeout: STATUSLINE_PROCESS_TIMEOUT_MS,
     });
-    assert.ok(out.includes('7'), 'should show the active project thumbs up count');
-    assert.ok(out.includes('3'), 'should show the active project thumbs down count');
+    const plain = stripStatuslineFormatting(out);
+    assert.match(plain, /7\S* 3\S* this project/, `should show the active project thumbs up and down, labelled; got: ${plain}`);
+    assert.ok(/(^|\D)7\D/.test(plain) && /(^|\D)3\D/.test(plain), 'should show both counts as standalone numbers');
     assert.ok(out.includes(`ThumbGate v${PKG_VERSION}`), 'should show package version');
   } finally {
     fs.rmSync(tmpDir, { recursive: true, force: true });
@@ -336,7 +394,7 @@ test('local stats syncs Claude history for the persisted active project from tra
       timeout: STATUSLINE_PROCESS_TIMEOUT_MS,
     });
     const payload = JSON.parse(out);
-    assert.equal(payload.thumbs_up, '1');
+    assert.equal(payload.thumbs_up, '0', 'history-synced entries are not human thumbs');
     assert.equal(payload.thumbs_down, '0');
     assert.ok(fs.existsSync(path.join(feedbackDir, 'feedback-log.jsonl')), 'feedback log should be created in the active project');
   } finally {
@@ -379,8 +437,8 @@ test('statusline resolves project feedback from Claude cwd instead of the runtim
       timeout: STATUSLINE_PROCESS_TIMEOUT_MS,
     });
 
-    assert.ok(out.includes('2'), 'should show project thumbs up count from Claude cwd');
-    assert.ok(out.includes('1'), 'should show project thumbs down count from Claude cwd');
+    assert.match(out.replace(/\x1b\]8;;[^\x07]*\x07/g, '').replace(/\x1b\[[0-9;]*m/g, ''), /2👍 1👎 this project/, 'should show project 2 up, 1 down from Claude cwd');
+    assert.doesNotMatch(out, /no human feedback/, 'should not fall back to the empty label');
 
     const cache = JSON.parse(fs.readFileSync(path.join(feedbackDir, 'statusline_cache.json'), 'utf8'));
     assert.equal(cache.thumbs_up, '2');
@@ -646,17 +704,21 @@ test('Claude Code wiring uses portable ThumbGate commands for status line and ca
     // Published install: subcommand in both fast-path exec and fallback npm-exec
     /thumbgate["']?\s+"statusline-render".*\|\|.*thumbgate"\s+"statusline-render"/.test(statusCommand)
       // Source checkout: direct node invocation
-      || /bin\/cli\.js"\s+statusline-render/.test(statusCommand),
+      || /bin\/cli\.js"\s+statusline-render/.test(statusCommand)
+      // Worktree checkout: stable launcher, never a path that disappears with the worktree
+      || /thumbgate-hook"\s+statusline-render/.test(statusCommand),
     `statusline command must forward statusline-render in both fast and fallback paths: ${statusCommand}`
   );
   assert.ok(
     (cacheCommand.includes('--package') && cacheCommand.includes('thumbgate@') && cacheCommand.includes('thumbgate') && cacheCommand.includes('cache-update'))
-      || cacheCommand.includes('bin/cli.js" cache-update'),
+      || cacheCommand.includes('bin/cli.js" cache-update')
+      || cacheCommand.includes('thumbgate-hook" cache-update'),
     `unexpected cache update command: ${cacheCommand}`
   );
   assert.ok(
     (statusCommand.includes('--package') && statusCommand.includes('thumbgate@') && statusCommand.includes('thumbgate') && statusCommand.includes('statusline-render'))
-      || statusCommand.includes('bin/cli.js" statusline-render'),
+      || statusCommand.includes('bin/cli.js" statusline-render')
+      || statusCommand.includes('thumbgate-hook" statusline-render'),
     `unexpected statusline command: ${statusCommand}`
   );
 });
@@ -732,7 +794,7 @@ test('Codex hook runtime stays durable in source worktrees unless explicitly pin
     mcpConfig.publishedCliAvailable = () => false;
     const sourceRuntime = require(hookRuntimePath);
 
-    assert.match(sourceRuntime.statuslineCommand(), /bin\/cli\.js"\s+statusline-render/);
+    assert.match(sourceRuntime.statuslineCommand(), /(bin\/cli\.js|thumbgate-hook)"\s+statusline-render/);
     assert.match(sourceRuntime.codexStatuslineCommand(), /thumbgate@latest/);
     assert.doesNotMatch(sourceRuntime.codexStatuslineCommand(), /bin\/cli\.js"\s+statusline-render/);
 

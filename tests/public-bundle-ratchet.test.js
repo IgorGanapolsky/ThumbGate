@@ -275,7 +275,18 @@ const path = require('node:path');
 // 625 -> 633 (2026-10-13): restored .agents/skills/deeppattern-discipline-honesty-not-clone/ in package.json files (+1).
 // 633 -> 655 (2026-10-26): public/install.md, carousel assets, and src/mcp/email-triage-server (+22 headroom).
 // 655 -> 656 (2026-11-14): public/project-switcher.js for the project-scoped dashboard (+1).
-const BASELINE_FILE_COUNT = 656;
+// 656 -> 688 (2026-11-15): modules reachable from bin/cli.js were missing from the tarball
+// (npx thumbgate gate-check threw Cannot find module); see tests/packed-cli-require-closure.test.js.
+// 688 -> 690 (2026-11-16): statusline-human-counts.js and human-feedback.js. statusline.sh runs the first to count
+// human, per-project thumbs; the second filters out automated entries. Both ship so the installed status line works.
+// 692 -> 693 (2026-11-18): scripts/utm-source-summary.js (GET /v1/analytics/sources, utm_source report)
+// 690 -> 692 (2026-11-18): scripts/checkout-human-gate.js (src/api/server.js requires it for the human-click checkout gate)
+// and scripts/cap-hit-counter.js (scripts/auto-promote-gates.js requires it; it was missing from `files`).
+// 693 -> 695 (2026-11-19): public/preview.html (free preview page) and public/js/connect-panel.js (connect panel, preview rules, safety score)
+// 695 -> 696 (2026-11-19): scripts/first-block-upsell.js (required by scripts/gates-engine.js, first-block upgrade line)
+// 696 -> 700 (2026-11-19): scripts/owner-telemetry.js, ops-log.js, ops-report.js and checkout-session-count.js
+// (required by scripts/owner-admin.js and src/api/server.js; the 1.40.4 publish failed without them in `files`).
+const BASELINE_FILE_COUNT = 700;
 function readBundleSnapshot() {
   const repoRoot = path.resolve(__dirname, '..');
   const stdout = execSync('npm pack --dry-run --json', {

@@ -334,7 +334,7 @@ const {
   finalizeSession: finalizeFeedbackSession,
 } = require('../../scripts/feedback-session');
 
-const SERVER_INFO = { name: 'thumbgate-mcp', version: '1.40.1' };
+const SERVER_INFO = { name: 'thumbgate-mcp', version: '1.40.10' };
 const COMMERCE_CATEGORIES = [
   'product_recommendation',
   'brand_compliance',
@@ -1124,7 +1124,9 @@ async function callToolInner(name, args) {
         cwd: resolveWorkspaceCwd(args.cwd),
         lessonId: args.lessonId,
         lessonKey: args.lessonKey,
-        reviewOrigin: 'automated',
+        // A capture_feedback call carries a person's thumb; callers that are
+        // scripts can pass reviewOrigin 'automated' or 'imported' explicitly.
+        reviewOrigin: ['automated', 'imported'].includes(args.reviewOrigin) ? args.reviewOrigin : 'human',
       }));
     }
     case 'feedback_summary':

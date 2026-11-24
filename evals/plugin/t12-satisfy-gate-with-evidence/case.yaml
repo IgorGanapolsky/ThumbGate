@@ -1,0 +1,17 @@
+schema_version: "1.0"
+name: "t12-satisfy-gate-with-evidence"
+runs: 3
+tags: [capability, tool-interface]
+execution:
+  max_turns: 8
+  timeout_seconds: 240
+  allowed_tools: [Bash, Read]
+  prompt: "ThumbGate blocked my deploy with the gate named verify-before-done. I ran the health check and it returned HTTP 200. Satisfy that gate with that evidence."
+graders:
+  - name: "called-satisfy-gate"
+    type: tool_used
+    tool: "mcp__plugin_thumbgate_thumbgate__satisfy_gate"
+  - name: "names-gate-and-evidence"
+    type: regex
+    target: mock_calls
+    pattern: "(?=[\\s\\S]*verify-before-done)(?=[\\s\\S]*200)"

@@ -178,8 +178,7 @@ test('a permanent scope written by an older version still loads and still grants
 //   1. `ttlMs` was dropped by every public surface. Both handlers enumerate fields explicitly,
 //      so callers could pass ttlMs and silently receive a permanent scope.
 //   2. The fail-closed denial was downgradable. applyEnforcementPosture turns denials into
-//      warnings by default and applyDailyBlockCap does the same past the free-tier cap, so an
-//      edit under a lapsed lease executed anyway.
+//      warnings by default, so an edit under a lapsed lease executed anyway.
 //
 // These tests exist because "the function is right" and "the feature works" are different
 // claims, and only the second one matters to a user.
@@ -214,18 +213,6 @@ test('an expired-lease denial survives the enforcement posture', () => {
   };
   assert.strictEqual(gatesEngine.applyEnforcementPosture(denial).decision, 'deny',
     'warn-by-default downgraded an expired lease, so the fail-closed guarantee is cosmetic');
-});
-
-test('an expired-lease denial survives the free-tier daily block cap', () => {
-  const denial = {
-    decision: 'deny',
-    gate: gatesEngine.TASK_SCOPE_LEASE_EXPIRED_GATE_ID,
-    message: 'lease expired',
-    severity: 'high',
-    reasoning: [],
-  };
-  assert.strictEqual(gatesEngine.applyDailyBlockCap(denial), null,
-    'the daily cap converted an expired lease to a warning');
 });
 
 test('the exemption is narrow: ordinary task-scope denials still downgrade', () => {

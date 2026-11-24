@@ -1,0 +1,17 @@
+schema_version: "1.0"
+name: "t07-capture-praise-without-keywords"
+runs: 3
+tags: [capability, tool-interface, edge]
+execution:
+  max_turns: 8
+  timeout_seconds: 240
+  allowed_tools: [Bash, Read]
+  prompt: "The summary you gave me of the incident was spot on, short and with the root cause first. Tell ThumbGate to keep doing that."
+graders:
+  - name: "called-capture-feedback"
+    type: tool_used
+    tool: "mcp__plugin_thumbgate_thumbgate__capture_feedback"
+  - name: "signal-is-up"
+    type: regex
+    target: mock_calls
+    pattern: "\"signal\"\\s*:\\s*\"up\""

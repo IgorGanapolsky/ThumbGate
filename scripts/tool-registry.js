@@ -206,7 +206,7 @@ const MEMORY_SCOPE_SCHEMA = {
 const TOOLS = [
   destructiveTool({
     name: 'capture_feedback',
-    description: 'Capture an up/down signal plus one line of why. Vague feedback is logged, then returned with a clarification prompt instead of memory promotion.',
+    description: 'Capture an up/down signal plus one line of why. Required: signal ("up" or "down"; not "feedback" or "rating"). Add context (one sentence) and, for "down", whatWentWrong and whatToChange. Example: {"signal":"down","context":"claimed deployed without a health check","whatToChange":"run curl on /health first"}. Vague feedback is logged, then returned with a clarification prompt instead of memory promotion.',
     inputSchema: {
       type: 'object',
       required: ['signal'],

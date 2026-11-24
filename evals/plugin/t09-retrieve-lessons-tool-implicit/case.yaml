@@ -1,0 +1,13 @@
+schema_version: "1.0"
+name: "t09-retrieve-lessons-tool-implicit"
+runs: 3
+tags: [capability, tool-interface, edge]
+execution:
+  max_turns: 8
+  timeout_seconds: 240
+  allowed_tools: [Bash, Read]
+  prompt: "I am about to run a database migration from the shell. Retrieve the ThumbGate lessons for that specific action before I do."
+graders:
+  - name: "called-a-lesson-tool"
+    type: tool_used
+    tool: "mcp__plugin_thumbgate_thumbgate__retrieve_lessons"

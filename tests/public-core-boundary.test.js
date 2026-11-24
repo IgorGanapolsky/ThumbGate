@@ -334,7 +334,7 @@ test('public-core-boundary: npm bundle stays thin (file count ceiling)', () => {
   // 652 -> 653 (2026-11-12): src/openshell-lovable-engine.js (OpenShell policy prover / design guard, exported from src/index.js and used by bin/cli.js). Public shell CLI scope.
   // 653 -> 655 (2026-11-12): scripts/brand-standards-gate.js + config/brand-standards.json for Adobe MAX Brand Intelligence and voice gating (+2).
   // 655 -> 656 (2026-11-14): public/project-switcher.js for the project-scoped dashboard (+1).
-  const CEILING = 656;
+  const CEILING = 690; // 688 -> 690 (2026-11-16): statusline-human-counts.js and human-feedback.js, run by statusline.sh
   assert.ok(
     files.length <= CEILING,
     `public npm bundle should stay <= ${CEILING} files, got ${files.length}. ` +

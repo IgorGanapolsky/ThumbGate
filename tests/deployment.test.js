@@ -868,10 +868,11 @@ test('CI workflow supports merge queue and cancels stale non-main runs', () => {
   const workflow = fs.readFileSync(path.join(PROJECT_ROOT, '.github', 'workflows', 'ci.yml'), 'utf8');
 
   assert.match(workflow, /permissions:\s+contents:\s+read\s+pull-requests:\s+read/s);
-  assert.match(workflow, /push:\s+#[\s\S]*?branches:\s*\[main\]/);
-  assert.doesNotMatch(workflow, /branches:\s*\[main,\s*feat\/\*\*\]/);
-  assert.match(workflow, /merge_group:/);
-  assert.match(workflow, /types:\s*\[checks_requested\]/);
+  // Direct-push policy (2026-11-18): CI runs on a v* tag or by hand only.
+  assert.match(workflow, /push:\s+tags:\s*\['v\*'\]\s+workflow_dispatch:/);
+  assert.doesNotMatch(workflow, /branches:\s*\[main/);
+  assert.doesNotMatch(workflow, /^\s{2}pull_request:/m);
+  assert.doesNotMatch(workflow, /merge_group:/);
   assert.match(workflow, /group:\s*ci-\$\{\{\s*github\.workflow\s*\}\}-\$\{\{\s*github\.event\.pull_request\.number \|\| github\.ref\s*\}\}/);
   assert.match(workflow, /cancel-in-progress:\s*\$\{\{\s*github\.ref != 'refs\/heads\/main'\s*\}\}/);
   assert.match(workflow, /name: Check operational integrity[\s\S]*?GH_TOKEN:\s*\$\{\{\s*github\.token\s*\}\}[\s\S]*?npm run ops:integrity:ci/);
@@ -928,8 +929,11 @@ test('CI workflow routes pure-deps and workflow-only PRs through focused smoke t
 test('CodeQL workflow supports merge queue and cancels stale non-main runs', () => {
   const workflow = fs.readFileSync(path.join(PROJECT_ROOT, '.github', 'workflows', 'codeql.yml'), 'utf8');
 
-  assert.match(workflow, /merge_group:/);
-  assert.match(workflow, /types:\s*\[checks_requested\]/);
+  // Direct-push policy (2026-11-18): tag/dispatch plus the weekly scan; no PR or push-to-main runs.
+  assert.match(workflow, /push:\s+tags:\s*\['v\*'\]/);
+  assert.match(workflow, /schedule:/);
+  assert.match(workflow, /workflow_dispatch:/);
+  assert.doesNotMatch(workflow, /merge_group:|^\s{2}pull_request:/m);
   assert.match(workflow, /group:\s*codeql-\$\{\{\s*github\.workflow\s*\}\}-\$\{\{\s*github\.event\.pull_request\.number \|\| github\.ref\s*\}\}/);
   assert.match(workflow, /cancel-in-progress:\s*\$\{\{\s*github\.ref != 'refs\/heads\/main'\s*\}\}/);
 });
@@ -938,11 +942,9 @@ test('SonarCloud workflow gates PRs and keeps main refresh non-blocking', () => 
   const workflow = fs.readFileSync(path.join(PROJECT_ROOT, '.github', 'workflows', 'sonarcloud.yml'), 'utf8');
 
   assert.match(workflow, /^name:\s*SonarCloud/m);
-  assert.match(workflow, /push:\s+branches:\s*\[main\]/);
-  assert.match(workflow, /workflow_dispatch:/);
-  assert.match(workflow, /pull_request:/);
-  assert.match(workflow, /merge_group:/);
-  assert.match(workflow, /types:\s*\[checks_requested\]/);
+  // Direct-push policy (2026-11-18): SonarCloud runs on a v* tag or by hand only.
+  assert.match(workflow, /push:\s+tags:\s*\['v\*'\]\s+workflow_dispatch:/);
+  assert.doesNotMatch(workflow, /merge_group:|^\s{2}pull_request:/m);
   assert.match(workflow, /group:\s*sonarcloud-\$\{\{\s*github\.workflow\s*\}\}-\$\{\{\s*github\.event\.pull_request\.number \|\| github\.ref\s*\}\}/);
   assert.match(workflow, /cancel-in-progress:\s*\$\{\{\s*github\.ref != 'refs\/heads\/main'\s*\}\}/);
   assert.match(workflow, /name:\s*SonarCloud Code Analysis\s*\n\s*runs-on:/);

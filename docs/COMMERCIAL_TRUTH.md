@@ -38,7 +38,7 @@ This document is the source of truth for product, pricing, traction, and proof c
 - No recall or lesson search
 - No exports (DPO, Databricks, HuggingFace)
 - Bundled checks plus a local PreToolUse hook
-- Warn-by-default enforcement: detected secret leaks and the `self-protect-kill` / `self-protect-env-override` command gates deny by default. Force-push, `rm -rf`, fetch-and-run, and direct guardrail-file edits warn and log by default. `THUMBGATE_STRICT_ENFORCEMENT=1` preserves deny decisions for every matched blocking rule.
+- Warn-by-default enforcement: detected secret leaks and the `self-protect-kill` / `self-protect-env-override` command gates deny by default. Force-push, `git reset --hard`, `git clean -f`, `rm -rf` on home or root, and `DROP TABLE` also deny by default (hard floor). Fetch-and-run and direct guardrail-file edits warn and log by default. `THUMBGATE_STRICT_ENFORCEMENT=1` preserves deny decisions for every matched blocking rule.
 - Local-first enforcement on the operator's machine
 - MCP integrations for Claude Code, Cursor, Codex, Gemini CLI, Amp, Cline, OpenCode, and compatible agents
 

@@ -99,6 +99,7 @@ function session(env) {
     { jsonrpc: '2.0', id: 1, method: 'tools/list' },
     { jsonrpc: '2.0', id: 2, method: 'tools/call', params: { name: 'gate_check', arguments: GATE('rm -rf /') } },
     { jsonrpc: '2.0', id: 3, method: 'tools/call', params: { name: 'gate_check', arguments: GATE('echo hello') } },
+    { jsonrpc: '2.0', id: 4, method: 'tools/call', params: { name: 'gate_check', arguments: GATE('npm publish') } },
   ], env);
 }
 
@@ -131,11 +132,18 @@ test('gate_check BLOCKS a destructive command under strict enforcement', () => {
   assert.match(v.reason, /\[GATE:/, 'must name the gate that matched');
 });
 
+test('a catastrophic command is BLOCKED by default, no strict mode needed', () => {
+  const v = verdict(defaultSession, 2);
+  assert.equal(v.decision, 'block');
+  assert.equal(v.flagged, true);
+  assert.match(v.reason, /\[GATE:rm-rf-home-or-root\]/);
+});
+
 test('a flagged action NEVER reads as allow, even in warn-by-default mode', () => {
   // The failure this pins: the engine downgrades a matched gate to a warning by
   // default. Reporting that as "allow" would make .clinerules ("abort on block")
-  // run rm -rf / while the warning text sat unread in a field agents ignore.
-  const v = verdict(defaultSession, 2);
+  // run a flagged command while the warning text sat unread in a field agents ignore.
+  const v = verdict(defaultSession, 4);
   assert.notEqual(v.decision, 'allow',
     'a matched gate must never be reported as allow — this is how the tool becomes theater');
   assert.equal(v.decision, 'warn');

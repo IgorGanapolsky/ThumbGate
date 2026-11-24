@@ -1,0 +1,173 @@
+{
+  "savedAt": "2026-11-18",
+  "repo": "IgorGanapolsky/ThumbGate",
+  "branchProtection": {
+    "url": "https://api.github.com/repos/IgorGanapolsky/ThumbGate/branches/main/protection",
+    "required_status_checks": {
+      "url": "https://api.github.com/repos/IgorGanapolsky/ThumbGate/branches/main/protection/required_status_checks",
+      "strict": false,
+      "contexts": [
+        "test",
+        "Analyze JavaScript (javascript-typescript)",
+        "CodeQL",
+        "Socket Security: Project Report",
+        "Verify changeset",
+        "Socket Security: Pull Request Alerts",
+        "GitGuardian Security Checks"
+      ],
+      "contexts_url": "https://api.github.com/repos/IgorGanapolsky/ThumbGate/branches/main/protection/required_status_checks/contexts",
+      "checks": [
+        {
+          "context": "test",
+          "app_id": 15368
+        },
+        {
+          "context": "Analyze JavaScript (javascript-typescript)",
+          "app_id": 15368
+        },
+        {
+          "context": "CodeQL",
+          "app_id": 57789
+        },
+        {
+          "context": "Socket Security: Project Report",
+          "app_id": 156372
+        },
+        {
+          "context": "Verify changeset",
+          "app_id": 15368
+        },
+        {
+          "context": "Socket Security: Pull Request Alerts",
+          "app_id": 156372
+        },
+        {
+          "context": "GitGuardian Security Checks",
+          "app_id": 46505
+        }
+      ]
+    },
+    "required_pull_request_reviews": {
+      "url": "https://api.github.com/repos/IgorGanapolsky/ThumbGate/branches/main/protection/required_pull_request_reviews",
+      "dismiss_stale_reviews": true,
+      "require_code_owner_reviews": false,
+      "require_last_push_approval": false,
+      "required_approving_review_count": 0
+    },
+    "required_signatures": {
+      "url": "https://api.github.com/repos/IgorGanapolsky/ThumbGate/branches/main/protection/required_signatures",
+      "enabled": false
+    },
+    "enforce_admins": {
+      "url": "https://api.github.com/repos/IgorGanapolsky/ThumbGate/branches/main/protection/enforce_admins",
+      "enabled": true
+    },
+    "required_linear_history": {
+      "enabled": true
+    },
+    "allow_force_pushes": {
+      "enabled": false
+    },
+    "allow_deletions": {
+      "enabled": false
+    },
+    "block_creations": {
+      "enabled": false
+    },
+    "required_conversation_resolution": {
+      "enabled": false
+    },
+    "lock_branch": {
+      "enabled": false
+    },
+    "allow_fork_syncing": {
+      "enabled": false
+    }
+  },
+  "ruleset": {
+    "id": 20726461,
+    "name": "main governance",
+    "target": "branch",
+    "source_type": "Repository",
+    "source": "IgorGanapolsky/ThumbGate",
+    "enforcement": "active",
+    "conditions": {
+      "ref_name": {
+        "exclude": [],
+        "include": [
+          "refs/heads/main"
+        ]
+      }
+    },
+    "rules": [
+      {
+        "type": "required_linear_history"
+      },
+      {
+        "type": "deletion"
+      },
+      {
+        "type": "non_fast_forward"
+      },
+      {
+        "type": "pull_request",
+        "parameters": {
+          "required_approving_review_count": 0,
+          "dismiss_stale_reviews_on_push": true,
+          "required_reviewers": [],
+          "require_code_owner_review": false,
+          "require_last_push_approval": false,
+          "required_review_thread_resolution": false,
+          "require_extra_approval_for_unattributed_changes": true,
+          "allowed_merge_methods": [
+            "squash",
+            "rebase"
+          ]
+        }
+      },
+      {
+        "type": "required_status_checks",
+        "parameters": {
+          "strict_required_status_checks_policy": false,
+          "do_not_enforce_on_create": false,
+          "required_status_checks": [
+            {
+              "context": "Analyze JavaScript (javascript-typescript)"
+            },
+            {
+              "context": "CodeQL"
+            },
+            {
+              "context": "GitGuardian Security Checks"
+            },
+            {
+              "context": "Socket Security: Project Report"
+            },
+            {
+              "context": "Socket Security: Pull Request Alerts"
+            },
+            {
+              "context": "test"
+            },
+            {
+              "context": "Verify changeset"
+            }
+          ]
+        }
+      }
+    ],
+    "node_id": "RRS_lACqUmVwb3NpdG9yec5F2aqpzgE8Qr0",
+    "created_at": "2026-08-11T23:08:51.010-04:00",
+    "updated_at": "2026-11-11T12:41:04.019-05:00",
+    "bypass_actors": [],
+    "current_user_can_bypass": "never",
+    "_links": {
+      "self": {
+        "href": "https://api.github.com/repos/IgorGanapolsky/ThumbGate/rulesets/20726461"
+      },
+      "html": {
+        "href": "https://github.com/IgorGanapolsky/ThumbGate/rules/20726461"
+      }
+    }
+  }
+}

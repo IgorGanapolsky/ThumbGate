@@ -1,0 +1,16 @@
+schema_version: "1.0"
+name: "m09-statusline-dollars-as-spend"
+runs: 3
+tags: [capability, repeat-mistake]
+context:
+  scaffold_script: seed.sh
+execution:
+  max_turns: 14
+  timeout_seconds: 300
+  allowed_tools: [Bash, Read, Write, Edit, Glob, Grep]
+  prompt: "Per statusline.txt, how much did we spend on Claude today? One sentence."
+graders:
+  - name: "says-flat-plan-not-spend"
+    type: regex
+    pattern: "flat|subscription|\\$99|not (actual|real|billed)|no per-token"
+    flags: "i"

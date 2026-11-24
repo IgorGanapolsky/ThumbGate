@@ -1,0 +1,695 @@
+{
+  "tools": [
+    {
+      "name": "capture_feedback",
+      "description": "Capture an up/down signal plus one line of why. Required: signal (\"up\" or \"down\"; not \"feedback\" or \"rating\"). Add context (one sentence) and, for \"down\", whatWentWrong and whatToChange. Example: {\"signal\":\"down\",\"context\":\"claimed deployed without a health check\",\"whatToChange\":\"run curl on /health first\"}. Vague feedback is logged, then returned with a clarification prompt instead of memory promotion.",
+      "inputSchema": {
+        "type": "object",
+        "required": [
+          "signal"
+        ],
+        "properties": {
+          "signal": {
+            "type": "string",
+            "enum": [
+              "up",
+              "down"
+            ]
+          },
+          "failureType": {
+            "type": "string",
+            "enum": [
+              "decision",
+              "execution"
+            ],
+            "description": "Dual-signal: \"decision\" = wrong tool/action chosen, \"execution\" = right tool but bad parameters/output. Improves Thompson Sampling precision."
+          },
+          "context": {
+            "type": "string",
+            "description": "One-sentence reason describing what worked or failed"
+          },
+          "relatedFeedbackId": {
+            "type": "string",
+            "description": "Optional prior feedback event to merge with later follow-up context."
+          },
+          "whatWentWrong": {
+            "type": "string"
+          },
+          "whatToChange": {
+            "type": "string"
+          },
+          "whatWorked": {
+            "type": "string"
+          },
+          "chatHistory": {
+            "type": "array",
+            "description": "Optional caller-supplied recent conversation window used for history-aware lesson distillation. The current Claude auto-capture path sends up to 8 prior recorded entries for vague negative inline signals.",
+            "items": {
+              "type": "object",
+              "properties": {
+                "author": {
+                  "type": "string"
+                },
+                "text": {
+                  "type": "string"
+                },
+                "timestamp": {
+                  "type": "string"
+                },
+                "source": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "tags": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "skill": {
+            "type": "string"
+          },
+          "conversationWindow": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "role": {
+                  "type": "string",
+                  "enum": [
+                    "user",
+                    "assistant"
+                  ]
+                },
+                "content": {
+                  "type": "string"
+                },
+                "timestamp": {
+                  "type": "string"
+                }
+              }
+            },
+            "description": "Recent conversation turns before the feedback signal. Raw messages, not summaries."
+          },
+          "rubricScores": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "criterion": {
+                  "type": "string"
+                },
+                "score": {
+                  "type": "number"
+                },
+                "evidence": {
+                  "type": "string"
+                },
+                "judge": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "guardrails": {
+            "type": "object",
+            "properties": {
+              "testsPassed": {
+                "type": "boolean"
+              },
+              "pathSafety": {
+                "type": "boolean"
+              },
+              "budgetCompliant": {
+                "type": "boolean"
+              }
+            }
+          },
+          "memorySource": {
+            "type": "object",
+            "additionalProperties": false,
+            "description": "Provenance for content being considered for durable memory. External email, web, document, file, webhook, browser, or tool-output content should be marked untrusted.",
+            "properties": {
+              "type": {
+                "type": "string"
+              },
+              "identifier": {
+                "type": "string"
+              },
+              "trust": {
+                "type": "string",
+                "enum": [
+                  "trusted",
+                  "untrusted"
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "gate_check",
+      "description": "Evaluate a proposed tool call against ThumbGate policy BEFORE executing it. Returns decision \"block\" (do not run the action; surface the reason) or \"allow\". Use this when about to run a shell command, write/edit a file, or take any irreversible action.",
+      "inputSchema": {
+        "type": "object",
+        "required": [
+          "tool_name"
+        ],
+        "properties": {
+          "tool_name": {
+            "type": "string",
+            "description": "The tool about to be invoked (e.g. Bash, Write, Edit)"
+          },
+          "tool_input": {
+            "type": "object",
+            "description": "The proposed arguments, e.g. { \"command\": \"rm -rf /\" } for Bash or { \"file_path\": \"...\" } for Write"
+          }
+        }
+      }
+    },
+    {
+      "name": "retrieve_lessons",
+      "description": "Retrieve the most relevant lessons for a given tool/action context. Use in PreToolUse hooks for per-action guidance.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "toolName": {
+            "type": "string",
+            "description": "The tool being called (e.g., Bash, Edit, Read)"
+          },
+          "actionContext": {
+            "type": "string",
+            "description": "Description of what the tool call is doing"
+          },
+          "maxResults": {
+            "type": "number",
+            "description": "Max lessons to return (default 5)"
+          },
+          "scope": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "entityId",
+              "projectId",
+              "processId",
+              "sessionId"
+            ],
+            "properties": {
+              "entityId": {
+                "type": "string",
+                "minLength": 1
+              },
+              "projectId": {
+                "type": "string",
+                "minLength": 1
+              },
+              "processId": {
+                "type": "string",
+                "minLength": 1
+              },
+              "sessionId": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          },
+          "requireScope": {
+            "type": "boolean",
+            "description": "Fail closed unless a complete four-field scope is supplied."
+          },
+          "includeShared": {
+            "type": "boolean",
+            "description": "Include explicitly shared memories with scoped results. Defaults true."
+          },
+          "filters": {
+            "type": "object",
+            "description": "Pre-filter the candidate corpus before lexical or vector ranking.",
+            "properties": {
+              "domain": {
+                "type": [
+                  "string",
+                  "array"
+                ],
+                "items": {
+                  "type": "string"
+                }
+              },
+              "signal": {
+                "type": [
+                  "string",
+                  "array"
+                ],
+                "items": {
+                  "type": "string"
+                }
+              },
+              "source": {
+                "type": [
+                  "string",
+                  "array"
+                ],
+                "items": {
+                  "type": "string"
+                }
+              },
+              "toolsUsed": {
+                "type": [
+                  "string",
+                  "array"
+                ],
+                "items": {
+                  "type": "string"
+                }
+              },
+              "tags": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "requireAllTags": {
+                "type": "boolean"
+              }
+            }
+          },
+          "queryRewrite": {
+            "type": "boolean",
+            "description": "Enable bounded deterministic synonym expansion when the original lexical match is weak. Defaults true."
+          },
+          "includeRetrievalMeta": {
+            "type": "boolean",
+            "description": "Include path provenance such as lexical/dense pools and query variants."
+          }
+        },
+        "required": [
+          "toolName"
+        ]
+      }
+    },
+    {
+      "name": "search_lessons",
+      "description": "Search promoted lessons and show the corrective actions, lifecycle state, prevention rules, gates, and next harness fixes linked to each result.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "query": {
+            "type": "string",
+            "description": "Search query. Leave empty to list the most recent lessons."
+          },
+          "limit": {
+            "type": "number",
+            "description": "Maximum results to return (default 10)"
+          },
+          "category": {
+            "type": "string",
+            "enum": [
+              "error",
+              "learning",
+              "preference"
+            ]
+          },
+          "tags": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Require all tags to be present on a lesson"
+          },
+          "scope": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "entityId",
+              "projectId",
+              "processId",
+              "sessionId"
+            ],
+            "properties": {
+              "entityId": {
+                "type": "string",
+                "minLength": 1
+              },
+              "projectId": {
+                "type": "string",
+                "minLength": 1
+              },
+              "processId": {
+                "type": "string",
+                "minLength": 1
+              },
+              "sessionId": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          },
+          "requireScope": {
+            "type": "boolean",
+            "description": "Fail closed unless a complete four-field scope is supplied."
+          },
+          "includeShared": {
+            "type": "boolean",
+            "description": "Include explicitly shared memories with scoped results. Defaults true."
+          }
+        }
+      }
+    },
+    {
+      "name": "recall",
+      "description": "Recall relevant past feedback, memories, and prevention rules for the current task. Call this at the start of any task to inject past learnings into the conversation.",
+      "inputSchema": {
+        "type": "object",
+        "required": [
+          "query"
+        ],
+        "properties": {
+          "query": {
+            "type": "string",
+            "description": "Describe the current task or context to find relevant past feedback"
+          },
+          "limit": {
+            "type": "number",
+            "description": "Max memories to return (default 5)"
+          },
+          "repoPath": {
+            "type": "string",
+            "description": "Optional repository path for structural impact analysis on coding tasks"
+          }
+        }
+      }
+    },
+    {
+      "name": "prevention_rules",
+      "description": "Generate prevention rules from repeated mistake patterns",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "minOccurrences": {
+            "type": "number"
+          },
+          "outputPath": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    {
+      "name": "record_task_outcome",
+      "description": "Record an idempotent task-level outcome with verification evidence, tool correctness, policy behavior, latency, cost, and business KPI movement. A completed response without evidence is recorded as not working.",
+      "inputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "taskId",
+          "goal",
+          "status",
+          "verification",
+          "toolCalls",
+          "policy",
+          "efficiency"
+        ],
+        "properties": {
+          "taskId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "taskType": {
+            "type": "string"
+          },
+          "goal": {
+            "type": "string",
+            "minLength": 1
+          },
+          "expectedOutcome": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "completed",
+              "failed",
+              "partial",
+              "escalated"
+            ]
+          },
+          "verification": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "performed",
+              "passed",
+              "evidence"
+            ],
+            "properties": {
+              "performed": {
+                "type": "boolean"
+              },
+              "passed": {
+                "type": "boolean"
+              },
+              "verifier": {
+                "type": "string"
+              },
+              "method": {
+                "type": "string"
+              },
+              "evidence": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "unsupportedClaims": {
+                "type": "integer",
+                "minimum": 0
+              }
+            }
+          },
+          "toolCalls": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "name",
+                "contractValid",
+                "allowed",
+                "succeeded",
+                "attempts"
+              ],
+              "properties": {
+                "name": {
+                  "type": "string"
+                },
+                "contractValid": {
+                  "type": "boolean"
+                },
+                "allowed": {
+                  "type": "boolean"
+                },
+                "succeeded": {
+                  "type": "boolean"
+                },
+                "attempts": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "latencyMs": {
+                  "type": "number",
+                  "minimum": 0
+                },
+                "costUsd": {
+                  "type": "number",
+                  "minimum": 0
+                },
+                "sideEffect": {
+                  "type": "boolean"
+                },
+                "idempotencyKey": {
+                  "type": "string"
+                },
+                "duplicateSideEffect": {
+                  "type": "boolean"
+                }
+              }
+            }
+          },
+          "policy": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "violations",
+              "unsafeEscapes",
+              "falseBlocks"
+            ],
+            "properties": {
+              "violations": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "unsafeEscapes": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "falseBlocks": {
+                "type": "integer",
+                "minimum": 0
+              }
+            }
+          },
+          "failure": {
+            "type": "object",
+            "additionalProperties": true
+          },
+          "escalation": {
+            "type": "object",
+            "additionalProperties": true
+          },
+          "efficiency": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "latencyMs",
+              "costUsd"
+            ],
+            "properties": {
+              "latencyMs": {
+                "type": "number",
+                "minimum": 0
+              },
+              "costUsd": {
+                "type": "number",
+                "minimum": 0
+              },
+              "firstAttempt": {
+                "type": "boolean"
+              }
+            }
+          },
+          "businessOutcome": {
+            "type": "object",
+            "additionalProperties": true
+          },
+          "traceId": {
+            "type": "string"
+          },
+          "idempotencyKey": {
+            "type": "string"
+          },
+          "versions": {
+            "type": "object",
+            "additionalProperties": true
+          },
+          "metadata": {
+            "type": "object",
+            "additionalProperties": true
+          }
+        }
+      }
+    },
+    {
+      "name": "satisfy_gate",
+      "description": "Satisfy a gate condition with optional structured reasoning. Evidence is stored with a 5-minute TTL. When structuredReasoning is provided, the premise/evidence/conclusion chain is stored in the audit trail.",
+      "inputSchema": {
+        "type": "object",
+        "required": [
+          "gate"
+        ],
+        "properties": {
+          "gate": {
+            "type": "string",
+            "description": "Gate condition ID to satisfy (e.g., pr_threads_checked)"
+          },
+          "evidence": {
+            "type": "string",
+            "description": "Evidence text (e.g., \"0 unresolved threads\")"
+          },
+          "structuredReasoning": {
+            "type": "object",
+            "description": "Structured pre-gate reasoning: state premises, trace evidence, assess risk, derive conclusion before unlocking.",
+            "properties": {
+              "premise": {
+                "type": "string",
+                "description": "What am I trying to do and why?"
+              },
+              "evidence": {
+                "type": "string",
+                "description": "What specific, verifiable evidence supports this action?"
+              },
+              "risk": {
+                "type": "string",
+                "description": "What could go wrong if this action proceeds?"
+              },
+              "conclusion": {
+                "type": "string",
+                "description": "Based on evidence, should I proceed? Yes/No with justification."
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "verify_claim",
+      "description": "Check whether a claim has enough tracked evidence and, for parseable factual claims (row counts, file lines/bytes/existence, versions), recheck configured SQLite/filesystem/JSON verifiers before the agent asserts it.",
+      "inputSchema": {
+        "type": "object",
+        "required": [
+          "claim"
+        ],
+        "properties": {
+          "claim": {
+            "type": "string",
+            "description": "The claim text to verify (e.g. \"the row count is 1,284\" or \"all tests pass\")"
+          },
+          "goalContract": {
+            "type": "object",
+            "description": "Optional agent handoff contract. Use this when a worker/orchestrator/reviewer loop needs explicit done criteria before a done/fixed/shipped claim is allowed.",
+            "properties": {
+              "goal": {
+                "type": "string",
+                "description": "The operator-visible goal this claim is trying to close."
+              },
+              "doneWhen": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "description": "Human-readable acceptance criteria for the task."
+              },
+              "proveBy": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "description": "Tracked action ids required before the claim can pass, such as tests_passed, review_completed, ci_green, deploy_verified, or operator_approved."
+              },
+              "mustNotChange": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "description": "Protected areas or constraints the agents must preserve while completing the goal."
+              },
+              "workerAgent": {
+                "type": "string",
+                "description": "Agent responsible for implementation."
+              },
+              "reviewerAgent": {
+                "type": "string",
+                "description": "Agent responsible for independent verification."
+              },
+              "orchestratorAgent": {
+                "type": "string",
+                "description": "Agent responsible for routing and deciding whether done can be claimed."
+              }
+            }
+          }
+        }
+      }
+    }
+  ]
+}

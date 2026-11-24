@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Okta governs the MCP connection. Who gates the tool call? - ThumbGate</title>
+<script defer data-domain="thumbgate.ai" src="https://plausible.io/js/script.js"></script>
+<meta name="description" content="Okta for AI Agents now governs agent registration and MCP server connections under one policy. The open question is per-tool scope: a connection grant still lets every tool on that server run. ThumbGate gates each tool call before it fires.">
+<meta name="keywords" content="Okta for AI Agents, MCP governance, MCP server authorization, per-tool authorization, agent identity, pre-action enforcement, PreToolUse, ThumbGate">
+<meta property="og:title" content="Okta governs the MCP connection. Who gates the tool call?">
+<meta property="og:description" content="Identity decides which agent may reach which MCP server. A pre-action gate decides whether this specific tool call should run right now.">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://thumbgate.ai/learn/okta-mcp-governance-per-tool-call-gates">
+<link rel="canonical" href="https://thumbgate.ai/learn/okta-mcp-governance-per-tool-call-gates">
+<link rel="stylesheet" href="/learn/learn.css">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "TechArticle",
+  "headline": "Okta governs the MCP connection. Who gates the tool call?",
+  "description": "Okta for AI Agents extends identity governance to agent registration and MCP server connections. ThumbGate adds the per-tool-call layer: a pre-action gate that checks each MCP or shell call against learned prevention rules before it runs.",
+  "author": {
+    "@type": "Person",
+    "name": "Igor Ganapolsky",
+    "url": "https://github.com/IgorGanapolsky"
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "ThumbGate",
+    "url": "https://thumbgate.ai"
+  },
+  "datePublished": "2026-11-20",
+  "dateModified": "2026-11-20",
+  "mainEntityOfPage": "https://thumbgate.ai/learn/okta-mcp-governance-per-tool-call-gates",
+  "about": [
+    {"@type": "Thing", "name": "Okta for AI Agents"},
+    {"@type": "Thing", "name": "MCP governance"},
+    {"@type": "Thing", "name": "per-tool authorization"},
+    {"@type": "Thing", "name": "pre-action gates"}
+  ]
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "What did Okta add for MCP governance?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Okta for AI Agents added agent import from more platforms (including Cursor, Snowflake, Databricks, Workato, and Tines), agent registration through Client ID Metadata Documents, an MCP Server Catalog, MCP server registration with Dynamic Client Registration, and multiple custom MCP servers behind one authorization server and one policy."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Does an MCP connection grant limit which tools an agent can call?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Not by itself. An authorization server issues a token with an audience and scopes for a server. Once the agent holds that token, every tool the server exposes inside those scopes is reachable. Whether a specific call, with specific arguments, should run right now is a separate decision."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Where does ThumbGate fit next to Okta?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "ThumbGate runs at the agent's pre-action hook. It checks each tool call, including MCP tool calls, against prevention rules learned from thumbs up and thumbs down feedback, and warns or blocks before the call fires. Okta decides which agent may reach which server; ThumbGate decides whether this call should run."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Is ThumbGate an Okta partner or integration?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "No. ThumbGate is not an Okta partner, certified integration, or endorsed product. This page uses Okta's public November 2026 materials as market evidence and describes an architectural fit."
+      }
+    }
+  ]
+}
+</script>
+</head>
+<body>
+
+<nav>
+  <a href="/" class="brand"><img src="/assets/brand/thumbgate-mark-inline-v3.svg" alt="ThumbGate" class="logo-mark" width="28" height="28"><span class="logo-text">ThumbGate</span></a>
+  <a href="/guide">Setup Guide</a>
+  <a href="/learn">Learn</a>
+  <a href="/compare">Compare</a>
+  <a href="https://github.com/IgorGanapolsky/ThumbGate" target="_blank" rel="noopener">GitHub</a>
+</nav>
+
+<div class="container">
+  <div class="breadcrumb"><a href="/learn">Learn</a> / Okta MCP governance</div>
+  <h1>Okta governs the MCP connection. Who gates the tool call?</h1>
+  <p style="color:var(--muted);">4 min read &middot; For teams rolling out MCP servers to coding agents</p>
+
+  <div class="tldr"><strong>TL;DR:</strong> Okta for AI Agents now registers agents and puts MCP servers behind one authorization policy. That answers "which agent may reach which server." It does not answer "should this exact tool call, with these arguments, run right now." That second question is where repeated agent mistakes happen, and it is the layer ThumbGate gates.</div>
+
+  <h2>What Okta shipped</h2>
+  <p>Okta's latest Okta for AI Agents release focuses on two questions: <em>where are my agents</em> and <em>what can they do</em>. In plain terms:</p>
+  <ul>
+    <li><strong>One registry:</strong> agent import from more builder platforms, including Cursor, Snowflake, Databricks, Workato, and Tines.</li>
+    <li><strong>No hand-managed secrets:</strong> agents register through a Client ID Metadata Document, so credentials rotate without a calendar reminder.</li>
+    <li><strong>Faster MCP setup:</strong> an MCP Server Catalog, plus Dynamic Client Registration for custom servers.</li>
+    <li><strong>One policy:</strong> several custom MCP servers behind a single authorization server, each with its own audience and scopes, and tokens that record which user and agent were involved.</li>
+  </ul>
+  <p>That is a real step forward. Agent identity and connection governance have been scattered one-off projects, and Okta is collapsing them into the identity layer.</p>
+
+  <h2>The question in the comments</h2>
+  <p>Under Okta's announcement post, a practitioner asked the sharpest question: the MCP server usually holds a service account with more scope than any single tool call needs, so <strong>does the policy scope per tool, or is it still one grant per server?</strong></p>
+  <p>That is the right question. A token's scopes decide what an agent <em>may</em> reach. They do not look at what the agent is <em>about to do</em>: the tool name, the arguments, the target branch, the row count, the recipient. Okta lists "What are they doing?" and "How do I respond?" as its next two questions. A pre-action gate is one practical answer to both, today, at the developer's machine.</p>
+
+  <h2>Connection grant vs. call gate</h2>
+  <ul>
+    <li><strong>Identity layer (Okta):</strong> Is this a registered agent? Who owns it? May it reach the GitHub MCP server? Which scopes does its token carry? Kill switch when something goes wrong.</li>
+    <li><strong>Pre-action layer (ThumbGate):</strong> This agent is about to call <code>delete_branch</code> on <code>main</code>. Last week a thumbs-down on the same pattern became a prevention rule. Warn, or block in strict mode, before the call fires.</li>
+  </ul>
+  <p>The two layers do not compete. Identity narrows the blast radius to what an agent is allowed to touch. The gate narrows it again to what this agent should do right now, using what your team has already learned the hard way.</p>
+
+  <h2>Why learned rules matter here</h2>
+  <p>Per-tool policy written up front misses the mistakes nobody predicted. ThumbGate turns each thumbs-down into a prevention rule that matches on the tool and its arguments, so the second occurrence of a mistake is stopped instead of repeated. That covers MCP tool calls, shell commands, file edits, and deploys through the same pre-action hook.</p>
+
+  <h2>Try it this week</h2>
+  <ol>
+    <li>Pick one MCP tool your coding agent can reach that has burned you once: a force push, a bulk update, a post sent without review.</li>
+    <li>Give that call a thumbs-down, or write the rule directly.</li>
+    <li>Run the workflow again and confirm the call is flagged, or blocked in strict mode, before it reaches the server.</li>
+  </ol>
+
+  <h2>Sources and positioning</h2>
+  <p>This article is based on Okta's public materials about the Okta for AI Agents release. ThumbGate is not an Okta partner, product, certification, or endorsed integration. The comparison is architectural positioning.</p>
+  <ul>
+    <li><a href="https://www.okta.com/blog/product-innovation/registering-ai-agents-mcp-servers/" target="_blank" rel="noopener">Okta: Okta for AI Agents, simplify agent registration and MCP governance</a></li>
+    <li><a href="https://www.linkedin.com/posts/okta-inc-_secure-every-hop-in-an-ai-agents-mcp-workflow-activity-7529286964328693761-s2Xy" target="_blank" rel="noopener">Okta on LinkedIn: secure every hop in an AI agent's MCP workflow</a></li>
+  </ul>
+
+  <div class="cta-box">
+    <h2>Gate the call, not just the connection</h2>
+    <p>Start with one MCP tool call your agent should never repeat.</p>
+    <div class="cta-install">npx thumbgate init</div>
+    <div class="cta-actions">
+      <a class="cta-link" href="/learn/mcp-pre-action-checks-explained">Read MCP pre-action checks</a>
+      <a class="cta-link cta-link-secondary" href="/learn/agent-identity-connector-governance">Agent identity and connector governance</a>
+    </div>
+  </div>
+
+  <div class="related">
+    <h2>Related</h2>
+    <a href="/learn/agent-identity-connector-governance">Agent identity and connector governance</a>
+    <a href="/learn/databricks-unity-ai-gateway-runtime-governance">Databricks Unity AI Gateway validates runtime governance</a>
+    <a href="/learn/protocol-governance-pretooluse">Protocol governance with PreToolUse</a>
+  </div>
+</div>
+
+<div class="sticky-cta">
+  <span>Gate one risky MCP tool call</span>
+  <code>npx thumbgate init</code>
+  <a href="/guide?utm_source=okta_mcp_governance&amp;utm_medium=learn&amp;utm_campaign=mcp_per_tool_gates">Setup guide</a>
+</div>
+
+</body>
+</html>

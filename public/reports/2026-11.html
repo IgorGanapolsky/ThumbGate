@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>What AI coding agents tried to do in November 2026 | ThumbGate</title>
+  <meta name="description" content="34 risky agent actions were stopped or flagged by ThumbGate between 2026-11-01 and 2026-11-17, across 1,995 agent sessions on one operator's own fleet. Counts by action type, with the method and limits." />
+  <meta property="og:title" content="What AI coding agents tried to do in November 2026 | ThumbGate" />
+  <meta property="og:description" content="34 risky agent actions were stopped or flagged by ThumbGate between 2026-11-01 and 2026-11-17, across 1,995 agent sessions on one operator's own fleet. Counts by action type, with the method and limits." />
+  <meta property="og:type" content="article" />
+  <meta property="og:url" content="https://thumbgate.ai/reports/2026-11" />
+  <link rel="canonical" href="https://thumbgate.ai/reports/2026-11" />
+  <link rel="icon" type="image/png" href="/thumbgate-icon.png" />
+  <meta property="og:image" content="/og.png" />
+  <style>
+    :root { --bg: #0a0a0b; --bg-card: #161618; --bg-raised: #111113; --line: #222225; --text: #e8e8ec; --muted: #8b8b96; --cyan: #22d3ee; }
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); line-height: 1.65; }
+    a { color: var(--cyan); text-decoration: none; }
+    .container { max-width: 860px; margin: 0 auto; padding: 0 24px; }
+    .topbar { border-bottom: 1px solid var(--line); }
+    .topbar .container { display: flex; justify-content: space-between; align-items: center; padding-top: 14px; padding-bottom: 14px; }
+    .brand { font-weight: 700; color: var(--text); display: inline-flex; align-items: center; gap: 8px; }
+    h1 { font-size: clamp(30px, 5vw, 48px); line-height: 1.1; letter-spacing: -0.03em; margin: 48px 0 12px; }
+    .lede { color: var(--muted); font-size: 18px; }
+    .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin: 28px 0; }
+    .stat { background: var(--bg-card); border: 1px solid var(--line); border-radius: 14px; padding: 16px; }
+    .stat b { display: block; font-size: 32px; letter-spacing: -0.03em; }
+    .stat span { color: var(--muted); font-size: 14px; }
+    section { background: var(--bg-card); border: 1px solid var(--line); border-radius: 16px; padding: 24px; margin-bottom: 18px; }
+    h2 { margin: 0 0 12px; font-size: 22px; letter-spacing: -0.02em; }
+    p, li { color: var(--muted); }
+    table { width: 100%; border-collapse: collapse; font-size: 14px; }
+    th, td { border: 1px solid var(--line); padding: 10px 12px; text-align: left; }
+    th { background: var(--bg-raised); color: var(--cyan); }
+    td:not(:first-child), th:not(:first-child) { text-align: right; width: 110px; }
+    @media (max-width: 600px) { td:not(:first-child), th:not(:first-child) { width: auto; } }
+  </style>
+  <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Article",
+  "headline": "What AI coding agents tried to do in November 2026",
+  "description": "34 risky agent actions were stopped or flagged by ThumbGate between 2026-11-01 and 2026-11-17, across 1,995 agent sessions on one operator's own fleet. Counts by action type, with the method and limits.",
+  "url": "https://thumbgate.ai/reports/2026-11",
+  "datePublished": "2026-11-17",
+  "dateModified": "2026-11-17",
+  "author": {
+    "@type": "Organization",
+    "name": "ThumbGate",
+    "url": "https://thumbgate.ai"
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "ThumbGate",
+    "url": "https://thumbgate.ai"
+  },
+  "mainEntityOfPage": "https://thumbgate.ai/reports/2026-11"
+}
+  </script>
+  <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Dataset",
+  "name": "ThumbGate agent gate decisions, November 2026",
+  "description": "Aggregate counts of tool calls that ThumbGate denied, warned on or allowed for one operator's own AI coding agents, 2026-11-01 to 2026-11-17. No commands, paths or customer data.",
+  "url": "https://thumbgate.ai/reports/2026-11",
+  "temporalCoverage": "2026-11-01/2026-11-17",
+  "license": "https://opensource.org/licenses/MIT",
+  "creator": {
+    "@type": "Organization",
+    "name": "ThumbGate",
+    "url": "https://thumbgate.ai"
+  },
+  "variableMeasured": [
+    "shell command patterns evaluated",
+    "denied tool calls by action type",
+    "warned tool calls by action type",
+    "agent actions evaluated",
+    "agent sessions registered"
+  ],
+  "distribution": [
+    {
+      "@type": "DataDownload",
+      "encodingFormat": "application/json",
+      "contentUrl": "https://github.com/IgorGanapolsky/ThumbGate/blob/main/public/reports/2026-11.data.json"
+    }
+  ],
+  "isBasedOn": "https://github.com/IgorGanapolsky/ThumbGate/blob/main/scripts/build-monthly-report.js"
+}
+  </script>
+</head>
+<body>
+  <header class="topbar"><div class="container">
+    <a href="/" class="brand"><img src="/assets/brand/thumbgate-mark-inline-v3.svg" alt="ThumbGate" width="28" height="28" /><span>ThumbGate</span></a>
+    <nav><a href="/learn">Learn</a> &nbsp; <a href="/pricing">Pricing</a> &nbsp; <a href="https://github.com/IgorGanapolsky/ThumbGate" target="_blank" rel="noopener">GitHub</a></nav>
+  </div></header>
+  <main class="container">
+    <h1>What AI coding agents tried to do in November 2026</h1>
+    <p class="lede">This is data from our own fleet, not a survey and not customer data. It covers 2026-11-01 to 2026-11-17 on one Mac where ThumbGate gates our own coding agents. It is a small sample, and we say so below.</p>
+    <div class="stats">
+      <div class="stat"><b>34</b><span>risky actions stopped or flagged (30 denied, 4 warned)</span></div>
+      <div class="stat"><b>124</b><span>agent actions the gate checked (98 allowed, 24 denied, 2 warned)</span></div>
+      <div class="stat"><b>1,995</b><span>agent sessions registered by our agents</span></div>
+    </div>
+    <section>
+      <h2>What the gate stopped or flagged, by action type</h2>
+      <table>
+        <thead><tr><th>Action type</th><th>Denied</th><th>Warned</th><th>Total</th></tr></thead>
+        <tbody>
+              <tr><td>Commit on a PR branch before review threads were verified</td><td>14</td><td>0</td><td>14</td></tr>
+              <tr><td>Dependency added to package.json</td><td>0</td><td>1</td><td>1</td></tr>
+              <tr><td>Edit outside the declared task scope</td><td>3</td><td>0</td><td>3</td></tr>
+              <tr><td>Force-push</td><td>6</td><td>0</td><td>6</td></tr>
+              <tr><td>High predicted workflow risk before execution</td><td>0</td><td>2</td><td>2</td></tr>
+              <tr><td>Pull request opened without permission evidence</td><td>1</td><td>0</td><td>1</td></tr>
+              <tr><td>Repeat of a high-risk action ThumbGate had already been told was bad</td><td>5</td><td>0</td><td>5</td></tr>
+              <tr><td>Secret material in a tool call</td><td>1</td><td>0</td><td>1</td></tr>
+              <tr><td>Unauthorized network egress</td><td>0</td><td>1</td><td>1</td></tr>
+        </tbody>
+      </table>
+      <p>An action type is the rule that fired. Denied means the tool call did not run. Warned means it ran after a warning.</p>
+    </section>
+    <section>
+      <h2>Dangerous-looking shell commands, and what the gate did</h2>
+      <p>Of 80 shell commands the gate engine evaluated, these counts are commands whose text contains each pattern. Zero rows are real zeros in this window.</p>
+      <table>
+        <thead><tr><th>Command pattern</th><th>Seen</th><th>Allowed</th><th>Warned</th><th>Denied</th></tr></thead>
+        <tbody>
+              <tr><td>rm -rf (recursive force delete)</td><td>0</td><td>0</td><td>0</td><td>0</td></tr>
+              <tr><td>git push --force</td><td>5</td><td>0</td><td>0</td><td>5</td></tr>
+              <tr><td>git reset --hard</td><td>0</td><td>0</td><td>0</td><td>0</td></tr>
+              <tr><td>Reading a secrets file or keychain entry</td><td>0</td><td>0</td><td>0</td><td>0</td></tr>
+              <tr><td>DROP TABLE / DROP DATABASE</td><td>0</td><td>0</td><td>0</td><td>0</td></tr>
+              <tr><td>curl or wget piped into a shell</td><td>0</td><td>0</td><td>0</td><td>0</td></tr>
+              <tr><td>npm publish</td><td>0</td><td>0</td><td>0</td><td>0</td></tr>
+              <tr><td>git --no-verify</td><td>0</td><td>0</td><td>0</td><td>0</td></tr>
+        </tbody>
+      </table>
+      <p>A command can match a pattern and still be allowed, for example <code>rm -rf</code> on a build folder inside the declared task scope. Pattern matching counts text, so a command that only mentions a pattern (an echo, a commit message) is counted too. The rule table above counts rules that fired, so it can differ from this table when a rule matches a form of the command our text pattern does not.</p>
+    </section>
+    <section>
+      <h2>What the gate allowed</h2>
+      <p>Of 124 agent actions (shell commands, edits, file reads and writes) the gate engine evaluated, 98 were allowed, 24 were denied and 2 produced a warning. Separately, agents made 537 calls to ThumbGate's own tools (feedback, recall, gate checks); 532 were allowed and 5 were denied.</p>
+      <table>
+        <thead><tr><th>Agent action tool</th><th>Checked</th></tr></thead>
+        <tbody>
+              <tr><td>Bash</td><td>78</td></tr>
+              <tr><td>Edit</td><td>33</td></tr>
+              <tr><td>cronjob_manage</td><td>3</td></tr>
+              <tr><td>Write</td><td>3</td></tr>
+              <tr><td>patch</td><td>2</td></tr>
+              <tr><td>Read</td><td>2</td></tr>
+              <tr><td>terminal</td><td>2</td></tr>
+              <tr><td>cronjob_manage.update</td><td>1</td></tr>
+        </tbody>
+      </table>
+    </section>
+    <section>
+      <h2>How we counted, and what this does not show</h2>
+      <ul>
+        <li><strong>Source.</strong> ThumbGate's own local logs for our agents: the gate event log, the audit trail and the agent registry. The counts come from <a href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/scripts/build-monthly-report.js" target="_blank" rel="noopener">scripts/build-monthly-report.js</a> and the published <a href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/public/reports/2026-11.data.json" target="_blank" rel="noopener">2026-11.data.json</a>.</li>
+        <li><strong>Sessions, not agents.</strong> An "agent session" is one ThumbGate server start by one of our agents. The same agent restarting counts again, and we cannot separate distinct agents from restarts, so we do not state a fleet size.</li>
+        <li><strong>Small sample.</strong> One operator, one machine, 34 stopped or flagged actions. Do not read the percentages as industry rates.</li>
+        <li><strong>Private by design.</strong> Only counts by rule and tool are published. No commands, file paths, messages, project names or customer data.</li>
+        <li><strong>Strict mode.</strong> By default ThumbGate warns on matching destructive actions and denies detected secret exfiltration and gate-bypass attempts; strict mode (<code>THUMBGATE_STRICT_ENFORCEMENT=1</code>) hard-denies the rest. We did not break the counts out by mode.</li>
+      </ul>
+    </section>
+    <section>
+      <h2>Run it on your own agents</h2>
+      <p><code>npx thumbgate init --agent claude</code> installs the gates; <a href="/pricing">see pricing</a> for what Pro adds.</p>
+    </section>
+  </main>
+</body>
+</html>

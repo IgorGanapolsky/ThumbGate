@@ -83,5 +83,8 @@ test('main-branch ruleset policy config forbids bypass actors', () => {
   assert.deepEqual(policy.bypass_actors, []);
   assert.equal(policy.rules.non_fast_forward, true);
   assert.equal(policy.rules.required_linear_history, true);
-  assert.equal(policy.rules.pull_request.required_review_thread_resolution, true);
+  // Direct-push policy (Igor, 2026-11-18): no PR or status-check rule; force-push and delete stay blocked.
+  assert.equal(policy.rules.deletion, true);
+  assert.equal(policy.rules.pull_request, undefined);
+  assert.equal(policy.rules.required_status_checks, undefined);
 });

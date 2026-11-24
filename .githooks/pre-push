@@ -1,7 +1,7 @@
 #!/bin/bash
 # ThumbGate pre-push hook — catches packaging + publish regressions before CI.
 #
-# Activate: git config core.hooksPath .githooks
+# Activate: node scripts/git-hook-installer.js (or: git config core.hooksPath .githooks)
 
 set -e
 
@@ -58,26 +58,19 @@ if (errors.length) {
 }
 ' || exit 1
 
-# 3. Full repo test chain quick subset — DON'T run everything (would be too slow for pre-push)
-# Run only the regression-guard tests that protect against common mistakes
-if [ -f tests/public-package-parity.test.js ]; then
-  echo -e "${YELLOW}pre-push:${NC} running regression-guard tests..."
-  # Money attack matrix is mandatory: never-spend class must fail the push, not CI later.
-  if ! node --test \
-      tests/public-package-parity.test.js \
-      tests/test-suite-parity.test.js \
-      $( [ -f tests/landing-page-claims.test.js ] && echo tests/landing-page-claims.test.js ) \
-      $( [ -f tests/financial-spend-attack-matrix.test.js ] && echo tests/financial-spend-attack-matrix.test.js ) \
-      >/dev/null 2>&1; then
-    echo -e "${RED}✗ Regression-guard tests failed${NC}"
-    node --test \
-      tests/public-package-parity.test.js \
-      tests/test-suite-parity.test.js \
-      $( [ -f tests/landing-page-claims.test.js ] && echo tests/landing-page-claims.test.js ) \
-      $( [ -f tests/financial-spend-attack-matrix.test.js ] && echo tests/financial-spend-attack-matrix.test.js ) \
-      2>&1 | grep -A3 "not ok" | head -40
+# 3. Fast unit tests, ONE FILE AT A TIME under nice -n 15 (direct-push policy,
+# Igor 2026-11-18: no PRs, so this hook is the gate before main).
+# Don't run everything (too slow for pre-push); run the regression guards.
+# Money attack matrix is mandatory: never-spend class must fail the push, not CI later.
+FAST_TESTS="tests/public-package-parity.test.js tests/test-suite-parity.test.js tests/landing-page-claims.test.js tests/financial-spend-attack-matrix.test.js tests/never-bypass-branch-protection.test.js tests/sync-repository-rulesets.test.js tests/sync-branch-protection.test.js"
+echo -e "${YELLOW}pre-push:${NC} running fast unit tests one file at a time (nice -n 15)..."
+for t in $FAST_TESTS; do
+  [ -f "$t" ] || continue
+  if ! OUT=$(nice -n 15 node --test "$t" 2>&1); then
+    echo -e "${RED}✗ $t failed${NC}"
+    echo "$OUT" | grep -A3 "not ok" | head -40
     exit 1
   fi
-fi
+done
 
 echo -e "${GREEN}pre-push: all guards passed${NC}"

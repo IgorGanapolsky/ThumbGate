@@ -23,5 +23,5 @@
     "thompson-sampling",
     "self-improving-agents"
   ],
-  "metaDescription": "The firewall for AI agents. Free local capture and pre-action gates. Choose Pro for recall, dashboard, adapters, and exports."
+  "metaDescription": "Thumbs-down a Claude Code mistake once and ThumbGate warns next time; after three thumbs-downs on the same command, strict mode blocks it. Free local PreToolUse gates; Pro adds recall and every learned rule."
 }

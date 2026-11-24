@@ -16,6 +16,9 @@ const {
   syncBranchProtection,
 } = require('../scripts/sync-branch-protection');
 
+// Legacy pull-request policy: the repo required status checks before 2026-11-18.
+const PR_POLICY = { rules: { required_status_checks: {} } };
+
 function createRunner(results) {
   const queue = [...results];
   return (args) => {
@@ -94,7 +97,7 @@ test('syncBranchProtection --check reports drift when main is missing a required
     }
   ]);
 
-  const result = syncBranchProtection({ check: true, repo: 'IgorGanapolsky/ThumbGate', branch: 'main' }, runner);
+  const result = syncBranchProtection({ check: true, repo: 'IgorGanapolsky/ThumbGate', branch: 'main', policy: PR_POLICY }, runner);
   assert.equal(result.ok, false);
   assert.ok(result.diff.missing.length > 0);
 });
@@ -134,7 +137,7 @@ test('syncBranchProtection falls back to REST branch protection when GraphQL ret
     }
   ]);
 
-  const result = syncBranchProtection({ check: true, repo: 'IgorGanapolsky/ThumbGate', branch: 'main' }, runner);
+  const result = syncBranchProtection({ check: true, repo: 'IgorGanapolsky/ThumbGate', branch: 'main', policy: PR_POLICY }, runner);
   assert.equal(result.ok, true);
   assert.equal(result.ruleId, 'rest:IgorGanapolsky/ThumbGate#main');
   assert.deepEqual(result.diff, { missing: [], unexpected: [] });
@@ -197,7 +200,7 @@ test('syncBranchProtection updates REST-backed branch protection when GraphQL ha
     return runner(args);
   };
 
-  const result = syncBranchProtection({ repo: 'IgorGanapolsky/ThumbGate', branch: 'main' }, recordingRunner);
+  const result = syncBranchProtection({ repo: 'IgorGanapolsky/ThumbGate', branch: 'main', policy: PR_POLICY }, recordingRunner);
   const patchCall = calls.find((args) => args.includes('PATCH'));
 
   assert.equal(result.ok, true);
@@ -258,7 +261,7 @@ test('syncBranchProtection updates main branch protection to the configured qual
     }
   ]);
 
-  const result = syncBranchProtection({ repo: 'IgorGanapolsky/ThumbGate', branch: 'main' }, runner);
+  const result = syncBranchProtection({ repo: 'IgorGanapolsky/ThumbGate', branch: 'main', policy: PR_POLICY }, runner);
   assert.equal(result.ok, true);
   assert.equal(result.updated, true);
   assert.equal(result.actualContexts.includes('GitGuardian Security Checks'), true);
@@ -332,4 +335,22 @@ test('runCli exits nonzero when branch protection drifts from the configured qua
   }
 
   assert.match(output.join('\n'), /Branch protection drift: IgorGanapolsky\/ThumbGate main/);
+});
+
+test('direct-push policy expects no required contexts and flags re-enabled status checks', () => {
+  const { expectedRequiredContexts } = require('../scripts/sync-branch-protection');
+  assert.deepEqual(expectedRequiredContexts(), []);
+
+  const restNone = { status: 0, stdout: JSON.stringify({ data: { repository: { branchProtectionRules: { nodes: [
+    { id: 'R1', pattern: 'main', requiresStatusChecks: false, requiredStatusCheckContexts: [] },
+  ] } } } }), stderr: '' };
+  const ok = syncBranchProtection({ check: true, repo: 'IgorGanapolsky/ThumbGate', branch: 'main' }, createRunner([restNone]));
+  assert.equal(ok.ok, true);
+
+  const restOn = { status: 0, stdout: JSON.stringify({ data: { repository: { branchProtectionRules: { nodes: [
+    { id: 'R1', pattern: 'main', requiresStatusChecks: true, requiredStatusCheckContexts: ['test'] },
+  ] } } } }), stderr: '' };
+  const drift = syncBranchProtection({ check: true, repo: 'IgorGanapolsky/ThumbGate', branch: 'main' }, createRunner([restOn]));
+  assert.equal(drift.ok, false);
+  assert.deepEqual(drift.diff.unexpected, ['test']);
 });

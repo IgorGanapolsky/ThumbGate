@@ -205,7 +205,7 @@ function scoreFeedbackReward(params = {}) {
   }
   if (typeof buildCompositeReward !== 'function') return null;
 
-  const reward = buildCompositeReward({ prediction });
+  const reward = buildCompositeReward({ prediction, kind: 'feedback' });
   return {
     score: reward.score,
     label: reward.label,

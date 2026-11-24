@@ -1,5 +1,74 @@
 # Changelog
 
+## 1.40.10
+
+### Patch Changes
+
+- 0c06a74: Lifetime analytics no longer report fewer visitors than the 30-day window. When the telemetry log passed 64 MB the lifetime window silently read only a 4 MB tail while the 30-day window read 32 MB, so production showed 1,950 lifetime visitors against 13,947 for 30 days. The lifetime window now reads as much as the widest bounded window (64 MB). Counts are still marked partial (`telemetryWindowComplete: false`) when the log is larger than that.
+
+## 1.40.9
+
+### Patch Changes
+
+- Per-project dashboard: opening the dashboard for a project (status-line links now carry `project` and `projectDir`) shows the same up/down counts as the status line's this-project numbers, and the project switcher no longer keeps a stale folder. New `beforeShellExecution` adapter lets Cursor call the ThumbGate gate (`scripts/cursor-shell-gate.js`).
+- Attribution: a LinkedIn referrer (linkedin.com, lnkd.in) is named `linkedin`. The landing visit's `utm_source`, `utm_medium`, `utm_campaign`, `utm_content` and `utm_term` are kept in a 30-day first-party cookie and flow into the checkout form and the Stripe session metadata, so a buyer from a LinkedIn post shows up as `linkedin`, not `website`. New read-only `GET /v1/analytics/sources` (admin or operator key) groups visits, installs and checkout starts by `utm_source` for the last 7 and 30 days. The About page links the correct LinkedIn profile.
+- Checkout opens a Stripe session only after a confirmed human click. The Pro buttons post to the server with a short-lived single-use token that page JavaScript fetches after a real pointer or keyboard event. A bare GET, a request without a token, or more than 2 a minute from one IP gets no session, and `/go/pro*` GET links go to the confirm page instead of a payment link. Every session records landing page, referrer, browser class and button id. The npm package now ships `scripts/checkout-human-gate.js` and `scripts/cap-hit-counter.js` (+2 files, bundle baseline 690 -> 692).
+
+## 1.40.8
+
+### Patch Changes
+
+- Fix the status line showing "no human feedback this project" when the Claude Code session sits in a subfolder of the project. The status line now counts thumbs for the project root (the project dir Claude reports, else the git root), the same place captures are written.
+
+## 1.40.7
+
+### Patch Changes
+
+- The status-bar vote counter always reads the project's own feedback log, even when a feedback-directory override points at the shared store, and shows "feedback count unavailable" instead of "no human feedback" when the counter itself fails. Corrections that use the words done, live or force-push are no longer rejected by the reward check. Adds a Stop-hook script that asks for a label on unlabelled present-tense claims about outside state (not installed by default; see docs/guides/claim-gate-stop-hook.md).
+
+## 1.40.6
+
+### Patch Changes
+
+- Hardened argument quoting in the bundled email-triage server's Apple Mail tools (`read_apple_mail`, `triage_emails`) and in the Comet skill's `open_comet_url` helper. Mailbox, sender and subject values are now escaped before they reach AppleScript, values with control characters or line breaks are rejected, and `osascript` is run with an argument list. Upgrade if you run the email-triage server on macOS. Thanks to Marcus Still of Still OS for the report.
+- 81a29ae: A typed "thumbs down" now raises the status-bar counter every time. A repeat of the same bare text in the same session used to be dropped as a duplicate for five minutes; the duplicate check now compares when the prompts were typed (30 seconds), so only a second delivery of the same prompt is skipped. A capture that is logged but not promoted (lifecycle block or schema failure) now refreshes the counter too.
+
+## 1.40.5
+
+### Patch Changes
+
+- 0015671: The status line's "Latest mistake" time is now in the reader's local time, 12-hour with AM/PM ("Nov 19, 3:37 PM"), instead of UTC 24-hour. Also ships the modules the owner console requires (`owner-telemetry.js`, `ops-log.js`, `ops-report.js`, `checkout-session-count.js`), which were missing from the npm package and blocked the 1.40.4 publish.
+
+## 1.40.4
+
+### Patch Changes
+
+- b0ea946: A default install now denies force-push, `git reset --hard`, `git clean -f`, `rm -rf` on home or root, and `DROP TABLE`, the way it already denied secret exfiltration. These five gates join the unconditional hard floor. Warning text no longer says "blocked" when the action runs.
+- 7d23574: Funnel counts stop including bots: /success counts a visit only when its session_id is paid in Stripe, and billing-summary checkout starts count only Stripe sessions that got past raw (an email entered or a payment attempted).
+- 32370f4: Homepage and pricing now lead with Claude Code: plain-words headline, a recorded strict-mode deny, a real status line capture, a Claude Code install with the status line step, a 3-step loop, a hooks comparison, a Free vs Pro table built from the code limits, and one "Also works with" section for other agents.
+- 2299b1c: Maintainers push straight to `main` (Igor, 2026-11-18). The ruleset policy and the branch-protection check no longer expect a `pull_request` or required-status-check rule and flag either one returning as drift. Test workflows run on a `v*` tag or by hand, and the pre-push hook runs the fast unit tests one file at a time.
+- fc6829a: A rule that denies now denies every time. The free tier used to turn a deny into a warning once a user passed a daily block quota (`FREE_TIER_DAILY_BLOCKS`, `applyDailyBlockCap`); that quota and the per-day block counter are removed. Free-tier limits now apply only to how many auto-promoted rules load and how many feedback captures a free user can make. The warn-by-default posture (`THUMBGATE_STRICT_ENFORCEMENT`) is unchanged.
+- 275bf9d: Add a recorded gate demo (four real Claude Code sessions, three thumbs-downs, a fourth session denied) near the top of `/pricing` and the homepage, with a line saying who it is for. Static media under `/media/` now answers byte-range requests, which iOS Safari needs to play video. An auto-promoted rule that is upgraded from warn to block now quotes its current count ("3 occurrences") instead of the count at first promotion.
+- b6de4bd: The homepage and `/pricing` now say what a default install does: a thumbs-down adds a warning gate, a repeat is warned about and allowed to run, and only secret leaks are denied. Strict mode (`THUMBGATE_STRICT_ENFORCEMENT=1`) blocks a learned rule after three thumbs-downs on the same command and blocks the built-in destructive gates at once. Codex and Gemini CLI enforcement claims are removed until a gated session has been run. Enforcement defaults are unchanged.
+- c7973ec: Adds the public monthly report at /reports/2026-11: counts of what our own agents tried to do, by action type, built from ThumbGate local logs by `scripts/build-monthly-report.js`, with Article and Dataset JSON-LD, a homepage link and a sitemap entry.
+- 19c5468: CI and the npm publish workflow now fail when a pinned `thumbgate@x.y.z` on the site, in the plugins, adapters, server cards, docs or README is not a version that exists on npm. `npm run check:npm-versions` runs the same check and lists the file and line of each unpublished pin. On pull requests, package.json's own version is accepted only while it is an unreleased bump; after `npm publish` the check runs with no allowance.
+- 97c92d1: The pricing page and homepage no longer say Free blocks only the first 2 gate hits a day and then warns. That quota was removed, so the Free vs Pro table now shows unlimited gate blocks (strict mode) on both plans, and the homepage drops the "no daily cap" Pro point. The claims test now pins the absence of a daily quota instead of the old number.
+- 5c43c1a: The status line now counts thumbs an agent recorded for the person through MCP `capture_feedback` even when an older server saved them as `automated`: such a row counts when the history sync captured the person's own thumb within 90 seconds of it. "Latest mistake" now shows the newest counted thumbs-down for the project instead of the last lesson the inference step happened to write, which could be days old.
+
+## 1.40.3
+
+### Patch Changes
+
+- b00ed72: Status line thumbs now count only feedback a person gave, for the project the line is shown in, and the line says so ("this project"). Before, it summed every project's store and counted automated and history-scraped entries, which showed 45 up and 27 down in a project with one real thumb. `capture_feedback` over MCP now records a human origin (callers can still pass `automated` or `imported`), and status line thumb clicks carry their project. MCP `capture_feedback` rows saved in the global store count for the project named in their scope. The npm file-count ceiling goes from 688 to 690 for the two new scripts the status line runs (`statusline-human-counts.js`, `human-feedback.js`).
+
+## 1.40.2
+
+### Patch Changes
+
+- c04d58e: Stage daily social content for review, queue engagement checks, and exclude repository-only publishing scripts from the npm package.
+- Fix npm package missing modules. Versions 1.39.0 through 1.40.1 omitted 35 files that `bin/cli.js` requires (including `scripts/third-author-governance.js`), so `npx thumbgate gate-check` failed with "Cannot find module". Added them to the `package.json` `files` list and added `tests/packed-cli-require-closure.test.js`, which packs the repo, checks every module reachable from `bin/cli.js` is in the tarball, requires each one from the unpacked package, and runs `gate-check` from the unpacked package. Because `cli.js` requires these modules and `npx gate-check` errors without them, two limits were raised: the file-count ceilings 656 to 688 (public-bundle-ratchet, public-core-boundary, package-boundary tests) and the unpacked size cap 10,110,000 to 10,296,000 bytes (measured 10,246,404, about 50 KB headroom).
+- 5f6c072: Restore homepage links to self-serve Pro and remove the setup offer from homepage copy.
+
 ## 1.40.1
 
 ### Patch Changes

@@ -29,7 +29,6 @@ const FREE_TIER_LIMITS = {
 };
 
 const FREE_TIER_MAX_GATES = 3; // 3 active prevention rules on free; Pro is unlimited
-const FREE_TIER_DAILY_BLOCKS = 2; // 3 gate blocks/day on free; after limit, deny → warn + upgrade CTA
 
 const UPGRADE_MESSAGE = `Pro: ${PRO_PRICE_LABEL} — unlimited rules, recall, lesson search, dashboard, and exports: ${PRO_MONTHLY_PAYMENT_LINK}\n  Enterprise: ${ENTERPRISE_PRICE_LABEL} after workflow qualification.`;
 
@@ -242,6 +241,13 @@ function proWouldHaveBlockedSentence(mistake) {
   return `Pro would have blocked this repeat: ${clean}. ${PRO_REPEAT_URL}`;
 }
 
+// One plain line shown the moment a free install learns a rule it cannot enforce (rule 4 and up).
+function capUpgradeLine(rule, maxActive = FREE_TIER_MAX_GATES) {
+  const clean = scrubRepeatText(rule);
+  if (!clean) return null;
+  return `ThumbGate learned a ${maxActive + 1}th rule (${clean}), but Free enforces ${maxActive}. Pro enforces all of them: ${PRO_REPEAT_URL}`;
+}
+
 function droppedRepeatFromRulesMarkdown(markdown, maxActive = FREE_TIER_MAX_GATES) {
   const mistakes = [];
   for (const section of String(markdown || '').split(/\n## /)) {
@@ -268,12 +274,12 @@ module.exports = {
   todayKey,
   FREE_TIER_LIMITS,
   FREE_TIER_MAX_GATES,
-  FREE_TIER_DAILY_BLOCKS,
   TRIAL_DAYS,
   UPGRADE_MESSAGE,
   PAYWALL_MESSAGES,
   USAGE_FILE,
   proWouldHaveBlockedSentence,
+  capUpgradeLine,
   droppedRepeatFromRulesMarkdown,
   scrubRepeatText,
 };

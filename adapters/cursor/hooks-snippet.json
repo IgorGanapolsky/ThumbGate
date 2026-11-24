@@ -1,0 +1,8 @@
+{
+  "beforeShellExecution": [
+    {
+      "command": "node /Users/iganapolsky/workspace/ThumbGate/scripts/cursor-shell-gate.js",
+      "timeout": 10
+    }
+  ]
+}

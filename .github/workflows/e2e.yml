@@ -1,29 +1,10 @@
 name: E2E
 
 on:
+  # Direct-push policy (Igor, 2026-11-18): no PRs, so test workflows run on a
+  # release tag or by hand only. Pre-push hook runs the fast unit tests.
   push:
-    branches: [main]
-    paths:
-      - 'public/**'
-      - 'src/api/**'
-      - 'tests/e2e/**'
-      - 'playwright.config.js'
-      - 'package.json'
-      - 'package-lock.json'
-      - '.github/workflows/e2e.yml'
-  pull_request:
-    branches: [main]
-    paths:
-      - 'public/**'
-      - 'src/api/**'
-      - 'tests/e2e/**'
-      - 'playwright.config.js'
-      - 'package.json'
-      - 'package-lock.json'
-      - '.github/workflows/e2e.yml'
-  merge_group:
-    branches: [main]
-    types: [checks_requested]
+    tags: ['v*']
   workflow_dispatch:
 
 permissions:

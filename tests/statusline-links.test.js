@@ -50,10 +50,10 @@ test('getStatuslineLinks returns clickable local URLs when the dashboard is live
   });
 
   assert.equal(result.state, 'ready');
-  assert.equal(result.dashboardUrl, 'http://localhost:3456/dashboard');
-  assert.equal(result.lessonsUrl, 'http://localhost:3456/lessons');
-  assert.equal(result.upUrl, 'http://localhost:3456/feedback/quick?signal=up');
-  assert.equal(result.downUrl, 'http://localhost:3456/feedback/quick?signal=down');
+  assert.match(result.dashboardUrl, /^http:\/\/localhost:3456\/dashboard\?project=[^&]+&projectDir=/);
+  assert.match(result.lessonsUrl, /^http:\/\/localhost:3456\/lessons\?project=[^&]+&projectDir=/);
+  assert.match(result.upUrl, /^http:\/\/localhost:3456\/feedback\/quick\?signal=up&projectDir=/);
+  assert.match(result.downUrl, /^http:\/\/localhost:3456\/feedback\/quick\?signal=down&projectDir=/);
 });
 
 test('getStatuslineLinks boots a local Pro server when one is not already running', async () => {

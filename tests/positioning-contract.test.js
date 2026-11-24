@@ -50,9 +50,9 @@ test('public surfaces lead with outcomes instead of infrastructure abstractions'
 
   assert.match(readme, /AI coding agents repeat mistakes/i);
   assert.match(readme, /evaluate the proposed tool call before execution/i);
-  assert.match(landingPage, /One repeated agent mistake\. One configured gate\./i);
+  assert.match(landingPage, /Thumbs-down a Claude Code mistake once, and ThumbGate warns the next time it tries that command\. After three thumbs-downs on the same command, strict mode blocks it/i);
   assert.match(landingPage, /allowed, warned, or denied/i);
-  assert.match(landingPage, /free local CLI and supported hook integrations/i);
+  assert.match(landingPage, /Free local PreToolUse gates/i);
   assert.match(gptInstructions, /Sell outcomes before infrastructure/i);
   assert.doesNotMatch(landingPage, /Global enforcement/i);
   assert.doesNotMatch(readme, /Behavior control system/i);
@@ -233,12 +233,12 @@ test('public landing copy stays vendor-neutral while offering Pro and Enterprise
   const congruence = readText(path.join('docs', 'MARKETING_COPY_CONGRUENCE.md'));
   const landingPage = readText(path.join('public', 'index.html'));
 
-  assert.match(congruence, /Root landing page stays vendor-neutral/i);
+  assert.match(congruence, /Root landing page leads with Claude Code/i);
   assert.match(congruence, /Do not claim a standalone VS Code extension/i);
   assert.match(landingPage, /Claude Code/i);
   assert.match(landingPage, /Cursor/i);
   assert.match(landingPage, /Codex/i);
-  assert.match(landingPage, /or similar agents/i);
+  assert.match(landingPage, /Also works with/i);
   assert.match(landingPage, /free local CLI/i);
   assert.match(landingPage, /href="\/checkout\/pro"/);
   // Pro removed from public buying path

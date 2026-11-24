@@ -1,0 +1,22 @@
+schema_version: "1.0"
+name: "t08-gate-check-write-tool"
+runs: 3
+tags: [capability, tool-interface, edge]
+execution:
+  max_turns: 8
+  timeout_seconds: 240
+  allowed_tools: [Bash, Read]
+  prompt: "cna you ask thumbgate whether writing to config/.env.production would be alowed? just check, dont write the file"
+graders:
+  - name: "called-gate-check"
+    type: tool_used
+    tool: "mcp__plugin_thumbgate_thumbgate__gate_check"
+  - name: "checked-the-real-path"
+    type: regex
+    target: mock_calls
+    pattern: "env\\.production"
+  - name: "did-not-write"
+    type: tool_used
+    tool: "mcp__plugin_thumbgate_thumbgate__Write"
+    min: 0
+    max: 0

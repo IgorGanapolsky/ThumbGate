@@ -1,0 +1,17 @@
+schema_version: "1.0"
+name: "t06-capture-vague-feedback-ambiguous"
+runs: 3
+tags: [capability, tool-interface, edge]
+execution:
+  max_turns: 8
+  timeout_seconds: 240
+  allowed_tools: [Bash, Read]
+  prompt: "The migration script you wrote earlier dropped the wrong column and I had to revert it. Make a note in ThumbGate so we do not do it again."
+graders:
+  - name: "called-capture-feedback"
+    type: tool_used
+    tool: "mcp__plugin_thumbgate_thumbgate__capture_feedback"
+  - name: "signal-is-down"
+    type: regex
+    target: mock_calls
+    pattern: "\"signal\"\\s*:\\s*\"down\""

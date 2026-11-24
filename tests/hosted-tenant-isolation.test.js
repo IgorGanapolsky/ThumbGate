@@ -282,7 +282,10 @@ test('request dispatch clears inherited scope, binds the authenticated customer 
     assert.equal(stats.status, 200);
     assert.equal((await stats.json()).total, readRows(dirs[1], 'feedback-log.jsonl').length);
     assert.equal(billing.validateApiKey(credentials[1]).usageCount, before + 1);
-    const checkout = await fetch(target + '/v1/billing/checkout', { method: 'POST', headers, body: JSON.stringify({ planId: 'pro', customerEmail: ['scope-control', 'example.invalid'].join('@') }) });
+    // The human-click gate: a same-origin page fetches a single-use token before it asks for a session.
+    const tokenRes = await fetch(target + '/v1/checkout/click-token', { method: 'POST', headers: { 'content-type': 'application/json', origin: target }, body: JSON.stringify({ buttonId: 'tenant_isolation', landingPage: '/pricing' }) });
+    const { token } = await tokenRes.json();
+    const checkout = await fetch(target + '/v1/billing/checkout', { method: 'POST', headers: { ...headers, 'x-thumbgate-click-token': token }, body: JSON.stringify({ planId: 'pro', customerEmail: ['scope-control', 'example.invalid'].join('@') }) });
     assert.equal(checkout.status, 200);
     const session = await checkout.json();
     assert.equal(session.localMode, true);

@@ -1,0 +1,17 @@
+schema_version: "1.0"
+name: "t05-search-lessons-by-topic"
+runs: 3
+tags: [capability, tool-interface]
+execution:
+  max_turns: 8
+  timeout_seconds: 240
+  allowed_tools: [Bash, Read]
+  prompt: "Search ThumbGate lessons for anything about force pushes and list what you find."
+graders:
+  - name: "called-search-lessons"
+    type: tool_used
+    tool: "mcp__plugin_thumbgate_thumbgate__search_lessons"
+  - name: "relays-the-lesson"
+    type: regex
+    pattern: "force push"
+    flags: "i"

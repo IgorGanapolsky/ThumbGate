@@ -1,0 +1,207 @@
+{
+  "month": "2026-11",
+  "window": {
+    "from": "2026-11-01",
+    "through": "2026-11-17"
+  },
+  "generatedFrom": "one operator fleet; ThumbGate local logs (gate-events-log, audit-trail, agent-registry)",
+  "fleet": {
+    "agentSessionsRegistered": 1995
+  },
+  "gateDecisions": {
+    "total": 34,
+    "denied": 30,
+    "warned": 4,
+    "byActionType": [
+      {
+        "actionType": "Commit on a PR branch before review threads were verified",
+        "denied": 14,
+        "warned": 0,
+        "total": 14
+      },
+      {
+        "actionType": "Dependency added to package.json",
+        "denied": 0,
+        "warned": 1,
+        "total": 1
+      },
+      {
+        "actionType": "Edit outside the declared task scope",
+        "denied": 3,
+        "warned": 0,
+        "total": 3
+      },
+      {
+        "actionType": "Force-push",
+        "denied": 6,
+        "warned": 0,
+        "total": 6
+      },
+      {
+        "actionType": "High predicted workflow risk before execution",
+        "denied": 0,
+        "warned": 2,
+        "total": 2
+      },
+      {
+        "actionType": "Pull request opened without permission evidence",
+        "denied": 1,
+        "warned": 0,
+        "total": 1
+      },
+      {
+        "actionType": "Repeat of a high-risk action ThumbGate had already been told was bad",
+        "denied": 5,
+        "warned": 0,
+        "total": 5
+      },
+      {
+        "actionType": "Secret material in a tool call",
+        "denied": 1,
+        "warned": 0,
+        "total": 1
+      },
+      {
+        "actionType": "Unauthorized network egress",
+        "denied": 0,
+        "warned": 1,
+        "total": 1
+      }
+    ],
+    "byTool": [
+      {
+        "tool": "Bash",
+        "count": 18
+      },
+      {
+        "tool": "Edit",
+        "count": 10
+      },
+      {
+        "tool": "capture_feedback",
+        "count": 5
+      },
+      {
+        "tool": "Read",
+        "count": 1
+      }
+    ]
+  },
+  "shellCommandPatterns": {
+    "shellCommandsEvaluated": 80,
+    "patterns": [
+      {
+        "id": "rm-rf",
+        "label": "rm -rf (recursive force delete)",
+        "evaluated": 0,
+        "allowed": 0,
+        "denied": 0,
+        "warned": 0
+      },
+      {
+        "id": "git-force-push",
+        "label": "git push --force",
+        "evaluated": 5,
+        "allowed": 0,
+        "denied": 5,
+        "warned": 0
+      },
+      {
+        "id": "git-reset-hard",
+        "label": "git reset --hard",
+        "evaluated": 0,
+        "allowed": 0,
+        "denied": 0,
+        "warned": 0
+      },
+      {
+        "id": "secret-read",
+        "label": "Reading a secrets file or keychain entry",
+        "evaluated": 0,
+        "allowed": 0,
+        "denied": 0,
+        "warned": 0
+      },
+      {
+        "id": "sql-drop",
+        "label": "DROP TABLE / DROP DATABASE",
+        "evaluated": 0,
+        "allowed": 0,
+        "denied": 0,
+        "warned": 0
+      },
+      {
+        "id": "pipe-to-shell",
+        "label": "curl or wget piped into a shell",
+        "evaluated": 0,
+        "allowed": 0,
+        "denied": 0,
+        "warned": 0
+      },
+      {
+        "id": "npm-publish",
+        "label": "npm publish",
+        "evaluated": 0,
+        "allowed": 0,
+        "denied": 0,
+        "warned": 0
+      },
+      {
+        "id": "no-verify",
+        "label": "git --no-verify",
+        "evaluated": 0,
+        "allowed": 0,
+        "denied": 0,
+        "warned": 0
+      }
+    ]
+  },
+  "gateEngineEvaluations": {
+    "agentActions": {
+      "evaluated": 124,
+      "allowed": 98,
+      "denied": 24,
+      "warned": 2
+    },
+    "agentActionsByTool": [
+      {
+        "tool": "Bash",
+        "evaluated": 78
+      },
+      {
+        "tool": "Edit",
+        "evaluated": 33
+      },
+      {
+        "tool": "cronjob_manage",
+        "evaluated": 3
+      },
+      {
+        "tool": "Write",
+        "evaluated": 3
+      },
+      {
+        "tool": "patch",
+        "evaluated": 2
+      },
+      {
+        "tool": "Read",
+        "evaluated": 2
+      },
+      {
+        "tool": "terminal",
+        "evaluated": 2
+      },
+      {
+        "tool": "cronjob_manage.update",
+        "evaluated": 1
+      }
+    ],
+    "thumbgateToolCalls": {
+      "evaluated": 537,
+      "allowed": 532,
+      "denied": 5,
+      "warned": 0
+    }
+  }
+}

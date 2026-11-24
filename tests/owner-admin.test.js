@@ -47,18 +47,28 @@ const deps = (extra = {}) => ({ feedbackDir: root, health: () => ({ version: 'fi
 test.before(async () => { server = createApiServer({ ownerAdminDependencies: { getStripeClient: () => stripe } }); await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve)); origin = 'http://127.0.0.1:' + server.address().port; });
 test.after(async () => { await new Promise((resolve) => server.close(resolve)); fs.rmSync(root, { recursive: true, force: true }); });
 
-test('anonymous, non-owner and expired sessions receive identical private 404 without collection or writes', async () => {
+test('anonymous and expired sessions get a sign-in redirect on the page and a private 404 elsewhere; a non-owner session gets 403; none collect or write', async () => {
   const before = fs.readFileSync(sessionPath, 'utf8');
   const count = providerCalls;
+  const pages = ['/admin', '/admin/', '/admin.html', '/%61dmin'];
   for (const token of [null, otherToken, expiredToken]) {
-    for (const url of ['/admin', '/admin/', '/admin.html', '/admin/customers', '/%61dmin', '/v1/admin', '/v1/admin/stripe/customers', '/v1/%61dmin/stripe/customers']) {
+    for (const url of [...pages, '/admin/customers', '/v1/admin', '/v1/admin/stripe/customers', '/v1/%61dmin/stripe/customers']) {
       for (const method of ['GET', 'HEAD', 'OPTIONS', 'POST']) {
-        const response = await request(url, { token, method });
-        assert.equal(response.status, 404);
+        const response = await request(url, { token, method, redirect: 'manual' });
         assert.equal(response.headers.get('cache-control'), 'private, no-store');
         assert.equal(response.headers.get('access-control-allow-origin'), null);
         assert.equal(response.headers.get('www-authenticate'), null);
-        assert.equal(await response.text(), method === 'HEAD' ? '' : '{"error":"Not found"}');
+        if (token === otherToken) {
+          assert.equal(response.status, 403);
+          assert.equal(await response.text(), method === 'HEAD' ? '' : '{"error":"Forbidden"}');
+        } else if (pages.includes(url) && ['GET', 'HEAD'].includes(method)) {
+          assert.equal(response.status, 302);
+          assert.equal(response.headers.get('location'), '/signin?next=%2Fadmin');
+          assert.equal(await response.text(), '');
+        } else {
+          assert.equal(response.status, 404);
+          assert.equal(await response.text(), method === 'HEAD' ? '' : '{"error":"Not found"}');
+        }
       }
     }
   }
@@ -93,12 +103,12 @@ test('owner page has restrictive CSP and no extra login; HEAD and forbidden meth
 test('durable deletion and allowlist changes revoke a warmed session immediately', async () => {
   assert.equal((await request('/admin')).status, 200);
   fs.writeFileSync(sessionPath, '{}');
-  assert.equal((await request('/admin')).status, 404);
+  assert.equal((await request('/admin', { redirect: 'manual' })).status, 302);
   writeSessions();
   process.env.THUMBGATE_OWNER_EMAILS = '';
-  assert.equal((await request('/admin')).status, 404);
+  assert.equal((await request('/admin')).status, 403);
   process.env.THUMBGATE_OWNER_EMAILS = 'other@example.invalid';
-  assert.equal((await request('/admin')).status, 404);
+  assert.equal((await request('/admin')).status, 403);
   process.env.THUMBGATE_OWNER_EMAILS = 'owner@example.invalid';
   assert.equal((await request('/admin')).status, 200);
 });
@@ -277,6 +287,25 @@ test('nonwriting data inventory maps joined accounts, counts scoped files, pagin
   assert.equal(fs.readFileSync(path.join(fixture, 'api-keys.json'), 'utf8'), before);
 });
 
+test('the same owner is "internal" in Hosted data when the paid key carries no email but the joined session does', async () => {
+  const fixture = fs.mkdtempSync(path.join(root, 'identity-'));
+  const d = deps({ feedbackDir: fixture });
+  fs.writeFileSync(path.join(fixture, 'api-keys.json'), JSON.stringify({ keys: {
+    'synthetic-owner-key': { customerId: 'customer_owner', active: true },
+    'synthetic-buyer-key': { customerId: 'customer_buyer', customerEmail: 'buyer@example.invalid', active: true },
+    'synthetic-keyless': { customerId: 'customer_noemail', active: true },
+  } }));
+  fs.writeFileSync(path.join(fixture, 'auth-sessions.json'), JSON.stringify({
+    one: { ...baseSession, ssoEmail: 'owner@example.invalid', customerId: 'customer_owner', subjectType: 'paid' },
+  }));
+  const result = await admin.collectAdminSection({ section: 'data', limit: 50, offset: 0 }, d);
+  const byId = Object.fromEntries(result.data.records.map((r) => [r.accountId, r.classification]));
+  assert.equal(byId.customer_owner, 'internal', 'owner joined by session is internal, matching the Stripe class');
+  assert.equal(byId.customer_buyer, 'external');
+  assert.equal(byId.customer_noemail, 'unknown', 'an account with no identity at all stays unknown');
+  assert.equal(billing.classifyRevenueRecord({ customerEmail: 'owner@example.invalid' }), 'internal', 'Stripe-side class of the same address');
+});
+
 test('data readers reject symlinks, corrupt stores and missing files without claiming zero', async () => {
   const fixture = fs.mkdtempSync(path.join(root, 'unsafe-'));
   fs.symlinkSync(sessionPath, path.join(fixture, 'auth-sessions.json'));
@@ -314,14 +343,65 @@ test('provider slots survive response timeout and block repeated refresh and sha
   assert.equal(available, 'settled');
 });
 
-test('oversized analytics source does not invoke shared synchronous collector', async () => {
+// A 50 MB telemetry log: 125,000 events spread over 45 days, so about a third of it is older than the 30-day window.
+function writeLargeTelemetry(target, lines = 125000) {
+  const pad = 'x'.repeat(300);
+  const fd = fs.openSync(target, 'w');
+  try {
+    const now = Date.now();
+    let batch = [];
+    for (let i = 0; i < lines; i += 1) {
+      const ageMs = (1 - i / lines) * 45 * 86400000;
+      const type = i % 40 === 0 ? 'checkout_start' : i % 7 === 0 ? 'cta_click' : 'landing_page_view';
+      batch.push(JSON.stringify({ receivedAt: new Date(now - ageMs).toISOString(), clientType: 'web', eventType: type, visitorId: 'v' + (i % 5000), sessionId: 's' + (i % 9000), source: 'reddit', page: '/', audience: 'external', pad }));
+      if (batch.length === 5000) { fs.writeSync(fd, batch.join('\n') + '\n'); batch = []; }
+    }
+    if (batch.length) fs.writeSync(fd, batch.join('\n') + '\n');
+  } finally { fs.closeSync(fd); }
+  return fs.statSync(target).size;
+}
+
+test('a 50 MB telemetry log is streamed from its newest end: analytics and money return numbers in under 3 seconds', async () => {
   const target = path.join(root, 'telemetry-pings.jsonl');
   const prior = fs.existsSync(target) ? fs.readFileSync(target) : null;
-  fs.writeFileSync(target, ' '.repeat(8 * 1024 * 1024 + 1));
-  let calls = 0;
+  const size = writeLargeTelemetry(target);
+  const extra = { getBillingSummaryLive: async () => ({}), telemetryCacheMs: 0, moneyCacheMs: 0, lastGoodMs: 0, getStripeClient: () => { throw new Error('STRIPE_SECRET_KEY is missing. Stripe client cannot be initialized.'); } };
   try {
-    const result = await admin.collectAdminSection({ section: 'analytics' }, deps({ getBillingSummaryLive: async () => { calls++; return {}; } }));
-    assert.equal(result.status, 'unavailable'); assert.equal(calls, 0); assert.deepEqual(result.warnings, ['analytics_source_budget']);
+    assert.ok(size > 45 * 1024 * 1024, 'the fixture is about 50 MB, got ' + size);
+    const startedAnalytics = Date.now();
+    const analytics = await admin.collectAdminSection({ section: 'analytics' }, deps(extra));
+    const analyticsMs = Date.now() - startedAnalytics;
+    const startedMoney = Date.now();
+    const money = await admin.collectAdminSection({ section: 'money' }, deps(extra));
+    const moneyMs = Date.now() - startedMoney;
+    assert.ok(analyticsMs < 3000, 'analytics took ' + analyticsMs + ' ms');
+    assert.ok(moneyMs < 3000, 'money took ' + moneyMs + ' ms');
+    assert.notEqual(analytics.status, 'unavailable');
+    assert.ok(!analytics.warnings.includes('analytics_source_budget'));
+    const traffic = analytics.data.trafficMetrics;
+    assert.equal(traffic.visitors, 5000, 'every id logged some web event');
+    assert.equal(traffic.pageViewers, 4875, '125 of the 5000 ids only ever log clicks or checkout starts in this fixture');
+    assert.ok(traffic.pageViewers <= traffic.pageViews);
+    assert.ok(traffic.pageViews > 50000 && traffic.checkoutStarts > 1000 && traffic.ctaClicks > 5000, 'counts come from the in-window two thirds');
+    assert.ok(analytics.data.daily.length >= 29 && analytics.data.daily.length <= 31, 'one entry per day in the window, got ' + analytics.data.daily.length);
+    assert.equal(analytics.data.dataQuality.telemetryWindowComplete, true, 'the window edge was reached before the byte cap');
+    assert.ok(analytics.data.dataQuality.telemetryBytesRead < size, 'the older third of the file was never read');
+    assert.equal(money.data.traffic30d.visitors, 5000);
+    assert.equal(money.data.reasons.visitors, null);
+    assert.equal(money.data.reasons.payingCustomers, 'Stripe key missing');
+  } finally { if (prior) fs.writeFileSync(target, prior); else fs.rmSync(target); }
+});
+
+test('a byte cap below the window edge returns partial numbers, never a refusal', async () => {
+  const target = path.join(root, 'telemetry-pings.jsonl');
+  const prior = fs.existsSync(target) ? fs.readFileSync(target) : null;
+  writeLargeTelemetry(target, 20000);
+  try {
+    const result = await admin.collectAdminSection({ section: 'analytics' }, deps({ getBillingSummaryLive: async () => ({}), telemetryCacheMs: 0, telemetryMaxBytes: 2 * 1024 * 1024 }));
+    assert.notEqual(result.status, 'unavailable');
+    assert.ok(result.data.trafficMetrics.visitors > 0);
+    assert.equal(result.data.dataQuality.telemetryWindowComplete, false);
+    assert.ok(result.warnings.includes('telemetry_incomplete'));
   } finally { if (prior) fs.writeFileSync(target, prior); else fs.rmSync(target); }
 });
 
@@ -430,14 +510,15 @@ test('shared read-path inventory includes enabled legacy merging and trial fallb
     const paths = billing.getBillingAnalyticsReadPaths();
     assert.ok(paths.includes(path.join(legacy, 'revenue-events.jsonl')));
     assert.ok(paths.includes(path.join(legacy, 'trial-emails.jsonl')));
+    // Large ledgers no longer block the owner console: telemetry is streamed and billing totals come from a worker.
     let calls = 0;
-    const result = await admin.collectAdminSection({ section: 'analytics' }, deps({ getBillingSummaryLive: async () => { calls++; return {}; } }));
-    assert.equal(calls, 0); assert.equal(result.status, 'unavailable');
-    assert.deepEqual(result.warnings, ['analytics_source_budget']);
+    const result = await admin.collectAdminSection({ section: 'analytics' }, deps({ telemetryCacheMs: 0, getBillingSummaryLive: async () => { calls++; return {}; } }));
+    assert.equal(calls, 1); assert.notEqual(result.status, 'unavailable');
+    assert.ok(!result.warnings.includes('analytics_source_budget'));
     fs.rmSync(path.join(legacy, 'revenue-events.jsonl'));
     fs.writeFileSync(path.join(legacy, 'trial-emails.jsonl'), ' '.repeat(8 * 1024 * 1024 + 1));
-    const trial = await admin.collectAdminSection({ section: 'analytics' }, deps({ getBillingSummaryLive: async () => { calls++; return {}; } }));
-    assert.equal(calls, 0); assert.deepEqual(trial.warnings, ['analytics_source_budget']);
+    const trial = await admin.collectAdminSection({ section: 'analytics' }, deps({ telemetryCacheMs: 0, getBillingSummaryLive: async () => { calls++; return {}; } }));
+    assert.equal(calls, 2); assert.ok(!trial.warnings.includes('analytics_source_budget'));
   } finally {
     if (saved.merge === undefined) delete process.env._TEST_INCLUDE_LEGACY_BILLING_DATA; else process.env._TEST_INCLUDE_LEGACY_BILLING_DATA = saved.merge;
     if (saved.fallback === undefined) delete process.env._TEST_THUMBGATE_FALLBACK_FEEDBACK_DIR; else process.env._TEST_THUMBGATE_FALLBACK_FEEDBACK_DIR = saved.fallback;

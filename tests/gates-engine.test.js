@@ -1162,18 +1162,18 @@ test('run warns on git push by default, denies under strict enforcement', () => 
   cleanupStateFiles();
 });
 
-test('run warns on destructive local git cleanup by default, denies under strict', () => {
+test('run denies destructive local git cleanup by default, with or without strict', () => {
   cleanupStateFiles();
   const resetWarn = JSON.parse(run({
     tool_name: 'Bash',
     tool_input: { command: 'git reset --hard HEAD' },
   }));
-  assert.notEqual(resetWarn.hookSpecificOutput.permissionDecision, 'deny');
+  assert.equal(resetWarn.hookSpecificOutput.permissionDecision, 'deny');
   const cleanWarn = JSON.parse(run({
     tool_name: 'Bash',
     tool_input: { command: 'git clean -fd' },
   }));
-  assert.notEqual(cleanWarn.hookSpecificOutput.permissionDecision, 'deny');
+  assert.equal(cleanWarn.hookSpecificOutput.permissionDecision, 'deny');
 
   process.env.THUMBGATE_STRICT_ENFORCEMENT = '1';
   try {
@@ -1195,13 +1195,13 @@ test('run warns on destructive local git cleanup by default, denies under strict
   cleanupStateFiles();
 });
 
-test('run warns on broad rm -rf by default, denies under strict enforcement', () => {
+test('run denies broad rm -rf by default, with or without strict enforcement', () => {
   cleanupStateFiles();
-  // Warn+audit posture (CEO decision 2026-06-04): even rm -rf / is flagged + logged, NOT
-  // hard-blocked, by default — we do not pretend a regex can reliably catch destructive
-  // commands (sudo/bash -c/find -exec all evade it). Hard enforcement is the strict opt-in.
+  // Catastrophic commands (rm -rf on root or home, force-push, reset --hard, clean -f, DROP TABLE)
+  // are in the unconditional hard floor: denied on a default install, as the engine comment promises.
+  // Reworded variants (sudo/bash -c/find -exec) can still evade a regex; benign rm -rf stays allowed.
   const warnOut = JSON.parse(run({ tool_name: 'Bash', tool_input: { command: 'rm -rf /' } }));
-  assert.notEqual(warnOut.hookSpecificOutput.permissionDecision, 'deny');
+  assert.equal(warnOut.hookSpecificOutput.permissionDecision, 'deny');
   process.env.THUMBGATE_STRICT_ENFORCEMENT = '1';
   try {
     const denyOut = JSON.parse(run({ tool_name: 'Bash', tool_input: { command: 'rm -rf /' } }));
@@ -3040,7 +3040,8 @@ test('secret-exfiltration deny names the safe vault path for a non-vault Write',
     assert.equal(result.gate, 'secret-exfiltration');
     // The fix: deny message must point the agent at the whitelisted vault,
     // not leave it to invent a brittle /tmp workaround.
-    assert.match(result.message, /\.resume_secrets/);
+    assert.match(result.message, /\.thumbgate\/secrets/);
+    assert.doesNotMatch(result.message, /\.resume_secrets/);
     assert.match(result.remediation, /Write\/Edit tool/);
     assert.match(result.remediation, /world-readable/);
   });
@@ -3054,8 +3055,24 @@ test('secret-exfiltration deny tells Bash callers to use the vault, not inline',
       tool_input: { command: `echo ${stripeKey} > /tmp/x` },
     });
     assert.ok(result, 'expected a block');
-    assert.match(result.remediation, /\.resume_secrets/);
+    assert.match(result.remediation, /\.thumbgate\/secrets/);
+    assert.doesNotMatch(result.remediation, /\.resume_secrets/);
     assert.match(result.remediation, /environment variable|reading that file/);
+  });
+});
+
+test('secret-exfiltration deny for reading .env gives read advice, not vault advice', () => {
+  withTempFeedbackDir(() => {
+    const result = evaluateSecretGuard({
+      tool_name: 'Bash',
+      tool_input: { command: 'cat .env' },
+    });
+    assert.ok(result, 'expected a block');
+    assert.equal(result.gate, 'secret-exfiltration');
+    assert.match(result.message, /environment file/);
+    assert.match(result.remediation, /credentials file/);
+    assert.match(result.remediation, /runtime/);
+    assert.doesNotMatch(result.message, /resume_secrets|secret literal/);
   });
 });
 

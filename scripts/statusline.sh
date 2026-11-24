@@ -13,10 +13,26 @@ STATUSLINE_VERBOSE="${THUMBGATE_STATUSLINE_VERBOSE:-0}"
 eval "$(cat | jq -r '
   def n(f): f // 0;
   @sh "CTX_PCT=\(n(.context_window.used_percentage) | floor)",
-  @sh "PROJECT_CWD=\(.cwd // .working_directory // "")"
+  @sh "PROJECT_CWD=\(.cwd // .working_directory // "")",
+  @sh "CLAUDE_PROJECT_ROOT=\(.workspace.project_dir // "")"
 ' 2>/dev/null)"
 CTX_PCT="${CTX_PCT:-0}"
 PROJECT_CWD="${PROJECT_CWD:-}"
+CLAUDE_PROJECT_ROOT="${CLAUDE_PROJECT_ROOT:-}"
+
+# Feedback is captured against the project root, not whichever subfolder the session
+# has cd'd into. Use the project dir Claude reports, else the git root of the cwd,
+# else the cwd itself, so "this project" counts the same thumbs the captures wrote.
+if [ -n "$PROJECT_CWD" ] && [ -d "$PROJECT_CWD" ]; then
+  if [ -n "$CLAUDE_PROJECT_ROOT" ] && [ -d "$CLAUDE_PROJECT_ROOT" ]; then
+    PROJECT_CWD="$CLAUDE_PROJECT_ROOT"
+  else
+    _GIT_ROOT="$(git -C "$PROJECT_CWD" rev-parse --show-toplevel 2>/dev/null)"
+    if [ -n "$_GIT_ROOT" ] && [ -d "$_GIT_ROOT" ]; then
+      PROJECT_CWD="$_GIT_ROOT"
+    fi
+  fi
+fi
 
 if [ -n "$PROJECT_CWD" ] && [ -d "$PROJECT_CWD" ]; then
   export THUMBGATE_PROJECT_DIR="$PROJECT_CWD"
@@ -88,6 +104,26 @@ if [ "$UP" = "0" ] && [ "$DOWN" = "0" ] || [ $(( _NOW - ${CACHE_TS:-0} )) -gt 12
       @sh "CACHE_TS=\(.updated_at // "0")"
     ' 2>/dev/null)"
   fi
+fi
+
+# Thumb counts shown on the line are human feedback for this project only. The
+# caches above are global sums that include automated entries, so they feed
+# lessons and trend, never the thumbs.
+SCOPE_LABEL="this project"
+LD_TS=""; LD_LABEL=""; LD_TEXT=""
+_HUMAN_JSON="${_TEST_THUMBGATE_STATUSLINE_HUMAN_JSON:-$(node "${SCRIPT_DIR}/statusline-human-counts.js" 2>/dev/null)}"
+if [ -n "$_HUMAN_JSON" ]; then
+  eval "$(echo "$_HUMAN_JSON" | jq -r '
+    @sh "UP=\(.up // 0)",
+    @sh "DOWN=\(.down // 0)",
+    @sh "SCOPE_LABEL=\(.label // "this project")",
+    @sh "LD_TS=\(.latestDown.timestamp // "")",
+    @sh "LD_LABEL=\(.latestDown.label // "")",
+    @sh "LD_TEXT=\(.latestDown.text // "")"
+  ' 2>/dev/null)"
+else
+  # The counter printed nothing. That is a failure, not an absence of feedback.
+  UP="0"; DOWN="0"; HUMAN_COUNTS_UNAVAILABLE="1"
 fi
 
 # Background refresh from REST API when cache is stale (>120s)
@@ -165,8 +201,17 @@ if [[ -n "$_LESSON_JSON" ]]; then
     @sh "LESSON_TEXT=\(.text // "")",
     @sh "LESSON_ID=\(.lessonId // "")",
     @sh "LESSON_LABEL=\(.label // "")",
-    @sh "LESSON_LINK=\(.link // "")"
+    @sh "LESSON_LINK=\(.link // "")",
+    @sh "LESSON_CREATED=\(.createdAt // "")"
   ' 2>/dev/null)"
+fi
+# "Latest mistake" is the newest thumbs-down a person gave this project. The
+# lesson store only fills when a lesson is inferred, so it can lag far behind;
+# the thumb log is the fresher record. Both are ISO UTC, so a string compare orders them.
+LESSON_CREATED="${LESSON_CREATED:-}"
+if [[ -n "$LD_TS" ]] && [[ -z "$LESSON_CREATED" || ! "$LD_TS" < "$LESSON_CREATED" ]]; then
+  LESSON_LABEL="$LD_LABEL"; LESSON_TEXT="$LD_TEXT"
+  if [[ "$LD_TS" != "$LESSON_CREATED" ]]; then LESSON_ID=""; LESSON_LINK=""; fi
 fi
 
 # ── Colors ────────────────────────────────────────────────────────
@@ -217,7 +262,11 @@ LINE=""
 [[ -n "$WORK_ITEM_LABEL" ]] && LINE="${LINE:+${LINE} · }${WORK_ITEM_LABEL}"
 LINE="${LINE:+${LINE} · }ThumbGate v${TG_VERSION} · ${TG_TIER}"
 if [[ "$UP" = "0" && "$DOWN" = "0" ]]; then
-  LINE="${D}${LINE}${RST} · no feedback yet"
+  if [[ "${HUMAN_COUNTS_UNAVAILABLE:-0}" = "1" ]]; then
+    LINE="${D}${LINE}${RST} · ${UP_LINK} ${DOWN_LINK} ${D}feedback count unavailable${RST}"
+  else
+    LINE="${D}${LINE}${RST} · ${UP_LINK} ${DOWN_LINK} ${D}no human feedback ${SCOPE_LABEL}${RST}"
+  fi
   [[ -n "$PR_LABEL" ]] && LINE="${LINE} · ${D}${PR_LABEL}${RST}"
   
   LINE="${LINE} · ${C}${DASHBOARD_LINK}${RST}"
@@ -225,7 +274,7 @@ if [[ "$UP" = "0" && "$DOWN" = "0" ]]; then
   
   printf '%b\n' "$LINE"
 else
-  LINE="${LINE} · ${G}${BD}${UP}${RST}${UP_LINK} ${R}${BD}${DOWN}${RST}${DOWN_LINK} ${ARROW}"
+  LINE="${LINE} · ${G}${BD}${UP}${RST}${UP_LINK} ${R}${BD}${DOWN}${RST}${DOWN_LINK} ${D}${SCOPE_LABEL}${RST}"
 
   # Control Tower alerts (if any)
   [[ "${SLO_V:-0}" -gt 0 ]] && LINE="${LINE} ${R}${SLO_V} SLO${RST}"

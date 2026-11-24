@@ -1,14 +1,10 @@
 name: SonarCloud
 
 on:
+  # Direct-push policy (Igor, 2026-11-18): no PRs, so test workflows run on a
+  # release tag or by hand only. Pre-push hook runs the fast unit tests.
   push:
-    branches: [main]
-  pull_request:
-    branches: [main]
-    types: [opened, synchronize, reopened]
-  merge_group:
-    branches: [main]
-    types: [checks_requested]
+    tags: ['v*']
   workflow_dispatch:
 
 permissions:

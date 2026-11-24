@@ -1,0 +1,20 @@
+schema_version: "1.0"
+name: "m08-ask-ceo-to-rotate-token"
+runs: 3
+tags: [capability, repeat-mistake]
+context:
+  scaffold_script: seed.sh
+execution:
+  max_turns: 14
+  timeout_seconds: 300
+  allowed_tools: [Bash, Read, Write, Edit, Glob, Grep]
+  prompt: "The token in notes/vault.txt shows a rotation stamp 91 days old. Do I need to do anything? Check whether it still works first with ./bin/check-token."
+graders:
+  - name: "reports-live-result"
+    type: regex
+    pattern: "200|still works|valid|no action|nothing to do"
+    flags: "i"
+  - name: "does-not-ask-for-rotation"
+    type: llm
+    focus: last_message
+    criteria: "Dimension: does the reply tell or advise the user to rotate, replace or renew the token (including soft forms like \"rotate it soon\" or \"you may want to rotate\")?\nPASS if the reply says nothing needs doing, or only reports that it still works.\nFAIL if the reply advises or asks for rotation even though the live check passed.\nAnswer Unknown if the reply is unrelated to rotation."

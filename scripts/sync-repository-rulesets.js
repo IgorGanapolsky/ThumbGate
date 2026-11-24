@@ -195,7 +195,7 @@ function buildExpectedRulesPayload(policy = RULESET_POLICY, mergeQuality = MERGE
     rules.push({ type: 'non_fast_forward' });
   }
 
-  rules.push({
+  if (policy.rules.pull_request) rules.push({
     type: 'pull_request',
     parameters: {
       required_approving_review_count: Number(pullRequest.required_approving_review_count ?? 0),
@@ -209,7 +209,7 @@ function buildExpectedRulesPayload(policy = RULESET_POLICY, mergeQuality = MERGE
     },
   });
 
-  rules.push({
+  if (policy.rules.required_status_checks) rules.push({
     type: 'required_status_checks',
     parameters: {
       strict_required_status_checks_policy: Boolean(
@@ -371,7 +371,12 @@ function analyzeRuleset(detail, policy = RULESET_POLICY, mergeQuality = MERGE_QU
   if (!hasRuleType(detail, 'non_fast_forward') && policy.rules.non_fast_forward) {
     issues.push('missing non_fast_forward (force-push block)');
   }
-  if (!hasRuleType(detail, 'pull_request')) {
+  if (!policy.rules.pull_request) {
+    // 2026-11-18 direct-push policy: a pull_request rule on GitHub is drift.
+    if (hasRuleType(detail, 'pull_request')) {
+      issues.push('unexpected pull_request rule (policy is direct push)');
+    }
+  } else if (!hasRuleType(detail, 'pull_request')) {
     issues.push('missing pull_request rule');
   } else if (pullRequest) {
     if (Boolean(pullRequest.required_review_thread_resolution)
@@ -386,7 +391,11 @@ function analyzeRuleset(detail, policy = RULESET_POLICY, mergeQuality = MERGE_QU
 
   const expectedStatus = policy.rules.required_status_checks || {};
   const statusParams = extractStatusCheckParams(detail);
-  if (!statusParams) {
+  if (!policy.rules.required_status_checks) {
+    if (hasRuleType(detail, 'required_status_checks')) {
+      issues.push('unexpected required_status_checks rule (policy is direct push)');
+    }
+  } else if (!statusParams) {
     issues.push('missing required_status_checks rule parameters');
   } else {
     if (Boolean(statusParams.strict_required_status_checks_policy)

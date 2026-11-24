@@ -166,8 +166,19 @@ for (const input of FINANCIAL_BROWSER_CASES) {
   });
 }
 
-test('ordinary block gates remain warn-by-default without disclosing the bypass name', () => {
+const ORDINARY_BLOCK_GATE = {
+  tool_name: 'Bash',
+  tool_input: { command: 'npm publish' },
+};
+
+test('force-push is denied by default, as a catastrophic hard floor', () => {
   const result = gateCheck(FORCE_PUSH);
+  assert.equal(result.decision, 'deny');
+  assert.match(result.reason, /\[GATE:force-push\]/);
+});
+
+test('ordinary block gates remain warn-by-default without disclosing the bypass name', () => {
+  const result = gateCheck(ORDINARY_BLOCK_GATE);
   assert.notEqual(result.decision, 'deny');
   assert.match(result.context, /warn-by-default/);
   assert.doesNotMatch(result.raw, /THUMBGATE_HOTFIX_BYPASS/);

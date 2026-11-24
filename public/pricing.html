@@ -4,12 +4,12 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Pricing — ThumbGate Pro | ThumbGate</title>
-  <meta name="description" content="Free local capture and pre-action gates. Choose Pro for recall, dashboard, adapters, and exports.">
+  <meta name="description" content="Free local capture and PreToolUse gates for Claude Code. Choose Pro for recall, dashboard, and exports.">
   <link rel="canonical" href="__APP_ORIGIN__/pricing">
   <link rel="alternate" type="text/markdown" title="ThumbGate LLM context" href="__APP_ORIGIN__/llm-context.md">
   <meta property="og:title" content="ThumbGate Pricing — ThumbGate Pro">
-  <meta property="og:description" content="Free local capture and pre-action gates. Choose Pro for recall, dashboard, adapters, and exports.">
-  <meta name="twitter:description" content="Free local capture and pre-action gates. Choose Pro for recall, dashboard, adapters, and exports.">
+  <meta property="og:description" content="Free local capture and PreToolUse gates for Claude Code. Choose Pro for recall, dashboard, and exports.">
+  <meta name="twitter:description" content="Free local capture and PreToolUse gates for Claude Code. Choose Pro for recall, dashboard, and exports.">
   <meta property="og:url" content="__APP_ORIGIN__/pricing">
   <meta property="og:type" content="product">
   <script type="application/ld+json">
@@ -51,6 +51,10 @@
     @media (max-width:900px) { .offer-grid { grid-template-columns:1fr; } }
     .eyebrow { color:var(--green); font-size:.76rem; font-weight:850; letter-spacing:.14em; text-transform:uppercase; }
     h1 { max-width:760px; margin:14px 0 18px; font-size:clamp(2.5rem,6vw,5.15rem); line-height:.96; letter-spacing:-.055em; }
+    .audience { max-width:660px; margin:0 0 14px; color:var(--ink); font-size:1.05rem; }
+    .gate-demo { margin:0 0 8px; max-width:100%; }
+    .gate-demo video { display:block; width:100%; height:auto; aspect-ratio:960 / 722; border:1px solid var(--line); border-radius:14px; background:#090d14; }
+    .gate-demo figcaption { margin-top:10px; color:var(--muted); font-size:.86rem; line-height:1.45; }
     .lede { max-width:660px; margin:0 0 28px; color:var(--muted); font-size:1.13rem; }
     .outcome { display:grid; gap:12px; margin-top:34px; }
     .outcome-row { display:flex; gap:13px; align-items:flex-start; }
@@ -64,6 +68,9 @@
     .fine { margin:12px 0 0; color:var(--muted); font-size:.79rem; }
     .boundary { margin-top:18px; padding:14px 16px; border-left:4px solid var(--red); background:#fff5f2; color:#63332d; font-size:.9rem; }
     section { padding-top:76px; }
+    table.compare { width:100%; border-collapse:collapse; margin:16px 0; font-size:.95rem; }
+    table.compare th, table.compare td { border:1px solid var(--line, rgba(128,128,128,.35)); padding:10px 12px; text-align:left; vertical-align:top; }
+    table.compare caption { text-align:left; color:var(--muted, #6b7280); padding-bottom:6px; }
     h2 { margin:0 0 14px; font-size:clamp(1.8rem,3.5vw,2.8rem); letter-spacing:-.035em; }
     .section-lede { max-width:680px; color:var(--muted); }
     .steps { display:grid; grid-template-columns:repeat(3,1fr); gap:14px; margin-top:28px; }
@@ -115,6 +122,7 @@
   <meta http-equiv="origin-trial" content="A06wj3yXAwOhT5Cd5WYdVQotlYa/OID3SW099ZQB+cs9eHeJmtH1yHudLwqDKZ7y43tQvLB4TfM/pjmUa7aJNQsAAAB4eyJvcmlnaW4iOiJodHRwczovL3d3dy50aHVtYmdhdGUuYXBwOjQ0MyIsImZlYXR1cmUiOiJXZWJNQ1AiLCJleHBpcnkiOjE4MDYzNjQ4MDAsImlzU3ViZG9tYWluIjp0cnVlLCJpc1RoaXJkUGFydHkiOnRydWV9" />
   <script src="/js/webmcp.js" defer></script>
   <script src="/js/buyer-intent.js" defer></script>
+  <script src="/js/connect-panel.js" defer></script>
 </head>
 <body>
   <nav>
@@ -137,31 +145,61 @@
   <main class="shell">
     <div class="hero">
       <div>
-        <div class="eyebrow">Free local gates. Optional Pro features.</div>
-        <h1>Stop paying for the same AI mistake twice.</h1>
-        <p class="lede">Free local CLI, or self-serve Pro. Choose the plan that fits your workflow.</p>
+        <div class="eyebrow">Claude Code guardrails. Free local gates, optional Pro.</div>
+        <h1>Get warned before Claude Code repeats a mistake you already paid for.</h1>
+        <p class="audience" id="pricing-audience"><strong>Who it's for:</strong> Claude Code users whose agent has already broken something once. The local CLI is free and stays free.</p>
+        <p class="lede">Free local gates for Claude Code, or self-serve Pro. Choose the plan that fits your workflow.</p>
+
+        <figure class="gate-demo" id="gate-demo">
+          <video id="gate-demo-video" width="960" height="722" controls autoplay muted loop playsinline preload="auto" poster="/media/thumbgate-gate-demo-poster.jpg" aria-label="Recording: Claude Code deletes a folder, gets thumbs-down three times, and the fourth session is blocked by the gate">
+            <source src="/media/thumbgate-gate-demo.mp4" type="video/mp4">
+          </video>
+          <figcaption>Real 58-second run with <code>THUMBGATE_STRICT_ENFORCEMENT=1</code>: three thumbs-downs, then the fourth attempt is denied. A reworded delete is not caught. <a href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/demo/gate-demo/README.md" target="_blank" rel="noopener">How it was recorded</a>.</figcaption>
+        </figure>
 
         <div class="outcome">
-          <div class="outcome-row"><span class="tick">✓</span><span>Pro: recall, dashboard, adapters, and exports.</span></div>
-          <div class="outcome-row"><span class="tick">✓</span><span><strong>Free local evaluate:</strong> <code>npx thumbgate init</code> — first hard gate usually minutes after install.</span></div>
+          <div class="outcome-row"><span class="tick">✓</span><span>Pro: Claude Code recall, dashboard, and exports.</span></div>
+          <div class="outcome-row"><span class="tick">✓</span><span><strong>Free local evaluate:</strong> <code>npx thumbgate init</code>. Secret leaks and catastrophic commands (force-push, reset --hard, rm -rf on home or root, DROP TABLE) are denied from the start; other flagged actions warn.</span></div>
           <div class="outcome-row"><span class="tick">✓</span><span>Team and enterprise subscriptions are not available through self-serve checkout. Compare the free CLI and individual Pro software features before choosing.</span></div>
         </div>
       </div>
+
+      <div id="connect-panel" aria-label="Connect ThumbGate to your agent"></div>
 
       <div class="offer-grid" id="buy">
         <aside id="enterprise-gate" class="card pro-card" data-primary-checkout>
             <h2>ThumbGate Pro</h2>
             <div class="price">$__PRO_PRICE_DOLLARS__<span>/month</span></div>
             <p>__PRO_PRICE_LABEL__</p>
-            <p>Pro adds recall, dashboard, adapters, and exports. The free local CLI includes local capture and pre-action gates.</p>
+            <p>Pro adds recall, dashboard, and exports for Claude Code. The free local CLI includes local capture and PreToolUse gates.</p>
             <a class="button button-primary" href="/checkout/pro" data-offer-link data-value="__PRO_PRICE_DOLLARS__" data-revenue-cta data-cta-id="pricing_pro_checkout" data-cta-placement="offers" data-plan-id="pro">Get Pro</a>
+            <p class="annual-option" id="pro-annual">Or pay yearly: <strong>$149/year</strong> (about $12.42/month, saves $79 against twelve monthly payments). <a href="/checkout/pro?billing_cycle=annual" data-offer-link data-value="149" data-revenue-cta data-cta-id="pricing_pro_annual_checkout" data-cta-placement="offers" data-plan-id="pro_annual">Get Pro yearly</a></p>
             <p><a href="/install">Start with the free CLI</a></p>
           </aside>
       </div>
     </div>
 
+    <section id="free-vs-pro"><h2>Free vs Pro</h2>
+      <p>Strict blocking of catastrophic commands is free. Pro is about memory.</p>
+      <table class="compare">
+        <caption>Free and Pro, from the license checks in the code</caption>
+        <thead><tr><th>Feature</th><th>Free</th><th>Pro</th></tr></thead>
+        <tbody>
+          <tr><th>Blocked by default: force-push, <code>git reset --hard</code>, <code>git clean -f</code>, <code>rm -rf</code> on home or root, <code>DROP TABLE</code></th><td>Yes</td><td>Yes</td></tr>
+          <tr><th>Gate blocks per day (strict mode)</th><td>Unlimited</td><td>Unlimited</td></tr>
+          <tr><th>Learned rules from your thumbs-down that stay active (warn; block in strict mode)</th><td>3</td><td>All</td></tr>
+          <tr><th>Recall of past lessons</th><td>No</td><td>Yes</td></tr>
+          <tr><th>Lesson search</th><td>No</td><td>Yes</td></tr>
+          <tr><th>Multi-hop recall, synthetic DPO pairs</th><td>No</td><td>Yes</td></tr>
+          <tr><th>Team-shared rules</th><td>Coming</td><td>Coming</td></tr>
+          <tr><th>Lessons synced across machines</th><td>Coming</td><td>Coming</td></tr>
+          <tr><th>Audit history for managers</th><td>Coming</td><td>Coming</td></tr>
+        </tbody>
+      </table>
+    </section>
+
     <section id="value"><h2>Free local protection. Pro recall.</h2>
-      <p>Install the free CLI with <code>npx thumbgate init</code>. Upgrade when you need recall, dashboard, adapters, and exports.</p>
+      <p>Install the Claude Code plugin, then run <code>npx thumbgate init --agent claude</code>. Upgrade when you need recall, dashboard, and exports.</p>
       <p>Pro: __PRO_PRICE_LABEL__. <a href="/checkout/pro">Get Pro</a>.</p>
       <p><a href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md">Read verification evidence</a>.</p>
       <p>Shared hosting, SSO, compliance packaging, and organization-wide rollout are not generally available.</p>
@@ -172,6 +210,13 @@
     <div class="shell footer-inner">
       <span>ThumbGate · Local AI-agent gates</span>
       <div class="footer-links"><a href="/support">Support</a><a href="/terms">Terms</a><a href="/privacy">Privacy</a><a href="/third-party-notices">Third-Party Notices</a><a href="/llm-context.md">LLM context</a><a href="/dashboard">Subscriber login</a><a href="/portal">Billing portal</a></div>
+    </div>
+    <div class="shell" data-also-by-igor style="margin-top:12px;font-size:14px;">
+      <strong>Also by Igor</strong>
+      <ul style="list-style:none;margin:6px 0 0;padding:0;">
+        <li><a href="https://macyolosafeguards.io/?utm_source=thumbgate" rel="noopener">Mac YOLO Safeguards</a>: Free menu bar app that cleans up what coding agents leave running on your Mac.</li>
+        <li><a href="https://dayglass.io/?utm_source=thumbgate" rel="noopener">Dayglass</a>: Private AI memory for your Mac calls and work, no meeting bot.</li>
+      </ul>
     </div>
     <div class="shell" style="margin-top:12px;font-size:12px;color:#6b7280;text-align:center;">
       Anthropic, Claude, OpenAI, ChatGPT, Cursor, Codex, Perplexity, Hermes, MCP, GitHub, Google, Nvidia, Railway, Stripe, Supabase, PostHog, and Plausible are trademarks of their respective owners. ThumbGate is an independent product.

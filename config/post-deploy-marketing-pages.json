@@ -4,7 +4,7 @@
   "pages": [
     {
       "route": "/",
-      "sentinel": "One repeated agent mistake. One configured gate.",
+      "sentinel": "Thumbs-down a Claude Code mistake once, and ThumbGate warns the next time it tries that command.",
       "description": "Home page hero (lifeblood \u2014 never regress)"
     },
     {
@@ -28,8 +28,8 @@
     },
     {
       "route": "/dashboard",
-      "sentinel": "ThumbGate Dashboard",
-      "description": "Dashboard demo (already enforced by /dashboard step; included here for symmetry with PR comment surface)"
+      "sentinel": "Sign in to ThumbGate",
+      "description": "A signed-out visit to /dashboard on the hosted site lands on the one sign-in page (since 19 Nov 2026); the signed-in dashboard is not covered by this signed-out check"
     },
     {
       "route": "/federal",

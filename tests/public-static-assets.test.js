@@ -91,6 +91,28 @@ test('GET /media/thumbgate-demo.gif serves the animated demo GIF without an API 
   assert.ok(Number(res.headers.get('content-length')) > 0);
 });
 
+test('GET /media/thumbgate-gate-demo.mp4 serves video/mp4 and answers Range requests (iOS Safari needs 206)', async () => {
+  const full = await fetch(`${origin}/media/thumbgate-gate-demo.mp4`, { method: 'HEAD' });
+  assert.equal(full.status, 200);
+  assert.equal(full.headers.get('content-type'), 'video/mp4');
+  assert.equal(full.headers.get('accept-ranges'), 'bytes');
+  const size = Number(full.headers.get('content-length'));
+  assert.ok(size > 1000);
+
+  const part = await fetch(`${origin}/media/thumbgate-gate-demo.mp4`, { headers: { Range: 'bytes=0-99' } });
+  assert.equal(part.status, 206);
+  assert.equal(part.headers.get('content-range'), `bytes 0-99/${size}`);
+  assert.equal((await part.arrayBuffer()).byteLength, 100);
+
+  const tail = await fetch(`${origin}/media/thumbgate-gate-demo.mp4`, { headers: { Range: 'bytes=-10' } });
+  assert.equal(tail.status, 206);
+  assert.equal((await tail.arrayBuffer()).byteLength, 10);
+
+  const bad = await fetch(`${origin}/media/thumbgate-gate-demo.mp4`, { headers: { Range: `bytes=${size + 5}-` } });
+  assert.equal(bad.status, 416);
+  assert.equal(bad.headers.get('content-range'), `bytes */${size}`);
+});
+
 test('GET /media/does-not-exist.gif returns 404', async () => {
   const res = await fetch(`${origin}/media/does-not-exist.gif`);
   assert.equal(res.status, 404);
@@ -146,7 +168,7 @@ test('landing page explains pre-action enforcement instead of passive logging', 
   assert.match(html, />WARN</);
   assert.match(html, />DENY</);
   assert.match(html, /Detected secret exfiltration and gate-process bypass attempts are denied by default/);
-  assert.match(html, /Matching destructive actions warn by default and deny in strict mode/);
+  assert.match(html, /Other matching destructive actions warn by default and deny in strict mode/);
 });
 
 test('homepage and pricing surfaces expose canonical and LLM context links', async () => {
@@ -1043,4 +1065,24 @@ test('GET /sitemap.xml includes the cloudflare-writeguard comparison page', asyn
   const entry = xml.match(/<url>\s*<loc>[^<]*\/compare\/cloudflare-writeguard<\/loc>[\s\S]*?<\/url>/);
   assert.ok(entry, 'compare/cloudflare-writeguard <url> block must exist');
   assert.match(entry[0], /<priority>0\.85<\/priority>/);
+});
+
+test('every URL in /sitemap.xml resolves locally (no 404s handed to crawlers)', async () => {
+  const xml = await (await fetch(`${origin}/sitemap.xml`)).text();
+  const paths = [...xml.matchAll(/<loc>([^<]+)<\/loc>/g)].map((m) => new URL(m[1]).pathname);
+  assert.ok(paths.length > 50, `expected a populated sitemap, got ${paths.length} entries`);
+  const broken = [];
+  for (const p of paths) {
+    const res = await fetch(`${origin}${p}`, { method: 'HEAD', redirect: 'manual' });
+    if (res.status === 404 || res.status >= 500) broken.push(`${res.status} ${p}`);
+  }
+  assert.deepEqual(broken, [], `sitemap lists pages that do not resolve:\n${broken.join('\n')}`);
+});
+
+test('GET /connectors serves the connectors page linked from /pricing', async () => {
+  const res = await fetch(`${origin}/connectors`);
+  assert.equal(res.status, 200);
+  assert.match(res.headers.get('content-type') || '', /text\/html/);
+  const html = await res.text();
+  assert.match(html, /<link rel="canonical" href="https:\/\/thumbgate\.ai\/connectors">/);
 });

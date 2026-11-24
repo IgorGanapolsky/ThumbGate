@@ -511,6 +511,58 @@ async function collectPaymentAttemptForensics(stripe, sessions, nowEpochSeconds,
   return rows;
 }
 
+/**
+ * Every completed or paid session on the account, newest first, with the
+ * buyer email masked. Answers "who actually paid, for what, through which
+ * site and webhook era" without exposing customer data.
+ */
+async function collectCompletedSessions(stripe, sessions = []) {
+  const completed = sessions.filter((s) => isCompletedSession(s)).slice(0, 50);
+  return Promise.all(completed.map(async (session) => {
+    let products = [];
+    try {
+      if (stripe.checkout.sessions.listLineItems) {
+        const items = await stripe.checkout.sessions.listLineItems(session.id, { limit: 5, expand: ['data.price.product'] });
+        products = (items?.data || []).map((item) => item.description || item.price?.product?.name || 'unknown');
+      }
+    } catch {
+      products = [];
+    }
+    let subscriptionStatus = null;
+    let invoicesPaid = null;
+    try {
+      if (typeof session.subscription === 'string' && stripe.subscriptions?.retrieve) {
+        const sub = await stripe.subscriptions.retrieve(session.subscription);
+        subscriptionStatus = sub?.status || null;
+        if (stripe.invoices?.list) {
+          const inv = await stripe.invoices.list({ subscription: session.subscription, limit: 20 });
+          invoicesPaid = (inv?.data || []).filter((i) => i.status === 'paid' && Number(i.amount_paid) > 0)
+            .map((i) => `${(Number(i.amount_paid) / 100).toFixed(2)} ${String(i.currency || '').toUpperCase()} ${new Date(i.created * 1000).toISOString().slice(0, 10)}`);
+        }
+      }
+    } catch {
+      subscriptionStatus = subscriptionStatus || 'lookup_failed';
+    }
+    const attribution = extractSessionAttribution(session);
+    return {
+      subscriptionStatus,
+      invoicesPaid,
+      createdAt: new Date(session.created * 1000).toISOString(),
+      status: session.status,
+      paymentStatus: session.payment_status,
+      mode: session.mode || null,
+      livemode: session.livemode === true,
+      amount: sessionAmountLabel(session),
+      successHost: sessionSuccessHost(session),
+      paymentLink: typeof session.payment_link === 'string' ? session.payment_link : null,
+      products,
+      source: attribution?.source || null,
+      plan: attribution?.planId || null,
+      buyer: maskEmail(getSessionEmail(session)),
+    };
+  }));
+}
+
 function classifyCheckoutFunnel({
   sessions = [],
   paymentIntents = [],
@@ -717,6 +769,7 @@ async function runDiagnostic({
     })
   );
 
+  const completedSessions = await collectCompletedSessions(stripe, sessions);
   const generatedAt = new Date();
   const nowEpochSeconds = Math.floor(generatedAt.getTime() / 1000);
   const sessionEvidence = summarizeSessionEvidence(sessions);
@@ -744,6 +797,7 @@ async function runDiagnostic({
     funnelDiagnosis,
     account,
     webhooks,
+    completedSessions,
     recentSessions: recentSessionDetail,
   };
 }
@@ -927,6 +981,18 @@ function renderMarkdown(report) {
     lines.push(`Webhooks: NOT AVAILABLE — ${report.webhooks.gap}`);
   }
   lines.push('');
+  lines.push('## Completed sessions (all time, buyer masked)');
+  lines.push('');
+  if (!report.completedSessions || report.completedSessions.length === 0) {
+    lines.push('_None._');
+  } else {
+    lines.push('| Created | Mode | Live | Amount | Success host | Payment link | Products | Source | Plan | Buyer | Subscription | Paid invoices |');
+    lines.push('| --- | --- | --- | ---: | --- | --- | --- | --- | --- | --- | --- | --- |');
+    for (const c of report.completedSessions) {
+      lines.push(`| ${c.createdAt} | ${c.mode || '—'} | ${c.livemode ? 'yes' : 'no'} | ${c.amount} | ${c.successHost} | ${c.paymentLink || '—'} | ${(c.products || []).join('; ') || '—'} | ${c.source || '—'} | ${c.plan || '—'} | ${c.buyer || '—'} | ${c.subscriptionStatus || '—'} | ${(c.invoicesPaid || []).join('; ') || '—'} |`);
+    }
+  }
+  lines.push('');
   lines.push('## Recent sessions (last 20)');
   lines.push('');
   lines.push('| Created | Status | Pay status | Amount | Identity evidence | Payment attempt | Source | Plan | PI error code | PI decline |');
@@ -1006,6 +1072,7 @@ module.exports = {
   summarizeRecentSegments,
   maskEmail,
   collectPaymentAttemptForensics,
+  collectCompletedSessions,
   countPossibleAutomationClusters,
   classifyCheckoutFunnel,
   runDiagnostic,

@@ -129,12 +129,24 @@ function launchLocalServer(options = {}) {
   return state;
 }
 
+function projectQuery(projectDir) {
+  let key = '';
+  try { key = require('./project-identity').resolveLocalProject(projectDir).projectKey; } catch { key = ''; }
+  return `${key ? `project=${encodeURIComponent(key)}&` : ''}projectDir=${encodeURIComponent(projectDir)}`;
+}
+
 function buildLinkState({
   ready,
   booting,
   origin,
   canBootstrap,
+  projectDir,
 }) {
+  // The thumb links carry the project so a click is recorded for the project the
+  // status line shows, not for whichever directory the local server started in.
+  const projectParam = projectDir ? `&projectDir=${encodeURIComponent(projectDir)}` : '';
+  // Dashboard and Lessons open pinned to this project, never the account-wide view.
+  const pinned = projectDir ? `?${projectQuery(projectDir)}` : '';
   if (ready) {
     return {
       state: 'ready',
@@ -142,10 +154,10 @@ function buildLinkState({
       lessonsLabel: 'Lessons',
       upLabel: '👍',
       downLabel: '👎',
-      dashboardUrl: `${origin}/dashboard`,
-      lessonsUrl: `${origin}/lessons`,
-      upUrl: `${origin}/feedback/quick?signal=up`,
-      downUrl: `${origin}/feedback/quick?signal=down`,
+      dashboardUrl: `${origin}/dashboard${pinned}`,
+      lessonsUrl: `${origin}/lessons${pinned}`,
+      upUrl: `${origin}/feedback/quick?signal=up${projectParam}`,
+      downUrl: `${origin}/feedback/quick?signal=down${projectParam}`,
     };
   }
 
@@ -194,7 +206,13 @@ async function getStatuslineLinks(options = {}) {
 
   const ready = allowLocalBootstrap ? await probe(origin, options) : false;
   if (ready) {
-    return buildLinkState({ ready: true, booting: false, origin, canBootstrap });
+    return buildLinkState({
+      ready: true,
+      booting: false,
+      origin,
+      canBootstrap,
+      projectDir: resolveProjectDir({ env, cwd: options.cwd || process.cwd() }),
+    });
   }
 
   const state = readRuntimeState({ env, home: homeDir });

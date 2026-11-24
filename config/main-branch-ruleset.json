@@ -14,31 +14,13 @@
   "rules": {
     "required_linear_history": true,
     "deletion": true,
-    "non_fast_forward": true,
-    "pull_request": {
-      "required_approving_review_count": 0,
-      "dismiss_stale_reviews_on_push": true,
-      "require_code_owner_review": false,
-      "require_last_push_approval": false,
-      "required_review_thread_resolution": true,
-      "allowed_merge_methods": [
-        "squash",
-        "rebase"
-      ]
-    },
-    "required_status_checks": {
-      "strict_required_status_checks_policy": true,
-      "do_not_enforce_on_create": false,
-      "contexts_from": "merge-quality-checks",
-      "additional_contexts": [
-        "pr-size"
-      ]
-    }
+    "non_fast_forward": true
   },
   "notes": [
     "Zero bypass_actors: no human, admin, or owner-token agent may skip rules via ruleset bypass.",
-    "Classic branch protection remains layered; this ruleset is the GitHub-preferred durable floor.",
-    "Status check contexts are sourced from config/merge-quality-checks.json requiredStatusCheckContexts.",
+    "2026-11-18: Igor ordered direct pushes to main (no pull request, no required status checks). Only required_linear_history, deletion and non_fast_forward remain.",
+    "Before-state (pull_request + required_status_checks) is saved in docs/ops/branch-protection-before-2026-11-18.json for restore.",
+    "Test workflows run on v* tags or workflow_dispatch; the pre-push hook runs the fast unit tests one file at a time.",
     "Do not add User or OrganizationAdmin bypass actors without CEO-approved policy change + tests."
   ]
 }

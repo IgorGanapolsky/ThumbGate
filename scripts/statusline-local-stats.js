@@ -13,10 +13,12 @@ const { resolveProjectDir } = require('./feedback-paths');
 try {
   const projectDir = resolveProjectDir({ cwd: process.cwd(), env: process.env });
   syncClaudeHistoryFeedback({ projectDir });
-  const scope = String(process.env.THUMBGATE_STATUSLINE_SCOPE || 'global').toLowerCase();
-  const stats = scope !== 'project' && shouldAggregateFeedback({ env: process.env })
+  // The status line is per project by default. Global totals mix every repo's
+  // entries and are opt-in with THUMBGATE_STATUSLINE_SCOPE=global.
+  const scope = String(process.env.THUMBGATE_STATUSLINE_SCOPE || 'project').toLowerCase();
+  const stats = scope === 'global' && shouldAggregateFeedback({ env: process.env })
     ? computeAggregateFeedbackStats({ projectDir, env: process.env })
-    : analyzeFeedback(undefined, { humanOnly: true });
+    : analyzeFeedback(undefined, { humanOnly: true, strictHuman: true });
   const payload = {
     ...normalizeStatsPayload(stats),
     aggregate: stats.aggregate || { enabled: false },
