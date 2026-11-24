@@ -154,4 +154,10 @@ test('ship-gate workflow reads policy from main and merges only the tested commi
   assert.doesNotMatch(wf, /APPROVE/, 'the gate must never approve a PR');
   assert.match(wf, /reviewThreads/);
   assert.match(wf, /pull_request_review:/, 'an approval must re-run the gate');
+  assert.match(wf, /format\('-label-\{0\}', github\.run_id\)/, 'gate label churn must not cancel a run');
+  assert.match(wf, /fromJSON\('\["do-not-merge","automerge","igor-review"\]'\)/, 'Igor control labels must not get the label-churn group');
+  assert.match(wf, /GH_TOKEN="\$MERGE_TOKEN" gh pr merge/, 'only the merge uses the PAT');
+  assert.doesNotMatch(wf, /GH_TOKEN:\s*\$\{\{\s*secrets\.GH_PAT/, 'labels and reads must not use the PAT');
+  const sweeper = fs.readFileSync(path.join(__dirname, '..', '.github', 'workflows', 'pr-stale-sweeper.yml'), 'utf8');
+  assert.match(sweeper, /prs="\$\(gh pr list [^\n]*--limit 1000/, 'steward re-dispatch must list every routine PR and fail loudly');
 });
