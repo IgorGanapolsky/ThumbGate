@@ -1092,7 +1092,7 @@ function startAlertDelivery(makeDeps, { intervalMs = 15 * 60 * 1000, firstCheckM
     try {
       const deps = makeDeps();
       const result = await collectAlerts(deps, AbortSignal.timeout(30000));
-      const firing = result.data.alerts.filter((alert) => alert.level !== 'info');
+      const firing = result.data.alerts.filter(ownerAlerts.isDeliverable);
       const state = readState(deps);
       const before = new Set(Array.isArray(state?.firing) ? state.firing : []);
       const added = firing.filter((alert) => !before.has(alert.id));
