@@ -55,7 +55,7 @@ test('the project picker loads with the first stats render, not after the 10 sec
 test('a bare dashboard URL opens on a project and All projects is an explicit project=all choice', () => {
   const source = fs.readFileSync(path.join(__dirname, '..', 'public', 'project-switcher.js'), 'utf8');
   assert.match(source, /var explicit = selected !== null;/);
-  assert.match(source, /if \(!explicit\) \{/);
+  assert.match(source, /if \(!explicit && !inNonProject\) \{/);
   assert.match(source, /window\.location\.replace\(next\.href\)/);
   assert.match(source, /next\.searchParams\.set\('project', select\.value \|\| 'all'\)/);
 });
@@ -69,6 +69,42 @@ test('every dashboard section heading carries its tab name, with the descriptive
   }
   assert.ok(tabs.length >= 7);
   assert.match(html, /\.tab-content\{scroll-margin-top:\d+px\}/);
+});
+
+test('a folder with no git remote is not a project, a folder with one is', () => {
+  const { execFileSync } = require('node:child_process');
+  const { isProjectFolder } = require('../scripts/project-identity');
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'tg-folder-'));
+  try {
+    const plain = path.join(root, 'plain');
+    fs.mkdirSync(plain);
+    assert.equal(isProjectFolder(plain, { machineId: 'test-machine' }), false);
+    const repo = path.join(root, 'repo');
+    fs.mkdirSync(repo);
+    execFileSync('git', ['-C', repo, 'init', '-q']);
+    assert.equal(isProjectFolder(repo, { machineId: 'test-machine' }), false, 'a git repo with no remote is not a project');
+    execFileSync('git', ['-C', repo, 'remote', 'add', 'origin', 'https://github.com/example/clarity-test.git']);
+    assert.equal(isProjectFolder(repo, { machineId: 'test-machine' }), true);
+    assert.equal(isProjectFolder(path.join(root, 'missing'), { machineId: 'test-machine' }), false);
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('the project catalog route reports whether the dashboard folder is a project', () => {
+  const server = fs.readFileSync(path.join(__dirname, '..', 'src', 'api', 'server.js'), 'utf8');
+  assert.match(server, /projectDirIsProject: catalogDir \? isProjectFolder\(catalogDir\) : null/);
+});
+
+test('a bare dashboard URL for a folder that is not a project opens on All projects and says so', () => {
+  const source = fs.readFileSync(path.join(__dirname, '..', 'public', 'project-switcher.js'), 'utf8');
+  assert.match(source, /data\.projectDirIsProject === false/);
+  assert.match(source, /\(not a project\)/);
+  assert.match(source, /you are in/);
+  // The most-recent-project redirect only runs when the folder is a real project (or unknown).
+  assert.match(source, /if \(!explicit && !inNonProject\) \{/);
+  // The page's own projectDir is passed so the server judges the folder the dashboard was opened for.
+  assert.match(source, /\/v1\/projects' \+ folderQuery/);
 });
 
 test('the picker placeholder names the project folder instead of saying "Selected project"', () => {
