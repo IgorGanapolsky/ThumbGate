@@ -105,7 +105,10 @@ function resolveLocalProjectUncached(cwd = process.cwd(), options = {}) {
   if (canonicalRemote(remote)) return projectFromRemote(remote);
   // Common git metadata gives remote-less worktrees the identity of their repository.
   if (common && path.basename(common) === '.git') root = path.dirname(common);
-  return { projectKey: `local_${hash(`${machineIdentity(options)}\0${root}`)}`, projectName: safeProjectName(path.basename(root), 'Local project'), identitySource: 'local' };
+  // A session started in the home folder belongs to no project; naming it after the user's login reads like a project called "<username>".
+  const homeFolder = (() => { try { return fs.realpathSync(os.homedir()); } catch { return null; } })();
+  const projectName = homeFolder && root === homeFolder ? 'Home folder (no project)' : safeProjectName(path.basename(root), 'Local project');
+  return { projectKey: `local_${hash(`${machineIdentity(options)}\0${root}`)}`, projectName, identitySource: 'local' };
 }
 function legacyAlias(record = {}, options = {}) {
   const registry = options.recordType === 'agent-registry.jsonl' || record.recordType === 'agent-registry.jsonl';
