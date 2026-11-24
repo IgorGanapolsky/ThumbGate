@@ -42,8 +42,6 @@ function contextProjectPrefix(row) {
   return match ? match[1].trim().toLowerCase() : null;
 }
 
-const PERSON_STATED = /(?:explicit\s+(?:user\s+)?thumbs?[- ]?up|\b(?:user|igor)\s+(?:gave\s+(?:a\s+)?)?(?:thumbs?[- ]?up|liked|said\s+['"]?great)|thumbs up from cli)/i;
-
 // Only a thumbs-up can be auto-made this way: "found a successful pattern" is the sync's own guess, and a
 // positive row with no text that the system logged as no-action names nothing. A distilled failure quotes the
 // person's own message, so it stays.
@@ -115,12 +113,10 @@ function collectHumanRows(options = {}) {
   // A row written before project tracking carries no key, so it proves nothing about
   // which project it belongs to. It counts only when the row itself shows the person
   // typed the thumb (the user-prompt hook tag, or a history-sync scrape beside it).
-  // The context may also say plainly that a person gave it ("Explicit user thumbs-up",
-  // "Igor said 'great'", "Thumbs up from CLI"). That text is the agent's own wording, so it
-  // is weaker than the tag, but it is the only trace the older rows carry.
+  // Text in the context ("Explicit user thumbs-up") is the agent's own wording and proves nothing.
   const hasPersonEvidence = (row) => {
     const tags = Array.isArray(row.tags) ? row.tags : [];
-    return tags.includes('user-prompt-thumbs') || corroborated(row) || PERSON_STATED.test(String(row.context || ''));
+    return tags.includes('user-prompt-thumbs') || corroborated(row);
   };
   const counted = [];
   for (const { row, unassigned } of mineRows) {

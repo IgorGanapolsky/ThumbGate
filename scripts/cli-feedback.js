@@ -13,7 +13,8 @@
  *   node scripts/cli-feedback.js down "what went wrong"
  */
 
-const { captureFeedback, analyzeFeedback } = require('./feedback-loop');
+const { captureFeedback } = require('./feedback-loop');
+const { computeHumanCounts } = require('./statusline-human-counts');
 const { loadOptionalModule } = require('./private-core-boundary');
 // Keep the optional distiller from breaking the public package.
 const { distillFromHistory } = loadOptionalModule('./history-distiller', () => ({
@@ -73,14 +74,14 @@ function processInlineFeedback({ signal, context, chatHistory, whatWentWrong, wh
   // 3. Get the most recent lesson and stats
   const recentLesson = getRecentLesson();
   const lessonStats = getLessonStats();
-  const feedbackStats = analyzeFeedback(undefined, { humanOnly: true });
+  // The same counter the status line and the dashboard headline use, so the three surfaces cannot disagree.
+  const counts = computeHumanCounts({ cwd: process.cwd() });
   const stats = {
     ...lessonStats,
-    total: feedbackStats.total,
-    positive: feedbackStats.totalPositive,
-    negative: feedbackStats.totalNegative,
-    rawTotal: feedbackStats.rawTotal,
-    excludedTotal: feedbackStats.excludedTotal,
+    total: counts.up + counts.down,
+    positive: counts.up,
+    negative: counts.down,
+    notCounted: counts.notCounted,
   };
 
   // 4. If the user wrote an explicit "never …" / "always …" directive, surface
