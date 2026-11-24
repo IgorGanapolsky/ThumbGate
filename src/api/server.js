@@ -7561,6 +7561,13 @@ function createUnscopedApiServer({ ownerAdminDependencies = {} } = {}) {
   const humanReviewerConfig = getHumanReviewerConfig(expectedApiKey, expectedOperatorKey);
 
   const adminRuntime = ownerAdmin.createRuntimeObservations();
+  // Owner alerts to the owner's own incoming webhook, only when THUMBGATE_OWNER_ALERT_WEBHOOK is set. Not under tests.
+  if (!process.env.NODE_TEST_CONTEXT) ownerAdmin.startAlertDelivery(() => withoutDataScope(() => ({
+    feedbackDir: getFeedbackPaths().FEEDBACK_DIR, buildMetadata: BUILD_METADATA, runtime: adminRuntime,
+    hashDataIdentity, buildHostedTenantIdentity,
+    health: () => ({ version: pkg.version, buildSha: BUILD_METADATA.buildSha, uptime: process.uptime() }),
+    ...ownerAdminDependencies,
+  })));
   const observedRequests = new WeakSet();
   const eventBus = new EventEmitter();
   eventBus.setMaxListeners(200);

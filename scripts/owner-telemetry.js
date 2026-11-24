@@ -211,4 +211,31 @@ async function readTrafficWindow(options) {
   };
 }
 
-module.exports = { scanFile, scanTelemetry, readTrafficWindow, DEFAULT_MAX_BYTES };
+// Weekly retention for CLI installs. Week 0 is the newest 7 days. An install joins the cohort of the oldest week it was
+// seen in, and `retained[k]` counts the cohort's installs seen again k weeks later. The oldest cohort also holds installs
+// that began before the read window, so it is marked `includesOlder`.
+async function readInstallCohorts({ weeks = 8, now = Date.now(), ...options }) {
+  const seen = new Map();
+  const meta = await scanTelemetry({
+    ...options,
+    days: weeks * 7,
+    now,
+    onEntry(entry, time) {
+      if (!isCli(entry) || !entry.installId || isOwnOrCiInstall(entry)) return;
+      const week = Math.min(weeks - 1, Math.max(0, Math.floor((now - time) / (7 * DAY_MS))));
+      const set = seen.get(entry.installId) || new Set();
+      set.add(week);
+      seen.set(entry.installId, set);
+    },
+  });
+  const cohorts = [];
+  for (let first = weeks - 1; first >= 0; first -= 1) {
+    const members = [...seen.values()].filter((set) => Math.max(...set) === first);
+    const retained = [];
+    for (let k = 0; k <= first; k += 1) retained.push(members.filter((set) => set.has(first - k)).length);
+    cohorts.push({ weekStart: new Date(now - (first + 1) * 7 * DAY_MS).toISOString().slice(0, 10), weeksAgo: first, size: members.length, retained, includesOlder: first === weeks - 1 });
+  }
+  return { weeks, partial: meta.partial, cohorts };
+}
+
+module.exports = { scanFile, scanTelemetry, readTrafficWindow, readInstallCohorts, DEFAULT_MAX_BYTES };

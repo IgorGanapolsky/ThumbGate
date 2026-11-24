@@ -10,7 +10,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
-const { readTrafficWindow } = require('../scripts/owner-telemetry');
+const { readTrafficWindow, readInstallCohorts } = require('../scripts/owner-telemetry');
 const { monthlyRecurring } = require('../scripts/owner-admin');
 const { sanitizeTelemetryPayload } = require('../scripts/telemetry-analytics');
 
@@ -121,4 +121,105 @@ test('a missing usage source says so instead of showing zero', () => {
 test('Analytics shows the weekly comparison, usage and installs per day', () => {
   const page = renderTexts('analytics', { usage, weekOverWeek, daily: [{ date: '2026-11-23', visitors: 3, activeInstalls: 2, pageViews: 4, ctaClicks: 0, checkoutStarts: 0, checkoutPaidConfirmations: 0 }], reconciliation: { status: 'ok', complete: true } });
   for (const wanted of ['Past 7 days against the 7 days before', 'Active installs, past 7 days', 'Active CLI installs']) assert.ok(page.includes(wanted), 'missing: ' + wanted);
+});
+
+const { evaluateAlerts, createAlertTracker, formatAlertMessage } = require('../scripts/owner-alerts');
+
+test('alert rules fire on real trouble, worst first, each with an action', () => {
+  const alerts = evaluateAlerts({
+    report: { errors: { lastHour: 7 }, uptime: { percent: 99.9 }, webhooks: { failures24h: 2 }, disk: { percent: 90 }, signIn: { failed24h: 1 } },
+    money: {
+      reasons: {},
+      weekOverWeek: { last7: { realVisitors: 8, checkoutStarts: 1, activeInstalls: 5 }, prior7: { realVisitors: 40, checkoutStarts: 6, activeInstalls: 6 } },
+      usage30d: { activeInstalls30d: 20, activatedInstalls: 2 },
+      cancellingAtPeriodEnd: 1,
+      recurring30d: { churnedSubscriptions: 0 },
+    },
+  });
+  const ids = alerts.map((a) => a.id);
+  assert.deepEqual(ids.slice(0, 2).sort(), ['server_errors', 'stripe_webhooks']);
+  for (const id of ['disk', 'visitors_drop', 'checkout_drop', 'activation_low', 'cancelling']) assert.ok(ids.includes(id), id);
+  for (const id of ['uptime', 'sign_in', 'installs_drop', 'churned']) assert.ok(!ids.includes(id), id + ' should stay quiet');
+  for (const alert of alerts) assert.ok(alert.text && alert.action, alert.id);
+});
+
+test('small numbers never raise a drop alert, and a healthy console raises nothing', () => {
+  const quiet = evaluateAlerts({
+    report: { errors: { lastHour: 0 }, uptime: { percent: 100 }, webhooks: { failures24h: 0 }, disk: { percent: 20 }, signIn: { failed24h: 0 } },
+    money: { reasons: {}, weekOverWeek: { last7: { realVisitors: 1, checkoutStarts: 0, activeInstalls: 0 }, prior7: { realVisitors: 3, checkoutStarts: 2, activeInstalls: 3 } }, usage30d: { activeInstalls30d: 3, activatedInstalls: 0 }, cancellingAtPeriodEnd: 0 },
+  });
+  assert.deepEqual(quiet, []);
+});
+
+test('an unreadable source is its own alert instead of a quiet zero', () => {
+  const alerts = evaluateAlerts({ money: { reasons: { payingCustomers: 'Stripe did not answer in time', visitors: 'telemetry read failed' } } });
+  assert.deepEqual(alerts.map((a) => a.id), ['stripe_unreadable', 'telemetry_unreadable']);
+});
+
+test('delivery sends an alert once, when it first appears', () => {
+  const tracker = createAlertTracker();
+  const a = { id: 'disk', text: 'x', action: 'y', level: 'amber' };
+  const b = { id: 'server_errors', text: 'z', action: 'w', level: 'red' };
+  assert.deepEqual(tracker.fresh([a]), [a]);
+  assert.deepEqual(tracker.fresh([a]), []);
+  assert.deepEqual(tracker.fresh([a, b]), [b]);
+  assert.deepEqual(tracker.fresh([]), []);
+  assert.deepEqual(tracker.fresh([a]), [a], 'an alert that cleared and came back is new again');
+  assert.match(formatAlertMessage([b]).message, /^\[urgent\] z w/);
+});
+
+test('Today opens with alerts, then this week, renewals and churn, with the detail folded away', () => {
+  const page = renderTexts('money', { mrr: { USD: 1900 }, cancellingAtPeriodEnd: 0, recurring30d: { renewalRevenue: { USD: 3800 }, renewalInvoices: 2, churnedSubscriptions: 1, churnRate: 0.25, complete: true }, usage30d: usage, weekOverWeek, payingCustomers: 0, reasons: {}, notes: [] });
+  const order = ['Needs you', 'This week at a glance', 'Product usage · CLI installs, past 30 days', 'Biggest evidenced obstacle', 'Money detail: customers, checkouts, revenue, traffic and leads'].map((t) => page.indexOf(t));
+  assert.ok(order.every((i) => i >= 0), order.join(','));
+  assert.deepEqual([...order].sort((x, y) => x - y), order, 'in that order');
+  for (const wanted of ['$38.00', 'Renewal revenue, past 30 days (2 renewals)', '25%', 'Churn, past 30 days (1 cancelled)']) assert.ok(page.includes(wanted), 'missing: ' + wanted);
+});
+
+test('install cohorts: each install joins the week it was first seen, and later weeks count who came back', async () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'tg-cohort-'));
+  fs.writeFileSync(path.join(dir, 'telemetry-pings.jsonl'), [
+    cli(20, 'cli_init', 'a'), cli(13, 'cli_capture', 'a'), cli(1, 'cli_stats', 'a'),
+    cli(19, 'cli_init', 'b'),
+    cli(2, 'cli_init', 'c'),
+    cli(2, 'cli_init', 'mine', { visitorType: 'owner' }),
+    cli(70, 'cli_init', 'too_old'),
+  ].join('\n') + '\n');
+  try {
+    const { cohorts } = await readInstallCohorts({ feedbackDir: dir, weeks: 8, now: NOW });
+    const week2 = cohorts.find((c) => c.weeksAgo === 2);
+    assert.equal(week2.size, 2, 'a and b were first seen 2 weeks ago');
+    assert.deepEqual(week2.retained, [2, 1, 1], 'a came back in each later week, b never did');
+    assert.deepEqual(cohorts.find((c) => c.weeksAgo === 0).retained, [1], 'c is new this week; owner left out');
+    assert.equal(cohorts.reduce((n, c) => n + c.size, 0), 3, 'the 70-day-old install is outside the 8-week read');
+    assert.equal(cohorts[0].includesOlder, true);
+  } finally { fs.rmSync(dir, { recursive: true, force: true }); }
+});
+
+test('Growth shows the cohort table and Today shows where buyers come from', () => {
+  const growth = renderTexts('analytics', { cohorts: { cohorts: [{ weekStart: '2026-11-03', weeksAgo: 2, size: 4, retained: [4, 2, 1], includesOlder: false }, { weekStart: '2026-11-17', weeksAgo: 0, size: 3, retained: [3], includesOlder: false }] }, reconciliation: { status: 'ok', complete: true } });
+  for (const wanted of ['Install retention by week first seen', '50% (2)', '25% (1)']) assert.ok(growth.includes(wanted), 'missing: ' + wanted);
+  const today = renderTexts('money', { channels: [{ channel: 'reddit', checkoutStarts30d: 5, paidCustomers: 1, revenue30d: { USD: 1900 } }], reasons: {}, notes: [] });
+  for (const wanted of ['Where buyers come from', 'reddit', '$19.00']) assert.ok(today.includes(wanted), 'missing: ' + wanted);
+});
+
+test('alert delivery sends a one-time confirmation, then each new alert once', async () => {
+  const { startAlertDelivery, createRuntimeObservations } = require('../scripts/owner-admin');
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'tg-deliver-'));
+  const sent = [];
+  const makeDeps = () => ({ feedbackDir: dir, runtime: createRuntimeObservations(), health: () => ({ version: 'x', buildSha: null, uptime: 1 }), getStripeClient: () => { throw new Error('STRIPE_SECRET_KEY is missing.'); }, getOwnerEmails: () => [], moneyCacheMs: 0, lastGoodMs: 0, telemetryCacheMs: 0, stripeDeadlineMs: 200, getBillingSummaryLive: async () => ({ error: 'off' }) });
+  const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+  try {
+    const timer = startAlertDelivery(makeDeps, { intervalMs: 60000, firstCheckMs: 10, send: async (m) => { sent.push(m); } });
+    for (let i = 0; i < 100 && sent.length < 2; i += 1) await wait(50);
+    clearInterval(timer);
+    assert.equal(sent[0].title, 'ThumbGate: alert delivery is on');
+    assert.match(sent[1].message, /Stripe could not be read: Stripe key missing/);
+    assert.ok(fs.existsSync(path.join(dir, 'owner-alert-delivery.json')));
+    sent.length = 0;
+    const again = startAlertDelivery(makeDeps, { intervalMs: 60000, firstCheckMs: 10, send: async (m) => { sent.push(m); } });
+    for (let i = 0; i < 100 && sent.length < 1; i += 1) await wait(50);
+    clearInterval(again);
+    assert.equal(sent.some((m) => m.title === 'ThumbGate: alert delivery is on'), false, 'the confirmation is sent once ever');
+  } finally { fs.rmSync(dir, { recursive: true, force: true }); }
 });

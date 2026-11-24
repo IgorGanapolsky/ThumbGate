@@ -518,8 +518,9 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
     // 693 -> 695 (2026-11-19): public/preview.html and public/js/connect-panel.js (free preview, connect panel) (+2).
     // 695 -> 696 (2026-11-19): scripts/first-block-upsell.js (required by scripts/gates-engine.js, first-block upgrade line) (+1).
     // 696 -> 700 (2026-11-19): scripts/owner-telemetry.js, ops-log.js, ops-report.js, checkout-session-count.js (required by owner-admin.js and server.js) (+4).
-    manifest.fileCount <= 700,
-    `npm package should stay <= 700 files, got ${manifest.fileCount}`
+    // 700 -> 701 (2026-11-24): scripts/owner-alerts.js (required by the packaged scripts/owner-admin.js).
+    manifest.fileCount <= 701,
+    `npm package should stay <= 701 files, got ${manifest.fileCount}`
   );
   // Ceiling bumped from 2.75 MB → 2.85 MB (2026-04-16) to accommodate the
   // incremental review-delta demo content in public/dashboard.html landing
@@ -790,8 +791,10 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // Bumped 10.296 MB -> 10.45 MB (2026-11-19): the owner console shipped without the modules it requires
   // (scripts/owner-admin.js -> owner-telemetry.js, ops-log.js, ops-report.js, checkout-session-count.js), which
   // failed the 1.40.4 publish. Adding those four (+26 KB) on top of the console and Money/Observability work.
-  manifest.unpackedSize <= 10_450_000,
-  `npm package should stay <= 10.45 MB unpacked, got ${manifest.unpackedSize}`
+  // Bumped 10.45 MB -> 10.5 MB (2026-11-24): scripts/owner-admin.js also requires owner-alerts.js,
+  // which were missing from the tarball and failed the 1.40.11 publish. Adding it (+6 KB) on top of the Today tab.
+  manifest.unpackedSize <= 10_500_000,
+  `npm package should stay <= 10.5 MB unpacked, got ${manifest.unpackedSize}`
 );
 
   for (const file of requiredRuntimeFiles) {

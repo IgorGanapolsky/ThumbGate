@@ -813,7 +813,7 @@ test('inspectRepositoryRulesets handles API failure gracefully', () => {
   assert.equal(result.activeRulesets.length, 0);
 });
 
-test('sweepStalePrs skips dependabot/* and trunk-merge/*, closes non-draft red >24h and drafts idle >3d without deleting branches, and supports dryRun', () => {
+test('sweepStalePrs never closes: rebases behind branches, labels red/idle/conflicting PRs once, skips dependabot and holds, supports dryRun', () => {
   const fs = require('node:fs');
   const path = require('node:path');
   const { classifyStalePr, sweepStalePrs } = require('../scripts/pr-manager');
@@ -862,13 +862,48 @@ test('sweepStalePrs skips dependabot/* and trunk-merge/*, closes non-draft red >
       updatedAt: '2026-11-06T12:00:00Z',
       statusCheckRollup: [],
     },
+    {
+      number: 106,
+      title: 'fix: behind main',
+      headRefName: 'fix/behind',
+      baseRefName: 'main',
+      isDraft: true,
+      updatedAt: '2026-11-01T12:00:00Z',
+      mergeStateStatus: 'BEHIND',
+      statusCheckRollup: [],
+    },
+    {
+      number: 107,
+      title: 'fix: conflicting',
+      headRefName: 'fix/conflict',
+      baseRefName: 'main',
+      isDraft: false,
+      mergeStateStatus: 'DIRTY',
+      mergeable: 'CONFLICTING',
+      updatedAt: '2026-11-06T12:00:00Z',
+      statusCheckRollup: [],
+    },
   ];
 
   assert.equal(classifyStalePr(prs[0], { nowMs }).action, 'skip');
   assert.equal(classifyStalePr(prs[1], { nowMs }).action, 'skip');
-  assert.equal(classifyStalePr(prs[2], { nowMs }).reason, 'red_checks_over_24h');
-  assert.equal(classifyStalePr(prs[3], { nowMs }).reason, 'draft_idle_over_3d');
+  assert.deepEqual(
+    [classifyStalePr(prs[2], { nowMs }).reason, classifyStalePr(prs[2], { nowMs }).label],
+    ['red_checks_over_24h', 'needs-fix'],
+  );
+  assert.deepEqual(
+    [classifyStalePr(prs[3], { nowMs }).reason, classifyStalePr(prs[3], { nowMs }).label],
+    ['draft_idle_over_3d', 'stale'],
+  );
   assert.equal(classifyStalePr(prs[4], { nowMs }).action, 'keep');
+  assert.equal(classifyStalePr(prs[5], { nowMs }).action, 'update_branch');
+  assert.equal(classifyStalePr(prs[6], { nowMs }).label, 'needs-rebase');
+
+  // Already labelled: no second comment.
+  assert.equal(classifyStalePr({ ...prs[2], labels: [{ name: 'needs-fix' }] }, { nowMs }).action, 'keep');
+  assert.equal(classifyStalePr({ ...prs[3], labels: ['stale'] }, { nowMs }).action, 'keep');
+  // Igor's hold label wins.
+  assert.equal(classifyStalePr({ ...prs[5], labels: ['do-not-merge'] }, { nowMs }).action, 'skip');
 
   const dryCalls = [];
   const drySummary = sweepStalePrs({ dryRun: true, nowMs }, (args) => {
@@ -876,11 +911,11 @@ test('sweepStalePrs skips dependabot/* and trunk-merge/*, closes non-draft red >
     return { status: 0, stdout: JSON.stringify(prs), stderr: '' };
   });
   assert.equal(drySummary.dryRun, true);
-  assert.equal(drySummary.closedCount, 2);
+  assert.equal(drySummary.actedCount, 4);
+  assert.equal(drySummary.closedCount, 0);
   assert.equal(drySummary.skippedCount, 2);
   assert.equal(drySummary.keptCount, 1);
-  assert.equal(dryCalls.length, 1, 'dryRun must only list PRs and never comment or close');
-
+  assert.equal(dryCalls.length, 1, 'dryRun must only list PRs and never mutate');
   assert.ok(dryCalls[0].includes('1000'), 'sweep must list every open PR, not only the first 100');
 
   const liveCalls = [];
@@ -895,18 +930,31 @@ test('sweepStalePrs skips dependabot/* and trunk-merge/*, closes non-draft red >
     }
     return { status: 0, stdout: 'ok', stderr: '' };
   });
-  assert.equal(liveSummary.closedCount, 2);
-  // 1 list + (view, comment, close) for each of the 2 closures.
-  assert.equal(liveCalls.length, 7);
+  assert.equal(liveSummary.actedCount, 4);
   for (const call of liveCalls) {
-    assert.equal(call.includes('--delete-branch'), false, 'sweeper must never delete branches');
+    assert.notEqual(call[1], 'close', 'steward must never close a PR');
+    assert.equal(call.includes('--delete-branch'), false, 'steward must never delete branches');
   }
+  assert.ok(liveCalls.some((a) => a[1] === 'update-branch' && a[2] === '106' && a.includes('--rebase')));
+  assert.ok(liveCalls.some((a) => a[1] === 'edit' && a[2] === '103' && a.includes('needs-fix')));
+
+  // Rebase fails, merge-update fails: flagged needs-rebase, still open.
+  const failCalls = [];
+  const failSummary = sweepStalePrs({ dryRun: false, nowMs }, (args) => {
+    failCalls.push(args);
+    if (args[1] === 'list') return { status: 0, stdout: JSON.stringify([prs[5]]), stderr: '' };
+    if (args[1] === 'view') return { status: 0, stdout: JSON.stringify({ ...prs[5], state: 'OPEN' }), stderr: '' };
+    if (args[1] === 'update-branch') return { status: 1, stdout: '', stderr: 'conflict' };
+    return { status: 0, stdout: 'ok', stderr: '' };
+  });
+  assert.equal(failSummary.decisions[0].via, 'flagged');
+  assert.ok(failCalls.some((a) => a[1] === 'edit' && a.includes('needs-rebase')));
 
   // Red checks on a non-main base are not judged: the required set is unknown there.
   const offMain = { ...prs[2], baseRefName: 'release/1.x' };
   assert.equal(classifyStalePr(offMain, { nowMs }).reason, 'required_checks_unknown_for_base');
 
-  // A PR that recovered between listing and closing is kept, not closed.
+  // A PR that recovered between listing and acting is left alone.
   const recoveredCalls = [];
   const recoveredSummary = sweepStalePrs({ dryRun: false, nowMs }, (args) => {
     recoveredCalls.push(args);
@@ -918,9 +966,39 @@ test('sweepStalePrs skips dependabot/* and trunk-merge/*, closes non-draft red >
     }
     return { status: 0, stdout: 'ok', stderr: '' };
   });
-  assert.equal(recoveredSummary.closedCount, 0);
+  assert.equal(recoveredSummary.actedCount, 0);
   assert.equal(recoveredSummary.decisions[0].reason, 'eligibility_changed');
-  assert.equal(recoveredCalls.some((args) => args[1] === 'close' || args[1] === 'comment'), false);
+  assert.equal(recoveredCalls.some((args) => ['close', 'comment', 'edit'].includes(args[1])), false);
+
+  // Without an up-to-date rule GitHub never says BEHIND, and the list says
+  // UNKNOWN for conflicts. The steward asks the REST API for both.
+  const listed = [
+    { number: 201, headRefName: 'fix/far-behind', headRefOid: 'aaa', baseRefName: 'main', isDraft: false, mergeStateStatus: 'UNSTABLE', updatedAt: '2026-11-06T12:00:00Z', statusCheckRollup: [] },
+    { number: 202, headRefName: 'fix/conflict-unknown', headRefOid: 'bbb', baseRefName: 'main', isDraft: false, mergeStateStatus: 'UNKNOWN', updatedAt: '2026-11-06T12:00:00Z', statusCheckRollup: [] },
+    { number: 203, headRefName: 'fix/barely-behind', headRefOid: 'ccc', baseRefName: 'main', isDraft: false, mergeStateStatus: 'CLEAN', updatedAt: '2026-11-06T12:00:00Z', statusCheckRollup: [] },
+  ];
+  const api = { 201: ['unstable', '11'], 202: ['dirty', '3'], 203: ['clean', '2'] };
+  const enrichCalls = [];
+  const enrichSummary = sweepStalePrs({ dryRun: false, nowMs }, (args) => {
+    enrichCalls.push(args);
+    if (args[0] === 'api') {
+      const n = (args[1].match(/pulls\/(\d+)$/) || [])[1];
+      if (n) return { status: 0, stdout: api[n][0], stderr: '' };
+      const sha = args[1].split('...')[1];
+      const pr = listed.find((p) => p.headRefOid === sha);
+      return { status: 0, stdout: api[pr.number][1], stderr: '' };
+    }
+    if (args[1] === 'list') return { status: 0, stdout: JSON.stringify(listed), stderr: '' };
+    if (args[1] === 'view') return { status: 0, stdout: JSON.stringify({ ...listed.find((p) => String(p.number) === args[2]), state: 'OPEN' }), stderr: '' };
+    return { status: 0, stdout: 'ok', stderr: '' };
+  });
+  const byNumber = Object.fromEntries(enrichSummary.decisions.map((d) => [d.number, d]));
+  assert.equal(byNumber[201].reason, 'behind_main_by_commits');
+  assert.equal(byNumber[201].via, 'merge', 'far-behind branches get a merge update, never a rebase');
+  assert.equal(enrichCalls.some((a) => a[1] === 'update-branch' && a[2] === '201' && a.includes('--rebase')), false);
+  assert.equal(byNumber[202].label, 'needs-rebase');
+  assert.equal(byNumber[203].action, 'keep');
+  assert.equal(enrichCalls.some((a) => a[0] === 'api' && a.includes('-X')), false, 'enrichment is read-only');
 
   const workflowRaw = fs.readFileSync(
     path.join(__dirname, '..', '.github', 'workflows', 'pr-stale-sweeper.yml'),
