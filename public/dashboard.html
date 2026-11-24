@@ -1175,6 +1175,7 @@ async function connect(options) {
     }
     renderStats(data);
     setSelectedCard('all');
+    window.ThumbGateProjects.refresh(getHeaders());
     var deepLinkedTab = getDeepLinkTab();
     if (deepLinkedTab && deepLinkedTab !== 'search') {
       switchTab(deepLinkedTab);

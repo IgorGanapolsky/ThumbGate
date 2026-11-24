@@ -41,6 +41,19 @@ test('dashboard states the scope of its headline feedback numbers', () => {
   assert.match(html, /not counted/);
 });
 
+test('the project picker loads with the first stats render, not after the 10 second hydration timer', () => {
+  const html = fs.readFileSync(path.join(__dirname, '..', 'public', 'dashboard.html'), 'utf8');
+  assert.match(html, /setSelectedCard\('all'\);\s*window\.ThumbGateProjects\.refresh\(getHeaders\(\)\);/);
+});
+
+test('a bare dashboard URL opens on a project and All projects is an explicit project=all choice', () => {
+  const source = fs.readFileSync(path.join(__dirname, '..', 'public', 'project-switcher.js'), 'utf8');
+  assert.match(source, /var explicit = selected !== null;/);
+  assert.match(source, /if \(!explicit\) \{/);
+  assert.match(source, /window\.location\.replace\(next\.href\)/);
+  assert.match(source, /next\.searchParams\.set\('project', select\.value \|\| 'all'\)/);
+});
+
 test('the picker placeholder names the project folder instead of saying "Selected project"', () => {
   const source = fs.readFileSync(path.join(__dirname, '..', 'public', 'project-switcher.js'), 'utf8');
   assert.doesNotMatch(source, /textContent = 'Selected project'/);

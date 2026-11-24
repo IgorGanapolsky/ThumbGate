@@ -1,6 +1,7 @@
 (function () {
   'use strict';
   var selected = new URL(window.location.href).searchParams.get('project');
+  var explicit = selected !== null;
   if (selected === 'all') selected = null;
   var selectedDir = selected ? new URL(window.location.href).searchParams.get('projectDir') : null;
   var loading = null;
@@ -24,7 +25,7 @@
     select.id = 'projectSwitcher'; select.style.cssText = 'padding:8px;min-width:260px;max-width:100%;background:var(--bg-raised,#18181b);color:var(--text,#fafafa);border:1px solid var(--border,#444);border-radius:6px';
     var all = document.createElement('option'); all.value = ''; all.textContent = 'All projects (account-wide, not one project)'; select.appendChild(all);
     if (selected) { var pending = document.createElement('option'); pending.value = selected; pending.textContent = selectedDir ? selectedDir.split('/').filter(Boolean).pop() : 'Loading project…'; select.appendChild(pending); select.value = selected; }
-    select.addEventListener('change', function () { var next = new URL(window.location.href); next.searchParams.delete('projectDir'); if (select.value) next.searchParams.set('project', select.value); else next.searchParams.delete('project'); window.location.assign(next.href); });
+    select.addEventListener('change', function () { var next = new URL(window.location.href); next.searchParams.delete('projectDir'); next.searchParams.set('project', select.value || 'all'); window.location.assign(next.href); });
     var status = document.createElement('span'); status.id = 'projectStatus'; status.setAttribute('role', 'status'); status.style.cssText = 'color:var(--text-muted,#a1a1aa)';
     var cards = document.createElement('div'); cards.id = 'projectCards'; cards.style.cssText = 'display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px;margin-top:12px';
     var sharedGates = document.createElement('p'); sharedGates.id = 'projectGlobalGates'; sharedGates.style.cssText = 'margin:8px 0 0;color:var(--text-muted,#a1a1aa);font-size:13px';
@@ -48,6 +49,11 @@
       var projects = Array.isArray(data.projects) ? data.projects : [];
       if (selected && !projects.some(function (project) { return project.projectKey === selected; })) projects.push({ projectKey: selected, projectName: 'Project with no recorded activity', counts: {} });
       // Leftover identities with nothing recorded are not worth a pick: hide them and say how many.
+      // A bare dashboard URL opens on a project; "All projects" is an explicit pick (project=all).
+      if (!explicit) {
+        var recent = projects.filter(function (project) { return hasActivity(project) && project.lastActivity; }).sort(function (a, b) { return new Date(b.lastActivity) - new Date(a.lastActivity); })[0];
+        if (recent) { var next = new URL(window.location.href); next.searchParams.set('project', recent.projectKey); window.location.replace(next.href); return; }
+      }
       var shown = projects.filter(function (project) { return hasActivity(project) || project.projectKey === selected; });
       var hidden = projects.length - shown.length;
       shown.forEach(function (project) { var option = document.createElement('option'); option.value = project.projectKey; var f = (project.counts || {}).feedback || 0; option.textContent = project.projectName + ' · ' + f + ' feedback'; select.appendChild(option); });
