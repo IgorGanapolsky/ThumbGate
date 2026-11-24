@@ -484,6 +484,29 @@ async function listAll({ list, params, keep = () => true, maxPages = 40, signal,
   }
 }
 
+// Monthly recurring revenue by currency from active subscriptions: each item's price times quantity, scaled to one month.
+// Discounts and coupons are not applied, so this is list-price MRR. `cancelling` counts subscriptions set to end at period end.
+const MONTHS_PER = { day: 12 / 365, week: 12 / 52, month: 1, year: 12 };
+function monthlyRecurring(subscriptions) {
+  const mrr = {};
+  let cancelling = 0;
+  let unpriced = 0;
+  for (const row of subscriptions) {
+    if (row.cancel_at_period_end === true) cancelling += 1;
+    for (const item of row.items?.data || []) {
+      const price = item.price || {};
+      const every = MONTHS_PER[price.recurring?.interval];
+      const count = Number.isInteger(price.recurring?.interval_count) && price.recurring.interval_count > 0 ? price.recurring.interval_count : 1;
+      if (!every || !Number.isSafeInteger(price.unit_amount) || !/^[a-z]{3}$/i.test(price.currency || '')) { unpriced += 1; continue; }
+      const code = price.currency.toUpperCase();
+      const quantity = Number.isInteger(item.quantity) && item.quantity > 0 ? item.quantity : 1;
+      mrr[code] = (mrr[code] || 0) + (price.unit_amount * quantity) / (every * count);
+    }
+  }
+  for (const code of Object.keys(mrr)) mrr[code] = Math.round(mrr[code]);
+  return { mrr, cancelling, unpriced };
+}
+
 const thumbgateSession = (row) => /thumbgate/i.test(String(row.success_url || ''));
 
 // Why a Stripe source failed, in words a person can act on. Never a bare "Unknown".
@@ -560,7 +583,7 @@ async function collectMoney(deps, signal) {
         return !(email && ownerEmails.some((owner) => email === String(owner).toLowerCase()));
       });
       const customers = new Set(external.map((row) => id(row.customer) || String(row.customer?.email || row.id).toLowerCase()));
-      return { count: external.length, customers, complete: result.complete };
+      return { count: external.length, customers, complete: result.complete, ...monthlyRecurring(external) };
     });
     return [paidResult, proResult];
   })();
@@ -656,6 +679,11 @@ async function collectMoney(deps, signal) {
     payingCustomersSource: 'stripe',
     payingCustomersBasis: bothStripe ? (paid.complete && proRun.value.complete ? 'stripe_paid_and_active' : 'stripe_paid_and_active_partial') : 'unavailable',
     activePro: proRun.value ? proRun.value.count : null,
+    mrr: proRun.value ? proRun.value.mrr : null,
+    mrrBasis: proRun.value ? (proRun.value.complete && !proRun.value.unpriced ? 'stripe_active_subscription_list_prices' : 'stripe_active_subscription_list_prices_partial') : 'unavailable',
+    cancellingAtPeriodEnd: proRun.value ? proRun.value.cancelling : null,
+    usage30d: trafficReason ? null : (trafficRead.usage || null),
+    weekOverWeek: trafficReason ? null : (trafficRead.weeks || null),
     activeProBasis: proRun.value ? (proRun.value.complete ? 'stripe_active_subscriptions_excluding_owner' : 'stripe_active_subscriptions_first_100_only') : 'unavailable',
     revenueLast30Days: paid ? paid.revenue : null,
     revenueBasis: 'stripe_paid_checkouts_after_refunds',
@@ -667,6 +695,7 @@ async function collectMoney(deps, signal) {
     reasons: {
       payingCustomers: bothStripe ? null : (paidRun.reason || proRun.reason),
       activePro: proRun.value ? null : proRun.reason,
+      mrr: proRun.value ? null : proRun.reason,
       revenue: paid ? null : paidRun.reason,
       checkouts: sessions ? null : sessionRun.reason,
       visitors: trafficReason,
@@ -708,6 +737,8 @@ async function collectAnalytics(deps, signal) {
   const hasTraffic = trafficRun.ok && !trafficRead.empty;
   data.trafficMetrics = hasTraffic ? trafficFields(trafficRead) : (data.trafficMetrics || null);
   data.daily = hasTraffic ? trafficRead.daily : [];
+  data.usage = hasTraffic ? (trafficRead.usage || null) : null;
+  data.weekOverWeek = hasTraffic ? (trafficRead.weeks || null) : null;
   data.dataQuality = { ...(data.dataQuality || {}), telemetryWindowComplete: hasTraffic ? !trafficRead.partial : false, telemetryBytesRead: trafficRead ? trafficRead.bytesRead : 0, telemetrySizeBytes: trafficRead ? trafficRead.size : 0 };
   const warnings = [];
   if (data.reconciliation && (data.reconciliation.status !== 'ok' || !data.reconciliation.complete)) warnings.push('stripe_reconciliation_' + data.reconciliation.status);
@@ -761,6 +792,8 @@ async function collectSummary(deps, signal) {
     add('money.paying_customers', 'Paying customers', money.payingCustomers, { ...stripeOpts('paid', why.payingCustomers), partial: money.payingCustomersBasis === 'stripe_paid_and_active_partial' });
     add('money.active_pro', 'Active Pro subscriptions', money.activePro, { ...stripeOpts('subscriptions', why.activePro), partial: money.activeProBasis === 'stripe_active_subscriptions_first_100_only' });
     // collectMoney reads completed Checkout Sessions only, so this is first-charge revenue; renewal invoices never appear in it.
+    add('money.mrr', 'Monthly recurring revenue at list price, by currency (active Stripe subscriptions)', money.mrr, { ...stripeOpts('subscriptions', why.mrr), partial: money.mrrBasis === 'stripe_active_subscription_list_prices_partial' });
+    add('money.cancelling_at_period_end', 'Active subscriptions set to cancel at period end', money.cancellingAtPeriodEnd, stripeOpts('subscriptions', why.mrr));
     add('money.revenue_30d', 'One-time checkout revenue, past 30 days, by currency (completed Checkout Sessions after refunds)', money.revenueLast30Days, stripeOpts('paid', why.revenue));
     add('money.subscription_invoices_30d', 'Subscription invoices, past 30 days', null, { source: 'stripe', unresolved: true, reason: 'Not collected yet: renewal invoices are not read, so recurring revenue is not in any revenue number here' });
     buckets('money.checkouts_7d', '7 days', money.checkouts7d);
@@ -779,6 +812,13 @@ async function collectSummary(deps, signal) {
   trafficField('traffic.cta_clicks_30d', 'Call to action clicks (30 days)', 'ctaClicks');
   trafficField('traffic.checkout_starts_30d', 'Checkout starts seen on the site (30 days)', 'checkoutStarts');
   trafficField('traffic.paid_confirmations_30d', 'Paid confirmations (30 days)', 'checkoutPaidConfirmations');
+  const usage = analytics?.usage || money?.usage30d || null;
+  const usageField = (key, label, name) => add(key, label, usage ? usage[name] ?? null : null, trafficOpts);
+  usageField('usage.active_installs_7d', 'CLI installs active in the past 7 days (owner and CI excluded)', 'activeInstalls7d');
+  usageField('usage.active_installs_30d', 'CLI installs active in the past 30 days (owner and CI excluded)', 'activeInstalls30d');
+  usageField('usage.activated_installs_30d', 'Active installs that captured feedback (30 days)', 'activatedInstalls');
+  usageField('usage.returning_installs_30d', 'Active installs seen on 2 or more days (30 days)', 'returningInstalls');
+  add('traffic.week_over_week', 'Past 7 days against the 7 days before', analytics?.weekOverWeek || money?.weekOverWeek || null, trafficOpts);
   add('traffic.daily_30d', 'Daily traffic, past 30 days', analytics ? analytics.daily : null, trafficOpts);
   const billingOpts = { source: 'billing_summary', collectedAt: fresh.leads?.collectedAt || null, reason: analyticsRun.ok ? null : analyticsRun.reason, unresolved: !analytics?.signups };
   add('analytics.email_signups', 'Email signups', analytics?.signups?.emailSignups ?? null, billingOpts);
@@ -825,4 +865,4 @@ async function collectAdminSection(route, deps, externalSignal) {
   }
 }
 
-module.exports = { PRIVATE_HEADERS, RESPONSE_LIMIT, adminPath, parseAdminRoute, readOwnerIdentity, readSessionState, collectMoney, collectAnalytics, collectSummary, summaryParts, collectAdminSection, createRuntimeObservations, githubCommitTitle, collectObservability, projectAnalytics, projectStripe, readObject, countRecords, guardPath };
+module.exports = { PRIVATE_HEADERS, RESPONSE_LIMIT, monthlyRecurring, adminPath, parseAdminRoute, readOwnerIdentity, readSessionState, collectMoney, collectAnalytics, collectSummary, summaryParts, collectAdminSection, createRuntimeObservations, githubCommitTitle, collectObservability, projectAnalytics, projectStripe, readObject, countRecords, guardPath };

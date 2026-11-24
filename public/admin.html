@@ -161,6 +161,19 @@
         font-size: 12px;
         color: var(--muted);
       }
+      .delta {
+        font-size: 13px;
+        margin-top: 4px;
+      }
+      .delta.up {
+        color: #4ade80;
+      }
+      .delta.down {
+        color: #f87171;
+      }
+      .delta.flat {
+        color: var(--muted);
+      }
       .status {
         border-radius: 99px;
         padding: 3px 10px;
@@ -582,10 +595,11 @@
             table(
               box,
               [['Metric', (r) => r.name], ['Value', (r) => r.value], ['State', (r) => r.state], ['Source observed', (r) => r.observed]],
-              metricRows(fields, ['money.paying_customers', 'money.active_pro', 'money.revenue_30d', 'money.subscription_invoices_30d']),
+              metricRows(fields, ['money.paying_customers', 'money.active_pro', 'money.mrr', 'money.cancelling_at_period_end', 'money.revenue_30d', 'money.subscription_invoices_30d', 'usage.active_installs_7d', 'usage.active_installs_30d', 'usage.activated_installs_30d', 'usage.returning_installs_30d']),
             );
           else box.append(element('p', 'The money summary is unavailable right now. No zero is inferred.', 'notice'));
           box.append(element('h3', 'Recorded first API-key use'));
+          box.append(element('p', 'Free local use never calls an API key, so this funnel cannot see it. CLI installs that captured feedback, in the table above, are the activation measure for the free product.', 'muted'));
           if (funnel) {
             cards(
               box,
@@ -757,8 +771,78 @@
             'Data disk': r.disk.usedGb + ' GB of ' + r.disk.capacityGb + ' GB used (' + r.disk.percent + '%)',
           });
       }
+      // "+3 vs prior 7 days (12 → 15)": the change a reader would otherwise have to remember from last week.
+      function deltaWords(now, before) {
+        if (!Number.isFinite(now) || !Number.isFinite(before)) return { text: 'No earlier week to compare', tone: 'flat' };
+        const diff = now - before;
+        const pct = before > 0 ? ' (' + (diff >= 0 ? '+' : '') + Math.round((diff / before) * 100) + '%)' : '';
+        if (diff === 0) return { text: 'Same as the 7 days before', tone: 'flat' };
+        return { text: (diff > 0 ? '+' : '') + diff + pct + ' vs the 7 days before (' + before + ')', tone: diff > 0 ? 'up' : 'down' };
+      }
+      function weekCards(parent, weeks, extra = {}) {
+        const grid = element('div', undefined, 'cards');
+        const add = (name, value, delta) => {
+          const card = element('div', undefined, 'card');
+          card.append(element('div', value, 'value'), element('div', name, 'label'));
+          if (delta) card.append(element('div', delta.text, 'delta ' + delta.tone));
+          grid.append(card);
+        };
+        for (const [name, value] of Object.entries(extra)) add(name, value);
+        if (weeks) {
+          const rows = [
+            ['People on the site', 'realVisitors'],
+            ['Checkout starts', 'checkoutStarts'],
+            ['Active CLI installs', 'activeInstalls'],
+          ];
+          for (const [name, key] of rows) add(name + ', past 7 days', String(weeks.last7?.[key] ?? 'Unknown'), deltaWords(weeks.last7?.[key], weeks.prior7?.[key]));
+        }
+        parent.append(grid);
+      }
+      function mrrWords(mrr) {
+        if (!mrr) return null;
+        const entries = Object.entries(mrr);
+        return entries.length ? entries.map(([c, a]) => money(a, c)).join(', ') : money(0, 'usd');
+      }
+      function usageBlock(parent, usage) {
+        parent.append(element('h3', 'Product usage · CLI installs, past 30 days'));
+        if (!usage) {
+          parent.append(element('p', 'CLI usage is unavailable right now. No zero is inferred.', 'notice'));
+          return;
+        }
+        const share = (n) => (usage.activeInstalls30d > 0 && Number.isFinite(n) ? ' (' + Math.round((n / usage.activeInstalls30d) * 100) + '%)' : '');
+        cards(
+          parent,
+          {
+            'Active installs, past 7 days': usage.activeInstalls7d,
+            'Active installs, past 30 days': usage.activeInstalls30d,
+            'Ran init in this window': usage.initsInWindow,
+            'Captured feedback (activated)': String(usage.activatedInstalls) + share(usage.activatedInstalls),
+            'Came back on a second day': String(usage.returningInstalls) + share(usage.returningInstalls),
+          },
+          true,
+        );
+        parent.append(
+          element(
+            'p',
+            'An install is the anonymous id the CLI keeps in ~/.thumbgate. Your own machines, CI and flagged pings are left out (' +
+              usage.excludedInstalls +
+              ' excluded). Installs with telemetry turned off are not seen, so these are lower bounds. Gate blocks run locally and are not reported.',
+            'muted',
+          ),
+        );
+        detail(parent, 'CLI commands run', usage.eventsByType);
+        detail(parent, 'Installs by version', usage.byVersion);
+        detail(parent, 'Installs by platform', usage.byPlatform);
+      }
       function render(parent, section, data) {
         if (section === 'money') {
+          parent.append(element('h3', 'This week at a glance'));
+          weekCards(parent, data.weekOverWeek, {
+            'Monthly recurring revenue (list price)': data.mrr ? mrrWords(data.mrr) : (data.reasons?.mrr || 'Source not available right now'),
+            'Subscriptions cancelling at period end': data.cancellingAtPeriodEnd === null || data.cancellingAtPeriodEnd === undefined ? (data.reasons?.mrr || 'Source not available right now') : String(data.cancellingAtPeriodEnd),
+          });
+          usageBlock(parent, data.usage30d);
+          parent.append(element('h3', 'Customers and traffic'));
           const checkouts = data.checkouts7d;
           const traffic = data.traffic30d;
           const why = data.reasons || {};
@@ -1070,6 +1154,7 @@
               [
                 ['Day', (r) => r.date],
                 ['Visitors', (r) => r.visitors],
+                ['Active CLI installs', (r) => r.activeInstalls ?? 0],
                 ['Page views', (r) => r.pageViews],
                 ['Call to action clicks', (r) => r.ctaClicks],
                 ['Checkout starts', (r) => r.checkoutStarts],
@@ -1078,6 +1163,11 @@
               [...data.daily].reverse(),
             );
           }
+          if (data.weekOverWeek) {
+            parent.append(element('h3', 'Past 7 days against the 7 days before'));
+            weekCards(parent, data.weekOverWeek);
+          }
+          usageBlock(parent, data.usage);
           if (data.reconciliation?.status !== 'ok' || data.reconciliation?.complete !== true)
             parent.append(element('p', 'Provider reconciliation is incomplete (' + (data.reconciliation?.status || 'not reported') + '). Paid-order and revenue totals are partial ledger evidence, not verified payment outcomes. Local installations and successful first local use are not measured.', 'notice'));
           parent.append(
