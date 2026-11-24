@@ -11,6 +11,7 @@ const { describe, it } = require('node:test');
 const assert = require('node:assert/strict');
 
 const gate = require('../scripts/checkout-human-gate');
+const { activePrices } = require('./helpers/fake-stripe-prices');
 
 // Throwaway signing values for the tests, built at runtime so no literal looks like a credential.
 const SIGNING_A = ['unit', 'test', 'signing', 'a'].join('-');
@@ -315,6 +316,7 @@ function makeFakeStripe({ failFirstWith } = {}) {
   return {
     calls,
     products: { list: async () => ({ data: [] }) },
+    prices: activePrices(),
     checkout: {
       sessions: {
         async create(payload) {

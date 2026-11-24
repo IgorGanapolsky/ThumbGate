@@ -3643,9 +3643,6 @@ async function createCheckoutSession({ successUrl, cancelUrl, customerEmail, ins
     appOrigin,
     activePriceId,
   });
-  if (!packId && sessionPayload.metadata) {
-    sessionPayload.metadata.priceSource = activePriceId ? 'configured_price_id' : 'inline_price_data';
-  }
   const session =await createSessionDroppingRejectedOptionals(stripe, sessionPayload);
 
   appendFunnelEvent({
@@ -3685,15 +3682,17 @@ function priceEnvNameFor(checkoutSelection) {
 
 // Returns the configured Stripe price id only when Stripe confirms it is active
 // and matches the amount, interval and interval count the page shows. Otherwise
-// null and the caller falls back to inline price_data, so a bad config never
-// blocks checkout. The fallback is NOT silent: it logs the env var and reason,
-// and the session metadata records priceSource=inline_price_data.
+// THROWS when it does not, naming the env var and the reason. It never falls
+// back to inline price_data: that created a new ad hoc Stripe price (and product
+// data) per session, so archived prices and duplicate products kept growing.
 async function resolveActiveStripePriceId(stripe, checkoutSelection) {
   const priceId = checkoutSelection && checkoutSelection.priceId;
   const envName = priceEnvNameFor(checkoutSelection || {});
   const fallback = (reason) => {
-    console.error(`[billing] checkout price fallback: ${envName} (${priceId || 'unset'}) ${reason}; using inline price_data, which creates a new ad hoc Stripe price for this session. Fix the env var.`);
-    return null;
+    const err = new Error(`Refusing to create checkout session: ${envName} (${priceId || 'unset'}) ${reason}. Set it to the active Stripe price for this plan.`);
+    err.code = 'STRIPE_PRICE_MISCONFIGURED';
+    console.error(`[billing] ${err.message}`);
+    throw err;
   };
   if (!priceId) return fallback('is not set');
   if (!stripe || !stripe.prices || typeof stripe.prices.retrieve !== 'function') return fallback('could not be checked (no Stripe prices API)');

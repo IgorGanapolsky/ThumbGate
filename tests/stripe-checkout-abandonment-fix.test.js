@@ -2,6 +2,7 @@
 
 const { describe, it, before, after } = require('node:test');
 const assert = require('node:assert/strict');
+const { activePrices } = require('./helpers/fake-stripe-prices');
 const fs = require('node:fs');
 const http = require('node:http');
 const os = require('node:os');
@@ -43,6 +44,7 @@ class MockStripe {
         data: [{ id: 'prod_pro_active', name: 'ThumbGate Pro', active: true }],
       }),
     };
+    this.prices = activePrices();
     this.checkout = {
       sessions: {
         create: async (payload) => {
@@ -211,8 +213,10 @@ describe('Stripe checkout conversion & Payment Link / Annual routing fixes', () 
     assert.equal(monthlyRes.status, 303);
     assert.match(monthlyRes.location, /^https:\/\/checkout\.stripe\.com\/c\/pay\/cs_test_fix_/);
     const monthlyCreated = createdStripePayloads[startIdx];
-    assert.equal(monthlyCreated.line_items[0].price_data.unit_amount, 1900);
-    assert.equal(monthlyCreated.line_items[0].price_data.recurring.interval, 'month');
+    // Charged by the verified configured price id (amount and interval are checked
+    // against the page before the session opens), not as a new inline price.
+    assert.equal(monthlyCreated.line_items[0].price, billing.CONFIG.STRIPE_PRICE_ID_PRO_MONTHLY);
+    assert.equal(monthlyCreated.line_items[0].price_data, undefined);
     assert.equal(monthlyCreated.customer_email, 'buyer@acme.io');
     assert.match(monthlyCreated.success_url, /\/success\?session_id=\{CHECKOUT_SESSION_ID\}/);
     assert.match(monthlyCreated.cancel_url, /\/cancel\?/);
@@ -221,15 +225,14 @@ describe('Stripe checkout conversion & Payment Link / Annual routing fixes', () 
     assert.equal(annualRes.status, 303);
     assert.match(annualRes.location, /^https:\/\/checkout\.stripe\.com\/c\/pay\/cs_test_fix_/);
     const annualCreated = createdStripePayloads[startIdx + 1];
-    assert.equal(annualCreated.line_items[0].price_data.unit_amount, 14900);
-    assert.equal(annualCreated.line_items[0].price_data.recurring.interval, 'year');
+    assert.equal(annualCreated.line_items[0].price, billing.CONFIG.STRIPE_PRICE_ID_PRO_ANNUAL);
+    assert.equal(annualCreated.line_items[0].price_data, undefined);
 
     const annualQueryRes = await rawBrowserPost(origin, '/go/pro-direct', { plan_id: 'pro', billing_cycle: 'annual' });
     assert.equal(annualQueryRes.status, 303);
     assert.equal(annualCreated.metadata.utmCampaign, 'pro_annual_149');
     assert.equal(annualCreated.metadata.ctaId, 'pro_checkout_annual_stripe');
-    assert.equal(createdStripePayloads[startIdx + 2].line_items[0].price_data.unit_amount, 14900);
-    assert.equal(createdStripePayloads[startIdx + 2].line_items[0].price_data.recurring.interval, 'year');
+    assert.equal(createdStripePayloads[startIdx + 2].line_items[0].price, billing.CONFIG.STRIPE_PRICE_ID_PRO_ANNUAL);
 
     const beforeProbe = createdStripePayloads.length;
     const probeRes = await rawBrowserPost(origin, '/go/pro-direct?probe=1');
