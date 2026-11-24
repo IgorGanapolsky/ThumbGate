@@ -350,7 +350,7 @@ const STRIPE_OFFER_CATALOG = Object.freeze({
   }),
   compare_plans: Object.freeze({
     offerId: 'compare_plans', productPagePath: '/pricing', priceUsd: null, billingType: 'none', proofPath: '/pricing',
-    headline: 'Stop paying for the same AI mistake twice.', ctaLabel: 'Compare current plans',
+    headline: 'Get warned before Claude Code repeats a mistake you already paid for.', ctaLabel: 'Compare current plans',
     rationale: 'Team and enterprise subscriptions are not available through self-serve checkout. Compare the free CLI and individual Pro software features before choosing.',
     checkoutPath: '/pricing',
   }),
