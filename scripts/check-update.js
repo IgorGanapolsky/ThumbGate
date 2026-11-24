@@ -197,23 +197,9 @@ async function checkUpdate(options = {}) {
   }
 }
 
-// ---------------------------------------------------------------------------
-// Hook runtime version skew
-
-/*
- * Hook runtime version skew.
- *
- * Hooks run from ~/.thumbgate/runtime (a cached install; see published-cli.js and install-shim.js).
- * Once that cache exists it is never upgraded by default, on purpose: hooks must not mutate a
- * pinned or dogfood runtime behind the operator's back. The MCP server, by contrast, is wired as
- * `thumbgate@latest`, so it is usually current. On 2026-11-24, 225 of 261 active installs ran
- * hook builds too old to report a version, so no hook-side fix reached them.
- *
- * This module only detects and reports the gap. It never installs anything; the person updates
- * with `npx thumbgate@latest self-update`, which now refreshes the hook runtime too.
- * See docs/decisions/2026-11-24-revenue-funnel-activation.md (loop 2).
- */
-
+// Hook runtime version skew: hooks run the cached ~/.thumbgate/runtime, which never
+// auto-upgrades by design. Detect and report only; never install.
+// See docs/decisions/2026-11-24-revenue-funnel-activation.md (loop 2).
 
 const SKEW_REPORT_INTERVAL_MS = 24 * 60 * 60 * 1000;
 const STATE_FILE = 'runtime-skew-reported.json';
