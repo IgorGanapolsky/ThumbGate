@@ -1956,22 +1956,11 @@ async function handleRequest(message) {
     return null;
   }
   if (message.method === 'initialize') {
-    const result = {
+    return {
       protocolVersion: '2024-11-05',
       capabilities: { tools: {} },
       serverInfo: SERVER_INFO,
     };
-    // Old hook runtimes never self-upgrade, so the (usually @latest) MCP server is the one
-    // place that can notice the gap. Detect and report only; never install. Best-effort.
-    try {
-      const skewLib = require('../../scripts/check-update');
-      const skew = skewLib.detectSkew({ currentVersion: SERVER_INFO.version });
-      if (skew.skewed) {
-        result.instructions = skewLib.buildSkewNotice(skew.runtimeVersion, skew.currentVersion);
-        skewLib.reportSkewOnce({ skew });
-      }
-    } catch { /* never fail initialize */ }
-    return result;
   }
   if (message.method === 'ping') return {};
   if (message.method === 'tools/list') return { tools: getExposedTools() };
