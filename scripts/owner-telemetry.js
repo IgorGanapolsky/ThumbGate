@@ -158,7 +158,10 @@ async function readTrafficWindow(options) {
         seen.activated ||= type === ACTIVATION_EVENT;
         if (type === FIRST_VALUE_EVENT) {
           seen.firstValue = true;
-          const minutes = Number(entry.minutesSinceInstall);
+          // null or a blank means the CLI could not read its install marker: the install still reached first value, but its
+          // duration is unknown, so it stays out of the percentiles (Number(null) would count it as zero minutes).
+          const raw = entry.minutesSinceInstall;
+          const minutes = raw === null || raw === undefined || raw === '' || typeof raw === 'boolean' ? NaN : Number(raw);
           if (Number.isFinite(minutes) && minutes >= 0 && (seen.firstValueMinutes === null || minutes < seen.firstValueMinutes)) seen.firstValueMinutes = minutes;
         }
         if (time >= seen.lastMs) { seen.lastMs = time; seen.version = entry.version || entry.pkgVersion || seen.version; seen.platform = entry.platform || seen.platform; }

@@ -932,12 +932,12 @@
         else if (access.status === 'unavailable') parent.append(element('p', access.reason, 'notice'));
         else {
           cards(parent, {
-            'Paid but no active key': String(access.paidWithoutAccess),
+            'Entitled but no key': String(access.paidWithoutAccess),
             'Failed payment, key still active': access.failedPaymentWithAccess === null ? 'Not checked' : String(access.failedPaymentWithAccess),
             'Active paid keys with no Stripe payment': String(access.accessWithoutStripePayment),
             'Subscriptions with a failed payment': access.failedPaymentSubscriptions === null ? 'Not checked' : String(access.failedPaymentSubscriptions),
           }, true);
-          parent.append(element('p', 'Keys with no Stripe payment can be GitHub Marketplace, PayPal or manual grants, so they are listed for review, not called wrong. Trial and free keys are left out (' + access.activeTrialOrFreeKeys + ').' + (access.complete ? '' : ' Some Stripe lists were cut short, so these counts are a lower bound.'), 'muted'));
+          parent.append(element('p', 'Entitled means an active subscription or a credit pack bought in the past year; service orders and canceled subscriptions grant no key. Used-up credit packs (' + access.exhaustedCreditKeys + ') were provisioned, so they are not missing keys. Keys with no Stripe payment can be GitHub Marketplace, PayPal or manual grants, so they are listed for review, not called wrong. Trial and free keys are left out (' + access.activeTrialOrFreeKeys + ').' + (access.complete ? '' : ' Some Stripe lists were cut short, so these counts are a lower bound.'), 'muted'));
         }
         for (const reason of [reasons.fixed, reasons.build, reasons.currencies, d.hosting?.reason, d.emailBasis]) if (reason) parent.append(element('p', reason, 'muted'));
         parent.append(element('p', 'Rates checked ' + data.ratesCheckedAt + ' and kept in config/unit-costs.json with their sources. JSON for agents: /v1/admin/economics.', 'muted'));

@@ -546,30 +546,44 @@ const trafficFields = (read) => ({ visitors: read.traffic.visitors, realVisitors
 
 const attemptSync = (work) => { try { return work(); } catch { return { status: 'unavailable', reason: 'The key store could not be read.' }; } };
 
-// Payment to access: every Stripe payment should have an active ThumbGate key, and every active paid key should trace to a
-// payment. Counts only; no customer id or address leaves this function. A paid key with no Stripe match is listed for
-// review, not called wrong: GitHub Marketplace, PayPal and manual grants also make keys.
+// Payment to access: every purchase that still grants access should have a ThumbGate key that works, and every working paid
+// key should trace to a payment. Counts only; no customer id or address leaves this function.
+//   - `entitled` is who should hold access now: credit-pack buyers (one year) and active subscribers. Service orders and
+//     canceled subscriptions grant no key, so they are not expected to have one.
+//   - A key works the way billing.validateApiKey() decides: active, and not a credit pack with no credits left. A used-up
+//     credit pack was provisioned, so it is counted apart (`exhaustedCreditKeys`), never as a provisioning failure.
+//   - A working paid key with no Stripe match is listed for review, not called wrong: GitHub Marketplace, PayPal and manual
+//     grants also make keys.
 const isTrialOrFree = (meta) => /free|trial/i.test(String(meta.plan || '') + ' ' + String(meta.tier || '') + ' ' + String(meta.source || ''));
-function paymentAccessCheck({ paying, failing, store, complete = true }) {
-  const keys = Object.values(store?.keys || {}).filter((meta) => meta && meta.active === true);
-  const keyed = new Set();
-  for (const meta of keys) {
-    if (meta.customerId) keyed.add(String(meta.customerId));
-    if (meta.customerEmail) keyed.add(String(meta.customerEmail).toLowerCase());
-  }
-  const paidKeys = keys.filter((meta) => !isTrialOrFree(meta));
-  const paidWithoutAccess = [...paying].filter((who) => !keyed.has(String(who)) && !keyed.has(String(who).toLowerCase())).length;
-  const accessWithoutStripePayment = paidKeys.filter((meta) => !paying.has(String(meta.customerId || '')) && !paying.has(String(meta.customerEmail || '').toLowerCase())).length;
+const creditsExhausted = (meta) => meta.remainingCredits !== undefined && meta.remainingCredits !== null && meta.remainingCredits <= 0;
+function paymentAccessCheck({ entitled, failing, store, complete = true }) {
+  const active = Object.values(store?.keys || {}).filter((meta) => meta && meta.active === true);
+  const working = active.filter((meta) => !creditsExhausted(meta));
+  const owners = (list) => {
+    const out = new Set();
+    for (const meta of list) {
+      if (meta.customerId) out.add(String(meta.customerId));
+      if (meta.customerEmail) out.add(String(meta.customerEmail).toLowerCase());
+    }
+    return out;
+  };
+  const provisioned = owners(active);
+  const withAccess = owners(working);
+  const has = (set, who) => set.has(String(who)) || set.has(String(who).toLowerCase());
+  const paidKeys = working.filter((meta) => !isTrialOrFree(meta));
+  const paidWithoutAccess = [...entitled].filter((who) => !has(provisioned, who)).length;
+  const accessWithoutStripePayment = paidKeys.filter((meta) => !entitled.has(String(meta.customerId || '')) && !entitled.has(String(meta.customerEmail || '').toLowerCase())).length;
   const failingIds = Array.isArray(failing) ? failing.map((row) => row.customer).filter(Boolean) : null;
-  const failedPaymentWithAccess = failingIds ? failingIds.filter((who) => keyed.has(who)).length : null;
+  const failedPaymentWithAccess = failingIds ? failingIds.filter((who) => has(withAccess, who)).length : null;
   const problems = paidWithoutAccess + (failedPaymentWithAccess || 0);
   return {
     status: problems ? 'needs_review' : accessWithoutStripePayment ? 'review' : 'ok',
     complete: complete && failingIds !== null,
-    payingCustomers: paying.size,
-    activeKeys: keys.length,
+    entitledCustomers: entitled.size,
+    activeKeys: working.length,
     activePaidKeys: paidKeys.length,
-    activeTrialOrFreeKeys: keys.length - paidKeys.length,
+    activeTrialOrFreeKeys: working.length - paidKeys.length,
+    exhaustedCreditKeys: active.length - working.length,
     paidWithoutAccess,
     accessWithoutStripePayment,
     failedPaymentSubscriptions: failingIds ? failingIds.length : null,
@@ -645,7 +659,11 @@ async function collectMoney(deps, signal) {
         const byChannel = channel(channelOf(row)).revenue30d;
         byChannel[code] = (byChannel[code] || 0) + row.amount_total - refunded;
       }
-      return { customers, revenue, channels, fees, complete: result.complete };
+      // Credit-pack buyers keep access for the pack's life; a subscription checkout's access is checked against active
+      // subscriptions instead, and a service order grants no key.
+      const grant = deps.resolveCheckoutProvisioningGrant || billing._resolveCheckoutProvisioningGrant;
+      const creditPackCustomers = new Set(paid.filter((row) => grant(row).kind === 'credit_pack').map((row) => id(row.customer) || String(row.customer_details?.email || row.customer_email || row.id).toLowerCase()));
+      return { customers, creditPackCustomers, revenue, channels, fees, complete: result.complete };
     });
     const proResult = await withLastGood('subscriptions', async () => {
       const result = await listIt((params, options) => stripe().subscriptions.list(params, options), { status: 'active', expand: ['data.customer'] }, () => true, 5);
@@ -737,7 +755,7 @@ async function collectMoney(deps, signal) {
   } : null);
   const bothStripe = paid && proRun.value;
   const access = bothStripe ? attemptSync(() => paymentAccessCheck({
-    paying: new Set([...paid.customers, ...proRun.value.customers]),
+    entitled: new Set([...(paid.creditPackCustomers || []), ...proRun.value.customers]),
     failing: recurringRun.ok ? recurringRun.value.failing : null,
     store: (deps.loadKeyStore || billing.loadKeyStore)(),
     complete: paid.complete && proRun.value.complete,
@@ -958,7 +976,7 @@ async function collectSummary(deps, signal) {
     add('money.signups_by_source', 'Signups by source', money.leadsBySource?.signups ?? null, leadOpts);
     add('money.workflow_sprint_leads', 'Setup Sprint leads', money.leadsBySource?.workflowSprint ?? null, leadOpts);
     add('money.newsletter', 'Newsletter signups', money.leadsBySource?.newsletter ?? null, leadOpts);
-    add('money.payment_access', 'Payment to access check: paid without a key, paid keys without a Stripe payment, failed payments still holding a key', money.paymentAccess || null, stripeOpts('paid', why.payingCustomers));
+    add('money.payment_access', 'Payment to access check: entitled customers (active subscription or credit pack) without a key, working paid keys without a Stripe payment, failed payments still holding a working key', money.paymentAccess || null, stripeOpts('paid', why.payingCustomers));
     const econ = economicsFrom(money, deps);
     const econOpts = { source: 'cost_meter_and_stripe', collectedAt: refreshed, partial: econ.status !== 'ok', reason: econ.reasons?.hosting || null };
     add('economics.delivery_cost_30d_usd', 'Cost to deliver the service, past 30 days, US dollars (hosting, email, payment fees, fixed)', econ.delivery?.totalUsd ?? null, econOpts);
