@@ -10459,6 +10459,8 @@ a{color:#8b9}</style></head><body><form class="card" method="post" action="/oaut
         'cli_capture', 'cli_recall', 'cli_stats',
         'activation_first_rule_promoted',
         'first_blocked_tool_call',
+        // What production CLIs actually send for the first gate firing.
+        'first_block',
       ]);
       const thirtyDaysAgo = now - 30 * 24 * 60 * 60 * 1000;
       const last30 = classified.filter(e => {

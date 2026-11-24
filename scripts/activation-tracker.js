@@ -24,6 +24,7 @@
  * is a no-op for the lifetime of that install.
  */
 
+const crypto = require('node:crypto');
 const fs = require('node:fs');
 const { spawn } = require('node:child_process');
 const http = require('node:http');
@@ -186,6 +187,11 @@ function resolveActivationAccountAuth(options = {}) {
   return { apiKey, apiBaseUrl };
 }
 
+// A short one-way fingerprint, so the marker file never stores the key itself.
+function hashKeyForMarker(apiKey) {
+  return crypto.createHash('sha256').update(String(apiKey)).digest('hex').slice(0, 16);
+}
+
 function postActivationEvent(endpointUrl, apiKey, bodyObj, awaitDelivery = false) {
   const payload = JSON.stringify(bodyObj);
   const parsed = new URL(endpointUrl);
@@ -248,7 +254,13 @@ function reportFirstBlockActivation(metadata = {}) {
   const firstBlockAt = existing.firstBlockAt || metadata.firstBlockAt || existing.blockedAt || new Date().toISOString();
   const { apiKey, apiBaseUrl } = resolveActivationAccountAuth(metadata);
 
-  if (existing.firstBlockReportedAt || (!apiKey && existing.firstBlockAnonReportedAt)) {
+  const keyAlreadyRejected = Boolean(
+    apiKey
+    && existing.firstBlockAnonReportedAt
+    && existing.firstBlockAuthRejectedKeyHash
+    && existing.firstBlockAuthRejectedKeyHash === hashKeyForMarker(apiKey)
+  );
+  if (existing.firstBlockReportedAt || (!apiKey && existing.firstBlockAnonReportedAt) || keyAlreadyRejected) {
     if (!existing.firstBlockAt || existing.event !== 'first_block') {
       writeJsonSafe(markerPath, { ...existing, firstBlockAt, event: 'first_block', at: existing.at || firstBlockAt });
     }
@@ -292,6 +304,27 @@ function reportFirstBlockActivation(metadata = {}) {
       ? `${apiBaseUrl}/v1/activation/first-block`
       : `${apiBaseUrl}/v1/telemetry/ping`;
     return postActivationEvent(targetUrl, apiKey, eventPayload, true).then((res) => {
+      if (!res.ok && apiKey && (res.statusCode === 401 || res.statusCode === 403)) {
+        // The stored key no longer authenticates (rotated operator key, expired
+        // trial, wrong host). Don't lose the activation: report it anonymously,
+        // and remember the rejected key so every later gate firing stops retrying
+        // the account route with it.
+        const rejectedKeyHash = hashKeyForMarker(apiKey);
+        return postActivationEvent(`${apiBaseUrl}/v1/telemetry/ping`, '', eventPayload, true).then((anon) => {
+          const latest = readJsonSafe(markerPath) || nextMarker;
+          const stamp = new Date().toISOString();
+          writeJsonSafe(markerPath, {
+            ...latest,
+            at: latest.at || firstBlockAt,
+            firstBlockAt: latest.firstBlockAt || firstBlockAt,
+            event: 'first_block',
+            firstBlockAuthRejectedKeyHash: rejectedKeyHash,
+            firstBlockAuthRejectedAt: stamp,
+            ...(anon.ok ? { firstBlockAnonReportedAt: stamp } : {}),
+          });
+          return { reported: Boolean(anon.ok), statusCode: res.statusCode, fallback: 'anonymous', firstBlockAt };
+        });
+      }
       if (res.ok) {
         const latest = readJsonSafe(markerPath) || nextMarker;
         const stamp = new Date().toISOString();
@@ -347,15 +380,24 @@ function extractEntryBlockMinutes(e) {
   return typeof ms === 'number' && Number.isFinite(ms) ? Math.round((ms / 60_000) * 10) / 10 : null;
 }
 
+const FIRST_BLOCK_EVENT_NAMES = new Set(['first_block', 'first_blocked_tool_call']);
+
 function summarizeFirstBlockEvents(entries = []) {
   if (!Array.isArray(entries) || entries.length === 0) {
     return { count: 0, medianMinutes: null, under5MinutesCount: 0 };
   }
   let count = 0;
   const minutesList = [];
+  const seenInstalls = new Set();
   for (const e of entries) {
-    if ((e?.eventType || e?.event) !== 'first_blocked_tool_call') continue;
-    if (e.visitorType === 'bot' || e.visitorType === 'ci') continue;
+    // Production CLIs report the activation as `first_block` (reportFirstBlockActivation);
+    // older builds sent `first_blocked_tool_call`. Count either, once per install.
+    if (!FIRST_BLOCK_EVENT_NAMES.has(e?.eventType || e?.event)) continue;
+    if (e.visitorType === 'bot' || e.visitorType === 'ci' || e.visitorType === 'owner') continue;
+    if (e.installId) {
+      if (seenInstalls.has(e.installId)) continue;
+      seenInstalls.add(e.installId);
+    }
     count += 1;
     const m = extractEntryBlockMinutes(e);
     if (m !== null && m >= 0) minutesList.push(m);
