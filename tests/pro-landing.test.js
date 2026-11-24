@@ -19,11 +19,13 @@ test('pro landing page positions ThumbGate Pro as the paid operator lane', () =>
 
   assert.match(proPage, /ThumbGate Pro/i);
   assert.match(proPage, /paid lane for individual operators/i);
-  assert.match(proPage, /personal local dashboard/i);
+  assert.match(proPage, /Every learned rule/i);
+  assert.match(proPage, /Recall and lesson search/i);
   assert.match(proPage, /DPO export/i);
-  assert.match(proPage, /review-ready evidence/i);
-  assert.match(proPage, /Founder support/i);
   assert.match(proPage, /stay on Free/i);
+  // Honesty pass (24 Nov 2026): nothing on the page that the code or a process does not back.
+  assert.doesNotMatch(proPage, /Founder support|Model Hardening Advisor|auto-connect|review-ready|No cloud account required|Email me the demo/i);
+  assert.match(proPage, /The local dashboard and the default gates are free on both plans/);
 });
 
 test('pro landing page uses checkout routes for monthly and annual conversions', () => {
@@ -137,12 +139,14 @@ test('pro landing page captures buyer email and reuses it for checkout', () => {
   assert.doesNotMatch(proPage, /props:\s*\{\s*email:/);
 });
 
-test('pro landing page keeps team pilot attribution ahead of the intake anchor', () => {
+test('pro landing page keeps the $499 sprint separate from the Pro subscription', () => {
   const proPage = readProPage();
+  const sidebar = proPage.slice(proPage.indexOf('<div class="pricing-sidebar">'), proPage.indexOf('<section class="section" id="faq">'));
 
-  assert.match(
-    proPage,
-    /href="\/#workflow-sprint-intake"/
-  );
-  assert.doesNotMatch(proPage, /href="\/#workflow-sprint-intake\?utm_source=website/);
+  assert.match(sidebar, /Separate from Pro/);
+  assert.match(sidebar, /not part of the Pro subscription/);
+  assert.match(sidebar, /href="\/enterprise-governance"/);
+  assert.match(sidebar, /href="\/diagnostic#intake"/);
+  // the old pilot link landed on the homepage Pro card, not an intake form
+  assert.doesNotMatch(proPage, /href="\/#workflow-sprint-intake/);
 });

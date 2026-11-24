@@ -689,7 +689,7 @@
   <meta http-equiv="origin-trial" content="AzcKU1rE0e4sfmh97XzN75yRFS+xFzZJrUJWswxGr6RahQWDNupKLhkVvdQZQayA/s4FLwcKpPntqUZgclhDjgoAAAB0eyJvcmlnaW4iOiJodHRwczovL3RodW1iZ2F0ZS5hcHA6NDQzIiwiZmVhdHVyZSI6IldlYk1DUCIsImV4cGlyeSI6MTgwNjM2NDgwMCwiaXNTdWJkb21haW4iOnRydWUsImlzVGhpcmRQYXJ0eSI6dHJ1ZX0=" />
   <meta http-equiv="origin-trial" content="A06wj3yXAwOhT5Cd5WYdVQotlYa/OID3SW099ZQB+cs9eHeJmtH1yHudLwqDKZ7y43tQvLB4TfM/pjmUa7aJNQsAAAB4eyJvcmlnaW4iOiJodHRwczovL3d3dy50aHVtYmdhdGUuYXBwOjQ0MyIsImZlYXR1cmUiOiJXZWJNQ1AiLCJleHBpcnkiOjE4MDYzNjQ4MDAsImlzU3ViZG9tYWluIjp0cnVlLCJpc1RoaXJkUGFydHkiOnRydWV9" />
   <script src="/js/webmcp.js" defer></script>
-<script type="application/ld+json">{"@context": "https://schema.org", "@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": "What is free?", "acceptedAnswer": {"@type": "Answer", "text": "The MIT local CLI captures feedback and runs configured gates. Install the Claude Code plugin, then run npx thumbgate init --agent claude."}}, {"@type": "Question", "name": "What does Pro add?", "acceptedAnswer": {"@type": "Answer", "text": "Pro adds memory: every learned rule stays active, plus recall and lesson search. Strict blocking of catastrophic commands stays free. Compare current subscription details at /pricing."}}, {"@type": "Question", "name": "What does ThumbGate not do?", "acceptedAnswer": {"@type": "Answer", "text": "Force-push, git reset --hard, git clean -f, rm -rf on home or root and DROP TABLE are denied by default; hard deny for every other matching action needs strict mode (THUMBGATE_STRICT_ENFORCEMENT=1), otherwise they warn and are logged. Detected secret exfiltration and gate-process bypass attempts are denied by default. It does not retrain model weights, does not rewrite policy silently, and does not contain the blast radius, which is a sandbox job. Only the agents in Also works with are supported, and advisory ones do not guarantee blocking."}}, {"@type": "Question", "name": "Is it really self-improving?", "acceptedAnswer": {"@type": "Answer", "text": "Thumbs teach. The gate enforces. Feedback refines the control layer, not the LLM. Reviewed outcomes can become prevention rules under your control."}}, {"@type": "Question", "name": "Which integrations enforce gates?", "acceptedAnswer": {"@type": "Answer", "text": "Claude Code enforces gates through PreToolUse hooks. Other agents are listed under Also works with; advisory integrations do not guarantee execution blocking."}}]}</script>
+<script type="application/ld+json">{"@context": "https://schema.org", "@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": "What is free?", "acceptedAnswer": {"@type": "Answer", "text": "The MIT local CLI: the default gates, 3 learned rules, and 2 thumbs a day (10 in total) after a 7-day Pro trial. Install the Claude Code plugin, then run npx thumbgate init --agent claude."}}, {"@type": "Question", "name": "What does Pro add?", "acceptedAnswer": {"@type": "Answer", "text": "Every learned rule stays active, unlimited thumbs, recall, lesson search and exports. Blocking catastrophic commands stays free. The full table is on /pricing."}}, {"@type": "Question", "name": "What does ThumbGate not do?", "acceptedAnswer": {"@type": "Answer", "text": "It does not catch a reworded version of a command you thumbed down, it does not contain damage like a sandbox, and it does not retrain the model. Outside Claude Code, most integrations are advisory. The coverage table above lists what is denied, what only warns, and what is missed."}}, {"@type": "Question", "name": "Which integrations enforce gates?", "acceptedAnswer": {"@type": "Answer", "text": "Claude Code enforces gates through PreToolUse hooks. Other agents are listed under Also works with; advisory integrations do not guarantee execution blocking."}}]}</script>
 <script type="application/ld+json">{"@context":"https://schema.org","@type":"SoftwareApplication","name":"ThumbGate","applicationCategory":"DeveloperApplication","operatingSystem":"Cross-platform","url":"__APP_ORIGIN__/","offers":{"@type":"Offer","name":"ThumbGate Pro","price":"__PRO_PRICE_DOLLARS__","priceCurrency":"USD","url":"__APP_ORIGIN__/checkout/pro"}}</script>
 </head>
 <body data-revenue-assist="off">
@@ -702,7 +702,7 @@
       <div class="nav-links">
         <a href="#how-it-works">How it works</a>
         <a href="#offers">Pricing</a>
-        <a href="#proof">Proof</a>
+        <a href="#coverage">Coverage</a>
         <button type="button" id="navPaidLoginBtn" data-cta-id="nav_paid_login" aria-expanded="false" aria-controls="paidLoginBar" onclick="window.tgTogglePaidLogin()" style="display:inline-flex;align-items:center;min-height:44px;min-width:44px;padding:8px 13px;border-radius:8px;border:1px solid rgba(56,215,255,0.45);background:rgba(56,215,255,0.08);color:var(--cyan);font:800 13px/1 inherit;">Log in</button>
         <a id="navPaidDashboardLink" href="/dashboard" data-cta-id="nav_paid_dashboard" style="display:none;align-items:center;min-height:44px;min-width:44px;padding:8px 13px;border-radius:8px;border:1px solid rgba(86,227,159,0.45);background:rgba(86,227,159,0.12);color:var(--green);font:800 13px/1 inherit;text-decoration:none;">Dashboard →</a>
         <a class="nav-buy" href="/checkout/pro" data-cta-id="nav_pro_checkout">Get Pro</a>
@@ -741,10 +741,10 @@
           </svg>
           <div class="hero-thumbs">
             <span class="up" aria-hidden="true"><svg class="hero-thumb-up" viewBox="0 0 32 32" aria-hidden="true"><use href="#thumb-glyph"/></svg></span>
-            <button type="button" class="down" id="hero-thumb-down" aria-label="Record a thumbs-down for the selected command"><svg class="hero-thumb-down" viewBox="0 0 32 32" aria-hidden="true"><use href="#thumb-glyph"/></svg></button>
+            <button type="button" class="down" id="hero-thumb-down" aria-label="Try the default rules on your own commands" title="Try the default rules on your own commands"><svg class="hero-thumb-down" viewBox="0 0 32 32" aria-hidden="true"><use href="#thumb-glyph"/></svg></button>
           </div>
           <h1>Thumbs-down a Claude Code mistake once, and ThumbGate warns the next time it tries that command. After three thumbs-downs on the same command, strict mode blocks it.</h1>
-          <p class="hero-lede">Run Claude Code with bypass permissions and ThumbGate checks every call: secret leaks and catastrophic commands are denied, other flagged actions warn, strict mode blocks them.</p>
+          <p class="hero-lede">Claude Code asks ThumbGate before a tool runs, even in bypass mode. Secret leaks, attempts to switch the gate off and five catastrophic commands are denied out of the box. Other flagged actions warn, and strict mode blocks them. <a href="#coverage">See coverage</a>.</p>
           <p class="hero-audience" id="hero-audience"><strong>Who it's for:</strong> Claude Code users whose agent has already broken something once. The local CLI is free.</p>
           <div class="actions"style="display:flex;gap:12px;flex-wrap:wrap;align-items:center;margin:0 0 24px;">
             <button type="button" class="button-primary" data-copy-install data-cta-id="hero_install_copy_primary">Copy free install: npx thumbgate init --agent claude</button>
@@ -772,7 +772,7 @@ $ ... "git reset --hard HEAD~5"
 $ ... "rm -rf ~/"
  "permissionDecisionReason":"[GATE:rm-rf-home-or-root] Broad rm -rf against root or home is blocked. Use a narrow, reviewed path ..."</pre>
           </div>
-          <p class="hero-note">Recorded from <code>thumbgate gate-check</code> v1.40.3. Claude reads the <code>permissionDecisionReason</code> and changes course. These three deny by default. Hard deny for every other flagged action is <strong>strict mode, one env var</strong>: <code>THUMBGATE_STRICT_ENFORCEMENT=1</code>.</p>
+          <p class="hero-note">Recorded from <code>thumbgate gate-check</code> v1.40.3 and re-run on v1.40.10 with the same result. These three are denied on a default install. Other flagged actions only warn unless you turn on strict mode: <code>THUMBGATE_STRICT_ENFORCEMENT=1</code>.</p>
           <p class="hero-note" id="adoption-line" hidden></p>
           <div class="cc-install" id="install">
             <p class="cc-step"><strong>1 · Install the plugin</strong> <span class="cc-where">inside Claude Code</span></p>
@@ -811,7 +811,7 @@ $ ... "rm -rf ~/"
         <ol class="loop-3">
           <li><strong>1 · Catch</strong> Claude tries something you rejected before, like <code>npm publish</code> from the wrong branch, or mocking the database in an end-to-end test.</li>
           <li><strong>2 · Signal</strong> One thumbs-down with the reason: <code>npx thumbgate capture --feedback=down --context="mocked the DB in an e2e test"</code></li>
-          <li><strong>3 · Enforce</strong> A local PreToolUse gate checks every future tool call in every Claude Code session in that project. A match warns Claude with your reason; in strict mode, after three thumbs-downs, it is denied.</li>
+          <li><strong>3 · Enforce</strong> The local PreToolUse gate checks Claude Code's later tool calls in that project. A match warns Claude with your reason. In strict mode, the third thumbs-down on the same command turns the warning into a deny.</li>
         </ol>
         <h3 style="margin-top:28px;font-size:1.1rem;">What <code>init</code> adds to your Claude Code settings</h3>
 <pre class="cc-cmd settings-block"><code>{
@@ -846,29 +846,23 @@ $ ... "rm -rf ~/"
 
     <section id="offers">
       <div class="shell" id="workflow-sprint-intake">
-        <div class="trust-strip" aria-label="Where the gate runs">
-          <span>Claude Code · local gate</span>
-        </div>
-        <p class="install-hint">A firewall for AI coding agents, built for Claude Code. Other agents are listed under <a href="#also-works-with">Also works with</a>.</p>
-        <p class="install-hint" id="thumbgate-dashboard-command" style="margin-top:10px;">Dashboard: <code>npx thumbgate dashboard --open</code> · <code>/thumbgate-dashboard</code> · <code>thumbgate-dashboard</code> · <a href="/dashboard#insights">demo</a> · <a class="proof-link" href="#proof">strict-mode deny example ↓</a></p>
-        <div class="offer-stack" style="grid-template-columns: 1fr; max-width: 480px; margin: 0 auto;">
-          <div class="why-pro" id="why-pro">
-          <h3 class="section-title" style="font-size:1.6rem;">Why Pro is worth $__PRO_PRICE_DOLLARS__</h3>
-          <p class="install-hint">Free blocks force-push, <code>git reset --hard</code>, <code>git clean -f</code>, <code>rm -rf</code> on home or root and <code>DROP TABLE</code> by default. Pro is about memory.</p>
-          <ul class="offer-points">
-            <li><strong>Every learned rule stays active.</strong> Free keeps your first 3 learned rules active. Pro keeps all of them.</li>
-            <li><strong>Recall.</strong> Ask what Claude got wrong before, and search past lessons. Both are Pro only.</li>
-            <li><strong>Coming, not shipped yet:</strong> team-shared rules, lessons synced across machines, audit history.</li>
-          </ul>
-          <p><a class="button-primary" href="/checkout/pro" data-cta-id="homepage_pro_checkout">Get Pro — $__PRO_PRICE_DOLLARS__/month</a></p>
-        </div>
-        <aside id="enterprise-gate" class="checkout-card" data-primary-checkout>
-            <h2>ThumbGate Pro</h2>
+        <p class="install-hint">A firewall for AI coding agents, built for Claude Code.</p>
+        <p class="install-hint" id="thumbgate-dashboard-command">Local dashboard, free: <code>npx thumbgate dashboard --open</code> or <code>/thumbgate-dashboard</code> inside Claude Code. <a href="/dashboard#insights">Open the demo dashboard</a>.</p>
+        <div class="offer-stack" style="grid-template-columns: 1fr; max-width: 520px; margin: 0 auto;">
+          <aside id="enterprise-gate" class="checkout-card why-pro" data-primary-checkout>
+            <h2 id="why-pro">ThumbGate Pro</h2>
             <div class="price">$__PRO_PRICE_DOLLARS__<span>/month</span></div>
             <p>__PRO_PRICE_LABEL__</p>
-            <p>Pro adds recall, dashboard, adapters, and exports. The free local CLI includes local capture and pre-action gates.</p>
-            <a class="button button-primary" href="/checkout/pro" data-revenue-cta data-cta-id="index_pro_checkout" data-cta-placement="offers" data-plan-id="pro">Get Pro</a>
-            <p><a href="/install">Start with the free CLI</a></p>
+            <p>The free local CLI already denies the catastrophic commands. Pro is about memory:</p>
+            <ul class="offer-points">
+              <li><span><strong>Every learned rule stays active.</strong> Free keeps your first 3.</span></li>
+              <li><span><strong>Unlimited thumbs.</strong> Free records 2 a day and 10 in total, after a 7-day Pro trial.</span></li>
+              <li><span><strong>Recall and lesson search.</strong> Ask what Claude got wrong before. Pro only.</span></li>
+              <li><span><strong>Exports.</strong> DPO pairs and data exports from your own corrections. Pro only.</span></li>
+              <li><span><strong>Not shipped yet:</strong> team-shared rules, lessons synced across machines, audit history.</span></li>
+            </ul>
+            <a class="button button-primary" href="/checkout/pro" data-revenue-cta data-cta-id="homepage_pro_checkout" data-cta-placement="offers" data-plan-id="pro">Get Pro — $__PRO_PRICE_DOLLARS__/month</a>
+            <p><a href="/install">Start with the free CLI</a> · <a href="/pricing">Free vs Pro table</a></p>
           </aside>
         </div>
       </div>
@@ -891,15 +885,11 @@ $ ... "rm -rf ~/"
     <section id="how-it-works">
       <div class="shell">
         <div class="section-kicker">Self-improving product loop</div>
-        <h2 class="section-title">Pre-action checks—and the systems that refine them.</h2>
-        <p class="section-lede">Corrections become local lessons; repeated negatives become gates; the next action is checked before execution. <strong style="color:var(--text)">Click a step</strong> for the under-the-hood demo.</p>
+        <h2 class="section-title">What happens under the hood.</h2>
+        <p class="section-lede">Corrections become local lessons, repeated thumbs-downs become gates, and the next action is checked before it runs. The model is not retrained. <strong style="color:var(--text)">Click a step</strong> to see what each one does; step 4 is open below.</p>
         <figure class="diagram-frame" style="margin-top:28px">
           <img src="/assets/diagrams/self-improving-thumbs-loop.svg" width="1100" height="420" alt="Self-improving ThumbGate loop: thumbs up or thumbs down become a local lesson, then a prevention rule, then ALLOW WARN or DENY on the next tool call. The loop closes under your control without retraining the model." loading="lazy" decoding="async">
         </figure>
-        <div class="self-improve-callout">
-          <strong>Is it really self-improving?</strong>
-          Yes — the control layer, not the LLM. 👍/👎 → local lesson → ranked rule → next tool call gated. No model retrain.
-        </div>
         <div class="loop" role="tablist" aria-label="Self-improving product loop — click a step for under-the-hood demo">
           <!-- Cards are divs (not <button>) so headings/chips stay valid HTML; browsers
                auto-close <button> around <h3>/<div>, which broke click targets. -->
@@ -965,59 +955,51 @@ $ ... "rm -rf ~/"
               <div class="loop-panel-actions">
                 <button type="button" class="copy-cmd" id="loop-copy-cmd">Copy command</button>
                 <a class="secondary" href="/guide">Setup guide</a>
-                <a href="#proof">Strict-mode example</a>
+                <a href="#coverage">Coverage</a>
               </div>
             </div>
           </div>
         </div>
-        <p class="loop-back"><strong>Each reviewed outcome closes the loop—under your control.</strong> Lessons are re-ranked per action, repeated failures can promote into gates, and stale auto-promoted gates expire. The firewall improves from explicit feedback without retraining the model or silently rewriting policy.</p>
       </div>
     </section>
 
 
 
-    <section id="proof">
+    <section id="coverage">
       <div class="shell">
-        <div class="section-kicker">What "stop" honestly means</div>
-        <h2 class="section-title">Hard deny where configured. Honest warning everywhere else.</h2>
-        <div class="proof-grid">
-          <div class="terminal" aria-label="Illustrative strict-mode ThumbGate deny decision">
-            <div class="terminal-chrome" aria-hidden="true">
-              <div class="dots"><span></span><span></span><span></span></div>
-              <span class="title">thumbgate — pretooluse (strict mode)</span>
-              <span>THUMBGATE_STRICT_ENFORCEMENT=1</span>
-            </div>
-            <pre><span class="green">proposed</span>  git push --force origin main
-mode      strict enforcement
-rule      protect-main
-source    core protection · strict mode
-decision  <span class="red">DENY</span>
-reason    force-push to protected branch
-next      decision recorded before execution</pre>
-            <div class="terminal-status" aria-hidden="true">
-              <span>reviewable decision</span>
-              <span><span class="accent">under your control</span> · local lesson store</span>
-            </div>
-          </div>
-          <div class="proof-copy">
-            <p><strong>Why not a static hook?</strong> Prompts compact away; static bash hooks don't learn from 👍/👎. Detected secret exfiltration and gate-process bypass attempts are denied by default. Catastrophic commands (force-push, <code>reset --hard</code>, <code>rm -rf</code> on home or root, <code>DROP TABLE</code>) are denied by default. Other matching destructive actions warn by default and deny in strict mode. This is a managed strict-mode example, not a claim that every free install blocks every risky command automatically.</p>
-            <a href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md" target="_blank" rel="noopener">Read the test-backed verification evidence →</a>
-            <p style="margin-top:12px;"><a href="/whitepaper">White paper</a> · <a href="/eval-scorecard">Scorecard</a> · <a href="/architecture">Architecture</a> · <a href="/case-studies">How we use it</a></p>
-          </div>
-        </div>
-        
+        <div class="section-kicker">Coverage</div>
+        <h2 class="section-title">What it catches, and what it misses.</h2>
+        <span id="proof" aria-hidden="true"></span>
+        <table class="compare">
+          <caption>What a default install of ThumbGate does in Claude Code, checked with <code>thumbgate gate-check</code> v1.40.10 on 24 Nov 2026</caption>
+          <thead><tr><th>Situation</th><th>Default install</th><th>Strict mode</th></tr></thead>
+          <tbody>
+            <tr><th><code>git push --force</code>, <code>git reset --hard</code>, <code>git clean -f</code>, <code>rm -rf</code> on home or root, <code>DROP TABLE</code></th><td>Denied</td><td>Denied</td></tr>
+            <tr><th>Sending secrets out, for example <code>curl -d @.env</code></th><td>Denied</td><td>Denied</td></tr>
+            <tr><th>Switching the gate off (gate process kill/bypass), for example <code>pkill -f thumbgate</code></th><td>Denied</td><td>Denied</td></tr>
+            <tr><th>A command you gave a thumbs-down</th><td>Warns, with your reason</td><td>Denied from the third thumbs-down</td></tr>
+            <tr><th>Other flagged actions, for example <code>git push origin main</code></th><td>Warns</td><td>Denied</td></tr>
+            <tr><th>The same action, reworded</th><td colspan="2"><strong>Not caught.</strong> A learned rule matches the command you thumbed down, not its purpose. In the recording above, <code>rm -rf ../old-notes</code> is denied, but deleting the same folder with <code>python3 shutil.rmtree</code> only gets a warning.</td></tr>
+            <tr><th>Cursor, Cline, OpenCode, Amp</th><td colspan="2">Advisory or feedback only. They do not guarantee a block. See <a href="#also-works-with">Also works with</a>.</td></tr>
+            <tr><th>Damage from a command it allows</th><td colspan="2">Not contained. ThumbGate is not a sandbox.</td></tr>
+          </tbody>
+        </table>
+        <p class="hero-note">Detected secret exfiltration and gate-process bypass attempts are denied by default, and so are the five catastrophic commands. Other matching destructive actions warn by default and deny in strict mode.</p>
+        <h3 style="margin-top:32px;font-size:1.2rem;">Try the default rules on your own commands</h3>
+        <p class="section-lede">Paste commands from a recent agent session. This runs in your browser and nothing you paste is sent.</p>
+        <div id="preview-app" aria-label="Try the default ThumbGate rules in your browser"></div>
+        <p style="margin-top:12px;"><a href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/demo/gate-demo/README.md" target="_blank" rel="noopener">How the recording was made</a> · <a href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md" target="_blank" rel="noopener">Test-backed verification evidence</a> · <a href="/architecture">Architecture</a></p>
       </div>
     </section>
 
     <section id="faq">
       <div class="shell">
         <div class="section-kicker">Before you buy</div>
-        <h2 class="section-title">Five questions, answered plainly.</h2>
+        <h2 class="section-title">Four questions, answered plainly.</h2>
         <div class="faq-list">
-<div class="faq-item"><button class="faq-q" type="button" aria-expanded="false">What is free?</button><div class="faq-a">The MIT local CLI captures feedback and runs configured gates. Install the Claude Code plugin, then run npx thumbgate init --agent claude.</div></div>
-<div class="faq-item"><button class="faq-q" type="button" aria-expanded="false">What does Pro add?</button><div class="faq-a">Pro adds memory: every learned rule stays active, plus recall and lesson search. Strict blocking of catastrophic commands stays free. Compare current subscription details at /pricing.</div></div>
-<div class="faq-item"><button class="faq-q" type="button" aria-expanded="false">What does ThumbGate not do?</button><div class="faq-a">Force-push, git reset --hard, git clean -f, rm -rf on home or root and DROP TABLE are denied by default; hard deny for every other matching action needs strict mode (THUMBGATE_STRICT_ENFORCEMENT=1), otherwise they warn and are logged. Detected secret exfiltration and gate-process bypass attempts are denied by default. It does not retrain model weights, does not rewrite policy silently, and does not contain the blast radius, which is a sandbox job. Only the agents in Also works with are supported, and advisory ones do not guarantee blocking.</div></div>
-<div class="faq-item"><button class="faq-q" type="button" aria-expanded="false">Is it really self-improving?</button><div class="faq-a">Thumbs teach. The gate enforces. Feedback refines the control layer, not the LLM. Reviewed outcomes can become prevention rules under your control.</div></div>
+<div class="faq-item"><button class="faq-q" type="button" aria-expanded="false">What is free?</button><div class="faq-a">The MIT local CLI: the default gates, 3 learned rules, and 2 thumbs a day (10 in total) after a 7-day Pro trial. Install the Claude Code plugin, then run npx thumbgate init --agent claude.</div></div>
+<div class="faq-item"><button class="faq-q" type="button" aria-expanded="false">What does Pro add?</button><div class="faq-a">Every learned rule stays active, unlimited thumbs, recall, lesson search and exports. Blocking catastrophic commands stays free. The full table is on /pricing.</div></div>
+<div class="faq-item"><button class="faq-q" type="button" aria-expanded="false">What does ThumbGate not do?</button><div class="faq-a">It does not catch a reworded version of a command you thumbed down, it does not contain damage like a sandbox, and it does not retrain the model. Outside Claude Code, most integrations are advisory. The coverage table above lists what is denied, what only warns, and what is missed.</div></div>
 <div class="faq-item"><button class="faq-q" type="button" aria-expanded="false">Which integrations enforce gates?</button><div class="faq-a">Claude Code enforces gates through PreToolUse hooks. Other agents are listed under Also works with; advisory integrations do not guarantee execution blocking.</div></div>
         </div>
       </div>
@@ -1237,21 +1219,18 @@ next      decision recorded before execution</pre>
           termTitle: 'thumbgate · capture-feedback',
           termMode: 'local JSONL',
           body:
-            '$ node .claude/scripts/feedback/capture-feedback.js \\\n' +
-            '    --feedback=down \\\n' +
-            '    --context="git push --force origin main without tests" \\\n' +
-            '    --what-went-wrong="force-push skipped CI" \\\n' +
-            '    --what-to-change="block force-push to main"\n\n' +
-            '<span class="g">→ written</span>  .claude/memory/feedback/feedback-log.jsonl\n' +
+            '$ npx thumbgate capture --feedback=down \\\n' +
+            '    --context="mocked the DB in an e2e test"\n\n' +
+            '<span class="g">→ written</span>  .thumbgate/ in this project (JSONL log + local index)\n' +
             '<span class="y">→ bare 👎</span>   no context  →  <span class="r">no-action</span> (not promoted)\n' +
             '<span class="c">→ schema</span>    requires actionable context before storage',
           facts: [
             'Explicit thumbs-up/down with context becomes a feedback record',
             'Bare thumbs-down without context is rejected (no-action)',
-            'Capture paths: CLI, hooks, MCP — not silent model training',
+            'Capture paths: CLI, hooks, MCP. Free records 2 a day, 10 in total',
           ],
           honest: 'A vague 👎 does not invent a rule. Context is required before anything is stored or promoted.',
-          cmd: 'node .claude/scripts/feedback/capture-feedback.js --feedback=down --context="force-push without tests" --what-went-wrong="skipped CI" --what-to-change="block force-push to main"',
+          cmd: 'npx thumbgate capture --feedback=down --context="mocked the DB in an e2e test"',
           showModes: false,
         },
         2: {
@@ -1262,8 +1241,8 @@ next      decision recorded before execution</pre>
           body:
             'lesson {\n' +
             '  signal:  "negative",\n' +
-            '  context: "force-push to main without tests",\n' +
-            '  path:    "local feedback log / lesson DB",\n' +
+            '  context: "mocked the DB in an e2e test",\n' +
+            '  path:    ".thumbgate/ in your project",\n' +
             '  model_weights: <span class="g">unchanged</span>  // always\n' +
             '}\n\n' +
             '<span class="c">survives</span>  session restarts + model swaps\n' +
@@ -1274,7 +1253,7 @@ next      decision recorded before execution</pre>
             'Does not fine-tune or rewrite model weights',
           ],
           honest: 'This is a control-layer memory, not “the AI remembered forever.” Your files; your review.',
-          cmd: 'ls .claude/memory/feedback/',
+          cmd: 'ls .thumbgate/',
           showModes: false,
         },
         3: {
@@ -1292,12 +1271,12 @@ next      decision recorded before execution</pre>
             '  source:    auto-promote\n\n' +
             '<span class="c">retrieve/rerank</span>  relevant lessons for the proposed action',
           facts: [
-            '1 matching negative → warning gate (auto-promote)',
-            '3 in 30 days → hard-block candidate (with regression quarantine)',
-            'Stale auto-promoted gates expire ~90 days unless they keep firing',
+            '1 thumbs-down → warning gate (auto-promote)',
+            '3 in 30 days → deny, in strict mode',
+            'Stale auto-promoted gates expire after 90 days unless they keep firing. Free keeps 3 active',
           ],
           honest: 'Promotion can create warn gates without a human click. Review auto-promoted-gates.json; force-promote is permanent only when you say so.',
-          cmd: 'npm run feedback:rules',
+          cmd: 'cat .thumbgate/auto-promoted-gates.json',
           showModes: false,
         },
         4: {
@@ -1306,21 +1285,21 @@ next      decision recorded before execution</pre>
           termTitle: 'thumbgate · pretooluse',
           termMode: 'default',
           bodyDefault:
-            'proposed  git push --force origin main\n' +
+            'proposed  git push origin main\n' +
             'hook      PreToolUse → gates-engine\n' +
-            'mode      <span class="y">warn-by-default</span>\n' +
+            'mode      <span class="y">default</span>\n' +
             'decision  <span class="y">WARN</span>\n' +
             'note      logged + flagged; tool may still proceed\n\n' +
-            'secret exfil / gate process bypass floors  →  <span class="r">DENY</span> regardless',
+            'force-push, reset --hard, secret exfil, gate shutdown  →  <span class="r">DENY</span> regardless',
           bodyStrict:
-            'proposed  git push --force origin main\n' +
+            'proposed  git push origin main\n' +
             'hook      PreToolUse → gates-engine\n' +
             'mode      <span class="c">THUMBGATE_STRICT_ENFORCEMENT=1</span>\n' +
             'decision  <span class="r">DENY</span>\n' +
-            'rule      protect-main (or matching high-risk gate)\n' +
+            'rule      push-without-thread-check\n' +
             'next      blocked before execution',
           facts: [
-            'PreToolUse hooks check Bash / Edit / Write before the tool runs',
+            'The PreToolUse hook is asked before the tool runs',
             'Outcomes: allowed, warned, or denied (ALLOW / WARN / DENY)',
             'Default install denies secret leaks, force-push, reset --hard, clean -f, rm -rf on home or root and DROP TABLE; other flagged actions warn until strict mode',
           ],
@@ -1429,6 +1408,8 @@ next      decision recorded before execution</pre>
         const stepParam = params.get('step') || (window.location.hash.match(/loop-step-(\d)/) || [])[1];
         if (stepParam && demos[stepParam]) {
           setOpen(stepParam);
+        } else {
+          setOpen('4');
         }
       } catch (_) {}
     })();
@@ -1448,33 +1429,16 @@ next      decision recorded before execution</pre>
       }).catch(function () {});
     })();
 
-    (function initHeroGateDemo() {
-      const demo = document.getElementById('hero-gate-demo');
-      const note = document.getElementById('hero-gate-note');
+    (function initHeroThumb() {
       const down = document.getElementById('hero-thumb-down');
-      if (!demo || !note || !down) return;
-      const rows = demo.querySelectorAll('.hero-gate-row');
-      let selected = 'secret';
-      const notes = {
-        secret: "Illustrative example, not a recorded result. Matching destructive actions warn by default; advisory integrations do not guarantee execution blocking.",
-        force: "Illustrative example, not a recorded result. In Claude Code this command is denied by default; advisory integrations do not guarantee execution blocking.",
-        rm: "Illustrative example, not a recorded result. In Claude Code this command is denied by default; advisory integrations do not guarantee execution blocking.",
-      };
-      rows.forEach(function (row) {
-        row.addEventListener('click', function () {
-          selected = row.getAttribute('data-gate') || 'secret';
-          rows.forEach(function (other) {
-            const on = other === row;
-            other.classList.toggle('is-selected', on);
-            other.setAttribute('aria-selected', on ? 'true' : 'false');
-          });
-          note.textContent = '';
-        });
-      });
+      const target = document.getElementById('preview-app');
+      if (!down || !target) return;
       down.addEventListener('click', function () {
-        note.textContent = notes[selected] || notes.secret;
         down.classList.add('is-lit');
         window.setTimeout(function () { down.classList.remove('is-lit'); }, 700);
+        target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        const input = document.getElementById('tg-input');
+        if (input) window.setTimeout(function () { input.focus({ preventScroll: true }); }, 400);
       });
     })();
 

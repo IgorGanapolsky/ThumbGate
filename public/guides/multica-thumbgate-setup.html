@@ -75,7 +75,7 @@
 
       <h2>What ThumbGate adds</h2>
       <p>ThumbGate is the tool-call-boundary enforcement layer. It runs as an MCP server on the same VPS as your Multica-hosted agent and maintains a local SQLite lesson database at <code class="inline">.thumbgate/memory.sqlite</code>. Every thumbs-down becomes a row. On every subsequent tool call, ThumbGate checks the proposed call against the DB, flags and logs the decision, and hard-blocks secret exfiltration (writes to <code class="inline">.env</code>) and attempts to disable ThumbGate itself by default — before the command executes. Everything else (<code class="inline">rm -rf</code>-class irreversible filesystem commands, supply-chain risks like <code class="inline">curl ... | sh</code>, <code class="inline">git push --force</code>, destructive SQL, cloud mutations) warns by default and hard-blocks when you set <code class="inline">THUMBGATE_STRICT_ENFORCEMENT=1</code>.</p>
-      <p>No cloud service, no account, no vendor lock-in. The lesson DB lives next to the agent on your VPS.</p>
+      <p>No cloud service and no vendor lock-in. The lesson DB lives next to the agent on your VPS.</p>
 
       <h2>Install inside Multica</h2>
       <p>There is no <code class="inline">--agent multica</code> flag because Multica is a runtime, not an agent. Multica invokes Claude Code or OpenCode as the actual terminal agent. ThumbGate wraps the underlying CLI with the install commands you already know:</p>
@@ -115,7 +115,7 @@ npx thumbgate init --agent opencode</code></pre>
       <p>No. Multica invokes Claude Code or OpenCode as subprocesses. Both are first-class ThumbGate-supported agents.</p>
 
       <h3>Does ThumbGate work with Multica's "Talk directly to agent" mode?</h3>
-      <p>Yes. The PreToolUse hook runs on every tool call, regardless of whether the call originated from an issue, an autopilot run, or direct chat.</p>
+      <p>Yes. The PreToolUse hook runs on tool calls regardless of whether the call originated from an issue, an autopilot run, or direct chat.</p>
 
       <h3>What happens if the ThumbGate MCP server is down?</h3>
       <p>The PreToolUse hook fails open by default — if the gate can't be reached, tool calls proceed, matching ThumbGate's warn-by-default posture. You can opt into fail-closed (block tool calls that can't reach the gate) via <code class="inline">.thumbgate/config.json</code> if your workflow prefers strictness over availability.</p>

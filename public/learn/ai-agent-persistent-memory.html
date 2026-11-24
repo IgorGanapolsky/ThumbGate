@@ -145,7 +145,7 @@ node .claude/scripts/feedback/capture-feedback.js \
   <p>The FTS5 index means retrieval is fast even as the database grows. You are not loading the entire history into context. You are loading the lessons most likely to matter right now. That is the difference between a knowledge base and a memory dump.</p>
 
   <h3>Procedural layer: prevention rules and checks</h3>
-  <p>Promoted lessons generate prevention rules in <code>prevention-rules.md</code>. Rules are not prompt instructions — they are checked by a PreToolUse hook that fires before every tool call. The agent cannot reason around a check. The check runs outside the agent's context.</p>
+  <p>Promoted lessons generate prevention rules in <code>prevention-rules.md</code>. Rules are not prompt instructions — they are checked by a PreToolUse hook that runs before tool calls. The agent cannot reason around a check. The check runs outside the agent's context.</p>
 
   <div class="callout callout-green">
     <strong>The promotion pipeline:</strong> Thumbs-down event &rarr; feedback log entry &rarr; lesson promoted to SQLite &rarr; prevention rule generated &rarr; PreToolUse check active for every future session, with no additional setup.
@@ -167,7 +167,7 @@ node .claude/scripts/feedback/capture-feedback.js \
     <li>The SQLite+FTS5 lesson database in <code>.claude/memory/</code></li>
     <li>The feedback log at <code>.claude/memory/feedback/feedback-log.jsonl</code></li>
     <li>Prevention rules at <code>.claude/memory/feedback/prevention-rules.md</code></li>
-    <li>A PreToolUse hook that reads checks on every tool call</li>
+    <li>A PreToolUse hook that reads checks on tool calls</li>
     <li>The MCP server adapter for your agent runtime</li>
   </ul>
 

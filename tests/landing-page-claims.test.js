@@ -15,7 +15,7 @@ test('homepage offers configured self-serve Pro and the free CLI', () => {
   assert.match(HOME_HTML, /href="\/checkout\/pro"/);
   assert.match(HOME_HTML, /__PRO_PRICE_DOLLARS__/);
   assert.match(HOME_HTML, /__PRO_PRICE_LABEL__/);
-  assert.match(HOME_HTML, /free local CLI/i);
+  assert.match(HOME_HTML, /free CLI/i);
   assert.doesNotMatch(HOME_HTML, /Setup Sprint|\$499|diagnostic-pay/);
 });
 
@@ -28,21 +28,24 @@ test('pricing offers configured self-serve Pro and the free CLI', () => {
   assert.doesNotMatch(PRICING_HTML, /\$1,500|\$3,000|\$10,000|\$15,000/);
 });
 
-test('free-tier limits remain code truth without crowding the cash path', () => {
+test('free-tier limits shown on the site match the code', () => {
   const { FREE_TIER_LIMITS, FREE_TIER_MAX_GATES } = require('../scripts/rate-limiter');
 
   assert.equal(FREE_TIER_LIMITS.capture_feedback.daily, 2);
   assert.equal(FREE_TIER_LIMITS.capture_feedback.lifetime, 10);
   assert.equal(FREE_TIER_MAX_GATES, 3);
-  assert.doesNotMatch(HOME_HTML, /2 captures\/day|10 total|3 active prevention rules/i);
-  assert.doesNotMatch(PRICING_HTML, /2 captures\/day|10 total|3 active prevention rules/i);
+  // The capture cap is disclosed, not hidden (honesty pass, 24 Nov 2026).
+  for (const html of [HOME_HTML, PRICING_HTML]) {
+    assert.match(html, new RegExp(`${FREE_TIER_LIMITS.capture_feedback.daily} a day[^<]*${FREE_TIER_LIMITS.capture_feedback.lifetime} in total`));
+  }
+  assert.match(HOME_HTML, new RegExp(`Free keeps your first ${FREE_TIER_MAX_GATES}`));
 });
 
 test('Pro detail stays code-backed and is linked from primary cash paths', () => {
   const server = fs.readFileSync(path.join(ROOT, 'src', 'api', 'server.js'), 'utf8');
   const pkg = JSON.parse(fs.readFileSync(path.join(ROOT, 'package.json'), 'utf8'));
 
-  assert.match(PRO_HTML, /personal local dashboard/i);
+  assert.match(PRO_HTML, /Local dashboard<\/th><td[^>]*>Yes<\/td><td[^>]*>Yes/);
   assert.match(PRO_HTML, /DPO/i);
   assert.match(server, /'\/v1\/dpo\/export'/);
   assert.ok(pkg.files.includes('public/dashboard.html'));
@@ -60,7 +63,10 @@ test('pricing hides hosted team offers and states the availability boundary', ()
 test('homepage Pro promise excludes managed services while legacy checkout remains email gated', () => {
   const server = fs.readFileSync(path.join(ROOT, 'src', 'api', 'server.js'), 'utf8');
 
-  assert.match(HOME_HTML, /Pro adds recall, dashboard, adapters, and exports/);
+  // Only Pro-gated features are sold as Pro: the local dashboard is free.
+  assert.match(HOME_HTML, /Recall and lesson search/);
+  assert.match(HOME_HTML, /Every learned rule stays active/);
+  assert.doesNotMatch(HOME_HTML, /Pro adds recall, dashboard, adapters/);
   assert.doesNotMatch(HOME_HTML, /managed implementation|two business days/i);
   assert.doesNotMatch(HOME_HTML, /order is refunded/i);
   assert.match(server, /'diagnostic-pay':/);
@@ -113,8 +119,10 @@ test('public enforcement claims match the implemented default and strict boundar
   // Ordinary flagged actions still warn by default and deny in strict mode.
   assert.equal(runGate('npm publish'), 'allow');
   assert.equal(runGate('npm publish', { THUMBGATE_STRICT_ENFORCEMENT: '1' }), 'deny');
-  assert.match(HOME_HTML, /secret exfiltration[\s\S]*denied by default/i);
-  assert.match(HOME_HTML, /denied by default\. Other matching destructive actions warn by default and deny in strict mode/i);
+  assert.match(HOME_HTML, /id="coverage"/);
+  assert.match(HOME_HTML, /Sending secrets out[^<]*<code>curl -d @\.env<\/code><\/th><td>Denied<\/td>/);
+  assert.match(HOME_HTML, /Other flagged actions[\s\S]*?<td>Warns<\/td><td>Denied<\/td>/);
+  assert.match(HOME_HTML, /The same action, reworded[\s\S]*?Not caught/);
   assert.match(PRICING_HTML, /Blocked by default: force-push/i);
 });
 

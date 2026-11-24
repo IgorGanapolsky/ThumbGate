@@ -585,7 +585,7 @@ test('/pro serves the Pro landing page instead of redirecting to the homepage', 
   assert.match(res.headers.get('content-type') || '', /text\/html/);
   const html = await res.text();
   assert.match(html, /ThumbGate Pro/);
-  assert.match(html, /Buy the operator loop that proves your AI agent stopped repeating the mistake\./);
+  assert.match(html, /Keep every lesson your agent learned, and ask it what went wrong before\./);
   assert.match(html, /\/checkout\/pro\?plan_id=pro&billing_cycle=monthly/);
 });
 
@@ -1214,7 +1214,7 @@ test('pricing page is the single source of truth for what ThumbGate sells', asyn
   const body = await res.text();
   assert.match(body, /ThumbGate Pro/i);
   assert.match(body, /href="\/checkout\/pro"/);
-  assert.match(body, /recall, dashboard, adapters, and exports/);
+  assert.match(body, /keeps every learned rule active and adds recall, lesson search and exports/);
   assert.match(body, /Subscriber login/);
   assert.doesNotMatch(body, /Setup Sprint|\$499|diagnostic-pay|__PRO_PRICE_DOLLARS__|__PRO_PRICE_LABEL__/);
   assert.doesNotMatch(body, /\$1,500|\$3,000|\$10,000|\$15,000/);

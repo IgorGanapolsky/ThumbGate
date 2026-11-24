@@ -128,7 +128,7 @@ npx thumbgate init --agent gemini</code></pre>
       <p>The gate reads a local SQLite row and runs a pattern match. Typical overhead is under 5 ms per proposed tool call, measured against an empty warm cache. Your BigQuery query itself is still bounded by Google's SLA, not ours.</p>
 
       <h3>What happens on an autopilot / scheduled run?</h3>
-      <p>The gate runs on every tool call regardless of origin. Whether Claude Code fired it from your terminal, an autopilot job triggered it at 9am, or Gemini CLI ran it from a CI hook — the PreToolUse hook still checks the lesson DB first.</p>
+      <p>The gate runs on tool calls regardless of origin. Whether Claude Code fired it from your terminal, an autopilot job triggered it at 9am, or Gemini CLI ran it from a CI hook — the PreToolUse hook still checks the lesson DB first.</p>
 
       <h3>Does ThumbGate send my query text to any external service?</h3>
       <p>No. The lesson DB is local SQLite. The gate check is local. No outbound network call is required for enforcement.</p>
