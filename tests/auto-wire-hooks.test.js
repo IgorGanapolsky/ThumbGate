@@ -227,10 +227,14 @@ describe('auto-wire-hooks', () => {
       const sharedSettingsPath = path.join(settingsDir, 'settings.json');
 
       fs.mkdirSync(settingsDir, { recursive: true });
+      // The script must exist: hooks that point at a missing script behind bash or node are pruned.
+      const existingScript = path.join(tmpDir, 'existing-hook.sh');
+      fs.writeFileSync(existingScript, '#!/bin/sh\n');
+      const existingCommand = `bash ${existingScript}`;
       const existing = {
         hooks: {
           PreToolUse: [
-            { hooks: [{ type: 'command', command: 'bash existing-hook.sh' }] },
+            { hooks: [{ type: 'command', command: existingCommand }] },
           ],
         },
         otherKey: 'preserved',
@@ -245,7 +249,7 @@ describe('auto-wire-hooks', () => {
         assert.equal(settings.otherKey, 'preserved');
         // Existing hook + new hook = 2 entries in PreToolUse
         assert.equal(settings.hooks.PreToolUse.length, 2);
-        assert.equal(settings.hooks.PreToolUse[0].hooks[0].command, 'bash existing-hook.sh');
+        assert.equal(settings.hooks.PreToolUse[0].hooks[0].command, existingCommand);
       } finally {
         fs.rmSync(tmpDir, { recursive: true, force: true });
       }
