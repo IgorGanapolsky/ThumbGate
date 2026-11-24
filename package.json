@@ -1240,7 +1240,7 @@
     "test:model-distress-doctor": "node --test tests/model-distress-doctor.test.js",
     "strands:doctor": "node scripts/strands-harness-doctor.js",
     "test:strands-harness-doctor": "node --test tests/strands-harness-doctor.test.js",
-    "test:plugin-hooks-manifest": "node --test tests/plugin-hooks-manifest.test.js tests/hook-command-paths.test.js",
+    "test:plugin-hooks-manifest": "node --test tests/plugin-hooks-manifest.test.js tests/hook-command-paths.test.js tests/auto-wire-hooks-cli-safety.test.js",
     "test:hook-self-protection": "node --test tests/hook-self-protection.test.js",
     "test:never-bypass-branch-protection": "node --test tests/never-bypass-branch-protection.test.js",
     "test:self-protect-enforcement": "node --test tests/self-protect-enforcement.test.js",
