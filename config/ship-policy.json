@@ -8,7 +8,8 @@
     "optIn": "automerge",
     "hold": "do-not-merge",
     "needsFix": "needs-fix",
-    "stale": "stale"
+    "stale": "stale",
+    "ownerReview": "igor-review"
   },
   "autoMerge": {
     "enabled": true,

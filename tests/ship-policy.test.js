@@ -59,6 +59,13 @@ test('automerge label lets an unprefixed branch through', () => {
   assert.equal(r.verdict, 'auto');
 });
 
+test("Igor's igor-review label always needs Igor; the gate's own needs-igor label is recomputed", () => {
+  const r = evaluatePr({ ...routinePr, labels: ['igor-review'] }, [file('docs/a.md')], policy);
+  assert.equal(r.verdict, 'human');
+  assert.match(r.reasons.join(' '), /igor-review/);
+  assert.equal(evaluatePr({ ...routinePr, labels: ['needs-igor'] }, [file('docs/a.md')], policy).verdict, 'auto');
+});
+
 test('drafts and do-not-merge are held', () => {
   assert.equal(evaluatePr({ ...routinePr, isDraft: true }, [file('docs/a.md')], policy).verdict, 'hold');
   assert.equal(evaluatePr({ ...routinePr, labels: ['do-not-merge'] }, [file('docs/a.md')], policy).verdict, 'hold');
@@ -111,6 +118,9 @@ test('selectTests: fast guards plus tests matching changed files, capped', () =>
     listTests: () => names,
   });
   assert.deepEqual(out.sort(), ['tests/foo-extra.test.js', 'tests/foo.test.js', 'tests/pr-manager.test.js', 'tests/ship-policy.test.js']);
+  // A test the PR adds is selected even though main does not have it yet.
+  const added = selectTests(['tests/brand-new.test.js'], { ...policy, fastTests: [] }, { exists: () => false, listTests: () => [] });
+  assert.deepEqual(added, ['tests/brand-new.test.js']);
   const capped = selectTests(['scripts/foo.js'], { ...policy, fastTests: [], maxSelectedTests: 1 }, { exists: () => true, listTests: () => names });
   assert.equal(capped.length, 1);
 });
@@ -138,4 +148,5 @@ test('ship-gate workflow reads policy from main and merges only the tested commi
   assert.doesNotMatch(wf, /--admin/);
   assert.doesNotMatch(wf, /APPROVE/, 'the gate must never approve a PR');
   assert.match(wf, /reviewThreads/);
+  assert.match(wf, /pull_request_review:/, 'an approval must re-run the gate');
 });

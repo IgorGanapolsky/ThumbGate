@@ -119,6 +119,11 @@ function evaluatePr(pr = {}, files = [], policy = loadPolicy()) {
     return { verdict: 'hold', reasons: [`Labelled \`${policy.labels.hold}\`.`], warnings, findings, changedLines, files: names };
   }
 
+  // needs-igor is the gate's own label and is recomputed every run; igor-review
+  // is Igor's and the gate never removes it.
+  if (policy.labels.ownerReview && labels.has(policy.labels.ownerReview)) {
+    reasons.push(`Labelled \`${policy.labels.ownerReview}\` (Igor asked to review it).`);
+  }
   if (!auto.enabled) reasons.push('Auto-merge is switched off in config/ship-policy.json.');
   if (pr.base && pr.base !== policy.base) reasons.push(`Targets \`${pr.base}\`, not \`${policy.base}\`.`);
   if (pr.isCrossRepository) reasons.push('Opened from a fork.');
@@ -176,7 +181,9 @@ function selectTests(changed = [], policy = loadPolicy(), options = {}) {
   const testNames = listTests();
 
   for (const file of changed) {
-    if (/^tests\/.*\.test\.js$/.test(file) && exists(file)) {
+    // Changed tests are taken as-is: a test the PR adds is not on main yet, and
+    // the test job runs against the PR head where it does exist.
+    if (/^tests\/.*\.test\.js$/.test(file)) {
       selected.add(file);
       continue;
     }
@@ -229,7 +236,7 @@ function renderReview(result, tests = []) {
   }
   lines.push(`${result.files.length} files, ${result.changedLines} changed lines.`);
   if (tests.length) lines.push(`Tests run by the gate: ${tests.map((t) => `\`${t}\``).join(', ')}.`);
-  lines.push('', '_Policy: `config/ship-policy.json` (read from main). Add `do-not-merge` to stop a merge, `needs-igor` to require you._');
+  lines.push('', '_Policy: `config/ship-policy.json` (read from main). Add `do-not-merge` to stop a merge or `igor-review` to require you. Approving the head commit, resolving a thread or pushing re-runs the gate._');
   return lines.join('\n');
 }
 
@@ -290,7 +297,8 @@ function main(argv = process.argv.slice(2)) {
   if (cmd === 'evaluate') {
     const { pr, files } = fetchPr(args.pr, repo, policy);
     const result = evaluatePr(pr, files, policy);
-    const tests = selectTests(result.files, policy);
+    const present = files.filter((f) => f.status !== 'removed').map((f) => f.filename);
+    const tests = selectTests(present, policy);
     if (args['review-out']) fs.writeFileSync(args['review-out'], renderReview(result, tests));
     writeGithubOutput({ verdict: result.verdict, tests: tests.join(' '), head_sha: pr.headSha });
     console.log(args.json ? JSON.stringify({ ...result, tests }, null, 2) : `verdict=${result.verdict}`);

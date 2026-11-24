@@ -14,6 +14,10 @@ on:
   pull_request:
     branches: [main]
     types: [opened, synchronize, reopened, ready_for_review, labeled, unlabeled]
+  # An approval or a review reply can unblock a PR the last run left waiting.
+  # (Thread resolution has no Actions event; the daily steward re-dispatches.)
+  pull_request_review:
+    types: [submitted, dismissed]
   workflow_dispatch:
     inputs:
       pr_number:
@@ -42,7 +46,7 @@ jobs:
     if: >-
       github.event_name == 'workflow_dispatch' ||
       (github.event.action != 'labeled' && github.event.action != 'unlabeled') ||
-      github.event.label.name == 'do-not-merge' || github.event.label.name == 'automerge'
+      github.event.label.name == 'do-not-merge' || github.event.label.name == 'automerge' || github.event.label.name == 'igor-review'
     runs-on: ubuntu-latest
     timeout-minutes: 5
     outputs:
@@ -78,6 +82,7 @@ jobs:
           fi
           gh label create needs-igor --color B60205 --description "Ship gate: waits for Igor" 2>/dev/null || true
           gh label create routine --color 0E8A16 --description "Ship gate: merges on green" 2>/dev/null || true
+          gh label create igor-review --color 5319E7 --description "Igor: I want to review this one" 2>/dev/null || true
           # New commits reset the previous needs-fix verdict.
           if [ "${{ github.event.action }}" = synchronize ]; then
             gh pr edit "$PR_NUMBER" --remove-label needs-fix 2>/dev/null || true
