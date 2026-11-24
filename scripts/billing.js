@@ -2422,7 +2422,9 @@ async function listStripeReconciledRevenueEvents({ signal, deadline = Infinity }
 // qualified checkout start.
 function classifyCheckoutSessionDepth(session) {
   if (!session || typeof session !== 'object') return 'raw';
-  if (session.payment_status === 'paid' || session.status === 'complete') return 'paid';
+  // Session completion can precede asynchronous payment settlement.
+  // Only the payment status supports the paid bucket.
+  if (session.payment_status === 'paid') return 'paid';
   if (normalizeText(session.payment_intent) || normalizeText(session.setup_intent)) return 'payment_attempt';
   const email = normalizeText(session.customer_details?.email) || normalizeText(session.customer_email);
   if (email && !isSyntheticOrOwnerCheckoutEmail(email)) return 'identified';

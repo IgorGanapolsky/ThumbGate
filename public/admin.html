@@ -471,9 +471,9 @@
                 : 'N/A, not reported',
         });
         return [
-          row('Acquisition to activation', rates.acquisitionToActivation, stages.acquisition, 'no measured acquisition events'),
-          row('Activation to paid', rates.activationToPaid, stages.activation, 'no measured activations'),
-          row('Acquisition to paid', rates.acquisitionToPaid, stages.acquisition, 'no measured acquisition events'),
+          row('Acquisition event to first API-key use', rates.acquisitionToActivation, stages.acquisition, 'no measured acquisition events'),
+          row('First API-key use to paid', rates.activationToPaid, stages.activation, 'no recorded first API-key uses'),
+          row('Acquisition event to paid', rates.acquisitionToPaid, stages.acquisition, 'no measured acquisition events'),
         ];
       }
       function funnelTable(parent, funnel) {
@@ -483,7 +483,7 @@
         parent.append(
           element(
             'p',
-            'A lead is one distinct acquisition event identity (an acquisition, trace, visitor, session or install id) from a real checkout step; synthetic checkout sessions are excluded. ' +
+            'An acquisition identity is one distinct event identity (an acquisition, trace, visitor, session or install id) from a recorded acquisition event; synthetic checkout sessions are excluded. ' +
               'An activation is the first call made with an API key. Free local use without a key is not measured, so a 0 here means none observed, not none happened.',
             'muted',
           ),
@@ -537,7 +537,7 @@
         if (paying > 0) return 'Money is arriving: ' + paying + ' paying customers.';
         const parts = [];
         if (Number.isFinite(leads) && leads > 0 && stages.activation === 0)
-          parts.push(leads + ' acquisition leads and 0 measured activations: no lead has made a first API-key call (free local use is not measured).');
+          parts.push(leads + ' distinct acquisition-event identities and 0 recorded first API-key uses. This does not establish unique people, installations or successful local use.');
         if (since && since.human === 0)
           parts.push('Since the bot check on ' + (panel.botCheckBeganLabel || 'its start date') + ', ' + since.started + ' checkout sessions started and 0 are classified as a browser (' + since.bot + ' bot-classified, ' + since.internal + ' owner or test).');
         else if (since && since.human > 0)
@@ -549,7 +549,7 @@
         if (m.value === null || m.value === undefined) return m.reason || 'Unavailable';
         if (typeof m.value === 'object') {
           const entries = Object.entries(m.value);
-          return entries.length ? entries.map(([c, a]) => money(a, c)).join(', ') : 'None in this window';
+          return entries.length ? entries.map(([c, a]) => money(a, c)).join(', ') : m.status === 'partial' ? 'No amounts found in partial evidence' : 'None in this window';
         }
         return String(m.value);
       }
@@ -569,7 +569,7 @@
         const mine = activeLoad;
         const box = element('div');
         parent.append(box);
-        box.append(element('p', 'Loading verified money and measured activation…', 'muted'));
+        box.append(element('p', 'Loading money and recorded first API-key use…', 'muted'));
         const read = (url) =>
           fetch(url, { credentials: 'same-origin', cache: 'no-store' }).then((r) => (r.ok ? r.json() : null)).catch(() => null);
         Promise.all([read('/v1/admin/summary'), read('/v1/admin/analytics')]).then(([summary, analytics]) => {
@@ -577,7 +577,7 @@
           box.replaceChildren();
           const fields = summary?.data?.fields;
           const funnel = analytics?.data?.funnel;
-          box.append(element('h3', 'Verified external money'));
+          box.append(element('h3', 'External money and verification state'));
           if (fields)
             table(
               box,
@@ -585,14 +585,14 @@
               metricRows(fields, ['money.paying_customers', 'money.active_pro', 'money.revenue_30d', 'money.subscription_invoices_30d']),
             );
           else box.append(element('p', 'The money summary is unavailable right now. No zero is inferred.', 'notice'));
-          box.append(element('h3', 'Measured activation'));
+          box.append(element('h3', 'Recorded first API-key use'));
           if (funnel) {
             cards(
               box,
               {
-                'Unique acquisition leads': funnel.uniqueAcquisitionLeads,
+                'Distinct acquisition-event identities': funnel.uniqueAcquisitionLeads,
                 'Acquisition events': funnel.stageCounts?.acquisition,
-                'Measured activations': funnel.stageCounts?.activation,
+                'Recorded first API-key uses': funnel.stageCounts?.activation,
                 'Paid customers': funnel.uniquePaidCustomers,
                 'Excluded synthetic checkout sessions': funnel.excludedSyntheticCheckoutSessions,
               },
@@ -1024,7 +1024,7 @@
               'Checkout starts (30 days)': shown(traffic?.checkoutStarts, 'Telemetry store empty'),
               'Paid confirmations (30 days)': shown(traffic?.checkoutPaidConfirmations, 'Telemetry store empty'),
               'Email signups': shown(data.signups?.emailSignups, waiting),
-              'External paid orders': shown(external.paidOrders, waiting),
+              'External paid orders': shown(external.paidOrders, waiting) + (external.paidOrders !== undefined && (data.reconciliation?.status !== 'ok' || data.reconciliation?.complete !== true) ? ' (partial)' : ''),
             },
             true,
           );
@@ -1078,6 +1078,8 @@
               [...data.daily].reverse(),
             );
           }
+          if (data.reconciliation?.status !== 'ok' || data.reconciliation?.complete !== true)
+            parent.append(element('p', 'Provider reconciliation is incomplete (' + (data.reconciliation?.status || 'not reported') + '). Paid-order and revenue totals are partial ledger evidence, not verified payment outcomes. Local installations and successful first local use are not measured.', 'notice'));
           parent.append(
             element('h3', 'External booked revenue · past 30 days'),
           );
@@ -1098,6 +1100,13 @@
               'muted',
             ),
           );
+          if (data.checkoutSessionDepth) {
+            parent.append(element('h3', 'Checkout-session evidence coverage'));
+            detail(parent, 'Existing checkout event IDs matched to Stripe session depth', data.checkoutSessionDepth, {
+              sessionsCreated: 'Recorded checkout-created events', raw: 'No email or payment-attempt evidence', identified: 'Email present, not proof of a buyer', paymentAttempt: 'Payment intent present, not proof of payment', paid: 'Stripe payment status paid', unresolved: 'Session evidence not resolved', qualifiedCheckoutStarts: 'Identified or later, not unique people', basis: 'Count basis', lookupStatus: 'Provider lookup coverage',
+            });
+            parent.append(element('p', 'This joins existing checkout-event evidence IDs to Stripe sessions. It does not join site visitor IDs to people, prove a payment attempt was declined, or explain abandonment. Unresolved events stay unknown.', 'muted'));
+          }
           funnelTable(parent, data.funnel);
           for (const key of [
             'funnel',

@@ -76,19 +76,19 @@ test('conversion rates with no denominator are N/A, not zero', () => {
   const { context } = renderTexts('observability', observability(600));
   const rows = context.conversionRows(funnel({ acquisition: 209, activation: 0, paid: 0 }));
   const byName = Object.fromEntries(rows.map((r) => [r.name, r.value]));
-  assert.equal(byName['Activation to paid'], 'N/A, no measured activations');
-  assert.equal(byName['Acquisition to activation'], '0%', 'a real zero over a real denominator stays 0%');
+  assert.equal(byName['First API-key use to paid'], 'N/A, no recorded first API-key uses');
+  assert.equal(byName['Acquisition event to first API-key use'], '0%', 'a real zero over a real denominator stays 0%');
   const none = context.conversionRows(funnel({ acquisition: 0, activation: 0, paid: 0 }));
-  assert.ok(none.every((r) => /^N\/A, no measured/.test(r.value)));
+  assert.ok(none.every((r) => /^N\/A, no (measured|recorded)/.test(r.value)));
   const some = context.conversionRows(funnel({ acquisition: 200, activation: 20, paid: 2 }, { acquisitionToActivation: 0.1, activationToPaid: 0.1, acquisitionToPaid: 0.01 }));
   assert.deepEqual([...some.map((r) => r.value)], ['10%', '10%', '1%']);
 });
 
-test('the Analytics tab shows the conversion table and what qualifies a lead', () => {
+test('the Analytics tab shows the conversion table and what qualifies an acquisition identity', () => {
   const page = renderTexts('analytics', { trafficMetrics: null, signups: {}, revenue: { external: {} }, funnel: funnel({ acquisition: 209, activation: 0, paid: 0 }) }).all();
   assert.ok(page.includes('Funnel conversion'));
-  assert.ok(page.includes('N/A, no measured activations'));
-  assert.ok(page.some((text) => /A lead is one distinct acquisition event identity/.test(text)));
+  assert.ok(page.includes('N/A, no recorded first API-key uses'));
+  assert.ok(page.some((text) => /An acquisition identity is one distinct event identity/.test(text)));
   assert.ok(page.some((text) => /first call made with an API key/.test(text)));
 });
 
@@ -126,8 +126,8 @@ test('Overview first screen: verified money, measured activation and the biggest
   const view = renderTexts('overview', { health: { version: 'x', buildSha: 'abc', uptime: 120 } }, fetchImpl);
   await new Promise((resolve) => setTimeout(resolve, 20));
   const page = view.all();
-  for (const wanted of ['Verified external money', 'Measured activation', 'Biggest evidenced obstacle', 'Verified zero', 'Unresolved, not collected yet', 'Funnel conversion', 'Build and runtime']) assert.ok(page.includes(wanted), 'missing: ' + wanted);
-  assert.ok(page.some((text) => /207 acquisition leads and 0 measured activations/.test(text)));
+  for (const wanted of ['External money and verification state', 'Recorded first API-key use', 'Biggest evidenced obstacle', 'Verified zero', 'Unresolved, not collected yet', 'Funnel conversion', 'Build and runtime']) assert.ok(page.includes(wanted), 'missing: ' + wanted);
+  assert.ok(page.some((text) => /207 distinct acquisition-event identities and 0 recorded first API-key uses/.test(text)));
   assert.ok(page.some((text) => /Since the bot check on 18 Nov 2026, 7:04 PM ET, 3 checkout sessions started and 0 are classified as a browser/.test(text)));
   assert.ok(page.some((text) => /read-only/.test(text) && /\/v1\/admin\/summary/.test(text)));
   assert.equal(page.some((text) => /uptimeSeconds/.test(text)), false);
@@ -145,7 +145,7 @@ test('Overview never infers a zero when the sources fail', async () => {
 test('describeObstacle names evidence and its limits, and does not invent one', () => {
   const { context } = renderTexts('observability', observability(600));
   const fields = summaryBody().data.fields;
-  assert.match(context.describeObstacle(fields, funnel({ acquisition: 209, activation: 0, paid: 0 })), /free local use is not measured/);
+  assert.match(context.describeObstacle(fields, funnel({ acquisition: 209, activation: 0, paid: 0 })), /does not establish unique people, installations or successful local use/);
   assert.match(context.describeObstacle(null, null), /could not be read right now/);
   assert.match(context.describeObstacle({ 'money.paying_customers': metric('p', 2, 'ok') }, null), /2 paying customers/);
   assert.match(context.describeObstacle({ 'money.paying_customers': metric('p', 0, 'verified_zero') }, null), /not enough classified evidence/);

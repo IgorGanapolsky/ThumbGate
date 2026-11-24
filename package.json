@@ -1466,7 +1466,7 @@
     "test:refund-policy-consistency": "node --test --test-force-exit tests/refund-policy-consistency.test.js",
     "test:no-orphan-posthog": "node --test --test-force-exit tests/no-orphan-posthog.test.js",
     "test:admin-truth-ui": "node --test --test-force-exit tests/admin-truth-ui.test.js",
-    "test:owner-admin": "node --test tests/owner-admin.test.js"
+    "test:owner-admin": "node --test tests/owner-admin.test.js tests/owner-admin-payment-cursor.test.js tests/owner-reporting-semantics.test.js tests/owner-summary-quality.test.js"
   },
   "keywords": [
     "mcp",
