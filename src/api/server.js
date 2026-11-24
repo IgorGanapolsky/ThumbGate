@@ -9083,6 +9083,23 @@ async function addContext(){
       return;
     }
 
+    if (isGetLikeRequest && (pathname === '/pilot' || pathname === '/pilot.html')) {
+      try {
+        servePublicMarketingPage({
+          req,
+          res,
+          parsed,
+          hostedConfig,
+          isHeadRequest,
+          renderHtml: () => fs.readFileSync(path.join(PUBLIC_DIR, 'pilot.html'), 'utf-8'),
+          extraTelemetry: { pageType: 'pilot_request' },
+        });
+      } catch {
+        sendJson(res, 404, { error: 'Pilot page not found' });
+      }
+      return;
+    }
+
     // Natural marketing URLs for the Workflow Hardening Diagnostic/Sprint.
     // High-intent outreach refers to "the diagnostic", "the sprint", or
     // "workflow hardening"; serve a focused buyer page instead of sending
@@ -10841,6 +10858,40 @@ a{color:#8b9}</style></head><body><form class="card" method="post" action="/oaut
           mailerReason: mailerResult.reason || null,
         });
       });
+      return;
+    }
+
+    if (req.method === 'OPTIONS' && pathname === '/v1/intake/pilot-request') {
+      sendPublicBillingPreflight(res);
+      return;
+    }
+
+    // POST /v1/intake/pilot-request: the "Request a 30-day team pilot" form. Stores the request and emails the owner.
+    if (req.method === 'POST' && pathname === '/v1/intake/pilot-request') {
+      const { FEEDBACK_DIR } = getFeedbackPaths();
+      const traceId = createTraceId('pilot_request');
+      try {
+        const pilot = require('../../scripts/pilot-request');
+        const contentType = String(req.headers['content-type'] || '').toLowerCase();
+        const body = contentType.includes('application/x-www-form-urlencoded')
+          ? await parseFormBody(req, 8 * 1024)
+          : await readProjectBody(req, 8 * 1024);
+        const checked = pilot.validatePilotRequest(body);
+        if (!checked.ok) {
+          sendJson(res, 400, { ok: false, fields: checked.errors }, getPublicBillingHeaders(traceId));
+          return;
+        }
+        pilot.storePilotRequest(FEEDBACK_DIR, checked.request);
+        const { getOwnerEmails } = require('../../scripts/bot-detection');
+        const notice = await pilot.notifyOwner(checked.request, {
+          ownerEmails: getOwnerEmails(),
+          sendEmail: require('../../scripts/mailer/resend-mailer').sendEmail,
+        });
+        console.log(`[pilot-request] stored ${checked.request.id}; owner email ${notice.sent ? 'sent' : `not sent (${notice.reason})`}`);
+        sendJson(res, 200, { ok: true, id: checked.request.id, stored: true, ownerNotified: notice.sent }, getPublicBillingHeaders(traceId));
+      } catch (err) {
+        sendJson(res, 500, { ok: false, error: 'Could not record the request.' }, getPublicBillingHeaders(traceId));
+      }
       return;
     }
 
