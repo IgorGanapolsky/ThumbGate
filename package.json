@@ -19,6 +19,8 @@
   },
   "files": [
     "!config/main-branch-ruleset.json",
+    "!config/ship-policy.json",
+    "!.claude/commands/ship.md",
     "!config/performance-budgets.json",
     "!public/assets/brand/github-social-preview.png",
     "!public/assets/diagrams/thumbgate-agent-meme.jpg",
