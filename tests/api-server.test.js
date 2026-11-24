@@ -620,25 +620,18 @@ test('/diagnostic serves the managed workflow gate checkout and fit page', async
   assert.equal(res.status, 200);
   assert.match(res.headers.get('content-type') || '', /text\/html/);
   const html = await res.text();
-  assert.match(html, /Setup Sprint/);
-  assert.match(html, /Submit for fit check/);
+  assert.match(html, /Team Pilot/);
+  assert.match(html, /Request a team pilot/);
   assert.match(html, /action="\/v1\/intake\/workflow-sprint"/);
   assert.match(html, /name="planId" value="diagnostic"/);
   assert.match(html, /name="ctaId" value="diagnostic_page_intake"/);
   assert.match(html, /workflow_sprint_intake_submit_attempted/);
-  assert.match(html, /Book the \$499 setup/);
-  assert.match(html, /Exactly what the \$499 Setup Sprint includes/);
-  assert.match(html, /one 60-minute working review/i);
-  assert.match(html, /one configured local gate and regression test/i);
-  assert.match(html, /rollout and rollback proof within two business days/i);
-  assert.match(html, /order is refunded instead of being silently converted/i);
-  assert.doesNotMatch(html, /\$1500|public Setup Sprint/i);
+  assert.match(html, /data-cta-id="diagnostic_page_submit"/);
+  // Request-only pilot: no price, no checkout form, no live payment path.
+  assert.doesNotMatch(html, /\$499|\$1500|public Setup Sprint/i);
+  assert.doesNotMatch(html, /action="\/go\/diagnostic-pay"/);
+  assert.doesNotMatch(html, /name="customer_email"/);
   assert.doesNotMatch(html, /__WORKFLOW_SPRINT_PRICE_DOLLARS__|__SPRINT_DIAGNOSTIC_PRICE_DOLLARS__/);
-  assert.match(html, /action="\/go\/diagnostic-pay" method="POST"/);
-  assert.match(html, /name="customer_email"[^>]*required/);
-  assert.match(html, /No Stripe session is created until you submit this form/);
-  assert.match(html, /data-cta-id="diagnostic_hero_paid"/);
-  assert.doesNotMatch(html, /No cold payment link/);
 });
 
 test('/workflow-hardening-sprint and diagnostic aliases serve the focused diagnostic page', async () => {
@@ -647,7 +640,7 @@ test('/workflow-hardening-sprint and diagnostic aliases serve the focused diagno
     assert.equal(res.status, 200, `${route} should render`);
     assert.match(res.headers.get('content-type') || '', /text\/html/);
     const html = await res.text();
-    assert.match(html, /Setup Sprint/);
+    assert.match(html, /Team Pilot/);
     assert.match(html, /<link rel="canonical" href="https:\/\/app\.example\.com\/diagnostic"/);
   }
 });
