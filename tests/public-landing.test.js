@@ -661,11 +661,11 @@ test('hero states the approved workflow scope with fit-first and free paths', ()
   );
   const lede = normalizeHtmlText((hero.match(/<p class="hero-lede">([\s\S]*?)<\/p>/) || [])[1]);
 
-  assert.match(landingPage, /Thumbs-down a Claude Code mistake once/i);
+  assert.match(landingPage, /Thumbs-down a Claude Code mistake, and ThumbGate shows your reason/i);
   assert.match(landingPage, /ThumbGate — Warn Claude Code before it repeats a mistake/i);
-  assert.match(hero, /<h1>Thumbs-down a Claude Code mistake once, and ThumbGate warns the next time it tries that command\. After three thumbs-downs on the same command, strict mode blocks it\.<\/h1>/i);
+  assert.match(hero, /<h1>Thumbs-down a Claude Code mistake, and ThumbGate shows your reason as a warning when a similar command comes up\. A thumbs-down warns; it does not block\.<\/h1>/i);
   assert.match(hero, /PreToolUse gate for Claude Code/i);
-  assert.match(hero, /ThumbGate checks every call: secret leaks and catastrophic commands are denied, other flagged actions warn, strict mode blocks them/i);
+  assert.match(hero, /ThumbGate checks every call: secret leaks and catastrophic commands are denied by built-in rules, other flagged actions warn/i);
   assert.match(hero, /data-recorded-deny/);
   assert.match(hero, /permissionDecision":"deny/);
   assert.match(hero, /THUMBGATE_STRICT_ENFORCEMENT=1/);
@@ -736,7 +736,7 @@ test('paid plan describes self-serve Pro features truthfully', () => {
 test('enforcement promise distinguishes default denies from strict-mode blocks', () => {
   assert.match(landingPage, /Detected secret exfiltration[\s\S]*denied by default/i);
   assert.match(landingPage, /Catastrophic commands \([^)]*\)[\s\S]*denied by default/i);
-  assert.match(landingPage, /Other matching destructive actions warn by default and deny in strict mode/i);
+  assert.match(landingPage, /Other matching destructive actions warn by default and deny in strict mode for some rules, not every action/i);
   assert.match(landingPage, /not a claim that every free install blocks every risky command automatically/i);
   assert.match(landingPage, /mode\s+strict enforcement[\s\S]*decision\s+<span class="red">DENY<\/span>/i);
 });

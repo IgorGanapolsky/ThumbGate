@@ -8,7 +8,7 @@ test.describe('/ free and Pro conversion path', () => {
 
   test('renders self-serve Pro and preserves the free enforcement loop', async ({ page }) => {
     await page.goto('/');
-    await expect(page.locator('.hero h1')).toHaveText('Thumbs-down a Claude Code mistake once, and ThumbGate warns the next time it tries that command. After three thumbs-downs on the same command, strict mode blocks it.');
+    await expect(page.locator('.hero h1')).toHaveText('Thumbs-down a Claude Code mistake, and ThumbGate shows your reason as a warning when a similar command comes up. A thumbs-down warns; it does not block.');
     await expect(page.locator('[data-primary-checkout]')).toBeVisible();
     await expect(page.locator('[data-primary-checkout] .price')).toContainText('$' + (process.env.THUMBGATE_PRO_PRICE_DOLLARS || '19'));
     await expect(page.locator('.hero [data-cta-id="homepage_pro_checkout"]')).toHaveAttribute('href', '/checkout/pro');
@@ -70,7 +70,7 @@ test.describe('/ free and Pro conversion path', () => {
 
     await expect(page).toHaveURL(/#proof$/);
     await expect(page.locator('#proof .terminal')).toBeVisible();
-    await expect(page.locator('#proof')).toContainText('Matching destructive actions warn by default and deny in strict mode.');
+    await expect(page.locator('#proof')).toContainText('Other matching destructive actions warn by default and deny in strict mode for some rules, not every action.');
   });
 
   test('FAQ interaction updates both visibility and aria-expanded', async ({ page }) => {

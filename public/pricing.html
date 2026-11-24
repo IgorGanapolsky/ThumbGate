@@ -154,7 +154,7 @@
           <video id="gate-demo-video" width="960" height="722" controls autoplay muted loop playsinline preload="auto" poster="/media/thumbgate-gate-demo-poster.jpg" aria-label="Recording: Claude Code deletes a folder, gets thumbs-down three times, and the fourth session is blocked by the gate">
             <source src="/media/thumbgate-gate-demo.mp4" type="video/mp4">
           </video>
-          <figcaption>Real 58-second run with <code>THUMBGATE_STRICT_ENFORCEMENT=1</code>: three thumbs-downs, then the fourth attempt is denied. A reworded delete is not caught. <a href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/demo/gate-demo/README.md" target="_blank" rel="noopener">How it was recorded</a>.</figcaption>
+          <figcaption>Recorded output of built-in deny rules, not rules learned from a thumbs-down. <a href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/demo/gate-demo/README.md" target="_blank" rel="noopener">How it was recorded</a>.</figcaption>
         </figure>
 
         <div class="outcome">
@@ -187,7 +187,7 @@
         <tbody>
           <tr><th>Blocked by default: force-push, <code>git reset --hard</code>, <code>git clean -f</code>, <code>rm -rf</code> on home or root, <code>DROP TABLE</code></th><td>Yes</td><td>Yes</td></tr>
           <tr><th>Gate blocks per day (strict mode)</th><td>Unlimited</td><td>Unlimited</td></tr>
-          <tr><th>Learned rules from your thumbs-down that stay active (warn; block in strict mode)</th><td>3</td><td>All</td></tr>
+          <tr><th>Learned rules from your thumbs-down that stay active (warn)</th><td>3</td><td>All</td></tr>
           <tr><th>Recall of past lessons</th><td>No</td><td>Yes</td></tr>
           <tr><th>Lesson search</th><td>No</td><td>Yes</td></tr>
           <tr><th>Multi-hop recall, synthetic DPO pairs</th><td>No</td><td>Yes</td></tr>

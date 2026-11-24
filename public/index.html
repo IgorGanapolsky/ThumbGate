@@ -14,9 +14,9 @@
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:image" content="https://thumbgate.ai/og.png">
   <title>ThumbGate — Warn Claude Code before it repeats a mistake</title>
-  <meta name="description" content="Thumbs-down a Claude Code mistake once and ThumbGate warns next time; after three thumbs-downs on the same command, strict mode blocks it. Free local PreToolUse gates; Pro adds recall and every learned rule.">
+  <meta name="description" content="Thumbs-down a Claude Code mistake and ThumbGate shows your reason as a warning when a similar command comes up. A thumbs-down warns; it does not block. Free local PreToolUse gates; Pro adds recall and every learned rule.">
   <meta property="og:title" content="ThumbGate — Warn Claude Code before it repeats a mistake">
-  <meta property="og:description" content="Thumbs-down a Claude Code mistake once and ThumbGate warns next time; after three thumbs-downs on the same command, strict mode blocks it. Free local PreToolUse gates; Pro adds recall and every learned rule.">
+  <meta property="og:description" content="Thumbs-down a Claude Code mistake and ThumbGate shows your reason as a warning when a similar command comes up. A thumbs-down warns; it does not block. Free local PreToolUse gates; Pro adds recall and every learned rule.">
   <meta property="og:type" content="website">
   <meta property="og:url" content="__APP_ORIGIN__/">
   <script defer data-domain="thumbgate.ai" src="https://plausible.io/js/script.tagged-events.js"></script>
@@ -743,9 +743,10 @@
             <span class="up" aria-hidden="true"><svg class="hero-thumb-up" viewBox="0 0 32 32" aria-hidden="true"><use href="#thumb-glyph"/></svg></span>
             <button type="button" class="down" id="hero-thumb-down" aria-label="Record a thumbs-down for the selected command"><svg class="hero-thumb-down" viewBox="0 0 32 32" aria-hidden="true"><use href="#thumb-glyph"/></svg></button>
           </div>
-          <h1>Thumbs-down a Claude Code mistake once, and ThumbGate warns the next time it tries that command. After three thumbs-downs on the same command, strict mode blocks it.</h1>
-          <p class="hero-lede">Run Claude Code with bypass permissions and ThumbGate checks every call: secret leaks and catastrophic commands are denied, other flagged actions warn, strict mode blocks them.</p>
+          <h1>Thumbs-down a Claude Code mistake, and ThumbGate shows your reason as a warning when a similar command comes up. A thumbs-down warns; it does not block.</h1>
+          <p class="hero-lede">Run Claude Code with bypass permissions and ThumbGate checks every call: secret leaks and catastrophic commands are denied by built-in rules, other flagged actions warn.</p>
           <p class="hero-audience" id="hero-audience"><strong>Who it's for:</strong> Claude Code users whose agent has already broken something once. The local CLI is free.</p>
+          <div class="hero-limits" id="hero-limits" style="margin:12px 0;padding:12px 14px;border:1px solid #444;border-radius:8px;max-width:640px"><p style="margin:0 0 6px"><strong>Does:</strong> checks the command Claude sends, before it runs, and warns with your reason.</p><p style="margin:0"><strong>Does not:</strong> block because of a thumbs-down, see what a script does underneath a command, replace Claude Code's own checks, or stop a first-time mistake.</p></div>
           <div class="actions"style="display:flex;gap:12px;flex-wrap:wrap;align-items:center;margin:0 0 24px;">
             <button type="button" class="button-primary" data-copy-install data-cta-id="hero_install_copy_primary">Copy free install: npx thumbgate init --agent claude</button>
             <a class="button-pro" href="/checkout/pro" data-revenue-cta data-cta-placement="hero" data-plan-id="pro" data-cta-id="homepage_hero_pro_checkout">Get Pro — $__PRO_PRICE_DOLLARS__/month</a>
@@ -754,7 +755,7 @@
             <video id="gate-demo-video" width="960" height="722" controls autoplay muted loop playsinline preload="auto" poster="/media/thumbgate-gate-demo-poster.jpg" aria-label="Recording: Claude Code deletes a folder, gets thumbs-down three times, and the fourth session is blocked by the gate">
               <source src="/media/thumbgate-gate-demo.mp4" type="video/mp4">
             </video>
-            <figcaption>Real 58-second run with <code>THUMBGATE_STRICT_ENFORCEMENT=1</code>: three thumbs-downs, then the fourth attempt is denied. A reworded delete is not caught. <a href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/demo/gate-demo/README.md" target="_blank" rel="noopener">How it was recorded</a>.</figcaption>
+            <figcaption>Recorded output of built-in deny rules, not rules learned from a thumbs-down. <a href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/demo/gate-demo/README.md" target="_blank" rel="noopener">How it was recorded</a>.</figcaption>
           </figure>
           <div class="hero-terminal" id="hero-recorded-deny" aria-label="Recorded PreToolUse decisions">
             <div class="terminal-chrome" aria-hidden="true">
@@ -811,7 +812,7 @@ $ ... "rm -rf ~/"
         <ol class="loop-3">
           <li><strong>1 · Catch</strong> Claude tries something you rejected before, like <code>npm publish</code> from the wrong branch, or mocking the database in an end-to-end test.</li>
           <li><strong>2 · Signal</strong> One thumbs-down with the reason: <code>npx thumbgate capture --feedback=down --context="mocked the DB in an e2e test"</code></li>
-          <li><strong>3 · Enforce</strong> A local PreToolUse gate checks every future tool call in every Claude Code session in that project. A match warns Claude with your reason; in strict mode, after three thumbs-downs, it is denied.</li>
+          <li><strong>3 · Enforce</strong> A local PreToolUse gate checks every future tool call in every Claude Code session in that project. A match warns Claude with your reason. A thumbs-down alone does not block a command.</li>
         </ol>
         <h3 style="margin-top:28px;font-size:1.1rem;">What <code>init</code> adds to your Claude Code settings</h3>
 <pre class="cc-cmd settings-block"><code>{
@@ -921,7 +922,7 @@ $ ... "rm -rf ~/"
             <span class="loop-number">3</span>
             <div class="thumb-icon" aria-hidden="true">📈</div>
             <h3>Rank and refine</h3>
-            <p>Re-rank lessons for the action. Repeated negatives become gates that warn, or block in strict mode; stale gates expire.</p>
+            <p>Re-rank lessons for the action. Repeated negatives become gates that warn; stale gates expire.</p>
             <span class="loop-hint">Under the hood ↓</span>
           </div>
           <div class="loop-step" role="tab" tabindex="0" id="loop-tab-4" data-loop-step="4" aria-selected="false" aria-controls="loop-panel" aria-expanded="false">
@@ -1000,7 +1001,7 @@ next      decision recorded before execution</pre>
             </div>
           </div>
           <div class="proof-copy">
-            <p><strong>Why not a static hook?</strong> Prompts compact away; static bash hooks don't learn from 👍/👎. Detected secret exfiltration and gate-process bypass attempts are denied by default. Catastrophic commands (force-push, <code>reset --hard</code>, <code>rm -rf</code> on home or root, <code>DROP TABLE</code>) are denied by default. Other matching destructive actions warn by default and deny in strict mode. This is a managed strict-mode example, not a claim that every free install blocks every risky command automatically.</p>
+            <p><strong>Why not a static hook?</strong> Prompts compact away; static bash hooks don't learn from 👍/👎. Detected secret exfiltration and gate-process bypass attempts are denied by default. Catastrophic commands (force-push, <code>reset --hard</code>, <code>rm -rf</code> on home or root, <code>DROP TABLE</code>) are denied by default. Other matching destructive actions warn by default and deny in strict mode for some rules, not every action. This is a managed strict-mode example, not a claim that every free install blocks every risky command automatically.</p>
             <a href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md" target="_blank" rel="noopener">Read the test-backed verification evidence →</a>
             <p style="margin-top:12px;"><a href="/whitepaper">White paper</a> · <a href="/eval-scorecard">Scorecard</a> · <a href="/architecture">Architecture</a> · <a href="/case-studies">How we use it</a></p>
           </div>

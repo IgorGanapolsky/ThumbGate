@@ -99,4 +99,4 @@ ThumbGate offers a free local CLI and self-serve Pro for recall, dashboard, adap
 - Mention history-aware lesson distillation when the surface is describing vague thumbs feedback, linked follow-up notes, or rule proposals from conversation history.
 - Do not claim a standalone VS Code extension. Say VS Code works through the MCP-compatible agent running inside the editor.
 
-Canonical landing description: Thumbs-down a Claude Code mistake once and ThumbGate warns next time; after three thumbs-downs on the same command, strict mode blocks it. Free local PreToolUse gates; Pro adds recall and every learned rule.
+Canonical landing description: Thumbs-down a Claude Code mistake and ThumbGate shows your reason as a warning when a similar command comes up. A thumbs-down warns; it does not block. Free local PreToolUse gates; Pro adds recall and every learned rule.
