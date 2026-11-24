@@ -179,6 +179,14 @@ function selectTests(changed = [], policy = loadPolicy(), options = {}) {
   const listTests = options.listTests || (() => fs.readdirSync(path.join(ROOT, 'tests')).filter((n) => n.endsWith('.test.js')));
   const selected = new Set((policy.fastTests || []).filter(exists));
   const testNames = listTests();
+  const cache = new Map();
+  const readTest = options.readTest || ((name) => {
+    if (!cache.has(name)) {
+      try { cache.set(name, fs.readFileSync(path.join(ROOT, 'tests', name), 'utf8')); } catch { cache.set(name, ''); }
+    }
+    return cache.get(name);
+  });
+  const referenced = new Set();
 
   for (const file of changed) {
     // Changed tests are taken as-is: a test the PR adds is not on main yet, and
@@ -193,7 +201,17 @@ function selectTests(changed = [], policy = loadPolicy(), options = {}) {
       const stem = name.replace(/\.test\.js$/, '');
       if (stem === base || stem.startsWith(`${base}-`)) selected.add(`tests/${name}`);
     }
+    // Tests that load or read the changed file by path, e.g.
+    // require('../scripts/foo') or path.join(..., 'config', 'foo.json').
+    const dir = path.dirname(file);
+    const needles = [`${dir}/${base}`, `'${dir.split('/').pop()}', '${path.basename(file)}'`];
+    for (const name of testNames) {
+      const body = readTest(name);
+      if (needles.some((n) => body.includes(n))) referenced.add(`tests/${name}`);
+    }
   }
+  // Direct matches first, then tests that only reference the file.
+  for (const t of referenced) selected.add(t);
 
   const list = [...selected];
   return list.slice(0, policy.maxSelectedTests || list.length);
@@ -307,7 +325,11 @@ function main(argv = process.argv.slice(2)) {
     const { pr, files } = fetchPr(args.pr, repo, policy);
     const result = evaluatePr(pr, files, policy);
     const present = files.filter((f) => f.status !== 'removed').map((f) => f.filename);
-    const tests = selectTests(present, policy);
+    const all = selectTests(present, { ...policy, maxSelectedTests: Infinity });
+    const tests = all.slice(0, policy.maxSelectedTests || all.length);
+    if (all.length > tests.length) {
+      result.warnings.push(`${all.length} tests match this change; the gate ran the first ${tests.length}. The full suite runs on the next release tag.`);
+    }
     if (args['review-out']) fs.writeFileSync(args['review-out'], renderReview(result, tests));
     writeGithubOutput({ verdict: result.verdict, tests: tests.join(' '), head_sha: pr.headSha });
     console.log(args.json ? JSON.stringify({ ...result, tests }, null, 2) : `verdict=${result.verdict}`);

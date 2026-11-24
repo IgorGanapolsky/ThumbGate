@@ -151,7 +151,7 @@
     "tests/sync-repository-rulesets.test.js",
     "tests/ship-policy.test.js"
   ],
-  "maxSelectedTests": 40,
+  "maxSelectedTests": 60,
   "optionalChecks": [
     "Entire Gates",
     "CodeRabbit",
@@ -164,7 +164,8 @@
   ],
   "selfChecks": [
     "ship-gate / merge",
-    "merge"
+    "merge",
+    "flag"
   ],
   "checkWaitMinutes": 12,
   "scanExcludePaths": [
