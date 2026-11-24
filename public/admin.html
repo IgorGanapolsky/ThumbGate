@@ -276,16 +276,17 @@
     </main>
     <footer>
       Private and read-only. Owner and test purchases are left out of every
-      revenue number. JSON for agents: /v1/admin/summary and /v1/admin/alerts.
+      revenue number. JSON for agents: /v1/admin/summary, /v1/admin/economics and /v1/admin/alerts.
     </footer>
     <script nonce="__ADMIN_NONCE__">
       'use strict';
       const content = document.getElementById('content');
       // Today answers "does anything need me, and how did this week go". Overview repeated it, so it left the menu;
       // its numbers stay in /v1/admin/summary for agents.
-      const sections = ['money', 'analytics', 'observability', 'stripe', 'data'];
+      const sections = ['money', 'economics', 'analytics', 'observability', 'stripe', 'data'];
       const titles = {
         money: 'Today',
+        economics: 'Unit economics',
         overview: 'Overview',
         stripe: 'Stripe records',
         data: 'Hosted data',
@@ -890,6 +891,57 @@
         );
         parent.append(element('p', 'The channel is the utm source a checkout carried, or direct. Bots and your own checkouts are left out of starts; a customer counts once, for their first paid checkout.', 'muted'));
       }
+      function minutesWords(m) {
+        if (m < 60) return Math.round(m) + ' min';
+        if (m < 1440) return Math.round((m / 60) * 10) / 10 + ' h';
+        return Math.round((m / 1440) * 10) / 10 + ' days';
+      }
+      const usd = (n) => (Number.isFinite(n) ? '$' + (Math.abs(n) < 1 && n !== 0 ? n.toFixed(4) : n.toFixed(2)) : null);
+      function economicsBlock(parent, data) {
+        const reasons = data.reasons || {};
+        const or = (value, reason) => (value === null || value === undefined ? reason || 'Source not available right now' : value);
+        const d = data.delivery || {};
+        parent.append(element('h3', 'Cost to deliver · past 30 days, US dollars'));
+        cards(parent, {
+          'Hosting (Railway, measured CPU and memory at list rates)': or(usd(d.hostingUsd), reasons.hosting),
+          'Email (sends counted by the app)': d.emailUsd === null || d.emailUsd === undefined ? 'Not counted yet' : usd(d.emailUsd) + ' · ' + d.emails + ' sent',
+          'Payment fees (Stripe)': or(usd(d.paymentFeesUsd), reasons.paymentFees),
+          'Fixed delivery costs': d.fixedUsd ? usd(d.fixedUsd) : 'None recorded',
+          'Total delivery cost': or(usd(d.totalUsd), 'Not complete yet'),
+          'Build and internal costs (kept apart)': data.build?.totalUsd ? usd(data.build.totalUsd) : 'None recorded',
+        }, true);
+        parent.append(element('h3', 'Per unit'));
+        cards(parent, {
+          'Serving cost per active install': or(usd(data.perActiveInstallUsd), reasons.activeInstalls || reasons.hosting),
+          'Delivery cost per paying customer': or(usd(data.perPayingCustomerUsd), reasons.payingCustomers || reasons.hosting),
+          'Revenue, past 30 days (one-time plus renewals)': or(usd(data.revenue?.totalUsd), 'Stripe not available right now'),
+          'Contribution (revenue minus delivery cost)': data.contribution ? usd(data.contribution.contributionUsd) + (Number.isFinite(data.contribution.marginPct) ? ' · ' + Math.round(data.contribution.marginPct * 1000) / 10 + '% margin' : '') : 'Not complete yet',
+        }, true);
+        parent.append(element('h3', 'Contribution per sale, by plan'));
+        const plans = Object.values(data.plans || {}).filter((plan) => plan && Number.isFinite(plan.priceUsd));
+        table(parent, [
+          ['Plan', (r) => r.name],
+          ['Price', (r) => usd(r.priceUsd) + (r.priceBasis === 'list_price' ? ' (list)' : ' (Stripe average)')],
+          ['Payment fee', (r) => usd(r.paymentFeeUsd)],
+          ['Serving cost', (r) => usd(r.deliveryCostUsd)],
+          ['Keeps', (r) => usd(r.contributionUsd) + ' · ' + Math.round(r.marginPct * 1000) / 10 + '%' + (r.laborNote ? ' · labor not counted' : '')],
+        ], plans);
+        const access = data.paymentAccess;
+        parent.append(element('h3', 'Payment to access'));
+        if (!access) parent.append(element('p', 'Stripe or the key store is not available right now, so the check did not run.', 'notice'));
+        else if (access.status === 'unavailable') parent.append(element('p', access.reason, 'notice'));
+        else {
+          cards(parent, {
+            'Paid but no active key': String(access.paidWithoutAccess),
+            'Failed payment, key still active': access.failedPaymentWithAccess === null ? 'Not checked' : String(access.failedPaymentWithAccess),
+            'Active paid keys with no Stripe payment': String(access.accessWithoutStripePayment),
+            'Subscriptions with a failed payment': access.failedPaymentSubscriptions === null ? 'Not checked' : String(access.failedPaymentSubscriptions),
+          }, true);
+          parent.append(element('p', 'Keys with no Stripe payment can be GitHub Marketplace, PayPal or manual grants, so they are listed for review, not called wrong. Trial and free keys are left out (' + access.activeTrialOrFreeKeys + ').' + (access.complete ? '' : ' Some Stripe lists were cut short, so these counts are a lower bound.'), 'muted'));
+        }
+        for (const reason of [reasons.fixed, reasons.build, reasons.currencies, d.hosting?.reason, d.emailBasis]) if (reason) parent.append(element('p', reason, 'muted'));
+        parent.append(element('p', 'Rates checked ' + data.ratesCheckedAt + ' and kept in config/unit-costs.json with their sources. JSON for agents: /v1/admin/economics.', 'muted'));
+      }
       function usageBlock(parent, usage) {
         parent.append(element('h3', 'Product usage · CLI installs, past 30 days'));
         if (!usage) {
@@ -905,6 +957,8 @@
             'Ran init in this window': usage.initsInWindow,
             'Captured feedback (activated)': String(usage.activatedInstalls) + share(usage.activatedInstalls),
             'Came back on a second day': String(usage.returningInstalls) + share(usage.returningInstalls),
+            'First value: a real gate blocked a tool call': Number.isFinite(usage.firstValueInstalls) ? String(usage.firstValueInstalls) + share(usage.firstValueInstalls) : 'Not reported by this telemetry yet',
+            'Time to first value (median)': usage.timeToFirstValue && Number.isFinite(usage.timeToFirstValue.medianMinutes) ? minutesWords(usage.timeToFirstValue.medianMinutes) + ' after install (' + usage.timeToFirstValue.installs + ' installs)' : 'N/A, no first block yet',
           },
           true,
         );
@@ -913,7 +967,7 @@
             'p',
             'An install is the anonymous id the CLI keeps in ~/.thumbgate. Your own machines, CI and flagged pings are left out (' +
               usage.excludedInstalls +
-              ' excluded). Installs with telemetry turned off are not seen, so these are lower bounds. Gate blocks run locally and are not reported.',
+              ' excluded). Installs with telemetry turned off are not seen, so these are lower bounds. Gate blocks run locally; only the first block on each install is reported, with the minutes since install.',
             'muted',
           ),
         );
@@ -922,6 +976,7 @@
         detail(parent, 'Installs by platform', usage.byPlatform);
       }
       function render(parent, section, data) {
+        if (section === 'economics') economicsBlock(parent, data);
         if (section === 'money') {
           alertsBlock(parent);
           parent.append(element('h3', 'This week at a glance'));
