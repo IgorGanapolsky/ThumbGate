@@ -1,0 +1,177 @@
+{
+  "$comment": "Approval policy for the free ship pipeline (scripts/ship-policy.js, .github/workflows/ship-gate.yml). A PR that passes every rule here and every check is merged without a human. Anything else is labelled needs-igor and waits for Igor. The gate always reads this file from main, never from the PR, so a PR cannot loosen its own rules.",
+  "version": 1,
+  "base": "main",
+  "mergeMethod": "squash",
+  "labels": {
+    "needsHuman": "needs-igor",
+    "optIn": "automerge",
+    "hold": "do-not-merge",
+    "needsFix": "needs-fix",
+    "stale": "stale"
+  },
+  "autoMerge": {
+    "enabled": true,
+    "maxChangedLines": 600,
+    "maxFiles": 40,
+    "allowedAuthors": [
+      "IgorGanapolsky",
+      "dependabot[bot]",
+      "github-actions[bot]"
+    ],
+    "allowedBranchPrefixes": [
+      "claude/",
+      "codex/",
+      "auto/",
+      "agent/",
+      "ship/",
+      "fix/",
+      "feat/",
+      "chore/",
+      "docs/",
+      "test/",
+      "dependabot/"
+    ]
+  },
+  "humanReviewPaths": [
+    ".github/workflows/**",
+    ".github/CODEOWNERS",
+    ".githooks/**",
+    ".claude/settings*.json",
+    "config/ship-policy.json",
+    "scripts/ship-policy.js",
+    "config/main-branch-ruleset.json",
+    "config/merge-quality-checks.json",
+    "scripts/sync-branch-protection.js",
+    "scripts/sync-repository-rulesets.js",
+    "config/gates/**",
+    "scripts/gates-engine.js",
+    "config/entitlement-public-keys.json",
+    "scripts/*stripe*",
+    "scripts/*billing*",
+    "scripts/*checkout*",
+    "src/**/*stripe*",
+    "src/**/*billing*",
+    "scripts/publish-*",
+    ".env*",
+    "LICENSE"
+  ],
+  "dependabotAllowedPaths": [
+    "package.json",
+    "package-lock.json",
+    "workers/package.json",
+    "workers/package-lock.json",
+    ".github/workflows/**",
+    ".changeset/dependabot-*.md"
+  ],
+  "riskyPatterns": [
+    {
+      "id": "aws-key",
+      "severity": "block",
+      "regex": "AKIA[0-9A-Z]{16}",
+      "message": "Looks like an AWS access key."
+    },
+    {
+      "id": "stripe-live-key",
+      "severity": "block",
+      "regex": "sk_live_[0-9a-zA-Z]{10,}",
+      "message": "Looks like a live Stripe secret key."
+    },
+    {
+      "id": "private-key",
+      "severity": "block",
+      "regex": "-----BEGIN (RSA |EC |OPENSSH )?PRIVATE KEY-----",
+      "message": "Private key material."
+    },
+    {
+      "id": "github-token",
+      "severity": "block",
+      "regex": "gh[pousr]_[A-Za-z0-9]{30,}",
+      "message": "Looks like a GitHub token."
+    },
+    {
+      "id": "no-verify",
+      "severity": "block",
+      "regex": "--no-verify",
+      "message": "Skips git hooks. Hooks are a required gate here."
+    },
+    {
+      "id": "force-push",
+      "severity": "block",
+      "regex": "push\\s+(--force|-f)\\b",
+      "message": "Force-push to a shared branch."
+    },
+    {
+      "id": "focused-test",
+      "severity": "block",
+      "regex": "\\b(test|it|describe)\\.only\\(",
+      "message": "A focused test silently skips the rest of the file."
+    },
+    {
+      "id": "skipped-test",
+      "severity": "warn",
+      "regex": "\\b(test|it|describe)\\.skip\\(|\\{\\s*skip:\\s*true",
+      "message": "A test was skipped. Never skip a test to get green."
+    },
+    {
+      "id": "eval",
+      "severity": "warn",
+      "regex": "\\beval\\(|new Function\\(",
+      "message": "Dynamic code execution."
+    },
+    {
+      "id": "shell-true",
+      "severity": "warn",
+      "regex": "shell:\\s*true",
+      "message": "Spawning through a shell. Check for injection."
+    },
+    {
+      "id": "todo-hack",
+      "severity": "warn",
+      "regex": "\\b(HACK|XXX)\\b",
+      "message": "Marked as a hack."
+    }
+  ],
+  "codePaths": [
+    "scripts/**",
+    "src/**",
+    "adapters/**",
+    "bin/**",
+    "workers/src/**"
+  ],
+  "testPaths": [
+    "tests/**",
+    "workers/test/**"
+  ],
+  "fastTests": [
+    "tests/public-package-parity.test.js",
+    "tests/test-suite-parity.test.js",
+    "tests/never-bypass-branch-protection.test.js",
+    "tests/sync-repository-rulesets.test.js",
+    "tests/ship-policy.test.js"
+  ],
+  "maxSelectedTests": 40,
+  "optionalChecks": [
+    "Entire Gates",
+    "CodeRabbit",
+    "Vercel",
+    "Vercel Preview Comments",
+    "Gitar",
+    "Gitar AI",
+    "SonarCloud",
+    "SonarCloud Code Analysis"
+  ],
+  "selfChecks": [
+    "ship-gate / merge",
+    "merge"
+  ],
+  "checkWaitMinutes": 12,
+  "scanExcludePaths": [
+    "**/*.md",
+    "config/ship-policy.json",
+    "scripts/ship-policy.js",
+    "tests/ship-policy.test.js",
+    "CHANGELOG.md"
+  ],
+  "owner": "IgorGanapolsky"
+}

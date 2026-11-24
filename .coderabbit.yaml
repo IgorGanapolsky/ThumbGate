@@ -1,11 +1,42 @@
 # yaml-language-server: $schema=https://coderabbit.ai/integrations/schema.v2.json
+# Free LLM review (CodeRabbit is free for public repos). Part of the ship
+# pipeline: ship-gate will not merge while a CodeRabbit thread is unresolved,
+# so keep reviews to real problems. See docs/ops/ship-pipeline.md.
 language: en-US
 reviews:
-  auto_review:
-    enabled: false
-    drafts: false
+  profile: chill
+  request_changes_workflow: false
   high_level_summary: false
   poem: false
   review_status: false
+  collapse_walkthrough: true
+  sequence_diagrams: false
+  changed_files_summary: false
+  auto_review:
+    enabled: true
+    drafts: false
+    base_branches:
+      - main
+    ignore_title_keywords:
+      - "chore(release)"
+  path_filters:
+    - "!**/package-lock.json"
+    - "!CHANGELOG.md"
+    - "!.agents/skills/**"
+    - "!.changeset/**"
+  path_instructions:
+    - path: "**/*.js"
+      instructions: >-
+        Flag only bugs, security problems (injection, secret leaks, unsafe
+        shell), missing error handling that loses data, and tests that cannot
+        fail. Skip style and naming. One comment per real problem.
+    - path: "tests/**"
+      instructions: >-
+        Flag tests that would still pass if the code under test were broken,
+        and any skipped or focused test.
+    - path: ".github/workflows/**"
+      instructions: >-
+        Flag untrusted input used in run: blocks, pull_request_target that
+        checks out PR code, and missing permissions blocks.
 chat:
-  auto_reply: false
+  auto_reply: true
