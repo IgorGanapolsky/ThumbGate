@@ -5096,7 +5096,7 @@ function buildBlockActionProCta() {
       return '\n\n💡 Pro: keep this rule searchable, exportable, and visible → thumbgate.ai/go/pro';
     }
     if (totalBlocks < 100) {
-      return `\n\n💡 ${totalBlocks} actions blocked. Pro adds recall, dashboard proof, and exports → thumbgate.ai/go/pro ($19/mo)`;
+      return `\n\n💡 ${totalBlocks} actions blocked. Pro keeps every learned rule active and adds recall and exports → thumbgate.ai/go/pro ($19/mo)`;
     }
     return `\n\n💡 ${totalBlocks} mistakes caught. Your team could use Enterprise shared hosted enforcement → thumbgate.ai/go/pro`;
   } catch (_) {

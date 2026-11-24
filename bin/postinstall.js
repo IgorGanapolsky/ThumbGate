@@ -26,8 +26,8 @@ process.stderr.write(`
   │  Need a hard gate built for you? $499 one-time.     │
   ╰─────────────────────────────────────────────────────╯
 
-  Trial unlocks: unlimited rules, lesson search, DPO export,
-  and personal dashboard proof. After 7 days, free tier limits apply.
+  Trial unlocks: unlimited rules and thumbs, recall, lesson search
+  and DPO export. After 7 days, free tier limits apply.
   Subscribe for the 5-min setup guide + weekly tips:
   npx thumbgate subscribe you@company.com
 
