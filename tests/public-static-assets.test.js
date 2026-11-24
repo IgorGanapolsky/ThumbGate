@@ -149,7 +149,7 @@ test('landing page presents configured self-serve Pro and free installation clea
   const res = await fetch(`${origin}/`);
   assert.equal(res.status, 200);
   const html = await res.text();
-  assert.match(html, /Pro adds recall, dashboard, adapters, and exports/);
+  assert.match(html, /Pro is about memory/);
   assert.match(html, /href="\/checkout\/pro"/);
   assert.match(html, /free local CLI/i);
   assert.doesNotMatch(html, /\$499|Setup Sprint|two business days/);
@@ -247,7 +247,7 @@ test('GET /install serves the verified distribution and buyer path page', async 
     assert.equal(res.status, 200, `${pathname} should render install page`);
     assert.match(res.headers.get('content-type') || '', /text\/html/);
     const html = await res.text();
-    assert.match(html, /Install paths verified for v1\.27\.20/);
+    assert.match(html, /Registry versions checked/);
     assert.match(html, /npm package/);
     assert.match(html, /VS Code Marketplace/);
     assert.match(html, /Open VSX/);
