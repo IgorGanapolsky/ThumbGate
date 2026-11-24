@@ -70,7 +70,9 @@ test('pro landing page links to proof assets and live demo surfaces', () => {
   assert.match(proPage, /__COMPATIBILITY_REPORT_URL__/);
   assert.match(proPage, /__AUTOMATION_REPORT_URL__/);
   assert.match(proPage, /\/dashboard/);
-  assert.match(proPage, /Live dashboard demo/i);
+  assert.match(proPage, /Hosted dashboard/i);
+  // the hosted /dashboard redirects signed-out visitors to /signin, so it is not sold as a demo
+  assert.doesNotMatch(proPage, /dashboard demo/i);
 });
 
 test('pro landing page keeps JSON-LD and FAQ structure for SEO and GEO', () => {
