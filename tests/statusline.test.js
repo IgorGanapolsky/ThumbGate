@@ -704,17 +704,21 @@ test('Claude Code wiring uses portable ThumbGate commands for status line and ca
     // Published install: subcommand in both fast-path exec and fallback npm-exec
     /thumbgate["']?\s+"statusline-render".*\|\|.*thumbgate"\s+"statusline-render"/.test(statusCommand)
       // Source checkout: direct node invocation
-      || /bin\/cli\.js"\s+statusline-render/.test(statusCommand),
+      || /bin\/cli\.js"\s+statusline-render/.test(statusCommand)
+      // Worktree checkout: stable launcher, never a path that disappears with the worktree
+      || /thumbgate-hook"\s+statusline-render/.test(statusCommand),
     `statusline command must forward statusline-render in both fast and fallback paths: ${statusCommand}`
   );
   assert.ok(
     (cacheCommand.includes('--package') && cacheCommand.includes('thumbgate@') && cacheCommand.includes('thumbgate') && cacheCommand.includes('cache-update'))
-      || cacheCommand.includes('bin/cli.js" cache-update'),
+      || cacheCommand.includes('bin/cli.js" cache-update')
+      || cacheCommand.includes('thumbgate-hook" cache-update'),
     `unexpected cache update command: ${cacheCommand}`
   );
   assert.ok(
     (statusCommand.includes('--package') && statusCommand.includes('thumbgate@') && statusCommand.includes('thumbgate') && statusCommand.includes('statusline-render'))
-      || statusCommand.includes('bin/cli.js" statusline-render'),
+      || statusCommand.includes('bin/cli.js" statusline-render')
+      || statusCommand.includes('thumbgate-hook" statusline-render'),
     `unexpected statusline command: ${statusCommand}`
   );
 });
@@ -790,7 +794,7 @@ test('Codex hook runtime stays durable in source worktrees unless explicitly pin
     mcpConfig.publishedCliAvailable = () => false;
     const sourceRuntime = require(hookRuntimePath);
 
-    assert.match(sourceRuntime.statuslineCommand(), /bin\/cli\.js"\s+statusline-render/);
+    assert.match(sourceRuntime.statuslineCommand(), /(bin\/cli\.js|thumbgate-hook)"\s+statusline-render/);
     assert.match(sourceRuntime.codexStatuslineCommand(), /thumbgate@latest/);
     assert.doesNotMatch(sourceRuntime.codexStatuslineCommand(), /bin\/cli\.js"\s+statusline-render/);
 

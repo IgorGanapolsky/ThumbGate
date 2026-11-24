@@ -30,6 +30,7 @@ const {
   statuslineCommand,
   userPromptHookCommand,
   cursorShellGateHookCommand,
+  isDisposableCheckout,
 } = require('./hook-runtime');
 const { installShim } = require('./install-shim');
 
@@ -488,7 +489,9 @@ function wireClaudeHooks(options) {
   // The shim at ~/.thumbgate/bin/thumbgate-hook always resolves @latest,
   // so hooks never go stale across version bumps (Volta-style pattern).
   // Skip in source-checkout mode — developers use direct node commands.
-  if (!dryRun && !require('./mcp-config').isSourceCheckout(path.join(__dirname, '..'))) {
+  // Worktree checkouts get hooks that call the stable launcher, so it must exist.
+  const sourceRoot = path.join(__dirname, '..');
+  if (!dryRun && (!require('./mcp-config').isSourceCheckout(sourceRoot) || isDisposableCheckout(sourceRoot))) {
     try {
       installShim();
     } catch {
@@ -885,6 +888,7 @@ function parseFlags(argv) {
   const flags = {};
   for (const arg of argv) {
     if (arg === '--dry-run') flags.dryRun = true;
+    if (arg === '--help' || arg === '-h') flags.help = true;
     if (arg === '--wire-hooks') flags.wireHooks = true;
     if (arg.startsWith('--agent=')) flags.agent = arg.slice('--agent='.length);
     if (arg.startsWith('--agent') && !arg.includes('=')) {
@@ -928,8 +932,18 @@ module.exports = {
   sessionStartHookCommand,
 };
 
+const USAGE = `Usage: node scripts/auto-wire-hooks.js [--agent=<claude-code|codex|gemini|forge|cursor>] [--dry-run] [--help]
+
+  --dry-run   print the entries that would be written; write nothing
+  --help, -h  print this text; write nothing
+`;
+
 if (require.main === module) {
   const flags = parseFlags(process.argv.slice(2));
+  if (flags.help) {
+    console.log(USAGE);
+    process.exit(0);
+  }
   const result = wireHooks(flags);
 
   if (result.error) {
