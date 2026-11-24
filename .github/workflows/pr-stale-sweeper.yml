@@ -1,4 +1,4 @@
-name: Daily Stale PR Sweeper
+name: Daily Stale PR Steward
 
 on:
   schedule:
@@ -6,15 +6,19 @@ on:
   workflow_dispatch:
     inputs:
       dry_run:
-        description: 'Preview stale PR closures without mutating GitHub state'
+        description: 'Preview steward actions (rebase, label) without mutating GitHub state'
         required: false
         default: 'false'
         type: string
 
+# Never closes a PR. Rebases branches that fell behind main and labels
+# red/idle/conflicting PRs (needs-fix, stale, needs-rebase) for the steward
+# agent session. See docs/ops/ship-pipeline.md.
 permissions:
-  contents: read
+  contents: write
   pull-requests: write
   issues: write
+  actions: write
 
 concurrency:
   group: pr-stale-sweeper
@@ -35,7 +39,8 @@ jobs:
 
       - name: Run stale PR sweeper
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # A PAT push re-triggers ship-gate on the rebased branch; GITHUB_TOKEN pushes do not.
+          GH_TOKEN: ${{ secrets.GH_PAT || secrets.GITHUB_TOKEN }}
           DRY_RUN: ${{ github.event.inputs.dry_run || 'false' }}
         run: |
           case "$DRY_RUN" in
@@ -43,3 +48,14 @@ jobs:
             false) node scripts/pr-manager.js --sweep-stale --json ;;
             *)     echo "::error::dry_run must be 'true' or 'false' (got '$DRY_RUN'); refusing to run a live sweep." ; exit 1 ;;
           esac
+
+      - name: Re-run the ship gate on open routine PRs
+        # Resolving a review thread fires no Actions event, so a routine PR the
+        # gate left waiting on an open thread is re-checked here once a day.
+        if: github.event.inputs.dry_run != 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          for n in $(gh pr list --state open --label routine --json number --jq '.[].number'); do
+            gh workflow run ship-gate.yml -f pr_number="$n" || echo "::warning::could not dispatch ship-gate for #$n"
+          done
