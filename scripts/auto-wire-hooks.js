@@ -29,6 +29,7 @@ const {
   sessionStartHookCommand,
   statuslineCommand,
   userPromptHookCommand,
+  cursorShellGateHookCommand,
 } = require('./hook-runtime');
 const { installShim } = require('./install-shim');
 
@@ -134,6 +135,64 @@ function cursorMcpConfigPath() {
   return path.join(process.cwd(), '.cursor', 'mcp.json');
 }
 
+function cursorHooksJsonPath() {
+  return path.join(getHome(), '.cursor', 'hooks.json');
+}
+
+function isStaleCursorGateCheckHook(entry) {
+  const command = String(entry?.command || '');
+  return command.includes('thumbgate') && command.includes('gate-check');
+}
+
+function wireCursorBeforeShellGate(options = {}) {
+  const hooksPath = options.cursorHooksPath || cursorHooksJsonPath();
+  const command = cursorShellGateHookCommand();
+  const hookEntry = { command, timeout: 10 };
+  const added = [];
+
+  let existing = { hooks: { beforeShellExecution: [] }, version: 1 };
+  if (fs.existsSync(hooksPath)) {
+    try {
+      existing = JSON.parse(fs.readFileSync(hooksPath, 'utf8'));
+    } catch {
+      return { changed: false, error: `Could not parse ${hooksPath}`, settingsPath: hooksPath, added: [] };
+    }
+  }
+  if (!existing.hooks) existing.hooks = {};
+  if (!Array.isArray(existing.hooks.beforeShellExecution)) {
+    existing.hooks.beforeShellExecution = [];
+  }
+
+  const beforeShell = existing.hooks.beforeShellExecution;
+  const staleRemoved = beforeShell.filter(isStaleCursorGateCheckHook);
+  if (staleRemoved.length > 0) {
+    existing.hooks.beforeShellExecution = beforeShell.filter((entry) => !isStaleCursorGateCheckHook(entry));
+    for (const entry of staleRemoved) {
+      added.push({ lifecycle: 'beforeShellExecution (removed stale gate-check)', command: entry.command });
+    }
+  }
+
+  const alreadyWired = beforeShell.some((entry) => entry.command === command);
+  if (!alreadyWired) {
+    existing.hooks.beforeShellExecution.unshift(hookEntry);
+    added.unshift({ lifecycle: 'beforeShellExecution', command });
+  }
+
+  const changed = staleRemoved.length > 0 || !alreadyWired;
+  if (!changed) {
+    return { changed: false, settingsPath: hooksPath, added: [] };
+  }
+
+  if (options.dryRun) {
+    return { changed: true, dryRun: true, settingsPath: hooksPath, added };
+  }
+
+  const dir = path.dirname(hooksPath);
+  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+  fs.writeFileSync(hooksPath, JSON.stringify(existing, null, 2) + '\n');
+  return { changed: true, settingsPath: hooksPath, added };
+}
+
 function wireCursorHooks(options = {}) {
   const mcpPath = cursorMcpConfigPath();
   const dir = path.dirname(mcpPath);
@@ -161,22 +220,51 @@ function wireCursorHooks(options = {}) {
     command: `${thumbgateServer.command} ${thumbgateServer.args.join(' ')}`,
   };
 
+  const shellGateOpts = {
+    ...options,
+    cursorHooksPath: options.cursorHooksPath,
+  };
+
   if (options.dryRun) {
-    return {
-      changed: before !== after,
+    const shellGate = wireCursorBeforeShellGate(shellGateOpts);
+    const mcpChanged = before !== after;
+  return {
+      changed: mcpChanged || shellGate.changed,
       dryRun: true,
-      settingsPath: mcpPath,
-      added: before === after ? [] : [addedEntry],
+      settingsPath: shellGate.settingsPath && shellGate.settingsPath !== mcpPath
+        ? `${mcpPath}, ${shellGate.settingsPath}`
+        : mcpPath,
+      added: (mcpChanged ? [addedEntry] : []).concat(shellGate.added || []),
+      shellGate,
     };
   }
 
   if (before === after) {
+    const shellGate = wireCursorBeforeShellGate(shellGateOpts);
+    if (shellGate.changed) {
+      return {
+        changed: true,
+        settingsPath: shellGate.settingsPath || mcpPath,
+        added: shellGate.added || [],
+        shellGate,
+      };
+    }
     return { changed: false, settingsPath: mcpPath, added: [] };
   }
 
   if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
   fs.writeFileSync(mcpPath, JSON.stringify(existing, null, 2) + '\n');
-  return { changed: true, settingsPath: mcpPath, added: [addedEntry] };
+  const shellGate = wireCursorBeforeShellGate(shellGateOpts);
+  const combinedAdded = [addedEntry].concat(shellGate.added || []);
+  const settingsPath = shellGate.settingsPath && shellGate.settingsPath !== mcpPath
+    ? `${mcpPath}, ${shellGate.settingsPath}`
+    : mcpPath;
+  return {
+    changed: true,
+    settingsPath,
+    added: combinedAdded,
+    shellGate,
+  };
 }
 
 // --- Claude Code wiring ---
