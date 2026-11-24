@@ -565,6 +565,7 @@
     ".agents/skills/craft-playbook-gate/",
     "public/project-switcher.js",
     "scripts/owner-admin.js",
+    "scripts/owner-alerts.js",
     "scripts/owner-telemetry.js",
     "scripts/ops-log.js",
     "scripts/ops-report.js",
