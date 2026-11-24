@@ -77,3 +77,17 @@ test('refreshHookRuntime updates an existing runtime with npm and skips when non
   const failed = cu.refreshHookRuntime({ dir, run: () => { throw new Error('offline'); } });
   assert.equal(failed.reason, 'install-failed');
 });
+
+test('the Windows npm launcher passes a path with %VAR% through literally, without cmd.exe', () => {
+  const nodeDir = fs.mkdtempSync(path.join(os.tmpdir(), 'tg-node-'));
+  const nodePath = path.join(nodeDir, 'node');
+  fs.symlinkSync(process.execPath, nodePath);
+  const cliDir = path.join(nodeDir, 'node_modules', 'npm', 'bin');
+  fs.mkdirSync(cliDir, { recursive: true });
+  const out = path.join(nodeDir, 'argv.json');
+  fs.writeFileSync(path.join(cliDir, 'npm-cli.js'),
+    `require('fs').writeFileSync(${JSON.stringify(out)}, JSON.stringify(process.argv.slice(2)));`);
+  const target = 'C:\\Users\\%USERNAME%\\.thumbgate\\runtime';
+  cu.npmRunner('win32', nodePath)('npm', ['install', '--prefix', target]);
+  assert.deepEqual(JSON.parse(fs.readFileSync(out, 'utf8')), ['install', '--prefix', target]);
+});

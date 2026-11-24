@@ -272,15 +272,19 @@ function reportSkewOnce({ skew, env = process.env, now = Date.now(), stateDir, t
   }
 }
 
+// npm.cmd needs cmd.exe, which expands %VARS% even inside quotes, so on Windows run npm-cli.js with node.
+function npmRunner(platform = process.platform, nodePath = process.execPath) {
+  if (platform !== 'win32') return (cmd, args) => execFileSync(cmd, args, { stdio: 'inherit' });
+  const cli = path.join(path.dirname(nodePath), 'node_modules', 'npm', 'bin', 'npm-cli.js');
+  return (cmd, args) => execFileSync(nodePath, [cli, ...args], { stdio: 'inherit' });
+}
+
 // Hooks run the cached runtime first (published-cli.js), so self-update refreshes it too. Never throws.
 function refreshHookRuntime(options = {}) {
   const dir = options.dir || runtimeDir();
   if (!fs.existsSync(dir)) return { refreshed: false, reason: 'no-runtime' };
   const before = readRuntimeVersion(dir);
-  // Windows exposes npm as npm.cmd, which needs cmd.exe; Windows paths cannot contain quotes.
-  const run = options.run || ((cmd, args) => (process.platform === 'win32'
-    ? execSync([cmd, ...args].map((a) => `"${a}"`).join(' '), { stdio: 'inherit' })
-    : execFileSync(cmd, args, { stdio: 'inherit' })));
+  const run = options.run || npmRunner();
   try {
     console.log(`Updating hook runtime in ${dir} (was ${before ? `v${before}` : 'unknown'})`);
     run('npm', ['install', '--prefix', dir, '--no-save', '--omit=dev', '--no-audit', '--no-fund', 'thumbgate@latest']);
@@ -323,6 +327,7 @@ module.exports = {
   checkUpdate,
   selfUpdate,
   refreshHookRuntime,
+  npmRunner,
   runtimeDir,
   readRuntimeVersion,
   isOlder,
