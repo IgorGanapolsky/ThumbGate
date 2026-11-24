@@ -532,7 +532,9 @@ const thumbgateSession = (row) => /thumbgate/i.test(String(row.success_url || ''
 // Why a Stripe source failed, in words a person can act on. Never a bare "Unknown".
 function stripeReason(error) {
   if (/STRIPE_SECRET_KEY is missing/i.test(String(error?.message || ''))) return 'Stripe key missing';
-  if (error?.code === 'collection_timeout') return 'Stripe did not answer in time';
+  // The request's own timeout is set to the time left before the shared deadline, so it can fire first: that is the
+  // same "no answer in time", not an outage.
+  if (error?.code === 'collection_timeout' || error?.code === 'ETIMEDOUT' || /timed? ?out/i.test(String(error?.message || ''))) return 'Stripe did not answer in time';
   if (error?.code === 'provider_busy') return 'Stripe is busy, refresh in a moment';
   return 'Stripe unavailable';
 }
