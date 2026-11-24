@@ -1054,8 +1054,8 @@ next      decision recorded before execution</pre>
             <tr><th>Agent</th><th>Enforcement</th><th>Default (secrets)</th><th>Default (destructive)</th><th>Strict mode</th></tr>
           </thead>
           <tbody>
-            <tr><th>Claude Code</th><td>Blocks before tool runs</td><td>DENY</td><td>DENY catastrophic, WARN other</td><td>DENY</td></tr>
-            <tr><th>Cursor, Cline, OpenCode</th><td>Advisory</td><td>DENY</td><td>WARN</td><td>DENY</td></tr>
+            <tr><th>Claude Code</th><td>Blocks before tool runs (PreToolUse hook)</td><td>DENY</td><td>DENY catastrophic, WARN other</td><td>DENY for some rules</td></tr>
+            <tr><th>Cursor</th><td>Shell commands: a hook adapter can deny; other tools advisory</td><td>Verdict DENY</td><td>WARN</td><td>Verdict DENY for some rules</td></tr><tr><th>Cline, OpenCode</th><td>Advisory: the agent chooses to call the check, so it can skip it</td><td>Verdict DENY, not enforced</td><td>WARN</td><td>Verdict DENY, not enforced</td></tr>
             <tr><th>Amp</th><td>Feedback only</td><td>Logged</td><td>Logged</td><td>Logged</td></tr>
           </tbody>
         </table>
