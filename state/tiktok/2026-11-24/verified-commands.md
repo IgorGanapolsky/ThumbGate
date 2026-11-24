@@ -43,6 +43,16 @@ For the clip, show the reason text "Blocked because the action appears to expose
 material: environment file." The rest of that sentence is advice written for inlined secret
 literals, and it names `~/.resume_secrets`, which will confuse viewers.
 
+Update: fixed on `main` in `e491efa`. The fix ships in the first npm release after 1.40.10.
+After that, the same command prints this reason (checked against `main` with
+`evaluateSecretGuard`):
+
+```
+Blocked because the action appears to expose secret material: environment file. Do not print or send a credentials file — its contents would land in the session transcript and logs. Let the code load those values at runtime (for example from environment variables), or ask the user which specific setting you need.
+```
+
+Once that release is out, the whole message is safe to show on screen.
+
 ## Idea 9: `git status --short` (skit only, no gate)
 
 ```
