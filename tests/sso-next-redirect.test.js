@@ -143,7 +143,7 @@ test('the sign-in page carries next into both providers and no longer tells peop
   assert.ok(!/again/i.test(page), 'the "open the page again" sentence is gone');
   const hostile = await (await fetch(`${origin}/signin?next=%2F%2Fevil.com`)).text();
   assert.match(hostile, /provider=google&amp;next=%2Fdashboard"/);
-  assert.ok(!hostile.includes('evil.com'));
+  assert.doesNotMatch(hostile, /evil\.com/);
 });
 
 test('signed-out /dashboard on the hosted site redirects to /signin?next=%2Fdashboard', async () => {

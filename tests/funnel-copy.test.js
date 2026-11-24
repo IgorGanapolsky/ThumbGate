@@ -13,7 +13,7 @@ const read = (file) => fs.readFileSync(path.join(ROOT, file), 'utf8');
 
 const diagnostic = read('public/diagnostic.html');
 const firstScreen = diagnostic.slice(diagnostic.indexOf('<main>'), diagnostic.indexOf('data-oceans-pain'));
-const textOf = (html) => html.replace(/<script[\s\S]*?<\/script>/g, ' ').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+const textOf = (html) => html.replace(/<script[\s\S]*?<\/script\s*>/g, ' ').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
 
 test('the sprint page title is a phrase a buyer would search for, not a product slogan', () => {
   const title = diagnostic.match(/<title>([^<]*)<\/title>/)[1];
@@ -39,7 +39,7 @@ test('the first screen states outcome, guarantee, speed and the buyer\'s effort,
 });
 
 test('the first screen says "supported" once, and it links to the integrations list', () => {
-  const words = firstScreen.replace(/<script[\s\S]*?<\/script>/g, ' ').match(/supported/gi) || [];
+  const words = firstScreen.replace(/<script[\s\S]*?<\/script\s*>/g, ' ').match(/supported/gi) || [];
   assert.equal(words.length, 1, 'the word appears ' + words.length + ' times on the first screen');
   assert.match(firstScreen, /<a href="\/install#install">supported integration<\/a>/);
   assert.match(read('public/install.html'), /id="install"/, 'the link target exists');
