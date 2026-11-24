@@ -1061,9 +1061,11 @@ describe('bin/cli.js', () => {
     });
     assert.strictEqual(result.status, 0, `Expected exit 0, got ${result.status}\n${result.stderr}`);
     assert.match(result.stdout, /Pro \(\$19\/mo or \$149\/yr\)/);
-    assert.match(result.stdout, /Personal recall: search lessons, rules, and proof/);
-    assert.match(result.stdout, /Managed adapters: Claude Code, Cursor, Codex, Gemini, Amp, Cline, OpenCode/);
-    assert.match(result.stdout, /Setup Sprint: \$499 for one supported workflow; hosted team sync and org dashboard are not GA/);
+    assert.match(result.stdout, /Recall and lesson search: ask what the agent got wrong before/);
+    assert.match(result.stdout, /Every learned rule stays active \(free keeps 3\)/);
+    // adapters install free, so they are not sold as a Pro feature
+    assert.doesNotMatch(result.stdout, /Managed adapters/);
+    assert.match(result.stdout, /Separate from Pro:\n  - Setup Sprint: \$499 one-time service for one supported workflow; hosted team sync and org dashboard are not GA/);
     assert.match(result.stdout, /personal local dashboard/i);
     assert.match(result.stdout, /Launch dashboard\s*:\s*npx thumbgate pro/);
     assert.match(result.stdout, /Activate \+ run\s*:\s*npx thumbgate pro --activate --key=YOUR_KEY/);
@@ -1362,8 +1364,8 @@ describe('bin/cli.js', () => {
     });
     assert.equal(checkoutUrl, PRO_MONTHLY_PAYMENT_LINK, 'Pro command should include the attributed Pro checkout URL');
     assert.ok(result.stdout.includes('$19/mo or $149/yr'), 'Pro command should include current pricing');
-    assert.ok(result.stdout.includes('Personal recall: search lessons, rules, and proof'), 'Pro command should lead with personal recall');
-    assert.ok(result.stdout.includes('Setup Sprint: $499 for one supported workflow; hosted team sync and org dashboard are not GA'), 'Pro command should separate the individual product from unavailable hosted team features');
+    assert.ok(result.stdout.includes('Recall and lesson search: ask what the agent got wrong before'), 'Pro command should list recall');
+    assert.ok(result.stdout.includes('Setup Sprint: $499 one-time service for one supported workflow; hosted team sync and org dashboard are not GA'), 'Pro command should separate the individual product from unavailable hosted team features');
     assert.ok(result.stdout.includes('Launch dashboard: npx thumbgate pro'), 'Pro command should include the local dashboard launcher');
     assert.ok(result.stdout.includes('Private core    : ThumbGate-Core (private repo)'), 'Pro command should describe the current private-core split');
   });

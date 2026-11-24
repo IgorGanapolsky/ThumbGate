@@ -76,7 +76,7 @@
       "name": "Is Cloudflare WriteGuard a competitor to ThumbGate?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "Adjacent, and mostly complementary. WriteGuard gates MCP write requests that flow through Cloudflare's portal — a network-layer control an organization applies to MCP traffic centrally. ThumbGate gates every tool call inside the agent runtime itself — shell commands, SQL, file writes, HTTP fetches, and MCP calls — including everything that never touches a network portal. An agent running rm -rf never issues an MCP request; only a runtime-boundary gate sees it."
+        "text": "Adjacent, and mostly complementary. WriteGuard gates MCP write requests that flow through Cloudflare's portal — a network-layer control an organization applies to MCP traffic centrally. ThumbGate gates tool calls inside the agent runtime itself — shell commands, SQL, file writes, HTTP fetches, and MCP calls — including everything that never touches a network portal. An agent running rm -rf never issues an MCP request; only a runtime-boundary gate sees it."
       }
     },
     {
@@ -126,7 +126,7 @@
 <section class="hero">
   <div class="container">
     <span class="eyebrow">ThumbGate vs Cloudflare WriteGuard</span>
-    <h1>WriteGuard gates MCP writes at the portal. ThumbGate gates every tool call at the runtime. A hyperscaler just validated the category.</h1>
+    <h1>WriteGuard gates MCP writes at the portal. ThumbGate gates tool calls at the runtime. A hyperscaler just validated the category.</h1>
     <p><strong>WriteGuard</strong> (by <a href="https://www.cloudflare.com/" target="_blank" rel="noopener">Cloudflare</a>, private beta) intercepts MCP requests at Cloudflare's portal, classifies operations from <em>read-only</em> through <em>contained write</em> to <em>critical</em>, and enforces tool-specific policies centrally — reusing existing OAuth identity and labeling agents in the audit trail. <strong>ThumbGate</strong> gates the tool call an AI coding agent is about to execute — bash, SQL, file write, HTTP fetch, MCP tool — <em>locally</em>, before the side effect happens when the harness supports it: mandatory PreToolUse hooks on Claude Code, Google Gemini CLI, and other hook-capable runtimes; MCP <code>gate_check</code> plus advisory rules/skills on Cursor, Sourcegraph Amp, Cline, and OpenCode (enforcement there depends on the agent calling the gate). Rules grow from your own operator feedback.</p>
     <div class="pill-row">
       <span class="pill">Both pre-action</span>
@@ -217,7 +217,7 @@
       <h2>FAQ</h2>
       <details class="faq-item" open>
         <summary>Is WriteGuard a competitor to ThumbGate?</summary>
-        <p>Adjacent, mostly complementary. WriteGuard governs MCP traffic at Cloudflare's portal; ThumbGate governs every tool call inside the agent runtime, including everything that never crosses a network portal.</p>
+        <p>Adjacent, mostly complementary. WriteGuard governs MCP traffic at Cloudflare's portal; ThumbGate governs tool calls inside the agent runtime, including everything that never crosses a network portal.</p>
       </details>
       <details class="faq-item">
         <summary>What does WriteGuard's launch mean for this category?</summary>

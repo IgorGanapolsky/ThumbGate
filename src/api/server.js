@@ -5104,6 +5104,7 @@ function renderSitemapXml(runtimeConfig) {
     { path: '/peter', changefreq: 'weekly', priority: '0.9' },
     { path: '/workflow-hardening-sprint', changefreq: 'weekly', priority: '0.9' },
     { path: '/install', changefreq: 'weekly', priority: '0.9' },
+    { path: '/connectors', changefreq: 'weekly', priority: '0.85' },
     { path: '/terms', changefreq: 'monthly', priority: '0.7' },
     { path: '/privacy', changefreq: 'monthly', priority: '0.7' },
     { path: '/support', changefreq: 'monthly', priority: '0.7' },
@@ -5135,7 +5136,6 @@ function renderSitemapXml(runtimeConfig) {
     { path: '/learn/codex-role-plugins-need-governance', changefreq: 'weekly', priority: '0.85' },
     { path: '/learn/agentic-os-team-governance', changefreq: 'weekly', priority: '0.85' },
     { path: '/learn/cost-aware-agent-gate-routing', changefreq: 'weekly', priority: '0.85' },
-    { path: '/learn/pretix-stripe-connect-marketplaces', changefreq: 'weekly', priority: '0.9' },
     { path: '/learn/netflix-oci-actor-critic-process-audits', changefreq: 'weekly', priority: '0.85' },
     { path: '/learn/future-agi-self-healing-agent-firewall', changefreq: 'weekly', priority: '0.85' },
     { path: '/learn/five-walls-enterprise-agent-deployment', changefreq: 'weekly', priority: '0.85' },
@@ -7561,6 +7561,13 @@ function createUnscopedApiServer({ ownerAdminDependencies = {} } = {}) {
   const humanReviewerConfig = getHumanReviewerConfig(expectedApiKey, expectedOperatorKey);
 
   const adminRuntime = ownerAdmin.createRuntimeObservations();
+  // Owner alerts to the owner's own incoming webhook, only when THUMBGATE_OWNER_ALERT_WEBHOOK is set. Not under tests.
+  if (!process.env.NODE_TEST_CONTEXT) ownerAdmin.startAlertDelivery(() => withoutDataScope(() => ({
+    feedbackDir: getFeedbackPaths().FEEDBACK_DIR, buildMetadata: BUILD_METADATA, runtime: adminRuntime,
+    hashDataIdentity, buildHostedTenantIdentity,
+    health: () => ({ version: pkg.version, buildSha: BUILD_METADATA.buildSha, uptime: process.uptime() }),
+    ...ownerAdminDependencies,
+  })));
   const observedRequests = new WeakSet();
   const eventBus = new EventEmitter();
   eventBus.setMaxListeners(200);
@@ -8799,6 +8806,33 @@ async function addContext(){
       } catch (err) {
         sendText(res, 500, err.message || 'Guide page unavailable');
       }
+      return;
+    }
+
+    // Short, typeable route for TikTok: captions and end cards cannot carry a clickable
+    // link, so people type thumbgate.ai/tiktok. Records the hit (the telemetry layer adds
+    // its own human/bot flag from the headers), then 302s to the install page with utms.
+    if (isGetLikeRequest && (pathname === '/tiktok' || pathname === '/tiktok/')) {
+      const tiktokQuery = '?utm_source=tiktok&utm_medium=video&utm_campaign=profile';
+      const journeyState = resolveJourneyState(req, parsed);
+      const tiktokParsed = new URL(`/tiktok${tiktokQuery}`, hostedConfig.appOrigin);
+      const tiktokAttribution = buildLandingAttribution(tiktokParsed, req);
+      appendBestEffortTelemetry(getFeedbackPaths().FEEDBACK_DIR, {
+        eventType: 'landing_page_view',
+        clientType: 'web',
+        visitorId: journeyState.visitorId,
+        sessionId: journeyState.sessionId,
+        acquisitionId: journeyState.acquisitionId,
+        ...tiktokAttribution,
+        pageType: 'tiktok_short_link',
+      }, req.headers, 'tiktok_short_link');
+      res.writeHead(302, {
+        ...(journeyState.setCookieHeaders.length ? { 'Set-Cookie': journeyState.setCookieHeaders } : {}),
+        'Cache-Control': 'no-store',
+        'X-Robots-Tag': 'noindex,nofollow',
+        Location: `/install${tiktokQuery}`,
+      });
+      res.end();
       return;
     }
 
@@ -11255,6 +11289,17 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
       return;
     }
 
+    // Public connectors page (linked from /pricing and the site nav).
+    if (isGetLikeRequest && (pathname === '/connectors' || pathname === '/connectors/' || pathname === '/connectors.html')) {
+      try {
+        const connectorsPageHtml = fs.readFileSync(path.join(PUBLIC_DIR, 'connectors.html'), 'utf-8');
+        sendHtml(res, 200, connectorsPageHtml, {}, { headOnly: isHeadRequest });
+      } catch {
+        sendText(res, 404, 'Connectors page not found');
+      }
+      return;
+    }
+
     // Public Remote MCP Connector Documentation.
     if (isGetLikeRequest && (pathname === '/docs/connectors' || pathname === '/docs/connectors/' || pathname === '/docs/connectors.html')) {
       try {
@@ -11775,7 +11820,7 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
       const _token = extractBearerToken(req);
       if (_token && _token !== expectedApiKey) recordUsage(_token);
       Object.assign(projectOptions, { projectKey: requestProjectKey, feedbackDir: requestFeedbackDir }, projectEvidenceForRequest(req, parsed, requestFeedbackDir, requestDataIdentity));
-      if (req.method === 'GET' && pathname === '/v1/projects') { sendJson(res, 200, buildProjectCatalog(requestFeedbackDir, projectOptions)); return; }
+      if (req.method === 'GET' && pathname === '/v1/projects') { sendJson(res, 200, { ...buildProjectCatalog(requestFeedbackDir, projectOptions), projectDir: projectOptions.projectDir || process.env.THUMBGATE_PROJECT_DIR || null }); return; }
       if (requestProjectKey != null && req.method === 'GET' && ['/v1/dashboard', '/v1/feedback/stats'].includes(pathname)) {
         const data = generateDashboard(requestFeedbackDir, {
           projectKey: requestProjectKey, ...projectOptions, humanOnly: true,

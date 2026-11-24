@@ -141,7 +141,7 @@
     <li><strong>Write the constitution.</strong> Three files: <code>mission.md</code>, <code>tech-stack.md</code>, <code>roadmap.md</code>. Keep them short.</li>
     <li><strong>Install the gate.</strong> <code>npx thumbgate init</code> — auto-detects the agent and wires the PreToolUse hooks. Point ThumbGate at the constitution path.</li>
   </ol>
-  <p>From there, the agent reads the spec into context every session, and ThumbGate enforces it on every tool call.</p>
+  <p>From there, the agent reads the spec into context every session, and ThumbGate checks tool calls against it.</p>
 
   <div class="cta-box">
     <h2 style="color:var(--text);font-size:1.3rem;margin:0 0 8px;">Stop hoping your agent reads the spec</h2>

@@ -65,8 +65,8 @@ const listCalls = [];
 const session = (id, metadata, extra = {}) => ({ id, success_url: 'https://thumbgate.ai/success', metadata, status: 'open', payment_status: 'unpaid', ...extra });
 const nowSec = Math.floor(Date.now() / 1000);
 const sessions = [
-  session('cs_1', { uaClass: 'browser' }, { status: 'complete', payment_status: 'paid', customer: 'cus_a', amount_total: 9900, currency: 'usd', created: nowSec - 3600 }),
-  session('cs_2', { uaClass: 'browser' }),
+  session('cs_1', { uaClass: 'browser', utmSource: 'reddit' }, { status: 'complete', payment_status: 'paid', customer: 'cus_a', amount_total: 9900, currency: 'usd', created: nowSec - 3600 }),
+  session('cs_2', { uaClass: 'browser', utmSource: 'reddit' }),
   session('cs_3', { uaClass: 'bot' }),
   session('cs_4', {}),
   session('cs_5', { uaClass: 'browser' }, { customer_email: OWNER }),
@@ -89,6 +89,12 @@ const stripe = {
     const limit = params.limit || 10;
     return { data: rows.slice(start, start + limit), has_more: start + limit < rows.length };
   } } },
+  // One paid renewal from a customer and one from the owner, which never counts.
+  invoices: { list: async () => { stripeCalls += 1; if (failProviders) throw new Error('provider failure'); return { has_more: false, data: [
+    { id: 'in_1', billing_reason: 'subscription_cycle', customer_email: MEMBER, amount_paid: 1900, currency: 'usd' },
+    { id: 'in_2', billing_reason: 'subscription_cycle', customer_email: OWNER, amount_paid: 1900, currency: 'usd' },
+    { id: 'in_3', billing_reason: 'subscription_create', customer_email: MEMBER, amount_paid: 1900, currency: 'usd' },
+  ] }; } },
   subscriptions: { list: async () => { stripeCalls += 1; if (failProviders) throw new Error('provider failure'); return { has_more: false, data: [{ id: 'sub_1', customer: { email: MEMBER } }, { id: 'sub_2', customer: { email: OWNER } }] }; } },
 };
 const summary = {
@@ -298,9 +304,11 @@ test('summary: the owner gets every number the Money and Analytics tabs show, ea
   assert.equal(fields['money.active_pro'].value, money.data.activePro);
   assert.deepEqual(fields['money.revenue_30d'].value, money.data.revenueLast30Days);
   assert.match(fields['money.revenue_30d'].label, /One-time checkout revenue/);
-  assert.equal(fields['money.subscription_invoices_30d'].status, 'unresolved');
-  assert.equal(fields['money.subscription_invoices_30d'].value, null);
-  assert.deepEqual(body.data.knownGaps, ['money.subscription_invoices_30d']);
+  // Renewal invoices are read now: only the customer's subscription_cycle invoice counts.
+  assert.deepEqual(fields['money.subscription_invoices_30d'].value, { USD: 1900 });
+  assert.deepEqual(fields['money.subscription_invoices_30d'].value, money.data.recurring30d.renewalRevenue);
+  assert.equal(fields['money.churned_subscriptions_30d'].value, money.data.recurring30d.churnedSubscriptions);
+  assert.deepEqual(body.data.knownGaps, []);
   for (const [window, block] of [['7d', money.data.checkouts7d], ['30d', money.data.checkouts30d]]) {
     for (const name of ['started', 'human', 'bot', 'notClassified', 'internal']) assert.equal(fields[`money.checkouts_${window}.${name}`].value, block[name], window + ' ' + name);
   }
@@ -344,4 +352,27 @@ test('sign-in page: Google and Apple links, no typed email', async () => {
   assert.ok(html.includes('/v1/cloud/sso/authorize?provider=google'));
   assert.ok(html.includes('/v1/cloud/sso/authorize?provider=apple'));
   assert.ok(!/type=["']email["']/i.test(html));
+});
+
+test('alerts: owner only, a list with an action on each, and delivery off without a webhook', async () => {
+  assert.equal((await request('/v1/admin/alerts')).status, 404);
+  assert.equal((await request('/v1/admin/alerts', { token: memberToken })).status, 403);
+  const body = await ownerJson('/v1/admin/alerts');
+  assert.equal(body.source, 'owner_alerts');
+  assert.ok(Array.isArray(body.data.alerts));
+  for (const alert of body.data.alerts) assert.ok(alert.text && alert.action && ['red', 'amber', 'info'].includes(alert.level), JSON.stringify(alert));
+  assert.equal(body.data.delivery, 'off');
+  assert.equal(body.data.checked.money, true);
+});
+
+test('channels: starts, paying customers and revenue per utm source, bots and owner left out', async () => {
+  const money = await ownerJson('/v1/admin/money');
+  const byName = Object.fromEntries(money.data.channels.map((row) => [row.channel, row]));
+  // cus_a first paid 40 days ago with no utm (direct), so the customer is credited to direct, not to reddit.
+  assert.equal(byName.direct.paidCustomers, 2, 'cus_a and cus_b');
+  assert.equal(byName.reddit.paidCustomers, 0);
+  assert.deepEqual(byName.reddit.revenue30d, { USD: 9900 }, 'the recent reddit checkout is reddit revenue');
+  assert.equal(byName.reddit.checkoutStarts30d, 2);
+  const summary = await ownerJson('/v1/admin/summary');
+  assert.deepEqual(summary.data.fields['money.channels'].value, money.data.channels);
 });

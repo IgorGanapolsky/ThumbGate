@@ -18,7 +18,7 @@ test('pricing telemetry attributes Pro clicks to the configured canonical price'
 
 test('pricing preserves free installation and truthful self-serve Pro boundaries', () => {
   assert.match(pricingHtml, /href="\/install"/);
-  assert.match(pricingHtml, /recall, dashboard, adapters, and exports/);
+  assert.match(pricingHtml, /keeps every learned rule active and adds recall, lesson search and exports/);
   assert.match(pricingHtml, /__PRO_PRICE_LABEL__/);
   assert.match(pricingHtml, /SSO.*not generally available/);
   assert.doesNotMatch(pricingHtml, /\$499|Setup Sprint|diagnostic-pay|workflow-sprint|48h turnaround/);

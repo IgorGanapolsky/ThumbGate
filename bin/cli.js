@@ -107,7 +107,7 @@ function upgradeNudge() {
     '\n  Enterprise entry: $499 Setup Sprint for one workflow\n' +
     `  ${diagnosticUrl}\n` +
     `\n  Solo side lane: Pro — ${PRO_PRICE_LABEL}\n` +
-    '  Removes solo caps; adds personal recall, dashboard proof, exports, and managed adapters.\n' +
+    '  Keeps every learned rule active, unlimited thumbs; adds recall, lesson search, and exports.\n' +
     `  ${pricingUrl}\n\n`
   );
 }
@@ -207,7 +207,7 @@ function proNudge(context) {
   const checkoutUrl = checkoutUrlFor('cli_nudge', context || COMMAND || 'general');
   const pricingUrl = pricingUrlFor('cli_nudge', context || COMMAND || 'general');
   const messages = [
-    `\n  💡 Pro (${PRO_PRICE_LABEL}): personal recall, dashboard proof, exports, and managed adapters.\n     See pricing: ${pricingUrl}\n`,
+    `\n  💡 Pro (${PRO_PRICE_LABEL}): every learned rule active, unlimited thumbs, recall, lesson search, and exports.\n     See pricing: ${pricingUrl}\n`,
     `\n  💡 You just taught ThumbGate something locally. Pro keeps personal lessons searchable and exportable without free-tier caps.\n     See pricing: ${pricingUrl}\n`,
     `\n  💡 ThumbGate Pro maintains adapter coverage across Claude, Codex, Cursor, containers, and CI. ${PRO_PRICE_LABEL}.\n     Start Pro: ${checkoutUrl}\n`,
   ];
@@ -239,7 +239,7 @@ function printInitConversionPrompt(email) {
   console.log('');
   console.log('  ┌──────────────────────────────────────────────────────────┐');
   console.log(`  │  7-day Pro trial active through ${trialDeadlineLabel()}.               │`);
-  console.log('  │  Pro keeps lessons/rules/dashboard synced everywhere.   │');
+  console.log('  │  Pro keeps every learned rule active and searchable.    │');
   console.log('  │  Add onboarding: npx thumbgate init --email you@company.com │');
   console.log(`  │  Upgrade: ${checkoutUrl}`);
   console.log('  └──────────────────────────────────────────────────────────┘');
@@ -1741,10 +1741,11 @@ function pro() {
     console.log('Self-serve side lane today: Pro ($19/mo or $149/yr).');
     console.log('Every licensed Pro user gets a personal local dashboard on localhost.');
     console.log('\nWhat is available:');
-    console.log('  - Personal recall: search lessons, rules, and proof');
-    console.log('  - Local Pro dashboard: your own browser dashboard for search, gates, and DPO export');
-    console.log('  - Managed adapters: Claude Code, Cursor, Codex, Gemini, Amp, Cline, OpenCode');
-    console.log('  - Setup Sprint: $499 for one supported workflow; hosted team sync and org dashboard are not GA');
+    console.log('  - Every learned rule stays active (free keeps 3); unlimited thumbs (free: 2 a day, 10 in total)');
+    console.log('  - Recall and lesson search: ask what the agent got wrong before');
+    console.log('  - Local Pro dashboard with search and DPO export (the project dashboard, npx thumbgate dashboard, is free)');
+    console.log('\nSeparate from Pro:');
+    console.log('  - Setup Sprint: $499 one-time service for one supported workflow; hosted team sync and org dashboard are not GA');
     console.log('  - Commercial truth doc: source of truth for traction, pricing, and proof claims');
     console.log('\nLinks:');
     console.log(`  Buy Pro         : ${PRO_CHECKOUT_URL}`);
@@ -4027,7 +4028,7 @@ function help() {
     console.log('  security-central                                  Free Agent Security Central posture report');
     console.log('  break-glass --reason="..."                       Short TTL recovery if gates over-fire');
     console.log('  brain [--write]                                   Build the agent-readable context brain (lessons + rules + gates)');
-    console.log('  pro                                               ThumbGate Pro (dashboard, exports, sync)');
+    console.log('  pro                                               ThumbGate Pro (license, recall, exports)');
     console.log('  diagnostic                                        $499 Setup Sprint for one repeated team failure');
     console.log('  subscribe <email>                                 Get the 5-min setup guide + weekly tips by email');
     console.log('');

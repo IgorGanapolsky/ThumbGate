@@ -149,7 +149,7 @@ test('landing page presents configured self-serve Pro and free installation clea
   const res = await fetch(`${origin}/`);
   assert.equal(res.status, 200);
   const html = await res.text();
-  assert.match(html, /Pro adds recall, dashboard, adapters, and exports/);
+  assert.match(html, /Pro is about memory/);
   assert.match(html, /href="\/checkout\/pro"/);
   assert.match(html, /free local CLI/i);
   assert.doesNotMatch(html, /\$499|Setup Sprint|two business days/);
@@ -267,7 +267,7 @@ test('GET /install serves the verified distribution and buyer path page', async 
     assert.equal(res.status, 200, `${pathname} should render install page`);
     assert.match(res.headers.get('content-type') || '', /text\/html/);
     const html = await res.text();
-    assert.match(html, /Install paths verified for v1\.27\.20/);
+    assert.match(html, /Registry versions checked/);
     assert.match(html, /npm package/);
     assert.match(html, /VS Code Marketplace/);
     assert.match(html, /Open VSX/);
@@ -1084,4 +1084,24 @@ test('GET /sitemap.xml includes the cloudflare-writeguard comparison page', asyn
   const entry = xml.match(/<url>\s*<loc>[^<]*\/compare\/cloudflare-writeguard<\/loc>[\s\S]*?<\/url>/);
   assert.ok(entry, 'compare/cloudflare-writeguard <url> block must exist');
   assert.match(entry[0], /<priority>0\.85<\/priority>/);
+});
+
+test('every URL in /sitemap.xml resolves locally (no 404s handed to crawlers)', async () => {
+  const xml = await (await fetch(`${origin}/sitemap.xml`)).text();
+  const paths = [...xml.matchAll(/<loc>([^<]+)<\/loc>/g)].map((m) => new URL(m[1]).pathname);
+  assert.ok(paths.length > 50, `expected a populated sitemap, got ${paths.length} entries`);
+  const broken = [];
+  for (const p of paths) {
+    const res = await fetch(`${origin}${p}`, { method: 'HEAD', redirect: 'manual' });
+    if (res.status === 404 || res.status >= 500) broken.push(`${res.status} ${p}`);
+  }
+  assert.deepEqual(broken, [], `sitemap lists pages that do not resolve:\n${broken.join('\n')}`);
+});
+
+test('GET /connectors serves the connectors page linked from /pricing', async () => {
+  const res = await fetch(`${origin}/connectors`);
+  assert.equal(res.status, 200);
+  assert.match(res.headers.get('content-type') || '', /text\/html/);
+  const html = await res.text();
+  assert.match(html, /<link rel="canonical" href="https:\/\/thumbgate\.ai\/connectors">/);
 });

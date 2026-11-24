@@ -566,7 +566,7 @@ const PRETOOLUSE_HOOK_GUIDE_SPEC = Object.freeze({
     ],
     [
       'Does this run locally or call a cloud service?',
-      'Local-first. The PreToolUse decision happens in the hook process on your machine in milliseconds — no network round-trip, no cloud dependency, no data leaving the laptop. Pro adds personal recall, exports, dashboard proof, and managed adapter coverage. Enterprise service work is qualified after intake; hosted rule sharing and a hosted org dashboard are not generally available.',
+      'Local-first. The PreToolUse decision happens in the hook process on your machine in milliseconds — no network round-trip, no cloud dependency, no data leaving the laptop. Pro keeps every learned rule active and adds recall, lesson search, and exports. Enterprise service work is qualified after intake; hosted rule sharing and a hosted org dashboard are not generally available.',
     ],
   ],
   relatedPaths: ['/guides/mcp-tool-governance', '/guides/ai-agent-pre-action-approval-gates', '/guides/ai-coding-agent-zero-trust'],
