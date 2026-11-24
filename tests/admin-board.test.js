@@ -65,8 +65,8 @@ const listCalls = [];
 const session = (id, metadata, extra = {}) => ({ id, success_url: 'https://thumbgate.ai/success', metadata, status: 'open', payment_status: 'unpaid', ...extra });
 const nowSec = Math.floor(Date.now() / 1000);
 const sessions = [
-  session('cs_1', { uaClass: 'browser' }, { status: 'complete', payment_status: 'paid', customer: 'cus_a', amount_total: 9900, currency: 'usd', created: nowSec - 3600 }),
-  session('cs_2', { uaClass: 'browser' }),
+  session('cs_1', { uaClass: 'browser', utmSource: 'reddit' }, { status: 'complete', payment_status: 'paid', customer: 'cus_a', amount_total: 9900, currency: 'usd', created: nowSec - 3600 }),
+  session('cs_2', { uaClass: 'browser', utmSource: 'reddit' }),
   session('cs_3', { uaClass: 'bot' }),
   session('cs_4', {}),
   session('cs_5', { uaClass: 'browser' }, { customer_email: OWNER }),
@@ -363,4 +363,16 @@ test('alerts: owner only, a list with an action on each, and delivery off withou
   for (const alert of body.data.alerts) assert.ok(alert.text && alert.action && ['red', 'amber', 'info'].includes(alert.level), JSON.stringify(alert));
   assert.equal(body.data.delivery, 'off');
   assert.equal(body.data.checked.money, true);
+});
+
+test('channels: starts, paying customers and revenue per utm source, bots and owner left out', async () => {
+  const money = await ownerJson('/v1/admin/money');
+  const byName = Object.fromEntries(money.data.channels.map((row) => [row.channel, row]));
+  // cus_a first paid 40 days ago with no utm (direct), so the customer is credited to direct, not to reddit.
+  assert.equal(byName.direct.paidCustomers, 2, 'cus_a and cus_b');
+  assert.equal(byName.reddit.paidCustomers, 0);
+  assert.deepEqual(byName.reddit.revenue30d, { USD: 9900 }, 'the recent reddit checkout is reddit revenue');
+  assert.equal(byName.reddit.checkoutStarts30d, 2);
+  const summary = await ownerJson('/v1/admin/summary');
+  assert.deepEqual(summary.data.fields['money.channels'].value, money.data.channels);
 });

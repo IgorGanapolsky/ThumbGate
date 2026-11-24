@@ -10,7 +10,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
-const { readTrafficWindow } = require('../scripts/owner-telemetry');
+const { readTrafficWindow, readInstallCohorts } = require('../scripts/owner-telemetry');
 const { monthlyRecurring } = require('../scripts/owner-admin');
 const { sanitizeTelemetryPayload } = require('../scripts/telemetry-analytics');
 
@@ -173,6 +173,32 @@ test('Today opens with alerts, then this week, renewals and churn, with the deta
   const order = ['Needs you', 'This week at a glance', 'Product usage · CLI installs, past 30 days', 'Biggest evidenced obstacle', 'Money detail: customers, checkouts, revenue, traffic and leads'].map((t) => page.indexOf(t));
   assert.ok(order.every((i) => i >= 0), order.join(','));
   assert.deepEqual([...order].sort((x, y) => x - y), order, 'in that order');
-  assert.ok(page.includes('$38.00 · 2 renewals'));
-  assert.ok(page.includes('25% · 1 cancelled'));
+  for (const wanted of ['$38.00', 'Renewal revenue, past 30 days (2 renewals)', '25%', 'Churn, past 30 days (1 cancelled)']) assert.ok(page.includes(wanted), 'missing: ' + wanted);
+});
+
+test('install cohorts: each install joins the week it was first seen, and later weeks count who came back', async () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'tg-cohort-'));
+  fs.writeFileSync(path.join(dir, 'telemetry-pings.jsonl'), [
+    cli(20, 'cli_init', 'a'), cli(13, 'cli_capture', 'a'), cli(1, 'cli_stats', 'a'),
+    cli(19, 'cli_init', 'b'),
+    cli(2, 'cli_init', 'c'),
+    cli(2, 'cli_init', 'mine', { visitorType: 'owner' }),
+    cli(70, 'cli_init', 'too_old'),
+  ].join('\n') + '\n');
+  try {
+    const { cohorts } = await readInstallCohorts({ feedbackDir: dir, weeks: 8, now: NOW });
+    const week2 = cohorts.find((c) => c.weeksAgo === 2);
+    assert.equal(week2.size, 2, 'a and b were first seen 2 weeks ago');
+    assert.deepEqual(week2.retained, [2, 1, 1], 'a came back in each later week, b never did');
+    assert.deepEqual(cohorts.find((c) => c.weeksAgo === 0).retained, [1], 'c is new this week; owner left out');
+    assert.equal(cohorts.reduce((n, c) => n + c.size, 0), 3, 'the 70-day-old install is outside the 8-week read');
+    assert.equal(cohorts[0].includesOlder, true);
+  } finally { fs.rmSync(dir, { recursive: true, force: true }); }
+});
+
+test('Growth shows the cohort table and Today shows where buyers come from', () => {
+  const growth = renderTexts('analytics', { cohorts: { cohorts: [{ weekStart: '2026-11-03', weeksAgo: 2, size: 4, retained: [4, 2, 1], includesOlder: false }, { weekStart: '2026-11-17', weeksAgo: 0, size: 3, retained: [3], includesOlder: false }] }, reconciliation: { status: 'ok', complete: true } });
+  for (const wanted of ['Install retention by week first seen', '50% (2)', '25% (1)']) assert.ok(growth.includes(wanted), 'missing: ' + wanted);
+  const today = renderTexts('money', { channels: [{ channel: 'reddit', checkoutStarts30d: 5, paidCustomers: 1, revenue30d: { USD: 1900 } }], reasons: {}, notes: [] });
+  for (const wanted of ['Where buyers come from', 'reddit', '$19.00']) assert.ok(today.includes(wanted), 'missing: ' + wanted);
 });

@@ -838,12 +838,57 @@
               element(
                 'p',
                 result.data.delivery === 'off'
-                  ? 'Alerts show here only. Set THUMBGATE_OWNER_ALERT_WEBHOOK on Railway to also get new ones in Slack or Discord.'
-                  : 'New alerts are also sent to your webhook, checked every 15 minutes.',
+                  ? 'Alerts show here only. On Railway, THUMBGATE_OWNER_ALERT_EMAIL=on emails new ones to you; THUMBGATE_OWNER_ALERT_WEBHOOK posts them to Slack or Discord.'
+                  : 'New alerts are also sent (' + label(result.data.delivery).replace(/ on new alert$/, '') + '), checked every 15 minutes.',
                 'muted',
               ),
             );
           });
+      }
+      // Retention by weekly install cohort: of the installs first seen in a week, the share seen again 1, 2, 3… weeks later.
+      function cohortTable(parent, read) {
+        parent.append(element('h3', 'Install retention by week first seen'));
+        if (!read || !Array.isArray(read.cohorts)) {
+          parent.append(element('p', 'Cohorts are unavailable right now. No zero is inferred.', 'notice'));
+          return;
+        }
+        const later = Math.max(0, ...read.cohorts.map((c) => c.retained.length - 1));
+        const columns = [
+          ['Week first seen', (c) => c.weekStart + (c.includesOlder ? ' or earlier' : '')],
+          ['Installs', (c) => c.size],
+        ];
+        for (let k = 1; k <= later; k += 1)
+          columns.push([
+            'Week ' + k,
+            (c) => (k >= c.retained.length ? '' : c.size ? Math.round((c.retained[k] / c.size) * 100) + '% (' + c.retained[k] + ')' : '–'),
+          ]);
+        table(parent, columns, read.cohorts);
+        parent.append(
+          element(
+            'p',
+            'Week 1 is the 7 days after the first week an install was seen. The oldest row also holds installs that began before this 8-week read.' +
+              (read.partial ? ' The telemetry log was cut short, so older weeks are lower bounds.' : ''),
+            'muted',
+          ),
+        );
+      }
+      function channelTable(parent, channels, why) {
+        parent.append(element('h3', 'Where buyers come from'));
+        if (!Array.isArray(channels)) {
+          parent.append(element('p', why || 'Source not available right now', 'notice'));
+          return;
+        }
+        table(
+          parent,
+          [
+            ['Channel', (r) => r.channel],
+            ['Checkout starts, 30 days', (r) => (r.checkoutStarts30d === null ? 'Not read' : r.checkoutStarts30d)],
+            ['Paying customers, 1 year', (r) => (r.paidCustomers === null ? 'Not read' : r.paidCustomers)],
+            ['Revenue, 30 days', (r) => (r.revenue30d === null ? 'Not read' : mrrWords(r.revenue30d))],
+          ],
+          channels,
+        );
+        parent.append(element('p', 'The channel is the utm source a checkout carried, or direct. Bots and your own checkouts are left out of starts; a customer counts once, for their first paid checkout.', 'muted'));
       }
       function usageBlock(parent, usage) {
         parent.append(element('h3', 'Product usage · CLI installs, past 30 days'));
@@ -884,11 +929,12 @@
           const recurringWhy = data.reasons?.recurring || 'Source not available right now';
           weekCards(parent, data.weekOverWeek, {
             'Monthly recurring revenue (list price)': data.mrr ? mrrWords(data.mrr) : (data.reasons?.mrr || 'Source not available right now'),
-            'Renewal revenue, past 30 days': recurring ? mrrWords(recurring.renewalRevenue) + ' · ' + recurring.renewalInvoices + ' renewals' : recurringWhy,
-            'Churn, past 30 days': recurring ? (Number.isFinite(recurring.churnRate) ? Math.round(recurring.churnRate * 1000) / 10 + '% · ' : 'N/A · ') + recurring.churnedSubscriptions + ' cancelled' : recurringWhy,
+            [recurring ? 'Renewal revenue, past 30 days (' + recurring.renewalInvoices + (recurring.renewalInvoices === 1 ? ' renewal)' : ' renewals)') : 'Renewal revenue, past 30 days']: recurring ? mrrWords(recurring.renewalRevenue) : recurringWhy,
+            [recurring ? 'Churn, past 30 days (' + recurring.churnedSubscriptions + ' cancelled)' : 'Churn, past 30 days']: recurring ? (Number.isFinite(recurring.churnRate) ? Math.round(recurring.churnRate * 1000) / 10 + '%' : 'N/A, no subscriptions') : recurringWhy,
             'Subscriptions cancelling at period end': data.cancellingAtPeriodEnd === null || data.cancellingAtPeriodEnd === undefined ? (data.reasons?.mrr || 'Source not available right now') : String(data.cancellingAtPeriodEnd),
           });
           usageBlock(parent, data.usage30d);
+          channelTable(parent, data.channels, data.reasons?.revenue || data.reasons?.checkouts);
           parent.append(element('h3', 'Biggest evidenced obstacle'));
           parent.append(element('p', describeObstacle({ 'money.paying_customers': { value: data.payingCustomers }, 'money.checkout_bot_check': { value: data.checkoutBotCheck } }, null)));
           // Everything below is the evidence behind the headline numbers, folded away until asked for.
@@ -1222,6 +1268,7 @@
             weekCards(parent, data.weekOverWeek);
           }
           usageBlock(parent, data.usage);
+          cohortTable(parent, data.cohorts);
           if (data.reconciliation?.status !== 'ok' || data.reconciliation?.complete !== true)
             parent.append(element('p', 'Provider reconciliation is incomplete (' + (data.reconciliation?.status || 'not reported') + '). Paid-order and revenue totals are partial ledger evidence, not verified payment outcomes. Local installations and successful first local use are not measured.', 'notice'));
           parent.append(

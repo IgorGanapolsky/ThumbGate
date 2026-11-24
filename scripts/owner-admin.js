@@ -446,6 +446,17 @@ async function readTraffic(deps, signal) {
   return value;
 }
 
+const cohortCache = new Map();
+async function readCohorts(deps, signal) {
+  const ttl = deps.telemetryCacheMs ?? TELEMETRY_CACHE_MS;
+  const key = String(deps.feedbackDir);
+  const hit = cohortCache.get(key);
+  if (ttl > 0 && hit && Date.now() - hit.at < ttl) return hit.value;
+  const value = await ownerTelemetry.readInstallCohorts({ feedbackDir: guardPath(deps.feedbackDir, deps.feedbackDir), weeks: 8, signal, maxBytes: deps.telemetryMaxBytes });
+  if (ttl > 0) cohortCache.set(key, { at: Date.now(), value });
+  return value;
+}
+
 // Why the Money board used to say "Stripe is busy": every list held one of the account's two read slots for its whole run
 // (a 30-day checkout list is about six pages), a read that found both taken failed at once, and a read that timed out kept
 // running and kept its slot. Now each page waits for a slot until one shared deadline, a stopped list stops between pages,
@@ -506,6 +517,12 @@ function monthlyRecurring(subscriptions) {
   }
   for (const code of Object.keys(mrr)) mrr[code] = Math.round(mrr[code]);
   return { mrr, cancelling, unpriced };
+}
+
+// The acquisition channel a checkout carried in its metadata (utm source, else source), in one plain lower-case word.
+function channelOf(row) {
+  const raw = String(row?.metadata?.utmSource || row?.metadata?.source || '').trim().toLowerCase().replace(/[^a-z0-9_.-]+/g, '_').slice(0, 40);
+  return raw && raw !== 'unknown' ? raw : 'direct';
 }
 
 const thumbgateSession = (row) => /thumbgate/i.test(String(row.success_url || ''));
@@ -569,13 +586,23 @@ async function collectMoney(deps, signal) {
       const paid = result.rows.filter((row) => row.payment_status === 'paid' && classifySession(row, { ownerEmails }) !== 'internal' && charge(row)?.refunded !== true);
       const customers = new Set(paid.map((row) => id(row.customer) || String(row.customer_details?.email || row.customer_email || row.id).toLowerCase()));
       const revenue = {};
+      const channels = {};
+      const counted = new Set();
+      const channel = (name) => (channels[name] ||= { paidCustomers: 0, revenue30d: {} });
+      // Oldest first, so a customer is credited to the channel of their first paid checkout.
+      for (const row of [...paid].sort((a, b) => (a.created || 0) - (b.created || 0))) {
+        const who = id(row.customer) || String(row.customer_details?.email || row.customer_email || row.id).toLowerCase();
+        if (!counted.has(who)) { counted.add(who); channel(channelOf(row)).paidCustomers += 1; }
+      }
       for (const row of paid) {
         if (!(row.created >= nowSeconds - 30 * 86400) || !Number.isSafeInteger(row.amount_total) || !/^[a-z]{3}$/i.test(row.currency || '')) continue;
         const code = row.currency.toUpperCase();
         const refunded = Number.isSafeInteger(charge(row)?.amount_refunded) ? charge(row).amount_refunded : 0;
         revenue[code] = (revenue[code] || 0) + row.amount_total - refunded;
+        const byChannel = channel(channelOf(row)).revenue30d;
+        byChannel[code] = (byChannel[code] || 0) + row.amount_total - refunded;
       }
-      return { customers, revenue, complete: result.complete };
+      return { customers, revenue, channels, complete: result.complete };
     });
     const proResult = await withLastGood('subscriptions', async () => {
       const result = await listIt((params, options) => stripe().subscriptions.list(params, options), { status: 'active', expand: ['data.customer'] }, () => true, 5);
@@ -616,7 +643,13 @@ async function collectMoney(deps, signal) {
         const botCheckSeconds = Date.parse(botCheckBeganAt) / 1000;
         const beforeBotCheck = (row) => Boolean(row.created) && row.created < botCheckSeconds;
         const classified = result.rows.filter((row) => row.metadata?.uaClass && row.created).map((row) => row.created);
+        const startsByChannel = {};
+        for (const row of result.rows) {
+          if (['bot', 'internal'].includes(classifySession(row, { ownerEmails }))) continue;
+          startsByChannel[channelOf(row)] = (startsByChannel[channelOf(row)] || 0) + 1;
+        }
         return {
+          startsByChannel,
           d30: countSessions(result.rows, { ownerEmails }),
           d7: countSessions(result.rows.filter((row) => !row.created || row.created >= since7), { ownerEmails }),
           before: countSessions(result.rows.filter(beforeBotCheck), { ownerEmails }),
@@ -711,6 +744,12 @@ async function collectMoney(deps, signal) {
       churnRate: proRun.value && proRun.value.count + recurringRun.value.churned > 0 ? Math.round((recurringRun.value.churned / (proRun.value.count + recurringRun.value.churned)) * 1000) / 1000 : null,
       complete: recurringRun.value.complete,
     } : null,
+    // One row per channel: checkout sessions started in 30 days (bots and owner left out), paying customers credited to
+    // the channel of their first paid checkout in the past year, and 30-day checkout revenue.
+    channels: paid || sessions ? Object.entries([...new Set([...Object.keys(paid?.channels || {}), ...Object.keys(sessions?.startsByChannel || {})])].reduce((out, name) => {
+      out[name] = { checkoutStarts30d: sessions ? sessions.startsByChannel[name] || 0 : null, paidCustomers: paid ? paid.channels[name]?.paidCustomers || 0 : null, revenue30d: paid ? paid.channels[name]?.revenue30d || {} : null };
+      return out;
+    }, {})).map(([channel, row]) => ({ channel, ...row })).sort((a, b) => (b.paidCustomers || 0) - (a.paidCustomers || 0) || (b.checkoutStarts30d || 0) - (a.checkoutStarts30d || 0)).slice(0, 25) : null,
     usage30d: trafficReason ? null : (trafficRead.usage || null),
     weekOverWeek: trafficReason ? null : (trafficRead.weeks || null),
     activeProBasis: proRun.value ? (proRun.value.complete ? 'stripe_active_subscriptions_excluding_owner' : 'stripe_active_subscriptions_first_100_only') : 'unavailable',
@@ -757,9 +796,10 @@ async function collectMoney(deps, signal) {
 // Analytics: 30 days of traffic streamed from the telemetry tail (never refused for size), a daily series, and the
 // billing totals from the cached child-process summary when it is ready.
 async function collectAnalytics(deps, signal) {
-  const [trafficRun, summaryRun] = await Promise.all([
+  const [trafficRun, summaryRun, cohortRun] = await Promise.all([
     attempt(() => readTraffic(deps, signal), telemetryReason),
     attempt(() => readSummary(deps, signal), () => 'billing totals failed'),
+    attempt(() => readCohorts(deps, signal), telemetryReason),
   ]);
   const parts = summaryRun.value?.value || null;
   const trafficRead = trafficRun.value;
@@ -770,6 +810,7 @@ async function collectAnalytics(deps, signal) {
   data.daily = hasTraffic ? trafficRead.daily : [];
   data.usage = hasTraffic ? (trafficRead.usage || null) : null;
   data.weekOverWeek = hasTraffic ? (trafficRead.weeks || null) : null;
+  data.cohorts = cohortRun.ok ? cohortRun.value : null;
   data.dataQuality = { ...(data.dataQuality || {}), telemetryWindowComplete: hasTraffic ? !trafficRead.partial : false, telemetryBytesRead: trafficRead ? trafficRead.bytesRead : 0, telemetrySizeBytes: trafficRead ? trafficRead.size : 0 };
   const warnings = [];
   if (data.reconciliation && (data.reconciliation.status !== 'ok' || !data.reconciliation.complete)) warnings.push('stripe_reconciliation_' + data.reconciliation.status);
@@ -854,6 +895,8 @@ async function collectSummary(deps, signal) {
   usageField('usage.active_installs_30d', 'CLI installs active in the past 30 days (owner and CI excluded)', 'activeInstalls30d');
   usageField('usage.activated_installs_30d', 'Active installs that captured feedback (30 days)', 'activatedInstalls');
   usageField('usage.returning_installs_30d', 'Active installs seen on 2 or more days (30 days)', 'returningInstalls');
+  add('usage.install_cohorts_8w', 'Weekly CLI install cohorts and how many came back each later week (8 weeks)', analytics?.cohorts?.cohorts ?? null, { ...trafficOpts, partial: analytics?.cohorts?.partial === true });
+  if (money) add('money.channels', 'Checkout starts (30 days), paying customers (first paid checkout, 1 year) and revenue (30 days) by channel', money.channels, stripeOpts('paid', why.revenue));
   add('traffic.week_over_week', 'Past 7 days against the 7 days before', analytics?.weekOverWeek || money?.weekOverWeek || null, trafficOpts);
   add('traffic.daily_30d', 'Daily traffic, past 30 days', analytics ? analytics.daily : null, trafficOpts);
   const billingOpts = { source: 'billing_summary', collectedAt: fresh.leads?.collectedAt || null, reason: analyticsRun.ok ? null : analyticsRun.reason, unresolved: !analytics?.signups };
@@ -885,23 +928,39 @@ async function collectAlerts(deps, signal) {
   const alerts = ownerAlerts.evaluateAlerts({ money, report });
   if (!money) alerts.push({ id: 'money_unchecked', level: 'amber', text: 'The money checks could not run this time.', action: 'Refresh in a minute.', tab: 'money' });
   if (!report) alerts.push({ id: 'health_unchecked', level: 'amber', text: 'The health checks could not run this time.', action: 'Refresh in a minute.', tab: 'observability' });
-  const delivery = process.env.THUMBGATE_OWNER_ALERT_WEBHOOK ? 'webhook_on_new_alert' : 'off';
+  const delivery = alertChannels().length ? alertChannels().join('_and_') + '_on_new_alert' : 'off';
   return envelope('owner_alerts', { alerts, checked: { money: Boolean(money), health: Boolean(report) }, delivery }, [], money && report ? 'ok' : 'partial');
 }
 
-// Checks the alerts every 15 minutes and posts the new ones to the owner's own incoming webhook. Off without the variable.
-function startAlertDelivery(makeDeps, { intervalMs = 15 * 60 * 1000 } = {}) {
+// Where new alerts go: the owner's own incoming webhook (Slack, Discord or Teams) and/or an email to the owner addresses
+// through the app's existing mail provider. Both are off unless their variable is set.
+function alertChannels() {
+  const out = [];
+  if (/^https:\/\//.test(String(process.env.THUMBGATE_OWNER_ALERT_WEBHOOK || '').trim())) out.push('webhook');
+  if (String(process.env.THUMBGATE_OWNER_ALERT_EMAIL || '').trim().toLowerCase() === 'on') out.push('email');
+  return out;
+}
+
+// Checks the alerts every 15 minutes and sends the new ones to the channels above. Does nothing when none is set.
+function startAlertDelivery(makeDeps, { intervalMs = 15 * 60 * 1000, send } = {}) {
+  const channels = alertChannels();
+  if (!channels.length && !send) return null;
   const url = String(process.env.THUMBGATE_OWNER_ALERT_WEBHOOK || '').trim();
-  if (!/^https:\/\//.test(url)) return null;
   const platform = /discord/i.test(url) ? 'discord' : /office|teams|logic\.azure/i.test(url) ? 'teams' : 'slack';
+  const deliver = send || (async ({ title, message }) => {
+    if (channels.includes('webhook')) await require('./webhook-delivery').deliver(platform, url, title, message).catch(() => null);
+    if (channels.includes('email')) {
+      const to = require('./bot-detection').getOwnerEmails();
+      if (to.length) await require('./mailer/resend-mailer').sendEmail({ to: String(to[0]), subject: title, text: message }).catch(() => null);
+    }
+  });
   const tracker = ownerAlerts.createAlertTracker();
   const run = async () => {
     try {
       const result = await collectAlerts(makeDeps(), AbortSignal.timeout(30000));
       const added = tracker.fresh(result.data.alerts.filter((alert) => alert.level !== 'info'));
       if (!added.length) return;
-      const { title, message } = ownerAlerts.formatAlertMessage(added);
-      await require('./webhook-delivery').deliver(platform, url, title, message);
+      await deliver(ownerAlerts.formatAlertMessage(added));
     } catch { /* an alert check never takes the server down */ }
   };
   const timer = setInterval(run, intervalMs);
