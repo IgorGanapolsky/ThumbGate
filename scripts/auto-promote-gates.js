@@ -21,6 +21,7 @@ function autoGateLimit(options = {}) {
 // escalation still requires 3 captures (BLOCK_THRESHOLD) so noise doesn't auto-hard-block.
 const WARN_THRESHOLD = 1;
 const BLOCK_THRESHOLD = 3; // 3+ repeated failures hard-block the action
+const HUMAN_BLOCK_THRESHOLD = 2; // AGENT-3667: two thumbs-downs from a person on one command hard-block it
 const WINDOW_DAYS = 30;
 
 // Default TTL on auto-promoted gates. Reddit reviewer @MomSausageandPeppers
@@ -300,6 +301,7 @@ function groupNegativeFeedback(entries, windowDays) {
         ...project,
         key: patternKey,
         count: 0,
+        humanCount: 0,
         entries: [],
         latestContext: '',
         latestTimestamp: '',
@@ -307,6 +309,7 @@ function groupNegativeFeedback(entries, windowDays) {
       };
     }
     groups[key].count++;
+    if (String(entry.reviewOrigin || '').toLowerCase() === 'human') groups[key].humanCount++;
     groups[key].entries.push(entry);
     if (!groups[key].latestTimestamp || (entry.timestamp && entry.timestamp > groups[key].latestTimestamp)) {
       groups[key].latestTimestamp = entry.timestamp || '';
@@ -416,7 +419,9 @@ function gateMatchesOwnContext(gate, context) {
 function buildGateRule(group, actionOverride) {
   // Tests and callers may pass partial groups; never crash on missing fields.
   const g = group && typeof group === 'object' ? group : {};
-  const action = actionOverride || (g.count === 'MANUAL' ? g.manualAction || 'block' : (g.count >= BLOCK_THRESHOLD ? 'block' : 'warn'));
+  // Two thumbs-downs from a person on the same command are enough; agent-written entries still need three.
+  const blocks = g.count >= BLOCK_THRESHOLD || Number(g.humanCount || 0) >= HUMAN_BLOCK_THRESHOLD;
+  const action = actionOverride || (g.count === 'MANUAL' ? g.manualAction || 'block' : (blocks ? 'block' : 'warn'));
   const severity = action === 'block' ? 'critical' : action === 'approve' ? 'high' : 'medium';
   const fromExecutable = (g.latestExecutable
     || extractExecutableAction({ context: g.latestContext })
@@ -461,6 +466,8 @@ function buildGateRule(group, actionOverride) {
     expiresAt,
     lastFiredAt: null,
     source: g.source || 'auto-promote',
+    // Two thumbs-downs from a person on one command is the person's own "never again": deny it, not just warn.
+    ...(action === 'block' && Number(g.humanCount || 0) >= HUMAN_BLOCK_THRESHOLD ? { hardDeny: true } : {}),
     ...(surfacePattern && !fromExecutable ? { surfaceDerived: true } : {}),
   };
 }
@@ -654,7 +661,7 @@ function promote(feedbackLogPath, options) {
     const existingIdx = data.gates.findIndex((g) => g.id === gateId);
     if (existingIdx !== -1) {
       const existing = data.gates[existingIdx];
-      const newAction = group.count >= BLOCK_THRESHOLD ? 'block' : 'warn';
+      const newAction = (group.count >= BLOCK_THRESHOLD || Number(group.humanCount || 0) >= HUMAN_BLOCK_THRESHOLD) ? 'block' : 'warn';
       if (existing.action !== newAction && newAction === 'block') {
         // Self-Harness stage 3: regression-test before upgrading warn -> block.
         const regression = opts.skipRegression ? null : safeRegressionCheck(buildGateRule(group, 'block'), regressionOpts);
@@ -663,7 +670,14 @@ function promote(feedbackLogPath, options) {
           promotions.push({ type: 'upgrade-quarantined', gateId, from: existing.action, occurrences: group.count, falseBlocks: regression.falseBlocks });
         } else {
           // Upgrade from warn to block
-          data.gates[existingIdx] = { ...existing, action: 'block', severity: 'critical', occurrences: group.count, upgradedAt: new Date().toISOString() };
+          data.gates[existingIdx] = {
+            ...existing,
+            action: 'block',
+            severity: 'critical',
+            occurrences: group.count,
+            upgradedAt: new Date().toISOString(),
+            ...(Number(group.humanCount || 0) >= HUMAN_BLOCK_THRESHOLD ? { hardDeny: true } : {}),
+          };
           promotions.push({ type: 'upgrade', gateId, from: existing.action, to: 'block', occurrences: group.count });
         }
       }

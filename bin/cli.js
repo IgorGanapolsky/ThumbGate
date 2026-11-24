@@ -3673,12 +3673,25 @@ function hookAutoCapture() {
     timestamp: promptEnvelope.timestamp,
     source: 'claude-user-prompt',
   });
+  // A thumbs-down is about the shell command the agent just ran. Attach it so repeated thumbs-downs on one command
+  // can become a gate (without it the entry names no action and auto-promotion has nothing to match).
+  let failedCommand;
+  if (signal === 'down') {
+    try {
+      const { resolveFeedbackDir } = require(path.join(PKG_ROOT, 'scripts', 'feedback-paths'));
+      failedCommand = require(path.join(PKG_ROOT, 'scripts', 'recent-commands')).lastCommand({
+        feedbackDir: resolveFeedbackDir({ cwd: promptEnvelope.projectDir || CWD }),
+        sessionId: promptEnvelope.sessionId || process.env.CLAUDE_SESSION_ID || '',
+      }) || undefined;
+    } catch { /* no recent command is fine */ }
+  }
   const result = processInlineFeedback({
     signal,
     context: prompt,
     chatHistory,
     whatWentWrong: signal === 'down' && !genericFeedback ? prompt : undefined,
     whatWorked: signal === 'up' && !genericFeedback ? prompt : undefined,
+    failedCommand,
     sourceEvent,
   });
   if (!result.feedbackResult || !result.feedbackResult.duplicate) {

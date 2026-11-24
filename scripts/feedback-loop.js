@@ -1616,6 +1616,10 @@ function captureFeedback(params, options = {}) {
     structuredRule: structuredRule || null,
     ...(reflection && { reflection }),
     gateAction: params.gateAction || null,
+    // The shell command the thumbs-down is about (recorded by the pre-action hook); auto-promotion groups on it.
+    ...(typeof params.failedCommand === 'string' && params.failedCommand.trim()
+      ? { failedCommand: params.failedCommand.trim().slice(0, 400) }
+      : {}),
     reviewOrigin: normalizeReviewOrigin(params.reviewOrigin),
     sourceEvent: publicFeedbackSourceMetadata(params.sourceEvent),
     memorySource: params.memorySource && typeof params.memorySource === 'object'

@@ -192,6 +192,14 @@ const SELF_PROTECT_HARD_FLOOR_GATE_IDS = new Set([
 // edit under a lapsed lease would execute anyway. A lease that stops binding is not a lease.
 const TASK_SCOPE_LEASE_EXPIRED_GATE_ID = 'task-scope-lease-expired';
 
+const BULK_DESTROY_GATE_IDS = [
+  'cloud-bulk-delete',
+  'terraform-destroy',
+  'kubectl-bulk-delete',
+  'docker-system-prune-all',
+  'find-delete-broad',
+  'iam-policy-change',
+];
 const UNCONDITIONAL_HARD_FLOOR_GATE_IDS = new Set([
   'secret-exfiltration',
   'security-vuln-scan',
@@ -221,6 +229,8 @@ const UNCONDITIONAL_HARD_FLOOR_GATE_IDS = new Set([
   'git-clean-force',
   'rm-rf-home-or-root',
   'db-drop-table-production',
+  // Cloud and cluster wipes that passed in Cursor's review (AGENT-3667, 24 Nov 2026).
+  ...BULK_DESTROY_GATE_IDS,
   TASK_SCOPE_LEASE_EXPIRED_GATE_ID,
   ...SELF_PROTECT_HARD_FLOOR_GATE_IDS,
 ]);
@@ -247,6 +257,7 @@ const CATASTROPHIC_DECLARATIVE_GATE_IDS = new Set([
   'az-repos-pr-publish-requires-cross-review',
   'mabl-failure-honesty',
   'db-drop-table-production',
+  ...BULK_DESTROY_GATE_IDS,
 ]);
 const SELF_PROTECT_CONFIG_TARGET_PATTERN = /(?:^|\/)(?:config\/gates\/|config\/(?:budget|enforcement|mcp-allowlists)\.json$|\.thumbgate\/config\.json$|thumbgate\.json$)/i;
 const SELF_PROTECT_HOOK_TARGET_PATTERN = /(?:^|\/)(?:\.claude\/settings(?:\.local)?\.json|\.codex\/config\.toml|scripts\/hook-[^/]+\.(?:js|sh))$/i;
@@ -297,7 +308,7 @@ function applyEnforcementPosture(result) {
   const mode = resolveGovernanceMode();
   const alignmentLayer = alignmentLayerForResult(result);
   // Defensive backstop: hard-floor results must never be posture-downgraded.
-  if (UNCONDITIONAL_HARD_FLOOR_GATE_IDS.has(result.gate)) {
+  if (UNCONDITIONAL_HARD_FLOOR_GATE_IDS.has(result.gate) || result.hardDeny === true) {
     return { ...result, governanceMode: mode, alignmentLayer };
   }
   // Simulation/batch shadow live traffic: record, do not block (except floors).
@@ -2743,6 +2754,23 @@ function checkWhenClause(when, constraints) {
  * Body/content is intentionally excluded to avoid false blocks when an agent
  * *edits code that mentions* a send endpoint.
  */
+// Base64 literals inside a command that decodes base64 (`base64 -d`, `--decode`, `-D`, `openssl base64 -d`).
+// Only printable ASCII results count, and a decoded payload is scanned once more in case it decodes again.
+function decodeShellPayloads(command, depth = 0) {
+  const text = String(command || '');
+  if (depth > 1 || text.length > 4000) return [];
+  if (!/\b(?:base64\s+(?:-d|-D|--decode)\b|openssl\s+(?:enc\s+)?-?base64\s+-d\b|openssl\s+base64\s+-d\b)/.test(text)) return [];
+  const decoded = [];
+  for (const match of text.matchAll(/[A-Za-z0-9+/]{8,}={0,2}/g)) {
+    let value;
+    try { value = Buffer.from(match[0], 'base64').toString('utf8'); } catch { continue; }
+    if (value.length < 3 || !/^[\x09\x0A\x0D\x20-\x7E]+$/.test(value)) continue;
+    decoded.push(value.trim());
+    for (const inner of decodeShellPayloads(value, depth + 1)) decoded.push(inner);
+  }
+  return decoded;
+}
+
 function buildMatchSurfaces(toolName, toolInput = {}) {
   const name = String(toolName || '').trim();
   const command = String(toolInput.command || '').trim();
@@ -2753,6 +2781,8 @@ function buildMatchSurfaces(toolName, toolInput = {}) {
     if (v && !surfaces.includes(v)) surfaces.push(v);
   };
   push(command);
+  // `echo <base64> | base64 -d | sh` hides the real command; every gate also sees the decoded text.
+  for (const decoded of decodeShellPayloads(command)) push(decoded);
   push(filePath);
   push(name);
   if (name && command) push(`${name} ${command}`);
@@ -3821,6 +3851,8 @@ async function evaluateGatesAsyncInner(toolName, toolInput, configPath, options 
         message: overrideMessage,
         severity: gate.severity,
         reasoning,
+        // A gate a person earned with repeated thumbs-downs on one command is never downgraded to a warning.
+        ...(gate.hardDeny === true ? { hardDeny: true } : {}),
         ...(adminOverride ? { requiresAdminOverride: true, adminOverride } : {}),
       };
       recordStat(gate.id, 'block', gate, { ...execution, toolName, toolInput });
@@ -4134,6 +4166,8 @@ function evaluateGatesInner(toolName, toolInput, configPath, options = {}) {
         message: overrideMessage,
         severity: gate.severity,
         reasoning,
+        // A gate a person earned with repeated thumbs-downs on one command is never downgraded to a warning.
+        ...(gate.hardDeny === true ? { hardDeny: true } : {}),
         ...(adminOverride ? { requiresAdminOverride: true, adminOverride } : {}),
       };
       recordStat(gate.id, 'block', gate, { ...execution, toolName, toolInput });
@@ -5452,10 +5486,30 @@ function buildDesignSelfCorrectionContext(toolName, toolInput = {}) {
   }
 }
 
+// A shell command the gates let through is the one a later thumbs-down is about. Keep the latest few per session so
+// the thumbs-down hook can attach it and two identical thumbs-downs can become a gate. Never blocks the hook.
+function rememberAllowedShellCommand(rawInput, output) {
+  try {
+    const input = rawInput || {};
+    const toolName = input.tool_name || input.toolName || '';
+    if (toolName !== 'Bash') return;
+    const toolInput = input.tool_input || input.toolInput || {};
+    const command = toolInput.command || toolInput.cmd;
+    if (!command || /"permissionDecision"\s*:\s*"deny"|"decision"\s*:\s*"block"/.test(String(output || ''))) return;
+    const { resolveFeedbackDir } = require('./feedback-paths');
+    require('./recent-commands').recordCommand({
+      feedbackDir: resolveFeedbackDir({ cwd: input.cwd || process.cwd() }),
+      sessionId: input.session_id || input.sessionId || input.conversation_id || '',
+      command,
+    });
+  } catch { /* recording a command is best effort */ }
+}
+
 // Hook-facing entry. The first real block (then at most once per 7 days) carries one upgrade line in
 // the host-shown `systemMessage`; the reason the model reads is untouched. See first-block-upsell.js.
 async function runAsync(rawInput) {
   const output = await runAsyncCore(rawInput);
+  rememberAllowedShellCommand(rawInput, output);
   try {
     return require('./first-block-upsell').withFirstBlockUpsell(output);
   } catch {
