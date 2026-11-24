@@ -3152,6 +3152,7 @@ const CHECKOUT_GATE_NOTICES = Object.freeze({
   retry: "We couldn't confirm that click. Press the button again.",
   network: 'Your connection changed while we confirmed the click. Press the button again.',
   busy: 'Many checkouts are starting from your network right now. Wait a minute, then press the button again.',
+  unavailable: "We couldn't open the Stripe payment page just now. Nothing was charged. Press the button again in a minute.",
 });
 
 function checkoutGateNoticeCode(reason) {
@@ -3871,6 +3872,8 @@ async function serveTrackedLinkRedirect({ req, res, parsed, hostedConfig, isHead
       return;
     }
   }
+  // Set when an admitted click could not get a Stripe session; the visitor is told instead of silently seeing the same page.
+  let sessionFailure = null;
   if (!isHeadRequest && isDirectProSessionSlug(target.slug) && process.env.STRIPE_SECRET_KEY) {
     try {
       const dynamicSessionUrl = await tryCreateDirectProCheckoutRedirect({
@@ -3894,6 +3897,7 @@ async function serveTrackedLinkRedirect({ req, res, parsed, hostedConfig, isHead
         res.end();
         return;
       }
+      sessionFailure = 'no_session_url';
     } catch (err) {
       if (err && err.code === 'AUTOMATED_CHECKOUT_BLOCKED') {
         const deflectUrl = new URL(target.botDeflectPath || '/checkout/pro', hostedConfig.appOrigin);
@@ -3910,6 +3914,8 @@ async function serveTrackedLinkRedirect({ req, res, parsed, hostedConfig, isHead
       }
       // Dynamic session creation failed: Pro slugs go to the confirm page below.
       console.warn('[checkout] dynamic session creation failed', target.slug, err && (err.code || err.message));
+      // Only a short code-shaped value reaches telemetry; any other error text becomes 'error'.
+      sessionFailure = err && typeof err.code === 'string' && /^[A-Za-z0-9_]{1,40}$/.test(err.code) ? err.code : 'error';
     }
   }
   if (isProSubscriptionSlug(target.slug)) {
@@ -3917,6 +3923,16 @@ async function serveTrackedLinkRedirect({ req, res, parsed, hostedConfig, isHead
     // the visitor to the confirm page, never to a payment link.
     const confirmUrl = new URL('/checkout/pro', hostedConfig.appOrigin);
     appendTrackedLinkQueryParams(confirmUrl, parsed, { ...target, allowCustomerEmail: false });
+    if (sessionFailure && req.method === 'POST') {
+      // A real buyer clicked Pay and nothing opened: say so, and count it (the reason code only, never free text).
+      confirmUrl.searchParams.set('gate_notice', 'unavailable');
+      appendBestEffortTelemetry(
+        FEEDBACK_DIR,
+        { eventType: 'checkout_session_failed', clientType: 'web', page: `/go/${target.slug}`, reason: sessionFailure.slice(0, 60), planId: 'pro' },
+        req.headers,
+        'checkout_session_failed'
+      );
+    }
     res.writeHead(302, {
       ...(journeyState.setCookieHeaders.length ? { 'Set-Cookie': journeyState.setCookieHeaders } : {}),
       'Cache-Control': 'no-store',
