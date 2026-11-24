@@ -110,7 +110,7 @@
       "name": "How does ThumbGate compare to SpecLock?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "SpecLock requires manually writing constraints or compiling them from a PRD. ThumbGate learns automatically from thumbs-up/down feedback and auto-generates prevention rules from repeated failures. SpecLock locks files from modification; ThumbGate flags specific actions before they execute and hard-blocks the catastrophic ones (or any rule under strict mode)."
+        "text": "SpecLock's own README says it turns rules from your existing AI rule files into checks that run before edits and shell commands. ThumbGate starts from your thumbs-down instead: it saves your reason and shows it back as a warning when a similar command comes up, and its built-in rules deny a short list of catastrophic commands. A thumbs-down alone does not block."
       }
     },
     {
@@ -325,18 +325,18 @@ npx thumbgate init --agent gemini</code></pre>
 <h2>ThumbGate vs Alternatives</h2>
 <table class="comparison-table">
   <tr><th>Feature</th><th>ThumbGate</th><th>SpecLock</th><th>Mem0</th></tr>
-  <tr><td>Flags mistakes before execution</td><td>Yes — PreToolUse checks (hard-blocks critical / strict mode)</td><td>Yes — Patch Firewall</td><td>No</td></tr>
-  <tr><td>Learns from feedback</td><td>Yes — thumbs up/down</td><td>No — manual specs</td><td>Yes — auto-capture</td></tr>
-  <tr><td>Auto-generates rules</td><td>Yes — from repeated failures</td><td>No</td><td>No</td></tr>
+  <tr><td>Flags mistakes before execution</td><td>Yes — PreToolUse checks (built-in rules deny a short list; other matches warn)</td><td>Yes — Patch Firewall</td><td>No</td></tr>
+  <tr><td>Learns from feedback</td><td>Yes — thumbs up/down</td><td>Not stated in its README; it reads existing rule files</td><td>Yes — auto-capture</td></tr>
+  <tr><td>Auto-generates rules</td><td>Auto-promotes a warning rule from repeated thumbs-downs</td><td>Not compared</td><td>No</td></tr>
   <tr><td>Agent support</td><td>Claude Code, Codex, Gemini, Amp, Cursor, OpenCode</td><td>Claude Code, Cursor, Windsurf, Cline</td><td>Claude, Cursor</td></tr>
   <tr><td>Install</td><td><code>npx thumbgate init</code></td><td><code>npx speclock setup</code></td><td>Cloud signup</td></tr>
-<tr><td>Cost</td><td>Free CLI + $499 one-time Setup Sprint</td><td>Free</td><td>Free tier + paid</td></tr>
+<tr><td>Cost</td><td>Free local CLI; Pro $19/month or $149/year</td><td>Free</td><td>Free tier + paid</td></tr>
 </table>
 
 <h2>Common Scenarios</h2>
 
 <h3>Agent keeps deleting files</h3>
-<p>Give a thumbs-down: "deleted production config file." After 2-3 occurrences, ThumbGate generates a check that blocks <code>rm</code> commands targeting config files.</p>
+<p>Give a thumbs-down: "deleted production config file." ThumbGate saves your reason and shows it back as a warning when a similar command comes up. It does not block on a thumbs-down alone.</p>
 
 <h3>Agent ignores test failures</h3>
 <p>Give a thumbs-down: "committed code with failing tests." ThumbGate learns the pattern and checks future commits when test results show failures.</p>
@@ -351,7 +351,7 @@ npx thumbgate init --agent gemini</code></pre>
   <ul>
     <li><strong>Free:</strong> use <code>npx thumbgate init</code> to prove one workflow on one machine.</li>
     <li><strong>Pro:</strong> buy the self-serve lane only when you want a personal local dashboard, DPO export, and proof-ready workflow review for the next risky flow.</li>
-    <li><strong>$499 Setup Sprint:</strong> book the one-time, done-with-you setup once one workflow, one owner, and one repeated failure are already clear.</li>
+    <li><strong>Team pilot:</strong> request a 30-day pilot with the team when one workflow, one owner, and one repeated failure are already clear. No checkout is live for this.</li>
   </ul>
 </div>
 
@@ -371,7 +371,7 @@ npx thumbgate init --agent gemini</code></pre>
 <h2>Get Started</h2>
 <pre><code>npx thumbgate init</code></pre>
 <p>One command. Works with Claude Code, Cursor, Codex, Gemini, Amp, and OpenCode. Claude Code can also call Codex for review, adversarial review, and second-pass handoffs through the repo-local bridge plugin.</p>
-<a href="/diagnostic?utm_source=guide&amp;utm_medium=cta_button&amp;utm_campaign=workflow_diagnostic" class="cta">Book the $499 Setup Sprint</a>
+<a href="/diagnostic?utm_source=guide&amp;utm_medium=cta_button&amp;utm_campaign=workflow_diagnostic" class="cta">Request a team pilot</a>
 <a href="https://thumbgate.ai/#workflow-sprint-intake" class="cta cta-secondary">Send workflow first</a>
 <p style="color:var(--muted); font-size:0.85rem;">Free: 2 captures/day, 10 total captures, 3 active prevention rules, hook blocking. Pro: personal local dashboard, recall, search, unlimited captures/rules, managed adapters, DPO export. Enterprise service work is qualified and signed after intake; hosted team sync and a hosted org dashboard are not generally available.</p>
 
