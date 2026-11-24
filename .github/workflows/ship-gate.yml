@@ -32,7 +32,13 @@ permissions:
   actions: write
 
 concurrency:
-  group: ship-gate-${{ github.event.pull_request.number || inputs.pr_number }}
+  # A label change that is not one of Igor's control labels gets its own
+  # group, so it cannot cancel a gate run that is testing or merging.
+  group: >-
+    ship-gate-${{ github.event.pull_request.number || inputs.pr_number }}${{
+    ((github.event.action == 'labeled' || github.event.action == 'unlabeled') &&
+     !contains(fromJSON('["do-not-merge","automerge","igor-review"]'), github.event.label.name))
+    && format('-label-{0}', github.run_id) || '' }}
   cancel-in-progress: true
 
 env:
@@ -149,7 +155,10 @@ jobs:
 
       - name: Wait for other checks, then merge the tested commit
         env:
-          GH_TOKEN: ${{ secrets.GH_PAT || github.token }}
+          # Labels and reads use GITHUB_TOKEN (its events start no runs);
+          # only the merge itself uses the PAT, so the push fires deploy.
+          GH_TOKEN: ${{ github.token }}
+          MERGE_TOKEN: ${{ secrets.GH_PAT || github.token }}
           HEAD_SHA: ${{ needs.policy.outputs.head_sha }}
           USED_PAT: ${{ secrets.GH_PAT != '' }}
         run: |
@@ -179,7 +188,7 @@ jobs:
           fi
 
           gh pr edit "$PR_NUMBER" --remove-label needs-fix 2>/dev/null || true
-          gh pr merge "$PR_NUMBER" --squash --delete-branch --match-head-commit "$HEAD_SHA"
+          GH_TOKEN="$MERGE_TOKEN" gh pr merge "$PR_NUMBER" --squash --delete-branch --match-head-commit "$HEAD_SHA"
           echo "Merged #$PR_NUMBER at $HEAD_SHA" >> "$GITHUB_STEP_SUMMARY"
 
           # A merge made with GITHUB_TOKEN does not fire push workflows, so

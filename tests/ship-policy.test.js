@@ -154,4 +154,6 @@ test('ship-gate workflow reads policy from main and merges only the tested commi
   assert.doesNotMatch(wf, /APPROVE/, 'the gate must never approve a PR');
   assert.match(wf, /reviewThreads/);
   assert.match(wf, /pull_request_review:/, 'an approval must re-run the gate');
+  assert.match(wf, /format\('-label-\{0\}', github\.run_id\)/, 'gate label churn must not cancel a run');
+  assert.match(wf, /GH_TOKEN="\$MERGE_TOKEN" gh pr merge/, 'only the merge uses the PAT');
 });
