@@ -1895,8 +1895,17 @@ function captureFeedback(params, options = {}) {
 
     if (similar) {
       // Merge into existing lesson
-      const merged = mergeIntoExisting(MEMORY_LOG_PATH, similar.match, memoryRecord, feedbackEvent);
-      synthesisResult = { action: 'merged', existingId: similar.match.id, similarity: similar.similarity, occurrences: merged.occurrences };
+      // Only an identical lesson (same canonical hash) collapses into the existing row. A lesson that is merely
+      // worded alike is a different lesson (a different page, signer or date): it keeps its own row, the existing
+      // row keeps its own text, and the existing row's count still goes up so repeat promotion works.
+      const identical = similar.matchType === 'canonical';
+      const merged = mergeIntoExisting(MEMORY_LOG_PATH, similar.match, memoryRecord, feedbackEvent, { enrichContent: identical });
+      if (!identical) {
+        memoryRecord.occurrences = 1;
+        memoryRecord.similarToId = similar.match.id;
+        appendJSONL(MEMORY_LOG_PATH, memoryRecord);
+      }
+      synthesisResult = { action: identical ? 'merged' : 'kept-distinct', existingId: similar.match.id, similarity: similar.similarity, occurrences: merged.occurrences };
 
       // Auto-promote if threshold reached, but only after the rule
       // validator (scripts/rule-validator.js) confirms the proposed trigger
