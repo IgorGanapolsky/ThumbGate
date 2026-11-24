@@ -814,7 +814,6 @@ const CLI_COMMANDS = [
     flags: [],
   },
   {
-<<<<<<< HEAD
     name: 'cuda-gate',
     aliases: ['cuda-gate-batch'],
     description: 'CUDA-inspired parallel PreToolUse gate evaluation (SIMT + shared-memory hot cache)',
@@ -837,12 +836,12 @@ const CLI_COMMANDS = [
       { name: 'json', type: 'boolean', description: 'Output as JSON' },
       { name: 'memory-dir', type: 'string', description: 'Custom memory directory path' },
     ],
-=======
+  },
+  {
     name: 'cursor-shell-gate',
     description: 'Cursor beforeShellExecution hook: map command JSON to gate pipeline and emit permission allow/deny',
     group: 'gates',
     flags: [],
->>>>>>> c47af0f9f (feat(cursor): add beforeShellExecution adapter for gate-check)
   },
   {
     name: 'force-gate',
