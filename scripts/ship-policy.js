@@ -204,7 +204,16 @@ function summarizeChecks(checks = [], policy = loadPolicy()) {
   const self = new Set(policy.selfChecks || []);
   const failing = [];
   const pending = [];
+  // A re-run (or a run cancelled by a newer one) leaves several entries with
+  // the same name on one commit. Only the newest of each name counts.
+  const newest = new Map();
   for (const check of checks) {
+    const name = check.name || check.context || '';
+    const at = Date.parse(check.startedAt || check.completedAt || '') || 0;
+    const prev = newest.get(name);
+    if (!prev || at >= prev.at) newest.set(name, { check, at });
+  }
+  for (const { check } of newest.values()) {
     const name = check.name || check.context || '';
     if (!name || optional.has(name) || self.has(name)) continue;
     const status = String(check.status || '').toUpperCase();

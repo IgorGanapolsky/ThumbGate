@@ -130,6 +130,11 @@ test('summarizeChecks ignores optional and self checks', () => {
   assert.equal(summarizeChecks([{ name: 'pr-size', status: 'IN_PROGRESS' }], policy).state, 'pending');
   assert.deepEqual(summarizeChecks([{ name: 'GitGuardian Security Checks', status: 'COMPLETED', conclusion: 'FAILURE' }], policy).failing, ['GitGuardian Security Checks']);
   assert.equal(summarizeChecks([{ context: 'ext', state: 'PENDING' }], policy).state, 'pending');
+  // A run cancelled by a newer run of the same check does not count against the PR.
+  assert.equal(summarizeChecks([
+    { name: 'test', status: 'COMPLETED', conclusion: 'CANCELLED', startedAt: '2026-11-24T18:36:12Z' },
+    { name: 'test', status: 'COMPLETED', conclusion: 'SUCCESS', startedAt: '2026-11-24T18:36:30Z' },
+  ], policy).state, 'green');
 });
 
 test('renderReview starts with the sticky marker and says what happens', () => {
