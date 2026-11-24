@@ -1085,3 +1085,23 @@ test('GET /sitemap.xml includes the cloudflare-writeguard comparison page', asyn
   assert.ok(entry, 'compare/cloudflare-writeguard <url> block must exist');
   assert.match(entry[0], /<priority>0\.85<\/priority>/);
 });
+
+test('every URL in /sitemap.xml resolves locally (no 404s handed to crawlers)', async () => {
+  const xml = await (await fetch(`${origin}/sitemap.xml`)).text();
+  const paths = [...xml.matchAll(/<loc>([^<]+)<\/loc>/g)].map((m) => new URL(m[1]).pathname);
+  assert.ok(paths.length > 50, `expected a populated sitemap, got ${paths.length} entries`);
+  const broken = [];
+  for (const p of paths) {
+    const res = await fetch(`${origin}${p}`, { method: 'HEAD', redirect: 'manual' });
+    if (res.status === 404 || res.status >= 500) broken.push(`${res.status} ${p}`);
+  }
+  assert.deepEqual(broken, [], `sitemap lists pages that do not resolve:\n${broken.join('\n')}`);
+});
+
+test('GET /connectors serves the connectors page linked from /pricing', async () => {
+  const res = await fetch(`${origin}/connectors`);
+  assert.equal(res.status, 200);
+  assert.match(res.headers.get('content-type') || '', /text\/html/);
+  const html = await res.text();
+  assert.match(html, /<link rel="canonical" href="https:\/\/thumbgate\.ai\/connectors">/);
+});
