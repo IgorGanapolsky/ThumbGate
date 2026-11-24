@@ -203,6 +203,15 @@ test('Growth shows the cohort table and Today shows where buyers come from', () 
   for (const wanted of ['Where buyers come from', 'reddit', '$19.00']) assert.ok(today.includes(wanted), 'missing: ' + wanted);
 });
 
+test('unfiltered count-drop alerts are never delivered, real faults still are', () => {
+  const { evaluateAlerts, isDeliverable } = require('../scripts/owner-alerts');
+  const week = { prior7: { realVisitors: 200, checkoutStarts: 90, activeInstalls: 214 }, last7: { realVisitors: 10, checkoutStarts: 2, activeInstalls: 30 } };
+  const alerts = evaluateAlerts({ money: { weekOverWeek: week, reasons: {}, usage30d: { activeInstalls30d: 30, activatedInstalls: 1 } }, report: { errors: { lastHour: 9 } } });
+  const ids = alerts.map((alert) => alert.id);
+  for (const id of ['visitors_drop', 'checkout_drop', 'installs_drop', 'activation_low']) assert.ok(ids.includes(id), 'still shown on the admin page: ' + id);
+  assert.deepEqual(alerts.filter(isDeliverable).map((alert) => alert.id), ['server_errors']);
+});
+
 test('alert delivery sends a one-time confirmation, then each new alert once', async () => {
   const { startAlertDelivery, createRuntimeObservations } = require('../scripts/owner-admin');
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'tg-deliver-'));
