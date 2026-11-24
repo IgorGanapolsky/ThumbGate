@@ -3643,7 +3643,10 @@ async function createCheckoutSession({ successUrl, cancelUrl, customerEmail, ins
     appOrigin,
     activePriceId,
   });
-  const session = await createSessionDroppingRejectedOptionals(stripe, sessionPayload);
+  if (!packId && sessionPayload.metadata) {
+    sessionPayload.metadata.priceSource = activePriceId ? 'configured_price_id' : 'inline_price_data';
+  }
+  const session =await createSessionDroppingRejectedOptionals(stripe, sessionPayload);
 
   appendFunnelEvent({
     stage: 'acquisition',
@@ -3673,25 +3676,42 @@ async function createSessionDroppingRejectedOptionals(stripe, payload) {
   }
 }
 
+// Env var that holds the price id for a checkout selection (named in the log line).
+function priceEnvNameFor(checkoutSelection) {
+  if (checkoutSelection.planId === 'team') return 'STRIPE_PRICE_ID_TEAM_MONTHLY';
+  if (checkoutSelection.billingCycle === 'annual') return 'STRIPE_PRICE_ID_PRO_ANNUAL';
+  return 'STRIPE_PRICE_ID_PRO_MONTHLY (or STRIPE_PRICE_ID)';
+}
+
 // Returns the configured Stripe price id only when Stripe confirms it is active
-// and matches the amount and interval the page shows. Otherwise null, and the
-// caller falls back to inline price_data so a bad config never blocks checkout.
+// and matches the amount, interval and interval count the page shows. Otherwise
+// null and the caller falls back to inline price_data, so a bad config never
+// blocks checkout. The fallback is NOT silent: it logs the env var and reason,
+// and the session metadata records priceSource=inline_price_data.
 async function resolveActiveStripePriceId(stripe, checkoutSelection) {
   const priceId = checkoutSelection && checkoutSelection.priceId;
-  if (!priceId || !stripe || !stripe.prices || typeof stripe.prices.retrieve !== 'function') return null;
+  const envName = priceEnvNameFor(checkoutSelection || {});
+  const fallback = (reason) => {
+    console.error(`[billing] checkout price fallback: ${envName} (${priceId || 'unset'}) ${reason}; using inline price_data, which creates a new ad hoc Stripe price for this session. Fix the env var.`);
+    return null;
+  };
+  if (!priceId) return fallback('is not set');
+  if (!stripe || !stripe.prices || typeof stripe.prices.retrieve !== 'function') return fallback('could not be checked (no Stripe prices API)');
   try {
     const price = await stripe.prices.retrieve(priceId);
     const expectedInterval = checkoutSelection.billingCycle === 'annual' ? 'year' : 'month';
     const expectedAmount = Math.round(checkoutSelection.unitPriceDollars * 100);
-    const ok = price
-      && price.active === true
-      && String(price.currency || '').toLowerCase() === 'usd'
-      && price.unit_amount === expectedAmount
-      && price.recurring
-      && price.recurring.interval === expectedInterval;
-    return ok ? priceId : null;
-  } catch {
-    return null;
+    if (!price) return fallback('was not found');
+    if (price.active !== true) return fallback('is inactive');
+    if (String(price.currency || '').toLowerCase() !== 'usd') return fallback('is not USD');
+    if (price.unit_amount !== expectedAmount) return fallback(`charges ${price.unit_amount} cents, page shows ${expectedAmount}`);
+    const recurring = price.recurring || {};
+    if (recurring.interval !== expectedInterval) return fallback(`bills every ${recurring.interval || 'none'}, expected ${expectedInterval}`);
+    const count = recurring.interval_count === undefined ? 1 : recurring.interval_count;
+    if (count !== 1) return fallback(`bills every ${count} ${expectedInterval}s, expected 1`);
+    return priceId;
+  } catch (err) {
+    return fallback(`lookup failed (${err && err.message ? err.message : 'error'})`);
   }
 }
 

@@ -45,7 +45,7 @@ function fakeStripe({ price, priceError } = {}) {
   };
 }
 
-async function open(stripe) {
+async function open(stripe, metadata = { planId: 'pro', billingCycle: 'monthly' }) {
   billing._setStripeClient(stripe);
   await billing.createCheckoutSession({
     successUrl: 'https://thumbgate.ai/success?session_id={CHECKOUT_SESSION_ID}',
@@ -54,7 +54,7 @@ async function open(stripe) {
     installId: 'inst_test',
     appOrigin: 'https://thumbgate.ai',
     humanClick: { admitted: true },
-    metadata: { planId: 'pro', billingCycle: 'monthly' },
+    metadata,
   });
   return stripe.created[0];
 }
@@ -94,4 +94,54 @@ test('a Stripe lookup error falls back to price_data', async () => {
 test('session metadata still names the configured price id', async () => {
   const payload = await open(fakeStripe({ price: activeMonthly() }));
   assert.equal(payload.metadata.priceId, billing.CONFIG.STRIPE_PRICE_ID_PRO_MONTHLY);
+});
+
+function captureErrors(fn) {
+  const lines = [];
+  const orig = console.error;
+  console.error = (...a) => lines.push(a.join(' '));
+  return fn().then((r) => { console.error = orig; return { r, lines }; }, (e) => { console.error = orig; throw e; });
+}
+
+test('a price billed every 3 months is not accepted as monthly (interval_count)', async () => {
+  const { r, lines } = await captureErrors(() => open(fakeStripe({ price: { ...activeMonthly(), recurring: { interval: 'month', interval_count: 3 } } })));
+  assert.equal(r.line_items[0].price, undefined);
+  assert.ok(lines.some((l) => /every 3 months/.test(l)));
+});
+
+test('fallback is loud: names the env var and the reason, and metadata records inline_price_data', async () => {
+  const { r, lines } = await captureErrors(() => open(fakeStripe({ price: { ...activeMonthly(), active: false } })));
+  assert.ok(lines.some((l) => /STRIPE_PRICE_ID_PRO_MONTHLY/.test(l) && /inactive/.test(l)));
+  assert.equal(r.metadata.priceSource, 'inline_price_data');
+});
+
+test('the configured path records priceSource=configured_price_id and logs nothing', async () => {
+  const { r, lines } = await captureErrors(() => open(fakeStripe({ price: activeMonthly() })));
+  assert.equal(r.metadata.priceSource, 'configured_price_id');
+  assert.equal(lines.length, 0);
+});
+
+test('annual: active matching price is charged by id; wrong interval falls back and names ANNUAL', async () => {
+  const meta = { planId: 'pro', billingCycle: 'annual' };
+  const id = billing.CONFIG.STRIPE_PRICE_ID_PRO_ANNUAL;
+  const good = { id, active: true, currency: 'usd', unit_amount: 14900, recurring: { interval: 'year', interval_count: 1 } };
+  const ok = await open(fakeStripe({ price: good }), meta);
+  assert.equal(ok.line_items[0].price, id);
+  const { r, lines } = await captureErrors(() => open(fakeStripe({ price: { ...good, recurring: { interval: 'month' } } }), meta));
+  assert.equal(r.line_items[0].price, undefined);
+  assert.equal(r.line_items[0].price_data.unit_amount, 14900);
+  assert.ok(lines.some((l) => /STRIPE_PRICE_ID_PRO_ANNUAL/.test(l)));
+});
+
+test('team: active matching price is charged by id with the seat quantity; inactive falls back and names TEAM', async () => {
+  const meta = { planId: 'team', seatCount: 3 };
+  const id = billing.CONFIG.STRIPE_PRICE_ID_TEAM_MONTHLY;
+  const unit = billing._buildCheckoutSessionPayload({ successUrl: 'https://thumbgate.ai/s', cancelUrl: 'https://thumbgate.ai/c', checkoutMetadata: meta, appOrigin: 'https://thumbgate.ai' }).line_items[0].price_data.unit_amount;
+  const good = { id, active: true, currency: 'usd', unit_amount: unit, recurring: { interval: 'month', interval_count: 1 } };
+  const ok = await open(fakeStripe({ price: good }), meta);
+  assert.equal(ok.line_items[0].price, id);
+  assert.equal(ok.line_items[0].quantity, 3);
+  const { r, lines } = await captureErrors(() => open(fakeStripe({ price: { ...good, active: false } }), meta));
+  assert.equal(r.line_items[0].price, undefined);
+  assert.ok(lines.some((l) => /STRIPE_PRICE_ID_TEAM_MONTHLY/.test(l)));
 });
