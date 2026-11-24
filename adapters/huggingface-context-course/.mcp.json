@@ -2,7 +2,7 @@
   "mcpServers": {
     "thumbgate": {
       "command": "npx",
-      "args": ["--yes", "--package", "thumbgate@1.40.9", "thumbgate", "serve"]
+      "args": ["--yes", "--package", "thumbgate@1.40.10", "thumbgate", "serve"]
     }
   },
   "hooks": {
@@ -11,7 +11,7 @@
       "args": [
         "--yes",
         "--package",
-        "thumbgate@1.40.9",
+        "thumbgate@1.40.10",
         "thumbgate",
         "gate-check"
       ]
@@ -21,11 +21,11 @@
       "args": [
         "--yes",
         "--package",
-        "thumbgate@1.40.9",
+        "thumbgate@1.40.10",
         "thumbgate",
         "hook-auto-capture"
       ]
     }
   },
-  "notes": "Claude Code MCP config with ThumbGate gates for Hugging Face Context Course exercises. PreToolUse hook gates all tool calls. All configs pin thumbgate@1.40.9. See HF_CONTEXT.md for unit-by-unit integration guide."
+  "notes": "Claude Code MCP config with ThumbGate gates for Hugging Face Context Course exercises. PreToolUse hook gates all tool calls. All configs pin thumbgate@1.40.10. See HF_CONTEXT.md for unit-by-unit integration guide."
 }
