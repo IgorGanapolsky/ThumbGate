@@ -661,11 +661,13 @@ test('hero states the approved workflow scope with fit-first and free paths', ()
   );
   const lede = normalizeHtmlText((hero.match(/<p class="hero-lede">([\s\S]*?)<\/p>/) || [])[1]);
 
-  assert.match(landingPage, /Thumbs-down a Claude Code mistake, and ThumbGate shows your reason/i);
+  assert.match(landingPage, /Thumbs-down a Claude Code mistake once/i);
   assert.match(landingPage, /ThumbGate — Warn Claude Code before it repeats a mistake/i);
-  assert.match(hero, /<h1>Thumbs-down a Claude Code mistake, and ThumbGate shows your reason as a warning when a similar command comes up\. A thumbs-down warns; it does not block\.<\/h1>/i);
+  assert.match(hero, /<h1>Thumbs-down a Claude Code mistake once, and ThumbGate warns the next time it tries that command\. After three thumbs-downs on the same command, strict mode blocks it\.<\/h1>/i);
   assert.match(hero, /PreToolUse gate for Claude Code/i);
-  assert.match(hero, /ThumbGate checks every call: secret leaks and catastrophic commands are denied by built-in rules, other flagged actions warn/i);
+  assert.match(hero, /Secret leaks, attempts to switch the gate off and five catastrophic commands are denied out of the box\. Other flagged actions warn, and strict mode blocks them/i);
+  assert.match(hero, /href="#coverage"/);
+  assert.doesNotMatch(landingPage, /every tool call|every call|budget enforcement|no account/i);
   assert.match(hero, /data-recorded-deny/);
   assert.match(hero, /permissionDecision":"deny/);
   assert.match(hero, /THUMBGATE_STRICT_ENFORCEMENT=1/);
@@ -676,9 +678,9 @@ test('hero states the approved workflow scope with fit-first and free paths', ()
   assert.match(hero, /this project/);
   assert.match(hero, /Latest success/);
   assert.doesNotMatch(hero, /Cursor|Codex|Gemini|Cline|OpenCode|Amp\b/, 'other agents live under Also works with');
-  assert.match(hero, /Upgrade to Pro/i);
+  assert.match(hero, /Get Pro — \$__PRO_PRICE_DOLLARS__\/month/);
   assert.match(hero, /Recorded PreToolUse decisions/i);
-  assert.match(landingPage, /advisory ones do not guarantee blocking/i, 'the advisory caveat lives in the FAQ');
+  assert.match(landingPage, /Advisory or feedback only\. They do not guarantee a block/i, 'the advisory caveat lives in the coverage table');
   assert.match(hero, /npx thumbgate init/);
   assert.doesNotMatch(hero, /id="offers"|Start Pro/);
   assert.match(landingPage, /id="thumbgate-dashboard-command"/);
@@ -696,14 +698,12 @@ test('hero states the approved workflow scope with fit-first and free paths', ()
 });
 
 test('how-it-works sells the self-improving loop, not a static allowlist', () => {
-  assert.match(landingPage, /Pre-action checks—and the systems that refine them/i);
-  assert.match(landingPage, /Lessons are re-ranked per action/i);
-  assert.match(landingPage, /repeated failures can promote into gates/i);
-  assert.match(landingPage, /stale auto-promoted gates expire/i);
-  assert.match(landingPage, /under your control/i);
-  assert.match(landingPage, /silently rewriting policy|does not silently rewrite/i);
-  assert.match(landingPage, /firewall improves from explicit feedback without retraining the model/i);
-  assert.match(landingPage, /source\s+core protection · strict mode/i);
+  assert.match(landingPage, /What happens under the hood/i);
+  assert.match(landingPage, /repeated thumbs-downs become gates/i);
+  assert.match(landingPage, /Stale auto-promoted gates expire/i);
+  assert.match(landingPage, /The model is not retrained/i);
+  // the interactive panel opens on step 4 without a click
+  assert.match(landingPage, /setOpen\('4'\)/);
 });
 
 test('homepage explains the product with one four-stage self-improving loop', () => {
@@ -715,7 +715,7 @@ test('homepage explains the product with one four-stage self-improving loop', ()
   assert.match(landingPage, />ALLOW</);
   assert.match(landingPage, />WARN</);
   assert.match(landingPage, />DENY</);
-  assert.match(landingPage, /Each reviewed outcome closes the loop/);
+
   assert.match(landingPage, /data-loop-step="1"/);
   assert.match(landingPage, /data-loop-step="4"/);
   assert.match(landingPage, /id="loop-panel"/);
@@ -729,19 +729,21 @@ test('homepage explains the product with one four-stage self-improving loop', ()
 });
 
 test('paid plan describes self-serve Pro features truthfully', () => {
-  assert.match(landingPage, /Pro adds recall, dashboard, adapters, and exports/);
+  assert.match(landingPage, /Pro is about memory/);
+  assert.doesNotMatch(landingPage, /Pro adds recall, dashboard, adapters/);
   assert.doesNotMatch(landingPage, /Delivery within two business days|order is refunded|managed implementation/);
 });
 
 test('enforcement promise distinguishes default denies from strict-mode blocks', () => {
-  assert.match(landingPage, /Detected secret exfiltration[\s\S]*denied by default/i);
-  assert.match(landingPage, /Catastrophic commands \([^)]*\)[\s\S]*denied by default/i);
-  assert.match(landingPage, /Other matching destructive actions warn by default and deny in strict mode for some rules, not every action/i);
-  assert.match(landingPage, /not a claim that every free install blocks every risky command automatically/i);
-  assert.match(landingPage, /mode\s+strict enforcement[\s\S]*decision\s+<span class="red">DENY<\/span>/i);
+  const coverage = landingPage.slice(landingPage.indexOf('<section id="coverage">'), landingPage.indexOf('<section id="faq">'));
+  assert.match(coverage, /<code>git push --force<\/code>[\s\S]*?<td>Denied<\/td><td>Denied<\/td>/);
+  assert.match(coverage, /A command you gave a thumbs-down<\/th><td>Warns, with your reason<\/td><td>Denied from the third thumbs-down<\/td>/);
+  assert.match(coverage, /Other flagged actions[\s\S]*?<td>Warns<\/td><td>Denied<\/td>/);
+  assert.match(coverage, /python3 shutil\.rmtree<\/code> only gets a warning/);
+  assert.match(coverage, /id="preview-app"/, 'the in-browser preview is on the homepage');
 });
 
-test('FAQPage JSON-LD matches the five visible buyer questions', () => {
+test('FAQPage JSON-LD matches the four visible buyer questions', () => {
   const jsonLd = parseJsonLd(landingPage);
   const faqSchema = jsonLd.find((document) => document['@type'] === 'FAQPage');
   const visibleFaq = visibleFaqAnswers(landingPage);
@@ -749,8 +751,8 @@ test('FAQPage JSON-LD matches the five visible buyer questions', () => {
   assert.ok(jsonLd.some((document) => document['@type'] === 'SoftwareApplication'));
   assert.ok(!jsonLd.some((document) => document['@type'] === 'Service'));
   assert.ok(faqSchema);
-  assert.equal(faqSchema.mainEntity.length, 5);
-  assert.equal(visibleFaq.size, 5);
+  assert.equal(faqSchema.mainEntity.length, 4);
+  assert.equal(visibleFaq.size, 4);
   for (const entity of faqSchema.mainEntity) {
     const question = normalizeHtmlText(entity.name);
     const answer = normalizeHtmlText(entity.acceptedAnswer.text);
@@ -787,8 +789,7 @@ test('homepage features thumbs branding and self-improving diagrams above the fo
   assert.match(landingPage, /id="thumb-glyph"/);
   assert.match(landingPage, /class="hero-thumb-up"/);
   assert.match(landingPage, /id="hero-thumb-down"/);
-  assert.match(landingPage, /strict mode, one env var/);
-  assert.match(landingPage, /warn and are logged/);
+  assert.match(landingPage, /only warn unless you turn on strict mode/);
   assert.match(landingPage, /data-cta-placement="offers"/);
   assert.match(landingPage, /<section id="offers">\s*<div class="shell" id="workflow-sprint-intake">/);
   assert.match(landingPage, /data-plan-id="pro"/);
@@ -800,9 +801,7 @@ test('homepage features thumbs branding and self-improving diagrams above the fo
   assert.match(landingPage, /\/assets\/diagrams\/before-after\.svg/);
   assert.match(landingPage, /\/assets\/diagrams\/loop\.svg/);
   assert.match(landingPage, /\/assets\/diagrams\/self-improving-thumbs-loop\.svg/);
-  assert.match(landingPage, /Is it really self-improving\?/);
   assert.match(landingPage, /Thumbs teach\. The gate enforces\./);
-  assert.match(landingPage, /control layer, not the LLM/i);
 
   const heroStart = landingPage.indexOf('<!-- HERO -->');
   const howStart = landingPage.indexOf('id="how-it-works"');

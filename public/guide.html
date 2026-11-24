@@ -94,7 +94,7 @@
       "name": "Why does my Claude Code agent keep force-pushing to main?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "Because prompt rules are suggestions the agent can ignore. ThumbGate adds enforcement: a PreToolUse hook fires before every tool call and checks it against known failure patterns. When the action matches a check (like git push --force to main), it is flagged and logged before execution — and hard-blocked when strict enforcement (THUMBGATE_STRICT_ENFORCEMENT=1) is on. Catastrophic actions such as secret exfiltration and destructive deletes are hard-blocked by default."
+        "text": "Because prompt rules are suggestions the agent can ignore. ThumbGate adds enforcement: a PreToolUse hook runs before tool calls and checks them against known failure patterns. When the action matches a check (like git push --force to main), it is flagged and logged before execution — and hard-blocked when strict enforcement (THUMBGATE_STRICT_ENFORCEMENT=1) is on. Catastrophic actions such as secret exfiltration and destructive deletes are hard-blocked by default."
       }
     },
     {
@@ -134,7 +134,7 @@
       "name": "How do I set up PreToolUse hooks in Claude Code?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "Run npx thumbgate init --agent claude-code. This auto-configures PreToolUse hooks in your .claude/settings.json. The hooks fire before every tool call and check it against your prevention rules and checks."
+        "text": "Run npx thumbgate init --agent claude-code. This auto-configures PreToolUse hooks in your .claude/settings.json. The hooks run before tool calls and check them against your prevention rules and checks."
       }
     },
     {
@@ -317,7 +317,7 @@ npx thumbgate init --agent gemini</code></pre>
   <tr><th>Feature</th><th>Prompt Rules</th><th>Pre-Action Checks</th></tr>
   <tr><td>Where they live</td><td>CLAUDE.md, .cursorrules</td><td>PreToolUse hooks</td></tr>
   <tr><td>Enforcement</td><td>Suggestion (can be ignored)</td><td>Flags + logs; hard-blocks critical / strict mode</td></tr>
-  <tr><td>When they fire</td><td>At prompt load</td><td>Before every tool call</td></tr>
+  <tr><td>When they fire</td><td>At prompt load</td><td>Before a tool runs</td></tr>
   <tr><td>Auto-generated</td><td>No — hand-written</td><td>Yes — from feedback</td></tr>
   <tr><td>Adaptive</td><td>No</td><td>Yes — Thompson Sampling</td></tr>
   <tr><td>Persist across sessions</td><td>Only if in a file</td><td>SQLite + JSONL</td></tr>

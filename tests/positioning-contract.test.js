@@ -50,7 +50,7 @@ test('public surfaces lead with outcomes instead of infrastructure abstractions'
 
   assert.match(readme, /AI coding agents repeat mistakes/i);
   assert.match(readme, /evaluate the proposed tool call before execution/i);
-  assert.match(landingPage, /Thumbs-down a Claude Code mistake, and ThumbGate shows your reason as a warning when a similar command comes up\. A thumbs-down warns; it does not block/i);
+  assert.match(landingPage, /Thumbs-down a Claude Code mistake once, and ThumbGate warns the next time it tries that command\. After three thumbs-downs on the same command, strict mode blocks it/i);
   assert.match(landingPage, /allowed, warned, or denied/i);
   assert.match(landingPage, /Free local PreToolUse gates/i);
   assert.match(gptInstructions, /Sell outcomes before infrastructure/i);
@@ -191,7 +191,7 @@ test('LLM context positions ThumbGate as AI agent security infrastructure', () =
 
   assert.match(context, /AI Agent Security Infrastructure/);
   assert.match(context, /Self-protection/);
-  assert.match(context, /Budget enforcement/);
+  assert.doesNotMatch(context, /Budget enforcement/, 'unverified claim removed in the 24 Nov 2026 honesty pass');
   assert.match(context, /Compliance mapping/);
   assert.match(context, /NIST/);
   assert.match(context, /SOC2/);

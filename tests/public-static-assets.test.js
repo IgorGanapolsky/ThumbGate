@@ -149,7 +149,7 @@ test('landing page presents configured self-serve Pro and free installation clea
   const res = await fetch(`${origin}/`);
   assert.equal(res.status, 200);
   const html = await res.text();
-  assert.match(html, /Pro adds recall, dashboard, adapters, and exports/);
+  assert.match(html, /Pro is about memory/);
   assert.match(html, /href="\/checkout\/pro"/);
   assert.match(html, /free local CLI/i);
   assert.doesNotMatch(html, /\$499|Setup Sprint|two business days/);
@@ -210,22 +210,16 @@ test('GET /diagnostic serves the managed workflow gate checkout and fit page', a
   assert.equal(res.status, 200);
   assert.match(res.headers.get('content-type') || '', /text\/html/);
   const html = await res.text();
-  assert.match(html, /Setup Sprint/);
-  assert.match(html, /Submit for fit check/);
+  assert.match(html, /Team Pilot/);
+  assert.match(html, /Request a team pilot/);
   assert.match(html, /action="\/v1\/intake\/workflow-sprint"/);
   assert.match(html, /data-diagnostic-intake-form/);
   assert.match(html, /diagnostic_page_submit/);
-  assert.match(html, /Book the \$499 setup/);
-  assert.match(html, /Exactly what the \$499 Setup Sprint includes/);
-  assert.match(html, /one 60-minute working review/i);
-  assert.match(html, /one configured local gate and regression test/i);
-  assert.match(html, /rollout and rollback proof within two business days/i);
-  assert.match(html, /order is refunded instead of being silently converted/i);
-  assert.doesNotMatch(html, /\$1500|public Setup Sprint/i);
+  // Request-only pilot: no price, no checkout form, no live payment path.
+  assert.doesNotMatch(html, /\$499|\$1500|public Setup Sprint/i);
   assert.doesNotMatch(html, /__WORKFLOW_SPRINT_PRICE_DOLLARS__|__SPRINT_DIAGNOSTIC_PRICE_DOLLARS__/);
-  assert.match(html, /action="\/go\/diagnostic-pay" method="POST"/);
-  assert.match(html, /name="customer_email"[^>]*required/);
-  assert.match(html, /data-cta-id="diagnostic_hero_paid"/);
+  assert.doesNotMatch(html, /action="\/go\/diagnostic-pay"/);
+  assert.doesNotMatch(html, /name="customer_email"/);
   assert.match(html, /\/v1\/telemetry\/ping/);
   assert.doesNotMatch(html, /\/v1\/telemetry\/event/);
   assert.match(html, /const inboundSource = search\.get\('utm_source'\) \|\| search\.get\('source'\)/);
@@ -253,8 +247,8 @@ test('workflow diagnostic aliases serve the focused diagnostic page', async () =
     assert.equal(res.status, 200, `${pathname} should render diagnostic page`);
     assert.match(res.headers.get('content-type') || '', /text\/html/);
     const html = await res.text();
-    assert.match(html, /Setup Sprint/);
-    assert.match(html, /Submit for fit check/);
+    assert.match(html, /Team Pilot/);
+    assert.match(html, /Request a team pilot/);
     assert.match(html, /<link rel="canonical" href="[^"]+\/diagnostic"/);
   }
 });
@@ -267,7 +261,7 @@ test('GET /install serves the verified distribution and buyer path page', async 
     assert.equal(res.status, 200, `${pathname} should render install page`);
     assert.match(res.headers.get('content-type') || '', /text\/html/);
     const html = await res.text();
-    assert.match(html, /Install paths verified for v1\.27\.20/);
+    assert.match(html, /Registry versions checked/);
     assert.match(html, /npm package/);
     assert.match(html, /VS Code Marketplace/);
     assert.match(html, /Open VSX/);
