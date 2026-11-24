@@ -1,0 +1,51 @@
+capture exit 0; 1 thumbs-down(s) on: rm -rf ./build-cache
+mode               result             command
+before-thumbs-down builtin-gate-warn  rm -rf ./build-cache
+before-thumbs-down nothing            ls
+before-thumbs-down nothing            mv a b
+before-thumbs-down nothing            git status
+default            gate+lesson        rm -rf ./build-cache
+default            gate+lesson        rm -rf ./build-cache/
+default            gate+lesson        rm -fr ./build-cache
+default            gate+lesson        rm -r -f ./build-cache
+default            gate+lesson        rm --recursive --force ./build-cache
+default            gate+lesson        rm -rf "./build-cache"
+default            gate+lesson        rm -rf './build-cache'
+default            gate+lesson        rm -rf ./build-\cache
+default            gate+lesson        D=./build-cache; rm -rf "$D"
+default            gate+lesson        cd . && rm -rf build-cache
+default            gate+lesson        find ./build-cache -delete
+default            gate+lesson        find ./build-cache -type f -exec rm -f {} +
+default            gate+lesson        bash -c "rm -rf ./build-cache"
+default            recency-text-only  sh cleanup.sh
+default            lesson-matched     python3 -c "import shutil; shutil.rmtree('./build-cache')"
+default            lesson-matched     node -e "require('fs').rmSync('./build-cache',{recursive:true,force:true})"
+default            lesson-matched     rsync -a --delete /tmp/empty/ ./build-cache/
+default            lesson-matched     mv ./build-cache /dev/null
+default            recency-text-only  ls
+default            recency-text-only  mv a b
+default            recency-text-only  git status
+strict             gate+lesson        rm -rf ./build-cache
+strict             gate+lesson        rm -rf ./build-cache/
+strict             gate+lesson        rm -fr ./build-cache
+strict             gate+lesson        rm -r -f ./build-cache
+strict             gate+lesson        rm --recursive --force ./build-cache
+strict             gate+lesson        rm -rf "./build-cache"
+strict             gate+lesson        rm -rf './build-cache'
+strict             gate+lesson        rm -rf ./build-\cache
+strict             gate+lesson        D=./build-cache; rm -rf "$D"
+strict             gate+lesson        cd . && rm -rf build-cache
+strict             gate+lesson        find ./build-cache -delete
+strict             gate+lesson        find ./build-cache -type f -exec rm -f {} +
+strict             gate+lesson        bash -c "rm -rf ./build-cache"
+strict             recency-text-only  sh cleanup.sh
+strict             lesson-matched     python3 -c "import shutil; shutil.rmtree('./build-cache')"
+strict             lesson-matched     node -e "require('fs').rmSync('./build-cache',{recursive:true,force:true})"
+strict             lesson-matched     rsync -a --delete /tmp/empty/ ./build-cache/
+strict             lesson-matched     mv ./build-cache /dev/null
+strict             recency-text-only  ls
+strict             recency-text-only  mv a b
+strict             recency-text-only  git status
+before-thumbs-down: {"builtin-gate-warn":1,"nothing":3}
+default: {"gate+lesson":13,"recency-text-only":4,"lesson-matched":4}
+strict: {"gate+lesson":13,"recency-text-only":4,"lesson-matched":4}
