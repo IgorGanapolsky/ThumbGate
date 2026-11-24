@@ -3,11 +3,11 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Stop Your AI Coding Agent Repeating Mistakes — $499 Setup Sprint | ThumbGate</title>
-<meta name="description" content="Your coding agent keeps making the same mistake. The $499 Setup Sprint blocks it before the tool runs, with a regression test that proves it. One repeated mistake, one local workflow, rollout and rollback proof.">
+<title>Stop Your AI Coding Agent Repeating Mistakes — Team Pilot (by request) | ThumbGate</title>
+<meta name="description" content="Your coding agent keeps making the same mistake. A request-only team pilot turns it into a configured gate and a regression test, with the accepted result agreed first. One repeated mistake, one local workflow, rollout and rollback proof.">
 <link rel="canonical" href="__APP_ORIGIN__/diagnostic">
 <link rel="alternate" type="text/markdown" title="ThumbGate LLM context" href="__APP_ORIGIN__/llm-context.md">
-<meta property="og:title" content="Stop Your AI Coding Agent Repeating Mistakes — $499 Setup Sprint">
+<meta property="og:title" content="Stop Your AI Coding Agent Repeating Mistakes — Team Pilot (by request)">
 <meta property="og:description" content="Send one repeated AI-agent workflow failure. Get one configured gate, a regression test, and rollout and rollback proof.">
 <meta property="og:url" content="__APP_ORIGIN__/diagnostic">
 <meta property="og:type" content="website">
@@ -257,7 +257,7 @@ footer { padding: 32px 0 44px; color: var(--muted); }
 {
   "@context": "https://schema.org",
   "@type": "Service",
-  "name": "ThumbGate Setup Sprint",
+  "name": "ThumbGate Team Pilot",
   "provider": {
     "@type": "Organization",
     "name": "ThumbGate",
@@ -266,7 +266,6 @@ footer { padding: 32px 0 44px; color: var(--muted); }
   "description": "A managed implementation for one repeated AI-agent workflow failure, including one configured local gate, a regression test, and rollout and rollback proof.",
   "offers": {
     "@type": "Offer",
-    "price": "__SPRINT_DIAGNOSTIC_PRICE_DOLLARS__",
     "priceCurrency": "USD",
     "availability": "https://schema.org/InStock",
     "url": "__APP_ORIGIN__/diagnostic"
@@ -290,40 +289,28 @@ footer { padding: 32px 0 44px; color: var(--muted); }
 <main>
   <div class="hero">
     <div>
-      <div class="eyebrow">Setup Sprint · $499 one-time for one workflow</div>
+      <div class="eyebrow">Team pilot · by request · 30 days · one workflow</div>
       <h1>Your coding agent keeps making the same mistake. We make it stop.</h1>
-      <p class="lede">ThumbGate checks each tool call your agent proposes before it runs. The $499 Setup Sprint turns one repeated mistake in one local workflow, on a <a href="/install#install">supported integration</a>, into a configured gate and a regression test.</p>
+      <p class="lede">ThumbGate checks each tool call your agent proposes before it runs. The team pilot turns one repeated mistake in one local workflow, on a <a href="/install#install">supported integration</a>, into a configured gate and a regression test.</p>
       <ul class="offer-promise offer-points" data-offer-promise>
-        <li><strong>The outcome:</strong> that mistake is blocked before the tool runs, with a regression test that proves it.</li>
-        <li><strong>The guarantee:</strong> if we can't turn it into a gate, you get the $499 back.</li>
+        <li><strong>The outcome:</strong> a configured gate and a regression test for that mistake, with the accepted result agreed before we start.</li>
+        <li><strong>The terms:</strong> request only. No price is listed and no payment is taken on this page.</li>
         <li><strong>The speed:</strong> two business days, counted from when we have access and your workflow materials.</li>
         <li><strong>Your part:</strong> a short intake and one 60-minute working review.</li>
       </ul>
       <div class="actions">
-        <form class="diagnostic-pay-form" action="/go/diagnostic-pay" method="POST" data-diagnostic-pay-form>
-          <input type="hidden" name="utm_source" value="diagnostic_page">
-          <input type="hidden" name="utm_medium" value="diagnostic_confirmation">
-          <input type="hidden" name="utm_campaign" value="workflow_hardening_diagnostic">
-          <input type="hidden" name="utm_content" value="hero_paid_diagnostic">
-          <input type="hidden" name="cta_id" value="diagnostic_hero_paid">
-          <input type="hidden" name="cta_placement" value="hero">
-          <input type="hidden" name="plan_id" value="sprint_diagnostic">
-          <label for="diagnostic-pay-email">Work email for the receipt</label>
-          <input id="diagnostic-pay-email" type="email" name="customer_email" autocomplete="email" required placeholder="you@company.com">
-          <button class="button primary" type="submit" data-revenue-cta data-cta-id="diagnostic_hero_paid" data-cta-placement="hero">Book the $__SPRINT_DIAGNOSTIC_PRICE_DOLLARS__ setup</button>
-          <span class="hint">No Stripe session is created until you submit this form.</span>
-        </form>
-        <a class="button" href="#intake" data-revenue-cta data-cta-id="diagnostic_hero_intake" data-cta-placement="hero">Check workflow fit first</a>
+        <a class="button primary" href="#intake" data-revenue-cta data-cta-id="diagnostic_hero_intake_primary" data-cta-placement="hero">Request a team pilot</a>
+        
       </div>
       <div class="proof-strip" aria-label="Diagnostic proof points">
-        <div class="proof"><strong>$__SPRINT_DIAGNOSTIC_PRICE_DOLLARS__</strong><span>One fixed-price managed implementation.</span></div>
+        <div class="proof"><strong>Request only</strong><span>No price listed; no checkout.</span></div>
         <div class="proof"><strong>One workflow</strong><span>One configured local gate and regression test.</span></div>
         <div class="proof"><strong>Two business days</strong><span>Rollout and rollback proof after access is available.</span></div>
       </div>
     </div>
     <form id="intake" class="intake-card" action="/v1/intake/workflow-sprint" method="POST" data-team-intake-form data-diagnostic-intake-form>
-      <h2>Check workflow fit</h2>
-      <p>Use this before checkout if you are unsure the repeated action can be reduced to one local gate.</p>
+      <h2>Request a team pilot</h2>
+      <p>Tell us your story. We read every request and reply to say whether one local gate fits.</p>
       <input type="hidden" name="ctaId" value="diagnostic_page_intake">
       <input type="hidden" name="ctaPlacement" value="diagnostic_page">
       <input type="hidden" name="utmMedium" value="diagnostic_intake">
@@ -336,7 +323,7 @@ footer { padding: 32px 0 44px; color: var(--muted); }
       <input id="email" name="email" type="email" autocomplete="email" required>
       <label for="company">Company or project</label>
       <input id="company" name="company" autocomplete="organization">
-      <label for="workflow">What workflow keeps failing?</label>
+      <label for="workflow">Tell us your story: what was the repeated mistake, and why were your existing controls not enough?</label>
       <textarea id="workflow" name="workflow" required placeholder="Example: agent opens PRs without the right proof, sends the wrong customer update, or deploys before approvals are clear."></textarea>
       <label for="urgency">Urgency</label>
       <select id="urgency" name="urgency">
@@ -344,8 +331,8 @@ footer { padding: 32px 0 44px; color: var(--muted); }
         <option>We are about to roll this workflow out</option>
         <option>We need an independent proof checklist first</option>
       </select>
-      <button type="submit" data-revenue-cta data-cta-id="diagnostic_page_submit" data-cta-placement="intake">Submit for fit check</button>
-      <p class="hint" data-diagnostic-payment-hint>Ready to pay now? Use the $499 managed-gate checkout above. If the workflow is not a fit, we refund the order instead of opening a larger consulting scope.</p>
+      <button type="submit" data-revenue-cta data-cta-id="diagnostic_page_submit" data-cta-placement="intake">Request pilot</button>
+      <p class="hint" data-diagnostic-payment-hint>No payment is taken. If it is not a fit, we say so.</p>
     </form>
   </div>
   <section data-oceans-pain>
@@ -362,7 +349,7 @@ footer { padding: 32px 0 44px; color: var(--muted); }
       </div>
       <div class="pain">
         <h3>US hires and GRC suites are slow capital</h3>
-        <p>Months of process for a dashboard. The $__SPRINT_DIAGNOSTIC_PRICE_DOLLARS__ offer hardens one concrete workflow in two business days after access.</p>
+        <p>Months of process for a dashboard. The team pilot works on one concrete workflow.</p>
       </div>
     </div>
   </section>
@@ -401,7 +388,7 @@ footer { padding: 32px 0 44px; color: var(--muted); }
     </div>
   </section>
   <section>
-    <h2>Exactly what the $499 Setup Sprint includes</h2>
+    <h2>What the team pilot covers</h2>
     <p class="lede" style="font-size:17px;">One workflow, one 60-minute working review, one configured local gate and regression test, plus rollout and rollback proof within two business days after access and the agreed workflow materials are available.</p>
     <div class="grid" data-diagnostic-offer-contract>
       <div class="box">
@@ -419,7 +406,7 @@ footer { padding: 32px 0 44px; color: var(--muted); }
     </div>
     <div class="intake-card" style="margin-top:16px;" data-diagnostic-fit-terms>
       <h3 style="margin-top:0;">Fit and refund boundary</h3>
-      <p>If the repeated failure cannot be reduced to one supported ThumbGate gate, the $__SPRINT_DIAGNOSTIC_PRICE_DOLLARS__ order is refunded instead of being silently converted into a larger service. This fence matches the <a href="/terms">Terms of Service</a> Module B deliverable and refund language exactly.</p>
+      <p>If the repeated failure cannot be reduced to one supported ThumbGate gate, we tell you it is not a fit instead of silently converting it into a larger service. No payment is taken on this page.</p>
       <p class="hint">This is a one-workflow setup, not an enterprise contract. Multi-workflow rollout, ongoing monitoring, shared hosting, compliance work, SSO, and a hosted audit log are not included. Hosted Enterprise capabilities are not generally available. Legal summaries: <a href="/privacy">Privacy</a> · <a href="/security">Security</a> · <a href="/legal">Legal index</a>.</p>
     </div>
   </section>
@@ -476,7 +463,7 @@ footer { padding: 32px 0 44px; color: var(--muted); }
             <td>Model + review time</td>
             <td>$5,500–7,000+/mo loaded</td>
             <td>$2,500–5,000/mo</td>
-            <td>$__SPRINT_DIAGNOSTIC_PRICE_DOLLARS__ once</td>
+            <td>By request</td>
           </tr>
           <tr>
             <td>Time to first hard boundary</td>
@@ -505,7 +492,7 @@ footer { padding: 32px 0 44px; color: var(--muted); }
       </div>
       <div class="faq-item">
         <button class="faq-q" type="button" aria-expanded="false">What if the workflow is not the right fit?</button>
-        <div class="faq-a">We refund the $__SPRINT_DIAGNOSTIC_PRICE_DOLLARS__ order instead of expanding into open consulting. Bad matches stay rare because the fence is one supported local gate.</div>
+        <div class="faq-a">We say it is not a fit instead of expanding into open consulting. Bad matches stay rare because the fence is one supported local gate.</div>
       </div>
       <div class="faq-item">
         <button class="faq-q" type="button" aria-expanded="false">Is this a long-term contract?</button>
@@ -524,7 +511,7 @@ footer { padding: 32px 0 44px; color: var(--muted); }
         <p class="hint" style="margin-top:10px;">Refunded if the failure cannot be reduced to one supported ThumbGate gate. Runs locally on your machine. Want the free path first? <code>npx thumbgate init</code> — no account, nothing sent to us. See the <a href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md" target="_blank" rel="noopener">verification evidence</a>.</p>
       </div>
       <div class="actions">
-        <a class="button primary" href="#top" data-revenue-cta data-cta-id="diagnostic_bottom_buy" data-cta-placement="bottom_band">Harden my workflow — $__SPRINT_DIAGNOSTIC_PRICE_DOLLARS__</a>
+        <a class="button primary" href="#intake" data-revenue-cta data-cta-id="diagnostic_bottom_buy" data-cta-placement="bottom_band">Request a team pilot</a>
       </div>
     </div>
   </section>
