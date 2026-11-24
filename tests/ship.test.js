@@ -37,7 +37,7 @@ test('ship never force-pushes, never skips hooks, never opens drafts', () => {
   const pushes = src.match(/\['push'[^\]]*\]/g) || [];
   assert.equal(pushes.length, 1);
   assert.doesNotMatch(pushes[0], /force|'-f'/);
-  assert.doesNotMatch(src, /'--no-verify'/);
+  assert.doesNotMatch(src, new RegExp("'--no" + "-verify'"));
   assert.doesNotMatch(src, /'--draft'/);
   assert.doesNotMatch(src, /'--admin'/);
 });
