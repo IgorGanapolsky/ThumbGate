@@ -585,7 +585,10 @@ function serveStaticFile(res, filePath, { headOnly = false, cacheSeconds = 86400
     return;
   }
   res.setHeader('Content-Type', contentType);
-  res.setHeader('Cache-Control', `public, max-age=${cacheSeconds}, immutable`);
+  // Scripts, styles and pages have no content hash in their URL, so a browser that pins them as
+  // immutable keeps running an old build's code after an upgrade. Only media is safe to pin.
+  const revalidate = ['.js', '.mjs', '.css', '.html', '.json'].includes(ext);
+  res.setHeader('Cache-Control', revalidate ? 'no-cache' : `public, max-age=${cacheSeconds}, immutable`);
   res.setHeader('Referrer-Policy', 'same-origin');
   res.setHeader('Accept-Ranges', 'bytes');
   const range = rangeHeader ? parseByteRange(rangeHeader, stat.size) : null;
