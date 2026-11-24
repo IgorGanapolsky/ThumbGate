@@ -4,7 +4,8 @@
 const fs = require('fs');
 const path = require('path');
 const https = require('https');
-const { execSync } = require('child_process');
+const os = require('os');
+const { execSync, execFileSync } = require('child_process');
 
 const PROJECT_ROOT = path.join(__dirname, '..');
 const GITHUB_REPO = 'IgorGanapolsky/ThumbGate';
@@ -196,6 +197,116 @@ async function checkUpdate(options = {}) {
   }
 }
 
+// ---------------------------------------------------------------------------
+// Hook runtime version skew
+
+/*
+ * Hook runtime version skew.
+ *
+ * Hooks run from ~/.thumbgate/runtime (a cached install; see published-cli.js and install-shim.js).
+ * Once that cache exists it is never upgraded by default, on purpose: hooks must not mutate a
+ * pinned or dogfood runtime behind the operator's back. The MCP server, by contrast, is wired as
+ * `thumbgate@latest`, so it is usually current. On 2026-11-24, 225 of 261 active installs ran
+ * hook builds too old to report a version, so no hook-side fix reached them.
+ *
+ * This module only detects and reports the gap. It never installs anything; the person updates
+ * with `npx thumbgate@latest self-update`, which now refreshes the hook runtime too.
+ * See docs/decisions/2026-11-24-revenue-funnel-activation.md (loop 2).
+ */
+
+
+const SKEW_REPORT_INTERVAL_MS = 24 * 60 * 60 * 1000;
+const STATE_FILE = 'runtime-skew-reported.json';
+const UPDATE_COMMAND = 'npx thumbgate@latest self-update';
+
+function runtimeDir(env = process.env) {
+  const home = env.HOME || env.USERPROFILE || os.homedir();
+  return path.join(home, '.thumbgate', 'runtime');
+}
+
+function readRuntimeVersion(dir = runtimeDir()) {
+  try {
+    const pkg = JSON.parse(fs.readFileSync(path.join(dir, 'node_modules', 'thumbgate', 'package.json'), 'utf8'));
+    return typeof pkg.version === 'string' ? pkg.version : null;
+  } catch {
+    return null;
+  }
+}
+
+function parse(v) {
+  const m = /^(\d+)\.(\d+)\.(\d+)/.exec(String(v || ''));
+  return m ? [Number(m[1]), Number(m[2]), Number(m[3])] : null;
+}
+
+function isOlder(a, b) {
+  const pa = parse(a);
+  const pb = parse(b);
+  if (!pa || !pb) return false;
+  for (let i = 0; i < 3; i += 1) {
+    if (pa[i] !== pb[i]) return pa[i] < pb[i];
+  }
+  return false;
+}
+
+/** @returns {{ skewed: boolean, runtimeVersion: string|null, currentVersion: string }} */
+function detectSkew({ currentVersion, dir } = {}) {
+  const runtimeVersion = readRuntimeVersion(dir);
+  return { skewed: Boolean(runtimeVersion && isOlder(runtimeVersion, currentVersion)), runtimeVersion, currentVersion };
+}
+
+function buildSkewNotice(runtimeVersion, currentVersion) {
+  return `ThumbGate's hooks on this machine run v${runtimeVersion}, but v${currentVersion} is installed for the MCP server, `
+    + `so fixes since v${runtimeVersion} are not active in the hooks. If the person asks about ThumbGate or its gates, `
+    + `tell them once that \`${UPDATE_COMMAND}\` updates the hooks.`;
+}
+
+/**
+ * Send one `runtime_version_skew` ping per 24h per machine. Never throws, never blocks.
+ * `track` defaults to cli-telemetry.trackEvent and is skipped under the node test runner.
+ */
+function reportSkewOnce({ skew, env = process.env, now = Date.now(), stateDir, track } = {}) {
+  try {
+    if (!skew || !skew.skewed) return false;
+    if (env.THUMBGATE_NO_TELEMETRY === '1' || env.DO_NOT_TRACK === '1') return false;
+    const send = track || ((eventType, metadata) => {
+      if (env.NODE_TEST_CONTEXT || process.env.NODE_TEST_CONTEXT) return;
+      require('./cli-telemetry').trackEvent(eventType, metadata);
+    });
+    const dir = stateDir || path.join(path.dirname(runtimeDir(env)));
+    const file = path.join(dir, STATE_FILE);
+    let last = 0;
+    try { last = Number(JSON.parse(fs.readFileSync(file, 'utf8')).at) || 0; } catch { /* first time */ }
+    if (now - last < SKEW_REPORT_INTERVAL_MS) return false;
+    fs.mkdirSync(dir, { recursive: true });
+    fs.writeFileSync(file, JSON.stringify({ at: now, runtimeVersion: skew.runtimeVersion, currentVersion: skew.currentVersion }));
+    send('runtime_version_skew', { runtimeVersion: skew.runtimeVersion, currentVersion: skew.currentVersion });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+
+/**
+ * Update the cached hook runtime (~/.thumbgate/runtime) when one exists. Hook commands run that
+ * copy first (published-cli.js fast path), so without this a self-update left the hooks on the
+ * old version. Runs only when the person asked for an update. Returns the outcome; never throws.
+ */
+function refreshHookRuntime(options = {}) {
+  const dir = options.dir || runtimeDir();
+  const before = readRuntimeVersion(dir);
+  if (!before) return { refreshed: false, reason: 'no-runtime' };
+  const run = options.run || ((cmd, args) => execFileSync(cmd, args, { stdio: 'inherit' }));
+  try {
+    console.log(`Updating hook runtime in ${dir} (was v${before})`);
+    run('npm', ['install', '--prefix', dir, '--no-save', '--omit=dev', '--no-audit', '--no-fund', 'thumbgate@latest']);
+    return { refreshed: true, before, after: readRuntimeVersion(dir) };
+  } catch (err) {
+    console.error(`⚠️  Hook runtime update failed: ${err.message}. Run: npm install --prefix "${dir}" thumbgate@latest`);
+    return { refreshed: false, reason: 'install-failed', before };
+  }
+}
+
 function selfUpdate() {
   const current = getLocalVersion();
   console.log(`Attempting self-update for ThumbGate...`);
@@ -209,6 +320,8 @@ function selfUpdate() {
   try {
     console.log('Running: npm install -g thumbgate@latest');
     execSync('npm install -g thumbgate@latest', { stdio: 'inherit' });
+    // Hooks run from the cached runtime, not the global install, so update it too.
+    refreshHookRuntime();
     console.log('✨ Self-update complete! Run `thumbgate version` to verify.');
     return true;
   } catch (err) {
@@ -221,6 +334,15 @@ function selfUpdate() {
 module.exports = {
   checkUpdate,
   selfUpdate,
+  refreshHookRuntime,
+  runtimeDir,
+  readRuntimeVersion,
+  isOlder,
+  detectSkew,
+  buildSkewNotice,
+  reportSkewOnce,
+  RUNTIME_SKEW_STATE_FILE: STATE_FILE,
+  UPDATE_COMMAND,
   getLocalVersion,
   isNewer,
 };

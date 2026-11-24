@@ -73,6 +73,27 @@ shown stays 0 while activated grows, version reach is the problem (see revised r
 
 Results are appended below as they come in.
 
+## Loop 2 (same day): get old installs onto the current version
+
+**Observation.** `usage30d.byVersion`: 225 of 261 active installs send no version (builds older than
+the version field), 29 run 1.39.x, 1 runs ≥ 1.40.10. **Explanation.** Hook commands run the cached
+runtime at `~/.thumbgate/runtime` first (`scripts/published-cli.js` fast path, `install-shim.js`).
+Once cached it never updates by default (a deliberate rule: hooks must not mutate a pinned runtime),
+and `thumbgate self-update` only ran `npm install -g`, which hooks never use. So every install stays
+on the build it first installed, and no hook-side fix (including loop 1) reaches it.
+The MCP server is wired as `thumbgate@latest`, so it is the one current component on those machines.
+
+**Intervention.**
+
+| Change | Metric | Baseline |
+|---|---|---|
+| `self-update` also refreshes `~/.thumbgate/runtime` (only when the person runs it) | share of active installs on the latest minor in `usage30d.byVersion` | 1 of 261 on ≥ 1.40.10 |
+| MCP `initialize` detects an older hook runtime and adds one operational sentence to `instructions` naming `npx thumbgate@latest self-update`; nothing is installed | same | same |
+| `runtime_version_skew` ping, at most once per 24h per machine | count of skewed machines (new denominator) | not measured |
+
+Auto-upgrading the runtime stays opt-in (`THUMBGATE_SHIM_AUTO_UPDATE=1`); changing that default is
+Igor's call, not this loop's.
+
 ## 5. Revised rules
 
 1. Every upgrade link the CLI or a hook prints is an absolute `https://` URL through `thumbgate.ai`
