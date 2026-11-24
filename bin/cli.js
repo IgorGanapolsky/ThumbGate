@@ -34,20 +34,17 @@ const PRO_CHECKOUT_URL = PRO_MONTHLY_PAYMENT_LINK;
 const TRIAL_DAYS = 7;
 
 function checkoutUrlFor(source, content) {
+  // Every CLI upgrade link goes through thumbgate.ai/go/pro, never a raw Stripe payment link:
+  // only that route attributes the click, opens a session tied to the buyer, and provisions the key.
   try {
-    const base = content === 'capture_feedback'
-      ? 'https://buy.stripe.com/7sYfZhaiE1eSbO99uj3sI0d'
-      : PRO_CHECKOUT_URL;
-    const url = new URL(base);
+    const url = new URL(PRO_CHECKOUT_URL);
     url.searchParams.set('utm_source', source || 'cli');
     url.searchParams.set('utm_medium', 'cli');
     url.searchParams.set('utm_campaign', 'pro_conversion');
     if (content) url.searchParams.set('utm_content', content);
     return url.toString();
   } catch (_) {
-    return content === 'capture_feedback'
-      ? 'https://buy.stripe.com/7sYfZhaiE1eSbO99uj3sI0d'
-      : PRO_CHECKOUT_URL;
+    return PRO_CHECKOUT_URL;
   }
 }
 
@@ -225,6 +222,8 @@ function limitNudge(action, limitResult = {}) {
   const reason = limitResult.message
     ? String(limitResult.message).split('\n')[0]
     : 'Free tier limit reached.';
+  // The free-tier wall is an upgrade moment; count it so the funnel can see it.
+  try { trackEvent('cli_limit_hit', { action, limitType: limitResult.limitType || null }); } catch (_) { /* best-effort */ }
   process.stderr.write(
     `\n  🔒 ${reason}\n` +
     usageLine +

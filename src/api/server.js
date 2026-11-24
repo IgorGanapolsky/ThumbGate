@@ -255,6 +255,7 @@ const {
 } = require('../../scripts/gates-engine');
 const {
   summarizeFirstBlockEvents,
+  summarizeActivationFunnel,
 } = require('../../scripts/activation-tracker');
 const {
   evaluateOperationalIntegrity,
@@ -7018,6 +7019,10 @@ async function handleFirstBlockActivationRoute(req, res, expectedApiKey, expecte
         clientType: 'cli',
         installId: trustedInstallId,
         firstBlockAt: recorded.firstBlockAt,
+        // Keep the CLI's own classification; an admin or operator key is the owner by definition.
+        visitorType: (isAdmin || isOperator)
+          ? 'owner'
+          : (['real_user', 'owner', 'ci'].includes(body?.visitorType) ? body.visitorType : 'real_user'),
         ...(typeof body?.gateId === 'string' ? { gateId: body.gateId.slice(0, 120) } : {}),
       }, req.headers);
     } catch { /* telemetry best-effort */ }
@@ -10444,8 +10449,13 @@ a{color:#8b9}</style></head><body><form class="card" method="post" action="/oaut
       const sevenDaysAgo = now - 7 * 24 * 60 * 60 * 1000;
 
       const classified = entries.map(e => {
+        if (e.visitorType) return e;
+        // A CLI ping comes from node, not a browser, so an empty User-Agent says nothing about it;
+        // UA classification would label every unclassified CLI event (e.g. first_block) a bot.
+        // The CLI marks CI and owner installs itself; one that didn't is a real install.
+        if ((e.clientType || e.client) === 'cli') return { ...e, visitorType: 'real_user' };
         const cls = bd.classifyVisitor({ headers: { 'user-agent': e.userAgent || '' }, email: e.email || '' });
-        return { ...e, visitorType: e.visitorType || cls.type };
+        return { ...e, visitorType: cls.type };
       });
 
       const recent = classified.filter(e => {
@@ -10480,6 +10490,8 @@ a{color:#8b9}</style></head><body><form class="card" method="post" action="/oaut
         'cli_capture', 'cli_recall', 'cli_stats',
         'activation_first_rule_promoted',
         'first_blocked_tool_call',
+        // What production CLIs actually send for the first gate firing.
+        'first_block',
       ]);
       const thirtyDaysAgo = now - 30 * 24 * 60 * 60 * 1000;
       const last30 = classified.filter(e => {
@@ -10530,6 +10542,7 @@ a{color:#8b9}</style></head><body><form class="card" method="post" action="/oaut
           activeInstalls: activeInstalls30d.size,
           uniqueSessions: uniqueSessions30d.size,
           firstBlockedToolCall: summarizeFirstBlockEvents(last30),
+          activationFunnel: summarizeActivationFunnel(last30),
         },
         last7Days: {
           total: recent.length,
@@ -10541,6 +10554,7 @@ a{color:#8b9}</style></head><body><form class="card" method="post" action="/oaut
           activeInstalls: activeInstalls7d.size,
           uniqueSessions: uniqueSessions7d.size,
           firstBlockedToolCall: summarizeFirstBlockEvents(recent),
+          activationFunnel: summarizeActivationFunnel(recent),
         },
         byEventType,
         byVisitorType,
