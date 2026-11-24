@@ -291,7 +291,7 @@ h2{font-size:20px;font-weight:700;margin-bottom:16px;letter-spacing:-.02em}
     <span id="chipWarnedToday" class="g-chip w"><strong data-chip-count="warned-today">0</strong> WARNED TODAY</span>
     <span id="chipActiveGates" class="g-chip a"><strong data-chip-count="active-gates">0</strong> ACTIVE GATES</span>
   </div>
-  
+  <p id="feedbackScopeNote" style="margin:0 0 8px;font-size:13px;color:var(--text-muted,#a1a1aa)"></p>
   <div class="stats-grid" id="statsGrid">
     <a class="stat-card" data-card-action="all" onclick="selectCard(this,'all')" href="/lessons?signal=all" style="cursor:pointer;text-decoration:none;color:inherit;display:block;" title="Click to view all feedback → Lessons page"><div class="stat-label">Total Feedback <span class="tooltip-trigger" onclick="event.stopPropagation(); event.preventDefault();">?<span class="tooltip-content">Total thumbs-up and thumbs-down signals captured from your AI agent interactions.</span></span></div><div class="stat-value cyan" id="statTotal">—</div></a>
     <a class="stat-card" data-card-action="up" onclick="selectCard(this,'up')" href="/lessons?signal=up" style="cursor:pointer;text-decoration:none;color:inherit;display:block;" title="Click to view positive feedback → Lessons page"><div class="stat-label">👍 Positive <span class="tooltip-trigger" onclick="event.stopPropagation(); event.preventDefault();">?<span class="tooltip-content">Successful outcomes where the agent's work met expectations (thumbs-up).</span></span></div><div class="stat-value green" id="statPositive">—</div></a>
@@ -1266,7 +1266,23 @@ function markDashboardRefreshed() {
   refreshed.textContent = now.toLocaleString();
 }
 
+// Say where the headline numbers come from so they cannot silently disagree with a statusline or a per-project card.
+function renderFeedbackScope(data) {
+  var note = document.getElementById('feedbackScopeNote');
+  if (!note || isDemo) return;
+  var agg = data.aggregate || {};
+  var stores = Array.isArray(agg.stores) ? agg.stores.length : null;
+  var parts = [];
+  if (agg.enabled && stores != null) parts.push('Counts human-reviewed feedback merged from ' + stores + ' data folder' + (stores === 1 ? '' : 's') + ' on this machine');
+  else if (window.ThumbGateProjects && window.ThumbGateProjects.selected) parts.push('Counts for the selected project only');
+  else parts.push('Counts human-reviewed feedback from this data folder');
+  var excluded = Number(data.excludedTotal || 0);
+  if (excluded > 0) parts.push(excluded + ' automated or unreviewed event' + (excluded === 1 ? '' : 's') + ' not counted');
+  note.textContent = parts.join('; ') + '. Pick a project above for its own numbers.';
+}
+
 function renderStats(data) {
+  renderFeedbackScope(data);
   const total = (data.totalFeedback || data.total || 0);
   const pos = (data.totalPositive || data.positive || data.thumbsUp || 0);
   const neg = (data.totalNegative || data.negative || data.thumbsDown || 0);
