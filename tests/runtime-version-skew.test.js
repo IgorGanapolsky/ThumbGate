@@ -80,8 +80,9 @@ test('refreshHookRuntime updates an existing runtime with npm and skips when non
 
 test('the Windows npm launcher passes a path with %VAR% through literally, without cmd.exe', () => {
   const nodeDir = fs.mkdtempSync(path.join(os.tmpdir(), 'tg-node-'));
-  const nodePath = path.join(nodeDir, 'node');
-  fs.symlinkSync(process.execPath, nodePath);
+  const nodePath = path.join(nodeDir, path.basename(process.execPath));
+  // Windows may refuse symlinks without the privilege; a copy of node works everywhere.
+  try { fs.symlinkSync(process.execPath, nodePath); } catch { fs.copyFileSync(process.execPath, nodePath); }
   const cliDir = path.join(nodeDir, 'node_modules', 'npm', 'bin');
   fs.mkdirSync(cliDir, { recursive: true });
   const out = path.join(nodeDir, 'argv.json');
