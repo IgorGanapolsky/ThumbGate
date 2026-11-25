@@ -521,8 +521,14 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
     // 700 -> 701 (2026-11-24): scripts/owner-alerts.js (required by the packaged scripts/owner-admin.js).
     // 701 -> 704 (2026-11-24): scripts/cost-meter.js (required by src/api/server.js), scripts/unit-economics.js
     // and config/unit-costs.json (its rate card), for the owner console's unit economics (+3).
-    manifest.fileCount <= 704,
-    `npm package should stay <= 704 files, got ${manifest.fileCount}`
+    // 704 -> 708 (2026-11-25): config/gates/profiles/private-owner.json and public/pilot.html (landed after
+    // 1.40.14), plus scripts/recent-commands.js (required by gates-engine.js) and scripts/lesson-effect.js
+    // (required by statusline-human-counts.js) and scripts/pilot-request.js (required by src/api/server.js),
+    // and scripts/checkout-price-guard.js (required by scripts/billing.js), which were missing from `files` (+6).
+    // 712 -> 715 (2026-11-25): canary-gate.js, boundary-check.js, prompt-risk-lint.js (AGENT-3667 item J).
+    // 710 -> 711 (2026-11-25): config/gates/profiles/shared-tree.json, the opt-in shared-tree gate profile (bb6208a).
+    manifest.fileCount <= 723,
+    `npm package should stay <= 723 files, got ${manifest.fileCount}`
   );
   // Ceiling bumped from 2.75 MB → 2.85 MB (2026-04-16) to accommodate the
   // incremental review-delta demo content in public/dashboard.html landing
@@ -797,8 +803,13 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // which were missing from the tarball and failed the 1.40.11 publish. Adding it (+6 KB) on top of the Today tab.
   // Bumped 10.5 MB -> 10.55 MB (2026-11-24): scripts/cost-meter.js, scripts/unit-economics.js and
   // config/unit-costs.json for the owner console's unit economics (measured 10,513,990 unpacked, +36 KB headroom).
-  manifest.unpackedSize <= 10_550_000,
-  `npm package should stay <= 10.55 MB unpacked, got ${manifest.unpackedSize}`
+  // Bumped 10.71 MB -> 10.73 MB (2026-11-25): the claim gate and its learned-rules module now ship (AGENT-3667 item N).
+  // Bumped 10.65 MB -> 10.71 MB (2026-11-25): the plugin hook script and four modules it loads now ship (AGENT-3667 item K).
+  // Bumped 10.62 MB -> 10.65 MB (2026-11-25): canary-gate.js, boundary-check.js, prompt-risk-lint.js (AGENT-3667 item J).
+  // Bumped 10.55 MB -> 10.62 MB (2026-11-25): the files above that were missing from `files`
+  // (runtime requires that crashed or silently failed in the published package) and the pinned-hook fix.
+  manifest.unpackedSize <= 10_730_000,
+  `npm package should stay <= 10.73 MB unpacked, got ${manifest.unpackedSize}`
 );
 
   for (const file of requiredRuntimeFiles) {

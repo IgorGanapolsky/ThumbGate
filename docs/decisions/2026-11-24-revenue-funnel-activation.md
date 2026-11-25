@@ -73,6 +73,23 @@ shown stays 0 while activated grows, version reach is the problem (see revised r
 
 Results are appended below as they come in.
 
+**2026-11-25 01:20 UTC: loop 1 completion check passed.**
+
+- #5188 merged as 297d27f and #5190 as 42a69e5. Both are in npm `thumbgate@1.40.14` (published 2026-11-24
+  23:12 UTC), so CLIs that install or self-update from now on get the new upgrade line and pings.
+- Production `/health` shows build c6c692e, which includes 297d27f. `/dashboard` serves the sign-in page.
+  Railway held every deploy from 22:38 UTC until about 01:00 UTC (see the Railway queue stall note), so the server
+  part went live about 2.5 hours after the merge.
+- `/v1/metrics/real` now shows `last30Days.firstBlockedToolCall.count = 117` (was 0) and 34 in the last 7 days.
+- `activationFunnel`, 30 days: 269 CLI installs, 117 activated, 0 shown, 0 limit hits, 1 CLI checkout view,
+  0 clicks, 0 paid. The 0 shown is expected: no install runs 1.40.14 yet.
+- `/checkout/pro?utm_source=cli&utm_medium=first_block&utm_campaign=first_block_upsell` returns 200 and renders
+  "Pay $19/mo with Stripe".
+- Still open: `medianMinutes` is null because production CLIs send `first_block` without `minutesSinceInstall`.
+  The timing KPI needs that field, which is a small follow-up.
+
+The business check on Dec 1 and Dec 8 stays as written above.
+
 ## Loop 2 (same day): get old installs onto the current version
 
 **Observation.** `usage30d.byVersion`: 225 of 261 active installs send no version (builds older than
@@ -103,3 +120,30 @@ Igor's call, not this loop's.
    CLI-side change; next loop iteration: get existing installs onto current versions (hook runtime
    self-update notice), since 225 of 261 active installs run old builds.
 4. Before quoting an activation number, check the event name the shipped CLI actually sends.
+
+## Loop 3 (2026-11-25): why installs still do not update
+
+**Observation.** 15 hours after 1.40.14 was published, `activationFunnel.upsellShownInstalls` was 0 (30d and 7d)
+while 34 installs activated in 7 days. A clean `npx thumbgate@1.40.14 init` in an empty home wrote every Claude
+hook as `... npm exec --prefix ~/.thumbgate/runtime --package thumbgate@1.40.14 ...`, not the shim, and
+`npm exec --prefix` does not fill `~/.thumbgate/runtime` (checked: the folder stays empty). `npx --package
+thumbgate@latest` does re-resolve the dist-tag (checked: with 1.40.13 cached it ran 1.40.14).
+
+**Explanation.** `CLAUDE_HOOKS` in `scripts/auto-wire-hooks.js` was built when the module loaded, before
+`wireClaudeHooks` installed the shim. On a first install the shim did not exist yet, so hooks were pinned to the
+init version forever. Loop 2's skew check read only the runtime folder, which pinned installs never have, so it
+never fired for them. Also, `usage30d.byVersion` "unknown" (234 of 269) is mostly a measurement gap: `first_block`
+pings carried no version or platform (118 platform "unknown" = 118 `first_block` events), and CLI versions were
+only stored from 2026-11-24 17:36 UTC. It does not mean those installs are old.
+
+**Intervention.**
+
+| Change | Metric | Baseline (2026-11-25 14:35 UTC) |
+|---|---|---|
+| Hook table built at wire time, so first installs get the `@latest` shim | `byVersion` share on ≥ 1.40.15 among installs active in 7 days | 0 of 37 |
+| Skew check also reads `thumbgate@x.y.z` pins from `~/.claude/settings*.json`; ping carries `source: pinned-hooks` | `runtime_version_skew` events | 0 |
+| `self-update` refreshes the hook runtime first (creates it for pinned hooks) | same | same |
+| `first_block` ping carries `pkgVersion`, `platform`, `minutesSinceInstall`; owner console counts `first_block` as first value | `usage30d.firstValueInstalls`, `timeToFirstValue.medianMinutes` | 0, null |
+| Ship `recent-commands.js`, `lesson-effect.js`, `pilot-request.js` (required, missing from `files`) | package-boundary test | red on main |
+
+Business check stays Dec 1: `upsellShownInstalls ≥ 1` from installs on ≥ 1.40.15.

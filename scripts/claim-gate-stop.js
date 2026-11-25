@@ -33,7 +33,7 @@ const STATE_CLAIM_PATTERNS = [
   { kind: 'absence', re: /\b(?:nothing|no\s*one|nobody|none)\s+(?:is\s+|are\s+)?(?:watch\w*|runn\w*|open\w*|monitor\w*|listen\w*|show\w*|sent|pending|waiting|there|here|exist\w*|came|arrived)\b/i },
   { kind: 'no-reply', re: /\b(?:hasn'?t|has\s+not|haven'?t|have\s+not|still\s+hasn'?t|yet\s+to)\s+(?:replied|responded|answered|arrived|come\s+back|reached|opened|sent|run)\b/i },
   { kind: 'no-thing', re: /\bno\s+(?:\w+\s+){0,3}?(?:tab|window|session|reply|response|watcher|job|process|link|message|email|agent|app)s?\s+(?:is\s+|are\s+)?(?:open|running|exists?|found|there|yet|came|arrived|connected)\b/i },
-  { kind: 'state', re: /\b(?:is|are|isn'?t|aren'?t|remains?|stays?|still|currently|now)\s+(?:\w+\s+){0,2}?(?:open|closed|running|stopped|down|sent|delivered|pending|waiting|blocked|failing|failed|passing|merged|approved|connected|disconnected|missing|absent|empty|idle|stuck|paused|unread|replied|signed\s+in|logged\s+in)\b/i },
+  { kind: 'state', re: /\b(?:is|are|isn'?t|aren'?t|remains?|stays?|still|currently|now)\s+(?:\w+\s+){0,2}?(?:open|closed|running|stopped|down|sent|delivered|pending|waiting|blocked|refused|rejected|denied|unreachable|offline|unavailable|broken|expired|failing|failed|passing|merged|approved|connected|disconnected|missing|absent|empty|idle|stuck|paused|unread|replied|signed\s+in|logged\s+in)\b/i },
   { kind: 'done-by-other', re: /\b(?:has|have)\s+(?:already\s+)?(?:replied|responded|answered|sent|opened|closed|accepted|signed|paid|arrived|finished|completed|failed)\b/i },
   { kind: 'already', re: /\balready\s+(?:sent|open|closed|running|replied|delivered|merged|done)\b/i },
 ];
@@ -57,6 +57,18 @@ const HEDGE_RE = /\b(?:if|whether|would|could|should|might|may|unless|can'?t\s+t
 
 // Tool calls that do not look at the outside world, so they do not count as a check.
 const STALE_PRONE_KINDS = new Set(['absence', 'no-reply', 'no-thing']);
+// A tool call that only reads a health page or an old log looks at the outside world but not at the claim.
+// "/health returned 200" does not show a signed-in session works; a log file is yesterday's state, not now.
+const HEALTH_CALL_RE = /(?:curl|wget|fetch|http|get)\b.*\/(?:health|healthz|status|ping|ready|readyz|live|livez)\b/i;
+const SESSION_WORDS_RE = /login|sign-?in|auth|session|cookie|token|account|dashboard/i;
+const LOG_READ_RE = /\.log\b|journalctl|\/var\/log|\blogs?\/|\.jsonl?\b.*\b(?:tail|cat)\b|\b(?:tail|cat)\b.*\.jsonl?\b/i;
+function isWeakCheck(call) {
+  const summary = String((call && call.summary) || '');
+  if (!summary) return false;
+  if (HEALTH_CALL_RE.test(summary) && !SESSION_WORDS_RE.test(summary)) return true;
+  return LOG_READ_RE.test(summary);
+}
+
 const NON_CHECK_TOOLS = new Set(['TodoWrite', 'ExitPlanMode', 'AskUserQuestion', 'EnterPlanMode', 'TaskStop', 'SendUserFile']);
 
 function stripQuotedAndCode(text) {
@@ -98,6 +110,22 @@ function findStateClaims(text) {
   return claims;
 }
 
+/** Sentences that match a rule a person's thumbs-downs created (claim-gate-rules.json in the feedback dir). */
+function findLearnedClaims(text, feedbackDir) {
+  let rules = [];
+  try { rules = require('./claim-gate-rules').readRules(feedbackDir || require('./feedback-paths').resolveFeedbackDir({ cwd: process.cwd() })).rules; } catch { return []; }
+  const claims = [];
+  for (const sentence of splitSentences(text)) {
+    if (sentence.endsWith('?') || HEDGE_RE.test(sentence) || isLabelled(sentence)) continue;
+    for (const rule of rules) {
+      let hit = false;
+      try { hit = new RegExp(rule.pattern, 'i').test(sentence); } catch { hit = false; }
+      if (hit) { claims.push({ kind: 'learned', sentence: sentence.slice(0, 240), ruleId: rule.id }); break; }
+    }
+  }
+  return claims;
+}
+
 function lessonText(lesson) {
   const raw = lesson.rule && typeof lesson.rule === 'object'
     ? (lesson.rule.rule || lesson.rule.text || lesson.rule.description || '')
@@ -128,11 +156,15 @@ function retrieveLessons(claims, options = {}) {
  */
 function evaluateDraft(text, options = {}) {
   const toolNames = Array.isArray(options.toolNames) ? options.toolNames : [];
-  const checked = toolNames.some((name) => !NON_CHECK_TOOLS.has(name));
+  const toolCalls = Array.isArray(options.toolCalls) ? options.toolCalls : null;
+  const checked = toolCalls
+    ? toolCalls.some((call) => !NON_CHECK_TOOLS.has(call.name) && !isWeakCheck(call))
+    : toolNames.some((name) => !NON_CHECK_TOOLS.has(name));
   // A tool call in the turn covers an ordinary state claim. A claim that something is
   // absent or has not replied goes stale in minutes ("hasn't replied yet" was true at
   // 12:42 and false at 12:44), so those need a label even when the turn ran a tool.
-  const claims = findStateClaims(text).filter((c) => !checked || STALE_PRONE_KINDS.has(c.kind));
+  const claims = [...findStateClaims(text), ...findLearnedClaims(text, options.feedbackDir)]
+    .filter((c) => !checked || STALE_PRONE_KINDS.has(c.kind));
   if (claims.length === 0) return { block: false, claims, lessons: [], reason: null, checked };
 
   const lessons = (options.retrieve || retrieveLessons)(claims, options);
@@ -173,7 +205,7 @@ function collectTurns(entries) {
   let current = null;
   for (const entry of entries) {
     if (isRealUserPrompt(entry)) {
-      current = { timestamp: entry.timestamp || null, text: [], tools: [] };
+      current = { timestamp: entry.timestamp || null, text: [], tools: [], calls: [] };
       turns.push(current);
       continue;
     }
@@ -182,7 +214,12 @@ function collectTurns(entries) {
     if (!Array.isArray(content)) continue;
     const t = textOf(entry.message);
     if (t) current.text.push(t);
-    for (const block of content) if (block && block.type === 'tool_use') current.tools.push(block.name || 'tool');
+    for (const block of content) {
+      if (!block || block.type !== 'tool_use') continue;
+      current.tools.push(block.name || 'tool');
+      const input = block.input && typeof block.input === 'object' ? block.input : {};
+      current.calls.push({ name: block.name || 'tool', summary: String(input.command || input.file_path || input.url || input.path || '').slice(0, 400) });
+    }
     current.lastTimestamp = entry.timestamp || current.lastTimestamp;
   }
   return turns;
@@ -210,16 +247,17 @@ function main() {
   const file = payload.transcript_path;
   let text = '';
   let toolNames = [];
+  let toolCalls = null;
   if (file && fs.existsSync(file)) {
     const turns = collectTurns(readTranscript(file));
     const turn = turns[turns.length - 1];
-    if (turn) { text = turn.text.join('\n'); toolNames = turn.tools; }
+    if (turn) { text = turn.text.join('\n'); toolNames = turn.tools; toolCalls = turn.calls; }
   } else {
     text = String(payload.last_assistant_message || '');
   }
   if (!text.trim()) return;
 
-  const verdict = evaluateDraft(text, { toolNames, feedbackDir: process.env.THUMBGATE_FEEDBACK_DIR });
+  const verdict = evaluateDraft(text, { toolNames, toolCalls, feedbackDir: process.env.THUMBGATE_FEEDBACK_DIR });
   if (verdict.block) process.stdout.write(`${JSON.stringify({ decision: 'block', reason: verdict.reason })}\n`);
 }
 
@@ -250,6 +288,8 @@ if (path.resolve(process.argv[1] || '') === path.resolve(__filename)) {
 }
 
 module.exports = {
+  isWeakCheck,
+  findLearnedClaims,
   STATE_CLAIM_PATTERNS,
   LABEL_RE,
   findStateClaims,

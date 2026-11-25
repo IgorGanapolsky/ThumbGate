@@ -1,5 +1,0 @@
----
-"thumbgate": minor
----
-
-Three fixes to what ThumbGate blocks. (1) Two identical thumbs-downs from a person on one shell command now create a gate that denies that command, instead of a warning: a typed thumbs-down now carries the last command that ran in the session, and a gate earned by a person is exempt from the warn-by-default downgrade. (2) The default gates now deny `aws s3 rm --recursive`, `aws s3 rb --force`, `terraform destroy`, `terraform apply -destroy`, `kubectl delete namespace`, `kubectl delete` with all namespaces, `docker system prune -a`, `gcloud projects delete`, `az group delete`, a `find ... -delete` with no name, age or size filter, and a real IAM or policy change (`aws iam put-/attach-/create-...`, `gcloud add-iam-policy-binding`). A command piped through `base64 -d` or `--decode` is decoded first and the decoded text is matched against every gate. (3) Matching is on the action, not words: reading, searching or listing something that mentions billing or policy is allowed, and the old permission gate now matches only `chmod`, `chown` and `setfacl` at the start of a command.

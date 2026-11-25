@@ -51,7 +51,25 @@ function classifyInstall() {
     return 'owner';
   }
 
+  // The owner's coding agents run in fresh cloud containers (user root, random hostname), each with a new install id.
+  // Without this they were counted as real users.
+  if (isOwnerAgentSession()) return 'owner';
+
   return 'real_user';
+}
+
+// SHA-256 of the owner's Claude account address. Claude Code sets CLAUDE_CODE_USER_EMAIL in every session it runs, so
+// this matches the owner's own agent sessions on any machine and in any folder, and never a user who only cloned the
+// public repo. The address is hashed locally and compared; nothing new is sent. More hashes can be added with
+// THUMBGATE_OWNER_ACCOUNT_HASHES (comma separated).
+const OWNER_ACCOUNT_HASHES = ['fb84659fe07a0a2b2e86dc8e4c04137f5b6dec460946a020c713ff7d4753ba7c'];
+
+function isOwnerAgentSession(env = process.env) {
+  const account = String(env.CLAUDE_CODE_USER_EMAIL || '').trim().toLowerCase();
+  if (!account) return false;
+  const hash = crypto.createHash('sha256').update(account).digest('hex');
+  const extra = String(env.THUMBGATE_OWNER_ACCOUNT_HASHES || '').split(',').map((value) => value.trim().toLowerCase()).filter(Boolean);
+  return OWNER_ACCOUNT_HASHES.includes(hash) || extra.includes(hash);
 }
 
 /**
@@ -92,4 +110,4 @@ function trackEvent(eventType, metadata = {}) {
   } catch (_) {} // never crash the CLI
 }
 
-module.exports = { trackEvent, getInstallId, classifyInstall, INSTALL_ID_PATH, SESSION_ID };
+module.exports = { trackEvent, getInstallId, classifyInstall, isOwnerAgentSession, INSTALL_ID_PATH, SESSION_ID };
