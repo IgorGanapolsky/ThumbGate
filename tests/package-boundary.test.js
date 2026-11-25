@@ -838,8 +838,10 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // and the portable Cursor shell gate (PRs #5255, #5257); measured 10,822,233 on main and on the release branch.
   // Bumped 10.83 MB -> 10.84 MB (2026-11-25): main measured 10,832,577 after the evening merges; 10,836,397 with public/host-matrix.html.
   // Bumped 10.84 MB -> 10.87 MB (2026-11-25, PR 5271): public/demo.html (28 KB), the chaptered /demo walkthrough.
-  manifest.unpackedSize <= 10_870_000,
-  `npm package should stay <= 10.87 MB unpacked, got ${manifest.unpackedSize}`
+  // Bumped 10.87 MB -> 10.88 MB (2026-11-25, PR #5274): hook latency caches in scripts/gates-engine.js and
+  // scripts/project-identity.js (about 8 KB); measured 10,874,860 after merging main.
+  manifest.unpackedSize <= 10_880_000,
+  `npm package should stay <= 10.88 MB unpacked, got ${manifest.unpackedSize}`
 );
 
   for (const file of requiredRuntimeFiles) {

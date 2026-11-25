@@ -90,11 +90,97 @@ function resolveLocalProject(cwd = process.cwd(), options = {}) {
   const stamp = gitConfigStamp(cwd);
   if (!stamp) return resolveLocalProjectUncached(cwd, options);
   const key = `${path.resolve(cwd)}\0${options.machineId || ''}\0${options.machineIdPath || ''}`;
-  const hit = localProjectCache.get(key);
-  if (hit && hit.stamp === stamp) return { ...hit.value };
+  const hit = localProjectCache.get(key) || diskIdentityCacheGet(key, stamp);
+  if (hit && hit.stamp === stamp) {
+    localProjectCache.set(key, hit);
+    return { ...hit.value };
+  }
   const value = resolveLocalProjectUncached(cwd, options);
   localProjectCache.set(key, { stamp, value });
+  diskIdentityCacheSet(key, { stamp, value });
   return { ...value };
+}
+// Each hook is its own short-lived process, so the in-memory cache above starts empty on every
+// tool call and paid four git spawns (about 14 ms) each time. The same stamped entries are kept in
+// one small file so the next process can reuse them. A changed remote or worktree link changes the
+// stamp, and the entry is recomputed.
+const DISK_IDENTITY_CACHE_MAX = 64;
+let diskIdentityCache = null;
+function diskIdentityCachePath() {
+  return path.join(os.homedir(), '.thumbgate', 'cache', 'project-identity.json');
+}
+function diskIdentityCacheEnabled() {
+  return process.env.THUMBGATE_IDENTITY_DISK_CACHE !== '0';
+}
+function loadDiskIdentityCache() {
+  if (diskIdentityCache) return diskIdentityCache;
+  diskIdentityCache = {};
+  try {
+    const parsed = JSON.parse(fs.readFileSync(diskIdentityCachePath(), 'utf8'));
+    if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) diskIdentityCache = parsed;
+  } catch { /* first run or unreadable cache: resolve with git */ }
+  return diskIdentityCache;
+}
+// The remote can also come from global git config (url.<base>.insteadOf) or an included file.
+// Global config files join the stamp; any [include]/[includeIf] means the inputs can't be fully
+// fingerprinted, so that identity is never persisted and every new process asks git again.
+function globalGitConfigFiles() {
+  const home = os.homedir();
+  const xdg = process.env.XDG_CONFIG_HOME || path.join(home, '.config');
+  return [process.env.GIT_CONFIG_GLOBAL || path.join(home, '.gitconfig'), path.join(xdg, 'git', 'config')];
+}
+function configUsesInclude(file) {
+  try { return /^\s*\[\s*include(?:if)?\b/im.test(fs.readFileSync(file, 'utf8')); } catch { return false; }
+}
+function persistentStamp(stamp) {
+  const parts = [stamp];
+  for (const file of globalGitConfigFiles()) {
+    try {
+      const stat = fs.statSync(file);
+      if (configUsesInclude(file)) return null;
+      parts.push(`${file}:${stat.mtimeMs}:${stat.size}`);
+    } catch { parts.push(`${file}:none`); }
+  }
+  // gitConfigStamp ends with `<common git dir>:<mtime>:<size>` for the repository's config file.
+  const last = stamp.split('|').pop() || '';
+  const commonDir = last.replace(/:[^:]*:[^:]*$/, '');
+  if (!commonDir || configUsesInclude(path.join(commonDir, 'config'))) return null;
+  // Config passed through the environment (GIT_CONFIG_PARAMETERS, GIT_CONFIG_COUNT/KEY_n/VALUE_n)
+  // joins the stamp as a hash, so the cache file never holds the values themselves.
+  const envConfig = Object.keys(process.env)
+    .filter((name) => name === 'GIT_CONFIG_PARAMETERS' || /^GIT_CONFIG_(COUNT|KEY_\d+|VALUE_\d+)$/.test(name))
+    .sort()
+    .map((name) => `${name}=${process.env[name]}`)
+    .join('\n');
+  if (envConfig) parts.push(`env:${crypto.createHash('sha256').update(envConfig).digest('hex').slice(0, 16)}`);
+  return parts.join('|');
+}
+function diskIdentityCacheGet(key, stamp) {
+  if (!diskIdentityCacheEnabled()) return null;
+  const entry = loadDiskIdentityCache()[key];
+  if (!entry || typeof entry.stamp !== 'string' || !entry.value || typeof entry.value.projectKey !== 'string') return null;
+  const full = persistentStamp(stamp);
+  if (!full || entry.stamp !== full) return null;
+  return { stamp, value: entry.value };
+}
+function diskIdentityCacheSet(key, entry) {
+  if (!diskIdentityCacheEnabled()) return;
+  const full = persistentStamp(entry.stamp);
+  if (!full) return;
+  try {
+    const cache = loadDiskIdentityCache();
+    cache[key] = { stamp: full, value: entry.value, at: Date.now() };
+    const keys = Object.keys(cache);
+    if (keys.length > DISK_IDENTITY_CACHE_MAX) {
+      keys.sort((a, b) => (cache[a].at || 0) - (cache[b].at || 0));
+      for (const old of keys.slice(0, keys.length - DISK_IDENTITY_CACHE_MAX)) delete cache[old];
+    }
+    const file = diskIdentityCachePath();
+    fs.mkdirSync(path.dirname(file), { recursive: true });
+    const tmp = `${file}.${process.pid}.tmp`;
+    fs.writeFileSync(tmp, JSON.stringify(cache), { mode: 0o600 });
+    fs.renameSync(tmp, file);
+  } catch { /* cache is optional; never fail identity resolution over it */ }
 }
 function resolveLocalProjectUncached(cwd = process.cwd(), options = {}) {
   let root = git(cwd, ['rev-parse', '--show-toplevel']) || path.resolve(cwd);
