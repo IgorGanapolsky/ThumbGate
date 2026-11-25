@@ -71,3 +71,40 @@ test('the Railway deploy workflow cancels superseded deploys right after railway
   const step = wf.slice(wf.lastIndexOf('- name:', cancel), cancel);
   assert.match(step, /continue-on-error: true/);
 });
+
+test('cancelSuperseded falls back to the project token when the account token is rejected', async () => {
+  const seen = [];
+  const fetchFn = async (url, opts) => {
+    const { query } = JSON.parse(opts.body);
+    seen.push(opts.headers.Authorization ? 'account' : 'project');
+    if (opts.headers.Authorization) return { ok: false, status: 401, json: async () => ({ errors: [{ message: 'Not Authorized' }] }) };
+    let data;
+    if (query.includes('deployments(')) {
+      data = { deployments: { edges: [
+        { node: { id: 'q-old', status: 'QUEUED', createdAt: '2026-11-25T17:00:00Z' } },
+        { node: { id: 'q-new', status: 'QUEUED', createdAt: '2026-11-25T19:00:00Z' } },
+      ] } };
+    } else {
+      data = { deploymentCancel: true };
+    }
+    return { ok: true, status: 200, json: async () => ({ data }) };
+  };
+  const result = await cancelSuperseded({
+    env: {
+      RAILWAY_API_TOKEN: 'bad', RAILWAY_PROJECT_TOKEN_FALLBACK: 'p',
+      RAILWAY_PROJECT_ID: 'proj', RAILWAY_ENVIRONMENT_ID: 'env', RAILWAY_SERVICE: '51362f55-be4b-443e-a2ca-015a32670d20',
+    },
+    fetchFn,
+    log: () => {},
+  });
+  assert.deepEqual(result.cancelled, ['q-old']);
+  assert.equal(seen[0], 'account');
+  assert.ok(seen.slice(1).every((who) => who === 'project'));
+});
+
+test('the cancel step receives the project-token fallback the deploy step uses', () => {
+  const wf = fs.readFileSync(path.join(__dirname, '..', '.github', 'workflows', 'deploy-railway.yml'), 'utf8');
+  const cancel = wf.indexOf('node scripts/railway-cancel-superseded.js');
+  const step = wf.slice(wf.lastIndexOf('- name:', cancel), cancel);
+  assert.match(step, /RAILWAY_PROJECT_TOKEN_FALLBACK: \$\{\{ secrets\.RAILWAY_TOKEN \}\}/);
+});

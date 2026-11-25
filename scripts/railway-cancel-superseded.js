@@ -14,7 +14,8 @@
 // waiting deployment and anything already DEPLOYING (mid-handoff), and cancels the rest.
 // Best effort: it prints what it did and always exits 0, so it can never block a deploy.
 //
-// Env: RAILWAY_API_TOKEN (account/team token) or RAILWAY_TOKEN (project token), RAILWAY_PROJECT_ID,
+// Env: RAILWAY_API_TOKEN (account/team token), RAILWAY_TOKEN or RAILWAY_PROJECT_TOKEN_FALLBACK (project
+// token, tried in that order when the one before is rejected), RAILWAY_PROJECT_ID,
 // RAILWAY_ENVIRONMENT_ID, and RAILWAY_SERVICE (service id or name).
 
 const ENDPOINT = 'https://backboard.railway.com/graphql/v2';
@@ -22,10 +23,21 @@ const ENDPOINT = 'https://backboard.railway.com/graphql/v2';
 const SUPERSEDABLE = new Set(['QUEUED', 'WAITING', 'INITIALIZING', 'BUILDING']);
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
+/**
+ * Every credential to try, best first. The deploy step falls back from a rejected account token to
+ * the project token only inside its own shell, so this step gets the same fallback here.
+ */
+function credentialCandidates(env) {
+  const out = [];
+  if (env.RAILWAY_API_TOKEN) out.push({ Authorization: `Bearer ${env.RAILWAY_API_TOKEN}` });
+  for (const token of [env.RAILWAY_TOKEN, env.RAILWAY_PROJECT_TOKEN_FALLBACK]) {
+    if (token && !out.some((h) => h['Project-Access-Token'] === token)) out.push({ 'Project-Access-Token': token });
+  }
+  return out;
+}
+
 function authHeaders(env) {
-  if (env.RAILWAY_API_TOKEN) return { Authorization: `Bearer ${env.RAILWAY_API_TOKEN}` };
-  if (env.RAILWAY_TOKEN) return { 'Project-Access-Token': env.RAILWAY_TOKEN };
-  return null;
+  return credentialCandidates(env)[0] || null;
 }
 
 async function gql(fetchFn, headers, query, variables) {
@@ -63,16 +75,29 @@ function pickSuperseded(deployments = []) {
 }
 
 async function cancelSuperseded({ env = process.env, fetchFn = globalThis.fetch, log = console.log } = {}) {
-  const headers = authHeaders(env);
+  const candidates = credentialCandidates(env);
   const { RAILWAY_PROJECT_ID: projectId, RAILWAY_ENVIRONMENT_ID: environmentId, RAILWAY_SERVICE: service } = env;
-  if (!headers || !projectId || !environmentId || !service) {
+  if (!candidates.length || !projectId || !environmentId || !service) {
     log('cancel-superseded: skipped (missing Railway token, project, environment or service)');
     return { cancelled: [], skipped: 'config' };
   }
-  const serviceId = await resolveServiceId(fetchFn, headers, projectId, service);
-  const data = await gql(fetchFn, headers,
-    'query($input: DeploymentListInput!) { deployments(first: 50, input: $input) { edges { node { id status createdAt } } } }',
-    { input: { projectId, environmentId, serviceId } });
+  let headers = null;
+  let data = null;
+  let lastError = null;
+  for (const candidate of candidates) {
+    try {
+      const serviceId = await resolveServiceId(fetchFn, candidate, projectId, service);
+      data = await gql(fetchFn, candidate,
+        'query($input: DeploymentListInput!) { deployments(first: 50, input: $input) { edges { node { id status createdAt } } } }',
+        { input: { projectId, environmentId, serviceId } });
+      headers = candidate;
+      break;
+    } catch (err) {
+      lastError = err;
+      log(`cancel-superseded: credential rejected, trying the next one (${err.message})`);
+    }
+  }
+  if (!headers) throw lastError || new Error('no Railway credential worked');
   const deployments = ((data.deployments && data.deployments.edges) || []).map((edge) => edge.node);
   const ids = pickSuperseded(deployments);
   const cancelled = [];
@@ -88,7 +113,7 @@ async function cancelSuperseded({ env = process.env, fetchFn = globalThis.fetch,
   return { cancelled };
 }
 
-module.exports = { cancelSuperseded, pickSuperseded, authHeaders, SUPERSEDABLE };
+module.exports = { cancelSuperseded, pickSuperseded, authHeaders, credentialCandidates, SUPERSEDABLE };
 
 if (require.main === module) {
   cancelSuperseded().catch((err) => {

@@ -296,6 +296,8 @@ jobs:
         if: steps.railway-config.outputs.enabled == 'true'
         continue-on-error: true
         timeout-minutes: 2
+        env:
+          RAILWAY_PROJECT_TOKEN_FALLBACK: ${{ secrets.RAILWAY_TOKEN }}
         run: node scripts/railway-cancel-superseded.js
       - name: Verify deployment health
         if: steps.railway-config.outputs.enabled == 'true'
