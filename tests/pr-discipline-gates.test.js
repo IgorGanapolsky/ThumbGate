@@ -25,14 +25,8 @@ function files(n, linesEach = 1, prefix = 'src/f') {
 
 const PR = { owner: 'o', repo: 'r', head: 'claude/x', base: 'main', title: 'feat(connector): hosted MCP keeps sign-in across redeploys' };
 
-test('(c) PR create over 40 files is denied', async () => {
-  const gh = fakeGh([[/\/compare\//, { files: files(41) }]]);
-  const r = await gates.evaluatePrCreate(PR, { gh });
-  assert.equal(r.deny, true);
-  assert.equal(r.rule, 'pr-size');
-});
-
-test('(c) PR create over 1,000 lines is denied; lockfiles do not count', async () => {
+test('(c) PR create over 40 files or 1,000 lines is denied; lockfiles do not count', async () => {
+  assert.equal((await gates.evaluatePrCreate(PR, { gh: fakeGh([[/\/compare\//, { files: files(41) }]]) })).rule, 'pr-size');
   const big = await gates.evaluatePrCreate(PR, { gh: fakeGh([[/\/compare\//, { files: files(5, 201) }]]) });
   assert.equal(big.rule, 'pr-size');
   const lock = await gates.evaluatePrCreate(PR, {
@@ -73,19 +67,28 @@ test('(b) PR create that overlaps the same files as an open PR is denied; change
     ]),
   });
   assert.equal(noOverlap.deny, false);
+
+  // Only the changeset overlaps: must be allowed (fails if changesets were counted).
+  const onlyChangeset = await gates.evaluatePrCreate(PR, {
+    gh: fakeGh([
+      [/\/compare\//, { files: [{ filename: 'src/a.js', additions: 1 }, { filename: '.changeset/a.md', additions: 1 }] }],
+      [/\/pulls\?state=open/, [{ number: 9, title: 'Unrelated title words here', head: { ref: 'claude/y' } }]],
+      [/\/pulls\/9\/files/, [{ filename: '.changeset/a.md' }]],
+    ]),
+  });
+  assert.equal(onlyChangeset.deny, false);
 });
 
 test('(b) the PR for the same branch is not its own duplicate', async () => {
-  const gh = fakeGh([
-    [/\/compare\//, { files: files(2) }],
-    [/\/pulls\?state=open/, [{ number: 5, title: PR.title, head: { ref: PR.head } }]],
-  ]);
+  const gh = fakeGh([[/\/compare\//, { files: files(2) }], [/\/pulls\?state=open/, [{ number: 5, title: PR.title, head: { ref: PR.head } }]]]);
   assert.equal((await gates.evaluatePrCreate(PR, { gh })).deny, false);
 });
 
 test('gh pr create is parsed into a PR request', () => {
   const p = gates.parseGhPrCreate('gh pr create --title "feat: x y z" --base main --head claude/x --repo o/r');
-  assert.deepEqual(p, { title: 'feat: x y z', base: 'main', head: 'claude/x', repo: 'o/r' });
+  assert.deepEqual(p, { title: 'feat: x y z', base: 'main', head: 'claude/x', repo: 'o/r', cd: null });
+  const short = gates.parseGhPrCreate('cd ThumbGate && gh pr create -R o/target -H big -B release -t "dup title"');
+  assert.deepEqual(short, { title: 'dup title', base: 'release', head: 'big', repo: 'o/target', cd: 'ThumbGate' });
   assert.equal(gates.parseGhPrCreate('gh pr view 5'), null);
   const mcp = gates.prFromToolInput('mcp__github__create_pull_request', { owner: 'o', repo: 'r', head: 'h', base: 'main', title: 't' });
   assert.equal(mcp.head, 'h');
@@ -97,12 +100,7 @@ function ledgerEnv() {
 
 test('(a) Stop is blocked while a PR this session opened is red, then allowed once green', async () => {
   const env = ledgerEnv();
-  const recorded = gates.recordOpenedPrs({
-    session_id: 's1',
-    tool_name: 'mcp__github__create_pull_request',
-    tool_input: { owner: 'o', repo: 'r' },
-    tool_response: { url: 'https://github.com/o/r/pull/42' },
-  }, { env });
+  const recorded = gates.recordOpenedPrs({ session_id: 's1', tool_name: 'mcp__github__create_pull_request', tool_response: { url: 'https://github.com/o/r/pull/42' } }, { env });
   assert.deepEqual(recorded.map((p) => p.number), [42]);
 
   let conclusion = 'failure';
@@ -129,6 +127,11 @@ test('(a) needs-fix, merge conflicts and needs-igor are handled', async () => {
   assert.match(dirty.reason, /merge conflicts/);
   const igor = await gates.evaluateStop({ session_id: 's2' }, { env, gh: make({ state: 'open', labels: [{ name: 'needs-igor' }], mergeable_state: 'dirty', head: { sha: 'x' } }) });
   assert.equal(igor.block, false, 'waiting on the owner is not the agent stalling');
+  const statusRed = await gates.evaluateStop({ session_id: 's2' }, {
+    env,
+    gh: fakeGh([[/\/pulls\/7$/, { state: 'open', labels: [], head: { sha: 'x' } }], [/check-runs/, { check_runs: [] }], [/\/status$/, { statuses: [{ state: 'failure', context: 'ci/legacy' }, { state: 'pending', context: 'other' }] }]]),
+  });
+  assert.match(statusRed.reason, /red statuses: ci\/legacy/);
   const merged = await gates.evaluateStop({ session_id: 's2' }, { env, gh: make({ state: 'closed', merged: true, labels: [] }) });
   assert.equal(merged.block, false);
 });
@@ -143,15 +146,12 @@ test('(a) Stop gives up blocking after 3 tries so a session cannot loop forever'
   assert.match(results[3].warning, /after 3 blocks/);
 });
 
-test('gates are off by default and on with THUMBGATE_PR_DISCIPLINE=1 or config/pr-discipline.json', () => {
+test('config shares the reply gates switch and can override limits', () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'tg-prd-cfg-'));
   assert.equal(gates.loadConfig({ cwd: dir, env: {} }).enabled, false);
-  assert.equal(gates.loadConfig({ cwd: dir, env: { THUMBGATE_PR_DISCIPLINE: '1' } }).enabled, true);
   fs.mkdirSync(path.join(dir, 'config'));
   fs.writeFileSync(path.join(dir, 'config', 'pr-discipline.json'), JSON.stringify({ enabled: true, maxFiles: 10 }));
-  const cfg = gates.loadConfig({ cwd: dir, env: {} });
-  assert.equal(cfg.enabled, true);
-  assert.equal(cfg.maxFiles, 10);
+  assert.deepEqual([gates.loadConfig({ cwd: dir, env: {} }).enabled, gates.loadConfig({ cwd: dir, env: {} }).maxFiles], [true, 10]);
 });
 
 test('main fails open on an internal error and emits a deny in hook format', async () => {
@@ -205,4 +205,20 @@ test('npm run ship counts as a PR create, before and after', () => {
     tool_response: { stdout: 'ship: opened https://github.com/o/r/pull/77\nwaiting for gate' },
   }, { env });
   assert.deepEqual(recorded.map((p) => p.number), [77]);
+});
+
+test('the ledger keeps entries another session recorded while Stop was checking GitHub', async () => {
+  const env = ledgerEnv();
+  gates.recordOpenedPrs({ session_id: 'a', tool_name: 'Bash', tool_input: { command: 'gh pr create -t x' }, tool_response: 'https://github.com/o/r/pull/1' }, { env });
+  const gh = async (p) => {
+    if (/\/pulls\/1$/.test(p)) {
+      gates.recordOpenedPrs({ session_id: 'b', tool_name: 'Bash', tool_input: { command: 'gh pr create -t y' }, tool_response: 'https://github.com/o/r/pull/2' }, { env });
+      return { state: 'open', labels: [{ name: 'needs-fix' }] };
+    }
+    return {};
+  };
+  assert.equal((await gates.evaluateStop({ session_id: 'a' }, { env, gh })).block, true);
+  const ledger = JSON.parse(fs.readFileSync(path.join(env.THUMBGATE_PR_LEDGER_DIR, 'session-prs.json'), 'utf8'));
+  assert.deepEqual(ledger.b.prs.map((p) => p.number), [2], "session b's PR survived a's Stop write");
+  assert.equal(ledger.a.stopBlocks, 1);
 });

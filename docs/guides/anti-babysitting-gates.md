@@ -18,26 +18,19 @@ Every gate fails open on an internal error.
 Off unless `THUMBGATE_PR_DISCIPLINE=1` is set or the project has
 `config/pr-discipline.json` with `{"enabled": true}`.
 
-Hook wiring (user or project `settings.json`). The PR gates read GitHub through
-`GITHUB_TOKEN` when it is set, and fail open when GitHub can't be reached:
+Hook wiring (user or project `settings.json`). The PR gates read GitHub with
+`GITHUB_TOKEN` or `GH_TOKEN` (not the `gh` login). Private repositories need one
+of them set; without it the PR gates fail open:
 
 ```json
 {
   "hooks": {
-    "PreToolUse": [
-      { "matcher": "mcp__hearthbot__post_message|mcp__hearthbot__request_decision|mcp__hearthbot__edit_message",
-        "hooks": [{ "type": "command", "command": "node /path/to/ThumbGate/scripts/reply-discipline-gates.js pre" }] },
-      { "matcher": "mcp__github__create_pull_request|Bash",
-        "hooks": [{ "type": "command", "command": "node /path/to/ThumbGate/scripts/pr-discipline-gates.js pre" }] }
-    ],
-    "PostToolUse": [
-      { "matcher": "mcp__github__create_pull_request|Bash",
-        "hooks": [{ "type": "command", "command": "node /path/to/ThumbGate/scripts/pr-discipline-gates.js post" }] }
-    ],
-    "Stop": [{ "hooks": [
-      { "type": "command", "command": "node /path/to/ThumbGate/scripts/reply-discipline-gates.js stop" },
-      { "type": "command", "command": "node /path/to/ThumbGate/scripts/pr-discipline-gates.js stop" }
-    ] }]
+    "PreToolUse": [{ "matcher": "mcp__hearthbot__post_message|mcp__hearthbot__request_decision|mcp__hearthbot__edit_message",
+      "hooks": [{ "type": "command", "command": "node /path/to/ThumbGate/scripts/reply-discipline-gates.js pre" }] },
+      { "matcher": "mcp__github__create_pull_request|Bash", "hooks": [{ "type": "command", "command": "node /path/to/ThumbGate/scripts/pr-discipline-gates.js pre" }] }],
+    "PostToolUse": [{ "matcher": "mcp__github__create_pull_request|Bash", "hooks": [{ "type": "command", "command": "node /path/to/ThumbGate/scripts/pr-discipline-gates.js post" }] }],
+    "Stop": [{ "hooks": [{ "type": "command", "command": "node /path/to/ThumbGate/scripts/reply-discipline-gates.js stop" },
+      { "type": "command", "command": "node /path/to/ThumbGate/scripts/pr-discipline-gates.js stop" }] }]
   }
 }
 ```
