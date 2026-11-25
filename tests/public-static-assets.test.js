@@ -513,6 +513,18 @@ test('the Claude desktop apps learn page is served, listed, and says the app doe
   assert.match(html, /not affiliated with or endorsed by Anthropic/);
 });
 
+test('the Mellum reasoning-mode learn page is served, listed, cites sources, and names the real env var', async () => {
+  const sitemap = await (await fetch(`${origin}/sitemap.xml`)).text();
+  assert.match(sitemap, /<loc>[^<]*\/learn\/mellum-instruct-no-thinking-routing<\/loc>/, 'sitemap must list the Mellum learn page');
+  const res = await fetch(`${origin}/learn/mellum-instruct-no-thinking-routing`);
+  assert.equal(res.status, 200);
+  const html = await res.text();
+  assert.match(html, /thenewstack\.io\/jetbrains-mellum2-1-instruct-coding-model/);
+  assert.match(html, /huggingface\.co\/JetBrains\/Mellum2\.1-12B-A2\.5B-Instruct/);
+  assert.match(html, /THUMBGATE_LOCAL_MODEL_FAMILY=mellum/);
+  assert.match(html, /not affiliated with or endorsed by JetBrains/);
+});
+
 test('the Siren sandbox-escape learn page is served, in the sitemap, cites the primary source, and names only real gates', async () => {
   const sitemap = await (await fetch(`${origin}/sitemap.xml`)).text();
   assert.match(sitemap, /<loc>[^<]*\/learn\/siren-agent-sandbox-escape-gates<\/loc>/, 'sitemap must list the Siren learn page');

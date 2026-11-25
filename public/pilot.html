@@ -38,6 +38,15 @@ button[disabled] { opacity:.6; cursor:wait; }
 .status { margin:14px 0 0; font-weight:700; }
 .status.ok { color:#6ee7a8; }
 .status.err { color:#ff9b9b; }
+.runs { padding:0 0 64px; }
+.runs h2 { margin:0 0 6px; font-size:28px; }
+.runs > p { color:var(--muted); margin:0 0 22px; max-width:720px; }
+.steps { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:16px; margin:0; padding:0; list-style:none; counter-reset:step; }
+.steps li { border:1px solid var(--line); border-radius:8px; background:var(--panel); padding:18px; color:var(--muted); font-size:15px; }
+.steps li::before { counter-increment:step; content:"Step " counter(step); display:block; color:var(--cyan); font-size:12px; font-weight:800; text-transform:uppercase; letter-spacing:.08em; margin-bottom:6px; }
+.steps strong { display:block; color:var(--text); font-size:17px; margin-bottom:6px; }
+.steps code { color:var(--text); background:#080c0f; border:1px solid #35464e; border-radius:4px; padding:1px 5px; font-size:13px; }
+@media (max-width:800px) { .steps { grid-template-columns:1fr; } }
 footer { padding:28px 0 40px; border-top:1px solid var(--line); color:var(--muted); }
 @media (max-width:800px) { .layout { grid-template-columns:1fr; padding-top:36px; } h1 { font-size:36px; } }
 </style>
@@ -82,6 +91,16 @@ footer { padding:28px 0 40px; border-top:1px solid var(--line); color:var(--mute
       <p class="hint">We use your details only to reply about the pilot.</p>
     </form>
   </div>
+  <section class="runs" id="how-the-pilot-runs" aria-labelledby="runs-title">
+    <h2 id="runs-title">How the pilot runs</h2>
+    <p>Your agent proposes actions. Your team decides which ones it may repeat. Every decision is written down, so at the end you have a record, not an impression.</p>
+    <ol class="steps">
+      <li><strong>Start with one repo.</strong>Run <code>npx thumbgate init</code> in the repository where an agent mistake would hurt most. Nothing else changes.</li>
+      <li><strong>Your team decides.</strong>When the agent does something wrong, give it a thumbs-down. That becomes a prevention rule, and ThumbGate warns or blocks the next repeat before it runs.</li>
+      <li><strong>Evidence for every decision.</strong>Each allow, warn and block is logged on your machine. <code>npx thumbgate inventory</code> turns the log into a report: decisions per tool, the gates that blocked most, activity per day and the false-block rate.</li>
+      <li><strong>Decide at day 30.</strong>Review the report with us. Add more repos, keep it on one, or stop. The rules and the log stay with you.</li>
+    </ol>
+  </section>
 </main>
 <footer>ThumbGate is a pre-action check for AI coding agents: it blocks a known-bad action before it runs.</footer>
 <script>
