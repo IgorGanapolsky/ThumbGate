@@ -182,3 +182,13 @@ test('Cursor self-heal: an install from the old init (shell gate only) gets the 
   const { repairCursorHooks } = require('../scripts/cursor-self-heal');
   assert.equal(repairCursorHooks({ homeDir: other.project, env: {} }).reason, 'not-a-thumbgate-cursor-install', 'a hooks.json without ThumbGate is left alone');
 });
+
+test('Cursor loop hooks are recognised in every spelling, so init and self-heal never add a second copy', () => {
+  const { isThumbgateLoopHook } = require('../scripts/auto-wire-hooks');
+  const { publishedCliShellCommand } = require('../scripts/published-cli');
+  assert.ok(isThumbgateLoopHook({ command: publishedCliShellCommand('1.45.1', ['cursor-prompt']) }, 'cursor-prompt'), 'npm exec form');
+  assert.ok(isThumbgateLoopHook({ command: '"/home/u/.thumbgate/bin/thumbgate-hook" cursor-stop' }, 'cursor-stop'), 'shim form');
+  assert.ok(isThumbgateLoopHook({ command: 'node "/repo/bin/cli.js" cursor-record' }, 'cursor-record'), 'source form');
+  assert.ok(!isThumbgateLoopHook({ command: 'echo cursor-prompt' }, 'cursor-prompt'), 'someone else\'s hook');
+  assert.ok(!isThumbgateLoopHook({ command: 'node "/repo/bin/cli.js" cursor-record' }, 'cursor-prompt'), 'another subcommand');
+});

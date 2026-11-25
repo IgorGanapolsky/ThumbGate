@@ -161,11 +161,11 @@ const CURSOR_LOOP_HOOKS = [
   { lifecycle: 'stop', subcommand: 'cursor-stop', extra: { timeout: 15, loop_limit: 1 } },
 ];
 
-// Match by subcommand, not the exact path: an npx cache or a global install puts cli.js somewhere else, and a
-// second copy of the same hook would place every hold twice.
+// Match by subcommand, not the exact command: the source checkout, the shim and `npx thumbgate@x` all spell it
+// differently, and a second copy of the same hook would place every hold twice.
 function isThumbgateLoopHook(entry, subcommand) {
   const command = String((entry && entry.command) || '');
-  return /cli\.js['"]?\s/.test(command) && new RegExp(`\\s${subcommand}(\\s|$)`).test(command);
+  return /thumbgate|cli\.js/i.test(command) && new RegExp(`\\s["']?${subcommand}["']?(\\s|$)`).test(command);
 }
 
 function wireCursorBeforeShellGate(options = {}) {
