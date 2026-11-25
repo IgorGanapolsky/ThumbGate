@@ -528,8 +528,9 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
     // 712 -> 715 (2026-11-25): canary-gate.js, boundary-check.js, prompt-risk-lint.js (AGENT-3667 item J).
     // 710 -> 711 (2026-11-25): config/gates/profiles/shared-tree.json, the opt-in shared-tree gate profile (bb6208a).
     // 723 -> 724 (2026-11-25): scripts/clarity.js (required by src/api/server.js and owner-admin.js: Microsoft Clarity tag and export) (+1).
-    manifest.fileCount <= 724,
-    `npm package should stay <= 724 files, got ${manifest.fileCount}`
+    // 724 -> 725 (2026-11-25): scripts/deploy-proof-gate.js (required by scripts/hook-stop-anti-claim.js) (+1).
+    manifest.fileCount <= 725,
+    `npm package should stay <= 725 files, got ${manifest.fileCount}`
   );
   // Ceiling bumped from 2.75 MB → 2.85 MB (2026-04-16) to accommodate the
   // incremental review-delta demo content in public/dashboard.html landing
