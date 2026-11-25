@@ -1,7 +1,7 @@
 # Commercial Truth
 
 Status: current for packaging and runtime capabilities; live traction requires authenticated telemetry
-Updated: July 22, 2026
+Updated: November 25, 2026
 
 This document is the source of truth for product, pricing, traction, and proof claims in this repository.
 
@@ -9,10 +9,10 @@ This document is the source of truth for product, pricing, traction, and proof c
 
 - The open-source `thumbgate` package is free and MIT licensed.
 - The local CLI is the adoption wedge; it is not the primary monetization story.
-- For the current 30-day conversion experiment, the only promoted public offer is the **Setup Sprint** at **$499 one-time** via the email-backed `/go/diagnostic-pay` POST on `/`, `/pricing`, and `/diagnostic`. It covers one 60-minute review for one supported local workflow, one configured gate, one regression test, and written rollout and rollback proof within two business days after access and agreed materials are available. If the failure cannot be reduced to a supported gate, the order is refunded instead of silently upsold.
-- **Pro at $19/mo or $149/yr** remains a supported legacy self-serve subscription and the `$1,500` Setup Sprint remains an internal catalog/scoping rail, but neither is promoted on the homepage or pricing page during the single-offer experiment. Enterprise remains proposal-only after qualification.
-- The `$499` managed workflow gate is the only currently promoted public one-time service offer. Legacy Stripe Payment Links must remain deactivated or undistributed; they are not current public acquisition offers.
-- Stripe revenue attribution never relies on a product name. `scripts/stripe-revenue-catalog.js` binds each reviewed offer to its exact price ID, product ID, integer amount, currency, cadence, and interval. The public `$499` checkout now uses the Stripe product name `Setup Sprint`; that product still has a separate active `$999` price, but its Payment Link is deactivated and it is not a current ThumbGate offer. `npm run stripe:catalog-audit` verifies the live prices, product/price active states, mode, and the exact Pro-monthly and managed-gate Payment Links without mutating Stripe. Catalog configuration is not payment evidence.
+- The only promoted team offer is the **request-only 30-day team pilot** at `/pilot`. A team submits its name, work email, team size and coding agent through `POST /v1/intake/pilot-request`; the request is stored and the owner is emailed. A person replies by email with how the pilot would run. There is no public price and no self-serve team checkout. A pilot request is not revenue.
+- **Pro at $19/mo or $149/yr** is the only self-serve paid software, for one person. Enterprise remains proposal-only after qualification.
+- The `$499` Setup Sprint (also sold as the Sprint Diagnostic, managed workflow gate or Diagnostic Gate) and the `$1,500` Setup Sprint are retired (Igor, 2026-11-25). Their routes (`/diagnostic`, `/go/diagnostic*`, `/go/sprint`, `/go/operator-diagnostic`, `/checkout/sprint`, `/checkout/diagnostic`) answer 410. `/founders` still serves its old page until the follow-up PR that redirects it to `/pilot` ships. Do not advertise either as a current offer. Legacy Stripe Payment Links must remain deactivated or undistributed.
+- Stripe revenue attribution never relies on a product name. `scripts/stripe-revenue-catalog.js` binds each reviewed offer to its exact price ID, product ID, integer amount, currency, cadence, and interval. The retired `$499` catalog entry (Stripe product name `Setup Sprint`) stays in the catalog only so historical payments still reconcile. `npm run stripe:catalog-audit` verifies the live prices, product/price active states, mode, and Payment Links without mutating Stripe. Catalog configuration is not payment evidence.
 - Active CLI receipts, paywall messages, SEO generators, email drafts, and social launch drafts must use first-party `thumbgate.ai` buyer paths. Raw Stripe or PayPal links are provider plumbing, not buyer-facing distribution assets. Retired kit catalogs are archived and cannot advertise their historical Payment Links as current offers.
 - Zernio is retired for ThumbGate publishing. Its historical adapter is read-only; every publish, schedule, upload, or delete mutation fails closed before a network request. Active publishing requires a direct platform adapter or an explicitly approved manual platform session.
 - Recurring and Enterprise service work is proposal-only after qualification: **Workflow Reliability Operations at $3,000/month for one proof-backed workflow**, a **$15,000 30-day Enterprise Governance Pilot for up to three local workflows**, and **Enterprise Reliability Operations at $10,000/month for the same three workflows after a completed pilot**. There is no public checkout for these services. Every engagement requires a signed scope, and service revenue counts only after provider-confirmed payment. Generic self-serve subscription MRR remains a separate provider-subscription metric. Hosted team lesson sync and a hosted org dashboard are not general-availability features in the current public runtime. The former Team seat tier is retired.
@@ -58,26 +58,21 @@ This document is the source of truth for product, pricing, traction, and proof c
 
 ## Service Offer Ladder
 
-### Setup Sprint ($499 one-time)
+### 30-day team pilot (request only)
 
-- Buyer: one workflow owner with one repeated AI-agent failure and enough workflow evidence to review it
-- Buyer inputs: short intake, a 60-minute working review, and non-secret examples or logs needed to understand the failure
-- Deliverables: one workflow/failure map, one configured local gate, one regression test, and written rollout, rollback, and verification proof
-- Delivery window: within two business days after access and the agreed workflow materials are available
-- Risk reducer: submit the workflow before checkout when fit is unclear; if a paid workflow cannot be reduced to one supported gate, refund the order instead of expanding the scope
-- Exclusions: multi-system implementation, legal or compliance certification, guaranteed savings, guaranteed incident prevention, and uncontracted hosted-team features
+- Buyer: a team rolling a coding agent (Claude Code, Cursor, Codex, Gemini or another) out to a handful to a few hundred people
+- Buyer inputs: name, work email, team size and agent, through the form at `/pilot`
+- What happens: the request is stored, the owner is emailed, and a person replies by email with how the pilot would run for that team
+- No public price, no self-serve checkout, and no promise of hosted team sync, SSO or an org-wide dashboard
 
-### Setup Sprint ($1,500 one-time, not a promoted public offer)
+### Retired: Setup Sprint ($499 and $1,500 one-time)
 
-- Buyer: a diagnostic-qualified workflow owner ready to implement and prove the first gate set
-- Deliverables: scoped gate implementation for the agreed workflow, local regression/proof artifacts, an approval and rollback runbook, and a review handoff
-- The internal catalog price is `$1,500`. It is retained for prior contracts and controlled scoping, not advertised as a second public cash path during the single-offer experiment.
-- Broader integrations, ongoing monitoring, multi-workflow rollout, shared hosting, and compliance work require separate Enterprise scope
+- Retired on 2026-11-25. Not a current offer on any public surface. Historical payments and signed scopes still reconcile through the catalog and intake validators described above.
 
 ### Recurring and Enterprise expansion
 
 - Pro remains the `$19/mo` or `$149/yr` individual subscription after a solo operator has evidence that the local workflow is useful.
-- Workflow Reliability Operations is `$3,000/month` after a proof-backed sprint: one existing workflow, one 45-minute monthly evidence review, up to two small gate or regression updates, one incident or near-miss review, and one refreshed approval/rollback/proof packet. It excludes new integrations, 24/7 monitoring, incident-response SLAs, compliance certification, and hosted team features.
+- Workflow Reliability Operations is `$3,000/month` after a proof-backed pilot: one existing workflow, one 45-minute monthly evidence review, up to two small gate or regression updates, one incident or near-miss review, and one refreshed approval/rollback/proof packet. It excludes new integrations, 24/7 monitoring, incident-response SLAs, compliance certification, and hosted team features.
 - The `$15,000` Enterprise Governance Pilot covers up to three local workflows over 30 days after signed scope, payment, and receipt of agreed inputs. The `$10,000/month` Enterprise Reliability Operations follow-on is available only after a completed pilot and remains bounded to those three workflows.
 - These three expansion offers are `qualified_proposal_only`: no public checkout, no claim of general availability for hosted team features, and no service-revenue attribution before signed scope plus provider-confirmed payment.
 - A diagnostic, intake, checkout session, pending invoice, or proposal is not revenue. Only provider-confirmed payment counts as booked service revenue. Self-serve recurring-product claims require an active provider subscription tied to a ThumbGate product; productized recurring-service claims require a current provider-paid recurring invoice reconciled under the stricter contract gate above.

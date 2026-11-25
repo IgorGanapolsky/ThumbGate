@@ -164,16 +164,16 @@ test('thumbgate stats -h short flag also triggers the interceptor', () => {
   }
 });
 
-test('thumbgate diagnostic prints the enterprise entry fit and checkout paths', () => {
+test('thumbgate diagnostic points teams at the 30-day pilot request', () => {
   const home = freshHome();
   try {
     const result = runCli(['diagnostic'], unlicensedEnv(home));
     assert.equal(result.status, 0, `diagnostic subcommand should exit 0; stderr=${result.stderr}`);
-    assert.match(result.stdout, /Setup Sprint — \$499/);
-    assert.match(result.stdout, /Best fit: one workflow, one repeated failure, one owner/);
-    assert.match(result.stdout, /https:\/\/thumbgate\.ai\/diagnostic\?utm_source=cli_diagnostic/);
-    assert.match(result.stdout, /https:\/\/thumbgate\.ai\/go\/diagnostic\?utm_source=cli_diagnostic/);
-    assert.match(result.stdout, /utm_campaign=workflow_hardening_diagnostic/);
+    assert.match(result.stdout, /30-day team pilot/);
+    assert.match(result.stdout, /https:\/\/thumbgate\.ai\/pilot\?utm_source=cli_diagnostic/);
+    assert.match(result.stdout, /utm_campaign=team_pilot/);
+    // The $499 Setup Sprint and its /diagnostic routes are retired (410).
+    assert.doesNotMatch(result.stdout, /\$499|Setup Sprint|thumbgate\.ai\/(?:go\/)?diagnostic/);
   } finally {
     fs.rmSync(home, { recursive: true, force: true });
   }
