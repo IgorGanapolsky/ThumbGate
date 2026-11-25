@@ -825,8 +825,10 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // config/gates/default.json; measured 10,800,539 (main was 10,791,301).
   // Bumped 10.80 MB -> 10.81 MB (2026-11-25, PR #5232): durable OAuth store + refresh tokens in
   // scripts/mcp-oauth.js and hosted MCP instructions in src/api/server.js; measured 10,802,087.
-  manifest.unpackedSize <= 10_810_000,
-  `npm package should stay <= 10.81 MB unpacked, got ${manifest.unpackedSize}`
+  // Bumped 10.81 MB -> 10.82 MB (2026-11-25, PR #5239): main itself reached 10,813,745 after
+  // #5236 (per-host enforcement summary); this PR adds 37 bytes; measured 10,813,782.
+  manifest.unpackedSize <= 10_820_000,
+  `npm package should stay <= 10.82 MB unpacked, got ${manifest.unpackedSize}`
 );
 
   for (const file of requiredRuntimeFiles) {
