@@ -195,7 +195,9 @@ test('the one-line category claim agrees across every surface that defines the p
   // are not required to restate it — they are covered by the conflict check below.
   // Igor's homepage edit on 2026-11-25 (eec6a167) says "local pre-execution gate for AI coding agents"
   // instead of "firewall"; both name the same category (a gate that checks tool calls before they run).
-  const categoryClaim = /(?:firewall|pre-execution gate) for (?:your )?ai(?:[- ]coding)? agents/i;
+  // The README (25 Nov 2026, AGENT-3667) says "checks AI coding actions before they run: allow, warn or deny" instead of "firewall",
+  // because the product denies some actions and only warns on others.
+  const categoryClaim = /(?:(?:firewall|pre-execution gate) for (?:your )?ai(?:[- ]coding)? agents|checks ai coding actions before they run)/i;
   const definingSurfaces = [
     'README.md',
     'public/llm-context.md',
