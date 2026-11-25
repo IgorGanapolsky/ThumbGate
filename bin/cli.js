@@ -3624,7 +3624,14 @@ function applyThumbHold(detected, prompt, promptEnvelope) {
     }
     if ((detected && detected.signal === 'up') || (!detected && sendGate.isReleasePrompt(prompt))) {
       const released = sendGate.releaseHolds({ feedbackDir });
-      return released ? `ThumbGate: ${released} hold(s) released by the person.` : null;
+      const isThumbsUp = Boolean(detected && detected.signal === 'up');
+      const approval = isThumbsUp
+        ? sendGate.recordApproval({ feedbackDir, sessionId: promptEnvelope.sessionId || process.env.CLAUDE_SESSION_ID || '' })
+        : null;
+      const parts = [];
+      if (released) parts.push(`${released} hold(s) released by the person.`);
+      if (approval) parts.push(`Thumbs-up recorded on ${sendGate.describeAction(approval)} (approved ${approval.count}x). Keep doing it this way.`);
+      return parts.length ? `ThumbGate: ${parts.join(' ')}` : null;
     }
   } catch { /* a hold never breaks prompt capture */ }
   return null;
@@ -3839,8 +3846,8 @@ function dashboard() {
     const { resolveProjectDir } = require(path.join(PKG_ROOT, 'scripts', 'feedback-paths'));
     const projectDir = resolveProjectDir({ cwd: process.cwd(), env: process.env });
     const port = process.env.PORT || 3456;
-    const { resolveLocalProject } = require(path.join(PKG_ROOT, 'scripts', 'project-identity'));
-    const url = `http://127.0.0.1:${port}/dashboard?project=${encodeURIComponent(resolveLocalProject(projectDir).projectKey)}`;
+    const { dashboardProjectParam } = require(path.join(PKG_ROOT, 'scripts', 'project-identity'));
+    const url = `http://127.0.0.1:${port}/dashboard?project=${encodeURIComponent(dashboardProjectParam(projectDir))}`;
 
     progress.start(`Starting local dashboard on :${port}…`);
     ensureDash(Number(port))
@@ -4644,8 +4651,14 @@ switch (COMMAND) {
     const cursorGate = require('../scripts/cursor-shell-gate');
     cursorGate.runCursorShellGate(require('node:fs').readFileSync(0, 'utf8')).then((out) => {
       process.stdout.write(JSON.stringify(out) + '\n');
+      try { require('../scripts/cursor-self-heal').repairCursorHooks(); } catch (_) { /* never changes the decision */ }
       process.exit(out.permission === 'deny' ? 2 : 0);
-    }).catch(() => { process.stdout.write('{"permission":"allow"}\n'); process.exit(0); });
+    }).catch((err) => {
+      // Fail closed, the same as scripts/cursor-shell-gate.js: a gate that could not decide does not let the command run.
+      const reason = `ThumbGate could not check this command (${err && err.message ? err.message : 'error'}), so it was blocked. Retry; if it keeps failing run: npx thumbgate doctor`;
+      process.stdout.write(JSON.stringify({ permission: 'deny', user_message: reason, agent_message: reason }) + '\n');
+      process.exit(2);
+    });
     break;
   }
   case 'cursor-mcp-gate': {

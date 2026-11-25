@@ -59,6 +59,11 @@ const REWRITES = [
   ['os.unlink in a heredoc script', `python3 - <<'PY'\nimport os\nos.unlink("${TARGET}")\nPY`],
   ['pathlib rmdir', `python3 -c "from pathlib import Path; Path('${TARGET}').rmdir()"`],
   ['subprocess rm -rf with an argument list', `python3 -c "import subprocess; subprocess.run(['rm', '-rf', '${TARGET}'])"`],
+  ['pathlib unlink', `python3 -c "from pathlib import Path; Path('${TARGET}').unlink()"`],
+  ['os.system rm -rf', `python3 -c "import os; os.system('rm -rf ${TARGET}')"`],
+  ['subprocess.run rm string with shell=True', `python3 -c "import subprocess; subprocess.run('rm -rf ${TARGET}', shell=True)"`],
+  ['os.rmdir in python -c', `python3 -c "import os; os.rmdir('${TARGET}')"`],
+  ['subprocess.call rm list with absolute /bin/rm', `python3 -c "import subprocess; subprocess.call(['/bin/rm', '-r', '${TARGET}'])"`],
   ['os.remove with shell-escaped double quotes', `python3 -c "import os; os.remove(\\"${TARGET}\\")"`],
 ];
 
