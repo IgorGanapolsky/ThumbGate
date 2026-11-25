@@ -258,7 +258,7 @@ describe('proof-common', () => {
     const root = require('path').join(__dirname, '..');
     const version = JSON.parse(require('fs').readFileSync(require('path').join(root, 'package.json'), 'utf-8')).version;
 
-    it('validates adapter file existence and version pins', () => {
+    it('validates adapter file existence and that it follows latest', () => {
       const results = proveAdapterFilesExist(root, version, [
         { file: 'adapters/vlt/VLT.md' },
       ]);
