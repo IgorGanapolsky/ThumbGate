@@ -26,6 +26,7 @@
     "!public/assets/diagrams/thumbgate-agent-meme.jpg",
     "!public/assets/diagrams/agent-integration.png",
     "!public/assets/diagrams/thumbgate-architecture.png",
+    "!public/assets/diagrams/deploy-proof-gate.png",
     "!public/js/webmcp.js",
     "!src/webmcp-governance.js",
     ".claude-plugin/plugin.json",
