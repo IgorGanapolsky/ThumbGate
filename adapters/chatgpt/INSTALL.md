@@ -38,7 +38,7 @@ Critical failure rule: if the `captureFeedback` Action fails with `401`, `403`, 
 2. ThumbGate evaluates whether to allow, block, or require a checkpoint before the action runs.
 3. After any answer or agent run, reply with `thumbs up:` or `thumbs down:` plus one concrete sentence.
 4. ThumbGate saves the lesson, refreshes prevention rules when patterns repeat, and can show what it remembers.
-5. When the user is ready to enforce outside ChatGPT, send them to `npx thumbgate init` for Claude Code, Cursor, Codex, Gemini CLI, Amp, OpenCode, or another MCP-compatible agent.
+5. When the user is ready to use ThumbGate outside ChatGPT, send them to `npx thumbgate init`: hard blocking in Claude Code and Cursor shell commands; advisory checks in Codex, Gemini CLI, OpenCode, Cline and other MCP agents; feedback capture only in Amp.
 
 Regular users should never need to know MCP, OpenAPI, Actions, DPO, Thompson Sampling, or schema validation. The GPT should explain the loop as: "One signal becomes one remembered rule. Fix it once; block the repeat before the next tool call."
 

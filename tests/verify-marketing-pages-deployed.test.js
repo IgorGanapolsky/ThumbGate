@@ -367,12 +367,14 @@ test('manifest contract: shipped config/post-deploy-marketing-pages.json is vali
     homeHtml.includes(home.sentinel),
     'home-page sentinel must match shipped public/index.html before deployment',
   );
-  const diagnostic = m.pages.find((p) => p.route === '/diagnostic');
-  assert.ok(diagnostic, 'manifest must include /diagnostic');
-  const diagnosticHtml = fs.readFileSync(path.resolve(__dirname, '..', 'public', 'diagnostic.html'), 'utf8');
+  // /diagnostic is retired (410), so the team pilot page is the high-intent page checked after deploy.
+  assert.equal(m.pages.find((p) => p.route === '/diagnostic'), undefined, 'retired /diagnostic must not be verified as a live page');
+  const pilot = m.pages.find((p) => p.route === '/pilot');
+  assert.ok(pilot, 'manifest must include /pilot');
+  const pilotHtml = fs.readFileSync(path.resolve(__dirname, '..', 'public', 'pilot.html'), 'utf8');
   assert.ok(
-    diagnosticHtml.includes(diagnostic.sentinel),
-    'diagnostic sentinel must match shipped public/diagnostic.html before deployment',
+    pilotHtml.includes(pilot.sentinel),
+    'pilot sentinel must match shipped public/pilot.html before deployment',
   );
   const checkout = m.pages.find((p) => p.route === '/checkout/pro');
   assert.ok(checkout, 'manifest must include the revenue-critical Pro checkout route');
