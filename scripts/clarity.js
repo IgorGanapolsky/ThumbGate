@@ -9,7 +9,9 @@
 // - Never on private surfaces (admin, dashboard, sign-in, checkout, billing, success pages, JSON API).
 // - Never when the visitor sends Global Privacy Control or Do Not Track; the tag also re-checks in the browser.
 // - Forms and inputs are marked data-clarity-mask so typed text, emails and keys are never recorded.
-// - consentv2 always denies ad storage; browsers in European time zones also deny analytics cookies (cookieless).
+// - No consent call is made. Clarity's own Consent Mode applies to EEA, UK and Switzerland visitors (it waits for a
+//   consent signal before setting cookies); this site has no banner, so it sends none. No browser time-zone guess.
+// - A click on a /checkout/pro link sends the Clarity custom event checkout_click (the page navigates as normal).
 //
 // Export rules: Clarity allows 10 export calls per project per day and only the last 1 to 3 days. The snapshot is
 // cached on disk, refreshed at most every 8 hours with 3 calls, so restarts and deploys never spend the budget.
@@ -70,10 +72,16 @@ function buildClarityTag(projectId) {
     '  c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};',
     '  t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;',
     '  y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);',
-    // Never ad storage. Analytics cookies only outside Europe (no consent banner here), judged by the browser time zone.
-    "  var tz=''; try { tz=Intl.DateTimeFormat().resolvedOptions().timeZone||''; } catch (_) {}",
-    "  var eu=/^(Europe\\/|Atlantic\\/(Reykjavik|Canary|Madeira|Azores|Faroe)|Arctic\\/)/.test(tz);",
-    "  c[a]('consentv2',{ad_Storage:'denied',analytics_Storage:eu?'denied':'granted'});",
+    // No consent call and no guess from the browser time zone. Clarity applies Consent Mode itself for visitors in the
+    // EEA, UK and Switzerland: it waits for a consent signal before setting cookies, and this site sends none.
+    // Pro checkout click: one custom event, then the link proceeds. The handler never touches the navigation.
+    "  l.addEventListener('click',function(e){",
+    '    try {',
+    "      var n=e.target; while (n && n.nodeType===1 && !(n.tagName==='A' && n.getAttribute('href'))) n=n.parentNode;",
+    '      if (!n || n.nodeType!==1) return;',
+    "      if (/^(https?:\\/\\/(www\\.)?thumbgate\\.ai)?\\/checkout\\/pro(\\?|#|$)/i.test(n.getAttribute('href'))) c[a]('event','checkout_click');",
+    '    } catch (_) {}',
+    '  },true);',
     `})(window, document, "clarity", "script", "${projectId}");`,
     '</script>',
   ].join('\n');

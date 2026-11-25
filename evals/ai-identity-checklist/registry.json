@@ -10,7 +10,7 @@
     { "id": "adapter:claw", "purpose": "Claw-style enterprise agent adapter docs" },
     { "id": "adapter:cline", "purpose": "Cline install path" },
     { "id": "adapter:codex", "purpose": "OpenAI Codex local adapter" },
-    { "id": "adapter:cursor", "purpose": "Cursor hook wiring (beforeShellExecution) for ThumbGate gates" },
+    { "id": "adapter:cursor", "purpose": "Cursor shell-command gate and typed thumbs capture" },
     { "id": "adapter:confidence", "purpose": "Spotify Confidence MCP pre-action governance diode and flag rollout gate" },
     { "id": "adapter:forge", "purpose": "Forge.yaml adapter" },
     { "id": "adapter:future-agi", "purpose": "Future AGI evaluator bridge" },
