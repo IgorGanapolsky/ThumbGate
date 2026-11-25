@@ -258,7 +258,7 @@ function updateStatuslineWithLesson({ accepted, signal, memoryId, feedbackId, le
     try {
       const { refreshStatuslineCache } = require('./hook-thumbgate-cache-updater');
       // Human-only: the status bar shows the owner's own thumbs, not agent captures.
-      refreshStatuslineCache(analyzeFeedback(undefined, { humanOnly: true }), cachePath);
+      refreshStatuslineCache(humanCountedStats(analyzeFeedback(undefined, { humanOnly: true })), cachePath);
     } catch {
       /* keep lesson refresh best-effort */
     }
@@ -271,11 +271,17 @@ function updateStatuslineWithLesson({ accepted, signal, memoryId, feedbackId, le
  * log, so the counter must include it; without this the cache kept its old
  * counts until the next accepted capture.
  */
+function humanCountedStats(stats) {
+  // The one counter: the thumb totals come from computeHumanCounts, never from the log tally in analyzeFeedback.
+  const { applyHumanCounts } = require('./statusline-human-counts');
+  return applyHumanCounts(stats, { cwd: process.cwd() });
+}
+
 function refreshStatuslineCounts() {
   try {
     const cachePath = path.join(getFeedbackPaths().FEEDBACK_DIR, 'statusline_cache.json');
     const { refreshStatuslineCache } = require('./hook-thumbgate-cache-updater');
-    refreshStatuslineCache(analyzeFeedback(undefined, { humanOnly: true }), cachePath);
+    refreshStatuslineCache(humanCountedStats(analyzeFeedback(undefined, { humanOnly: true })), cachePath);
   } catch {
     /* statusline refresh is best-effort */
   }
@@ -1616,6 +1622,10 @@ function captureFeedback(params, options = {}) {
     structuredRule: structuredRule || null,
     ...(reflection && { reflection }),
     gateAction: params.gateAction || null,
+    // The shell command the thumbs-down is about (recorded by the pre-action hook); auto-promotion groups on it.
+    ...(typeof params.failedCommand === 'string' && params.failedCommand.trim()
+      ? { failedCommand: params.failedCommand.trim().slice(0, 400) }
+      : {}),
     reviewOrigin: normalizeReviewOrigin(params.reviewOrigin),
     sourceEvent: publicFeedbackSourceMetadata(params.sourceEvent),
     memorySource: params.memorySource && typeof params.memorySource === 'object'
@@ -1895,8 +1905,17 @@ function captureFeedback(params, options = {}) {
 
     if (similar) {
       // Merge into existing lesson
-      const merged = mergeIntoExisting(MEMORY_LOG_PATH, similar.match, memoryRecord, feedbackEvent);
-      synthesisResult = { action: 'merged', existingId: similar.match.id, similarity: similar.similarity, occurrences: merged.occurrences };
+      // Only an identical lesson (same canonical hash) collapses into the existing row. A lesson that is merely
+      // worded alike is a different lesson (a different page, signer or date): it keeps its own row, the existing
+      // row keeps its own text, and the existing row's count still goes up so repeat promotion works.
+      const identical = similar.matchType === 'canonical';
+      const merged = mergeIntoExisting(MEMORY_LOG_PATH, similar.match, memoryRecord, feedbackEvent, { enrichContent: identical });
+      if (!identical) {
+        memoryRecord.occurrences = 1;
+        memoryRecord.similarToId = similar.match.id;
+        appendJSONL(MEMORY_LOG_PATH, memoryRecord);
+      }
+      synthesisResult = { action: identical ? 'merged' : 'kept-distinct', existingId: similar.match.id, similarity: similar.similarity, occurrences: merged.occurrences };
 
       // Auto-promote if threshold reached, but only after the rule
       // validator (scripts/rule-validator.js) confirms the proposed trigger
@@ -2111,6 +2130,8 @@ function captureFeedback(params, options = {}) {
     try {
       const autoPromote = require('./auto-promote-gates');
       const promoteResult = autoPromote.promote(FEEDBACK_LOG_PATH, { gateAction: feedbackEvent.gateAction });
+      // A person's thumbs-down on an unchecked status claim becomes a claim-gate rule at the second one (item N).
+      try { require('./claim-gate-rules').recordFromFeedback(feedbackEvent, path.dirname(FEEDBACK_LOG_PATH)); } catch { /* rule writing is best effort */ }
       // Free tier: a 4th learned rule is stored but not enforced. Say so once, in one line.
       if (promoteResult && promoteResult.upgradeLine && !tenantDataScope()) {
         process.stderr.write(`${promoteResult.upgradeLine}\n`);

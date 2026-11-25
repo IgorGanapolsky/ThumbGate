@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="generator" content="ThumbGate">
   <meta name="author" content="Igor Ganapolsky">
-  <meta name="thumbgate-version" content="1.40.10">
+  <meta name="thumbgate-version" content="1.42.1">
   __GOOGLE_SITE_VERIFICATION_META__
   <link rel="icon" type="image/png" href="/thumbgate-icon.png">
   <link rel="canonical" href="__APP_ORIGIN__/">
@@ -754,7 +754,7 @@
             <video id="gate-demo-video" width="960" height="722" controls autoplay muted loop playsinline preload="auto" poster="/media/thumbgate-gate-demo-poster.jpg" aria-label="Recording: Claude Code deletes a folder, gets thumbs-down three times, and the fourth session is blocked by the gate">
               <source src="/media/thumbgate-gate-demo.mp4" type="video/mp4">
             </video>
-            <figcaption>Real 58-second run with <code>THUMBGATE_STRICT_ENFORCEMENT=1</code>: three thumbs-downs, then the fourth attempt is denied. A reworded delete is not caught. <a href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/demo/gate-demo/README.md" target="_blank" rel="noopener">How it was recorded</a>.</figcaption>
+            <figcaption>Real 58-second run with <code>THUMBGATE_STRICT_ENFORCEMENT=1</code>: three thumbs-downs, then the fourth attempt is denied. <a href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/demo/gate-demo/README.md" target="_blank" rel="noopener">How it was recorded</a>.</figcaption>
           </figure>
           <div class="hero-terminal" id="hero-recorded-deny" aria-label="Recorded PreToolUse decisions">
             <div class="terminal-chrome" aria-hidden="true">
@@ -846,7 +846,7 @@ $ ... "rm -rf ~/"
 
     <section id="offers">
       <div class="shell" id="workflow-sprint-intake">
-        <p class="install-hint">A firewall for AI coding agents, built for Claude Code.</p>
+        <p class="install-hint">A local pre-execution gate for AI coding agents, built for Claude Code.</p>
         <p class="install-hint" id="thumbgate-dashboard-command">Local dashboard, free: <code>npx thumbgate dashboard --open</code> or <code>/thumbgate-dashboard</code> inside Claude Code.</p>
         <div class="offer-stack" style="grid-template-columns: 1fr; max-width: 520px; margin: 0 auto;">
           <aside id="enterprise-gate" class="checkout-card why-pro" data-primary-checkout>
@@ -862,7 +862,7 @@ $ ... "rm -rf ~/"
               <li><span><strong>Not shipped yet:</strong> team-shared rules, lessons synced across machines, audit history.</span></li>
             </ul>
             <a class="button button-primary" href="/checkout/pro" data-revenue-cta data-cta-id="homepage_pro_checkout" data-cta-placement="offers" data-plan-id="pro">Get Pro — $__PRO_PRICE_DOLLARS__/month</a>
-            <p><a href="/install">Start with the free CLI</a> · <a href="/pricing">Free vs Pro table</a></p>
+            <p><a href="/install">Start with the free CLI</a> · <a href="/pricing">Free vs Pro table</a> · <a href="/pilot" data-pilot-link="home">Request a 30-day team pilot</a></p>
           </aside>
         </div>
       </div>
@@ -980,7 +980,8 @@ $ ... "rm -rf ~/"
             <tr><th>A command you gave a thumbs-down</th><td>Warns, with your reason</td><td>Denied from the third thumbs-down</td></tr>
             <tr><th>Other flagged actions, for example <code>git push origin main</code></th><td>Warns</td><td>Denied</td></tr>
             <tr><th>The same action, reworded</th><td colspan="2"><strong>Not caught.</strong> A learned rule matches the command you thumbed down, not its purpose. In the recording above, <code>rm -rf ../old-notes</code> is denied, but deleting the same folder with <code>python3 shutil.rmtree</code> only gets a warning.</td></tr>
-            <tr><th>Cursor, Cline, OpenCode, Amp</th><td colspan="2">Advisory or feedback only. They do not guarantee a block. See <a href="#also-works-with">Also works with</a>.</td></tr>
+            <tr><th>Cursor</th><td colspan="2">Shell commands are denied before they run; other tools are advisory. See <a href="#also-works-with">Also works with</a>.</td></tr>
+            <tr><th>Cline, OpenCode, Amp</th><td colspan="2">Advisory or feedback only. They do not guarantee a block. See <a href="#also-works-with">Also works with</a>.</td></tr>
             <tr><th>Damage from a command it allows</th><td colspan="2">Not contained. ThumbGate is not a sandbox.</td></tr>
           </tbody>
         </table>
@@ -1036,7 +1037,8 @@ $ ... "rm -rf ~/"
           </thead>
           <tbody>
             <tr><th>Claude Code</th><td>Blocks before tool runs</td><td>DENY</td><td>DENY catastrophic, WARN other</td><td>DENY</td></tr>
-            <tr><th>Cursor, Cline, OpenCode</th><td>Advisory</td><td>DENY</td><td>WARN</td><td>DENY</td></tr>
+            <tr><th>Cursor shell</th><td>Blocks first</td><td>DENY</td><td>DENY catastrophic, WARN other</td><td>DENY</td></tr>
+            <tr><th>Cursor other, Cline, OpenCode</th><td>Advisory</td><td>DENY</td><td>WARN</td><td>DENY</td></tr>
             <tr><th>Amp</th><td>Feedback only</td><td>Logged</td><td>Logged</td><td>Logged</td></tr>
           </tbody>
         </table>
@@ -1047,7 +1049,7 @@ $ ... "rm -rf ~/"
 
   <footer>
     <div class="shell footer-inner">
-      <span>ThumbGate · MIT License · npm v1.40.10</span>
+      <span>ThumbGate · MIT License · npm v1.42.1</span>
       <div class="footer-links">
         <a href="https://github.com/IgorGanapolsky/ThumbGate" target="_blank" rel="noopener">GitHub</a>
         <a href="/guide">Technical setup</a>

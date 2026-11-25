@@ -13,6 +13,10 @@ const DEFAULT_TIMEOUT_MS = 45000;
 const DEFAULT_PUBLISH_INSTALL_RETRIES = 12;
 const DEFAULT_PUBLISH_INSTALL_DELAY_MS = 10000;
 const MAX_PUBLISH_INSTALL_DELAY_MS = 45000;
+// npm says "Your package is being processed" after publish; 1.40.14 took ~7 min and 1.41.0 ~9 min
+// to resolve, longer than 12 attempts (~6.6 min). Keep retrying registry misses for a published
+// package until at least this much waiting has passed, whatever --install-attempts says.
+const DEFAULT_PUBLISH_MIN_WAIT_MS = 15 * 60 * 1000;
 const STATUSLINE_INPUT = JSON.stringify({ context_window: { used_percentage: 12 } });
 
 function parseArgs(argv = process.argv.slice(2)) {
@@ -80,9 +84,11 @@ async function installPackageWithRetry(prefixDir, packageSpec, options = {}) {
   const remotePackage = options.remotePackage !== undefined ? options.remotePackage : isRemotePackageSpec(packageSpec);
   const attempts = Number(options.attempts || (remotePackage ? DEFAULT_PUBLISH_INSTALL_RETRIES : 3));
   let delayMs = Number(options.delayMs || DEFAULT_PUBLISH_INSTALL_DELAY_MS);
+  const minWaitMs = Number(options.minWaitMs !== undefined ? options.minWaitMs : (remotePackage ? DEFAULT_PUBLISH_MIN_WAIT_MS : 0));
+  let waitedMs = 0;
   let lastError = null;
 
-  for (let attempt = 1; attempt <= attempts; attempt += 1) {
+  for (let attempt = 1; ; attempt += 1) {
     if (attempt > 1) {
       fs.rmSync(prefixDir, { recursive: true, force: true });
     }
@@ -91,14 +97,15 @@ async function installPackageWithRetry(prefixDir, packageSpec, options = {}) {
     } catch (error) {
       lastError = error;
       const transient = isTransientRegistryMiss(error);
-      const retryable = transient && attempt < attempts;
+      const retryable = transient && (attempt < attempts || waitedMs < minWaitMs);
       if (!retryable) {
         throw error;
       }
       process.stderr.write(
-        `Retrying package install for ${packageSpec} after transient npm failure (${attempt}/${attempts - 1})\n`
+        `Retrying package install for ${packageSpec} after transient npm failure (attempt ${attempt}, waited ${Math.round(waitedMs / 1000)}s)\n`
       );
       await sleepImpl(delayMs);
+      waitedMs += delayMs;
       delayMs = Math.min(Math.round(delayMs * 1.5), MAX_PUBLISH_INSTALL_DELAY_MS);
     }
   }

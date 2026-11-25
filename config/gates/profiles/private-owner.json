@@ -1,0 +1,32 @@
+{
+  "version": 1,
+  "description": "Owner-only gates for one operator's own machines: corporate email isolation and off-brand outbound posting. Not part of the default install. Load with THUMBGATE_EXTRA_GATES=<this file> or copy it to ~/.config/thumbgate/extra-gates.json.",
+  "gates": [
+    {
+      "id": "outbound-off-brand-vertical-block",
+      "layer": "Execution",
+      "trigger": "any:outbound_off_brand_vertical_block",
+      "pattern": "^(?=[\\s\\S]*(?:linkedin\\.com\\/(?:sharing|feed|posts|in\\/)|api\\.linkedin\\.com|ugcPosts|bsky\\.app|com\\.atproto\\.repo\\.createRecord|threads\\.(?:com|net)|(?:x|twitter)\\.com\\/(?:i\\/|intent\\/|compose)|api\\.(?:x|twitter)\\.com|oauth\\.reddit\\.com\\/api\\/submit|substack\\.com|api\\.medium\\.com|dev\\.to\\/api\\/articles|scripts\\/(?:post-everywhere|publish-bluesky|social-post-hourly|publish-linkedin|social-analytics\\/publishers)|browseros[-_]neo|browser_type|browser_fill))(?=[\\s\\S]*(?:[rR]eal[\\s_-]?[eE]state|[tT]ax[\\s_-]?[dD]eed|197\\.552|\\b[fF]olios?\\b|[mM]iami-[dD]ade|[bB]roward|[pP]rop[sS]tream|[rR]exera|[eE]lise[aA][iI]|deals\\.igorganapolsky\\.com|[bB]igger[pP]ockets))",
+      "action": "block",
+      "message": "Outbound social or browser post blocked: contains prohibited off-brand vertical offers or external deal links outside ThumbGate's AI agent governance scope.",
+      "severity": "critical",
+      "compliance": [
+        "SOC2-CC6.1",
+        "CWE-285"
+      ]
+    },
+    {
+      "id": "eci-corporate-email-isolation",
+      "layer": "Execution",
+      "trigger": "any:eci_corporate_email_isolation",
+      "pattern": "(?=[\\s\\S]*(?:@ecisolutions\\.com|@ecinexus\\.com|@eci\\.com|Microsoft\\s+Outlook\\.app))(?=[\\s\\S]*(?:sendmail|msmtp|mailx|smtplib|nodemailer|view=cm|send_email|create_draft|reply_to_email|boardy|viktor|openfinance|mail\\.google\\.com))",
+      "action": "block",
+      "message": "CRITICAL SECURITY BLOCK: Corporate ECI email domains (@ecisolutions.com, @ecinexus.com, @eci.com) and Microsoft Outlook.app are strictly isolated and must NEVER be touched by personal, ThumbGate, Boardy, or Viktor workflows.",
+      "severity": "critical",
+      "compliance": [
+        "SOC2-CC6.1",
+        "CWE-200"
+      ]
+    }
+  ]
+}

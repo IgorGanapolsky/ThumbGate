@@ -92,7 +92,7 @@ function findSimilarLesson(memoryLogPath, newRecord) {
  * Merge a new feedback event into an existing lesson.
  * Increments occurrence count, updates timestamp, enriches context.
  */
-function mergeIntoExisting(memoryLogPath, existingLesson, newRecord, newFeedbackEvent) {
+function mergeIntoExisting(memoryLogPath, existingLesson, newRecord, newFeedbackEvent, { enrichContent = true } = {}) {
   const merged = {
     ...existingLesson,
     occurrences: (existingLesson.occurrences || 1) + 1,
@@ -103,8 +103,9 @@ function mergeIntoExisting(memoryLogPath, existingLesson, newRecord, newFeedback
     ].slice(-20), // Keep last 20 IDs
   };
 
-  // Enrich context if the new one adds information
-  if (newRecord.content && newRecord.content.length > (existingLesson.content || '').length) {
+  // Enrich context if the new one adds information. A caller that keeps the new lesson as its own row passes
+  // enrichContent false so the earlier lesson's text is never overwritten.
+  if (enrichContent && newRecord.content && newRecord.content.length > (existingLesson.content || '').length) {
     merged.content = newRecord.content;
   }
 

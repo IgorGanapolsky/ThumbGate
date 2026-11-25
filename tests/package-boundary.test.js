@@ -518,8 +518,19 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
     // 693 -> 695 (2026-11-19): public/preview.html and public/js/connect-panel.js (free preview, connect panel) (+2).
     // 695 -> 696 (2026-11-19): scripts/first-block-upsell.js (required by scripts/gates-engine.js, first-block upgrade line) (+1).
     // 696 -> 700 (2026-11-19): scripts/owner-telemetry.js, ops-log.js, ops-report.js, checkout-session-count.js (required by owner-admin.js and server.js) (+4).
-    manifest.fileCount <= 700,
-    `npm package should stay <= 700 files, got ${manifest.fileCount}`
+    // 700 -> 701 (2026-11-24): scripts/owner-alerts.js (required by the packaged scripts/owner-admin.js).
+    // 701 -> 704 (2026-11-24): scripts/cost-meter.js (required by src/api/server.js), scripts/unit-economics.js
+    // and config/unit-costs.json (its rate card), for the owner console's unit economics (+3).
+    // 704 -> 708 (2026-11-25): config/gates/profiles/private-owner.json and public/pilot.html (landed after
+    // 1.40.14), plus scripts/recent-commands.js (required by gates-engine.js) and scripts/lesson-effect.js
+    // (required by statusline-human-counts.js) and scripts/pilot-request.js (required by src/api/server.js),
+    // and scripts/checkout-price-guard.js (required by scripts/billing.js), which were missing from `files` (+6).
+    // 712 -> 715 (2026-11-25): canary-gate.js, boundary-check.js, prompt-risk-lint.js (AGENT-3667 item J).
+    // 710 -> 711 (2026-11-25): config/gates/profiles/shared-tree.json, the opt-in shared-tree gate profile (bb6208a).
+    // 723 -> 724 (2026-11-25): scripts/clarity.js (required by src/api/server.js and owner-admin.js: Microsoft Clarity tag and export) (+1).
+    // 724 -> 725 (2026-11-25): scripts/deploy-proof-gate.js (required by scripts/hook-stop-anti-claim.js) (+1).
+    manifest.fileCount <= 725,
+    `npm package should stay <= 725 files, got ${manifest.fileCount}`
   );
   // Ceiling bumped from 2.75 MB → 2.85 MB (2026-04-16) to accommodate the
   // incremental review-delta demo content in public/dashboard.html landing
@@ -790,8 +801,21 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // Bumped 10.296 MB -> 10.45 MB (2026-11-19): the owner console shipped without the modules it requires
   // (scripts/owner-admin.js -> owner-telemetry.js, ops-log.js, ops-report.js, checkout-session-count.js), which
   // failed the 1.40.4 publish. Adding those four (+26 KB) on top of the console and Money/Observability work.
-  manifest.unpackedSize <= 10_450_000,
-  `npm package should stay <= 10.45 MB unpacked, got ${manifest.unpackedSize}`
+  // Bumped 10.45 MB -> 10.5 MB (2026-11-24): scripts/owner-admin.js also requires owner-alerts.js,
+  // which were missing from the tarball and failed the 1.40.11 publish. Adding it (+6 KB) on top of the Today tab.
+  // Bumped 10.5 MB -> 10.55 MB (2026-11-24): scripts/cost-meter.js, scripts/unit-economics.js and
+  // config/unit-costs.json for the owner console's unit economics (measured 10,513,990 unpacked, +36 KB headroom).
+  // Bumped 10.71 MB -> 10.73 MB (2026-11-25): the claim gate and its learned-rules module now ship (AGENT-3667 item N).
+  // Bumped 10.65 MB -> 10.71 MB (2026-11-25): the plugin hook script and four modules it loads now ship (AGENT-3667 item K).
+  // Bumped 10.62 MB -> 10.65 MB (2026-11-25): canary-gate.js, boundary-check.js, prompt-risk-lint.js (AGENT-3667 item J).
+  // Bumped 10.55 MB -> 10.62 MB (2026-11-25): the files above that were missing from `files`
+  // (runtime requires that crashed or silently failed in the published package) and the pinned-hook fix.
+  // Bumped 10.73 MB -> 10.75 MB (2026-11-25): scripts/not-a-thumb.js, the not-counted ledger and the one-counter
+  // wiring (AGENT-3667 one-count follow-up); measured 10,731,089 before this commit's review fixes.
+  // Bumped 10.75 MB -> 10.77 MB (2026-11-25): scripts/clarity.js (Clarity tag + owner-console export), the
+  // Visitor behavior tab in public/admin.html and the privacy note; measured 10,751,766.
+  manifest.unpackedSize <= 10_770_000,
+  `npm package should stay <= 10.77 MB unpacked, got ${manifest.unpackedSize}`
 );
 
   for (const file of requiredRuntimeFiles) {

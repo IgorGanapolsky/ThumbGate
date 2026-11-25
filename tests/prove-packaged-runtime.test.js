@@ -64,10 +64,37 @@ test('installPackageWithRetry gives newly published packages a long propagation 
       /ETARGET/
     );
 
-    assert.equal(attempts, 12);
-    assert.equal(delays.length, 11);
+    // npm can take 9+ minutes to serve a new version, so the default keeps going past
+    // 12 attempts until at least 15 minutes of waiting, then gives up.
+    const waited = delays.reduce((a, b) => a + b, 0);
+    assert.ok(attempts > 12, `expected more than 12 attempts, got ${attempts}`);
+    assert.equal(delays.length, attempts - 1);
     assert.equal(delays[0], 10000);
     assert.equal(Math.max(...delays), 45000);
+    assert.ok(waited >= 15 * 60 * 1000, `waited ${waited}ms`);
+    assert.ok(waited < 15 * 60 * 1000 + 45000, `waited ${waited}ms`);
+  } finally {
+    fs.rmSync(prefixDir, { recursive: true, force: true });
+  }
+});
+
+test('installPackageWithRetry honours an explicit attempts cap when minWaitMs is 0', async () => {
+  const prefixDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-publish-cap-'));
+  let attempts = 0;
+  try {
+    await assert.rejects(
+      installPackageWithRetry(prefixDir, 'thumbgate@9.9.9-test', {
+        attempts: 3,
+        minWaitMs: 0,
+        installImpl() {
+          attempts += 1;
+          throw new Error('npm error code ETARGET');
+        },
+        sleepImpl() { return Promise.resolve(); },
+      }),
+      /ETARGET/
+    );
+    assert.equal(attempts, 3);
   } finally {
     fs.rmSync(prefixDir, { recursive: true, force: true });
   }

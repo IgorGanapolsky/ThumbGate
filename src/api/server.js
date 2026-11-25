@@ -1,8 +1,9 @@
 #!/usr/bin/env node
 const { withDataScope, withoutDataScope, currentDataScope, tenantDataScope, assertScopedDataPath, dataScopeKey } = require('../../scripts/feedback-scope');
-const { parseProjectSelection, projectForCapture, projectForRecord, matchesProject, validProjectKey } = require('../../scripts/project-identity');
+const { isProjectFolder, parseProjectSelection, projectForCapture, projectForRecord, matchesProject, validProjectKey } = require('../../scripts/project-identity');
 const { readProjectRows, buildProjectCatalog } = require('../../scripts/project-catalog');
 const ownerAdmin = require('../../scripts/owner-admin');
+const clarity = require('../../scripts/clarity');
 const opsLog = require('../../scripts/ops-log');
 const http = require('http');
 const https = require('https');
@@ -84,6 +85,7 @@ const {
   getFeedbackPaths,
   appendDiagnosticRecord,
 } = require('../../scripts/feedback-loop');
+const { applyHumanCounts } = require('../../scripts/statusline-human-counts');
 const {
   readActiveProjectState,
   resolveProjectDir,
@@ -255,6 +257,7 @@ const {
 } = require('../../scripts/gates-engine');
 const {
   summarizeFirstBlockEvents,
+  summarizeActivationFunnel,
 } = require('../../scripts/activation-tracker');
 const {
   evaluateOperationalIntegrity,
@@ -3152,6 +3155,7 @@ const CHECKOUT_GATE_NOTICES = Object.freeze({
   retry: "We couldn't confirm that click. Press the button again.",
   network: 'Your connection changed while we confirmed the click. Press the button again.',
   busy: 'Many checkouts are starting from your network right now. Wait a minute, then press the button again.',
+  unavailable: "We couldn't open the Stripe payment page just now. Nothing was charged. Press the button again in a minute.",
 });
 
 function checkoutGateNoticeCode(reason) {
@@ -3871,6 +3875,8 @@ async function serveTrackedLinkRedirect({ req, res, parsed, hostedConfig, isHead
       return;
     }
   }
+  // Set when an admitted click could not get a Stripe session; the visitor is told instead of silently seeing the same page.
+  let sessionFailure = null;
   if (!isHeadRequest && isDirectProSessionSlug(target.slug) && process.env.STRIPE_SECRET_KEY) {
     try {
       const dynamicSessionUrl = await tryCreateDirectProCheckoutRedirect({
@@ -3894,6 +3900,7 @@ async function serveTrackedLinkRedirect({ req, res, parsed, hostedConfig, isHead
         res.end();
         return;
       }
+      sessionFailure = 'no_session_url';
     } catch (err) {
       if (err && err.code === 'AUTOMATED_CHECKOUT_BLOCKED') {
         const deflectUrl = new URL(target.botDeflectPath || '/checkout/pro', hostedConfig.appOrigin);
@@ -3910,6 +3917,8 @@ async function serveTrackedLinkRedirect({ req, res, parsed, hostedConfig, isHead
       }
       // Dynamic session creation failed: Pro slugs go to the confirm page below.
       console.warn('[checkout] dynamic session creation failed', target.slug, err && (err.code || err.message));
+      // Only a short code-shaped value reaches telemetry; any other error text becomes 'error'.
+      sessionFailure = err && typeof err.code === 'string' && /^[A-Za-z0-9_]{1,40}$/.test(err.code) ? err.code : 'error';
     }
   }
   if (isProSubscriptionSlug(target.slug)) {
@@ -3917,6 +3926,16 @@ async function serveTrackedLinkRedirect({ req, res, parsed, hostedConfig, isHead
     // the visitor to the confirm page, never to a payment link.
     const confirmUrl = new URL('/checkout/pro', hostedConfig.appOrigin);
     appendTrackedLinkQueryParams(confirmUrl, parsed, { ...target, allowCustomerEmail: false });
+    if (sessionFailure && req.method === 'POST') {
+      // A real buyer clicked Pay and nothing opened: say so, and count it (the reason code only, never free text).
+      confirmUrl.searchParams.set('gate_notice', 'unavailable');
+      appendBestEffortTelemetry(
+        FEEDBACK_DIR,
+        { eventType: 'checkout_session_failed', clientType: 'web', page: `/go/${target.slug}`, reason: sessionFailure.slice(0, 60), planId: 'pro' },
+        req.headers,
+        'checkout_session_failed'
+      );
+    }
     res.writeHead(302, {
       ...(journeyState.setCookieHeaders.length ? { 'Set-Cookie': journeyState.setCookieHeaders } : {}),
       'Cache-Control': 'no-store',
@@ -4055,6 +4074,12 @@ function extractOriginTrialTokens(html) {
 
 function sendHtml(res, statusCode, html, extraHeaders = {}, options = {}) {
   const { headOnly = false } = options;
+  // Microsoft Clarity on public pages only; scripts/clarity.js skips private paths and GPC/DNT visitors.
+  if (options.clarity !== false && statusCode < 400 && res.req) {
+    let requestPath = '/admin';
+    try { requestPath = new URL(res.req.url || '/', 'http://localhost').pathname; } catch { /* treat as private */ }
+    html = clarity.injectClarityTag(html, { pathname: requestPath, headers: res.req.headers || {} });
+  }
   const originTrialTokens = extractOriginTrialTokens(html);
   const originTrialHeader = originTrialTokens.length > 0
     ? { 'Origin-Trial': originTrialTokens.join(', ') }
@@ -5140,6 +5165,7 @@ function renderSitemapXml(runtimeConfig) {
     { path: '/learn/future-agi-self-healing-agent-firewall', changefreq: 'weekly', priority: '0.85' },
     { path: '/learn/five-walls-enterprise-agent-deployment', changefreq: 'weekly', priority: '0.85' },
     { path: '/learn/okta-mcp-governance-per-tool-call-gates', changefreq: 'weekly', priority: '0.85' },
+    { path: '/learn/ai-finops-agent-spend-guardrails', changefreq: 'weekly', priority: '0.85' },
     { path: '/compare/claude-code-hooks', changefreq: 'weekly', priority: '0.85' },
     { path: '/compare/bumblebee', changefreq: 'weekly', priority: '0.85' },
     { path: '/compare/anthropic-containment', changefreq: 'weekly', priority: '0.85' },
@@ -6850,6 +6876,13 @@ function renderSigninPage(nextPath, ssoError) {
 
 const DEFAULT_HOSTED_OWNER_EMAILS =['iganapolsky@gmail.com', 'igor.ganapolsky@gmail.com', 'igor@thumbgate.ai'];
 
+function isHostedOwnerEmail(address) {
+  const value = String(address || '').trim().toLowerCase();
+  if (!value) return false;
+  const { getOwnerEmails } = require('../../scripts/bot-detection');
+  return [...DEFAULT_HOSTED_OWNER_EMAILS, ...getOwnerEmails()].some((owner) => String(owner).trim().toLowerCase() === value);
+}
+
 function ensureHostedActivationsReady(baseFeedbackDir, extraOpts = {}) {
   const { backfillHostedAccountActivations } = require('../../scripts/dashboard');
   const { getOwnerEmails } = require('../../scripts/bot-detection');
@@ -7001,7 +7034,16 @@ async function handleFirstBlockActivationRoute(req, res, expectedApiKey, expecte
         clientType: 'cli',
         installId: trustedInstallId,
         firstBlockAt: recorded.firstBlockAt,
+        // Keep the CLI's own classification; an admin or operator key, or a key issued to an owner address, is the owner.
+        visitorType: (isAdmin || isOperator || (validKey && isHostedOwnerEmail(validKey.customerEmail)))
+          ? 'owner'
+          : (['real_user', 'owner', 'ci'].includes(body?.visitorType) ? body.visitorType : 'real_user'),
         ...(typeof body?.gateId === 'string' ? { gateId: body.gateId.slice(0, 120) } : {}),
+        // Same fields the anonymous ping carries, so keyed installs keep version, platform and timing.
+        ...(typeof body?.pkgVersion === 'string' ? { pkgVersion: body.pkgVersion.slice(0, 40) } : {}),
+        ...(typeof body?.platform === 'string' ? { platform: body.platform.slice(0, 40) } : {}),
+        ...(Number.isFinite(body?.minutesSinceInstall) && body.minutesSinceInstall >= 0
+          ? { minutesSinceInstall: body.minutesSinceInstall } : {}),
       }, req.headers);
     } catch { /* telemetry best-effort */ }
   }
@@ -7561,6 +7603,17 @@ function createUnscopedApiServer({ ownerAdminDependencies = {} } = {}) {
   const humanReviewerConfig = getHumanReviewerConfig(expectedApiKey, expectedOperatorKey);
 
   const adminRuntime = ownerAdmin.createRuntimeObservations();
+  // Owner alerts to the owner's own incoming webhook, only when THUMBGATE_OWNER_ALERT_WEBHOOK is set. Not under tests.
+  if (!process.env.NODE_TEST_CONTEXT) ownerAdmin.startAlertDelivery(() => withoutDataScope(() => ({
+    feedbackDir: getFeedbackPaths().FEEDBACK_DIR, buildMetadata: BUILD_METADATA, runtime: adminRuntime,
+    hashDataIdentity, buildHostedTenantIdentity,
+    health: () => ({ version: pkg.version, buildSha: BUILD_METADATA.buildSha, uptime: process.uptime() }),
+    ...ownerAdminDependencies,
+  })));
+  // Cost meter for the owner console's unit economics: hosted deployments only (Railway sets RAILWAY_ENVIRONMENT), never under tests.
+  if (!process.env.NODE_TEST_CONTEXT && (process.env.RAILWAY_ENVIRONMENT || process.env.THUMBGATE_COST_METER === '1')) {
+    try { require('../../scripts/cost-meter').start({ feedbackDir: withoutDataScope(() => getFeedbackPaths().FEEDBACK_DIR) }); } catch { /* best-effort */ }
+  }
   const observedRequests = new WeakSet();
   const eventBus = new EventEmitter();
   eventBus.setMaxListeners(200);
@@ -9050,6 +9103,23 @@ async function addContext(){
       return;
     }
 
+    if (isGetLikeRequest && (pathname === '/pilot' || pathname === '/pilot.html')) {
+      try {
+        servePublicMarketingPage({
+          req,
+          res,
+          parsed,
+          hostedConfig,
+          isHeadRequest,
+          renderHtml: () => fs.readFileSync(path.join(PUBLIC_DIR, 'pilot.html'), 'utf-8'),
+          extraTelemetry: { pageType: 'pilot_request' },
+        });
+      } catch {
+        sendJson(res, 404, { error: 'Pilot page not found' });
+      }
+      return;
+    }
+
     // Natural marketing URLs for the Workflow Hardening Diagnostic/Sprint.
     // High-intent outreach refers to "the diagnostic", "the sprint", or
     // "workflow hardening"; serve a focused buyer page instead of sending
@@ -10282,6 +10352,20 @@ a{color:#8b9}</style></head><body><form class="card" method="post" action="/oaut
         degraded = true;
       }
 
+      // Check 4: the Stripe price ids this build will put in checkout metadata, and whether each is active.
+      // TELEMETRY-DEGRADED: an archived id never blocks checkout (sessions carry inline price_data), but it must be visible.
+      {
+        const priceStatus = require('../../scripts/checkout-price-guard').getCheckoutPriceStatus();
+        if (!priceStatus) {
+          checks.checkoutPrices = { ok: true, status: 'unchecked' };
+        } else if (priceStatus.ok) {
+          checks.checkoutPrices = { ok: true, status: 'all_active', checkedAt: priceStatus.checkedAt, prices: priceStatus.prices };
+        } else {
+          checks.checkoutPrices = { ok: false, status: 'inactive_or_missing', severity: 'degraded', checkedAt: priceStatus.checkedAt, prices: priceStatus.prices };
+          degraded = true;
+        }
+      }
+
       const statusCode = failing ? 503 : 200;
       const status = failing ? 'failing' : (degraded ? 'degraded' : 'ok');
       sendJson(res, statusCode, {
@@ -10416,8 +10500,13 @@ a{color:#8b9}</style></head><body><form class="card" method="post" action="/oaut
       const sevenDaysAgo = now - 7 * 24 * 60 * 60 * 1000;
 
       const classified = entries.map(e => {
+        if (e.visitorType) return e;
+        // A CLI ping comes from node, not a browser, so an empty User-Agent says nothing about it;
+        // UA classification would label every unclassified CLI event (e.g. first_block) a bot.
+        // The CLI marks CI and owner installs itself; one that didn't is a real install.
+        if ((e.clientType || e.client) === 'cli') return { ...e, visitorType: 'real_user' };
         const cls = bd.classifyVisitor({ headers: { 'user-agent': e.userAgent || '' }, email: e.email || '' });
-        return { ...e, visitorType: e.visitorType || cls.type };
+        return { ...e, visitorType: cls.type };
       });
 
       const recent = classified.filter(e => {
@@ -10452,6 +10541,8 @@ a{color:#8b9}</style></head><body><form class="card" method="post" action="/oaut
         'cli_capture', 'cli_recall', 'cli_stats',
         'activation_first_rule_promoted',
         'first_blocked_tool_call',
+        // What production CLIs actually send for the first gate firing.
+        'first_block',
       ]);
       const thirtyDaysAgo = now - 30 * 24 * 60 * 60 * 1000;
       const last30 = classified.filter(e => {
@@ -10502,6 +10593,7 @@ a{color:#8b9}</style></head><body><form class="card" method="post" action="/oaut
           activeInstalls: activeInstalls30d.size,
           uniqueSessions: uniqueSessions30d.size,
           firstBlockedToolCall: summarizeFirstBlockEvents(last30),
+          activationFunnel: summarizeActivationFunnel(last30),
         },
         last7Days: {
           total: recent.length,
@@ -10513,6 +10605,7 @@ a{color:#8b9}</style></head><body><form class="card" method="post" action="/oaut
           activeInstalls: activeInstalls7d.size,
           uniqueSessions: uniqueSessions7d.size,
           firstBlockedToolCall: summarizeFirstBlockEvents(recent),
+          activationFunnel: summarizeActivationFunnel(recent),
         },
         byEventType,
         byVisitorType,
@@ -10799,6 +10892,40 @@ a{color:#8b9}</style></head><body><form class="card" method="post" action="/oaut
           mailerReason: mailerResult.reason || null,
         });
       });
+      return;
+    }
+
+    if (req.method === 'OPTIONS' && pathname === '/v1/intake/pilot-request') {
+      sendPublicBillingPreflight(res);
+      return;
+    }
+
+    // POST /v1/intake/pilot-request: the "Request a 30-day team pilot" form. Stores the request and emails the owner.
+    if (req.method === 'POST' && pathname === '/v1/intake/pilot-request') {
+      const { FEEDBACK_DIR } = getFeedbackPaths();
+      const traceId = createTraceId('pilot_request');
+      try {
+        const pilot = require('../../scripts/pilot-request');
+        const contentType = String(req.headers['content-type'] || '').toLowerCase();
+        const body = contentType.includes('application/x-www-form-urlencoded')
+          ? await parseFormBody(req, 8 * 1024)
+          : await readProjectBody(req, 8 * 1024);
+        const checked = pilot.validatePilotRequest(body);
+        if (!checked.ok) {
+          sendJson(res, 400, { ok: false, fields: checked.errors }, getPublicBillingHeaders(traceId));
+          return;
+        }
+        pilot.storePilotRequest(FEEDBACK_DIR, checked.request);
+        const { getOwnerEmails } = require('../../scripts/bot-detection');
+        const notice = await pilot.notifyOwner(checked.request, {
+          ownerEmails: getOwnerEmails(),
+          sendEmail: require('../../scripts/mailer/resend-mailer').sendEmail,
+        });
+        console.log(`[pilot-request] stored ${checked.request.id}; owner email ${notice.sent ? 'sent' : `not sent (${notice.reason})`}`);
+        sendJson(res, 200, { ok: true, id: checked.request.id, stored: true, ownerNotified: notice.sent }, getPublicBillingHeaders(traceId));
+      } catch (err) {
+        sendJson(res, 500, { ok: false, error: 'Could not record the request.' }, getPublicBillingHeaders(traceId));
+      }
       return;
     }
 
@@ -11813,7 +11940,12 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
       const _token = extractBearerToken(req);
       if (_token && _token !== expectedApiKey) recordUsage(_token);
       Object.assign(projectOptions, { projectKey: requestProjectKey, feedbackDir: requestFeedbackDir }, projectEvidenceForRequest(req, parsed, requestFeedbackDir, requestDataIdentity));
-      if (req.method === 'GET' && pathname === '/v1/projects') { sendJson(res, 200, buildProjectCatalog(requestFeedbackDir, projectOptions)); return; }
+      if (req.method === 'GET' && pathname === '/v1/projects') {
+        // The folder the dashboard was opened for: the page's own projectDir (loopback only), else the server's.
+        const catalogDir = getEffectiveRequestedProjectSelection(req, parsed) || projectOptions.projectDir || process.env.THUMBGATE_PROJECT_DIR || null;
+        sendJson(res, 200, { ...buildProjectCatalog(requestFeedbackDir, projectOptions), projectDir: catalogDir, projectDirIsProject: catalogDir ? isProjectFolder(catalogDir) : null });
+        return;
+      }
       if (requestProjectKey != null && req.method === 'GET' && ['/v1/dashboard', '/v1/feedback/stats'].includes(pathname)) {
         const data = generateDashboard(requestFeedbackDir, {
           projectKey: requestProjectKey, ...projectOptions, humanOnly: true,
@@ -11829,7 +11961,11 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
       if (req.method === 'GET' && pathname === '/v1/feedback/stats') {
         const stats = shouldAggregateFeedback()
           ? computeAggregateFeedbackStats({ feedbackDir: requestFeedbackPaths.FEEDBACK_DIR })
-          : analyzeFeedback(requestFeedbackPaths.FEEDBACK_LOG_PATH, { humanOnly: true });
+          : (() => {
+            const base = analyzeFeedback(requestFeedbackPaths.FEEDBACK_LOG_PATH, { humanOnly: true });
+            // A hosted tenant stays inside its own data scope: the project-folder counter reads other directories.
+            return tenantDataScope() ? base : applyHumanCounts(base, { cwd: getEffectiveRequestedProjectSelection(req, parsed) || process.cwd() });
+          })();
         const requestToken = extractApiKey(req);
         const authenticatedTier = requestToken
           ? resolvePaidSessionTier(requestToken, expectedApiKey, expectedOperatorKey)
@@ -14130,6 +14266,14 @@ function startServer({ port, host } = {}) {
   }
   const server = createApiServer();
   registerGracefulShutdown(server);
+  // Verify the configured Stripe price ids once now and every 10 minutes; /health reports the answer.
+  if (process.env.STRIPE_SECRET_KEY && process.env.NODE_ENV !== 'test') {
+    const { refreshCheckoutPriceStatus } = require('../../scripts/billing');
+    const refresh = () => { refreshCheckoutPriceStatus().catch(() => {}); };
+    refresh();
+    const timer = setInterval(refresh, 10 * 60 * 1000);
+    if (typeof timer.unref === 'function') timer.unref();
+  }
   return new Promise((resolve) => {
     server.listen(listenPort, listenHost, () => {
       const address = server.address();

@@ -110,6 +110,11 @@ function resolveLocalProjectUncached(cwd = process.cwd(), options = {}) {
   const projectName = homeFolder && root === homeFolder ? 'Home folder (no project)' : safeProjectName(path.basename(root), 'Local project');
   return { projectKey: `local_${hash(`${machineIdentity(options)}\0${root}`)}`, projectName, identitySource: 'local' };
 }
+// A folder is a real project only when its git remote identifies it (the same rule as isRealProject in public/project-switcher.js).
+function isProjectFolder(dir, options = {}) {
+  if (!dir || typeof dir !== 'string') return false;
+  try { return resolveLocalProject(dir, options).identitySource === 'remote'; } catch { return false; }
+}
 function legacyAlias(record = {}, options = {}) {
   const registry = options.recordType === 'agent-registry.jsonl' || record.recordType === 'agent-registry.jsonl';
   const value = record.scope?.projectId || record.metadata?.project || record.metadata?.repo || record.projectId || (registry ? record.registryProject || record.project : null);
@@ -182,4 +187,4 @@ function projectForCapture(input = {}, options = {}) {
   if ((input.projectKey && input.projectKey !== descriptor.projectKey) || (remote && remote.projectKey !== descriptor.projectKey)) throw invalid('Project key does not match execution directory');
   return descriptor;
 }
-module.exports = { KEY_RE, UNASSIGNED, hash, validProjectKey, safeProjectName, canonicalRemote, projectFromRemote, resolveLocalProject, legacyAlias, recordedRemotes, resolveProjectEvidence, projectForRecord, buildAliases, matchesProject, gateAppliesToProject, isGeneratedGate, parseProjectSelection, projectForCapture };
+module.exports = { KEY_RE, UNASSIGNED, hash, validProjectKey, safeProjectName, canonicalRemote, projectFromRemote, resolveLocalProject, isProjectFolder, legacyAlias, recordedRemotes, resolveProjectEvidence, projectForRecord, buildAliases, matchesProject, gateAppliesToProject, isGeneratedGate, parseProjectSelection, projectForCapture };

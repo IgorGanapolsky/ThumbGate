@@ -334,7 +334,7 @@ const {
   finalizeSession: finalizeFeedbackSession,
 } = require('../../scripts/feedback-session');
 
-const SERVER_INFO = { name: 'thumbgate-mcp', version: '1.40.10' };
+const SERVER_INFO = { name: 'thumbgate-mcp', version: '1.42.1' };
 const COMMERCE_CATEGORIES = [
   'product_recommendation',
   'brand_compliance',
@@ -1124,9 +1124,11 @@ async function callToolInner(name, args) {
         cwd: resolveWorkspaceCwd(args.cwd),
         lessonId: args.lessonId,
         lessonKey: args.lessonKey,
-        // A capture_feedback call carries a person's thumb; callers that are
-        // scripts can pass reviewOrigin 'automated' or 'imported' explicitly.
-        reviewOrigin: ['automated', 'imported'].includes(args.reviewOrigin) ? args.reviewOrigin : 'human',
+        // An agent calling this tool is not a person. A call is a person's thumb only when it carries the
+        // user-prompt hook's tag, which the hook adds when the thumb came from the person's own message.
+        // Everything else is recorded as automated, whatever the caller says.
+        reviewOrigin: args.reviewOrigin === 'imported' ? 'imported'
+          : (args.reviewOrigin === 'human' && Array.isArray(args.tags) && args.tags.includes('user-prompt-thumbs') ? 'human' : 'automated'),
       }));
     }
     case 'feedback_summary':
@@ -1956,11 +1958,24 @@ async function handleRequest(message) {
     return null;
   }
   if (message.method === 'initialize') {
-    return {
+    const result = {
       protocolVersion: '2024-11-05',
       capabilities: { tools: {} },
       serverInfo: SERVER_INFO,
     };
+    // Old hook runtimes never self-upgrade, so the (usually @latest) MCP server is the one
+    // place that can notice the gap. It starts a detached background refresh (at most once a day,
+    // THUMBGATE_NO_AUTO_UPDATE=1 opts out) and never waits for it. Best-effort.
+    try {
+      const skewLib = require('../../scripts/check-update');
+      const skew = skewLib.detectSkew({ currentVersion: SERVER_INFO.version });
+      if (skew.skewed) {
+        const update = require('../../scripts/runtime-auto-update').scheduleRuntimeAutoUpdate({ skew });
+        result.instructions = skewLib.buildSkewNotice(skew.runtimeVersion, skew.currentVersion, { updating: update.started });
+        skewLib.reportSkewOnce({ skew });
+      }
+    } catch { /* never fail initialize */ }
+    return result;
   }
   if (message.method === 'ping') return {};
   if (message.method === 'tools/list') return { tools: getExposedTools() };
