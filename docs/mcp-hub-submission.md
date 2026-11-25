@@ -125,7 +125,7 @@ Verification evidence: https://github.com/IgorGanapolsky/ThumbGate/blob/main/doc
 
 ## Transport
 
-- **stdio** (primary): `npx -y thumbgate@latest serve` — portable MCP launcher that follows npm latest for Claude Code desktop and CLI
+- **stdio** (primary): `npx -y thumbgate@latest serve` — version-pinned portable MCP launcher for Claude Code desktop and CLI
 - **HTTP** (secondary): `src/api/server.js` — REST API (`POST /v1/feedback/capture`, `GET /v1/feedback/summary`, `POST /v1/dpo/export`)
 
 ---
@@ -172,7 +172,7 @@ MIT
 
 ## Version
 
-1.43.0
+1.43.1
 
 ---
 

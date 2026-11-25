@@ -485,7 +485,8 @@ test('Claude Codex bridge plugin surface is present and aligned to ThumbGate met
   assert.equal(pluginManifest.homepage, 'https://thumbgate.ai');
   assert.equal(pluginManifest.repository, 'https://github.com/IgorGanapolsky/ThumbGate');
   assert.equal(pluginManifest.name, 'codex-bridge');
-  assert.deepEqual(pluginConfig.mcpServers.thumbgate.args, explicitServeArgs);
+  // The bridge follows npm latest so it never stays on the version it was installed with.
+  assert.deepEqual(pluginConfig.mcpServers.thumbgate.args, ['--yes', '--package', 'thumbgate@latest', 'thumbgate', 'serve']);
   assert.match(readme, /Claude Code plugin/i);
   assert.match(readme, /adversarial review/i);
   assert.match(readme, /second-pass handoff/i);
