@@ -336,7 +336,7 @@ function keyStoreReadable() {
     const target = resolveKeyStoreReadPath();
     if (!fs.existsSync(target)) return true;
     const parsed = JSON.parse(fs.readFileSync(target, 'utf-8'));
-    return Boolean(parsed && typeof parsed.keys === 'object');
+    return Boolean(parsed && parsed.keys && typeof parsed.keys === 'object' && !Array.isArray(parsed.keys));
   } catch {
     return false;
   }

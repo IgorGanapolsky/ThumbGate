@@ -36,11 +36,13 @@ test('a paid funnel event without a key (service order) keeps the ledger flagged
 });
 
 test('an unreadable key store never reads as "nothing sold yet"', () => {
-  fs.writeFileSync(process.env._TEST_API_KEYS_PATH, '{not json');
   try {
-    const found = codes();
-    assert.ok(found.includes('revenue_ledger_missing'), found.join(','));
-    assert.ok(!found.includes('revenue_ledger_empty'));
+    for (const body of ['{not json', '{"keys":null}', '{"keys":[]}', 'null']) {
+      fs.writeFileSync(process.env._TEST_API_KEYS_PATH, body);
+      const found = codes();
+      assert.ok(found.includes('revenue_ledger_missing'), `${body}: ${found.join(',')}`);
+      assert.ok(!found.includes('revenue_ledger_empty'), body);
+    }
   } finally {
     fs.rmSync(process.env._TEST_API_KEYS_PATH, { force: true });
   }
