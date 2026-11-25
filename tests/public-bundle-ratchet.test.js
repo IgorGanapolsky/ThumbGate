@@ -299,8 +299,8 @@ const path = require('node:path');
 // 725 -> 726 (2026-11-25): public/udemy.html, the thumbgate.ai/udemy landing page (AGENT-3667).
 // 726 -> 727 (2026-11-25): scripts/delete-equivalence.js, a learned delete also denies the same delete written in Python (AGENT-3667).
 // 727 -> 728 (2026-11-25): scripts/send-gate.js (thumbs-down hold and chat send rules, PR 5213).
-// 729 -> 730 (2026-11-25): public/host-matrix.html, the host enforcement matrix page (a1844d0).
 // 728 -> 729 (2026-11-25): src/api/security-headers.js (PR 5250); scripts/cursor-self-heal.js landed in 5252 at 728.
+// 729 -> 730 (2026-11-25): public/host-matrix.html, the host enforcement matrix page (a1844d0).
 const BASELINE_FILE_COUNT = 730;
 function readBundleSnapshot() {
   const repoRoot = path.resolve(__dirname, '..');
