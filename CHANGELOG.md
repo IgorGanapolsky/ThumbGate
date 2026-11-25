@@ -1,5 +1,20 @@
 # Changelog
 
+## 1.45.3
+
+### Patch Changes
+
+- dfbbff2: thumbgate.ai's sitemap now gives each page a `<lastmod>` taken from the page's own JSON-LD `dateModified` (or `datePublished`), so answer engines can see which pages are fresh. `/llms-full.txt` now serves the long-form `llm-context.md` instead of a 404.
+- 9f0ec2c: `thumbgate dashboard --open` from a folder with no git remote now opens on all projects instead of pinning that folder as a project.
+- 5b3dc08: Add thumbgate.ai/demo: a five-chapter walkthrough (install, built-in block, thumbs-down, learned gate, team pilot) with real CLI output, a cost-of-repeats calculator and the team pilot form. /pilot now fills its canonical URL and analytics placeholders like every other marketing page.
+- 16582c8: The PreToolUse hook is about twice as fast (about 255 ms down to about 135 ms per tool call in our benchmark). It now asks git for the repo root once per tool call instead of about 20 times, keeps project identity in a small cache file between hook runs, finds executables on PATH without spawning `which`, uses Node's compile cache on Node 22.1+, and refreshes the learned intervention policy at most every 5 minutes instead of on every audited call.
+- d0d6668: Homepage hero now shows what 1.45 does: one typed thumbs-down holds the command until you say "go ahead", a second one makes it a deny, and terraform destroy, kubectl delete and aws s3 rm are denied on a fresh install. The hero transcript and status line are real captures from the published 1.45.1 package.
+- fb855e1: Model routing now says whether a task needs a reasoning step. Routine edits, tool loops and sub-agent work get `reasoningMode: "instruct"`; debugging, architecture and hard algorithmic or math work get `"thinking"`, and so does a task that failed twice without it. New local family `THUMBGATE_LOCAL_MODEL_FAMILY=mellum` maps roles to JetBrains' open-weights Mellum2.1 Instruct and Thinking models (Apache 2.0).
+- 300b1f7: The /pilot page now explains how a 30-day team pilot runs (one repo, the team's thumbs decide, an `npx thumbgate inventory` evidence report, a day-30 decision), and a new learn page compares DXC Frontier Code Assurance with pre-action gates.
+- e8e1659: Privacy page now says exactly what Clarity does: no consent signal is sent and there is no banner.
+- fe45106: `thumbgate cfo`, `north-star` and the telemetry sync now honor `NO_PROXY`. Behind an HTTPS proxy they used to send every hosted request through it, including requests to localhost or internal hosts listed in `NO_PROXY`, which made those reads fail and fall back to local data.
+- f31ae67: Terms of Service and Support now say the $499 Hardened Workflow Gate is no longer offered and that its terms and refund rule apply only to orders placed before November 25, 2026.
+
 ## 1.45.2
 
 ### Patch Changes
