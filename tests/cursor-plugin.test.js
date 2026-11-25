@@ -192,8 +192,6 @@ test('cursor plugin covers programmatic SDK and cloud agent runs', () => {
   const skill = fs.readFileSync(path.join(pluginDir, 'skills/programmatic-agent-runs/SKILL.md'), 'utf-8');
   const agent = fs.readFileSync(path.join(pluginDir, 'agents/sdk-run-governor.md'), 'utf-8');
   const hooks = JSON.parse(fs.readFileSync(path.join(pluginDir, 'hooks/hooks.json'), 'utf-8'));
-  const matchers = hooks.hooks.beforeShellExecution.map((hook) => hook.matcher).join('|');
-
   assert.match(skill, /Cursor SDK/i);
   assert.match(skill, /cloud/i);
   assert.match(skill, /self-hosted/i);
@@ -201,8 +199,8 @@ test('cursor plugin covers programmatic SDK and cloud agent runs', () => {
   assert.match(skill, /autoCreatePR/);
   assert.match(agent, /cloud VM/i);
   assert.match(agent, /subagent/i);
-  assert.match(matchers, /@cursor\/sdk/);
-  assert.match(matchers, /autoCreatePR/);
+  // SDK and autoCreatePR runs are shell commands, and the gate sees every one.
+  assert.ok(hooks.hooks.beforeShellExecution.every((hook) => hook.matcher === undefined));
 });
 
 test('command .md files have valid YAML frontmatter with name and description', () => {
@@ -229,13 +227,13 @@ test('hooks.json is valid JSON with correct hooks object structure', () => {
   assert.ok(hooks.hooks.beforeShellExecution, 'hooks must have beforeShellExecution');
   assert.ok(Array.isArray(hooks.hooks.beforeShellExecution), 'beforeShellExecution must be an array');
 
+  // Since 195a697 the gate runs on every shell command, so beforeShellExecution
+  // entries carry no keyword matcher (swarm-claim, az repos pr update, etc. are
+  // all covered). tests/cursor-gate-path.test.js asserts the same.
   for (const hook of hooks.hooks.beforeShellExecution) {
     assert.ok(typeof hook.command === 'string', 'each hook must have a command string');
-    assert.ok(typeof hook.matcher === 'string', 'each hook must have a matcher string');
+    assert.equal(hook.matcher, undefined, 'beforeShellExecution must run on every shell command');
   }
-  const matchers = hooks.hooks.beforeShellExecution.map((hook) => hook.matcher).join('|');
-  assert.match(matchers, /swarm-claim/);
-  assert.match(matchers, /az repos pr update/);
   assert.ok(Array.isArray(hooks.hooks.afterShellExecution), 'afterShellExecution must record swarm-claim.py');
   assert.match(hooks.hooks.afterShellExecution[0].matcher, /swarm-claim/);
 });

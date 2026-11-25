@@ -3657,6 +3657,14 @@ function hookAutoCapture() {
     return;
   }
 
+  // Deliver the anti-claim reminder the last Stop hook parked for this session.
+  // Stop-hook stdout never reaches the model; UserPromptSubmit stdout does.
+  try {
+    const parked = require(path.join(PKG_ROOT, 'scripts', 'hook-stop-anti-claim'))
+      .takePendingReminder(promptEnvelope.sessionId || process.env.CLAUDE_SESSION_ID || '');
+    if (parked) process.stdout.write(`${parked}\n`);
+  } catch { /* a reminder never blocks a prompt */ }
+
   const detected = detectFeedbackSignal(prompt);
   // A thumbs-down holds the action that drew it before the agent's next tool call; a thumbs-up or "go ahead"
   // releases it (scripts/send-gate.js).
