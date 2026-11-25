@@ -424,11 +424,9 @@ function buildBillingSourceDiagnostics(feedbackDir) {
       'Revenue events are loading only from a legacy feedback directory.'
     ));
   } else if (revenueLedger.activeMode === 'missing') {
-    // The ledger file is created by the first paid event the webhook records, so "missing" means no paid
-    // event has been recorded here yet. Paid truth comes from Stripe (/v1/admin/money), not this file.
     warnings.push(buildSourceWarning(
-      'revenue_ledger_empty',
-      'No revenue events recorded yet; the local revenue ledger is created by the first paid checkout. Stripe stays the source of truth for paid revenue.'
+      'revenue_ledger_missing',
+      'Revenue events are missing from both the active and legacy feedback directories.'
     ));
   }
 
