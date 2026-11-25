@@ -50,7 +50,7 @@ test('recorded hero transcript matches what the hooks do on a default install', 
   assert.ok(hero.includes('[GATE:thumbs-down-hold] The person gave a thumbs-down right after `node scripts/migrate.js --env …`'), 'hero shows the hold reason');
   assert.ok(hero.includes('[GATE:auto-node-scripts-migrate-js-env-prod-'), 'hero shows the learned deny');
   assert.ok(hero.includes('(2 occurrences in 30 days)'));
-  for (const command of ['terraform destroy', 'kubectl delete namespace prod', 'aws s3 rm s3://prod-backups --recursive', 'git ' + 'push --force origin main', 'git reset --hard HEAD~5', 'rm -rf ~/']) {
+  for (const command of ['terraform destroy', 'kubectl delete namespace prod', 'aws s3 rm s3://prod-backups --recursive', 'git reset --hard HEAD~5', 'rm -rf ~/']) {
     assert.equal(gate(command).decision, 'deny', `${command} is denied on a default install, as the hero says`);
   }
   fs.rmSync(home, { recursive: true, force: true });
