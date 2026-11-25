@@ -2,4 +2,4 @@
 "thumbgate": patch
 ---
 
-README leads with install: a one-line pitch, `npx thumbgate init` and `npx thumbgate doctor` with what success looks like, a safe `gate-check` demo of a blocked force-push, then the per-agent install table, what a 👍 and a 👎 do, and what is blocked by default. Badges, Pro buttons, pricing, buyer guides, memes and the "why usage, not stars" notes move below.
+README now leads with a plain one-line pitch, then the two install commands (`npx thumbgate init`, `npx thumbgate doctor`) and what success looks like (`Overall: READY`, exit code 0), then the per-agent install table. Badges are down from 8 to 4 at the top; the listing badges, pricing, buyer guides, star-history notes and memes moved lower in the page. No facts were removed.

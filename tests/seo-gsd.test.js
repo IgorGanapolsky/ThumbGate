@@ -355,7 +355,8 @@ test('AI agent governance sprint page routes bottom-funnel buyers into Team inta
     priority: '0.8',
   });
   assert.match(html, /AI Agent Governance Sprint/);
-  assert.match(html, /48-hour Setup Sprint/);
+  assert.match(html, /request-only 30-day team pilot/);
+  assert.doesNotMatch(html, /\$499|Setup Sprint/);
   assert.match(html, /npx thumbgate background-governance --check --json/);
   assert.match(html, /workflow-sprint-intake/);
 });
@@ -380,7 +381,8 @@ test('AI deployment readiness page turns deployment demand into sprint intake', 
   assert.match(html, /governance and proof layer/i);
   assert.match(html, /npx thumbgate background-governance --check --json/);
   assert.match(html, /workflow-sprint-intake/);
-  assert.match(html, /Workflow Hardening Diagnostic/);
+  assert.match(html, /30-day team pilot/);
+  assert.doesNotMatch(html, /\$499|\$1,?500|Setup Sprint|Workflow Hardening Diagnostic|48-hour/i);
 });
 
 test('GPT-5.5 model evaluation page is discoverable and commercially classified', () => {
