@@ -5148,10 +5148,58 @@ function renderRobotsTxt(runtimeConfig) {
   ].join('\n');
 }
 
+// Freshness is an answer-engine ranking signal, so each sitemap URL carries a
+// <lastmod> when its page declares one. We only trust the page's own JSON-LD
+// "dateModified" (falling back to "datePublished"), never file mtimes: Docker
+// builds reset mtimes, and a lastmod that changes on every deploy teaches
+// crawlers to ignore it. Pages without a declared date get no <lastmod>.
+const SITEMAP_DATE_PATTERN = /"date(Modified|Published)"\s*:\s*"(\d{4}-\d{2}-\d{2})/g;
+const sitemapLastmodCache = new Map();
+
+function resolveSitemapPageFile(publicPath) {
+  if (publicPath === '/') return path.join(PUBLIC_DIR, 'index.html');
+  if (!/^\/[a-z0-9/_-]+$/i.test(publicPath)) return null;
+  const relative = publicPath.slice(1);
+  const candidates = [
+    path.join(PUBLIC_DIR, `${relative}.html`),
+    path.join(PUBLIC_DIR, relative, 'index.html'),
+  ];
+  return candidates.find((candidate) => {
+    try {
+      return fs.statSync(candidate).isFile();
+    } catch {
+      return false;
+    }
+  }) || null;
+}
+
+function readSitemapLastmod(publicPath) {
+  if (sitemapLastmodCache.has(publicPath)) return sitemapLastmodCache.get(publicPath);
+  let lastmod = null;
+  const file = resolveSitemapPageFile(publicPath);
+  if (file) {
+    try {
+      const html = fs.readFileSync(file, 'utf8');
+      let modified = null;
+      let published = null;
+      for (const match of html.matchAll(SITEMAP_DATE_PATTERN)) {
+        if (match[1] === 'Modified' && (!modified || match[2] > modified)) modified = match[2];
+        if (match[1] === 'Published' && (!published || match[2] > published)) published = match[2];
+      }
+      lastmod = modified || published;
+    } catch {
+      lastmod = null;
+    }
+  }
+  sitemapLastmodCache.set(publicPath, lastmod);
+  return lastmod;
+}
+
 function renderSitemapXml(runtimeConfig) {
   const entries = [
     { path: '/', changefreq: 'weekly', priority: '1.0' },
     { path: '/pricing', changefreq: 'weekly', priority: '0.9' },
+    { path: '/demo', changefreq: 'monthly', priority: '0.8' },
     { path: '/operator-framework', changefreq: 'weekly', priority: '0.9' },
     { path: '/peter', changefreq: 'weekly', priority: '0.9' },
     { path: '/install', changefreq: 'weekly', priority: '0.9' },
@@ -5191,8 +5239,10 @@ function renderSitemapXml(runtimeConfig) {
     { path: '/learn/future-agi-self-healing-agent-firewall', changefreq: 'weekly', priority: '0.85' },
     { path: '/learn/five-walls-enterprise-agent-deployment', changefreq: 'weekly', priority: '0.85' },
     { path: '/learn/okta-mcp-governance-per-tool-call-gates', changefreq: 'weekly', priority: '0.85' },
+    { path: '/learn/dxc-frontier-code-assurance-ai-written-code', changefreq: 'weekly', priority: '0.85' },
     { path: '/learn/ai-finops-agent-spend-guardrails', changefreq: 'weekly', priority: '0.85' },
     { path: '/learn/claude-artifact-desktop-apps', changefreq: 'weekly', priority: '0.85' },
+    { path: '/learn/mellum-instruct-no-thinking-routing', changefreq: 'weekly', priority: '0.85' },
     { path: '/learn/siren-agent-sandbox-escape-gates', changefreq: 'weekly', priority: '0.85' },
     { path: '/learn/proof-before-claim-deploy-gate', changefreq: 'weekly', priority: '0.85' },
     { path: '/compare/claude-code-hooks', changefreq: 'weekly', priority: '0.85' },
@@ -5237,9 +5287,11 @@ function renderSitemapXml(runtimeConfig) {
       const loc = entry.path === '/'
         ? `${runtimeConfig.appOrigin}/`
         : `${runtimeConfig.appOrigin}${entry.path}`;
+      const lastmod = readSitemapLastmod(entry.path);
       return [
         '  <url>',
         `    <loc>${loc}</loc>`,
+        ...(lastmod ? [`    <lastmod>${lastmod}</lastmod>`] : []),
         `    <changefreq>${entry.changefreq}</changefreq>`,
         `    <priority>${entry.priority}</priority>`,
         '  </url>',
@@ -8404,13 +8456,20 @@ function createUnscopedApiServer({ ownerAdminDependencies = {} } = {}) {
       return;
     }
 
-    if (isGetLikeRequest && pathname === '/llm-context.md') {
+    // /llms-full.txt is the llmstxt.org name for the long-form context file;
+    // answer engines and agent tools probe it, so serve llm-context.md there too.
+    if (isGetLikeRequest && (pathname === '/llm-context.md' || pathname === '/llms-full.txt')) {
       const llmContextPath = path.resolve(__dirname, '../../public/llm-context.md');
       try {
         const content = fs.readFileSync(llmContextPath, 'utf8');
         sendText(res, 200, content, {
-          'Content-Type': 'text/markdown; charset=utf-8',
+          'Content-Type': pathname === '/llms-full.txt'
+            ? 'text/plain; charset=utf-8'
+            : 'text/markdown; charset=utf-8',
           'X-Robots-Tag': 'all',
+          ...(pathname === '/llms-full.txt'
+            ? { Link: `<${buildPublicUrl(hostedConfig, '/llm-context.md')}>; rel="canonical"` }
+            : {}),
         }, {
           headOnly: isHeadRequest,
         });
@@ -9167,6 +9226,24 @@ async function addContext(){
       return;
     }
 
+    // Chaptered product demo (?chapter=install|block|thumbs|gate|team), ending in the team pilot form.
+    if (isGetLikeRequest && (pathname === '/demo' || pathname === '/demo.html' || pathname === '/demo/')) {
+      try {
+        servePublicMarketingPage({
+          req,
+          res,
+          parsed,
+          hostedConfig,
+          isHeadRequest,
+          renderHtml: (runtimeConfig, pageContext) => loadPublicMarketingTemplateHtml(path.join(PUBLIC_DIR, 'demo.html'), runtimeConfig, pageContext),
+          extraTelemetry: { pageType: 'product_demo' },
+        });
+      } catch {
+        sendJson(res, 404, { error: 'Demo page not found' });
+      }
+      return;
+    }
+
     if (isGetLikeRequest && (pathname === '/pilot' || pathname === '/pilot.html')) {
       try {
         servePublicMarketingPage({
@@ -9175,7 +9252,8 @@ async function addContext(){
           parsed,
           hostedConfig,
           isHeadRequest,
-          renderHtml: () => fs.readFileSync(path.join(PUBLIC_DIR, 'pilot.html'), 'utf-8'),
+          // Fill __APP_ORIGIN__ / __GA_BOOTSTRAP__ like every other marketing page (they shipped raw before).
+          renderHtml: (runtimeConfig, pageContext) => loadPublicMarketingTemplateHtml(path.join(PUBLIC_DIR, 'pilot.html'), runtimeConfig, pageContext),
           extraTelemetry: { pageType: 'pilot_request' },
         });
       } catch {
