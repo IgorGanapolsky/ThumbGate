@@ -111,7 +111,7 @@
   </div>
 
   <h2>Where ThumbGate fits</h2>
-  <p>ThumbGate runs at layer 3 — pre-action hooks. The hook process intercepts tool calls from Claude Code, Cursor, Codex, Gemini, Amp, Cline, and OpenCode before they fire. Three things make this layer worth the engineering minutes:</p>
+  <p>ThumbGate runs at layer 3 — pre-action hooks. The hook process intercepts tool calls from Claude Code and Cursor shell commands before they fire. In Cline and OpenCode the check is advisory (the agent has to call it), and Amp is feedback capture only. Three things make this layer worth the engineering minutes:</p>
   <ul>
     <li><strong>Context-eviction immunity.</strong> The hook runs in a different process. The agent can compress, forget, or hallucinate away the rule, and the rule still fires.</li>
     <li><strong>Cross-agent portability.</strong> One installation, every agent runtime the team uses. The rule "no force-push to main" applies whether today's session is Claude Code or Cursor.</li>

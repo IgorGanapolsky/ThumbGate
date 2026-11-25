@@ -61,29 +61,16 @@ function pricingUrlFor(source, content) {
   }
 }
 
-function diagnosticUrlFor(source, content) {
+function pilotUrlFor(source, content) {
   try {
-    const url = new URL('/diagnostic', PRO_URL);
+    const url = new URL('/pilot', PRO_URL);
     url.searchParams.set('utm_source', source || 'cli');
     url.searchParams.set('utm_medium', 'cli');
-    url.searchParams.set('utm_campaign', 'workflow_hardening_diagnostic');
+    url.searchParams.set('utm_campaign', 'team_pilot');
     if (content) url.searchParams.set('utm_content', content);
     return url.toString();
   } catch (_) {
-    return `${PRO_URL}/diagnostic`;
-  }
-}
-
-function diagnosticCheckoutUrlFor(source, content) {
-  try {
-    const url = new URL('/go/diagnostic', PRO_URL);
-    url.searchParams.set('utm_source', source || 'cli');
-    url.searchParams.set('utm_medium', 'cli');
-    url.searchParams.set('utm_campaign', 'workflow_hardening_diagnostic');
-    if (content) url.searchParams.set('utm_content', content);
-    return url.toString();
-  } catch (_) {
-    return `${PRO_URL}/go/diagnostic`;
+    return `${PRO_URL}/pilot`;
   }
 }
 
@@ -99,33 +86,28 @@ function upgradeNudge() {
     if (isProTier()) return;
   } catch (_) { return; }
   const pricingUrl = pricingUrlFor('cli_upgrade_nudge', COMMAND || 'general');
-  const diagnosticUrl = diagnosticUrlFor('cli_upgrade_nudge', COMMAND || 'general');
+  const pilotUrl = pilotUrlFor('cli_upgrade_nudge', COMMAND || 'general');
   process.stderr.write(
-    '\n  Enterprise entry: $499 Setup Sprint for one workflow\n' +
-    `  ${diagnosticUrl}\n` +
+    '\n  Teams: request a 30-day team pilot\n' +
+    `  ${pilotUrl}\n` +
     `\n  Solo side lane: Pro — ${PRO_PRICE_LABEL}\n` +
     '  Keeps every learned rule active, unlimited thumbs; adds recall, lesson search, and exports.\n' +
     `  ${pricingUrl}\n\n`
   );
 }
 
+// `thumbgate diagnostic` used to sell the retired $499 Setup Sprint; it now points teams at the pilot.
 function diagnostic() {
-  const intakeUrl = diagnosticUrlFor('cli_diagnostic', COMMAND || 'diagnostic');
-  const checkoutUrl = diagnosticCheckoutUrlFor('cli_diagnostic', COMMAND || 'diagnostic');
+  const pilotUrl = pilotUrlFor('cli_diagnostic', COMMAND || 'diagnostic');
   console.log('');
-  console.log('  ThumbGate Setup Sprint — $499');
+  console.log('  ThumbGate 30-day team pilot');
   console.log('  ------------------------------------------');
-  console.log('  Use this when one repeated AI-agent workflow failure is already costing');
-  console.log('  review time, release confidence, customer trust, or money.');
+  console.log('  Rolling ThumbGate out to a team? Request a 30-day pilot.');
+  console.log('  Tell us your team size and which coding agent it uses, and a person');
+  console.log('  replies by email with how the pilot would run. No self-serve checkout.');
   console.log('');
-  console.log('  Best fit: one workflow, one repeated failure, one owner who can review proof.');
-  console.log('  Output: failure taxonomy, block/warn/human-review split, and proof checklist.');
-  console.log('');
-  console.log('  Start with intake:');
-  console.log(`  ${intakeUrl}`);
-  console.log('');
-  console.log('  Ready to pay now:');
-  console.log(`  ${checkoutUrl}`);
+  console.log('  Request a team pilot:');
+  console.log(`  ${pilotUrl}`);
   console.log('');
 }
 
@@ -1603,8 +1585,8 @@ function stats() {
     console.log(`  Repeated Failures detected: ${payload.negatives}`);
     console.log(`  Estimated Operational Loss: $${payload.revenueAtRisk}`);
     console.log('  Action Required: Run "npx thumbgate rules" to generate guardrails.');
-    console.log('  Strategic Recommendation: if this is a shared workflow problem, start with the $499 Setup Sprint.');
-    console.log('  Enterprise entry: https://thumbgate.ai/pricing');
+    console.log('  Strategic Recommendation: if this is a shared team problem, request a 30-day team pilot.');
+    console.log('  Team pilot: https://thumbgate.ai/pilot');
     console.log('  Solo side lane: npx thumbgate pro');
   } else {
     console.log('\n✅ System is currently high-reliability. No immediate revenue loss detected.');
@@ -1745,10 +1727,11 @@ function pro() {
     console.log('  - Recall and lesson search: ask what the agent got wrong before');
     console.log('  - Local Pro dashboard with search and DPO export (the project dashboard, npx thumbgate dashboard, is free)');
     console.log('\nSeparate from Pro:');
-    console.log('  - Setup Sprint: $499 one-time service for one supported workflow; hosted team sync and org dashboard are not GA');
+    console.log('  - 30-day team pilot: request only, link below; hosted team sync and org dashboard are not GA');
     console.log('  - Commercial truth doc: source of truth for traction, pricing, and proof claims');
     console.log('\nLinks:');
     console.log(`  Buy Pro         : ${PRO_CHECKOUT_URL}`);
+    console.log('  Team pilot      : https://thumbgate.ai/pilot');
     console.log(`  Commercial truth: ${truthUrl}\n`);
     console.log('  Launch dashboard: npx thumbgate pro');
     console.log('  Activate + run  : npx thumbgate pro --activate --key=YOUR_KEY');
@@ -4059,7 +4042,7 @@ function help() {
     console.log('  break-glass --reason="..."                       Short TTL recovery if gates over-fire');
     console.log('  brain [--write]                                   Build the agent-readable context brain (lessons + rules + gates)');
     console.log('  pro                                               ThumbGate Pro (license, recall, exports)');
-    console.log('  diagnostic                                        $499 Setup Sprint for one repeated team failure');
+    console.log('  diagnostic                                        Request a 30-day team pilot');
     console.log('  subscribe <email>                                 Get the 5-min setup guide + weekly tips by email');
     console.log('');
     console.log('More:');
@@ -4286,7 +4269,7 @@ const SUBCOMMAND_HELP = {
   stats:         'Usage: npx thumbgate stats\n\nShow gate enforcement statistics: blocked/warned counts, active gates, time saved.',
   trial:         'Usage: npx thumbgate trial\n\nShow Pro trial status, remaining days, and upgrade path.',
   pro:           'Usage: npx thumbgate pro [--activate <key>]\n\nLaunch the local Pro dashboard or activate a Pro license key.',
-  diagnostic:    'Usage: npx thumbgate diagnostic\n\nShow the $499 Setup Sprint fit-check and checkout paths for teams with one repeated AI-agent workflow failure.',
+  diagnostic:    'Usage: npx thumbgate diagnostic\n\nShow how to request a 30-day team pilot for a team rolling out a coding agent.',
   subscribe:     'Usage: npx thumbgate subscribe <email>\n\nSubscribe to the 5-minute setup guide + trial reminders.',
   lessons:       'Usage: npx thumbgate lessons [--query="..."] [--limit=N]\n\nSearch the lesson database (Pro feature).',
   search:        'Usage: npx thumbgate search <query>\n\nSearch ThumbGate knowledge base (Pro feature).',
@@ -4602,6 +4585,8 @@ switch (COMMAND) {
     break;
   }
   case 'gate-check':
+    // Keeps the hook runtime on npm latest (one file read; at most one detached check per 24h).
+    try { require('../scripts/runtime-auto-update').scheduleLatestCheck(); } catch (_) { /* best-effort */ }
     gateCheck().catch((err) => {
       console.error(err && err.message ? err.message : err);
       process.exit(1);
@@ -4650,6 +4635,7 @@ switch (COMMAND) {
     observeToolResult();
     break;
   case 'session-start':
+    try { require('../scripts/runtime-auto-update').scheduleLatestCheck(); } catch (_) { /* best-effort */ }
     sessionStart();
     break;
   case 'capture':
