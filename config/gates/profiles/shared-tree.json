@@ -1,0 +1,70 @@
+{
+  "version": 1,
+  "description": "Opt-in gates for a checkout that several agents share. Off by default; switch on with THUMBGATE_SHARED_TREE=1, or point THUMBGATE_EXTRA_GATES at this file.",
+  "gates": [
+    {
+      "id": "shared-tree-stash-reset",
+      "layer": "Execution",
+      "trigger": "Bash:git_stash_reset",
+      "toolNames": [
+        "Bash"
+      ],
+      "pattern": "(?:^|[;&|(]\\s*|\\b(?:bash|sh|zsh)\\s+-c\\s+['\"]\\s*)(?:(?:sudo|command|exec|time|nohup)\\s+|env\\s+(?:\\S+=\\S*\\s+)*|\\S+=\\S*\\s+)*git\\s+(?:-[Cc]\\s+\\S+\\s+|--no-pager\\s+)*(?:stash\\b(?!\\s+(?:list|show)\\b)|reset\\b)",
+      "action": "block",
+      "message": "git stash and git reset rewrite a working tree other agents are using. Make your own worktree (git worktree add ../<name> -b <branch>) or commit on your own branch instead.",
+      "severity": "high",
+      "source": "profile:shared-tree",
+      "compliance": [
+        "SOC2-CC8.1"
+      ]
+    },
+    {
+      "id": "shared-tree-checkout",
+      "layer": "Execution",
+      "trigger": "Bash:git_checkout_switch",
+      "toolNames": [
+        "Bash"
+      ],
+      "pattern": "(?:^|[;&|(]\\s*|\\b(?:bash|sh|zsh)\\s+-c\\s+['\"]\\s*)(?:(?:sudo|command|exec|time|nohup)\\s+|env\\s+(?:\\S+=\\S*\\s+)*|\\S+=\\S*\\s+)*git\\s+(?:-[Cc]\\s+\\S+\\s+|--no-pager\\s+)*(?:checkout|switch)\\b(?!\\s+(?:-h|--help)\\b)",
+      "action": "block",
+      "message": "git checkout and git switch move a checkout that other agents may be standing in. Make your own worktree (git worktree add ../<name> -b <branch>) or commit on your own branch instead.",
+      "severity": "high",
+      "source": "profile:shared-tree",
+      "compliance": [
+        "SOC2-CC8.1"
+      ]
+    },
+    {
+      "id": "shared-tree-force-push",
+      "layer": "Execution",
+      "trigger": "Bash:git_force_push_shared",
+      "toolNames": [
+        "Bash"
+      ],
+      "pattern": "(?:^|[;&|(]\\s*|\\b(?:bash|sh|zsh)\\s+-c\\s+['\"]\\s*)(?:(?:sudo|command|exec|time|nohup)\\s+|env\\s+(?:\\S+=\\S*\\s+)*|\\S+=\\S*\\s+)*git\\s+(?:-[Cc]\\s+\\S+\\s+|--no-pager\\s+)*push\\b[^;&|\\n]*(?:\\s--force(?![-\\w])|\\s-[a-zA-Z]*f[a-zA-Z]*\\b|\\s\\+\\S)",
+      "action": "block",
+      "message": "A plain force push can erase other agents' commits. Use --force-with-lease on your own branch, and never force-push the default branch.",
+      "severity": "high",
+      "source": "profile:shared-tree",
+      "compliance": [
+        "SOC2-CC8.1"
+      ]
+    },
+    {
+      "id": "shared-tree-force-default-branch",
+      "layer": "Execution",
+      "trigger": "Bash:git_force_push_default",
+      "toolNames": [
+        "Bash"
+      ],
+      "pattern": "(?:^|[;&|(]\\s*|\\b(?:bash|sh|zsh)\\s+-c\\s+['\"]\\s*)(?:(?:sudo|command|exec|time|nohup)\\s+|env\\s+(?:\\S+=\\S*\\s+)*|\\S+=\\S*\\s+)*git\\s+(?:-[Cc]\\s+\\S+\\s+|--no-pager\\s+)*push\\b(?=[^;&|\\n]*--force-with-lease)[^;&|\\n]*[\\s:+/](?:main|master|trunk)(?=\\s|$|[;&|])",
+      "action": "block",
+      "message": "Never force-push the default branch, even with a lease. Push your own branch and open a pull request.",
+      "severity": "high",
+      "source": "profile:shared-tree",
+      "compliance": [
+        "SOC2-CC8.1"
+      ]
+    }
+  ]
+}

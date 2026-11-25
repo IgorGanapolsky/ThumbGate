@@ -192,6 +192,9 @@ const SELF_PROTECT_HARD_FLOOR_GATE_IDS = new Set([
 // edit under a lapsed lease would execute anyway. A lease that stops binding is not a lease.
 const TASK_SCOPE_LEASE_EXPIRED_GATE_ID = 'task-scope-lease-expired';
 
+// Opt-in shared-tree gates (config/gates/profiles/shared-tree.json). A person who switches them on wants them enforced,
+// so they sit on the hard floor; with the profile off the ids match nothing.
+const SHARED_TREE_GATE_IDS = ['shared-tree-stash-reset', 'shared-tree-checkout', 'shared-tree-force-push', 'shared-tree-force-default-branch'];
 const BULK_DESTROY_GATE_IDS = [
   'cloud-bulk-delete',
   'terraform-destroy',
@@ -231,6 +234,7 @@ const UNCONDITIONAL_HARD_FLOOR_GATE_IDS = new Set([
   'db-drop-table-production',
   // Cloud and cluster wipes that passed in Cursor's review (AGENT-3667, 24 Nov 2026).
   ...BULK_DESTROY_GATE_IDS,
+  ...SHARED_TREE_GATE_IDS,
   TASK_SCOPE_LEASE_EXPIRED_GATE_ID,
   ...SELF_PROTECT_HARD_FLOOR_GATE_IDS,
 ]);
@@ -258,6 +262,7 @@ const CATASTROPHIC_DECLARATIVE_GATE_IDS = new Set([
   'mabl-failure-honesty',
   'db-drop-table-production',
   ...BULK_DESTROY_GATE_IDS,
+  ...SHARED_TREE_GATE_IDS,
 ]);
 const SELF_PROTECT_CONFIG_TARGET_PATTERN = /(?:^|\/)(?:config\/gates\/|config\/(?:budget|enforcement|mcp-allowlists)\.json$|\.thumbgate\/config\.json$|thumbgate\.json$)/i;
 const SELF_PROTECT_HOOK_TARGET_PATTERN = /(?:^|\/)(?:\.claude\/settings(?:\.local)?\.json|\.codex\/config\.toml|scripts\/hook-[^/]+\.(?:js|sh))$/i;
@@ -501,6 +506,22 @@ function loadGatesConfig(configPath, harnessPath, options = {}) {
     const extraGates = (loadOne(extraGatesPath, false) || [])
       .map(g => ({ ...g, layer: g.layer || 'Execution', source: g.source || 'extra-gates' }));
     mergedConfig.gates.push(...extraGates);
+  }
+
+  // Opt-in shared-tree profile: off unless THUMBGATE_SHARED_TREE is 1/true/on.
+  if (!tenantDataScope() && /^(1|true|on|yes)$/i.test(String(process.env.THUMBGATE_SHARED_TREE || '').trim())) {
+    const sharedTreePath = path.join(__dirname, '..', 'config', 'gates', 'profiles', 'shared-tree.json');
+    if (fs.existsSync(sharedTreePath)) {
+      const sharedGates = (loadOne(sharedTreePath, false) || [])
+        .map(g => ({ ...g, layer: g.layer || 'Execution', source: g.source || 'profile:shared-tree' }));
+      mergedConfig.gates.push(...sharedGates);
+      // The default force-push gate also matches --force-with-lease. With the profile on, the profile's own gates
+      // deny plain force and any force to the default branch, so the default gate steps back to plain force only
+      // and a lease push to your own branch can pass.
+      for (const gate of mergedConfig.gates) {
+        if (gate.id === 'force-push' && !gate.source) gate.pattern = 'git\\s+push\\s+(?:--force(?![-\\w])|-f\\b)';
+      }
+    }
   }
 
   // Load workflow-specific harness gates (always additive, never replaces default).
