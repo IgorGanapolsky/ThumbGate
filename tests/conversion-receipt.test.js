@@ -34,8 +34,9 @@ test('buildCaptureReceipt turns a saved thumbs signal into a paid-intent next st
   assert.match(receipt, /npx thumbgate cost/);
   assert.match(receipt, /utm_source=cli_capture_receipt/);
   assert.match(receipt, /utm_campaign=pro_conversion/);
-  assert.match(receipt, /Setup Sprint — \$499 one-time/);
-  assert.match(receipt, /https:\/\/thumbgate\.ai\/pricing/);
+  assert.match(receipt, /30-day team pilot, request only/);
+  assert.match(receipt, /https:\/\/thumbgate\.ai\/pilot/);
+  assert.doesNotMatch(receipt, /\$499|Setup Sprint/);
   assert.doesNotMatch(receipt, /\$15k|\$10k\/mo|workflow-sprint-intake/i);
 });
 
@@ -58,6 +59,6 @@ test('buildStatsReceipt routes proven friction to Pro and the enterprise entry o
   assert.match(receipt, /3 negative signals/);
   assert.match(receipt, /npx thumbgate cost/);
   assert.match(receipt, /utm_source=cli_stats_receipt/);
-  assert.match(receipt, /Enterprise\s*: https:\/\/thumbgate\.ai\/pricing/);
+  assert.match(receipt, /Team pilot\s*: https:\/\/thumbgate\.ai\/pilot/);
   assert.doesNotMatch(receipt, /workflow-sprint-intake/i);
 });

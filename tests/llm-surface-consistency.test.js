@@ -389,7 +389,9 @@ test('the promoted one-time offer is stated at the canonical amount wherever it 
     }
   }
 
-  assert.ok(statedSomewhere, 'no published surface states the promoted one-time offer amount');
+  // The $499 Setup Sprint was retired on 2026-11-25, so no surface has to state a one-time amount;
+  // any surface that still does must use the catalog amount.
+  void statedSomewhere;
 });
 
 test('the recurring subscription prices agree with the canonical catalog', () => {
@@ -463,27 +465,16 @@ test('the price sweep reaches the surfaces that carry a commercial call to actio
   assert.doesNotMatch(pricing, /\$499|Setup Sprint|Workflow Sprint/i);
 });
 
-test('every AI-discovery surface describes the promoted paid offer', () => {
-  // An llms.txt/llm-context.md that lists tiers but silently omits the promoted
-  // offer teaches retrieval engines an incomplete answer. Both must name it and
-  // point at the canonical terms page.
-  const offerName = /Setup Sprint/;
-  const termsUrl = `${CANONICAL.appOrigin}/pricing`;
-  const canonicalDollars = wholeDollars(currentOffer('workflow_hardening_diagnostic'));
-
+test('every AI-discovery surface describes the team pilot and Pro, and no retired offer', () => {
+  // An llms.txt/llm-context.md that lists tiers but silently omits the team
+  // offer teaches retrieval engines an incomplete answer. Both must name the
+  // request-only team pilot, link /pilot, and never revive the retired $499 Setup Sprint.
+  const pilotUrl = `${CANONICAL.appOrigin}/pilot`;
   for (const file of ['public/llm-context.md', '.well-known/llms.txt']) {
     const text = readText(file);
-    assert.match(text, offerName, `${file} never names the promoted paid offer`);
-
-    // Terms must be resolvable from the surface itself: either it states the
-    // canonical amount inline, or it links to the canonical terms page.
-    const statesAmount = text.includes(`$${canonicalDollars}`);
-    const linksTerms = text.includes(termsUrl);
-    assert.ok(
-      statesAmount || linksTerms,
-      `${file} names the promoted paid offer but gives no way to resolve its terms — ` +
-        `state the canonical amount inline or link ${termsUrl}`,
-    );
+    assert.match(text, /30-day team pilot/, `${file} never names the team pilot`);
+    assert.ok(text.includes(pilotUrl), `${file} names the team pilot but does not link ${pilotUrl}`);
+    assert.doesNotMatch(text, /Setup Sprint|\$499/, `${file} still advertises the retired $499 Setup Sprint`);
   }
 });
 

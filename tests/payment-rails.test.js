@@ -32,6 +32,6 @@ test('workflow migration checklist routes payment through the intent gate', () =
   // The $499 diagnostic is retired (410); the CTA requests a team pilot.
   assert.match(page, /href="\/pilot\?[^"]*"[^>]*>Request a team pilot</);
   assert.doesNotMatch(page, /href="\/diagnostic|Start \$499 diagnostic/);
-  assert.match(page, /Alternative payment rails are offered only after email-backed confirmation/);
+  assert.doesNotMatch(page, /\$499|Setup Sprint/);
   assert.doesNotMatch(page, /optional-payment-link|CHECKOUT_URL|buy\.stripe\.com|paypal\.com/);
 });

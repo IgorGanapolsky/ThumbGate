@@ -432,8 +432,6 @@ const GAMING_PLAYBOOK_PAGE_PATH = path.resolve(__dirname, '../../public/gaming-p
 const YT_PAGE_PATH = path.resolve(__dirname, '../../public/yt.html');
 const PRICING_PAGE_PATH = path.resolve(__dirname, '../../public/pricing.html');
 const ABOUT_PAGE_PATH = path.resolve(__dirname, '../../public/about.html');
-const DIAGNOSTIC_PAGE_PATH = path.resolve(__dirname, '../../public/diagnostic.html');
-const FOUNDERS_PAGE_PATH = path.resolve(__dirname, '../../public/founders.html');
 const PARTNER_INTAKE_PAGE_PATH = path.resolve(__dirname, '../../public/partner-intake.html');
 const PETER_PAGE_PATH = path.resolve(__dirname, '../../public/peter.html');
 const INSTALL_PAGE_PATH = path.resolve(__dirname, '../../public/install.html');
@@ -4419,14 +4417,6 @@ function loadProPageHtml(runtimeConfig, pageContext = {}) {
   return loadPublicMarketingTemplateHtml(PRO_PAGE_PATH, runtimeConfig, pageContext);
 }
 
-function loadDiagnosticPageHtml(runtimeConfig, pageContext = {}) {
-  return loadPublicMarketingTemplateHtml(DIAGNOSTIC_PAGE_PATH, runtimeConfig, pageContext);
-}
-
-function loadFoundersPageHtml(runtimeConfig, pageContext = {}) {
-  return loadPublicMarketingTemplateHtml(FOUNDERS_PAGE_PATH, runtimeConfig, pageContext);
-}
-
 function loadPartnerIntakePageHtml(runtimeConfig, pageContext = {}) {
   return loadPublicMarketingTemplateHtml(PARTNER_INTAKE_PAGE_PATH, runtimeConfig, pageContext);
 }
@@ -5128,7 +5118,6 @@ function renderRobotsTxt(runtimeConfig) {
 function renderSitemapXml(runtimeConfig) {
   const entries = [
     { path: '/', changefreq: 'weekly', priority: '1.0' },
-    { path: '/founders', changefreq: 'weekly', priority: '0.95' },
     { path: '/pricing', changefreq: 'weekly', priority: '0.9' },
     { path: '/operator-framework', changefreq: 'weekly', priority: '0.9' },
     { path: '/peter', changefreq: 'weekly', priority: '0.9' },
@@ -9124,32 +9113,11 @@ async function addContext(){
       return;
     }
 
-    // Oceans-style founder conversion landing (high-ROI cash path).
-    // Mirrors personal operator pages (/peter): pain triad, timed process,
-    // comparison table, refund fence, sticky diagnostic checkout.
-    if (isGetLikeRequest && (
-      pathname === '/founders'
-      || pathname === '/founders.html'
-      || pathname === '/operators'
-      || pathname === '/operators.html'
-      || pathname === '/agent-operators'
-      || pathname === '/agent-operators.html'
-    )) {
-      try {
-        servePublicMarketingPage({
-          req,
-          res,
-          parsed,
-          hostedConfig,
-          isHeadRequest,
-          renderHtml: loadFoundersPageHtml,
-          extraTelemetry: {
-            pageType: 'founders',
-          },
-        });
-      } catch (err) {
-        sendText(res, 500, err.message || 'Founders page unavailable');
-      }
+    // The founders page sold the retired $499 Setup Sprint. Its routes now send visitors to the
+    // request-only 30-day team pilot and keep the query string for attribution.
+    if (isGetLikeRequest && /^\/(?:founders|operators|agent-operators)(?:\.html)?\/?$/.test(pathname)) {
+      res.writeHead(301, { Location: `/pilot${parsed.search || ''}`, 'Cache-Control': 'no-store' });
+      res.end();
       return;
     }
 
@@ -9170,41 +9138,6 @@ async function addContext(){
       return;
     }
 
-    // Natural marketing URLs for the Workflow Hardening Diagnostic/Sprint.
-    // High-intent outreach refers to "the diagnostic", "the sprint", or
-    // "workflow hardening"; serve a focused buyer page instead of sending
-    // qualified traffic to the generic homepage anchor.
-    if (isGetLikeRequest && (
-      pathname === '/diagnostic'
-      || pathname === '/diagnostic.html'
-      || pathname === '/workflow-diagnostic'
-      || pathname === '/workflow-diagnostic.html'
-      || pathname === '/sprint'
-      || pathname === '/sprint.html'
-      || pathname === '/workflow-hardening'
-      || pathname === '/workflow-hardening.html'
-      || pathname === '/workflow-hardening-sprint'
-      || pathname === '/workflow-hardening-sprint.html'
-      || pathname === '/workflow-sprint'
-      || pathname === '/workflow-sprint.html'
-    )) {
-      try {
-        servePublicMarketingPage({
-          req,
-          res,
-          parsed,
-          hostedConfig,
-          isHeadRequest,
-          renderHtml: loadDiagnosticPageHtml,
-          extraTelemetry: {
-            pageType: 'diagnostic',
-          },
-        });
-      } catch (err) {
-        sendText(res, 500, err.message || 'Diagnostic page unavailable');
-      }
-      return;
-    }
 
     if (isGetLikeRequest && (pathname === '/numbers' || pathname === '/numbers.html')) {
       res.writeHead(301, {
