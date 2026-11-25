@@ -42,7 +42,8 @@ test('GET /operator-framework serves the offers, partner program, and FAQ schema
 
   assert.match(html, /Operator Framework/);
   for (const route of Object.keys(OFFER_ROUTES)) {
-    assert.ok(html.includes(`href="${route}`), `missing offer link ${route}`);
+    const escaped = route.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    assert.match(html, new RegExp(`href="${escaped}[?"]`), `missing offer link ${route}`);
   }
   assert.doesNotMatch(html, /href="\/go\/operator-diagnostic/, 'no link to the retired checkout');
   assert.doesNotMatch(html, /buy\.stripe\.com/, 'payment links stay behind /go/ redirects');
