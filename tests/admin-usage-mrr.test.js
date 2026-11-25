@@ -203,6 +203,15 @@ test('Growth shows the cohort table and Today shows where buyers come from', () 
   for (const wanted of ['Where buyers come from', 'reddit', '$19.00']) assert.ok(today.includes(wanted), 'missing: ' + wanted);
 });
 
+test('unfiltered count-drop alerts are never delivered, real faults still are', () => {
+  const { evaluateAlerts, isDeliverable } = require('../scripts/owner-alerts');
+  const week = { prior7: { realVisitors: 200, checkoutStarts: 90, activeInstalls: 214 }, last7: { realVisitors: 10, checkoutStarts: 2, activeInstalls: 30 } };
+  const alerts = evaluateAlerts({ money: { weekOverWeek: week, reasons: {}, usage30d: { activeInstalls30d: 30, activatedInstalls: 1 } }, report: { errors: { lastHour: 9 } } });
+  const ids = alerts.map((alert) => alert.id);
+  for (const id of ['visitors_drop', 'checkout_drop', 'installs_drop', 'activation_low']) assert.ok(ids.includes(id), 'still shown on the admin page: ' + id);
+  assert.deepEqual(alerts.filter(isDeliverable).map((alert) => alert.id), ['server_errors']);
+});
+
 test('alert delivery sends a one-time confirmation, then each new alert once', async () => {
   const { startAlertDelivery, createRuntimeObservations } = require('../scripts/owner-admin');
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'tg-deliver-'));
@@ -217,9 +226,12 @@ test('alert delivery sends a one-time confirmation, then each new alert once', a
     assert.match(sent[1].message, /Stripe could not be read: Stripe key missing/);
     assert.ok(fs.existsSync(path.join(dir, 'owner-alert-delivery.json')));
     sent.length = 0;
+    // A restart (every deploy) reads the saved state: no second confirmation, and a still-firing alert is not re-sent.
     const again = startAlertDelivery(makeDeps, { intervalMs: 60000, firstCheckMs: 10, send: async (m) => { sent.push(m); } });
-    for (let i = 0; i < 100 && sent.length < 1; i += 1) await wait(50);
+    const statePath = path.join(dir, 'owner-alert-delivery.json');
+    const firstCheck = JSON.parse(fs.readFileSync(statePath, 'utf8')).checkedAt;
+    for (let i = 0; i < 100 && JSON.parse(fs.readFileSync(statePath, 'utf8')).checkedAt === firstCheck; i += 1) await wait(50);
     clearInterval(again);
-    assert.equal(sent.some((m) => m.title === 'ThumbGate: alert delivery is on'), false, 'the confirmation is sent once ever');
+    assert.deepEqual(sent, [], 'nothing is sent again after a restart');
   } finally { fs.rmSync(dir, { recursive: true, force: true }); }
 });

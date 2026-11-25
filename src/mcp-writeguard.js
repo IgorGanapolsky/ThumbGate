@@ -344,8 +344,8 @@ const STRIPE_OFFER_CATALOG = Object.freeze({
   }),
   pro_19: Object.freeze({
     offerId: 'pro_19', productPagePath: '/pro', priceUsd: 19, billingType: 'subscription', proofPath: '/pro',
-    headline: 'ThumbGate Pro is for one operator who already hit a repeated AI-agent failure and now needs proof: what was blocked, why it was blocked, and what changed before the next risky run.', ctaLabel: 'Start Pro',
-    rationale: 'Start Pro when you want the local dashboard, DPO export, and a single proof lane for the repeated mistake you need to stop.',
+    headline: 'Keep every lesson your agent learned, and ask it what went wrong before.', ctaLabel: 'Start Pro',
+    rationale: 'The free CLI already denies catastrophic commands and secret leaks. ThumbGate Pro is about memory: every rule you teach with a thumbs-down stays active, you can record as many thumbs as you like, and you can search and export what was learned.',
     checkoutPath: '/go/pro-direct?utm_source=website&utm_medium=objection_rescue&utm_campaign=pro_upgrade',
   }),
   compare_plans: Object.freeze({

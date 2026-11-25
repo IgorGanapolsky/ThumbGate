@@ -1,6 +1,6 @@
 {
   "name": "thumbgate",
-  "version": "1.40.12",
+  "version": "1.40.14",
   "description": "ThumbGate Pre-Action Checks self-improve from ranked lessons and repeated failures, hard-block detected secret leaks, and block matches in strict mode.",
   "homepage": "https://thumbgate.ai",
   "repository": {
@@ -113,6 +113,7 @@
     "public/numbers.html",
     "public/onboarding.html",
     "public/partner-intake.html",
+    "public/pilot.html",
     "public/peter.html",
     "public/platform-partners.html",
     "public/operator-framework.html",
@@ -569,6 +570,8 @@
     "scripts/owner-admin.js",
     "scripts/owner-alerts.js",
     "scripts/owner-telemetry.js",
+    "scripts/cost-meter.js",
+    "scripts/unit-economics.js",
     "scripts/ops-log.js",
     "scripts/ops-report.js",
     "scripts/checkout-session-count.js",
@@ -839,7 +842,7 @@
     "test:thumbgate-skill": "node --test tests/thumbgate-skill.test.js",
     "test:discoverable-skills": "node --test tests/discoverable-skills.test.js",
     "test:discoverable-skill-skills": "node --test tests/discoverable-skill-skills.test.js",
-    "test:statusline": "node --test tests/claude-feedback-sync.test.js tests/statusline.test.js tests/statusline-aggregation.test.js tests/statusline-context.test.js tests/statusline-links.test.js tests/statusline-e2e.test.js tests/statusline-human-counts.test.js tests/statusline-human-counts-env.test.js",
+    "test:statusline": "node --test tests/claude-feedback-sync.test.js tests/statusline.test.js tests/statusline-aggregation.test.js tests/statusline-context.test.js tests/statusline-links.test.js tests/statusline-e2e.test.js tests/statusline-human-counts.test.js tests/statusline-human-counts-env.test.js tests/statusline-fake-thumbs.test.js tests/e2e/one-count.e2e.test.js",
     "test:statusline-cache-aggregate": "node --test tests/statusline-cache-aggregate.test.js",
     "test:no-internal-orchestration-leaks": "node --test tests/no-internal-orchestration-leaks.test.js",
     "test:memory-dedup": "node --test tests/memory-dedup.test.js",
@@ -1230,7 +1233,7 @@
     "test:mcp-oauth-reviewer": "node --test tests/mcp-oauth-reviewer.test.js",
     "test:dashboard-chat": "node --test tests/dashboard-chat.test.js",
     "test:gitar-integration": "node --test tests/gitar-integration.test.js",
-    "test:api": "node --test --test-concurrency=1 tests/api-server.test.js tests/api-events-sse.test.js tests/api-auth-config.test.js tests/mcp-server.test.js tests/adapters.test.js tests/openapi-parity.test.js tests/budget-guard.test.js tests/context-manager.test.js tests/contextfs.test.js tests/job-api.test.js tests/pack-templates.test.js tests/dashboard.test.js tests/dashboard-jsonl-bound.test.js tests/dashboard-limits.test.js tests/cli-progress.test.js tests/dashboard-render-spec.test.js tests/dashboard-html.test.js tests/agent-readiness.test.js tests/progressive-signoff.test.js tests/mcp-policy.test.js tests/subagent-profiles.test.js tests/intent-router.test.js tests/internal-agent-bootstrap.test.js tests/lesson-search.test.js tests/thumbgate-search.test.js tests/document-intake.test.js tests/rubric-engine.test.js tests/self-healing-check.test.js tests/self-heal.test.js tests/feedback-schema.test.js tests/thompson-sampling.test.js tests/feedback-sequences.test.js tests/diversity-tracking.test.js tests/vector-store.test.js tests/gemini-embedding-policy.test.js tests/feedback-attribution.test.js tests/hybrid-feedback-context.test.js tests/loop-closure.test.js tests/code-reasoning.test.js tests/feedback-loop.test.js tests/feedback-inbox-read.test.js tests/feedback-to-memory.test.js tests/test-coverage.test.js tests/version-metadata.test.js tests/claude-mcpb.test.js tests/claude-codex-bridge.test.js tests/cursor-plugin.test.js tests/codex-plugin.test.js tests/ide-marketplace-extensions.test.js tests/telemetry-analytics.test.js tests/claude-first-claims.test.js tests/public-landing.test.js tests/lessons-page.test.js tests/pro-landing.test.js tests/local-model-profile.test.js tests/risk-scorer.test.js tests/context-compaction.test.js tests/reminder-engine.test.js tests/verification-loop.test.js tests/async-job-runner.test.js tests/commerce-quality.test.js tests/recall-limit.test.js tests/problem-detail.test.js tests/natural-language-harness.test.js tests/settings-hierarchy.test.js tests/classifier-routing.test.js tests/dashboard-response-cache.test.js tests/onboarding-first-block.test.js tests/sso-authorize-no-typed-email.test.js tests/admin-board.test.js tests/sso-next-redirect.test.js tests/admin-money-labels.test.js tests/admin-observability.test.js tests/funnel-copy.test.js tests/owner-money-stripe.test.js",
+    "test:api": "node --test --test-concurrency=1 tests/api-server.test.js tests/api-events-sse.test.js tests/api-auth-config.test.js tests/mcp-server.test.js tests/adapters.test.js tests/openapi-parity.test.js tests/budget-guard.test.js tests/context-manager.test.js tests/contextfs.test.js tests/job-api.test.js tests/pack-templates.test.js tests/dashboard.test.js tests/dashboard-jsonl-bound.test.js tests/dashboard-limits.test.js tests/cli-progress.test.js tests/dashboard-render-spec.test.js tests/dashboard-html.test.js tests/agent-readiness.test.js tests/progressive-signoff.test.js tests/mcp-policy.test.js tests/subagent-profiles.test.js tests/intent-router.test.js tests/internal-agent-bootstrap.test.js tests/lesson-search.test.js tests/thumbgate-search.test.js tests/document-intake.test.js tests/rubric-engine.test.js tests/self-healing-check.test.js tests/self-heal.test.js tests/feedback-schema.test.js tests/thompson-sampling.test.js tests/feedback-sequences.test.js tests/diversity-tracking.test.js tests/vector-store.test.js tests/gemini-embedding-policy.test.js tests/feedback-attribution.test.js tests/hybrid-feedback-context.test.js tests/loop-closure.test.js tests/code-reasoning.test.js tests/feedback-loop.test.js tests/feedback-inbox-read.test.js tests/feedback-to-memory.test.js tests/test-coverage.test.js tests/version-metadata.test.js tests/claude-mcpb.test.js tests/claude-codex-bridge.test.js tests/cursor-plugin.test.js tests/codex-plugin.test.js tests/ide-marketplace-extensions.test.js tests/telemetry-analytics.test.js tests/claude-first-claims.test.js tests/public-landing.test.js tests/lessons-page.test.js tests/pro-landing.test.js tests/local-model-profile.test.js tests/risk-scorer.test.js tests/context-compaction.test.js tests/reminder-engine.test.js tests/verification-loop.test.js tests/async-job-runner.test.js tests/commerce-quality.test.js tests/recall-limit.test.js tests/problem-detail.test.js tests/natural-language-harness.test.js tests/settings-hierarchy.test.js tests/classifier-routing.test.js tests/dashboard-response-cache.test.js tests/onboarding-first-block.test.js tests/activation-first-block-delivery.test.js tests/runtime-version-skew.test.js tests/sso-authorize-no-typed-email.test.js tests/admin-board.test.js tests/sso-next-redirect.test.js tests/admin-money-labels.test.js tests/admin-observability.test.js tests/funnel-copy.test.js tests/owner-money-stripe.test.js",
     "test:leak-scanner": "node --test tests/leak-scanner.test.js",
     "test:tool-contract-validator": "node --test tests/tool-contract-validator.test.js",
     "test:letta-adapter": "node --test tests/letta-adapter.test.js",
@@ -1307,7 +1310,7 @@
     "test:adapter-pins": "node --test tests/adapter-version-pins.test.js",
     "test:secret-egress": "node --test tests/secret-egress-gate.test.js",
     "test:harness-tool-names": "node --test tests/harness-tool-names.test.js",
-    "test:feedback-reward": "node --test tests/feedback-reward-score.test.js",
+    "test:feedback-reward": "node --test tests/feedback-reward-score.test.js tests/feedback-thumbs-down-promotion.test.js tests/pilot-request.test.js tests/lesson-distinct-kept.test.js tests/prompt-lessons.test.js tests/lesson-effect.test.js tests/bulk-destroy-gates.test.js tests/default-gates-clean.test.js",
     "test:capability-wiring": "node --test tests/capability-wiring-ratchet.test.js && node --test tests/prove-vlt-dogfood.test.js && node --test tests/context-engineering-checklist.test.js",
     "test:llm-gateway": "node --test tests/llm-gateway-provider.test.js",
     "test:request-envelope": "node --test tests/request-envelope.test.js",
@@ -1475,7 +1478,7 @@
     "test:no-orphan-posthog": "node --test --test-force-exit tests/no-orphan-posthog.test.js",
     "test:admin-truth-ui": "node --test --test-force-exit tests/admin-truth-ui.test.js",
     "test:admin-usage-mrr": "node --test --test-force-exit tests/admin-usage-mrr.test.js",
-    "test:owner-admin": "node --test tests/owner-admin.test.js tests/owner-admin-payment-cursor.test.js tests/owner-reporting-semantics.test.js tests/owner-summary-quality.test.js"
+    "test:owner-admin": "node --test tests/unit-economics.test.js tests/admin-economics.test.js tests/owner-admin.test.js tests/owner-admin-payment-cursor.test.js tests/owner-reporting-semantics.test.js tests/owner-summary-quality.test.js"
   },
   "keywords": [
     "mcp",
@@ -1531,7 +1534,7 @@
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^1.3.0",
-    "@google/genai": "3.0.0",
+    "@google/genai": "3.6.1",
     "@lancedb/lancedb": "^0.41.0",
     "apache-arrow": "^18.1.0",
     "better-sqlite3": "^12.11.1",
@@ -1556,7 +1559,7 @@
     "js-yaml": "5.5.0",
     "sharp": "0.35.5",
     "shell-quote": "1.12.0",
-    "undici": "8.12.4",
+    "undici": "8.13.1",
     "test-exclude": {
       "glob": "14.0.3",
       "minimatch": "11.0.4"
@@ -1569,7 +1572,7 @@
     "@playwright/test": "^1.62.1",
     "c8": "^12.0.0",
     "launch-editor": "^2.14.2",
-    "undici": "8.12.4"
+    "undici": "8.13.1"
   },
   "hotfix": "gate-check-bypass-2026-06-03"
 }

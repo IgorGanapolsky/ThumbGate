@@ -228,7 +228,9 @@ function requirePaidFeature(feature, opts = {}) {
   const decision = requireEntitlement(feature, opts);
   const label = opts.label || feature;
   const warningKey = `${feature}:${label}`;
-  if (!decision.entitled && !opts.silent && !advisoryWarnings.has(warningKey)) {
+  // Hook calls run this on every tool use; a free user gets no license text unless they ask for it.
+  const wantsAdvisory = (opts.env || process.env).THUMBGATE_LICENSE_ADVISORY === '1';
+  if (!decision.entitled && !opts.silent && wantsAdvisory && !advisoryWarnings.has(warningKey)) {
     advisoryWarnings.add(warningKey);
     console.error(`⚠️ ThumbGate: ${label} requires a paid license (tier: ${decision.tier}). Advisory mode — set THUMBGATE_ENFORCE_ENTITLEMENTS=1 to enforce. License: https://thumbgate.ai/pricing`);
   }

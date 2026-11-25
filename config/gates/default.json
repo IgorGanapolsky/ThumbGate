@@ -181,19 +181,6 @@
       ]
     },
     {
-      "id": "outbound-off-brand-vertical-block",
-      "layer": "Execution",
-      "trigger": "any:outbound_off_brand_vertical_block",
-      "pattern": "^(?=[\\s\\S]*(?:linkedin\\.com\\/(?:sharing|feed|posts|in\\/)|api\\.linkedin\\.com|ugcPosts|bsky\\.app|com\\.atproto\\.repo\\.createRecord|threads\\.(?:com|net)|(?:x|twitter)\\.com\\/(?:i\\/|intent\\/|compose)|api\\.(?:x|twitter)\\.com|oauth\\.reddit\\.com\\/api\\/submit|substack\\.com|api\\.medium\\.com|dev\\.to\\/api\\/articles|scripts\\/(?:post-everywhere|publish-bluesky|social-post-hourly|publish-linkedin|social-analytics\\/publishers)|browseros[-_]neo|browser_type|browser_fill))(?=[\\s\\S]*(?:[rR]eal[\\s_-]?[eE]state|[tT]ax[\\s_-]?[dD]eed|197\\.552|\\b[fF]olios?\\b|[mM]iami-[dD]ade|[bB]roward|[pP]rop[sS]tream|[rR]exera|[eE]lise[aA][iI]|deals\\.igorganapolsky\\.com|[bB]igger[pP]ockets))",
-      "action": "block",
-      "message": "Outbound social or browser post blocked: contains prohibited off-brand vertical offers or external deal links outside ThumbGate's AI agent governance scope.",
-      "severity": "critical",
-      "compliance": [
-        "SOC2-CC6.1",
-        "CWE-285"
-      ]
-    },
-    {
       "id": "outbound-email-send",
       "layer": "Execution",
       "trigger": "any:outbound_email_send",
@@ -210,19 +197,6 @@
       "compliance": [
         "SOC2-CC6.1",
         "CWE-285"
-      ]
-    },
-    {
-      "id": "eci-corporate-email-isolation",
-      "layer": "Execution",
-      "trigger": "any:eci_corporate_email_isolation",
-      "pattern": "(?=[\\s\\S]*(?:@ecisolutions\\.com|@ecinexus\\.com|@eci\\.com|Microsoft\\s+Outlook\\.app))(?=[\\s\\S]*(?:sendmail|msmtp|mailx|smtplib|nodemailer|view=cm|send_email|create_draft|reply_to_email|boardy|viktor|openfinance|mail\\.google\\.com))",
-      "action": "block",
-      "message": "CRITICAL SECURITY BLOCK: Corporate ECI email domains (@ecisolutions.com, @ecinexus.com, @eci.com) and Microsoft Outlook.app are strictly isolated and must NEVER be touched by personal, ThumbGate, Boardy, or Viktor workflows.",
-      "severity": "critical",
-      "compliance": [
-        "SOC2-CC6.1",
-        "CWE-200"
       ]
     },
     {
@@ -278,6 +252,108 @@
       "pattern": "(?:^|[;&|]\\s*)rm\\s+-(?=[^\\s]*r)(?=[^\\s]*f)[^\\s]+\\s+(?:/|/\\*|~(?:/[^\\s]*)?|\\$HOME(?:/[^\\s]*)?)(?:\\s|$)",
       "action": "block",
       "message": "Broad rm -rf against root or home is blocked. Use a narrow, reviewed path and explicit approval for destructive deletes.",
+      "severity": "critical",
+      "compliance": [
+        "NIST-CM-5",
+        "SOC2-CC8.1",
+        "CWE-732"
+      ]
+    },
+    {
+      "id": "cloud-bulk-delete",
+      "layer": "Execution",
+      "trigger": "Bash:cloud_bulk_delete",
+      "toolNames": [
+        "Bash"
+      ],
+      "pattern": "(?:^|[;&|(]\\s*|\\b(?:bash|sh|zsh)\\s+-c\\s+['\"]\\s*)(?:(?:sudo|command|exec|time|nohup)\\s+|env\\s+(?:\\S+=\\S*\\s+)*|\\S+=\\S*\\s+)*(?:aws\\s+s3\\s+rm\\b(?=[^;&|\\n]*--recursive)|aws\\s+s3\\s+rb\\b(?=[^;&|\\n]*--force)|gcloud\\s+projects\\s+delete\\b|az\\s+group\\s+delete\\b)",
+      "action": "block",
+      "message": "Bulk cloud deletion (aws s3 rm --recursive, aws s3 rb --force, gcloud projects delete, az group delete) is blocked. It is effectively irreversible. Run it yourself in a terminal if you mean it.",
+      "severity": "critical",
+      "compliance": [
+        "NIST-CM-5",
+        "SOC2-CC8.1",
+        "CWE-732"
+      ]
+    },
+    {
+      "id": "terraform-destroy",
+      "layer": "Execution",
+      "trigger": "Bash:terraform_destroy",
+      "toolNames": [
+        "Bash"
+      ],
+      "pattern": "(?:^|[;&|(]\\s*|\\b(?:bash|sh|zsh)\\s+-c\\s+['\"]\\s*)(?:(?:sudo|command|exec|time|nohup)\\s+|env\\s+(?:\\S+=\\S*\\s+)*|\\S+=\\S*\\s+)*(?:terraform|tofu)\\s+(?:destroy\\b|apply\\b[^;&|\\n]*\\s-destroy\\b)",
+      "action": "block",
+      "message": "terraform destroy (and apply -destroy) is blocked because it tears down real infrastructure. Run it yourself in a terminal if you mean it.",
+      "severity": "critical",
+      "compliance": [
+        "NIST-CM-5",
+        "SOC2-CC8.1",
+        "CWE-732"
+      ]
+    },
+    {
+      "id": "kubectl-bulk-delete",
+      "layer": "Execution",
+      "trigger": "Bash:kubectl_bulk_delete",
+      "toolNames": [
+        "Bash"
+      ],
+      "pattern": "(?:^|[;&|(]\\s*|\\b(?:bash|sh|zsh)\\s+-c\\s+['\"]\\s*)(?:(?:sudo|command|exec|time|nohup)\\s+|env\\s+(?:\\S+=\\S*\\s+)*|\\S+=\\S*\\s+)*kubectl\\s+delete\\s+(?:(?:namespaces?|ns)\\b|[^;&|\\n]*(?:--all-namespaces\\b|\\s-A\\b))",
+      "action": "block",
+      "message": "kubectl delete of a namespace, or across all namespaces, is blocked because it removes every workload inside. Run it yourself in a terminal if you mean it.",
+      "severity": "critical",
+      "compliance": [
+        "NIST-CM-5",
+        "SOC2-CC8.1",
+        "CWE-732"
+      ]
+    },
+    {
+      "id": "docker-system-prune-all",
+      "layer": "Execution",
+      "trigger": "Bash:docker_system_prune_all",
+      "toolNames": [
+        "Bash"
+      ],
+      "pattern": "(?:^|[;&|(]\\s*|\\b(?:bash|sh|zsh)\\s+-c\\s+['\"]\\s*)(?:(?:sudo|command|exec|time|nohup)\\s+|env\\s+(?:\\S+=\\S*\\s+)*|\\S+=\\S*\\s+)*docker\\s+system\\s+prune\\b(?=[^;&|\\n]*(?:\\s-[a-zA-Z]*a|--all\\b))",
+      "action": "block",
+      "message": "docker system prune -a is blocked because it removes every unused image, container, network and cache. Run it yourself in a terminal if you mean it.",
+      "severity": "critical",
+      "compliance": [
+        "NIST-CM-5",
+        "SOC2-CC8.1",
+        "CWE-732"
+      ]
+    },
+    {
+      "id": "find-delete-broad",
+      "layer": "Execution",
+      "trigger": "Bash:find_delete_broad",
+      "toolNames": [
+        "Bash"
+      ],
+      "pattern": "(?:^|[;&|(]\\s*|\\b(?:bash|sh|zsh)\\s+-c\\s+['\"]\\s*)(?:(?:sudo|command|exec|time|nohup)\\s+|env\\s+(?:\\S+=\\S*\\s+)*|\\S+=\\S*\\s+)*find\\s+(?![^;&|\\n]*\\s-(?:i?name|i?path|i?wholename|i?regex|newer\\w*|[mac]time|[mac]min|size|user|group|perm|empty|lname)\\b)[^;&|\\n]*\\s-delete\\b",
+      "action": "block",
+      "message": "find ... -delete with no name, path, age or size filter is blocked because it deletes everything under the start path. Add a narrowing filter or run it yourself.",
+      "severity": "critical",
+      "compliance": [
+        "NIST-CM-5",
+        "SOC2-CC8.1",
+        "CWE-732"
+      ]
+    },
+    {
+      "id": "iam-policy-change",
+      "layer": "Execution",
+      "trigger": "Bash:iam_policy_change",
+      "toolNames": [
+        "Bash"
+      ],
+      "pattern": "(?:^|[;&|(]\\s*|\\b(?:bash|sh|zsh)\\s+-c\\s+['\"]\\s*)(?:(?:sudo|command|exec|time|nohup)\\s+|env\\s+(?:\\S+=\\S*\\s+)*|\\S+=\\S*\\s+)*(?:aws\\s+iam\\s+(?:put|attach|detach|create|delete|update|add|remove|set)-[a-z-]*(?:policy|role|user|group|access-key)[a-z-]*\\b|gcloud\\s+[a-z. -]*?(?:add|remove|set)-iam-policy-binding\\b|gcloud\\s+[a-z. -]*?set-iam-policy\\b|az\\s+role\\s+assignment\\s+(?:create|delete)\\b)",
+      "action": "block",
+      "message": "A real IAM or policy change (aws iam put/attach/create/delete..., gcloud add-iam-policy-binding, az role assignment) is blocked. Reading or listing policies is fine. Run the change yourself if you mean it.",
       "severity": "critical",
       "compliance": [
         "NIST-CM-5",
@@ -413,7 +489,7 @@
       "toolNames": [
         "Bash"
       ],
-      "pattern": "(?:chmod|chown|setfacl|iam|policy|role|grant|revoke)\\s+",
+      "pattern": "(?:^|[;&|(]\\s*)(?:sudo\\s+)?(?:chmod|chown|setfacl)\\s+",
       "action": "approve",
       "message": "Permission or IAM change detected. Human approval required before this action can proceed.",
       "severity": "high",

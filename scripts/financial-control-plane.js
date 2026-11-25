@@ -606,7 +606,8 @@ function isPlatformEconomicCli(executable, positional) {
     case 'stripe':
       return positional.some((tok) => STRIPE_CLI_RESOURCES.has(tok));
     case 'gcloud':
-      return positional.includes('billing');
+      // Listing or describing billing accounts spends nothing; only changes (unlink, link, create) count.
+      return positional.includes('billing') && !positional.some((tok) => /^(?:list|describe|get|get-iam-policy|test-iam-permissions)$/.test(tok));
     case 'aws':
       return isAwsEconomicCli(positional);
     case 'az':

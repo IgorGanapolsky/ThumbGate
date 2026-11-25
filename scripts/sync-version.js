@@ -381,6 +381,8 @@ function syncVersion(opts) {
     'adapters/vlt/opencode.json',
     'adapters/vlt/.mcp.json',
     'adapters/vlt/VLT.md',
+    // The 1.40.13 bump left this Cursor doc pinned to the previous release.
+    'adapters/cursor/CURSOR.md',
     // poolside + future-agi adapters landed after the vlt registration and were
     // never added here; the 1.36.0 release PR went red on their stale pins
     // (adapters.test.js "Poolside settings must pin the shipped ThumbGate version").
