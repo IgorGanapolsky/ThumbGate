@@ -45,6 +45,32 @@ const {
   sanitizeFeedbackText,
 } = require('./feedback-sanitizer');
 
+const executableHashCache = new Map();
+
+// What `which <name>` prints, without spawning `which`: the first executable regular file named
+// `name` in a PATH directory. A name containing a slash is not looked up, as in `which`.
+function resolveOnPath(name) {
+  if (!name || name.includes('/') || name.includes('\\')) return null;
+  const dirs = String(process.env.PATH || '').split(path.delimiter).filter(Boolean);
+  const exts = process.platform === 'win32'
+    ? ['', ...String(process.env.PATHEXT || '.EXE;.CMD;.BAT;.COM').split(';').filter(Boolean)]
+    : [''];
+  for (const dir of dirs) {
+    for (const ext of exts) {
+      const candidate = path.join(dir, name + ext);
+      try {
+        const stat = fs.statSync(candidate);
+        if (!stat.isFile()) continue;
+        fs.accessSync(candidate, fs.constants.X_OK);
+        return candidate;
+      } catch {
+        continue;
+      }
+    }
+  }
+  return null;
+}
+
 /**
  * Computes the SHA-256 hash of an executable binary to prevent path-based bypasses.
  * (Layer 5: Supply Chain / Layer 3: Execution)
@@ -58,18 +84,19 @@ function computeExecutableHash(command) {
     // Resolve absolute path using 'which'. Use execFileSync (no shell) and pass
     // firstWord as an argv element, never interpolated into a command string, so
     // a hostile `command` value cannot inject shell metacharacters here.
-    let fullPath;
-    try {
-      fullPath = execFileSync('which', [firstWord], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim();
-    } catch (e) {
-      // If 'which' fails, it might be an absolute path or a non-existent command
-      fullPath = path.isAbsolute(firstWord) ? firstWord : null;
-    }
-    
+    // If the PATH lookup fails, it might be an absolute path or a non-existent command.
+    const fullPath = resolveOnPath(firstWord) || (path.isAbsolute(firstWord) ? firstWord : null);
+
     if (!fullPath || !fs.existsSync(fullPath) || !fs.lstatSync(fullPath).isFile()) return null;
 
+    const stat = fs.statSync(fullPath);
+    const cacheKey = `${fullPath}\0${stat.ino}\0${stat.size}\0${stat.mtimeMs}`;
+    if (executableHashCache.has(cacheKey)) return executableHashCache.get(cacheKey);
     const buffer = fs.readFileSync(fullPath);
-    return crypto.createHash('sha256').update(buffer).digest('hex');
+    const digest = crypto.createHash('sha256').update(buffer).digest('hex');
+    if (executableHashCache.size > 64) executableHashCache.clear();
+    executableHashCache.set(cacheKey, digest);
+    return digest;
   } catch (e) {
     return null;
   }
@@ -1208,7 +1235,24 @@ function getHybridFeedbackModule() {
   }
 }
 
+// One gate-check evaluates dozens of gates, and many of them ask git the same question
+// (`diff --cached`, `ls-files`). Each answer costs a 3-5 ms process spawn. Answers are reused
+// for a short window: long enough to cover one evaluation, short enough that a long-lived MCP
+// server never serves an old file list to a later tool call.
+const EXEC_LINES_TTL_MS = 1500;
+const execLinesCache = new Map();
 function safeExecFileLines(binary, args, cwd) {
+  const key = `${binary}\0${args.join('\0')}\0${cwd || ''}`;
+  const now = Date.now();
+  const hit = execLinesCache.get(key);
+  if (hit && now - hit.at < EXEC_LINES_TTL_MS) return hit.lines.slice();
+  const lines = safeExecFileLinesUncached(binary, args, cwd);
+  if (execLinesCache.size > 256) execLinesCache.clear();
+  execLinesCache.set(key, { at: now, lines });
+  return lines.slice();
+}
+
+function safeExecFileLinesUncached(binary, args, cwd) {
   try {
     const output = execFileSync(binary, args, {
       cwd,
@@ -1329,19 +1373,64 @@ function resolveRepoRoot(toolInput = {}) {
   }
 
   for (const cwd of candidates) {
-    try {
-      const root = execFileSync('git', ['rev-parse', '--show-toplevel'], {
-        cwd,
-        encoding: 'utf8',
-        stdio: ['ignore', 'pipe', 'ignore'],
-      }).trim();
-      if (root) return root;
-    } catch {
-      continue;
-    }
+    const root = gitToplevel(cwd);
+    if (root) return root;
   }
 
   return null;
+}
+
+// `git rev-parse --show-toplevel` ran about 20 times per gate-check (once per gate that looks
+// at affected files), about 70 ms of process spawns for one tool call. The answer only changes
+// when the nearest `.git` entry appears, disappears or is replaced, so it is cached against a
+// stamp of that entry. The stamp is a few stat calls, not a process.
+const gitToplevelCache = new Map();
+function nearestGitMarker(cwd) {
+  let dir = cwd;
+  for (let depth = 0; depth < 128; depth += 1) {
+    const marker = path.join(dir, '.git');
+    try {
+      const stat = fs.statSync(marker);
+      return `${marker}:${stat.ino}:${stat.mtimeMs}:${stat.isFile() ? 'f' : 'd'}`;
+    } catch (err) {
+      if (err && err.code !== 'ENOENT' && err.code !== 'ENOTDIR') return null;
+    }
+    const parent = path.dirname(dir);
+    if (parent === dir) break;
+    dir = parent;
+  }
+  try {
+    return `none:${fs.statSync(cwd).ino}`;
+  } catch {
+    return null;
+  }
+}
+
+function gitToplevelUncached(cwd) {
+  try {
+    return execFileSync('git', ['rev-parse', '--show-toplevel'], {
+      cwd,
+      encoding: 'utf8',
+      stdio: ['ignore', 'pipe', 'ignore'],
+    }).trim() || null;
+  } catch {
+    return null;
+  }
+}
+
+function gitToplevel(cwd) {
+  const env = process.env;
+  // Git's own location overrides change the answer without touching the tree, so they key the cache.
+  const key = [cwd, env.GIT_DIR, env.GIT_WORK_TREE, env.GIT_CEILING_DIRECTORIES, env.GIT_DISCOVERY_ACROSS_FILESYSTEM]
+    .map((v) => v || '').join('\0');
+  const stamp = nearestGitMarker(cwd);
+  if (!stamp) return gitToplevelUncached(cwd);
+  const hit = gitToplevelCache.get(key);
+  if (hit && hit.stamp === stamp) return hit.root;
+  const root = gitToplevelUncached(cwd);
+  if (gitToplevelCache.size > 256) gitToplevelCache.clear();
+  gitToplevelCache.set(key, { stamp, root });
+  return root;
 }
 
 function toRepoRelativePath(filePath, repoRoot) {

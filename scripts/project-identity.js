@@ -90,11 +90,59 @@ function resolveLocalProject(cwd = process.cwd(), options = {}) {
   const stamp = gitConfigStamp(cwd);
   if (!stamp) return resolveLocalProjectUncached(cwd, options);
   const key = `${path.resolve(cwd)}\0${options.machineId || ''}\0${options.machineIdPath || ''}`;
-  const hit = localProjectCache.get(key);
-  if (hit && hit.stamp === stamp) return { ...hit.value };
+  const hit = localProjectCache.get(key) || diskIdentityCacheGet(key);
+  if (hit && hit.stamp === stamp) {
+    localProjectCache.set(key, hit);
+    return { ...hit.value };
+  }
   const value = resolveLocalProjectUncached(cwd, options);
   localProjectCache.set(key, { stamp, value });
+  diskIdentityCacheSet(key, { stamp, value });
   return { ...value };
+}
+// Each hook is its own short-lived process, so the in-memory cache above starts empty on every
+// tool call and paid four git spawns (about 14 ms) each time. The same stamped entries are kept in
+// one small file so the next process can reuse them. A changed remote or worktree link changes the
+// stamp, and the entry is recomputed.
+const DISK_IDENTITY_CACHE_MAX = 64;
+let diskIdentityCache = null;
+function diskIdentityCachePath() {
+  return path.join(os.homedir(), '.thumbgate', 'cache', 'project-identity.json');
+}
+function diskIdentityCacheEnabled() {
+  return process.env.THUMBGATE_IDENTITY_DISK_CACHE !== '0';
+}
+function loadDiskIdentityCache() {
+  if (diskIdentityCache) return diskIdentityCache;
+  diskIdentityCache = {};
+  try {
+    const parsed = JSON.parse(fs.readFileSync(diskIdentityCachePath(), 'utf8'));
+    if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) diskIdentityCache = parsed;
+  } catch { /* first run or unreadable cache: resolve with git */ }
+  return diskIdentityCache;
+}
+function diskIdentityCacheGet(key) {
+  if (!diskIdentityCacheEnabled()) return null;
+  const entry = loadDiskIdentityCache()[key];
+  if (!entry || typeof entry.stamp !== 'string' || !entry.value || typeof entry.value.projectKey !== 'string') return null;
+  return { stamp: entry.stamp, value: entry.value };
+}
+function diskIdentityCacheSet(key, entry) {
+  if (!diskIdentityCacheEnabled()) return;
+  try {
+    const cache = loadDiskIdentityCache();
+    cache[key] = { ...entry, at: Date.now() };
+    const keys = Object.keys(cache);
+    if (keys.length > DISK_IDENTITY_CACHE_MAX) {
+      keys.sort((a, b) => (cache[a].at || 0) - (cache[b].at || 0));
+      for (const old of keys.slice(0, keys.length - DISK_IDENTITY_CACHE_MAX)) delete cache[old];
+    }
+    const file = diskIdentityCachePath();
+    fs.mkdirSync(path.dirname(file), { recursive: true });
+    const tmp = `${file}.${process.pid}.tmp`;
+    fs.writeFileSync(tmp, JSON.stringify(cache), { mode: 0o600 });
+    fs.renameSync(tmp, file);
+  } catch { /* cache is optional; never fail identity resolution over it */ }
 }
 function resolveLocalProjectUncached(cwd = process.cwd(), options = {}) {
   let root = git(cwd, ['rev-parse', '--show-toplevel']) || path.resolve(cwd);

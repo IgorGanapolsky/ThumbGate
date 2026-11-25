@@ -967,7 +967,7 @@
     "test:hash-anchored-edit": "node --test tests/hash-anchored-edit.test.js",
     "test:redteam": "node --test tests/redteam-5-attacks.test.js",
     "test:mcp-writeguard": "node --test tests/mcp-writeguard.test.js",
-    "test:latency-budget": "node --test tests/latency-budget.test.js",
+    "test:latency-budget": "node --test tests/latency-budget.test.js tests/hook-latency-caches.test.js",
     "test:perf-budget": "node --test tests/perf-budget.test.js",
     "test:nvhbm-base-die-gates": "node --test tests/nvhbm-base-die-gates.test.js",
     "test:graphrag-schema-first-multi-hop": "node --test tests/graphrag-schema-first-multi-hop.test.js",
