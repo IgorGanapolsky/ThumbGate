@@ -1235,24 +1235,7 @@ function getHybridFeedbackModule() {
   }
 }
 
-// One gate-check evaluates dozens of gates, and many of them ask git the same question
-// (`diff --cached`, `ls-files`). Each answer costs a 3-5 ms process spawn. Answers are reused
-// for a short window: long enough to cover one evaluation, short enough that a long-lived MCP
-// server never serves an old file list to a later tool call.
-const EXEC_LINES_TTL_MS = 1500;
-const execLinesCache = new Map();
 function safeExecFileLines(binary, args, cwd) {
-  const key = `${binary}\0${args.join('\0')}\0${cwd || ''}`;
-  const now = Date.now();
-  const hit = execLinesCache.get(key);
-  if (hit && now - hit.at < EXEC_LINES_TTL_MS) return hit.lines.slice();
-  const lines = safeExecFileLinesUncached(binary, args, cwd);
-  if (execLinesCache.size > 256) execLinesCache.clear();
-  execLinesCache.set(key, { at: now, lines });
-  return lines.slice();
-}
-
-function safeExecFileLinesUncached(binary, args, cwd) {
   try {
     const output = execFileSync(binary, args, {
       cwd,

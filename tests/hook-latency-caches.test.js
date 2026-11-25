@@ -89,3 +89,32 @@ test('project identity is reused from the disk cache by a new process', () => {
   assert.ok(third.n > 0);
   assert.notEqual(third.key, first.key);
 });
+
+test('project identity is not persisted when git config uses an include', () => {
+  const home = fs.mkdtempSync(path.join(os.tmpdir(), 'tg-identity-inc-home-'));
+  const repo = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), 'tg-identity-inc-repo-')));
+  childProcess.execFileSync('git', ['init', '-q'], { cwd: repo });
+  const included = path.join(repo, 'remote.inc');
+  fs.writeFileSync(included, '[remote "origin"]\n\turl = https://github.com/example/first.git\n');
+  childProcess.execFileSync('git', ['config', 'include.path', included], { cwd: repo });
+  const script = `
+    const { resolveLocalProject } = require(${JSON.stringify(path.join(__dirname, '..', 'scripts', 'project-identity'))});
+    process.stdout.write(resolveLocalProject(${JSON.stringify(repo)}, { machineId: 'test' }).projectName);
+  `;
+  const env = { ...process.env, HOME: home, USERPROFILE: home };
+  const first = childProcess.execFileSync(process.execPath, ['-e', script], { env, encoding: 'utf8' });
+  fs.writeFileSync(included, '[remote "origin"]\n\turl = https://github.com/example/second.git\n');
+  const second = childProcess.execFileSync(process.execPath, ['-e', script], { env, encoding: 'utf8' });
+  assert.notEqual(first, second, 'an included remote change must not be served from the disk cache');
+});
+
+test('git file lists are not reused across evaluations', () => {
+  const dir = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), 'tg-staged-')));
+  childProcess.execFileSync('git', ['init', '-q'], { cwd: dir });
+  const { extractAffectedFiles } = require('../scripts/gates-engine');
+  const input = { command: 'git commit -m x', cwd: dir };
+  assert.deepEqual(extractAffectedFiles('Bash', input).files, []);
+  fs.writeFileSync(path.join(dir, 'AGENTS.md'), 'policy\n');
+  childProcess.execFileSync('git', ['add', 'AGENTS.md'], { cwd: dir });
+  assert.ok(extractAffectedFiles('Bash', input).files.some((f) => f.endsWith('AGENTS.md')), 'newly staged file must be seen');
+});
