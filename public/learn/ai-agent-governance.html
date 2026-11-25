@@ -89,7 +89,7 @@
       <h3>3. Pre-action hooks</h3>
       <div class="where">Out-of-process intercept at the agent runtime's tool-call boundary. Examples: MCP PreToolUse hooks, Claude Code hooks, ThumbGate.</div>
       <p>The hook runs in a separate process from the agent. The agent emits a tool-call intent; the hook accepts, rejects, or transforms it before the tool itself sees it.</p>
-      <p class="catches">Catches: every tool call the agent runtime mediates. Works across agent CLIs (Claude Code, Cursor, Codex, Gemini, Amp, Cline, OpenCode). Survives context-eviction because the hook is not in the agent's context.</p>
+      <p class="catches">Catches: tool calls the agent runtime routes through the hook. Works across agent CLIs (Claude Code, Cursor, Codex, Gemini, Amp, Cline, OpenCode). Survives context-eviction because the hook is not in the agent's context.</p>
       <p class="misses">Misses: actions taken by tools the runtime doesn't know about (e.g., a sub-process opening its own network socket after the initial allowed call).</p>
     </div>
 

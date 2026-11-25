@@ -25,7 +25,7 @@ test('homepage promotes free and self-serve Pro without retired managed service 
   for (const file of ['public/index.html']) {
     const landing = read(file);
     assert.match(landing, /free local CLI/i);
-    assert.match(landing, /Pro adds recall, dashboard, adapters, and exports/i);
+    assert.match(landing, /Pro is about memory/i);
     assert.match(landing, /href="\/checkout\/pro"[^>]*data-cta-id="homepage_pro_checkout"/);
     assert.match(landing, /__PRO_PRICE_DOLLARS__/);
     assert.match(landing, /proof/i);

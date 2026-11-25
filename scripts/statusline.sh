@@ -13,10 +13,26 @@ STATUSLINE_VERBOSE="${THUMBGATE_STATUSLINE_VERBOSE:-0}"
 eval "$(cat | jq -r '
   def n(f): f // 0;
   @sh "CTX_PCT=\(n(.context_window.used_percentage) | floor)",
-  @sh "PROJECT_CWD=\(.cwd // .working_directory // "")"
+  @sh "PROJECT_CWD=\(.cwd // .working_directory // "")",
+  @sh "CLAUDE_PROJECT_ROOT=\(.workspace.project_dir // "")"
 ' 2>/dev/null)"
 CTX_PCT="${CTX_PCT:-0}"
 PROJECT_CWD="${PROJECT_CWD:-}"
+CLAUDE_PROJECT_ROOT="${CLAUDE_PROJECT_ROOT:-}"
+
+# Feedback is captured against the project root, not whichever subfolder the session
+# has cd'd into. Use the project dir Claude reports, else the git root of the cwd,
+# else the cwd itself, so "this project" counts the same thumbs the captures wrote.
+if [ -n "$PROJECT_CWD" ] && [ -d "$PROJECT_CWD" ]; then
+  if [ -n "$CLAUDE_PROJECT_ROOT" ] && [ -d "$CLAUDE_PROJECT_ROOT" ]; then
+    PROJECT_CWD="$CLAUDE_PROJECT_ROOT"
+  else
+    _GIT_ROOT="$(git -C "$PROJECT_CWD" rev-parse --show-toplevel 2>/dev/null)"
+    if [ -n "$_GIT_ROOT" ] && [ -d "$_GIT_ROOT" ]; then
+      PROJECT_CWD="$_GIT_ROOT"
+    fi
+  fi
+fi
 
 if [ -n "$PROJECT_CWD" ] && [ -d "$PROJECT_CWD" ]; then
   export THUMBGATE_PROJECT_DIR="$PROJECT_CWD"
@@ -101,13 +117,20 @@ if [ -n "$_HUMAN_JSON" ]; then
     @sh "UP=\(.up // 0)",
     @sh "DOWN=\(.down // 0)",
     @sh "SCOPE_LABEL=\(.label // "this project")",
+    @sh "PROJECT_NAME=\(.project // "")",
     @sh "LD_TS=\(.latestDown.timestamp // "")",
     @sh "LD_LABEL=\(.latestDown.label // "")",
-    @sh "LD_TEXT=\(.latestDown.text // "")"
+    @sh "LD_TEXT=\(.latestDown.text // "")",
+    @sh "LE_PER100=\(.lessonEffect.repeatMissesPer100 // "")",
+    @sh "LE_INJ=\(.lessonEffect.injections // 0)"
   ' 2>/dev/null)"
 else
-  UP="0"; DOWN="0"
+  # The counter printed nothing. That is a failure, not an absence of feedback.
+  UP="0"; DOWN="0"; HUMAN_COUNTS_UNAVAILABLE="1"
 fi
+# Name the project the counts belong to, so another project's pane does not read as this one's.
+PROJECT_NAME="$(printf '%s' "${PROJECT_NAME:-}" | tr -cd 'A-Za-z0-9._ -' | cut -c1-40)"
+[[ -n "$PROJECT_NAME" ]] && SCOPE_LABEL="${SCOPE_LABEL} (${PROJECT_NAME})"
 
 # Background refresh from REST API when cache is stale (>120s)
 if [ $(( _NOW - ${CACHE_TS:-0} )) -gt 120 ]; then
@@ -245,7 +268,11 @@ LINE=""
 [[ -n "$WORK_ITEM_LABEL" ]] && LINE="${LINE:+${LINE} · }${WORK_ITEM_LABEL}"
 LINE="${LINE:+${LINE} · }ThumbGate v${TG_VERSION} · ${TG_TIER}"
 if [[ "$UP" = "0" && "$DOWN" = "0" ]]; then
-  LINE="${D}${LINE}${RST} · ${UP_LINK} ${DOWN_LINK} ${D}no human feedback ${SCOPE_LABEL}${RST}"
+  if [[ "${HUMAN_COUNTS_UNAVAILABLE:-0}" = "1" ]]; then
+    LINE="${D}${LINE}${RST} · ${UP_LINK} ${DOWN_LINK} ${D}feedback count unavailable${RST}"
+  else
+    LINE="${D}${LINE}${RST} · ${UP_LINK} ${DOWN_LINK} ${D}no human feedback ${SCOPE_LABEL}${RST}"
+  fi
   [[ -n "$PR_LABEL" ]] && LINE="${LINE} · ${D}${PR_LABEL}${RST}"
   
   LINE="${LINE} · ${C}${DASHBOARD_LINK}${RST}"
@@ -254,6 +281,7 @@ if [[ "$UP" = "0" && "$DOWN" = "0" ]]; then
   printf '%b\n' "$LINE"
 else
   LINE="${LINE} · ${G}${BD}${UP}${RST}${UP_LINK} ${R}${BD}${DOWN}${RST}${DOWN_LINK} ${D}${SCOPE_LABEL}${RST}"
+  [[ -n "${LE_PER100:-}" ]] && LINE="${LINE} · ${D}${LE_PER100} repeat misses/100 injections (${LE_INJ})${RST}"
 
   # Control Tower alerts (if any)
   [[ "${SLO_V:-0}" -gt 0 ]] && LINE="${LINE} ${R}${SLO_V} SLO${RST}"

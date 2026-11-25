@@ -109,6 +109,44 @@ test('statusline script reads jq input and outputs ThumbGate line', () => {
   assert.doesNotMatch(out, /Lessons \(http:\/\/localhost:3456\/lessons\)/);
 });
 
+test('the Dashboard word is an OSC 8 hyperlink to the dashboard URL and reads the same without it', () => {
+  const links = linkFixture();
+  const out = runStatusline({
+    thumbs_up: '10', thumbs_down: '5', lessons: '3', trend: 'improving'
+  }, {
+    _TEST_THUMBGATE_STATUSLINE_LINKS_JSON: JSON.stringify(links),
+  });
+  const open = `\u001b]8;;${links.dashboardUrl}\u0007`;
+  const close = '\u001b]8;;\u0007';
+  assert.ok(
+    out.includes(`${open}Dashboard${close}`),
+    `Dashboard must sit between the OSC 8 open for ${links.dashboardUrl} and the close; got ${JSON.stringify(out)}`
+  );
+
+  const plainOut = runStatusline({
+    thumbs_up: '10', thumbs_down: '5', lessons: '3', trend: 'improving'
+  }, {
+    THUMBGATE_STATUSLINE_PLAIN: '1',
+    _TEST_THUMBGATE_STATUSLINE_LINKS_JSON: JSON.stringify(links),
+  });
+  assert.ok(!plainOut.includes('\u001b]8;'), 'plain mode must carry no OSC 8 sequences');
+  assert.equal(
+    stripStatuslineFormatting(out),
+    stripStatuslineFormatting(plainOut),
+    'visible text must be identical with and without hyperlinks'
+  );
+});
+
+test('the Dashboard word stays plain text when no dashboard URL is known', () => {
+  const out = runStatusline({
+    thumbs_up: '10', thumbs_down: '5', lessons: '3', trend: 'improving'
+  }, {
+    _TEST_THUMBGATE_STATUSLINE_LINKS_JSON: JSON.stringify(linkFixture({ dashboardUrl: '' })),
+  });
+  assert.ok(!out.includes('\u001b]8;;http://localhost:3456/dashboard'), 'no link without a URL');
+  assert.match(stripStatuslineFormatting(out), /Dashboard/);
+});
+
 test('statusline is compact by default for Claude chrome', () => {
   const out = runStatusline({
     thumbs_up: '10', thumbs_down: '5', lessons: '3', trend: 'improving'
@@ -174,9 +212,9 @@ test('statusline rebuilds counters from local feedback logs when cache is empty'
   fs.writeFileSync(
     path.join(tmpDir, 'feedback-log.jsonl'),
     [
-      JSON.stringify({ signal: 'positive', timestamp: '2026-04-08T10:00:00.000Z', context: 'verified fix', reviewOrigin: 'human' }),
-      JSON.stringify({ signal: 'negative', timestamp: '2026-04-08T10:01:00.000Z', context: 'unverified claim', reviewOrigin: 'human' }),
-      JSON.stringify({ signal: 'negative', timestamp: '2026-04-08T10:02:00.000Z', context: 'scope creep', reviewOrigin: 'human' }),
+      JSON.stringify({ signal: 'positive', timestamp: '2026-04-08T10:00:00.000Z', context: 'verified fix', reviewOrigin: 'human', tags: ['user-prompt-thumbs'] }),
+      JSON.stringify({ signal: 'negative', timestamp: '2026-04-08T10:01:00.000Z', context: 'unverified claim', reviewOrigin: 'human', tags: ['user-prompt-thumbs'] }),
+      JSON.stringify({ signal: 'negative', timestamp: '2026-04-08T10:02:00.000Z', context: 'scope creep', reviewOrigin: 'human', tags: ['user-prompt-thumbs'] }),
     ].join('\n') + '\n'
   );
   fs.writeFileSync(
@@ -376,9 +414,9 @@ test('statusline resolves project feedback from Claude cwd instead of the runtim
   fs.writeFileSync(
     path.join(feedbackDir, 'feedback-log.jsonl'),
     [
-      JSON.stringify({ signal: 'positive', reviewOrigin: 'human', timestamp: '2026-04-09T18:00:00.000Z', context: 'kept scope tight' }),
-      JSON.stringify({ signal: 'positive', reviewOrigin: 'human', timestamp: '2026-04-09T18:01:00.000Z', context: 'verified clean worktree' }),
-      JSON.stringify({ signal: 'negative', reviewOrigin: 'human', timestamp: '2026-04-09T18:02:00.000Z', context: 'stale runtime cwd' }),
+      JSON.stringify({ signal: 'positive', reviewOrigin: 'human', tags: ['user-prompt-thumbs'], timestamp: '2026-04-09T18:00:00.000Z', context: 'kept scope tight' }),
+      JSON.stringify({ signal: 'positive', reviewOrigin: 'human', tags: ['user-prompt-thumbs'], timestamp: '2026-04-09T18:01:00.000Z', context: 'verified clean worktree' }),
+      JSON.stringify({ signal: 'negative', reviewOrigin: 'human', tags: ['user-prompt-thumbs'], timestamp: '2026-04-09T18:02:00.000Z', context: 'stale runtime cwd' }),
     ].join('\n') + '\n'
   );
 
@@ -666,17 +704,21 @@ test('Claude Code wiring uses portable ThumbGate commands for status line and ca
     // Published install: subcommand in both fast-path exec and fallback npm-exec
     /thumbgate["']?\s+"statusline-render".*\|\|.*thumbgate"\s+"statusline-render"/.test(statusCommand)
       // Source checkout: direct node invocation
-      || /bin\/cli\.js"\s+statusline-render/.test(statusCommand),
+      || /bin\/cli\.js"\s+statusline-render/.test(statusCommand)
+      // Worktree checkout: stable launcher, never a path that disappears with the worktree
+      || /thumbgate-hook"\s+statusline-render/.test(statusCommand),
     `statusline command must forward statusline-render in both fast and fallback paths: ${statusCommand}`
   );
   assert.ok(
     (cacheCommand.includes('--package') && cacheCommand.includes('thumbgate@') && cacheCommand.includes('thumbgate') && cacheCommand.includes('cache-update'))
-      || cacheCommand.includes('bin/cli.js" cache-update'),
+      || cacheCommand.includes('bin/cli.js" cache-update')
+      || cacheCommand.includes('thumbgate-hook" cache-update'),
     `unexpected cache update command: ${cacheCommand}`
   );
   assert.ok(
     (statusCommand.includes('--package') && statusCommand.includes('thumbgate@') && statusCommand.includes('thumbgate') && statusCommand.includes('statusline-render'))
-      || statusCommand.includes('bin/cli.js" statusline-render'),
+      || statusCommand.includes('bin/cli.js" statusline-render')
+      || statusCommand.includes('thumbgate-hook" statusline-render'),
     `unexpected statusline command: ${statusCommand}`
   );
 });
@@ -752,7 +794,7 @@ test('Codex hook runtime stays durable in source worktrees unless explicitly pin
     mcpConfig.publishedCliAvailable = () => false;
     const sourceRuntime = require(hookRuntimePath);
 
-    assert.match(sourceRuntime.statuslineCommand(), /bin\/cli\.js"\s+statusline-render/);
+    assert.match(sourceRuntime.statuslineCommand(), /(bin\/cli\.js|thumbgate-hook)"\s+statusline-render/);
     assert.match(sourceRuntime.codexStatuslineCommand(), /thumbgate@latest/);
     assert.doesNotMatch(sourceRuntime.codexStatuslineCommand(), /bin\/cli\.js"\s+statusline-render/);
 

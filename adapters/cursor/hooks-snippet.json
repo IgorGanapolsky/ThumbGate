@@ -1,0 +1,9 @@
+{
+  "beforeShellExecution": [
+    {
+      "command": "npx --yes --package thumbgate@latest thumbgate cursor-gate",
+      "timeout": 30,
+      "failClosed": true
+    }
+  ]
+}

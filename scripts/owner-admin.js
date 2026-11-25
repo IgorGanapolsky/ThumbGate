@@ -8,12 +8,16 @@ const billing = require('./billing');
 const ownerTelemetry = require('./owner-telemetry');
 const opsLog = require('./ops-log');
 const opsReport = require('./ops-report');
+const ownerAlerts = require('./owner-alerts');
+const costMeter = require('./cost-meter');
+const unitEconomics = require('./unit-economics');
+const clarity = require('./clarity');
 
 const JSON_LIMIT = 8 * 1024 * 1024;
 const LOG_LIMIT = 16 * 1024 * 1024;
 const RESPONSE_LIMIT = 1024 * 1024;
 const RESOURCES = Object.freeze({ customers: 'cus', subscriptions: 'sub', payments: 'ch', refunds: 're', products: 'prod', prices: 'price', 'subscription-items': 'si' });
-const SECTIONS = new Set(['overview', 'money', 'data', 'analytics', 'observability', 'summary']);
+const SECTIONS = new Set(['overview', 'money', 'data', 'analytics', 'observability', 'summary', 'alerts', 'economics', 'behavior', 'sources']);
 const MONEY_CACHE_MS = 60000;
 let moneyCache = null;
 const PRIVATE_HEADERS = Object.freeze({ 'Cache-Control': 'private, no-store', Vary: 'Cookie', 'X-Robots-Tag': 'noindex, nofollow', 'Referrer-Policy': 'no-referrer', 'X-Content-Type-Options': 'nosniff' });
@@ -49,7 +53,10 @@ function parseAdminRoute(pathname, params) {
   if (limitRaw !== null && (!/^[1-9][0-9]*$/.test(limitRaw) || Number(limitRaw) > max)) throw failure('invalid_query');
   const limit = limitRaw === null ? 25 : Number(limitRaw);
   const cursor = params.get(section === 'data' ? 'cursor' : 'starting_after') || '';
-  if (section === 'stripe' && cursor && !new RegExp(`^${RESOURCES[resource]}_[A-Za-z0-9]{1,120}$`).test(cursor)) throw failure('invalid_query');
+  // Stripe charge lists can return ch_ or py_ identifiers. Accept both only
+  // for payments, so the nextCursor we return is valid for the next request.
+  const cursorPrefix = resource === 'payments' ? '(?:ch|py)' : RESOURCES[resource];
+  if (section === 'stripe' && cursor && !new RegExp(`^${cursorPrefix}_[A-Za-z0-9]{1,120}$`).test(cursor)) throw failure('invalid_query');
   let offset = 0;
   if (section === 'data' && cursor) {
     if (!/^[A-Za-z0-9_-]{1,32}$/.test(cursor)) throw failure('invalid_query');
@@ -296,6 +303,7 @@ function projectAnalytics(summary) {
   return {
     funnel: { ...numericFields(summary.funnel, ['totalEvents', 'uniqueAcquisitionLeads', 'uniquePaidCustomers', 'excludedSyntheticCheckoutSessions']), stageCounts: numericFields(summary.funnel?.stageCounts, ['acquisition', 'activation', 'paid']), conversionRates: numericFields(summary.funnel?.conversionRates, ['acquisitionToActivation', 'activationToPaid', 'acquisitionToPaid']) },
     signups: numericFields(summary.signups, ['total', 'uniqueLeads', 'emailSignups', 'emailRecords', 'checkoutSessionsCreated']),
+    checkoutSessionDepth: { ...numericFields(summary.checkoutSessionDepth, ['sessionsCreated', 'raw', 'identified', 'paymentAttempt', 'paid', 'unresolved', 'qualifiedCheckoutStarts']), basis: summary.checkoutSessionDepth?.basis === 'stripe_session_lookup' ? 'stripe_session_lookup' : 'telemetry_heuristic', lookupStatus: ['ok', 'partial', 'unconfigured', 'unavailable', 'not_requested'].includes(summary.checkoutSessionDepth?.lookupStatus) ? summary.checkoutSessionDepth.lookupStatus : 'unavailable' },
     revenue: { external: { ...numericFields(external, ['paidOrders', 'amountUnknownOrders', 'duplicates']), bookedRevenueByCurrency: currencies(external?.bookedRevenueByCurrency), refundedByCurrency: currencies(external?.refundedByCurrency), excluded: numericFields(external?.excluded, ['internal', 'test', 'unknown']) }, broadAccounting: { ...numericFields(summary.revenue, ['paidOrders', 'paidCustomers', 'amountKnownOrders', 'amountUnknownOrders']), bookedRevenueByCurrency: currencies(summary.revenue?.bookedRevenueByCurrency) } },
     trafficMetrics: numericFields(summary.trafficMetrics, ['visitors', 'sessions', 'pageViews', 'ctaClicks', 'checkoutStarts', 'checkoutPaidConfirmations']),
     attribution: { coverageRate: number(summary.dataQuality?.attributionCoverage) },
@@ -441,6 +449,17 @@ async function readTraffic(deps, signal) {
   return value;
 }
 
+const cohortCache = new Map();
+async function readCohorts(deps, signal) {
+  const ttl = deps.telemetryCacheMs ?? TELEMETRY_CACHE_MS;
+  const key = String(deps.feedbackDir);
+  const hit = cohortCache.get(key);
+  if (ttl > 0 && hit && Date.now() - hit.at < ttl) return hit.value;
+  const value = await ownerTelemetry.readInstallCohorts({ feedbackDir: guardPath(deps.feedbackDir, deps.feedbackDir), weeks: 8, signal, maxBytes: deps.telemetryMaxBytes });
+  if (ttl > 0) cohortCache.set(key, { at: Date.now(), value });
+  return value;
+}
+
 // Why the Money board used to say "Stripe is busy": every list held one of the account's two read slots for its whole run
 // (a 30-day checkout list is about six pages), a read that found both taken failed at once, and a read that timed out kept
 // running and kept its slot. Now each page waits for a slot until one shared deadline, a stopped list stops between pages,
@@ -480,12 +499,43 @@ async function listAll({ list, params, keep = () => true, maxPages = 40, signal,
   }
 }
 
+// Monthly recurring revenue by currency from active subscriptions: each item's price times quantity, scaled to one month.
+// Discounts and coupons are not applied, so this is list-price MRR. `cancelling` counts subscriptions set to end at period end.
+const MONTHS_PER = { day: 12 / 365, week: 12 / 52, month: 1, year: 12 };
+function monthlyRecurring(subscriptions) {
+  const mrr = {};
+  let cancelling = 0;
+  let unpriced = 0;
+  for (const row of subscriptions) {
+    if (row.cancel_at_period_end === true) cancelling += 1;
+    for (const item of row.items?.data || []) {
+      const price = item.price || {};
+      const every = MONTHS_PER[price.recurring?.interval];
+      const count = Number.isInteger(price.recurring?.interval_count) && price.recurring.interval_count > 0 ? price.recurring.interval_count : 1;
+      if (!every || !Number.isSafeInteger(price.unit_amount) || !/^[a-z]{3}$/i.test(price.currency || '')) { unpriced += 1; continue; }
+      const code = price.currency.toUpperCase();
+      const quantity = Number.isInteger(item.quantity) && item.quantity > 0 ? item.quantity : 1;
+      mrr[code] = (mrr[code] || 0) + (price.unit_amount * quantity) / (every * count);
+    }
+  }
+  for (const code of Object.keys(mrr)) mrr[code] = Math.round(mrr[code]);
+  return { mrr, cancelling, unpriced };
+}
+
+// The acquisition channel a checkout carried in its metadata (utm source, else source), in one plain lower-case word.
+function channelOf(row) {
+  const raw = String(row?.metadata?.utmSource || row?.metadata?.source || '').trim().toLowerCase().replace(/[^a-z0-9_.-]+/g, '_').slice(0, 40);
+  return raw && raw !== 'unknown' ? raw : 'direct';
+}
+
 const thumbgateSession = (row) => /thumbgate/i.test(String(row.success_url || ''));
 
 // Why a Stripe source failed, in words a person can act on. Never a bare "Unknown".
 function stripeReason(error) {
   if (/STRIPE_SECRET_KEY is missing/i.test(String(error?.message || ''))) return 'Stripe key missing';
-  if (error?.code === 'collection_timeout') return 'Stripe did not answer in time';
+  // The request's own timeout is set to the time left before the shared deadline, so it can fire first: that is the
+  // same "no answer in time", not an outage.
+  if (error?.code === 'collection_timeout' || error?.code === 'ETIMEDOUT' || /timed? ?out/i.test(String(error?.message || ''))) return 'Stripe did not answer in time';
   if (error?.code === 'provider_busy') return 'Stripe is busy, refresh in a moment';
   return 'Stripe unavailable';
 }
@@ -495,7 +545,54 @@ const attempt = async (work, reasonOf) => {
 };
 const telemetryReason = (error) => (error?.code === 'collection_timeout' ? 'telemetry read timed out' : 'telemetry read failed');
 
-const trafficFields = (read) => ({ visitors: read.traffic.visitors, realVisitors: read.traffic.realVisitors, botOrInternalVisitors: read.traffic.botOrInternalVisitors, pageViewers: read.traffic.pageViewers, checkoutStartsByType: read.traffic.checkoutStartsByType, sessions: read.traffic.sessions, pageViews: read.traffic.pageViews, ctaClicks: read.traffic.ctaClicks, checkoutStarts: read.traffic.checkoutStarts, checkoutPaidConfirmations: read.traffic.checkoutPaidConfirmations });
+const trafficFields = (read) => ({ visitors: read.traffic.visitors, realVisitors: read.traffic.realVisitors, engagedVisitors: read.traffic.engagedVisitors, botOrInternalVisitors: read.traffic.botOrInternalVisitors, pageViewers: read.traffic.pageViewers, checkoutStartsByType: read.traffic.checkoutStartsByType, sessions: read.traffic.sessions, pageViews: read.traffic.pageViews, ctaClicks: read.traffic.ctaClicks, checkoutStarts: read.traffic.checkoutStarts, checkoutPaidConfirmations: read.traffic.checkoutPaidConfirmations });
+
+const attemptSync = (work) => { try { return work(); } catch { return { status: 'unavailable', reason: 'The key store could not be read.' }; } };
+
+// Payment to access: every purchase that still grants access should have a ThumbGate key that works, and every working paid
+// key should trace to a payment. Counts only; no customer id or address leaves this function.
+//   - `entitled` is who should hold access now: credit-pack buyers (one year) and active subscribers. Service orders and
+//     canceled subscriptions grant no key, so they are not expected to have one.
+//   - A key works the way billing.validateApiKey() decides: active, and not a credit pack with no credits left. A used-up
+//     credit pack was provisioned, so it is counted apart (`exhaustedCreditKeys`), never as a provisioning failure.
+//   - A working paid key with no Stripe match is listed for review, not called wrong: GitHub Marketplace, PayPal and manual
+//     grants also make keys.
+const isTrialOrFree = (meta) => /free|trial/i.test(String(meta.plan || '') + ' ' + String(meta.tier || '') + ' ' + String(meta.source || ''));
+const creditsExhausted = (meta) => meta.remainingCredits !== undefined && meta.remainingCredits !== null && meta.remainingCredits <= 0;
+function paymentAccessCheck({ entitled, failing, store, complete = true }) {
+  const active = Object.values(store?.keys || {}).filter((meta) => meta && meta.active === true);
+  const working = active.filter((meta) => !creditsExhausted(meta));
+  const owners = (list) => {
+    const out = new Set();
+    for (const meta of list) {
+      if (meta.customerId) out.add(String(meta.customerId));
+      if (meta.customerEmail) out.add(String(meta.customerEmail).toLowerCase());
+    }
+    return out;
+  };
+  const provisioned = owners(active);
+  const withAccess = owners(working);
+  const has = (set, who) => set.has(String(who)) || set.has(String(who).toLowerCase());
+  const paidKeys = working.filter((meta) => !isTrialOrFree(meta));
+  const paidWithoutAccess = [...entitled].filter((who) => !has(provisioned, who)).length;
+  const accessWithoutStripePayment = paidKeys.filter((meta) => !entitled.has(String(meta.customerId || '')) && !entitled.has(String(meta.customerEmail || '').toLowerCase())).length;
+  const failingIds = Array.isArray(failing) ? failing.map((row) => row.customer).filter(Boolean) : null;
+  const failedPaymentWithAccess = failingIds ? failingIds.filter((who) => has(withAccess, who)).length : null;
+  const problems = paidWithoutAccess + (failedPaymentWithAccess || 0);
+  return {
+    status: problems ? 'needs_review' : accessWithoutStripePayment ? 'review' : 'ok',
+    complete: complete && failingIds !== null,
+    entitledCustomers: entitled.size,
+    activeKeys: working.length,
+    activePaidKeys: paidKeys.length,
+    activeTrialOrFreeKeys: working.length - paidKeys.length,
+    exhaustedCreditKeys: active.length - working.length,
+    paidWithoutAccess,
+    accessWithoutStripePayment,
+    failedPaymentSubscriptions: failingIds ? failingIds.length : null,
+    failedPaymentWithAccess,
+  };
+}
 
 // Money board. Each block fails alone: its fields are null and a plain-words reason is returned beside them.
 // Stripe answers paying customers, revenue and checkouts; our own page-view telemetry answers visitors.
@@ -534,20 +631,42 @@ async function collectMoney(deps, signal) {
   const paidAndProLane = (async () => {
     const paidResult = await withLastGood('paid', async () => {
       const result = await listIt((params, options) => stripe().checkout.sessions.list(params, options),
-        { status: 'complete', created: { gte: nowSeconds - 365 * 86400 }, expand: ['data.payment_intent.latest_charge'] },
+        { status: 'complete', created: { gte: nowSeconds - 365 * 86400 }, expand: ['data.payment_intent.latest_charge.balance_transaction'] },
         (row) => row.status === 'complete' && thumbgateSession(row), 10);
       // Paid and not refunded in full, owner and test purchases excluded. A partial refund comes off the revenue.
       const charge = (row) => (object(row.payment_intent) && object(row.payment_intent.latest_charge) ? row.payment_intent.latest_charge : null);
       const paid = result.rows.filter((row) => row.payment_status === 'paid' && classifySession(row, { ownerEmails }) !== 'internal' && charge(row)?.refunded !== true);
       const customers = new Set(paid.map((row) => id(row.customer) || String(row.customer_details?.email || row.customer_email || row.id).toLowerCase()));
       const revenue = {};
+      const channels = {};
+      const counted = new Set();
+      const channel = (name) => (channels[name] ||= { paidCustomers: 0, revenue30d: {} });
+      // Oldest first, so a customer is credited to the channel of their first paid checkout.
+      for (const row of [...paid].sort((a, b) => (a.created || 0) - (b.created || 0))) {
+        const who = id(row.customer) || String(row.customer_details?.email || row.customer_email || row.id).toLowerCase();
+        if (!counted.has(who)) { counted.add(who); channel(channelOf(row)).paidCustomers += 1; }
+      }
+      // Stripe's own fee on each 30-day checkout, read from the charge's balance transaction when Stripe returns it.
+      const fees = { reportedFees: {}, unreportedCharges: 0, unreportedAmount: {}, subscriptionFirstCharges: {} };
       for (const row of paid) {
         if (!(row.created >= nowSeconds - 30 * 86400) || !Number.isSafeInteger(row.amount_total) || !/^[a-z]{3}$/i.test(row.currency || '')) continue;
         const code = row.currency.toUpperCase();
         const refunded = Number.isSafeInteger(charge(row)?.amount_refunded) ? charge(row).amount_refunded : 0;
         revenue[code] = (revenue[code] || 0) + row.amount_total - refunded;
+        const fee = charge(row)?.balance_transaction?.fee;
+        if (Number.isSafeInteger(fee)) {
+          const feeCode = String(charge(row).balance_transaction.currency || row.currency).toUpperCase();
+          fees.reportedFees[feeCode] = (fees.reportedFees[feeCode] || 0) + fee;
+        } else { fees.unreportedCharges += 1; fees.unreportedAmount[code] = (fees.unreportedAmount[code] || 0) + row.amount_total; }
+        if (row.mode === 'subscription') fees.subscriptionFirstCharges[code] = (fees.subscriptionFirstCharges[code] || 0) + row.amount_total;
+        const byChannel = channel(channelOf(row)).revenue30d;
+        byChannel[code] = (byChannel[code] || 0) + row.amount_total - refunded;
       }
-      return { customers, revenue, complete: result.complete };
+      // Credit-pack buyers keep access for the pack's life; a subscription checkout's access is checked against active
+      // subscriptions instead, and a service order grants no key.
+      const grant = deps.resolveCheckoutProvisioningGrant || billing._resolveCheckoutProvisioningGrant;
+      const creditPackCustomers = new Set(paid.filter((row) => grant(row).kind === 'credit_pack').map((row) => id(row.customer) || String(row.customer_details?.email || row.customer_email || row.id).toLowerCase()));
+      return { customers, creditPackCustomers, revenue, channels, fees, complete: result.complete };
     });
     const proResult = await withLastGood('subscriptions', async () => {
       const result = await listIt((params, options) => stripe().subscriptions.list(params, options), { status: 'active', expand: ['data.customer'] }, () => true, 5);
@@ -556,13 +675,38 @@ async function collectMoney(deps, signal) {
         return !(email && ownerEmails.some((owner) => email === String(owner).toLowerCase()));
       });
       const customers = new Set(external.map((row) => id(row.customer) || String(row.customer?.email || row.id).toLowerCase()));
-      return { count: external.length, customers, complete: result.complete };
+      return { count: external.length, customers, complete: result.complete, ...monthlyRecurring(external) };
     });
     return [paidResult, proResult];
   })();
-  let paidAndPro; let sessionRun; let trafficRun; let summaryRun;
+  const isOwnerEmail = (email) => Boolean(email) && ownerEmails.some((owner) => String(email).toLowerCase() === String(owner).toLowerCase());
+  // Third lane: what subscriptions actually brought in and lost in 30 days. Renewal invoices are the recurring cash the
+  // checkout list never sees; cancelled subscriptions are churn.
+  const recurringLane = withLastGood('recurring', async () => {
+    const since30 = nowSeconds - 30 * 86400;
+    const invoices = await listIt((params, options) => stripe().invoices.list(params, options), { status: 'paid', created: { gte: since30 } },
+      (row) => row.billing_reason === 'subscription_cycle' && !isOwnerEmail(row.customer_email), 10);
+    const renewals = {};
+    for (const row of invoices.rows) {
+      if (!Number.isSafeInteger(row.amount_paid) || !/^[a-z]{3}$/i.test(row.currency || '')) continue;
+      const code = row.currency.toUpperCase();
+      renewals[code] = (renewals[code] || 0) + row.amount_paid;
+    }
+    const cancelled = await listIt((params, options) => stripe().subscriptions.list(params, options), { status: 'canceled', expand: ['data.customer'] },
+      (row) => Number(row.canceled_at || row.ended_at) >= since30 && !isOwnerEmail(row.customer?.email), 5);
+    // Failed payments: subscriptions Stripe could not charge. Their customer ids feed the payment-to-access check.
+    const failing = [];
+    let failingComplete = true;
+    for (const status of ['past_due', 'unpaid']) {
+      const listed = await listIt((params, options) => stripe().subscriptions.list(params, options), { status }, (row) => row.status === status, 2);
+      failingComplete &&= listed.complete;
+      for (const row of listed.rows) failing.push({ status, customer: id(row.customer) });
+    }
+    return { renewals, renewalCount: invoices.rows.length, churned: cancelled.rows.length, churnedMrr: monthlyRecurring(cancelled.rows).mrr, failing, complete: invoices.complete && cancelled.complete && failingComplete };
+  });
+  let paidAndPro; let sessionRun; let trafficRun; let summaryRun; let recurringRun;
   try {
-    [paidAndPro, sessionRun, trafficRun, summaryRun] = await Promise.all([
+    [paidAndPro, sessionRun, trafficRun, summaryRun, recurringRun] = await Promise.all([
       paidAndProLane,
       withLastGood('checkouts', async () => {
         const result = await listIt((params, options) => stripe().checkout.sessions.list(params, options), { created: { gte: nowSeconds - 30 * 86400 } }, thumbgateSession, 40);
@@ -571,7 +715,13 @@ async function collectMoney(deps, signal) {
         const botCheckSeconds = Date.parse(botCheckBeganAt) / 1000;
         const beforeBotCheck = (row) => Boolean(row.created) && row.created < botCheckSeconds;
         const classified = result.rows.filter((row) => row.metadata?.uaClass && row.created).map((row) => row.created);
+        const startsByChannel = {};
+        for (const row of result.rows) {
+          if (['bot', 'internal'].includes(classifySession(row, { ownerEmails }))) continue;
+          startsByChannel[channelOf(row)] = (startsByChannel[channelOf(row)] || 0) + 1;
+        }
         return {
+          startsByChannel,
           d30: countSessions(result.rows, { ownerEmails }),
           d7: countSessions(result.rows.filter((row) => !row.created || row.created >= since7), { ownerEmails }),
           before: countSessions(result.rows.filter(beforeBotCheck), { ownerEmails }),
@@ -582,6 +732,7 @@ async function collectMoney(deps, signal) {
       }),
       attempt(() => readTraffic(deps, signal), telemetryReason),
       attempt(() => readSummary(deps, signal), () => 'lead ledgers failed'),
+      recurringLane,
     ]);
   } finally {
     clearTimeout(sharedTimer);
@@ -606,6 +757,12 @@ async function collectMoney(deps, signal) {
     internal: counts.excluded.internal,
   } : null);
   const bothStripe = paid && proRun.value;
+  const access = bothStripe ? attemptSync(() => paymentAccessCheck({
+    entitled: new Set([...(paid.creditPackCustomers || []), ...proRun.value.customers]),
+    failing: recurringRun.ok ? recurringRun.value.failing : null,
+    store: (deps.loadKeyStore || billing.loadKeyStore)(),
+    complete: paid.complete && proRun.value.complete,
+  })) : null;
   // The checkout panel: sessions with no bot check on record come first, then people, bots and owner only for sessions
   // created after the bot check began, then the gap between the site's own start events and Stripe's sessions.
   const checkoutBotCheck = (counts, traffic) => {
@@ -638,6 +795,7 @@ async function collectMoney(deps, signal) {
     paid: blockTime('paid'),
     subscriptions: blockTime('subscriptions'),
     checkouts: blockTime('checkouts'),
+    recurring: blockTime('recurring'),
     traffic: { collectedAt: trafficRead?.collectedAt || null, stale: false },
     leads: { collectedAt: summaryRun.value?.collectedAt || null, stale: summaryRun.value?.state === 'stale' },
     displayRefreshedAt: new Date().toISOString(),
@@ -652,8 +810,31 @@ async function collectMoney(deps, signal) {
     payingCustomersSource: 'stripe',
     payingCustomersBasis: bothStripe ? (paid.complete && proRun.value.complete ? 'stripe_paid_and_active' : 'stripe_paid_and_active_partial') : 'unavailable',
     activePro: proRun.value ? proRun.value.count : null,
+    mrr: proRun.value ? proRun.value.mrr : null,
+    mrrBasis: proRun.value ? (proRun.value.complete && !proRun.value.unpriced ? 'stripe_active_subscription_list_prices' : 'stripe_active_subscription_list_prices_partial') : 'unavailable',
+    cancellingAtPeriodEnd: proRun.value ? proRun.value.cancelling : null,
+    // Churn: subscriptions cancelled in 30 days against those plus the ones still active.
+    recurring30d: recurringRun.ok ? {
+      renewalRevenue: recurringRun.value.renewals,
+      renewalInvoices: recurringRun.value.renewalCount,
+      churnedSubscriptions: recurringRun.value.churned,
+      churnedMrr: recurringRun.value.churnedMrr,
+      failedPaymentSubscriptions: recurringRun.value.failing.length,
+      churnRate: proRun.value && proRun.value.count + recurringRun.value.churned > 0 ? Math.round((recurringRun.value.churned / (proRun.value.count + recurringRun.value.churned)) * 1000) / 1000 : null,
+      complete: recurringRun.value.complete,
+    } : null,
+    // One row per channel: checkout sessions started in 30 days (bots and owner left out), paying customers credited to
+    // the channel of their first paid checkout in the past year, and 30-day checkout revenue.
+    channels: paid || sessions ? Object.entries([...new Set([...Object.keys(paid?.channels || {}), ...Object.keys(sessions?.startsByChannel || {})])].reduce((out, name) => {
+      out[name] = { checkoutStarts30d: sessions ? sessions.startsByChannel[name] || 0 : null, paidCustomers: paid ? paid.channels[name]?.paidCustomers || 0 : null, revenue30d: paid ? paid.channels[name]?.revenue30d || {} : null };
+      return out;
+    }, {})).map(([channel, row]) => ({ channel, ...row })).sort((a, b) => (b.paidCustomers || 0) - (a.paidCustomers || 0) || (b.checkoutStarts30d || 0) - (a.checkoutStarts30d || 0)).slice(0, 25) : null,
+    usage30d: trafficReason ? null : (trafficRead.usage || null),
+    weekOverWeek: trafficReason ? null : (trafficRead.weeks || null),
     activeProBasis: proRun.value ? (proRun.value.complete ? 'stripe_active_subscriptions_excluding_owner' : 'stripe_active_subscriptions_first_100_only') : 'unavailable',
     revenueLast30Days: paid ? paid.revenue : null,
+    paymentFees30d: paid ? paid.fees : null,
+    paymentAccess: access,
     revenueBasis: 'stripe_paid_checkouts_after_refunds',
     checkouts7d: sessionBuckets(sessions?.d7),
     checkouts30d: sessionBuckets(sessions?.d30),
@@ -663,6 +844,8 @@ async function collectMoney(deps, signal) {
     reasons: {
       payingCustomers: bothStripe ? null : (paidRun.reason || proRun.reason),
       activePro: proRun.value ? null : proRun.reason,
+      mrr: proRun.value ? null : proRun.reason,
+      recurring: recurringRun.ok ? null : recurringRun.reason,
       revenue: paid ? null : paidRun.reason,
       checkouts: sessions ? null : sessionRun.reason,
       visitors: trafficReason,
@@ -670,7 +853,7 @@ async function collectMoney(deps, signal) {
     },
     notes: ['Every started checkout is counted once: real people, bots, not classified, or owner and test.', 'Sessions created before the bot check carry no browser class, so they are counted as not classified.'],
   };
-  const staleLabel = { paid: 'paying customers and revenue', subscriptions: 'active subscriptions', checkouts: 'checkout counts' };
+  const staleLabel = { paid: 'paying customers and revenue', subscriptions: 'active subscriptions', checkouts: 'checkout counts', recurring: 'renewals and churn' };
   for (const [key, at] of Object.entries(staleBlocks)) {
     const minutes = Math.max(1, Math.round((Date.now() - at) / 60000));
     data.notes.push(`Showing the last good ${staleLabel[key]} from ${minutes} minute${minutes === 1 ? '' : 's'} ago, because Stripe did not answer this time.`);
@@ -682,6 +865,7 @@ async function collectMoney(deps, signal) {
   if (!paidRun.ok) warnings.push('paid_checkout_list_unavailable');
   if (!sessionRun.ok) warnings.push('checkout_list_unavailable');
   if (!proRun.ok) warnings.push('subscription_list_unavailable');
+  if (!recurringRun.ok) warnings.push('renewal_and_churn_unavailable');
   if (trafficReason) warnings.push('telemetry_unavailable');
   if (leadsReason) warnings.push('leads_unavailable');
   const failed = [paidRun, sessionRun, proRun].filter((run) => !run.ok).length;
@@ -693,9 +877,10 @@ async function collectMoney(deps, signal) {
 // Analytics: 30 days of traffic streamed from the telemetry tail (never refused for size), a daily series, and the
 // billing totals from the cached child-process summary when it is ready.
 async function collectAnalytics(deps, signal) {
-  const [trafficRun, summaryRun] = await Promise.all([
+  const [trafficRun, summaryRun, cohortRun] = await Promise.all([
     attempt(() => readTraffic(deps, signal), telemetryReason),
     attempt(() => readSummary(deps, signal), () => 'billing totals failed'),
+    attempt(() => readCohorts(deps, signal), telemetryReason),
   ]);
   const parts = summaryRun.value?.value || null;
   const trafficRead = trafficRun.value;
@@ -704,6 +889,9 @@ async function collectAnalytics(deps, signal) {
   const hasTraffic = trafficRun.ok && !trafficRead.empty;
   data.trafficMetrics = hasTraffic ? trafficFields(trafficRead) : (data.trafficMetrics || null);
   data.daily = hasTraffic ? trafficRead.daily : [];
+  data.usage = hasTraffic ? (trafficRead.usage || null) : null;
+  data.weekOverWeek = hasTraffic ? (trafficRead.weeks || null) : null;
+  data.cohorts = cohortRun.ok ? cohortRun.value : null;
   data.dataQuality = { ...(data.dataQuality || {}), telemetryWindowComplete: hasTraffic ? !trafficRead.partial : false, telemetryBytesRead: trafficRead ? trafficRead.bytesRead : 0, telemetrySizeBytes: trafficRead ? trafficRead.size : 0 };
   const warnings = [];
   if (data.reconciliation && (data.reconciliation.status !== 'ok' || !data.reconciliation.complete)) warnings.push('stripe_reconciliation_' + data.reconciliation.status);
@@ -711,6 +899,119 @@ async function collectAnalytics(deps, signal) {
   if (!hasTraffic) warnings.push(trafficRun.ok ? 'telemetry_store_empty' : 'telemetry_unavailable');
   else if (trafficRead.partial) warnings.push('telemetry_incomplete');
   return envelope('telemetry_tail_and_billing_summary_30d', data, warnings);
+}
+
+// Visitor behavior from Microsoft Clarity's Data Export API (sessions, rage and dead clicks, scroll, top pages and
+// sources). Lights up once THUMBGATE_CLARITY_API_TOKEN is set; until then it says what is missing, never a zero.
+async function collectBehavior(deps, signal) {
+  const result = await (deps.collectClarity || clarity.collectClarity)({ feedbackDir: deps.feedbackDir, signal });
+  return envelope('microsoft_clarity_export_24h', result.data, result.warnings);
+}
+
+// Sources: one tile per place a number comes from, each with the time of its last event and a plain state.
+//   ok              this server read an event time from its own first-party log
+//   no_data_yet     this server reads the source and has seen no event in the window
+//   not_read_here   the tag is on the site, but this server does not read that vendor's numbers: no time, no count,
+//                   open the vendor's own dashboard (no key is held in the browser or invented here)
+//   not_installed   the tag is not in the site files
+//   unavailable     the first-party log could not be read; no zero is implied
+// Never a made-up number: a tile with nothing to show says so.
+const CLARITY_DASHBOARD = 'https://clarity.microsoft.com/projects/view/zjaflwztgq/gettingstarted';
+const PLAUSIBLE_DASHBOARD = 'https://plausible.io/thumbgate.ai';
+const GA_DASHBOARD = 'https://analytics.google.com/analytics/web/';
+const FUNNEL_STAGES = Object.freeze([
+  { id: 'visitor', label: 'Visitor (landing page view)', events: ['landing_page_view'], cli: false },
+  { id: 'install', label: 'Install (CLI init)', events: ['cli_init'], cli: true },
+  { id: 'first_block', label: 'First block (a gate stopped a tool call)', events: ['first_block', 'first_blocked_tool_call'], cli: true },
+  { id: 'pro_checkout_click', label: 'Pro checkout click', events: ['checkout_start', 'pro_checkout_start'], cli: false },
+]);
+
+function readSiteFile(publicDir, name) {
+  try { return fs.readFileSync(path.join(publicDir, name), 'utf8'); } catch { return null; }
+}
+
+function siteTags(deps) {
+  const publicDir = deps.publicDir || path.join(__dirname, '..', 'public');
+  const home = readSiteFile(publicDir, 'index.html');
+  const env = deps.env || process.env;
+  const gaId = String(env.THUMBGATE_GA_MEASUREMENT_ID || '').trim();
+  // The Clarity tag is added to public pages by the server (scripts/clarity.js), so it is read from there, not from files.
+  const clarityId = clarity.resolveClarityProjectId(env);
+  return {
+    readable: home !== null,
+    plausible: home !== null && /plausible\.io\/js\//.test(home),
+    googleAnalytics: home !== null && home.includes('__GA_BOOTSTRAP__') && /^G-[A-Z0-9]{6,14}$/.test(gaId) ? gaId : null,
+    clarity: clarityId || null,
+  };
+}
+
+async function collectSources(deps, signal) {
+  const warnings = [];
+  const tags = siteTags(deps);
+  if (!tags.readable) warnings.push('site_files_unreadable');
+  const last = new Map(FUNNEL_STAGES.map((stage) => [stage.id, { at: null, count: 0 }]));
+  const byEvent = new Map();
+  for (const stage of FUNNEL_STAGES) for (const event of stage.events) byEvent.set(event, stage);
+  let scanned = null;
+  try {
+    scanned = await ownerTelemetry.scanTelemetry({
+      feedbackDir: guardPath(deps.feedbackDir, deps.feedbackDir), days: 30, signal, maxBytes: deps.telemetryMaxBytes,
+      onEntry: (entry, time) => {
+        const stage = byEvent.get(String(entry.eventType || entry.event || '').toLowerCase());
+        if (!stage) return;
+        // Bot, internal and test traffic is left out, and so are the owner's own and build-server installs.
+        if (entry.isBotTraffic === true || entry.isInternal === true || entry.isTest === true) return;
+        if (stage.cli && ['owner', 'ci'].includes(String(entry.visitorType || '').toLowerCase())) return;
+        const seen = last.get(stage.id);
+        seen.count += 1;
+        if (seen.at === null || time > seen.at) seen.at = time;
+      },
+    });
+  } catch (error) {
+    if (error.code === 'collection_timeout') throw error;
+    warnings.push('telemetry_unavailable');
+  }
+  if (scanned?.partial) warnings.push('telemetry_incomplete');
+  if (scanned?.empty) warnings.push('telemetry_store_empty');
+  const readable = Boolean(scanned);
+  const funnel = FUNNEL_STAGES.map((stage) => {
+    const seen = last.get(stage.id);
+    const base = { id: stage.id, label: stage.label, group: 'funnel', source: 'first_party_log_30d', dashboardUrl: null };
+    if (!readable) return { ...base, status: 'unavailable', lastEventAt: null, count30d: null, note: 'The first-party log could not be read, so nothing is shown.' };
+    if (seen.at === null) return { ...base, status: 'no_data_yet', lastEventAt: null, count30d: null, note: scanned.partial ? 'No event found in the part of the log that was read (the 30-day window was not read in full).' : 'No event in the last 30 days (bot, internal, test, owner and build-server traffic left out).' };
+    return { ...base, status: 'ok', lastEventAt: new Date(seen.at).toISOString(), count30d: seen.count, note: scanned.partial ? 'Count is a lower bound: the 30-day window was not read in full.' : 'Last event this server recorded (bot, internal, test, owner and build-server traffic left out).' };
+  });
+  const vendor = (id, label, installed, detail, dashboardUrl) => ({
+    id, label, group: 'analytics', source: 'site_files', dashboardUrl,
+    status: installed ? 'not_read_here' : 'not_installed', lastEventAt: null, count30d: null,
+    note: installed
+      ? `${detail} This server does not read ${label}'s numbers, so there is no event time here (no data yet on this page). Open its own dashboard.`
+      : `${label} is not in the site files.`,
+  });
+  const analytics = [
+    vendor('plausible', 'Plausible', tags.plausible, 'The Plausible script is on the site pages.', PLAUSIBLE_DASHBOARD),
+    vendor('google_analytics', 'Google Analytics', Boolean(tags.googleAnalytics), tags.googleAnalytics ? `Measurement ID ${tags.googleAnalytics} is injected into the marketing pages.` : '', GA_DASHBOARD),
+    vendor('clarity', 'Microsoft Clarity', Boolean(tags.clarity), tags.clarity ? `Project ${tags.clarity} loads on the public marketing pages (never on /admin or signed-in pages).` : '', CLARITY_DASHBOARD),
+  ];
+  return envelope('site_files_and_first_party_log_30d', { tiles: [...analytics, ...funnel], windowDays: 30 }, warnings);
+}
+
+// Unit economics: delivery cost per active install and per paying customer, contribution per plan, payment-to-access.
+function economicsFrom(money, deps) {
+  const meter = (deps.readCostMeter || ((options) => costMeter.readWindow(options)))({ feedbackDir: deps.feedbackDir, days: 30 });
+  return unitEconomics.computeUnitEconomics({ money, usage: money?.usage30d || null, meter, costs: deps.unitCosts || unitEconomics.loadUnitCosts() });
+}
+
+async function collectEconomics(deps, signal) {
+  const moneyRun = await attempt(() => collectMoney(deps, signal), () => 'Money collection failed');
+  const money = moneyRun.ok ? moneyRun.value.data : null;
+  const data = economicsFrom(money, deps);
+  data.paymentAccess = money?.paymentAccess || null;
+  data.firstValue = money?.usage30d ? { activeInstalls30d: money.usage30d.activeInstalls30d, initsInWindow: money.usage30d.initsInWindow, firstValueInstalls: money.usage30d.firstValueInstalls ?? null, timeToFirstValue: money.usage30d.timeToFirstValue || null } : null;
+  const warnings = [];
+  if (!money) warnings.push('money_unavailable');
+  if (data.status !== 'ok') warnings.push('costs_partial');
+  return envelope('unit_economics_30d', data, warnings);
 }
 
 // One metric of the read-only summary: its value, where it came from, when that source was read, and one of these states:
@@ -757,8 +1058,15 @@ async function collectSummary(deps, signal) {
     add('money.paying_customers', 'Paying customers', money.payingCustomers, { ...stripeOpts('paid', why.payingCustomers), partial: money.payingCustomersBasis === 'stripe_paid_and_active_partial' });
     add('money.active_pro', 'Active Pro subscriptions', money.activePro, { ...stripeOpts('subscriptions', why.activePro), partial: money.activeProBasis === 'stripe_active_subscriptions_first_100_only' });
     // collectMoney reads completed Checkout Sessions only, so this is first-charge revenue; renewal invoices never appear in it.
+    add('money.mrr', 'Monthly recurring revenue at list price, by currency (active Stripe subscriptions)', money.mrr, { ...stripeOpts('subscriptions', why.mrr), partial: money.mrrBasis === 'stripe_active_subscription_list_prices_partial' });
+    add('money.cancelling_at_period_end', 'Active subscriptions set to cancel at period end', money.cancellingAtPeriodEnd, stripeOpts('subscriptions', why.mrr));
     add('money.revenue_30d', 'One-time checkout revenue, past 30 days, by currency (completed Checkout Sessions after refunds)', money.revenueLast30Days, stripeOpts('paid', why.revenue));
-    add('money.subscription_invoices_30d', 'Subscription invoices, past 30 days', null, { source: 'stripe', unresolved: true, reason: 'Not collected yet: renewal invoices are not read, so recurring revenue is not in any revenue number here' });
+    const recurring = money.recurring30d;
+    const recurringOpts = { ...stripeOpts('recurring', why.recurring), partial: recurring ? recurring.complete === false : false };
+    add('money.subscription_invoices_30d', 'Subscription renewal revenue, past 30 days, by currency (paid renewal invoices)', recurring ? recurring.renewalRevenue : null, recurringOpts);
+    add('money.churned_subscriptions_30d', 'Subscriptions cancelled in the past 30 days', recurring ? recurring.churnedSubscriptions : null, recurringOpts);
+    const noSubscriptions = recurring && recurring.churnRate === null;
+    add('money.churn_rate_30d', 'Subscription churn, past 30 days (cancelled ÷ cancelled plus active)', recurring ? recurring.churnRate : null, noSubscriptions ? { ...recurringOpts, unresolved: true, reason: 'No active or cancelled subscriptions, so there is no rate' } : recurringOpts);
     buckets('money.checkouts_7d', '7 days', money.checkouts7d);
     buckets('money.checkouts_30d', '30 days', money.checkouts30d);
     const panel = money.checkoutBotCheck;
@@ -766,27 +1074,168 @@ async function collectSummary(deps, signal) {
     add('money.signups_by_source', 'Signups by source', money.leadsBySource?.signups ?? null, leadOpts);
     add('money.workflow_sprint_leads', 'Setup Sprint leads', money.leadsBySource?.workflowSprint ?? null, leadOpts);
     add('money.newsletter', 'Newsletter signups', money.leadsBySource?.newsletter ?? null, leadOpts);
+    add('money.payment_access', 'Payment to access check: entitled customers (active subscription or credit pack) without a key, working paid keys without a Stripe payment, failed payments still holding a working key', money.paymentAccess || null, stripeOpts('paid', why.payingCustomers));
+    const econ = economicsFrom(money, deps);
+    const econOpts = { source: 'cost_meter_and_stripe', collectedAt: refreshed, partial: econ.status !== 'ok', reason: econ.reasons?.hosting || null };
+    add('economics.delivery_cost_30d_usd', 'Cost to deliver the service, past 30 days, US dollars (hosting, email, payment fees, fixed)', econ.delivery?.totalUsd ?? null, econOpts);
+    add('economics.cost_per_active_install_usd', 'Hosting, email and fixed cost per active CLI install, past 30 days, US dollars', econ.perActiveInstallUsd ?? null, { ...econOpts, reason: econ.reasons?.activeInstalls || econOpts.reason });
+    add('economics.cost_per_paying_customer_usd', 'Delivery cost per paying customer, past 30 days, US dollars', econ.perPayingCustomerUsd ?? null, { ...econOpts, reason: econ.reasons?.payingCustomers || econOpts.reason });
+    add('economics.contribution_30d', 'Revenue minus delivery cost, past 30 days, US dollars', econ.contribution || null, econOpts);
+    add('economics.plans', 'Contribution per sale for each plan, US dollars', econ.plans || null, econOpts);
   }
   const traffic = analytics?.trafficMetrics || money?.traffic30d || null;
   const trafficField = (key, label, name) => add(key, label, traffic ? traffic[name] ?? null : null, trafficOpts);
   trafficField('traffic.visitor_identifiers_all_30d', 'All observed visitor identifiers (30 days)', 'visitors');
   if (money?.traffic30d) add('traffic.visitor_identifiers_excluding_flagged_30d', 'Observed visitor identifiers, excluding bot, internal and test (30 days)', money.traffic30d.realVisitors, trafficOpts);
+  if (money?.traffic30d) add('traffic.engaged_visitors_30d', 'Visitor ids with two or more events or any click, excluding bot, internal and test (30 days)', money.traffic30d.engagedVisitors, trafficOpts);
   trafficField('traffic.landing_page_views_30d', 'Landing page views (30 days)', 'pageViews');
   trafficField('traffic.cta_clicks_30d', 'Call to action clicks (30 days)', 'ctaClicks');
   trafficField('traffic.checkout_starts_30d', 'Checkout starts seen on the site (30 days)', 'checkoutStarts');
   trafficField('traffic.paid_confirmations_30d', 'Paid confirmations (30 days)', 'checkoutPaidConfirmations');
+  const usage = analytics?.usage || money?.usage30d || null;
+  const usageField = (key, label, name) => add(key, label, usage ? usage[name] ?? null : null, trafficOpts);
+  usageField('usage.active_installs_7d', 'CLI installs active in the past 7 days (owner and CI excluded)', 'activeInstalls7d');
+  usageField('usage.active_installs_30d', 'CLI installs active in the past 30 days (owner and CI excluded)', 'activeInstalls30d');
+  usageField('usage.activated_installs_30d', 'Active installs that captured feedback (30 days)', 'activatedInstalls');
+  usageField('usage.returning_installs_30d', 'Active installs seen on 2 or more days (30 days)', 'returningInstalls');
+  usageField('usage.first_value_installs_30d', 'Installs whose first real gate block arrived in the past 30 days', 'firstValueInstalls');
+  usageField('usage.time_to_first_value', 'Minutes from install to first real gate block (median and 75th percentile)', 'timeToFirstValue');
+  add('usage.install_cohorts_8w', 'Weekly CLI install cohorts and how many came back each later week (8 weeks)', analytics?.cohorts?.cohorts ?? null, { ...trafficOpts, partial: analytics?.cohorts?.partial === true });
+  if (money) add('money.channels', 'Checkout starts (30 days), paying customers (first paid checkout, 1 year) and revenue (30 days) by channel', money.channels, stripeOpts('paid', why.revenue));
+  add('traffic.week_over_week', 'Past 7 days against the 7 days before', analytics?.weekOverWeek || money?.weekOverWeek || null, trafficOpts);
   add('traffic.daily_30d', 'Daily traffic, past 30 days', analytics ? analytics.daily : null, trafficOpts);
   const billingOpts = { source: 'billing_summary', collectedAt: fresh.leads?.collectedAt || null, reason: analyticsRun.ok ? null : analyticsRun.reason, unresolved: !analytics?.signups };
   add('analytics.email_signups', 'Email signups', analytics?.signups?.emailSignups ?? null, billingOpts);
-  add('analytics.external_paid_orders', 'External paid orders', analytics?.revenue?.external?.paidOrders ?? null, billingOpts);
-  add('analytics.external_booked_revenue_30d', 'External booked revenue, past 30 days, by currency', analytics?.revenue?.external?.bookedRevenueByCurrency ?? null, billingOpts);
+  // Ledger totals remain useful evidence when the provider reconciliation is
+  // incomplete, but a zero must not be promoted to a verified provider zero.
+  const reconciliationComplete = analytics?.reconciliation?.status === 'ok' && analytics.reconciliation.complete === true;
+  const revenueOpts = { ...billingOpts, partial: Boolean(analytics) && !reconciliationComplete,
+    reason: reconciliationComplete || !analytics ? billingOpts.reason : 'Provider reconciliation is incomplete (' + (analytics?.reconciliation?.status || 'not reported') + '); these are partial ledger totals, not a verified payment outcome' };
+  add('analytics.external_paid_orders', 'External paid orders', analytics?.revenue?.external?.paidOrders ?? null, revenueOpts);
+  add('analytics.external_booked_revenue_30d', 'External booked revenue, past 30 days, by currency', analytics?.revenue?.external?.bookedRevenueByCurrency ?? null, revenueOpts);
 
   // A permanent, stated gap is listed apart so the overall state reflects sources that failed, not a feature not built yet.
-  const knownGaps = ['money.subscription_invoices_30d'];
-  const states = Object.entries(fields).filter(([key]) => !knownGaps.includes(key)).map(([, entry]) => entry.status);
+  const knownGaps = [];
+  // Unit economics are estimates at list rates and start empty until the cost meter has samples, so they never decide the
+  // summary's overall state; each one carries its own status.
+  const states = Object.entries(fields).filter(([key]) => !knownGaps.includes(key) && !key.startsWith('economics.')).map(([, entry]) => entry.status);
   const bad = states.filter((state) => state === 'unavailable').length;
   const overall = !money && !analytics ? 'unavailable' : states.every((state) => state === 'ok' || state === 'verified_zero') ? 'ok' : 'partial';
   return envelope('owner_console_summary', { generatedAt: refreshed, readOnly: true, windows: { checkouts: '7d and 30d', traffic: '30d', revenue: '30d' }, freshness: { displayRefreshedAt: refreshed, stripeCollectedAt: fresh.checkouts?.collectedAt || null, telemetryCollectedAt: fresh.traffic?.collectedAt || null, leadsCollectedAt: fresh.leads?.collectedAt || null, telemetryCacheSeconds: Math.round((deps.telemetryCacheMs ?? TELEMETRY_CACHE_MS) / 1000), billingSummaryCacheSeconds: Math.round(SUMMARY_TTL_MS / 1000) }, fields, knownGaps, unavailableFields: bad }, [], overall);
+}
+
+// GET /v1/admin/alerts: what needs the owner now, from the Money board and the Health report.
+async function collectAlerts(deps, signal) {
+  const [moneyRun, healthRun] = await Promise.all([
+    attempt(() => collectMoney(deps, signal), () => 'money unavailable'),
+    attempt(() => collectObservability(deps, signal), () => 'health unavailable'),
+  ]);
+  const money = moneyRun.ok ? moneyRun.value.data : null;
+  const report = healthRun.ok ? healthRun.value.data?.report || null : null;
+  const alerts = ownerAlerts.evaluateAlerts({ money, report });
+  if (!money) alerts.push({ id: 'money_unchecked', level: 'amber', text: 'The money checks could not run this time.', action: 'Refresh in a minute.', tab: 'money' });
+  if (!report) alerts.push({ id: 'health_unchecked', level: 'amber', text: 'The health checks could not run this time.', action: 'Refresh in a minute.', tab: 'observability' });
+  const delivery = alertChannels().length ? alertChannels().join('_and_') + '_on_new_alert' : 'off';
+  return envelope('owner_alerts', { alerts, checked: { money: Boolean(money), health: Boolean(report) }, delivery }, [], money && report ? 'ok' : 'partial');
+}
+
+// Where new alerts go: the owner's own incoming webhook (Slack, Discord or Teams) and/or an email to the owner addresses
+// through the app's existing mail provider. Both are off unless their variable is set.
+function alertChannels() {
+  const out = [];
+  if (/^https:\/\//.test(String(process.env.THUMBGATE_OWNER_ALERT_WEBHOOK || '').trim())) out.push('webhook');
+  if (String(process.env.THUMBGATE_OWNER_ALERT_EMAIL || '').trim().toLowerCase() === 'on') out.push('email');
+  return out;
+}
+
+// One-shot webhook post for owner alerts. Kept local because scripts/webhook-delivery.js is a dev-only file the npm package must not ship.
+function postOwnerWebhook(platform, webhookUrl, title, message) {
+  const payload = platform === 'teams' ? { '@type': 'MessageCard', '@context': 'http://schema.org/extensions', summary: title, themeColor: '0076D7', title, text: message }
+    : platform === 'discord' ? { embeds: [{ title, description: String(message).substring(0, 4096), color: 0x0076D7 }] }
+      : { text: `*${title}*\n${message}` };
+  const target = new URL(webhookUrl);
+  const body = JSON.stringify(payload);
+  return new Promise((resolve, reject) => {
+    const req = (target.protocol === 'https:' ? require('https') : require('http')).request(target, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(body) }, timeout: 10000 }, (res) => {
+      res.resume();
+      res.on('end', () => (res.statusCode >= 200 && res.statusCode < 300 ? resolve(res.statusCode) : reject(new Error(`Webhook HTTP ${res.statusCode}`))));
+    });
+    req.on('error', reject);
+    req.on('timeout', () => req.destroy(new Error('Webhook timeout')));
+    req.end(body);
+  });
+}
+
+const TRANSIENT_ALERTS = new Set(['stripe_unreadable', 'telemetry_unreadable', 'money_unchecked', 'health_unchecked']);
+// An unreadable-source alert is sent only when it is still failing on this many checks in a row (checks are 15 minutes apart).
+const TRANSIENT_CHECKS_TO_SEND = 3;
+const failingFor = (sinceIso, nowMs) => {
+  const minutes = Math.max(1, Math.round((nowMs - Date.parse(sinceIso)) / 60000));
+  return minutes < 90 ? minutes + ' minutes' : Math.round(minutes / 60) + ' hours';
+};
+
+// Pure step of the delivery check: which alerts fire, which are still being counted, and the new streaks.
+function nextAlertDeliveryState(deliverable, state, nowMs = Date.now()) {
+  const before = new Set(Array.isArray(state?.firing) ? state.firing : []);
+  const streaks = {};
+  const firing = [];
+  const pending = [];
+  const added = [];
+  for (const alert of deliverable) {
+    if (!TRANSIENT_ALERTS.has(alert.id)) { firing.push(alert); if (!before.has(alert.id)) added.push(alert); continue; }
+    const prev = state?.streaks?.[alert.id]
+      || (Array.isArray(state?.pending) && state.pending.includes(alert.id) ? { count: 1, since: state.checkedAt || new Date(nowMs).toISOString() } : null);
+    if (before.has(alert.id)) { firing.push(alert); continue; }
+    const count = (prev?.count || 0) + 1;
+    const since = prev?.since || new Date(nowMs).toISOString();
+    if (count >= TRANSIENT_CHECKS_TO_SEND) {
+      firing.push(alert);
+      added.push({ ...alert, text: alert.text + ' It has been failing for ' + failingFor(since, nowMs) + '.' });
+    } else { pending.push(alert.id); streaks[alert.id] = { count, since }; }
+  }
+  return { firing: firing.map((alert) => alert.id), pending, streaks, added };
+}
+
+// Checks the alerts every 15 minutes and sends the new ones to the channels above. Does nothing when none is set.
+function startAlertDelivery(makeDeps, { intervalMs = 15 * 60 * 1000, firstCheckMs = 60000, send } = {}) {
+  const channels = alertChannels();
+  if (!channels.length && !send) return null;
+  const url = String(process.env.THUMBGATE_OWNER_ALERT_WEBHOOK || '').trim();
+  const platform = /discord/i.test(url) ? 'discord' : /office|teams|logic\.azure/i.test(url) ? 'teams' : 'slack';
+  const deliver = send || (async ({ title, message }) => {
+    if (channels.includes('webhook')) await postOwnerWebhook(platform, url, title, message).catch(() => null);
+    if (channels.includes('email')) {
+      const to = require('./bot-detection').getOwnerEmails();
+      const sent = to.length ? await require('./mailer/resend-mailer').sendEmail({ to: String(to[0]), subject: title, text: message }).catch(() => null) : null;
+      console.log('[owner-alerts] email ' + (sent && sent.sent !== false ? 'sent' : 'not sent (' + (sent?.reason || (to.length ? 'error' : 'no_owner_address')) + ')'));
+    }
+  });
+  console.log('[owner-alerts] delivery on: ' + (channels.join(', ') || 'custom'));
+  // State lives on the volume (owner-alert-delivery.json), so a deploy or restart never re-sends an alert that is
+  // still firing. The first check ever also sends one confirmation, so the channel is proven before a real alert needs it.
+  const readState = (deps) => { const read = readObject(deps.feedbackDir, 'owner-alert-delivery.json'); return read.state === 'ok' ? read.value : null; };
+  const writeState = (deps, state) => fs.writeFileSync(path.join(deps.feedbackDir, 'owner-alert-delivery.json'), JSON.stringify(state));
+  const run = async () => {
+    try {
+      const deps = makeDeps();
+      const result = await collectAlerts(deps, AbortSignal.timeout(30000));
+      const state = readState(deps);
+      // A read that fails (Stripe or telemetry unreadable, a check that timed out) is usually a slow answer or a cold
+      // start after a deploy, so it is sent only when it is still failing on the third check in a row (checks are
+      // 15 minutes apart), with how long it has been failing. One good check clears the count. Red alerts are not counted.
+      const deliverable = result.data.alerts.filter(ownerAlerts.isDeliverable);
+      const { firing, pending, streaks, added } = nextAlertDeliveryState(deliverable, state);
+      writeState(deps, { confirmedAt: state?.confirmedAt || new Date().toISOString(), channels, firing, pending, streaks, checkedAt: new Date().toISOString() });
+      if (!state?.confirmedAt) await deliver({ title: 'ThumbGate: alert delivery is on', message: 'This is the one-time test that owner alerts reach you. New alerts from thumbgate.ai/admin will arrive here, each once, checked every 15 minutes. Firing right now: ' + firing.length + '.\nhttps://thumbgate.ai/admin' });
+      console.log('[owner-alerts] checked: ' + firing.length + ' firing, ' + added.length + ' new');
+      if (!added.length) return;
+      await deliver(ownerAlerts.formatAlertMessage(added));
+    } catch { /* an alert check never takes the server down */ }
+  };
+  const timer = setInterval(run, intervalMs);
+  timer.unref?.();
+  setTimeout(run, firstCheckMs).unref?.();
+  return timer;
 }
 
 async function collectAdminSection(route, deps, externalSignal) {
@@ -803,9 +1252,13 @@ async function collectAdminSection(route, deps, externalSignal) {
       if (route.section === 'overview') return envelope('current_process', { health: deps.health(), sections: ['stripe', 'data', 'analytics', 'observability'] });
       if (route.section === 'money') return collectMoney(deps, controller.signal);
       if (route.section === 'summary') return collectSummary(deps, controller.signal);
+      if (route.section === 'alerts') return collectAlerts(deps, controller.signal);
+      if (route.section === 'economics') return collectEconomics(deps, controller.signal);
+      if (route.section === 'sources') return collectSources(deps, controller.signal);
       if (route.section === 'stripe') return collectStripe(route, deps, controller.signal);
       if (route.section === 'data') return collectData(route, deps, controller.signal);
       if (route.section === 'observability') return collectObservability(deps, controller.signal);
+      if (route.section === 'behavior') return collectBehavior(deps, controller.signal);
       return collectAnalytics(deps, controller.signal);
     };
     return await deadline(operation(), deps.sectionTimeoutMs || 10000, controller.signal);
@@ -816,4 +1269,4 @@ async function collectAdminSection(route, deps, externalSignal) {
   }
 }
 
-module.exports = { PRIVATE_HEADERS, RESPONSE_LIMIT, adminPath, parseAdminRoute, readOwnerIdentity, readSessionState, collectMoney, collectAnalytics, collectSummary, summaryParts, collectAdminSection, createRuntimeObservations, githubCommitTitle, collectObservability, projectAnalytics, projectStripe, readObject, countRecords, guardPath };
+module.exports = { collectSources, paymentAccessCheck, PRIVATE_HEADERS, RESPONSE_LIMIT, monthlyRecurring, collectAlerts, startAlertDelivery, nextAlertDeliveryState, adminPath, parseAdminRoute, readOwnerIdentity, readSessionState, collectMoney, collectAnalytics, collectSummary, summaryParts, collectAdminSection, createRuntimeObservations, githubCommitTitle, collectObservability, projectAnalytics, projectStripe, readObject, countRecords, guardPath };

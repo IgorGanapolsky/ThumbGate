@@ -19,7 +19,7 @@
       <div class="bg-gray-900 border border-gray-800 rounded-xl p-6">
         <h2 class="text-xl font-semibold text-emerald-400 mb-3">1. The Monorepo Bottleneck in Agentic AI</h2>
         <p class="text-gray-300 leading-relaxed mb-4">
-          As documented in Cursor's engineering post <em>"Git at any scale"</em> (Aug 2026), standard Git operations traverse the commit and object DAG. In large monorepos or multi-agent worktrees, running recurring synchronous git subprocesses (<code>git rev-parse</code>, <code>git diff</code>, <code>git status</code>) on every tool call adds 50ms to 500ms of latency per turn and causes disk I/O thrashing.
+          As documented in Cursor's engineering post <em>"Git at any scale"</em> (Aug 2026), standard Git operations traverse the commit and object DAG. In large monorepos or multi-agent worktrees, running recurring synchronous git subprocesses (<code>git rev-parse</code>, <code>git diff</code>, <code>git status</code>) on each tool call adds 50ms to 500ms of latency per turn and causes disk I/O thrashing.
         </p>
         <p class="text-gray-300 leading-relaxed">
           When AI coding agents make dozens of tool calls per minute, pre-action governance cannot afford 500ms overhead. Safety gates must evaluate in sub-millisecond time.

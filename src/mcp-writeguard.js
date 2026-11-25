@@ -344,15 +344,15 @@ const STRIPE_OFFER_CATALOG = Object.freeze({
   }),
   pro_19: Object.freeze({
     offerId: 'pro_19', productPagePath: '/pro', priceUsd: 19, billingType: 'subscription', proofPath: '/pro',
-    headline: 'ThumbGate Pro is for one operator who already hit a repeated AI-agent failure and now needs proof: what was blocked, why it was blocked, and what changed before the next risky run.', ctaLabel: 'Start Pro',
-    rationale: 'Start Pro when you want the local dashboard, DPO export, and a single proof lane for the repeated mistake you need to stop.',
+    headline: 'Keep every lesson your agent learned, and ask it what went wrong before.', ctaLabel: 'Start Pro',
+    rationale: 'The free CLI already denies catastrophic commands and secret leaks. ThumbGate Pro is about memory: every rule you teach with a thumbs-down stays active, you can record as many thumbs as you like, and you can search and export what was learned.',
     checkoutPath: '/go/pro-direct?utm_source=website&utm_medium=objection_rescue&utm_campaign=pro_upgrade',
   }),
-  diagnostic_499: Object.freeze({
-    offerId: 'diagnostic_499', productPagePath: '/diagnostic', priceUsd: 499, billingType: 'one_time', proofPath: '/diagnostic',
-    headline: 'Setup Sprint · $499 one-time for one workflow', ctaLabel: 'Book the $499 setup',
-    rationale: 'One workflow, one 60-minute working review, one configured local gate and regression test, plus rollout and rollback proof within two business days after access and the agreed workflow materials are available.',
-    checkoutPath: '/diagnostic?utm_source=website&utm_medium=objection_rescue&utm_campaign=diagnostic_499',
+  compare_plans: Object.freeze({
+    offerId: 'compare_plans', productPagePath: '/pricing', priceUsd: null, billingType: 'none', proofPath: '/pricing',
+    headline: 'Get warned before Claude Code repeats a mistake you already paid for.', ctaLabel: 'Compare current plans',
+    rationale: 'Team and enterprise subscriptions are not available through self-serve checkout. Compare the free CLI and individual Pro software features before choosing.',
+    checkoutPath: '/pricing',
   }),
 });
 
@@ -360,7 +360,7 @@ const OFFER_CHOICE_DESCRIPTIONS = Object.freeze({
   playbook_999: `${STRIPE_OFFER_CATALOG.playbook_999.headline} ${STRIPE_OFFER_CATALOG.playbook_999.rationale}`,
   bundle_49: `${STRIPE_OFFER_CATALOG.bundle_49.headline} ${STRIPE_OFFER_CATALOG.bundle_49.rationale}`,
   pro_19: `${STRIPE_OFFER_CATALOG.pro_19.headline} ${STRIPE_OFFER_CATALOG.pro_19.rationale}`,
-  diagnostic_499: `${STRIPE_OFFER_CATALOG.diagnostic_499.headline}. ${STRIPE_OFFER_CATALOG.diagnostic_499.rationale}`,
+  compare_plans: `${STRIPE_OFFER_CATALOG.compare_plans.headline} ${STRIPE_OFFER_CATALOG.compare_plans.rationale}`,
 });
 
 const DETERMINISTIC_SECRET_PATTERNS = [
@@ -855,7 +855,7 @@ function deterministicOfferFallback(reasonCode = '', reasonText = '') {
   const code = String(reasonCode || '').trim().toLowerCase();
   const combined = `${code} ${String(reasonText || '').trim().toLowerCase()}`;
   if (code === 'need_team_plan' || /\b(team|org|enterprise|sso|soc2|audit|custom|seat|company)\b/.test(combined)) {
-    return { ...STRIPE_OFFER_CATALOG.diagnostic_499, confidence: 0.9, source: 'deterministic_fallback', probabilities: { diagnostic_499: 0.9 } };
+    return { ...STRIPE_OFFER_CATALOG.compare_plans, confidence: 0.9, source: 'deterministic_fallback', probabilities: { compare_plans: 0.9 } };
   }
   if (code === 'price_unclear' || /\b(subscription|monthly|recurring|expense|card|procurement|one[- ]time|bundle)\b/.test(combined)) {
     return { ...STRIPE_OFFER_CATALOG.bundle_49, confidence: 0.88, source: 'deterministic_fallback', probabilities: { bundle_49: 0.88 } };

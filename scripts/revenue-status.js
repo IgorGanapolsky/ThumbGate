@@ -304,17 +304,11 @@ function buildDiagnosis({ publicProbe, hostedAudit }) {
     )
   );
   const gaRuntimeMissing = runtimePresenceKnown && !runtimePresence.THUMBGATE_GA_MEASUREMENT_ID;
-  const sprintCheckoutRuntimeMissing = runtimePresenceKnown && (
-    !runtimePresence.THUMBGATE_SPRINT_DIAGNOSTIC_CHECKOUT_URL ||
-    !runtimePresence.THUMBGATE_WORKFLOW_SPRINT_CHECKOUT_URL
-  );
 
   let primaryIssue = 'inconclusive';
   if (trackingImplemented && telemetryIngressWorking && hostedSummaryWorking && hostedTrafficObserved) {
     if (gaRuntimeMissing) {
       primaryIssue = 'ga4_runtime_config_gap';
-    } else if (sprintCheckoutRuntimeMissing) {
-      primaryIssue = 'paid_sprint_checkout_config_gap';
     } else if (ownerTestRevenueOnly) {
       primaryIssue = 'owner_test_revenue_only';
     } else if (hostedRevenueObserved) {
@@ -337,11 +331,14 @@ function buildDiagnosis({ publicProbe, hostedAudit }) {
   if (gaRuntimeMissing) {
     gaps.push('GA4 runtime env is missing in Railway');
   }
+  // The Sprint payment links fall back to working built-in links (scripts/hosted-config.js), which is what
+  // the server reports as configured. An unset env var is a note, not a gap, so the two reports agree.
+  const notes = [];
   if (runtimePresenceKnown && !runtimePresence.THUMBGATE_SPRINT_DIAGNOSTIC_CHECKOUT_URL) {
-    gaps.push('Workflow Hardening Diagnostic payment link env is missing in Railway');
+    notes.push('Workflow Hardening Diagnostic payment link uses the built-in link (no Railway override)');
   }
   if (runtimePresenceKnown && !runtimePresence.THUMBGATE_WORKFLOW_SPRINT_CHECKOUT_URL) {
-    gaps.push('Setup Sprint payment link env is missing in Railway');
+    notes.push('Setup Sprint payment link uses the built-in link (no Railway override)');
   }
   if (runtimePresenceKnown && !runtimePresence.THUMBGATE_PUBLIC_APP_ORIGIN) {
     gaps.push('THUMBGATE_PUBLIC_APP_ORIGIN is not explicitly set in Railway runtime');
@@ -365,6 +362,7 @@ function buildDiagnosis({ publicProbe, hostedAudit }) {
     hostedAuditMethod: hostedAudit?.auditMethod || 'unknown',
     primaryIssue,
     gaps,
+    notes,
   };
 }
 
@@ -463,6 +461,14 @@ function formatReport(report) {
     lines.push('Gaps:');
     for (const gap of report.diagnosis.gaps) {
       lines.push(`- ${gap}`);
+    }
+  }
+
+  if (report.diagnosis?.notes?.length) {
+    lines.push('');
+    lines.push('Notes:');
+    for (const note of report.diagnosis.notes) {
+      lines.push(`- ${note}`);
     }
   }
 

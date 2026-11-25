@@ -286,7 +286,18 @@ const path = require('node:path');
 // 695 -> 696 (2026-11-19): scripts/first-block-upsell.js (required by scripts/gates-engine.js, first-block upgrade line)
 // 696 -> 700 (2026-11-19): scripts/owner-telemetry.js, ops-log.js, ops-report.js and checkout-session-count.js
 // (required by scripts/owner-admin.js and src/api/server.js; the 1.40.4 publish failed without them in `files`).
-const BASELINE_FILE_COUNT = 700;
+// 700 -> 704 (2026-11-24): scripts/owner-alerts.js (required by scripts/owner-admin.js), plus scripts/cost-meter.js
+// (required by src/api/server.js), scripts/unit-economics.js and config/unit-costs.json for the owner console's unit economics (#5177).
+// 704 -> 710 (2026-11-25): config/gates/profiles/private-owner.json and public/pilot.html (landed on main
+// after 1.40.14), plus four runtime requires that were missing from `files`: scripts/recent-commands.js,
+// scripts/lesson-effect.js, scripts/pilot-request.js, scripts/checkout-price-guard.js (#5194, changeset
+// hooks-follow-latest).
+// 712 -> 715 (2026-11-25): canary-gate.js, boundary-check.js, prompt-risk-lint.js (AGENT-3667 item J).
+// 710 -> 711 (2026-11-25): config/gates/profiles/shared-tree.json, the opt-in shared-tree gate profile (bb6208a).
+// 723 -> 724 (2026-11-25): scripts/clarity.js (Microsoft Clarity tag and owner-console export; changeset clarity-analytics).
+// 724 -> 725 (2026-11-25): scripts/deploy-proof-gate.js, the default-on deploy-proof check behind claim-stop-check.
+// 725 -> 726 (2026-11-25): public/udemy.html, the thumbgate.ai/udemy landing page (AGENT-3667).
+const BASELINE_FILE_COUNT = 726;
 function readBundleSnapshot() {
   const repoRoot = path.resolve(__dirname, '..');
   const stdout = execSync('npm pack --dry-run --json', {

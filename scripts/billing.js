@@ -18,6 +18,7 @@ const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
 const https = require('https');
+const priceGuard = require('./checkout-price-guard');
 const {
   DEFAULT_PUBLIC_APP_ORIGIN,
   createTraceId,
@@ -2422,7 +2423,9 @@ async function listStripeReconciledRevenueEvents({ signal, deadline = Infinity }
 // qualified checkout start.
 function classifyCheckoutSessionDepth(session) {
   if (!session || typeof session !== 'object') return 'raw';
-  if (session.payment_status === 'paid' || session.status === 'complete') return 'paid';
+  // Session completion can precede asynchronous payment settlement.
+  // Only the payment status supports the paid bucket.
+  if (session.payment_status === 'paid') return 'paid';
   if (normalizeText(session.payment_intent) || normalizeText(session.setup_intent)) return 'payment_attempt';
   const email = normalizeText(session.customer_details?.email) || normalizeText(session.customer_email);
   if (email && !isSyntheticOrOwnerCheckoutEmail(email)) return 'identified';
@@ -3728,7 +3731,8 @@ function buildCheckoutSessionPayload({ successUrl, cancelUrl, customerEmail, che
       planId: pack ? checkoutMetadata.planId : checkoutSelection.planId,
       billingCycle: pack ? checkoutMetadata.billingCycle : checkoutSelection.billingCycle,
       seatCount: pack ? checkoutMetadata.seatCount : checkoutSelection.seatCount,
-      priceId: pack ? checkoutMetadata.priceId : checkoutSelection.priceId,
+      // A configured price id the last Stripe check found archived is never written into the session.
+      priceId: pack ? checkoutMetadata.priceId : priceGuard.activePriceIdOrNull(checkoutSelection.priceId),
       packId: pack ? pack.id : null,
       credits: pack ? pack.credits : null,
     }),
@@ -5153,7 +5157,26 @@ function handleGithubWebhook(event, provenance = {}) {
   }
 }
 
+// The price ids this deployment will use, checked against Stripe. Reads only; never throws.
+function configuredCheckoutPrices() {
+  return [
+    { name: 'pro_monthly', id: CONFIG.STRIPE_PRICE_ID_PRO_MONTHLY || CONFIG.STRIPE_PRICE_ID },
+    { name: 'pro_annual', id: CONFIG.STRIPE_PRICE_ID_PRO_ANNUAL },
+    { name: 'team_monthly', id: CONFIG.STRIPE_PRICE_ID_TEAM_MONTHLY },
+  ];
+}
+
+async function refreshCheckoutPriceStatus() {
+  if (!CONFIG.STRIPE_SECRET_KEY) return null;
+  try {
+    return await priceGuard.verifyCheckoutPrices({ stripe: getStripeClient(), configured: configuredCheckoutPrices() });
+  } catch {
+    return null;
+  }
+}
+
 module.exports = {
+  configuredCheckoutPrices, refreshCheckoutPriceStatus,
   getStripeClient, classifyRevenueRecord, summarizeExternalRevenue, buildBillingSourceDiagnostics,
   withStripeReadSlot, getBillingAnalyticsReadPaths,
   _mergeRevenueEvents: mergeRevenueEvents,

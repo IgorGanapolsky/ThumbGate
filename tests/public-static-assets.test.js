@@ -149,7 +149,7 @@ test('landing page presents configured self-serve Pro and free installation clea
   const res = await fetch(`${origin}/`);
   assert.equal(res.status, 200);
   const html = await res.text();
-  assert.match(html, /Pro adds recall, dashboard, adapters, and exports/);
+  assert.match(html, /Pro is about memory/);
   assert.match(html, /href="\/checkout\/pro"/);
   assert.match(html, /free local CLI/i);
   assert.doesNotMatch(html, /\$499|Setup Sprint|two business days/);
@@ -176,7 +176,6 @@ test('homepage and pricing surfaces expose canonical and LLM context links', asy
     ['/', `${origin}/`, `${origin}/llm-context.md`],
     ['/pricing', `${origin}/pricing`, `${origin}/llm-context.md`],
     ['/pro', `${origin}/pro`, `${origin}/llm-context.md`],
-    ['/diagnostic', `${origin}/diagnostic`, `${origin}/llm-context.md`],
     ['/partner-intake', `${origin}/partner-intake`, `${origin}/llm-context.md`],
   ];
 
@@ -205,35 +204,17 @@ test('GET /partner-intake serves a clean form-only partner handoff', async () =>
   assert.doesNotMatch(html, /\$\s*\d|Stripe|checkout|payment|data-revenue-cta/i);
 });
 
-test('GET /diagnostic serves the managed workflow gate checkout and fit page', async () => {
-  const res = await fetch(`${origin}/diagnostic`);
-  assert.equal(res.status, 200);
-  assert.match(res.headers.get('content-type') || '', /text\/html/);
-  const html = await res.text();
-  assert.match(html, /Setup Sprint/);
-  assert.match(html, /Submit for fit check/);
-  assert.match(html, /action="\/v1\/intake\/workflow-sprint"/);
-  assert.match(html, /data-diagnostic-intake-form/);
-  assert.match(html, /diagnostic_page_submit/);
-  assert.match(html, /Book the \$499 setup/);
-  assert.match(html, /Exactly what the \$499 Setup Sprint includes/);
-  assert.match(html, /one 60-minute working review/i);
-  assert.match(html, /one configured local gate and regression test/i);
-  assert.match(html, /rollout and rollback proof within two business days/i);
-  assert.match(html, /order is refunded instead of being silently converted/i);
-  assert.doesNotMatch(html, /\$1500|public Setup Sprint/i);
-  assert.doesNotMatch(html, /__WORKFLOW_SPRINT_PRICE_DOLLARS__|__SPRINT_DIAGNOSTIC_PRICE_DOLLARS__/);
-  assert.match(html, /action="\/go\/diagnostic-pay" method="POST"/);
-  assert.match(html, /name="customer_email"[^>]*required/);
-  assert.match(html, /data-cta-id="diagnostic_hero_paid"/);
-  assert.match(html, /\/v1\/telemetry\/ping/);
-  assert.doesNotMatch(html, /\/v1\/telemetry\/event/);
-  assert.match(html, /const inboundSource = search\.get\('utm_source'\) \|\| search\.get\('source'\)/);
-  assert.match(html, /paidForm\.querySelector\('input\[name="utm_source"\]'\)\.value = inboundSource\.trim\(\)/);
-  assert.doesNotMatch(html, /No cold payment link/);
+test('GET /diagnostic returns an explicit retirement response with current pricing', async () => {
+  const res = await fetch(`${origin}/diagnostic`, { redirect: 'manual' });
+  assert.equal(res.status, 410);
+  assert.match(res.headers.get('content-type') || '', /application\/json/);
+  assert.equal(res.headers.get('cache-control'), 'no-store');
+  assert.equal(res.headers.get('link'), '</pricing>; rel="alternate"');
+  assert.equal(res.headers.get('location'), null);
+  assert.deepEqual(await res.json(), { error: 'This offer has been retired.', pricingUrl: '/pricing' });
 });
 
-test('workflow diagnostic aliases serve the focused diagnostic page', async () => {
+test('workflow diagnostic aliases preserve the retirement response', async () => {
   const paths = [
     '/diagnostic.html',
     '/workflow-diagnostic',
@@ -250,12 +231,11 @@ test('workflow diagnostic aliases serve the focused diagnostic page', async () =
 
   for (const pathname of paths) {
     const res = await fetch(`${origin}${pathname}`, { redirect: 'manual' });
-    assert.equal(res.status, 200, `${pathname} should render diagnostic page`);
-    assert.match(res.headers.get('content-type') || '', /text\/html/);
-    const html = await res.text();
-    assert.match(html, /Setup Sprint/);
-    assert.match(html, /Submit for fit check/);
-    assert.match(html, /<link rel="canonical" href="[^"]+\/diagnostic"/);
+    assert.equal(res.status, 410, `${pathname} should be retired`);
+    assert.match(res.headers.get('content-type') || '', /application\/json/);
+    assert.equal(res.headers.get('location'), null);
+    assert.equal(res.headers.get('cache-control'), 'no-store');
+    assert.equal((await res.json()).pricingUrl, '/pricing');
   }
 });
 
@@ -267,7 +247,7 @@ test('GET /install serves the verified distribution and buyer path page', async 
     assert.equal(res.status, 200, `${pathname} should render install page`);
     assert.match(res.headers.get('content-type') || '', /text\/html/);
     const html = await res.text();
-    assert.match(html, /Install paths verified for v1\.27\.20/);
+    assert.match(html, /Registry versions checked/);
     assert.match(html, /npm package/);
     assert.match(html, /VS Code Marketplace/);
     assert.match(html, /Open VSX/);
@@ -282,11 +262,12 @@ test('GET /install serves the verified distribution and buyer path page', async 
   }
 });
 
-test('GET /sitemap.xml includes /diagnostic and /workflow-hardening-sprint at priority 0.9', async () => {
+test('GET /sitemap.xml lists current pricing and excludes retired service pages', async () => {
   const res = await fetch(`${origin}/sitemap.xml`);
   assert.equal(res.status, 200);
   const xml = await res.text();
-  for (const route of ['/diagnostic', '/workflow-hardening-sprint']) {
+  assert.doesNotMatch(xml, /<loc>[^<]*\/(?:diagnostic|workflow-hardening-sprint)<\/loc>/);
+  for (const route of ['/pricing']) {
     assert.match(xml, new RegExp(`<loc>[^<]*${route}<\\/loc>`), `sitemap must list ${route}`);
     const entry = xml.match(new RegExp(`<url>\\s*<loc>[^<]*${route}<\\/loc>[\\s\\S]*?<\\/url>`));
     assert.ok(entry, `${route} <url> block must exist`);
@@ -416,8 +397,8 @@ test('public marketing directory aliases redirect to canonical pages', async () 
     ['/guides', '/learn'],
     ['/guides/', '/learn'],
     ['/guides.html', '/learn'],
-    ['/services', '/#workflow-sprint-intake'],
-    ['/services.html', '/#workflow-sprint-intake'],
+    ['/services', '/pricing'],
+    ['/services.html', '/pricing'],
   ];
 
   for (const [pathname, expectedLocation] of cases) {
@@ -506,6 +487,16 @@ test('GET /sitemap.xml includes /chatgpt-app at priority 0.85', async () => {
   const entry = xml.match(/<url>\s*<loc>[^<]*\/chatgpt-app<\/loc>[\s\S]*?<\/url>/);
   assert.ok(entry, 'chatgpt-app <url> block must exist');
   assert.match(entry[0], /<priority>0\.85<\/priority>/);
+});
+
+test('the AI FinOps learn page is served, listed in the sitemap, and claims no budget enforcement', async () => {
+  const sitemap = await (await fetch(`${origin}/sitemap.xml`)).text();
+  assert.match(sitemap, /<loc>[^<]*\/learn\/ai-finops-agent-spend-guardrails<\/loc>/, 'sitemap must list the AI FinOps learn page');
+  const res = await fetch(`${origin}/learn/ai-finops-agent-spend-guardrails`);
+  assert.equal(res.status, 200);
+  const html = await res.text();
+  assert.doesNotMatch(html, /budget enforcement/i, 'ThumbGate caps no tokens or dollars, so the page must not claim budget enforcement');
+  assert.match(html, /does not cap tokens or dollars/i, 'the page says plainly what the gates do not do');
 });
 
 test('GET /agents-cost-savings serves the FinOps-for-AI landing HTML', async () => {
@@ -1084,4 +1075,24 @@ test('GET /sitemap.xml includes the cloudflare-writeguard comparison page', asyn
   const entry = xml.match(/<url>\s*<loc>[^<]*\/compare\/cloudflare-writeguard<\/loc>[\s\S]*?<\/url>/);
   assert.ok(entry, 'compare/cloudflare-writeguard <url> block must exist');
   assert.match(entry[0], /<priority>0\.85<\/priority>/);
+});
+
+test('every URL in /sitemap.xml resolves locally (no 404s handed to crawlers)', async () => {
+  const xml = await (await fetch(`${origin}/sitemap.xml`)).text();
+  const paths = [...xml.matchAll(/<loc>([^<]+)<\/loc>/g)].map((m) => new URL(m[1]).pathname);
+  assert.ok(paths.length > 50, `expected a populated sitemap, got ${paths.length} entries`);
+  const broken = [];
+  for (const p of paths) {
+    const res = await fetch(`${origin}${p}`, { method: 'HEAD', redirect: 'manual' });
+    if (res.status === 404 || res.status >= 500) broken.push(`${res.status} ${p}`);
+  }
+  assert.deepEqual(broken, [], `sitemap lists pages that do not resolve:\n${broken.join('\n')}`);
+});
+
+test('GET /connectors serves the connectors page linked from /pricing', async () => {
+  const res = await fetch(`${origin}/connectors`);
+  assert.equal(res.status, 200);
+  assert.match(res.headers.get('content-type') || '', /text\/html/);
+  const html = await res.text();
+  assert.match(html, /<link rel="canonical" href="https:\/\/thumbgate\.ai\/connectors">/);
 });
