@@ -292,7 +292,7 @@ const path = require('node:path');
 // after 1.40.14), plus four runtime requires that were missing from `files`: scripts/recent-commands.js,
 // scripts/lesson-effect.js, scripts/pilot-request.js, scripts/checkout-price-guard.js (#5194, changeset
 // hooks-follow-latest).
-// 710 -> 711 (2026-11-25): config/gates/profiles/shared-tree.json (opt-in shared-tree gate, bb6208a).
+// 710 -> 711 (2026-11-25): config/gates/profiles/shared-tree.json, the opt-in shared-tree gate profile (bb6208a).
 const BASELINE_FILE_COUNT = 711;
 function readBundleSnapshot() {
   const repoRoot = path.resolve(__dirname, '..');

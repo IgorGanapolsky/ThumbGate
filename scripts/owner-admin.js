@@ -544,7 +544,7 @@ const attempt = async (work, reasonOf) => {
 };
 const telemetryReason = (error) => (error?.code === 'collection_timeout' ? 'telemetry read timed out' : 'telemetry read failed');
 
-const trafficFields = (read) => ({ visitors: read.traffic.visitors, realVisitors: read.traffic.realVisitors, botOrInternalVisitors: read.traffic.botOrInternalVisitors, pageViewers: read.traffic.pageViewers, checkoutStartsByType: read.traffic.checkoutStartsByType, sessions: read.traffic.sessions, pageViews: read.traffic.pageViews, ctaClicks: read.traffic.ctaClicks, checkoutStarts: read.traffic.checkoutStarts, checkoutPaidConfirmations: read.traffic.checkoutPaidConfirmations });
+const trafficFields = (read) => ({ visitors: read.traffic.visitors, realVisitors: read.traffic.realVisitors, engagedVisitors: read.traffic.engagedVisitors, botOrInternalVisitors: read.traffic.botOrInternalVisitors, pageViewers: read.traffic.pageViewers, checkoutStartsByType: read.traffic.checkoutStartsByType, sessions: read.traffic.sessions, pageViews: read.traffic.pageViews, ctaClicks: read.traffic.ctaClicks, checkoutStarts: read.traffic.checkoutStarts, checkoutPaidConfirmations: read.traffic.checkoutPaidConfirmations });
 
 const attemptSync = (work) => { try { return work(); } catch { return { status: 'unavailable', reason: 'The key store could not be read.' }; } };
 
@@ -991,6 +991,7 @@ async function collectSummary(deps, signal) {
   const trafficField = (key, label, name) => add(key, label, traffic ? traffic[name] ?? null : null, trafficOpts);
   trafficField('traffic.visitor_identifiers_all_30d', 'All observed visitor identifiers (30 days)', 'visitors');
   if (money?.traffic30d) add('traffic.visitor_identifiers_excluding_flagged_30d', 'Observed visitor identifiers, excluding bot, internal and test (30 days)', money.traffic30d.realVisitors, trafficOpts);
+  if (money?.traffic30d) add('traffic.engaged_visitors_30d', 'Visitor ids with two or more events or any click, excluding bot, internal and test (30 days)', money.traffic30d.engagedVisitors, trafficOpts);
   trafficField('traffic.landing_page_views_30d', 'Landing page views (30 days)', 'pageViews');
   trafficField('traffic.cta_clicks_30d', 'Call to action clicks (30 days)', 'ctaClicks');
   trafficField('traffic.checkout_starts_30d', 'Checkout starts seen on the site (30 days)', 'checkoutStarts');
