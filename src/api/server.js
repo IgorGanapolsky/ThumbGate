@@ -444,7 +444,6 @@ const GAMING_PLAYBOOK_PAGE_PATH = path.resolve(__dirname, '../../public/gaming-p
 const YT_PAGE_PATH = path.resolve(__dirname, '../../public/yt.html');
 const PRICING_PAGE_PATH = path.resolve(__dirname, '../../public/pricing.html');
 const ABOUT_PAGE_PATH = path.resolve(__dirname, '../../public/about.html');
-const DIAGNOSTIC_PAGE_PATH = path.resolve(__dirname, '../../public/diagnostic.html');
 const PARTNER_INTAKE_PAGE_PATH = path.resolve(__dirname, '../../public/partner-intake.html');
 const PETER_PAGE_PATH = path.resolve(__dirname, '../../public/peter.html');
 const INSTALL_PAGE_PATH = path.resolve(__dirname, '../../public/install.html');
@@ -4448,10 +4447,6 @@ function loadLandingPageHtml(runtimeConfig, pageContext = {}) {
 
 function loadProPageHtml(runtimeConfig, pageContext = {}) {
   return loadPublicMarketingTemplateHtml(PRO_PAGE_PATH, runtimeConfig, pageContext);
-}
-
-function loadDiagnosticPageHtml(runtimeConfig, pageContext = {}) {
-  return loadPublicMarketingTemplateHtml(DIAGNOSTIC_PAGE_PATH, runtimeConfig, pageContext);
 }
 
 function loadPartnerIntakePageHtml(runtimeConfig, pageContext = {}) {
@@ -9186,41 +9181,6 @@ async function addContext(){
       return;
     }
 
-    // Natural marketing URLs for the Workflow Hardening Diagnostic/Sprint.
-    // High-intent outreach refers to "the diagnostic", "the sprint", or
-    // "workflow hardening"; serve a focused buyer page instead of sending
-    // qualified traffic to the generic homepage anchor.
-    if (isGetLikeRequest && (
-      pathname === '/diagnostic'
-      || pathname === '/diagnostic.html'
-      || pathname === '/workflow-diagnostic'
-      || pathname === '/workflow-diagnostic.html'
-      || pathname === '/sprint'
-      || pathname === '/sprint.html'
-      || pathname === '/workflow-hardening'
-      || pathname === '/workflow-hardening.html'
-      || pathname === '/workflow-hardening-sprint'
-      || pathname === '/workflow-hardening-sprint.html'
-      || pathname === '/workflow-sprint'
-      || pathname === '/workflow-sprint.html'
-    )) {
-      try {
-        servePublicMarketingPage({
-          req,
-          res,
-          parsed,
-          hostedConfig,
-          isHeadRequest,
-          renderHtml: loadDiagnosticPageHtml,
-          extraTelemetry: {
-            pageType: 'diagnostic',
-          },
-        });
-      } catch (err) {
-        sendText(res, 500, err.message || 'Diagnostic page unavailable');
-      }
-      return;
-    }
 
     if (isGetLikeRequest && (pathname === '/numbers' || pathname === '/numbers.html')) {
       res.writeHead(301, {
