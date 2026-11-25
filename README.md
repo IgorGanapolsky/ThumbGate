@@ -57,6 +57,12 @@ You get `"permissionDecision":"deny"` and `[GATE:force-push] Force push blocked.
 
 When your agent does something you never want repeated, give it a thumbs-down:
 
+In Claude Code you can also install it as a plugin:
+
+```
+/plugin install thumbgate --marketplace IgorGanapolsky/ThumbGate
+```
+
 ```bash
 npx thumbgate capture --feedback=down --context="Never run DROP on production tables" --what-went-wrong="agent proposed DROP" --what-to-change="require review for DROP"
 ```

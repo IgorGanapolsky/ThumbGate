@@ -821,6 +821,8 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // and the install version share in scripts/activation-tracker.js; measured 10,780,497.
   // Bumped 10.79 MB -> 10.80 MB (2026-11-25): the Sources tab (scripts/owner-admin.js, public/admin.html) and the
   // checkout_click event, on top of the hook-side latest check above.
+  // Bumped 10.80 MB -> 10.81 MB (2026-11-25, PR #5199): six sandbox-escape and App Store gates in
+  // config/gates/default.json; measured 10,800,539 (main was 10,791,301).
   // Bumped 10.80 MB -> 10.81 MB (2026-11-25, PR #5232): durable OAuth store + refresh tokens in
   // scripts/mcp-oauth.js and hosted MCP instructions in src/api/server.js; measured 10,802,087.
   manifest.unpackedSize <= 10_810_000,
