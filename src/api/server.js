@@ -454,6 +454,7 @@ const USE_CASE_PAGE_PATHS_BY_SLUG = buildPublicHtmlFileMap(USE_CASES_DIR);
 const BLOG_PAGE_PATHS_BY_SLUG = buildPublicHtmlFileMap(BLOG_DIR);
 const BUYER_INTENT_SCRIPT_PATH = path.resolve(__dirname, '../../public/js/buyer-intent.js');
 const WEBMCP_SCRIPT_PATH = path.resolve(__dirname, '../../public/js/webmcp.js');
+const CLARITY_SCRIPT_PATH = path.resolve(__dirname, '../../public/js/clarity.js');
 const STATIC_MIME_BY_EXT = Object.freeze({
   '.png': 'image/png',
   '.jpg': 'image/jpeg',
@@ -8019,6 +8020,25 @@ function createUnscopedApiServer({ ownerAdminDependencies = {} } = {}) {
         }
       } catch {
         sendJson(res, 404, { error: 'Buyer intent script not found' });
+      }
+      return;
+    }
+
+    // Microsoft Clarity loader for the public marketing pages (never linked from /admin or signed-in pages).
+    if (isGetLikeRequest && pathname === '/js/clarity.js') {
+      try {
+        const script = fs.readFileSync(CLARITY_SCRIPT_PATH, 'utf-8');
+        res.writeHead(200, {
+          'Content-Type': 'application/javascript; charset=utf-8',
+          'Cache-Control': 'public, max-age=3600',
+        });
+        if (!isHeadRequest) {
+          res.end(script);
+        } else {
+          res.end();
+        }
+      } catch {
+        sendJson(res, 404, { error: 'Clarity script not found' });
       }
       return;
     }

@@ -16,7 +16,7 @@ const JSON_LIMIT = 8 * 1024 * 1024;
 const LOG_LIMIT = 16 * 1024 * 1024;
 const RESPONSE_LIMIT = 1024 * 1024;
 const RESOURCES = Object.freeze({ customers: 'cus', subscriptions: 'sub', payments: 'ch', refunds: 're', products: 'prod', prices: 'price', 'subscription-items': 'si' });
-const SECTIONS = new Set(['overview', 'money', 'data', 'analytics', 'observability', 'summary', 'alerts', 'economics']);
+const SECTIONS = new Set(['overview', 'money', 'data', 'analytics', 'observability', 'summary', 'alerts', 'economics', 'sources']);
 const MONEY_CACHE_MS = 60000;
 let moneyCache = null;
 const PRIVATE_HEADERS = Object.freeze({ 'Cache-Control': 'private, no-store', Vary: 'Cookie', 'X-Robots-Tag': 'noindex, nofollow', 'Referrer-Policy': 'no-referrer', 'X-Content-Type-Options': 'nosniff' });
@@ -900,6 +900,94 @@ async function collectAnalytics(deps, signal) {
   return envelope('telemetry_tail_and_billing_summary_30d', data, warnings);
 }
 
+// Sources: one tile per place a number comes from, each with the time of its last event and a plain state.
+//   ok              this server read an event time from its own first-party log
+//   no_data_yet     this server reads the source and has seen no event in the window
+//   not_read_here   the tag is on the site, but this server does not read that vendor's numbers: no time, no count,
+//                   open the vendor's own dashboard (no key is held in the browser or invented here)
+//   not_installed   the tag is not in the site files
+//   unavailable     the first-party log could not be read; no zero is implied
+// Never a made-up number: a tile with nothing to show says so.
+const CLARITY_DASHBOARD = 'https://clarity.microsoft.com/projects/view/zjaflwztgq/gettingstarted';
+const PLAUSIBLE_DASHBOARD = 'https://plausible.io/thumbgate.ai';
+const GA_DASHBOARD = 'https://analytics.google.com/analytics/web/';
+const FUNNEL_STAGES = Object.freeze([
+  { id: 'visitor', label: 'Visitor (landing page view)', events: ['landing_page_view'], cli: false },
+  { id: 'install', label: 'Install (CLI init)', events: ['cli_init'], cli: true },
+  { id: 'first_block', label: 'First block (a gate stopped a tool call)', events: ['first_block', 'first_blocked_tool_call'], cli: true },
+  { id: 'pro_checkout_click', label: 'Pro checkout click', events: ['checkout_start'], cli: false },
+]);
+
+function readSiteFile(publicDir, name) {
+  try { return fs.readFileSync(path.join(publicDir, name), 'utf8'); } catch { return null; }
+}
+
+function siteTags(deps) {
+  const publicDir = deps.publicDir || path.join(__dirname, '..', 'public');
+  const home = readSiteFile(publicDir, 'index.html');
+  const loader = readSiteFile(publicDir, path.join('js', 'clarity.js'));
+  const env = deps.env || process.env;
+  const gaId = String(env.THUMBGATE_GA_MEASUREMENT_ID || '').trim();
+  const clarityId = loader && /CLARITY_PROJECT_ID\s*=\s*'([a-z0-9]{6,20})'/.exec(loader);
+  return {
+    readable: home !== null,
+    plausible: home !== null && /plausible\.io\/js\//.test(home),
+    googleAnalytics: home !== null && home.includes('__GA_BOOTSTRAP__') && /^G-[A-Z0-9]{6,14}$/.test(gaId) ? gaId : null,
+    clarity: home !== null && /\/js\/clarity\.js/.test(home) && clarityId ? clarityId[1] : null,
+  };
+}
+
+async function collectSources(deps, signal) {
+  const warnings = [];
+  const tags = siteTags(deps);
+  if (!tags.readable) warnings.push('site_files_unreadable');
+  const last = new Map(FUNNEL_STAGES.map((stage) => [stage.id, { at: null, count: 0 }]));
+  const byEvent = new Map();
+  for (const stage of FUNNEL_STAGES) for (const event of stage.events) byEvent.set(event, stage);
+  let scanned = null;
+  try {
+    scanned = await ownerTelemetry.scanTelemetry({
+      feedbackDir: guardPath(deps.feedbackDir, deps.feedbackDir), days: 30, signal, maxBytes: deps.telemetryMaxBytes,
+      onEntry: (entry, time) => {
+        const stage = byEvent.get(String(entry.eventType || entry.event || '').toLowerCase());
+        if (!stage) return;
+        // Bot, internal and test traffic is left out, and so are the owner's own and build-server installs.
+        if (entry.isBotTraffic === true || entry.isInternal === true || entry.isTest === true) return;
+        if (stage.cli && ['owner', 'ci'].includes(String(entry.visitorType || '').toLowerCase())) return;
+        const seen = last.get(stage.id);
+        seen.count += 1;
+        if (seen.at === null || time > seen.at) seen.at = time;
+      },
+    });
+  } catch (error) {
+    if (error.code === 'collection_timeout') throw error;
+    warnings.push('telemetry_unavailable');
+  }
+  if (scanned?.partial) warnings.push('telemetry_incomplete');
+  if (scanned?.empty) warnings.push('telemetry_store_empty');
+  const readable = Boolean(scanned);
+  const funnel = FUNNEL_STAGES.map((stage) => {
+    const seen = last.get(stage.id);
+    const base = { id: stage.id, label: stage.label, group: 'funnel', source: 'first_party_log_30d', dashboardUrl: null };
+    if (!readable) return { ...base, status: 'unavailable', lastEventAt: null, count30d: null, note: 'The first-party log could not be read, so nothing is shown.' };
+    if (seen.at === null) return { ...base, status: 'no_data_yet', lastEventAt: null, count30d: null, note: scanned.partial ? 'No event found in the part of the log that was read (the 30-day window was not read in full).' : 'No event in the last 30 days (bot, internal, test, owner and build-server traffic left out).' };
+    return { ...base, status: 'ok', lastEventAt: new Date(seen.at).toISOString(), count30d: seen.count, note: scanned.partial ? 'Count is a lower bound: the 30-day window was not read in full.' : 'Last event this server recorded (bot, internal, test, owner and build-server traffic left out).' };
+  });
+  const vendor = (id, label, installed, detail, dashboardUrl) => ({
+    id, label, group: 'analytics', source: 'site_files', dashboardUrl,
+    status: installed ? 'not_read_here' : 'not_installed', lastEventAt: null, count30d: null,
+    note: installed
+      ? `${detail} This server does not read ${label}'s numbers, so there is no event time here (no data yet on this page). Open its own dashboard.`
+      : `${label} is not in the site files.`,
+  });
+  const analytics = [
+    vendor('plausible', 'Plausible', tags.plausible, 'The Plausible script is on the site pages.', PLAUSIBLE_DASHBOARD),
+    vendor('google_analytics', 'Google Analytics', Boolean(tags.googleAnalytics), tags.googleAnalytics ? `Measurement ID ${tags.googleAnalytics} is injected into the marketing pages.` : '', GA_DASHBOARD),
+    vendor('clarity', 'Microsoft Clarity', Boolean(tags.clarity), tags.clarity ? `Project ${tags.clarity} loads on the public marketing pages (never on /admin or signed-in pages).` : '', CLARITY_DASHBOARD),
+  ];
+  return envelope('site_files_and_first_party_log_30d', { tiles: [...analytics, ...funnel], windowDays: 30 }, warnings);
+}
+
 // Unit economics: delivery cost per active install and per paying customer, contribution per plan, payment-to-access.
 function economicsFrom(money, deps) {
   const meter = (deps.readCostMeter || ((options) => costMeter.readWindow(options)))({ feedbackDir: deps.feedbackDir, days: 30 });
@@ -1158,6 +1246,7 @@ async function collectAdminSection(route, deps, externalSignal) {
       if (route.section === 'summary') return collectSummary(deps, controller.signal);
       if (route.section === 'alerts') return collectAlerts(deps, controller.signal);
       if (route.section === 'economics') return collectEconomics(deps, controller.signal);
+      if (route.section === 'sources') return collectSources(deps, controller.signal);
       if (route.section === 'stripe') return collectStripe(route, deps, controller.signal);
       if (route.section === 'data') return collectData(route, deps, controller.signal);
       if (route.section === 'observability') return collectObservability(deps, controller.signal);
@@ -1171,4 +1260,4 @@ async function collectAdminSection(route, deps, externalSignal) {
   }
 }
 
-module.exports = { paymentAccessCheck, PRIVATE_HEADERS, RESPONSE_LIMIT, monthlyRecurring, collectAlerts, startAlertDelivery, nextAlertDeliveryState, adminPath, parseAdminRoute, readOwnerIdentity, readSessionState, collectMoney, collectAnalytics, collectSummary, summaryParts, collectAdminSection, createRuntimeObservations, githubCommitTitle, collectObservability, projectAnalytics, projectStripe, readObject, countRecords, guardPath };
+module.exports = { collectSources, paymentAccessCheck, PRIVATE_HEADERS, RESPONSE_LIMIT, monthlyRecurring, collectAlerts, startAlertDelivery, nextAlertDeliveryState, adminPath, parseAdminRoute, readOwnerIdentity, readSessionState, collectMoney, collectAnalytics, collectSummary, summaryParts, collectAdminSection, createRuntimeObservations, githubCommitTitle, collectObservability, projectAnalytics, projectStripe, readObject, countRecords, guardPath };

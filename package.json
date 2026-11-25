@@ -1497,7 +1497,7 @@
     "test:no-orphan-posthog": "node --test --test-force-exit tests/no-orphan-posthog.test.js",
     "test:admin-truth-ui": "node --test --test-force-exit tests/admin-truth-ui.test.js",
     "test:admin-usage-mrr": "node --test --test-force-exit tests/admin-usage-mrr.test.js",
-    "test:owner-admin": "node --test tests/unit-economics.test.js tests/admin-economics.test.js tests/owner-admin.test.js tests/owner-admin-payment-cursor.test.js tests/owner-reporting-semantics.test.js tests/owner-summary-quality.test.js"
+    "test:owner-admin": "node --test tests/unit-economics.test.js tests/admin-economics.test.js tests/owner-admin.test.js tests/site-sources-clarity.test.js tests/owner-admin-payment-cursor.test.js tests/owner-reporting-semantics.test.js tests/owner-summary-quality.test.js"
   },
   "keywords": [
     "mcp",

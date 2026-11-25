@@ -283,7 +283,7 @@
       const content = document.getElementById('content');
       // Today answers "does anything need me, and how did this week go". Overview repeated it, so it left the menu;
       // its numbers stay in /v1/admin/summary for agents.
-      const sections = ['money', 'economics', 'analytics', 'observability', 'stripe', 'data'];
+      const sections = ['money', 'economics', 'analytics', 'sources', 'observability', 'stripe', 'data'];
       const titles = {
         money: 'Today',
         economics: 'Unit economics',
@@ -291,8 +291,44 @@
         stripe: 'Stripe records',
         data: 'Hosted data',
         analytics: 'Growth',
+        sources: 'Sources',
         observability: 'Health',
       };
+      // Sources tab: one block per source with the time of its last event, or a plain "no data yet" state. No number
+      // is filled in for a source this server does not read; each block links to that source's own dashboard.
+      const SOURCE_STATE_WORDS = {
+        ok: 'Last event seen',
+        no_data_yet: 'No data yet',
+        not_read_here: 'No data here yet: open its own dashboard',
+        not_installed: 'Not installed',
+        unavailable: 'Unavailable right now',
+      };
+      function renderSources(parent, data) {
+        const groups = [
+          ['analytics', 'Analytics tools on the site'],
+          ['funnel', 'Funnel, from our own first-party log (past 30 days)'],
+        ];
+        for (const [group, title] of groups) {
+          parent.append(element('h3', title));
+          for (const tile of data.tiles.filter((item) => item.group === group)) {
+            const block = element('div', undefined, 'card');
+            block.append(element('div', SOURCE_STATE_WORDS[tile.status] || label(tile.status), 'value'));
+            block.append(element('div', tile.label, 'label'));
+            if (tile.lastEventAt) block.append(element('div', 'Last event: ' + date(tile.lastEventAt), 'muted'));
+            if (Number.isFinite(tile.count30d)) block.append(element('div', 'Events in the past 30 days: ' + tile.count30d, 'muted'));
+            block.append(element('p', tile.note, 'muted'));
+            if (tile.dashboardUrl && /^https:\/\//.test(tile.dashboardUrl)) {
+              const link = element('a', 'Open ' + tile.label + ' dashboard');
+              link.href = tile.dashboardUrl;
+              link.target = '_blank';
+              link.rel = 'noopener noreferrer';
+              block.append(link);
+            }
+            parent.append(block);
+          }
+        }
+        parent.append(element('p', 'JSON for agents: /v1/admin/sources. Clarity recordings and heatmaps are read in the Clarity dashboard; a session only counts as seen there once it shows a real session.', 'muted'));
+      }
       let current = 'money';
       let resource = 'customers';
       let subscriptionId = null;
@@ -1377,6 +1413,9 @@
         }
         if (section === 'observability') {
           renderObservability(parent, data);
+        }
+        if (section === 'sources') {
+          renderSources(parent, data);
         }
       }
       function controls() {
