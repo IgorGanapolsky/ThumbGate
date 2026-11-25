@@ -73,6 +73,23 @@ shown stays 0 while activated grows, version reach is the problem (see revised r
 
 Results are appended below as they come in.
 
+**2026-11-25 01:20 UTC: loop 1 completion check passed.**
+
+- #5188 merged as 297d27f and #5190 as 42a69e5. Both are in npm `thumbgate@1.40.14` (published 2026-11-24
+  23:12 UTC), so CLIs that install or self-update from now on get the new upgrade line and pings.
+- Production `/health` shows build c6c692e, which includes 297d27f. `/dashboard` serves the sign-in page.
+  Railway held every deploy from 22:38 UTC until about 01:00 UTC (see the Railway queue stall note), so the server
+  part went live about 2.5 hours after the merge.
+- `/v1/metrics/real` now shows `last30Days.firstBlockedToolCall.count = 117` (was 0) and 34 in the last 7 days.
+- `activationFunnel`, 30 days: 269 CLI installs, 117 activated, 0 shown, 0 limit hits, 1 CLI checkout view,
+  0 clicks, 0 paid. The 0 shown is expected: no install runs 1.40.14 yet.
+- `/checkout/pro?utm_source=cli&utm_medium=first_block&utm_campaign=first_block_upsell` returns 200 and renders
+  "Pay $19/mo with Stripe".
+- Still open: `medianMinutes` is null because production CLIs send `first_block` without `minutesSinceInstall`.
+  The timing KPI needs that field, which is a small follow-up.
+
+The business check on Dec 1 and Dec 8 stays as written above.
+
 ## Loop 2 (same day): get old installs onto the current version
 
 **Observation.** `usage30d.byVersion`: 225 of 261 active installs send no version (builds older than
