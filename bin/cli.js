@@ -4312,6 +4312,7 @@ function help() {
   console.log('  npx thumbgate lessons "force push" --json');
   console.log('  npx thumbgate lessons --query="deploy" --remote');
   console.log('  npx thumbgate gate-stats --json');
+  console.log('  npx thumbgate assurance-report --days=30 --out=assurance-report.md');
   console.log('  npx thumbgate desktop-snapshot --json');
   console.log('  npx thumbgate capture --feedback=down --context="agent broke deploy" --json');
   proNudge();
@@ -5566,6 +5567,12 @@ switch (COMMAND) {
   case 'gate-stats':
     gateStats();
     break;
+  case 'assurance-report': {
+    const { runAssuranceReport } = require(path.join(PKG_ROOT, 'scripts', 'assurance-report'));
+    const { output, written } = runAssuranceReport(process.argv.slice(3));
+    console.log(written ? `Assurance report written to ${written}` : output);
+    break;
+  }
   case 'desktop-snapshot':
     require(path.join(PKG_ROOT, 'scripts', 'explore-subcommands')).runDesktopSnapshotCli(process.argv.slice(3));
     break;
