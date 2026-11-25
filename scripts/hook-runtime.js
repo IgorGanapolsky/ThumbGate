@@ -144,8 +144,16 @@ function codexStatuslineCommand() {
   return buildCodexPortableHookCommand('statusline-render');
 }
 
+// The Cursor shell gate goes through the same portable runtime as every other hook. It used to pin
+// `node <install>/scripts/cursor-shell-gate.js`; with failClosed: true, a cleared npx cache or a deleted worktree then
+// blocked every shell command in every Cursor project. The shim and the pinned npm-exec runtime cannot go missing that way.
 function cursorShellGateHookCommand() {
-  return `node ${shellQuote(path.join(PKG_ROOT, 'scripts', 'cursor-shell-gate.js'))}`;
+  return buildPortableHookCommand('cursor-gate');
+}
+
+/** An older ThumbGate shell-gate entry that points at one install's scripts/cursor-shell-gate.js. */
+function isPinnedCursorShellGateCommand(command) {
+  return /cursor-shell-gate\.js/.test(String(command || ''));
 }
 
 /** A Cursor hook that runs one ThumbGate CLI subcommand (cursor-prompt, cursor-mcp-gate, cursor-record, cursor-stop). */
@@ -177,5 +185,6 @@ module.exports = {
   statuslineCommand,
   userPromptHookCommand,
   cursorShellGateHookCommand,
+  isPinnedCursorShellGateCommand,
   isDisposableCheckout,
 };

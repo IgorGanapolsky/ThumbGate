@@ -9,11 +9,11 @@ Cursor's shell guard hook speaks a different JSON contract than Claude Code PreT
 
 Wire ThumbGate with `cursor-shell-gate`, which maps both directions and reuses the same `gates-engine` pipeline as `gate-check` (hard floor secret guard, security scan, learned rules). It does **not** turn on `THUMBGATE_STRICT_ENFORCEMENT`.
 
-Add to `~/.cursor/hooks.json` under `beforeShellExecution`:
+Add to `~/.cursor/hooks.json` under `beforeShellExecution` (`npx thumbgate init --agent cursor` does this for you). Don't point it at one install's `scripts/cursor-shell-gate.js`: with `failClosed`, a cleared npx cache or a deleted checkout then blocks every shell command.
 
 ```json
 {
-  "command": "node /path/to/ThumbGate/scripts/cursor-shell-gate.js",
+  "command": "npx --yes --package thumbgate@latest thumbgate cursor-gate",
   "timeout": 10,
   "failClosed": true
 }
