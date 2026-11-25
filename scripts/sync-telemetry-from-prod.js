@@ -57,8 +57,10 @@ const MS_PER_DAY = 24 * 60 * 60 * 1000;
     || process.env.HTTP_PROXY || process.env.http_proxy;
   if (!proxyUrl) return;
   try {
-    const { ProxyAgent, setGlobalDispatcher } = require('undici');
-    setGlobalDispatcher(new ProxyAgent(proxyUrl));
+    // EnvHttpProxyAgent reads HTTP(S)_PROXY and honors NO_PROXY. A plain ProxyAgent sent every
+    // request through the proxy, even to localhost or an internal billing host listed in NO_PROXY.
+    const { EnvHttpProxyAgent, setGlobalDispatcher } = require('undici');
+    setGlobalDispatcher(new EnvHttpProxyAgent());
   } catch {
     // undici not available — fetch will use the default dispatcher.
   }
