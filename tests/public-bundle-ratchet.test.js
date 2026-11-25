@@ -294,7 +294,7 @@ const path = require('node:path');
 // hooks-follow-latest).
 // 712 -> 715 (2026-11-25): canary-gate.js, boundary-check.js, prompt-risk-lint.js (AGENT-3667 item J).
 // 710 -> 711 (2026-11-25): config/gates/profiles/shared-tree.json, the opt-in shared-tree gate profile (bb6208a).
-const BASELINE_FILE_COUNT = 715;
+const BASELINE_FILE_COUNT = 720;
 function readBundleSnapshot() {
   const repoRoot = path.resolve(__dirname, '..');
   const stdout = execSync('npm pack --dry-run --json', {
