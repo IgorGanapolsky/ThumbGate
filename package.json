@@ -588,6 +588,7 @@
     "public/project-switcher.js",
     "scripts/owner-admin.js",
     "scripts/clarity.js",
+    "scripts/orion.js",
     "scripts/delete-equivalence.js",
     "scripts/owner-alerts.js",
     "scripts/owner-telemetry.js",
