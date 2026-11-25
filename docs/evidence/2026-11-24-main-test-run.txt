@@ -1,0 +1,18 @@
+Full test run on a fresh detached worktree of origin/main 9f6fa22ef (24 Nov 2026).
+Method: every tests/*.test.js file run one at a time with `nice -n 15 node --test <file>`; 876 files; exit code of each recorded.
+Result: 12 files exit 1. The first error line of each is quoted below. "Cause" is what that line says; "owner guess" is a guess, not checked.
+
+1. tests/cli-schema.test.js  - cause: "SyntaxError: Unexpected token '<<'" (merge conflict marker in scripts/cli-schema.js). Fix: PR 5162 (cli-schema.test.js 39 pass with it). Owner: author of #5149.
+2. tests/cli.test.js  - cause: "Expected exit 0, got 1" plus the same SyntaxError. Fix: PR 5162 (same marker). I did not re-run cli.test.js on 5162.
+3. tests/cli-agent-experience.test.js  - cause NOT read (the lines I captured were passing tests). Probably the same marker; unverified.
+4. tests/public-landing.test.js  - cause: "visible homepage is 1535 words" (limit 1520); also the /Upgrade to Pro/i hero assertion (hero text was changed on 19 Nov in 929a70704). Decision: the page's growth is slow, the Pro assertion is stale. Blocked on a secret-exfiltration gate that refuses reading this test file. Owner guess: whoever landed 929a70704.
+5. tests/adapter-version-pins.test.js  - cause: "adapter pins disagree with package.json (1.40.10)". Owner guess: release/version-sync (adapters not bumped).
+6. tests/ai-identity-checklist.test.js  - cause: first line "adapter:cursor" with expected 0, so the Cursor adapter fails the identity checklist. Owner guess: the Cursor adapter author (#5149 area). Detail not read.
+7. tests/capability-wiring-ratchet.test.js  - cause: "orphan scripts rose to 25 (max 24)": one script has no caller outside tests/. Owner guess: whoever added scripts/cursor-shell-gate.js (its only caller may be the Cursor hook config, not code). Not verified which script.
+8. tests/public-core-boundary.test.js  - cause: "public npm bundle should stay <= 690 files, got 700". Owner guess: the ratchet needs a deliberate baseline bump or files removed.
+9. tests/legal-public-routes.test.js  - cause: a page no longer matches /7-day/i. Owner guess: a refund or trial wording change. Not traced.
+10. tests/no-real-estate-outbound.test.js  - cause: "Found prohibited real-estate/tax-deed text in tracked ThumbGate files". The file list was not captured. Note: the claim audit evidence from my branch also mentions "0.4ms" in a grep for this test; unrelated to this failure. Owner guess: whoever added the text; ThumbGate must never carry real-estate text.
+11. tests/obsidian-export.test.js  - cause: "Expected values to be strictly equal: actual 1, expected 0" (a child process exit code). Not traced. May depend on the local Obsidian vault; possibly environment, not a code bug.
+12. tests/spec-template.test.js  - cause: "The following specs violate the standard template". Owner guess: a spec doc added without the required sections (my own docs/specs additions are not on main).
+
+Small bugs fixed: items 1 and 2 (PR 5162). Nothing else fixed yet; items 3 to 12 are listed for an owner. Caveat: run on one Mac, so items 6 and 11 may be environment effects.

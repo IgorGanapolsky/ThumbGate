@@ -490,7 +490,7 @@ async function managePrs(prNumber = '', runner = runGh, options = {}) {
 const SWEEP_PR_FIELDS = 'number,state,isDraft,title,url,headRefName,headRefOid,baseRefName,updatedAt,createdAt,author,statusCheckRollup,mergeStateStatus,mergeable,labels';
 // main has no "require up to date" rule, so GitHub never reports BEHIND here.
 // The steward asks the compare API instead and updates a branch this far back.
-const SWEEP_BEHIND_THRESHOLD = 10;
+const SWEEP_BEHIND_THRESHOLD = 3;
 const SWEEP_LIST_LIMIT = '1000';
 const SWEEP_REQUIRED_CHECKS_BASE = 'main';
 const DEFAULT_RED_MAX_AGE_MS = 24 * 60 * 60 * 1000;
