@@ -529,8 +529,9 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
     // 710 -> 711 (2026-11-25): config/gates/profiles/shared-tree.json, the opt-in shared-tree gate profile (bb6208a).
     // 723 -> 724 (2026-11-25): scripts/clarity.js (required by src/api/server.js and owner-admin.js: Microsoft Clarity tag and export) (+1).
     // 724 -> 725 (2026-11-25): scripts/deploy-proof-gate.js (required by scripts/hook-stop-anti-claim.js) (+1).
-    manifest.fileCount <= 725,
-    `npm package should stay <= 725 files, got ${manifest.fileCount}`
+    // 725 -> 726 (2026-11-25): public/udemy.html, the thumbgate.ai/udemy landing page (AGENT-3667) (+1).
+    manifest.fileCount <= 726,
+    `npm package should stay <= 726 files, got ${manifest.fileCount}`
   );
   // Ceiling bumped from 2.75 MB → 2.85 MB (2026-04-16) to accommodate the
   // incremental review-delta demo content in public/dashboard.html landing
@@ -814,8 +815,10 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // wiring (AGENT-3667 one-count follow-up); measured 10,731,089 before this commit's review fixes.
   // Bumped 10.75 MB -> 10.77 MB (2026-11-25): scripts/clarity.js (Clarity tag + owner-console export), the
   // Visitor behavior tab in public/admin.html and the privacy note; measured 10,751,766.
-  manifest.unpackedSize <= 10_770_000,
-  `npm package should stay <= 10.77 MB unpacked, got ${manifest.unpackedSize}`
+  // Bumped 10.77 MB -> 10.78 MB (2026-11-25): public/udemy.html and the install-source field in
+  // scripts/cli-telemetry.js (AGENT-3667 udemy source); measured 10,773,470 (main was 10,767,503).
+  manifest.unpackedSize <= 10_780_000,
+  `npm package should stay <= 10.78 MB unpacked, got ${manifest.unpackedSize}`
 );
 
   for (const file of requiredRuntimeFiles) {
