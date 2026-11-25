@@ -43,6 +43,19 @@ const VLLM_MODEL_ROLES = {
   vlm: 'Qwen/Qwen2-VL-7B-Instruct',
 };
 
+// JetBrains Mellum2.1 open-weights (Apache 2.0) 12B MoE, 2.5B active per token.
+// Activate with THUMBGATE_LOCAL_MODEL_FAMILY=mellum. The Instruct variant skips
+// the chain-of-thought step (about 45% fewer tokens per agent task in JetBrains'
+// tests), so it serves routine roles; Thinking is kept for hard problems.
+// GGUF builds: JetBrains/Mellum2.1-12B-A2.5B-Instruct-GGUF and -Thinking-GGUF.
+const MELLUM_MODEL_ROLES = {
+  normal: 'JetBrains/Mellum2.1-12B-A2.5B-Instruct',
+  thinking: 'JetBrains/Mellum2.1-12B-A2.5B-Thinking',
+  critique: 'JetBrains/Mellum2.1-12B-A2.5B-Instruct',
+  compaction: 'JetBrains/Mellum2.1-12B-A2.5B-Instruct',
+  vlm: 'gemini-2.5-flash',
+};
+
 const VALID_MODEL_ROLES = Object.keys(MODEL_ROLES);
 
 const EMBEDDING_PROFILES = {
@@ -356,13 +369,16 @@ function resolveModelRole(role, env) {
   const envKey = `THUMBGATE_MODEL_ROLE_${normalized.toUpperCase()}`;
   const modelFamily = resolveModelFamily(e);
   const isLocalGlm = modelFamily.startsWith('glm');
+  const isLocalMellum = modelFamily.startsWith('mellum') || modelFamily.startsWith('jetbrains-mellum');
   // Only explicit vLLM family/server selects VLLM_MODEL_ROLES. A generic
   // THUMBGATE_LOCAL_LLM_ENDPOINT (Ollama, LM Studio, etc.) must keep its own model id.
   const serverEngine = normalizeSlug(e.THUMBGATE_LOCAL_MODEL_SERVER || e.THUMBGATE_MODEL_SERVER || '');
   const isLocalVllm = modelFamily.startsWith('vllm') || serverEngine === 'vllm';
   const providerMode = resolveProviderMode(e);
-  const provider = (isLocalGlm || isLocalVllm) ? 'local' : (providerMode === 'vertex' ? 'vertex' : 'gemini');
-  const defaultModel = isLocalVllm
+  const provider = (isLocalGlm || isLocalVllm || isLocalMellum) ? 'local' : (providerMode === 'vertex' ? 'vertex' : 'gemini');
+  const defaultModel = isLocalMellum
+    ? (MELLUM_MODEL_ROLES[normalized] || MODEL_ROLES[normalized])
+    : isLocalVllm
     ? (VLLM_MODEL_ROLES[normalized] || MODEL_ROLES[normalized])
     : (isLocalGlm ? (GLM_MODEL_ROLES[normalized] || MODEL_ROLES[normalized]) : MODEL_ROLES[normalized]);
   const model = (e[envKey] && String(e[envKey]).trim()) || defaultModel;
@@ -404,6 +420,7 @@ module.exports = {
   DEFAULT_FEEDBACK_DIR,
   EMBEDDING_PROFILES,
   GLM_MODEL_ROLES,
+  MELLUM_MODEL_ROLES,
   VLLM_MODEL_ROLES,
   INDEXCACHE_SERVER_ENGINES,
   LONG_CONTEXT_TAGS,
