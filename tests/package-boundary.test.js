@@ -531,8 +531,9 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
     // 724 -> 725 (2026-11-25): scripts/deploy-proof-gate.js (required by scripts/hook-stop-anti-claim.js) (+1).
     // 725 -> 726 (2026-11-25): public/udemy.html, the thumbgate.ai/udemy landing page (AGENT-3667) (+1).
     // 726 -> 727 (2026-11-25): scripts/delete-equivalence.js, a learned delete also denies the same delete written in Python (AGENT-3667) (+1).
-    manifest.fileCount <= 727,
-    `npm package should stay <= 727 files, got ${manifest.fileCount}`
+    // 727 -> 728 (2026-11-25): scripts/cursor-self-heal.js (adds the thumbs-down loop to old Cursor installs).
+    manifest.fileCount <= 728,
+    `npm package should stay <= 728 files, got ${manifest.fileCount}`
   );
   // Ceiling bumped from 2.75 MB → 2.85 MB (2026-04-16) to accommodate the
   // incremental review-delta demo content in public/dashboard.html landing
