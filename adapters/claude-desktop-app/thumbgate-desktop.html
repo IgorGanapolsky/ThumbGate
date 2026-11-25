@@ -382,10 +382,9 @@ ul.list li.empty { color: var(--muted); }
     }
 
     async function fromOlderCli(cwd) {
-      // Releases before desktop-snapshot: assemble the same shape from commands that already exist.
-      const [stats, firings, rules, lessons] = await Promise.all([
+      // Older releases have no reader for gate denies (explore firings is rejected feedback), so no block list.
+      const [stats, rules, lessons] = await Promise.all([
         run('stats --json', cwd),
-        run('explore firings --json --limit=10', cwd).catch(() => ({ firings: [] })),
         run('explore rules --json', cwd).catch(() => ({ rules: [] })),
         run('explore lessons --json --limit=50', cwd).catch(() => ({ lessons: [] })),
       ]);
@@ -398,7 +397,7 @@ ul.list li.empty { color: var(--muted); }
           activeGates: stats.totalGates || 0, autoPromotedGates: stats.autoPromotedGates || 0,
           rules: (rules.rules || []).length, thumbsDown: stats.negatives || downs.length, lessons: stats.total || 0,
         },
-        recentBlocks: (firings.firings || []).map((f) => ({ reason: f.reason, context: f.context, timestamp: f.timestamp })),
+        recentBlocks: [],
         recentThumbsDown: downs.slice(0, 10).map((l) => ({ context: l.context, tags: l.tags || [], promoted: l.confidence === 'active', timestamp: l.timestamp })),
         rules: (rules.rules || []).slice(0, 10).map((r) => ({ id: r.id, title: r.title })),
         plan: { tier: 'free', upgradeUrl: null, unknown: true },

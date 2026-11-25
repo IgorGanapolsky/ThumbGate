@@ -108,7 +108,7 @@
   <h2>What it runs, and what it does not do</h2>
   <p>ThumbGate Desktop asks for full access for one reason: to run one read-only command in the project folder you pick.</p>
   <div class="cta-install">npx thumbgate desktop-snapshot --json</div>
-  <p>That command reads the same local files as <code>thumbgate stats</code> and <code>thumbgate explore</code> and prints one JSON document with a fixed schema, <code>thumbgate.desktop-snapshot/v1</code>. On older ThumbGate releases the app falls back to those two commands.</p>
+  <p>That command reads the same local files as <code>thumbgate stats</code> and <code>thumbgate explore</code> and prints one JSON document with a fixed schema, <code>thumbgate.desktop-snapshot/v1</code>. On older ThumbGate releases the app falls back to those two commands and shows counts without the list of recent blocks.</p>
   <ul>
     <li>It does not write files, capture feedback, or add or remove rules.</li>
     <li>It does not enforce anything. Blocking still happens in ThumbGate's PreToolUse hook, whether the app is open or not.</li>

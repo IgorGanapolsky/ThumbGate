@@ -307,7 +307,7 @@ function buildDesktopSnapshot(options = {}) {
   const feedbackDir = options.feedbackDir
     || safe(() => req('feedback-loop').getFeedbackPaths().FEEDBACK_DIR, null);
 
-  const explore = { exploreGateFirings, exploreRules, loadLessons };
+  const explore = { exploreRules, loadLessons };
   const gateRuntime = options.gateRuntime
     || safe(() => req('gates-engine').loadStats(), { blocked: 0, warned: 0, passed: 0, byGate: {} });
   const gateConfig = options.gateConfig
@@ -316,8 +316,11 @@ function buildDesktopSnapshot(options = {}) {
     ? options.isPro
     : safe(() => req('rate-limiter').isProTier(), false);
 
-  const firings = feedbackDir && explore
-    ? safe(() => explore.exploreGateFirings({ feedbackDir, limit, json: true }).firings, [])
+  // Enforcement events come from gate-events-log.jsonl (audit-trail.js); rejection-ledger is rejected feedback.
+  const denies = feedbackDir
+    ? safe(() => fs.readFileSync(path.join(feedbackDir, 'gate-events-log.jsonl'), 'utf8').split('\n')
+      .map((l) => { try { return JSON.parse(l); } catch { return null; } })
+      .filter((e) => e && e.decision === 'deny').reverse().slice(0, limit), [])
     : [];
   const lessons = feedbackDir && explore
     ? safe(() => explore.loadLessons(feedbackDir), [])
@@ -352,11 +355,11 @@ function buildDesktopSnapshot(options = {}) {
       thumbsDown: lessons.filter((l) => isThumbsDown(l.signal || l.feedback)).length,
       lessons: lessons.length,
     },
-    recentBlocks: firings.map((f) => ({
-      id: f.id || null,
-      reason: shortText(f.reason),
-      context: shortText(f.context),
-      timestamp: f.timestamp || null,
+    recentBlocks: denies.map((e) => ({
+      id: e.id || null,
+      reason: shortText(e.message || e.gateId),
+      context: shortText([e.toolName, e.gateId].filter(Boolean).join(' · ')),
+      timestamp: e.timestamp || null,
     })),
     recentThumbsDown: thumbsDown,
     rules: rules.slice(0, limit).map((r) => ({ id: r.id, title: shortText(r.title) })),

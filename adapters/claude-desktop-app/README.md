@@ -8,7 +8,7 @@ if allowed, a menu bar count, an alert per new block and `Alt+Shift+G`.
 
 With `full-access` it runs one read-only command once a minute in the project
 folder you pick: `npx --yes thumbgate desktop-snapshot --json` (older releases:
-`stats --json` and `explore ... --json`). It writes nothing and enforces nothing.
+`stats --json` and `explore rules|lessons --json`, no block list). It writes nothing and enforces nothing.
 
 Full access is generally allowed only for apps written inside your own
 organization, so ask Claude to publish your own copy of this file as an artifact

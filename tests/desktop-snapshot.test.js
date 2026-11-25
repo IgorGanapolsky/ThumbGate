@@ -21,8 +21,10 @@ function tmpFeedbackDir() {
     JSON.stringify({ id: 'l2', signal: 'positive', context: 'ran tests before commit', timestamp: '2026-11-21T10:00:00Z' }),
     JSON.stringify({ id: 'l3', feedback: 'down', content: 'deleted the .env file', timestamp: '2026-11-22T10:00:00Z' }),
   ].join('\n'));
-  fs.writeFileSync(path.join(dir, 'rejection-ledger.jsonl'), [
-    JSON.stringify({ id: 'b1', signal: 'negative', reason: 'protected branch push blocked', context: 'git push origin main', timestamp: '2026-11-23T10:00:00Z' }),
+  fs.writeFileSync(path.join(dir, 'rejection-ledger.jsonl'), JSON.stringify({ id: 'r1', signal: 'positive', reason: 'schema validation failed' }));
+  fs.writeFileSync(path.join(dir, 'gate-events-log.jsonl'), [
+    JSON.stringify({ id: 'g1', decision: 'deny', gateId: 'protected-branch', toolName: 'Bash', message: 'protected branch push blocked', timestamp: '2026-11-23T10:00:00Z' }),
+    JSON.stringify({ id: 'g2', decision: 'warn', gateId: 'env-guard', toolName: 'Write', message: 'warned only' }),
   ].join('\n'));
   fs.writeFileSync(path.join(dir, 'prevention-rules.md'), '# Rules\n\n## Never force-push main\nbody\n\n## Never delete .env\nbody\n');
   return dir;
@@ -43,7 +45,7 @@ test('snapshot has a stable schema with totals, blocks, thumbs-downs, rules and 
     blocked: 7, warned: 3, passed: 40, activeGates: 12, autoPromotedGates: 2,
     rules: 2, thumbsDown: 2, lessons: 3,
   });
-  assert.equal(snap.recentBlocks.length, 1);
+  assert.deepEqual(snap.recentBlocks.map((b) => b.id), ['g1'], 'only deny events from the gate log, never rejected feedback');
   assert.equal(snap.recentBlocks[0].reason, 'protected branch push blocked');
   assert.deepEqual(snap.recentThumbsDown.map((t) => t.id), ['l3', 'l1'], 'newest thumbs-down first, positives left out');
   assert.equal(snap.recentThumbsDown[1].promoted, true);
@@ -74,7 +76,7 @@ test('long text is cut and limits are clamped', () => {
   for (const s of ['down', 'negative', 'NEGATIVE', 'thumbs_down']) assert.ok(isThumbsDown(s), s);
   for (const s of ['up', 'positive', '', undefined]) assert.ok(!isThumbsDown(s), String(s));
   const dir = tmpFeedbackDir();
-  fs.writeFileSync(path.join(dir, 'rejection-ledger.jsonl'), JSON.stringify({ id: 'x', reason: 'r'.repeat(1000) }));
+  fs.writeFileSync(path.join(dir, 'gate-events-log.jsonl'), JSON.stringify({ id: 'x', decision: 'deny', message: 'r'.repeat(1000) }));
   const snap = buildDesktopSnapshot({ feedbackDir: dir, gateRuntime: {}, gateConfig: {}, isPro: false });
   assert.ok(snap.recentBlocks[0].reason.length <= 280);
 });
