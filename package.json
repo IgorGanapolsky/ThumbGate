@@ -1284,7 +1284,7 @@
     "test:plugin-hooks-manifest": "node --test tests/plugin-hooks-manifest.test.js tests/hook-command-paths.test.js tests/auto-wire-hooks-cli-safety.test.js",
     "test:hook-self-protection": "node --test tests/hook-self-protection.test.js",
     "test:never-bypass-branch-protection": "node --test tests/never-bypass-branch-protection.test.js",
-    "test:self-protect-enforcement": "node --test tests/self-protect-enforcement.test.js",
+    "test:self-protect-enforcement": "node --test tests/self-protect-enforcement.test.js tests/learned-rule-store-self-protect.test.js",
     "test:pack-runtime-integrity": "node --test tests/pack-runtime-integrity.test.js",
     "test:packed-cli-require-closure": "node --test tests/packed-cli-require-closure.test.js",
     "test:entitlement": "node --test tests/entitlement.test.js",
