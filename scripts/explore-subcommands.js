@@ -265,7 +265,130 @@ function exploreGateFirings(options = {}) {
   return lines.join('\n');
 }
 
+// Desktop snapshot (`thumbgate desktop-snapshot --json`): one read-only JSON
+// document for desktop/menu bar apps (adapters/claude-desktop-app/). Kept in
+// this file to reuse the loaders above without adding a file to the bundle.
+const DESKTOP_SNAPSHOT_SCHEMA = 'thumbgate.desktop-snapshot/v1';
+const DEFAULT_LIMIT = 10;
+const MAX_LIMIT = 50;
+const MAX_TEXT = 280;
+const PRICING_URL = 'https://thumbgate.ai/pricing?utm_source=desktop_app&utm_medium=desktop&utm_campaign=pro_education';
+
+function clampLimit(value) {
+  const n = Number.parseInt(value, 10);
+  if (!Number.isFinite(n) || n < 1) return DEFAULT_LIMIT;
+  return Math.min(n, MAX_LIMIT);
+}
+
+function shortText(value) {
+  const text = String(value == null ? '' : value).replace(/\s+/g, ' ').trim();
+  return text.length > MAX_TEXT ? `${text.slice(0, MAX_TEXT - 1)}…` : text;
+}
+
+function isThumbsDown(signal) {
+  const s = String(signal || '').toLowerCase();
+  return s === 'down' || s.includes('neg') || s === 'thumbs_down' || s === '-1';
+}
+
+function safe(fn, fallback) {
+  try {
+    const value = fn();
+    return value == null ? fallback : value;
+  } catch {
+    return fallback;
+  }
+}
+
+function buildDesktopSnapshot(options = {}) {
+  const pkgRoot = options.pkgRoot || path.join(__dirname, '..');
+  const limit = clampLimit(options.limit);
+  const req = (name) => require(path.join(pkgRoot, 'scripts', name));
+
+  const feedbackDir = options.feedbackDir
+    || safe(() => req('feedback-loop').getFeedbackPaths().FEEDBACK_DIR, null);
+
+  const explore = { exploreRules, loadLessons };
+  const gateRuntime = options.gateRuntime
+    || safe(() => req('gates-engine').loadStats(), { blocked: 0, warned: 0, passed: 0, byGate: {} });
+  const gateConfig = options.gateConfig
+    || safe(() => req('gate-stats').calculateStats(), {});
+  const pro = typeof options.isPro === 'boolean'
+    ? options.isPro
+    : safe(() => req('rate-limiter').isProTier(), false);
+
+  // Enforcement events come from gate-events-log.jsonl (audit-trail.js); rejection-ledger is rejected feedback.
+  const denies = feedbackDir
+    ? safe(() => fs.readFileSync(path.join(feedbackDir, 'gate-events-log.jsonl'), 'utf8').split('\n')
+      .map((l) => { try { return JSON.parse(l); } catch { return null; } })
+      .filter((e) => e && e.decision === 'deny').reverse().slice(0, limit), [])
+    : [];
+  const lessons = feedbackDir && explore
+    ? safe(() => explore.loadLessons(feedbackDir), [])
+    : [];
+  const rules = feedbackDir && explore
+    ? safe(() => explore.exploreRules({ feedbackDir, json: true }).rules, [])
+    : [];
+
+  const thumbsDown = lessons
+    .filter((l) => isThumbsDown(l.signal || l.feedback))
+    .slice(0, limit)
+    .map((l) => ({
+      id: l.id || null,
+      context: shortText(l.content || l.context),
+      tags: Array.isArray(l.tags) ? l.tags.slice(0, 5) : [],
+      promoted: Boolean(l.gatePromoted || l.autoGateId),
+      timestamp: l.timestamp || l.createdAt || null,
+    }));
+
+  return {
+    schema: DESKTOP_SNAPSHOT_SCHEMA,
+    generatedAt: (options.now || new Date()).toISOString(),
+    version: safe(() => require(path.join(pkgRoot, 'package.json')).version, null),
+    feedbackDir: feedbackDir || null,
+    totals: {
+      blocked: Number(gateRuntime.blocked || 0),
+      warned: Number(gateRuntime.warned || 0),
+      passed: Number(gateRuntime.passed || 0),
+      activeGates: Number(gateConfig.totalGates || 0),
+      autoPromotedGates: Number(gateConfig.autoPromotedGates || 0),
+      rules: rules.length,
+      thumbsDown: lessons.filter((l) => isThumbsDown(l.signal || l.feedback)).length,
+      lessons: lessons.length,
+    },
+    recentBlocks: denies.map((e) => ({
+      id: e.id || null,
+      reason: shortText(e.message || e.gateId),
+      context: shortText([e.toolName, e.gateId].filter(Boolean).join(' · ')),
+      timestamp: e.timestamp || null,
+    })),
+    recentThumbsDown: thumbsDown,
+    rules: rules.slice(0, limit).map((r) => ({ id: r.id, title: shortText(r.title) })),
+    plan: pro
+      ? { tier: 'pro', upgradeUrl: null }
+      : { tier: 'free', upgradeUrl: PRICING_URL },
+  };
+}
+
+function runDesktopSnapshotCli(argv = []) {
+  const limitArg = argv.find((a) => a.startsWith('--limit='));
+  const snapshot = buildDesktopSnapshot({ limit: limitArg ? limitArg.split('=')[1] : undefined });
+  if (argv.includes('--json')) {
+    process.stdout.write(`${JSON.stringify(snapshot, null, 2)}\n`);
+    return snapshot;
+  }
+  const t = snapshot.totals;
+  const lines = [`ThumbGate: ${t.blocked} blocked, ${t.warned} warned, ${t.activeGates} gates, ${t.rules} rules, ${t.thumbsDown} thumbs-downs (${snapshot.plan.tier})`,
+    'For apps: npx thumbgate desktop-snapshot --json', ''];
+  process.stdout.write(lines.join('\n'));
+  return snapshot;
+}
+
 module.exports = {
+  DESKTOP_SNAPSHOT_SCHEMA,
+  buildDesktopSnapshot,
+  runDesktopSnapshotCli,
+  isThumbsDown,
+  clampLimit,
   exploreLessons,
   exploreRules,
   exploreGates,

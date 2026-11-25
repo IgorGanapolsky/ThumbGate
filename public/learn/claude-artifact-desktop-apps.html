@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Claude artifacts are now desktop apps. Put your agent's guardrails in the menu bar - ThumbGate</title>
+<script defer data-domain="thumbgate.ai" src="https://plausible.io/js/script.js"></script>
+<meta name="description" content="Since November 24, 2026, Claude can install an artifact as a Mac or Windows app with a menu bar item, notifications and, if you allow it, access to your computer. Here is what that means for agent guardrails, and the ThumbGate desktop companion built on it.">
+<meta name="keywords" content="Claude artifacts, install artifact as app, Claude desktop apps, menu bar app, AI coding agent guardrails, PreToolUse, ThumbGate, Claude Code">
+<meta property="og:title" content="Claude artifacts are now desktop apps. Put your agent's guardrails in the menu bar">
+<meta property="og:description" content="An artifact installed as an app can sit in the menu bar, send notifications and read local files. ThumbGate uses that to show what it blocked outside the terminal.">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://thumbgate.ai/learn/claude-artifact-desktop-apps">
+<link rel="canonical" href="https://thumbgate.ai/learn/claude-artifact-desktop-apps">
+<link rel="stylesheet" href="/learn/learn.css">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "TechArticle",
+  "headline": "Claude artifacts are now desktop apps. Put your agent's guardrails in the menu bar",
+  "description": "Claude can install an artifact as a Mac or Windows app (beta, November 24, 2026). ThumbGate Desktop is an artifact built on that: a menu bar count of blocked tool calls, alerts on new blocks, and the thumbs-downs and rules behind them, read from one read-only command.",
+  "author": {
+    "@type": "Person",
+    "name": "Igor Ganapolsky",
+    "url": "https://github.com/IgorGanapolsky"
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "ThumbGate",
+    "url": "https://thumbgate.ai"
+  },
+  "datePublished": "2026-11-25",
+  "dateModified": "2026-11-25",
+  "mainEntityOfPage": "https://thumbgate.ai/learn/claude-artifact-desktop-apps",
+  "about": [
+    {"@type": "Thing", "name": "Claude artifacts"},
+    {"@type": "Thing", "name": "desktop apps"},
+    {"@type": "Thing", "name": "AI agent guardrails"}
+  ]
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "Can a Claude artifact run as a desktop app?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Yes, in beta since November 24, 2026. In Claude for Mac or Claude for Windows (version 6.28899.0 or later), open the artifact and choose Install as app. It gets its own window and icon. It is not available on Linux, the web or mobile, and it needs an internet connection and a signed-in Claude Desktop session to open."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "What can an installed artifact app do?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Each of these needs your Allow: notifications, keyboard shortcuts that work in other apps, floating over other windows, a macOS menu bar item or Windows tray icon, and full access to the computer, which lets it run programs and read, change or delete files. An Allow covers one version of the app. Anthropic does not review apps before you install them."
+      }
+    }
+  ]
+}
+</script>
+</head>
+<body>
+
+<nav>
+  <a href="/" class="brand"><img src="/assets/brand/thumbgate-mark-inline-v3.svg" alt="ThumbGate" class="logo-mark" width="28" height="28"><span class="logo-text">ThumbGate</span></a>
+  <a href="/guide">Setup Guide</a>
+  <a href="/learn">Learn</a>
+  <a href="/compare">Compare</a>
+  <a href="https://github.com/IgorGanapolsky/ThumbGate" target="_blank" rel="noopener">GitHub</a>
+</nav>
+
+<div class="container">
+  <div class="breadcrumb"><a href="/learn">Learn</a> / Claude artifacts as desktop apps</div>
+  <h1>Claude artifacts are now desktop apps. Put your agent's guardrails in the menu bar</h1>
+  <p style="color:var(--muted);">4 min read &middot; For developers running Claude Code and other coding agents</p>
+
+  <div class="tldr"><strong>TL;DR:</strong> On November 24, 2026 Anthropic started letting Claude users install an artifact as a Mac or Windows app, in beta. An installed app can ask for a menu bar item, notifications, a global shortcut and, if you allow it, access to your computer. ThumbGate Desktop uses that to show what your gates blocked, your recent thumbs-downs and the rules they became, with a block count in the menu bar. Enforcement stays where it was, in ThumbGate's PreToolUse hook.</div>
+
+  <h2>What Anthropic shipped</h2>
+  <p>These points come from Anthropic's own help article and release notes, linked below.</p>
+  <ul>
+    <li><strong>Install as app.</strong> Open an artifact in Claude for Mac or Claude for Windows, version 6.28899.0 or later, and choose Install as app from the title menu, the right-click menu or Share. It gets its own window and icon, in a Claude Apps folder on macOS or the Start menu on Windows.</li>
+    <li><strong>Beta on every plan.</strong> Free, Pro, Max, Ultra, Team and Enterprise. On Team the feature is on but full computer access is off until an admin turns it on. On Enterprise an owner turns the whole feature on.</li>
+    <li><strong>Permissions you approve one at a time.</strong> Notifications, keyboard shortcuts in other apps, floating over other windows, a menu bar or tray item, and full access to the computer. An Allow covers one version, so an update asks again. A Don't allow is kept.</li>
+    <li><strong>Not offline.</strong> Opening an app needs an internet connection and a signed-in Claude Desktop session. Apps keep the artifact's access to Claude and your connectors.</li>
+    <li><strong>Limits.</strong> No Linux, web or mobile. Docs, Slides and Sheets template artifacts, legacy artifacts and Cowork live artifacts cannot be installed. Organizations with HIPAA-ready configurations cannot use it.</li>
+  </ul>
+
+  <h2>Why this matters for agent guardrails</h2>
+  <p>A pre-action gate works in the terminal, where the agent runs. That is also why most people forget it is there. When a gate blocks a force-push at 2 AM inside a background session, nobody sees it until they read a log.</p>
+  <p>A desktop app changes where that information lives. A count in the menu bar and a notification when something is blocked make the guardrail visible while you are in your editor, your browser or a meeting.</p>
+  <p>Anthropic's own safety note applies here too: an app with full access "can run any program and read, change, or delete your files," and Anthropic does not review apps before you install them. So a guardrail companion should ask for as little as it can and say exactly what it runs.</p>
+
+  <h2>ThumbGate Desktop: what it does</h2>
+  <ul>
+    <li><strong>Menu bar count.</strong> The number of tool calls ThumbGate has blocked, with the last block and your rule count in its menu.</li>
+    <li><strong>An alert on each new block.</strong> When the blocked count goes up between checks, you get a notification with the reason.</li>
+    <li><strong>The story behind each rule.</strong> Recent blocks, recent thumbs-downs, which of them became rules, and your active prevention rules.</li>
+    <li><strong>A shortcut.</strong> Alt-Shift-G brings the window up and refreshes it.</li>
+    <li><strong>Plan status.</strong> Free installs see what Pro adds. Pro installs see no upgrade prompt.</li>
+  </ul>
+
+  <h2>What it runs, and what it does not do</h2>
+  <p>ThumbGate Desktop asks for full access for one reason: to run one read-only command in the project folder you pick.</p>
+  <div class="cta-install">npx thumbgate desktop-snapshot --json</div>
+  <p>That command reads the same local files as <code>thumbgate stats</code> and <code>thumbgate explore</code> and prints one JSON document with a fixed schema, <code>thumbgate.desktop-snapshot/v1</code>. On older ThumbGate releases the app falls back to those two commands and shows counts without the list of recent blocks.</p>
+  <ul>
+    <li>It does not write files, capture feedback, or add or remove rules.</li>
+    <li>It does not enforce anything. Blocking still happens in ThumbGate's PreToolUse hook, whether the app is open or not.</li>
+    <li>It does not send your data anywhere. The snapshot is read on your computer and shown in the app's window.</li>
+    <li>It checks once a minute, not in real time, so a notification can come up to a minute after the block.</li>
+  </ul>
+
+  <h2>Try it</h2>
+  <ol>
+    <li>Install ThumbGate in a project: <code>npx thumbgate init</code>.</li>
+    <li>Update Claude for Mac or Claude for Windows to 6.28899.0 or later.</li>
+    <li>Ask Claude to publish the page in <a href="https://github.com/IgorGanapolsky/ThumbGate/tree/main/adapters/claude-desktop-app" target="_blank" rel="noopener">adapters/claude-desktop-app</a> as an artifact with the desktop capability, then choose Install as app. Building it in your own account matters: Claude generally allows full access only for apps written inside your own organization.</li>
+    <li>Open ThumbGate Desktop, pick your project folder, and allow access. Turn on the menu bar item and alerts if you want them.</li>
+  </ol>
+
+  <h2>Sources</h2>
+  <ul>
+    <li><a href="https://support.claude.com/en/articles/18516354-install-an-artifact-as-an-app" target="_blank" rel="noopener">Claude Help Center: Install an artifact as an app</a></li>
+    <li><a href="https://support.claude.com/en/articles/12138966-release-notes" target="_blank" rel="noopener">Claude Help Center: Release notes, November 24, 2026</a></li>
+    <li><a href="https://www.unite.ai/anthropic-lets-claude-users-install-ai-built-tools-as-desktop-apps/" target="_blank" rel="noopener">Unite.AI: Anthropic lets Claude users install AI-built tools as desktop apps</a></li>
+    <li><a href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/scripts/explore-subcommands.js" target="_blank" rel="noopener">ThumbGate: desktop-snapshot source</a></li>
+  </ul>
+  <p style="color:var(--muted);">ThumbGate is an independent project and is not affiliated with or endorsed by Anthropic.</p>
+
+  <div class="cta-box">
+    <h2>See your guardrails without opening a terminal</h2>
+    <p>Install ThumbGate first, then add the desktop companion.</p>
+    <div class="cta-install">npx thumbgate init</div>
+    <div class="cta-actions">
+      <a class="cta-link" href="/guide?utm_source=claude_desktop_apps&amp;utm_medium=learn&amp;utm_campaign=desktop_companion">Setup guide</a>
+      <a class="cta-link cta-link-secondary" href="/learn/mcp-pre-action-checks-explained">MCP pre-action checks explained</a>
+    </div>
+  </div>
+
+  <div class="related">
+    <h2>Related</h2>
+    <a href="/learn/mcp-pre-action-checks-explained">MCP pre-action checks explained</a>
+    <a href="/learn/background-agent-control-layer">A control layer for background agents</a>
+    <a href="/learn/okta-mcp-governance-per-tool-call-gates">Okta governs the MCP connection. Who gates the tool call?</a>
+  </div>
+</div>
+
+<div class="sticky-cta">
+  <span>Guardrails you can see</span>
+  <code>npx thumbgate init</code>
+  <a href="/guide?utm_source=claude_desktop_apps&amp;utm_medium=learn&amp;utm_campaign=desktop_companion">Setup guide</a>
+</div>
+
+</body>
+</html>
