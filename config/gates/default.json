@@ -376,7 +376,7 @@
     {
       "id": "cloud-metadata-credential",
       "layer": "Cloud",
-      "pattern": "(?:\\b169\\.254\\.169\\.254\\b|\\b169\\.254\\.170\\.2\\b|\\bmetadata\\.google\\.internal\\b|\\bfd00:ec2::254\\b|\\b100\\.100\\.100\\.200\\b)",
+      "pattern": "(?:https?://|\\b(?:curl|wget|nc|ncat|telnet|http|xh)\\b[^\\n;&|]*?\\s)\\[?(?:169\\.254\\.169\\.254|169\\.254\\.170\\.2|metadata\\.google\\.internal|fd00:ec2::254|100\\.100\\.100\\.200)\\b",
       "action": "block",
       "message": "Blocked: this reaches a cloud instance-metadata service, which hands out the machine's own cloud credentials. A coding task should use only the credentials it was given. If the task needs cloud access, stop and tell the person what you need. Source: Anthropic Siren boundary rule on credentials (safeguards.anthropic.com/2026/siren).",
       "severity": "critical",
@@ -392,9 +392,22 @@
       "toolNames": [
         "Bash"
       ],
-      "pattern": "(?:--unix-socket[=\\s]+\\S*(?:docker|containerd|podman|crio)\\S*\\.sock\\b|(?:-v|--volume|--mount)[=\\s]+\\S*(?:docker|containerd|podman|crio)\\.sock\\b|\\b(?:docker|podman|nerdctl)\\s+(?:container\\s+)?(?:run|create)\\b[^\\n;&|]*(?:--privileged\\b|--pid[=\\s]+host\\b|(?:-v|--volume)[=\\s]+/:/|--cap-add[=\\s]+(?:SYS_ADMIN|ALL)\\b)|\\bnsenter\\b[^\\n;&|]*(?:-t\\s*1\\b|--target[=\\s]+1\\b)|https?://[\\w.-]+:10250/)",
+      "pattern": "(?:--unix-socket[=\\s]+\\S*(?:docker|containerd|podman|crio)\\S*\\.sock\\b|(?:-v|--volume|--mount)[=\\s]+\\S*(?:docker|containerd|podman|crio)\\.sock\\b|\\b(?:docker|podman|nerdctl)\\s+(?:container\\s+)?(?:run|create)\\b[^\\n;&|]*(?:--privileged\\b|--pid[=\\s]+host\\b|(?:-v|--volume)[=\\s]+/:/|--cap-add[=\\s]+(?:SYS_ADMIN|ALL)\\b)|\\bnsenter\\b[^\\n;&|]*(?:-t\\s*1\\b|--target[=\\s]+1\\b))",
       "action": "approve",
       "message": "Human approval required: this talks to a container engine or node control API, or starts a container with host-level access (privileged, host PID, host root mount). From inside a sandbox that is a way out of it. If the task needs this, stop and say why. Source: Anthropic Siren boundary rule on node control sockets (safeguards.anthropic.com/2026/siren).",
+      "severity": "high",
+      "compliance": [
+        "NIST-SC-39",
+        "CWE-250",
+        "NIST-AC-6"
+      ]
+    },
+    {
+      "id": "node-control-api",
+      "layer": "Execution",
+      "pattern": "https?://[\\w.-]+:(?:10250|10255|2375|2376)\\b",
+      "action": "approve",
+      "message": "Human approval required: this calls a node control API (kubelet on 10250/10255, or a Docker daemon over TCP on 2375/2376). From inside a sandbox that is a way out of it. If the task needs this, stop and say why. Source: Anthropic Siren boundary rule on node control APIs (safeguards.anthropic.com/2026/siren).",
       "severity": "high",
       "compliance": [
         "NIST-SC-39",

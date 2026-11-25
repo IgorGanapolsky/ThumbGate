@@ -56,9 +56,22 @@ test('container engine sockets and host-level containers need approval', () => {
     'docker run --pid=host --rm alpine ps',
     'docker run -v /:/host alpine cat /host/etc/shadow',
     'nsenter -t 1 -m -u -i -n sh',
-    'curl -k https://10.0.0.5:10250/pods',
   ]) {
     assert.equal(gateOf(bash(cmd)), 'container-host-control', cmd);
+  }
+});
+
+test('node control APIs need approval from shell and from HTTP tools', () => {
+  assert.equal(gateOf(bash('curl -k https://10.0.0.5:10250/pods')), 'node-control-api');
+  assert.equal(gateOf(bash('curl http://127.0.0.1:2375/containers/json')), 'node-control-api');
+  const web = gatesEngine.evaluateGates('WebFetch', { url: 'https://10.0.0.5:10250/pods' }, CONFIG);
+  assert.equal(gateOf(web), 'node-control-api');
+  assert.equal(web.decision, 'approve');
+});
+
+test('searching code for a metadata address is not a metadata call', () => {
+  for (const cmd of ['rg -n "169.254.169.254" src', 'grep -r metadata.google.internal .']) {
+    assert.notEqual(gateOf(bash(cmd)), 'cloud-metadata-credential', cmd);
   }
 });
 
