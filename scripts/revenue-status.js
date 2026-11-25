@@ -464,6 +464,14 @@ function formatReport(report) {
     }
   }
 
+  if (report.diagnosis?.notes?.length) {
+    lines.push('');
+    lines.push('Notes:');
+    for (const note of report.diagnosis.notes) {
+      lines.push(`- ${note}`);
+    }
+  }
+
   return `${lines.join('\n')}\n`;
 }
 
