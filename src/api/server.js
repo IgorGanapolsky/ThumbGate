@@ -84,6 +84,7 @@ const {
   getFeedbackPaths,
   appendDiagnosticRecord,
 } = require('../../scripts/feedback-loop');
+const { applyHumanCounts } = require('../../scripts/statusline-human-counts');
 const {
   readActiveProjectState,
   resolveProjectDir,
@@ -11953,7 +11954,7 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
       if (req.method === 'GET' && pathname === '/v1/feedback/stats') {
         const stats = shouldAggregateFeedback()
           ? computeAggregateFeedbackStats({ feedbackDir: requestFeedbackPaths.FEEDBACK_DIR })
-          : analyzeFeedback(requestFeedbackPaths.FEEDBACK_LOG_PATH, { humanOnly: true });
+          : applyHumanCounts(analyzeFeedback(requestFeedbackPaths.FEEDBACK_LOG_PATH, { humanOnly: true }), { cwd: getEffectiveRequestedProjectSelection(req, parsed) || process.cwd() });
         const requestToken = extractApiKey(req);
         const authenticatedTier = requestToken
           ? resolvePaidSessionTier(requestToken, expectedApiKey, expectedOperatorKey)
