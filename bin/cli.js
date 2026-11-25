@@ -3619,7 +3619,14 @@ function applyThumbHold(detected, prompt, promptEnvelope) {
     }
     if ((detected && detected.signal === 'up') || (!detected && sendGate.isReleasePrompt(prompt))) {
       const released = sendGate.releaseHolds({ feedbackDir });
-      return released ? `ThumbGate: ${released} hold(s) released by the person.` : null;
+      const isThumbsUp = Boolean(detected && detected.signal === 'up');
+      const approval = isThumbsUp
+        ? sendGate.recordApproval({ feedbackDir, sessionId: promptEnvelope.sessionId || process.env.CLAUDE_SESSION_ID || '' })
+        : null;
+      const parts = [];
+      if (released) parts.push(`${released} hold(s) released by the person.`);
+      if (approval) parts.push(`Thumbs-up recorded on ${sendGate.describeAction(approval)} (approved ${approval.count}x). Keep doing it this way.`);
+      return parts.length ? `ThumbGate: ${parts.join(' ')}` : null;
     }
   } catch { /* a hold never breaks prompt capture */ }
   return null;
