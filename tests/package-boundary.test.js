@@ -842,8 +842,9 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // Bumped 10.87 MB -> 10.88 MB (2026-11-25, PR #5274): hook latency caches in scripts/gates-engine.js and
   // scripts/project-identity.js (about 8 KB); measured 10,874,860 after merging main.
   // Bumped 10.88 MB -> 10.90 MB (2026-11-25): scripts/assurance-report.js, the assurance-report CLI command (~14 KB with its CLI wiring).
-  manifest.unpackedSize <= 10_900_000,
-  `npm package should stay <= 10.90 MB unpacked, got ${manifest.unpackedSize}`
+  // Bumped 10.90 MB -> 10.91 MB (2026-11-25): #5164 and #5201 each fit alone but together measured 10,900,646.
+  manifest.unpackedSize <= 10_910_000,
+  `npm package should stay <= 10.91 MB unpacked, got ${manifest.unpackedSize}`
 );
 
   for (const file of requiredRuntimeFiles) {
