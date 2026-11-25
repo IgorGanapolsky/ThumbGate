@@ -63,7 +63,7 @@
       <li>Hosted / Pro features: account identity, API keys, pairing metadata, and workflow operational metadata associated with your account.</li>
       <li>Billing: payment identifiers via Stripe and related processors.</li>
       <li>Optional CLI telemetry is best-effort install/usage metadata. Disable with <code>THUMBGATE_NO_TELEMETRY=1</code> or <code>DO_NOT_TRACK=1</code>.</li>
-      <li>Marketing pages may record first-party funnel events and, when no GPC/DNT signal is present, Plausible / PostHog page analytics and Microsoft Clarity session analytics (heatmaps and session replay, with form fields masked; never on sign-in, checkout, billing, dashboard or admin pages, and with Clarity's advertising storage denied). Visitors whose browser is set to a European time zone get Clarity without cookies. First-party events carry visitor and session identifiers (pseudonymous, not anonymous). See <a href="#your-privacy-choices">Your Privacy Choices</a>.</li>
+      <li>Marketing pages may record first-party funnel events and, when no GPC/DNT signal is present, Plausible / PostHog page analytics and Microsoft Clarity session analytics (heatmaps and session replay, with form fields masked; never on sign-in, checkout, billing, dashboard or admin pages). We send Clarity no consent signal and have no consent banner: for visitors in the EEA, UK and Switzerland Clarity's own Consent Mode applies, so it waits for a consent signal before setting cookies, and we never give one on your behalf. First-party events carry visitor and session identifiers (pseudonymous, not anonymous). See <a href="#your-privacy-choices">Your Privacy Choices</a>.</li>
     </ul>
 
     <h2>Data Sharing</h2>
