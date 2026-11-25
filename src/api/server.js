@@ -5202,6 +5202,7 @@ function renderSitemapXml(runtimeConfig) {
     { path: '/learn/five-walls-enterprise-agent-deployment', changefreq: 'weekly', priority: '0.85' },
     { path: '/learn/okta-mcp-governance-per-tool-call-gates', changefreq: 'weekly', priority: '0.85' },
     { path: '/learn/ai-finops-agent-spend-guardrails', changefreq: 'weekly', priority: '0.85' },
+    { path: '/learn/siren-agent-sandbox-escape-gates', changefreq: 'weekly', priority: '0.85' },
     { path: '/learn/proof-before-claim-deploy-gate', changefreq: 'weekly', priority: '0.85' },
     { path: '/compare/claude-code-hooks', changefreq: 'weekly', priority: '0.85' },
     { path: '/compare/bumblebee', changefreq: 'weekly', priority: '0.85' },

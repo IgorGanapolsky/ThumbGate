@@ -1720,7 +1720,7 @@ const PAGE_BLUEPRINTS = [
         heading: 'Choose ThumbGate when',
         bullets: [
           'Your agent already repeats known mistakes and you need the block to happen before tool execution.',
-          'You want one feedback loop that supports both reinforcement from thumbs up and prevention from thumbs down.',
+          'You want one feedback loop that records what worked from thumbs up and prevents repeats from thumbs down.',
           'You need proof assets, automation reports, and compatibility across multiple coding agents.',
         ],
       },
@@ -1771,8 +1771,8 @@ const PAGE_BLUEPRINTS = [
           'ThumbGate begins with the same need to remember, but it goes further. A thumbs down can become a prevention rule, and that rule can become a pre-action check that blocks a repeated tool call.',
         ],
         bullets: [
-          'Thumbs up reinforces good behavior.',
-          'Thumbs down blocks repeated mistakes.',
+          'Thumbs up saves what worked as a lesson. It does not loosen or remove a check.',
+          'Repeated thumbs-downs become checks that warn, or block in strict mode.',
           'Verification evidence and automation reports back up the reliability claim.',
         ],
       },
@@ -2000,7 +2000,7 @@ const PAGE_BLUEPRINTS = [
     pillar: 'pre-action-checks',
     title: 'Pre-Action Checks for AI Coding Agents | ThumbGate Guide',
     heroTitle: 'What Are Pre-Action Checks?',
-    heroSummary: 'Pre-action gates stop the risky move before the agent executes it. ThumbGate uses thumbs-up/down feedback to decide what should be reinforced, warned, or blocked.',
+    heroSummary: 'Pre-action gates stop the risky move before the agent executes it. ThumbGate saves thumbs-up/down feedback as lessons and turns repeated thumbs-downs into checks that warn or block.',
     takeaways: [
       'Prompt rules are advisory. Pre-action gates are enforcement.',
       'A repeated thumbs down can become a warning gate or a hard block.',
@@ -2037,7 +2037,7 @@ const PAGE_BLUEPRINTS = [
       },
       {
         question: 'Can a thumbs up matter too?',
-        answer: 'Yes. ThumbGate explicitly uses thumbs up to reinforce successful behavior so the system is not only punitive.',
+        answer: 'Yes. A thumbs-up with context is saved as a success lesson, so the record is not only failures. It does not create, loosen or remove a check.',
       },
     ],
     relatedPaths: ['/compare/speclock', '/guides/claude-code-feedback'],
@@ -2063,7 +2063,7 @@ const PAGE_BLUEPRINTS = [
           'Environment inspection requirements: require file reads, screenshots, API responses, or command output before the agent claims the state of the world.',
           'Pre-action enforcement: block risky tool calls before execution when the action violates a learned rule, budget, or inspection requirement.',
           'Parallel branch budgets: cap fan-out so multi-agent desktop sessions do not burn tokens, duplicate work, or merge conflicting changes blindly.',
-          'Repeated-failure memory: turn thumbs-down reviews into prevention rules and thumbs-up reviews into reinforced safe patterns.',
+          'Repeated-failure memory: turn thumbs-down reviews into prevention rules and thumbs-up reviews into saved success lessons.',
         ],
       },
       {
@@ -2202,7 +2202,7 @@ const PAGE_BLUEPRINTS = [
           'Thumbs down captures the exact failure you do not want repeated.',
           'Repeated failures promote into linked prevention rules.',
           'Pre-action gates intercept the risky tool call before execution.',
-          'Thumbs up reinforces the safe path so the agent learns what good looks like too.',
+          'Thumbs up saves the safe path as a success lesson, so the record shows what good looks like too.',
         ],
       },
       {
@@ -2219,7 +2219,7 @@ const PAGE_BLUEPRINTS = [
       },
       {
         question: 'Does ThumbGate only punish bad behavior?',
-        answer: 'No. Thumbs up reinforces good behavior, so the loop captures safe patterns as well as failures.',
+        answer: 'No. A thumbs-up with one sentence of context is saved as a success lesson, so the record shows what worked as well as what failed. Only thumbs-downs become checks.',
       },
     ],
     relatedPaths: ['/guides/pre-action-checks', '/guides/claude-code-feedback'],
@@ -2247,7 +2247,7 @@ const PAGE_BLUEPRINTS = [
       {
         heading: 'The ThumbGate angle',
         bullets: [
-          'Thumbs up reinforces good behavior.',
+          'Thumbs up saves what worked as a lesson. It does not loosen or remove a check.',
           'Thumbs down becomes a prevention rule.',
           'Pre-action gates stop the repeated mistake before the next command executes.',
           'The same flow works across Cursor, Codex, Gemini, Amp, and OpenCode.',
@@ -2267,7 +2267,7 @@ const PAGE_BLUEPRINTS = [
       },
       {
         question: 'Why mention thumbs up as well as thumbs down?',
-        answer: 'Because reinforcement matters. Good behavior should become easier to repeat, not only bad behavior harder to repeat.',
+        answer: 'Because the record should show what worked, not only what failed. A thumbs-up is saved as a success lesson; it does not change any check.',
       },
     ],
     relatedPaths: ['/guides/pre-action-checks', '/compare/mem0'],
@@ -3917,8 +3917,8 @@ ${renderWebPageJsonLd(page, { appOrigin })}
       <h1>${escapeHtml(page.heroTitle)}</h1>
       <p>${escapeHtml(page.heroSummary)}</p>
       <div class="signal-row">
-        <div class="signal-pill up">👍 Thumbs up reinforces good behavior</div>
-        <div class="signal-pill down">👎 Thumbs down blocks repeated mistakes</div>
+        <div class="signal-pill up">👍 Thumbs up saves what worked as a lesson</div>
+        <div class="signal-pill down">👎 Thumbs down catches repeated mistakes</div>
       </div>
     </section>
 
