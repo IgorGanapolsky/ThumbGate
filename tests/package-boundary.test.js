@@ -833,7 +833,9 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // Bumped 10.80 MB -> 10.81 MB (2026-11-25, PR #5232): durable OAuth store + refresh tokens in
   // scripts/mcp-oauth.js and hosted MCP instructions in src/api/server.js; measured 10,802,087.
   // Bumped 10.81 MB -> 10.82 MB (2026-11-25, PR #5222, after merging main): measured 10,819,959.
-  // Bumped 10.82 MB -> 10.83 MB (2026-11-25): scripts/staged-secret-gate.js and its call in scripts/gates-engine.js; measured 10,825,000 or less.
+  // Bumped 10.82 MB -> 10.83 MB (2026-11-25, release PR #5260): thumbs-up approval recording in scripts/send-gate.js
+  // and the portable Cursor shell gate (PRs #5255, #5257); measured 10,822,233 on main and on the release branch.
+  // Also scripts/staged-secret-gate.js and its call in scripts/gates-engine.js (about 3 KB).
   manifest.unpackedSize <= 10_830_000,
   `npm package should stay <= 10.83 MB unpacked, got ${manifest.unpackedSize}`
 );
