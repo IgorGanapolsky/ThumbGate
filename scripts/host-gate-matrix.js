@@ -30,6 +30,8 @@ const CURSOR_PLUGIN = path.join(ROOT, 'plugins', 'cursor-marketplace');
 const RESULTS_PATH = path.join(ROOT, 'docs', 'compat', 'host-gate-results.json');
 const DOC_PATH = path.join(ROOT, 'docs', 'host-compatibility.md');
 const README_PATH = path.join(ROOT, 'README.md');
+const PAGE_PATH = path.join(ROOT, 'public', 'learn', 'enforcement-matrix.html');
+const BLOB = 'https://github.com/IgorGanapolsky/ThumbGate/blob/main/';
 const START = '<!-- host-gate-matrix:start -->';
 const END = '<!-- host-gate-matrix:end -->';
 
@@ -137,6 +139,60 @@ function probeLearned(host) {
   }
 }
 
+/** Does this host's hook path stop the command when ThumbGate itself fails? Returns {mode, check}. */
+function probeFailMode(host) {
+  const w = world();
+  try {
+    if (host === 'claude-code') {
+      const res = spawn(process.execPath, [CLI, 'gate-check'], w, 'not json');
+      const out = lastJson(res.stdout);
+      const decision = out.hookSpecificOutput && out.hookSpecificOutput.permissionDecision;
+      const denied = decision === 'deny' || res.status === 2;
+      return { mode: denied ? 'closed' : 'open', check: `gate-check given unreadable input -> exit ${res.status}, permissionDecision ${decision || 'none'}` };
+    }
+    if (host === 'cursor') {
+      const failing = `${process.execPath} -e process.exit(1)`;
+      const res = cp.spawnSync('bash', [path.join(CURSOR_PLUGIN, 'scripts', 'gate-check.sh')], { cwd: w.project, env: { ...w.env, THUMBGATE_CLI: failing }, input: JSON.stringify({ command: 'ls', cwd: w.project }), encoding: 'utf8', timeout: 90000 });
+      const out = lastJson(res.stdout);
+      const denied = out.permission === 'deny' && res.status === 2;
+      return { mode: denied ? 'closed' : 'open', check: `plugin gate-check.sh when the ThumbGate command fails -> exit ${res.status}, permission ${out.permission || 'none'}` };
+    }
+    throw new Error(`no fail-mode probe for ${host}`);
+  } finally {
+    w.done();
+  }
+}
+
+const NO_OWN_PAYLOAD = "No test sends the gate this host's own payload, so nothing is claimed.";
+const SUMMARY_STATIC = {
+  cline: { hardStops: 'no', failMode: 'not applicable', evidence: 'tests/advisory-hosts-honesty.test.js', note: 'No hook: init writes an MCP server entry and a .clinerules file. Advisory, because the model has to call gate_check itself.' },
+  opencode: { hardStops: 'no', failMode: 'not applicable', evidence: 'tests/advisory-hosts-honesty.test.js', note: 'No hook: init writes an MCP server entry only. Advisory, because the model has to call gate_check itself.' },
+  amp: { hardStops: 'no', failMode: 'not applicable', evidence: 'tests/advisory-hosts-honesty.test.js', note: 'No hook: init writes an MCP server entry only. Feedback capture, not enforcement.' },
+  codex: { hardStops: 'untested', failMode: 'untested', evidence: 'docs/host-compatibility.md', note: NO_OWN_PAYLOAD },
+  'gemini-cli': { hardStops: 'untested', failMode: 'untested', evidence: 'docs/host-compatibility.md', note: NO_OWN_PAYLOAD },
+};
+const SUMMARY_EVIDENCE = { 'claude-code': 'docs/host-compatibility.md', cursor: 'tests/cursor-fail-closed.test.js' };
+const EXTRA_LABELS = { cline: 'Cline', opencode: 'OpenCode', amp: 'Amp' };
+
+/** One row per host: does it hard-stop a bad call, does it fail open or closed, and where is the evidence. */
+function buildSummary(rows) {
+  const gateRows = rows.filter((r) => r.kind === 'gate');
+  return HOSTS.map((h) => h.id).concat(['cline', 'opencode', 'amp']).map((id) => {
+    const known = HOSTS.find((h) => h.id === id);
+    const label = known ? known.label : EXTRA_LABELS[id];
+    if (RUNNABLE.has(id)) {
+      const enforced = gateRows.filter((r) => r.cells[id].status === 'enforced').length;
+      const fail = probeFailMode(id);
+      const note = id === 'cursor'
+        ? "Every hook entry ThumbGate ships or writes sets failClosed: true. A crash or timeout inside Cursor itself follows Cursor's own rule and was not run here."
+        : 'If ThumbGate errors, the command runs: the hook exits 0 with no decision.';
+      return { id, label, hardStops: enforced > 0 ? 'yes' : 'no', gatesDenied: `${enforced} of ${gateRows.length}`, failMode: fail.mode, failCheck: `${fail.check}. ${note}`, evidence: BLOB + SUMMARY_EVIDENCE[id], note };
+    }
+    const st = SUMMARY_STATIC[id];
+    return { id, label, hardStops: st.hardStops, gatesDenied: 'n/a', failMode: st.failMode, failCheck: st.note, evidence: BLOB + st.evidence, note: st.note };
+  });
+}
+
 function untested(host) {
   return { status: 'untested', check: host.check };
 }
@@ -155,7 +211,7 @@ function runProbes() {
   const chat = {};
   for (const host of HOSTS) chat[host.id] = { status: 'out of scope', check: CHAT_ROW.note };
   rows.push({ id: CHAT_ROW.id, kind: 'chat', note: CHAT_ROW.note, cells: chat });
-  return { schema: 1, hosts: HOSTS.map((h) => ({ id: h.id, label: h.label, check: h.check })), rows };
+  return { schema: 1, hosts: HOSTS.map((h) => ({ id: h.id, label: h.label, check: h.check })), rows, summary: buildSummary(rows) };
 }
 
 const STATUSES = new Set(['enforced', 'not enforced', 'untested', 'out of scope']);
@@ -178,6 +234,16 @@ function validateResults(results) {
       if (cell.status === 'untested' && !cell.check) errors.push(`${row.id} / ${host.id}: untested cell has no note`);
     }
   }
+  if (!Array.isArray(results.summary)) { errors.push('results must have a summary'); return errors; }
+  for (const sm of results.summary) {
+    const enforced = results.rows.filter((r) => r.kind === 'gate' && r.cells[sm.id] && r.cells[sm.id].status === 'enforced').length;
+    if (sm.hardStops === 'yes' && enforced === 0) errors.push(`summary ${sm.id}: hardStops "yes" but no gate is enforced`);
+    if (!RUNNABLE.has(sm.id)) {
+      if (sm.hardStops === 'yes') errors.push(`summary ${sm.id}: hardStops "yes" for a host with no runnable hook path`);
+      if (sm.failMode === 'open' || sm.failMode === 'closed') errors.push(`summary ${sm.id}: failMode "${sm.failMode}" for a host with no runnable hook path`);
+    }
+    if (!String(sm.evidence || '').startsWith(BLOB)) errors.push(`summary ${sm.id}: evidence must be a link into the repo`);
+  }
   return errors;
 }
 
@@ -195,6 +261,83 @@ function renderTable(results) {
   return lines.join('\n');
 }
 
+function renderSummaryTable(results) {
+  const lines = ['| Host | Hard-stops a bad call | Fails open or closed | Evidence |', '|---|---|---|---|'];
+  for (const sm of results.summary) {
+    const stops = sm.hardStops === 'yes' ? `yes (${sm.gatesDenied} gates denied)` : sm.hardStops === 'no' ? 'no, warns only' : 'untested';
+    const fail = sm.failMode === 'open' ? 'Fails open' : sm.failMode === 'closed' ? 'Fails closed' : sm.failMode === 'not applicable' ? 'no hook, so not applicable' : 'untested';
+    lines.push(`| ${sm.label} | ${stops} | ${fail} | [${sm.evidence.slice(BLOB.length)}](${sm.evidence}) |`);
+  }
+  return lines.join('\n');
+}
+
+function esc(t) { return String(t).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+
+function renderPage(results) {
+  const rowsHtml = results.summary.map((sm) => {
+    const stops = sm.hardStops === 'yes' ? `Yes (${esc(sm.gatesDenied)} gates denied)` : sm.hardStops === 'no' ? 'No, warns only' : 'Untested';
+    const fail = sm.failMode === 'open' ? 'Fails open' : sm.failMode === 'closed' ? 'Fails closed' : sm.failMode === 'not applicable' ? 'No hook, so not applicable' : 'Untested';
+    return `      <tr><th>${esc(sm.label)}</th><td>${stops}</td><td>${fail}</td><td>${esc(sm.note)}</td><td><a href="${esc(sm.evidence)}" rel="noopener">${esc(sm.evidence.slice(BLOB.length))}</a></td></tr>`;
+  }).join('\n');
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Which agents ThumbGate hard-stops, and which only warn - ThumbGate</title>
+<meta name="description" content="Per agent: does ThumbGate hard-stop a bad call, does the hook fail open or closed, and the test that shows it. Generated from real hook runs.">
+<link rel="canonical" href="https://thumbgate.ai/learn/enforcement-matrix">
+<link rel="stylesheet" href="/learn/learn.css">
+<style>
+  table { width: 100%; border-collapse: collapse; margin: 1rem 0; }
+  th, td { text-align: left; padding: 0.6rem 0.8rem; border-bottom: 1px solid var(--border); font-size: 0.9rem; vertical-align: top; }
+  th { color: var(--cyan); font-weight: 600; }
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="/" class="brand"><img src="/assets/brand/thumbgate-mark-inline-v3.svg" alt="ThumbGate" class="logo-mark" width="28" height="28"><span class="logo-text">ThumbGate</span></a>
+  <a href="/guide">Setup Guide</a>
+  <a href="/learn">Learn</a>
+  <a href="/dashboard">Dashboard</a>
+  <a href="https://github.com/IgorGanapolsky/ThumbGate" target="_blank" rel="noopener">GitHub</a>
+</nav>
+
+<div class="container">
+  <div class="breadcrumb"><a href="/learn">Learn</a> / Enforcement by agent</div>
+  <h1>Which agents ThumbGate hard-stops, and which only warn</h1>
+
+  <div class="tldr"><strong>TL;DR:</strong> Claude Code and Cursor shell commands are hard-stopped by a hook. Cline, OpenCode and Amp have no hook, so they warn or capture feedback only. Codex and Gemini CLI are untested.</div>
+
+  <p>This table is generated by <code>npm run compat:matrix</code> from real runs through each agent's hook path, and a test fails the build if the page differs from a fresh run. A "yes" means the hook denied at least one gate's command in that run. "Fails open" means that when ThumbGate itself errors, the command still runs.</p>
+
+  <table>
+    <thead><tr><th>Agent</th><th>Hard-stops a bad call</th><th>Fails open or closed</th><th>What this means</th><th>Evidence</th></tr></thead>
+    <tbody>
+${rowsHtml}
+    </tbody>
+  </table>
+
+  <p>Limits: a denial is the default configuration in a clean home folder. Text typed into a chat window or web page is never seen by a hook. Gates that need project state have no stateless denial to run and are not counted. The per-gate table is in <a href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/host-compatibility.md" rel="noopener">docs/host-compatibility.md</a>.</p>
+
+  <div class="cta-box">
+    <h2 style="color:var(--text);font-size:1.3rem;margin:0 0 8px;">Install</h2>
+    <div class="cta-install">$ npx thumbgate init</div>
+  </div>
+</div>
+
+  <div class="sticky-cta">
+    <span style="color:var(--muted)">Try it now:</span>
+    <code>npx thumbgate init</code>
+    <a href="https://github.com/IgorGanapolsky/ThumbGate" target="_blank" rel="noopener">GitHub &rarr;</a>
+  </div>
+<script src="/js/buyer-intent.js"></script>
+</body>
+</html>
+`;
+}
+
 function renderReadmeBlock(results) {
   return [
     START,
@@ -203,6 +346,10 @@ function renderReadmeBlock(results) {
     'Which gates were actually denied on which host. Generated by `npm run compat:matrix` from real runs through each host\'s hook path; nothing here is typed by hand. "enforced" means a test ran that gate\'s denial through that host in this checkout. "not enforced" means the command ran and was allowed. "untested" means no run exists. Details and the exact check per host: [docs/host-compatibility.md](docs/host-compatibility.md).',
     '',
     renderTable(results),
+    '',
+    '### Which hosts hard-stop, and how they fail',
+    '',
+    renderSummaryTable(results),
     END,
   ].join('\n');
 }
@@ -216,6 +363,12 @@ function renderDoc(results) {
     'A cell says **enforced** only when the generator ran that gate\'s denial through the host\'s real hook path in this checkout and the hook denied it. **not enforced**: the command ran and the hook allowed it. **untested**: no run exists, so nothing is claimed. **out of scope**: the thing is not a tool call, so no hook sees it.',
     '',
     renderTable(results),
+    '',
+    '## Which hosts hard-stop, and how they fail',
+    '',
+    renderSummaryTable(results),
+    '',
+    ...results.summary.map((sm) => `- **${sm.label}**: ${sm.failCheck}`),
     '',
     '## How each host was checked',
     '',
@@ -253,6 +406,7 @@ function render(results, readme) {
     json: `${JSON.stringify(results, null, 2)}\n`,
     doc: renderDoc(results),
     readme: spliceReadme(readme, renderReadmeBlock(results)),
+    page: renderPage(results),
   };
 }
 
@@ -267,6 +421,7 @@ function main(argv) {
     fs.writeFileSync(RESULTS_PATH, next.json);
     fs.writeFileSync(DOC_PATH, next.doc);
     fs.writeFileSync(README_PATH, next.readme);
+    fs.writeFileSync(PAGE_PATH, next.page);
     console.log(`wrote ${path.relative(ROOT, RESULTS_PATH)}, ${path.relative(ROOT, DOC_PATH)} and the README block`);
     return;
   }
@@ -274,10 +429,11 @@ function main(argv) {
   if (!fs.existsSync(RESULTS_PATH) || fs.readFileSync(RESULTS_PATH, 'utf8') !== next.json) stale.push('docs/compat/host-gate-results.json');
   if (!fs.existsSync(DOC_PATH) || fs.readFileSync(DOC_PATH, 'utf8') !== next.doc) stale.push('docs/host-compatibility.md');
   if (fs.readFileSync(README_PATH, 'utf8') !== next.readme) stale.push('README.md');
+  if (!fs.existsSync(PAGE_PATH) || fs.readFileSync(PAGE_PATH, 'utf8') !== next.page) stale.push('public/learn/enforcement-matrix.html');
   if (stale.length) { console.error(`out of date, rerun: node scripts/host-gate-matrix.js --write\n${stale.join('\n')}`); process.exit(1); }
   console.log('host gate matrix is current');
 }
 
-module.exports = { HOSTS, GATE_ROWS, RESULTS_PATH, DOC_PATH, README_PATH, START, END, runProbes, validateResults, render, renderTable, spliceReadme };
+module.exports = { PAGE_PATH, HOSTS, GATE_ROWS, RESULTS_PATH, DOC_PATH, README_PATH, START, END, runProbes, validateResults, render, renderTable, spliceReadme };
 
 if (require.main === module) main(process.argv.slice(2));
