@@ -834,8 +834,10 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // Bumped 10.81 MB -> 10.82 MB (2026-11-25, PR #5222, after merging main): measured 10,819,959.
   // Bumped 10.82 MB -> 10.83 MB (2026-11-25, release PR #5260): thumbs-up approval recording in scripts/send-gate.js
   // and the portable Cursor shell gate (PRs #5255, #5257); measured 10,822,233 on main and on the release branch.
-  manifest.unpackedSize <= 10_830_000,
-  `npm package should stay <= 10.83 MB unpacked, got ${manifest.unpackedSize}`
+  // Bumped 10.83 MB -> 10.84 MB (2026-11-25, PR #5270): gate-audit trigger audit in scripts/auto-promote-gates.js
+  // and bin/cli.js, plus main's growth since #5260; measured 10,831,869.
+  manifest.unpackedSize <= 10_840_000,
+  `npm package should stay <= 10.84 MB unpacked, got ${manifest.unpackedSize}`
 );
 
   for (const file of requiredRuntimeFiles) {
