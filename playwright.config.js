@@ -21,6 +21,10 @@ module.exports = defineConfig({
   },
   use: {
     baseURL,
+    // Flashwright (drop-in Playwright fork, see docs/agents/browser-testing.md):
+    // keep a fresh context per test so sign-in and cookie tests never share state.
+    // Pristine Playwright ignores this option.
+    isolation: 'strict',
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
     video: 'retain-on-failure',

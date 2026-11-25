@@ -1215,7 +1215,7 @@
     "test:competitive-positioning-marketing": "node --test tests/competitive-positioning-marketing.test.js tests/knowledge-graph-guardrails.test.js tests/supply-chain-guardrails.test.js tests/saas-moat-honesty.test.js",
     "test:medium-weekly": "node --test tests/medium-weekly.test.js",
     "test:dashboard-deeplink-e2e": "node --test tests/dashboard-deeplink-e2e.test.js",
-    "test:e2e:playwright": "playwright test",
+    "test:e2e:playwright": "FLASHWRIGHT_SESSION=0 playwright test",
     "test:e2e:playwright:headed": "playwright test --headed",
     "test:e2e:playwright:ui": "playwright test --ui",
     "test:e2e:playwright:report": "playwright show-report",
@@ -1595,7 +1595,7 @@
   "devDependencies": {
     "@changesets/changelog-github": "^1.0.0",
     "@changesets/cli": "^3.0.0",
-    "@playwright/test": "^1.62.1",
+    "@playwright/test": "npm:flashwright-test@1.64.1-flashwright.12",
     "c8": "^12.0.0",
     "launch-editor": "^2.14.2",
     "undici": "8.13.1"

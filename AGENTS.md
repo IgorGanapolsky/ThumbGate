@@ -318,6 +318,8 @@ Rules:
 
 Details: [`docs/agents/code-search.md`](./docs/agents/code-search.md). Skill: `.agents/skills/graphify/SKILL.md`.
 
+Browser e2e runs on Flashwright (free Playwright fork, same API). Agents run `npm run test:e2e:playwright` (it sets `FLASHWRIGHT_SESSION=0`) and keep `isolation: 'strict'`. Details: [`docs/agents/browser-testing.md`](./docs/agents/browser-testing.md).
+
 ## Inbox Correspondence & Send Dispositions (2026-11-12 — supersedes 2026-10-17 Hard No-Send Mandate)
 
 Per Igor (10:28 AM Nov 12, 2026: `"use this. steal their ideas. take care of this"`), ordinary business email correspondence defaults to sending (`REPLIED`) instead of staging every reply under the 2026-10-17 no-send rule:
