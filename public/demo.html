@@ -4,10 +4,10 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>See a thumbs-down become a gate | ThumbGate demo</title>
-<meta name="description" content="A two-minute, five-chapter walkthrough of ThumbGate: install, a built-in block, a thumbs-down, the gate it becomes, and how a team rolls it out. Every output is real CLI output.">
+<meta name="description" content="A two-minute, five-chapter walkthrough of ThumbGate: install, a built-in block, a thumbs-down that holds the retry, the hard rule two of them make, and how a team rolls it out. Every output is real CLI output.">
 <link rel="canonical" href="__APP_ORIGIN__/demo">
 <meta property="og:title" content="See a thumbs-down become a gate | ThumbGate">
-<meta property="og:description" content="Five short chapters. Watch ThumbGate deny a force-push, then turn your thumbs-down on a command into a check that blocks it next time.">
+<meta property="og:description" content="Five short chapters. Watch ThumbGate deny a force-push, then stop a retry with one thumbs-down and make it a hard rule with two.">
 <meta property="og:url" content="__APP_ORIGIN__/demo">
 <meta property="og:type" content="website">
 <meta property="og:image" content="__APP_ORIGIN__/og.png">
@@ -123,7 +123,7 @@ footer { padding:24px 0 40px; border-top:1px solid var(--line); color:var(--mute
     </div>
     <ul class="outcomes">
       <li><span><strong>Blocks the worst commands out of the box:</strong> force-push, <code>rm -rf</code> on home or root, <code>DROP TABLE</code>, secret leaks.</span></li>
-      <li><span><strong>Learns from you:</strong> one thumbs-down on a command makes the next attempt warn. A second one blocks it.</span></li>
+      <li><span><strong>Learns from you:</strong> one thumbs-down stops the agent from retrying a mistake. Two make it a hard rule.</span></li>
       <li><span><strong>Runs before the action:</strong> it checks each tool call in your agent's hook, on your machine, before anything executes.</span></li>
     </ul>
   </section>
@@ -131,8 +131,8 @@ footer { padding:24px 0 40px; border-top:1px solid var(--line); color:var(--mute
   <div class="journey" role="tablist" aria-label="Demo chapters">
     <button role="tab" id="tab-install" aria-controls="chapter-install" data-chapter="install"><span class="n">1 · 20 sec</span>Install</button>
     <button role="tab" id="tab-block" aria-controls="chapter-block" data-chapter="block"><span class="n">2 · 20 sec</span>Built-in block</button>
-    <button role="tab" id="tab-thumbs" aria-controls="chapter-thumbs" data-chapter="thumbs"><span class="n">3 · 30 sec</span>Your thumbs-down</button>
-    <button role="tab" id="tab-gate" aria-controls="chapter-gate" data-chapter="gate"><span class="n">4 · 20 sec</span>It becomes a gate</button>
+    <button role="tab" id="tab-thumbs" aria-controls="chapter-thumbs" data-chapter="thumbs"><span class="n">3 · 30 sec</span>One thumbs-down</button>
+    <button role="tab" id="tab-gate" aria-controls="chapter-gate" data-chapter="gate"><span class="n">4 · 20 sec</span>A hard rule</button>
     <button role="tab" id="tab-team" aria-controls="chapter-team" data-chapter="team"><span class="n">5 · 30 sec</span>Your team</button>
   </div>
 
@@ -164,7 +164,7 @@ footer { padding:24px 0 40px; border-top:1px solid var(--line); color:var(--mute
       <p class="why">This is the whole idea: the check happens before the action, not in a review afterwards.</p>
       <p>Try it yourself without risking anything. This feeds ThumbGate the same input the hook would, without running the push:</p>
       <button class="copy" type="button" data-copy="echo '{&quot;tool_name&quot;:&quot;Bash&quot;,&quot;tool_input&quot;:{&quot;command&quot;:&quot;git push --force&quot;}}' | npx thumbgate gate-check" data-cta="demo_copy_gatecheck"><span>echo '…git push --force…' | npx thumbgate gate-check</span><span class="tag">Copy</span></button>
-      <div class="nav-row"><button class="btn" type="button" data-prev>← Back</button><button class="btn primary" type="button" data-next>Next: your thumbs-down →</button></div>
+      <div class="nav-row"><button class="btn" type="button" data-prev>← Back</button><button class="btn primary" type="button" data-next>Next: one thumbs-down →</button></div>
     </div>
     <div class="terminal" aria-label="Terminal: built-in block">
       <div class="bar"><i></i><i></i><i></i><span>PreToolUse hook · gate-check</span></div>
@@ -185,39 +185,38 @@ footer { padding:24px 0 40px; border-top:1px solid var(--line); color:var(--mute
   <section class="chapter" id="chapter-thumbs" role="tabpanel" aria-labelledby="tab-thumbs" hidden>
     <div>
       <div class="time">Chapter 3 of 5</div>
-      <h2>Your agent seeds production. You give it a thumbs-down.</h2>
-      <p>No built-in rule knows that <code>npm run db:seed -- --prod</code> is bad in <em>your</em> project. You do. Type a thumbs-down in the agent session right after the command, or capture it from the CLI as shown here.</p>
-      <p>The next time the agent proposes that command, ThumbGate turns it into a check that <strong>warns</strong> before it runs, and puts your lesson in front of the agent.</p>
+      <h2>Your agent seeds production. One thumbs-down stops the retry.</h2>
+      <p>No built-in rule knows that <code>npm run db:seed -- --prod</code> is bad in <em>your</em> project. You do. Type a thumbs-down in the agent session right after it runs.</p>
+      <p>ThumbGate <strong>holds</strong> that command at once: the agent's next try is denied until you say "go ahead" or give a thumbs-up. Other commands keep working, and the agent is told to ask you what to change.</p>
+      <p>Your thumbs-down is also saved as a lesson. After you release the hold, the next run of that command <strong>warns</strong> before it runs and shows the agent your lesson.</p>
       <p class="why">One sentence from you. No YAML, no policy file to write.</p>
-      <div class="nav-row"><button class="btn" type="button" data-prev>← Back</button><button class="btn primary" type="button" data-next>Next: it becomes a gate →</button></div>
+      <div class="nav-row"><button class="btn" type="button" data-prev>← Back</button><button class="btn primary" type="button" data-next>Next: two make it a hard rule →</button></div>
     </div>
-    <div class="terminal" aria-label="Terminal: thumbs-down">
-      <div class="bar"><i></i><i></i><i></i><span>your-project</span></div>
-<pre><span class="cmd">npx thumbgate capture --feedback=down --context="npm run db:seed -- --prod" --what-went-wrong="seeded test rows into the production database" --what-to-change="never seed production"</span>
-Feedback Captured [DOWN]
-  Signal      : negative (store-mistake)
-  Storage     : JSONL log + LanceDB vector index
+    <div class="terminal" aria-label="Terminal: thumbs-down hold">
+      <div class="bar"><i></i><i></i><i></i><span>Claude Code session · your-project</span></div>
+<pre><span class="dim"># you type in the session, right after the seed ran:</span>
+&gt; thumbs down: that seeded test rows into production
+ThumbGate hold: thumbs-down received. `npm run db:seed …` is refused until the person says "go ahead". Ask what to change.
 
-<span class="dim"># later, the agent proposes the same command again:</span>
-<span class="warn">[GATE:auto-npm-run-db-seed-prod-…] WARNING:</span> Auto-promoted repeated executable action: "npm run db:seed -- --prod" (1 occurrences in 30 days)
-  • Gate auto-npm-run-db-seed-prod-… [warn] — layer: Execution, severity: medium
-  • Auto-promoted from feedback after 1 failures
-[ThumbGate] Past mistakes relevant to this action — read before proceeding:
-  • seeded test rows into the production database
-    → never seed production</pre>
+<span class="dim"># the agent tries again:</span>
+"permissionDecision": <span class="deny">"deny"</span>
+<span class="deny">[GATE:thumbs-down-hold]</span> The person gave a thumbs-down right after `npm run db:seed …`. That action is held until the person says to go on (a thumbs-up or "go ahead"). Do not retry it or route around it with another tool; ask what to change.
+
+<span class="dim"># after you say "go ahead", the next run warns first:</span>
+<span class="warn">[GATE:auto-npm-run-db-seed-prod-…] WARNING:</span> Auto-promoted repeated executable action: "npm run db:seed -- --prod" (1 occurrences in 30 days)</pre>
     </div>
   </section>
 
   <section class="chapter" id="chapter-gate" role="tabpanel" aria-labelledby="tab-gate" hidden>
     <div>
       <div class="time">Chapter 4 of 5</div>
-      <h2>It happens again. Second thumbs-down. Now it's blocked.</h2>
-      <p>A second thumbs-down from you on the same command upgrades the check from warn to <strong>block</strong>. From then on the agent gets <code>deny</code>, the same answer as a built-in gate, and the command does not run.</p>
-      <p>The gate is scoped to this project, so a thumbs-down in one repo doesn't block anything in another.</p>
+      <h2>It happens again. Two thumbs-downs make it a hard rule.</h2>
+      <p>A second thumbs-down from you on the same command turns the warning into a <strong>block</strong>. Saying "go ahead" lifts the hold but not the rule: from then on the agent gets <code>deny</code> for that command, the same answer as a built-in gate, and it does not run.</p>
+      <p>The rule is scoped to this project, so a thumbs-down in one repo doesn't block anything in another.</p>
       <p class="why">Free enforces your first 3 learned rules. <a href="/pricing" data-cta="demo_pricing">Pro</a> enforces all of them and adds lesson search and exports.</p>
       <div class="nav-row"><button class="btn" type="button" data-prev>← Back</button><button class="btn primary" type="button" data-next>Next: roll it out to a team →</button></div>
     </div>
-    <div class="terminal" aria-label="Terminal: learned gate denies">
+    <div class="terminal" aria-label="Terminal: learned rule denies">
       <div class="bar"><i></i><i></i><i></i><span>PreToolUse hook · after the second thumbs-down</span></div>
 <pre><span class="dim"># agent proposes: npm run db:seed -- --prod</span>
 "permissionDecision": <span class="deny">"deny"</span>

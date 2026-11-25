@@ -40,7 +40,15 @@ test('one thumbs-down warns and a second from a person blocks, as the page says'
   const src = fs.readFileSync(path.join(ROOT, 'scripts', 'auto-promote-gates.js'), 'utf8');
   assert.match(src, /const WARN_THRESHOLD = 1;/);
   assert.match(src, /const HUMAN_BLOCK_THRESHOLD = 2;/);
-  assert.match(html, /second thumbs-down from you on the same command upgrades the check from warn to <strong>block<\/strong>/);
+  assert.match(html, /second thumbs-down from you on the same command turns the warning into a <strong>block<\/strong>/);
+});
+
+test('chapter 3 hold copy matches scripts/send-gate.js (one thumbs-down holds the retry until "go ahead")', () => {
+  const sendGate = fs.readFileSync(path.join(ROOT, 'scripts', 'send-gate.js'), 'utf8');
+  assert.match(sendGate, /deny\('thumbs-down-hold'/);
+  assert.match(sendGate, /That action is held until the person says to go on \(a thumbs-up or "go ahead"\)\. Do not retry it or route around it with another tool; ask what to change\./);
+  assert.match(html, /That action is held until the person says to go on \(a thumbs-up or "go ahead"\)\. Do not retry it or route around it with another tool; ask what to change\./);
+  assert.match(html, /one thumbs-down stops the agent from retrying a mistake\. Two make it a hard rule\./);
 });
 
 test('free-tier copy matches the learned-rule cap', () => {
