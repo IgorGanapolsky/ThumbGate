@@ -300,7 +300,8 @@ const path = require('node:path');
 // 726 -> 727 (2026-11-25): scripts/delete-equivalence.js, a learned delete also denies the same delete written in Python (AGENT-3667).
 // 727 -> 728 (2026-11-25): scripts/send-gate.js (thumbs-down hold and chat send rules, PR 5213).
 // 728 -> 729 (2026-11-25): src/api/security-headers.js (PR 5250); scripts/cursor-self-heal.js landed in 5252 at 728.
-const BASELINE_FILE_COUNT = 729;
+// 729 -> 730 (2026-11-25): public/host-matrix.html, added on main without a package.json files entry (PR 5267 ships it so public-package-parity passes).
+const BASELINE_FILE_COUNT = 730;
 function readBundleSnapshot() {
   const repoRoot = path.resolve(__dirname, '..');
   const stdout = execSync('npm pack --dry-run --json', {
