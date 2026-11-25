@@ -222,13 +222,20 @@ if (process.argv[1] && path.resolve(process.argv[1]) === path.resolve(__filename
 function applyHumanCounts(stats = {}, options = {}) {
   const { up, down } = computeHumanCounts(options);
   const total = up + down;
-  return {
+  const rate = total ? up / total : 0;
+  const out = {
     ...stats,
     totalPositive: up,
     totalNegative: down,
     total,
-    approvalRate: total ? up / total : 0,
+    approvalRate: rate,
   };
+  // The lifetime window repeats the same two totals, so it follows them. The short recent windows and the
+  // per-skill and per-tag buckets are trends, not the headline thumb count, and keep what analyzeFeedback built.
+  if (stats.windows && stats.windows.lifetime) {
+    out.windows = { ...stats.windows, lifetime: { ...stats.windows.lifetime, total, rate } };
+  }
+  return out;
 }
 
 module.exports = { computeHumanCounts, collectHumanRows, applyHumanCounts, NOT_COUNTED_FILE };

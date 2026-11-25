@@ -17,7 +17,13 @@ function markNotCounted(ids, reason, options = {}) {
   const file = path.join(dir, NOT_COUNTED_FILE);
   const at = new Date().toISOString();
   const lines = ids.map((id) => `${JSON.stringify({ id: String(id), reason: String(reason || ''), markedAt: at })}\n`);
-  fs.appendFileSync(file, lines.join(''));
+  // A ledger whose last line has no newline would otherwise glue the first new record to it; blank lines are ignored.
+  let lead = '';
+  try {
+    const existing = fs.readFileSync(file, 'utf8');
+    if (existing && !existing.endsWith('\n')) lead = '\n';
+  } catch { /* no ledger yet */ }
+  fs.appendFileSync(file, lead + lines.join(''));
   return { file, ids };
 }
 

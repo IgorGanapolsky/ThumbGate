@@ -54,6 +54,33 @@ test('REQ-02: applyHumanCounts replaces only the thumb totals of a stats payload
   }
 });
 
+test('REQ-04: an unterminated ledger line does not swallow the next record, and the lifetime window follows the totals', () => {
+  const p = makeProject();
+  try {
+    const ledger = path.join(p.project, '.thumbgate', 'not-counted-feedback.jsonl');
+    fs.writeFileSync(ledger, JSON.stringify({ id: 'probe_1', reason: 'old' }));
+    markNotCounted(['probe_2'], 'new', p.options);
+    assert.equal(computeHumanCounts(p.options).down, 1, 'both marked rows are left out');
+    const out = applyHumanCounts({ windows: { lifetime: { total: 3, rate: 0.1 }, last7: { total: 3 } } }, p.options);
+    assert.deepEqual(out.windows.lifetime, { total: 1, rate: 0 });
+    assert.deepEqual(out.windows.last7, { total: 3 });
+  } finally {
+    fs.rmSync(p.home, { recursive: true, force: true });
+  }
+});
+
+test('REQ-05: the aggregate stats path leaves marked rows out too', () => {
+  const { computeAggregateFeedbackStats } = require('../scripts/feedback-aggregate');
+  const p = makeProject();
+  try {
+    markNotCounted(['probe_1', 'probe_2'], 'probe', p.options);
+    const stats = computeAggregateFeedbackStats({ feedbackDir: path.join(p.project, '.thumbgate') });
+    assert.equal(stats.totalNegative, 1);
+  } finally {
+    fs.rmSync(p.home, { recursive: true, force: true });
+  }
+});
+
 test('REQ-03: the status line names the project next to the counts and keeps the version', () => {
   const json = JSON.stringify({ up: 2, down: 5, label: 'this project', project: 'orchestrator' });
   const out = execFileSync('bash', [path.join(__dirname, '..', 'scripts', 'statusline.sh')], {

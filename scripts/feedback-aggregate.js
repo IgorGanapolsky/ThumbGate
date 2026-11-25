@@ -182,8 +182,17 @@ function collectAggregateLogEntries(fileName, options = {}) {
       tail: !wantFull,
       full: wantFull,
     }) || [];
+    // Row ids listed in this store's not-counted-feedback.jsonl are not a person's thumb (scripts/not-a-thumb.js).
+    const notCounted = new Set();
+    try {
+      for (const line of fs.readFileSync(path.join(dir, 'not-counted-feedback.jsonl'), 'utf8').split('\n')) {
+        if (!line.trim()) continue;
+        try { const mark = JSON.parse(line); if (mark && mark.id) notCounted.add(String(mark.id)); } catch { /* skip a bad line */ }
+      }
+    } catch { /* no ledger in this store */ }
     for (let index = 0; index < rows.length; index += 1) {
       const rawEntry = rows[index];
+      if (rawEntry && rawEntry.id && notCounted.has(String(rawEntry.id))) continue;
       const entry = { ...rawEntry };
       if (entry.signal || entry.feedback) entry.signal = normalizeSignal(entry.signal || entry.feedback);
       const key = stableEntryKey(entry, { logPath, index });
