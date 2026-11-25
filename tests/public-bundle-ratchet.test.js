@@ -302,7 +302,8 @@ const path = require('node:path');
 // 728 -> 729 (2026-11-25): src/api/security-headers.js (PR 5250); scripts/cursor-self-heal.js landed in 5252 at 728.
 // 729 -> 730 (2026-11-25): public/host-matrix.html, the host enforcement matrix page (a1844d0).
 // 730 -> 731 (2026-11-25): public/demo.html, the chaptered thumbgate.ai/demo walkthrough (PR 5271).
-const BASELINE_FILE_COUNT = 731;
+// 731 -> 732 (2026-11-25): scripts/assurance-report.js, the assurance-report CLI command.
+const BASELINE_FILE_COUNT = 732;
 function readBundleSnapshot() {
   const repoRoot = path.resolve(__dirname, '..');
   const stdout = execSync('npm pack --dry-run --json', {
