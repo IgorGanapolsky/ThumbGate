@@ -808,8 +808,10 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // Bumped 10.62 MB -> 10.65 MB (2026-11-25): canary-gate.js, boundary-check.js, prompt-risk-lint.js (AGENT-3667 item J).
   // Bumped 10.55 MB -> 10.62 MB (2026-11-25): the files above that were missing from `files`
   // (runtime requires that crashed or silently failed in the published package) and the pinned-hook fix.
-  manifest.unpackedSize <= 10_730_000,
-  `npm package should stay <= 10.73 MB unpacked, got ${manifest.unpackedSize}`
+  // Bumped 10.73 MB -> 10.74 MB (2026-11-25): `thumbgate desktop-snapshot` for the Claude desktop app
+  // companion, folded into the already-shipped explore-subcommands.js (no new file). Measured 10,733,124 unpacked.
+  manifest.unpackedSize <= 10_740_000,
+  `npm package should stay <= 10.74 MB unpacked, got ${manifest.unpackedSize}`
 );
 
   for (const file of requiredRuntimeFiles) {

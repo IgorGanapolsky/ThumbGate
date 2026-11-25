@@ -518,6 +518,18 @@ test('the AI FinOps learn page is served, listed in the sitemap, and claims no b
   assert.match(html, /does not cap tokens or dollars/i, 'the page says plainly what the gates do not do');
 });
 
+test('the Claude desktop apps learn page is served, listed, and says the app does not enforce', async () => {
+  const sitemap = await (await fetch(`${origin}/sitemap.xml`)).text();
+  assert.match(sitemap, /<loc>[^<]*\/learn\/claude-artifact-desktop-apps<\/loc>/, 'sitemap must list the Claude desktop apps learn page');
+  const res = await fetch(`${origin}/learn/claude-artifact-desktop-apps`);
+  assert.equal(res.status, 200);
+  const html = await res.text();
+  assert.match(html, /support\.claude\.com\/en\/articles\/18516354/, 'cites Anthropic\'s own install guide');
+  assert.match(html, /It does not enforce anything/, 'the companion app must not be presented as the enforcement point');
+  assert.match(html, /npx thumbgate desktop-snapshot --json/);
+  assert.match(html, /not affiliated with or endorsed by Anthropic/);
+});
+
 test('GET /agents-cost-savings serves the FinOps-for-AI landing HTML', async () => {
   const [routeRes, htmlRes] = await Promise.all([
     fetch(`${origin}/agents-cost-savings`),
