@@ -219,11 +219,14 @@ test('alert delivery sends a one-time confirmation, then each new alert once', a
   const makeDeps = () => ({ feedbackDir: dir, runtime: createRuntimeObservations(), health: () => ({ version: 'x', buildSha: null, uptime: 1 }), getStripeClient: () => { throw new Error('STRIPE_SECRET_KEY is missing.'); }, getOwnerEmails: () => [], moneyCacheMs: 0, lastGoodMs: 0, telemetryCacheMs: 0, stripeDeadlineMs: 200, getBillingSummaryLive: async () => ({ error: 'off' }) });
   const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
   try {
-    const timer = startAlertDelivery(makeDeps, { intervalMs: 60000, firstCheckMs: 10, send: async (m) => { sent.push(m); } });
+    const timer = startAlertDelivery(makeDeps, { intervalMs: 150, firstCheckMs: 10, send: async (m) => { sent.push(m); } });
+    for (let i = 0; i < 100 && sent.length < 1; i += 1) await wait(20);
+    assert.equal(sent[0].title, 'ThumbGate: alert delivery is on');
+    assert.equal(sent.length, 1, 'an unreadable source seen once (a cold start after a deploy) is not sent yet');
+    assert.deepEqual(JSON.parse(fs.readFileSync(path.join(dir, 'owner-alert-delivery.json'), 'utf8')).pending, ['stripe_unreadable']);
     for (let i = 0; i < 100 && sent.length < 2; i += 1) await wait(50);
     clearInterval(timer);
-    assert.equal(sent[0].title, 'ThumbGate: alert delivery is on');
-    assert.match(sent[1].message, /Stripe could not be read: Stripe key missing/);
+    assert.match(sent[1].message, /Stripe could not be read: Stripe key missing/, 'still unreadable on the next check, so it is sent');
     assert.ok(fs.existsSync(path.join(dir, 'owner-alert-delivery.json')));
     sent.length = 0;
     // A restart (every deploy) reads the saved state: no second confirmation, and a still-firing alert is not re-sent.
