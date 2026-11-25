@@ -494,6 +494,15 @@ function loadGatesConfig(configPath, harnessPath, options = {}) {
     mergedConfig.gates.push(...limitedAutoGates);
   }
 
+  // Opt-in owner gates (for example config/gates/profiles/private-owner.json): additive, absent on a fresh install.
+  const extraGatesPath = tenantDataScope() || configPath ? null : (process.env.THUMBGATE_EXTRA_GATES
+    || path.join(os.homedir(), '.config', 'thumbgate', 'extra-gates.json'));
+  if (extraGatesPath && fs.existsSync(extraGatesPath)) {
+    const extraGates = (loadOne(extraGatesPath, false) || [])
+      .map(g => ({ ...g, layer: g.layer || 'Execution', source: g.source || 'extra-gates' }));
+    mergedConfig.gates.push(...extraGates);
+  }
+
   // Load workflow-specific harness gates (always additive, never replaces default).
   // Resolved by harness-selector based on tool name + command context.
   const resolvedHarness = tenantDataScope() ? null : (harnessPath || process.env.THUMBGATE_HARNESS_CONFIG);

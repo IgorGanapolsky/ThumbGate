@@ -980,7 +980,8 @@ $ ... "rm -rf ~/"
             <tr><th>A command you gave a thumbs-down</th><td>Warns, with your reason</td><td>Denied from the third thumbs-down</td></tr>
             <tr><th>Other flagged actions, for example <code>git push origin main</code></th><td>Warns</td><td>Denied</td></tr>
             <tr><th>The same action, reworded</th><td colspan="2"><strong>Not caught.</strong> A learned rule matches the command you thumbed down, not its purpose. In the recording above, <code>rm -rf ../old-notes</code> is denied, but deleting the same folder with <code>python3 shutil.rmtree</code> only gets a warning.</td></tr>
-            <tr><th>Cursor, Cline, OpenCode, Amp</th><td colspan="2">Advisory or feedback only. They do not guarantee a block. See <a href="#also-works-with">Also works with</a>.</td></tr>
+            <tr><th>Cursor</th><td colspan="2">Shell commands are denied before they run; other tools are advisory. See <a href="#also-works-with">Also works with</a>.</td></tr>
+            <tr><th>Cline, OpenCode, Amp</th><td colspan="2">Advisory or feedback only. They do not guarantee a block. See <a href="#also-works-with">Also works with</a>.</td></tr>
             <tr><th>Damage from a command it allows</th><td colspan="2">Not contained. ThumbGate is not a sandbox.</td></tr>
           </tbody>
         </table>
@@ -1036,7 +1037,8 @@ $ ... "rm -rf ~/"
           </thead>
           <tbody>
             <tr><th>Claude Code</th><td>Blocks before tool runs</td><td>DENY</td><td>DENY catastrophic, WARN other</td><td>DENY</td></tr>
-            <tr><th>Cursor, Cline, OpenCode</th><td>Advisory</td><td>DENY</td><td>WARN</td><td>DENY</td></tr>
+            <tr><th>Cursor shell</th><td>Blocks first</td><td>DENY</td><td>DENY catastrophic, WARN other</td><td>DENY</td></tr>
+            <tr><th>Cursor other, Cline, OpenCode</th><td>Advisory</td><td>DENY</td><td>WARN</td><td>DENY</td></tr>
             <tr><th>Amp</th><td>Feedback only</td><td>Logged</td><td>Logged</td><td>Logged</td></tr>
           </tbody>
         </table>

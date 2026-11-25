@@ -138,7 +138,7 @@ Lightweight visuals for how agents fail without a pre-action gate:
 | **Codex** | `npx thumbgate init --agent codex` | 🛡️ Hard — `pre_tool_use` |
 | **Gemini CLI** | `npx thumbgate init --agent gemini` | 🛡️ Hard — PreToolUse |
 | **ForgeCode** | `npx thumbgate init --agent forge` | 🛡️ Hard — `pre_tool_use` |
-| **Cursor** | `npx thumbgate init --agent cursor` | 💬 Advisory — MCP `gate_check` |
+| **Cursor** | `npx thumbgate init --agent cursor` | 🛡️ Hard for shell commands — `beforeShellExecution` hook denies them. 💬 Advisory for every other Cursor tool (file edits, MCP calls) — MCP `gate_check`. The hook fails open if it errors. |
 | **Cline** | `npx thumbgate init --agent cline` | 💬 Advisory — MCP + `.clinerules` |
 | **OpenCode** | `npx thumbgate init --agent opencode` | 💬 Advisory — MCP `gate_check` |
 | **Any MCP agent** | `npx thumbgate serve` | 💬 Advisory — MCP `gate_check` |
