@@ -135,7 +135,7 @@
     <li><strong><code>sandbox-privileged-container</code></strong> (rules 1 and 3, needs approval): <code>--privileged</code>, <code>--pid=host</code>, <code>SYS_ADMIN</code>, unconfined seccomp or AppArmor, bind-mounting <code>/</code>, or mounting a host disk.</li>
     <li><strong><code>sandbox-host-persistence</code></strong> (rule 6, needs approval): installing cron jobs, systemd units, launch agents, <code>ld.so.preload</code>, sudoers or init scripts.</li>
   </ul>
-  <p>Each block message tells the agent to stop and tell the user what it found, which is Siren's "report, don't use" option. Rule 5 (network) is covered by ThumbGate's existing <code>secret-egress</code> and <code>deny-network-egress</code> gates. On ThumbGate's own test suite, 18 of 20 escape commands passed the previous default gates; all 20 are now stopped, and 10 ordinary container and ops commands such as <code>docker ps</code>, <code>crontab -l</code> and <code>docker run -v $(pwd):/app</code> still run.</p>
+  <p>Each block message tells the agent to stop and tell the user what it found, which is Siren's "report, don't use" option. Rule 5 (network) is covered by ThumbGate's existing <code>secret-egress</code> and <code>deny-network-egress</code> gates. On ThumbGate's own test suite, 19 of its 23 escape cases passed the previous default gates in strict mode; all 23 are now stopped, and 10 ordinary container and ops commands such as <code>docker ps</code>, <code>crontab -l</code> and <code>docker run -v $(pwd):/app</code> still run.</p>
 
   <h2>What this does not do</h2>
   <ul>

@@ -10,7 +10,7 @@
 // classifier skipped Claude Code's file-reading tools. These gates encode the rules as
 // PreToolUse checks that also cover Read/Write/WebFetch, not only Bash.
 //
-// Before this change, 18 of the 20 escape commands below were allowed by default.json.
+// Before this change, 19 of the 23 escape cases below were allowed by default.json (strict mode).
 
 const { test, beforeEach, afterEach } = require('node:test');
 const assert = require('node:assert/strict');
