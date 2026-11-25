@@ -2323,7 +2323,8 @@ function evaluatePendingPrThreadResolutionGate(toolName, toolInput = {}, options
   const trackedRepoRoot = pendingEntry.metadata && pendingEntry.metadata.repoRoot;
   if (trackedRepoRoot) {
     const currentRepoRoot = resolveRepoRoot(toolInput);
-    if (currentRepoRoot && currentRepoRoot !== trackedRepoRoot) return null;
+    // An unknown current repo (cwd outside any git repo) must not inherit another repo's pending gate.
+    if (!currentRepoRoot || currentRepoRoot !== trackedRepoRoot) return null;
   }
 
   if (isThreadResolutionSatisfied(options)) return null;
@@ -3836,6 +3837,13 @@ async function evaluateGatesAsyncInner(toolName, toolInput, configPath, options 
     return agentIdentityLifecycleGate;
   }
 
+  // Catastrophic hard-floor gates run before the stateful PR-thread gate: that gate is demoted to warn by the
+  // enforcement posture, and an early return there used to hide a later terraform-destroy or force-push deny.
+  const earlyCatastrophicGate = evaluateCatastrophicDeclarativeGate(config, constraints, toolName, toolInput, execution);
+  if (earlyCatastrophicGate) {
+    return recordStructuralGateBlock(toolName, toolInput, earlyCatastrophicGate, execution);
+  }
+
   const pendingThreadResolutionGate = evaluatePendingPrThreadResolutionGate(toolName, toolInput, execution);
   if (pendingThreadResolutionGate) {
     recordStat(pendingThreadResolutionGate.gate, 'block', null, { ...execution, toolName, toolInput });
@@ -4177,6 +4185,13 @@ function evaluateGatesInner(toolName, toolInput, configPath, options = {}) {
     });
     auditToFeedback(identityAuditRecord);
     return agentIdentityLifecycleGate;
+  }
+
+  // Catastrophic hard-floor gates run before the stateful PR-thread gate: that gate is demoted to warn by the
+  // enforcement posture, and an early return there used to hide a later terraform-destroy or force-push deny.
+  const earlyCatastrophicGate = evaluateCatastrophicDeclarativeGate(config, constraints, toolName, toolInput, execution);
+  if (earlyCatastrophicGate) {
+    return recordStructuralGateBlock(toolName, toolInput, earlyCatastrophicGate, execution);
   }
 
   const pendingThreadResolutionGate = evaluatePendingPrThreadResolutionGate(toolName, toolInput, execution);
