@@ -29,6 +29,8 @@ function childEnv(mode, home, feedbackDir) {
     THUMBGATE_PRO_MODE: '1',
     THUMBGATE_NO_RATE_LIMIT: '1',
     THUMBGATE_DISABLE_TELEMETRY: '1',
+    // cli-telemetry's opt-out; without it a detached delivery child can still be writing into home while root is removed.
+    THUMBGATE_NO_TELEMETRY: '1',
     THUMBGATE_MONTHLY_BUDGET_USD: mode === 'on' ? '10' : '1000000',
   };
 }
