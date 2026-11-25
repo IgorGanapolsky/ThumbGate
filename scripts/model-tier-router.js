@@ -278,6 +278,44 @@ class FrontierBudget {
   }
 }
 
+// ---------------------------------------------------------------------------
+// Reasoning mode (thinking vs. instruct)
+// ---------------------------------------------------------------------------
+
+// Pattern from JetBrains Mellum2.1 Instruct (Nov 2026): routine agent work
+// (small edits, tool loops, lookups, sub-agent hand-offs) gains nothing from a
+// chain-of-thought step and spends about 45% more tokens on it. Keep thinking
+// for investigation and hard algorithmic or math work, or after instruct fails.
+const THINKING_TASK_TYPES = new Set([
+  'debugging', 'complex-debugging', 'diagnosis', 'root-cause', 'architecture',
+  'system-design', 'algorithmic', 'math', 'proof', 'planning',
+]);
+const THINKING_TAGS = new Set(['hard', 'algorithmic', 'math', 'investigate', 'root-cause', 'needs-thinking']);
+const INSTRUCT_TAGS = new Set(['routine', 'sub-agent', 'tool-loop', 'no-thinking']);
+
+function recommendReasoningMode(task = {}) {
+  const type = String(task.type || '').toLowerCase();
+  const tags = Array.isArray(task.tags) ? task.tags.map((t) => String(t).toLowerCase()) : [];
+  const retryCount = Number(task.retryCount) || 0;
+  const retryThreshold = loadConfig().escalationRules.failureRetryThreshold;
+
+  const instructTag = tags.find((t) => INSTRUCT_TAGS.has(t));
+  if (instructTag) {
+    return { mode: 'instruct', modelRole: 'normal', reason: `tag "${instructTag}" asks for no reasoning step` };
+  }
+  const thinkingTag = tags.find((t) => THINKING_TAGS.has(t));
+  if (thinkingTag) {
+    return { mode: 'thinking', modelRole: 'thinking', reason: `tag "${thinkingTag}" needs a reasoning step` };
+  }
+  if (THINKING_TASK_TYPES.has(type)) {
+    return { mode: 'thinking', modelRole: 'thinking', reason: `task type "${type}" needs a reasoning step` };
+  }
+  if (retryCount >= retryThreshold) {
+    return { mode: 'thinking', modelRole: 'thinking', reason: `${retryCount} retries without reasoning; switching to thinking` };
+  }
+  return { mode: 'instruct', modelRole: 'normal', reason: 'routine task; a reasoning step adds tokens and latency without quality' };
+}
+
 function isSwitchyardEnabled(task = {}, env = process.env) {
   const flag = String(env.THUMBGATE_SWITCHYARD || '').trim().toLowerCase();
   if (flag === '1' || flag === 'true' || flag === 'yes' || flag === 'on') return true;
@@ -317,6 +355,11 @@ function recommendExecutionPlan(task = {}, env = process.env) {
     indexCacheEnabled: inference.backend.indexCacheEnabled,
     reason: `${classification.reason}; ${inference.reason}`,
   };
+
+  const reasoning = recommendReasoningMode(task);
+  plan.reasoningMode = reasoning.mode;
+  plan.reasoningModelRole = reasoning.modelRole;
+  plan.reasoningReason = reasoning.reason;
 
   // Optional NeMo Switchyard–style multi-model step plan (opt-in).
   if (isSwitchyardEnabled(task, env)) {
@@ -688,6 +731,7 @@ function isCostRouteQwenEnabled(task = {}, env = process.env) {
 }
 
 module.exports = {
+  recommendReasoningMode,
   isCostRouteQwenEnabled,
   TIERS,
   TIER_ROUTING_ORDER,
