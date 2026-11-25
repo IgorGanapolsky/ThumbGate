@@ -287,7 +287,7 @@ Free tier: **2 feedback captures/day (10 total)** and **up to 3 active auto-prom
 | Hosted team lesson sync | — | — | Not general availability |
 | Hosted org dashboard | — | — | Not general availability |
 
-**Enterprise intake path:** the **Setup Sprint** scopes one repeated failure before any broader rollout commitment. **[Start intake →](https://thumbgate.ai/go/diagnostic?utm_source=github&utm_medium=readme&utm_campaign=team_rollout)**
+**Team path:** request a **30-day team pilot**. Tell us your team size and coding agent, and a person replies by email with how the pilot would run. There is no self-serve team checkout. **[Request a team pilot →](https://thumbgate.ai/pilot?utm_source=github&utm_medium=readme&utm_campaign=team_rollout)**
 
 **Local technical path:** install the CLI and use `init` plus the documented setup so Pre-Action Checks evaluate tool calls where the agent actually runs.
 
@@ -295,7 +295,7 @@ Free tier: **2 feedback captures/day (10 total)** and **up to 3 active auto-prom
 
 **Paid path for individual operators:** [ThumbGate Pro](https://thumbgate.ai/go/pro-direct?utm_source=github&utm_medium=readme&utm_campaign=pro_page) is the self-serve side lane for a personal dashboard and export-ready evidence.
 
-[**Start free**](https://thumbgate.ai/?utm_source=github&utm_medium=readme) · [**Pro $19/mo**](https://thumbgate.ai/go/pro-direct?utm_source=github&utm_medium=readme) · [**Live Dashboard**](https://thumbgate.ai/dashboard?utm_source=github&utm_medium=readme) · [**Team Sprint intake**](https://thumbgate.ai/go/diagnostic?utm_source=github&utm_medium=readme) · [**Setup Sprint**](https://thumbgate.ai/go/diagnostic?utm_source=github&utm_medium=readme&utm_campaign=top_cta) · [**First Dollar Playbook**](docs/FIRST_DOLLAR_PLAYBOOK.md)
+[**Start free**](https://thumbgate.ai/?utm_source=github&utm_medium=readme) · [**Pro $19/mo**](https://thumbgate.ai/go/pro-direct?utm_source=github&utm_medium=readme) · [**Live Dashboard**](https://thumbgate.ai/dashboard?utm_source=github&utm_medium=readme) · [**30-day team pilot**](https://thumbgate.ai/pilot?utm_source=github&utm_medium=readme&utm_campaign=top_cta) · [**First Dollar Playbook**](docs/FIRST_DOLLAR_PLAYBOOK.md)
 
 <details>
 <summary><b>More guides: popular buyer questions</b></summary>
