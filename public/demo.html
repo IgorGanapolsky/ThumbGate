@@ -1,0 +1,407 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>See a thumbs-down become a gate | ThumbGate demo</title>
+<meta name="description" content="A two-minute, five-chapter walkthrough of ThumbGate: install, a built-in block, a thumbs-down that holds the retry, the hard rule two of them make, and how a team rolls it out. Every output is real CLI output.">
+<link rel="canonical" href="__APP_ORIGIN__/demo">
+<meta property="og:title" content="See a thumbs-down become a gate | ThumbGate">
+<meta property="og:description" content="Five short chapters. Watch ThumbGate deny a force-push, then stop a retry with one thumbs-down and make it a hard rule with two.">
+<meta property="og:url" content="__APP_ORIGIN__/demo">
+<meta property="og:type" content="website">
+<meta property="og:image" content="__APP_ORIGIN__/og.png">
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"WebPage","name":"See a thumbs-down become a gate","url":"https://thumbgate.ai/demo","dateModified":"2026-11-25","description":"Chaptered walkthrough of ThumbGate pre-action checks for AI coding agents.","isPartOf":{"@type":"WebSite","name":"ThumbGate","url":"https://thumbgate.ai"}}
+</script>
+__GOOGLE_SITE_VERIFICATION_META__
+__GA_BOOTSTRAP__
+<style>
+:root { color-scheme: dark; --bg:#070a0c; --panel:#10161a; --panel2:#0b1114; --line:#2a3941; --text:#edf7f8; --muted:#a7b5ba; --cyan:#2fd2e6; --green:#6ee7a8; --amber:#f5c26b; --red:#ff8f8f; }
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body { margin:0; min-height:100vh; background:var(--bg); color:var(--text); font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif; line-height:1.55; }
+a { color:var(--cyan); }
+header, main, footer { width:min(1120px,calc(100% - 32px)); margin:0 auto; }
+header { display:flex; align-items:center; justify-content:space-between; gap:16px; padding:22px 0; }
+.brand { display:flex; align-items:center; gap:10px; color:var(--text); font-weight:800; text-decoration:none; }
+.brand img { display:block; width:28px; height:28px; }
+header nav { display:flex; gap:18px; flex-wrap:wrap; }
+header nav a { color:var(--muted); text-decoration:none; font-size:15px; }
+header nav a:hover { color:var(--text); }
+.hero { display:grid; grid-template-columns:minmax(0,1.1fr) minmax(0,.9fr); gap:40px; padding:40px 0 28px; align-items:end; }
+.eyebrow { color:var(--cyan); font-size:13px; font-weight:800; text-transform:uppercase; letter-spacing:.08em; }
+h1 { margin:12px 0 16px; font-size:48px; line-height:1.04; letter-spacing:-.01em; }
+.lede { color:var(--muted); font-size:19px; margin:0; max-width:620px; }
+.outcomes { list-style:none; margin:0; padding:0; display:grid; gap:12px; }
+.outcomes li { display:flex; gap:12px; align-items:flex-start; color:var(--muted); }
+.outcomes li::before { content:"✓"; flex:0 0 22px; height:22px; border-radius:50%; background:rgba(47,210,230,.15); color:var(--cyan); font-weight:900; font-size:13px; display:grid; place-items:center; margin-top:2px; }
+.outcomes strong { color:var(--text); }
+/* Journey bar */
+.journey { margin:18px 0 0; display:flex; align-items:stretch; gap:0; overflow-x:auto; scrollbar-width:none; border:1px solid var(--line); border-radius:10px; background:var(--panel2); }
+.journey::-webkit-scrollbar { display:none; }
+.journey button { flex:1 1 0; min-width:120px; position:relative; border:0; background:transparent; color:var(--muted); font:inherit; font-size:14px; font-weight:700; padding:14px 14px 12px; cursor:pointer; text-align:left; border-right:1px solid var(--line); }
+.journey button:last-child { border-right:0; }
+.journey button .n { display:block; font-size:11px; letter-spacing:.08em; text-transform:uppercase; color:#6c7f86; margin-bottom:2px; }
+.journey button::after { content:""; position:absolute; left:0; right:0; bottom:0; height:3px; background:transparent; transition:background .2s; }
+.journey button.done::after { background:rgba(47,210,230,.45); }
+.journey button[aria-selected="true"] { color:var(--text); background:rgba(47,210,230,.07); }
+.journey button[aria-selected="true"]::after { background:var(--cyan); }
+.journey button:focus-visible { outline:2px solid var(--cyan); outline-offset:-2px; }
+/* Chapter */
+.chapter { display:grid; grid-template-columns:minmax(0,.85fr) minmax(0,1.15fr); gap:32px; padding:28px 0 12px; min-height:440px; }
+.chapter[hidden] { display:none; }
+.chapter h2 { margin:6px 0 12px; font-size:30px; line-height:1.15; }
+.chapter p { color:var(--muted); margin:0 0 14px; }
+.chapter .why { border-left:3px solid var(--cyan); padding:2px 0 2px 14px; color:var(--text); }
+.time { color:#6c7f86; font-size:13px; font-weight:700; }
+.terminal { border:1px solid var(--line); border-radius:10px; background:#05080a; overflow:hidden; align-self:start; }
+.terminal .bar { display:flex; align-items:center; gap:7px; padding:10px 14px; border-bottom:1px solid var(--line); background:var(--panel); color:#6c7f86; font-size:12px; }
+.terminal .bar i { width:10px; height:10px; border-radius:50%; background:#2a3941; display:inline-block; }
+.terminal .bar span { margin-left:8px; }
+.terminal pre { margin:0; padding:16px; font:13px/1.6 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; white-space:pre-wrap; word-break:break-word; color:#cfe3e7; min-height:300px; }
+.terminal .cmd { color:var(--text); }
+.terminal .cmd::before { content:"$ "; color:var(--cyan); }
+.terminal .dim { color:#6c7f86; }
+.terminal .deny { color:var(--red); font-weight:700; }
+.terminal .warn { color:var(--amber); font-weight:700; }
+.terminal .ok { color:var(--green); font-weight:700; }
+.copy { display:inline-flex; align-items:center; gap:8px; margin:4px 0 14px; border:1px solid var(--line); border-radius:8px; background:var(--panel); color:var(--text); font:13px ui-monospace,SFMono-Regular,Menlo,monospace; padding:10px 12px; cursor:pointer; }
+.copy:hover { border-color:var(--cyan); }
+.copy .tag { font-family:Inter,system-ui,sans-serif; font-size:12px; font-weight:800; color:var(--cyan); }
+.nav-row { display:flex; gap:12px; align-items:center; margin-top:18px; flex-wrap:wrap; }
+.btn { display:inline-flex; align-items:center; justify-content:center; min-height:46px; padding:0 18px; border-radius:8px; border:1px solid var(--line); background:var(--panel); color:var(--text); font:inherit; font-weight:800; text-decoration:none; cursor:pointer; }
+.btn.primary { background:var(--cyan); color:#041014; border-color:var(--cyan); }
+.btn:focus-visible, .copy:focus-visible { outline:2px solid var(--cyan); outline-offset:2px; }
+.btn[disabled] { opacity:.6; cursor:wait; }
+/* Team chapter */
+.cards { display:grid; gap:14px; }
+.card { border:1px solid var(--line); border-radius:10px; background:var(--panel); padding:20px; }
+.card h3 { margin:0 0 6px; font-size:18px; }
+.card p { margin:0; }
+.calc { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px; margin:12px 0 10px; }
+.calc label { font-size:12px; font-weight:700; color:var(--muted); display:block; }
+.calc input { width:100%; margin-top:5px; border:1px solid #35464e; border-radius:7px; background:#080c0f; color:var(--text); padding:10px; font:inherit; }
+.calc-out { font-size:15px; color:var(--text); }
+.calc-out strong { color:var(--cyan); font-size:22px; }
+.fine { color:#6c7f86; font-size:12px; margin-top:8px !important; }
+form.pilot label { display:block; margin:12px 0 6px; font-size:14px; font-weight:750; }
+form.pilot input, form.pilot select { width:100%; border:1px solid #35464e; border-radius:7px; background:#080c0f; color:var(--text); padding:11px; font:inherit; }
+form.pilot .row { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+form.pilot button { width:100%; margin-top:16px; }
+.status { margin:12px 0 0; font-weight:700; }
+.status.ok { color:var(--green); }
+.status.err { color:var(--red); }
+/* Trust strip */
+.trust { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:14px; padding:28px 0 36px; border-top:1px solid var(--line); margin-top:28px; }
+.trust div { color:var(--muted); font-size:14px; }
+.trust strong { display:block; color:var(--text); font-size:15px; margin-bottom:4px; }
+footer { padding:24px 0 40px; border-top:1px solid var(--line); color:var(--muted); font-size:14px; }
+@media (max-width:860px) {
+  .hero, .chapter { grid-template-columns:1fr; gap:22px; }
+  h1 { font-size:36px; }
+  .trust { grid-template-columns:1fr 1fr; }
+  .calc { grid-template-columns:1fr; }
+  form.pilot .row { grid-template-columns:1fr; }
+  .chapter { min-height:0; }
+  .terminal pre { min-height:0; }
+}
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior:auto; } .journey button::after { transition:none; } }
+</style>
+</head>
+<body>
+<header>
+  <a class="brand" href="/"><img src="/assets/brand/thumbgate-mark-inline-v3.svg" alt="" width="28" height="28"><span>ThumbGate</span></a>
+  <nav aria-label="Demo shortcuts"><a href="/install">Install</a><a href="/pricing">Pricing</a><a href="#chapter-team" data-jump="team">Team pilot</a></nav>
+</header>
+<main>
+  <section class="hero" aria-labelledby="demo-title">
+    <div>
+      <div class="eyebrow">Two-minute demo · 5 chapters</div>
+      <h1 id="demo-title">See a thumbs-down become a gate.</h1>
+      <p class="lede">Your AI coding agent makes a mistake once. ThumbGate makes sure it doesn't make it twice. Every terminal output on this page is real ThumbGate output, copied from the CLI.</p>
+    </div>
+    <ul class="outcomes">
+      <li><span><strong>Blocks the worst commands out of the box:</strong> force-push, <code>rm -rf</code> on home or root, <code>DROP TABLE</code>, secret leaks.</span></li>
+      <li><span><strong>Learns from you:</strong> one thumbs-down stops the agent from retrying a mistake. Two make it a hard rule.</span></li>
+      <li><span><strong>Runs before the action:</strong> in Claude Code, Codex and Gemini CLI it checks each tool call in the agent's pre-tool hook, on your machine, before anything executes.</span></li>
+    </ul>
+  </section>
+
+  <div class="journey" role="tablist" aria-label="Demo chapters">
+    <button role="tab" id="tab-install" aria-controls="chapter-install" data-chapter="install"><span class="n">1 · 20 sec</span>Install</button>
+    <button role="tab" id="tab-block" aria-controls="chapter-block" data-chapter="block"><span class="n">2 · 20 sec</span>Built-in block</button>
+    <button role="tab" id="tab-thumbs" aria-controls="chapter-thumbs" data-chapter="thumbs"><span class="n">3 · 30 sec</span>One thumbs-down</button>
+    <button role="tab" id="tab-gate" aria-controls="chapter-gate" data-chapter="gate"><span class="n">4 · 20 sec</span>A hard rule</button>
+    <button role="tab" id="tab-team" aria-controls="chapter-team" data-chapter="team"><span class="n">5 · 30 sec</span>Your team</button>
+  </div>
+
+  <section class="chapter" id="chapter-install" role="tabpanel" aria-labelledby="tab-install">
+    <div>
+      <div class="time">Chapter 1 of 5</div>
+      <h2>Install in the project where your agent works.</h2>
+      <p><code>init</code> finds your agent and wires ThumbGate in. Claude Code, Codex and Gemini CLI get a hard pre-tool hook, and Cursor gets one for shell commands. Cline, OpenCode and other MCP agents get the checks as an advisory <code>gate_check</code> tool the model can skip, so the blocks below are guaranteed only where a hook is installed. <code>doctor</code> confirms the wiring and prints <code>Overall: READY</code>.</p>
+      <p class="why">No account, no API key and no cloud service are needed for the checks. They run on your machine.</p>
+      <button class="copy" type="button" data-copy="npx thumbgate init" data-cta="demo_copy_init"><span>npx thumbgate init</span><span class="tag">Copy</span></button>
+      <div class="nav-row"><button class="btn primary" type="button" data-next>Next: a built-in block →</button></div>
+    </div>
+    <div class="terminal" aria-label="Terminal: install">
+      <div class="bar"><i></i><i></i><i></i><span>your-project</span></div>
+<pre><span class="cmd">npx thumbgate init</span>
+<span class="dim"># detects your agent and installs the hooks</span>
+
+<span class="cmd">npx thumbgate doctor</span>
+<span class="dim"># checks the hooks are wired; exits 0 when ready</span>
+<span class="ok">Overall: READY</span></pre>
+    </div>
+  </section>
+
+  <section class="chapter" id="chapter-block" role="tabpanel" aria-labelledby="tab-block" hidden>
+    <div>
+      <div class="time">Chapter 2 of 5</div>
+      <h2>Your agent tries to force-push. It never runs.</h2>
+      <p>Before each tool call, the agent's hook hands ThumbGate the proposed command. A built-in gate matches <code>git push --force</code> and answers <code>deny</code>. The agent gets the reason, and the push never happens.</p>
+      <p class="why">This is the whole idea: the check happens before the action, not in a review afterwards.</p>
+      <p>Try it yourself without risking anything. This feeds ThumbGate the same input the hook would, without running the push:</p>
+      <button class="copy" type="button" data-copy="echo '{&quot;tool_name&quot;:&quot;Bash&quot;,&quot;tool_input&quot;:{&quot;command&quot;:&quot;git push --force&quot;}}' | npx thumbgate gate-check" data-cta="demo_copy_gatecheck"><span>echo '…git push --force…' | npx thumbgate gate-check</span><span class="tag">Copy</span></button>
+      <div class="nav-row"><button class="btn" type="button" data-prev>← Back</button><button class="btn primary" type="button" data-next>Next: one thumbs-down →</button></div>
+    </div>
+    <div class="terminal" aria-label="Terminal: built-in block">
+      <div class="bar"><i></i><i></i><i></i><span>PreToolUse hook · gate-check</span></div>
+<pre><span class="cmd">echo '{"tool_name":"Bash","tool_input":{"command":"git push --force"}}' | npx thumbgate gate-check</span>
+{"hookSpecificOutput":{
+  "hookEventName": "PreToolUse",
+  "permissionDecision": <span class="deny">"deny"</span>,
+  "permissionDecisionReason":
+    "<span class="deny">[GATE:force-push] Force push blocked.</span> This is destructive and irreversible.
+      Reasoning:
+      • Pattern /git\s+push\s+(--force|-f)/ matched "git push --force"
+      • Gate force-push [block] — layer: Execution, severity: critical
+      • Manual policy rule (default.json)"
+}}</pre>
+    </div>
+  </section>
+
+  <section class="chapter" id="chapter-thumbs" role="tabpanel" aria-labelledby="tab-thumbs" hidden>
+    <div>
+      <div class="time">Chapter 3 of 5</div>
+      <h2>Your agent seeds production. One thumbs-down stops the retry.</h2>
+      <p>No built-in rule knows that <code>npm run db:seed -- --prod</code> is bad in <em>your</em> project. You do. Type a thumbs-down in the agent session right after it runs.</p>
+      <p>ThumbGate <strong>holds</strong> that command at once: the agent's next try is denied until you say "go ahead" or give a thumbs-up. Other commands keep working, and the agent is told to ask you what to change.</p>
+      <p>Your thumbs-down is also saved as a lesson. After you release the hold, the next run of that command <strong>warns</strong> before it runs and shows the agent your lesson.</p>
+      <p class="why">One sentence from you. No YAML, no policy file to write.</p>
+      <div class="nav-row"><button class="btn" type="button" data-prev>← Back</button><button class="btn primary" type="button" data-next>Next: two make it a hard rule →</button></div>
+    </div>
+    <div class="terminal" aria-label="Terminal: thumbs-down hold">
+      <div class="bar"><i></i><i></i><i></i><span>Claude Code session · your-project</span></div>
+<pre><span class="dim"># you type in the session, right after the seed ran:</span>
+&gt; thumbs down: that seeded test rows into production
+ThumbGate hold: thumbs-down received. `npm run db:seed …` is refused until the person says "go ahead". Ask what to change.
+
+<span class="dim"># the agent tries again:</span>
+"permissionDecision": <span class="deny">"deny"</span>
+<span class="deny">[GATE:thumbs-down-hold]</span> The person gave a thumbs-down right after `npm run db:seed …`. That action is held until the person says to go on (a thumbs-up or "go ahead"). Do not retry it or route around it with another tool; ask what to change.
+
+<span class="dim"># after you say "go ahead", the next run warns first:</span>
+<span class="warn">[GATE:auto-npm-run-db-seed-prod-…] WARNING:</span> Auto-promoted repeated executable action: "npm run db:seed -- --prod" (1 occurrences in 30 days)</pre>
+    </div>
+  </section>
+
+  <section class="chapter" id="chapter-gate" role="tabpanel" aria-labelledby="tab-gate" hidden>
+    <div>
+      <div class="time">Chapter 4 of 5</div>
+      <h2>It happens again. Two thumbs-downs make it a hard rule.</h2>
+      <p>A second thumbs-down from you on the same command turns the warning into a <strong>block</strong>. Saying "go ahead" lifts the hold but not the rule: from then on the agent gets <code>deny</code> for that command, the same answer as a built-in gate, and it does not run.</p>
+      <p>The rule is scoped to this project, so a thumbs-down in one repo doesn't block anything in another.</p>
+      <p class="why">Free enforces your first 3 learned rules. <a href="/pricing" data-cta="demo_pricing">Pro</a> enforces all of them and adds lesson search and exports.</p>
+      <div class="nav-row"><button class="btn" type="button" data-prev>← Back</button><button class="btn primary" type="button" data-next>Next: roll it out to a team →</button></div>
+    </div>
+    <div class="terminal" aria-label="Terminal: learned rule denies">
+      <div class="bar"><i></i><i></i><i></i><span>PreToolUse hook · after the second thumbs-down</span></div>
+<pre><span class="dim"># agent proposes: npm run db:seed -- --prod</span>
+"permissionDecision": <span class="deny">"deny"</span>
+<span class="deny">[GATE:auto-npm-run-db-seed-prod-…]</span> Auto-promoted repeated executable action: "npm run db:seed -- --prod" (2 occurrences in 30 days)
+  Reasoning:
+  • Pattern /npm run db:seed -- --prod/ matched "npm run db:seed -- --prod"
+  • Gate auto-npm-run-db-seed-prod-… [block] — layer: Execution, severity: critical
+  • Auto-promoted from feedback after 2 failures
+  • History: blocked 0×, warned 1×</pre>
+    </div>
+  </section>
+
+  <section class="chapter" id="chapter-team" role="tabpanel" aria-labelledby="tab-team" hidden>
+    <div class="cards">
+      <div>
+        <div class="time">Chapter 5 of 5</div>
+        <h2>Every engineer's thumbs-down protects the whole team.</h2>
+        <p>One developer's agent is a small risk. Twenty developers' agents, each repeating the mistakes the others already hit, is a pattern. A team pilot is how you see whether ThumbGate catches those repeats in your repos.</p>
+      </div>
+      <div class="card">
+        <h3>What does one repeated mistake cost you?</h3>
+        <p>Use your own numbers. This is arithmetic, not a ThumbGate statistic.</p>
+        <div class="calc">
+          <label>Repeats a month<input id="calc-repeats" type="number" min="0" max="10000" value="4" inputmode="numeric"></label>
+          <label>Hours to clean up each<input id="calc-hours" type="number" min="0" max="1000" step="0.5" value="2" inputmode="decimal"></label>
+          <label>Loaded cost per hour ($)<input id="calc-rate" type="number" min="0" max="10000" value="120" inputmode="numeric"></label>
+        </div>
+        <p class="calc-out" aria-live="polite">Repeats cost about <strong id="calc-total">$960</strong> a month in cleanup alone.</p>
+        <p class="fine">ThumbGate can only block a command you or a built-in gate have flagged, so it prevents repeats, not first-time mistakes.</p>
+      </div>
+    </div>
+    <form class="card pilot" id="pilot-form" action="/v1/intake/pilot-request" method="POST">
+      <h3>Request a 30-day team pilot</h3>
+      <p>Tell us your team size and agent. A person reads every request and replies by email.</p>
+      <input type="hidden" name="page" value="/demo">
+      <input type="hidden" name="source" value="demo">
+      <div class="row">
+        <div><label for="pilot-name">Name</label><input id="pilot-name" name="name" autocomplete="name" required maxlength="120"></div>
+        <div><label for="pilot-email">Work email</label><input id="pilot-email" name="email" type="email" autocomplete="email" required maxlength="200"></div>
+      </div>
+      <div class="row">
+        <div><label for="pilot-size">Team size</label>
+          <select id="pilot-size" name="teamSize" required><option value="" disabled selected>Choose one</option><option>1-5</option><option>6-20</option><option>21-100</option><option>100+</option></select></div>
+        <div><label for="pilot-agent">Agent your team uses</label>
+          <select id="pilot-agent" name="agent" required><option value="" disabled selected>Choose one</option><option>Claude Code</option><option>Cursor</option><option>Codex</option><option>Gemini</option><option>Other</option></select></div>
+      </div>
+      <button class="btn primary" type="submit" id="pilot-submit">Request a 30-day team pilot</button>
+      <p class="status" id="pilot-status" role="status" aria-live="polite"></p>
+      <p class="fine">We use your details only to reply about the pilot. Just you? <a href="/install" data-cta="demo_install_solo">Install free</a> instead.</p>
+      <div class="nav-row"><button class="btn" type="button" data-prev>← Back</button><button class="btn" type="button" data-restart>Watch again</button></div>
+    </form>
+  </section>
+
+  <section class="trust" aria-label="Why teams trust it">
+    <div><strong>Checks run locally</strong>No account or cloud call is needed to allow or deny a tool call.</div>
+    <div><strong>Before, not after</strong>It answers in the agent's pre-tool hook, so a denied command never executes.</div>
+    <div><strong>Every decision explained</strong>Each warn or deny names the gate, the pattern it matched and where the rule came from.</div>
+    <div><strong>Open source</strong>MIT licensed. Read the gates on <a href="https://github.com/IgorGanapolsky/ThumbGate">GitHub</a>.</div>
+  </section>
+</main>
+<footer>ThumbGate is a pre-action check for AI coding agents: it blocks a known-bad action before it runs. <a href="/">Home</a> · <a href="/pilot">Team pilot</a> · <a href="/privacy">Privacy</a></footer>
+<script>
+(function () {
+  var ORDER = ['install', 'block', 'thumbs', 'gate', 'team'];
+  var tabs = Array.prototype.slice.call(document.querySelectorAll('.journey [role="tab"]'));
+  var current = null;
+
+  function optedOut() {
+    try { return navigator.globalPrivacyControl === true || navigator.doNotTrack === '1' || window.doNotTrack === '1'; } catch (_) { return false; }
+  }
+  function ping(event, props) {
+    if (optedOut()) return;
+    var body = JSON.stringify({ event: event, page: '/demo', source: 'demo', props: props || {} });
+    try {
+      if (navigator.sendBeacon) { navigator.sendBeacon('/v1/telemetry/ping', new Blob([body], { type: 'application/json' })); return; }
+      fetch('/v1/telemetry/ping', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: body, keepalive: true }).catch(function () {});
+    } catch (_) {}
+  }
+
+  function show(name, opts) {
+    if (ORDER.indexOf(name) === -1) name = ORDER[0];
+    if (name === current) return;
+    current = name;
+    var idx = ORDER.indexOf(name);
+    ORDER.forEach(function (key, i) {
+      var panel = document.getElementById('chapter-' + key);
+      var tab = document.getElementById('tab-' + key);
+      var active = key === name;
+      panel.hidden = !active;
+      tab.setAttribute('aria-selected', active ? 'true' : 'false');
+      tab.tabIndex = active ? 0 : -1;
+      tab.classList.toggle('done', i < idx);
+      if (active) { var bar = tab.parentNode; bar.scrollLeft = Math.max(0, tab.offsetLeft - bar.offsetLeft - 16); }
+    });
+    if (!opts || !opts.silentUrl) {
+      try {
+        var url = new URL(window.location.href);
+        url.searchParams.set('chapter', name);
+        window.history.replaceState(null, '', url.toString());
+      } catch (_) {}
+    }
+    if (opts && opts.focus) {
+      var heading = document.querySelector('#chapter-' + name + ' h2');
+      document.querySelector('.journey').scrollIntoView({ block: 'start' });
+      if (heading) { heading.tabIndex = -1; heading.focus({ preventScroll: true }); }
+    }
+    ping('demo_chapter_view', { sectionId: name, sectionLabel: 'chapter ' + (idx + 1) });
+  }
+
+  tabs.forEach(function (tab, i) {
+    tab.addEventListener('click', function () { show(tab.getAttribute('data-chapter')); });
+    tab.addEventListener('keydown', function (e) {
+      var d = e.key === 'ArrowRight' ? 1 : e.key === 'ArrowLeft' ? -1 : 0;
+      if (!d) return;
+      e.preventDefault();
+      var next = tabs[(i + d + tabs.length) % tabs.length];
+      next.focus();
+      show(next.getAttribute('data-chapter'));
+    });
+  });
+  document.querySelectorAll('[data-next]').forEach(function (b) { b.addEventListener('click', function () { show(ORDER[Math.min(ORDER.indexOf(current) + 1, ORDER.length - 1)], { focus: true }); }); });
+  document.querySelectorAll('[data-prev]').forEach(function (b) { b.addEventListener('click', function () { show(ORDER[Math.max(ORDER.indexOf(current) - 1, 0)], { focus: true }); }); });
+  document.querySelectorAll('[data-restart]').forEach(function (b) { b.addEventListener('click', function () { show(ORDER[0], { focus: true }); }); });
+  document.querySelectorAll('[data-jump]').forEach(function (a) { a.addEventListener('click', function (e) { e.preventDefault(); show(a.getAttribute('data-jump'), { focus: true }); }); });
+
+  document.querySelectorAll('[data-copy]').forEach(function (b) {
+    b.addEventListener('click', function () {
+      var text = b.getAttribute('data-copy');
+      var tag = b.querySelector('.tag');
+      var done = function () { if (tag) { tag.textContent = 'Copied'; setTimeout(function () { tag.textContent = 'Copy'; }, 1600); } };
+      try { navigator.clipboard.writeText(text).then(done, function () {}); } catch (_) {}
+      ping('cta_click', { ctaId: b.getAttribute('data-cta') || 'demo_copy', sectionId: current });
+    });
+  });
+  document.querySelectorAll('a[data-cta]').forEach(function (a) {
+    a.addEventListener('click', function () { ping('cta_click', { ctaId: a.getAttribute('data-cta'), sectionId: current }); });
+  });
+
+  // Cost-of-repeats calculator: the visitor's own numbers, nothing claimed by ThumbGate.
+  var inputs = ['calc-repeats', 'calc-hours', 'calc-rate'].map(function (id) { return document.getElementById(id); });
+  var total = document.getElementById('calc-total');
+  function recalc() {
+    var v = inputs.map(function (el) { var n = parseFloat(el.value); return isFinite(n) && n > 0 ? n : 0; });
+    total.textContent = '$' + Math.round(v[0] * v[1] * v[2]).toLocaleString('en-US');
+  }
+  inputs.forEach(function (el) { el.addEventListener('input', recalc); });
+  recalc();
+
+  // Team pilot form: same intake endpoint as /pilot.
+  var form = document.getElementById('pilot-form');
+  var status = document.getElementById('pilot-status');
+  var button = document.getElementById('pilot-submit');
+  var search = new URLSearchParams(window.location.search);
+  var source = search.get('utm_source') || search.get('source');
+  if (source) form.querySelector('input[name="source"]').value = ('demo_' + source).slice(0, 80);
+  form.addEventListener('submit', function (event) {
+    event.preventDefault();
+    button.disabled = true;
+    status.className = 'status';
+    status.textContent = 'Sending...';
+    var data = {};
+    new FormData(form).forEach(function (value, key) { data[key] = value; });
+    fetch(form.action, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) })
+      .then(function (res) { return res.json().then(function (json) { return { ok: res.ok, json: json }; }); })
+      .then(function (result) {
+        if (result.ok && result.json && result.json.ok) {
+          status.className = 'status ok';
+          status.textContent = 'Request received (' + result.json.id + '). We will email you.';
+          form.reset();
+          ping('cta_click', { ctaId: 'demo_pilot_submitted', sectionId: 'team' });
+        } else {
+          status.className = 'status err';
+          status.textContent = 'Please check: ' + ((result.json && result.json.fields) || ['the form']).join(', ') + '.';
+          button.disabled = false;
+        }
+      })
+      .catch(function () {
+        status.className = 'status err';
+        status.textContent = 'Could not send. Please try again.';
+        button.disabled = false;
+      });
+  });
+
+  show(search.get('chapter') || ORDER[0], { silentUrl: !search.get('chapter') });
+}());
+</script>
+</body>
+</html>

@@ -534,9 +534,10 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
     // 727 -> 728 (2026-11-25): scripts/cursor-self-heal.js (adds the thumbs-down loop to old Cursor installs).
     // 728 -> 729 (2026-11-25): src/api/security-headers.js, baseline security headers on every response (+1).
     // 729 -> 730 (2026-11-25): public/host-matrix.html (a1844d0) added to package.json files (+1).
-    // 730 -> 731 (2026-11-25): scripts/assurance-report.js, the assurance-report CLI command (+1).
-    manifest.fileCount <= 731,
-    `npm package should stay <= 731 files, got ${manifest.fileCount}`
+    // 730 -> 731 (2026-11-25): public/demo.html, the chaptered thumbgate.ai/demo walkthrough (PR 5271) (+1).
+    // 731 -> 732 (2026-11-25): scripts/assurance-report.js, the assurance-report CLI command (+1).
+    manifest.fileCount <= 732,
+    `npm package should stay <= 732 files, got ${manifest.fileCount}`
   );
   // Ceiling bumped from 2.75 MB → 2.85 MB (2026-04-16) to accommodate the
   // incremental review-delta demo content in public/dashboard.html landing
@@ -837,9 +838,10 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // Bumped 10.82 MB -> 10.83 MB (2026-11-25, release PR #5260): thumbs-up approval recording in scripts/send-gate.js
   // and the portable Cursor shell gate (PRs #5255, #5257); measured 10,822,233 on main and on the release branch.
   // Bumped 10.83 MB -> 10.84 MB (2026-11-25): main measured 10,832,577 after the evening merges; 10,836,397 with public/host-matrix.html.
-  // Bumped 10.84 MB -> 10.86 MB (2026-11-25): scripts/assurance-report.js, the assurance-report CLI command, plus its CLI wiring; measured 10,850,153.
-  manifest.unpackedSize <= 10_860_000,
-  `npm package should stay <= 10.86 MB unpacked, got ${manifest.unpackedSize}`
+  // Bumped 10.84 MB -> 10.87 MB (2026-11-25, PR 5271): public/demo.html (28 KB), the chaptered /demo walkthrough.
+  // Bumped 10.87 MB -> 10.89 MB (2026-11-25): scripts/assurance-report.js, the assurance-report CLI command (~14 KB with its CLI wiring).
+  manifest.unpackedSize <= 10_890_000,
+  `npm package should stay <= 10.89 MB unpacked, got ${manifest.unpackedSize}`
 );
 
   for (const file of requiredRuntimeFiles) {
