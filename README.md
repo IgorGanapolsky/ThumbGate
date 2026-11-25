@@ -170,7 +170,10 @@ flowchart LR
 ⛔ secret-exfiltration → hard-block (default)
 ⛔ self-protect-kill   → hard-block (default)
 ⛔ self-protect-env    → hard-block (default)
-⚠️ force-push          → warn; hard-block under strict
+⛔ force-push          → hard-block (default)
+⛔ git-reset-hard      → hard-block (default)
+⛔ git-clean-force     → hard-block (default)
+⛔ rm-rf-home-or-root  → hard-block (default)
 ⚠️ protected-branch    → warn; hard-block under strict
 ⚠️ unresolved-threads  → warn; hard-block under strict
 ⚠️ package-lock-reset  → warn; hard-block under strict
