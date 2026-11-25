@@ -35,10 +35,10 @@ const SCOPE_KEYWORDS = [
 ];
 
 // What init really writes (verified 2026-11-25 in a clean HOME and repo):
-// hooks go machine-wide to ~/.claude/settings.local.json, lessons stay per repo
+// hooks go machine-wide to ~/.claude/settings.json, lessons stay per repo
 // in <repo>/.thumbgate/. Earlier copy promised a shared cross-repo store and a
 // per-project hooks file, which init never wrote.
-const HOOKS_PATH_PHRASE = /~\/\.claude\/settings\.local\.json/;
+const HOOKS_PATH_PHRASE = /~\/\.claude\/settings\.json/;
 const LESSON_PATH_PHRASE = /<repo>\/\.thumbgate\//;
 const FALSE_SHARED_STORE_PHRASE = /same machine-local feedback store|one shared dashboard across every repo|automatically flags the same mistake in/i;
 
@@ -80,7 +80,7 @@ describe('install-scope documentation: public/guide.html', () => {
   test('renders the scope table with machine-wide hooks and per-project lessons', () => {
     assert.match(GUIDE_HTML, /<table[\s\S]+?Machine-wide[\s\S]+?Per-project[\s\S]+?<\/table>/i,
       'guide.html must show a table with both scopes');
-    assert.match(GUIDE_HTML, /~\/\.claude\/settings\.local\.json/);
+    assert.match(GUIDE_HTML, /~\/\.claude\/settings\.json/);
     assert.doesNotMatch(GUIDE_HTML, FALSE_SHARED_STORE_PHRASE, 'guide.html must not promise a shared cross-repo lesson store');
   });
 

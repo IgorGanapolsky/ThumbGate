@@ -1,9 +1,9 @@
 'use strict';
 
 // `init --project` must write Claude Code hooks into the repo, and plain `init`
-// must keep writing them machine-wide. Before 2026-11-25 init ignored --project
-// and always wrote ~/.claude/settings.local.json, while the README promised
-// per-project hooks.
+// must write them machine-wide to ~/.claude/settings.json. Before 2026-11-25 init
+// ignored --project and always wrote ~/.claude/settings.local.json, a file Claude
+// Code does not read, so the hooks never ran.
 
 const fs = require('node:fs');
 const os = require('node:os');
@@ -53,12 +53,37 @@ test('init --project writes Claude Code hooks to <repo>/.claude/settings.json on
   }
 });
 
-test('plain init keeps writing Claude Code hooks to ~/.claude/settings.local.json', () => {
+test('plain init writes Claude Code hooks to ~/.claude/settings.json, the file Claude Code reads', () => {
   const box = sandbox();
   try {
     runInit(box, []);
-    assert.equal(hasPreToolUse(path.join(box.home, '.claude', 'settings.local.json')), true);
+    assert.equal(hasPreToolUse(path.join(box.home, '.claude', 'settings.json')), true);
+    assert.equal(hasPreToolUse(path.join(box.home, '.claude', 'settings.local.json')), false);
     assert.equal(hasPreToolUse(path.join(box.repo, '.claude', 'settings.json')), false);
+  } finally {
+    fs.rmSync(box.root, { recursive: true, force: true });
+  }
+});
+
+test('re-running init moves ThumbGate hooks out of the unread ~/.claude/settings.local.json and keeps other hooks', () => {
+  const box = sandbox();
+  try {
+    const legacy = path.join(box.home, '.claude', 'settings.local.json');
+    fs.writeFileSync(legacy, JSON.stringify({
+      permissions: { allow: ['Bash(ls)'] },
+      hooks: {
+        PreToolUse: [
+          { matcher: '.*', hooks: [{ type: 'command', command: 'node "/old/thumbgate/bin/cli.js" gate-check' }] },
+          { matcher: 'Bash', hooks: [{ type: 'command', command: 'my-own-hook.sh' }] },
+        ],
+      },
+    }));
+    runInit(box, []);
+    const after = JSON.parse(fs.readFileSync(legacy, 'utf8'));
+    assert.deepEqual(after.permissions, { allow: ['Bash(ls)'] });
+    assert.equal(after.hooks.PreToolUse.length, 1);
+    assert.equal(after.hooks.PreToolUse[0].hooks[0].command, 'my-own-hook.sh');
+    assert.equal(hasPreToolUse(path.join(box.home, '.claude', 'settings.json')), true);
   } finally {
     fs.rmSync(box.root, { recursive: true, force: true });
   }
