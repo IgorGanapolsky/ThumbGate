@@ -40,13 +40,18 @@ function writeState(file, state) {
 }
 
 /** Why a background update should not start, or null when it may. */
-function skipReason({ skew, env = process.env, now = Date.now(), file }) {
+function skipReason({ skew, env = process.env, now = Date.now(), file, force = false }) {
   if (!skew || !skew.skewed) return 'not-skewed';
   if (env.THUMBGATE_NO_AUTO_UPDATE === '1') return 'opted-out';
   if (env.CI === 'true' || env.CI === '1') return 'ci';
   if (!VERSION_RE.test(String(skew.currentVersion || ''))) return 'bad-version';
   if (skew.runtimeVersion && !isOlder(skew.runtimeVersion, skew.currentVersion)) return 'not-older';
   const last = readState(file);
+  // `init` asks for a refresh on purpose, so it ignores the 24h wait (never a refresh still running).
+  if (force && !refreshInProgress(last, now)) return null;
+  // The 24h wait guards against retrying a failure. A finished, successful attempt to an older target
+  // must not hold back a newer release the same day.
+  if (last.ok === true && VERSION_RE.test(String(last.to || '')) && isOlder(last.to, skew.currentVersion)) return null;
   if (now - (Number(last.startedAt) || 0) < RETRY_INTERVAL_MS) return 'recently-tried';
   return null;
 }
@@ -57,11 +62,11 @@ function skipReason({ skew, env = process.env, now = Date.now(), file }) {
  * the node test runner.
  * @returns {{ started: boolean, reason?: string }}
  */
-function scheduleRuntimeAutoUpdate({ skew, env = process.env, now = Date.now(), dir, spawnFn, nodePath = process.execPath } = {}) {
+function scheduleRuntimeAutoUpdate({ skew, env = process.env, now = Date.now(), dir, spawnFn, nodePath = process.execPath, force = false } = {}) {
   try {
     const target = dir || runtimeDir(env);
     const file = path.join(path.dirname(target), STATE_FILE);
-    const reason = skipReason({ skew, env, now, file });
+    const reason = skipReason({ skew, env, now, file, force });
     if (reason) return { started: false, reason };
     if (!spawnFn && (env.NODE_TEST_CONTEXT || process.env.NODE_TEST_CONTEXT)) return { started: false, reason: 'test' };
     // Written before the spawn, so it doubles as the lock against parallel MCP servers.
@@ -77,6 +82,27 @@ function scheduleRuntimeAutoUpdate({ skew, env = process.env, now = Date.now(), 
     if (child && typeof child.on === 'function') child.on('error', () => {});
     if (child && typeof child.unref === 'function') child.unref();
     return { started: true };
+  } catch {
+    return { started: false, reason: 'spawn-failed' };
+  }
+}
+
+/**
+ * `thumbgate init` on a newer package than the cached runtime: refresh the runtime to the running
+ * package's version (detached, so init stays fast). A missing runtime is left to the shim's first run.
+ * @returns {{ started: boolean, reason?: string }}
+ */
+function refreshRuntimeOnInit({ packageVersion, env = process.env, now = Date.now(), dir, spawnFn, nodePath } = {}) {
+  try {
+    const target = dir || runtimeDir(env);
+    const runtimeVersion = readRuntimeVersion(target);
+    if (!runtimeVersion) return { started: false, reason: 'no-runtime' };
+    if (!VERSION_RE.test(String(packageVersion || ''))) return { started: false, reason: 'bad-version' };
+    if (!isOlder(runtimeVersion, packageVersion)) return { started: false, reason: 'current' };
+    return scheduleRuntimeAutoUpdate({
+      skew: { skewed: true, runtimeVersion, currentVersion: packageVersion, source: 'init' },
+      env, now, dir: target, spawnFn, nodePath, force: true,
+    });
   } catch {
     return { started: false, reason: 'spawn-failed' };
   }
@@ -233,6 +259,7 @@ module.exports = {
   refreshInProgress,
   scheduleRuntimeAutoUpdate,
   scheduleLatestCheck,
+  refreshRuntimeOnInit,
   checkLatest,
   runningFromRuntime,
   refreshRuntime,

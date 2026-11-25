@@ -3,6 +3,16 @@
 
 'use strict';
 
+// Every hook (PreToolUse runs before each tool call) starts a fresh Node process, and compiling
+// this CLI plus the gates engine is a large part of that start. Node 22.1+ can keep the compiled
+// code on disk between runs. Older Node has no such API and simply skips this.
+try {
+  const nodeModule = require('module');
+  if (typeof nodeModule.enableCompileCache === 'function' && process.env.THUMBGATE_COMPILE_CACHE !== '0') {
+    nodeModule.enableCompileCache();
+  }
+} catch (_) { /* best-effort speed-up only */ }
+
 const fs = require('fs');
 const os = require('os');
 const path = require('path');

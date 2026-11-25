@@ -290,13 +290,31 @@ function recordAuditEvent(params = {}) {
     });
   }
   fs.appendFileSync(logPath, `${line}\n`);
-  try {
-    const { trainAndPersistInterventionPolicy } = require('./intervention-policy');
-    trainAndPersistInterventionPolicy(path.dirname(logPath));
-  } catch {
-    // Keep audit recording resilient even if the learned policy refresh fails.
+  if (interventionPolicyStale(path.dirname(logPath))) {
+    try {
+      const { trainAndPersistInterventionPolicy } = require('./intervention-policy');
+      trainAndPersistInterventionPolicy(path.dirname(logPath));
+    } catch {
+      // Keep audit recording resilient even if the learned policy refresh fails.
+    }
   }
   return record;
+}
+
+// Retraining reads up to 64 MiB of history. It ran on every audited tool call, inside the
+// PreToolUse hook, so a long history slowed every tool call. One new row barely moves the model,
+// so it is refreshed at most once per window (default 5 minutes) and right away when missing.
+const DEFAULT_POLICY_RETRAIN_MS = 5 * 60 * 1000;
+function interventionPolicyStale(feedbackDir, now = Date.now()) {
+  const configured = Number(process.env.THUMBGATE_POLICY_RETRAIN_MS);
+  const windowMs = Number.isFinite(configured) && configured >= 0 ? configured : DEFAULT_POLICY_RETRAIN_MS;
+  if (windowMs === 0) return true;
+  try {
+    const stat = fs.statSync(path.join(resolveFeedbackDir({ feedbackDir }), 'intervention-policy.json'));
+    return now - stat.mtimeMs >= windowMs;
+  } catch {
+    return true;
+  }
 }
 
 const KNOWN_HOSTS = new Set(['claude-code', 'cursor', 'codex', 'gemini-cli']);
@@ -606,6 +624,7 @@ function tuneCacheThreshold(logPath) {
 // ---------------------------------------------------------------------------
 
 module.exports = {
+  interventionPolicyStale,
   recordAuditEvent,
   auditToFeedback,
   readAuditLog,
