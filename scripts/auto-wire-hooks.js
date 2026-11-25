@@ -313,7 +313,7 @@ function migrateLegacyLocalClaudeHooks(legacyPath, hookDefs, dryRun) {
       const entryHooks = Array.isArray(entry && entry.hooks) ? entry.hooks : [];
       const isThumbGate = entryHooks.some((hook) => {
         const cmd = hook && typeof hook.command === 'string' ? hook.command : '';
-        return cmd === command || pattern.test(cmd);
+        return cmd === command || pattern.test(cmd) || /thumbgate/i.test(cmd);
       });
       return !isThumbGate;
     });

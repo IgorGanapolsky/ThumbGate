@@ -3455,6 +3455,11 @@ function serve() {
     const { repairCodexHooks } = require(path.join(PKG_ROOT, 'scripts', 'codex-self-heal'));
     repairCodexHooks();
   } catch (_) { /* self-heal is best-effort */ }
+  try {
+    // Moves hooks that older inits left in the unread ~/.claude/settings.local.json.
+    const { repairUnreadClaudeHooks } = require(path.join(PKG_ROOT, 'scripts', 'claude-self-heal'));
+    repairUnreadClaudeHooks();
+  } catch (_) { /* self-heal is best-effort */ }
   // Start MCP server over stdio
   const mcpServer = path.join(PKG_ROOT, 'adapters', 'mcp', 'server-stdio.js');
   const { startStdioServer } = require(mcpServer);
