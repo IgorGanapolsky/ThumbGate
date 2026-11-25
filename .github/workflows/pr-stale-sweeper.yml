@@ -2,8 +2,9 @@ name: Stale PR Steward
 
 on:
   schedule:
-    # Every 4 hours: ThumbGate is public, so these minutes are free.
-    - cron: '17 */4 * * *'
+    # Every hour: ThumbGate is public, so these minutes are free. Hourly keeps
+    # every open PR (needs-igor ones too) within an hour of main.
+    - cron: '17 * * * *'
   workflow_dispatch:
     inputs:
       dry_run:
@@ -52,7 +53,7 @@ jobs:
 
       - name: Re-run the ship gate on open routine PRs
         # Resolving a review thread fires no Actions event, so a routine PR the
-        # gate left waiting on an open thread is re-checked here every 4 hours.
+        # gate left waiting on an open thread is re-checked here every hour.
         if: github.event.inputs.dry_run != 'true'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
