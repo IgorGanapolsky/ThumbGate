@@ -322,6 +322,32 @@ function writeJsonlRecords(filePath, rows = []) {
   }
 }
 
+// A key that came from Stripe or a marketplace purchase, or that names a Stripe customer.
+function keyStoreHasPaidKeys(store = loadKeyStore()) {
+  return Object.values((store && store.keys) || {}).some((key) => key && (
+    /^cus_/.test(String(key.customerId || '')) || /stripe|marketplace/.test(String(key.source || ''))
+  ));
+}
+
+// True when the key store is absent (no keys yet) or parses with a keys object. loadKeyStore() turns
+// a read or parse failure into an empty store, which must not count as proof that nothing was sold.
+function keyStoreReadable() {
+  try {
+    const target = resolveKeyStoreReadPath();
+    if (!fs.existsSync(target)) return true;
+    const parsed = JSON.parse(fs.readFileSync(target, 'utf-8'));
+    return Boolean(parsed && parsed.keys && typeof parsed.keys === 'object' && !Array.isArray(parsed.keys));
+  } catch {
+    return false;
+  }
+}
+
+// Any confirmed payment in the funnel ledger (stage 'paid'), e.g. checkout_paid_confirmed.
+// Reads the same files as loadFunnelLedger(), so legacy merging is honored.
+function funnelHasPaidEvents() {
+  return loadFunnelLedger().some((row) => row && row.stage === 'paid');
+}
+
 function buildSourceWarning(code, message) {
   return { code, message };
 }
@@ -423,10 +449,17 @@ function buildBillingSourceDiagnostics(feedbackDir) {
       'revenue_ledger_legacy_fallback',
       'Revenue events are loading only from a legacy feedback directory.'
     ));
+  } else if (revenueLedger.activeMode === 'missing' && keyStoreReadable() && !keyStoreHasPaidKeys() && !funnelHasPaidEvents()) {
+    // The first paid event creates the ledger file. With no paid key and no paid funnel event (service
+    // orders get no key), a missing ledger means nothing has been sold yet: a fact, not a broken source.
+    warnings.push(buildSourceWarning(
+      'revenue_ledger_empty',
+      'No revenue events recorded yet; the revenue ledger is created by the first paid checkout.'
+    ));
   } else if (revenueLedger.activeMode === 'missing') {
     warnings.push(buildSourceWarning(
       'revenue_ledger_missing',
-      'Revenue events are missing from both the active and legacy feedback directories.'
+      'Revenue events are missing from both the active and legacy feedback directories, but paid activity exists (a paid key or paid funnel event) or the key store could not be read.'
     ));
   }
 
@@ -5222,7 +5255,7 @@ async function refreshCheckoutPriceStatus() {
 
 module.exports = {
   configuredCheckoutPrices, refreshCheckoutPriceStatus,
-  getStripeClient, classifyRevenueRecord, summarizeExternalRevenue, buildBillingSourceDiagnostics,
+  getStripeClient, classifyRevenueRecord, summarizeExternalRevenue, buildBillingSourceDiagnostics, keyStoreHasPaidKeys, funnelHasPaidEvents,
   withStripeReadSlot, getBillingAnalyticsReadPaths,
   _mergeRevenueEvents: mergeRevenueEvents,
   _buildStripeReconciledRevenueEvent: buildStripeReconciledRevenueEvent,
