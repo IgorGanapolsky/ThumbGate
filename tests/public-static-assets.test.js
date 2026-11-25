@@ -176,7 +176,6 @@ test('homepage and pricing surfaces expose canonical and LLM context links', asy
     ['/', `${origin}/`, `${origin}/llm-context.md`],
     ['/pricing', `${origin}/pricing`, `${origin}/llm-context.md`],
     ['/pro', `${origin}/pro`, `${origin}/llm-context.md`],
-    ['/diagnostic', `${origin}/diagnostic`, `${origin}/llm-context.md`],
     ['/partner-intake', `${origin}/partner-intake`, `${origin}/llm-context.md`],
   ];
 
@@ -205,36 +204,17 @@ test('GET /partner-intake serves a clean form-only partner handoff', async () =>
   assert.doesNotMatch(html, /\$\s*\d|Stripe|checkout|payment|data-revenue-cta/i);
 });
 
-test('GET /diagnostic serves the managed workflow gate checkout and fit page', async () => {
-  const res = await fetch(`${origin}/diagnostic`);
-  assert.equal(res.status, 200);
-  assert.match(res.headers.get('content-type') || '', /text\/html/);
-  const html = await res.text();
-  assert.match(html, /Team Pilot/);
-  assert.match(html, /Request a team pilot/);
-  assert.match(html, /action="\/v1\/intake\/workflow-sprint"/);
-  assert.match(html, /data-diagnostic-intake-form/);
-  assert.match(html, /diagnostic_page_submit/);
-  // Request-only pilot: no price, no checkout form, no live payment path.
-  assert.doesNotMatch(html, /\$499|\$1500|public Setup Sprint/i);
-  // Any listed price, not only the retired ones: the offer (first screen and Service JSON-LD) carries none.
-  // The cost-comparison table further down quotes other options' prices and is not part of the offer.
-  const offerScreen = html.slice(html.indexOf('<main>'), html.indexOf('data-oceans-pain'));
-  assert.ok(offerScreen.length > 0, 'offer screen found');
-  assert.doesNotMatch(offerScreen.replace(/<script[\s\S]*?<\/script\s*>/g, ' '), /[$€£]\s?\d|\d\s?(?:USD|dollars)\b/i);
-  assert.doesNotMatch(html, /"price"\s*:/);
-  assert.doesNotMatch(html, /__WORKFLOW_SPRINT_PRICE_DOLLARS__|__SPRINT_DIAGNOSTIC_PRICE_DOLLARS__/);
-  assert.doesNotMatch(html, /action="\/go\/diagnostic-pay"/);
-  assert.doesNotMatch(html, /name="customer_email"/);
-  assert.match(html, /\/v1\/telemetry\/ping/);
-  assert.doesNotMatch(html, /\/v1\/telemetry\/event/);
-  assert.match(html, /const inboundSource = search\.get\('utm_source'\) \|\| search\.get\('source'\)/);
-  assert.match(html, /sourceInput\.value = inboundSource\.trim\(\)/);
-  assert.doesNotMatch(html, /data-diagnostic-pay-form|paidForm/);
-  assert.doesNotMatch(html, /No cold payment link/);
+test('GET /diagnostic returns an explicit retirement response with current pricing', async () => {
+  const res = await fetch(`${origin}/diagnostic`, { redirect: 'manual' });
+  assert.equal(res.status, 410);
+  assert.match(res.headers.get('content-type') || '', /application\/json/);
+  assert.equal(res.headers.get('cache-control'), 'no-store');
+  assert.equal(res.headers.get('link'), '</pricing>; rel="alternate"');
+  assert.equal(res.headers.get('location'), null);
+  assert.deepEqual(await res.json(), { error: 'This offer has been retired.', pricingUrl: '/pricing' });
 });
 
-test('workflow diagnostic aliases serve the focused diagnostic page', async () => {
+test('workflow diagnostic aliases preserve the retirement response', async () => {
   const paths = [
     '/diagnostic.html',
     '/workflow-diagnostic',
@@ -251,12 +231,11 @@ test('workflow diagnostic aliases serve the focused diagnostic page', async () =
 
   for (const pathname of paths) {
     const res = await fetch(`${origin}${pathname}`, { redirect: 'manual' });
-    assert.equal(res.status, 200, `${pathname} should render diagnostic page`);
-    assert.match(res.headers.get('content-type') || '', /text\/html/);
-    const html = await res.text();
-    assert.match(html, /Team Pilot/);
-    assert.match(html, /Request a team pilot/);
-    assert.match(html, /<link rel="canonical" href="[^"]+\/diagnostic"/);
+    assert.equal(res.status, 410, `${pathname} should be retired`);
+    assert.match(res.headers.get('content-type') || '', /application\/json/);
+    assert.equal(res.headers.get('location'), null);
+    assert.equal(res.headers.get('cache-control'), 'no-store');
+    assert.equal((await res.json()).pricingUrl, '/pricing');
   }
 });
 
@@ -278,16 +257,18 @@ test('GET /install serves the verified distribution and buyer path page', async 
     assert.match(html, /id="hermes"/);
     assert.match(html, /grok mcp add thumbgate/);
     assert.match(html, /hermes-gate/);
-    assert.match(html, /\/diagnostic\?utm_source=install_page/);
+    assert.match(html, /\/pilot\?utm_source=install_page/);
+    assert.doesNotMatch(html, /href="\/diagnostic/, "no links to the retired /diagnostic page");
     assert.match(html, /Setup Sprint/);
   }
 });
 
-test('GET /sitemap.xml includes /diagnostic and /workflow-hardening-sprint at priority 0.9', async () => {
+test('GET /sitemap.xml lists current pricing and excludes retired service pages', async () => {
   const res = await fetch(`${origin}/sitemap.xml`);
   assert.equal(res.status, 200);
   const xml = await res.text();
-  for (const route of ['/diagnostic', '/workflow-hardening-sprint']) {
+  assert.doesNotMatch(xml, /<loc>[^<]*\/(?:diagnostic|workflow-hardening-sprint)<\/loc>/);
+  for (const route of ['/pricing']) {
     assert.match(xml, new RegExp(`<loc>[^<]*${route}<\\/loc>`), `sitemap must list ${route}`);
     const entry = xml.match(new RegExp(`<url>\\s*<loc>[^<]*${route}<\\/loc>[\\s\\S]*?<\\/url>`));
     assert.ok(entry, `${route} <url> block must exist`);
@@ -417,8 +398,8 @@ test('public marketing directory aliases redirect to canonical pages', async () 
     ['/guides', '/learn'],
     ['/guides/', '/learn'],
     ['/guides.html', '/learn'],
-    ['/services', '/#workflow-sprint-intake'],
-    ['/services.html', '/#workflow-sprint-intake'],
+    ['/services', '/pricing'],
+    ['/services.html', '/pricing'],
   ];
 
   for (const [pathname, expectedLocation] of cases) {

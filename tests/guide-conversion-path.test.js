@@ -17,7 +17,7 @@ test('guide keeps proof-backed conversion links close to the install path', () =
 test('guide explains when to use Pro versus a request-only team pilot', () => {
   assert.match(GUIDE_HTML, /<strong>Team pilot:<\/strong> request a 30-day pilot/);
   assert.match(GUIDE_HTML, /one workflow, one owner, and one repeated failure/i);
-  assert.match(GUIDE_HTML, /<a href="\/diagnostic\?utm_source=guide[^"]*" class="cta">Request a team pilot<\/a>/);
+  assert.match(GUIDE_HTML, /<a href="\/pilot\?utm_source=guide[^"]*" class="cta">Request a team pilot<\/a>/);
   assert.doesNotMatch(GUIDE_HTML, /\$499|Setup Sprint/, 'the retired $499 Setup Sprint is not offered');
   // Single-offer experiment (docs/COMMERCIAL_TRUTH.md): the $1,500 sprint is not promoted publicly.
   assert.doesNotMatch(GUIDE_HTML, /\$1,?500/);
