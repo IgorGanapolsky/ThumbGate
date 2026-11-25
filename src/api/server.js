@@ -6867,6 +6867,13 @@ function renderSigninPage(nextPath, ssoError) {
 
 const DEFAULT_HOSTED_OWNER_EMAILS =['iganapolsky@gmail.com', 'igor.ganapolsky@gmail.com', 'igor@thumbgate.ai'];
 
+function isHostedOwnerEmail(address) {
+  const value = String(address || '').trim().toLowerCase();
+  if (!value) return false;
+  const { getOwnerEmails } = require('../../scripts/bot-detection');
+  return [...DEFAULT_HOSTED_OWNER_EMAILS, ...getOwnerEmails()].some((owner) => String(owner).trim().toLowerCase() === value);
+}
+
 function ensureHostedActivationsReady(baseFeedbackDir, extraOpts = {}) {
   const { backfillHostedAccountActivations } = require('../../scripts/dashboard');
   const { getOwnerEmails } = require('../../scripts/bot-detection');
@@ -7018,11 +7025,16 @@ async function handleFirstBlockActivationRoute(req, res, expectedApiKey, expecte
         clientType: 'cli',
         installId: trustedInstallId,
         firstBlockAt: recorded.firstBlockAt,
-        // Keep the CLI's own classification; an admin or operator key is the owner by definition.
-        visitorType: (isAdmin || isOperator)
+        // Keep the CLI's own classification; an admin or operator key, or a key issued to an owner address, is the owner.
+        visitorType: (isAdmin || isOperator || (validKey && isHostedOwnerEmail(validKey.customerEmail)))
           ? 'owner'
           : (['real_user', 'owner', 'ci'].includes(body?.visitorType) ? body.visitorType : 'real_user'),
         ...(typeof body?.gateId === 'string' ? { gateId: body.gateId.slice(0, 120) } : {}),
+        // Same fields the anonymous ping carries, so keyed installs keep version, platform and timing.
+        ...(typeof body?.pkgVersion === 'string' ? { pkgVersion: body.pkgVersion.slice(0, 40) } : {}),
+        ...(typeof body?.platform === 'string' ? { platform: body.platform.slice(0, 40) } : {}),
+        ...(Number.isFinite(body?.minutesSinceInstall) && body.minutesSinceInstall >= 0
+          ? { minutesSinceInstall: body.minutesSinceInstall } : {}),
       }, req.headers);
     } catch { /* telemetry best-effort */ }
   }
@@ -10348,6 +10360,20 @@ a{color:#8b9}</style></head><body><form class="card" method="post" action="/oaut
       } else {
         checks.buildMetadata = { ok: false, error: 'missing_buildSha', severity: 'degraded' };
         degraded = true;
+      }
+
+      // Check 4: the Stripe price ids this build will put in checkout metadata, and whether each is active.
+      // TELEMETRY-DEGRADED: an archived id never blocks checkout (sessions carry inline price_data), but it must be visible.
+      {
+        const priceStatus = require('../../scripts/checkout-price-guard').getCheckoutPriceStatus();
+        if (!priceStatus) {
+          checks.checkoutPrices = { ok: true, status: 'unchecked' };
+        } else if (priceStatus.ok) {
+          checks.checkoutPrices = { ok: true, status: 'all_active', checkedAt: priceStatus.checkedAt, prices: priceStatus.prices };
+        } else {
+          checks.checkoutPrices = { ok: false, status: 'inactive_or_missing', severity: 'degraded', checkedAt: priceStatus.checkedAt, prices: priceStatus.prices };
+          degraded = true;
+        }
       }
 
       const statusCode = failing ? 503 : 200;
@@ -14246,6 +14272,14 @@ function startServer({ port, host } = {}) {
   }
   const server = createApiServer();
   registerGracefulShutdown(server);
+  // Verify the configured Stripe price ids once now and every 10 minutes; /health reports the answer.
+  if (process.env.STRIPE_SECRET_KEY && process.env.NODE_ENV !== 'test') {
+    const { refreshCheckoutPriceStatus } = require('../../scripts/billing');
+    const refresh = () => { refreshCheckoutPriceStatus().catch(() => {}); };
+    refresh();
+    const timer = setInterval(refresh, 10 * 60 * 1000);
+    if (typeof timer.unref === 'function') timer.unref();
+  }
   return new Promise((resolve) => {
     server.listen(listenPort, listenHost, () => {
       const address = server.address();

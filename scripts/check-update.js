@@ -198,7 +198,8 @@ async function checkUpdate(options = {}) {
 }
 
 // Hook runtime version skew: hooks run the cached ~/.thumbgate/runtime, which never
-// auto-upgrades by design. Detect and report only; never install.
+// auto-upgrades on its own. This module detects and reports; the MCP server starts the background
+// refresh in scripts/runtime-auto-update.js.
 // See docs/decisions/2026-11-24-revenue-funnel-activation.md (loop 2).
 
 const SKEW_REPORT_INTERVAL_MS = 24 * 60 * 60 * 1000;
@@ -234,13 +235,60 @@ function isOlder(a, b) {
   return false;
 }
 
-/** @returns {{ skewed: boolean, runtimeVersion: string|null, currentVersion: string }} */
-function detectSkew({ currentVersion, dir } = {}) {
-  const runtimeVersion = readRuntimeVersion(dir);
-  return { skewed: Boolean(runtimeVersion && isOlder(runtimeVersion, currentVersion)), runtimeVersion, currentVersion };
+// Before 1.40.15 a first `thumbgate init` wired hooks as `npm exec ... thumbgate@<init version>`
+// (the hook table was built before the shim existed), and `npm exec` never fills the runtime folder.
+// Those hooks run their init version forever, so read the pin from the hook commands themselves.
+const PINNED_HOOK_RE = /thumbgate@(\d+\.\d+\.\d+)\b/g;
+
+function claudeSettingsFiles(env = process.env) {
+  const home = env.HOME || env.USERPROFILE || os.homedir();
+  return [path.join(home, '.claude', 'settings.local.json'), path.join(home, '.claude', 'settings.json')];
 }
 
-function buildSkewNotice(runtimeVersion, currentVersion) {
+/** Oldest `thumbgate@x.y.z` pinned in a ThumbGate hook command, or null. Never throws. */
+function readPinnedHookVersion(files = claudeSettingsFiles()) {
+  let oldest = null;
+  for (const file of files) {
+    let hooks;
+    try { hooks = JSON.parse(fs.readFileSync(file, 'utf8')).hooks; } catch { continue; }
+    if (!hooks || typeof hooks !== 'object') continue;
+    for (const entries of Object.values(hooks)) {
+      for (const entry of Array.isArray(entries) ? entries : []) {
+        for (const hook of (entry && Array.isArray(entry.hooks)) ? entry.hooks : []) {
+          const command = hook && typeof hook.command === 'string' ? hook.command : '';
+          for (const match of command.matchAll(PINNED_HOOK_RE)) {
+            if (!oldest || isOlder(match[1], oldest)) oldest = match[1];
+          }
+        }
+      }
+    }
+  }
+  return oldest;
+}
+
+/**
+ * The cached runtime wins when it exists (every hook command tries it first). Without one,
+ * hooks pinned to an old version are the skew. `settingsFiles: []` skips the hook scan.
+ * @returns {{ skewed: boolean, runtimeVersion: string|null, currentVersion: string, source?: string }}
+ */
+function detectSkew({ currentVersion, dir, settingsFiles } = {}) {
+  const runtimeVersion = readRuntimeVersion(dir);
+  if (runtimeVersion) {
+    return { skewed: isOlder(runtimeVersion, currentVersion), runtimeVersion, currentVersion };
+  }
+  const pinned = readPinnedHookVersion(settingsFiles || claudeSettingsFiles());
+  if (pinned && isOlder(pinned, currentVersion)) {
+    return { skewed: true, runtimeVersion: pinned, currentVersion, source: 'pinned-hooks' };
+  }
+  return { skewed: false, runtimeVersion: null, currentVersion };
+}
+
+function buildSkewNotice(runtimeVersion, currentVersion, { updating = false } = {}) {
+  if (updating) {
+    return `ThumbGate's hooks on this machine run v${runtimeVersion}; they are being updated to v${currentVersion} in the background `
+      + `and pick it up on the next hook run. If the person asks about ThumbGate or its gates and the hooks still look old, `
+      + `\`${UPDATE_COMMAND}\` updates them by hand.`;
+  }
   return `ThumbGate's hooks on this machine run v${runtimeVersion}, but v${currentVersion} is installed for the MCP server, `
     + `so fixes since v${runtimeVersion} are not active in the hooks. If the person asks about ThumbGate or its gates, `
     + `tell them once that \`${UPDATE_COMMAND}\` updates the hooks.`;
@@ -265,7 +313,11 @@ function reportSkewOnce({ skew, env = process.env, now = Date.now(), stateDir, t
     if (now - last < SKEW_REPORT_INTERVAL_MS) return false;
     fs.mkdirSync(dir, { recursive: true });
     fs.writeFileSync(file, JSON.stringify({ at: now, runtimeVersion: skew.runtimeVersion, currentVersion: skew.currentVersion }));
-    send('runtime_version_skew', { runtimeVersion: skew.runtimeVersion, currentVersion: skew.currentVersion });
+    send('runtime_version_skew', {
+      runtimeVersion: skew.runtimeVersion,
+      currentVersion: skew.currentVersion,
+      ...(skew.source ? { source: skew.source } : {}),
+    });
     return true;
   } catch {
     return false;
@@ -282,7 +334,13 @@ function npmRunner(platform = process.platform, nodePath = process.execPath) {
 // Hooks run the cached runtime first (published-cli.js), so self-update refreshes it too. Never throws.
 function refreshHookRuntime(options = {}) {
   const dir = options.dir || runtimeDir();
-  if (!fs.existsSync(dir)) return { refreshed: false, reason: 'no-runtime' };
+  // Pinned hook commands (see readPinnedHookVersion) run the runtime folder first, so filling it
+  // is what moves them off their pin; create it when such hooks exist.
+  if (!fs.existsSync(dir)) {
+    const pinned = options.pinnedVersion !== undefined ? options.pinnedVersion : readPinnedHookVersion(options.settingsFiles);
+    if (!pinned) return { refreshed: false, reason: 'no-runtime' };
+    try { fs.mkdirSync(dir, { recursive: true }); } catch { return { refreshed: false, reason: 'no-runtime' }; }
+  }
   const before = readRuntimeVersion(dir);
   const run = options.run || npmRunner();
   try {
@@ -305,22 +363,26 @@ function selfUpdate() {
     return false;
   }
 
+  // Hooks run the cached runtime, not the global install, so update it first: a global install
+  // that fails for permissions (common without sudo) must not leave the hooks on the old build.
+  const runtime = refreshHookRuntime();
+  if (runtime.reason === 'install-failed') {
+    console.error('❌ Self-update incomplete: hooks still run the old runtime.');
+    return false;
+  }
   try {
     console.log('Running: npm install -g thumbgate@latest');
     execSync('npm install -g thumbgate@latest', { stdio: 'inherit' });
-    // Hooks run from the cached runtime, not the global install, so update it too.
-    const runtime = refreshHookRuntime();
-    if (runtime.reason === 'install-failed') {
-      console.error('❌ Self-update incomplete: hooks still run the old runtime.');
+  } catch (err) {
+    if (!runtime.refreshed) {
+      console.error(`❌ Self-update failed: ${err.message}`);
+      console.log('Please run: sudo npm install -g thumbgate@latest');
       return false;
     }
-    console.log('✨ Self-update complete! Run `thumbgate version` to verify.');
-    return true;
-  } catch (err) {
-    console.error(`❌ Self-update failed: ${err.message}`);
-    console.log('Please run: sudo npm install -g thumbgate@latest');
-    return false;
+    console.log(`⚠️  Global install skipped (${err.message}); the hooks are updated.`);
   }
+  console.log('✨ Self-update complete! Run `thumbgate version` to verify.');
+  return true;
 }
 
 module.exports = {
@@ -332,6 +394,7 @@ module.exports = {
   readRuntimeVersion,
   isOlder,
   detectSkew,
+  readPinnedHookVersion,
   buildSkewNotice,
   reportSkewOnce,
   RUNTIME_SKEW_STATE_FILE: STATE_FILE,

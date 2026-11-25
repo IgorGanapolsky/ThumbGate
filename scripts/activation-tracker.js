@@ -297,6 +297,10 @@ function reportFirstBlockActivation(metadata = {}) {
     installId,
     // Without this the server classifies the event by User-Agent (node sends none) as a bot.
     visitorType: (() => { try { return classifyInstall(); } catch { return undefined; } })(),
+    // Without these the owner console files every activation under version and platform "unknown".
+    pkgVersion: (() => { try { return require('../package.json').version; } catch { return undefined; } })(),
+    platform: os.platform(),
+    ...minutesSinceInstallField(firstBlockAt),
     ...(gateId ? { gateId: String(gateId).slice(0, 120) } : {}),
   };
 
@@ -380,6 +384,18 @@ function extractEntryBlockMinutes(e) {
     ? e.signupToFirstBlockMs
     : e.elapsedSinceOpenMs;
   return typeof ms === 'number' && Number.isFinite(ms) ? Math.round((ms / 60_000) * 10) / 10 : null;
+}
+
+// Minutes from install (the install id file's creation) to the first block, for time to first value.
+function minutesSinceInstallField(firstBlockAt, installIdPath = INSTALL_ID_PATH) {
+  try {
+    const stat = fs.statSync(installIdPath);
+    const born = stat.birthtimeMs > 0 ? stat.birthtimeMs : stat.mtimeMs;
+    const minutes = Math.round((Date.parse(firstBlockAt) - born) / 60000);
+    return Number.isFinite(minutes) && minutes >= 0 ? { minutesSinceInstall: minutes } : {};
+  } catch {
+    return {};
+  }
 }
 
 const FIRST_BLOCK_EVENT_NAMES = new Set(['first_block', 'first_blocked_tool_call']);

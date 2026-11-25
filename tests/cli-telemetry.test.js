@@ -50,3 +50,12 @@ test('trackEvent does not throw with DO_NOT_TRACK', () => {
   assert.doesNotThrow(() => trackEvent('test_event'));
   if (orig) process.env.DO_NOT_TRACK = orig; else delete process.env.DO_NOT_TRACK;
 });
+
+test('isOwnerAgentSession: only the owner account hash marks a session as owner; a clone of the public repo does not', () => {
+  const crypto = require('node:crypto');
+  const { isOwnerAgentSession } = require('../scripts/cli-telemetry');
+  const hash = (value) => crypto.createHash('sha256').update(value).digest('hex');
+  assert.equal(isOwnerAgentSession({}), false, 'no Claude account at all');
+  assert.equal(isOwnerAgentSession({ CLAUDE_CODE_USER_EMAIL: 'someone@example.test' }), false, 'any other account is a real user');
+  assert.equal(isOwnerAgentSession({ CLAUDE_CODE_USER_EMAIL: ' Agent@Example.Test ', THUMBGATE_OWNER_ACCOUNT_HASHES: 'x, ' + hash('agent@example.test') }), true, 'trimmed, lower-cased, extra hashes honoured');
+});

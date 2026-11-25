@@ -1,0 +1,281 @@
+{
+  "schema": 1,
+  "hosts": [
+    {
+      "id": "claude-code",
+      "label": "Claude Code",
+      "check": "bin/cli.js gate-check, Claude PreToolUse JSON on stdin (Bash tool)"
+    },
+    {
+      "id": "cursor",
+      "label": "Cursor",
+      "check": "plugins/cursor-marketplace/scripts/gate-check.sh, Cursor beforeShellExecution JSON on stdin; deny = exit 2"
+    },
+    {
+      "id": "codex",
+      "label": "Codex",
+      "check": "no run: Codex calls the same gate-check command, but nothing here sends it Codex's own payload"
+    },
+    {
+      "id": "gemini-cli",
+      "label": "Gemini CLI",
+      "check": "no run: no test sends the gate Gemini CLI's own hook payload"
+    }
+  ],
+  "rows": [
+    {
+      "id": "force-push",
+      "kind": "gate",
+      "command": "git push --force origin main",
+      "cells": {
+        "claude-code": {
+          "status": "enforced",
+          "check": "git push --force origin main -> exit 0, permissionDecision deny by gate force-push"
+        },
+        "cursor": {
+          "status": "enforced",
+          "check": "git push --force origin main -> exit 2, permission deny by gate force-push"
+        },
+        "codex": {
+          "status": "untested",
+          "check": "no run: Codex calls the same gate-check command, but nothing here sends it Codex's own payload"
+        },
+        "gemini-cli": {
+          "status": "untested",
+          "check": "no run: no test sends the gate Gemini CLI's own hook payload"
+        }
+      }
+    },
+    {
+      "id": "git-reset-hard",
+      "kind": "gate",
+      "command": "git reset --hard HEAD~1",
+      "cells": {
+        "claude-code": {
+          "status": "enforced",
+          "check": "git reset --hard HEAD~1 -> exit 0, permissionDecision deny by gate git-reset-hard"
+        },
+        "cursor": {
+          "status": "enforced",
+          "check": "git reset --hard HEAD~1 -> exit 2, permission deny by gate git-reset-hard"
+        },
+        "codex": {
+          "status": "untested",
+          "check": "no run: Codex calls the same gate-check command, but nothing here sends it Codex's own payload"
+        },
+        "gemini-cli": {
+          "status": "untested",
+          "check": "no run: no test sends the gate Gemini CLI's own hook payload"
+        }
+      }
+    },
+    {
+      "id": "git-clean-force",
+      "kind": "gate",
+      "command": "git clean -fdx",
+      "cells": {
+        "claude-code": {
+          "status": "enforced",
+          "check": "git clean -fdx -> exit 0, permissionDecision deny by gate git-clean-force"
+        },
+        "cursor": {
+          "status": "enforced",
+          "check": "git clean -fdx -> exit 2, permission deny by gate git-clean-force"
+        },
+        "codex": {
+          "status": "untested",
+          "check": "no run: Codex calls the same gate-check command, but nothing here sends it Codex's own payload"
+        },
+        "gemini-cli": {
+          "status": "untested",
+          "check": "no run: no test sends the gate Gemini CLI's own hook payload"
+        }
+      }
+    },
+    {
+      "id": "rm-rf-home-or-root",
+      "kind": "gate",
+      "command": "rm -rf ~/",
+      "cells": {
+        "claude-code": {
+          "status": "enforced",
+          "check": "rm -rf ~/ -> exit 0, permissionDecision deny by gate rm-rf-home-or-root"
+        },
+        "cursor": {
+          "status": "enforced",
+          "check": "rm -rf ~/ -> exit 2, permission deny by gate rm-rf-home-or-root"
+        },
+        "codex": {
+          "status": "untested",
+          "check": "no run: Codex calls the same gate-check command, but nothing here sends it Codex's own payload"
+        },
+        "gemini-cli": {
+          "status": "untested",
+          "check": "no run: no test sends the gate Gemini CLI's own hook payload"
+        }
+      }
+    },
+    {
+      "id": "cloud-bulk-delete",
+      "kind": "gate",
+      "command": "aws s3 rm s3://prod-bucket --recursive",
+      "cells": {
+        "claude-code": {
+          "status": "enforced",
+          "check": "aws s3 rm s3://prod-bucket --recursive -> exit 0, permissionDecision deny by gate cloud-bulk-delete"
+        },
+        "cursor": {
+          "status": "enforced",
+          "check": "aws s3 rm s3://prod-bucket --recursive -> exit 2, permission deny by gate cloud-bulk-delete"
+        },
+        "codex": {
+          "status": "untested",
+          "check": "no run: Codex calls the same gate-check command, but nothing here sends it Codex's own payload"
+        },
+        "gemini-cli": {
+          "status": "untested",
+          "check": "no run: no test sends the gate Gemini CLI's own hook payload"
+        }
+      }
+    },
+    {
+      "id": "terraform-destroy",
+      "kind": "gate",
+      "command": "terraform destroy -auto-approve",
+      "cells": {
+        "claude-code": {
+          "status": "enforced",
+          "check": "terraform destroy -auto-approve -> exit 0, permissionDecision deny by gate terraform-destroy"
+        },
+        "cursor": {
+          "status": "enforced",
+          "check": "terraform destroy -auto-approve -> exit 2, permission deny by gate terraform-destroy"
+        },
+        "codex": {
+          "status": "untested",
+          "check": "no run: Codex calls the same gate-check command, but nothing here sends it Codex's own payload"
+        },
+        "gemini-cli": {
+          "status": "untested",
+          "check": "no run: no test sends the gate Gemini CLI's own hook payload"
+        }
+      }
+    },
+    {
+      "id": "kubectl-bulk-delete",
+      "kind": "gate",
+      "command": "kubectl delete namespace prod",
+      "cells": {
+        "claude-code": {
+          "status": "enforced",
+          "check": "kubectl delete namespace prod -> exit 0, permissionDecision deny by gate kubectl-bulk-delete"
+        },
+        "cursor": {
+          "status": "enforced",
+          "check": "kubectl delete namespace prod -> exit 2, permission deny by gate kubectl-bulk-delete"
+        },
+        "codex": {
+          "status": "untested",
+          "check": "no run: Codex calls the same gate-check command, but nothing here sends it Codex's own payload"
+        },
+        "gemini-cli": {
+          "status": "untested",
+          "check": "no run: no test sends the gate Gemini CLI's own hook payload"
+        }
+      }
+    },
+    {
+      "id": "docker-system-prune-all",
+      "kind": "gate",
+      "command": "docker system prune -af --volumes",
+      "cells": {
+        "claude-code": {
+          "status": "enforced",
+          "check": "docker system prune -af --volumes -> exit 0, permissionDecision deny by gate docker-system-prune-all"
+        },
+        "cursor": {
+          "status": "enforced",
+          "check": "docker system prune -af --volumes -> exit 2, permission deny by gate docker-system-prune-all"
+        },
+        "codex": {
+          "status": "untested",
+          "check": "no run: Codex calls the same gate-check command, but nothing here sends it Codex's own payload"
+        },
+        "gemini-cli": {
+          "status": "untested",
+          "check": "no run: no test sends the gate Gemini CLI's own hook payload"
+        }
+      }
+    },
+    {
+      "id": "iam-policy-change",
+      "kind": "gate",
+      "command": "aws iam attach-user-policy --user-name bob --policy-arn arn:aws:iam::aws:policy/AdministratorAccess",
+      "cells": {
+        "claude-code": {
+          "status": "enforced",
+          "check": "aws iam attach-user-policy --user-name bob --policy-arn arn:aws:iam::aws:policy/AdministratorAccess -> exit 0, permissionDecision deny by gate iam-policy-change"
+        },
+        "cursor": {
+          "status": "enforced",
+          "check": "aws iam attach-user-policy --user-name bob --policy-arn arn:aws:iam::aws:policy/AdministratorAccess -> exit 2, permission deny by gate iam-policy-change"
+        },
+        "codex": {
+          "status": "untested",
+          "check": "no run: Codex calls the same gate-check command, but nothing here sends it Codex's own payload"
+        },
+        "gemini-cli": {
+          "status": "untested",
+          "check": "no run: no test sends the gate Gemini CLI's own hook payload"
+        }
+      }
+    },
+    {
+      "id": "learned-from-two-thumbs-downs",
+      "kind": "learned",
+      "command": "node ./scripts/notify-all-customers.js --send",
+      "note": "two typed thumbs-downs on one command, then the same command",
+      "cells": {
+        "claude-code": {
+          "status": "enforced",
+          "check": "node ./scripts/notify-all-customers.js --send: allowed, one thumbs-down allowed, after two denied (exit 0, permissionDecision deny)"
+        },
+        "cursor": {
+          "status": "enforced",
+          "check": "node ./scripts/notify-all-customers.js --send: allowed, one thumbs-down allowed, after two denied (exit 2, permission deny)"
+        },
+        "codex": {
+          "status": "untested",
+          "check": "no run: Codex calls the same gate-check command, but nothing here sends it Codex's own payload"
+        },
+        "gemini-cli": {
+          "status": "untested",
+          "check": "no run: no test sends the gate Gemini CLI's own hook payload"
+        }
+      }
+    },
+    {
+      "id": "text-typed-in-a-chat-or-web-page",
+      "kind": "chat",
+      "note": "no hook sees text that is not a tool call",
+      "cells": {
+        "claude-code": {
+          "status": "out of scope",
+          "check": "no hook sees text that is not a tool call"
+        },
+        "cursor": {
+          "status": "out of scope",
+          "check": "no hook sees text that is not a tool call"
+        },
+        "codex": {
+          "status": "out of scope",
+          "check": "no hook sees text that is not a tool call"
+        },
+        "gemini-cli": {
+          "status": "out of scope",
+          "check": "no hook sees text that is not a tool call"
+        }
+      }
+    }
+  ]
+}

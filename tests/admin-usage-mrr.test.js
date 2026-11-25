@@ -60,8 +60,8 @@ test('the newest 7 days are set against the 7 days before them', async () => {
     cli(1, 'cli_capture', 'i1'),
     cli(1, 'cli_init', 'i2'),
   ]);
-  assert.deepEqual(weeks.last7, { realVisitors: 2, pageViews: 3, checkoutStarts: 0, activeInstalls: 2 });
-  assert.deepEqual(weeks.prior7, { realVisitors: 1, pageViews: 1, checkoutStarts: 1, activeInstalls: 1 });
+  assert.deepEqual(weeks.last7, { realVisitors: 2, engagedVisitors: 0, pageViews: 3, checkoutStarts: 0, activeInstalls: 2 });
+  assert.deepEqual(weeks.prior7, { realVisitors: 1, engagedVisitors: 1, pageViews: 1, checkoutStarts: 1, activeInstalls: 1 });
 });
 
 test('MRR is each active item at list price scaled to one month, and pending cancels are counted', () => {
@@ -219,11 +219,14 @@ test('alert delivery sends a one-time confirmation, then each new alert once', a
   const makeDeps = () => ({ feedbackDir: dir, runtime: createRuntimeObservations(), health: () => ({ version: 'x', buildSha: null, uptime: 1 }), getStripeClient: () => { throw new Error('STRIPE_SECRET_KEY is missing.'); }, getOwnerEmails: () => [], moneyCacheMs: 0, lastGoodMs: 0, telemetryCacheMs: 0, stripeDeadlineMs: 200, getBillingSummaryLive: async () => ({ error: 'off' }) });
   const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
   try {
-    const timer = startAlertDelivery(makeDeps, { intervalMs: 60000, firstCheckMs: 10, send: async (m) => { sent.push(m); } });
-    for (let i = 0; i < 100 && sent.length < 2; i += 1) await wait(50);
-    clearInterval(timer);
+    const timer = startAlertDelivery(makeDeps, { intervalMs: 150, firstCheckMs: 10, send: async (m) => { sent.push(m); } });
+    for (let i = 0; i < 100 && sent.length < 1; i += 1) await wait(20);
     assert.equal(sent[0].title, 'ThumbGate: alert delivery is on');
-    assert.match(sent[1].message, /Stripe could not be read: Stripe key missing/);
+    assert.equal(sent.length, 1, 'an unreadable source seen once (a cold start after a deploy) is not sent yet');
+    assert.deepEqual(JSON.parse(fs.readFileSync(path.join(dir, 'owner-alert-delivery.json'), 'utf8')).pending, ['stripe_unreadable']);
+    for (let i = 0; i < 150 && sent.length < 2; i += 1) await wait(50);
+    clearInterval(timer);
+    assert.match(sent[1].message, /Stripe could not be read: Stripe key missing\. It has been failing for \d+ minutes?\./, 'still unreadable on the third check in a row, so it is sent');
     assert.ok(fs.existsSync(path.join(dir, 'owner-alert-delivery.json')));
     sent.length = 0;
     // A restart (every deploy) reads the saved state: no second confirmation, and a still-firing alert is not re-sent.
@@ -234,4 +237,74 @@ test('alert delivery sends a one-time confirmation, then each new alert once', a
     clearInterval(again);
     assert.deepEqual(sent, [], 'nothing is sent again after a restart');
   } finally { fs.rmSync(dir, { recursive: true, force: true }); }
+});
+
+test('engaged visitors: one id with a single page view is not counted as a person; two events or any click is', async () => {
+  const { traffic, weeks } = await read([
+    web(2, 'landing_page_view', 'crawler-1'),
+    web(2, 'landing_page_view', 'crawler-2'),
+    web(2, 'landing_page_view', 'reader'), web(2, 'landing_page_view', 'reader'),
+    web(3, 'cta_click', 'clicker'),
+    web(3, 'landing_page_view', 'bot', { isBotTraffic: true }), web(3, 'cta_click', 'bot', { isBotTraffic: true }),
+    web(10, 'landing_page_view', 'old-reader'), web(10, 'pricing_view', 'old-reader'),
+  ]);
+  assert.equal(traffic.realVisitors, 5, 'the existing count keeps every unflagged id');
+  assert.equal(traffic.engagedVisitors, 3, 'reader, clicker and old-reader; the single-view ids and the flagged bot are out');
+  assert.equal(weeks.last7.engagedVisitors, 2);
+  assert.equal(weeks.prior7.engagedVisitors, 1);
+});
+
+test('the visitors-drop alert follows engaged visitors when they are reported', () => {
+  const { evaluateAlerts } = require('../scripts/owner-alerts');
+  const money = (week) => ({ weekOverWeek: week, reasons: {}, usage30d: {} });
+  const crawlerSpike = { prior7: { realVisitors: 9000, engagedVisitors: 30 }, last7: { realVisitors: 100, engagedVisitors: 28 } };
+  assert.ok(!evaluateAlerts({ money: money(crawlerSpike), report: {} }).some((a) => a.id === 'visitors_drop'), 'a crawler swing alone is not a drop in people');
+  const realDrop = { prior7: { realVisitors: 100, engagedVisitors: 40 }, last7: { realVisitors: 100, engagedVisitors: 10 } };
+  assert.ok(evaluateAlerts({ money: money(realDrop), report: {} }).some((a) => a.id === 'visitors_drop'));
+});
+
+test('owner alerts (a): one failed Stripe read sends nothing, and a good check clears the count', () => {
+  const { nextAlertDeliveryState } = require('../scripts/owner-admin');
+  const stripe = { id: 'stripe_unreadable', level: 'amber', text: 'Stripe could not be read: Stripe did not answer in time.', action: 'Refresh in a minute.', tab: 'money' };
+  const T0 = Date.parse('2026-11-25T10:00:00Z');
+  const min = (n) => T0 + n * 60000;
+  const first = nextAlertDeliveryState([stripe], null, min(0));
+  assert.deepEqual(first.added, [], 'one failed read: no delivery');
+  assert.equal(first.streaks.stripe_unreadable.count, 1);
+  const good = nextAlertDeliveryState([], { firing: first.firing, pending: first.pending, streaks: first.streaks, checkedAt: new Date(min(0)).toISOString() }, min(15));
+  assert.deepEqual(good.streaks, {}, 'a successful read clears the count');
+  const again = nextAlertDeliveryState([stripe], { firing: good.firing, pending: good.pending, streaks: good.streaks }, min(30));
+  assert.deepEqual(again.added, [], 'a failure after a success starts from one again');
+  assert.equal(again.streaks.stripe_unreadable.count, 1);
+  const second = nextAlertDeliveryState([stripe], { firing: first.firing, pending: first.pending, streaks: first.streaks }, min(15));
+  assert.deepEqual(second.added, [], 'two in a row is still not sent');
+});
+
+test('owner alerts (b): three failed Stripe reads in a row send exactly one email, with how long it has been failing, and it does not repeat', () => {
+  const { nextAlertDeliveryState } = require('../scripts/owner-admin');
+  const { formatAlertMessage } = require('../scripts/owner-alerts');
+  const stripe = { id: 'stripe_unreadable', level: 'amber', text: 'Stripe could not be read: Stripe did not answer in time.', action: 'Refresh in a minute. If it stays, check the Stripe key on Railway.', tab: 'money' };
+  const T0 = Date.parse('2026-11-25T10:00:00Z');
+  let state = null;
+  const sentMessages = [];
+  for (const offset of [0, 15, 30, 45, 60]) {
+    const step = nextAlertDeliveryState([stripe], state, T0 + offset * 60000);
+    if (step.added.length) sentMessages.push(formatAlertMessage(step.added));
+    state = { firing: step.firing, pending: step.pending, streaks: step.streaks, checkedAt: new Date(T0 + offset * 60000).toISOString() };
+  }
+  assert.equal(sentMessages.length, 1, 'exactly one delivery over five failing checks');
+  assert.match(sentMessages[0].message, /Stripe could not be read: Stripe did not answer in time\. It has been failing for 30 minutes\. Refresh in a minute\. If it stays, check the Stripe key on Railway\./);
+  assert.equal(sentMessages[0].title, 'ThumbGate: 1 thing need you');
+});
+
+test('owner alerts (c): a red alert (failed Stripe notifications) is sent on the first check', () => {
+  const { nextAlertDeliveryState } = require('../scripts/owner-admin');
+  const { evaluateAlerts, isDeliverable } = require('../scripts/owner-alerts');
+  const alerts = evaluateAlerts({ report: { webhooks: { failures24h: 3 } } }).filter(isDeliverable);
+  assert.deepEqual(alerts.map((a) => [a.id, a.level]), [['stripe_webhooks', 'red']]);
+  const step = nextAlertDeliveryState(alerts, null, Date.parse('2026-11-25T10:00:00Z'));
+  assert.deepEqual(step.added.map((a) => a.id), ['stripe_webhooks']);
+  assert.doesNotMatch(step.added[0].text, /failing for/, 'red alert wording is unchanged');
+  const repeat = nextAlertDeliveryState(alerts, { firing: step.firing, pending: step.pending, streaks: step.streaks }, Date.parse('2026-11-25T10:15:00Z'));
+  assert.deepEqual(repeat.added, [], 'does not repeat while it keeps firing');
 });
