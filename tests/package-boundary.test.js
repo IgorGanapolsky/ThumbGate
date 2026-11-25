@@ -530,8 +530,9 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
     // 723 -> 724 (2026-11-25): scripts/clarity.js (required by src/api/server.js and owner-admin.js: Microsoft Clarity tag and export) (+1).
     // 724 -> 725 (2026-11-25): scripts/deploy-proof-gate.js (required by scripts/hook-stop-anti-claim.js) (+1).
     // 725 -> 726 (2026-11-25): public/udemy.html, the thumbgate.ai/udemy landing page (AGENT-3667) (+1).
-    manifest.fileCount <= 726,
-    `npm package should stay <= 726 files, got ${manifest.fileCount}`
+    // 726 -> 727 (2026-11-25): scripts/delete-equivalence.js, a learned delete also denies the same delete written in Python (AGENT-3667) (+1).
+    manifest.fileCount <= 727,
+    `npm package should stay <= 727 files, got ${manifest.fileCount}`
   );
   // Ceiling bumped from 2.75 MB → 2.85 MB (2026-04-16) to accommodate the
   // incremental review-delta demo content in public/dashboard.html landing
@@ -821,10 +822,13 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // and the install version share in scripts/activation-tracker.js; measured 10,780,497.
   // Bumped 10.79 MB -> 10.80 MB (2026-11-25): the Sources tab (scripts/owner-admin.js, public/admin.html) and the
   // checkout_click event, on top of the hook-side latest check above.
+  // Bumped 10.80 MB -> 10.81 MB (2026-11-25, PR #5199): six sandbox-escape and App Store gates in
+  // config/gates/default.json; measured 10,800,539 (main was 10,791,301).
   // Bumped 10.80 MB -> 10.81 MB (2026-11-25, PR #5232): durable OAuth store + refresh tokens in
   // scripts/mcp-oauth.js and hosted MCP instructions in src/api/server.js; measured 10,802,087.
-  manifest.unpackedSize <= 10_810_000,
-  `npm package should stay <= 10.81 MB unpacked, got ${manifest.unpackedSize}`
+  // Bumped 10.81 MB -> 10.82 MB (2026-11-25, PR #5222, after merging main): measured 10,819,959.
+  manifest.unpackedSize <= 10_820_000,
+  `npm package should stay <= 10.82 MB unpacked, got ${manifest.unpackedSize}`
 );
 
   for (const file of requiredRuntimeFiles) {

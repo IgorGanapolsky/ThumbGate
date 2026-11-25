@@ -50,7 +50,7 @@
       "name": "Is ThumbGate a PreToolUse hook, a feedback collector, or a rule engine?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "All three, in a loop. ThumbGate is the four-stage loop: (1) Capture — the user clicks 👍 or 👎 on any AI answer, decision, or proposed tool call; (2) Memory — the feedback record lands in a local lesson DB (SQLite + LanceDB vector index) on the user's infrastructure; (3) Rule promotion — recurring 👎 patterns get promoted to deterministic prevention rules via Thompson Sampling, and recurring 👍 patterns become reinforced routing; (4) Enforcement — the promoted rules fire at the PreToolUse hook before the agent's next proposed tool call executes. The PreToolUse hook is one stage of four. Customers buy the loop, not any single stage."
+        "text": "All three, in a loop. ThumbGate is the four-stage loop: (1) Capture — the user clicks 👍 or 👎 on any AI answer, decision, or proposed tool call; (2) Memory — the feedback record lands in a local lesson DB (SQLite + LanceDB vector index) on the user's infrastructure; (3) Rule promotion — recurring 👎 patterns get promoted to deterministic prevention rules via Thompson Sampling, and 👍 feedback is saved as success lessons that do not change any rule; (4) Enforcement — the promoted rules fire at the PreToolUse hook before the agent's next proposed tool call executes. The PreToolUse hook is one stage of four. Customers buy the loop, not any single stage."
       }
     },
     {

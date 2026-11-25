@@ -112,7 +112,7 @@ Frame: "This isn't just blocking. The same feedback loop that creates the kill s
 Show the **Insights pipeline** card:
 - Intake Events 184 → Rules Refined 42 → Gates Active 14 → Risks Prevented 93.
 
-Frame: "Every thumbs-up reinforces a good routing path. Every thumbs-down compiles a gate. The two loops feed each other — and neither calls out to the cloud."
+Frame: "Every thumbs-up saves what worked as a lesson. Every thumbs-down compiles a gate. The two loops feed each other — and neither calls out to the cloud."
 
 ### 17:00 – 22:00 — Pillar 3: Zero Cloud Egress (terminal)
 

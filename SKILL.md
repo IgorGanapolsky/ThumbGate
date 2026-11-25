@@ -51,7 +51,7 @@ Add to your agent's MCP config (e.g., `claude_desktop_config.json` or `.cursor/m
 
 When an agent action succeeds or fails, capture structured feedback:
 
-- **Thumbs up**: Records what worked, tags it, and stores it as a reusable pattern.
+- **Thumbs up**: Records what worked and stores it as a success lesson (it needs one sentence of context). It does not create, loosen or lift a prevention rule.
 - **Thumbs down**: Records the failure context, what went wrong, and what to change. Repeated failures auto-promote into prevention rules.
 
 ### Prevention Rules

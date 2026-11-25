@@ -7,7 +7,7 @@
 </p>
 
 <p align="center">
-  <b>ThumbGate is the self-improving pre-action firewall for AI coding agents</b><br>
+  <b>ThumbGate checks AI coding actions before they run: allow, warn or deny</b><br>
   It checks every tool call your agent is about to make and stops the dangerous ones before they run.
 </p>
 
@@ -45,21 +45,29 @@ npx thumbgate doctor    # checks that the hooks are really wired
 
 That's it. The built-in checks are now active. Your agent can keep working as usual; ThumbGate only speaks up when a tool call matches a check.
 
+**See a block without risking anything.** This hands ThumbGate the same input your agent's hook would, without running the command:
+
+```bash
+echo '{"tool_name":"Bash","tool_input":{"command":"git push --force"}}' | npx thumbgate gate-check
+```
+
+You get `"permissionDecision":"deny"` and `[GATE:force-push] Force push blocked.` In a real session, the agent gets that answer and the push never runs.
+
 ### Teach it your first rule (optional)
 
 When your agent does something you never want repeated, give it a thumbs-down:
+
+In Claude Code you can also install it as a plugin:
+
+```
+/plugin install thumbgate --marketplace IgorGanapolsky/ThumbGate
+```
 
 ```bash
 npx thumbgate capture --feedback=down --context="Never run DROP on production tables" --what-went-wrong="agent proposed DROP" --what-to-change="require review for DROP"
 ```
 
-Later `DROP` attempts in the same scope surface the check:
-
-```
-⚠️ Check fired: "Never run DROP on production tables"
-   Pattern: DROP.*production
-   Verdict: 👎 WARN + LOG   (⛔ BLOCK when THUMBGATE_STRICT_ENFORCEMENT=1)
-```
+From then on the agent sees that lesson before a matching action. After three matching thumbs-downs it becomes a check that warns, or blocks with `THUMBGATE_STRICT_ENFORCEMENT=1`. (`DROP TABLE` itself is already denied by default.)
 
 To see your rules and what was caught, run `npx thumbgate dashboard --open`. An empty dashboard on day one is normal; it means nothing has fired yet.
 
@@ -86,12 +94,14 @@ Per-agent guides: [Claude/Codex bridge](plugins/claude-codex-bridge/README.md) �
 
 ### Install scope: machine-wide vs per-project
 
-| Scope | Command | Settings | Lessons | Best for |
-|-------|---------|----------|---------|----------|
-| **Machine-wide** (default) | `npx thumbgate init` | `~/.claude/settings.json` | `~/.claude/memory/feedback/` | Solo operators — **same machine-local feedback store** across repos |
-| **Per-project** | `npx thumbgate init --project` | `<repo>/.claude/settings.json` | `<repo>/.claude/memory/feedback/` | Client / compliance — **separate dashboard** / isolated lessons per repo |
+| Scope | Command | Claude Code hooks | MCP entry | Lessons and dashboard data |
+|-------|---------|-------------------|-----------|----------------------------|
+| **Machine-wide** (default) | `npx thumbgate init` | `~/.claude/settings.json`, so they run in every repo on this machine | `<repo>/.mcp.json` | `<repo>/.thumbgate/` |
+| **Per-project** | `npx thumbgate init --project` | `<repo>/.claude/settings.json`, so they run only in this repo | `<repo>/.mcp.json` | `<repo>/.thumbgate/` |
 
-Both scopes write `mcpServers.thumbgate` plus PreToolUse / UserPromptSubmit / PostToolUse / SessionStart hooks. Machine-wide is the right default for most developers. Cross-repo blocking is not automatic: a lesson learned in one project only applies elsewhere when you share the store (machine-wide) or export/import lessons.
+Lessons stay per repo in both scopes: a 👎 in `repo-A` does not flag anything in `repo-B`. Cross-repo blocking is not automatic. Versions before 1.31 kept lessons in `<repo>/.claude/memory/feedback/` or `~/.thumbgate/projects/<name>/`. ThumbGate reads `<repo>/.thumbgate/` first once it exists, and `init` creates it, so copy the old files into `<repo>/.thumbgate/` to keep those lessons. Keep `.thumbgate/` out of git. Inits before 1.43.2 wrote hooks to `~/.claude/settings.local.json`, which Claude Code does not read. From 1.43.2 the ThumbGate MCP server moves them to `~/.claude/settings.json` the next time it starts (set `THUMBGATE_DISABLE_CLAUDE_SELF_HEAL=1` to stop that), `npx thumbgate init` moves them right away, and `npx thumbgate doctor` tells you if they are still in the old file. `<repo>/.claude/settings.json` is the file teams usually commit, so check the hook paths in it before you commit it.
+
+For an MCP-only install, `npx thumbgate install-mcp` adds `mcpServers.thumbgate` to `~/.claude/settings.json`, and `npx thumbgate install-mcp --project` adds it to `<repo>/.claude/settings.json` instead. Neither writes hooks.
 
 **MCP tools (surface):** `gate_check` (read/evaluate proposed tool call), feedback capture + session tools (write), dashboard/stats (read). Destructive agent actions stay blocked/warned by PreToolUse — ThumbGate does not execute user shell commands for you.
 
@@ -105,6 +115,19 @@ npx -y thumbgate serve
 
 - Equivalent: `npx -y thumbgate mcp`
 - Do **not** use `npm start` for MCP — that launches the hosted HTTP API (`src/api/server.js`), not the agent-facing stdio server.
+
+---
+
+## What a 👍 and a 👎 do
+
+| You give | What ThumbGate does |
+|----------|---------------------|
+| 👎 typed in the agent session right after a command | Turns that command into a check. The first one warns on the next run. A second 👎 from you on the same command blocks it, with or without strict mode. |
+| 👎 from the CLI with only a sentence of context (no command attached) | Saves a lesson the agent sees before a matching action. On the third matching 👎, a check fires: a warning by default, a block with `THUMBGATE_STRICT_ENFORCEMENT=1`. |
+| 👍 with one sentence of context | Saves a success lesson and counts it in your stats. It does not create, loosen or lift a check. |
+| 👍 or 👎 with no context and no command | Logged only. Nothing is stored or promoted. |
+
+Example: the agent runs `npm run deploy:staging` and you type *"thumbs down: that pushed to the wrong environment"*. The next `npm run deploy:staging` gets a warning before it runs. You thumbs-down it a second time, and the next run is denied. A later 👍 on the same command is saved as a success lesson, and the block stays in place.
 
 ---
 
@@ -269,6 +292,18 @@ Which gates were actually denied on which host. Generated by `npm run compat:mat
 | `iam-policy-change` | enforced | enforced | untested | untested |
 | Gate learned from two thumbs-downs | enforced | enforced | untested | untested |
 | Text typed in a chat window or web page | out of scope | out of scope | out of scope | out of scope |
+
+### Which hosts hard-stop, and how they fail
+
+| Host | Hard-stops a bad call | Fails open or closed | Evidence |
+|---|---|---|---|
+| Claude Code | yes (9 of 9 gates denied) | Fails open | [docs/host-compatibility.md](https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/host-compatibility.md) |
+| Cursor | yes (9 of 9 gates denied) | Fails closed | [tests/cursor-fail-closed.test.js](https://github.com/IgorGanapolsky/ThumbGate/blob/main/tests/cursor-fail-closed.test.js) |
+| Codex | untested | untested | [docs/host-compatibility.md](https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/host-compatibility.md) |
+| Gemini CLI | untested | untested | [docs/host-compatibility.md](https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/host-compatibility.md) |
+| Cline | no, warns only | no hook, so not applicable | [tests/advisory-hosts-honesty.test.js](https://github.com/IgorGanapolsky/ThumbGate/blob/main/tests/advisory-hosts-honesty.test.js) |
+| OpenCode | no, warns only | no hook, so not applicable | [tests/advisory-hosts-honesty.test.js](https://github.com/IgorGanapolsky/ThumbGate/blob/main/tests/advisory-hosts-honesty.test.js) |
+| Amp | no, warns only | no hook, so not applicable | [tests/advisory-hosts-honesty.test.js](https://github.com/IgorGanapolsky/ThumbGate/blob/main/tests/advisory-hosts-honesty.test.js) |
 <!-- host-gate-matrix:end -->
 
 
@@ -323,7 +358,7 @@ Every Changeset is tied to the exact `main` merge commit and generates Verificat
 
 ## Cloud & model infrastructure
 
-- **Local Pre-Action Firewall & MCP Runtime**: Sub-`0.5ms` local `PreToolUse` enforcement (`npx thumbgate init`) across Claude Code, Cursor, Codex, and Gemini CLI; `TencentDB Agent Memory` record normalization into blocking SQL safety candidates is covered in `tests/memory-provider-enforcement-bridge.test.js`, and outer-harness context-budget checks inspired by Tencent Hunyuan `Hy-Memory-30B-A3B` research are validated in `scripts/rrsi-doctor.js`.
+- **Local Pre-Action Checks & MCP Runtime**: Sub-`0.5ms` local `PreToolUse` enforcement (`npx thumbgate init`) across Claude Code, Cursor, Codex, and Gemini CLI; `TencentDB Agent Memory` record normalization into blocking SQL safety candidates is covered in `tests/memory-provider-enforcement-bridge.test.js`, and outer-harness context-budget checks inspired by Tencent Hunyuan `Hy-Memory-30B-A3B` research are validated in `scripts/rrsi-doctor.js`.
 - **Companion Benchmark & Technical Case Study**: External evaluation of [Tencent Cloud](https://www.tencentcloud.com/) Lighthouse / CVM (`SA5` / `SA9` AMD Turin-Dense `3.4 GHz` all-core turbo in `ap-hongkong` & `ap-singapore`) and the `Hy-Memory-30B-A3B` surgical state-patching pattern is published in our companion `hermes-eval` benchmark repository (`docs/TENCENT-CLOUD-SA9-HUNYUAN-CASE-STUDY.md` and `scripts/tencent_sa9_hunyuan_benchmark.py`).
 
 ## Docs

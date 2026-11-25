@@ -281,7 +281,7 @@ Framework: GSD
 - Page type: guide
 - Opportunity score: 83
 - CTA: Go Pro — $19/mo
-- Summary: Pre-action gates stop the risky move before the agent executes it. ThumbGate uses thumbs-up/down feedback to decide what should be reinforced, warned, or blocked.
+- Summary: Pre-action gates stop the risky move before the agent executes it. ThumbGate saves thumbs-up/down feedback as lessons and turns repeated thumbs-downs into checks that warn or block.
 ### 23. AI Agent Harness Optimization | Progressive Disclosure + Pre-Action Checks
 
 - Path: /guides/agent-harness-optimization

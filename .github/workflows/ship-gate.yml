@@ -15,7 +15,7 @@ on:
     branches: [main]
     types: [opened, synchronize, reopened, ready_for_review, labeled, unlabeled]
   # An approval or a review reply can unblock a PR the last run left waiting.
-  # (Thread resolution has no Actions event; the steward re-dispatches every 4 hours.)
+  # (Thread resolution has no Actions event; the steward re-dispatches every hour.)
   pull_request_review:
     types: [submitted, dismissed]
   workflow_dispatch:
