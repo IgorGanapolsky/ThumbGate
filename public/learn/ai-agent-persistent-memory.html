@@ -155,7 +155,7 @@ node .claude/scripts/feedback/capture-feedback.js \
   <p>Not every prevention rule has the same confidence level. A rule derived from one thumbs-down event is weaker than a rule reinforced by a dozen. ThumbGate uses Thompson Sampling — a multi-armed bandit algorithm — to handle this uncertainty.</p>
   <p>For each check, the system maintains a Beta distribution over outcomes. As thumbs-up and thumbs-down feedback accumulates, the distribution tightens. A high-confidence check is surfaced as a stronger warning by default — and enforced as a hard block for catastrophic actions (secret exfiltration, rm -rf) or under strict mode. A check still gathering signal issues a lighter warning and lets the agent reconsider.</p>
   <p>This matters for memory because it means the system learns your preferences rather than requiring you to manually tune thresholds. You give feedback. The check calibrates. The agent adapts.</p>
-  <p>Thompson Sampling also prevents over-blocking. If a pattern that was once dangerous stops being a problem — because the codebase changed, or you updated your workflow — thumbs-up feedback on future calls will widen the distribution back toward allowing. Memory is not one-way.</p>
+  <p>A thumbs-up does not lift a rule that is already in place. In the current release it is saved as a success lesson, and the rule keeps checking matching calls.</p>
 
   <h2>Setup: persistent memory in two minutes</h2>
   <p>ThumbGate ships as an MCP server. Any agent that speaks MCP — Claude Code, Cursor, Codex, Gemini, Amp, OpenCode — can connect to it. You initialize once and the memory layer is active for every subsequent session.</p>
@@ -183,7 +183,7 @@ node .claude/scripts/feedback/capture-feedback.js \
     <p>One command. Works with Claude Code, Cursor, Codex, Gemini, Amp, and any MCP-compatible agent.</p>
     <div class="cta-install">$ npx thumbgate init</div>
     <div class="cta-actions" aria-label="Managed ThumbGate service">
-      <a class="cta-link" href="/diagnostic?utm_source=learn&amp;utm_medium=persistent_memory_article&amp;utm_campaign=managed_workflow_gate&amp;cta_id=learn_persistent_memory_managed_gate&amp;cta_placement=article_cta">Get the $499 managed workflow gate</a>
+      <a class="cta-link" href="/pilot?utm_source=learn&amp;utm_medium=persistent_memory_article&amp;utm_campaign=managed_workflow_gate&amp;cta_id=learn_persistent_memory_managed_gate&amp;cta_placement=article_cta">Request a team pilot</a>
     </div>
     <p style="font-size:0.85rem;margin-top:0.9rem;">Use the free CLI for hands-on evaluation. Buy the managed gate when one repeated failure needs a configured check, regression test, and rollout proof.</p>
   </div>
@@ -201,7 +201,7 @@ node .claude/scripts/feedback/capture-feedback.js \
   <div class="sticky-cta">
     <span style="color:var(--muted)">Try it now:</span>
     <code>npx thumbgate init</code>
-    <a href="/diagnostic?utm_source=learn&amp;utm_medium=sticky&amp;utm_campaign=managed_workflow_gate&amp;cta_id=learn_persistent_memory_sticky_managed_gate&amp;cta_placement=sticky">Managed gate &rarr;</a>
+    <a href="/pilot?utm_source=learn&amp;utm_medium=sticky&amp;utm_campaign=managed_workflow_gate&amp;cta_id=learn_persistent_memory_sticky_managed_gate&amp;cta_placement=sticky">Managed gate &rarr;</a>
     <a href="https://github.com/IgorGanapolsky/ThumbGate" target="_blank" rel="noopener">GitHub &rarr;</a>
   </div>
 <script src="/js/buyer-intent.js"></script>

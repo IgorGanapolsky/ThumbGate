@@ -1,0 +1,58 @@
+NOTE (24 Nov 2026, added after an independent re-run). Do not cite the "gate+lesson" or "lesson-matched" rows as proof that a thumbs-down covers rewordings.
+- Same script, same PR head, different machines, different results. This file (author's Mac, clean clone of f21527fae, v1.40.10, also after a fresh npm ci and with a cleared environment): gate+lesson 13, lesson-matched 4, recency-text-only 4 of 21 rows. The verifier's two full runs: builtin-gate-warn 13, recency-text-only 8, lesson-matched 0.
+- What reproduces on both: the 13 rows are the built-in rm/find gate, which fires with no thumbs-down at all (--downs=0 gives builtin-gate-warn 13, nothing 8). Strict mode gives the same warn as default, no deny.
+- The 4 "lesson-matched" rows (python/node/rsync/mv rewordings) appear only on the author's Mac. Cause not found: not node_modules (fresh npm ci), not leaked env vars (env -i), not HF offline flags. gates-engine.js says semantic retrieval degrades to lexical when no embedder is available, which is one guess, not proven.
+- The command list has 18 entries: the original, 16 rewordings, and "sh cleanup.sh". Count is 12 of 16 rewordings, not 13 of 17.
+- Verdict for copy: claim nothing about paraphrase coverage. The numbers below are the author's run, kept as recorded.
+
+capture exit 0; 1 thumbs-down(s) on: rm -rf ./build-cache
+mode              result             command
+before-thumbs-down builtin-gate-warn  rm -rf ./build-cache
+before-thumbs-down nothing            ls
+before-thumbs-down nothing            mv a b
+before-thumbs-down nothing            git status
+default            gate+lesson        rm -rf ./build-cache
+default            gate+lesson        rm -rf ./build-cache/
+default            gate+lesson        rm -fr ./build-cache
+default            gate+lesson        rm -r -f ./build-cache
+default            gate+lesson        rm --recursive --force ./build-cache
+default            gate+lesson        rm -rf "./build-cache"
+default            gate+lesson        rm -rf './build-cache'
+default            gate+lesson        rm -rf ./build-\cache
+default            gate+lesson        D=./build-cache; rm -rf "$D"
+default            gate+lesson        cd . && rm -rf build-cache
+default            gate+lesson        find ./build-cache -delete
+default            gate+lesson        find ./build-cache -type f -exec rm -f {} +
+default            gate+lesson        bash -c "rm -rf ./build-cache"
+default            recency-text-only  sh cleanup.sh
+default            lesson-matched     python3 -c "import shutil; shutil.rmtree('./build-cache')"
+default            lesson-matched     node -e "require('fs').rmSync('./build-cache',{recursive:true,force:true})"
+default            lesson-matched     rsync -a --delete /tmp/empty/ ./build-cache/
+default            lesson-matched     mv ./build-cache /dev/null
+default            recency-text-only  ls
+default            recency-text-only  mv a b
+default            recency-text-only  git status
+strict             gate+lesson        rm -rf ./build-cache
+strict             gate+lesson        rm -rf ./build-cache/
+strict             gate+lesson        rm -fr ./build-cache
+strict             gate+lesson        rm -r -f ./build-cache
+strict             gate+lesson        rm --recursive --force ./build-cache
+strict             gate+lesson        rm -rf "./build-cache"
+strict             gate+lesson        rm -rf './build-cache'
+strict             gate+lesson        rm -rf ./build-\cache
+strict             gate+lesson        D=./build-cache; rm -rf "$D"
+strict             gate+lesson        cd . && rm -rf build-cache
+strict             gate+lesson        find ./build-cache -delete
+strict             gate+lesson        find ./build-cache -type f -exec rm -f {} +
+strict             gate+lesson        bash -c "rm -rf ./build-cache"
+strict             recency-text-only  sh cleanup.sh
+strict             lesson-matched     python3 -c "import shutil; shutil.rmtree('./build-cache')"
+strict             lesson-matched     node -e "require('fs').rmSync('./build-cache',{recursive:true,force:true})"
+strict             lesson-matched     rsync -a --delete /tmp/empty/ ./build-cache/
+strict             lesson-matched     mv ./build-cache /dev/null
+strict             recency-text-only  ls
+strict             recency-text-only  mv a b
+strict             recency-text-only  git status
+before-thumbs-down: {"builtin-gate-warn":1,"nothing":3}
+default: {"gate+lesson":13,"recency-text-only":4,"lesson-matched":4}
+strict: {"gate+lesson":13,"recency-text-only":4,"lesson-matched":4}

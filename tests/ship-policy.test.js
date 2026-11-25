@@ -54,6 +54,30 @@ test('sensitive paths, size, unknown author, fork and odd branch each need Igor'
   }
 });
 
+test('copy-only PRs over the routine size merge on their own; code, legal pages and huge sweeps still need Igor', () => {
+  const pages = Array.from({ length: 77 }, (_, i) => file(`public/guides/page-${i}.html`, { additions: 6, deletions: 4 }));
+  const copy = evaluatePr(routinePr, [...pages, file('tests/pages.test.js'), file('.changeset/pages.md')], policy);
+  assert.equal(copy.verdict, 'auto', copy.reasons.join('; '));
+  assert.match(copy.warnings.join(' '), /copy-only size limits/);
+
+  const withCode = evaluatePr(routinePr, [...pages, file('scripts/a.js'), file('tests/a.test.js')], policy);
+  assert.equal(withCode.verdict, 'human');
+  assert.match(withCode.reasons.join(' '), /files \(routine limit/);
+
+  const legal = evaluatePr(routinePr, [...pages, file('public/terms.html')], policy);
+  assert.equal(legal.verdict, 'human');
+
+  const huge = evaluatePr(routinePr, [file('docs/a.md', { additions: 5000 })], policy);
+  assert.equal(huge.verdict, 'human');
+  assert.match(huge.reasons.join(' '), /copy-only limit/);
+
+  const sensitiveCopy = evaluatePr(routinePr, [...pages, file('tests/old.test.js', { status: 'removed' })], policy);
+  assert.equal(sensitiveCopy.verdict, 'human', 'deleting a test still needs Igor');
+
+  const small = evaluatePr(routinePr, [file('docs/a.md')], policy);
+  assert.deepEqual(small.warnings, []);
+});
+
 test('automerge label lets an unprefixed branch through', () => {
   const r = evaluatePr({ ...routinePr, headRef: 'random', labels: [{ name: 'automerge' }] }, [file('docs/a.md')], policy);
   assert.equal(r.verdict, 'auto');

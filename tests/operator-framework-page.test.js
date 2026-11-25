@@ -27,9 +27,12 @@ test.after(async () => {
   await new Promise((resolve) => handle.server.close(resolve));
 });
 
+// /go/operator-diagnostic (the $499 Sprint Diagnostic) is retired and answers 410; the page links the
+// team pilot request instead.
 const OFFER_ROUTES = {
-  '/go/operator-diagnostic': 'https://buy.stripe.com/fZueVd9eA4r42dz7mb3sI2W', // $499 Sprint Diagnostic
+  '/pilot': null,
 };
+const RETIRED_ROUTES = ['/go/operator-diagnostic'];
 
 test('GET /operator-framework serves the offers, partner program, and FAQ schema', async () => {
   const res = await fetch(`${origin}/operator-framework`);
@@ -39,10 +42,13 @@ test('GET /operator-framework serves the offers, partner program, and FAQ schema
 
   assert.match(html, /Operator Framework/);
   for (const route of Object.keys(OFFER_ROUTES)) {
-    assert.ok(html.includes(`href="${route}"`), `missing checkout link ${route}`);
+    const escaped = route.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    assert.match(html, new RegExp(`href="${escaped}[?"]`), `missing offer link ${route}`);
   }
+  assert.doesNotMatch(html, /href="\/go\/operator-diagnostic/, 'no link to the retired checkout');
   assert.doesNotMatch(html, /buy\.stripe\.com/, 'payment links stay behind /go/ redirects');
-  assert.match(html, /\$499/);
+  assert.doesNotMatch(html, /\$499|Setup Sprint/, 'the $499 Setup Sprint is retired');
+  assert.match(html, /30-day team pilot/);
   assert.match(html, /VERIFICATION_EVIDENCE\.md/);
   assert.match(html, /30% revenue share/);
   assert.match(html, /mailto:igor@igorganapolsky\.com/);
@@ -75,7 +81,7 @@ test('pricing page links to the operator framework', async () => {
 });
 
 test('retired operator diagnostic rejects human checkout navigation without a payment redirect', async () => {
-  for (const route of Object.keys(OFFER_ROUTES)) {
+  for (const route of RETIRED_ROUTES) {
     // Raw request: Node's fetch overwrites Sec-Fetch-Mode, which this route checks.
     const routeUrl = new URL(route, origin);
     const res = await new Promise((resolve, reject) => {

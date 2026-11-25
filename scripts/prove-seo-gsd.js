@@ -71,10 +71,10 @@ async function run() {
 
         if (!/"@type": "TechArticle"/.test(html)) throw new Error('TechArticle JSON-LD missing');
         if (!/"@type": "FAQPage"/.test(html)) throw new Error('FAQPage JSON-LD missing');
-        if (!/👍 Thumbs up reinforces good behavior/u.test(html)) {
+        if (!/👍 Thumbs up saves what worked as a lesson/u.test(html)) {
           throw new Error('Thumbs-up proof copy missing');
         }
-        if (!/👎 Thumbs down blocks repeated mistakes/u.test(html)) {
+        if (!/👎 Thumbs down catches repeated mistakes/u.test(html)) {
           throw new Error('Thumbs-down proof copy missing');
         }
         if (!/Verification evidence/.test(html)) {

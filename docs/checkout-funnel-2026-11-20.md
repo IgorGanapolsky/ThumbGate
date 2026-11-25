@@ -10,7 +10,7 @@ Stripe stores no user agent or IP on a session, and the checkout-start endpoint 
 
 | Class (all 76 are unpaid, no email) | Sessions |
 |---|---|
-| Not the ThumbGate site: payment links and other sites' success URLs (stripe.com 11, deals.igorganapolsky.com 5, thumbgate.app 5, macyolosafeguards.io 1) | 22 |
+| Not the ThumbGate site: payment links and other sites' success URLs (stripe.com 11, the owner's separate deals site 5, thumbgate.app 5, macyolosafeguards.io 1) | 22 |
 | thumbgate.ai, no `visitorId` (a link was opened without our page) | 9 |
 | thumbgate.ai, visitor has no telemetry at all | 6 |
 | thumbgate.ai, created in the same minute as two or more others | 7 |

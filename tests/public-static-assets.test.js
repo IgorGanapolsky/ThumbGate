@@ -257,8 +257,10 @@ test('GET /install serves the verified distribution and buyer path page', async 
     assert.match(html, /id="hermes"/);
     assert.match(html, /grok mcp add thumbgate/);
     assert.match(html, /hermes-gate/);
-    assert.match(html, /\/diagnostic\?utm_source=install_page/);
-    assert.match(html, /Setup Sprint/);
+    assert.match(html, /\/pilot\?utm_source=install_page/);
+    assert.doesNotMatch(html, /href="\/diagnostic/, "no links to the retired /diagnostic page");
+    assert.match(html, /30-day team pilot/);
+    assert.doesNotMatch(html, /\$499|Setup Sprint/);
   }
 });
 
@@ -497,6 +499,21 @@ test('the AI FinOps learn page is served, listed in the sitemap, and claims no b
   const html = await res.text();
   assert.doesNotMatch(html, /budget enforcement/i, 'ThumbGate caps no tokens or dollars, so the page must not claim budget enforcement');
   assert.match(html, /does not cap tokens or dollars/i, 'the page says plainly what the gates do not do');
+});
+
+test('the Siren sandbox-escape learn page is served, in the sitemap, cites the primary source, and names only real gates', async () => {
+  const sitemap = await (await fetch(`${origin}/sitemap.xml`)).text();
+  assert.match(sitemap, /<loc>[^<]*\/learn\/siren-agent-sandbox-escape-gates<\/loc>/, 'sitemap must list the Siren learn page');
+  const res = await fetch(`${origin}/learn/siren-agent-sandbox-escape-gates`);
+  assert.equal(res.status, 200);
+  const html = await res.text();
+  assert.match(html, /safeguards\.anthropic\.com\/2026\/siren\//, 'every figure must trace to Anthropic\'s own post');
+  assert.match(html, /does not fix the sandbox/i, 'the page says what the gates do not do');
+  assert.match(html, /not affiliated with Anthropic/i);
+  const gateIds = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'config', 'gates', 'default.json'), 'utf8')).gates.map((g) => g.id);
+  const named = html.match(/sandbox-[a-z-]+(?=<\/code>)/g) || [];
+  assert.equal(new Set(named).size, 5, 'the page names the five sandbox gates');
+  for (const id of named) assert.ok(gateIds.includes(id), `page names ${id}, which must be a real default gate`);
 });
 
 test('GET /agents-cost-savings serves the FinOps-for-AI landing HTML', async () => {
