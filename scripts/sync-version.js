@@ -321,7 +321,7 @@ function syncVersion(opts) {
   if (fs.existsSync(path.join(PROJECT_ROOT, claudeCodexBridgeConfigPath))) {
     const bridgeConfig = readJson(claudeCodexBridgeConfigPath);
     const server = bridgeConfig.mcpServers && bridgeConfig.mcpServers.thumbgate;
-    const expectedArgs = explicitPinnedServeArgs(version);
+    const expectedArgs = explicitLatestServeArgs();
     const currentArgs = server && Array.isArray(server.args) ? server.args : [];
     if (server && server.command === 'npx' && JSON.stringify(currentArgs) !== JSON.stringify(expectedArgs)) {
       drifted.push({ file: claudeCodexBridgeConfigPath, field: 'mcpServers.thumbgate.args', current: JSON.stringify(currentArgs) });

@@ -431,6 +431,38 @@ function versionAtLeast(version, min) {
   return true;
 }
 
+/**
+ * How many CLI installs run the current release, by the version on each install's newest ping.
+ * `runtime_version_skew` is skipped: the MCP server sends it with its own version, not the hooks'.
+ */
+function summarizeInstallVersions(entries = [], currentVersion = '') {
+  const newest = new Map();
+  for (const e of Array.isArray(entries) ? entries : []) {
+    if (!e || isInternalEntry(e) || !e.installId) continue;
+    if (!(e.clientType === 'cli' || e.client === 'cli')) continue;
+    const type = e.eventType || e.event || '';
+    if (type === 'runtime_version_skew') continue;
+    const version = String(e.version || e.pkgVersion || '').match(/^\d+\.\d+\.\d+/);
+    if (!version) continue;
+    const at = Date.parse(e.receivedAt || e.timestamp || '') || 0;
+    const prev = newest.get(e.installId);
+    if (!prev || at >= prev.at) newest.set(e.installId, { at, version: version[0] });
+  }
+  const counts = new Map();
+  for (const { version } of newest.values()) counts.set(version, (counts.get(version) || 0) + 1);
+  const installs = newest.size;
+  const onCurrent = counts.get(currentVersion) || 0;
+  const onUpsellCapable = [...counts].reduce((n, [v, c]) => n + (versionAtLeast(v, UPSELL_MIN_VERSION) ? c : 0), 0);
+  return {
+    currentVersion: currentVersion || null,
+    installs,
+    onCurrent,
+    onCurrentShare: installs ? Math.round((onCurrent / installs) * 1000) / 10 : null,
+    onUpsellCapable,
+    topVersions: [...counts].sort((a, b) => b[1] - a[1]).slice(0, 5).map(([version, count]) => ({ version, count })),
+  };
+}
+
 function summarizeActivationFunnel(entries = []) {
   const installs = new Set();
   const activated = new Set();
@@ -541,6 +573,7 @@ module.exports = {
   resolveActivationAccountAuth,
   summarizeFirstBlockEvents,
   summarizeActivationFunnel,
+  summarizeInstallVersions,
   computeDaysSinceInstall,
   computeMinutesSinceInstall,
   readMarker,
