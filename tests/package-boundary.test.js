@@ -527,8 +527,9 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
     // and scripts/checkout-price-guard.js (required by scripts/billing.js), which were missing from `files` (+6).
     // 712 -> 715 (2026-11-25): canary-gate.js, boundary-check.js, prompt-risk-lint.js (AGENT-3667 item J).
     // 710 -> 711 (2026-11-25): config/gates/profiles/shared-tree.json, the opt-in shared-tree gate profile (bb6208a).
-    manifest.fileCount <= 723,
-    `npm package should stay <= 723 files, got ${manifest.fileCount}`
+    // 723 -> 725 (2026-11-25): scripts/send-gate.js (thumbs-down hold and chat send rules), plus one slot for PR #5211's deploy-proof-gate.js.
+    manifest.fileCount <= 725,
+    `npm package should stay <= 725 files, got ${manifest.fileCount}`
   );
   // Ceiling bumped from 2.75 MB → 2.85 MB (2026-04-16) to accommodate the
   // incremental review-delta demo content in public/dashboard.html landing
@@ -808,10 +809,12 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // Bumped 10.62 MB -> 10.65 MB (2026-11-25): canary-gate.js, boundary-check.js, prompt-risk-lint.js (AGENT-3667 item J).
   // Bumped 10.55 MB -> 10.62 MB (2026-11-25): the files above that were missing from `files`
   // (runtime requires that crashed or silently failed in the published package) and the pinned-hook fix.
+  // Bumped 10.75 MB -> 10.79 MB (2026-11-25): scripts/send-gate.js, the Cursor MCP/stop adapters and the claim classes
+  // (measured 10,767,194 unpacked, +23 KB headroom for PR #5211's deploy-proof gate).
   // Bumped 10.73 MB -> 10.75 MB (2026-11-25): scripts/not-a-thumb.js, the not-counted ledger and the one-counter
   // wiring (AGENT-3667 one-count follow-up); measured 10,731,089 before this commit's review fixes.
-  manifest.unpackedSize <= 10_750_000,
-  `npm package should stay <= 10.75 MB unpacked, got ${manifest.unpackedSize}`
+  manifest.unpackedSize <= 10_790_000,
+  `npm package should stay <= 10.79 MB unpacked, got ${manifest.unpackedSize}`
 );
 
   for (const file of requiredRuntimeFiles) {

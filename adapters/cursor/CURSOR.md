@@ -28,3 +28,15 @@ Or after install:
 ```
 
 Remove any entry that pipes Cursor's payload directly to `thumbgate gate-check` — that hook expects Claude's PreToolUse shape and Cursor will ignore its stdout.
+## Thumbs-down holds, chat send rules and the claim gate
+
+The marketplace plugin (`plugins/cursor-marketplace/hooks/hooks.json`) also wires:
+
+| Cursor hook | Command | What it does |
+| --- | --- | --- |
+| `beforeSubmitPrompt` | `scripts/prompt-capture.sh` | A typed thumbs-down is captured and holds the action that drew it before the next tool call |
+| `beforeMCPExecution` | `scripts/cursor-hook.sh mcp-gate` | MCP calls (chat sends included) go through the gates: holds, raw URL, "I do not know", second new bubble |
+| `afterShellExecution`, `afterMCPExecution`, `afterAgentResponse` | `scripts/cursor-hook.sh record` | Records the turn for the claim gate |
+| `stop` | `scripts/cursor-hook.sh stop` | An unchecked status claim ("sign-in is refused", "the host is down") gets one follow-up message sending the agent back to check |
+
+Cursor runs plugin hooks from the plugin directory, so ThumbGate reads the project from `workspace_roots[0]`.

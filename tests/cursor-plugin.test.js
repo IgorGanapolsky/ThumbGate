@@ -246,7 +246,8 @@ test('scripts referenced in hooks.json exist and are executable', () => {
   const groups = Object.values(hooks.hooks).filter((value) => Array.isArray(value));
   for (const group of groups) {
     for (const hook of group) {
-      const scriptPath = path.join(pluginDir, hook.command);
+      // Strip an argument (`cursor-hook.sh stop`) and the plugin-root prefix stop hooks need.
+      const scriptPath = path.join(pluginDir, String(hook.command).replace(/^"?\$\{CURSOR_PLUGIN_ROOT(?::-\.)?\}"?\//, './').split(/\s+/)[0]);
       assert.equal(fs.existsSync(scriptPath), true, `script ${hook.command} must exist`);
 
       const stats = fs.statSync(scriptPath);

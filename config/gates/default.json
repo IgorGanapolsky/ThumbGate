@@ -266,9 +266,9 @@
       "toolNames": [
         "Bash"
       ],
-      "pattern": "(?:^|[;&|(]\\s*|\\b(?:bash|sh|zsh)\\s+-c\\s+['\"]\\s*)(?:(?:sudo|command|exec|time|nohup)\\s+|env\\s+(?:\\S+=\\S*\\s+)*|\\S+=\\S*\\s+)*(?:aws\\s+s3\\s+rm\\b(?=[^;&|\\n]*--recursive)|aws\\s+s3\\s+rb\\b(?=[^;&|\\n]*--force)|gcloud\\s+projects\\s+delete\\b|az\\s+group\\s+delete\\b)",
+      "pattern": "(?:^|[;&|(]\\s*|\\b(?:bash|sh|zsh)\\s+-c\\s+['\"]\\s*)(?:(?:sudo|command|exec|time|nohup)\\s+|env\\s+(?:\\S+=\\S*\\s+)*|\\S+=\\S*\\s+)*(?:aws\\s+s3\\s+rm\\b|aws\\s+s3\\s+rb\\b(?=[^;&|\\n]*--force)|gcloud\\s+projects\\s+delete\\b|az\\s+group\\s+delete\\b)",
       "action": "block",
-      "message": "Bulk cloud deletion (aws s3 rm --recursive, aws s3 rb --force, gcloud projects delete, az group delete) is blocked. It is effectively irreversible. Run it yourself in a terminal if you mean it.",
+      "message": "Cloud deletion (aws s3 rm in any form, aws s3 rb --force, gcloud projects delete, az group delete) is blocked. It is effectively irreversible. Run it yourself in a terminal if you mean it.",
       "severity": "critical",
       "compliance": [
         "NIST-CM-5",
@@ -300,9 +300,9 @@
       "toolNames": [
         "Bash"
       ],
-      "pattern": "(?:^|[;&|(]\\s*|\\b(?:bash|sh|zsh)\\s+-c\\s+['\"]\\s*)(?:(?:sudo|command|exec|time|nohup)\\s+|env\\s+(?:\\S+=\\S*\\s+)*|\\S+=\\S*\\s+)*kubectl\\s+delete\\s+(?:(?:namespaces?|ns)\\b|[^;&|\\n]*(?:--all-namespaces\\b|\\s-A\\b))",
+      "pattern": "(?:^|[;&|(]\\s*|\\b(?:bash|sh|zsh)\\s+-c\\s+['\"]\\s*)(?:(?:sudo|command|exec|time|nohup)\\s+|env\\s+(?:\\S+=\\S*\\s+)*|\\S+=\\S*\\s+)*kubectl\\s+delete\\b",
       "action": "block",
-      "message": "kubectl delete of a namespace, or across all namespaces, is blocked because it removes every workload inside. Run it yourself in a terminal if you mean it.",
+      "message": "kubectl delete is blocked in every form (a pod, a deployment, a namespace): it removes live workloads. Run it yourself in a terminal if you mean it.",
       "severity": "critical",
       "compliance": [
         "NIST-CM-5",

@@ -15,7 +15,7 @@ A cell says **enforced** only when the generator ran that gate's denial through 
 | `kubectl-bulk-delete` | enforced | enforced | untested | untested |
 | `docker-system-prune-all` | enforced | enforced | untested | untested |
 | `iam-policy-change` | enforced | enforced | untested | untested |
-| Gate learned from two thumbs-downs | enforced | enforced | untested | untested |
+| Held after one thumbs-down, gate after two | enforced | enforced | untested | untested |
 | Text typed in a chat window or web page | out of scope | out of scope | out of scope | out of scope |
 
 ## How each host was checked
@@ -38,7 +38,7 @@ A cell says **enforced** only when the generator ran that gate's denial through 
 | kubectl-bulk-delete | `kubectl delete namespace prod` | kubectl delete namespace prod -> exit 0, permissionDecision deny by gate kubectl-bulk-delete | kubectl delete namespace prod -> exit 2, permission deny by gate kubectl-bulk-delete |
 | docker-system-prune-all | `docker system prune -af --volumes` | docker system prune -af --volumes -> exit 0, permissionDecision deny by gate docker-system-prune-all | docker system prune -af --volumes -> exit 2, permission deny by gate docker-system-prune-all |
 | iam-policy-change | `aws iam attach-user-policy --user-name bob --policy-arn arn:aws:iam::aws:policy/AdministratorAccess` | aws iam attach-user-policy --user-name bob --policy-arn arn:aws:iam::aws:policy/AdministratorAccess -> exit 0, permissionDecision deny by gate iam-policy-change | aws iam attach-user-policy --user-name bob --policy-arn arn:aws:iam::aws:policy/AdministratorAccess -> exit 2, permission deny by gate iam-policy-change |
-| learned-from-two-thumbs-downs | `node ./scripts/notify-all-customers.js --send` | node ./scripts/notify-all-customers.js --send: allowed, one thumbs-down allowed, after two denied (exit 0, permissionDecision deny) | node ./scripts/notify-all-customers.js --send: allowed, one thumbs-down allowed, after two denied (exit 2, permission deny) |
+| learned-from-two-thumbs-downs | `node ./scripts/notify-all-customers.js --send` | node ./scripts/notify-all-customers.js --send: held after one thumbs-down, released by "go ahead", after two denied for good (exit 0, permissionDecision deny) | node ./scripts/notify-all-customers.js --send: held after one thumbs-down, released by "go ahead", after two denied for good (exit 2, permission deny) |
 | text-typed-in-a-chat-or-web-page | no hook sees text that is not a tool call | no hook sees text that is not a tool call | no hook sees text that is not a tool call |
 
 ## Limits

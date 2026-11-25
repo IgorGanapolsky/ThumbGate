@@ -5024,6 +5024,29 @@ function hookAuditOptions(input = {}) {
   return options;
 }
 
+function evaluateSendGate(input = {}) {
+  try {
+    const toolName = input.tool_name || input.toolName || '';
+    const toolInput = input.tool_input || input.toolInput || {};
+    const { resolveFeedbackDir } = require('./feedback-paths');
+    const result = require('./send-gate').evaluate({
+      // Cursor runs plugin hooks from the plugin directory; its project is workspace_roots[0].
+      feedbackDir: resolveFeedbackDir({ cwd: input.cwd || (Array.isArray(input.workspace_roots) && input.workspace_roots[0]) || process.cwd() }),
+      toolName,
+      toolInput,
+      sessionId: input.session_id || input.sessionId || input.conversation_id || '',
+    });
+    if (!result) return null;
+    try {
+      recordStat(result.gate, 'block', null, { toolName, toolInput });
+      auditToFeedback(recordAuditEvent({ toolName, toolInput, decision: 'deny', gateId: result.gate, message: result.message, severity: result.severity, source: 'send-gate' }));
+    } catch { /* audit is best effort */ }
+    return result;
+  } catch {
+    return null; // a broken state file never blocks the agent
+  }
+}
+
 function evaluateUnconditionalHardFloor(rawInput = {}, options = {}) {
   const input = canonicalizeHookInput(rawInput);
   const secretGuard = evaluateSecretGuard(input);
@@ -5043,6 +5066,11 @@ function evaluateUnconditionalHardFloor(rawInput = {}, options = {}) {
 
   const selfProtect = evaluateSelfProtectHardFloor(input);
   if (selfProtect) return { hardFloor: selfProtect, securityScan };
+
+  // A person's thumbs-down holds the action that drew it, and chat posts pass the send rules (raw URL, "I do not
+  // know", a second new bubble). Runs before the tool call on every host path (scripts/send-gate.js).
+  const sendGate = evaluateSendGate(input);
+  if (sendGate) return { hardFloor: sendGate, securityScan };
 
   const repeated = evaluateRepeatedMistakeGates(input);
   if (repeated) return { hardFloor: repeated, securityScan };
