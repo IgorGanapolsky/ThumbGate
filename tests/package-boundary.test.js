@@ -530,8 +530,9 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
     // 723 -> 724 (2026-11-25): scripts/clarity.js (required by src/api/server.js and owner-admin.js: Microsoft Clarity tag and export) (+1).
     // 724 -> 725 (2026-11-25): scripts/deploy-proof-gate.js (required by scripts/hook-stop-anti-claim.js) (+1).
     // 725 -> 726 (2026-11-25): public/udemy.html, the thumbgate.ai/udemy landing page (AGENT-3667) (+1).
-    manifest.fileCount <= 726,
-    `npm package should stay <= 726 files, got ${manifest.fileCount}`
+    // 726 -> 727 (2026-11-25): scripts/delete-equivalence.js, a learned delete also denies the same delete written in Python (AGENT-3667) (+1).
+    manifest.fileCount <= 727,
+    `npm package should stay <= 727 files, got ${manifest.fileCount}`
   );
   // Ceiling bumped from 2.75 MB → 2.85 MB (2026-04-16) to accommodate the
   // incremental review-delta demo content in public/dashboard.html landing
@@ -811,8 +812,11 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // Bumped 10.62 MB -> 10.65 MB (2026-11-25): canary-gate.js, boundary-check.js, prompt-risk-lint.js (AGENT-3667 item J).
   // Bumped 10.55 MB -> 10.62 MB (2026-11-25): the files above that were missing from `files`
   // (runtime requires that crashed or silently failed in the published package) and the pinned-hook fix.
+  // Bumped 10.75 MB -> 10.79 MB (2026-11-25): scripts/send-gate.js, the Cursor MCP/stop adapters and the claim classes
+  // (measured 10,767,194 unpacked, +23 KB headroom for PR #5211's deploy-proof gate).
   // Bumped 10.73 MB -> 10.75 MB (2026-11-25): scripts/not-a-thumb.js, the not-counted ledger and the one-counter
   // wiring (AGENT-3667 one-count follow-up); measured 10,731,089 before this commit's review fixes.
+  // Bumped 10.77 MB -> 10.80 MB (2026-11-25): scripts/send-gate.js, the Cursor MCP/stop adapters and the claim classes.
   // Bumped 10.75 MB -> 10.77 MB (2026-11-25): scripts/clarity.js (Clarity tag + owner-console export), the
   // Visitor behavior tab in public/admin.html and the privacy note; measured 10,751,766.
   // Bumped 10.77 MB -> 10.78 MB (2026-11-25): public/udemy.html and the install-source field in
@@ -825,7 +829,7 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // config/gates/default.json; measured 10,800,539 (main was 10,791,301).
   // Bumped 10.80 MB -> 10.81 MB (2026-11-25, PR #5232): durable OAuth store + refresh tokens in
   // scripts/mcp-oauth.js and hosted MCP instructions in src/api/server.js; measured 10,802,087.
-  // Bumped 10.81 MB -> 10.82 MB (2026-11-25, PR #5164, after merging main): measured 10,816,685.
+  // Bumped 10.81 MB -> 10.82 MB (2026-11-25, PR #5222, after merging main): measured 10,819,959.
   manifest.unpackedSize <= 10_820_000,
   `npm package should stay <= 10.82 MB unpacked, got ${manifest.unpackedSize}`
 );

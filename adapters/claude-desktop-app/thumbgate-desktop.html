@@ -1,0 +1,553 @@
+<title>ThumbGate Desktop</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<script type="application/json" id="claude-artifacts-manifest">{"permissions": ["full-access", "menu-bar", "notifications", "shortcuts"]}</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: one narrow column, sized for a small app window or a phone: status strip, counters, then three lists. */
+:root {
+  --bg: #f3f5f7;
+  --panel: #ffffff;
+  --fg: #16202b;
+  --muted: #5a6877;
+  --line: #d9e0e7;
+  --accent: #1f5fae;
+  --accent-ink: #ffffff;
+  --block: #b4232f;
+  --block-soft: #fbe9ea;
+  --warn: #8a5a00;
+  --warn-soft: #fff3d6;
+  --ok: #17703f;
+  --font-body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #11161c; --panel: #19212a; --fg: #e6ebf0; --muted: #9aa8b6; --line: #2a3541; --accent: #6ea8ff; --accent-ink: #0b1420;
+    --block: #ff7a84; --block-soft: #3a1c21; --warn: #f2c45a; --warn-soft: #362a10; --ok: #5fd08f; color-scheme: dark; } }
+:root[data-theme="dark"] {
+  --bg: #11161c; --panel: #19212a; --fg: #e6ebf0; --muted: #9aa8b6; --line: #2a3541; --accent: #6ea8ff; --accent-ink: #0b1420;
+  --block: #ff7a84; --block-soft: #3a1c21; --warn: #f2c45a; --warn-soft: #362a10; --ok: #5fd08f; color-scheme: dark; }
+body {
+  background: var(--bg); color: var(--fg); font-family: var(--font-body); font-size: 14px; line-height: 1.45;
+}
+.wrap {
+  max-width: 560px; margin: 0 auto;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 12px 28px;
+  display: flex; flex-direction: column; gap: 14px;
+}
+header { display: flex; align-items: center; gap: 10px; min-height: 40px; app-region: drag; }
+header canvas { width: 28px; height: 28px; flex: none; }
+header h1 { font-size: 16px; font-weight: 600; margin: 0; letter-spacing: 0.01em; }
+header .spacer { flex: 1; }
+header button, header .chip { app-region: no-drag; }
+.chip {
+  font-family: var(--font-mono); font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em;
+  border: 1px solid var(--line); border-radius: 999px; padding: 2px 8px; color: var(--muted); white-space: nowrap;
+}
+.chip.live { color: var(--ok); border-color: currentColor; }
+.chip.sample { color: var(--warn); border-color: currentColor; }
+button {
+  font: inherit; font-weight: 500; cursor: pointer; border-radius: 6px; padding: 6px 12px;
+  border: 1px solid var(--line); background: var(--panel); color: var(--fg);
+}
+button.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+button:focus-visible, a:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+button[disabled] { opacity: 0.55; cursor: default; }
+a { color: var(--accent); }
+.notice {
+  background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 12px 14px;
+  display: flex; flex-direction: column; gap: 8px;
+}
+.notice p { margin: 0; }
+.notice .row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.counters { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.counter { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; }
+.counter .n { font-family: var(--font-mono); font-size: 24px; font-weight: 600; font-variant-numeric: tabular-nums; line-height: 1.1; }
+.counter .l { font-size: 12px; color: var(--muted); }
+.counter.block .n { color: var(--block); }
+.counter.warn .n { color: var(--warn); }
+section { display: flex; flex-direction: column; gap: 6px; }
+section h2 {
+  font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); margin: 6px 0 0;
+  display: flex; justify-content: space-between; gap: 8px;
+}
+ul.list { list-style: none; margin: 0; padding: 0; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; }
+ul.list li { padding: 9px 12px; border-top: 1px solid var(--line); display: flex; gap: 10px; min-width: 0; }
+ul.list li:first-child { border-top: 0; }
+ul.list .tag {
+  flex: none; font-family: var(--font-mono); font-size: 10px; font-weight: 600; text-transform: uppercase;
+  letter-spacing: 0.06em; padding: 2px 6px; border-radius: 4px; align-self: flex-start; margin-top: 2px;
+}
+.tag.block { color: var(--block); background: var(--block-soft); }
+.tag.down { color: var(--warn); background: var(--warn-soft); }
+.tag.rule { color: var(--accent); border: 1px solid var(--line); }
+ul.list .body { min-width: 0; overflow-wrap: anywhere; }
+ul.list .meta { font-size: 12px; color: var(--muted); }
+ul.list li.empty { color: var(--muted); }
+.upgrade { border-color: var(--accent); }
+.foot { font-size: 12px; color: var(--muted); display: flex; flex-wrap: wrap; gap: 6px 14px; }
+.settings { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.settings label { font-size: 12px; color: var(--muted); }
+.settings input {
+  font: inherit; font-family: var(--font-mono); font-size: 12px; flex: 1; min-width: 0;
+  padding: 5px 8px; border: 1px solid var(--line); border-radius: 6px; background: var(--panel); color: var(--fg);
+}
+@media (max-width: 380px) { .counters { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+</style>
+
+<div class="wrap">
+  <header>
+    <canvas id="logo" width="56" height="56" aria-hidden="true"></canvas>
+    <h1>ThumbGate</h1>
+    <span class="spacer"></span>
+    <span class="chip sample" id="source-chip">Example data</span>
+    <button id="refresh" type="button" hidden>Refresh</button>
+  </header>
+
+  <div class="notice" id="notice">
+    <p id="notice-text">ThumbGate Desktop shows what ThumbGate blocked on your computer, your recent thumbs-downs and the rules they became. It runs as a desktop app installed from the Claude desktop app. The numbers below are examples until it is installed and connected.</p>
+    <div class="row" id="notice-actions"></div>
+  </div>
+
+  <div class="counters" aria-label="Totals">
+    <div class="counter block"><div class="n" id="n-blocked">0</div><div class="l">blocked</div></div>
+    <div class="counter warn"><div class="n" id="n-warned">0</div><div class="l">warned</div></div>
+    <div class="counter"><div class="n" id="n-gates">0</div><div class="l">active gates</div></div>
+    <div class="counter"><div class="n" id="n-rules">0</div><div class="l">rules</div></div>
+    <div class="counter"><div class="n" id="n-down">0</div><div class="l">thumbs-downs</div></div>
+    <div class="counter"><div class="n" id="n-auto">0</div><div class="l">auto-promoted</div></div>
+  </div>
+
+  <section>
+    <h2><span>Recent blocks</span></h2>
+    <ul class="list" id="blocks"></ul>
+  </section>
+
+  <section>
+    <h2><span>Recent thumbs-downs</span></h2>
+    <ul class="list" id="downs"></ul>
+  </section>
+
+  <section>
+    <h2><span>Prevention rules</span><span id="rules-count"></span></h2>
+    <ul class="list" id="rules"></ul>
+  </section>
+
+  <div class="notice upgrade" id="upgrade" hidden>
+    <p><strong>Free plan.</strong> Pro keeps every learned rule active, with unlimited thumbs, recall, lesson search and exports.</p>
+    <div class="row"><a id="upgrade-link" href="https://thumbgate.ai/pricing?utm_source=desktop_app&amp;utm_medium=desktop&amp;utm_campaign=pro_education" target="_blank" rel="noopener">See ThumbGate Pro</a></div>
+  </div>
+
+  <div class="settings" id="settings" hidden>
+    <label for="project-dir">Project folder</label>
+    <input id="project-dir" type="text" spellcheck="false" autocomplete="off" placeholder="~/code/my-project">
+    <button id="save-dir" type="button">Use</button>
+  </div>
+
+  <div class="foot">
+    <span id="updated">Not connected</span>
+    <a href="https://thumbgate.ai/learn/claude-artifact-desktop-apps" target="_blank" rel="noopener">How this works</a>
+    <a href="https://github.com/IgorGanapolsky/ThumbGate" target="_blank" rel="noopener">GitHub</a>
+  </div>
+</div>
+
+<script>
+(function () {
+  const POLL_MS = 60 * 1000;
+  const SHORTCUT = 'Alt+Shift+G';
+  const $ = (id) => document.getElementById(id);
+
+  const SAMPLE = {
+    schema: 'thumbgate.desktop-snapshot/v1',
+    sample: true,
+    totals: { blocked: 14, warned: 6, passed: 412, activeGates: 23, autoPromotedGates: 4, rules: 9, thumbsDown: 11, lessons: 27 },
+    recentBlocks: [
+      { reason: 'Push to a protected branch', context: 'git push origin main', timestamp: null },
+      { reason: 'Secret file write', context: 'Write .env', timestamp: null },
+      { reason: 'Purchase without approval', context: 'stripe charges create', timestamp: null },
+    ],
+    recentThumbsDown: [
+      { context: 'Agent said tests passed without running them', tags: ['claims'], promoted: true, timestamp: null },
+      { context: 'Deleted a migration file while cleaning up', tags: ['files'], promoted: false, timestamp: null },
+    ],
+    rules: [
+      { id: 1, title: 'Never force-push main' },
+      { id: 2, title: 'Run the test command before saying tests pass' },
+      { id: 3, title: 'Ask before writing to .env or key files' },
+    ],
+    plan: { tier: 'free', upgradeUrl: null },
+  };
+
+  function store(key, value) {
+    try {
+      if (value === undefined) return localStorage.getItem(key);
+      localStorage.setItem(key, value);
+    } catch (_) { /* storage can be blocked */ }
+    return null;
+  }
+
+  function relTime(ts) {
+    if (!ts) return '';
+    const t = Date.parse(ts);
+    if (!Number.isFinite(t)) return '';
+    const mins = Math.round((Date.now() - t) / 60000);
+    if (mins < 1) return 'just now';
+    if (mins < 60) return mins + ' min ago';
+    const hrs = Math.round(mins / 60);
+    if (hrs < 24) return hrs + ' h ago';
+    return Math.round(hrs / 24) + ' d ago';
+  }
+
+  function clockTime(d) {
+    return d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+  }
+
+  function fillList(el, items, tagClass, tagText, mainOf, metaOf, emptyText) {
+    el.textContent = '';
+    if (!items || items.length === 0) {
+      const li = document.createElement('li');
+      li.className = 'empty';
+      li.textContent = emptyText;
+      el.appendChild(li);
+      return;
+    }
+    for (const item of items) {
+      const li = document.createElement('li');
+      const tag = document.createElement('span');
+      tag.className = 'tag ' + tagClass;
+      tag.textContent = typeof tagText === 'function' ? tagText(item) : tagText;
+      const body = document.createElement('div');
+      body.className = 'body';
+      const main = document.createElement('div');
+      main.textContent = mainOf(item);
+      body.appendChild(main);
+      const metaText = metaOf ? metaOf(item) : '';
+      if (metaText) {
+        const meta = document.createElement('div');
+        meta.className = 'meta';
+        meta.textContent = metaText;
+        body.appendChild(meta);
+      }
+      li.append(tag, body);
+      el.appendChild(li);
+    }
+  }
+
+  function render(snap) {
+    const t = snap.totals || {};
+    $('n-blocked').textContent = t.blocked || 0;
+    $('n-warned').textContent = t.warned || 0;
+    $('n-gates').textContent = t.activeGates || 0;
+    $('n-rules').textContent = t.rules || 0;
+    $('n-down').textContent = t.thumbsDown || 0;
+    $('n-auto').textContent = t.autoPromotedGates || 0;
+    fillList($('blocks'), snap.recentBlocks, 'block', 'blocked',
+      (b) => b.reason || b.context || 'Blocked tool call',
+      (b) => [b.reason && b.context ? b.context : '', relTime(b.timestamp)].filter(Boolean).join(' · '),
+      'Nothing blocked yet. Blocks show up here as they happen.');
+    fillList($('downs'), snap.recentThumbsDown, 'down', (d) => (d.promoted ? 'rule' : 'down'),
+      (d) => d.context || 'Thumbs-down',
+      (d) => [(d.tags || []).join(', '), relTime(d.timestamp)].filter(Boolean).join(' · '),
+      'No thumbs-downs yet. Give your agent one when it gets something wrong.');
+    fillList($('rules'), snap.rules, 'rule', (r) => '#' + r.id, (r) => r.title, null,
+      'No prevention rules yet. They are made from thumbs-downs.');
+    $('rules-count').textContent = t.rules > (snap.rules || []).length ? 'showing ' + snap.rules.length + ' of ' + t.rules : '';
+    const free = snap.plan && snap.plan.tier === 'free';
+    $('upgrade').hidden = !free;
+    if (free && snap.plan.upgradeUrl && /^https:\/\/thumbgate\.ai\//.test(snap.plan.upgradeUrl)) {
+      $('upgrade-link').href = snap.plan.upgradeUrl;
+    }
+    const chip = $('source-chip');
+    chip.textContent = snap.sample ? 'Example data' : 'Live';
+    chip.className = 'chip ' + (snap.sample ? 'sample' : 'live');
+  }
+
+  function drawMark(size, template) {
+    const c = document.createElement('canvas');
+    c.width = c.height = size;
+    const g = c.getContext('2d');
+    const s = size / 256;
+    if (!template) {
+      g.fillStyle = '#1f5fae';
+      g.beginPath();
+      g.roundRect ? g.roundRect(0, 0, size, size, 56 * s) : g.rect(0, 0, size, size);
+      g.fill();
+    }
+    // Shield
+    g.beginPath();
+    g.moveTo(128 * s, 34 * s);
+    g.lineTo(206 * s, 64 * s);
+    g.lineTo(206 * s, 126 * s);
+    g.bezierCurveTo(206 * s, 176 * s, 172 * s, 208 * s, 128 * s, 226 * s);
+    g.bezierCurveTo(84 * s, 208 * s, 50 * s, 176 * s, 50 * s, 126 * s);
+    g.lineTo(50 * s, 64 * s);
+    g.closePath();
+    g.fillStyle = template ? '#000000' : '#ffffff';
+    g.fill();
+    // Gate bar through the shield
+    g.globalCompositeOperation = template ? 'destination-out' : 'source-over';
+    g.fillStyle = template ? '#000000' : '#1f5fae';
+    g.fillRect(84 * s, 118 * s, 88 * s, 26 * s);
+    g.fillRect(115 * s, 78 * s, 26 * s, 106 * s);
+    g.globalCompositeOperation = 'source-over';
+    return c;
+  }
+
+  function paintHeaderLogo() {
+    const target = $('logo');
+    const ctx = target.getContext('2d');
+    ctx.drawImage(drawMark(56, false), 0, 0);
+  }
+
+  function addAction(label, onClick, primary) {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.textContent = label;
+    if (primary) b.className = 'primary';
+    b.addEventListener('click', onClick);
+    $('notice-actions').appendChild(b);
+    return b;
+  }
+
+  function setNotice(text) {
+    $('notice').hidden = !text;
+    $('notice-text').textContent = text || '';
+    $('notice-actions').textContent = '';
+  }
+
+  render(SAMPLE);
+  paintHeaderLogo();
+
+  async function start() {
+    const desktop = window.claude && typeof window.claude.use === 'function'
+      ? await window.claude.use('desktop').catch(() => null)
+      : null;
+
+    if (!desktop || !desktop.childProcess) {
+      const state = desktop && desktop.install ? await desktop.install.state().catch(() => 'unavailable') : 'unavailable';
+      if (state === 'available') {
+        setNotice('Install ThumbGate Desktop to see live blocks, thumbs-downs and rules from your own computer, with a count in your menu bar. Until then the numbers below are examples.');
+        addAction('Install as app', async (ev) => {
+          ev.currentTarget.disabled = true;
+          const r = await desktop.install.request().catch(() => 'failed');
+          if (r === 'installed') setNotice('Installed. Open ThumbGate Desktop from your Claude Apps folder (Mac) or the Start menu (Windows).');
+          else ev.currentTarget.disabled = false;
+        }, true);
+      } else if (state === 'installed') {
+        setNotice('ThumbGate Desktop is installed on this computer. Open it from your Claude Apps folder (Mac) or the Start menu (Windows) to see your live numbers. The numbers below are examples.');
+      }
+      return;
+    }
+
+    // Inside the installed app.
+    desktop.app.dock.setIcon(drawMark(256, false).toDataURL('image/png')).catch(() => {});
+    desktop.window.setOptions({ titleBarStyle: 'hiddenInset', dragHeight: 40, width: 440, height: 720, minWidth: 340, minHeight: 420 }).catch(() => {});
+
+    const platform = await desktop.os.platform().catch(() => 'darwin');
+    let projectDir = store('tg.projectDir') || '~';
+    let lastBlocked = Number(store('tg.lastBlocked') || '-1');
+    let lastSnap = null;
+    let busy = false;
+    let timer = null;
+
+    $('settings').hidden = false;
+    $('project-dir').value = projectDir;
+    $('refresh').hidden = false;
+
+    async function expandDir(dir) {
+      if (dir === '~' || dir.startsWith('~/')) {
+        const home = await desktop.os.homedir();
+        return dir === '~' ? home : home + dir.slice(1);
+      }
+      return dir;
+    }
+
+    async function run(args, cwd) {
+      const cmd = platform === 'win32'
+        ? 'npx --yes thumbgate ' + args
+        : "/bin/zsh -lc 'npx --yes thumbgate " + args + "' 2>/dev/null || /bin/bash -lc 'npx --yes thumbgate " + args + "'";
+      const r = await desktop.childProcess.exec(cmd, {
+        cwd,
+        timeout: 90000,
+        env: { THUMBGATE_NO_NUDGE: '1' },
+      });
+      const out = r.stdout || '';
+      const i = out.indexOf('{');
+      const j = out.lastIndexOf('}');
+      if (i < 0 || j < i) throw new Error('ThumbGate printed no JSON' + (r.stderr ? ': ' + r.stderr.slice(0, 200) : ''));
+      return JSON.parse(out.slice(i, j + 1));
+    }
+
+    async function fromOlderCli(cwd) {
+      // Older releases have no reader for gate denies (explore firings is rejected feedback), so no block list.
+      const [stats, rules, lessons] = await Promise.all([
+        run('stats --json', cwd),
+        run('explore rules --json', cwd).catch(() => ({ rules: [] })),
+        run('explore lessons --json --limit=50', cwd).catch(() => ({ lessons: [] })),
+      ]);
+      const isDown = (s) => /^(down|thumbs_down)$|neg/i.test(String(s || ''));
+      const downs = (lessons.lessons || []).filter((l) => isDown(l.signal));
+      return {
+        schema: 'thumbgate.desktop-snapshot/v1',
+        totals: {
+          blocked: stats.gatesBlocked || 0, warned: stats.gatesWarned || 0, passed: 0,
+          activeGates: stats.totalGates || 0, autoPromotedGates: stats.autoPromotedGates || 0,
+          rules: (rules.rules || []).length, thumbsDown: stats.negatives || downs.length, lessons: stats.total || 0,
+        },
+        recentBlocks: [],
+        recentThumbsDown: downs.slice(0, 10).map((l) => ({ context: l.context, tags: l.tags || [], promoted: l.confidence === 'active', timestamp: l.timestamp })),
+        rules: (rules.rules || []).slice(0, 10).map((r) => ({ id: r.id, title: r.title })),
+        plan: { tier: 'free', upgradeUrl: null, unknown: true },
+      };
+    }
+
+    async function updateTray(snap) {
+      const state = await desktop.permissions.state('menu-bar').catch(() => 'unavailable');
+      if (state !== 'granted') return;
+      const t = snap.totals || {};
+      const menu = [
+        { label: t.blocked + ' blocked · ' + t.warned + ' warned', enabled: false },
+        { label: t.rules + ' rules · ' + t.thumbsDown + ' thumbs-downs', enabled: false },
+        { type: 'separator' },
+        { label: 'Open ThumbGate', click: () => desktop.window.show().catch(() => {}) },
+        { label: 'Refresh now', click: () => refresh(true) },
+        { type: 'separator' },
+      ];
+      const top = (snap.recentBlocks || [])[0];
+      if (top) menu.splice(2, 0, { label: 'Last block: ' + String(top.reason || top.context || '').slice(0, 60), enabled: false });
+      if (snap.plan && snap.plan.tier === 'free' && !snap.plan.unknown) {
+        menu.push({ label: 'See ThumbGate Pro', href: $('upgrade-link').href });
+      }
+      menu.push({ label: 'How this works', href: 'https://thumbgate.ai/learn/claude-artifact-desktop-apps' });
+      await desktop.tray.set({
+        icon: drawMark(36, true).toDataURL('image/png'),
+        title: String(t.blocked || 0),
+        toolTip: (t.blocked || 0) + ' tool calls blocked by ThumbGate',
+        menu,
+      }).catch(() => {});
+    }
+
+    async function maybeNotify(snap) {
+      const blocked = (snap.totals && snap.totals.blocked) || 0;
+      if (lastBlocked >= 0 && blocked > lastBlocked) {
+        const state = await desktop.permissions.state('notifications').catch(() => 'unavailable');
+        if (state === 'granted') {
+          const top = (snap.recentBlocks || [])[0];
+          const n = blocked - lastBlocked;
+          const body = 'ThumbGate blocked ' + n + ' tool call' + (n === 1 ? '' : 's') +
+            (top ? ': ' + String(top.reason || top.context || '').slice(0, 200) : '.');
+          desktop.notification.show({ body }).catch(() => {});
+        }
+      }
+      lastBlocked = blocked;
+      store('tg.lastBlocked', String(blocked));
+    }
+
+    async function refresh(fromPerson) {
+      if (busy) return;
+      busy = true;
+      $('refresh').disabled = true;
+      $('updated').textContent = 'Checking ThumbGate…';
+      try {
+        const cwd = await expandDir(projectDir);
+        let snap;
+        try {
+          snap = await run('desktop-snapshot --json', cwd);
+          if (snap.schema !== 'thumbgate.desktop-snapshot/v1') throw new Error('old CLI');
+        } catch (_) {
+          snap = await fromOlderCli(cwd);
+        }
+        lastSnap = snap;
+        render(snap);
+        desktop.app.dock.setBadge(snap.totals.blocked ? String(snap.totals.blocked) : '').catch(() => {});
+        await updateTray(snap);
+        await maybeNotify(snap);
+        $('updated').textContent = 'Updated ' + clockTime(new Date()) + ' · ' + projectDir;
+        renderPermissionNotice();
+      } catch (err) {
+        const msg = String((err && err.message) || err);
+        if (msg.startsWith('EPERM') || msg.startsWith('ENOSYS')) {
+          renderPermissionNotice();
+        } else {
+          setNotice('ThumbGate did not answer from ' + projectDir + '. Check that Node.js is installed and that this folder is a project where ThumbGate runs. Details: ' + msg.slice(0, 200));
+          addAction('Try again', () => refresh(true), true);
+        }
+        $('updated').textContent = 'Last try ' + clockTime(new Date()) + ' failed';
+      } finally {
+        busy = false;
+        $('refresh').disabled = false;
+      }
+    }
+
+    async function renderPermissionNotice() {
+      const states = await desktop.permissions.state().catch(() => null);
+      if (!states) return;
+      if (states['full-access'] !== 'granted') {
+        setNotice(states['full-access'] === 'denied'
+          ? 'ThumbGate Desktop needs access to this computer to read your ThumbGate data. You turned that off. You can turn it back on in Permissions.'
+          : 'To show your live numbers, ThumbGate Desktop runs one read-only command on this computer: npx thumbgate desktop-snapshot --json. Allow access to start.');
+        if (states['full-access'] === 'denied') addAction('Open Permissions', () => desktop.permissions.manage().catch(() => {}), true);
+        else if (states['full-access'] === 'prompt') addAction('Allow and connect', async () => {
+          await desktop.permissions.request(['full-access']).catch(() => {});
+          refresh(true);
+        }, true);
+        return;
+      }
+      const extras = ['menu-bar', 'notifications', 'shortcuts'].filter((p) => states[p] === 'prompt');
+      if (extras.length) {
+        setNotice('Add a block counter to your menu bar, an alert when ThumbGate blocks something, and ' + SHORTCUT.replace(/\+/g, '-') + ' to bring this window up.');
+        addAction('Turn these on', async () => {
+          await desktop.permissions.request(extras).catch(() => {});
+          await registerShortcut();
+          if (lastSnap) await updateTray(lastSnap);
+          renderPermissionNotice();
+        }, true);
+        addAction('Not now', () => setNotice(''));
+        return;
+      }
+      setNotice('');
+    }
+
+    async function registerShortcut() {
+      const state = await desktop.permissions.state('shortcuts').catch(() => 'unavailable');
+      if (state !== 'granted') return;
+      await desktop.globalShortcut.register(SHORTCUT, () => {
+        desktop.window.show().catch(() => {});
+        refresh(true);
+      }).catch(() => {});
+    }
+
+    $('refresh').addEventListener('click', () => refresh(true));
+    $('save-dir').addEventListener('click', () => {
+      const v = $('project-dir').value.trim();
+      if (!v) return;
+      projectDir = v;
+      store('tg.projectDir', v);
+      lastBlocked = -1;
+      refresh(true);
+    });
+
+    const fa = await desktop.permissions.state('full-access').catch(() => 'unavailable');
+    if (fa === 'granted') {
+      await registerShortcut();
+      refresh(false);
+      timer = setInterval(() => refresh(false), POLL_MS);
+    } else {
+      renderPermissionNotice();
+      $('updated').textContent = 'Not connected yet';
+      const poll = setInterval(async () => {
+        if ((await desktop.permissions.state('full-access').catch(() => '')) === 'granted' && !timer) {
+          clearInterval(poll);
+          await registerShortcut();
+          timer = setInterval(() => refresh(false), POLL_MS);
+        }
+      }, 5000);
+    }
+  }
+
+  start().catch(() => {});
+})();
+</script>

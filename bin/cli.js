@@ -556,10 +556,21 @@ function whichExists(cmd) {
   }));
 }
 
-function setupClaude() {
+// `init --project` keeps Claude Code hooks inside the repo (<repo>/.claude/settings.json)
+// instead of the machine-wide ~/.claude/settings.local.json. Before this, init ignored
+// the flag while the README and guide promised per-project hooks.
+// Only Claude Code: the Codex, Gemini and Forge wirers also read `settingsPath`.
+function claudeHookTarget(options = {}) {
+  if (!options.project) return {};
+  if (options.agent && options.agent !== 'claude-code') return {};
+  const projectSettings = path.join(CWD, '.claude', 'settings.json');
+  return { settingsPath: projectSettings, sharedSettingsPath: projectSettings, projectDir: CWD };
+}
+
+function setupClaude(options = {}) {
   const mcpChanged = mergeMcpJson(path.join(CWD, '.mcp.json'), 'Claude Code', 'project');
   const { wireHooks } = require(path.join(PKG_ROOT, 'scripts', 'auto-wire-hooks'));
-  const hookResult = wireHooks({ agent: 'claude-code' });
+  const hookResult = wireHooks({ agent: 'claude-code', ...claudeHookTarget(options) });
 
   if (hookResult.error) {
     console.log(`  Claude Code hooks: ${hookResult.error}`);
@@ -990,13 +1001,14 @@ function init(cliArgs = parseArgs(process.argv.slice(3))) {
     console.log('  --import-agent-plugins   Also import optional agent plugins when supported');
     console.log('  --email <email>          Subscribe installer to the setup guide and trial reminders');
     console.log('  --dry-run                Show hook changes without writing them');
+    console.log('  --project                Write Claude Code hooks to <repo>/.claude/settings.json instead of ~/.claude/settings.local.json');
     return;
   }
 
   // --wire-hooks only mode: skip scaffolding, just wire hooks
   if (args['wire-hooks']) {
     const { wireHooks, parseFlags: parseHookFlags } = require(path.join(PKG_ROOT, 'scripts', 'auto-wire-hooks'));
-    const hookResult = wireHooks({ agent: args.agent, dryRun: args['dry-run'] });
+    const hookResult = wireHooks({ agent: args.agent, dryRun: args['dry-run'], ...claudeHookTarget({ project: args.project === true, agent: args.agent || 'unknown' }) });
     if (hookResult.error) {
       console.error(hookResult.error);
       process.exit(1);
@@ -1087,7 +1099,7 @@ function init(cliArgs = parseArgs(process.argv.slice(3))) {
       () => whichExists('claude'),
       () => fs.existsSync(path.join(HOME, '.claude')),
       () => fs.existsSync(path.join(CWD, '.claude')),
-    ], setup: setupClaude },
+    ], setup: () => setupClaude({ project: args.project === true }) },
     { agent: 'codex', name: 'Codex', detect: [() => whichExists('codex'), () => fs.existsSync(path.join(HOME, '.codex'))], setup: setupCodex },
     {
       agent: 'gemini',
@@ -1151,7 +1163,7 @@ function init(cliArgs = parseArgs(process.argv.slice(3))) {
     if (!changed && !process.exitCode) console.log(`  ${args.agent}: already configured`);
   } else if (args.agent || args['wire-hooks']) {
     const { wireHooks } = require(path.join(PKG_ROOT, 'scripts', 'auto-wire-hooks'));
-    const hookResult = wireHooks({ agent: args.agent, dryRun: args['dry-run'] });
+    const hookResult = wireHooks({ agent: args.agent, dryRun: args['dry-run'], ...claudeHookTarget({ project: args.project === true, agent: args.agent || 'unknown' }) });
     if (hookResult.error) {
       // An explicit --agent that cannot be wired is a FAILURE, not a note. Exiting 0
       // here is what let a user believe `--agent opencode` had protected them.
@@ -3443,6 +3455,11 @@ function serve() {
     const { repairCodexHooks } = require(path.join(PKG_ROOT, 'scripts', 'codex-self-heal'));
     repairCodexHooks();
   } catch (_) { /* self-heal is best-effort */ }
+  try {
+    // Moves hooks that older inits left in the unread ~/.claude/settings.local.json.
+    const { repairUnreadClaudeHooks } = require(path.join(PKG_ROOT, 'scripts', 'claude-self-heal'));
+    repairUnreadClaudeHooks();
+  } catch (_) { /* self-heal is best-effort */ }
   // Start MCP server over stdio
   const mcpServer = path.join(PKG_ROOT, 'adapters', 'mcp', 'server-stdio.js');
   const { startStdioServer } = require(mcpServer);
@@ -3588,6 +3605,26 @@ function statuslineRender() {
   process.stdout.write(output);
 }
 
+function applyThumbHold(detected, prompt, promptEnvelope) {
+  try {
+    const sendGate = require(path.join(PKG_ROOT, 'scripts', 'send-gate'));
+    const { resolveFeedbackDir } = require(path.join(PKG_ROOT, 'scripts', 'feedback-paths'));
+    const feedbackDir = resolveFeedbackDir({ cwd: promptEnvelope.projectDir || CWD });
+    if (detected && detected.signal === 'down') {
+      const hold = sendGate.placeHold({ feedbackDir, sessionId: promptEnvelope.sessionId || process.env.CLAUDE_SESSION_ID || '', reason: prompt });
+      if (!hold) return null;
+      return hold.kind === 'post'
+        ? 'ThumbGate hold: thumbs-down received. New chat or colleague posts are refused until you edit the last bubble in place, or the person says "go ahead".'
+        : `ThumbGate hold: thumbs-down received. ${hold.signature ? `\`${hold.signature} …\`` : hold.toolName} is refused until the person says "go ahead". Ask what to change.`;
+    }
+    if ((detected && detected.signal === 'up') || (!detected && sendGate.isReleasePrompt(prompt))) {
+      const released = sendGate.releaseHolds({ feedbackDir });
+      return released ? `ThumbGate: ${released} hold(s) released by the person.` : null;
+    }
+  } catch { /* a hold never breaks prompt capture */ }
+  return null;
+}
+
 function hookAutoCapture() {
   syncActiveProjectContext();
   const { extractPromptEnvelope } = require(path.join(PKG_ROOT, 'scripts', 'feedback-sanitizer'));
@@ -3629,6 +3666,10 @@ function hookAutoCapture() {
   } catch { /* a reminder never blocks a prompt */ }
 
   const detected = detectFeedbackSignal(prompt);
+  // A thumbs-down holds the action that drew it before the agent's next tool call; a thumbs-up or "go ahead"
+  // releases it (scripts/send-gate.js).
+  const holdNote = applyThumbHold(detected, prompt, promptEnvelope);
+  if (holdNote) process.stdout.write(`${holdNote}\n`);
   if (!detected) {
     recordConversationEntry({
       author: 'user',
@@ -3668,7 +3709,12 @@ function hookAutoCapture() {
   // A thumbs-down is about the shell command the agent just ran. Attach it so repeated thumbs-downs on one command
   // can become a gate (without it the entry names no action and auto-promotion has nothing to match).
   let failedCommand;
-  if (signal === 'down') {
+  // A thumbs-down on what the agent SAID (an unchecked status claim) is not about the last command. Attaching it
+  // would turn the check itself (often `curl .../health`) into a gate; the claim rule handles it instead.
+  const aboutAClaim = (() => {
+    try { return require(path.join(PKG_ROOT, 'scripts', 'claim-gate-rules')).isClaimComplaint(prompt); } catch { return false; }
+  })();
+  if (signal === 'down' && !aboutAClaim) {
     try {
       const { resolveFeedbackDir } = require(path.join(PKG_ROOT, 'scripts', 'feedback-paths'));
       failedCommand = require(path.join(PKG_ROOT, 'scripts', 'recent-commands')).lastCommand({
@@ -4009,8 +4055,21 @@ function verifyClaimsCmd() {
 }
 
 function claimStopCheckCmd() {
-  const { main } = require(path.join(PKG_ROOT, 'scripts', 'hook-stop-anti-claim'));
-  main();
+  // Two Stop gates share this hook. The status-claim gate (claim-gate-stop.js: unchecked "sign-in refused", "host down",
+  // "ticket blocked", plus every rule a person's thumbs-down wrote) runs first and is on by default; then the
+  // completion-claim gate. Each runs as its own process on the same stdin; the first block wins.
+  const { spawnSync } = require('node:child_process');
+  const input = readStdinText();
+  const runGate = (file) => {
+    const out = spawnSync(process.execPath, [path.join(PKG_ROOT, 'scripts', file)], { input, env: process.env, encoding: 'utf8', timeout: 15000 });
+    return String((out && out.stdout) || '');
+  };
+  const claim = runGate('claim-gate-stop.js');
+  if (/"decision"\s*:\s*"block"/.test(claim)) {
+    process.stdout.write(claim);
+    return;
+  }
+  process.stdout.write(runGate('hook-stop-anti-claim.js'));
 }
 
 function help() {
@@ -4094,10 +4153,9 @@ function help() {
 
   // Legacy and specialist commands kept visible until they graduate into the schema.
   console.log('Also available:');
-  console.log('  install-mcp           Install MCP server + PreToolUse hooks into Claude Code settings');
-  console.log('                            default: machine-wide  (~/.claude/settings.json — shared dashboard)');
-  console.log('                            --project: per-repo    (<cwd>/.claude/settings.json — isolated dashboard)');
-  console.log('                            --no-hooks: MCP only, skip hook wiring');
+  console.log('  install-mcp           Add the ThumbGate MCP server to Claude Code settings (no hooks; init wires hooks)');
+  console.log('                            default: machine-wide  (~/.claude/settings.json)');
+  console.log('                            --project: per-repo    (<cwd>/.claude/settings.json)');
   console.log('  break-glass           Short TTL recovery if gates over-fire');
   console.log('  cfo                   Hosted billing summary (local fallback JSON)');
   console.log('  billing:setup         Generate operator key + print Railway setup instructions');
@@ -4242,6 +4300,7 @@ function help() {
   console.log('  npx thumbgate lessons "force push" --json');
   console.log('  npx thumbgate lessons --query="deploy" --remote');
   console.log('  npx thumbgate gate-stats --json');
+  console.log('  npx thumbgate desktop-snapshot --json');
   console.log('  npx thumbgate capture --feedback=down --context="agent broke deploy" --json');
   proNudge();
 }
@@ -4582,6 +4641,30 @@ switch (COMMAND) {
       process.stdout.write(JSON.stringify(out) + '\n');
       process.exit(out.permission === 'deny' ? 2 : 0);
     }).catch(() => { process.stdout.write('{"permission":"allow"}\n'); process.exit(0); });
+    break;
+  }
+  case 'cursor-mcp-gate': {
+    // Cursor beforeMCPExecution adapter: chat sends and every other MCP call go through the same gates (holds, send rules).
+    const cursorGate = require('../scripts/cursor-shell-gate');
+    cursorGate.runCursorMcpGate(require('node:fs').readFileSync(0, 'utf8')).then((out) => {
+      process.stdout.write(JSON.stringify(out) + '\n');
+      process.exit(out.permission === 'deny' ? 2 : 0);
+    }).catch(() => { process.stdout.write('{"permission":"allow"}\n'); process.exit(0); });
+    break;
+  }
+  case 'cursor-record': {
+    // Cursor afterShellExecution / afterMCPExecution / afterAgentResponse: record the turn for the stop-time claim gate.
+    try { require('../scripts/cursor-shell-gate').recordCursorEvent(JSON.parse(require('node:fs').readFileSync(0, 'utf8') || '{}')); } catch { /* never blocks */ }
+    process.stdout.write('{}\n');
+    process.exit(0);
+    break;
+  }
+  case 'cursor-stop': {
+    // Cursor stop: an unchecked status claim gets a follow-up message that sends the agent back to check (once).
+    let out = {};
+    try { out = require('../scripts/cursor-shell-gate').runCursorStop(JSON.parse(require('node:fs').readFileSync(0, 'utf8') || '{}')); } catch { out = {}; }
+    process.stdout.write(JSON.stringify(out) + '\n');
+    process.exit(0);
     break;
   }
   case 'gate-check':
@@ -5464,6 +5547,9 @@ switch (COMMAND) {
   }
   case 'gate-stats':
     gateStats();
+    break;
+  case 'desktop-snapshot':
+    require(path.join(PKG_ROOT, 'scripts', 'explore-subcommands')).runDesktopSnapshotCli(process.argv.slice(3));
     break;
   case 'verify-claims':
   case 'verify-claim':

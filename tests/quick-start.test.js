@@ -52,7 +52,7 @@ test('quick-start does not execute detected plugin managers by default', () => {
       'a Gemini quick-start should not configure unrelated Codex state',
     );
     assert.strictEqual(
-      fs.existsSync(path.join(tmp, '.home', '.claude', 'settings.local.json')),
+      fs.existsSync(path.join(tmp, '.home', '.claude', 'settings.json')),
       false,
       'a Gemini quick-start should not configure unrelated Claude state',
     );

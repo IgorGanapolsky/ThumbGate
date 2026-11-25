@@ -53,6 +53,8 @@ test('bulk-destroy commands are denied on a default install, read-only siblings 
       'sudo terraform destroy',
       'kubectl delete namespace prod',
       'kubectl delete pods --all-namespaces --all',
+      'kubectl delete pod web-1',
+      'aws s3 rm s3://bucket/file.txt',
       'bash -c "kubectl delete ns staging"',
       'docker system prune -a',
       'gcloud projects delete my-proj',
@@ -65,11 +67,9 @@ test('bulk-destroy commands are denied on a default install, read-only siblings 
       'terraform plan -destroy',
       'terraform apply',
       'kubectl get pods --all-namespaces',
-      'kubectl delete pod web-1',
       'docker system prune',
       'docker ps -a',
       'aws s3 ls s3://bucket --recursive',
-      'aws s3 rm s3://bucket/file.txt',
       "find . -name '*.pyc' -delete",
       'grep -rn "terraform destroy" docs/',
       'echo "aws s3 rm --recursive is dangerous"',
@@ -122,15 +122,23 @@ function thumbsDown(ctx, command, n) {
   cp.spawnSync(process.execPath, [CLI, 'hook-auto-capture'], { cwd: ctx.proj, env: ctx.env, input: payload, encoding: 'utf8', timeout: 60000 });
 }
 
+function goAhead(ctx) {
+  const payload = JSON.stringify({ session_id: 'bulk-test', cwd: ctx.proj, hook_event_name: 'UserPromptSubmit', prompt: 'go ahead' });
+  cp.spawnSync(process.execPath, [CLI, 'hook-auto-capture'], { cwd: ctx.proj, env: ctx.env, input: payload, encoding: 'utf8', timeout: 60000 });
+}
+
 test('two identical thumbs-downs from a person on one command create a gate that denies it; one does not', () => {
   const ctx = makeProject();
   try {
     const command = 'rm -rf tests/';
     assert.equal(gateCheck(ctx, command), 'allow', 'allowed before any thumbs-down');
     thumbsDown(ctx, command, 1);
-    assert.equal(gateCheck(ctx, command), 'allow', 'one thumbs-down is not enough');
+    assert.equal(gateCheck(ctx, command), 'deny', 'one thumbs-down holds the command right away (send-gate hold)');
+    goAhead(ctx);
+    assert.equal(gateCheck(ctx, command), 'allow', 'the person said go ahead: the hold is released, and one thumbs-down is not yet a gate');
     thumbsDown(ctx, command, 2);
-    assert.equal(gateCheck(ctx, command), 'deny', 'second identical thumbs-down creates a denying gate');
+    goAhead(ctx);
+    assert.equal(gateCheck(ctx, command), 'deny', 'second identical thumbs-down creates a denying gate that outlives the hold');
     assert.equal(gateCheck(ctx, 'rm -rf build/'), 'allow', 'a different command is untouched');
   } finally {
     fs.rmSync(ctx.proj, { recursive: true, force: true });
