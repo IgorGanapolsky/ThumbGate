@@ -803,13 +803,14 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // which were missing from the tarball and failed the 1.40.11 publish. Adding it (+6 KB) on top of the Today tab.
   // Bumped 10.5 MB -> 10.55 MB (2026-11-24): scripts/cost-meter.js, scripts/unit-economics.js and
   // config/unit-costs.json for the owner console's unit economics (measured 10,513,990 unpacked, +36 KB headroom).
+  // Bumped 10.73 MB -> 10.74 MB (2026-11-25): four Siren boundary gates in config/gates/default.json (+~5 KB; CI measured 10,730,544).
   // Bumped 10.71 MB -> 10.73 MB (2026-11-25): the claim gate and its learned-rules module now ship (AGENT-3667 item N).
   // Bumped 10.65 MB -> 10.71 MB (2026-11-25): the plugin hook script and four modules it loads now ship (AGENT-3667 item K).
   // Bumped 10.62 MB -> 10.65 MB (2026-11-25): canary-gate.js, boundary-check.js, prompt-risk-lint.js (AGENT-3667 item J).
   // Bumped 10.55 MB -> 10.62 MB (2026-11-25): the files above that were missing from `files`
   // (runtime requires that crashed or silently failed in the published package) and the pinned-hook fix.
-  manifest.unpackedSize <= 10_730_000,
-  `npm package should stay <= 10.73 MB unpacked, got ${manifest.unpackedSize}`
+  manifest.unpackedSize <= 10_740_000,
+  `npm package should stay <= 10.74 MB unpacked, got ${manifest.unpackedSize}`
 );
 
   for (const file of requiredRuntimeFiles) {
