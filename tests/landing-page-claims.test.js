@@ -137,3 +137,26 @@ test('founder 30-day proof page stays a founder audit, not a customer story', ()
   assert.doesNotMatch(html, /15,?000|our customer|Acme Corp|support@thumbgate\.ai|ghp_|sk-ant-/i);
   assert.doesNotMatch(html, /top 5|fourth category|fifth category/i);
 });
+
+test('homepage deploy-proof claim matches the shipped Stop hook', () => {
+  const { spawnSync } = require('node:child_process');
+  const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'landing-deploy-proof-'));
+  const env = { ...process.env, THUMBGATE_DEPLOY_PROOF_GATE: '', THUMBGATE_STRICT_ENFORCEMENT: '' };
+  delete env.THUMBGATE_CLAIM_VERIFIERS_PATH;
+  delete env.CLAUDE_RESPONSE;
+  delete env.CLAUDE_TRANSCRIPT_PATH;
+  const stop = (payload) => spawnSync('node', ['bin/cli.js', 'claim-stop-check'], {
+    cwd: ROOT, input: JSON.stringify({ cwd, ...payload }), env, encoding: 'utf8',
+  }).stdout.trim();
+
+  const blocked = JSON.parse(stop({ last_assistant_message: 'The login fix is deployed and live.' }));
+  assert.equal(blocked.decision, 'block');
+  assert.equal(blocked.gate, 'deploy-proof');
+  // Blocks once: the stop_hook_active retry is always allowed.
+  assert.equal(stop({ last_assistant_message: 'The login fix is deployed and live.', stop_hook_active: true }), '');
+  assert.equal(stop({ last_assistant_message: 'Deployed. curl -s https://app.example.com/health returned {"status":"ok","buildSha":"a6d96f15"}' }), '');
+
+  assert.match(HOME_HTML, /id="proof-before-claim"/);
+  assert.match(HOME_HTML, /blocks once so a reply can never loop/);
+  assert.match(HOME_HTML, /with no proof from production in the reply<\/th><td>Reply blocked once<\/td>/);
+});

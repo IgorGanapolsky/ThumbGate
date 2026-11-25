@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Stop your AI agent from saying "deployed" without proof - ThumbGate</title>
+<script defer data-domain="thumbgate.ai" src="https://plausible.io/js/script.js"></script>
+<meta name="description" content="ThumbGate's deploy-proof gate is a Claude Code Stop hook. When the agent says deployed, shipped, or live without curl output, a /health snapshot, a buildSha, or an HTTP 200 from production in the same reply, the reply is sent back to the agent to check first.">
+<meta name="keywords" content="Claude Code Stop hook, AI agent deployment verification, agent says deployed without checking, unverified completion claims, proof before claim, ThumbGate">
+<meta property="og:title" content="Stop your AI agent from saying &quot;deployed&quot; without proof">
+<meta property="og:description" content="A Claude Code Stop hook that sends &quot;it's live&quot; back to the agent until the reply shows proof from production.">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://thumbgate.ai/learn/proof-before-claim-deploy-gate">
+<meta property="og:image" content="https://thumbgate.ai/assets/diagrams/deploy-proof-gate.png">
+<link rel="canonical" href="https://thumbgate.ai/learn/proof-before-claim-deploy-gate">
+<link rel="stylesheet" href="/learn/learn.css">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "TechArticle",
+  "headline": "Stop your AI agent from saying \"deployed\" without proof",
+  "description": "How ThumbGate's deploy-proof gate, a Claude Code Stop hook, sends unproven deploy claims back to the agent, what counts as proof, how to configure production hosts, and what it does not catch.",
+  "image": "https://thumbgate.ai/assets/diagrams/deploy-proof-gate.png",
+  "author": {
+    "@type": "Person",
+    "name": "Igor Ganapolsky",
+    "url": "https://github.com/IgorGanapolsky"
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "ThumbGate",
+    "url": "https://thumbgate.ai"
+  },
+  "datePublished": "2026-11-25",
+  "dateModified": "2026-11-25",
+  "mainEntityOfPage": "https://thumbgate.ai/learn/proof-before-claim-deploy-gate"
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "What does the deploy-proof gate block?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "A Claude Code reply that says deployed, shipped, now live, or in production, when neither the reply nor a tool call in the same message shows curl output from production, a /health JSON snapshot, a buildSha, an HTTP 200 from the host, or a CI line you configured. Negated, hypothetical, and question forms are skipped."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Can it get the agent stuck in a loop?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "No. It blocks once. Claude Code then runs the Stop hook again with stop_hook_active set, and ThumbGate always allows that run. The block gives the agent one correction turn to run the check or retract the claim."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "How do I turn it off?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Set THUMBGATE_DEPLOY_PROOF_GATE=0, or put \"enabled\": false in .thumbgate/deploy-proof.json."
+      }
+    }
+  ]
+}
+</script>
+<style>
+  .shot { margin: 24px 0; }
+  .shot img { width: 100%; height: auto; border-radius: 8px; border: 1px solid var(--border, #2a3440); display: block; }
+  .shot figcaption { color: var(--muted); font-size: 0.85rem; margin-top: 8px; }
+  p code, li code { overflow-wrap: anywhere; }
+  pre.code { background: #0d1117; color: #d7dde4; padding: 14px 16px; border-radius: 8px; overflow-x: auto; font-size: 0.9rem; }
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="/" class="brand"><img src="/assets/brand/thumbgate-mark-inline-v3.svg" alt="ThumbGate" class="logo-mark" width="28" height="28"><span class="logo-text">ThumbGate</span></a>
+  <a href="/guide">Setup Guide</a>
+  <a href="/learn">Learn</a>
+  <a href="/compare">Compare</a>
+  <a href="https://github.com/IgorGanapolsky/ThumbGate" target="_blank" rel="noopener">GitHub</a>
+</nav>
+
+<div class="container">
+  <div class="breadcrumb"><a href="/learn">Learn</a> / Deploy-proof gate</div>
+  <h1>Stop your AI agent from saying "deployed" without proof</h1>
+  <p style="color:var(--muted);">4 min read &middot; For developers who ship with Claude Code</p>
+
+  <div class="tldr"><strong>TL;DR:</strong> Coding agents say "it's live" before anyone checked. ThumbGate's deploy-proof gate is a Claude Code Stop hook: if the reply claims a deploy and shows no proof from production, Claude Code hands the reply back to the agent with instructions to run the check and paste the output. It is on by default in ThumbGate 1.43.0 and later.</div>
+
+  <figure class="shot">
+    <img src="/assets/diagrams/deploy-proof-gate.png" width="1100" height="392" alt="Terminal: the agent says the login fix is deployed and live. ThumbGate's Stop hook blocks the reply because it shows no proof from production. The agent runs curl against the /health endpoint, pastes the JSON with version and buildSha, and the Stop hook allows the reply." loading="lazy" decoding="async">
+    <figcaption>The block message and the allow are the real output of <code>thumbgate claim-stop-check</code> on 25 Nov 2026, and the JSON is a real <code>/health</code> response from thumbgate.ai. The terminal frame is redrawn for readability.</figcaption>
+  </figure>
+
+  <h2>The failure it targets</h2>
+  <p>An agent merges a PR and writes "Deployed, it's live." The deploy is still building, or it failed, or it went to the wrong service. You believe it because the sentence sounds finished. We hit this ourselves: on 26 March 2026 an agent working on ThumbGate said "deployed" three times while the production container was failing to rebuild. The fix we used on our own repo is the hook this page describes, now generalized so any project can use it.</p>
+
+  <h2>What it does</h2>
+  <ol>
+    <li>When the agent finishes a reply, Claude Code runs the Stop hook that <code>npx thumbgate init</code> installs (<code>thumbgate claim-stop-check</code>). The ThumbGate Claude plugin runs the same hook.</li>
+    <li>The hook looks for a deploy claim: "deployed", "shipped", "now live", "is live", "in production". It skips "not deployed yet", "once it is deployed", "will be live", and questions.</li>
+    <li>It looks for proof in the same reply, or in a tool call from the same message: curl output against the production host, a <code>/health</code> JSON snapshot, a <code>buildSha</code>, an HTTP 200 from the host, or a CI line you name, such as "Deploy verified".</li>
+    <li>Claim and no proof: the reply is blocked once, and the agent is told to run the check and paste the output, or to say "not verified".</li>
+  </ol>
+
+  <h2>Set your production hosts</h2>
+  <p>Without configuration, proof from any https host counts. To require proof from your real production host, add <code>.thumbgate/deploy-proof.json</code>:</p>
+  <pre class="code">{
+  "hosts": ["app.example.com"],
+  "sentinels": ["Deploy verified"]
+}</pre>
+  <p>Or set <code>THUMBGATE_PROD_HOSTS=app.example.com,api.example.com</code>. Turn the gate off with <code>THUMBGATE_DEPLOY_PROOF_GATE=0</code>.</p>
+
+  <h2>What it does not do</h2>
+  <ul>
+    <li><strong>It blocks once, not forever.</strong> Claude Code gives the agent one correction turn, and ThumbGate allows that retry so a reply can never loop. An agent that ignores the instruction can still repeat the claim on the retry.</li>
+    <li><strong>It checks that proof is present, not that it is true.</strong> It does not call your server itself. A pasted health response from the wrong environment passes unless you set your hosts.</li>
+    <li><strong>It matches words.</strong> "The new build is up" is not a deploy claim to this hook.</li>
+    <li><strong>Claude Code only.</strong> Cursor, Codex, and other agents do not get this Stop-time check yet.</li>
+    <li>Other completion claims, such as "done" or "fixed", get a reminder by default and a block only in strict mode (<code>THUMBGATE_STRICT_ENFORCEMENT=1</code>).</li>
+  </ul>
+
+  <div class="cta-box">
+    <h2>Make "it's live" mean something</h2>
+    <p>Install ThumbGate in a Claude Code project. The deploy-proof gate is on by default.</p>
+    <div class="cta-install">npx thumbgate init</div>
+    <div class="cta-actions">
+      <a class="cta-link" href="/guide">Read the setup guide</a>
+      <a class="cta-link cta-link-secondary" href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/scripts/deploy-proof-gate.js" target="_blank" rel="noopener">Read the hook source</a>
+    </div>
+  </div>
+
+  <div class="related">
+    <h2>Related</h2>
+    <a href="/learn/anthropomorphic-claim-gates">Claim gates for agent replies</a>
+    <a href="/learn/from-prototype-to-production">From prototype to production</a>
+    <a href="/learn/stop-ai-agent-force-push">How to stop AI agents from force-pushing</a>
+  </div>
+</div>
+
+<div class="sticky-cta">
+  <span>Require proof before "deployed"</span>
+  <code>npx thumbgate init</code>
+  <a href="/guide?utm_source=deploy_proof_gate&amp;utm_medium=learn&amp;utm_campaign=proof_before_claim">Setup guide</a>
+</div>
+
+</body>
+</html>
