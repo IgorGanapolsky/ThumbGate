@@ -52,18 +52,44 @@ test('rm -rf ./src (a project folder, not home or root) is not denied', () => {
   } finally { w.done(); }
 });
 
-test('git commit with a staged fake AWS key is NOT denied: it only gets the task-scope warning', () => {
+function stage(w, rel, content) {
+  fs.mkdirSync(path.dirname(path.join(w.project, rel)), { recursive: true });
+  fs.writeFileSync(path.join(w.project, rel), content);
+  cp.execFileSync('git', ['add', rel], { cwd: w.project });
+}
+
+test('git commit with a staged fake AWS key is denied by the secret guard, and the reason does not print the key', () => {
   const w = world();
   try {
-    fs.writeFileSync(path.join(w.project, 'src', 'config.js'), `module.exports = { aws: '${FAKE_KEY}' };\n`);
-    cp.execFileSync('git', ['add', 'src/config.js'], { cwd: w.project });
-    const staged = cp.execFileSync('git', ['diff', '--cached', '--name-only'], { cwd: w.project, encoding: 'utf8' }).trim();
-    assert.equal(staged, 'src/config.js', 'the fake secret is staged');
+    stage(w, 'src/config.js', `module.exports = { aws: '${FAKE_KEY}' };\n`);
     const r = gate(w, 'git commit -m "add config"');
-    // Measured 25 Nov 2026, default mode: the commit is NOT denied. The only flag is the task-scope warning, and no gate
-    // looks at the staged content. If someone adds a staged-secret gate this test fails, and its title should change.
-    assert.notEqual(r.decision, 'deny', JSON.stringify(r));
-    assert.match(r.extra, /\[GATE:task-scope-required\] WARNING/);
-    assert.doesNotMatch(`${r.reason} ${r.extra}`, /secret|credential|AWS/i, 'no gate names the staged secret');
+    assert.equal(r.decision, 'deny', JSON.stringify(r));
+    assert.match(r.reason, /AWS access key/);
+    assert.match(r.reason, /src\/config\.js/);
+    assert.ok(!r.reason.includes(FAKE_KEY), 'the key itself is never echoed');
+  } finally { w.done(); }
+});
+
+test('git commit -am denies a key in a tracked file edited but not yet staged', () => {
+  const w = world();
+  try {
+    stage(w, 'src/a.js', 'module.exports = 1;\n');
+    cp.execFileSync('git', ['commit', '-q', '-m', 'init'], { cwd: w.project });
+    fs.writeFileSync(path.join(w.project, 'src', 'a.js'), `module.exports = '${FAKE_KEY}';\n`);
+    assert.equal(gate(w, 'git commit -am "tweak"').decision, 'deny');
+    assert.notEqual(gate(w, 'git commit -m "tweak"').decision, 'deny', 'without -a nothing is staged, so nothing to block');
+  } finally { w.done(); }
+});
+
+test('git commit of clean staged files, a removed key, --dry-run and a non-repo are not denied', () => {
+  const w = world();
+  try {
+    stage(w, 'src/clean.js', 'module.exports = 42;\n');
+    assert.notEqual(gate(w, 'git commit -m "clean"').decision, 'deny');
+    cp.execFileSync('git', ['commit', '-q', '-m', 'clean'], { cwd: w.project });
+    stage(w, 'src/old.js', `x = '${FAKE_KEY}'\n`);
+    assert.notEqual(gate(w, 'git commit --dry-run').decision, 'deny', '--dry-run writes nothing');
+    cp.execFileSync('git', ['rm', '-q', '-f', 'src/old.js'], { cwd: w.project });
+    assert.notEqual(gate(w, 'git commit -m "remove it"').decision, 'deny', 'a deletion adds no line');
   } finally { w.done(); }
 });
