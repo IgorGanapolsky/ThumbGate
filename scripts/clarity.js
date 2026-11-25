@@ -74,9 +74,11 @@ const CHECKOUT_HANDLER = [
   '  },true);',
 ];
 
-// Pages that link to Pro checkout get the click handler; form-only pages (partner intake, etc.) stay free of
-// checkout references.
+// Pages that link to Pro checkout, or load a script that inserts such links (connect-panel.js, buyer-intent.js),
+// get the click handler; form-only pages (partner intake, etc.) stay free of checkout references.
 const PRO_CHECKOUT_LINK = /href=["'](https?:\/\/(www\.)?thumbgate\.ai)?\/checkout\/pro(\?|#|["'])/i;
+const CHECKOUT_LINK_SCRIPT = /<script\b[^>]*\bsrc=["'][^"']*\/js\/(connect-panel|buyer-intent)\.js/i;
+const linksToProCheckout = (html) => PRO_CHECKOUT_LINK.test(html) || CHECKOUT_LINK_SCRIPT.test(html);
 
 function buildClarityTag(projectId, { trackCheckout = true } = {}) {
   if (!PROJECT_ID_PATTERN.test(projectId || '')) return '';
@@ -102,7 +104,7 @@ function injectClarityTag(html, { pathname = '/', headers = {}, env = process.en
   const projectId = resolveClarityProjectId(env);
   if (!projectId || isPrivatePath(pathname) || hasPrivacySignal(headers)) return html;
   if (html.includes('www.clarity.ms/tag/')) return html;
-  return maskFormFields(html).replace(/<\/head>/i, `${buildClarityTag(projectId, { trackCheckout: PRO_CHECKOUT_LINK.test(html) })}\n</head>`);
+  return maskFormFields(html).replace(/<\/head>/i, `${buildClarityTag(projectId, { trackCheckout: linksToProCheckout(html) })}\n</head>`);
 }
 
 // Marks forms and fields outside <script>, <style> and <template> blocks, so markup inside JS strings is untouched.

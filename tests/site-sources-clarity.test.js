@@ -177,3 +177,12 @@ test('REQ-02: a page with no Pro checkout link gets the tag without the checkout
   assert.match(html, /www\.clarity\.ms\/tag\//);
   assert.equal(/checkout/i.test(html), false);
 });
+
+test('REQ-02: pages whose scripts insert Pro checkout links keep the checkout_click handler', () => {
+  for (const name of ['connect-panel', 'buyer-intent']) {
+    const html = clarity.injectClarityTag(`<html><head><script src="/js/${name}.js" defer></script></head><body></body></html>`, { pathname: '/preview', headers: {}, env: {} });
+    assert.match(html, /checkout_click/, name);
+  }
+  const preview = fs.readFileSync(path.join(PUBLIC, 'preview.html'), 'utf8');
+  assert.match(clarity.injectClarityTag(preview, { pathname: '/preview', headers: {}, env: {} }), /checkout_click/);
+});
