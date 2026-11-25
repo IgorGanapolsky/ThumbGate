@@ -63,8 +63,26 @@ function hasPrivacySignal(headers = {}) {
   return get('sec-gpc') === '1' || get('dnt') === '1';
 }
 
-function buildClarityTag(projectId) {
+// Pro checkout click: one custom event, then the link proceeds. The handler never touches the navigation.
+const CHECKOUT_HANDLER = [
+  "  l.addEventListener('click',function(e){",
+  '    try {',
+  "      var n=e.target; while (n && n.nodeType===1 && !(n.tagName==='A' && n.getAttribute('href'))) n=n.parentNode;",
+  '      if (!n || n.nodeType!==1) return;',
+  "      if (/^(https?:\\/\\/(www\\.)?thumbgate\\.ai)?\\/checkout\\/pro(\\?|#|$)/i.test(n.getAttribute('href'))) c[a]('event','checkout_click');",
+  '    } catch (_) {}',
+  '  },true);',
+];
+
+// Pages that link to Pro checkout, or load a script that inserts such links (connect-panel.js, buyer-intent.js),
+// get the click handler; form-only pages (partner intake, etc.) stay free of checkout references.
+const PRO_CHECKOUT_LINK = /href=["'](https?:\/\/(www\.)?thumbgate\.ai)?\/checkout\/pro(\?|#|["'])/i;
+const CHECKOUT_LINK_SCRIPT = /<script\b[^>]*\bsrc=["'][^"']*\/js\/(connect-panel|buyer-intent)\.js/i;
+const linksToProCheckout = (html) => PRO_CHECKOUT_LINK.test(html) || CHECKOUT_LINK_SCRIPT.test(html);
+
+function buildClarityTag(projectId, { trackCheckout = true } = {}) {
   if (!PROJECT_ID_PATTERN.test(projectId || '')) return '';
+  const checkoutHandler = trackCheckout ? CHECKOUT_HANDLER : [];
   return [
     '<script>',
     '(function(c,l,a,r,i,t,y){',
@@ -74,14 +92,7 @@ function buildClarityTag(projectId) {
     '  y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);',
     // No consent call and no guess from the browser time zone. Clarity applies Consent Mode itself for visitors in the
     // EEA, UK and Switzerland: it waits for a consent signal before setting cookies, and this site sends none.
-    // Pro checkout click: one custom event, then the link proceeds. The handler never touches the navigation.
-    "  l.addEventListener('click',function(e){",
-    '    try {',
-    "      var n=e.target; while (n && n.nodeType===1 && !(n.tagName==='A' && n.getAttribute('href'))) n=n.parentNode;",
-    '      if (!n || n.nodeType!==1) return;',
-    "      if (/^(https?:\\/\\/(www\\.)?thumbgate\\.ai)?\\/checkout\\/pro(\\?|#|$)/i.test(n.getAttribute('href'))) c[a]('event','checkout_click');",
-    '    } catch (_) {}',
-    '  },true);',
+    ...checkoutHandler,
     `})(window, document, "clarity", "script", "${projectId}");`,
     '</script>',
   ].join('\n');
@@ -93,7 +104,7 @@ function injectClarityTag(html, { pathname = '/', headers = {}, env = process.en
   const projectId = resolveClarityProjectId(env);
   if (!projectId || isPrivatePath(pathname) || hasPrivacySignal(headers)) return html;
   if (html.includes('www.clarity.ms/tag/')) return html;
-  return maskFormFields(html).replace(/<\/head>/i, `${buildClarityTag(projectId)}\n</head>`);
+  return maskFormFields(html).replace(/<\/head>/i, `${buildClarityTag(projectId, { trackCheckout: linksToProCheckout(html) })}\n</head>`);
 }
 
 // Marks forms and fields outside <script>, <style> and <template> blocks, so markup inside JS strings is untouched.

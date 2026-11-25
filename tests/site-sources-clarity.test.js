@@ -17,7 +17,7 @@ const CLARITY_ID = 'zjaflwztgq';
 const OTHER_SITE_ID = ['zjac22a5n1'].join('');
 
 function injectedTag() {
-  const html = clarity.injectClarityTag('<html><head></head><body></body></html>', { pathname: '/', headers: {}, env: {} });
+  const html = clarity.injectClarityTag('<html><head></head><body><a href="/checkout/pro">Pro</a></body></html>', { pathname: '/', headers: {}, env: {} });
   const match = /<script>([\s\S]*?)<\/script>/.exec(html);
   assert.ok(match, 'the public home page gets the Clarity tag');
   return { html, source: match[1] };
@@ -170,4 +170,19 @@ test('REQ-03: real events show their last time; bot, internal and owner rows are
     for (const id of ['plausible', 'google_analytics', 'clarity']) assert.equal(tiles[id].status, 'not_installed', id);
     assert.equal(/api[_-]?key|token|secret/i.test(JSON.stringify(result)), false, 'no credential field in the payload');
   } finally { fs.rmSync(f.dir, { recursive: true, force: true }); }
+});
+
+test('REQ-02: a page with no Pro checkout link gets the tag without the checkout_click handler', () => {
+  const html = clarity.injectClarityTag('<html><head></head><body><form action="/v1/intake/x"></form></body></html>', { pathname: '/partner-intake', headers: {}, env: {} });
+  assert.match(html, /www\.clarity\.ms\/tag\//);
+  assert.equal(/checkout/i.test(html), false);
+});
+
+test('REQ-02: pages whose scripts insert Pro checkout links keep the checkout_click handler', () => {
+  for (const name of ['connect-panel', 'buyer-intent']) {
+    const html = clarity.injectClarityTag(`<html><head><script src="/js/${name}.js" defer></script></head><body></body></html>`, { pathname: '/preview', headers: {}, env: {} });
+    assert.match(html, /checkout_click/, name);
+  }
+  const preview = fs.readFileSync(path.join(PUBLIC, 'preview.html'), 'utf8');
+  assert.match(clarity.injectClarityTag(preview, { pathname: '/preview', headers: {}, env: {} }), /checkout_click/);
 });
