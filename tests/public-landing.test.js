@@ -646,7 +646,8 @@ test('homepage stays human-scannable instead of becoming a product monorepo', ()
   // 1520: catastrophic commands are denied by default, which the page now has to say (18 Nov 2026).
   // 1550: the coverage tables now say Cursor shell commands are denied, other Cursor tools advisory (24 Nov 2026).
   // 1640: the proof-before-claim section and its coverage row say what the deploy-proof Stop gate does and does not catch (25 Nov 2026).
-  assert.ok(words.length <= 1640, `visible homepage is ${words.length} words`);
+  // 1645: the hero line says the enforcement path needs no cloud, matching the README and tests/enforcement-path-offline.test.js (25 Nov 2026).
+  assert.ok(words.length <= 1645, `visible homepage is ${words.length} words`);
   assert.ok(h2Count <= 8, `homepage has ${h2Count} H2 headings`);
   assert.ok(h3Count <= 10, `homepage has ${h3Count} H3 headings`);
   for (const jargon of ['Thompson Sampling', 'DPO', 'LanceDB', 'ContextFS', 'MemAlign', 'FTS5']) {
