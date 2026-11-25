@@ -556,10 +556,21 @@ function whichExists(cmd) {
   }));
 }
 
-function setupClaude() {
+// `init --project` keeps Claude Code hooks inside the repo (<repo>/.claude/settings.json)
+// instead of the machine-wide ~/.claude/settings.local.json. Before this, init ignored
+// the flag while the README and guide promised per-project hooks.
+// Only Claude Code: the Codex, Gemini and Forge wirers also read `settingsPath`.
+function claudeHookTarget(options = {}) {
+  if (!options.project) return {};
+  if (options.agent && options.agent !== 'claude-code') return {};
+  const projectSettings = path.join(CWD, '.claude', 'settings.json');
+  return { settingsPath: projectSettings, sharedSettingsPath: projectSettings, projectDir: CWD };
+}
+
+function setupClaude(options = {}) {
   const mcpChanged = mergeMcpJson(path.join(CWD, '.mcp.json'), 'Claude Code', 'project');
   const { wireHooks } = require(path.join(PKG_ROOT, 'scripts', 'auto-wire-hooks'));
-  const hookResult = wireHooks({ agent: 'claude-code' });
+  const hookResult = wireHooks({ agent: 'claude-code', ...claudeHookTarget(options) });
 
   if (hookResult.error) {
     console.log(`  Claude Code hooks: ${hookResult.error}`);
@@ -990,13 +1001,14 @@ function init(cliArgs = parseArgs(process.argv.slice(3))) {
     console.log('  --import-agent-plugins   Also import optional agent plugins when supported');
     console.log('  --email <email>          Subscribe installer to the setup guide and trial reminders');
     console.log('  --dry-run                Show hook changes without writing them');
+    console.log('  --project                Write Claude Code hooks to <repo>/.claude/settings.json instead of ~/.claude/settings.local.json');
     return;
   }
 
   // --wire-hooks only mode: skip scaffolding, just wire hooks
   if (args['wire-hooks']) {
     const { wireHooks, parseFlags: parseHookFlags } = require(path.join(PKG_ROOT, 'scripts', 'auto-wire-hooks'));
-    const hookResult = wireHooks({ agent: args.agent, dryRun: args['dry-run'] });
+    const hookResult = wireHooks({ agent: args.agent, dryRun: args['dry-run'], ...claudeHookTarget({ project: args.project === true, agent: args.agent || 'unknown' }) });
     if (hookResult.error) {
       console.error(hookResult.error);
       process.exit(1);
@@ -1087,7 +1099,7 @@ function init(cliArgs = parseArgs(process.argv.slice(3))) {
       () => whichExists('claude'),
       () => fs.existsSync(path.join(HOME, '.claude')),
       () => fs.existsSync(path.join(CWD, '.claude')),
-    ], setup: setupClaude },
+    ], setup: () => setupClaude({ project: args.project === true }) },
     { agent: 'codex', name: 'Codex', detect: [() => whichExists('codex'), () => fs.existsSync(path.join(HOME, '.codex'))], setup: setupCodex },
     {
       agent: 'gemini',
@@ -1151,7 +1163,7 @@ function init(cliArgs = parseArgs(process.argv.slice(3))) {
     if (!changed && !process.exitCode) console.log(`  ${args.agent}: already configured`);
   } else if (args.agent || args['wire-hooks']) {
     const { wireHooks } = require(path.join(PKG_ROOT, 'scripts', 'auto-wire-hooks'));
-    const hookResult = wireHooks({ agent: args.agent, dryRun: args['dry-run'] });
+    const hookResult = wireHooks({ agent: args.agent, dryRun: args['dry-run'], ...claudeHookTarget({ project: args.project === true, agent: args.agent || 'unknown' }) });
     if (hookResult.error) {
       // An explicit --agent that cannot be wired is a FAILURE, not a note. Exiting 0
       // here is what let a user believe `--agent opencode` had protected them.

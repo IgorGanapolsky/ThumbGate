@@ -94,17 +94,14 @@ Per-agent guides: [Claude/Codex bridge](plugins/claude-codex-bridge/README.md) �
 
 ### Install scope: machine-wide vs per-project
 
-What `npx thumbgate init` writes, checked on Nov 25, 2026 in a clean home and repo:
+| Scope | Command | Claude Code hooks | MCP entry | Lessons and dashboard data |
+|-------|---------|-------------------|-----------|----------------------------|
+| **Machine-wide** (default) | `npx thumbgate init` | `~/.claude/settings.local.json`, so they run in every repo on this machine | `<repo>/.mcp.json` | `<repo>/.thumbgate/` |
+| **Per-project** | `npx thumbgate init --project` | `<repo>/.claude/settings.json`, so they run only in this repo | `<repo>/.mcp.json` | `<repo>/.thumbgate/` |
 
-| What | Where | Scope |
-|------|-------|-------|
-| Claude Code hooks (PreToolUse and the others) | `~/.claude/settings.local.json` | **Machine-wide**: they run in every repo on this machine |
-| MCP server entry | `<repo>/.mcp.json` | **Per-project** |
-| Lessons, feedback log and dashboard data | `<repo>/.thumbgate/` | **Per-project**: a 👎 in `repo-A` does not flag anything in `repo-B` |
+Lessons stay per repo in both scopes: a 👎 in `repo-A` does not flag anything in `repo-B`. Cross-repo blocking is not automatic. Older installs that already have `<repo>/.claude/memory/feedback/` or `~/.thumbgate/projects/<name>/` keep using that store. Keep `.thumbgate/` out of git. `<repo>/.claude/settings.json` is the file teams usually commit, so check the hook paths in it before you commit it.
 
-`init --project` writes the same files as `init` today. For an MCP-only install, `npx thumbgate install-mcp` adds `mcpServers.thumbgate` to `~/.claude/settings.json`, and `npx thumbgate install-mcp --project` adds it to `<repo>/.claude/settings.json` instead. Neither writes hooks.
-
-Cross-repo blocking is not automatic: each repo keeps its own lessons. Older installs that already have `<repo>/.claude/memory/feedback/` or `~/.thumbgate/projects/<name>/` keep using that store. Keep `.thumbgate/` out of git.
+For an MCP-only install, `npx thumbgate install-mcp` adds `mcpServers.thumbgate` to `~/.claude/settings.json`, and `npx thumbgate install-mcp --project` adds it to `<repo>/.claude/settings.json` instead. Neither writes hooks.
 
 **MCP tools (surface):** `gate_check` (read/evaluate proposed tool call), feedback capture + session tools (write), dashboard/stats (read). Destructive agent actions stay blocked/warned by PreToolUse — ThumbGate does not execute user shell commands for you.
 

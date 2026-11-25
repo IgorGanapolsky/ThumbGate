@@ -2,4 +2,4 @@
 "thumbgate": patch
 ---
 
-Install-scope docs (README, guide page, `install-mcp` help) now say what `init` really writes: Claude Code hooks go machine-wide to `~/.claude/settings.local.json`, the MCP entry goes to the repo's `.mcp.json`, and lessons stay per repo in `<repo>/.thumbgate/`. The old table promised a lesson store shared across repos and a per-project hooks file from `init --project`; neither was true. `install-mcp` help no longer claims it writes hooks or a `--no-hooks` flag.
+`npx thumbgate init --project` now writes the Claude Code hooks to `<repo>/.claude/settings.json`, so they run only in that repo. Before, init ignored `--project` and always wrote `~/.claude/settings.local.json`. Plain `init` is unchanged. The install-scope docs (README, guide page, `install-mcp` help) now also say that lessons stay per repo in `<repo>/.thumbgate/` in both scopes. The old table promised a lesson store shared across repos. `install-mcp` help no longer claims it writes hooks.
