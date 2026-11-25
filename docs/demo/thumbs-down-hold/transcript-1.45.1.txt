@@ -1,0 +1,38 @@
+# thumbgate 1.45.1 from npm, default install (no strict mode), 2026-11-25T22:48:00Z
+$ echo '{"tool_name":"Bash","tool_input":{"command":"node scripts/migrate.js --env prod"}}' | thumbgate gate-check
+{}
+
+# you type: thumbs down, wrong database, that was prod
+ThumbGate hold: thumbs-down received. `node scripts/migrate.js --env …` is refused until the person says "go ahead". Ask what to change.
+
+$ echo '{"tool_name":"Bash","tool_input":{"command":"node scripts/migrate.js --env prod --force"}}' | thumbgate gate-check
+{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"deny","permissionDecisionReason":"[GATE:thumbs-down-hold] The person gave a thumbs-down right after `node scripts/migrate.js --env …`. That action is held until the person says to go on (a thumbs-up or \"go ahead\"). Do not retry it or route around it with another tool; ask what to change."},"systemMessage":"ThumbGate just stopped a risky tool call. Pro adds enforcement of every rule you learn (Free enforces 3) - https://thumbgate.ai/checkout/pro?utm_source=cli&utm_medium=first_block&utm_campaign=first_block_upsell"}
+
+$ echo '{"tool_name":"Bash","tool_input":{"command":"git status"}}' | thumbgate gate-check
+{"hookSpecificOutput":{"hookEventName":"PreToolUse","additionalContext":"[ThumbGate] Recent mistakes (last 24h) — do NOT repeat:\n  • thumbs down, wrong database, that was prod","systemReminder":"[ThumbGate] Recent mistakes (last 24h) — do NOT repeat:\n  • thumbs down, wrong database, that was prod","thumbgateSystemReminder":"[ThumbGate] Recent mistakes (last 24h) — do NOT repeat:\n  • thumbs down, wrong database, that was prod"}}
+
+# you type: go ahead
+ThumbGate: 1 hold(s) released by the person.
+
+$ echo '{"tool_name":"Bash","tool_input":{"command":"node scripts/migrate.js --env prod"}}' | thumbgate gate-check
+{"hookSpecificOutput":{"hookEventName":"PreToolUse","additionalContext":"[GATE:auto-node-scripts-migrate-js-env-prod-9ce7e28d26c1d1ff] WARNING: Auto-promoted repeated executable action: \"node scripts/migrate.js --env prod\" (1 occurrences in 30 days)\n  Reasoning:\n  • Pattern /node scripts/migrate\\.js --env prod/ matched \"node scripts/migrate.js --env prod\"\n  • Gate auto-node-scripts-migrate-js-env-prod-9ce7e28d26c1d1ff [warn] — layer: Execution, severity: medium\n  • Auto-promoted from feedback after 1 failures (2026-11-25T22:48:01.471Z)\n[ThumbGate] Past mistakes relevant to this action — read before proceeding:\n  • thumbs down, wrong database, that was prod","systemReminder":"[ThumbGate] Past mistakes relevant to this action — read before proceeding:\n  • thumbs down, wrong database, that was prod","thumbgateSystemReminder":"[ThumbGate] Past mistakes relevant to this action — read before proceeding:\n  • thumbs down, wrong database, that was prod"}}
+
+# you type: thumbs down, never run migrations against prod
+ThumbGate hold: thumbs-down received. `node scripts/migrate.js --env …` is refused until the person says "go ahead". Ask what to change.
+
+# you type: go ahead
+ThumbGate: 1 hold(s) released by the person.
+
+$ echo '{"tool_name":"Bash","tool_input":{"command":"node scripts/migrate.js --env prod"}}' | thumbgate gate-check
+{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"deny","permissionDecisionReason":"[GATE:auto-node-scripts-migrate-js-env-prod-9ce7e28d26c1d1ff] Auto-promoted repeated executable action: \"node scripts/migrate.js --env prod\" (2 occurrences in 30 days)\n  Reasoning:\n  • Pattern /node scripts/migrate\\.js --env prod/ matched \"node scripts/migrate.js --env prod\"\n  • Gate auto-node-scripts-migrate-js-env-prod-9ce7e28d26c1d1ff [block] — layer: Execution, severity: critical\n  • Auto-promoted from feedback after 2 failures (2026-11-25T22:48:01.471Z)\n  • History: blocked 0×, warned 1×"}}
+
+$ echo '{"tool_name":"Bash","tool_input":{"command":"terraform destroy"}}' | thumbgate gate-check
+{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"deny","permissionDecisionReason":"[GATE:terraform-destroy] terraform destroy (and apply -destroy) is blocked because it tears down real infrastructure. Run it yourself in a terminal if you mean it.\n  Reasoning:\n  • Pattern /(?:^|[;&|(]\\s*|\\b(?:bash|sh|zsh)\\s+-c\\s+['\"]\\s*)(?:(?:sudo|command|exec|time|nohup)\\s+|env\\s+(?:\\S+=\\S*\\s+)*|\\S+=\\S*\\s+)*(?:terraform|tofu)\\s+(?:destroy\\b|apply\\b[^;&|\\n]*\\s-destroy\\b)/ matched \"terraform destroy\"\n  • Gate terraform-destroy [block] — layer: Execution, severity: critical\n  • Manual policy rule (default.json)"}}
+
+$ echo '{"tool_name":"Bash","tool_input":{"command":"kubectl delete namespace prod"}}' | thumbgate gate-check
+{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"deny","permissionDecisionReason":"[GATE:kubectl-bulk-delete] kubectl delete is blocked in every form (a pod, a deployment, a namespace): it removes live workloads. Run it yourself in a terminal if you mean it.\n  Reasoning:\n  • Pattern /(?:^|[;&|(]\\s*|\\b(?:bash|sh|zsh)\\s+-c\\s+['\"]\\s*)(?:(?:sudo|command|exec|time|nohup)\\s+|env\\s+(?:\\S+=\\S*\\s+)*|\\S+=\\S*\\s+)*kubectl\\s+delete\\b/ matched \"kubectl delete namespace prod\"\n  • Gate kubectl-bulk-delete [block] — layer: Execution, severity: critical\n  • Manual policy rule (default.json)"}}
+
+$ echo '{"tool_name":"Bash","tool_input":{"command":"aws s3 rm s3://prod-backups --recursive"}}' | thumbgate gate-check
+{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"deny","permissionDecisionReason":"[GATE:cloud-bulk-delete] Cloud deletion (aws s3 rm in any form, aws s3 rb --force, gcloud projects delete, az group delete) is blocked. It is effectively irreversible. Run it yourself in a terminal if you mean it.\n  Reasoning:\n  • Pattern /(?:^|[;&|(]\\s*|\\b(?:bash|sh|zsh)\\s+-c\\s+['\"]\\s*)(?:(?:sudo|command|exec|time|nohup)\\s+|env\\s+(?:\\S+=\\S*\\s+)*|\\S+=\\S*\\s+)*(?:aws\\s+s3\\s+rm\\b|aws\\s+s3\\s+rb\\b(?=[^;&|\\n]*--force)|gcloud\\s+projects\\s+delete\\b|az\\s+group\\s+delete\\b)/ matched \"aws s3 rm s3://prod-backups --recursive\"\n  • Gate cloud-bulk-delete [block] — layer: Execution, severity: critical\n  • Manual policy rule (default.json)\n\n💡 Pro: keep this rule searchable, exportable, and visible → thumbgate.ai/go/pro"}}
+
+ThumbGate v1.45.1 · Free · 0👍 2👎 this project (my-app) · Dashboard · Latest mistake 11/25/2026 22:48:02: , never run migrations against prod

@@ -922,7 +922,7 @@ test('root serves the landing page by default', async () => {
 
   const body = await res.text();
   assert.match(body, /ThumbGate/);
-  assert.match(body, /Thumbs-down a Claude Code mistake once, and ThumbGate warns the next time it tries that command\. After three thumbs-downs on the same command, strict mode blocks it/i);
+  assert.match(body, /One thumbs-down stops Claude Code from retrying a mistake\. Two make it a hard rule/i);
   assert.match(body, /warn by default/i);
   assert.match(body, /strict mode/i);
   assert.doesNotMatch(body, /learns from every mistake/i);
@@ -1927,6 +1927,21 @@ test('robots and sitemap endpoints publish crawl metadata for the canonical app 
   assert.match(sitemapBody, /<changefreq>weekly<\/changefreq>/);
   assert.match(sitemapBody, /<priority>0\.9<\/priority>/);
   assert.match(sitemapBody, /<priority>0\.8<\/priority>/);
+  // Freshness: pages that declare a JSON-LD dateModified expose it as <lastmod>.
+  assert.match(
+    sitemapBody,
+    /<loc>https:\/\/app\.example\.com\/compare\/arcade<\/loc>\n {4}<lastmod>\d{4}-\d{2}-\d{2}<\/lastmod>/,
+  );
+  for (const lastmod of sitemapBody.match(/<lastmod>[^<]*<\/lastmod>/g) || []) {
+    assert.match(lastmod, /^<lastmod>\d{4}-\d{2}-\d{2}<\/lastmod>$/);
+  }
+
+  const llmsFullRes = await fetch(apiUrl('/llms-full.txt'));
+  assert.equal(llmsFullRes.status, 200);
+  assert.match(String(llmsFullRes.headers.get('content-type')), /text\/plain/);
+  assert.match(String(llmsFullRes.headers.get('link')), /llm-context\.md>; rel="canonical"/);
+  const llmContextRes = await fetch(apiUrl('/llm-context.md'));
+  assert.equal(await llmsFullRes.text(), await llmContextRes.text());
 });
 
 test('provisioning endpoint works', async () => {

@@ -10,6 +10,7 @@ action, instead of rules that live only as memory text.
 | Don't stop while your PR is red | `scripts/pr-discipline-gates.js`, `PostToolUse` records PRs the session opens; `Stop` | Stop is blocked while a PR the session opened has a failed check, a `needs-fix` or `needs-rebase` label, or a merge conflict. `needs-igor` and `do-not-merge` are not the agent's to fix. Gives up after 3 blocks and leaves a warning. |
 | No duplicate PRs | same script, `PreToolUse` on `mcp__github__create_pull_request` and Bash `gh pr create` or `npm run ship` | Denied when an open PR has a near-identical title or touches at least half the same files (changesets, CHANGELOG and package files ignored). The PR for the same branch is not its own duplicate. |
 | Keep PRs small | same `PreToolUse` | Denied over 40 files or 1,000 changed lines (from the local diff for a Bash create, so an unpushed branch is still checked); lockfiles, `dist/`, snapshots and source maps don't count. |
+| Three strikes, then change approach | `scripts/three-strikes-gate.js`, `PostToolUse` and `PostToolUseFailure` on Bash record results; `PreToolUse` on Bash | After the same command fails 3 times in a row (within 30 minutes), a fourth identical try is denied with the recent errors and a prompt to change the approach or report the attempts. Output plumbing (`2>&1`, `\| tail`, a leading `cd`) is ignored when comparing; read-only probes like `grep` and `ls` never count; a success clears the streak. Tune with `"threeStrikes": {"maxStrikes": 3, "strikeWindowMinutes": 30}` in `config/pr-discipline.json`. Same rule the Claude Code PR watch uses: three failed rounds means the approach is probably wrong. |
 
 Every gate fails open on an internal error.
 
@@ -27,8 +28,11 @@ of them set; without it the PR gates fail open:
   "hooks": {
     "PreToolUse": [{ "matcher": "mcp__hearthbot__post_message|mcp__hearthbot__request_decision|mcp__hearthbot__edit_message",
       "hooks": [{ "type": "command", "command": "node /path/to/ThumbGate/scripts/reply-discipline-gates.js pre" }] },
-      { "matcher": "mcp__github__create_pull_request|Bash", "hooks": [{ "type": "command", "command": "node /path/to/ThumbGate/scripts/pr-discipline-gates.js pre" }] }],
-    "PostToolUse": [{ "matcher": "mcp__github__create_pull_request|Bash", "hooks": [{ "type": "command", "command": "node /path/to/ThumbGate/scripts/pr-discipline-gates.js post" }] }],
+      { "matcher": "mcp__github__create_pull_request|Bash", "hooks": [{ "type": "command", "command": "node /path/to/ThumbGate/scripts/pr-discipline-gates.js pre" }] },
+      { "matcher": "Bash", "hooks": [{ "type": "command", "command": "node /path/to/ThumbGate/scripts/three-strikes-gate.js pre" }] }],
+    "PostToolUse": [{ "matcher": "mcp__github__create_pull_request|Bash", "hooks": [{ "type": "command", "command": "node /path/to/ThumbGate/scripts/pr-discipline-gates.js post" }] },
+      { "matcher": "Bash", "hooks": [{ "type": "command", "command": "node /path/to/ThumbGate/scripts/three-strikes-gate.js post" }] }],
+    "PostToolUseFailure": [{ "matcher": "Bash", "hooks": [{ "type": "command", "command": "node /path/to/ThumbGate/scripts/three-strikes-gate.js post" }] }],
     "Stop": [{ "hooks": [{ "type": "command", "command": "node /path/to/ThumbGate/scripts/reply-discipline-gates.js stop" },
       { "type": "command", "command": "node /path/to/ThumbGate/scripts/pr-discipline-gates.js stop" }] }]
   }
