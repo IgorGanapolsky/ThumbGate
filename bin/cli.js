@@ -3460,6 +3460,11 @@ function serve() {
     const { repairUnreadClaudeHooks } = require(path.join(PKG_ROOT, 'scripts', 'claude-self-heal'));
     repairUnreadClaudeHooks();
   } catch (_) { /* self-heal is best-effort */ }
+  try {
+    // Adds the thumbs-down loop hooks that older Cursor inits left out of ~/.cursor/hooks.json.
+    const { repairCursorHooks } = require(path.join(PKG_ROOT, 'scripts', 'cursor-self-heal'));
+    repairCursorHooks();
+  } catch (_) { /* self-heal is best-effort */ }
   // Start MCP server over stdio
   const mcpServer = path.join(PKG_ROOT, 'adapters', 'mcp', 'server-stdio.js');
   const { startStdioServer } = require(mcpServer);
