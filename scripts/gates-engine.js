@@ -2981,7 +2981,9 @@ function matchGate(gate, toolName, toolInput = {}, options = {}) {
         // (e.g. Gmail send_message) have no `command` field — without multi-surface
         // matching, every pattern gate against them is permanently inert.
         const surfaces = matchSurfaces.length > 0 ? matchSurfaces : [matchText];
-        const anySurfaceMatch = surfaces.some((surface) => patternMatchesCommand(regex, surface));
+        // A learned delete command also matches the same delete written as a Python call (scripts/delete-equivalence.js).
+        const anySurfaceMatch = surfaces.some((surface) => patternMatchesCommand(regex, surface))
+          || require('./delete-equivalence').isReworkedLearnedDelete(gate, toolName, toolInput);
         if (!anySurfaceMatch) {
           return { matched: false, matchText, affectedFiles };
         }
