@@ -137,3 +137,24 @@ test('Cursor: a typed thumbs-down holds the next MCP chat post, and an unchecked
   const again = JSON.parse(cli(w, 'cursor-stop', { ...base, hook_event_name: 'stop', status: 'completed', loop_count: 1 }).stdout.trim());
   assert.deepEqual(again, {}, 'never loops: one follow-up only');
 });
+
+test('Cursor via `thumbgate init --agent cursor`: the wired hooks.json commands carry a thumbs-down to the next MCP post', () => {
+  const w = world();
+  fs.mkdirSync(path.join(w.project, '.cursor'), { recursive: true });
+  spawnSync(process.execPath, [CLI, 'init', '--agent', 'cursor'], { cwd: w.project, env: w.env, encoding: 'utf8', timeout: 60000 });
+  const hooks = JSON.parse(fs.readFileSync(path.join(w.project, '.cursor', 'hooks.json'), 'utf8')).hooks;
+  for (const lifecycle of ['beforeShellExecution', 'beforeSubmitPrompt', 'beforeMCPExecution', 'afterAgentResponse', 'stop']) {
+    assert.ok(Array.isArray(hooks[lifecycle]) && hooks[lifecycle].length > 0, `init wires ${lifecycle}`);
+  }
+  const run = (lifecycle, payload) => {
+    const out = spawnSync('sh', ['-c', hooks[lifecycle][0].command], { cwd: w.project, env: w.env, input: JSON.stringify(payload), encoding: 'utf8', timeout: 60000 });
+    return { status: out.status, last: String(out.stdout || '').trim().split('\n').pop() || '{}' };
+  };
+  const base = { conversation_id: 'conv-i', generation_id: 'gen-1', workspace_roots: [w.project] };
+  const post = (chat) => run('beforeMCPExecution', { ...base, hook_event_name: 'beforeMCPExecution', mcp_server_name: 'teams', tool_name: 'send_chat_message', tool_input: JSON.stringify({ chat_id: chat, text: 'Update.' }) });
+  assert.equal(JSON.parse(post('chat-a').last).permission, 'allow');
+  run('beforeSubmitPrompt', { ...base, hook_event_name: 'beforeSubmitPrompt', prompt: 'thumbs down' });
+  const held = post('chat-b');
+  assert.equal(JSON.parse(held.last).permission, 'deny', 'the thumbs-down typed in Cursor holds the next post');
+  assert.equal(held.status, 2);
+});

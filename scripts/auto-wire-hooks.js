@@ -30,6 +30,7 @@ const {
   statuslineCommand,
   userPromptHookCommand,
   cursorShellGateHookCommand,
+  cursorCliHookCommand,
   isDisposableCheckout,
 } = require('./hook-runtime');
 const { installShim } = require('./install-shim');
@@ -151,6 +152,15 @@ function isStaleCursorGateCheckHook(entry) {
   return command.includes('thumbgate') && command.includes('gate-check');
 }
 
+const CURSOR_LOOP_HOOKS = [
+  { lifecycle: 'beforeSubmitPrompt', subcommand: 'cursor-prompt', extra: { timeout: 10 } },
+  { lifecycle: 'beforeMCPExecution', subcommand: 'cursor-mcp-gate', extra: { timeout: 10, failClosed: true } },
+  { lifecycle: 'afterShellExecution', subcommand: 'cursor-record', extra: { timeout: 10 } },
+  { lifecycle: 'afterMCPExecution', subcommand: 'cursor-record', extra: { timeout: 10 } },
+  { lifecycle: 'afterAgentResponse', subcommand: 'cursor-record', extra: { timeout: 10 } },
+  { lifecycle: 'stop', subcommand: 'cursor-stop', extra: { timeout: 15, loop_limit: 1 } },
+];
+
 function wireCursorBeforeShellGate(options = {}) {
   const hooksPath = options.cursorHooksPath || cursorHooksJsonPath();
   const command = cursorShellGateHookCommand();
@@ -196,7 +206,20 @@ function wireCursorBeforeShellGate(options = {}) {
     }
   }
 
-  const changed = staleRemoved.length > 0 || !alreadyWired || upgradedFailClosed;
+  // The rest of the feedback loop: a typed thumbs-down/up reaches ThumbGate before the next tool call
+  // (beforeSubmitPrompt), MCP chat sends go through the same holds and send rules (beforeMCPExecution), and the
+  // claim gate sees what this turn ran and said (after* + stop). Without these a Cursor thumbs-down holds nothing.
+  let loopAdded = 0;
+  for (const spec of CURSOR_LOOP_HOOKS) {
+    const command = cursorCliHookCommand(spec.subcommand);
+    if (!Array.isArray(existing.hooks[spec.lifecycle])) existing.hooks[spec.lifecycle] = [];
+    if (existing.hooks[spec.lifecycle].some((entry) => entry && entry.command === command)) continue;
+    existing.hooks[spec.lifecycle].push({ command, ...spec.extra });
+    added.push({ lifecycle: spec.lifecycle, command });
+    loopAdded += 1;
+  }
+
+  const changed = staleRemoved.length > 0 || !alreadyWired || upgradedFailClosed || loopAdded > 0;
   if (!changed) {
     return { changed: false, settingsPath: hooksPath, added: [] };
   }
