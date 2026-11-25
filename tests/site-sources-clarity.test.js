@@ -153,6 +153,7 @@ test('REQ-03: real events show their last time; bot, internal and owner rows are
       { eventType: 'cli_init', receivedAt: iso(60), clientType: 'cli', visitorType: 'real_user' },
       { eventType: 'cli_init', receivedAt: iso(2), clientType: 'cli', visitorType: 'owner' },
       { eventType: 'checkout_start', receivedAt: iso(45), clientType: 'web' },
+      { eventType: 'pro_checkout_start', receivedAt: iso(20), clientType: 'web' },
     ],
   });
   try {
@@ -163,7 +164,8 @@ test('REQ-03: real events show their last time; bot, internal and owner rows are
     assert.equal(Date.parse(tiles.visitor.lastEventAt), Date.parse(iso(30)));
     assert.equal(tiles.install.count30d, 1, 'the owner install is not counted');
     assert.equal(Date.parse(tiles.install.lastEventAt), Date.parse(iso(60)));
-    assert.equal(tiles.pro_checkout_click.count30d, 1);
+    assert.equal(tiles.pro_checkout_click.count30d, 2, 'both checkout_start and the /pro page pro_checkout_start count');
+    assert.equal(Date.parse(tiles.pro_checkout_click.lastEventAt), Date.parse(iso(20)));
     assert.equal(tiles.first_block.status, 'no_data_yet');
     for (const id of ['plausible', 'google_analytics', 'clarity']) assert.equal(tiles[id].status, 'not_installed', id);
     assert.equal(/api[_-]?key|token|secret/i.test(JSON.stringify(result)), false, 'no credential field in the payload');

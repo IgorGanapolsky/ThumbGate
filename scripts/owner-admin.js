@@ -923,7 +923,7 @@ const FUNNEL_STAGES = Object.freeze([
   { id: 'visitor', label: 'Visitor (landing page view)', events: ['landing_page_view'], cli: false },
   { id: 'install', label: 'Install (CLI init)', events: ['cli_init'], cli: true },
   { id: 'first_block', label: 'First block (a gate stopped a tool call)', events: ['first_block', 'first_blocked_tool_call'], cli: true },
-  { id: 'pro_checkout_click', label: 'Pro checkout click', events: ['checkout_start'], cli: false },
+  { id: 'pro_checkout_click', label: 'Pro checkout click', events: ['checkout_start', 'pro_checkout_start'], cli: false },
 ]);
 
 function readSiteFile(publicDir, name) {
