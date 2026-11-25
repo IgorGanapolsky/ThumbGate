@@ -34,15 +34,29 @@ const COMMANDS = [
 // Controls: unrelated commands. If these get the same lesson text, it is not matching.
 const CONTROLS = ['ls', 'mv a b', 'git status'];
 
+// Settings that change what gate-check enforces. They are cleared from the inherited shell so each
+// mode means what its label says; a mode sets them explicitly when it needs them.
+const ENFORCEMENT_KEYS = ['THUMBGATE_STRICT_ENFORCEMENT', 'THUMBGATE_GOVERNANCE_MODE', 'THUMBGATE_HOTFIX_BYPASS'];
+
+function cleanEnv(base = process.env) {
+  const env = { ...base };
+  for (const key of ENFORCEMENT_KEYS) delete env[key];
+  return env;
+}
+
 function run(args, input, env, cwd) {
   return spawnSync(process.execPath, [CLI, ...args], {
-    input, env: { ...process.env, ...env }, cwd, encoding: 'utf8', timeout: 60000,
+    input, env: { ...cleanEnv(), ...env }, cwd, encoding: 'utf8', timeout: 60000,
   });
 }
 
 function verdict(out) {
+  // A check that timed out, was killed or could not start proves nothing either way.
+  if (out.error || out.signal) return 'error';
   const text = out.stdout || '';
   if (/"permissionDecision"\s*:\s*"deny"|"decision"\s*:\s*"block"|decision: DENY/.test(text)) return 'blocked';
+  // The CLI's caught-error reply and any other nonzero exit are failed checks, not "nothing happened".
+  if (out.status !== 0 || /\[ThumbGate Error\]/.test(text)) return 'error';
   const gate = /\[GATE:[a-z0-9-]+\]|\[THIRD-AUTHOR:/.test(text);
   const matched = /Past mistakes relevant to this action/.test(text);
   if (gate && matched) return 'gate+lesson';
@@ -87,7 +101,12 @@ function main() {
     }
   }
   fs.rmSync(dir, { recursive: true, force: true });
+  const errors = rows.filter((r) => r.result === 'error').length;
+  if (errors) {
+    console.error(`${errors} gate-check run(s) failed; these results are not evidence.`);
+    process.exitCode = 1;
+  }
 }
 
 if (path.resolve(process.argv[1] || '') === path.resolve(__filename)) main();
-module.exports = { COMMANDS, CONTROLS, verdict };
+module.exports = { COMMANDS, CONTROLS, ENFORCEMENT_KEYS, cleanEnv, verdict };

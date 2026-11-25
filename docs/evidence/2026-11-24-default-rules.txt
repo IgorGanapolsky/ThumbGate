@@ -1,3 +1,5 @@
+Source: config/gates/default.json at origin/main f21527fae (24 Nov 2026), output of scripts/default-rules-report.js.
+This is a dated snapshot. Later commits add rules; rerun the script for the current shipped file.
 id | action | severity
 local-only-git-writes | block | critical
 raw-gh-auto-merge-blocked | block | critical

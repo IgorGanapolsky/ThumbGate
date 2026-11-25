@@ -1,6 +1,6 @@
 'use strict';
 
-// Buyer-facing copy checks: the $499 Setup Sprint page opens in the buyer's words with one primary button,
+// Buyer-facing copy checks: the request-only team pilot page opens in the buyer's words with one primary button,
 // and the landing page and /pricing link to our two sister products in the footer.
 
 const test = require('node:test');
@@ -17,7 +17,7 @@ const textOf = (html) => html.replace(/<script[\s\S]*?<\/script\s*>/g, ' ').repl
 
 test('the sprint page title is a phrase a buyer would search for, not a product slogan', () => {
   const title = diagnostic.match(/<title>([^<]*)<\/title>/)[1];
-  assert.equal(title, 'Stop Your AI Coding Agent Repeating Mistakes — $499 Setup Sprint | ThumbGate');
+  assert.equal(title, 'Stop Your AI Coding Agent Repeating Mistakes — Team Pilot | ThumbGate');
   assert.doesNotMatch(title, /Self-Improving Firewall/i);
   assert.doesNotMatch(diagnostic, /Self-Improving Firewall/i);
   assert.ok(title.length <= 80, 'title fits a search result');
@@ -31,8 +31,9 @@ test('the sprint page headline names the pain in the buyer\'s words', () => {
 
 test('the first screen states outcome, guarantee, speed and the buyer\'s effort, each once, with the real numbers', () => {
   const text = textOf(firstScreen);
-  assert.match(text, /The outcome: that mistake is blocked before the tool runs, with a regression test that proves it\./);
-  assert.match(text, /The guarantee: if we can't turn it into a gate, you get the \$499 back\./);
+  assert.match(text, /The outcome: a configured gate and a regression test for that mistake, with the accepted result agreed before we start\./);
+  assert.match(text, /The terms: request only\. No price is listed and no payment is taken on this page\./);
+  assert.doesNotMatch(text, /\$\s?\d/, 'no price on the first screen of a request-only page');
   assert.match(text, /The speed: two business days, counted from when we have access and your workflow materials\./);
   assert.match(text, /Your part: a short intake and one 60-minute working review\./);
   assert.doesNotMatch(text, /30 minutes|minutes of your time/i, 'no effort claim the delivery process does not back');
@@ -47,16 +48,18 @@ test('the first screen says "supported" once, and it links to the integrations l
 
 test('one primary button above the fold, with the fit check as the secondary option', () => {
   assert.equal((firstScreen.match(/class="button primary"/g) || []).length, 1);
-  assert.match(firstScreen, /class="button primary"[^>]*data-cta-id="diagnostic_hero_paid"[^>]*>Book the \$__SPRINT_DIAGNOSTIC_PRICE_DOLLARS__ setup<\/button>/);
-  assert.match(firstScreen, /<a class="button" href="#intake"[^>]*>Check workflow fit first<\/a>/);
-  assert.equal((firstScreen.match(/Book the \$/g) || []).length, 1, 'the paid button text appears once');
+  assert.match(firstScreen, /<a class="button primary" href="#intake"[^>]*data-cta-id="diagnostic_hero_intake_primary"[^>]*>Request a team pilot<\/a>/);
+  assert.doesNotMatch(firstScreen, /diagnostic_hero_paid|Book the \$/, 'no paid button');
 });
 
-test('the Stripe flow is untouched: same form, endpoint, method and email field', () => {
-  assert.match(diagnostic, /<form class="diagnostic-pay-form" action="\/go\/diagnostic-pay" method="POST" data-diagnostic-pay-form>/);
-  assert.match(diagnostic, /name="customer_email" autocomplete="email" required/);
-  assert.match(diagnostic, /name="plan_id" value="sprint_diagnostic"/);
-  assert.match(diagnostic, /No Stripe session is created until you submit this form\./);
+test('the page takes a pilot request, not a payment', () => {
+  assert.match(diagnostic, /<form id="intake" class="intake-card" action="\/v1\/intake\/workflow-sprint" method="POST"[^>]*data-diagnostic-intake-form>/);
+  assert.match(diagnostic, /<input id="email" name="email" type="email" autocomplete="email" required>/);
+  assert.match(diagnostic, /<textarea id="workflow" name="workflow" required/);
+  assert.match(diagnostic, /data-cta-id="diagnostic_page_submit"[^>]*>Request pilot<\/button>/);
+  // No payment path: no Stripe form, endpoint, plan id or buyer-email field, and no price in the offer markup.
+  assert.doesNotMatch(diagnostic, /diagnostic-pay-form|data-diagnostic-pay-form|\/go\/diagnostic-pay|name="plan_id" value="sprint_diagnostic"|name="customer_email"|No Stripe session/);
+  assert.doesNotMatch(diagnostic, /"price"\s*:/, 'the Service offer lists no price');
 });
 
 for (const page of ['public/index.html', 'public/pricing.html']) {

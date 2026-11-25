@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Stop Your AI Coding Agent Repeating Mistakes — Team Pilot (by request) | ThumbGate</title>
+<title>Stop Your AI Coding Agent Repeating Mistakes — Team Pilot | ThumbGate</title>
 <meta name="description" content="Your coding agent keeps making the same mistake. A request-only team pilot turns it into a configured gate and a regression test, with the accepted result agreed first. One repeated mistake, one local workflow, rollout and rollback proof.">
 <link rel="canonical" href="__APP_ORIGIN__/diagnostic">
 <link rel="alternate" type="text/markdown" title="ThumbGate LLM context" href="__APP_ORIGIN__/llm-context.md">
@@ -86,16 +86,6 @@ h1 {
   font-size: 20px;
 }
 .actions { display: flex; flex-wrap: wrap; gap: 12px; }
-.diagnostic-pay-form {
-  width: min(100%, 520px);
-  padding: 16px;
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  background: var(--panel);
-}
-.diagnostic-pay-form label { margin-top: 0; }
-.diagnostic-pay-form button { margin-top: 10px; }
-.diagnostic-pay-form .hint { display: block; margin-top: 8px; }
 .button {
   min-height: 48px;
   display: inline-flex;
@@ -533,37 +523,12 @@ document.querySelectorAll('.faq-q').forEach((button) => {
 <script>
 (function () {
   const search = new URLSearchParams(window.location.search);
-  const paidForm = document.querySelector('[data-diagnostic-pay-form]');
-  const inboundSource = search.get('utm_source') || search.get('source');
-  const isAiventyxTraffic = String(inboundSource || '').trim().toLowerCase() === 'aiventyx';
-  if (paidForm && isAiventyxTraffic) {
-    paidForm.remove();
-    const paymentHint = document.querySelector('[data-diagnostic-payment-hint]');
-    if (paymentHint) {
-      paymentHint.textContent = 'The Aiventyx payment path is paused while seller fees and downstream obligations remain unverified. Submit the workflow here without entering a marketplace payment or revenue-share commitment.';
-    }
-  } else if (paidForm) {
-    const passthrough = /^(utm_(source|medium|campaign|content|term)|source|acquisition_id|visitor_id|session_id|visitor_session_id|install_id|trace_id|creator|community|post_id|comment_id|campaign_variant|offer_code|referrer_host)$/i;
-    for (const [key, value] of search.entries()) {
-      if (!passthrough.test(key) || !value.trim()) continue;
-      let input = paidForm.querySelector(`input[name="${CSS.escape(key)}"]`);
-      if (!input) {
-        input = document.createElement('input');
-        input.type = 'hidden';
-        input.name = key;
-        paidForm.appendChild(input);
-      }
-      input.value = value.trim();
-    }
-    if (inboundSource && inboundSource.trim()) {
-      paidForm.querySelector('input[name="utm_source"]').value = inboundSource.trim();
-    }
-  }
-
+  // The paid form is gone (request-only pilot), so inbound attribution rides on the intake form.
+  const passthrough = /^(utm_(source|medium|campaign|content|term)|source|campaign|content|term|acquisition_id|visitor_id|session_id|visitor_session_id|install_id|trace_id|creator|community|post_id|comment_id|campaign_variant|offer_code|referrer_host)$/i;
   const form = document.querySelector('[data-diagnostic-intake-form]');
   if (form) {
     for (const [key, value] of search.entries()) {
-      if (!/^utm_|^(source|campaign|content|term)$/i.test(key)) continue;
+      if (!passthrough.test(key) || !value.trim()) continue;
       let input = form.querySelector(`input[name="${CSS.escape(key)}"]`);
       if (!input) {
         input = document.createElement('input');
@@ -571,7 +536,19 @@ document.querySelectorAll('.faq-q').forEach((button) => {
         input.name = key;
         form.appendChild(input);
       }
-      input.value = value;
+      input.value = value.trim();
+    }
+    // A bare ?source= still attributes the request, as the paid form did.
+    const inboundSource = search.get('utm_source') || search.get('source');
+    if (inboundSource && inboundSource.trim()) {
+      let sourceInput = form.querySelector('input[name="utm_source"]');
+      if (!sourceInput) {
+        sourceInput = document.createElement('input');
+        sourceInput.type = 'hidden';
+        sourceInput.name = 'utm_source';
+        form.appendChild(sourceInput);
+      }
+      sourceInput.value = inboundSource.trim();
     }
   }
 

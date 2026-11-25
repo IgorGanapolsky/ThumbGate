@@ -5,7 +5,7 @@ Base: origin/main f21527fae plus this branch. Status: PARTIAL. Rows marked UNMAP
 | # | Claim (page) | Evidence | Status |
 |---|---|---|---|
 | 1 | It checks the command Claude sends, before it runs (index hero) | `bin/cli.js:3492` `gateCheck`, the PreToolUse hook entry | mapped |
-| 2 | A thumbs-down saves your reason and shows it back as a warning on a similar command (index hero, guide) | `docs/evidence/2026-11-24-paraphrase-test.txt`: 17 of 18 rewordings got "Past mistakes relevant"; 0 of 18 denied | mapped |
+| 2 | A thumbs-down saves your reason and shows it back as a warning on a similar command (index hero, guide) | `docs/evidence/2026-11-24-paraphrase-test.txt` is withdrawn as proof of rewording coverage (see the note at its top): independent re-runs found 0 lesson-matched rows, and the corrected count is 12 of 16 rewordings on the author's machine only. The saved reason is shown back on the same command; coverage of rewordings is not shown | UNVERIFIED for rewordings |
 | 3 | A thumbs-down alone does not block (index box) | same file: 0 denied in default and strict after 1 thumbs-down | mapped; not tested with 3 downs (free cap is 2/day, `capture` exit 1 on the third) |
 | 4 | Force-push, `git reset --hard`, `git clean -f`, `rm -rf` on home or root, secret egress are denied by built-in rules (index, pricing) | rule ids `force-push`, `git-reset-hard`, `git-clean-force`, `rm-rf-home-or-root`, `secret-egress` are `block` in the shipped default file (`docs/evidence/2026-11-24-default-rules.txt`); the demo transcript shows DENY for force-push | mapped to config; UNVERIFIED on a fresh install: `scripts/gates-engine.js:334` describes a warn-by-default sidecar mode that downgrades flagged actions |
 | 5 | Other flagged actions warn by default; strict mode denies some, not every action (index, FAQ) | `rm -rf ./build-cache` stayed warn in strict (`paraphrase-test` strict rows) | mapped |
@@ -17,7 +17,7 @@ Base: origin/main f21527fae plus this branch. Status: PARTIAL. Rows marked UNMAP
 | 11 | Stale auto-promoted gates expire (index "Re-rank" step) | `scripts/auto-promote-gates.js` lines 26 and 440 (TTL) | mapped by comment and code line; not run |
 | 12 | Repeated negatives become gates that warn (index) | `scripts/auto-promote-gates.js:19` ("1+ failure auto-promotes to a warning gate") | mapped |
 | 13 | Team-shared rules, lessons synced across machines, audit history | pricing marks these "Coming" | mapped to the page's own label |
-| 14 | Learned rules also catch "the same mistake" | NOT claimed any more; paraphrase test shows similar commands get a warning, not a block | removed |
+| 14 | Learned rules also catch "the same mistake" | NOT claimed any more. The paraphrase result is withdrawn; the warnings seen on similar commands come from the built-in rm/find gate, which fires with no thumbs-down at all | removed |
 | 15 | "<50ms" / "0.4ms" intercept (README) | `grep -n "50ms\|0.4ms" README.md` on this branch returns nothing, so the README no longer makes the claim; no change needed | mapped (claim absent) |
 | 16 | Real 58-second run: three thumbs-downs then denied | not reproducible; free cap 2/day; demo DENY came from built-in `untrusted-pipe-to-shell` | removed |
 

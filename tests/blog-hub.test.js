@@ -20,7 +20,8 @@ test('blog hub is a Poolside-style series index with CTAs', () => {
 assert.match(hub, /href="\/blog\/a-receipt-is-not-world-state"/);
   assert.match(hub, /Igor Ganapolsky · 11 min read/);
 
-  assert.match(hub, /Enterprise gate · \$499/);
+  assert.match(hub, /class="nav-buy" href="\/#buy">Team pilot · by request<\/a>/);
+  assert.doesNotMatch(hub, /Enterprise gate · \$499/);
   assert.match(hub, /"@type": "Blog"/);
 });
 

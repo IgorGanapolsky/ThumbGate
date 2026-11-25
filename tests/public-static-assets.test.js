@@ -217,13 +217,20 @@ test('GET /diagnostic serves the managed workflow gate checkout and fit page', a
   assert.match(html, /diagnostic_page_submit/);
   // Request-only pilot: no price, no checkout form, no live payment path.
   assert.doesNotMatch(html, /\$499|\$1500|public Setup Sprint/i);
+  // Any listed price, not only the retired ones: the offer (first screen and Service JSON-LD) carries none.
+  // The cost-comparison table further down quotes other options' prices and is not part of the offer.
+  const offerScreen = html.slice(html.indexOf('<main>'), html.indexOf('data-oceans-pain'));
+  assert.ok(offerScreen.length > 0, 'offer screen found');
+  assert.doesNotMatch(offerScreen.replace(/<script[\s\S]*?<\/script\s*>/g, ' '), /[$€£]\s?\d|\d\s?(?:USD|dollars)\b/i);
+  assert.doesNotMatch(html, /"price"\s*:/);
   assert.doesNotMatch(html, /__WORKFLOW_SPRINT_PRICE_DOLLARS__|__SPRINT_DIAGNOSTIC_PRICE_DOLLARS__/);
   assert.doesNotMatch(html, /action="\/go\/diagnostic-pay"/);
   assert.doesNotMatch(html, /name="customer_email"/);
   assert.match(html, /\/v1\/telemetry\/ping/);
   assert.doesNotMatch(html, /\/v1\/telemetry\/event/);
   assert.match(html, /const inboundSource = search\.get\('utm_source'\) \|\| search\.get\('source'\)/);
-  assert.match(html, /paidForm\.querySelector\('input\[name="utm_source"\]'\)\.value = inboundSource\.trim\(\)/);
+  assert.match(html, /sourceInput\.value = inboundSource\.trim\(\)/);
+  assert.doesNotMatch(html, /data-diagnostic-pay-form|paidForm/);
   assert.doesNotMatch(html, /No cold payment link/);
 });
 
