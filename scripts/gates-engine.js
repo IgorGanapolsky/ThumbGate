@@ -1759,6 +1759,31 @@ function gateMatchCandidates(matchText) {
   return candidates;
 }
 
+// Compile a gate's pattern. JavaScript rejects PCRE-style inline flags such as a
+// leading `(?i)`, which users copy from other tools; accept that prefix as the
+// `i` flag. A pattern that still fails to compile used to make its gate silently
+// inert, so warn once per gate on stderr instead of failing quietly.
+const warnedInvalidGatePatterns = new Set();
+function compileGatePattern(gate) {
+  let source = String(gate.pattern);
+  let flags = '';
+  const inline = /^\(\?([a-z]+)\)/.exec(source);
+  if (inline && /^[ims]+$/.test(inline[1])) {
+    flags = Array.from(new Set(inline[1].split(''))).join('');
+    source = source.slice(inline[0].length);
+  }
+  try {
+    return new RegExp(source, flags);
+  } catch (err) {
+    const key = gate.id || source;
+    if (!warnedInvalidGatePatterns.has(key)) {
+      warnedInvalidGatePatterns.add(key);
+      process.stderr.write(`[thumbgate] gate "${key}" has an invalid pattern and is skipped: ${err.message}\n`);
+    }
+    throw err;
+  }
+}
+
 function patternMatchesCommand(regex, matchText) {
   return gateMatchCandidates(matchText).some((candidate) => regex.test(candidate));
 }
@@ -2951,7 +2976,7 @@ function matchGate(gate, toolName, toolInput = {}, options = {}) {
           return { matched: false, matchText, affectedFiles };
         }
       } else {
-        const regex = new RegExp(gate.pattern);
+        const regex = compileGatePattern(gate);
         // Match command text, tool name, and light payload surfaces. MCP tools
         // (e.g. Gmail send_message) have no `command` field — without multi-surface
         // matching, every pattern gate against them is permanently inert.
@@ -3368,7 +3393,7 @@ function matchSelfProtectHardFloor(gate, toolName, toolInput = {}) {
     if (!Array.isArray(gate.toolNames) || !gate.toolNames.includes(toolName)) return null;
     if (!matchText || !gate.pattern) return null;
     try {
-      const regex = new RegExp(gate.pattern);
+      const regex = compileGatePattern(gate);
       if (!patternMatchesCommand(regex, matchText)) return null;
     } catch {
       return null;
@@ -6149,6 +6174,7 @@ function evaluateAgentIdentityLifecycleGate(toolName, toolInput) {
 }
 
 module.exports = {
+  compileGatePattern,
   evaluateAgentIdentityLifecycleGate,
   loadGatesConfig,
   loadState,
