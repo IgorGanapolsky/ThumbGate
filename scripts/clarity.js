@@ -17,7 +17,7 @@
 const fs = require('node:fs');
 const path = require('node:path');
 
-const DEFAULT_PROJECT_ID = 'zjac22a5n1';
+const DEFAULT_PROJECT_ID = 'zjaflwztgq';
 const PROJECT_ID_PATTERN = /^[a-z0-9]{6,16}$/;
 const EXPORT_URL = 'https://www.clarity.ms/export-data/api/v1/project-live-insights';
 const REFRESH_MS = 8 * 60 * 60 * 1000;

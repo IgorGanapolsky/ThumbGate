@@ -11,7 +11,7 @@ const page = '<html><head><title>x</title></head><body><form action="/x"><input 
 test('tag goes on public pages with form fields masked and script strings untouched', () => {
   const out = clarity.injectClarityTag(page, { pathname: '/pricing', headers: {}, env: {} });
   assert.match(out, /www\.clarity\.ms\/tag\/"\+i/);
-  assert.match(out, /"clarity", "script", "zjac22a5n1"/);
+  assert.match(out, /"clarity", "script", "zjaflwztgq"/);
   assert.match(out, /<form data-clarity-mask="True" action/);
   assert.match(out, /<input data-clarity-mask="True" type="email"/);
   assert.match(out, /<textarea data-clarity-mask="True">/);
@@ -29,7 +29,7 @@ test('no tag on private paths, privacy signals, or when switched off', () => {
   assert.equal(clarity.injectClarityTag(page, { pathname: '/', env: { THUMBGATE_CLARITY_PROJECT_ID: 'off' } }), page);
   assert.ok(clarity.injectClarityTag(page, { pathname: '/signing-guide', env: {} }).includes('clarity.ms'), 'prefix match is per segment');
   assert.equal(clarity.resolveClarityProjectId({ THUMBGATE_CLARITY_PROJECT_ID: 'abc123def' }), 'abc123def');
-  assert.equal(clarity.resolveClarityProjectId({ THUMBGATE_CLARITY_PROJECT_ID: '"><script>' }), 'zjac22a5n1');
+  assert.equal(clarity.resolveClarityProjectId({ THUMBGATE_CLARITY_PROJECT_ID: '"><script>' }), 'zjaflwztgq');
 });
 
 const sample = (dim) => [
