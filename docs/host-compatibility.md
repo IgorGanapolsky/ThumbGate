@@ -18,6 +18,26 @@ A cell says **enforced** only when the generator ran that gate's denial through 
 | Gate learned from two thumbs-downs | enforced | enforced | untested | untested |
 | Text typed in a chat window or web page | out of scope | out of scope | out of scope | out of scope |
 
+## Which hosts hard-stop, and how they fail
+
+| Host | Hard-stops a bad call | Fails open or closed | Evidence |
+|---|---|---|---|
+| Claude Code | yes (9 of 9 gates denied) | Fails open | [docs/host-compatibility.md](https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/host-compatibility.md) |
+| Cursor | yes (9 of 9 gates denied) | Fails closed | [tests/cursor-fail-closed.test.js](https://github.com/IgorGanapolsky/ThumbGate/blob/main/tests/cursor-fail-closed.test.js) |
+| Codex | untested | untested | [docs/host-compatibility.md](https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/host-compatibility.md) |
+| Gemini CLI | untested | untested | [docs/host-compatibility.md](https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/host-compatibility.md) |
+| Cline | no, warns only | no hook, so not applicable | [tests/advisory-hosts-honesty.test.js](https://github.com/IgorGanapolsky/ThumbGate/blob/main/tests/advisory-hosts-honesty.test.js) |
+| OpenCode | no, warns only | no hook, so not applicable | [tests/advisory-hosts-honesty.test.js](https://github.com/IgorGanapolsky/ThumbGate/blob/main/tests/advisory-hosts-honesty.test.js) |
+| Amp | no, warns only | no hook, so not applicable | [tests/advisory-hosts-honesty.test.js](https://github.com/IgorGanapolsky/ThumbGate/blob/main/tests/advisory-hosts-honesty.test.js) |
+
+- **Claude Code**: gate-check given unreadable input -> exit 0, permissionDecision none. If ThumbGate errors, the command runs: the hook exits 0 with no decision.
+- **Cursor**: plugin gate-check.sh when the ThumbGate command fails -> exit 2, permission deny. Every hook entry ThumbGate ships or writes sets failClosed: true. A crash or timeout inside Cursor itself follows Cursor's own rule and was not run here.
+- **Codex**: No test sends the gate this host's own payload, so nothing is claimed.
+- **Gemini CLI**: No test sends the gate this host's own payload, so nothing is claimed.
+- **Cline**: No hook: init writes an MCP server entry and a .clinerules file. Advisory, because the model has to call gate_check itself.
+- **OpenCode**: No hook: init writes an MCP server entry only. Advisory, because the model has to call gate_check itself.
+- **Amp**: No hook: init writes an MCP server entry only. Feedback capture, not enforcement.
+
 ## How each host was checked
 
 - **Claude Code**: bin/cli.js gate-check, Claude PreToolUse JSON on stdin (Bash tool)

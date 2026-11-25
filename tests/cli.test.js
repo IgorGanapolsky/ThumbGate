@@ -2396,7 +2396,7 @@ describe('bin/cli.js', () => {
     });
 
     assert.equal(result.status, 0, `hook wiring failed:\n${result.stderr}`);
-    const settingsPath = path.join(isolatedHome, '.claude', 'settings.local.json');
+    const settingsPath = path.join(isolatedHome, '.claude', 'settings.json');
     const settings = JSON.parse(fs.readFileSync(settingsPath, 'utf8'));
     assert.match(result.stdout, /Added hooks for claude-code:/);
     assert.equal(
@@ -2436,7 +2436,7 @@ describe('bin/cli.js', () => {
     assert.equal(result.status, 0, `init failed:\n${result.stderr}`);
     assert.match(result.stdout, /Claude Code/);
 
-    const settingsPath = path.join(isolatedHome, '.claude', 'settings.local.json');
+    const settingsPath = path.join(isolatedHome, '.claude', 'settings.json');
     const settings = JSON.parse(fs.readFileSync(settingsPath, 'utf8'));
     assert.equal(settings.hooks.PreToolUse[0].matcher, '.*');
     assert.match(settings.hooks.PreToolUse[0].hooks[0].command, /gate-check/);

@@ -2,6 +2,7 @@
 'use strict';
 
 const fs = require('fs');
+const os = require('os');
 const path = require('path');
 const {
   getActiveMcpProfile,
@@ -170,24 +171,49 @@ function summarizePermissionTier(profileName = getActiveMcpProfile()) {
 }
 
 
-function detectStopHookRegistered(projectRoot, existsSync, readFileSync) {
-  try {
-    const settingsPath = path.join(projectRoot, '.claude', 'settings.json');
-    if (!existsSync(settingsPath)) return false;
-    const settings = JSON.parse(readFileSync(settingsPath, 'utf8'));
-    const stopHooks = settings?.hooks?.Stop || [];
-    const flat = Array.isArray(stopHooks)
-      ? stopHooks.flatMap((entry) => entry?.hooks || [entry])
-      : [];
-    return flat.some((hook) => String(hook?.command || '').includes('hook-stop-anti-claim'));
-  } catch {
-    return false;
-  }
+function detectStopHookRegistered(projectRoot, existsSync, readFileSync, homeDir = null) {
+  // init registers the stop gate as `claim-stop-check`; older installs used `hook-stop-anti-claim`.
+  return claudeSettingsPaths(projectRoot, homeDir).some((settingsPath) => {
+    try {
+      if (!existsSync(settingsPath)) return false;
+      const settings = JSON.parse(readFileSync(settingsPath, 'utf8'));
+      const stopHooks = settings?.hooks?.Stop || [];
+      const flat = Array.isArray(stopHooks)
+        ? stopHooks.flatMap((entry) => entry?.hooks || [entry])
+        : [];
+      return flat.some((hook) => {
+        const command = [hook?.command, ...(Array.isArray(hook?.args) ? hook.args : [])].map(String).join(' ');
+        return command.includes('hook-stop-anti-claim') || command.includes('claim-stop-check');
+      });
+    } catch {
+      return false;
+    }
+  });
 }
 
-function detectPreToolUseHookRegistered(projectRoot, existsSync = fs.existsSync, readFileSync = fs.readFileSync) {
+// `npx thumbgate init` writes hooks machine-wide (~/.claude/settings.json) by default and
+// per-project (<repo>/.claude/settings.json) with --project, so look in every settings file
+// Claude Code reads. ~/.claude/settings.local.json is NOT one of them: hooks there never
+// run, so it must not count as wired (older inits wrote there).
+function claudeSettingsPaths(projectRoot, homeDir) {
+  const paths = [
+    path.join(projectRoot, '.claude', 'settings.json'),
+    path.join(projectRoot, '.claude', 'settings.local.json'),
+  ];
+  if (homeDir) {
+    paths.push(path.join(homeDir, '.claude', 'settings.json'));
+  }
+  return paths;
+}
+
+function legacyUnreadHookFile(homeDir, existsSync, readFileSync) {
+  if (!homeDir) return null;
+  const legacyPath = path.join(homeDir, '.claude', 'settings.local.json');
+  return settingsHasThumbgatePreToolUse(legacyPath, existsSync, readFileSync) ? legacyPath : null;
+}
+
+function settingsHasThumbgatePreToolUse(settingsPath, existsSync, readFileSync) {
   try {
-    const settingsPath = path.join(projectRoot, '.claude', 'settings.json');
     if (!existsSync(settingsPath)) return false;
     const settings = JSON.parse(readFileSync(settingsPath, 'utf8'));
     const preToolUse = settings?.hooks?.PreToolUse || [];
@@ -195,7 +221,7 @@ function detectPreToolUseHookRegistered(projectRoot, existsSync = fs.existsSync,
       ? preToolUse.flatMap((entry) => entry?.hooks || [entry])
       : [];
     return flat.some((hook) => {
-      const command = String(hook?.command || '');
+      const command = [hook?.command, ...(Array.isArray(hook?.args) ? hook.args : [])].map(String).join(' ');
       return (
         command.includes('thumbgate') ||
         command.includes('gate-check') ||
@@ -206,6 +232,11 @@ function detectPreToolUseHookRegistered(projectRoot, existsSync = fs.existsSync,
   } catch {
     return false;
   }
+}
+
+function detectPreToolUseHookRegistered(projectRoot, existsSync = fs.existsSync, readFileSync = fs.readFileSync, homeDir = null) {
+  return claudeSettingsPaths(projectRoot, homeDir)
+    .some((settingsPath) => settingsHasThumbgatePreToolUse(settingsPath, existsSync, readFileSync));
 }
 
 function recommendationForClaimState({
@@ -260,7 +291,7 @@ function summarizeClaimVerification(projectRoot = PROJECT_ROOT, deps = {}) {
     loadErrorMessage = `Claim verifier config failed to load: ${error?.message || 'unknown error'}`;
   }
 
-  const stopHookRegistered = detectStopHookRegistered(projectRoot, existsSync, readFileSync);
+  const stopHookRegistered = detectStopHookRegistered(projectRoot, existsSync, readFileSync, deps.homeDir || null);
   const recommendation = recommendationForClaimState({
     evaluatorReady,
     configLoadFailed,
@@ -312,9 +343,10 @@ function generateAgentReadinessReport(options = {}) {
   const runtime = detectRuntimeIsolation();
   const bootstrap = collectBootstrapFiles(projectRoot);
   const permissions = summarizePermissionTier(mcpProfile || getActiveMcpProfile());
-  const claimVerification = summarizeClaimVerification(projectRoot);
+  const homeDir = options.homeDir === undefined ? os.homedir() : options.homeDir;
+  const claimVerification = summarizeClaimVerification(projectRoot, { homeDir });
 
-  const preToolUseHookRegistered = detectPreToolUseHookRegistered(projectRoot);
+  const preToolUseHookRegistered = detectPreToolUseHookRegistered(projectRoot, fs.existsSync, fs.readFileSync, homeDir);
   const gitScale = summarizeGitScale(projectRoot);
   const progressiveSignoff = evaluateProgressiveSignoff({
     projectRoot,
@@ -325,7 +357,12 @@ function generateAgentReadinessReport(options = {}) {
   // Host runtime is the normal case on a developer laptop, so it is advice, not a failure.
   const advisories = [];
   if (!runtime.isolated) advisories.push(runtime.recommendation);
-  if (!bootstrap.ready) warnings.push(bootstrap.recommendation);
+  // Gates fire without AGENTS.md/CLAUDE.md/GEMINI.md, so missing context files are advice.
+  // A missing .mcp.json means the MCP tools are not wired, which stays a warning.
+  if (!bootstrap.ready) {
+    const blocking = (bootstrap.missingRequired || []).includes('.mcp.json');
+    (blocking ? warnings : advisories).push(bootstrap.recommendation);
+  }
   if (!permissions.ready) warnings.push(permissions.recommendation);
   // Missing operator verifiers is advisory (not every project asserts SQL row counts).
   // A missing evaluator module or a broken claim-verifier config is not advisory —
@@ -334,8 +371,10 @@ function generateAgentReadinessReport(options = {}) {
     warnings.push(claimVerification.recommendation);
   }
   if (!preToolUseHookRegistered) {
-    warnings.push(
-      'No ThumbGate PreToolUse hook found in .claude/settings.json. Run `npx thumbgate init --wire-hooks` before expecting gates to fire.'
+    const unread = legacyUnreadHookFile(homeDir, fs.existsSync, fs.readFileSync);
+    warnings.push(unread
+      ? `ThumbGate hooks are in ${unread}, which Claude Code does not read, so they never run. Run \`npx thumbgate init\` again to move them to ~/.claude/settings.json.`
+      : 'No ThumbGate PreToolUse hook found in .claude/settings.json, .claude/settings.local.json or ~/.claude/settings.json. Run `npx thumbgate init` before expecting gates to fire.'
     );
   }
   if (!gitScale.skipped && !gitScale.ready) {

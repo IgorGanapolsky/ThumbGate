@@ -297,7 +297,8 @@ const path = require('node:path');
 // 723 -> 724 (2026-11-25): scripts/clarity.js (Microsoft Clarity tag and owner-console export; changeset clarity-analytics).
 // 724 -> 725 (2026-11-25): scripts/deploy-proof-gate.js, the default-on deploy-proof check behind claim-stop-check.
 // 725 -> 726 (2026-11-25): public/udemy.html, the thumbgate.ai/udemy landing page (AGENT-3667).
-const BASELINE_FILE_COUNT = 726;
+// 726 -> 727 (2026-11-25): scripts/delete-equivalence.js, a learned delete also denies the same delete written in Python (AGENT-3667).
+const BASELINE_FILE_COUNT = 727;
 function readBundleSnapshot() {
   const repoRoot = path.resolve(__dirname, '..');
   const stdout = execSync('npm pack --dry-run --json', {

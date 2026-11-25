@@ -137,8 +137,19 @@ function evaluatePr(pr = {}, files = [], policy = loadPolicy()) {
   } else {
     const sensitive = names.filter((n) => matchesAny(n, policy.humanReviewPaths || []));
     if (sensitive.length) reasons.push(`Touches paths Igor reviews: ${sensitive.map((n) => `\`${n}\``).join(', ')}.`);
-    if (changedLines > auto.maxChangedLines) reasons.push(`${changedLines} changed lines (routine limit ${auto.maxChangedLines}).`);
-    if (names.length > auto.maxFiles) reasons.push(`${names.length} files (routine limit ${auto.maxFiles}).`);
+    // A PR that only changes copy (pages, docs) or tests gets the larger copy-only size limits, so a
+    // sweep across many pages is not held for Igor on size alone. Legal pages never count as copy.
+    const copyOnly = policy.copyOnly || {};
+    const isCopyOnly = names.length > 0 && Array.isArray(copyOnly.paths) && names.every((n) => matchesAny(n, copyOnly.paths)
+      && !matchesAny(n, copyOnly.excludePaths || []));
+    const maxLines = isCopyOnly && copyOnly.maxChangedLines ? copyOnly.maxChangedLines : auto.maxChangedLines;
+    const maxFiles = isCopyOnly && copyOnly.maxFiles ? copyOnly.maxFiles : auto.maxFiles;
+    const limitKind = maxLines === auto.maxChangedLines && maxFiles === auto.maxFiles ? 'routine' : 'copy-only';
+    if (limitKind === 'copy-only' && (changedLines > auto.maxChangedLines || names.length > auto.maxFiles)) {
+      warnings.push('Copy and tests only, so the copy-only size limits apply instead of the routine ones.');
+    }
+    if (changedLines > maxLines) reasons.push(`${changedLines} changed lines (${limitKind} limit ${maxLines}).`);
+    if (names.length > maxFiles) reasons.push(`${names.length} files (${limitKind} limit ${maxFiles}).`);
   }
 
   const deletedTests = files.filter((f) => f.status === 'removed' && matchesAny(f.filename, policy.testPaths || []));

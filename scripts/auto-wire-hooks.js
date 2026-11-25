@@ -287,8 +287,45 @@ function wireCursorHooks(options = {}) {
 
 // --- Claude Code wiring ---
 
+// Claude Code loads user-wide hooks from ~/.claude/settings.json. It does not read
+// ~/.claude/settings.local.json (only <project>/.claude/settings.local.json), which is
+// where init used to write them, so a default install's hooks never ran. Checked
+// 2026-11-25 with Claude Code 2.1.332: a SessionStart hook in ~/.claude/settings.json
+// ran, and the same hook in ~/.claude/settings.local.json did not.
 function claudeSettingsPath() {
+  return path.join(getHome(), '.claude', 'settings.json');
+}
+
+function claudeLegacyLocalSettingsPath() {
   return path.join(getHome(), '.claude', 'settings.local.json');
+}
+
+// Remove ThumbGate hooks from the old ~/.claude/settings.local.json so they are not
+// left behind once they live in ~/.claude/settings.json. Other entries are kept.
+function migrateLegacyLocalClaudeHooks(legacyPath, hookDefs, dryRun) {
+  const legacy = loadJsonFile(legacyPath);
+  if (!legacy || !legacy.hooks || typeof legacy.hooks !== 'object') return 0;
+  let removed = 0;
+  for (const { lifecycle, pattern, command } of hookDefs) {
+    const entries = legacy.hooks[lifecycle];
+    if (!Array.isArray(entries)) continue;
+    const kept = entries.filter((entry) => {
+      const entryHooks = Array.isArray(entry && entry.hooks) ? entry.hooks : [];
+      const isThumbGate = entryHooks.some((hook) => {
+        const cmd = hook && typeof hook.command === 'string' ? hook.command : '';
+        return cmd === command || pattern.test(cmd) || /thumbgate/i.test(cmd);
+      });
+      return !isThumbGate;
+    });
+    removed += entries.length - kept.length;
+    if (kept.length) legacy.hooks[lifecycle] = kept;
+    else delete legacy.hooks[lifecycle];
+  }
+  if (removed && !dryRun) {
+    if (Object.keys(legacy.hooks).length === 0) delete legacy.hooks;
+    fs.writeFileSync(legacyPath, JSON.stringify(legacy, null, 2) + '\n');
+  }
+  return removed;
 }
 
 function claudeSharedSettingsPath() {
@@ -521,7 +558,7 @@ function wireClaudeHooks(options) {
   // --- Step 0: clean up stale hooks from BOTH settings locations ---
   const staleWarnings = [];
 
-  // User-level: ~/.claude/settings.local.json
+  // User-level: ~/.claude/settings.json (or the explicit settingsPath)
   const userStale = pruneStaleHooksInFile(settingsPath, projectDir, dryRun);
   for (const p of userStale.removedPaths) {
     const msg = `Removed stale hook referencing missing file: ${p}`;
@@ -550,6 +587,21 @@ function wireClaudeHooks(options) {
     SessionStart: /(thumbgate_session_start\.sh|session-start\b)/,
     Stop: /(hook-stop-anti-claim\.js|claim-stop-check\b)/,
   };
+
+  let migratedLegacyHooks = 0;
+  if (!options.settingsPath) {
+    const defs = [];
+    for (const [lifecycle, hookDefOrList] of Object.entries(claudeHooks())) {
+      for (const hookDef of hookDefinitionList(hookDefOrList)) {
+        const pattern = hookDef.legacyPattern || legacyPatterns[lifecycle];
+        if (pattern) defs.push({ lifecycle, pattern, command: hookDef.hooks[0].command });
+      }
+    }
+    migratedLegacyHooks = migrateLegacyLocalClaudeHooks(claudeLegacyLocalSettingsPath(), defs, dryRun);
+  }
+  const migrationNote = migratedLegacyHooks
+    ? [{ lifecycle: 'migration', command: `removed ${migratedLegacyHooks} ThumbGate hook(s) from ~/.claude/settings.local.json, which Claude Code does not read` }]
+    : [];
 
   for (const [lifecycle, hookDefOrList] of Object.entries(claudeHooks())) {
     for (const hookDef of hookDefinitionList(hookDefOrList)) {
@@ -585,7 +637,7 @@ function wireClaudeHooks(options) {
       if (!dryRun) {
         fs.writeFileSync(settingsPath, JSON.stringify(settings, null, 2) + '\n');
       }
-      const addedEntries = [{ lifecycle: 'statusLine', command: desiredStatusLine }];
+      const addedEntries = [{ lifecycle: 'statusLine', command: desiredStatusLine }, ...migrationNote];
       if (syncClaudeStatusLine(sharedSettingsPath, desiredStatusLine, dryRun)) {
         addedEntries.push({ lifecycle: 'statusLine', command: `${desiredStatusLine} (synced ~/.claude/settings.json)` });
       }
@@ -593,9 +645,12 @@ function wireClaudeHooks(options) {
     }
     const sharedStatusChanged = syncClaudeStatusLine(sharedSettingsPath, desiredStatusLine, dryRun);
     return {
-      changed: sharedStatusChanged,
+      changed: sharedStatusChanged || migrationNote.length > 0,
       settingsPath,
-      added: sharedStatusChanged ? [{ lifecycle: 'statusLine', command: `${desiredStatusLine} (synced ~/.claude/settings.json)` }] : [],
+      added: [
+        ...(sharedStatusChanged ? [{ lifecycle: 'statusLine', command: `${desiredStatusLine} (synced ~/.claude/settings.json)` }] : []),
+        ...migrationNote,
+      ],
     };
   }
 
@@ -610,6 +665,7 @@ function wireClaudeHooks(options) {
   if (syncClaudeStatusLine(sharedSettingsPath, desiredStatusLine, dryRun)) {
     added.push({ lifecycle: 'statusLine', command: `${desiredStatusLine} (synced ~/.claude/settings.json)` });
   }
+  added.push(...migrationNote);
 
   return { changed: true, settingsPath, added };
 }

@@ -59,7 +59,7 @@
       "name": "Why mention thumbs up as well as thumbs down?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "Because reinforcement matters. Good behavior should become easier to repeat, not only bad behavior harder to repeat."
+        "text": "Because the record should show what worked, not only what failed. A thumbs-up is saved as a success lesson; it does not change any check."
       }
     },
     {
@@ -110,7 +110,7 @@
 
   <h2>The ThumbGate angle</h2>
   <ul>
-    <li>Thumbs up reinforces good behavior.</li>
+    <li>Thumbs up saves what worked as a lesson. It does not loosen or remove a check.</li>
     <li>Thumbs down becomes a prevention rule.</li>
     <li>Pre-action checks flag and log the repeated mistake before the next command executes — and hard-block secret exfiltration and guardrail-tampering by default.</li>
     <li>The same flow works across Cursor, Codex, Gemini, Amp, and OpenCode.</li>
@@ -128,7 +128,7 @@
   <p>No. Claude Code is a strong entry point, but the same thumbs-up/down feedback loop and pre-action checks work across other MCP-compatible coding agents too.</p>
 
   <h3>Why mention thumbs up as well as thumbs down?</h3>
-  <p>Because reinforcement matters. Good behavior should become easier to repeat, not only bad behavior harder to repeat.</p>
+  <p>Because the record should show what worked, not only what failed. A thumbs-up is saved as a success lesson; it does not change any check.</p>
 
   <h3>How does ThumbGate differ from Claude Code CLAUDE.md rules?</h3>
   <p>CLAUDE.md rules are advisory and can be overridden by context overflow or chain-of-thought reasoning. ThumbGate pre-action checks intercept tool calls at the hook layer, flag and log every decision by default, and hard-block secret exfiltration and guardrail-tampering by default (rm -rf, force-push, and supply-chain warn by default) before execution. Set THUMBGATE_STRICT_ENFORCEMENT=1 to hard-block every rule.</p>

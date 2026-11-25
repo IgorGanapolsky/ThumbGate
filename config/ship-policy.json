@@ -57,6 +57,34 @@
     ".env*",
     "LICENSE"
   ],
+  "copyOnly": {
+    "$comment": "A PR whose every file matches paths (and none matches excludePaths) is held to these limits instead of autoMerge's. Paths Igor reviews, secrets, deleted tests and every other rule still apply.",
+    "maxChangedLines": 4000,
+    "maxFiles": 200,
+    "paths": [
+      "public/**/*.html",
+      "public/**/*.md",
+      "public/**/*.txt",
+      "public/**/*.svg",
+      ".well-known/**",
+      "docs/**",
+      "**/*.md",
+      ".changeset/*.md",
+      "tests/**"
+    ],
+    "excludePaths": [
+      "public/terms*",
+      "public/privacy*",
+      "public/support*",
+      "public/legal/**",
+      "docs/legal/**",
+      "LICENSE*",
+      "CLAUDE.md",
+      "AGENTS.md",
+      ".claude/**",
+      "tests/e2e/**/*.js"
+    ]
+  },
   "dependabotAllowedPaths": [
     "package.json",
     "package-lock.json",

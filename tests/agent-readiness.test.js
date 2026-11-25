@@ -171,6 +171,7 @@ test('generateAgentReadinessReport needs attention without PreToolUse hook', () 
   const report = generateAgentReadinessReport({
     projectRoot,
     mcpProfile: 'default',
+    homeDir: fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-empty-home-')),
   });
   if (previousContainer === undefined) delete process.env.container;
   else process.env.container = previousContainer;
@@ -306,6 +307,77 @@ test('generateAgentReadinessReport warns when claim verifier config fails to loa
     assert.equal(report.claimVerification.configLoadFailed, true);
     assert.equal(report.overallStatus, 'needs_attention');
     assert.ok(report.warnings.some((w) => /failed to load/i.test(w)));
+  } finally {
+    fs.rmSync(projectRoot, { recursive: true, force: true });
+  }
+});
+
+test('doctor sees the hooks a default init writes to ~/.claude/settings.json', () => {
+  const projectRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-fresh-project-'));
+  const homeDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-fresh-home-'));
+  try {
+    fs.writeFileSync(path.join(projectRoot, '.mcp.json'), JSON.stringify({ mcpServers: { thumbgate: {} } }));
+    fs.mkdirSync(path.join(homeDir, '.claude'), { recursive: true });
+    fs.writeFileSync(path.join(homeDir, '.claude', 'settings.json'), JSON.stringify({
+      hooks: {
+        PreToolUse: [{ matcher: '.*', hooks: [{ type: 'command', command: 'node "/x/thumbgate/bin/cli.js" gate-check' }] }],
+        Stop: [{ hooks: [{ type: 'command', command: 'node "/x/thumbgate/bin/cli.js" claim-stop-check' }] }],
+      },
+    }));
+    const previousContainer = process.env.container;
+    process.env.container = '1';
+    const report = generateAgentReadinessReport({ projectRoot, mcpProfile: 'default', homeDir });
+    if (previousContainer === undefined) delete process.env.container;
+    else process.env.container = previousContainer;
+
+    assert.equal(report.preToolUseHookRegistered, true, 'machine-wide hook is found');
+    assert.equal(report.claimVerification.stopHookRegistered, true, 'claim-stop-check counts as the stop gate');
+    assert.equal(report.bootstrap.ready, false, 'AGENTS.md / CLAUDE.md / GEMINI.md are still reported missing');
+    assert.ok(report.advisories.includes(report.bootstrap.recommendation), 'missing context files are advice');
+    assert.equal(report.overallStatus, 'ready', 'a fresh project passes doctor right after init');
+  } finally {
+    fs.rmSync(projectRoot, { recursive: true, force: true });
+    fs.rmSync(homeDir, { recursive: true, force: true });
+  }
+});
+
+test('doctor fails when hooks are only in ~/.claude/settings.local.json, which Claude Code does not read', () => {
+  const projectRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-fresh-project-'));
+  const homeDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-fresh-home-'));
+  try {
+    fs.writeFileSync(path.join(projectRoot, '.mcp.json'), JSON.stringify({ mcpServers: { thumbgate: {} } }));
+    fs.mkdirSync(path.join(homeDir, '.claude'), { recursive: true });
+    fs.writeFileSync(path.join(homeDir, '.claude', 'settings.local.json'), JSON.stringify({
+      hooks: {
+        PreToolUse: [{ matcher: '.*', hooks: [{ type: 'command', command: 'node "/x/thumbgate/bin/cli.js" gate-check' }] }],
+        Stop: [{ hooks: [{ type: 'command', command: 'node "/x/thumbgate/bin/cli.js" claim-stop-check' }] }],
+      },
+    }));
+    const previousContainer = process.env.container;
+    process.env.container = '1';
+    const report = generateAgentReadinessReport({ projectRoot, mcpProfile: 'default', homeDir });
+    if (previousContainer === undefined) delete process.env.container;
+    else process.env.container = previousContainer;
+
+    assert.equal(report.preToolUseHookRegistered, false, 'an unread file does not count as wired');
+    assert.ok(report.warnings.some((w) => /does not read/.test(w) && /settings\.local\.json/.test(w)), 'doctor names the unread file');
+    assert.notEqual(report.overallStatus, 'ready');
+  } finally {
+    fs.rmSync(projectRoot, { recursive: true, force: true });
+    fs.rmSync(homeDir, { recursive: true, force: true });
+  }
+});
+
+test('a missing .mcp.json still fails doctor', () => {
+  const projectRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-no-mcp-'));
+  try {
+    fs.mkdirSync(path.join(projectRoot, '.claude'), { recursive: true });
+    fs.writeFileSync(path.join(projectRoot, '.claude', 'settings.json'), JSON.stringify({
+      hooks: { PreToolUse: [{ hooks: [{ type: 'command', command: 'npx thumbgate gate-check' }] }] },
+    }));
+    const report = generateAgentReadinessReport({ projectRoot, mcpProfile: 'default', homeDir: null });
+    assert.ok(report.warnings.includes(report.bootstrap.recommendation));
+    assert.equal(report.overallStatus, 'needs_attention');
   } finally {
     fs.rmSync(projectRoot, { recursive: true, force: true });
   }
