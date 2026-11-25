@@ -416,19 +416,80 @@ function isCliAttributed(e) {
  * The activated -> upgrade-shown -> checkout funnel, counted per install (CLI stages) and per
  * event (web stages that carry utm_source=cli). See docs/decisions/2026-11-24-revenue-funnel-activation.md.
  */
+// First release that shows the upgrade line after a block. Activated installs below it can never
+// produce upsellShown, so the funnel reports how many activated installs are on it or later.
+const UPSELL_MIN_VERSION = '1.40.14';
+
+function versionAtLeast(version, min) {
+  const a = String(version || '').match(/^(\d+)\.(\d+)\.(\d+)/);
+  if (!a) return false;
+  const b = min.split('.').map(Number);
+  for (let i = 0; i < 3; i += 1) {
+    const d = Number(a[i + 1]) - b[i];
+    if (d !== 0) return d > 0;
+  }
+  return true;
+}
+
+/**
+ * How many CLI installs run the current release, by the version on each install's newest ping.
+ * `runtime_version_skew` is skipped: the MCP server sends it with its own version, not the hooks'.
+ */
+function summarizeInstallVersions(entries = [], currentVersion = '') {
+  const newest = new Map();
+  for (const e of Array.isArray(entries) ? entries : []) {
+    if (!e || isInternalEntry(e) || !e.installId) continue;
+    if (!(e.clientType === 'cli' || e.client === 'cli')) continue;
+    const type = e.eventType || e.event || '';
+    if (type === 'runtime_version_skew') continue;
+    const version = String(e.version || e.pkgVersion || '').match(/^\d+\.\d+\.\d+/);
+    if (!version) continue;
+    const at = Date.parse(e.receivedAt || e.timestamp || '') || 0;
+    const prev = newest.get(e.installId);
+    if (!prev || at >= prev.at) newest.set(e.installId, { at, version: version[0] });
+  }
+  const counts = new Map();
+  for (const { version } of newest.values()) counts.set(version, (counts.get(version) || 0) + 1);
+  const installs = newest.size;
+  const onCurrent = counts.get(currentVersion) || 0;
+  const onUpsellCapable = [...counts].reduce((n, [v, c]) => n + (versionAtLeast(v, UPSELL_MIN_VERSION) ? c : 0), 0);
+  return {
+    currentVersion: currentVersion || null,
+    installs,
+    onCurrent,
+    onCurrentShare: installs ? Math.round((onCurrent / installs) * 1000) / 10 : null,
+    onUpsellCapable,
+    topVersions: [...counts].sort((a, b) => b[1] - a[1]).slice(0, 5).map(([version, count]) => ({ version, count })),
+  };
+}
+
 function summarizeActivationFunnel(entries = []) {
   const installs = new Set();
   const activated = new Set();
+  const upsellCapable = new Set();
   const upsellShown = new Set();
   const limitHit = new Set();
+  const runtimeSkew = new Set();
+  const autoUpdated = new Set();
+  const autoUpdateFailed = new Set();
   const funnel = { cliCheckoutViews: 0, cliCheckoutClicks: 0, cliCheckoutPaidPageViews: 0, firstBlockCheckoutViews: 0 };
   for (const e of Array.isArray(entries) ? entries : []) {
     if (!e || isInternalEntry(e)) continue;
     const type = e.eventType || e.event || '';
     if (e.installId && (e.clientType === 'cli' || e.client === 'cli')) installs.add(e.installId);
+    // Only hook-side versions count: the MCP server pings with its own (newer) version from the
+    // same install id, which says nothing about the hooks. A successful background refresh does.
+    const hookVersion = FIRST_BLOCK_EVENT_NAMES.has(type) || type === 'first_block_upsell_shown'
+      || (type === 'runtime_auto_update' && (e.reasonCode || e.reason) === 'updated');
+    if (e.installId && hookVersion && versionAtLeast(e.version || e.pkgVersion, UPSELL_MIN_VERSION)) upsellCapable.add(e.installId);
     if (e.installId && FIRST_BLOCK_EVENT_NAMES.has(type)) activated.add(e.installId);
     if (e.installId && type === 'first_block_upsell_shown') upsellShown.add(e.installId);
     if (e.installId && type === 'cli_limit_hit') limitHit.add(e.installId);
+    if (e.installId && type === 'runtime_version_skew') runtimeSkew.add(e.installId);
+    if (e.installId && type === 'runtime_auto_update') {
+      if ((e.reasonCode || e.reason) === 'updated') autoUpdated.add(e.installId);
+      else autoUpdateFailed.add(e.installId);
+    }
     if (!isCliAttributed(e)) continue;
     if (CHECKOUT_VIEW_EVENTS.has(type)) {
       funnel.cliCheckoutViews += 1;
@@ -440,8 +501,14 @@ function summarizeActivationFunnel(entries = []) {
   return {
     cliInstalls: installs.size,
     activatedInstalls: activated.size,
+    // Activated installs that sent any ping from a version that shows the upgrade line.
+    upsellCapableActivatedInstalls: [...activated].filter((id) => upsellCapable.has(id)).length,
     upsellShownInstalls: upsellShown.size,
     limitHitInstalls: limitHit.size,
+    // Hook-runtime updates: installs the MCP server found behind, and background refresh results.
+    runtimeSkewInstalls: runtimeSkew.size,
+    runtimeAutoUpdatedInstalls: autoUpdated.size,
+    runtimeAutoUpdateFailedInstalls: [...autoUpdateFailed].filter((id) => !autoUpdated.has(id)).length,
     ...funnel,
   };
 }
@@ -506,6 +573,7 @@ module.exports = {
   resolveActivationAccountAuth,
   summarizeFirstBlockEvents,
   summarizeActivationFunnel,
+  summarizeInstallVersions,
   computeDaysSinceInstall,
   computeMinutesSinceInstall,
   readMarker,

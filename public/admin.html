@@ -283,7 +283,7 @@
       const content = document.getElementById('content');
       // Today answers "does anything need me, and how did this week go". Overview repeated it, so it left the menu;
       // its numbers stay in /v1/admin/summary for agents.
-      const sections = ['money', 'economics', 'analytics', 'observability', 'stripe', 'data'];
+      const sections = ['money', 'economics', 'analytics', 'behavior', 'sources', 'observability', 'stripe', 'data'];
       const titles = {
         money: 'Today',
         economics: 'Unit economics',
@@ -291,8 +291,45 @@
         stripe: 'Stripe records',
         data: 'Hosted data',
         analytics: 'Growth',
+        behavior: 'Visitor behavior',
+        sources: 'Sources',
         observability: 'Health',
       };
+      // Sources tab: one block per source with the time of its last event, or a plain "no data yet" state. No number
+      // is filled in for a source this server does not read; each block links to that source's own dashboard.
+      const SOURCE_STATE_WORDS = {
+        ok: 'Last event seen',
+        no_data_yet: 'No data yet',
+        not_read_here: 'No data here yet: open its own dashboard',
+        not_installed: 'Not installed',
+        unavailable: 'Unavailable right now',
+      };
+      function renderSources(parent, data) {
+        const groups = [
+          ['analytics', 'Analytics tools on the site'],
+          ['funnel', 'Funnel, from our own first-party log (past 30 days)'],
+        ];
+        for (const [group, title] of groups) {
+          parent.append(element('h3', title));
+          for (const tile of data.tiles.filter((item) => item.group === group)) {
+            const block = element('div', undefined, 'card');
+            block.append(element('div', SOURCE_STATE_WORDS[tile.status] || label(tile.status), 'value'));
+            block.append(element('div', tile.label, 'label'));
+            if (tile.lastEventAt) block.append(element('div', 'Last event: ' + date(tile.lastEventAt), 'muted'));
+            if (Number.isFinite(tile.count30d)) block.append(element('div', 'Events in the past 30 days: ' + tile.count30d, 'muted'));
+            block.append(element('p', tile.note, 'muted'));
+            if (tile.dashboardUrl && /^https:\/\//.test(tile.dashboardUrl)) {
+              const link = element('a', 'Open ' + tile.label + ' dashboard');
+              link.href = tile.dashboardUrl;
+              link.target = '_blank';
+              link.rel = 'noopener noreferrer';
+              block.append(link);
+            }
+            parent.append(block);
+          }
+        }
+        parent.append(element('p', 'JSON for agents: /v1/admin/sources. Clarity recordings and heatmaps are read in the Clarity dashboard; a session only counts as seen there once it shows a real session.', 'muted'));
+      }
       let current = 'money';
       let resource = 'customers';
       let subscriptionId = null;
@@ -975,8 +1012,60 @@
         detail(parent, 'Installs by version', usage.byVersion);
         detail(parent, 'Installs by platform', usage.byPlatform);
       }
+      // Visitor behavior: Microsoft Clarity's last 24 hours (sessions, frustration signals, top pages and sources).
+      function behaviorBlock(parent, data) {
+        const links = element('p', undefined, 'muted');
+        for (const [name, href] of [['Clarity dashboard', data.dashboardUrl], ['Recordings', data.recordingsUrl], ['Heatmaps', data.heatmapsUrl]]) {
+          if (!href) continue;
+          const a = element('a', name + ' ↗');
+          a.href = href;
+          a.target = '_blank';
+          a.rel = 'noopener noreferrer';
+          links.append(a, document.createTextNode('  '));
+        }
+        parent.append(links);
+        parent.append(element('p', data.tagEnabled
+          ? 'Clarity tag is on for public pages (project ' + data.projectId + '). Not recorded: ' + data.tagExcludes + '. Form fields are masked.'
+          : 'Clarity tag is off (THUMBGATE_CLARITY_PROJECT_ID is set to off).', 'muted'));
+        if (!data.exportConfigured) {
+          parent.append(element('p', 'Numbers appear here once THUMBGATE_CLARITY_API_TOKEN is set in Railway (Clarity, Settings, Data Export). Recordings and heatmaps are in Clarity now.', 'notice'));
+          return;
+        }
+        const s = data.summary;
+        if (!s) {
+          parent.append(element('p', 'No Clarity snapshot yet. No zero total is inferred.', 'empty'));
+          return;
+        }
+        const pct = (v) => (Number.isFinite(v) ? Math.round(v * 10) / 10 + '%' : 'Not reported');
+        const num = (v) => (Number.isFinite(v) ? String(Math.round(v * 100) / 100) : 'Not reported');
+        parent.append(element('h3', 'Last 24 hours' + (data.fetchedAt ? ', fetched ' + date(data.fetchedAt) : '')));
+        cards(parent, {
+          'Sessions (humans)': num(s.sessions),
+          'Bot sessions': num(s.botSessions),
+          'Distinct visitors': num(s.distinctUsers),
+          'Pages per session': num(s.pagesPerSession),
+          'Average scroll depth': pct(s.averageScrollDepthPercent),
+          'Sessions with rage clicks': pct(s.rageClickSessionsPercent),
+          'Sessions with dead clicks': pct(s.deadClickSessionsPercent),
+          'Sessions with quick backs': pct(s.quickbackSessionsPercent),
+          'Sessions with script errors': pct(s.scriptErrorSessionsPercent),
+        }, true);
+        parent.append(element('h3', 'Top pages'));
+        table(parent, [['Page', (r) => r.url], ['Sessions', (r) => r.sessions], ['Visitors', (r) => r.distinctUsers], ['Pages per session', (r) => num(r.pagesPerSession)]], data.topPages || []);
+        parent.append(element('h3', 'Top sources'));
+        table(parent, [['Source', (r) => r.source], ['Sessions', (r) => r.sessions], ['Visitors', (r) => r.distinctUsers]], data.topSources || []);
+        for (const m of data.metrics || []) {
+          if (!m.rows?.length) continue;
+          const block = element('details');
+          block.append(element('summary', 'Raw Clarity metric: ' + m.name));
+          const keys = Object.keys(m.rows[0]);
+          table(block, keys.map((k) => [label(k), (r) => r[k]]), m.rows);
+          parent.append(block);
+        }
+      }
       function render(parent, section, data) {
         if (section === 'economics') economicsBlock(parent, data);
+        if (section === 'behavior') behaviorBlock(parent, data);
         if (section === 'money') {
           alertsBlock(parent);
           parent.append(element('h3', 'This week at a glance'));
@@ -1377,6 +1466,9 @@
         }
         if (section === 'observability') {
           renderObservability(parent, data);
+        }
+        if (section === 'sources') {
+          renderSources(parent, data);
         }
       }
       function controls() {
