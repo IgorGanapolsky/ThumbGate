@@ -191,9 +191,10 @@ function detectStopHookRegistered(projectRoot, existsSync, readFileSync, homeDir
   });
 }
 
-// `npx thumbgate init` writes hooks machine-wide (~/.claude/settings.local.json) by default and
-// per-project with --project, so look in every settings file Claude Code reads, not only the
-// project's settings.json. Otherwise doctor says "no hook" right after init wired one.
+// `npx thumbgate init` writes hooks machine-wide (~/.claude/settings.json) by default and
+// per-project (<repo>/.claude/settings.json) with --project, so look in every settings file
+// Claude Code reads. ~/.claude/settings.local.json is NOT one of them: hooks there never
+// run, so it must not count as wired (older inits wrote there).
 function claudeSettingsPaths(projectRoot, homeDir) {
   const paths = [
     path.join(projectRoot, '.claude', 'settings.json'),
@@ -201,9 +202,14 @@ function claudeSettingsPaths(projectRoot, homeDir) {
   ];
   if (homeDir) {
     paths.push(path.join(homeDir, '.claude', 'settings.json'));
-    paths.push(path.join(homeDir, '.claude', 'settings.local.json'));
   }
   return paths;
+}
+
+function legacyUnreadHookFile(homeDir, existsSync, readFileSync) {
+  if (!homeDir) return null;
+  const legacyPath = path.join(homeDir, '.claude', 'settings.local.json');
+  return settingsHasThumbgatePreToolUse(legacyPath, existsSync, readFileSync) ? legacyPath : null;
 }
 
 function settingsHasThumbgatePreToolUse(settingsPath, existsSync, readFileSync) {
@@ -365,8 +371,10 @@ function generateAgentReadinessReport(options = {}) {
     warnings.push(claimVerification.recommendation);
   }
   if (!preToolUseHookRegistered) {
-    warnings.push(
-      'No ThumbGate PreToolUse hook found in .claude/settings.json, .claude/settings.local.json or ~/.claude/. Run `npx thumbgate init` before expecting gates to fire.'
+    const unread = legacyUnreadHookFile(homeDir, fs.existsSync, fs.readFileSync);
+    warnings.push(unread
+      ? `ThumbGate hooks are in ${unread}, which Claude Code does not read, so they never run. Run \`npx thumbgate init\` again to move them to ~/.claude/settings.json.`
+      : 'No ThumbGate PreToolUse hook found in .claude/settings.json, .claude/settings.local.json or ~/.claude/settings.json. Run `npx thumbgate init` before expecting gates to fire.'
     );
   }
   if (!gitScale.skipped && !gitScale.ready) {

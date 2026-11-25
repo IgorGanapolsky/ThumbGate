@@ -697,7 +697,8 @@ test('cache updater writes cache from feedback_stats input', () => {
 
 test('Claude Code wiring uses portable ThumbGate commands for status line and cache updates', () => {
   const cliSource = fs.readFileSync(path.join(__dirname, '..', 'bin', 'cli.js'), 'utf8');
-  assert.match(cliSource, /wireHooks\(\{\s*agent:\s*'claude-code'\s*\}\)/, 'cli.js must delegate Claude setup to canonical hook wiring');
+  // `...claudeHookTarget(options)` only redirects the settings file for `init --project`.
+  assert.match(cliSource, /wireHooks\(\{\s*agent:\s*'claude-code'(?:,\s*\.\.\.claudeHookTarget\(options\))?\s*\}\)/, 'cli.js must delegate Claude setup to canonical hook wiring');
   const cacheCommand = cacheUpdateHookCommand();
   const statusCommand = statuslineCommand();
   assert.ok(
