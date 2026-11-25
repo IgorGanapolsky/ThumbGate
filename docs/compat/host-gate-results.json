@@ -234,15 +234,15 @@
       "id": "learned-from-two-thumbs-downs",
       "kind": "learned",
       "command": "node ./scripts/notify-all-customers.js --send",
-      "note": "two typed thumbs-downs on one command, then the same command",
+      "note": "one typed thumbs-down holds the command at once; two make a gate that outlives \"go ahead\"",
       "cells": {
         "claude-code": {
           "status": "enforced",
-          "check": "node ./scripts/notify-all-customers.js --send: allowed, one thumbs-down allowed, after two denied (exit 0, permissionDecision deny)"
+          "check": "node ./scripts/notify-all-customers.js --send: held after one thumbs-down, released by \"go ahead\", after two denied for good (exit 0, permissionDecision deny)"
         },
         "cursor": {
           "status": "enforced",
-          "check": "node ./scripts/notify-all-customers.js --send: allowed, one thumbs-down allowed, after two denied (exit 2, permission deny)"
+          "check": "node ./scripts/notify-all-customers.js --send: held after one thumbs-down, released by \"go ahead\", after two denied for good (exit 2, permission deny)"
         },
         "codex": {
           "status": "untested",

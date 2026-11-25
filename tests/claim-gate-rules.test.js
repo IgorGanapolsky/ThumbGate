@@ -36,7 +36,7 @@ test('a labelled claim is let through even with no check', () => {
   assert.equal(verdict.block, false);
 });
 
-test('two human thumbs-downs on an unchecked claim write a rule with no file edit, and the next unchecked claim is held', () => {
+test('one human thumbs-down on an unchecked claim writes a rule with no file edit, and the next unchecked claim is held', () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'tg-claim-learn-'));
   process.env.THUMBGATE_FEEDBACK_DIR = dir;
   process.env.THUMBGATE_NO_RATE_LIMIT = '1';
@@ -47,17 +47,19 @@ test('two human thumbs-downs on an unchecked claim write a rule with no file edi
   assert.equal(before.block, false, 'the built-in patterns do not know this sentence yet');
   const down = (n) => captureFeedback({ signal: 'down', reviewOrigin: 'human', context: `You said "${claim}" without checking it this turn (${n})`, whatWentWrong: `Stated "${claim}" without checking.`, whatToChange: 'Check before stating outside state.', tags: ['unchecked-claim'] });
   down(1);
-  assert.equal(gate.evaluateDraft(claim, { toolCalls: [], retrieve: () => [], feedbackDir: dir }).block, false, 'one thumbs-down is not a rule');
-  down(2);
   const rules = JSON.parse(fs.readFileSync(rulesFile, 'utf8')).rules;
-  assert.equal(rules.length, 1, 'a rule exists after the second thumbs-down');
+  assert.equal(rules.length, 1, 'one thumbs-down from a person writes the rule (it used to take two)');
   assert.equal(rules[0].action, 'hold');
-  assert.equal(rules[0].thumbsDown, 2);
+  assert.equal(rules[0].thumbsDown, 1);
+  down(2);
+  assert.equal(JSON.parse(fs.readFileSync(rulesFile, 'utf8')).rules.length, 1, 'a second thumbs-down on the same claim adds no duplicate');
   const held = gate.evaluateDraft('The webhook endpoint is timing out again.', { toolCalls: [], retrieve: () => [], feedbackDir: dir });
   assert.equal(held.block, true, 'the next unchecked claim is held');
   assert.equal(held.claims[0].kind, 'learned');
-  const withCheck = gate.evaluateDraft('The webhook endpoint is timing out.', { toolCalls: bash('curl -sS -m 5 -X POST https://x.test/hooks/stripe'), retrieve: () => [], feedbackDir: dir });
-  assert.equal(withCheck.block, false, 'a real check from this turn clears it');
+  const withCheck = gate.evaluateDraft('The webhook endpoint is timing out: `curl -m 5 -X POST /hooks/stripe` got exit 28.', { toolCalls: bash('curl -sS -m 5 -X POST https://x.test/hooks/stripe'), retrieve: () => [], feedbackDir: dir });
+  assert.equal(withCheck.block, false, 'a real check from this turn, with its output in the reply, clears it');
+  const checkNoOutput = gate.evaluateDraft('The webhook endpoint is timing out.', { toolCalls: bash('curl -sS -m 5 -X POST https://x.test/hooks/stripe'), retrieve: () => [], feedbackDir: dir });
+  assert.equal(checkNoOutput.block, true, 'a check that ran but whose output is not in the reply does not clear a learned rule');
   const healthOnly = gate.evaluateDraft('The webhook endpoint is timing out.', { toolCalls: bash('curl -s https://x.test/health'), retrieve: () => [], feedbackDir: dir });
   assert.equal(healthOnly.block, true, 'a /health 200 does not clear it');
 });
@@ -67,4 +69,22 @@ test('an agent-origin thumbs-down never writes a claim rule', () => {
   const rules = require('../scripts/claim-gate-rules');
   for (let i = 0; i < 3; i += 1) rules.recordFromFeedback({ reviewOrigin: 'agent', context: 'You said "the queue is stuck" without checking', whatWentWrong: 'said "the queue is stuck" without checking' }, dir);
   assert.equal(fs.existsSync(path.join(dir, 'claim-gate-rules.json')), false);
+});
+
+test('three differently worded thumbs-downs on sign-in claims: the first one already writes the sign-in rule', () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'tg-claim-reworded-'));
+  const rules = require('../scripts/claim-gate-rules');
+  const said = [
+    'You said sign-in is refused without checking the page.',
+    'Do not say the login is failing unless this turn opened the page.',
+    'Never claim the session expired from memory.',
+  ];
+  rules.recordFromFeedback({ reviewOrigin: 'human', context: said[0] }, dir);
+  assert.deepEqual(rules.readRules(dir).rules.map((r) => r.key), ['class:sign-in']);
+  rules.recordFromFeedback({ reviewOrigin: 'human', context: said[1] }, dir);
+  rules.recordFromFeedback({ reviewOrigin: 'human', context: said[2] }, dir);
+  assert.equal(rules.readRules(dir).rules.length, 1, 'rewording adds to the same rule instead of three half-rules');
+  for (const sentence of ['Sign-in is refused on the portal.', 'The login is failing for the admin page.', 'You are signed in already.']) {
+    assert.equal(gate.evaluateDraft(sentence, { toolCalls: [], retrieve: () => [], feedbackDir: dir }).block, true, sentence);
+  }
 });
