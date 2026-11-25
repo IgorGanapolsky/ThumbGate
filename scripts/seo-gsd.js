@@ -1223,7 +1223,7 @@ const AI_AGENT_GOVERNANCE_SPRINT_GUIDE_SPEC = Object.freeze({
   slug: 'ai-agent-governance-sprint',
   meta: {
     query: 'ai agent governance sprint',
-    title: 'AI Agent Governance Sprint | 48-Hour Workflow Hardening',
+    title: 'AI Agent Governance Sprint | Request a 30-Day Team Pilot',
     heroTitle: 'AI Agent Governance Sprint for One Risky Workflow',
     heroSummary: 'ThumbGate turns one repeated AI-agent failure into approval boundaries, pre-action checks, rollback safety, and rollout proof in a request-only 30-day team pilot.',
   },
@@ -1252,7 +1252,7 @@ const AI_AGENT_GOVERNANCE_SPRINT_GUIDE_SPEC = Object.freeze({
   faq: [
     [
       'What is included in the AI Agent Governance Sprint?',
-      'A focused 48-hour implementation around one workflow: intake, governance mapping, pre-action checks, background-agent risk routing, rollback notes, and a proof pack for the buyer review.',
+      'A request-only 30-day team pilot around one workflow: intake, governance mapping, pre-action checks, background-agent risk routing, rollback notes, and a proof pack for the buyer review. A person replies by email to scope it.',
     ],
     [
       'How is this different from the team pilot?',

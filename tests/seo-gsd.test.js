@@ -382,7 +382,7 @@ test('AI deployment readiness page turns deployment demand into sprint intake', 
   assert.match(html, /npx thumbgate background-governance --check --json/);
   assert.match(html, /workflow-sprint-intake/);
   assert.match(html, /30-day team pilot/);
-  assert.doesNotMatch(html, /\$499|\$1500|Workflow Hardening Diagnostic/);
+  assert.doesNotMatch(html, /\$499|\$1,?500|Setup Sprint|Workflow Hardening Diagnostic|48-hour/i);
 });
 
 test('GPT-5.5 model evaluation page is discoverable and commercially classified', () => {

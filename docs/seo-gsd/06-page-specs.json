@@ -2382,8 +2382,8 @@
     "pageType": "guide",
     "persona": "engineering-lead",
     "opportunityScore": 83,
-    "title": "AI Agent Governance Sprint | 48-Hour Workflow Hardening",
-    "description": "ThumbGate turns one repeated AI-agent failure into approval boundaries, pre-action checks, rollback safety, and rollout proof in a focused 48-hour Workflow H...",
+    "title": "AI Agent Governance Sprint | Request a 30-Day Team Pilot",
+    "description": "ThumbGate turns one repeated AI-agent failure into approval boundaries, pre-action checks, rollback safety, and rollout proof in a request-only 30-day team p...",
     "heroTitle": "AI Agent Governance Sprint for One Risky Workflow",
     "heroSummary": "ThumbGate turns one repeated AI-agent failure into approval boundaries, pre-action checks, rollback safety, and rollout proof in a request-only 30-day team pilot.",
     "takeaways": [
@@ -2420,7 +2420,7 @@
     "faq": [
       {
         "question": "What is included in the AI Agent Governance Sprint?",
-        "answer": "A focused 48-hour implementation around one workflow: intake, governance mapping, pre-action checks, background-agent risk routing, rollback notes, and a proof pack for the buyer review."
+        "answer": "A request-only 30-day team pilot around one workflow: intake, governance mapping, pre-action checks, background-agent risk routing, rollback notes, and a proof pack for the buyer review. A person replies by email to scope it."
       },
       {
         "question": "How is this different from the team pilot?",
