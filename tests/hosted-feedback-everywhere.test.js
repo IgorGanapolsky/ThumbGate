@@ -2,8 +2,7 @@
 
 // Feedback given outside a local Claude Code session (claude.ai chats, Claude
 // Desktop, Claude projects, cloud sessions) reaches ThumbGate through the
-// hosted MCP connector, survives a redeploy, and is pulled into the local
-// store where the PreToolUse gates read it.
+// hosted MCP connector, and the connector's sign-in survives a redeploy.
 
 const test = require('node:test');
 const assert = require('node:assert/strict');
@@ -13,12 +12,10 @@ const os = require('node:os');
 const path = require('node:path');
 const { spawn } = require('node:child_process');
 
-// Local test traffic must not go through an outbound proxy (the sync script
-// installs one when HTTPS_PROXY is set).
+// Local test traffic must not go through an outbound proxy.
 for (const k of ['HTTPS_PROXY', 'https_proxy', 'HTTP_PROXY', 'http_proxy']) delete process.env[k];
 
 const oauth = require('../scripts/mcp-oauth');
-const hostedSync = require('../scripts/hosted-feedback-sync');
 
 const ROOT = path.join(__dirname, '..');
 const OPERATOR_KEY = 'hosted-everywhere-operator-key';
@@ -108,21 +105,6 @@ test('durable store survives a restart, keeps no plaintext secrets, and drops se
   assert.equal(oauth.resolveAccessToken(rotated, tok.access_token), null, 'rotating the key revokes its sessions');
 });
 
-test('selectHostedFeedback keeps new hosted feedback events only', () => {
-  const bundle = {
-    lessons: [
-      { id: 'fb_2', signal: 'down', timestamp: '2026-11-25T02:00:00Z' },
-      { id: 'mem_2', signal: 'down' },
-      { id: 'fb_1', signal: 'up', timestamp: '2026-11-25T01:00:00Z' },
-      { id: 'fb_seen', signal: 'down' },
-      { id: 'fb_local', signal: 'down', tags: ['local-origin'] },
-      { id: 'fb_bad', signal: 'meh' },
-    ],
-  };
-  const picked = hostedSync.selectHostedFeedback(bundle, new Set(['fb_seen']));
-  assert.deepEqual(picked.map((l) => l.id), ['fb_1', 'fb_2']);
-});
-
 function startServerProcess(env) {
   return new Promise((resolve, reject) => {
     const script = "const {startServer}=require('./src/api/server');startServer({port:0,host:'127.0.0.1'}).then(h=>process.stdout.write('PORT '+h.port+'\\n'));";
@@ -175,9 +157,8 @@ function mcp(base, method, params, token) {
   });
 }
 
-test('end to end: chat thumbs-down via hosted connector survives a redeploy and lands in the local store', { timeout: 120000 }, async () => {
+test('end to end: chat thumbs-down via hosted connector after a redeploy and a token refresh', { timeout: 120000 }, async () => {
   const serverDir = tmpDir('tg-hosted-server-');
-  const localDir = tmpDir('tg-hosted-local-');
   const env = {
     THUMBGATE_ALLOW_INSECURE: 'true',
     THUMBGATE_OPERATOR_KEY: OPERATOR_KEY,
@@ -185,7 +166,6 @@ test('end to end: chat thumbs-down via hosted connector survives a redeploy and 
     THUMBGATE_REVIEWER_KEY: '',
     THUMBGATE_FEEDBACK_DIR: serverDir,
     THUMBGATE_PUBLIC_APP_ORIGIN: 'http://127.0.0.1',
-    THUMBGATE_HOSTED_SYNC: '0',
   };
   let server = await startServerProcess(env);
   try {
@@ -226,32 +206,7 @@ test('end to end: chat thumbs-down via hosted connector survives a redeploy and 
     }, refreshed.access_token)).json();
     assert.match(captured.result.content[0].text, /"accepted": true/);
 
-    // Local machine pulls it in.
-    const first = await hostedSync.syncHostedFeedback({ baseUrl: server.base, apiKey: OPERATOR_KEY, feedbackDir: localDir });
-    assert.equal(first.ok, true);
-    assert.equal(first.imported, 1, JSON.stringify(first));
-    const localLog = fs.readFileSync(path.join(localDir, 'feedback-log.jsonl'), 'utf8').trim().split('\n').map((l) => JSON.parse(l));
-    const row = localLog.find((r) => Array.isArray(r.tags) && r.tags.includes('hosted-connector'));
-    assert.ok(row, 'hosted feedback is in the local feedback log');
-    assert.ok(row.tags.includes('claude-ai-chat'), 'origin tag kept');
-    assert.match(fs.readFileSync(path.join(localDir, 'memory-log.jsonl'), 'utf8'), /curl on \/health/, 'promoted to a local lesson');
-
-    const second = await hostedSync.syncHostedFeedback({ baseUrl: server.base, apiKey: OPERATOR_KEY, feedbackDir: localDir });
-    assert.equal(second.imported, 0, 'a second sync imports nothing new');
   } finally {
     await stopServer(server.child);
-  }
-});
-
-test('sync without an operator key skips instead of failing', async () => {
-  const saved = { ...process.env };
-  delete process.env.THUMBGATE_OPERATOR_KEY;
-  delete process.env.THUMBGATE_API_KEY;
-  try {
-    const result = await hostedSync.syncHostedFeedback({ feedbackDir: tmpDir('tg-hosted-nokey-'), apiKey: '' , fetchImpl: () => { throw new Error('should not fetch'); } });
-    // operator.json may exist on a developer machine; only assert when no key resolved.
-    if (result.skipped) assert.equal(result.reason, 'no_operator_key');
-  } finally {
-    process.env = saved;
   }
 });
