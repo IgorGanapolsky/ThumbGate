@@ -13,30 +13,45 @@ const ROOT = path.join(__dirname, '..');
 const index = fs.readFileSync(path.join(ROOT, 'public', 'index.html'), 'utf8');
 const pricing = fs.readFileSync(path.join(ROOT, 'public', 'pricing.html'), 'utf8');
 
-test('recorded hero decisions match what gate-check returns in strict mode', () => {
+test('recorded hero transcript matches what the hooks do on a default install', () => {
+  // The hero shows docs/demo/thumbs-down-hold/transcript-1.45.1.txt: one typed thumbs-down holds the command, "go ahead"
+  // releases it, a second thumbs-down makes it a deny, and terraform destroy is denied. No strict mode.
   const home = fs.mkdtempSync(path.join(os.tmpdir(), 'tg-claims-'));
-  spawnSync('git', ['init', '-q', home]);
-  const cases = [
-    ['git ' + 'push --force origin main', 'GATE:force-push', 'Force push blocked. This is destructive and irreversible.'],
-    ['git reset --hard HEAD~5', 'GATE:git-reset-hard', 'git reset --hard is blocked because it can destroy uncommitted work.'],
-    ['rm -rf ~/', 'GATE:rm-rf-home-or-root', 'Broad rm -rf against root or home is blocked.'],
-  ];
-  for (const [command, gate, sentence] of cases) {
-    const run = spawnSync(process.execPath, [path.join(ROOT, 'bin', 'cli.js'), 'gate-check'], {
-      input: JSON.stringify({ tool_name: 'Bash', tool_input: { command }, hook_event_name: 'PreToolUse', cwd: home }),
-      encoding: 'utf8',
-      cwd: home,
-      env: { PATH: process.env.PATH, HOME: home, USERPROFILE: home, THUMBGATE_NO_TELEMETRY: '1', THUMBGATE_STRICT_ENFORCEMENT: '1' },
-      timeout: 120000,
-    });
-    assert.ok(run.stdout, `${command}: no stdout; status=${run.status} signal=${run.signal} stderr=${run.stderr}`);
-    const out = JSON.parse(run.stdout).hookSpecificOutput;
-    assert.equal(run.status, 0, `${command}: the deny is carried in JSON with exit 0, as the page shows`);
-    assert.equal(out.permissionDecision, 'deny', command);
-    assert.ok(out.permissionDecisionReason.includes(`[${gate}]`), `${command}: ${out.permissionDecisionReason}`);
-    assert.ok(out.permissionDecisionReason.includes(sentence), command);
-    assert.ok(index.includes(`[${gate}]`), `homepage shows ${gate}`);
-    assert.ok(index.includes(sentence.slice(0, 40)), `homepage shows the reason for ${gate}`);
+  const project = path.join(home, 'my-app');
+  fs.mkdirSync(project);
+  spawnSync('git', ['init', '-q', project]);
+  const env = { PATH: process.env.PATH, HOME: home, USERPROFILE: home, THUMBGATE_NO_TELEMETRY: '1', THUMBGATE_NO_AUTO_UPDATE: '1', THUMBGATE_FEEDBACK_DIR: path.join(home, 'fb') };
+  const cli = (sub, payload) => spawnSync(process.execPath, [path.join(ROOT, 'bin', 'cli.js'), sub], { input: JSON.stringify(payload), encoding: 'utf8', cwd: project, env, timeout: 120000 });
+  const gate = (command) => {
+    const run = cli('gate-check', { tool_name: 'Bash', tool_input: { command }, cwd: project, session_id: 's1' });
+    assert.equal(run.status, 0, `${command}: the decision is carried in JSON with exit 0, as the page shows`);
+    const last = String(run.stdout || '').trim().split('\n').filter(Boolean).pop() || '{}';
+    const out = JSON.parse(last).hookSpecificOutput || {};
+    return { decision: out.permissionDecision || 'allow', reason: out.permissionDecisionReason || '' };
+  };
+  const say = (prompt) => cli('hook-auto-capture', { prompt, session_id: 's1', cwd: project });
+  const migrate = 'node scripts/migrate.js --env prod';
+
+  assert.equal(gate(migrate).decision, 'allow');
+  say('thumbs down, wrong database, that was prod');
+  const held = gate(`${migrate} --force`);
+  assert.equal(held.decision, 'deny', 'the retry right after the thumbs-down is held');
+  assert.match(held.reason, /\[GATE:thumbs-down-hold\] The person gave a thumbs-down right after `node scripts\/migrate\.js --env …`/);
+  assert.notEqual(gate('git status').decision, 'deny', 'other commands are not held');
+  say('go ahead');
+  assert.notEqual(gate(migrate).decision, 'deny', 'released by the person; it only warns now');
+  say('thumbs down, never run migrations against prod');
+  say('go ahead');
+  const learned = gate(migrate);
+  assert.equal(learned.decision, 'deny', 'a second typed thumbs-down makes it a deny, no strict mode');
+  assert.match(learned.reason, /\[GATE:auto-node-scripts-migrate-js-env-prod-[0-9a-f]+\] Auto-promoted repeated executable action/);
+
+  const hero = index.slice(index.indexOf('<!-- HERO -->'), index.indexOf('id="loop"'));
+  assert.ok(hero.includes('[GATE:thumbs-down-hold] The person gave a thumbs-down right after `node scripts/migrate.js --env …`'), 'hero shows the hold reason');
+  assert.ok(hero.includes('[GATE:auto-node-scripts-migrate-js-env-prod-'), 'hero shows the learned deny');
+  assert.ok(hero.includes('(2 occurrences in 30 days)'));
+  for (const command of ['terraform destroy', 'kubectl delete namespace prod', 'aws s3 rm s3://prod-backups --recursive', 'git ' + 'push --force origin main', 'git reset --hard HEAD~5', 'rm -rf ~/']) {
+    assert.equal(gate(command).decision, 'deny', `${command} is denied on a default install, as the hero says`);
   }
   fs.rmSync(home, { recursive: true, force: true });
 });

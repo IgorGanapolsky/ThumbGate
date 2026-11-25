@@ -13,10 +13,10 @@
   <meta property="og:image" content="https://thumbgate.ai/og.png">
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:image" content="https://thumbgate.ai/og.png">
-  <title>ThumbGate — Warn Claude Code before it repeats a mistake</title>
-  <meta name="description" content="Thumbs-down a Claude Code mistake once and ThumbGate warns next time; after three thumbs-downs on the same command, strict mode blocks it. Free local PreToolUse gates; Pro adds recall and every learned rule.">
-  <meta property="og:title" content="ThumbGate — Warn Claude Code before it repeats a mistake">
-  <meta property="og:description" content="Thumbs-down a Claude Code mistake once and ThumbGate warns next time; after three thumbs-downs on the same command, strict mode blocks it. Free local PreToolUse gates; Pro adds recall and every learned rule.">
+  <title>ThumbGate — Stop Claude Code from repeating a mistake</title>
+  <meta name="description" content="One thumbs-down holds the command Claude Code just ran until you say go ahead; a second one makes it a hard deny. Free local PreToolUse gates; Pro adds recall and every learned rule.">
+  <meta property="og:title" content="ThumbGate — Stop Claude Code from repeating a mistake">
+  <meta property="og:description" content="One thumbs-down holds the command Claude Code just ran until you say go ahead; a second one makes it a hard deny. Free local PreToolUse gates; Pro adds recall and every learned rule.">
   <meta property="og:type" content="website">
   <meta property="og:url" content="__APP_ORIGIN__/">
   <script defer data-domain="thumbgate.ai" src="https://plausible.io/js/script.tagged-events.js"></script>
@@ -602,9 +602,6 @@
       height: auto;
     }
     .hero-audience { max-width: 650px; margin: 0 0 20px; color: #e6ebf2; font-size: 16px; line-height: 1.5; }
-    .gate-demo { margin: 0 0 22px; max-width: 100%; }
-    .gate-demo video { display: block; width: 100%; height: auto; aspect-ratio: 960 / 722; border: 1px solid #303b50; border-radius: 14px; background: #090d14; }
-    .gate-demo figcaption { margin-top: 10px; color: var(--muted); font-size: 14px; line-height: 1.45; }
     .hero-terminal {
       margin: 18px 0;
       border: 1px solid #303b50;
@@ -743,61 +740,58 @@
             <span class="up" aria-hidden="true"><svg class="hero-thumb-up" viewBox="0 0 32 32" aria-hidden="true"><use href="#thumb-glyph"/></svg></span>
             <button type="button" class="down" id="hero-thumb-down" aria-label="Try the default rules on your own commands" title="Try the default rules on your own commands"><svg class="hero-thumb-down" viewBox="0 0 32 32" aria-hidden="true"><use href="#thumb-glyph"/></svg></button>
           </div>
-          <h1>Thumbs-down a Claude Code mistake once, and ThumbGate warns the next time it tries that command. After three thumbs-downs on the same command, strict mode blocks it.</h1>
-          <p class="hero-lede">Claude Code asks ThumbGate before a tool runs, even in bypass mode. Secret leaks, attempts to switch the gate off and five catastrophic commands are denied out of the box. Other flagged actions warn, and strict mode blocks them. <a href="#coverage">See coverage</a>.</p>
-          <p class="hero-audience" id="hero-audience"><strong>Who it's for:</strong> Claude Code users whose agent has already broken something once. The local CLI is free.</p>
+          <h1>One thumbs-down stops Claude Code from retrying a mistake. Two make it a hard rule.</h1>
+          <p class="hero-lede">Type "thumbs down" after a bad command. ThumbGate holds that command before it can run again, until you say "go ahead". A second thumbs-down makes it a deny. No strict mode needed. <a href="#coverage">See coverage</a>.</p>
           <div class="actions"style="display:flex;gap:12px;flex-wrap:wrap;align-items:center;margin:0 0 24px;">
             <button type="button" class="button-primary" data-copy-install data-cta-id="hero_install_copy_primary">Copy free install: npx thumbgate init --agent claude</button>
             <a class="button-pro" href="/checkout/pro" data-revenue-cta data-cta-placement="hero" data-plan-id="pro" data-cta-id="homepage_hero_pro_checkout">Get Pro — $__PRO_PRICE_DOLLARS__/month</a>
           </div>
-          <figure class="gate-demo" id="gate-demo">
-            <video id="gate-demo-video" width="960" height="722" controls autoplay muted loop playsinline preload="auto" poster="/media/thumbgate-gate-demo-poster.jpg" aria-label="Recording: Claude Code deletes a folder, gets thumbs-down three times, and the fourth session is blocked by the gate">
-              <source src="/media/thumbgate-gate-demo.mp4" type="video/mp4">
-            </video>
-            <figcaption>Real 58-second run with <code>THUMBGATE_STRICT_ENFORCEMENT=1</code>: three thumbs-downs, then the fourth attempt is denied. <a href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/demo/gate-demo/README.md" target="_blank" rel="noopener">How it was recorded</a>.</figcaption>
-          </figure>
+          <p class="hero-note">Pro keeps every learned rule active. Free keeps your first 3. <a href="#why-pro">What Pro adds</a>.</p>
+          <p class="hero-audience" id="hero-audience"><strong>Denied on a fresh install, even in bypass mode:</strong> force-push, <code>git reset --hard</code>, <code>rm -rf ~</code>, <code>DROP TABLE</code>, <code>terraform destroy</code>, <code>kubectl delete</code>, <code>aws s3 rm</code>, secret leaks, and switching the gate off. The local CLI is free.</p>
           <div class="hero-terminal" id="hero-recorded-deny" aria-label="Recorded PreToolUse decisions">
             <div class="terminal-chrome" aria-hidden="true">
               <div class="dots"><span></span><span></span><span></span></div>
-              <span class="title">recorded · THUMBGATE_STRICT_ENFORCEMENT=1</span>
+              <span class="title">recorded · thumbgate 1.45.1 · default install</span>
               <span>exit 0</span>
             </div>
-<pre data-recorded-deny>$ echo '{"tool_name":"Bash","tool_input":{"command":"git push --force origin main"}}' | thumbgate gate-check
+<pre data-recorded-deny># Claude ran a prod migration. You type: thumbs down, wrong database, that was prod
+ThumbGate hold: thumbs-down received. `node scripts/migrate.js --env …` is refused until the person says "go ahead". Ask what to change.
+
+# Claude retries with --force
+$ ... "node scripts/migrate.js --env prod --force" | thumbgate gate-check
 {"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"deny",
- "permissionDecisionReason":"[GATE:force-push] Force push blocked. This is destructive and irreversible."}}
+ "permissionDecisionReason":"[GATE:thumbs-down-hold] The person gave a thumbs-down right after `node scripts/migrate.js --env …`. That action is held until the person says to go on ..."}}
 
-$ ... "git reset --hard HEAD~5"
- "permissionDecisionReason":"[GATE:git-reset-hard] git reset --hard is blocked because it can destroy uncommitted work. Stash or use a non-destructive restore path ..."
-
-$ ... "rm -rf ~/"
- "permissionDecisionReason":"[GATE:rm-rf-home-or-root] Broad rm -rf against root or home is blocked. Use a narrow, reviewed path ..."</pre>
+# You say "go ahead", then later give it a second thumbs-down. From then on:
+$ ... "node scripts/migrate.js --env prod"
+ "permissionDecision":"deny","permissionDecisionReason":"[GATE:auto-node-scripts-migrate-js-env-prod-…] Auto-promoted repeated executable action ... (2 occurrences in 30 days)"</pre>
           </div>
-          <p class="hero-note">Recorded from <code>thumbgate gate-check</code> v1.40.3 and re-run on v1.40.10 with the same result. These three are denied on a default install. Other flagged actions only warn unless you turn on strict mode: <code>THUMBGATE_STRICT_ENFORCEMENT=1</code>.</p>
+          <p class="hero-note">Published thumbgate 1.45.1, 25 Nov 2026, no strict mode, lines shortened. <a href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/demo/thumbs-down-hold/transcript-1.45.1.txt" target="_blank" rel="noopener">Full transcript</a>. Other flagged actions only warn unless you turn on strict mode: <code>THUMBGATE_STRICT_ENFORCEMENT=1</code>.</p>
           <p class="hero-note" id="adoption-line" hidden></p>
           <div class="cc-install" id="install">
             <p class="cc-step"><strong>1 · Install the plugin</strong> <span class="cc-where">inside Claude Code</span></p>
             <pre class="cc-cmd"><code>/plugin marketplace add IgorGanapolsky/ThumbGate
 /plugin install thumbgate@thumbgate-marketplace</code></pre>
-            <p class="cc-step"><strong>2 · Set up the status line</strong> <span class="cc-where">in your terminal, no manual config</span></p>
+            <p class="cc-step"><strong>2 · Set up the status line and hooks</strong> <span class="cc-where">in your terminal, no manual config</span></p>
             <pre class="cc-cmd"><code>npx thumbgate init --agent claude</code> <button type="button" class="copy-cmd" data-copy-install data-cta-id="hero_install_copy">Copy</button></pre>
-            <p class="hero-note">Step 2 writes the hooks and the status line into your Claude Code settings. Restart Claude Code and the line below appears.</p>
+            <p class="hero-note">Step 2 writes the hooks and the status line into your Claude Code settings. Restart Claude Code and the line below appears. The hooks update themselves once a day (opt out: <code>THUMBGATE_NO_AUTO_UPDATE=1</code>).</p>
           </div>
           </div>
           <figure class="hero-visual hero-statusline">
-            <div class="sl-terminal" role="img" aria-label="ThumbGate status line at the bottom of Claude Code: main, ThumbGate v1.40.3, Pro, 0 thumbs up, 2 thumbs down this project, Dashboard, Latest success Accurate">
+            <div class="sl-terminal" role="img" aria-label="ThumbGate status line at the bottom of Claude Code: ThumbGate v1.45.1, Free, 0 thumbs up, 2 thumbs down this project, Dashboard, Latest mistake">
               <div class="terminal-chrome" aria-hidden="true">
                 <div class="dots"><span></span><span></span><span></span></div>
                 <span class="title">Claude Code · bottom status line</span>
                 <span>live</span>
               </div>
-              <p class="sl-line" data-statusline-capture><span class="sl-dim">main · ThumbGate v1.40.3 · Pro</span> · <span class="sl-up">0👍</span> <span class="sl-down">2👎</span> <span class="sl-dim">this project</span> · <span class="sl-link">Dashboard</span> · <span class="sl-dim">Latest success 11/16/2026 18:00:28: Accurate</span></p>
+              <p class="sl-line" data-statusline-capture><span class="sl-dim">ThumbGate v1.45.1 · Free</span> · <span class="sl-up">0👍</span> <span class="sl-down">2👎</span> <span class="sl-dim">this project (my-app)</span> · <span class="sl-link">Dashboard</span> · <span class="sl-dim">Latest mistake 11/25/2026 22:47:15: 👎 still wrong, never against prod</span></p>
             </div>
             <ul class="sl-key">
-              <li><strong>0👍 2👎 this project</strong> Live count of the thumbs you gave in the project you are in. Automated and imported feedback is not counted.</li>
-              <li><strong>Dashboard</strong> One click opens your local dashboard.</li>
-              <li><strong>Latest success …</strong> The most recent lesson ThumbGate captured.</li>
+              <li><strong>0👍 2👎 this project</strong> Thumbs you gave in this project. Automated feedback is not counted.</li>
+              <li><strong>Dashboard</strong> One click opens your dashboard.</li>
+              <li><strong>Latest mistake …</strong> The newest lesson.</li>
             </ul>
-            <figcaption class="hero-note">Real capture from a Claude Code session on 16 Nov 2026 (ThumbGate v1.40.3, Pro). Your counts and lesson will differ.</figcaption>
+            <figcaption class="hero-note">Real <code>statusline-render</code> output from thumbgate 1.45.1 on 25 Nov 2026, free plan. Your counts and lesson will differ.</figcaption>
           </figure>
         </div>
     </section>
@@ -811,7 +805,7 @@ $ ... "rm -rf ~/"
         <ol class="loop-3">
           <li><strong>1 · Catch</strong> Claude tries something you rejected before, like <code>npm publish</code> from the wrong branch, or mocking the database in an end-to-end test.</li>
           <li><strong>2 · Signal</strong> One thumbs-down with the reason: <code>npx thumbgate capture --feedback=down --context="mocked the DB in an e2e test"</code></li>
-          <li><strong>3 · Enforce</strong> The local PreToolUse gate checks Claude Code's later tool calls in that project. A match warns Claude with your reason. In strict mode, the third thumbs-down on the same command turns the warning into a deny.</li>
+          <li><strong>3 · Enforce</strong> The local PreToolUse gate checks Claude Code's later tool calls in that project. A thumbs-down holds the command until you say "go ahead"; then a match warns Claude with your reason. A second thumbs-down makes it a deny.</li>
         </ol>
         <h3 style="margin-top:28px;font-size:1.1rem;">What <code>init</code> adds to your Claude Code settings</h3>
 <pre class="cc-cmd settings-block"><code>{
@@ -835,7 +829,7 @@ $ ... "rm -rf ~/"
           <caption>Hand-written PreToolUse hooks and settings.json deny rules versus ThumbGate</caption>
           <thead><tr><th></th><th>Own hooks + deny rules</th><th>ThumbGate</th></tr></thead>
           <tbody>
-            <tr><th>Where a rule comes from</th><td>You write the pattern by hand</td><td>One thumbs-down with a reason becomes a warning rule</td></tr>
+            <tr><th>Where a rule comes from</th><td>You write the pattern by hand</td><td>One thumbs-down holds it; a second makes a deny rule</td></tr>
             <tr><th>Across sessions</th><td>Whatever you saved in settings</td><td>Learned rules live on disk and load every session</td></tr>
             <tr><th>What Claude is told</th><td>Whatever message you wrote</td><td>Your own reason is shown to Claude in the warning</td></tr>
             <tr><th>Visible in <code>/hooks</code></th><td>Yes</td><td>Yes</td></tr>
@@ -983,26 +977,28 @@ $ ... "rm -rf ~/"
         <h2 class="section-title">What it catches, and what it misses.</h2>
         <span id="proof" aria-hidden="true"></span>
         <table class="compare">
-          <caption>What a default install of ThumbGate does in Claude Code, checked with <code>thumbgate gate-check</code> v1.40.10 on 24 Nov 2026</caption>
+          <caption>What a default install of ThumbGate does in Claude Code, checked with the published thumbgate 1.45.1 on 25 Nov 2026</caption>
           <thead><tr><th>Situation</th><th>Default install</th><th>Strict mode</th></tr></thead>
           <tbody>
             <tr><th><code>git push --force</code>, <code>git reset --hard</code>, <code>git clean -f</code>, <code>rm -rf</code> on home or root, <code>DROP TABLE</code></th><td>Denied</td><td>Denied</td></tr>
+            <tr><th><code>terraform destroy</code>, <code>kubectl delete</code> in any form, <code>aws s3 rm</code></th><td>Denied</td><td>Denied</td></tr>
             <tr><th>Sending secrets out, for example <code>curl -d @.env</code></th><td>Denied</td><td>Denied</td></tr>
             <tr><th>Switching the gate off (gate process kill/bypass), for example <code>pkill -f thumbgate</code></th><td>Denied</td><td>Denied</td></tr>
-            <tr><th>A command you gave a thumbs-down</th><td>Warns, with your reason</td><td>Denied from the third thumbs-down</td></tr>
+            <tr><th>The command right after you type a thumbs-down</th><td colspan="2">Held until you say "go ahead" or give a thumbs-up</td></tr>
+            <tr><th>A command you gave a thumbs-down, later</th><td colspan="2">Warns, with your reason. Denied from the second thumbs-down on the same command.</td></tr>
             <tr><th>Other flagged actions, for example <code>git push origin main</code></th><td>Warns</td><td>Denied</td></tr>
             <tr><th>Claude Code says "deployed" or "live" with no proof from production in the reply</th><td>Reply blocked once</td><td>Reply blocked once</td></tr>
-            <tr><th>The same action, reworded</th><td colspan="2"><strong>Not caught.</strong> A learned rule matches the command you thumbed down, not its purpose. In the recording above, <code>rm -rf ../old-notes</code> is denied, but deleting the same folder with <code>python3 shutil.rmtree</code> only gets a warning.</td></tr>
-            <tr><th>Cursor</th><td colspan="2">Shell commands are denied before they run; other tools are advisory. See <a href="#also-works-with">Also works with</a>.</td></tr>
+            <tr><th>The same action, reworded</th><td colspan="2"><strong>Not caught.</strong> A learned rule matches the command you thumbed down, not its purpose. After a thumbs-down on <code>rm -rf ../old-notes</code>, deleting the same folder with <code>python3 shutil.rmtree</code> only gets a warning.</td></tr>
+            <tr><th>Cursor</th><td colspan="2">Shell commands are denied before they run. After a thumbs-down, the next chat post through MCP is held. Other tools are advisory. See <a href="#also-works-with">Also works with</a>.</td></tr>
             <tr><th>Cline, OpenCode, Amp</th><td colspan="2">Advisory or feedback only. They do not guarantee a block. See <a href="#also-works-with">Also works with</a>.</td></tr>
             <tr><th>Damage from a command it allows</th><td colspan="2">Not contained. ThumbGate is not a sandbox.</td></tr>
           </tbody>
         </table>
-        <p class="hero-note">Detected secret exfiltration and gate-process bypass attempts are denied by default, and so are the five catastrophic commands. Other matching destructive actions warn by default and deny in strict mode.</p>
+        <p class="hero-note">Detected secret exfiltration and gate-process bypass attempts are denied by default, and so are the catastrophic commands above. Other matching destructive actions warn by default and deny in strict mode.</p>
         <h3 style="margin-top:32px;font-size:1.2rem;">Try the default rules on your own commands</h3>
         <p class="section-lede">Paste commands from a recent agent session. This runs in your browser and nothing you paste is sent.</p>
         <div id="preview-app" aria-label="Try the default ThumbGate rules in your browser"></div>
-        <p style="margin-top:12px;"><a href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/demo/gate-demo/README.md" target="_blank" rel="noopener">How the recording was made</a> · <a href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md" target="_blank" rel="noopener">Test-backed verification evidence</a> · <a href="/architecture">Architecture</a></p>
+        <p style="margin-top:12px;"><a href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/demo/thumbs-down-hold/README.md" target="_blank" rel="noopener">How the transcript was recorded</a> · <a href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md" target="_blank" rel="noopener">Test-backed verification evidence</a> · <a href="/architecture">Architecture</a></p>
       </div>
     </section>
 
@@ -1023,7 +1019,7 @@ $ ... "rm -rf ~/"
     <section class="final">
       <div class="shell">
         <div class="section-kicker">Start free today</div>
-        <h2 class="section-title">Get warned before your agent repeats last week's mistake.</h2>
+        <h2 class="section-title">Stop your agent before it repeats last week's mistake.</h2>
         <p class="section-lede">Run <code>npx thumbgate init</code> (MIT), or choose <strong style="color:var(--text)">self-serve Pro</strong>.</p>
         <div style="display:flex;flex-wrap:wrap;gap:12px;justify-content:center;margin-top:22px">
           <a class="nav-buy" href="#install" data-cta-id="final_install_free">Install free</a>
@@ -1241,8 +1237,8 @@ $ ... "rm -rf ~/"
             '<span class="c">→ schema</span>    requires actionable context before storage',
           facts: [
             'Explicit thumbs-up/down with context becomes a feedback record',
-            'A 👍 is saved as a success lesson. It does not create, loosen or lift a gate',
-            'Bare thumbs-down without context is rejected (no-action)',
+            'A 👍 is saved as a success lesson and releases a thumbs-down hold. It does not create or loosen a gate',
+            'Bare thumbs-down without context stores no lesson (no-action). Typed in the chat, it still holds the last command',
             'Capture paths: CLI, hooks, MCP. Free records 2 a day, 10 in total',
           ],
           honest: 'A vague 👎 does not invent a rule. Context is required before anything is stored or promoted.',
@@ -1280,6 +1276,7 @@ $ ... "rm -rf ~/"
           body:
             'recurring negatives (same pattern, 30 days)\n' +
             '  count 1  →  auto-promote <span class="y">warn</span> gate\n' +
+            '  2 typed by you  →  <span class="r">deny</span>, no strict mode needed\n' +
             '  count 3  →  candidate <span class="r">block</span> (may stay warn if regression check fails)\n\n' +
             'auto-promoted-gates.json\n' +
             '  action:    warn | block\n' +
@@ -1288,7 +1285,7 @@ $ ... "rm -rf ~/"
             '<span class="c">retrieve/rerank</span>  relevant lessons for the proposed action',
           facts: [
             '1 thumbs-down → warning gate (auto-promote)',
-            '3 in 30 days → deny, in strict mode',
+            '2 thumbs-downs you typed on one command → deny, on a default install',
             'Stale auto-promoted gates expire after 90 days unless they keep firing. Free keeps 3 active',
           ],
           honest: 'Promotion can create warn gates without a human click. Review auto-promoted-gates.json; force-promote is permanent only when you say so.',
@@ -1317,7 +1314,7 @@ $ ... "rm -rf ~/"
           facts: [
             'The PreToolUse hook is asked before the tool runs',
             'Outcomes: allowed, warned, or denied (ALLOW / WARN / DENY)',
-            'Default install denies secret leaks, force-push, reset --hard, clean -f, rm -rf on home or root and DROP TABLE; other flagged actions warn until strict mode',
+            'Default install denies secret leaks, force-push, reset --hard, clean -f, rm -rf on home or root, DROP TABLE, terraform destroy, kubectl delete and aws s3 rm; other flagged actions warn until strict mode',
           ],
           honest: 'Default is not “block everything.” Catastrophic commands and secret leaks are denied by default; other flagged actions warn. Strict mode denies those too.',
           cmd: 'export THUMBGATE_STRICT_ENFORCEMENT=1  # opt into hard deny',
