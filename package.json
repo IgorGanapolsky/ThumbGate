@@ -382,6 +382,7 @@
     "scripts/recent-commands.js",
     "scripts/lesson-effect.js",
     "scripts/pilot-request.js",
+    "scripts/checkout-price-guard.js",
     "scripts/reasoning-efficiency-guardrails.js",
     "scripts/refresh-proof-pack.js",
     "scripts/remote-feedback-capture.js",

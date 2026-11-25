@@ -524,9 +524,9 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
     // 704 -> 708 (2026-11-25): config/gates/profiles/private-owner.json and public/pilot.html (landed after
     // 1.40.14), plus scripts/recent-commands.js (required by gates-engine.js) and scripts/lesson-effect.js
     // (required by statusline-human-counts.js) and scripts/pilot-request.js (required by src/api/server.js),
-    // which were missing from `files` (+5).
-    manifest.fileCount <= 709,
-    `npm package should stay <= 709 files, got ${manifest.fileCount}`
+    // and scripts/checkout-price-guard.js (required by scripts/billing.js), which were missing from `files` (+6).
+    manifest.fileCount <= 710,
+    `npm package should stay <= 710 files, got ${manifest.fileCount}`
   );
   // Ceiling bumped from 2.75 MB → 2.85 MB (2026-04-16) to accommodate the
   // incremental review-delta demo content in public/dashboard.html landing
