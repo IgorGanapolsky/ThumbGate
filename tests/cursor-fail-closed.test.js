@@ -103,7 +103,7 @@ test('the hook entry thumbgate init writes to ~/.cursor/hooks.json sets failClos
     const hooksPath = path.join(home, 'hooks.json');
     wireCursorBeforeShellGate({ cursorHooksPath: hooksPath });
     const written = JSON.parse(fs.readFileSync(hooksPath, 'utf8'));
-    const ours = written.hooks.beforeShellExecution.filter((e) => /cursor-shell-gate/.test(e.command));
+    const ours = written.hooks.beforeShellExecution.filter((e) => /cursor-(shell-)?gate/.test(e.command));
     assert.ok(ours.length > 0, 'no ThumbGate entry written');
     for (const entry of ours) assert.equal(entry.failClosed, true);
   } finally { fs.rmSync(home, { recursive: true, force: true }); }

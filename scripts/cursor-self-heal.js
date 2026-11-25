@@ -1,10 +1,11 @@
 'use strict';
 
-// Self-heal for Cursor installs made by thumbgate <= 1.45.0. Their `init --agent cursor` wired only
+// Self-heal for Cursor installs made by thumbgate <= 1.45.1. Their `init --agent cursor` wired only
 // beforeShellExecution in ~/.cursor/hooks.json, so a thumbs-down typed in Cursor never reached ThumbGate and MCP
 // chat sends were never gated. On MCP server start (from .cursor/mcp.json) and on the shell gate, this adds the
 // missing loop hooks (beforeSubmitPrompt, beforeMCPExecution, after*, stop). It writes only when the file already
-// holds ThumbGate's shell gate and a loop hook is missing, so after the first repair it is a read and nothing else.
+// holds ThumbGate's shell gate and something is missing or pinned, so after the first repair it is a read and nothing
+// else. Since 1.45.2 it also moves a shell gate pinned to one install's path onto the portable runtime.
 // It never writes to stdout (the MCP server and the shell gate both speak JSON there).
 // Opt out with THUMBGATE_DISABLE_CURSOR_SELF_HEAL=1.
 
@@ -16,8 +17,9 @@ function cursorHooksPath(homeDir) {
 }
 
 function hasThumbgateShellGate(hooks) {
+  const { isThumbgateLoopHook } = require('./auto-wire-hooks');
   const entries = Array.isArray(hooks && hooks.beforeShellExecution) ? hooks.beforeShellExecution : [];
-  return entries.some((entry) => /cursor-shell-gate\.js/.test(String((entry && entry.command) || '')));
+  return entries.some((entry) => /cursor-shell-gate\.js/.test(String((entry && entry.command) || '')) || isThumbgateLoopHook(entry, 'cursor-gate'));
 }
 
 function repairCursorHooks(options = {}) {
@@ -37,8 +39,18 @@ function repairCursorHooks(options = {}) {
     return { changed: false, skipped: true, reason: 'not-a-thumbgate-cursor-install' };
   }
   const { CURSOR_LOOP_HOOKS, isThumbgateLoopHook } = require('./auto-wire-hooks');
-  const { cursorCliHookCommand } = require('./hook-runtime');
+  const { cursorCliHookCommand, cursorShellGateHookCommand, isPinnedCursorShellGateCommand } = require('./hook-runtime');
   const added = [];
+  // An older shell gate pinned to one install's path: if that folder goes (npx cache cleared, worktree removed), a
+  // failClosed hook blocks every shell command. Point it at the portable runtime in place; keep its position and flags.
+  for (const entry of config.hooks.beforeShellExecution) {
+    if (entry && isPinnedCursorShellGateCommand(entry.command)) {
+      const command = cursorShellGateHookCommand();
+      added.push({ lifecycle: 'beforeShellExecution (portable)', command, was: entry.command });
+      entry.command = command;
+      entry.failClosed = true;
+    }
+  }
   for (const spec of CURSOR_LOOP_HOOKS) {
     if (!Array.isArray(config.hooks[spec.lifecycle])) config.hooks[spec.lifecycle] = [];
     if (config.hooks[spec.lifecycle].some((entry) => isThumbgateLoopHook(entry, spec.subcommand))) continue;
@@ -53,7 +65,7 @@ function repairCursorHooks(options = {}) {
   } catch (error) {
     return { changed: false, skipped: true, reason: 'write-failed', error };
   }
-  console.error(`[thumbgate] Added ${added.length} Cursor hook(s) to ~/.cursor/hooks.json so a thumbs-down holds the next action. Restart Cursor to load them.`);
+  console.error(`[thumbgate] Repaired ${added.length} Cursor hook(s) in ~/.cursor/hooks.json (thumbs-down loop, portable shell gate). Restart Cursor to load them.`);
   return { changed: true, settingsPath: file, added };
 }
 

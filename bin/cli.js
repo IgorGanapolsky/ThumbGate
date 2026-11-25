@@ -4644,8 +4644,14 @@ switch (COMMAND) {
     const cursorGate = require('../scripts/cursor-shell-gate');
     cursorGate.runCursorShellGate(require('node:fs').readFileSync(0, 'utf8')).then((out) => {
       process.stdout.write(JSON.stringify(out) + '\n');
+      try { require('../scripts/cursor-self-heal').repairCursorHooks(); } catch (_) { /* never changes the decision */ }
       process.exit(out.permission === 'deny' ? 2 : 0);
-    }).catch(() => { process.stdout.write('{"permission":"allow"}\n'); process.exit(0); });
+    }).catch((err) => {
+      // Fail closed, the same as scripts/cursor-shell-gate.js: a gate that could not decide does not let the command run.
+      const reason = `ThumbGate could not check this command (${err && err.message ? err.message : 'error'}), so it was blocked. Retry; if it keeps failing run: npx thumbgate doctor`;
+      process.stdout.write(JSON.stringify({ permission: 'deny', user_message: reason, agent_message: reason }) + '\n');
+      process.exit(2);
+    });
     break;
   }
   case 'cursor-mcp-gate': {
