@@ -223,7 +223,8 @@ function limitNudge(action, limitResult = {}) {
     ? String(limitResult.message).split('\n')[0]
     : 'Free tier limit reached.';
   // The free-tier wall is an upgrade moment; count it so the funnel can see it.
-  try { trackEvent('cli_limit_hit', { action, limitType: limitResult.limitType || null }); } catch (_) { /* best-effort */ }
+  // The CLI exits right after this message, so a detached child delivers the ping.
+  try { require('../scripts/cli-telemetry').trackEventDetached('cli_limit_hit', { action, limitType: limitResult.limitType || null }); } catch (_) { /* best-effort */ }
   process.stderr.write(
     `\n  🔒 ${reason}\n` +
     usageLine +
@@ -3636,6 +3637,14 @@ function hookAutoCapture() {
     return;
   }
 
+  // Deliver the anti-claim reminder the last Stop hook parked for this session.
+  // Stop-hook stdout never reaches the model; UserPromptSubmit stdout does.
+  try {
+    const parked = require(path.join(PKG_ROOT, 'scripts', 'hook-stop-anti-claim'))
+      .takePendingReminder(promptEnvelope.sessionId || process.env.CLAUDE_SESSION_ID || '');
+    if (parked) process.stdout.write(`${parked}\n`);
+  } catch { /* a reminder never blocks a prompt */ }
+
   const detected = detectFeedbackSignal(prompt);
   if (!detected) {
     recordConversationEntry({
@@ -4593,6 +4602,8 @@ switch (COMMAND) {
     break;
   }
   case 'gate-check':
+    // Keeps the hook runtime on npm latest (one file read; at most one detached check per 24h).
+    try { require('../scripts/runtime-auto-update').scheduleLatestCheck(); } catch (_) { /* best-effort */ }
     gateCheck().catch((err) => {
       console.error(err && err.message ? err.message : err);
       process.exit(1);
@@ -4641,6 +4652,7 @@ switch (COMMAND) {
     observeToolResult();
     break;
   case 'session-start':
+    try { require('../scripts/runtime-auto-update').scheduleLatestCheck(); } catch (_) { /* best-effort */ }
     sessionStart();
     break;
   case 'capture':

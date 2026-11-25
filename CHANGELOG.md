@@ -1,5 +1,39 @@
 # Changelog
 
+## 1.43.1
+
+### Patch Changes
+
+- 940e7ff: The hook runtime now keeps itself on npm `latest`: `gate-check` and `session-start` check once a day in a detached child and refresh `~/.thumbgate/runtime` when a newer release exists (opt out with `THUMBGATE_NO_AUTO_UPDATE=1`). This covers Codex, plugin and hooks-only installs, which have no MCP server started from `@latest` to notice. The Claude plugin and the Claude Codex bridge now start the MCP server from `thumbgate@latest` instead of a cached or pinned version. `/v1/metrics/real` reports `installVersions`: the share of CLI installs on the current release.
+- Republish the 1.43.0 release (deploy-proof Stop gate, parked anti-claim reminder) as 1.43.1. npm staged the 1.43.0 upload for maintainer approval instead of publishing it, so `npm install thumbgate@latest` still resolved 1.42.1.
+
+## 1.43.0
+
+### Minor Changes
+
+- 94d8b8c: Deploy-proof gate: the Stop hook that `thumbgate init` installs (`claim-stop-check`), and now the Claude plugin's hooks file too, blocks a reply that says "deployed", "shipped", "now live" or "in production" unless the same reply or message shows proof from production: curl output, a /health JSON snapshot, a buildSha, an HTTP 200 from the host, or a CI line you name. It blocks once, so a reply can never loop. Name your production hosts in `.thumbgate/deploy-proof.json` (`{"hosts": ["app.example.com"], "sentinels": ["Deploy verified"]}`) or `THUMBGATE_PROD_HOSTS`; with none, proof from any https host counts. It is on by default; `THUMBGATE_DEPLOY_PROOF_GATE=0` turns it off. Other completion claims ("done", "fixed") still get the soft reminder unless `THUMBGATE_STRICT_ENFORCEMENT=1`.
+  
+  The soft anti-claim reminder now reaches the agent. Claude Code does not show a Stop hook's plain output to the model, so the reminder for an unproven "done" or "fixed" used to go nowhere. The Stop hook now also parks it for the session, and the next UserPromptSubmit hook (`hook-auto-capture`) prints it into the agent's context once.
+  
+  The deploy-proof gate wants a result, not a command: a curl line on its own, or one that reports a failure (connection refused, HTTP 5xx, `"status":"error"`), is not proof, and with hosts configured a health JSON or buildSha only counts next to a configured host. "Deployed to staging" (or dev, preview, test) is not a production claim.
+
+### Patch Changes
+
+- 96e6b1f: Microsoft Clarity heatmaps and masked session replay on public thumbgate.ai pages (never on admin, dashboard, sign-in, checkout, billing or success pages, never for GPC/DNT visitors, advertising storage always denied, cookieless for European time zones). The owner console gains a Visitor behavior tab that reads Clarity's Data Export API once `THUMBGATE_CLARITY_API_TOKEN` is set, cached on disk to stay inside the 10-calls-a-day limit.
+- d28c158: Return a non-cacheable retirement response for former service pages and checkout links, with current plans at /pricing.
+- 61b8f58: Add thumbgate.ai/udemy for students of the free Udemy course: the free install first, Pro below it as optional, every link tagged utm_source=udemy. A visit is recorded as udemy even if the link lost its query string. THUMBGATE_INSTALL_SOURCE=udemy on `npx thumbgate init` is remembered in ~/.thumbgate/install-source and sent as the source on later CLI pings, so installs show under udemy in /v1/analytics/sources.
+
+## 1.42.1
+
+### Patch Changes
+
+- 2fc74ea: Every gate decision row in `audit-trail.jsonl` now carries the session id, the host that sent the call (Claude Code or Cursor when it declares itself), and a short hash of the gate catalog in force, and logged command text goes through the shared secret redactor. `npm run audit:export` (or `node scripts/audit-trail.js --export [--since ISO] [--verdict allow|deny|ask|warn] [--limit N]`) prints one JSON line per decision.
+- 8d4f432: The optional Stop-time claim gate now ships in the npm package, holds claims like "sign-in is refused" until a check from the same turn is attached (a health-page 200 or an old log file does not count), and two thumbs-downs from a person on one unchecked claim write a rule into `claim-gate-rules.json` with no file edit. It stays opt-in: it only runs where the Stop hook is installed.
+- 79e9e4e: Deliver the `first_block_upsell_shown`, `cli_limit_hit` and `runtime_auto_update` pings from processes that exit right away (hooks, the CLI limit path, the background updater) through a detached or awaited send, so the server receives them. The public activation funnel now also reports upgrade-capable activations and hook-runtime update results.
+- 195a697: Cursor: the plugin now runs the ThumbGate check on every shell command instead of only a few keywords (so `aws s3 rm`, `terraform destroy` and `kubectl delete` are no longer skipped), answers in the shape Cursor expects through the new `thumbgate cursor-gate` command, and captures a typed thumbs-down through `thumbgate cursor-prompt` so two thumbs-downs on one command become a gate. The Cursor adapter script now ships in the npm package.
+- cedd326: Add a generated table of which gates are enforced on which host (Claude Code, Cursor, Codex, Gemini CLI). `npm run compat:matrix` runs each gate's denial through the real Claude Code and Cursor hook paths and writes `docs/host-compatibility.md`, `docs/compat/host-gate-results.json` and a README block. A cell says "enforced" only with a recorded denial; hosts with no run say "untested".
+- 97a6bd2: Every thumb counter now reads one function: the status-line stats command, the feedback-loop cache refresh and the unscoped feedback-stats endpoint take their thumb totals from `computeHumanCounts`. A row id listed in `.thumbgate/not-counted-feedback.jsonl` (written by `scripts/not-a-thumb.js`) is left out of every count without editing the log. The status line names the project next to the counts.
+
 ## 1.42.0
 
 ### Minor Changes
