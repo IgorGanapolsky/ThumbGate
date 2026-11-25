@@ -461,6 +461,25 @@
       ]
     },
     {
+      "id": "app-store-review-withdraw",
+      "layer": "Execution",
+      "trigger": "any:app_store_review_withdraw",
+      "pattern": "(?:(?=[^\\n]*(?:reviewSubmissions|appStoreVersionSubmissions))(?=[^\\n]*(?:\\bDELETE\\b|canceled\\W{0,4}:\\s*true))|\\breject_if_possible\\W{0,4}(?:true|1)\\b|(?:^|[_.])(?:cancel|withdraw|remove)[_-]?(?:review[_-]?|app[_-]?store[_-]?)?submission)",
+      "action": "block",
+      "adminOverride": {
+        "required": true,
+        "digestBound": true,
+        "singleUse": true,
+        "ttlMs": 900000
+      },
+      "message": "Blocked: this withdraws or cancels an App Store review submission. Apple sends a withdrawn app to the back of the review queue, so each withdrawal can cost days. Ask the owner first; they approve this exact action once. Reading the review status stays allowed.",
+      "severity": "critical",
+      "compliance": [
+        "SOC2-CC8.1",
+        "CWE-285"
+      ]
+    },
+    {
       "id": "env-file-edit",
       "layer": "Cloud",
       "trigger": "Edit:env_file",

@@ -136,3 +136,31 @@ test('sandbox gates cite Siren and are ordered ahead of the broad warn gates', (
     }
   }
 });
+
+// Folded in from #5204: one irreversible outward action seen in our own fleet. Agents withdrew
+// Dayglass 2.4.0 four times (Nov 3, Nov 11 twice, Nov 16) before Apple reviewed it.
+test('withdrawing an App Store review submission is blocked pending the owner', () => {
+  const cases = [
+    `curl -X PATCH https://api.appstoreconnect.apple.com/v1/reviewSubmissions/abc -d '{"data":{"type":"reviewSubmissions","id":"abc","attributes":{"canceled":true}}}'`,
+    'curl -X DELETE https://api.appstoreconnect.apple.com/v1/appStoreVersionSubmissions/abc',
+    'fastlane deliver --submit_for_review --reject_if_possible true',
+  ];
+  for (const command of cases) {
+    const r = check('Bash', { command });
+    assert.equal(r && r.gate, 'app-store-review-withdraw', command);
+    assert.equal(r.decision, 'deny');
+    assert.equal(r.requiresAdminOverride, true);
+  }
+  const mcp = check('mcp__appstore__cancel_review_submission', { id: 'abc' });
+  assert.equal(mcp && mcp.gate, 'app-store-review-withdraw');
+});
+
+test('reading App Store review status stays allowed', () => {
+  for (const command of [
+    'curl -s https://api.appstoreconnect.apple.com/v1/apps/123/reviewSubmissions?limit=10',
+    'curl -s https://api.appstoreconnect.apple.com/v1/reviewSubmissions/abc',
+  ]) {
+    const r = check('Bash', { command });
+    assert.notEqual(r && r.gate, 'app-store-review-withdraw', command);
+  }
+});
