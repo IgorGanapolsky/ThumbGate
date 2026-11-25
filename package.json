@@ -891,6 +891,7 @@
     "test:broker-execution-receipts": "node --test tests/broker-execution-receipts.test.js",
     "test:provider-attestation": "node --test tests/provider-attestation-conformance.test.js",
     "test:learn-hub": "node --test tests/learn-hub.test.js",
+    "gates:audit": "node bin/cli.js gate-audit",
     "test:feedback-to-rules": "node --test tests/feedback-to-rules.test.js",
     "test:memory-firewall": "node --test tests/memory-firewall.test.js",
     "test:memory-scope-readiness": "node --test tests/memory-scope-readiness.test.js",

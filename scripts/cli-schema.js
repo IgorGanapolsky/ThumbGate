@@ -132,6 +132,14 @@ const CLI_COMMANDS = [
     ],
   },
   {
+    name: 'gate-audit',
+    description: 'Replay learned rules on past allowed actions: false fires, sample size, 95% upper bound',
+    group: 'discovery',
+    flags: [
+      { name: 'json', type: 'boolean', description: 'Output as JSON' },
+    ],
+  },
+  {
     name: 'desktop-snapshot',
     description: 'One read-only JSON snapshot (blocks, thumbs-downs, rules, plan) for desktop and menu bar apps',
     group: 'discovery',

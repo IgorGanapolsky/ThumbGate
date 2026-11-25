@@ -5566,6 +5566,13 @@ switch (COMMAND) {
   case 'gate-stats':
     gateStats();
     break;
+  case 'gate-audit': {
+    // Read-only: replays each learned rule on past allowed actions (arXiv 2611.26450 trigger audit).
+    const { auditGateTriggers, formatTriggerAudit } = require(path.join(PKG_ROOT, 'scripts', 'auto-promote-gates'));
+    const rows = auditGateTriggers();
+    console.log(process.argv.includes('--json') ? JSON.stringify(rows, null, 2) : '\n' + formatTriggerAudit(rows) + '\n');
+    break;
+  }
   case 'desktop-snapshot':
     require(path.join(PKG_ROOT, 'scripts', 'explore-subcommands')).runDesktopSnapshotCli(process.argv.slice(3));
     break;

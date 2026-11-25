@@ -87,7 +87,7 @@ function getAuditTrailPath() {
   return assertScopedDataPath(path.join(path.dirname(getFeedbackLogPath()), 'audit-trail.jsonl'));
 }
 
-// Returns { falseBlocks, allowSampleSize } or null when there is no history /
+// Returns { falseBlocks, allowSampleSize, falseFireUpper95, evidence } or null when there is no history /
 // matcher available — in which case the caller promotes as usual (fail-open to
 // existing behavior, since regression gating is an enhancement, not a hard gate).
 function regressionCheck(gate, options = {}) {
@@ -121,7 +121,7 @@ function regressionCheck(gate, options = {}) {
       const cmd = (e.toolInput && (e.toolInput.command || e.toolInput.pattern)) || '';
       return !incidentSignatures.has(normalizeCommandSignature(String(cmd)));
     });
-    if (!allowed.length) return { falseBlocks: 0, allowSampleSize: 0 };
+    if (!allowed.length) return { falseBlocks: 0, allowSampleSize: 0, ...triggerEvidence(0, 0) };
   }
 
   let falseBlocks = 0;
@@ -130,7 +130,83 @@ function regressionCheck(gate, options = {}) {
       if (matchesGate(gate, e.toolName, e.toolInput || {}, { projectKey: gate.projectKey })) falseBlocks += 1;
     } catch { /* a bad pattern/entry never counts as a false block */ }
   }
-  return { falseBlocks, allowSampleSize: allowed.length };
+  return { falseBlocks, allowSampleSize: allowed.length, ...triggerEvidence(falseBlocks, allowed.length) };
+}
+
+// --- Trigger audit: how much a "0 false blocks" result is worth -------------
+// From "A CPU Inside an LLM" (arXiv 2611.26450): an exact rule grafted into a
+// system is only trusted after it is shown not to fire on unrelated input, and
+// the paper reports that as a count over a large held-out sample (0 of 11,134
+// out-of-distribution triggers), not as "it didn't fire". Zero false blocks on
+// 2 prior allowed actions says almost nothing; zero on 300 says a lot. So the
+// regression result also carries a 95% upper bound on the false-fire rate and
+// an evidence label. It does not change what gets quarantined.
+const TRIGGER_AUDIT_STRONG_UPPER = 0.05; // 95% upper bound at or under 5% => strong
+const Z_ONE_SIDED_95 = 1.6448536269514722;
+
+// One-sided 95% upper bound on a false-fire rate seen as k fires in n trials.
+// k = 0 uses the exact bound 1 - 0.05^(1/n) (about 3/n, the "rule of three");
+// k > 0 uses the Wilson score interval. n = 0 has no bound (1).
+function falseFireUpperBound(k, n) {
+  const fires = Math.max(0, Number(k) || 0);
+  const trials = Math.max(0, Number(n) || 0);
+  if (trials === 0) return 1;
+  if (fires === 0) return 1 - Math.pow(0.05, 1 / trials);
+  const p = Math.min(1, fires / trials);
+  const z2 = Z_ONE_SIDED_95 * Z_ONE_SIDED_95;
+  const centre = p + z2 / (2 * trials);
+  const margin = Z_ONE_SIDED_95 * Math.sqrt((p * (1 - p)) / trials + z2 / (4 * trials * trials));
+  return Math.min(1, (centre + margin) / (1 + z2 / trials));
+}
+
+function triggerEvidence(falseBlocks, allowSampleSize) {
+  const upper = falseFireUpperBound(falseBlocks, allowSampleSize);
+  let evidence;
+  if (!allowSampleSize) evidence = 'none';
+  else if (falseBlocks > 0) evidence = 'fires-on-safe-actions';
+  else evidence = upper <= TRIGGER_AUDIT_STRONG_UPPER ? 'strong' : 'weak';
+  return { falseFireUpper95: Number(upper.toFixed(4)), evidence };
+}
+
+// The quoted incident text in an auto-promoted gate's message. That command was
+// allowed before the gate existed (it is the mistake that was thumbs-downed), so
+// an audit of an existing gate must not count it as collateral damage.
+function incidentContextsForGate(gate) {
+  const out = [];
+  if (gate && gate.incidentContext) out.push(String(gate.incidentContext));
+  const m = /^Auto-promoted [^:]+: "(.*)" \(/.exec(String((gate && gate.message) || ''));
+  if (m && m[1]) out.push(m[1]);
+  return out;
+}
+
+// Replay every stored auto-promoted gate against the audit trail's prior allowed
+// actions and report fires, sample size, the 95% upper bound and the evidence
+// label per gate. Read-only: it never edits a gate.
+function auditGateTriggers(options = {}) {
+  const data = options.data || loadAutoGates(options);
+  const gates = Array.isArray(data.gates) ? data.gates : [];
+  return gates.map((gate) => {
+    const res = safeRegressionCheck(gate, { ...options, incidentContexts: incidentContextsForGate(gate) });
+    const r = res || { falseBlocks: 0, allowSampleSize: 0, ...triggerEvidence(0, 0) };
+    return {
+      gateId: gate.id,
+      action: gate.action,
+      pattern: gate.pattern,
+      falseBlocks: r.falseBlocks,
+      allowSampleSize: r.allowSampleSize,
+      falseFireUpper95: r.falseFireUpper95,
+      evidence: r.evidence,
+    };
+  });
+}
+
+function formatTriggerAudit(rows) {
+  if (!rows.length) return 'No auto-promoted gates to audit.';
+  const lines = rows.map((r) => {
+    const bound = r.allowSampleSize ? `<= ${(r.falseFireUpper95 * 100).toFixed(1)}% at 95%` : 'no bound';
+    return `${r.evidence.padEnd(22)} ${String(r.falseBlocks).padStart(3)} / ${String(r.allowSampleSize).padEnd(5)} ${bound.padEnd(18)} ${r.action.padEnd(5)} ${r.gateId}`;
+  });
+  return ['evidence               fires / allowed  false-fire rate    action gate', ...lines].join('\n');
 }
 
 function safeRegressionCheck(gate, options) {
@@ -728,6 +804,9 @@ function promote(feedbackLogPath, options) {
         gate.severity = 'medium';
         gate.quarantined = true;
         gate.regression = regression;
+      } else if (regression) {
+        // Keep the audit on a gate that went live too, so "0 false blocks" shows its sample size.
+        gate.triggerAudit = { ...regression, auditedAt: new Date().toISOString() };
       }
     }
 
@@ -744,6 +823,7 @@ function promote(feedbackLogPath, options) {
       action: gate.action,
       occurrences: group.count,
       ...(gate.quarantined ? { falseBlocks: regression.falseBlocks, allowSampleSize: regression.allowSampleSize } : {}),
+      ...(gate.triggerAudit ? { evidence: gate.triggerAudit.evidence, allowSampleSize: gate.triggerAudit.allowSampleSize } : {}),
     });
 
     // Free tier enforces only the first FREE_TIER_MAX_GATES learned rules (see gates-engine
@@ -769,6 +849,11 @@ function promote(feedbackLogPath, options) {
 }
 
 function runCli(argv = process.argv.slice(2)) {
+  if (argv.includes('--audit')) {
+    const rows = auditGateTriggers();
+    console.log(argv.includes('--json') ? JSON.stringify(rows, null, 2) : formatTriggerAudit(rows));
+    return 0;
+  }
   const forceContext = argv.find((arg) => arg.startsWith('--force-block='))?.split('=')[1];
   if (forceContext) {
     const result = forcePromote(forceContext, 'block');
@@ -784,7 +869,8 @@ function runCli(argv = process.argv.slice(2)) {
   } else {
     for (const promotion of result.promotions) {
       if (promotion.type === 'new') {
-        console.log(`NEW gate: ${promotion.gateId} (${promotion.action}, ${promotion.occurrences} occurrences)`);
+        const audit = promotion.evidence ? `, trigger audit ${promotion.evidence} on ${promotion.allowSampleSize} allowed actions` : '';
+        console.log(`NEW gate: ${promotion.gateId} (${promotion.action}, ${promotion.occurrences} occurrences${audit})`);
       } else if (promotion.type === 'upgrade') {
         console.log(`UPGRADE: ${promotion.gateId} ${promotion.from} -> ${promotion.to} (${promotion.occurrences} occurrences)`);
       } else if (promotion.type === 'rotated') {
@@ -820,6 +906,11 @@ module.exports = {
   isInertProsePattern,
   gateMatchesOwnContext,
   regressionCheck,
+  falseFireUpperBound,
+  triggerEvidence,
+  incidentContextsForGate,
+  auditGateTriggers,
+  formatTriggerAudit,
   getAuditTrailPath,
   REGRESSION_FALSE_BLOCK_LIMIT,
   extractPatternKey,

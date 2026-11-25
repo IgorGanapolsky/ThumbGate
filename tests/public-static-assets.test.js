@@ -528,6 +528,20 @@ test('the Siren sandbox-escape learn page is served, in the sitemap, cites the p
   for (const id of named) assert.ok(gateIds.includes(id), `page names ${id}, which must be a real default gate`);
 });
 
+test('the trigger-audit learn page is served, in the sitemap, cites arXiv 2611.26450, and names a real CLI command', async () => {
+  const sitemap = await (await fetch(`${origin}/sitemap.xml`)).text();
+  assert.match(sitemap, /<loc>[^<]*\/learn\/trigger-audit-learned-rules<\/loc>/, 'sitemap must list the trigger-audit learn page');
+  const res = await fetch(`${origin}/learn/trigger-audit-learned-rules`);
+  assert.equal(res.status, 200);
+  const html = await res.text();
+  assert.match(html, /arxiv\.org\/abs\/2611\.26450/, 'every figure must trace to the paper');
+  assert.match(html, /does not edit model weights/i, 'the page says ThumbGate is not doing what the paper does');
+  assert.match(html, /not affiliated with the paper/i);
+  for (const figure of ['99.17%', '100.00%', '42.2%', '61.7%', '11,134', '12,800']) assert.ok(html.includes(figure), `page cites ${figure}`);
+  const { findCommand } = require('../scripts/cli-schema');
+  assert.ok(findCommand('gate-audit'), 'gate-audit must be a real CLI command');
+});
+
 test('GET /agents-cost-savings serves the FinOps-for-AI landing HTML', async () => {
   const [routeRes, htmlRes] = await Promise.all([
     fetch(`${origin}/agents-cost-savings`),
