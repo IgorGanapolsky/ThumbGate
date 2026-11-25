@@ -154,7 +154,7 @@ function isStaleCursorGateCheckHook(entry) {
 function wireCursorBeforeShellGate(options = {}) {
   const hooksPath = options.cursorHooksPath || cursorHooksJsonPath();
   const command = cursorShellGateHookCommand();
-  const hookEntry = { command, timeout: 10 };
+  const hookEntry = { command, timeout: 10, failClosed: true };
   const added = [];
 
   let existing = { hooks: { beforeShellExecution: [] }, version: 1 };
@@ -185,7 +185,18 @@ function wireCursorBeforeShellGate(options = {}) {
     added.unshift({ lifecycle: 'beforeShellExecution', command });
   }
 
-  const changed = staleRemoved.length > 0 || !alreadyWired;
+  // Installs from before AGENT-3667 have our entry without failClosed; Cursor lets a crashed or timed-out hook through
+  // unless failClosed is true, so upgrade the entry in place.
+  let upgradedFailClosed = false;
+  for (const entry of existing.hooks.beforeShellExecution) {
+    if (entry.command === command && entry.failClosed !== true) {
+      entry.failClosed = true;
+      upgradedFailClosed = true;
+      added.push({ lifecycle: 'beforeShellExecution (failClosed set)', command });
+    }
+  }
+
+  const changed = staleRemoved.length > 0 || !alreadyWired || upgradedFailClosed;
   if (!changed) {
     return { changed: false, settingsPath: hooksPath, added: [] };
   }
@@ -913,6 +924,7 @@ module.exports = {
   detectAgent,
   wireHooks,
   wireClaudeHooks,
+  wireCursorBeforeShellGate,
   wireCodexHooks,
   wireGeminiHooks,
   wireForgeHooks,

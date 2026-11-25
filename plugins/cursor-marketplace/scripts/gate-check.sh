@@ -13,9 +13,11 @@ else
   RESULT=$(echo "$INPUT" | npx --yes --package thumbgate@latest thumbgate cursor-gate 2>/dev/null)
 fi
 
-if [ -z "$RESULT" ]; then
-  echo '{"permission":"allow"}'
-  exit 0
+# Fail closed (AGENT-3667): no answer, a failed command or anything that is not a permission decision means the gate
+# could not check this command, so it is denied. Only an explicit allow lets it run.
+if ! echo "$RESULT" | grep -Eq '"permission":[[:space:]]*"(allow|deny)"'; then
+  echo '{"permission":"deny","user_message":"ThumbGate could not check this command, so it was blocked. Retry; if it keeps failing run: npx thumbgate doctor","agent_message":"ThumbGate gate unavailable: command blocked (fail closed)."}'
+  exit 2
 fi
 
 echo "$RESULT"
