@@ -52,3 +52,23 @@ test('mellum family maps roles to open-weights Instruct and Thinking models', ()
 test('mellum is not selected without the family env', () => {
   assert.notEqual(resolveModelRole('normal', {}).model, MELLUM_MODEL_ROLES.normal);
 });
+
+test('local generation dispatches the Instruct or Thinking model the plan picked', async () => {
+  const { executeRoutedGeneration } = require('../scripts/model-tier-router');
+  const env = {
+    THUMBGATE_PROVIDER_MODE: 'local',
+    THUMBGATE_LOCAL_MODEL_FAMILY: 'mellum',
+    THUMBGATE_LOCAL_MODEL_BASE_URL: 'http://127.0.0.1:9000/v1',
+  };
+  const sent = [];
+  const fetchImpl = async (_url, options) => {
+    sent.push(JSON.parse(options.body).model);
+    return { ok: true, json: async () => ({ choices: [{ message: { content: 'ok' } }] }) };
+  };
+  await executeRoutedGeneration({ type: 'code-edit', privacyRoute: 'local' }, { userPrompt: 'x' }, { env, fetchImpl });
+  await executeRoutedGeneration({ type: 'code-edit', privacyRoute: 'local', retryCount: 2 }, { userPrompt: 'x' }, { env, fetchImpl });
+  assert.deepEqual(sent, [
+    'JetBrains/Mellum2.1-12B-A2.5B-Instruct',
+    'JetBrains/Mellum2.1-12B-A2.5B-Thinking',
+  ]);
+});

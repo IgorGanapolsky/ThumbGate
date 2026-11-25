@@ -447,10 +447,13 @@ function normalizeGenerationResult(result, fallback = {}) {
 }
 
 function resolveLocalGenerationModel(env, plan) {
-  const role = resolveModelRole('normal', env);
+  // Run the thinking model only when the plan asks for a reasoning step.
+  const roleName = plan.reasoningModelRole === 'thinking' ? 'thinking' : 'normal';
+  const role = resolveModelRole(roleName, env);
   if (role.provider === 'local') return role.model;
 
   const configuredModel = [
+    roleName === 'thinking' ? env.THUMBGATE_MODEL_ROLE_THINKING : undefined,
     env.THUMBGATE_MODEL_ROLE_NORMAL,
     env.THUMBGATE_LOCAL_MODEL,
     env.THUMBGATE_MODEL_ID,

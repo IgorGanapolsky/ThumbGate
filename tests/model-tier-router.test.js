@@ -400,8 +400,19 @@ test('local execution target uses the activated model family instead of a hard-c
     env,
   );
   assert.equal(target.provider, 'openai-compatible');
-  assert.equal(target.model, 'glm-z1-9b');
+  // Architecture needs a reasoning step, so the family's own thinking model runs.
+  assert.equal(target.model, 'glm-z1-32b');
   assert.notEqual(target.model, 'glm-5.1');
+
+  const routinePlan = recommendExecutionPlan({ type: 'code-edit' }, env);
+  const routineTarget = resolveGenerationTarget(
+    routinePlan,
+    { type: 'code-edit' },
+    config.tiers[routinePlan.tier],
+    {},
+    env,
+  );
+  assert.equal(routineTarget.model, 'glm-z1-9b');
 });
 
 test('default adapters share the OpenAI-compatible contract and JSONL telemetry is durable', async (t) => {
