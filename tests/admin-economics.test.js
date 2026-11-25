@@ -41,6 +41,23 @@ test('payment to access flags paid customers without a key and failed payments t
   assert.equal(noKeyNeeded.status, 'ok');
 });
 
+test('time to first value: the hosted first_block ping counts once per install, alongside the older event name', async () => {
+  const dir = tmp();
+  const now = Date.UTC(2026, 10, 24, 12);
+  const at = (d) => new Date(now - d * 86400000).toISOString();
+  const cli = (d, eventType, installId, extra = {}) => JSON.stringify({ receivedAt: at(d), clientType: 'cli', eventType, installId, ...extra });
+  fs.writeFileSync(path.join(dir, 'telemetry-pings.jsonl'), [
+    cli(3, 'cli_init', 'f'), cli(2, 'first_block', 'f'),
+    cli(3, 'cli_init', 'g'), cli(2, 'first_block', 'g'), cli(2, 'first_blocked_tool_call', 'g', { minutesSinceInstall: 15 }),
+    cli(1, 'first_block', 'mine', { visitorType: 'owner' }),
+  ].join('\n') + '\n');
+  try {
+    const { usage } = await readTrafficWindow({ feedbackDir: dir, days: 30, now });
+    assert.equal(usage.firstValueInstalls, 2, 'an install that sent only first_block still reached first value; the owner is left out');
+    assert.deepEqual(usage.timeToFirstValue, { installs: 1, medianMinutes: 15, p75Minutes: 15 });
+  } finally { fs.rmSync(dir, { recursive: true, force: true }); }
+});
+
 test('time to first value: the first real gate block per install, with median and 75th percentile minutes', async () => {
   const dir = tmp();
   const now = Date.UTC(2026, 10, 24, 12);
