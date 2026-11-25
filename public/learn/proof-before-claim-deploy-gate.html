@@ -46,7 +46,7 @@
       "name": "What does the deploy-proof gate block?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "A Claude Code reply that says deployed, shipped, now live, or in production, when neither the reply nor a tool call in the same message shows curl output from production, a /health JSON snapshot, a buildSha, an HTTP 200 from the host, or a CI line you configured. Negated, hypothetical, and question forms are skipped."
+        "text": "A Claude Code reply that says deployed, shipped, now live, or in production, when the reply does not show a successful result from production: a /health JSON snapshot, a buildSha, or an HTTP 200 next to the production host, or a CI line you configured. A curl command with no output, or a reported failure, is not proof. Negated, hypothetical, question and staging forms are skipped."
       }
     },
     {
@@ -105,7 +105,7 @@
   <ol>
     <li>When the agent finishes a reply, Claude Code runs the Stop hook that <code>npx thumbgate init</code> installs (<code>thumbgate claim-stop-check</code>). The ThumbGate Claude plugin runs the same hook.</li>
     <li>The hook looks for a deploy claim: "deployed", "shipped", "now live", "is live", "in production". It skips "not deployed yet", "once it is deployed", "will be live", and questions.</li>
-    <li>It looks for proof in the same reply, or in a tool call from the same message: curl output against the production host, a <code>/health</code> JSON snapshot, a <code>buildSha</code>, an HTTP 200 from the host, or a CI line you name, such as "Deploy verified".</li>
+    <li>It looks for a result in the same reply: a <code>/health</code> JSON snapshot, a <code>buildSha</code> or an HTTP 200, next to the production host, or a CI line you name, such as "Deploy verified". A curl command with no output is not proof, and a reported failure (connection refused, HTTP 5xx, <code>"status":"error"</code>) cancels it. "Deployed to staging" is not a production claim.</li>
     <li>Claim and no proof: the reply is blocked once, and the agent is told to run the check and paste the output, or to say "not verified".</li>
   </ol>
 
@@ -123,7 +123,7 @@
     <li><strong>It checks that proof is present, not that it is true.</strong> It does not call your server itself. A pasted health response from the wrong environment passes unless you set your hosts.</li>
     <li><strong>It matches words.</strong> "The new build is up" is not a deploy claim to this hook.</li>
     <li><strong>Claude Code only.</strong> Cursor, Codex, and other agents do not get this Stop-time check yet.</li>
-    <li>Other completion claims, such as "done" or "fixed", get a reminder by default and a block only in strict mode (<code>THUMBGATE_STRICT_ENFORCEMENT=1</code>).</li>
+    <li>Other completion claims, such as "done" or "fixed", get a reminder in the agent's context on your next prompt by default, and a block only in strict mode (<code>THUMBGATE_STRICT_ENFORCEMENT=1</code>).</li>
   </ul>
 
   <div class="cta-box">
