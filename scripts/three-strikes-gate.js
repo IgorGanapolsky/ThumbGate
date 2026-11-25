@@ -29,7 +29,7 @@ const reply = require('./reply-discipline-gates');
 const DEFAULTS = Object.freeze({ maxStrikes: 3, strikeWindowMinutes: 30 });
 const BASH_TOOLS = new Set(['Bash', 'Shell', 'bash']);
 // Commands whose non-zero exit is an answer ("no match", "missing"), not a failure.
-const PROBE_COMMANDS = new Set(['grep', 'rg', 'egrep', 'fgrep', 'ls', 'cat', 'head', 'tail', 'test', '[', '[[', 'which', 'command', 'type', 'diff', 'cmp', 'pgrep', 'find', 'stat', 'true', 'false']);
+const PROBE_COMMANDS = new Set(['grep', 'rg', 'egrep', 'fgrep', 'ls', 'cat', 'head', 'tail', 'test', '[', '[[', 'which', 'type', 'diff', 'cmp', 'pgrep', 'find', 'stat', 'true', 'false']);
 
 function readStdin() {
   try { return fs.readFileSync(0, 'utf8'); } catch { return ''; }
@@ -55,9 +55,16 @@ function normalizeCommand(command) {
   return c.replace(/\s+/g, ' ').trim();
 }
 
+/** True only when every part of the command (split on && || ; |) is a read-only probe. */
 function isProbe(key) {
-  const first = key.split(' ')[0] || '';
-  return PROBE_COMMANDS.has(path.basename(first));
+  const segments = String(key).split(/\s*(?:&&|\|\||;|\|)\s*/).filter(Boolean);
+  if (segments.length === 0) return false;
+  return segments.every((seg) => {
+    const [first = '', second = ''] = seg.trim().split(' ');
+    const name = path.basename(first);
+    if (name === 'command') return second === '-v' || second === '-V';
+    return PROBE_COMMANDS.has(name);
+  });
 }
 
 function commandOf(payload = {}) {
@@ -116,8 +123,12 @@ function recordResult(payload, options = {}) {
   const sid = payload.session_id || 'unknown';
   const entry = ledger[sid] || { commands: {} };
   const now = options.now || Date.now();
+  const cfg = { ...DEFAULTS, ...(options.config || {}) };
   if (failed(payload)) {
-    const prev = entry.commands[key] || { strikes: 0, attempts: [] };
+    const existing = entry.commands[key];
+    // A streak older than the window has expired: this failure starts a new one.
+    const fresh = !existing || now - Number(existing.lastFailedAt || 0) > cfg.strikeWindowMinutes * 60 * 1000;
+    const prev = fresh ? { strikes: 0, attempts: [] } : existing;
     const attempts = [...prev.attempts, { at: new Date(now).toISOString(), error: errorSnippet(payload) }].slice(-5);
     entry.commands[key] = { strikes: prev.strikes + 1, lastFailedAt: now, attempts };
   } else if (entry.commands[key]) {
@@ -162,7 +173,7 @@ async function main(mode = process.argv[2], options = {}) {
       if (r.deny) out({ hookSpecificOutput: { hookEventName: 'PreToolUse', permissionDecision: 'deny', permissionDecisionReason: r.reason } });
       else out({});
     } else if (mode === 'post') {
-      recordResult(payload, options);
+      recordResult(payload, { ...options, config });
       out({});
     } else out({});
   } catch (err) {

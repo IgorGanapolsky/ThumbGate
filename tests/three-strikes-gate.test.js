@@ -75,6 +75,28 @@ test('read-only probes such as grep never count as strikes', () => {
   assert.equal(gate.evaluatePre(pre('grep -rn needle src'), { env }).deny, false);
   assert.equal(gate.isProbe('ls missing'), true);
   assert.equal(gate.isProbe('npm test'), false);
+  assert.equal(gate.isProbe('grep -q x a.txt && ls'), true);
+  assert.equal(gate.isProbe('command -v node'), true);
+});
+
+test('a compound command that runs something real is not a probe', () => {
+  assert.equal(gate.isProbe('test -f package.json && npm test'), false);
+  assert.equal(gate.isProbe('command npm test'), false);
+  const env = tmpEnv();
+  for (let i = 0; i < 3; i++) gate.recordResult(fail('test -f package.json && npm test'), { env });
+  assert.equal(gate.evaluatePre(pre('test -f package.json && npm test'), { env }).deny, true);
+});
+
+test('a failure after the window starts a new streak instead of extending the old one', () => {
+  const env = tmpEnv();
+  const t0 = Date.now();
+  for (let i = 0; i < 3; i++) gate.recordResult(fail('npm run build'), { env, now: t0 });
+  const later = t0 + 31 * 60_000;
+  assert.equal(gate.evaluatePre(pre('npm run build'), { env, now: later }).deny, false);
+  gate.recordResult(fail('npm run build'), { env, now: later });
+  assert.equal(gate.evaluatePre(pre('npm run build'), { env, now: later + 1000 }).deny, false);
+  for (let i = 0; i < 2; i++) gate.recordResult(fail('npm run build'), { env, now: later + 2000 });
+  assert.equal(gate.evaluatePre(pre('npm run build'), { env, now: later + 3000 }).deny, true);
 });
 
 test('an interrupted command is not a strike; an explicit exit code is honored', () => {
