@@ -214,3 +214,45 @@ test('Cursor self-heal: a shell gate pinned to a folder that is gone is moved to
   wireCursorBeforeShellGate({ cursorHooksPath: hooksFile });
   assert.equal(JSON.parse(fs.readFileSync(hooksFile, 'utf8')).hooks.beforeShellExecution.length, 2, 'init after the repair adds no second shell gate');
 });
+
+function sendGateState(w) {
+  return JSON.parse(fs.readFileSync(path.join(w.feedbackDir, 'send-gate-state.json'), 'utf8'));
+}
+
+test('Claude Code: a thumbs-up lifts the hold and records the approved action for the next run', () => {
+  const w = world();
+  const run = (command) => claudeDecision(w, 'Bash', { command }).decision;
+  assert.equal(run('npm run deploy:staging'), 'allow');
+  cli(w, 'hook-auto-capture', { prompt: 'thumbs down', session_id: 's1', cwd: w.project });
+  assert.equal(run('npm run deploy:staging'), 'deny', 'held after the thumbs-down');
+
+  const up = cli(w, 'hook-auto-capture', { prompt: 'thumbs up', session_id: 's1', cwd: w.project });
+  assert.match(up.stdout, /hold\(s\) released/, 'the agent is told the hold is lifted');
+  assert.match(up.stdout, /Thumbs-up recorded on `npm run deploy:staging …`/, 'the agent is told which action was approved');
+  assert.equal(run('npm run deploy:staging'), 'allow', 'the approved action runs again');
+
+  const state = sendGateState(w);
+  assert.equal(state.holds.filter((h) => !h.releasedAt).length, 0);
+  const approval = state.approved.find((a) => a.signature === 'npm run deploy:staging');
+  assert.ok(approval, 'the approved pattern is stored');
+  assert.equal(approval.count, 1);
+
+  cli(w, 'hook-auto-capture', { prompt: 'thumbs up', session_id: 's1', cwd: w.project });
+  assert.equal(sendGateState(w).approved.find((a) => a.signature === 'npm run deploy:staging').count, 2, 'a second thumbs-up reinforces the same pattern');
+});
+
+test('Cursor: a typed thumbs-up lifts a thumbs-down hold through the prompt hook and records the approved post', () => {
+  const w = world();
+  const base = { conversation_id: 'conv-1', generation_id: 'gen-1', workspace_roots: [w.project] };
+  const mcpSend = (chat, text) => {
+    const out = cli(w, 'cursor-mcp-gate', { ...base, hook_event_name: 'beforeMCPExecution', mcp_server_name: 'teams', tool_name: 'send_chat_message', tool_input: JSON.stringify({ chat_id: chat, text }) });
+    return JSON.parse(out.stdout.trim().split('\n').pop()).permission;
+  };
+  assert.equal(mcpSend('chat-a', 'Update one.'), 'allow');
+  cli(w, 'cursor-prompt', { ...base, hook_event_name: 'beforeSubmitPrompt', prompt: 'thumbs down' });
+  assert.equal(mcpSend('chat-b', 'Update two.'), 'deny', 'held after the thumbs-down');
+  cli(w, 'cursor-prompt', { ...base, hook_event_name: 'beforeSubmitPrompt', prompt: 'thumbs up' });
+  assert.equal(mcpSend('chat-b', 'Update two.'), 'allow', 'the thumbs-up lifts the hold before the next tool call');
+  const state = sendGateState(w);
+  assert.ok(state.approved.some((a) => a.toolName === 'mcp__teams__send_chat_message'), 'the approved post is stored');
+});
