@@ -127,3 +127,32 @@ test('checkLatest refreshes only when npm latest is newer than the runtime', asy
   const state = JSON.parse(fs.readFileSync(path.join(path.dirname(dir), au.RUNTIME_AUTO_UPDATE_STATE_FILE), 'utf8'));
   assert.equal(state.to, '1.43.0');
 });
+
+test('checkLatest waits for a refresh the MCP path already started, and takes over a stale lock', async () => {
+  const dir = path.join(tmpHome(), '.thumbgate', 'runtime');
+  writeRuntime(dir, '1.42.0');
+  const file = path.join(path.dirname(dir), au.RUNTIME_AUTO_UPDATE_STATE_FILE);
+  const t0 = Date.parse('2026-11-25T20:00:00Z');
+  fs.writeFileSync(file, JSON.stringify({ startedAt: t0, from: '1.42.0', to: '1.44.0' }));
+  const refreshed = [];
+  const refresh = async (argv) => { refreshed.push(argv); };
+  assert.deepEqual(await au.checkLatest(dir, { latestVersion: () => '1.43.0', refresh, now: t0 + 60_000 }), { updated: false, reason: 'refresh-in-progress' });
+  assert.equal(JSON.parse(fs.readFileSync(file, 'utf8')).to, '1.44.0');
+  assert.equal(refreshed.length, 0);
+  fs.writeFileSync(file, JSON.stringify({ startedAt: t0, finishedAt: t0 + 30_000, ok: false }));
+  assert.equal((await au.checkLatest(dir, { latestVersion: () => '1.43.0', refresh, now: t0 + 60_000 })).updated, true);
+  fs.writeFileSync(file, JSON.stringify({ startedAt: t0 }));
+  assert.equal((await au.checkLatest(dir, { latestVersion: () => '1.43.0', refresh, now: t0 + 11 * 60_000 })).updated, true);
+  assert.equal(refreshed.length, 2);
+});
+
+test('refreshRuntime never swaps in an older runtime than the one now live', () => {
+  const dir = path.join(tmpHome(), '.thumbgate', 'runtime');
+  writeRuntime(dir, '1.44.0');
+  const install = (prefix, version) => writeRuntime(prefix, version);
+  const result = au.refreshRuntime(dir, '1.43.0', { install });
+  assert.equal(result.ok, false);
+  assert.equal(result.reason, 'not-older');
+  assert.equal(JSON.parse(fs.readFileSync(path.join(dir, 'node_modules', 'thumbgate', 'package.json'), 'utf8')).version, '1.44.0');
+  assert.deepEqual(fs.readdirSync(path.dirname(dir)).filter((n) => n.includes('.next-')), []);
+});

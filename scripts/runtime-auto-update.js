@@ -139,15 +139,24 @@ function defaultLatestVersion() {
 }
 
 /** Child side of scheduleLatestCheck: refresh the runtime when npm has a newer `latest`. */
-async function checkLatest(dir, { latestVersion = defaultLatestVersion, refresh = runChild } = {}) {
+/** True while a refresh started from either path has not finished and has not yet timed out. */
+function refreshInProgress(state, now = Date.now()) {
+  const started = Number(state && state.startedAt) || 0;
+  const finished = Number(state && state.finishedAt) || 0;
+  return started > 0 && finished < started && now - started < INSTALL_TIMEOUT_MS * 2;
+}
+
+async function checkLatest(dir, { latestVersion = defaultLatestVersion, refresh = runChild, now = Date.now() } = {}) {
   let latest = '';
   try { latest = latestVersion(); } catch { return { updated: false, reason: 'lookup-failed' }; }
   if (!VERSION_RE.test(latest)) return { updated: false, reason: 'bad-version' };
   const current = readRuntimeVersion(dir);
   if (!current || !isOlder(current, latest)) return { updated: false, reason: 'current' };
-  // Same lock the MCP path uses, so it does not start a second refresh today.
+  // Same lock the MCP path uses: skip while another refresh is still running, then take it.
   const file = path.join(path.dirname(dir), STATE_FILE);
-  writeState(file, { ...readState(file), startedAt: Date.now(), from: current, to: latest });
+  const last = readState(file);
+  if (refreshInProgress(last, now)) return { updated: false, reason: 'refresh-in-progress' };
+  if (!writeState(file, { startedAt: now, from: current, to: latest })) return { updated: false, reason: 'state-unwritable' };
   await refresh([dir, latest, 'hook']);
   return { updated: true, from: current, to: latest };
 }
@@ -175,6 +184,12 @@ function refreshRuntime(dir, version, { install = defaultInstall } = {}) {
     if (staged !== version) {
       cleanup(staging);
       return { ok: false, before, reason: 'verify-failed' };
+    }
+    // A parallel refresh may have installed something newer meanwhile: never swap a downgrade in.
+    const live = readRuntimeVersion(dir);
+    if (live && !isOlder(live, version)) {
+      cleanup(staging);
+      return { ok: false, before, reason: 'not-older' };
     }
     let moved = false;
     if (fs.existsSync(dir)) {
@@ -215,6 +230,7 @@ async function runChild(argv) {
 }
 
 module.exports = {
+  refreshInProgress,
   scheduleRuntimeAutoUpdate,
   scheduleLatestCheck,
   checkLatest,
