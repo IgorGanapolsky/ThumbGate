@@ -256,3 +256,18 @@ test('Cursor: a typed thumbs-up lifts a thumbs-down hold through the prompt hook
   const state = sendGateState(w);
   assert.ok(state.approved.some((a) => a.toolName === 'mcp__teams__send_chat_message'), 'the approved post is stored');
 });
+
+test('thumbs-up on two different posts to the same chat keeps two approvals, one per wording', () => {
+  const sendGate = require('../scripts/send-gate');
+  const feedbackDir = fs.mkdtempSync(path.join(os.tmpdir(), 'tg-td-up-'));
+  const toolName = 'mcp__teams__send_chat_message';
+  const t0 = Date.now();
+  const t1 = t0 + 3 * 60 * 60 * 1000; // past the second-bubble window
+  assert.equal(sendGate.evaluate({ feedbackDir, toolName, toolInput: { chat_id: 'chat-a', text: 'Release is out.' }, now: t0 }), null);
+  sendGate.recordApproval({ feedbackDir, now: t0 + 1000 });
+  assert.equal(sendGate.evaluate({ feedbackDir, toolName, toolInput: { chat_id: 'chat-a', text: 'Docs are updated.' }, now: t1 }), null);
+  sendGate.recordApproval({ feedbackDir, now: t1 + 1000 });
+  const approved = JSON.parse(fs.readFileSync(path.join(feedbackDir, 'send-gate-state.json'), 'utf8')).approved;
+  assert.equal(approved.length, 2, 'different wordings are separate approvals');
+  assert.ok(approved.every((a) => a.count === 1 && a.textHash), 'each keeps its own wording hash');
+});

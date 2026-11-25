@@ -213,8 +213,9 @@ function recordApproval({ feedbackDir, sessionId = '', now = Date.now() }) {
     kind: last.kind,
     chatKey: last.chatKey || null,
     signature: last.signature || null,
+    textHash: last.textHash || null,
   };
-  const existing = state.approved.find((a) => a.toolName === approval.toolName && a.signature === approval.signature && a.chatKey === approval.chatKey);
+  const existing = state.approved.find((a) => a.toolName === approval.toolName && a.signature === approval.signature && a.chatKey === approval.chatKey && (a.textHash || null) === approval.textHash);
   if (existing) {
     existing.count = (existing.count || 1) + 1;
     existing.at = approval.at;
@@ -297,9 +298,11 @@ function evaluate({ feedbackDir, toolName, toolInput = {}, sessionId = '', now =
       }
     }
     const prev = state.actions[state.actions.length - 1];
-    const dup = prev && prev.toolName === toolName && prev.signature === signature && prev.chatKey === chatKey && now - prev.at < 2000;
+    // Posts and edits have no command, so their wording (hashed) is what tells two approved posts apart.
+    const textHash = kind ? hashText(textOf(toolInput)) : null;
+    const dup = prev && prev.toolName === toolName && prev.signature === signature && prev.chatKey === chatKey && (prev.textHash || null) === textHash && now - prev.at < 2000;
     if (!dup) {
-      state.actions.push({ at: now, sessionId: String(sessionId || ''), toolName, kind: kind || 'action', chatKey, signature });
+      state.actions.push({ at: now, sessionId: String(sessionId || ''), toolName, kind: kind || 'action', chatKey, signature, ...(textHash ? { textHash } : {}) });
       state.actions = state.actions.slice(-KEEP_ACTIONS);
       changed = true;
     }
