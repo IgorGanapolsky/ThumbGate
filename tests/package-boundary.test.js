@@ -840,8 +840,10 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // Bumped 10.84 MB -> 10.87 MB (2026-11-25, PR 5271): public/demo.html (28 KB), the chaptered /demo walkthrough.
   // Bumped 10.87 MB -> 10.88 MB (2026-11-25, PR #5274): hook latency caches in scripts/gates-engine.js and
   // scripts/project-identity.js (about 8 KB); measured 10,874,860 after merging main.
-  manifest.unpackedSize <= 10_880_000,
-  `npm package should stay <= 10.88 MB unpacked, got ${manifest.unpackedSize}`
+  // Bumped 10.88 MB -> 10.89 MB (2026-11-25, PR #5201): revenue_ledger_empty diagnostics in scripts/billing.js;
+  // CI measured 10,883,909 after merging main.
+  manifest.unpackedSize <= 10_890_000,
+  `npm package should stay <= 10.89 MB unpacked, got ${manifest.unpackedSize}`
 );
 
   for (const file of requiredRuntimeFiles) {
