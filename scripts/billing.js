@@ -322,6 +322,32 @@ function writeJsonlRecords(filePath, rows = []) {
   }
 }
 
+// A key that came from Stripe or a marketplace purchase, or that names a Stripe customer.
+function keyStoreHasPaidKeys(store = loadKeyStore()) {
+  return Object.values((store && store.keys) || {}).some((key) => key && (
+    /^cus_/.test(String(key.customerId || '')) || /stripe|marketplace/.test(String(key.source || ''))
+  ));
+}
+
+// True when the key store is absent (no keys yet) or parses with a keys object. loadKeyStore() turns
+// a read or parse failure into an empty store, which must not count as proof that nothing was sold.
+function keyStoreReadable() {
+  try {
+    const target = resolveKeyStoreReadPath();
+    if (!fs.existsSync(target)) return true;
+    const parsed = JSON.parse(fs.readFileSync(target, 'utf-8'));
+    return Boolean(parsed && parsed.keys && typeof parsed.keys === 'object' && !Array.isArray(parsed.keys));
+  } catch {
+    return false;
+  }
+}
+
+// Any confirmed payment in the funnel ledger (stage 'paid'), e.g. checkout_paid_confirmed.
+// Reads the same files as loadFunnelLedger(), so legacy merging is honored.
+function funnelHasPaidEvents() {
+  return loadFunnelLedger().some((row) => row && row.stage === 'paid');
+}
+
 function buildSourceWarning(code, message) {
   return { code, message };
 }
@@ -423,10 +449,17 @@ function buildBillingSourceDiagnostics(feedbackDir) {
       'revenue_ledger_legacy_fallback',
       'Revenue events are loading only from a legacy feedback directory.'
     ));
+  } else if (revenueLedger.activeMode === 'missing' && keyStoreReadable() && !keyStoreHasPaidKeys() && !funnelHasPaidEvents()) {
+    // The first paid event creates the ledger file. With no paid key and no paid funnel event (service
+    // orders get no key), a missing ledger means nothing has been sold yet: a fact, not a broken source.
+    warnings.push(buildSourceWarning(
+      'revenue_ledger_empty',
+      'No revenue events recorded yet; the revenue ledger is created by the first paid checkout.'
+    ));
   } else if (revenueLedger.activeMode === 'missing') {
     warnings.push(buildSourceWarning(
       'revenue_ledger_missing',
-      'Revenue events are missing from both the active and legacy feedback directories.'
+      'Revenue events are missing from both the active and legacy feedback directories, but paid activity exists (a paid key or paid funnel event) or the key store could not be read.'
     ));
   }
 
@@ -3634,6 +3667,7 @@ async function createCheckoutSession({ successUrl, cancelUrl, customerEmail, ins
     await verifyActiveProductForPlan(stripe, checkoutSelection.planId);
   }
 
+  const activePriceId = packId ? null : await resolveActiveStripePriceId(stripe, checkoutSelection);
   const sessionPayload = buildCheckoutSessionPayload({
     successUrl,
     cancelUrl,
@@ -3641,8 +3675,9 @@ async function createCheckoutSession({ successUrl, cancelUrl, customerEmail, ins
     checkoutMetadata,
     packId,
     appOrigin,
+    activePriceId,
   });
-  const session = await createSessionDroppingRejectedOptionals(stripe, sessionPayload);
+  const session =await createSessionDroppingRejectedOptionals(stripe, sessionPayload);
 
   appendFunnelEvent({
     stage: 'acquisition',
@@ -3672,7 +3707,48 @@ async function createSessionDroppingRejectedOptionals(stripe, payload) {
   }
 }
 
-function buildCheckoutSessionPayload({ successUrl, cancelUrl, customerEmail, checkoutMetadata, packId = null, appOrigin } = {}) {
+// Env var that holds the price id for a checkout selection (named in the log line).
+function priceEnvNameFor(checkoutSelection) {
+  if (checkoutSelection.planId === 'team') return 'STRIPE_PRICE_ID_TEAM_MONTHLY';
+  if (checkoutSelection.billingCycle === 'annual') return 'STRIPE_PRICE_ID_PRO_ANNUAL';
+  return 'STRIPE_PRICE_ID_PRO_MONTHLY (or STRIPE_PRICE_ID)';
+}
+
+// Returns the configured Stripe price id only when Stripe confirms it is active
+// and matches the amount, interval and interval count the page shows. Otherwise
+// THROWS when it does not, naming the env var and the reason. It never falls
+// back to inline price_data: that created a new ad hoc Stripe price (and product
+// data) per session, so archived prices and duplicate products kept growing.
+async function resolveActiveStripePriceId(stripe, checkoutSelection) {
+  const priceId = checkoutSelection && checkoutSelection.priceId;
+  const envName = priceEnvNameFor(checkoutSelection || {});
+  const fallback = (reason) => {
+    const err = new Error(`Refusing to create checkout session: ${envName} (${priceId || 'unset'}) ${reason}. Set it to the active Stripe price for this plan.`);
+    err.code = 'STRIPE_PRICE_MISCONFIGURED';
+    console.error(`[billing] ${err.message}`);
+    throw err;
+  };
+  if (!priceId) return fallback('is not set');
+  if (!stripe || !stripe.prices || typeof stripe.prices.retrieve !== 'function') return fallback('could not be checked (no Stripe prices API)');
+  try {
+    const price = await stripe.prices.retrieve(priceId);
+    const expectedInterval = checkoutSelection.billingCycle === 'annual' ? 'year' : 'month';
+    const expectedAmount = Math.round(checkoutSelection.unitPriceDollars * 100);
+    if (!price) return fallback('was not found');
+    if (price.active !== true) return fallback('is inactive');
+    if (String(price.currency || '').toLowerCase() !== 'usd') return fallback('is not USD');
+    if (price.unit_amount !== expectedAmount) return fallback(`charges ${price.unit_amount} cents, page shows ${expectedAmount}`);
+    const recurring = price.recurring || {};
+    if (recurring.interval !== expectedInterval) return fallback(`bills every ${recurring.interval || 'none'}, expected ${expectedInterval}`);
+    const count = recurring.interval_count === undefined ? 1 : recurring.interval_count;
+    if (count !== 1) return fallback(`bills every ${count} ${expectedInterval}s, expected 1`);
+    return priceId;
+  } catch (err) {
+    return fallback(`lookup failed (${err && err.message ? err.message : 'error'})`);
+  }
+}
+
+function buildCheckoutSessionPayload({ successUrl, cancelUrl, customerEmail, checkoutMetadata, packId = null, appOrigin, activePriceId = null } = {}) {
   const pack = packId ? CONFIG.CREDIT_PACKS[packId] : null;
   const checkoutSelection = pack ? null : resolveSubscriptionCheckoutSelection(checkoutMetadata);
   if (!pack && !checkoutSelection.priceId) {
@@ -3691,10 +3767,12 @@ function buildCheckoutSessionPayload({ successUrl, cancelUrl, customerEmail, che
         },
         quantity: 1,
       }]
-    : [{
-        price_data: buildSubscriptionPriceData(checkoutSelection, appOrigin),
-        quantity: checkoutSelection.quantity,
-      }];
+    : [activePriceId
+        ? { price: activePriceId, quantity: checkoutSelection.quantity }
+        : {
+            price_data: buildSubscriptionPriceData(checkoutSelection, appOrigin),
+            quantity: checkoutSelection.quantity,
+          }];
 
   const explicitTrialDays = normalizeInteger(
     checkoutMetadata?.trialPeriodDays
@@ -5177,12 +5255,13 @@ async function refreshCheckoutPriceStatus() {
 
 module.exports = {
   configuredCheckoutPrices, refreshCheckoutPriceStatus,
-  getStripeClient, classifyRevenueRecord, summarizeExternalRevenue, buildBillingSourceDiagnostics,
+  getStripeClient, classifyRevenueRecord, summarizeExternalRevenue, buildBillingSourceDiagnostics, keyStoreHasPaidKeys, funnelHasPaidEvents,
   withStripeReadSlot, getBillingAnalyticsReadPaths,
   _mergeRevenueEvents: mergeRevenueEvents,
   _buildStripeReconciledRevenueEvent: buildStripeReconciledRevenueEvent,
   CONFIG, createCheckoutSession, isAutomatedCheckoutRequest, isSyntheticOrOwnerCheckoutEmail, createBillingPortalSession, getCheckoutSessionStatus, provisionApiKey, resolvePaidEntitlementForEmail, rotateApiKey, validateApiKey, recordUsage, recordAccountFirstBlock, disableCustomerKeys, handleWebhook, verifyWebhookSignature, verifyGithubWebhookSignature, verifyPayPalWebhookSignature, recordGithubMarketplaceWebhookDelivery, recordPayPalWebhookDelivery, handleGithubWebhook, loadKeyStore, appendFunnelEvent, appendRevenueEvent, loadFunnelLedger, loadRevenueLedger, loadGithubMarketplaceWebhookLedger, loadPayPalWebhookLedger, loadNewsletterSubscribers, loadResolvedRevenueEvents, getFunnelAnalytics, getBusinessAnalytics, getBillingSummary, getBillingSummaryLive, getBillingSummariesLive, listStripeReconciledRevenueEvents, listStripeCheckoutSessionDepth, classifyCheckoutSessionDepth, summarizeCheckoutSessionDepth, verifyPaidCheckoutSession, repairGithubMarketplaceRevenueLedger,
   _buildCheckoutSessionPayload: buildCheckoutSessionPayload,
+  _resolveActiveStripePriceId: resolveActiveStripePriceId,
   _setStripeClient: setStripeClientForTests,
   _filterQualifiedCheckoutFunnelEvents: filterQualifiedCheckoutFunnelEvents,
   _createSessionDroppingRejectedOptionals: createSessionDroppingRejectedOptionals,

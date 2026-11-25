@@ -36,6 +36,7 @@ fs.mkdirSync(ENV.THUMBGATE_FEEDBACK_DIR, { recursive: true });
 
 const billing = require('../scripts/billing');
 const { startServer, __test__ } = require('../src/api/server');
+const { activePrices } = require('./helpers/fake-stripe-prices');
 
 // undici rewrites Sec-Fetch-Mode, so a navigation-shaped POST goes through node:http.
 function navigationPost(url, headers, body) {
@@ -54,6 +55,7 @@ function makeFakeStripe() {
   return {
     calls,
     products: { list: async () => ({ data: [] }) },
+    prices: activePrices(),
     checkout: {
       sessions: {
         async create(payload) {
