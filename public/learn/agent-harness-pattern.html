@@ -123,7 +123,7 @@
     <li><strong>Pattern match:</strong> Does the tool name and arguments match any prevention rule?</li>
     <li><strong>Thompson Sampling:</strong> For rules with uncertain severity, use multi-armed bandit sampling to decide block vs. warn</li>
     <li><strong>Decision:</strong> Block (hard stop), warn (let agent reconsider), or allow (no match)</li>
-    <li><strong>Feedback loop:</strong> The decision is logged. Thumbs-up/down on outcomes refines future checks.</li>
+    <li><strong>Feedback loop:</strong> The decision is logged. Thumbs-downs on outcomes refine future checks, and thumbs-ups are saved as success lessons.</li>
   </ol>
 
   <p>This is the verification check pattern from the NLAH framework, running in production today.</p>
@@ -133,7 +133,7 @@
   <p>ThumbGate stores every feedback event in a SQLite database with full-text search (FTS5). When a new session starts, the agent's context is assembled from relevant past lessons — not the entire history, but the lessons most similar to the current task.</p>
 
   <div class="callout callout-green">
-    <strong>The feedback loop closes itself:</strong> You thumbs-down a mistake → a prevention rule is generated → the check catches the mistake next time → the agent adapts → you thumbs-up the adaptation → the rule is reinforced.
+    <strong>The feedback loop closes itself:</strong> You thumbs-down a mistake → a prevention rule is generated → the check catches the mistake next time → the agent adapts → you thumbs-up the adaptation → the fix is saved as a success lesson.
   </div>
 
   <h2>Adapters: one harness, many agents</h2>

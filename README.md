@@ -82,10 +82,20 @@ It **hard-blocks detected secret leaks and two direct self-disable command class
 | Verdict | Default behavior |
 |---------|------------------|
 | ⛔ **Hard-block** | Detected secret leaks; process-kill/environment-override self-disable; catastrophic commands (force-push, `git reset --hard`, `git clean -f`, `rm -rf` on home or root, `DROP TABLE`) |
-| 👎 **Warn + log** | fetch-and-run, direct guardrail edits, other matching rules (become hard denies with `THUMBGATE_STRICT_ENFORCEMENT=1`) |
-| 👍 **Allow** | Everything else |
+| ⚠️ **Warn + log** | fetch-and-run, direct guardrail edits, other matching rules (become hard denies with `THUMBGATE_STRICT_ENFORCEMENT=1`) |
+| ✅ **Allow** | Everything else |
 
 **Accepted feedback is stored as local lessons.** Repeated concrete failures can become prevention rules that promote from warnings to blocking gates. The firewall improves from operations without retraining the model. Prompt evaluation (`npx thumbgate eval`) turns accepted feedback into reusable eval cases and local proof reports.
+
+### What a 👍 and a 👎 do
+
+| You give | What ThumbGate does |
+|----------|---------------------|
+| 👎 with one sentence of context | Saves a lesson. From the first one, the agent sees it before a matching action. On the third matching 👎, a check fires on that action: a warning by default, a block with `THUMBGATE_STRICT_ENFORCEMENT=1`. |
+| 👍 with one sentence of context | Saves a success lesson and counts it in your stats. It does not create, loosen or lift a check. |
+| 👍 or 👎 with no context | Logged only. Nothing is stored or promoted. |
+
+Example: you thumbs-down `npm run seed:prod-db` three times with *"it wiped production data"*. The next `npm run seed:prod-db` is flagged before it runs (denied in strict mode). A later 👍 on the same command is saved as a success lesson, and the check stays in place.
 
 **Honest disclaimer:** ThumbGate does not update model weights. It intercepts tool calls at runtime. Local-first — no cloud required for the enforcement path.
 
@@ -229,8 +239,8 @@ flowchart LR
     B -- semantic --> C["Local LanceDB"]
     C --> D
     D -- secret/kill --> E["⛔ Hard-block"]
-    D -- known-bad --> G["👎 Warn + log"]
-    D -- safe --> F["👍 Allow"]
+    D -- known-bad --> G["⚠️ Warn + log"]
+    D -- safe --> F["✅ Allow"]
 ```
 
 </details>
