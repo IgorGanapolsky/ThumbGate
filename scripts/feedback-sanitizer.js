@@ -160,9 +160,11 @@ function extractPromptEnvelope(rawStdin) {
     if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
       return {
         prompt: typeof parsed.prompt === 'string' ? parsed.prompt.trim() : '',
-        sessionId: firstStringField(parsed, ['session_id', 'sessionId']),
+        // Cursor sends conversation_id and workspace_roots instead of session_id and cwd.
+        sessionId: firstStringField(parsed, ['session_id', 'sessionId', 'conversation_id']),
         promptId: firstStringField(parsed, ['prompt_id', 'promptId']),
-        projectDir: firstStringField(parsed, ['cwd', 'project', 'project_dir', 'projectDir']),
+        projectDir: firstStringField(parsed, ['cwd', 'project', 'project_dir', 'projectDir'])
+          || (Array.isArray(parsed.workspace_roots) && typeof parsed.workspace_roots[0] === 'string' ? parsed.workspace_roots[0] : undefined),
         timestamp: firstStringField(parsed, ['timestamp', 'created_at', 'createdAt']),
         hookEventName: firstStringField(parsed, ['hook_event_name', 'hookEventName']),
       };

@@ -120,10 +120,16 @@ function findLearnedClaims(text, feedbackDir) {
     for (const rule of rules) {
       let hit = false;
       try { hit = new RegExp(rule.pattern, 'i').test(sentence); } catch { hit = false; }
-      if (hit) { claims.push({ kind: 'learned', sentence: sentence.slice(0, 240), ruleId: rule.id }); break; }
+      if (hit) { claims.push({ kind: 'learned', sentence: sentence.slice(0, 240), ruleId: rule.id, requiresEvidence: rule.requiresEvidence !== false, ruleMessage: rule.message || '' }); break; }
     }
   }
   return claims;
+}
+
+// The reply shows what the check returned: a code span or block, a link, an HTTP status, or an exit code.
+const EVIDENCE_RE = /```|`[^`\n]{3,}`|https?:\/\/\S+|\b(?:HTTP|status|returned|got|exit(?:\s+code)?)\s*:?\s*[0-9]{1,3}\b|\b[1-5][0-9]{2}\s+(?:OK|Found|Unauthorized|Forbidden|Not\s+Found|Bad\s+Gateway|Service\s+Unavailable)\b/i;
+function hasEvidence(text) {
+  return EVIDENCE_RE.test(String(text || ''));
 }
 
 function lessonText(lesson) {
@@ -163,12 +169,15 @@ function evaluateDraft(text, options = {}) {
   // A tool call in the turn covers an ordinary state claim. A claim that something is
   // absent or has not replied goes stale in minutes ("hasn't replied yet" was true at
   // 12:42 and false at 12:44), so those need a label even when the turn ran a tool.
+  // A learned rule (a person's thumbs-down) also wants the check's output IN the reply, not just a tool call somewhere.
+  const evidenceInReply = hasEvidence(text);
   const claims = [...findStateClaims(text), ...findLearnedClaims(text, options.feedbackDir)]
-    .filter((c) => !checked || STALE_PRONE_KINDS.has(c.kind));
+    .filter((c) => !checked || STALE_PRONE_KINDS.has(c.kind) || (c.kind === 'learned' && c.requiresEvidence && !evidenceInReply));
   if (claims.length === 0) return { block: false, claims, lessons: [], reason: null, checked };
 
   const lessons = (options.retrieve || retrieveLessons)(claims, options);
-  const lessonLines = lessons.length
+  const ruleLines = [...new Set(claims.filter((c) => c.ruleMessage).map((c) => c.ruleMessage))];
+  const lessonLines = ruleLines.length ? ruleLines.map((m, i) => `${i + 1}. ${m}`).join('\n') : lessons.length
     ? lessons.map((l, i) => `${i + 1}. ${lessonText(l)}`).join('\n')
     : '1. Never state the present condition of a tab, app, chat, job or message from memory; check it this turn or label it.';
   const quoted = claims.slice(0, 3).map((c) => `- "${c.sentence}"`).join('\n');
@@ -288,6 +297,7 @@ if (path.resolve(process.argv[1] || '') === path.resolve(__filename)) {
 }
 
 module.exports = {
+  hasEvidence,
   isWeakCheck,
   findLearnedClaims,
   STATE_CLAIM_PATTERNS,

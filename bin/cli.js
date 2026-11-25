@@ -3605,6 +3605,26 @@ function statuslineRender() {
   process.stdout.write(output);
 }
 
+function applyThumbHold(detected, prompt, promptEnvelope) {
+  try {
+    const sendGate = require(path.join(PKG_ROOT, 'scripts', 'send-gate'));
+    const { resolveFeedbackDir } = require(path.join(PKG_ROOT, 'scripts', 'feedback-paths'));
+    const feedbackDir = resolveFeedbackDir({ cwd: promptEnvelope.projectDir || CWD });
+    if (detected && detected.signal === 'down') {
+      const hold = sendGate.placeHold({ feedbackDir, sessionId: promptEnvelope.sessionId || process.env.CLAUDE_SESSION_ID || '', reason: prompt });
+      if (!hold) return null;
+      return hold.kind === 'post'
+        ? 'ThumbGate hold: thumbs-down received. New chat or colleague posts are refused until you edit the last bubble in place, or the person says "go ahead".'
+        : `ThumbGate hold: thumbs-down received. ${hold.signature ? `\`${hold.signature} …\`` : hold.toolName} is refused until the person says "go ahead". Ask what to change.`;
+    }
+    if ((detected && detected.signal === 'up') || (!detected && sendGate.isReleasePrompt(prompt))) {
+      const released = sendGate.releaseHolds({ feedbackDir });
+      return released ? `ThumbGate: ${released} hold(s) released by the person.` : null;
+    }
+  } catch { /* a hold never breaks prompt capture */ }
+  return null;
+}
+
 function hookAutoCapture() {
   syncActiveProjectContext();
   const { extractPromptEnvelope } = require(path.join(PKG_ROOT, 'scripts', 'feedback-sanitizer'));
@@ -3646,6 +3666,10 @@ function hookAutoCapture() {
   } catch { /* a reminder never blocks a prompt */ }
 
   const detected = detectFeedbackSignal(prompt);
+  // A thumbs-down holds the action that drew it before the agent's next tool call; a thumbs-up or "go ahead"
+  // releases it (scripts/send-gate.js).
+  const holdNote = applyThumbHold(detected, prompt, promptEnvelope);
+  if (holdNote) process.stdout.write(`${holdNote}\n`);
   if (!detected) {
     recordConversationEntry({
       author: 'user',
@@ -3685,7 +3709,12 @@ function hookAutoCapture() {
   // A thumbs-down is about the shell command the agent just ran. Attach it so repeated thumbs-downs on one command
   // can become a gate (without it the entry names no action and auto-promotion has nothing to match).
   let failedCommand;
-  if (signal === 'down') {
+  // A thumbs-down on what the agent SAID (an unchecked status claim) is not about the last command. Attaching it
+  // would turn the check itself (often `curl .../health`) into a gate; the claim rule handles it instead.
+  const aboutAClaim = (() => {
+    try { return require(path.join(PKG_ROOT, 'scripts', 'claim-gate-rules')).isClaimComplaint(prompt); } catch { return false; }
+  })();
+  if (signal === 'down' && !aboutAClaim) {
     try {
       const { resolveFeedbackDir } = require(path.join(PKG_ROOT, 'scripts', 'feedback-paths'));
       failedCommand = require(path.join(PKG_ROOT, 'scripts', 'recent-commands')).lastCommand({
@@ -4026,8 +4055,21 @@ function verifyClaimsCmd() {
 }
 
 function claimStopCheckCmd() {
-  const { main } = require(path.join(PKG_ROOT, 'scripts', 'hook-stop-anti-claim'));
-  main();
+  // Two Stop gates share this hook. The status-claim gate (claim-gate-stop.js: unchecked "sign-in refused", "host down",
+  // "ticket blocked", plus every rule a person's thumbs-down wrote) runs first and is on by default; then the
+  // completion-claim gate. Each runs as its own process on the same stdin; the first block wins.
+  const { spawnSync } = require('node:child_process');
+  const input = readStdinText();
+  const runGate = (file) => {
+    const out = spawnSync(process.execPath, [path.join(PKG_ROOT, 'scripts', file)], { input, env: process.env, encoding: 'utf8', timeout: 15000 });
+    return String((out && out.stdout) || '');
+  };
+  const claim = runGate('claim-gate-stop.js');
+  if (/"decision"\s*:\s*"block"/.test(claim)) {
+    process.stdout.write(claim);
+    return;
+  }
+  process.stdout.write(runGate('hook-stop-anti-claim.js'));
 }
 
 function help() {
@@ -4599,6 +4641,30 @@ switch (COMMAND) {
       process.stdout.write(JSON.stringify(out) + '\n');
       process.exit(out.permission === 'deny' ? 2 : 0);
     }).catch(() => { process.stdout.write('{"permission":"allow"}\n'); process.exit(0); });
+    break;
+  }
+  case 'cursor-mcp-gate': {
+    // Cursor beforeMCPExecution adapter: chat sends and every other MCP call go through the same gates (holds, send rules).
+    const cursorGate = require('../scripts/cursor-shell-gate');
+    cursorGate.runCursorMcpGate(require('node:fs').readFileSync(0, 'utf8')).then((out) => {
+      process.stdout.write(JSON.stringify(out) + '\n');
+      process.exit(out.permission === 'deny' ? 2 : 0);
+    }).catch(() => { process.stdout.write('{"permission":"allow"}\n'); process.exit(0); });
+    break;
+  }
+  case 'cursor-record': {
+    // Cursor afterShellExecution / afterMCPExecution / afterAgentResponse: record the turn for the stop-time claim gate.
+    try { require('../scripts/cursor-shell-gate').recordCursorEvent(JSON.parse(require('node:fs').readFileSync(0, 'utf8') || '{}')); } catch { /* never blocks */ }
+    process.stdout.write('{}\n');
+    process.exit(0);
+    break;
+  }
+  case 'cursor-stop': {
+    // Cursor stop: an unchecked status claim gets a follow-up message that sends the agent back to check (once).
+    let out = {};
+    try { out = require('../scripts/cursor-shell-gate').runCursorStop(JSON.parse(require('node:fs').readFileSync(0, 'utf8') || '{}')); } catch { out = {}; }
+    process.stdout.write(JSON.stringify(out) + '\n');
+    process.exit(0);
     break;
   }
   case 'gate-check':
