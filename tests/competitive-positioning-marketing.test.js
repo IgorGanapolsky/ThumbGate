@@ -57,7 +57,8 @@ test('Agentix comparison page frames agency services as adjacent competition', (
   assert.match(agentixHtml, /adjacent competition/i);
   assert.match(agentixHtml, /custom AI agent and automation services/i);
   assert.match(agentixHtml, /productized enforcement layer/i);
-  assert.match(agentixHtml, /\$499 one-time Setup Sprint/i);
+  assert.match(agentixHtml, /30-day pilot/i);
+  assert.doesNotMatch(agentixHtml, /\$499|Setup Sprint/);
   assert.doesNotMatch(agentixHtml, /Pro \$19|\$149/i);
 });
 
@@ -71,7 +72,8 @@ test('FAR.AI comparison keeps research, evaluation, and runtime enforcement sepa
   assert.match(farAiHtml, /https:\/\/www\.far\.ai\/research/);
   assert.match(farAiHtml, /utm_source=far_ai_comparison/);
   assert.equal((farAiHtml.match(/When should I use ThumbGate\?/g) || []).length, 2);
-  assert.match(farAiHtml, /\$499 Setup Sprint/);
+  assert.match(farAiHtml, /30-day team pilot/);
+  assert.doesNotMatch(farAiHtml, /\$499|Setup Sprint/);
   assert.doesNotMatch(farAiHtml, /managed workflow hardening sprint/i);
   assert.match(compareHtml, /href="\/compare\/far-ai"/);
 });
@@ -103,7 +105,8 @@ test('EdotEnv comparison keeps RSI train/eval and runtime enforcement separate',
   assert.match(edotenvHtml, /No affiliation with EdotEnv/i);
   assert.match(edotenvHtml, /https:\/\/edotenv\.com\//);
   assert.match(edotenvHtml, /utm_source=edotenv_comparison/);
-  assert.match(edotenvHtml, /\$499 Setup Sprint/);
+  assert.match(edotenvHtml, /30-day team pilot/);
+  assert.doesNotMatch(edotenvHtml, /\$499|Setup Sprint/);
   assert.doesNotMatch(edotenvHtml, /we are affiliated|official EdotEnv/i);
   assert.match(compareHtml, /href="\/compare\/edotenv"/);
 });
@@ -113,7 +116,9 @@ test('platform-team use case page exists with rollout language', () => {
   assert.match(platformTeamsHtml, /one repo, one owner, and one repeated AI failure/i);
   assert.match(platformTeamsHtml, /shared lessons/i);
   assert.match(platformTeamsHtml, /managed workflow gate/i);
-  assert.match(platformTeamsHtml, /href="\/diagnostic"/i);
+  // The $499 diagnostic is retired (410); the team pilot is requested at /pilot.
+  assert.match(platformTeamsHtml, /href="\/pilot"/i);
+  assert.doesNotMatch(platformTeamsHtml, /href="\/diagnostic/i);
 });
 
 test('regulated workflow page exists without fake compliance claims', () => {
@@ -127,7 +132,7 @@ test('deployment readiness guide converts OpenAI-style deployment demand into on
   assert.match(deploymentReadinessHtml, /AI Deployment Readiness/i);
   assert.match(deploymentReadinessHtml, /deployment companies/i);
   assert.match(deploymentReadinessHtml, /governance and proof layer/i);
-  assert.match(deploymentReadinessHtml, /Setup Sprint/);
-  assert.match(deploymentReadinessHtml, /\$499 one-time/i);
+  assert.match(deploymentReadinessHtml, /30-day team pilot/);
+  assert.doesNotMatch(deploymentReadinessHtml, /\$499|Setup Sprint/);
   assert.doesNotMatch(deploymentReadinessHtml, /\$1500|workflow-sprint-intake|Pro \$19|\$149/i);
 });
