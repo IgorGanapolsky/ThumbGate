@@ -1039,7 +1039,8 @@ test('retired service checkout routes fail closed before billing or intake dispa
     return originalFetch(input, options);
   };
   try {
-    for (const route of ['/go/diagnostic', '/go/diagnostic-pay', '/go/diagnostic-499', '/go/diagnostic-direct', '/go/sprint', '/go/operator-diagnostic', '/checkout/diagnostic', '/checkout/sprint', '/checkout/workflow-sprint']) {
+    // Upper-case and odd-character spellings too: /go/ dispatch normalizes the slug, so retirement must as well.
+    for (const route of ['/go/diagnostic', '/go/diagnostic-pay', '/go/DIAGNOSTIC-PAY', '/go/Diagnostic-499', '/go/diagnostic-pay/','/go/SPRINT', '/go/diagnostic-499', '/go/diagnostic-direct', '/go/sprint', '/go/operator-diagnostic', '/checkout/diagnostic', '/checkout/sprint', '/CHECKOUT/Sprint', '/checkout/workflow-sprint']) {
       for (const method of ['GET', 'HEAD', 'POST', 'OPTIONS']) {
         const res = await fetch(apiUrl(`${route}?utm_source=retirement_test`), {
           method, redirect: 'manual',
@@ -2108,14 +2109,14 @@ test('cancel page serves retry message and records first-party telemetry', async
   assert.match(body, /checkout_cancel_workflow_intake_clicked/);
   assert.match(body, /checkout_cancel_workflow_sprint_intake/);
   assert.match(body, /utm_medium', 'checkout_cancel_recovery'/);
-  assert.match(body, /href="https:\/\/app\.example\.com\/diagnostic"/);
-  assert.match(body, /href="https:\/\/app\.example\.com\/go\/sprint"/);
-  assert.match(body, /Review \$499 diagnostic/);
-  assert.match(body, /Scope \$1500 sprint/);
+  // The diagnostic and sprint offers are retired (410), so recovery must not point at them.
+  assert.doesNotMatch(body, /href="https:\/\/app\.example\.com\/diagnostic"/);
+  assert.doesNotMatch(body, /href="https:\/\/app\.example\.com\/go\/sprint"/);
+  assert.doesNotMatch(body, /Review \$\d+ diagnostic|Scope \$\d+ sprint/);
+  assert.doesNotMatch(body, /data-recovery-offer="(?:sprint_diagnostic|workflow_sprint)"/);
+  assert.match(body, /href="https:\/\/app\.example\.com\/pricing" data-recovery-offer="compare_plans"[^>]*>Compare current plans</);
   assert.match(body, /Restart \$19 Pro checkout/);
   assert.match(body, /data-recovery-offer="pro_pay_now_retry"/);
-  assert.match(body, /data-recovery-offer="sprint_diagnostic"/);
-  assert.match(body, /data-recovery-offer="workflow_sprint"/);
   assert.doesNotMatch(body, /https:\/\/buy\.stripe\.com\//);
   assert.doesNotMatch(body, /https:\/\/www\.paypal\.com\/ncp\/payment\//);
   assert.doesNotMatch(body, /Pay \$(?:1|19|99) (?:first rule|quick read|teardown)/);

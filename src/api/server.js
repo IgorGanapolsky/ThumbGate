@@ -5713,26 +5713,23 @@ function renderCheckoutSuccessPage(runtimeConfig) {
 }
 
 function renderCheckoutCancelledPage(runtimeConfig) {
-  const sprintDiagnosticPriceDollars = runtimeConfig.sprintDiagnosticPriceDollars || 499;
-  const workflowSprintPriceDollars = runtimeConfig.workflowSprintPriceDollars || 1500;
   const proDirectUrl = escapeHtmlAttribute(new URL('/go/pro-direct?utm_source=website&utm_medium=checkout_cancel_recovery&utm_campaign=pro_upgrade', runtimeConfig.appOrigin).toString());
   const playbookUrl = escapeHtmlAttribute(new URL('/go/playbook-999?utm_source=website&utm_medium=checkout_cancel_recovery&utm_campaign=playbook_999', runtimeConfig.appOrigin).toString());
   const bundle49Url = escapeHtmlAttribute(new URL('/go/bundle-49?utm_source=website&utm_medium=checkout_cancel_recovery&utm_campaign=bundle_49', runtimeConfig.appOrigin).toString());
-  const diagnosticUrl = escapeHtmlAttribute(new URL('/diagnostic', runtimeConfig.appOrigin).toString());
-  const workflowSprintUrl = escapeHtmlAttribute(new URL('/go/sprint', runtimeConfig.appOrigin).toString());
+  // The diagnostic and sprint offers are retired (410), so recovery points at current plans instead.
+  const pricingUrl = escapeHtmlAttribute(new URL('/pricing', runtimeConfig.appOrigin).toString());
   const workflowSprintIntakeUrl = escapeHtmlAttribute(new URL('/#workflow-sprint-intake', runtimeConfig.appOrigin).toString());
   const recoveryOfferLinks = [
     `<a href="${playbookUrl}" data-recovery-offer="playbook_999" data-offer-price="9.99">Buy $9.99 Playbook (One-Time, No Subscription)</a>`,
     `<a href="${bundle49Url}" data-recovery-offer="bundle_49" data-offer-price="49">Buy $49 Production Bundle (One-Time Expense)</a>`,
     `<a href="${proDirectUrl}" data-recovery-offer="pro_direct" data-offer-price="19">1-Click Stripe Pro ($19/mo)</a>`,
     `<a id="send-workflow-first" href="${workflowSprintIntakeUrl}" data-recovery-offer="workflow_sprint_intake" data-offer-price="0">Send workflow first</a>`,
-    `<a href="${diagnosticUrl}" data-recovery-offer="sprint_diagnostic" data-offer-price="${sprintDiagnosticPriceDollars}">Review $${sprintDiagnosticPriceDollars} diagnostic</a>`,
-    `<a href="${workflowSprintUrl}" data-recovery-offer="workflow_sprint" data-offer-price="${workflowSprintPriceDollars}">Scope $${workflowSprintPriceDollars} sprint</a>`,
+    `<a href="${pricingUrl}" data-recovery-offer="compare_plans" data-offer-price="0">Compare current plans</a>`,
   ].join('\n        ');
   const recoveryOfferCard = recoveryOfferLinks
     ? `<div class="card recovery-card">
       <h2>Need help deciding?</h2>
-      <p>If Pro is not the right next step, start smaller or send the workflow first. We can qualify the blocker, confirm the proof plan, and route you to the diagnostic or sprint only when the scope is real.</p>
+      <p>If Pro is not the right next step, start smaller or send the workflow first. We can qualify the blocker and point you to the plan that fits.</p>
       <div class="actions">
         ${recoveryOfferLinks}
       </div>
@@ -7625,9 +7622,13 @@ function createUnscopedApiServer({ ownerAdminDependencies = {} } = {}) {
       '/diagnostic', '/workflow-diagnostic', '/sprint', '/workflow-hardening',
       '/workflow-hardening-sprint', '/workflow-sprint',
     ]);
-    const retiredPath = pathname.replace(/\/$/, '').replace(/\.html$/, '');
+    const retiredPath = pathname.toLowerCase().replace(/\/$/, '').replace(/\.html$/, '');
+    // /go/<slug> dispatch normalizes the slug (getTrackedLinkTarget), so match the same normalized slug here;
+    // otherwise /go/DIAGNOSTIC-PAY would skip retirement and still reach the payment link.
+    const goSlugMatch = pathname.match(/^\/go\/([^/]+)\/?$/);
+    const retiredGoSlug = goSlugMatch ? normalizeTrackedLinkSlug(goSlugMatch[1]) : '';
     if (retiredOfferPages.has(retiredPath)
-      || /^\/go\/(?:diagnostic(?:-499|-direct|-pay)?|sprint|operator-diagnostic)$/.test(retiredPath)
+      || /^(?:diagnostic(?:-499|-direct|-pay)?|sprint|operator-diagnostic)$/.test(retiredGoSlug)
       || /^\/checkout\/(?:sprint|diagnostic|workflow-sprint)$/.test(retiredPath)) {
       res.writeHead(410, {
         'Content-Type': 'application/json; charset=utf-8',
