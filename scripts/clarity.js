@@ -33,7 +33,7 @@ const EXPORT_QUERIES = Object.freeze([
 ]);
 const PRIVATE_PATH_PREFIXES = Object.freeze([
   '/admin', '/v1/', '/api/', '/dashboard', '/cloud', '/signin', '/login', '/logout', '/checkout', '/success',
-  '/billing', '/portal', '/account', '/oauth', '/auth', '/sso', '/keys', '/settings', '/lessons/', '/feedback/',
+  '/billing', '/portal', '/account', '/oauth', '/auth', '/sso', '/keys', '/settings', '/lessons', '/feedback/',
 ]);
 const OFF_VALUES = new Set(['off', 'false', '0', 'no', 'disabled', 'none']);
 

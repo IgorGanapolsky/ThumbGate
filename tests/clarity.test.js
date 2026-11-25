@@ -21,7 +21,7 @@ test('tag goes on public pages with form fields masked and script strings untouc
 });
 
 test('no tag on private paths, privacy signals, or when switched off', () => {
-  for (const pathname of ['/admin', '/admin/', '/admin.html', '/dashboard', '/dashboard/x', '/signin', '/checkout/pro', '/success', '/billing/portal', '/v1/admin/money', '/lessons/abc']) {
+  for (const pathname of ['/admin', '/admin/', '/admin.html', '/dashboard', '/dashboard/x', '/signin', '/checkout/pro', '/success', '/billing/portal', '/v1/admin/money', '/lessons', '/lessons.html', '/lessons/abc']) {
     assert.equal(clarity.injectClarityTag(page, { pathname, env: {} }), page, pathname);
   }
   assert.equal(clarity.injectClarityTag(page, { pathname: '/', headers: { 'sec-gpc': '1' }, env: {} }), page);
