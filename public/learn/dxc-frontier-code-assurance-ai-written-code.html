@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DXC checks the code after it is written. Who checks the agent while it writes? - ThumbGate</title>
+<script defer data-domain="thumbgate.ai" src="https://plausible.io/js/script.js"></script>
+<meta name="description" content="DXC Frontier Code Assurance uses Claude Mythos to find vulnerabilities, then has specialists validate and prioritize them with auditable evidence. ThumbGate applies the same split earlier: the agent proposes an action, your team's feedback decides, and every decision is logged.">
+<meta name="keywords" content="DXC Frontier Code Assurance, Claude Mythos, AI code security, AI-written code, managed code security, pre-action enforcement, PreToolUse, audit evidence, ThumbGate">
+<meta property="og:title" content="DXC checks the code after it is written. Who checks the agent while it writes?">
+<meta property="og:description" content="Code assurance finds flaws in code that exists. A pre-action gate stops a coding agent from repeating a known mistake before the code exists.">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://thumbgate.ai/learn/dxc-frontier-code-assurance-ai-written-code">
+<link rel="canonical" href="https://thumbgate.ai/learn/dxc-frontier-code-assurance-ai-written-code">
+<link rel="stylesheet" href="/learn/learn.css">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "TechArticle",
+  "headline": "DXC checks the code after it is written. Who checks the agent while it writes?",
+  "description": "DXC Frontier Code Assurance pairs Claude Mythos vulnerability discovery with specialist validation and auditable evidence. ThumbGate applies the same model-proposes, people-decide split at the coding agent's pre-action hook.",
+  "author": {
+    "@type": "Person",
+    "name": "Igor Ganapolsky",
+    "url": "https://github.com/IgorGanapolsky"
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "ThumbGate",
+    "url": "https://thumbgate.ai"
+  },
+  "datePublished": "2026-11-25",
+  "dateModified": "2026-11-25",
+  "mainEntityOfPage": "https://thumbgate.ai/learn/dxc-frontier-code-assurance-ai-written-code",
+  "about": [
+    {"@type": "Thing", "name": "DXC Frontier Code Assurance"},
+    {"@type": "Thing", "name": "AI code security"},
+    {"@type": "Thing", "name": "pre-action gates"},
+    {"@type": "Thing", "name": "audit evidence"}
+  ]
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "What is DXC Frontier Code Assurance?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "A managed code security service DXC announced on November 24, 2026. Anthropic's Claude Mythos model finds potential vulnerabilities in mission-critical software, DXC cybersecurity specialists validate them and rank them by business impact, and customers get a prioritized remediation roadmap with auditable evidence. DXC then helps remediate and patch."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "How is a pre-action gate different from code assurance?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Code assurance examines code that already exists and tells you what to fix. A pre-action gate runs before a coding agent's tool call executes, and stops the agent from repeating an action your team already marked as wrong. One reduces the backlog of flaws; the other reduces how many new ones an agent writes."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Does ThumbGate produce audit evidence?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Yes, locally. Every allow, warn and block decision is written to an audit log on the developer's machine, and npx thumbgate inventory summarizes it: decisions per tool, the gates that blocked most, activity per day, and the false-block rate."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Is ThumbGate a DXC partner?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "No. ThumbGate is not a DXC partner, product, or endorsed integration, and is not part of DXC Frontier Code Assurance. This page uses DXC's public press release as market evidence and describes an architectural fit."
+      }
+    }
+  ]
+}
+</script>
+</head>
+<body>
+
+<nav>
+  <a href="/" class="brand"><img src="/assets/brand/thumbgate-mark-inline-v3.svg" alt="ThumbGate" class="logo-mark" width="28" height="28"><span class="logo-text">ThumbGate</span></a>
+  <a href="/guide">Setup Guide</a>
+  <a href="/learn">Learn</a>
+  <a href="/compare">Compare</a>
+  <a href="https://github.com/IgorGanapolsky/ThumbGate" target="_blank" rel="noopener">GitHub</a>
+</nav>
+
+<div class="container">
+  <div class="breadcrumb"><a href="/learn">Learn</a> / DXC Frontier Code Assurance</div>
+  <h1>DXC checks the code after it is written. Who checks the agent while it writes?</h1>
+  <p style="color:var(--muted);">4 min read &middot; For teams whose code is increasingly written by AI agents</p>
+
+  <div class="tldr"><strong>TL;DR:</strong> DXC's new managed service has Claude Mythos find vulnerabilities, then has people validate and prioritize them, with evidence at every step. That is the right split. ThumbGate applies it one step earlier: the coding agent proposes an action, your team's thumbs-up and thumbs-down decide what it may repeat, and every decision is logged.</div>
+
+  <h2>What DXC shipped</h2>
+  <p>On November 24, 2026, DXC Technology announced Frontier Code Assurance, a managed code security service built on Anthropic's Claude Mythos model. In DXC's words:</p>
+  <ul>
+    <li><strong>Find:</strong> the model "can find flaws traditional scanners miss."</li>
+    <li><strong>Validate:</strong> findings are "validated by DXC cybersecurity specialists and ranked by business impact."</li>
+    <li><strong>Prove:</strong> customers get "a prioritized remediation roadmap with auditable evidence at every step."</li>
+    <li><strong>Fix:</strong> DXC then helps customers remediate and patch.</li>
+  </ul>
+  <p>Customers can start with a single application and expand from there. DXC describes itself as a Global Premier partner in the Claude Partner Network, and runs 12 security operations centers in more than 40 countries.</p>
+
+  <h2>The sentence worth stealing</h2>
+  <p>"Claude Mythos finds the potential vulnerabilities; DXC specialists decide what to do about it." The model proposes and people decide. DXC also says the bottleneck has shifted from finding flaws to prioritizing and executing the fix.</p>
+  <p>If finding flaws is cheap and fixing them is the bottleneck, the next lever is obvious: <strong>write fewer of them</strong>. More and more code is written by coding agents, and agents repeat mistakes. The same force push, the same unreviewed dependency, the same secret pasted into a command. Each repeat is one more item on somebody's remediation roadmap.</p>
+
+  <h2>Two checkpoints, not one</h2>
+  <ul>
+    <li><strong>After the code exists (code assurance):</strong> scan the application, validate findings, rank them, build a remediation plan, patch.</li>
+    <li><strong>Before the action runs (ThumbGate):</strong> the agent is about to run a tool call. Last week a thumbs-down on the same pattern became a prevention rule. ThumbGate warns, or blocks in strict mode, before the call fires.</li>
+  </ul>
+  <p>These do not compete. Code assurance shrinks the backlog of flaws you already have. A pre-action gate shrinks how many new ones an agent can add, using what your team has already learned the hard way.</p>
+
+  <h2>The same split, at the agent</h2>
+  <p>ThumbGate keeps the model-proposes, people-decide rule, but the people are your own developers, and the decision happens in the moment:</p>
+  <ol>
+    <li>The coding agent proposes an action: a shell command, a file edit, an MCP tool call.</li>
+    <li>ThumbGate checks it against prevention rules learned from your team's thumbs-down feedback.</li>
+    <li>A known-bad action is warned on or blocked before it runs. Everything else goes through.</li>
+    <li>Each allow, warn and block is written to a local audit log. <code>npx thumbgate inventory</code> summarizes it: decisions per tool, the gates that blocked most, activity per day, and the false-block rate.</li>
+  </ol>
+  <p>That last step is the "auditable evidence" idea applied to agent behavior. A reviewer can see what the agent tried, what was stopped, and how often a block was later overridden.</p>
+
+  <h2>Start with one repo</h2>
+  <p>DXC's adoption path is one application first, then expand. That is also the sensible way to roll out a gate:</p>
+  <ol>
+    <li>Run <code>npx thumbgate init</code> in the repository where an agent mistake would hurt most.</li>
+    <li>Give the next bad agent action a thumbs-down.</li>
+    <li>After a few weeks, run <code>npx thumbgate inventory</code> and decide whether to add more repos.</li>
+  </ol>
+
+  <h2>Sources and positioning</h2>
+  <p>This article is based on DXC's public press release. ThumbGate is not a DXC partner, product, certification, or endorsed integration, and is not part of DXC Frontier Code Assurance. The comparison is architectural positioning.</p>
+  <ul>
+    <li><a href="https://dxc.com/newsroom/11242026-dxc-introduces-frontier-code-assurance-a-managed-code-security-service-built-on-claude-mythos" target="_blank" rel="noopener">DXC: DXC introduces Frontier Code Assurance, a managed code security service built on Claude Mythos</a></li>
+  </ul>
+
+  <div class="cta-box">
+    <h2>Stop the repeat before it becomes a finding</h2>
+    <p>Try ThumbGate on one repo with your team for 30 days.</p>
+    <div class="cta-install">npx thumbgate init</div>
+    <div class="cta-actions">
+      <a class="cta-link" href="/pilot?utm_source=learn&amp;utm_medium=dxc_code_assurance_article">Request a team pilot</a>
+      <a class="cta-link cta-link-secondary" href="/learn/mcp-pre-action-checks-explained">How pre-action checks work</a>
+    </div>
+  </div>
+
+  <div class="related">
+    <h2>Related</h2>
+    <a href="/learn/okta-mcp-governance-per-tool-call-gates">Okta governs the MCP connection. Who gates the tool call?</a>
+    <a href="/learn/vibe-coding-safety-net">The vibe coding safety net you are missing</a>
+    <a href="/learn/stop-ai-agent-force-push">How to stop AI agents from force-pushing to main</a>
+  </div>
+</div>
+
+<div class="sticky-cta">
+  <span>Gate one repo for 30 days</span>
+  <code>npx thumbgate init</code>
+  <a href="/pilot?utm_source=learn&amp;utm_medium=dxc_code_assurance_article&amp;utm_campaign=code_assurance">Team pilot</a>
+</div>
+
+</body>
+</html>

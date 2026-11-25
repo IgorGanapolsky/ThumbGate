@@ -5191,6 +5191,7 @@ function renderSitemapXml(runtimeConfig) {
     { path: '/learn/future-agi-self-healing-agent-firewall', changefreq: 'weekly', priority: '0.85' },
     { path: '/learn/five-walls-enterprise-agent-deployment', changefreq: 'weekly', priority: '0.85' },
     { path: '/learn/okta-mcp-governance-per-tool-call-gates', changefreq: 'weekly', priority: '0.85' },
+    { path: '/learn/dxc-frontier-code-assurance-ai-written-code', changefreq: 'weekly', priority: '0.85' },
     { path: '/learn/ai-finops-agent-spend-guardrails', changefreq: 'weekly', priority: '0.85' },
     { path: '/learn/claude-artifact-desktop-apps', changefreq: 'weekly', priority: '0.85' },
     { path: '/learn/siren-agent-sandbox-escape-gates', changefreq: 'weekly', priority: '0.85' },
