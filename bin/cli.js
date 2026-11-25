@@ -4094,10 +4094,9 @@ function help() {
 
   // Legacy and specialist commands kept visible until they graduate into the schema.
   console.log('Also available:');
-  console.log('  install-mcp           Install MCP server + PreToolUse hooks into Claude Code settings');
-  console.log('                            default: machine-wide  (~/.claude/settings.json — shared dashboard)');
-  console.log('                            --project: per-repo    (<cwd>/.claude/settings.json — isolated dashboard)');
-  console.log('                            --no-hooks: MCP only, skip hook wiring');
+  console.log('  install-mcp           Add the ThumbGate MCP server to Claude Code settings (no hooks; init wires hooks)');
+  console.log('                            default: machine-wide  (~/.claude/settings.json)');
+  console.log('                            --project: per-repo    (<cwd>/.claude/settings.json)');
   console.log('  break-glass           Short TTL recovery if gates over-fire');
   console.log('  cfo                   Hosted billing summary (local fallback JSON)');
   console.log('  billing:setup         Generate operator key + print Railway setup instructions');

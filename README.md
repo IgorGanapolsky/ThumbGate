@@ -94,12 +94,17 @@ Per-agent guides: [Claude/Codex bridge](plugins/claude-codex-bridge/README.md) �
 
 ### Install scope: machine-wide vs per-project
 
-| Scope | Command | Settings | Lessons | Best for |
-|-------|---------|----------|---------|----------|
-| **Machine-wide** (default) | `npx thumbgate init` | `~/.claude/settings.json` | `~/.claude/memory/feedback/` | Solo operators — **same machine-local feedback store** across repos |
-| **Per-project** | `npx thumbgate init --project` | `<repo>/.claude/settings.json` | `<repo>/.claude/memory/feedback/` | Client / compliance — **separate dashboard** / isolated lessons per repo |
+What `npx thumbgate init` writes, checked on Nov 25, 2026 in a clean home and repo:
 
-Both scopes write `mcpServers.thumbgate` plus PreToolUse / UserPromptSubmit / PostToolUse / SessionStart hooks. Machine-wide is the right default for most developers. Cross-repo blocking is not automatic: a lesson learned in one project only applies elsewhere when you share the store (machine-wide) or export/import lessons.
+| What | Where | Scope |
+|------|-------|-------|
+| Claude Code hooks (PreToolUse and the others) | `~/.claude/settings.local.json` | **Machine-wide**: they run in every repo on this machine |
+| MCP server entry | `<repo>/.mcp.json` | **Per-project** |
+| Lessons, feedback log and dashboard data | `<repo>/.thumbgate/` | **Per-project**: a 👎 in `repo-A` does not flag anything in `repo-B` |
+
+`init --project` writes the same files as `init` today. For an MCP-only install, `npx thumbgate install-mcp` adds `mcpServers.thumbgate` to `~/.claude/settings.json`, and `npx thumbgate install-mcp --project` adds it to `<repo>/.claude/settings.json` instead. Neither writes hooks.
+
+Cross-repo blocking is not automatic: each repo keeps its own lessons. Older installs that already have `<repo>/.claude/memory/feedback/` or `~/.thumbgate/projects/<name>/` keep using that store. Keep `.thumbgate/` out of git.
 
 **MCP tools (surface):** `gate_check` (read/evaluate proposed tool call), feedback capture + session tools (write), dashboard/stats (read). Destructive agent actions stay blocked/warned by PreToolUse — ThumbGate does not execute user shell commands for you.
 
