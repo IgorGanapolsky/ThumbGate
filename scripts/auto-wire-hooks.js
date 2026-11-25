@@ -45,38 +45,44 @@ function getHome() {
 const OBSERVE_TOOL_MATCHER = '^(?:Bash|Shell|bash)$|teams.*(send|reply|post_message)';
 
 // --- Hook definitions ---
-const CLAUDE_HOOKS = {
-  PreToolUse: {
-    matcher: '.*',
-    hooks: [{ type: 'command', command: preToolHookCommand() }],
-  },
-  UserPromptSubmit: {
-    hooks: [{ type: 'command', command: userPromptHookCommand() }],
-  },
-  PostToolUse: [
-    {
-      matcher: 'mcp__thumbgate__feedback_stats|mcp__thumbgate__dashboard',
-      hooks: [{ type: 'command', command: cacheUpdateHookCommand() }],
-      legacyPattern: /(hook-thumbgate-cache-updater|cache-update\b)/,
+// Built on demand, never at module load: the commands depend on whether the stable shim at
+// ~/.thumbgate/bin/thumbgate-hook exists, and wireClaudeHooks installs it just before wiring.
+// Built at load time, a first install wired hooks pinned to `thumbgate@<init version>`, which
+// never update (2026-11-25, docs/decisions/2026-11-24-revenue-funnel-activation.md loop 3).
+function claudeHooks() {
+  return {
+    PreToolUse: {
+      matcher: '.*',
+      hooks: [{ type: 'command', command: preToolHookCommand() }],
     },
-    {
+    UserPromptSubmit: {
+      hooks: [{ type: 'command', command: userPromptHookCommand() }],
+    },
+    PostToolUse: [
+      {
+        matcher: 'mcp__thumbgate__feedback_stats|mcp__thumbgate__dashboard',
+        hooks: [{ type: 'command', command: cacheUpdateHookCommand() }],
+        legacyPattern: /(hook-thumbgate-cache-updater|cache-update\b)/,
+      },
+      {
+        matcher: OBSERVE_TOOL_MATCHER,
+        hooks: [{ type: 'command', command: observeToolResultHookCommand() }],
+        legacyPattern: /observe-tool-result\b/,
+      },
+    ],
+    PostToolUseFailure: {
       matcher: OBSERVE_TOOL_MATCHER,
       hooks: [{ type: 'command', command: observeToolResultHookCommand() }],
       legacyPattern: /observe-tool-result\b/,
     },
-  ],
-  PostToolUseFailure: {
-    matcher: OBSERVE_TOOL_MATCHER,
-    hooks: [{ type: 'command', command: observeToolResultHookCommand() }],
-    legacyPattern: /observe-tool-result\b/,
-  },
-  SessionStart: {
-    hooks: [{ type: 'command', command: sessionStartHookCommand() }],
-  },
-  Stop: {
-    hooks: [{ type: 'command', command: claimStopHookCommand() }],
-  },
-};
+    SessionStart: {
+      hooks: [{ type: 'command', command: sessionStartHookCommand() }],
+    },
+    Stop: {
+      hooks: [{ type: 'command', command: claimStopHookCommand() }],
+    },
+  };
+}
 
 const CODEX_HOOKS = {
   PreToolUse: {
@@ -534,7 +540,7 @@ function wireClaudeHooks(options) {
     Stop: /(hook-stop-anti-claim\.js|claim-stop-check\b)/,
   };
 
-  for (const [lifecycle, hookDefOrList] of Object.entries(CLAUDE_HOOKS)) {
+  for (const [lifecycle, hookDefOrList] of Object.entries(claudeHooks())) {
     for (const hookDef of hookDefinitionList(hookDefOrList)) {
       const hookCommand = hookDef.hooks[0].command;
       const legacyPattern = hookDef.legacyPattern || legacyPatterns[lifecycle];
@@ -925,12 +931,14 @@ module.exports = {
   pruneStaleFileHooks,
   staleHookPath,
   pruneStaleHooksInFile,
-  CLAUDE_HOOKS,
+  claudeHooks,
   preToolHookCommand,
   claimStopHookCommand,
   userPromptHookCommand,
   sessionStartHookCommand,
 };
+// Read at access time so the commands reflect whether the shim exists now.
+Object.defineProperty(module.exports, 'CLAUDE_HOOKS', { enumerable: true, get: claudeHooks });
 
 const USAGE = `Usage: node scripts/auto-wire-hooks.js [--agent=<claude-code|codex|gemini|forge|cursor>] [--dry-run] [--help]
 

@@ -7024,6 +7024,11 @@ async function handleFirstBlockActivationRoute(req, res, expectedApiKey, expecte
           ? 'owner'
           : (['real_user', 'owner', 'ci'].includes(body?.visitorType) ? body.visitorType : 'real_user'),
         ...(typeof body?.gateId === 'string' ? { gateId: body.gateId.slice(0, 120) } : {}),
+        // Same fields the anonymous ping carries, so keyed installs keep version, platform and timing.
+        ...(typeof body?.pkgVersion === 'string' ? { pkgVersion: body.pkgVersion.slice(0, 40) } : {}),
+        ...(typeof body?.platform === 'string' ? { platform: body.platform.slice(0, 40) } : {}),
+        ...(Number.isFinite(body?.minutesSinceInstall) && body.minutesSinceInstall >= 0
+          ? { minutesSinceInstall: body.minutesSinceInstall } : {}),
       }, req.headers);
     } catch { /* telemetry best-effort */ }
   }
