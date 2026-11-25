@@ -2124,6 +2124,8 @@ function captureFeedback(params, options = {}) {
     try {
       const autoPromote = require('./auto-promote-gates');
       const promoteResult = autoPromote.promote(FEEDBACK_LOG_PATH, { gateAction: feedbackEvent.gateAction });
+      // A person's thumbs-down on an unchecked status claim becomes a claim-gate rule at the second one (item N).
+      try { require('./claim-gate-rules').recordFromFeedback(feedbackEvent, path.dirname(FEEDBACK_LOG_PATH)); } catch { /* rule writing is best effort */ }
       // Free tier: a 4th learned rule is stored but not enforced. Say so once, in one line.
       if (promoteResult && promoteResult.upgradeLine && !tenantDataScope()) {
         process.stderr.write(`${promoteResult.upgradeLine}\n`);

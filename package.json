@@ -1,6 +1,6 @@
 {
   "name": "thumbgate",
-  "version": "1.41.0",
+  "version": "1.42.0",
   "description": "ThumbGate Pre-Action Checks self-improve from ranked lessons and repeated failures, hard-block detected secret leaks, and block matches in strict mode.",
   "homepage": "https://thumbgate.ai",
   "repository": {
@@ -389,6 +389,9 @@
     "scripts/pilot-request.js",
     "scripts/checkout-price-guard.js",
     "scripts/canary-gate.js",
+    "scripts/claim-gate-stop.js",
+    "scripts/claim-gate-rules.js",
+    "scripts/cursor-shell-gate.js",
     "scripts/boundary-check.js",
     "scripts/prompt-risk-lint.js",
     "scripts/reasoning-efficiency-guardrails.js",
@@ -1324,7 +1327,7 @@
     "test:secret-egress": "node --test tests/secret-egress-gate.test.js",
     "test:sandbox-escape-gates": "node --test tests/sandbox-escape-gates.test.js",
     "test:harness-tool-names": "node --test tests/harness-tool-names.test.js",
-    "test:feedback-reward": "node --test tests/feedback-reward-score.test.js tests/feedback-thumbs-down-promotion.test.js tests/pilot-request.test.js tests/lesson-distinct-kept.test.js tests/prompt-lessons.test.js tests/lesson-effect.test.js tests/bulk-destroy-gates.test.js tests/default-gates-clean.test.js tests/checkout-price-guard.test.js tests/shared-tree-gate.test.js tests/canary-boundary-lint.test.js tests/plugin-hook-paths-shipped.test.js",
+    "test:feedback-reward": "node --test tests/feedback-reward-score.test.js tests/feedback-thumbs-down-promotion.test.js tests/pilot-request.test.js tests/lesson-distinct-kept.test.js tests/prompt-lessons.test.js tests/lesson-effect.test.js tests/bulk-destroy-gates.test.js tests/default-gates-clean.test.js tests/checkout-price-guard.test.js tests/shared-tree-gate.test.js tests/canary-boundary-lint.test.js tests/plugin-hook-paths-shipped.test.js tests/cursor-gate-path.test.js tests/claim-gate-rules.test.js",
     "test:capability-wiring": "node --test tests/capability-wiring-ratchet.test.js && node --test tests/prove-vlt-dogfood.test.js && node --test tests/context-engineering-checklist.test.js",
     "test:llm-gateway": "node --test tests/llm-gateway-provider.test.js",
     "test:request-envelope": "node --test tests/request-envelope.test.js",

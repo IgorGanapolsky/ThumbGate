@@ -1,5 +1,21 @@
 # Changelog
 
+## 1.42.0
+
+### Minor Changes
+
+- 381d384: The MCP server now updates old hook runtimes in the background. When it sees the hooks on a machine running an older ThumbGate (including installs pinned to their first version), it installs its own version into a staging folder next to `~/.thumbgate/runtime`, checks it, and swaps it in, at most once a day. It never blocks the MCP server. Set `THUMBGATE_NO_AUTO_UPDATE=1` to turn it off.
+- 48a7d6b: Opt-in canary file gate (`thumbgate canary add <path>`) that denies and records any Read, Edit, Write, Grep, Glob or Bash action reaching a decoy credential file, a `thumbgate boundary-check` command that runs scripted outside-the-project actions through the real hook and counts what was stopped (no model calls), and a warning-only `thumbgate prompt-lint` for CLAUDE.md and AGENTS.md wording that Anthropic reported as associated with more reaching outside in its sandbox tests.
+
+### Patch Changes
+
+- 5fe0124: Owner console: "People on the site" now counts visitor ids with two or more events or any click (engaged visitors). Ids with a single page view, which is what most crawlers that pass the bot check look like, stay in the raw identifier count but no longer pass as people, and the visitors-drop alert follows the engaged count.
+- 5fe0124: Package size tests: the npm bundle ceiling moves from 710 to 711 for `config/gates/profiles/shared-tree.json`, the opt-in shared-tree gate profile, and the public-core ceiling is brought back in lockstep (704 to 711).
+- 5fe0124: Telemetry: the CLI labels itself `owner` in a Claude Code session signed in to the owner's account (the account address is hashed and compared locally, nothing new is sent), and a first-block report made with a key issued to an owner address is logged as `owner`. The owner's cloud coding agents (fresh container, new install id, user root) were being counted as real installs, which inflated active installs, activation and first value on the owner console.
+- 0e18d64: Owner alert emails: "Stripe could not be read", "telemetry could not be read" and a timed-out check are sent only when the next check still sees them. A single failed read is usually the cold start right after a deploy.
+- 1ad4bc5: Owner alerts: an unreadable-source alert such as "Stripe could not be read" is emailed only when it is still failing on the third check in a row (checks run every 15 minutes), and the email says how long it has been failing. One slow Stripe answer no longer emails the owner. Red alerts still send on the first check.
+- 69d4ebb: The npm package now ships `scripts/hook-pre-tool-use.js` and the four modules it loads, so the Claude plugin hooks file no longer points at a script that is missing from the package. A new test fails when any path named in the plugin files, or any local module those scripts load, is absent from `npm pack`.
+
 ## 1.41.0
 
 ### Minor Changes

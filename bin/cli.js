@@ -4574,6 +4574,24 @@ switch (COMMAND) {
   case 'sync-gcp':
     syncGcp();
     break;
+  case 'cursor-prompt': {
+    // Cursor beforeSubmitPrompt adapter: a typed thumbs-down is captured exactly as in Claude Code (hook-auto-capture),
+    // then Cursor gets {"continue": true}. Capture output is not sent to Cursor, which only accepts its own JSON.
+    const { spawnSync } = require('node:child_process');
+    spawnSync(process.execPath, [__filename, 'hook-auto-capture'], { input: require('node:fs').readFileSync(0, 'utf8'), env: process.env, encoding: 'utf8', timeout: 20000 });
+    process.stdout.write('{"continue":true}\n');
+    process.exit(0);
+    break;
+  }
+  case 'cursor-gate': {
+    // Cursor beforeShellExecution adapter: reads Cursor's {"command":...} JSON, answers {"permission":...}; exit 2 blocks.
+    const cursorGate = require('../scripts/cursor-shell-gate');
+    cursorGate.runCursorShellGate(require('node:fs').readFileSync(0, 'utf8')).then((out) => {
+      process.stdout.write(JSON.stringify(out) + '\n');
+      process.exit(out.permission === 'deny' ? 2 : 0);
+    }).catch(() => { process.stdout.write('{"permission":"allow"}\n'); process.exit(0); });
+    break;
+  }
   case 'gate-check':
     gateCheck().catch((err) => {
       console.error(err && err.message ? err.message : err);
