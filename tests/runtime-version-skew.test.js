@@ -32,7 +32,7 @@ test('detectSkew flags an older cached runtime and ignores a missing one', () =>
   assert.deepEqual(cu.detectSkew({ currentVersion: '1.40.13', dir: fakeRuntime('1.39.1') }),
     { skewed: true, runtimeVersion: '1.39.1', currentVersion: '1.40.13' });
   assert.equal(cu.detectSkew({ currentVersion: '1.40.13', dir: fakeRuntime('1.40.13') }).skewed, false);
-  assert.equal(cu.detectSkew({ currentVersion: '1.40.13', dir: fakeRuntime(null) }).skewed, false);
+  assert.equal(cu.detectSkew({ currentVersion: '1.40.13', dir: fakeRuntime(null), settingsFiles: [] }).skewed, false);
 });
 
 test('the notice names both versions and the one update command', () => {
@@ -66,7 +66,7 @@ test('refreshHookRuntime updates an existing runtime with npm and skips when non
   assert.equal(runs[0][runs[0].length - 1], 'thumbgate@latest');
 
   const missing = path.join(os.tmpdir(), `tg-runtime-missing-${process.pid}-${Date.now()}`);
-  assert.deepEqual(cu.refreshHookRuntime({ dir: missing, run: () => { throw new Error('must not run'); } }),
+  assert.deepEqual(cu.refreshHookRuntime({ dir: missing, pinnedVersion: null, run: () => { throw new Error('must not run'); } }),
     { refreshed: false, reason: 'no-runtime' });
 
   // A runtime folder with a missing or broken manifest is still repaired.
@@ -91,4 +91,45 @@ test('the Windows npm launcher passes a path with %VAR% through literally, witho
   const target = 'C:\\Users\\%USERNAME%\\.thumbgate\\runtime';
   cu.npmRunner('win32', nodePath)('npm', ['install', '--prefix', target]);
   assert.deepEqual(JSON.parse(fs.readFileSync(out, 'utf8')), ['install', '--prefix', target]);
+});
+
+// Loop 3: a first `thumbgate init` before 1.40.15 pinned every hook to its own version.
+function fakeSettings(commands) {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'tg-settings-'));
+  const file = path.join(dir, 'settings.local.json');
+  fs.writeFileSync(file, JSON.stringify({
+    hooks: {
+      PreToolUse: [{ matcher: '.*', hooks: commands.map((command) => ({ type: 'command', command })) }],
+      Stop: 'not-an-array',
+    },
+  }));
+  return file;
+}
+
+const pinned = (v) => `[ -x "$HOME/.thumbgate/runtime/node_modules/.bin/thumbgate" ] && exec x || exec npm "exec" "--package" "thumbgate@${v}" -- thumbgate gate-check`;
+
+test('readPinnedHookVersion returns the oldest pinned hook version and ignores @latest and junk', () => {
+  const file = fakeSettings([pinned('1.40.3'), pinned('1.39.1'), 'npx --yes --package thumbgate@latest -- thumbgate x', '"$HOME/.thumbgate/bin/thumbgate-hook" gate-check']);
+  assert.equal(cu.readPinnedHookVersion([file, path.join(os.tmpdir(), 'missing-settings.json')]), '1.39.1');
+  assert.equal(cu.readPinnedHookVersion([fakeSettings(['"$HOME/.thumbgate/bin/thumbgate-hook" gate-check'])]), null);
+  const bad = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'tg-bad-')), 's.json');
+  fs.writeFileSync(bad, '{not json');
+  assert.equal(cu.readPinnedHookVersion([bad]), null);
+});
+
+test('detectSkew reports pinned hooks when no runtime exists, and the runtime wins when it does', () => {
+  const file = fakeSettings([pinned('1.39.1')]);
+  assert.deepEqual(cu.detectSkew({ currentVersion: '1.40.15', dir: fakeRuntime(null), settingsFiles: [file] }),
+    { skewed: true, runtimeVersion: '1.39.1', currentVersion: '1.40.15', source: 'pinned-hooks' });
+  assert.equal(cu.detectSkew({ currentVersion: '1.40.15', dir: fakeRuntime('1.40.15'), settingsFiles: [file] }).skewed, false);
+  assert.equal(cu.detectSkew({ currentVersion: '1.39.1', dir: fakeRuntime(null), settingsFiles: [file] }).skewed, false);
+});
+
+test('refreshHookRuntime creates the runtime folder when hooks are pinned, so the pin stops applying', () => {
+  const runs = [];
+  const missing = path.join(os.tmpdir(), `tg-runtime-pinned-${process.pid}-${Date.now()}`);
+  const res = cu.refreshHookRuntime({ dir: missing, pinnedVersion: '1.39.1', run: (cmd, args) => runs.push([cmd, ...args]) });
+  assert.equal(res.refreshed, true);
+  assert.ok(fs.existsSync(missing));
+  assert.deepEqual(runs[0].slice(0, 4), ['npm', 'install', '--prefix', missing]);
 });

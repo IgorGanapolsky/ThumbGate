@@ -109,7 +109,9 @@ const isOwnOrCiInstall = (entry) => isFlagged(entry) || ['owner', 'ci'].includes
 const ACTIVATION_EVENT = 'cli_capture';
 // The first value event: a gate really fired and blocked a tool call in the user's own workflow. The CLI sends it once per
 // install with the minutes since install, so time to first value comes from the same ping.
-const FIRST_VALUE_EVENT = 'first_blocked_tool_call';
+// Shipped CLIs send `first_block`; `first_blocked_tool_call` is the legacy name (revised rule 4 of
+// docs/decisions/2026-11-24-revenue-funnel-activation.md). Matching only the legacy name showed 0.
+const FIRST_VALUE_EVENTS = new Set(['first_block', 'first_blocked_tool_call']);
 const quantile = (sorted, q) => (sorted.length ? sorted[Math.min(sorted.length - 1, Math.floor(q * sorted.length))] : null);
 const topCounts = (counts, limit = 10) => Object.fromEntries(Object.entries(counts).sort((a, b) => b[1] - a[1]).slice(0, limit));
 
@@ -156,7 +158,7 @@ async function readTrafficWindow(options) {
         seen.days.add(day.date);
         seen.inited ||= type === 'cli_init';
         seen.activated ||= type === ACTIVATION_EVENT;
-        if (type === FIRST_VALUE_EVENT) {
+        if (FIRST_VALUE_EVENTS.has(type)) {
           seen.firstValue = true;
           // null or a blank means the CLI could not read its install marker: the install still reached first value, but its
           // duration is unknown, so it stays out of the percentiles (Number(null) would count it as zero minutes).
