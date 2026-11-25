@@ -92,6 +92,26 @@ const DENIED = [
     tool_name: 'Write',
     tool_input: { file_path: '.thumbgate-compat/send-gate-state.json', content: '{}' },
   }],
+  ['move the whole store directory aside', {
+    tool_name: 'Bash',
+    tool_input: { command: 'mv .thumbgate /tmp/disabled-feedback-store' },
+  }],
+  ['delete the whole store directory', {
+    tool_name: 'Bash',
+    tool_input: { command: 'rm -rf ./.thumbgate/' },
+  }],
+  ['delete everything inside the store', {
+    tool_name: 'Bash',
+    tool_input: { command: 'rm -rf .thumbgate/*' },
+  }],
+  ['delete the legacy store parent', {
+    tool_name: 'Bash',
+    tool_input: { command: 'rm -rf .claude/memory' },
+  }],
+  ['move the global per-project store', {
+    tool_name: 'Bash',
+    tool_input: { command: 'mv ~/.thumbgate/projects/demo ~/old-demo' },
+  }],
 ];
 
 for (const [label, input] of DENIED) {
@@ -118,6 +138,14 @@ const NOT_SELF_PROTECTED = [
   ['writing a similarly named file outside the store', {
     tool_name: 'Write',
     tool_input: { file_path: 'docs/feedback-log.jsonl.md', content: 'hello' },
+  }],
+  ['moving an unrelated file under .thumbgate', {
+    tool_name: 'Bash',
+    tool_input: { command: 'mv .thumbgate/notes.md docs/notes.md' },
+  }],
+  ['copying the store as a backup', {
+    tool_name: 'Bash',
+    tool_input: { command: 'cp -r .thumbgate /tmp/thumbgate-backup' },
   }],
 ];
 

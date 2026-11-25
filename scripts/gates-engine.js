@@ -277,9 +277,14 @@ const SELF_PROTECT_CONFIG_TARGET_PATTERN = new RegExp(
   'i',
 );
 const SELF_PROTECT_HOOK_TARGET_PATTERN = /(?:^|\/)(?:\.claude\/settings(?:\.local)?\.json|\.codex\/config\.toml|scripts\/hook-[^/]+\.(?:js|sh))$/i;
+// A shell argument that IS a store directory (or one of its parents inside the project), so
+// `mv .thumbgate /tmp/x`, `rm -rf .claude/memory` or `rm -rf .thumbgate/*` cannot remove every
+// learned rule at once. Anchored to the whole argument: `.thumbgate/notes.md` does not match.
+const LEARNED_RULE_STORE_DIR_ARG = String.raw`^(?:.*\/)?(?:\.thumbgate(?:-compat)?(?:\/projects(?:\/[^/\s]+)?)?|\.claude(?:\/memory(?:\/feedback)?)?)\/?(?:\*)?$`;
 const SELF_PROTECT_CONFIG_COMMAND_PATTERN = new RegExp(
   String.raw`(?:config\/gates(?:\/|$|\b)|config\/(?:budget|enforcement|mcp-allowlists)\.json\b|\.thumbgate\/config\.json\b|thumbgate\.json\b)`
-  + '|' + LEARNED_RULE_STORE_DIR + LEARNED_RULE_STORE_FILE + String.raw`\b`,
+  + '|' + LEARNED_RULE_STORE_DIR + LEARNED_RULE_STORE_FILE + String.raw`\b`
+  + '|' + LEARNED_RULE_STORE_DIR_ARG,
   'i',
 );
 const SELF_PROTECT_HOOK_COMMAND_PATTERN = /(?:\.claude\/settings(?:\.local)?\.json|\.codex\/config\.toml|scripts\/hook-[^/\s'";|]+\.(?:js|sh))\b/i;
