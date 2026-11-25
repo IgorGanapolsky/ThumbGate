@@ -803,10 +803,11 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // which were missing from the tarball and failed the 1.40.11 publish. Adding it (+6 KB) on top of the Today tab.
   // Bumped 10.5 MB -> 10.55 MB (2026-11-24): scripts/cost-meter.js, scripts/unit-economics.js and
   // config/unit-costs.json for the owner console's unit economics (measured 10,513,990 unpacked, +36 KB headroom).
+  // Bumped 10.62 MB -> 10.65 MB (2026-11-25): canary-gate.js, boundary-check.js, prompt-risk-lint.js (AGENT-3667 item J).
   // Bumped 10.55 MB -> 10.62 MB (2026-11-25): the files above that were missing from `files`
   // (runtime requires that crashed or silently failed in the published package) and the pinned-hook fix.
-  manifest.unpackedSize <= 10_620_000,
-  `npm package should stay <= 10.62 MB unpacked, got ${manifest.unpackedSize}`
+  manifest.unpackedSize <= 10_650_000,
+  `npm package should stay <= 10.65 MB unpacked, got ${manifest.unpackedSize}`
 );
 
   for (const file of requiredRuntimeFiles) {
