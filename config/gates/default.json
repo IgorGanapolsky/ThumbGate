@@ -374,6 +374,54 @@
       "_ordering": "MUST precede env-file-edit and deny-network-egress: both are action:warn and match broadly (any .env mention / any curl to a non-allowlisted host). First-match-wins means either would swallow this critical block."
     },
     {
+      "id": "cloud-metadata-credential",
+      "layer": "Cloud",
+      "pattern": "(?:\\b169\\.254\\.169\\.254\\b|\\b169\\.254\\.170\\.2\\b|\\bmetadata\\.google\\.internal\\b|\\bfd00:ec2::254\\b|\\b100\\.100\\.100\\.200\\b)",
+      "action": "block",
+      "message": "Blocked: this reaches a cloud instance-metadata service, which hands out the machine's own cloud credentials. A coding task should use only the credentials it was given. If the task needs cloud access, stop and tell the person what you need. Source: Anthropic Siren boundary rule on credentials (safeguards.anthropic.com/2026/siren).",
+      "severity": "critical",
+      "compliance": [
+        "NIST-SC-7",
+        "CWE-522",
+        "SOC2-CC6.1"
+      ]
+    },
+    {
+      "id": "container-host-control",
+      "layer": "Execution",
+      "toolNames": [
+        "Bash"
+      ],
+      "pattern": "(?:--unix-socket[=\\s]+\\S*(?:docker|containerd|podman|crio)\\S*\\.sock\\b|(?:-v|--volume|--mount)[=\\s]+\\S*(?:docker|containerd|podman|crio)\\.sock\\b|\\b(?:docker|podman|nerdctl)\\s+(?:container\\s+)?(?:run|create)\\b[^\\n;&|]*(?:--privileged\\b|--pid[=\\s]+host\\b|(?:-v|--volume)[=\\s]+/:/|--cap-add[=\\s]+(?:SYS_ADMIN|ALL)\\b)|\\bnsenter\\b[^\\n;&|]*(?:-t\\s*1\\b|--target[=\\s]+1\\b)|https?://[\\w.-]+:10250/)",
+      "action": "approve",
+      "message": "Human approval required: this talks to a container engine or node control API, or starts a container with host-level access (privileged, host PID, host root mount). From inside a sandbox that is a way out of it. If the task needs this, stop and say why. Source: Anthropic Siren boundary rule on node control sockets (safeguards.anthropic.com/2026/siren).",
+      "severity": "high",
+      "compliance": [
+        "NIST-SC-39",
+        "CWE-250",
+        "NIST-AC-6"
+      ]
+    },
+    {
+      "id": "app-store-review-withdraw",
+      "layer": "Execution",
+      "trigger": "any:app_store_review_withdraw",
+      "pattern": "(?:(?=[^\\n]*(?:reviewSubmissions|appStoreVersionSubmissions))(?=[^\\n]*(?:\\bDELETE\\b|canceled\\W{0,4}:\\s*true))|\\breject_if_possible\\W{0,4}(?:true|1)\\b|(?:^|[_.])(?:cancel|withdraw|remove)[_-]?(?:review[_-]?|app[_-]?store[_-]?)?submission)",
+      "action": "block",
+      "adminOverride": {
+        "required": true,
+        "digestBound": true,
+        "singleUse": true,
+        "ttlMs": 900000
+      },
+      "message": "Blocked: this withdraws or cancels an App Store review submission. Apple sends a withdrawn app to the back of the review queue, so each withdrawal can cost days. Ask the owner first; they approve this exact action once. Reading the review status stays allowed.",
+      "severity": "critical",
+      "compliance": [
+        "SOC2-CC8.1",
+        "CWE-285"
+      ]
+    },
+    {
       "id": "env-file-edit",
       "layer": "Cloud",
       "trigger": "Edit:env_file",
