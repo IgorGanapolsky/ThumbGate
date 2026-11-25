@@ -108,8 +108,10 @@ jobs:
 
       # Trusted Publishing policy on publisher `igorganapolsky` allows
       # IgorGanapolsky/ThumbGate + publish-ide-marketplace.yml (no stored PAT).
+      # vsce is pinned: --oidc needs vsce 4.x, and an unpinned npx reuses the
+      # older vsce sitting in the restored npm cache.
       - name: Publish to VS Code Marketplace
         if: steps.marketplace-credentials.outputs.publish_ready == 'true'
         run: |
           cd plugins/vscode-extension
-          npx --yes @vscode/vsce publish --packagePath "${{ steps.vsix.outputs.name }}" --oidc --skip-duplicate
+          npx --yes @vscode/vsce@4.1.1 publish --packagePath "${{ steps.vsix.outputs.name }}" --oidc --skip-duplicate

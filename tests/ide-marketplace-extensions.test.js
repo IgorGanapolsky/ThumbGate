@@ -154,7 +154,7 @@ test('README and distribution docs promote IDE marketplaces without claiming pub
   assert.match(publishWorkflow, /OVSX_PAT/);
   assert.doesNotMatch(publishWorkflow, /VSCE_PAT/);
   assert.match(publishWorkflow, /id-token: write/);
-  assert.match(publishWorkflow, /@vscode\/vsce publish .*--oidc/);
+  assert.match(publishWorkflow, /@vscode\/vsce@[\d.]+ publish .*--oidc/);
   assert.match(publishWorkflow, /Verify marketplace publishing credentials/);
   assert.match(publishWorkflow, /Missing marketplace publish secrets/);
   assert.match(publishWorkflow, /IDE Marketplace Publish Skipped/);
@@ -164,5 +164,5 @@ test('README and distribution docs promote IDE marketplaces without claiming pub
   assert.doesNotMatch(publishWorkflow, /IDE Marketplace Publish Blocked/);
   assert.match(publishWorkflow, /npm run build:vscode-extension/);
   assert.match(publishWorkflow, /ovsx publish/);
-  assert.match(publishWorkflow, /@vscode\/vsce publish/);
+  assert.match(publishWorkflow, /@vscode\/vsce(@[\d.]+)? publish/);
 });
