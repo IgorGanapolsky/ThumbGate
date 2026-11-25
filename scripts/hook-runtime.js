@@ -148,8 +148,16 @@ function cursorShellGateHookCommand() {
   return `node ${shellQuote(path.join(PKG_ROOT, 'scripts', 'cursor-shell-gate.js'))}`;
 }
 
+/** A Cursor hook that runs one ThumbGate CLI subcommand (cursor-prompt, cursor-mcp-gate, cursor-record, cursor-stop). */
+// Portable like the Claude Code hooks: ~/.cursor/hooks.json is user-wide, so it must not point into an npx cache or
+// a disposable worktree that will be gone tomorrow (beforeMCPExecution is failClosed, so a dead path blocks MCP).
+function cursorCliHookCommand(subcommand) {
+  return buildPortableHookCommand(subcommand);
+}
+
 module.exports = {
   buildPortableHookCommand,
+  cursorCliHookCommand,
   buildCodexPortableHookCommand,
   cacheUpdateHookCommand,
   claimStopHookCommand,

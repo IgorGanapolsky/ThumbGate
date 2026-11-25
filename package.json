@@ -1,6 +1,6 @@
 {
   "name": "thumbgate",
-  "version": "1.45.0",
+  "version": "1.45.1",
   "description": "ThumbGate Pre-Action Checks self-improve from ranked lessons and repeated failures, hard-block detected secret leaks, and block matches in strict mode.",
   "homepage": "https://thumbgate.ai",
   "repository": {
@@ -198,6 +198,7 @@
     "scripts/codex-runbook-flywheel.js",
     "scripts/codex-self-heal.js",
     "scripts/claude-self-heal.js",
+    "scripts/cursor-self-heal.js",
     "scripts/colbert-style-maxsim.js",
     "scripts/commercial-offer.js",
     "scripts/context-engine.js",
@@ -796,7 +797,7 @@
     "test:python": "python3 -m pytest tests/*.py",
     "test:check-update": "node --test tests/check-update.test.js",
     "test:hook-stop-verify-deploy": "node --test tests/hook-stop-verify-deploy.test.js",
-    "test:hook-stop-anti-claim": "node --test tests/hook-stop-anti-claim.test.js tests/reply-discipline-gates.test.js",
+    "test:hook-stop-anti-claim": "node --test tests/hook-stop-anti-claim.test.js tests/reply-discipline-gates.test.js tests/pr-discipline-gates.test.js",
     "test:deploy-proof-gate": "node --test tests/deploy-proof-gate.test.js",
     "test:claim-gate-stop": "node --test tests/claim-gate-stop.test.js",
     "test:feedback-reward-claim-lessons": "node --test tests/feedback-reward-claim-lessons.test.js",
@@ -1216,7 +1217,7 @@
     "test:competitive-positioning-marketing": "node --test tests/competitive-positioning-marketing.test.js tests/knowledge-graph-guardrails.test.js tests/supply-chain-guardrails.test.js tests/saas-moat-honesty.test.js",
     "test:medium-weekly": "node --test tests/medium-weekly.test.js",
     "test:dashboard-deeplink-e2e": "node --test tests/dashboard-deeplink-e2e.test.js",
-    "test:e2e:playwright": "playwright test",
+    "test:e2e:playwright": "FLASHWRIGHT_SESSION=0 playwright test",
     "test:e2e:playwright:headed": "playwright test --headed",
     "test:e2e:playwright:ui": "playwright test --ui",
     "test:e2e:playwright:report": "playwright show-report",
@@ -1597,7 +1598,7 @@
   "devDependencies": {
     "@changesets/changelog-github": "^1.0.0",
     "@changesets/cli": "^3.0.0",
-    "@playwright/test": "^1.62.1",
+    "@playwright/test": "npm:flashwright-test@1.64.1-flashwright.12",
     "c8": "^12.0.0",
     "launch-editor": "^2.14.2",
     "undici": "8.13.1"

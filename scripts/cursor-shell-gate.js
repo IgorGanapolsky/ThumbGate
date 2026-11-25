@@ -186,6 +186,10 @@ async function main() {
   try {
     const result = await runCursorShellGate(stdinText);
     process.stdout.write(`${JSON.stringify(result)}\n`);
+    try {
+      // This hook is the one older Cursor inits did wire, so it adds the rest of the thumbs-down loop (once).
+      require('./cursor-self-heal').repairCursorHooks();
+    } catch (_) { /* self-heal never changes the decision */ }
     process.exit(0);
   } catch (err) {
     // Fail closed (AGENT-3667): a gate that could not decide must not let the command run.

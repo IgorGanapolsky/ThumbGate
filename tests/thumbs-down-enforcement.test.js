@@ -137,3 +137,58 @@ test('Cursor: a typed thumbs-down holds the next MCP chat post, and an unchecked
   const again = JSON.parse(cli(w, 'cursor-stop', { ...base, hook_event_name: 'stop', status: 'completed', loop_count: 1 }).stdout.trim());
   assert.deepEqual(again, {}, 'never loops: one follow-up only');
 });
+
+test('Cursor via `thumbgate init --agent cursor`: the wired hooks.json commands carry a thumbs-down to the next MCP post', () => {
+  const w = world();
+  fs.mkdirSync(path.join(w.project, '.cursor'), { recursive: true });
+  spawnSync(process.execPath, [CLI, 'init', '--agent', 'cursor'], { cwd: w.project, env: w.env, encoding: 'utf8', timeout: 60000 });
+  const hooks = JSON.parse(fs.readFileSync(path.join(w.project, '.cursor', 'hooks.json'), 'utf8')).hooks;
+  for (const lifecycle of ['beforeShellExecution', 'beforeSubmitPrompt', 'beforeMCPExecution', 'afterAgentResponse', 'stop']) {
+    assert.ok(Array.isArray(hooks[lifecycle]) && hooks[lifecycle].length > 0, `init wires ${lifecycle}`);
+  }
+  const run = (lifecycle, payload) => {
+    const out = spawnSync('sh', ['-c', hooks[lifecycle][0].command], { cwd: w.project, env: w.env, input: JSON.stringify(payload), encoding: 'utf8', timeout: 60000 });
+    return { status: out.status, last: String(out.stdout || '').trim().split('\n').pop() || '{}' };
+  };
+  const base = { conversation_id: 'conv-i', generation_id: 'gen-1', workspace_roots: [w.project] };
+  const post = (chat) => run('beforeMCPExecution', { ...base, hook_event_name: 'beforeMCPExecution', mcp_server_name: 'teams', tool_name: 'send_chat_message', tool_input: JSON.stringify({ chat_id: chat, text: 'Update.' }) });
+  assert.equal(JSON.parse(post('chat-a').last).permission, 'allow');
+  run('beforeSubmitPrompt', { ...base, hook_event_name: 'beforeSubmitPrompt', prompt: 'thumbs down' });
+  const held = post('chat-b');
+  assert.equal(JSON.parse(held.last).permission, 'deny', 'the thumbs-down typed in Cursor holds the next post');
+  assert.equal(held.status, 2);
+});
+
+test('Cursor self-heal: an install from the old init (shell gate only) gets the loop hooks on the next shell command, once', () => {
+  const w = world();
+  const hooksFile = path.join(w.project, '.cursor', 'hooks.json');
+  fs.mkdirSync(path.dirname(hooksFile), { recursive: true });
+  const shellGate = `node ${JSON.stringify(path.join(__dirname, '..', 'scripts', 'cursor-shell-gate.js'))}`;
+  fs.writeFileSync(hooksFile, JSON.stringify({ version: 1, hooks: { beforeShellExecution: [{ command: shellGate, timeout: 10, failClosed: true }] } }));
+  const shell = () => spawnSync('sh', ['-c', shellGate], { cwd: w.project, env: w.env, encoding: 'utf8', timeout: 60000, input: JSON.stringify({ command: 'ls', cwd: w.project, conversation_id: 'c', workspace_roots: [w.project] }) });
+  const first = shell();
+  assert.equal(JSON.parse(first.stdout.trim().split('\n').pop()).permission, 'allow', 'the decision is unchanged and stdout stays one JSON line');
+  const healed = JSON.parse(fs.readFileSync(hooksFile, 'utf8')).hooks;
+  for (const lifecycle of ['beforeSubmitPrompt', 'beforeMCPExecution', 'afterShellExecution', 'afterMCPExecution', 'afterAgentResponse', 'stop']) {
+    assert.equal((healed[lifecycle] || []).length, 1, `self-heal adds ${lifecycle}`);
+  }
+  shell();
+  assert.deepEqual(JSON.parse(fs.readFileSync(hooksFile, 'utf8')).hooks, healed, 'the second run changes nothing');
+
+  const other = world();
+  const otherFile = path.join(other.project, '.cursor', 'hooks.json');
+  fs.mkdirSync(path.dirname(otherFile), { recursive: true });
+  fs.writeFileSync(otherFile, JSON.stringify({ version: 1, hooks: { beforeShellExecution: [{ command: 'echo mine' }] } }));
+  const { repairCursorHooks } = require('../scripts/cursor-self-heal');
+  assert.equal(repairCursorHooks({ homeDir: other.project, env: {} }).reason, 'not-a-thumbgate-cursor-install', 'a hooks.json without ThumbGate is left alone');
+});
+
+test('Cursor loop hooks are recognised in every spelling, so init and self-heal never add a second copy', () => {
+  const { isThumbgateLoopHook } = require('../scripts/auto-wire-hooks');
+  const { publishedCliShellCommand } = require('../scripts/published-cli');
+  assert.ok(isThumbgateLoopHook({ command: publishedCliShellCommand('1.45.1', ['cursor-prompt']) }, 'cursor-prompt'), 'npm exec form');
+  assert.ok(isThumbgateLoopHook({ command: '"/home/u/.thumbgate/bin/thumbgate-hook" cursor-stop' }, 'cursor-stop'), 'shim form');
+  assert.ok(isThumbgateLoopHook({ command: 'node "/repo/bin/cli.js" cursor-record' }, 'cursor-record'), 'source form');
+  assert.ok(!isThumbgateLoopHook({ command: 'echo cursor-prompt' }, 'cursor-prompt'), 'someone else\'s hook');
+  assert.ok(!isThumbgateLoopHook({ command: 'node "/repo/bin/cli.js" cursor-record' }, 'cursor-prompt'), 'another subcommand');
+});
