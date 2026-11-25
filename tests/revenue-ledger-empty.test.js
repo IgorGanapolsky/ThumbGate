@@ -35,6 +35,24 @@ test('a paid funnel event without a key (service order) keeps the ledger flagged
   }
 });
 
+test('a paid event in a merged legacy funnel ledger keeps the ledger flagged as missing', () => {
+  const legacyDir = process.env._TEST_LEGACY_FEEDBACK_DIR;
+  const legacyFunnel = path.join(legacyDir, 'funnel-events.jsonl');
+  fs.mkdirSync(legacyDir, { recursive: true });
+  fs.writeFileSync(process.env._TEST_FUNNEL_LEDGER_PATH, '');
+  fs.writeFileSync(legacyFunnel, `${JSON.stringify({ stage: 'paid', event: 'checkout_paid_confirmed', evidence: 'cs_legacy' })}\n`);
+  process.env._TEST_INCLUDE_LEGACY_BILLING_DATA = '1';
+  try {
+    const found = codes();
+    assert.ok(found.includes('revenue_ledger_missing'), found.join(','));
+    assert.ok(!found.includes('revenue_ledger_empty'));
+  } finally {
+    delete process.env._TEST_INCLUDE_LEGACY_BILLING_DATA;
+    fs.rmSync(legacyFunnel, { force: true });
+    fs.rmSync(process.env._TEST_FUNNEL_LEDGER_PATH, { force: true });
+  }
+});
+
 test('an unreadable key store never reads as "nothing sold yet"', () => {
   try {
     for (const body of ['{not json', '{"keys":null}', '{"keys":[]}', 'null']) {

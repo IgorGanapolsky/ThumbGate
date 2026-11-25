@@ -343,10 +343,9 @@ function keyStoreReadable() {
 }
 
 // Any confirmed payment in the funnel ledger (stage 'paid'), e.g. checkout_paid_confirmed.
-function funnelHasPaidEvents(descriptor) {
-  return ((descriptor && descriptor.activePaths) || []).some((file) => (
-    loadJsonlFile(file).some((row) => row && row.stage === 'paid')
-  ));
+// Reads the same files as loadFunnelLedger(), so legacy merging is honored.
+function funnelHasPaidEvents() {
+  return loadFunnelLedger().some((row) => row && row.stage === 'paid');
 }
 
 function buildSourceWarning(code, message) {
@@ -450,7 +449,7 @@ function buildBillingSourceDiagnostics(feedbackDir) {
       'revenue_ledger_legacy_fallback',
       'Revenue events are loading only from a legacy feedback directory.'
     ));
-  } else if (revenueLedger.activeMode === 'missing' && keyStoreReadable() && !keyStoreHasPaidKeys() && !funnelHasPaidEvents(funnelLedger)) {
+  } else if (revenueLedger.activeMode === 'missing' && keyStoreReadable() && !keyStoreHasPaidKeys() && !funnelHasPaidEvents()) {
     // The first paid event creates the ledger file. With no paid key and no paid funnel event (service
     // orders get no key), a missing ledger means nothing has been sold yet: a fact, not a broken source.
     warnings.push(buildSourceWarning(
