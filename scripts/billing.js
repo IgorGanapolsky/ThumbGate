@@ -322,6 +322,13 @@ function writeJsonlRecords(filePath, rows = []) {
   }
 }
 
+// A key that came from Stripe or a marketplace purchase, or that names a Stripe customer.
+function keyStoreHasPaidKeys(store = loadKeyStore()) {
+  return Object.values((store && store.keys) || {}).some((key) => key && (
+    /^cus_/.test(String(key.customerId || '')) || /stripe|marketplace/.test(String(key.source || ''))
+  ));
+}
+
 function buildSourceWarning(code, message) {
   return { code, message };
 }
@@ -423,10 +430,17 @@ function buildBillingSourceDiagnostics(feedbackDir) {
       'revenue_ledger_legacy_fallback',
       'Revenue events are loading only from a legacy feedback directory.'
     ));
+  } else if (revenueLedger.activeMode === 'missing' && !keyStoreHasPaidKeys()) {
+    // The first paid event creates the ledger file. With no paid key either, a missing ledger means
+    // nothing has been sold yet: report that as a fact, not as a broken data source.
+    warnings.push(buildSourceWarning(
+      'revenue_ledger_empty',
+      'No revenue events recorded yet; the revenue ledger is created by the first paid checkout.'
+    ));
   } else if (revenueLedger.activeMode === 'missing') {
     warnings.push(buildSourceWarning(
       'revenue_ledger_missing',
-      'Revenue events are missing from both the active and legacy feedback directories.'
+      'Revenue events are missing from both the active and legacy feedback directories, but paid keys exist.'
     ));
   }
 
@@ -5177,7 +5191,7 @@ async function refreshCheckoutPriceStatus() {
 
 module.exports = {
   configuredCheckoutPrices, refreshCheckoutPriceStatus,
-  getStripeClient, classifyRevenueRecord, summarizeExternalRevenue, buildBillingSourceDiagnostics,
+  getStripeClient, classifyRevenueRecord, summarizeExternalRevenue, buildBillingSourceDiagnostics, keyStoreHasPaidKeys,
   withStripeReadSlot, getBillingAnalyticsReadPaths,
   _mergeRevenueEvents: mergeRevenueEvents,
   _buildStripeReconciledRevenueEvent: buildStripeReconciledRevenueEvent,
