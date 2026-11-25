@@ -986,7 +986,7 @@ const CLI_COMMANDS = [
   {
     name: 'diagnostic',
     aliases: ['workflow-diagnostic', 'sprint-diagnostic'],
-    description: '$499 Workflow Hardening Diagnostic for one repeated AI-agent workflow failure',
+    description: 'Request a 30-day team pilot for a team rolling out a coding agent',
     group: 'ops',
     flags: [],
   },
