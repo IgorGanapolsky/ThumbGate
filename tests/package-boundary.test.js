@@ -819,8 +819,10 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // scripts/cli-telemetry.js (AGENT-3667 udemy source); measured 10,773,470 (main was 10,767,503).
   // Bumped 10.78 MB -> 10.79 MB (2026-11-25): hook-side daily latest check in scripts/runtime-auto-update.js
   // and the install version share in scripts/activation-tracker.js; measured 10,780,497.
-  manifest.unpackedSize <= 10_790_000,
-  `npm package should stay <= 10.79 MB unpacked, got ${manifest.unpackedSize}`
+  // Bumped 10.79 MB -> 10.80 MB (2026-11-25): the Sources tab (scripts/owner-admin.js, public/admin.html) and the
+  // checkout_click event, on top of the hook-side latest check above.
+  manifest.unpackedSize <= 10_800_000,
+  `npm package should stay <= 10.80 MB unpacked, got ${manifest.unpackedSize}`
 );
 
   for (const file of requiredRuntimeFiles) {
