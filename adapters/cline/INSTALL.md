@@ -66,7 +66,7 @@ Inside Cline, open the MCP Servers panel; `thumbgate` should show a green dot. A
 
 1. You flag a Cline action as bad (`npx thumbgate capture --feedback=down --context "..." --what-went-wrong "..."`).
 2. ThumbGate distills the feedback into a concrete lesson and stores it in `.thumbgate/memory.sqlite`.
-3. Next time Cline proposes the same tool-call pattern in any future session, `gate_check` returns `block` and Cline refuses the call.
+3. Next time Cline proposes the same tool-call pattern in any future session, `gate_check` returns `block`. This is advisory: Cline refuses the call only if the model calls `gate_check` and honors the answer; nothing in Cline stops a command when it does not.
 4. Cline has to find a different approach. The mistake does not repeat.
 
 That is the full loop. No cloud, no vendor lock-in, and nothing to migrate if you ever switch agents again.

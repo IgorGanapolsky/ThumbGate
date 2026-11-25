@@ -18,40 +18,12 @@ const root = path.resolve(__dirname, '..');
 const read = (relativePath) => fs.readFileSync(path.join(root, relativePath), 'utf8');
 const commercialTruth = read('docs/COMMERCIAL_TRUTH.md');
 const ladder = read('docs/REVENUE_OFFER_LADDER.md');
-const diagnostic = read('public/diagnostic.html');
 
-test('commercial truth names one promoted public service offer', () => {
-  assert.match(commercialTruth, /only promoted public offer.*Setup Sprint.*\$499 one-time/is);
-  assert.match(commercialTruth, /\/go\/diagnostic-pay/);
-  assert.match(commercialTruth, /\$1,500.*internal catalog\/scoping rail/i);
-  assert.match(commercialTruth, /\$499.*only currently promoted public one-time service offer/i);
-});
-
-test('managed-gate page states a complete fixed-scope implementation contract', () => {
-  assert.match(diagnostic, /Exactly what the \$499 Setup Sprint includes/);
-  assert.match(diagnostic, /one 60-minute working review/i);
-  assert.match(diagnostic, /within two business days/i);
-  assert.match(diagnostic, /workflow and failure map/i);
-  assert.match(diagnostic, /one configured local gate/i);
-  assert.match(diagnostic, /regression test/i);
-  assert.match(diagnostic, /rollout, rollback, and verification proof/i);
-  assert.match(diagnostic, /does not include multi-system implementation/i);
-  assert.match(diagnostic, /guaranteed savings/i);
-  assert.match(diagnostic, /order is refunded instead of being silently converted/i);
-});
-
-test('managed-gate fit mechanics prevent an open-ended upsell', () => {
-  assert.match(diagnostic, /data-diagnostic-fit-terms/);
-  assert.match(diagnostic, /order is refunded instead of being silently converted/i);
-  assert.doesNotMatch(diagnostic, /public Setup Sprint is/i);
-  assert.match(commercialTruth, /refunded instead of silently upsold/i);
-});
-
-test('unverified marketplace obligations cannot receive a payment diversion', () => {
-  assert.match(diagnostic, /Aiventyx payment path is paused/i);
-  assert.match(diagnostic, /seller fees and downstream obligations remain unverified/i);
-  assert.match(diagnostic, /without entering a marketplace payment or revenue-share commitment/i);
-  assert.doesNotMatch(diagnostic, /Aiventyx will collect payment/);
+test('commercial truth names the team pilot and retires the Setup Sprint', () => {
+  assert.match(commercialTruth, /only promoted team offer is the \*\*request-only 30-day team pilot\*\* at `\/pilot`/i);
+  assert.match(commercialTruth, /no public price and no self-serve team checkout/i);
+  assert.match(commercialTruth, /`\$499` Setup Sprint.*and the `\$1,500` Setup Sprint are retired/i);
+  assert.doesNotMatch(commercialTruth, /only (?:currently )?promoted public (?:one-time service )?offer.*\$499/i);
 });
 
 test('offer ladder prices match the runtime catalog defaults', () => {
