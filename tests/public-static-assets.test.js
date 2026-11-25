@@ -508,6 +508,16 @@ test('GET /sitemap.xml includes /chatgpt-app at priority 0.85', async () => {
   assert.match(entry[0], /<priority>0\.85<\/priority>/);
 });
 
+test('the AI FinOps learn page is served, listed in the sitemap, and claims no budget enforcement', async () => {
+  const sitemap = await (await fetch(`${origin}/sitemap.xml`)).text();
+  assert.match(sitemap, /<loc>[^<]*\/learn\/ai-finops-agent-spend-guardrails<\/loc>/, 'sitemap must list the AI FinOps learn page');
+  const res = await fetch(`${origin}/learn/ai-finops-agent-spend-guardrails`);
+  assert.equal(res.status, 200);
+  const html = await res.text();
+  assert.doesNotMatch(html, /budget enforcement/i, 'ThumbGate caps no tokens or dollars, so the page must not claim budget enforcement');
+  assert.match(html, /does not cap tokens or dollars/i, 'the page says plainly what the gates do not do');
+});
+
 test('GET /agents-cost-savings serves the FinOps-for-AI landing HTML', async () => {
   const [routeRes, htmlRes] = await Promise.all([
     fetch(`${origin}/agents-cost-savings`),

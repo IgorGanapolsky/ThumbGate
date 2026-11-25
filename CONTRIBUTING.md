@@ -16,6 +16,24 @@ This project follows the [Contributor Covenant Code of Conduct](CODE_OF_CONDUCT.
    messages.
 7. Reference the relevant issue in your PR description.
 
+## AI-Assisted Contributions
+
+ThumbGate exists because AI coding agents make confident mistakes, so we hold
+agent-written contributions to the same bar as any other:
+
+- Say which AI tool helped and what it did, in the PR, issue or review comment.
+- Read the generated change yourself and check every technical claim and
+  reference. You are responsible for what you submit.
+- List the checks you ran and their results, and name any check you could not
+  run. Report functional, accuracy and performance claims separately, and say
+  which commit each result is for.
+- Do not weaken a test, gate or prevention rule to get a green result. Explain
+  intended behavior changes in the PR instead.
+
+This policy is adapted from the
+[vLLM-GR AI Usage Policy](https://github.com/vllm-project/vllm-gr/blob/main/docs/contributing/README.md#ai-usage-policy)
+(Apache-2.0).
+
 ## Contributor License Agreement / Developer Certificate of Origin
 
 By contributing code, documentation, diagrams, or other materials to the

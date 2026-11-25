@@ -35,11 +35,11 @@ function denyOutput(gate = 'force-push') {
   });
 }
 
-test('shown once on the first real block, naming what was stopped, with the pricing link', () => {
+test('shown once on the first real block, naming what was stopped, with the checkout link', () => {
   const stateDir = freshDir();
   const result = maybeUpsell({ gate: 'force-push', env: {}, now: T0, stateDir, exempt: notExempt });
   assert.equal(result.show, true);
-  assert.match(result.line, /^ThumbGate just stopped a force push\. Pro adds .+ - thumbgate\.ai\/pricing\?utm_source=cli&utm_medium=first_block$/);
+  assert.match(result.line, /^ThumbGate just stopped a force push\. Pro adds .+ - https:\/\/thumbgate\.ai\/checkout\/pro\?utm_source=cli&utm_medium=first_block&utm_campaign=first_block_upsell&utm_content=force-push$/);
   assert.ok(result.line.includes(PRICING_URL));
   assert.ok(!result.line.includes('\n'), 'one line');
   const again = maybeUpsell({ gate: 'force-push', env: {}, now: T0 + 1000, stateDir, exempt: notExempt });
@@ -130,7 +130,7 @@ test('deny output gains a systemMessage; the reason the model reads is unchanged
   const out = JSON.parse(withFirstBlockUpsell(original, { env: {}, now: T0, stateDir, exempt: notExempt }));
   assert.match(out.systemMessage, /^ThumbGate just stopped a force push\. Pro adds /);
   assert.equal(out.hookSpecificOutput.permissionDecisionReason, JSON.parse(original).hookSpecificOutput.permissionDecisionReason);
-  assert.ok(!JSON.stringify(out.hookSpecificOutput).includes('thumbgate.ai/pricing'), 'marketing never reaches the model');
+  assert.ok(!JSON.stringify(out.hookSpecificOutput).includes(PRICING_URL), 'marketing never reaches the model');
 });
 
 test('allow, warn, approval and financial-control outputs are returned untouched', () => {
@@ -177,4 +177,25 @@ test('gates-engine runAsync is the wired path: opt-out leaves its output without
     for (const key of Object.keys(process.env)) if (!(key in saved)) delete process.env[key];
     Object.assign(process.env, saved);
   }
+});
+
+test('the upsell link is clickable, opens checkout directly, and names the gate', () => {
+  const { upsellUrl } = require('../scripts/first-block-upsell');
+  assert.match(PRICING_URL, /^https:\/\/thumbgate\.ai\/checkout\/pro\?utm_source=cli&utm_medium=first_block/);
+  assert.equal(upsellUrl('force-push'), `${PRICING_URL}&utm_content=force-push`);
+  assert.equal(upsellUrl('unknown-gate-sk-123'), PRICING_URL, 'only fixed gate ids reach the URL');
+  assert.ok(buildLine('force-push').endsWith(`${PRICING_URL}&utm_content=force-push`));
+});
+
+test('each showing reports first_block_upsell_shown; quiet paths report nothing', () => {
+  const stateDir = freshDir();
+  const calls = [];
+  const track = (eventType, metadata) => calls.push({ eventType, metadata });
+  assert.equal(maybeUpsell({ gate: 'force-push', env: {}, now: T0, stateDir, exempt: notExempt, track }).show, true);
+  assert.equal(maybeUpsell({ gate: 'force-push', env: {}, now: T0 + DAY, stateDir, exempt: notExempt, track }).show, false);
+  assert.equal(maybeUpsell({ gate: 'force-push', env: {}, now: T0 + 8 * DAY, stateDir, exempt: notExempt, track }).show, true);
+  assert.deepEqual(calls, [
+    { eventType: 'first_block_upsell_shown', metadata: { gateId: 'force-push', shownCount: 1 } },
+    { eventType: 'first_block_upsell_shown', metadata: { gateId: 'force-push', shownCount: 2 } },
+  ]);
 });

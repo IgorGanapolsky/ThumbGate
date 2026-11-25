@@ -1,0 +1,47 @@
+{
+  "version": 1,
+  "checkedAt": "2026-11-24",
+  "currency": "USD",
+  "note": "List rates the owner console uses to turn measured usage into dollars. Change a rate here when a provider changes it, and record the date and source. Amounts are US dollars.",
+  "hosting": {
+    "provider": "Railway",
+    "source": "https://docs.railway.com/pricing (checked 2026-11-24): $20 per vCPU-month, $10 per GB of memory per month, $0.15 per GB-month of volume, $0.05 per GB of egress, billed by the minute",
+    "vcpuMonthUsd": 20,
+    "memoryGbMonthUsd": 10,
+    "volumeGbMonthUsd": 0.15,
+    "egressGbUsd": 0.05,
+    "volumeGb": 0.3,
+    "volumeGbSource": "Railway metrics for the thumbgate service, 7-day average 0.27 GB on 2026-11-24",
+    "egressGbPerMonth": 7.3,
+    "egressGbSource": "Railway metrics for the thumbgate service, 7-day average about 0.01 GB per hour on 2026-11-24; not measured live by the app"
+  },
+  "email": {
+    "provider": "Resend",
+    "source": "https://resend.com/pricing (checked 2026-11-24): free tier 3,000 emails per month and 100 per day; Pro $20 per month for 50,000, extra emails $0.90 per 1,000",
+    "costPerEmailUsd": 0.0004,
+    "basis": "Pro plan price divided by its included emails. While sends stay inside the free tier the true marginal cost is $0, so this is an upper bound."
+  },
+  "payments": {
+    "provider": "Stripe",
+    "source": "https://stripe.com/pricing and https://stripe.com/billing/pricing (checked 2026-11-24): 2.9% + 30 cents per successful domestic card charge; Stripe Billing adds 0.7% of recurring billing volume",
+    "percent": 0.029,
+    "fixedUsd": 0.3,
+    "basis": "Checkout fees are read from Stripe when it returns them. Renewal invoices, and any checkout whose fee was not returned, use the card rate; renewals and subscription first charges also carry the 0.7% Billing fee.",
+    "billingPercent": 0.007
+  },
+  "plans": {
+    "pro": {
+      "name": "Pro",
+      "listMonthlyUsd": 19
+    },
+    "setupSprint": {
+      "name": "Setup Sprint",
+      "listUsd": 499,
+      "deliveryHours": null,
+      "deliveryHoursNote": "Owner time to deliver one sprint is not recorded, so sprint margin leaves labor out."
+    }
+  },
+  "fixedDeliveryMonthly": [],
+  "buildAndInternalMonthly": [],
+  "fixedNote": "fixedDeliveryMonthly holds monthly costs of serving customers that usage does not measure (for example a plan minimum or a domain). buildAndInternalMonthly holds the cost of building and running the business (agent subscriptions, CI, tools). Each entry is { \"name\": \"...\", \"usd\": 0, \"source\": \"...\" }. Both lists are empty until a real bill is recorded; the console says so instead of guessing."
+}

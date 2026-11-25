@@ -276,20 +276,22 @@
     </main>
     <footer>
       Private and read-only. Owner and test purchases are left out of every
-      revenue number. JSON for agents: /v1/admin/summary and /v1/admin/alerts.
+      revenue number. JSON for agents: /v1/admin/summary, /v1/admin/economics and /v1/admin/alerts.
     </footer>
     <script nonce="__ADMIN_NONCE__">
       'use strict';
       const content = document.getElementById('content');
       // Today answers "does anything need me, and how did this week go". Overview repeated it, so it left the menu;
       // its numbers stay in /v1/admin/summary for agents.
-      const sections = ['money', 'analytics', 'observability', 'stripe', 'data'];
+      const sections = ['money', 'economics', 'analytics', 'behavior', 'observability', 'stripe', 'data'];
       const titles = {
         money: 'Today',
+        economics: 'Unit economics',
         overview: 'Overview',
         stripe: 'Stripe records',
         data: 'Hosted data',
         analytics: 'Growth',
+        behavior: 'Visitor behavior',
         observability: 'Health',
       };
       let current = 'money';
@@ -784,7 +786,7 @@
         for (const [name, value] of Object.entries(extra)) add(name, value);
         if (weeks) {
           const rows = [
-            ['People on the site', 'realVisitors'],
+            Number.isFinite(weeks.last7?.engagedVisitors) ? ['People who did something on the site', 'engagedVisitors'] : ['People on the site', 'realVisitors'],
             ['Checkout starts', 'checkoutStarts'],
             ['Active CLI installs', 'activeInstalls'],
           ];
@@ -890,6 +892,57 @@
         );
         parent.append(element('p', 'The channel is the utm source a checkout carried, or direct. Bots and your own checkouts are left out of starts; a customer counts once, for their first paid checkout.', 'muted'));
       }
+      function minutesWords(m) {
+        if (m < 60) return Math.round(m) + ' min';
+        if (m < 1440) return Math.round((m / 60) * 10) / 10 + ' h';
+        return Math.round((m / 1440) * 10) / 10 + ' days';
+      }
+      const usd = (n) => (Number.isFinite(n) ? '$' + (Math.abs(n) < 1 && n !== 0 ? n.toFixed(4) : n.toFixed(2)) : null);
+      function economicsBlock(parent, data) {
+        const reasons = data.reasons || {};
+        const or = (value, reason) => (value === null || value === undefined ? reason || 'Source not available right now' : value);
+        const d = data.delivery || {};
+        parent.append(element('h3', 'Cost to deliver · past 30 days, US dollars'));
+        cards(parent, {
+          'Hosting (Railway, measured CPU and memory at list rates)': or(usd(d.hostingUsd), reasons.hosting),
+          'Email (sends counted by the app)': d.emailUsd === null || d.emailUsd === undefined ? 'Not counted yet' : usd(d.emailUsd) + ' · ' + d.emails + ' sent',
+          'Payment fees (Stripe)': or(usd(d.paymentFeesUsd), reasons.paymentFees),
+          'Fixed delivery costs': d.fixedUsd ? usd(d.fixedUsd) : 'None recorded',
+          'Total delivery cost': or(usd(d.totalUsd), 'Not complete yet'),
+          'Build and internal costs (kept apart)': data.build?.totalUsd ? usd(data.build.totalUsd) : 'None recorded',
+        }, true);
+        parent.append(element('h3', 'Per unit'));
+        cards(parent, {
+          'Serving cost per active install': or(usd(data.perActiveInstallUsd), reasons.activeInstalls || reasons.hosting),
+          'Delivery cost per paying customer': or(usd(data.perPayingCustomerUsd), reasons.payingCustomers || reasons.hosting),
+          'Revenue, past 30 days (one-time plus renewals)': or(usd(data.revenue?.totalUsd), 'Stripe not available right now'),
+          'Contribution (revenue minus delivery cost)': data.contribution ? usd(data.contribution.contributionUsd) + (Number.isFinite(data.contribution.marginPct) ? ' · ' + Math.round(data.contribution.marginPct * 1000) / 10 + '% margin' : '') : 'Not complete yet',
+        }, true);
+        parent.append(element('h3', 'Contribution per sale, by plan'));
+        const plans = Object.values(data.plans || {}).filter((plan) => plan && Number.isFinite(plan.priceUsd));
+        table(parent, [
+          ['Plan', (r) => r.name],
+          ['Price', (r) => usd(r.priceUsd) + (r.priceBasis === 'list_price' ? ' (list)' : ' (Stripe average)')],
+          ['Payment fee', (r) => usd(r.paymentFeeUsd)],
+          ['Serving cost', (r) => usd(r.deliveryCostUsd)],
+          ['Keeps', (r) => usd(r.contributionUsd) + ' · ' + Math.round(r.marginPct * 1000) / 10 + '%' + (r.laborNote ? ' · labor not counted' : '')],
+        ], plans);
+        const access = data.paymentAccess;
+        parent.append(element('h3', 'Payment to access'));
+        if (!access) parent.append(element('p', 'Stripe or the key store is not available right now, so the check did not run.', 'notice'));
+        else if (access.status === 'unavailable') parent.append(element('p', access.reason, 'notice'));
+        else {
+          cards(parent, {
+            'Entitled but no key': String(access.paidWithoutAccess),
+            'Failed payment, key still active': access.failedPaymentWithAccess === null ? 'Not checked' : String(access.failedPaymentWithAccess),
+            'Active paid keys with no Stripe payment': String(access.accessWithoutStripePayment),
+            'Subscriptions with a failed payment': access.failedPaymentSubscriptions === null ? 'Not checked' : String(access.failedPaymentSubscriptions),
+          }, true);
+          parent.append(element('p', 'Entitled means an active subscription or a credit pack bought in the past year; service orders and canceled subscriptions grant no key. Used-up credit packs (' + access.exhaustedCreditKeys + ') were provisioned, so they are not missing keys. Keys with no Stripe payment can be GitHub Marketplace, PayPal or manual grants, so they are listed for review, not called wrong. Trial and free keys are left out (' + access.activeTrialOrFreeKeys + ').' + (access.complete ? '' : ' Some Stripe lists were cut short, so these counts are a lower bound.'), 'muted'));
+        }
+        for (const reason of [reasons.fixed, reasons.build, reasons.currencies, d.hosting?.reason, d.emailBasis]) if (reason) parent.append(element('p', reason, 'muted'));
+        parent.append(element('p', 'Rates checked ' + data.ratesCheckedAt + ' and kept in config/unit-costs.json with their sources. JSON for agents: /v1/admin/economics.', 'muted'));
+      }
       function usageBlock(parent, usage) {
         parent.append(element('h3', 'Product usage · CLI installs, past 30 days'));
         if (!usage) {
@@ -905,6 +958,8 @@
             'Ran init in this window': usage.initsInWindow,
             'Captured feedback (activated)': String(usage.activatedInstalls) + share(usage.activatedInstalls),
             'Came back on a second day': String(usage.returningInstalls) + share(usage.returningInstalls),
+            'First value: a real gate blocked a tool call': Number.isFinite(usage.firstValueInstalls) ? String(usage.firstValueInstalls) + share(usage.firstValueInstalls) : 'Not reported by this telemetry yet',
+            'Time to first value (median)': usage.timeToFirstValue && Number.isFinite(usage.timeToFirstValue.medianMinutes) ? minutesWords(usage.timeToFirstValue.medianMinutes) + ' after install (' + usage.timeToFirstValue.installs + ' installs)' : 'N/A, no first block yet',
           },
           true,
         );
@@ -913,7 +968,7 @@
             'p',
             'An install is the anonymous id the CLI keeps in ~/.thumbgate. Your own machines, CI and flagged pings are left out (' +
               usage.excludedInstalls +
-              ' excluded). Installs with telemetry turned off are not seen, so these are lower bounds. Gate blocks run locally and are not reported.',
+              ' excluded). Installs with telemetry turned off are not seen, so these are lower bounds. Gate blocks run locally; only the first block on each install is reported, with the minutes since install.',
             'muted',
           ),
         );
@@ -921,7 +976,60 @@
         detail(parent, 'Installs by version', usage.byVersion);
         detail(parent, 'Installs by platform', usage.byPlatform);
       }
+      // Visitor behavior: Microsoft Clarity's last 24 hours (sessions, frustration signals, top pages and sources).
+      function behaviorBlock(parent, data) {
+        const links = element('p', undefined, 'muted');
+        for (const [name, href] of [['Clarity dashboard', data.dashboardUrl], ['Recordings', data.recordingsUrl], ['Heatmaps', data.heatmapsUrl]]) {
+          if (!href) continue;
+          const a = element('a', name + ' ↗');
+          a.href = href;
+          a.target = '_blank';
+          a.rel = 'noopener noreferrer';
+          links.append(a, document.createTextNode('  '));
+        }
+        parent.append(links);
+        parent.append(element('p', data.tagEnabled
+          ? 'Clarity tag is on for public pages (project ' + data.projectId + '). Not recorded: ' + data.tagExcludes + '. Form fields are masked.'
+          : 'Clarity tag is off (THUMBGATE_CLARITY_PROJECT_ID is set to off).', 'muted'));
+        if (!data.exportConfigured) {
+          parent.append(element('p', 'Numbers appear here once THUMBGATE_CLARITY_API_TOKEN is set in Railway (Clarity, Settings, Data Export). Recordings and heatmaps are in Clarity now.', 'notice'));
+          return;
+        }
+        const s = data.summary;
+        if (!s) {
+          parent.append(element('p', 'No Clarity snapshot yet. No zero total is inferred.', 'empty'));
+          return;
+        }
+        const pct = (v) => (Number.isFinite(v) ? Math.round(v * 10) / 10 + '%' : 'Not reported');
+        const num = (v) => (Number.isFinite(v) ? String(Math.round(v * 100) / 100) : 'Not reported');
+        parent.append(element('h3', 'Last 24 hours' + (data.fetchedAt ? ', fetched ' + date(data.fetchedAt) : '')));
+        cards(parent, {
+          'Sessions (humans)': num(s.sessions),
+          'Bot sessions': num(s.botSessions),
+          'Distinct visitors': num(s.distinctUsers),
+          'Pages per session': num(s.pagesPerSession),
+          'Average scroll depth': pct(s.averageScrollDepthPercent),
+          'Sessions with rage clicks': pct(s.rageClickSessionsPercent),
+          'Sessions with dead clicks': pct(s.deadClickSessionsPercent),
+          'Sessions with quick backs': pct(s.quickbackSessionsPercent),
+          'Sessions with script errors': pct(s.scriptErrorSessionsPercent),
+        }, true);
+        parent.append(element('h3', 'Top pages'));
+        table(parent, [['Page', (r) => r.url], ['Sessions', (r) => r.sessions], ['Visitors', (r) => r.distinctUsers], ['Pages per session', (r) => num(r.pagesPerSession)]], data.topPages || []);
+        parent.append(element('h3', 'Top sources'));
+        table(parent, [['Source', (r) => r.source], ['Sessions', (r) => r.sessions], ['Visitors', (r) => r.distinctUsers]], data.topSources || []);
+        for (const m of data.metrics || []) {
+          if (!m.rows?.length) continue;
+          const block = element('details');
+          block.append(element('summary', 'Raw Clarity metric: ' + m.name));
+          const keys = Object.keys(m.rows[0]);
+          table(block, keys.map((k) => [label(k), (r) => r[k]]), m.rows);
+          parent.append(block);
+        }
+      }
       function render(parent, section, data) {
+        if (section === 'economics') economicsBlock(parent, data);
+        if (section === 'behavior') behaviorBlock(parent, data);
         if (section === 'money') {
           alertsBlock(parent);
           parent.append(element('h3', 'This week at a glance'));
@@ -957,6 +1065,7 @@
               'Paying customers': shown(data.payingCustomers, why.payingCustomers, ' · from Stripe'),
               'Active Pro subscriptions': shown(data.activePro, why.activePro, ' · from Stripe'),
               'Checkouts started (7 days)': shown(checkouts ? checkouts.started : null, why.checkouts),
+              'People who did something: two or more events or any click (30 days)': shown(traffic ? traffic.engagedVisitors : null, why.visitors),
               'Observed visitor identifiers, excluding bot, internal and test (30 days)': shown(traffic ? traffic.realVisitors : null, why.visitors),
               'All observed visitor identifiers (30 days)': shown(traffic ? traffic.visitors : null, why.visitors),
               'Landing page views (30 days)': shown(traffic ? traffic.pageViews : null, why.visitors),

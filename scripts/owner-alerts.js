@@ -40,7 +40,7 @@ function evaluateAlerts({ money = null, report = null } = {}) {
     if (why.visitors && why.visitors !== 'telemetry store empty') add('telemetry_unreadable', 'amber', 'Site and CLI telemetry could not be read: ' + why.visitors + '.', 'Refresh in a minute, then check the Railway volume.', 'analytics');
 
     const week = money.weekOverWeek;
-    const visitors = dropped(week, 'realVisitors', 20);
+    const visitors = dropped(week, Number.isFinite(week?.last7?.engagedVisitors) ? 'engagedVisitors' : 'realVisitors', 20);
     if (visitors) add('visitors_drop', 'amber', 'People on the site fell from ' + visitors.before + ' to ' + visitors.now + ' this week.', 'Check that the last deploy did not break a page, then check your launch posts and links.', 'analytics');
     const starts = dropped(week, 'checkoutStarts', 4);
     if (starts) add('checkout_drop', 'amber', 'Checkout starts fell from ' + starts.before + ' to ' + starts.now + ' this week.', 'Click through the pricing page to the Stripe checkout yourself.', 'money');
@@ -76,4 +76,9 @@ function createAlertTracker() {
   };
 }
 
-module.exports = { evaluateAlerts, formatAlertMessage, createAlertTracker };
+// These alerts compare raw event counts that still include our own agents, tests and bots, and installs counted by
+// anonymous id. They stay on the admin page, but are never sent by email or webhook until the counts are filtered.
+const UNFILTERED_COUNT_ALERTS = new Set(['visitors_drop', 'checkout_drop', 'installs_drop', 'activation_low']);
+const isDeliverable = (alert) => alert.level !== 'info' && !UNFILTERED_COUNT_ALERTS.has(alert.id);
+
+module.exports = { evaluateAlerts, formatAlertMessage, createAlertTracker, UNFILTERED_COUNT_ALERTS, isDeliverable };

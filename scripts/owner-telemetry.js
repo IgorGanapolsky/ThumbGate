@@ -107,6 +107,12 @@ const isCli = (entry) => (entry.clientType || entry.client) === 'cli';
 const isOwnOrCiInstall = (entry) => isFlagged(entry) || ['owner', 'ci'].includes(String(entry.visitorType || '').toLowerCase());
 // An install counts as activated once it has captured a piece of feedback: that is the first moment ThumbGate does its job.
 const ACTIVATION_EVENT = 'cli_capture';
+// The first value event: a gate really fired and blocked a tool call in the user's own workflow. The CLI sends it once per
+// install with the minutes since install, so time to first value comes from the same ping.
+// Shipped CLIs send `first_block`; `first_blocked_tool_call` is the legacy name (revised rule 4 of
+// docs/decisions/2026-11-24-revenue-funnel-activation.md). Matching only the legacy name showed 0.
+const FIRST_VALUE_EVENTS = new Set(['first_block', 'first_blocked_tool_call']);
+const quantile = (sorted, q) => (sorted.length ? sorted[Math.min(sorted.length - 1, Math.floor(q * sorted.length))] : null);
 const topCounts = (counts, limit = 10) => Object.fromEntries(Object.entries(counts).sort((a, b) => b[1] - a[1]).slice(0, limit));
 
 // Visitors, sessions, page views, CTA clicks, checkout starts and paid confirmations, in total and per UTC day.
@@ -117,7 +123,7 @@ const topCounts = (counts, limit = 10) => Object.fromEntries(Object.entries(coun
 async function readTrafficWindow(options) {
   const nowMs = Number.isFinite(options.now) ? options.now : Date.now();
   const weekOf = (time) => (time >= nowMs - 7 * DAY_MS ? 'last7' : time >= nowMs - 14 * DAY_MS ? 'prior7' : null);
-  const emptyWeek = () => ({ visitors: new Set(), flagged: new Set(), pageViews: 0, checkoutStarts: 0, activeInstalls: new Set() });
+  const emptyWeek = () => ({ visitors: new Set(), flagged: new Set(), activity: new Map(), pageViews: 0, checkoutStarts: 0, activeInstalls: new Set() });
   const weeks = { last7: emptyWeek(), prior7: emptyWeek() };
   const installs = new Map();
   const excludedInstalls = new Set();
@@ -126,6 +132,12 @@ async function readTrafficWindow(options) {
   const visitors = new Set();
   const flagged = new Set();
   const pageViewers = new Set();
+  // Per visitor id: how many events, and whether any was more than a landing page view. Most crawlers that pass the
+  // bot check still show up as one id with one page view, so 'engaged' (two or more events, or any click or step) is
+  // the honest count of people.
+  const activity = new Map();
+  const note = (map, who, type) => { const seen = map.get(who) || { events: 0, acted: false }; seen.events += 1; seen.acted ||= type !== 'landing_page_view'; map.set(who, seen); };
+  const engagedOf = (map, flaggedIds) => { let n = 0; for (const [who, seen] of map) if (!flaggedIds.has(who) && (seen.events >= 2 || seen.acted)) n += 1; return n; };
   const sessions = new Set();
   const startsByType = {};
   const totals = { pageViews: 0, ctaClicks: 0, checkoutStarts: 0, checkoutPaidConfirmations: 0, webEvents: 0 };
@@ -148,10 +160,18 @@ async function readTrafficWindow(options) {
         const day = dayOf(time);
         day.activeInstalls.add(install);
         if (week) weeks[week].activeInstalls.add(install);
-        const seen = installs.get(install) || { days: new Set(), lastMs: 0, inited: false, activated: false, version: null, platform: null };
+        const seen = installs.get(install) || { days: new Set(), lastMs: 0, inited: false, activated: false, firstValue: false, firstValueMinutes: null, version: null, platform: null };
         seen.days.add(day.date);
         seen.inited ||= type === 'cli_init';
         seen.activated ||= type === ACTIVATION_EVENT;
+        if (FIRST_VALUE_EVENTS.has(type)) {
+          seen.firstValue = true;
+          // null or a blank means the CLI could not read its install marker: the install still reached first value, but its
+          // duration is unknown, so it stays out of the percentiles (Number(null) would count it as zero minutes).
+          const raw = entry.minutesSinceInstall;
+          const minutes = raw === null || raw === undefined || raw === '' || typeof raw === 'boolean' ? NaN : Number(raw);
+          if (Number.isFinite(minutes) && minutes >= 0 && (seen.firstValueMinutes === null || minutes < seen.firstValueMinutes)) seen.firstValueMinutes = minutes;
+        }
         if (time >= seen.lastMs) { seen.lastMs = time; seen.version = entry.version || entry.pkgVersion || seen.version; seen.platform = entry.platform || seen.platform; }
         installs.set(install, seen);
         return;
@@ -160,9 +180,9 @@ async function readTrafficWindow(options) {
       totals.webEvents += 1;
       const day = dayOf(time);
       const who = entry.visitorId || entry.installId || entry.sessionId || null;
-      if (who) { visitors.add(who); day.visitors.add(who); if (isFlagged(entry)) flagged.add(who); }
+      if (who) { visitors.add(who); day.visitors.add(who); if (isFlagged(entry)) flagged.add(who); note(activity, who, kind(entry)); }
       if (week) {
-        if (who) { weeks[week].visitors.add(who); if (isFlagged(entry)) weeks[week].flagged.add(who); }
+        if (who) { weeks[week].visitors.add(who); if (isFlagged(entry)) weeks[week].flagged.add(who); note(weeks[week].activity, who, kind(entry)); }
         if (kind(entry) === 'landing_page_view') weeks[week].pageViews += 1;
         if (telemetry.isCheckoutStartEvent(kind(entry))) weeks[week].checkoutStarts += 1;
       }
@@ -180,16 +200,18 @@ async function readTrafficWindow(options) {
   const daily = [...days.values()].sort((a, b) => a.date.localeCompare(b.date)).map((day) => ({ date: day.date, visitors: day.visitors.size, pageViewers: day.pageViewers.size, sessions: day.sessions.size, activeInstalls: day.activeInstalls.size, pageViews: day.pageViews, ctaClicks: day.ctaClicks, checkoutStarts: day.checkoutStarts, checkoutPaidConfirmations: day.checkoutPaidConfirmations }));
   const byVersion = {};
   const byPlatform = {};
-  let newInstalls = 0; let activated = 0; let returning = 0; let active7 = 0;
+  let newInstalls = 0; let activated = 0; let returning = 0; let active7 = 0; let firstValue = 0;
+  const firstValueMinutes = [];
   for (const seen of installs.values()) {
     byVersion[seen.version || 'unknown'] = (byVersion[seen.version || 'unknown'] || 0) + 1;
     byPlatform[seen.platform || 'unknown'] = (byPlatform[seen.platform || 'unknown'] || 0) + 1;
     if (seen.inited) newInstalls += 1;
     if (seen.activated) activated += 1;
+    if (seen.firstValue) { firstValue += 1; if (seen.firstValueMinutes !== null) firstValueMinutes.push(seen.firstValueMinutes); }
     if (seen.days.size >= 2) returning += 1;
     if (seen.lastMs >= nowMs - 7 * DAY_MS) active7 += 1;
   }
-  const weekNumbers = (week) => ({ realVisitors: week.visitors.size - week.flagged.size, pageViews: week.pageViews, checkoutStarts: week.checkoutStarts, activeInstalls: week.activeInstalls.size });
+  const weekNumbers = (week) => ({ realVisitors: week.visitors.size - week.flagged.size, engagedVisitors: engagedOf(week.activity, week.flagged), pageViews: week.pageViews, checkoutStarts: week.checkoutStarts, activeInstalls: week.activeInstalls.size });
   return {
     ...meta,
     // CLI installs, from the anonymous install id the CLI sends. The owner's machines, CI and flagged pings are left out.
@@ -199,6 +221,12 @@ async function readTrafficWindow(options) {
       initsInWindow: newInstalls,
       activatedInstalls: activated,
       returningInstalls: returning,
+      // Installs whose first real gate block arrived in the window, and how long after install it came.
+      firstValueInstalls: firstValue,
+      timeToFirstValue: (() => {
+        const sorted = firstValueMinutes.sort((a, b) => a - b);
+        return { installs: sorted.length, medianMinutes: quantile(sorted, 0.5), p75Minutes: quantile(sorted, 0.75) };
+      })(),
       excludedInstalls: excludedInstalls.size,
       eventsByType: topCounts(cliEvents, 20),
       byVersion: topCounts(byVersion),
@@ -206,7 +234,7 @@ async function readTrafficWindow(options) {
     },
     // The newest 7 days against the 7 days before them, so a change shows without remembering last week.
     weeks: { last7: weekNumbers(weeks.last7), prior7: weekNumbers(weeks.prior7) },
-    traffic: { visitors: visitors.size, realVisitors: visitors.size - flagged.size, botOrInternalVisitors: flagged.size, pageViewers: pageViewers.size, checkoutStartsByType: startsByType, sessions: sessions.size, pageViews: totals.pageViews, ctaClicks: totals.ctaClicks, checkoutStarts: totals.checkoutStarts, checkoutPaidConfirmations: totals.checkoutPaidConfirmations },
+    traffic: { visitors: visitors.size, realVisitors: visitors.size - flagged.size, engagedVisitors: engagedOf(activity, flagged), botOrInternalVisitors: flagged.size, pageViewers: pageViewers.size, checkoutStartsByType: startsByType, sessions: sessions.size, pageViews: totals.pageViews, ctaClicks: totals.ctaClicks, checkoutStarts: totals.checkoutStarts, checkoutPaidConfirmations: totals.checkoutPaidConfirmations },
     daily,
   };
 }

@@ -114,7 +114,8 @@ describe('dashboard deep-linking e2e', () => {
     let m;
     while ((m = re.exec(indexHtml)) !== null) linkHashes.add(m[1]);
 
-    assert.ok(linkHashes.size > 0, 'landing page should have at least one dashboard deep-link');
+    // 462a22a removed the homepage's /dashboard#… links on purpose: the hosted dashboard is sign-in gated, so they led
+    // signed-out visitors to a sign-in wall. Zero links is allowed; any link that is present must still resolve.
 
     for (const hash of linkHashes) {
       assert.match(
