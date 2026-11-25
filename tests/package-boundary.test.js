@@ -836,8 +836,10 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // Bumped 10.81 MB -> 10.82 MB (2026-11-25, PR #5222, after merging main): measured 10,819,959.
   // Bumped 10.82 MB -> 10.83 MB (2026-11-25, release PR #5260): thumbs-up approval recording in scripts/send-gate.js
   // and the portable Cursor shell gate (PRs #5255, #5257); measured 10,822,233 on main and on the release branch.
-  manifest.unpackedSize <= 10_830_000,
-  `npm package should stay <= 10.83 MB unpacked, got ${manifest.unpackedSize}`
+  // Bumped 10.83 MB -> 10.85 MB (2026-11-25): Orion tag injector scripts/orion.js, public/host-matrix.html (a1844d0ec),
+  // privacy text; measured 10,839,359 before this bump.
+  manifest.unpackedSize <= 10_850_000,
+  `npm package should stay <= 10.85 MB unpacked, got ${manifest.unpackedSize}`
 );
 
   for (const file of requiredRuntimeFiles) {
