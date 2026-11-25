@@ -100,8 +100,16 @@ async function evaluatePrCreate(pr, deps = {}) {
   const { owner, repo, head, base, title } = pr;
   if (!owner || !repo || !head) return { deny: false, skipped: 'missing owner/repo/head' };
 
-  const compare = await gh(`/repos/${owner}/${repo}/compare/${encodeURIComponent(base || 'main')}...${encodeURIComponent(head)}`);
-  const ourFiles = Array.isArray(compare.files) ? compare.files : [];
+  // A Bash create runs in a checkout whose branch may not be pushed yet, so the
+  // local diff is the source of truth there; the compare API is the fallback.
+  let ourFiles = pr.cwd ? localChangedFiles(base || 'main', pr.cwd, deps.git) : null;
+  if (!ourFiles) {
+    try {
+      const compare = await gh(`/repos/${owner}/${repo}/compare/${encodeURIComponent(base || 'main')}...${encodeURIComponent(head)}`);
+      ourFiles = Array.isArray(compare.files) ? compare.files : null;
+    } catch { ourFiles = null; } // unknown size: still run the title check below
+  }
+  ourFiles = ourFiles || [];
   const size = sizeOf(ourFiles);
   if (size.files > cfg.maxFiles || size.lines > cfg.maxLines) {
     return {
@@ -150,8 +158,24 @@ function gitOutput(args, cwd) {
   }
 }
 
+/** Files changed from origin/<base> (or <base>) to HEAD, in compare-API shape; null if git can't tell. */
+function localChangedFiles(base, cwd, git = gitOutput) {
+  for (const ref of [`origin/${base}`, base]) {
+    const out = git(['diff', '--numstat', `${ref}...HEAD`], cwd);
+    if (!out) continue;
+    return out.split('\n').filter(Boolean).map((line) => {
+      const [add, del, ...name] = line.split('\t');
+      return { filename: name.join('\t'), additions: Number(add) || 0, deletions: Number(del) || 0 };
+    });
+  }
+  return null;
+}
+
+// `npm run ship` (scripts/ship.js) opens the PR with gh internally, so it counts as a create.
+const SHIP_WRAPPER = /\b(?:npm\s+run\s+ship|node\s+(?:\S*\/)?scripts\/ship\.js)\b/;
+
 function parseGhPrCreate(command) {
-  if (!/\bgh\s+pr\s+create\b/.test(String(command || ''))) return null;
+  if (!/\bgh\s+pr\s+create\b/.test(String(command || '')) && !SHIP_WRAPPER.test(String(command || ''))) return null;
   const pick = (flag) => {
     const m = String(command).match(new RegExp(`--${flag}(?:=|\\s+)(?:"([^"]*)"|'([^']*)'|(\\S+))`));
     return m ? (m[1] ?? m[2] ?? m[3]) : null;
@@ -180,6 +204,7 @@ function prFromToolInput(toolName, input = {}, payload = {}) {
       head: parsed.head || gitOutput(['rev-parse', '--abbrev-ref', 'HEAD'], cwd),
       base: parsed.base || 'main',
       title: parsed.title || gitOutput(['log', '-1', '--format=%s'], cwd),
+      cwd,
     };
   }
   return null;
@@ -332,6 +357,7 @@ module.exports = {
   sizeOf,
   evaluatePrCreate,
   parseGhPrCreate,
+  localChangedFiles,
   prFromToolInput,
   extractPrUrls,
   recordOpenedPrs,

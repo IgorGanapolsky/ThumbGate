@@ -8,8 +8,8 @@ action, instead of rules that live only as memory text.
 | No manual steps for the person | `scripts/reply-discipline-gates.js`, `PreToolUse` on `mcp__hearthbot__post_message`, `request_decision`, `edit_message`; `Stop` for plain replies | Denies "please paste", "you need to", "sign in and", "can you run" and similar. 2FA, verification codes and passkeys are exempt. `Stop` blocks once, never in a loop. |
 | Proof before claim | same `PreToolUse` | Denies "done", "deployed", "verified" and similar when nothing since the person's last message proves it (same patterns as `hook-stop-anti-claim.js`, which only sees plain assistant text, not thread replies sent through a tool). |
 | Don't stop while your PR is red | `scripts/pr-discipline-gates.js`, `PostToolUse` records PRs the session opens; `Stop` | Stop is blocked while a PR the session opened has a failed check, a `needs-fix` or `needs-rebase` label, or a merge conflict. `needs-igor` and `do-not-merge` are not the agent's to fix. Gives up after 3 blocks and leaves a warning. |
-| No duplicate PRs | same script, `PreToolUse` on `mcp__github__create_pull_request` and Bash `gh pr create` | Denied when an open PR has a near-identical title or touches at least half the same files (changesets, CHANGELOG and package files ignored). The PR for the same branch is not its own duplicate. |
-| Keep PRs small | same `PreToolUse` | Denied over 40 files or 1,000 changed lines; lockfiles, `dist/`, snapshots and source maps don't count. |
+| No duplicate PRs | same script, `PreToolUse` on `mcp__github__create_pull_request` and Bash `gh pr create` or `npm run ship` | Denied when an open PR has a near-identical title or touches at least half the same files (changesets, CHANGELOG and package files ignored). The PR for the same branch is not its own duplicate. |
+| Keep PRs small | same `PreToolUse` | Denied over 40 files or 1,000 changed lines (from the local diff for a Bash create, so an unpushed branch is still checked); lockfiles, `dist/`, snapshots and source maps don't count. |
 
 Every gate fails open on an internal error.
 

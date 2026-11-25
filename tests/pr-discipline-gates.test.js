@@ -176,3 +176,33 @@ test('main fails open on an internal error and emits a deny in hook format', asy
   assert.equal(deny.hookSpecificOutput.permissionDecision, 'deny');
   assert.deepEqual(JSON.parse(chunks[1]), {}, 'network failure fails open');
 });
+
+test('(c) a Bash create on an unpushed branch is sized from the local diff, and the title check still runs', async () => {
+  const numstat = Array.from({ length: 41 }, (_, i) => `1\t0\tsrc/f${i}.js`).join('\n');
+  const git = (args) => (args[0] === 'diff' ? numstat : '');
+  const noCompare = fakeGh([[/\/compare\//, () => { throw new Error('404'); }], [/\/pulls\?/, []]]);
+  const local = await gates.evaluatePrCreate({ ...PR, cwd: '/repo' }, { gh: noCompare, git });
+  assert.equal(local.rule, 'pr-size', 'unpushed branch still sized');
+
+  const dupTitle = fakeGh([
+    [/\/compare\//, () => { throw new Error('404'); }],
+    [/\/pulls\?/, [{ number: 9, title: PR.title, head: { ref: 'claude/other' } }]],
+  ]);
+  const dup = await gates.evaluatePrCreate(PR, { gh: dupTitle });
+  assert.equal(dup.rule, 'pr-duplicate', 'title check does not depend on the compare call');
+});
+
+test('npm run ship counts as a PR create, before and after', () => {
+  assert.ok(gates.parseGhPrCreate('npm run ship -- --title "feat: x"'));
+  assert.equal(gates.parseGhPrCreate('npm run ship -- --title "feat: x"').title, 'feat: x');
+  assert.ok(gates.parseGhPrCreate('node scripts/ship.js --no-wait'));
+  assert.equal(gates.parseGhPrCreate('npm run shipit'), null);
+  const env = ledgerEnv();
+  const recorded = gates.recordOpenedPrs({
+    session_id: 'ship1',
+    tool_name: 'Bash',
+    tool_input: { command: 'npm run ship' },
+    tool_response: { stdout: 'ship: opened https://github.com/o/r/pull/77\nwaiting for gate' },
+  }, { env });
+  assert.deepEqual(recorded.map((p) => p.number), [77]);
+});
