@@ -27,6 +27,11 @@
       "description": "Request-only team pilot page (replaces the retired /diagnostic checkout, which now returns 410)"
     },
     {
+      "route": "/demo",
+      "sentinel": "See a thumbs-down become a gate.",
+      "description": "Chaptered product demo (install, built-in block, thumbs-down, learned gate, team pilot form)"
+    },
+    {
       "route": "/dashboard",
       "sentinel": "Sign in to ThumbGate",
       "description": "A signed-out visit to /dashboard on the hosted site lands on the one sign-in page (since 19 Nov 2026); the signed-in dashboard is not covered by this signed-out check"
