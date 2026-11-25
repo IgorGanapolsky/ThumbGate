@@ -526,8 +526,9 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
     // (required by statusline-human-counts.js) and scripts/pilot-request.js (required by src/api/server.js),
     // and scripts/checkout-price-guard.js (required by scripts/billing.js), which were missing from `files` (+6).
     // 710 -> 711 (2026-11-25): config/gates/profiles/shared-tree.json, the opt-in shared-tree gate profile (bb6208a).
-    manifest.fileCount <= 711,
-    `npm package should stay <= 711 files, got ${manifest.fileCount}`
+    // 711 -> 712 (2026-11-25): scripts/runtime-auto-update.js, the background hook runtime refresh started by the MCP server.
+    manifest.fileCount <= 712,
+    `npm package should stay <= 712 files, got ${manifest.fileCount}`
   );
   // Ceiling bumped from 2.75 MB → 2.85 MB (2026-04-16) to accommodate the
   // incremental review-delta demo content in public/dashboard.html landing
