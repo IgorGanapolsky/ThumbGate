@@ -414,6 +414,7 @@ const PRO_PAGE_PATH = path.resolve(__dirname, '../../public/pro.html');
 const DASHBOARD_PAGE_PATH = path.resolve(__dirname, '../../public/dashboard.html');
 const LESSONS_PAGE_PATH = path.resolve(__dirname, '../../public/lessons.html');
 const GUIDE_PAGE_PATH = path.resolve(__dirname, '../../public/guide.html');
+const UDEMY_PAGE_PATH = path.resolve(__dirname, '../../public/udemy.html');
 const CHATGPT_APP_PAGE_PATH = path.resolve(__dirname, '../../public/chatgpt-app.html');
 const CODEX_PLUGIN_PAGE_PATH = path.resolve(__dirname, '../../public/codex-plugin.html');
 const COMPARE_PAGE_PATH = path.resolve(__dirname, '../../public/compare.html');
@@ -4454,6 +4455,10 @@ function loadAboutPageHtml(runtimeConfig, pageContext = {}) {
   return loadPublicMarketingTemplateHtml(ABOUT_PAGE_PATH, runtimeConfig, pageContext);
 }
 
+function loadUdemyPageHtml(runtimeConfig, pageContext = {}) {
+  return loadPublicMarketingTemplateHtml(UDEMY_PAGE_PATH, runtimeConfig, pageContext);
+}
+
 function loadGuidePageHtml(runtimeConfig, pageContext = {}) {
   return loadPublicMarketingTemplateHtml(GUIDE_PAGE_PATH, runtimeConfig, pageContext);
 }
@@ -5123,11 +5128,10 @@ function renderRobotsTxt(runtimeConfig) {
 function renderSitemapXml(runtimeConfig) {
   const entries = [
     { path: '/', changefreq: 'weekly', priority: '1.0' },
-    { path: '/diagnostic', changefreq: 'weekly', priority: '0.9' },
     { path: '/founders', changefreq: 'weekly', priority: '0.95' },
+    { path: '/pricing', changefreq: 'weekly', priority: '0.9' },
     { path: '/operator-framework', changefreq: 'weekly', priority: '0.9' },
     { path: '/peter', changefreq: 'weekly', priority: '0.9' },
-    { path: '/workflow-hardening-sprint', changefreq: 'weekly', priority: '0.9' },
     { path: '/install', changefreq: 'weekly', priority: '0.9' },
     { path: '/connectors', changefreq: 'weekly', priority: '0.85' },
     { path: '/terms', changefreq: 'monthly', priority: '0.7' },
@@ -5714,26 +5718,23 @@ function renderCheckoutSuccessPage(runtimeConfig) {
 }
 
 function renderCheckoutCancelledPage(runtimeConfig) {
-  const sprintDiagnosticPriceDollars = runtimeConfig.sprintDiagnosticPriceDollars || 499;
-  const workflowSprintPriceDollars = runtimeConfig.workflowSprintPriceDollars || 1500;
   const proDirectUrl = escapeHtmlAttribute(new URL('/go/pro-direct?utm_source=website&utm_medium=checkout_cancel_recovery&utm_campaign=pro_upgrade', runtimeConfig.appOrigin).toString());
   const playbookUrl = escapeHtmlAttribute(new URL('/go/playbook-999?utm_source=website&utm_medium=checkout_cancel_recovery&utm_campaign=playbook_999', runtimeConfig.appOrigin).toString());
   const bundle49Url = escapeHtmlAttribute(new URL('/go/bundle-49?utm_source=website&utm_medium=checkout_cancel_recovery&utm_campaign=bundle_49', runtimeConfig.appOrigin).toString());
-  const diagnosticUrl = escapeHtmlAttribute(new URL('/diagnostic', runtimeConfig.appOrigin).toString());
-  const workflowSprintUrl = escapeHtmlAttribute(new URL('/go/sprint', runtimeConfig.appOrigin).toString());
+  // The diagnostic and sprint offers are retired (410), so recovery points at current plans instead.
+  const pricingUrl = escapeHtmlAttribute(new URL('/pricing', runtimeConfig.appOrigin).toString());
   const workflowSprintIntakeUrl = escapeHtmlAttribute(new URL('/#workflow-sprint-intake', runtimeConfig.appOrigin).toString());
   const recoveryOfferLinks = [
     `<a href="${playbookUrl}" data-recovery-offer="playbook_999" data-offer-price="9.99">Buy $9.99 Playbook (One-Time, No Subscription)</a>`,
     `<a href="${bundle49Url}" data-recovery-offer="bundle_49" data-offer-price="49">Buy $49 Production Bundle (One-Time Expense)</a>`,
     `<a href="${proDirectUrl}" data-recovery-offer="pro_direct" data-offer-price="19">1-Click Stripe Pro ($19/mo)</a>`,
     `<a id="send-workflow-first" href="${workflowSprintIntakeUrl}" data-recovery-offer="workflow_sprint_intake" data-offer-price="0">Send workflow first</a>`,
-    `<a href="${diagnosticUrl}" data-recovery-offer="sprint_diagnostic" data-offer-price="${sprintDiagnosticPriceDollars}">Review $${sprintDiagnosticPriceDollars} diagnostic</a>`,
-    `<a href="${workflowSprintUrl}" data-recovery-offer="workflow_sprint" data-offer-price="${workflowSprintPriceDollars}">Scope $${workflowSprintPriceDollars} sprint</a>`,
+    `<a href="${pricingUrl}" data-recovery-offer="compare_plans" data-offer-price="0">Compare current plans</a>`,
   ].join('\n        ');
   const recoveryOfferCard = recoveryOfferLinks
     ? `<div class="card recovery-card">
       <h2>Need help deciding?</h2>
-      <p>If Pro is not the right next step, start smaller or send the workflow first. We can qualify the blocker, confirm the proof plan, and route you to the diagnostic or sprint only when the scope is real.</p>
+      <p>If Pro is not the right next step, start smaller or send the workflow first. We can qualify the blocker and point you to the plan that fits.</p>
       <div class="actions">
         ${recoveryOfferLinks}
       </div>
@@ -7622,6 +7623,29 @@ function createUnscopedApiServer({ ownerAdminDependencies = {} } = {}) {
   return http.createServer(async (req, res) => {
     const parsed = new URL(req.url, 'http://localhost');
     const pathname = parsed.pathname;
+    const retiredOfferPages = new Set([
+      '/diagnostic', '/workflow-diagnostic', '/sprint', '/workflow-hardening',
+      '/workflow-hardening-sprint', '/workflow-sprint',
+    ]);
+    const retiredPath = pathname.toLowerCase().replace(/\/$/, '').replace(/\.html$/, '');
+    // /go/<slug> dispatch normalizes the slug (getTrackedLinkTarget), so match the same normalized slug here;
+    // otherwise /go/DIAGNOSTIC-PAY would skip retirement and still reach the payment link.
+    const goSlugMatch = pathname.match(/^\/go\/([^/]+)\/?$/);
+    const retiredGoSlug = goSlugMatch ? normalizeTrackedLinkSlug(goSlugMatch[1]) : '';
+    if (retiredOfferPages.has(retiredPath)
+      || /^(?:diagnostic(?:-499|-direct|-pay)?|sprint|operator-diagnostic)$/.test(retiredGoSlug)
+      || /^\/checkout\/(?:sprint|diagnostic|workflow-sprint)$/.test(retiredPath)) {
+      res.writeHead(410, {
+        'Content-Type': 'application/json; charset=utf-8',
+        'Cache-Control': 'no-store',
+        Link: '</pricing>; rel="alternate"',
+      });
+      res.end(req.method === 'HEAD' ? undefined : JSON.stringify({
+        error: 'This offer has been retired.', pricingUrl: '/pricing',
+      }));
+      return;
+    }
+
     const privatePath = ownerAdmin.adminPath(pathname);
     const category = privatePath.matched ? 'admin' : pathname === '/v1/telemetry/ping' ? 'telemetry'
       : pathname === '/health' ? 'health' : pathname.startsWith('/v1/') ? 'api' : 'page';
@@ -8836,6 +8860,32 @@ async function addContext(){
       return;
     }
 
+    // Landing page for students of the free Udemy course. A visit is recorded with utm_source=udemy even when the
+    // course link lost its query string; installs and checkout starts follow through the existing source capture.
+    if (isGetLikeRequest && (pathname === '/udemy' || pathname === '/udemy/' || pathname === '/udemy.html')) {
+      if (!parsed.searchParams.get('utm_source')) {
+        parsed.searchParams.set('utm_source', 'udemy');
+        parsed.searchParams.set('utm_medium', 'course');
+        parsed.searchParams.set('utm_campaign', 'free_course');
+      }
+      try {
+        servePublicMarketingPage({
+          req,
+          res,
+          parsed,
+          hostedConfig,
+          isHeadRequest,
+          renderHtml: loadUdemyPageHtml,
+          extraTelemetry: {
+            pageType: 'udemy',
+          },
+        });
+      } catch (err) {
+        sendText(res, 500, err.message || 'Udemy page unavailable');
+      }
+      return;
+    }
+
     if (isGetLikeRequest && (pathname === '/guide' || pathname === '/guide.html')) {
       try {
         servePublicMarketingPage({
@@ -9007,7 +9057,7 @@ async function addContext(){
 
     if (isGetLikeRequest && (pathname === '/services' || pathname === '/services.html')) {
       res.writeHead(302, {
-        Location: '/#workflow-sprint-intake',
+        Location: '/pricing',
         'Cache-Control': 'no-store',
       });
       res.end();

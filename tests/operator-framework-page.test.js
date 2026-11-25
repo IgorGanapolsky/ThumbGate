@@ -74,8 +74,8 @@ test('pricing page links to the operator framework', async () => {
   assert.match(html, /href="\/operator-framework"/);
 });
 
-test('operator offer routes redirect humans to the live Stripe Payment Links', async () => {
-  for (const [route, stripeUrl] of Object.entries(OFFER_ROUTES)) {
+test('retired operator diagnostic rejects human checkout navigation without a payment redirect', async () => {
+  for (const route of Object.keys(OFFER_ROUTES)) {
     // Raw request: Node's fetch overwrites Sec-Fetch-Mode, which this route checks.
     const routeUrl = new URL(route, origin);
     const res = await new Promise((resolve, reject) => {
@@ -86,11 +86,12 @@ test('operator offer routes redirect humans to the live Stripe Payment Links', a
           'sec-fetch-mode': 'navigate',
           'sec-fetch-dest': 'document',
         },
-      }, (r) => { r.resume(); resolve({ status: r.statusCode, location: r.headers.location }); }).on('error', reject);
+      }, (r) => { r.resume(); resolve({ status: r.statusCode, location: r.headers.location, cacheControl: r.headers['cache-control'], link: r.headers.link }); }).on('error', reject);
     });
-    assert.equal(res.status, 302, `${route} must redirect`);
-    const location = new URL(res.location);
-    assert.equal(location.origin + location.pathname, stripeUrl, `${route} must land on ${stripeUrl}`);
+    assert.equal(res.status, 410, `${route} is retired`);
+    assert.equal(res.location, undefined, 'retired checkout must not redirect to payment');
+    assert.match(res.cacheControl || '', /no-store/);
+    assert.equal(res.link, '</pricing>; rel="alternate"');
   }
 });
 
