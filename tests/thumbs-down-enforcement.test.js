@@ -192,3 +192,25 @@ test('Cursor loop hooks are recognised in every spelling, so init and self-heal 
   assert.ok(!isThumbgateLoopHook({ command: 'echo cursor-prompt' }, 'cursor-prompt'), 'someone else\'s hook');
   assert.ok(!isThumbgateLoopHook({ command: 'node "/repo/bin/cli.js" cursor-record' }, 'cursor-prompt'), 'another subcommand');
 });
+
+test('Cursor self-heal: a shell gate pinned to a folder that is gone is moved to the portable runtime, and shell commands run again', () => {
+  const w = world();
+  const hooksFile = path.join(w.project, '.cursor', 'hooks.json');
+  fs.mkdirSync(path.dirname(hooksFile), { recursive: true });
+  const dead = 'node "/tmp/gone-npx-cache/node_modules/thumbgate/scripts/cursor-shell-gate.js"';
+  fs.writeFileSync(hooksFile, JSON.stringify({ version: 1, hooks: { beforeShellExecution: [{ command: 'echo mine' }, { command: dead, timeout: 10, failClosed: true }] } }));
+  const { repairCursorHooks } = require('../scripts/cursor-self-heal');
+  const result = repairCursorHooks({ homeDir: w.project, env: {} });
+  assert.equal(result.changed, true);
+  const shell = JSON.parse(fs.readFileSync(hooksFile, 'utf8')).hooks.beforeShellExecution;
+  assert.equal(shell.length, 2, 'the entry is replaced in place, not duplicated');
+  assert.equal(shell[0].command, 'echo mine', 'someone else\'s hook is untouched');
+  assert.ok(!/gone-npx-cache/.test(shell[1].command) && /cursor-gate/.test(shell[1].command), shell[1].command);
+  assert.equal(shell[1].failClosed, true, 'still fails closed when the gate itself cannot decide');
+  const out = spawnSync('sh', ['-c', shell[1].command], { cwd: w.project, env: w.env, encoding: 'utf8', timeout: 60000, input: JSON.stringify({ command: 'ls', cwd: w.project }) });
+  assert.equal(JSON.parse(out.stdout.trim().split('\n').pop()).permission, 'allow', 'the repaired gate answers');
+
+  const { wireCursorBeforeShellGate } = require('../scripts/auto-wire-hooks');
+  wireCursorBeforeShellGate({ cursorHooksPath: hooksFile });
+  assert.equal(JSON.parse(fs.readFileSync(hooksFile, 'utf8')).hooks.beforeShellExecution.length, 2, 'init after the repair adds no second shell gate');
+});
