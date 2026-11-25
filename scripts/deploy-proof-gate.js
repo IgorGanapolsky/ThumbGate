@@ -78,6 +78,7 @@ function findDeployClaim(text) {
     const after = response.slice(match.index + match[0].length, match.index + match[0].length + 15);
     const { clause, terminator } = clauseAround(response, match.index, match[0].length);
     if (NEGATION_BEFORE.test(before) || NEGATION_AFTER.test(after)) continue;
+    if (NON_PROD_TARGET.test(response.slice(match.index + match[0].length, match.index + match[0].length + 40))) continue;
     if (HEDGE_IN_CLAUSE.test(clause)) continue;
     if (terminator === '?') continue; // a question, not a claim
     return match[0];
@@ -85,36 +86,46 @@ function findDeployClaim(text) {
   return null;
 }
 
-/** Returns the kinds of production proof found in the text. */
+// A check that ran and failed is not proof.
+const FAILURE_RE = /\b(?:connection refused|could not resolve|timed? ?out|failed to connect|bad gateway|service unavailable|ECONNREFUSED|ENOTFOUND|ETIMEDOUT)\b|\bHTTP[\s/]*(?:1\.[01]|2(?:\.0)?)?\s*[45]\d\d\b|"(?:status)"\s*:\s*"(?:error|down|fail(?:ed|ing)?|unhealthy|degraded)"|"ok"\s*:\s*false/i;
+// Explicitly non-production targets.
+const NON_PROD_TARGET = /^\s*(?:to|on|in|at)\s+(?:the\s+)?(?:staging|stage|dev|development|preview|test|testing|qa|sandbox|local(?:host)?)\b/i;
+
+/**
+ * Returns the kinds of production proof found in the text. A curl command on
+ * its own is not proof: the reply must show a result (health JSON, buildSha,
+ * HTTP 200 or a sentinel line), and any reported failure cancels the proof.
+ * With hosts configured, the result must sit next to a configured host.
+ */
 function findDeployEvidence(text, config = { hosts: [], sentinels: [] }) {
   const response = String(text || '');
+  if (FAILURE_RE.test(response)) return [];
   const hosts = config.hosts || [];
-  const hostSource = hosts.length
-    ? `(?:${hosts.map(escapeRegExp).join('|')})`
-    : String.raw`[a-z0-9.-]+\.[a-z]{2,}`;
-  const hostRe = new RegExp(hostSource, 'i');
+  const hostRe = hosts.length
+    ? new RegExp(`(?:${hosts.map(escapeRegExp).join('|')})`, 'i')
+    : /https?:\/\/[a-z0-9.-]+\.[a-z]{2,}|\b[a-z0-9-]+(?:\.[a-z0-9-]+)*\.[a-z]{2,}\b/i;
+  const hostSeen = hostRe.test(response);
   const found = [];
 
-  if (new RegExp(String.raw`curl\s+(?:-\S+\s+)*['"]?https?:\/\/(?:[^\s/'"]*\.)?${hostSource}`, 'i').test(response)) {
-    found.push('curl');
-  }
-  if (/"buildSha"\s*:\s*"[a-f0-9]{6,}"/i.test(response) || /\bbuildSha\s*[:=]\s*[a-f0-9]{6,}/i.test(response)) {
+  if (/"buildSha"\s*:\s*"[a-f0-9]{6,}/i.test(response) || /\bbuildSha\s*[:=]\s*[a-f0-9]{6,}/i.test(response)) {
     found.push('buildSha');
   }
   if (/\{[^{}]*"(?:status|ok)"\s*:\s*(?:"ok"|"healthy"|true)[^{}]*\}/i.test(response)
     || /\{[^{}]*"version"\s*:\s*"\d+\.\d+\.\d+[^"]*"[^{}]*\}/i.test(response)) {
     found.push('health-json');
   }
-  if (/\bHTTP[\s/]*(?:1\.1|2|2\.0)?\s*200\b/i.test(response) && hostRe.test(response)) {
+  if (/\bHTTP[\s/]*(?:1\.[01]|2(?:\.0)?)?\s*200\b/i.test(response)) {
     found.push('http-200');
   }
+  // Results only count when the production host is named in the same reply.
+  const results = hostSeen ? found : [];
   for (const sentinel of config.sentinels || []) {
     if (response.includes(sentinel)) {
-      found.push(`sentinel:${sentinel}`);
+      results.push(`sentinel:${sentinel}`);
       break;
     }
   }
-  return found;
+  return results;
 }
 
 function deployProofReason(claim, config) {
@@ -135,7 +146,7 @@ function evaluateDeployProof(text, options = {}) {
   if (config.enabled === false) return null;
   const claim = findDeployClaim(text);
   if (!claim) return null;
-  const evidence = findDeployEvidence(`${text}\n${options.evidenceText || ''}`, config);
+  const evidence = findDeployEvidence(text, config);
   if (evidence.length) return null;
   return {
     decision: 'block',

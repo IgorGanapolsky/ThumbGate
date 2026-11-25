@@ -26,11 +26,12 @@ test('blocks an unproven deploy claim', () => {
 
 test('allows the claim when curl output against production is in the reply', () => {
   const reply = 'Shipped. `curl -s https://app.example.com/health` returned {"status":"ok","version":"2.1.0"}';
+  assert.equal(evaluateDeployProof(reply, { config: { hosts: ['app.example.com'], sentinels: [] }, env: EMPTY_ENV }), null);
   assert.equal(evaluateDeployProof(reply, { config: NO_HOSTS, env: EMPTY_ENV }), null);
 });
 
 test('allows the claim with a buildSha or HTTP 200 from the host', () => {
-  assert.equal(evaluateDeployProof('Deployed, buildSha: 9f3a2b1c', { config: NO_HOSTS, env: EMPTY_ENV }), null);
+  assert.equal(evaluateDeployProof('Deployed, app.example.com/health buildSha: 9f3a2b1c', { config: NO_HOSTS, env: EMPTY_ENV }), null);
   assert.equal(evaluateDeployProof('Now live. HTTP/2 200 from app.example.com', { config: NO_HOSTS, env: EMPTY_ENV }), null);
 });
 
@@ -40,7 +41,27 @@ test('with hosts configured, proof from another host does not count', () => {
   const result = evaluateDeployProof(reply, { config, env: EMPTY_ENV });
   assert.equal(result.decision, 'block');
   assert.match(result.reason, /app\.example\.com/);
+  // Health JSON and buildSha from another host do not count either.
+  const staging = 'Deployed. curl https://staging.other.dev/health returned {"status":"ok","version":"2.1.0","buildSha":"9f3a2b1c"}';
+  assert.equal(evaluateDeployProof(staging, { config, env: EMPTY_ENV }).decision, 'block');
   assert.equal(evaluateDeployProof('Deployed. curl -sI https://app.example.com → HTTP/2 200', { config, env: EMPTY_ENV }), null);
+});
+
+test('a curl command without a successful result is not proof', () => {
+  for (const reply of [
+    'Deployed. Run curl -s https://app.example.com/health to confirm.',
+    'Deployed. curl https://app.example.com/health failed: connection refused.',
+    'Deployed. curl -sI https://app.example.com → HTTP/2 502',
+    'Deployed. curl https://app.example.com/health → {"status":"error","version":"2.1.0"}',
+  ]) {
+    assert.equal(evaluateDeployProof(reply, { config: NO_HOSTS, env: EMPTY_ENV }).decision, 'block', reply);
+  }
+});
+
+test('deploys to staging or preview are not production claims', () => {
+  assert.equal(findDeployClaim('The fix is deployed to staging, not production.'), null);
+  assert.equal(findDeployClaim('Deployed on the preview environment for review.'), null);
+  assert.equal(findDeployClaim('Deployed to production.'), 'Deployed');
 });
 
 test('a configured CI sentinel counts as proof', () => {
@@ -77,7 +98,8 @@ test('loads hosts and sentinels from .thumbgate/deploy-proof.json and env', () =
   const config = loadDeployProofConfig({ cwd: dir, env: { THUMBGATE_PROD_HOSTS: 'api.example.com, app.example.com' } });
   assert.deepEqual(config.hosts, ['app.example.com', 'api.example.com']);
   assert.deepEqual(config.sentinels, ['Deploy verified']);
-  assert.deepEqual(findDeployEvidence('curl https://api.example.com/health', config), ['curl']);
+  assert.deepEqual(findDeployEvidence('curl -sI https://api.example.com/health → HTTP/2 200', config), ['http-200']);
+  assert.deepEqual(findDeployEvidence('curl -sI https://api.example.com/health', config), []);
 });
 
 test('shipped Stop hook (claim-stop-check) blocks once, then yields on retry', () => {
