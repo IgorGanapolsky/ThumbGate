@@ -103,9 +103,22 @@ test('hook emits reminder when claim has no proof in same turn', () => {
       { type: 'text', text: 'The federal page is now live on production.' },
     ],
   });
-  const { stdout } = runHook(transcript);
+  const { stdout } = runHook(transcript, { env: { THUMBGATE_DEPLOY_PROOF_GATE: '0' } });
   assert.match(stdout, /anti-claim gate/i);
   assert.match(stdout, /is\s+live|now\s+live/i);
+});
+
+test('deploy claim with no production proof hard-blocks by default (deploy-proof gate)', () => {
+  const transcript = writeTranscript({
+    content: [
+      { type: 'text', text: 'The federal page is now live on production.' },
+    ],
+  });
+  const { stdout } = runHook(transcript, { env: { THUMBGATE_DEPLOY_PROOF_GATE: '' } });
+  const decision = JSON.parse(stdout.trim());
+  assert.equal(decision.decision, 'block');
+  assert.equal(decision.gate, 'deploy-proof');
+  assert.match(decision.reason, /now live/);
 });
 
 test('hook emits reminder for GitHub metadata verification claim with no proof', () => {

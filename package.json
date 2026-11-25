@@ -391,6 +391,7 @@
     "scripts/canary-gate.js",
     "scripts/claim-gate-stop.js",
     "scripts/claim-gate-rules.js",
+    "scripts/deploy-proof-gate.js",
     "scripts/cursor-shell-gate.js",
     "scripts/boundary-check.js",
     "scripts/prompt-risk-lint.js",

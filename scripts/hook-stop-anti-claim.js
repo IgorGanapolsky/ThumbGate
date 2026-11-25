@@ -32,6 +32,7 @@ const fs = require('node:fs');
 const {
   evaluateUniversalClaims,
 } = require('./universal-claim-evaluator');
+const { evaluateDeployProof } = require('./deploy-proof-gate');
 
 // Lie-phrase patterns. These match common "claim of completion" wording
 // the agent emits without verification. Word-boundary anchored to avoid
@@ -303,6 +304,19 @@ function main() {
   });
   if (factualBlock) {
     process.stdout.write(`${JSON.stringify(factualBlock)}\n`);
+    return;
+  }
+
+  // Deploy-proof gate: on by default. "deployed / shipped / live" with no
+  // production proof (curl, /health JSON, buildSha, HTTP 200) in the reply
+  // blocks the stop once. THUMBGATE_DEPLOY_PROOF_GATE=0 turns it off.
+  // A curl/health call made in the same message counts as proof too.
+  const deployBlock = evaluateDeployProof(text, {
+    cwd: payload.cwd || payload.workspace_root || process.cwd(),
+    evidenceText: toolUseSummary,
+  });
+  if (deployBlock) {
+    process.stdout.write(`${JSON.stringify(deployBlock)}\n`);
     return;
   }
 
