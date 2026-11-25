@@ -128,9 +128,10 @@ function readState(feedbackDir) {
       holds: Array.isArray(data.holds) ? data.holds : [],
       actions: Array.isArray(data.actions) ? data.actions : [],
       posts: data.posts && typeof data.posts === 'object' ? data.posts : {},
+      approved: Array.isArray(data.approved) ? data.approved : [],
     };
   } catch {
-    return { holds: [], actions: [], posts: {} };
+    return { holds: [], actions: [], posts: {}, approved: [] };
   }
 }
 
@@ -192,6 +193,44 @@ function releaseHolds({ feedbackDir, now = Date.now(), by = 'person' }) {
   }
   if (count) writeState(feedbackDir, state);
   return count;
+}
+
+/**
+ * A person's thumbs-up: record the action that drew it as approved, so the next run can repeat it.
+ * Returns the approval, or null when there was no recent action to approve.
+ * @param {{feedbackDir: string, sessionId?: string, now?: number}} opts
+ */
+function recordApproval({ feedbackDir, sessionId = '', now = Date.now() }) {
+  if (!feedbackDir || !enabled()) return null;
+  const state = readState(feedbackDir);
+  const recent = state.actions.filter((a) => now - a.at <= LAST_ACTION_WINDOW_MS && (!sessionId || !a.sessionId || a.sessionId === sessionId));
+  const last = recent[recent.length - 1];
+  if (!last) return null;
+  const approval = {
+    at: new Date(now).toISOString(),
+    sessionId: String(sessionId || ''),
+    toolName: last.toolName,
+    kind: last.kind,
+    chatKey: last.chatKey || null,
+    signature: last.signature || null,
+    textHash: last.textHash || null,
+  };
+  const existing = state.approved.find((a) => a.toolName === approval.toolName && a.signature === approval.signature && a.chatKey === approval.chatKey && (a.textHash || null) === approval.textHash);
+  if (existing) {
+    existing.count = (existing.count || 1) + 1;
+    existing.at = approval.at;
+  } else {
+    state.approved.push({ ...approval, count: 1 });
+  }
+  state.approved = state.approved.slice(-50);
+  writeState(feedbackDir, state);
+  return existing || state.approved[state.approved.length - 1];
+}
+
+function describeAction(a) {
+  if (!a) return '';
+  if (a.signature) return `\`${a.signature} …\``;
+  return a.chatKey && !String(a.chatKey).startsWith('tool:') ? `${a.toolName} (${a.chatKey})` : a.toolName;
 }
 
 // ---------------------------------------------------------------------------
@@ -259,9 +298,11 @@ function evaluate({ feedbackDir, toolName, toolInput = {}, sessionId = '', now =
       }
     }
     const prev = state.actions[state.actions.length - 1];
-    const dup = prev && prev.toolName === toolName && prev.signature === signature && prev.chatKey === chatKey && now - prev.at < 2000;
+    // Posts and edits have no command, so their wording (hashed) is what tells two approved posts apart.
+    const textHash = kind ? hashText(textOf(toolInput)) : null;
+    const dup = prev && prev.toolName === toolName && prev.signature === signature && prev.chatKey === chatKey && (prev.textHash || null) === textHash && now - prev.at < 2000;
     if (!dup) {
-      state.actions.push({ at: now, sessionId: String(sessionId || ''), toolName, kind: kind || 'action', chatKey, signature });
+      state.actions.push({ at: now, sessionId: String(sessionId || ''), toolName, kind: kind || 'action', chatKey, signature, ...(textHash ? { textHash } : {}) });
       state.actions = state.actions.slice(-KEEP_ACTIONS);
       changed = true;
     }
@@ -282,6 +323,8 @@ module.exports = {
   isReleasePrompt,
   placeHold,
   releaseHolds,
+  recordApproval,
+  describeAction,
   evaluate,
   readState,
 };
