@@ -25,6 +25,7 @@ test('replies that hand the person manual steps are denied; 2FA is exempt', () =
   }
   assert.equal(gates.evaluateReply('mcp__hearthbot__post_message', { text: 'GitHub asks for your 2FA code; you need to type it on your phone.' }).deny, false);
   assert.equal(gates.evaluateReply('mcp__hearthbot__post_message', { text: 'I opened PR #12 and I am watching its checks.' }).deny, false);
+  assert.equal(gates.evaluateReply('mcp__hearthbot__post_message', { text: 'Please paste the API key here. We can configure 2FA later.' }).deny, true, '2FA elsewhere does not exempt an unrelated step');
   const card = gates.evaluateReply('mcp__hearthbot__request_decision', { question: 'Pick one', options: [{ label: 'A', consequence: 'You need to run the script yourself.' }] });
   assert.equal(card.deny, true, 'decision cards are checked too');
 });
@@ -36,6 +37,8 @@ test('a completion claim in a reply needs proof from this turn', () => {
   const noProof = gates.evaluateReply('mcp__hearthbot__post_message', { text: 'It is deployed and verified.' }, { transcript_path: transcript });
   assert.equal(noProof.deny, true);
   assert.equal(noProof.rule, 'proof-before-claim');
+  const namedOnly = gates.evaluateReply('mcp__hearthbot__post_message', { text: 'All tests are passing; npm test confirms it.' }, { transcript_path: transcript });
+  assert.equal(namedOnly.deny, true, 'naming a check in the reply is not proof');
 
   const toolUse = { type: 'assistant', message: { content: [{ type: 'tool_use', name: 'Bash', input: { command: 'curl -s https://thumbgate.ai/health' } }] } };
   const toolResult = { type: 'user', message: { content: [{ type: 'tool_result', content: '{"status":"ok","version":"1.42.2"}' }] } };

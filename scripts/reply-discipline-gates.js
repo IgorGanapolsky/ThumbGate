@@ -62,12 +62,16 @@ function loadConfig(options = {}) {
   return { enabled: env.THUMBGATE_PR_DISCIPLINE === '1' };
 }
 
+// The 2FA exemption covers only the sentence that asks for the code, so an
+// unrelated manual step elsewhere in the same reply is still caught.
 function findManualStep(text) {
-  const t = String(text || '');
-  if (!t || MANUAL_STEP_EXEMPT.test(t)) return null;
-  for (const p of MANUAL_STEP_PATTERNS) {
-    const m = t.match(p);
-    if (m) return m[0];
+  const sentences = String(text || '').split(/(?<=[.!?])\s+|\n+/);
+  for (const sentence of sentences) {
+    if (!sentence || MANUAL_STEP_EXEMPT.test(sentence)) continue;
+    for (const p of MANUAL_STEP_PATTERNS) {
+      const m = sentence.match(p);
+      if (m) return m[0];
+    }
   }
   return null;
 }
@@ -124,8 +128,9 @@ function evaluateReply(toolName, input, payload = {}, deps = {}) {
   const anti = deps.antiClaim || require('./hook-stop-anti-claim');
   const claim = anti.findClaim(text);
   if (claim) {
-    const evidence = `${text}\n${currentTurnEvidence(payload.transcript_path)}`;
-    if (!anti.hasProof(evidence)) {
+    // Only what ran this turn counts; naming a check in the reply is not proof.
+    const evidence = currentTurnEvidence(payload.transcript_path);
+    if (!evidence || !anti.hasProof(evidence)) {
       return {
         deny: true,
         rule: 'proof-before-claim',
