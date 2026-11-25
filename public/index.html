@@ -886,11 +886,11 @@ $ ... "rm -rf ~/"
       <div class="shell">
         <div class="section-kicker">New in 1.43.1 &middot; Claude Code</div>
         <h2 class="section-title">"It's live" needs proof.</h2>
-        <p class="section-lede">When your agent says <em>deployed</em>, <em>shipped</em> or <em>live</em> and the reply shows no curl output, <code>/health</code> snapshot, <code>buildSha</code> or HTTP 200 from production, ThumbGate's Stop hook sends the reply back to the agent to run the check first. It is on by default, blocks once so a reply can never loop, and reads your production hosts from <code>.thumbgate/deploy-proof.json</code>.</p>
+        <p class="section-lede">When Claude Code says <em>deployed</em> or <em>live</em> with no production proof in the reply (curl output, <code>/health</code>, <code>buildSha</code>, HTTP 200), ThumbGate's Stop hook sends it back to run the check. On by default, and it blocks once so a reply can never loop.</p>
         <figure class="diagram-frame" style="margin-top:24px">
           <img src="/assets/diagrams/deploy-proof-gate.png" width="1100" height="392" alt="Terminal: the agent says the login fix is deployed and live, ThumbGate's Stop hook blocks the reply for lack of production proof, the agent runs curl on /health and pastes the JSON, and the reply is allowed." loading="lazy" decoding="async">
         </figure>
-        <p class="hero-note">Real hook output from <code>thumbgate claim-stop-check</code>; terminal frame redrawn. It checks that proof is present, not that it is true, and it matches words, so "the build is up" is not caught. <a href="/learn/proof-before-claim-deploy-gate">How the deploy-proof gate works</a></p>
+        <p class="hero-note">Real <code>claim-stop-check</code> output, frame redrawn. It checks that proof is present, not that it is true. <a href="/learn/proof-before-claim-deploy-gate">How the deploy-proof gate works</a></p>
       </div>
     </section>
 
