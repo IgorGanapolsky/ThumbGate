@@ -533,8 +533,9 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
     // 726 -> 727 (2026-11-25): scripts/delete-equivalence.js, a learned delete also denies the same delete written in Python (AGENT-3667) (+1).
     // 727 -> 728 (2026-11-25): scripts/cursor-self-heal.js (adds the thumbs-down loop to old Cursor installs).
     // 728 -> 729 (2026-11-25): src/api/security-headers.js, baseline security headers on every response (+1).
-    manifest.fileCount <= 729,
-    `npm package should stay <= 729 files, got ${manifest.fileCount}`
+    // 729 -> 730 (2026-11-25): public/host-matrix.html (a1844d0) added to package.json files (+1).
+    manifest.fileCount <= 730,
+    `npm package should stay <= 730 files, got ${manifest.fileCount}`
   );
   // Ceiling bumped from 2.75 MB → 2.85 MB (2026-04-16) to accommodate the
   // incremental review-delta demo content in public/dashboard.html landing
@@ -834,7 +835,7 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // Bumped 10.81 MB -> 10.82 MB (2026-11-25, PR #5222, after merging main): measured 10,819,959.
   // Bumped 10.82 MB -> 10.83 MB (2026-11-25, release PR #5260): thumbs-up approval recording in scripts/send-gate.js
   // and the portable Cursor shell gate (PRs #5255, #5257); measured 10,822,233 on main and on the release branch.
-  // Bumped 10.83 MB -> 10.84 MB (2026-11-25): main measured 10,832,577 after the evening merges, over the ceiling.
+  // Bumped 10.83 MB -> 10.84 MB (2026-11-25): main measured 10,832,577 after the evening merges; 10,836,397 with public/host-matrix.html.
   manifest.unpackedSize <= 10_840_000,
   `npm package should stay <= 10.84 MB unpacked, got ${manifest.unpackedSize}`
 );
