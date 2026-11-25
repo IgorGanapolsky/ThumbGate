@@ -33,8 +33,11 @@ const SECURITY_HEADERS = Object.freeze({
 });
 
 function applySecurityHeaders(res) {
+  // Bare response objects (in-process test doubles, some adapters) may lack the header API.
+  if (!res || typeof res.setHeader !== 'function') return;
+  const has = typeof res.hasHeader === 'function' ? (name) => res.hasHeader(name) : () => false;
   for (const [name, value] of Object.entries(SECURITY_HEADERS)) {
-    if (!res.hasHeader(name)) res.setHeader(name, value);
+    if (!has(name)) res.setHeader(name, value);
   }
 }
 
