@@ -1,6 +1,6 @@
 {
   "name": "thumbgate",
-  "version": "1.43.1",
+  "version": "1.45.0",
   "description": "ThumbGate Pre-Action Checks self-improve from ranked lessons and repeated failures, hard-block detected secret leaks, and block matches in strict mode.",
   "homepage": "https://thumbgate.ai",
   "repository": {
@@ -392,6 +392,7 @@
     "scripts/canary-gate.js",
     "scripts/claim-gate-stop.js",
     "scripts/claim-gate-rules.js",
+    "scripts/send-gate.js",
     "scripts/deploy-proof-gate.js",
     "scripts/cursor-shell-gate.js",
     "scripts/boundary-check.js",
@@ -1175,7 +1176,7 @@
     "perplexity:brief": "node scripts/perplexity-command-center.js brief",
     "perplexity:full": "node scripts/perplexity-command-center.js full",
     "perplexity:mcp-config": "node scripts/perplexity-command-center.js mcp-config",
-    "test:explore": "node --test tests/explore.test.js",
+    "test:explore": "node --test tests/explore.test.js tests/desktop-snapshot.test.js",
     "test:cli-schema": "node --test tests/cli-schema.test.js",
     "compat:matrix": "node scripts/host-gate-matrix.js --write",
     "compat:check": "node scripts/host-gate-matrix.js --check",
@@ -1335,7 +1336,7 @@
     "test:secret-egress": "node --test tests/secret-egress-gate.test.js",
     "test:sandbox-escape-gates": "node --test tests/sandbox-escape-gates.test.js",
     "test:harness-tool-names": "node --test tests/harness-tool-names.test.js",
-    "test:feedback-reward": "node --test tests/readme-claims.test.js tests/enforcement-path-offline.test.js tests/commit-secret-and-rm-gates.test.js tests/host-enforcement-summary.test.js tests/enforcement-matrix-route.test.js tests/cursor-fail-closed.test.js tests/advisory-hosts-honesty.test.js tests/feedback-reward-score.test.js tests/feedback-thumbs-down-promotion.test.js tests/pilot-request.test.js tests/lesson-distinct-kept.test.js tests/prompt-lessons.test.js tests/lesson-effect.test.js tests/bulk-destroy-gates.test.js tests/default-gates-clean.test.js tests/checkout-price-guard.test.js tests/shared-tree-gate.test.js tests/canary-boundary-lint.test.js tests/plugin-hook-paths-shipped.test.js tests/cursor-gate-path.test.js tests/claim-gate-rules.test.js tests/host-gate-matrix.test.js tests/audit-decision-line.test.js tests/not-a-thumb.test.js tests/udemy-source.test.js tests/paraphrase-test-script.test.js",
+    "test:feedback-reward": "node --test tests/readme-claims.test.js tests/enforcement-path-offline.test.js tests/commit-secret-and-rm-gates.test.js tests/host-enforcement-summary.test.js tests/enforcement-matrix-route.test.js tests/cursor-fail-closed.test.js tests/advisory-hosts-honesty.test.js tests/feedback-reward-score.test.js tests/feedback-thumbs-down-promotion.test.js tests/pilot-request.test.js tests/lesson-distinct-kept.test.js tests/prompt-lessons.test.js tests/lesson-effect.test.js tests/bulk-destroy-gates.test.js tests/default-gates-clean.test.js tests/checkout-price-guard.test.js tests/shared-tree-gate.test.js tests/canary-boundary-lint.test.js tests/plugin-hook-paths-shipped.test.js tests/cursor-gate-path.test.js tests/claim-gate-rules.test.js tests/host-gate-matrix.test.js tests/audit-decision-line.test.js tests/not-a-thumb.test.js tests/udemy-source.test.js tests/paraphrase-test-script.test.js tests/thumbs-down-enforcement.test.js",
     "test:capability-wiring": "node --test tests/capability-wiring-ratchet.test.js && node --test tests/prove-vlt-dogfood.test.js && node --test tests/context-engineering-checklist.test.js",
     "test:llm-gateway": "node --test tests/llm-gateway-provider.test.js",
     "test:request-envelope": "node --test tests/request-envelope.test.js",

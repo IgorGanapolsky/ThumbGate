@@ -6,6 +6,11 @@
         "failClosed": true
       }
     ],
+    "beforeMCPExecution": [
+      {
+        "command": "./scripts/cursor-hook.sh mcp-gate"
+      }
+    ],
     "beforeSubmitPrompt": [
       {
         "command": "./scripts/prompt-capture.sh"
@@ -15,6 +20,25 @@
       {
         "command": "./scripts/observe-tool-result.sh",
         "matcher": "swarm-claim\\.py"
+      },
+      {
+        "command": "./scripts/cursor-hook.sh record"
+      }
+    ],
+    "afterMCPExecution": [
+      {
+        "command": "./scripts/cursor-hook.sh record"
+      }
+    ],
+    "afterAgentResponse": [
+      {
+        "command": "./scripts/cursor-hook.sh record"
+      }
+    ],
+    "stop": [
+      {
+        "command": "\"${CURSOR_PLUGIN_ROOT:-.}\"/scripts/cursor-hook.sh stop",
+        "loop_limit": 1
       }
     ]
   }

@@ -33,13 +33,18 @@ function viaPluginScript(w, command) {
   return { status: res.status, permission: verdict.permission, message: verdict.user_message || '' };
 }
 
+// A hook command may carry an argument (`cursor-hook.sh stop`) or the plugin root (stop hooks run from the workspace).
+function hookScriptPath(command) {
+  return String(command).replace(/^"?\$\{CURSOR_PLUGIN_ROOT(?::-\.)?\}"?\//, './').split(/\s+/)[0];
+}
+
 test('the Cursor plugin runs the hook on every shell command, not only on a few keywords', () => {
   const hooks = JSON.parse(fs.readFileSync(path.join(PLUGIN, 'hooks', 'hooks.json'), 'utf8')).hooks;
   const before = hooks.beforeShellExecution;
   assert.ok(before.length >= 1);
   for (const entry of before) assert.equal(entry.matcher, undefined, `beforeShellExecution must not filter by keyword: ${JSON.stringify(entry)}`);
   assert.ok(hooks.beforeSubmitPrompt.length >= 1, 'the prompt hook is wired so a typed thumbs-down reaches ThumbGate');
-  for (const group of Object.values(hooks)) for (const entry of group) assert.ok(fs.existsSync(path.join(PLUGIN, entry.command)), `hook script exists: ${entry.command}`);
+  for (const group of Object.values(hooks)) for (const entry of group) assert.ok(fs.existsSync(path.join(PLUGIN, hookScriptPath(entry.command))), `hook script exists: ${entry.command}`);
 });
 
 test('(b) through the Cursor plugin script: aws s3 rm, terraform destroy and kubectl delete are denied, ls is allowed', () => {
@@ -78,8 +83,11 @@ test('(c) two thumbs-downs typed in Cursor on one command deny that command thro
     assert.equal(viaPluginScript(w, command).permission, 'allow', 'before any thumbs-down it runs');
     const first = typePrompt(w, 'thumbs down: that was wrong, it mailed every single customer without asking me first');
     assert.deepEqual([first.status, first.out], [0, '{"continue":true}'], 'the prompt is let through');
-    assert.equal(viaPluginScript(w, command).permission, 'allow', 'one thumbs-down is not enough to deny');
+    assert.equal(viaPluginScript(w, command).permission, 'deny', 'one thumbs-down holds the command before the next run');
+    typePrompt(w, 'go ahead');
+    assert.equal(viaPluginScript(w, command).permission, 'allow', 'released by the person; one thumbs-down is not yet a gate');
     typePrompt(w, 'thumbs down again: you did it a second time and mailed all customers with no approval');
+    typePrompt(w, 'go ahead');
     const gates = JSON.parse(fs.readFileSync(path.join(w.project, '.thumbgate', 'auto-promoted-gates.json'), 'utf8')).gates;
     assert.equal(gates.length, 1, 'a gate was written without anyone editing a file');
     assert.equal(gates[0].action, 'block');
