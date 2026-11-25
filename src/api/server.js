@@ -3,6 +3,7 @@ const { withDataScope, withoutDataScope, currentDataScope, tenantDataScope, asse
 const { isProjectFolder, parseProjectSelection, projectForCapture, projectForRecord, matchesProject, validProjectKey } = require('../../scripts/project-identity');
 const { readProjectRows, buildProjectCatalog } = require('../../scripts/project-catalog');
 const ownerAdmin = require('../../scripts/owner-admin');
+const clarity = require('../../scripts/clarity');
 const opsLog = require('../../scripts/ops-log');
 const http = require('http');
 const https = require('https');
@@ -4073,6 +4074,12 @@ function extractOriginTrialTokens(html) {
 
 function sendHtml(res, statusCode, html, extraHeaders = {}, options = {}) {
   const { headOnly = false } = options;
+  // Microsoft Clarity on public pages only; scripts/clarity.js skips private paths and GPC/DNT visitors.
+  if (options.clarity !== false && statusCode < 400 && res.req) {
+    let requestPath = '/admin';
+    try { requestPath = new URL(res.req.url || '/', 'http://localhost').pathname; } catch { /* treat as private */ }
+    html = clarity.injectClarityTag(html, { pathname: requestPath, headers: res.req.headers || {} });
+  }
   const originTrialTokens = extractOriginTrialTokens(html);
   const originTrialHeader = originTrialTokens.length > 0
     ? { 'Origin-Trial': originTrialTokens.join(', ') }

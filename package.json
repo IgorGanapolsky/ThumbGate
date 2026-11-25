@@ -583,6 +583,7 @@
     ".agents/skills/craft-playbook-gate/",
     "public/project-switcher.js",
     "scripts/owner-admin.js",
+    "scripts/clarity.js",
     "scripts/owner-alerts.js",
     "scripts/owner-telemetry.js",
     "scripts/cost-meter.js",
