@@ -11,12 +11,13 @@ const opsReport = require('./ops-report');
 const ownerAlerts = require('./owner-alerts');
 const costMeter = require('./cost-meter');
 const unitEconomics = require('./unit-economics');
+const clarity = require('./clarity');
 
 const JSON_LIMIT = 8 * 1024 * 1024;
 const LOG_LIMIT = 16 * 1024 * 1024;
 const RESPONSE_LIMIT = 1024 * 1024;
 const RESOURCES = Object.freeze({ customers: 'cus', subscriptions: 'sub', payments: 'ch', refunds: 're', products: 'prod', prices: 'price', 'subscription-items': 'si' });
-const SECTIONS = new Set(['overview', 'money', 'data', 'analytics', 'observability', 'summary', 'alerts', 'economics']);
+const SECTIONS = new Set(['overview', 'money', 'data', 'analytics', 'observability', 'summary', 'alerts', 'economics', 'behavior']);
 const MONEY_CACHE_MS = 60000;
 let moneyCache = null;
 const PRIVATE_HEADERS = Object.freeze({ 'Cache-Control': 'private, no-store', Vary: 'Cookie', 'X-Robots-Tag': 'noindex, nofollow', 'Referrer-Policy': 'no-referrer', 'X-Content-Type-Options': 'nosniff' });
@@ -900,6 +901,13 @@ async function collectAnalytics(deps, signal) {
   return envelope('telemetry_tail_and_billing_summary_30d', data, warnings);
 }
 
+// Visitor behavior from Microsoft Clarity's Data Export API (sessions, rage and dead clicks, scroll, top pages and
+// sources). Lights up once THUMBGATE_CLARITY_API_TOKEN is set; until then it says what is missing, never a zero.
+async function collectBehavior(deps, signal) {
+  const result = await (deps.collectClarity || clarity.collectClarity)({ feedbackDir: deps.feedbackDir, signal });
+  return envelope('microsoft_clarity_export_24h', result.data, result.warnings);
+}
+
 // Unit economics: delivery cost per active install and per paying customer, contribution per plan, payment-to-access.
 function economicsFrom(money, deps) {
   const meter = (deps.readCostMeter || ((options) => costMeter.readWindow(options)))({ feedbackDir: deps.feedbackDir, days: 30 });
@@ -1161,6 +1169,7 @@ async function collectAdminSection(route, deps, externalSignal) {
       if (route.section === 'stripe') return collectStripe(route, deps, controller.signal);
       if (route.section === 'data') return collectData(route, deps, controller.signal);
       if (route.section === 'observability') return collectObservability(deps, controller.signal);
+      if (route.section === 'behavior') return collectBehavior(deps, controller.signal);
       return collectAnalytics(deps, controller.signal);
     };
     return await deadline(operation(), deps.sectionTimeoutMs || 10000, controller.signal);

@@ -3,6 +3,7 @@ const { withDataScope, withoutDataScope, currentDataScope, tenantDataScope, asse
 const { isProjectFolder, parseProjectSelection, projectForCapture, projectForRecord, matchesProject, validProjectKey } = require('../../scripts/project-identity');
 const { readProjectRows, buildProjectCatalog } = require('../../scripts/project-catalog');
 const ownerAdmin = require('../../scripts/owner-admin');
+const clarity = require('../../scripts/clarity');
 const opsLog = require('../../scripts/ops-log');
 const http = require('http');
 const https = require('https');
@@ -84,6 +85,7 @@ const {
   getFeedbackPaths,
   appendDiagnosticRecord,
 } = require('../../scripts/feedback-loop');
+const { applyHumanCounts } = require('../../scripts/statusline-human-counts');
 const {
   readActiveProjectState,
   resolveProjectDir,
@@ -4072,6 +4074,12 @@ function extractOriginTrialTokens(html) {
 
 function sendHtml(res, statusCode, html, extraHeaders = {}, options = {}) {
   const { headOnly = false } = options;
+  // Microsoft Clarity on public pages only; scripts/clarity.js skips private paths and GPC/DNT visitors.
+  if (options.clarity !== false && statusCode < 400 && res.req) {
+    let requestPath = '/admin';
+    try { requestPath = new URL(res.req.url || '/', 'http://localhost').pathname; } catch { /* treat as private */ }
+    html = clarity.injectClarityTag(html, { pathname: requestPath, headers: res.req.headers || {} });
+  }
   const originTrialTokens = extractOriginTrialTokens(html);
   const originTrialHeader = originTrialTokens.length > 0
     ? { 'Origin-Trial': originTrialTokens.join(', ') }
@@ -11953,7 +11961,11 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
       if (req.method === 'GET' && pathname === '/v1/feedback/stats') {
         const stats = shouldAggregateFeedback()
           ? computeAggregateFeedbackStats({ feedbackDir: requestFeedbackPaths.FEEDBACK_DIR })
-          : analyzeFeedback(requestFeedbackPaths.FEEDBACK_LOG_PATH, { humanOnly: true });
+          : (() => {
+            const base = analyzeFeedback(requestFeedbackPaths.FEEDBACK_LOG_PATH, { humanOnly: true });
+            // A hosted tenant stays inside its own data scope: the project-folder counter reads other directories.
+            return tenantDataScope() ? base : applyHumanCounts(base, { cwd: getEffectiveRequestedProjectSelection(req, parsed) || process.cwd() });
+          })();
         const requestToken = extractApiKey(req);
         const authenticatedTier = requestToken
           ? resolvePaidSessionTier(requestToken, expectedApiKey, expectedOperatorKey)
