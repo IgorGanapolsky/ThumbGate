@@ -117,6 +117,7 @@ if [ -n "$_HUMAN_JSON" ]; then
     @sh "UP=\(.up // 0)",
     @sh "DOWN=\(.down // 0)",
     @sh "SCOPE_LABEL=\(.label // "this project")",
+    @sh "PROJECT_NAME=\(.project // "")",
     @sh "LD_TS=\(.latestDown.timestamp // "")",
     @sh "LD_LABEL=\(.latestDown.label // "")",
     @sh "LD_TEXT=\(.latestDown.text // "")",
@@ -127,6 +128,9 @@ else
   # The counter printed nothing. That is a failure, not an absence of feedback.
   UP="0"; DOWN="0"; HUMAN_COUNTS_UNAVAILABLE="1"
 fi
+# Name the project the counts belong to, so another project's pane does not read as this one's.
+PROJECT_NAME="$(printf '%s' "${PROJECT_NAME:-}" | tr -cd 'A-Za-z0-9._ -' | cut -c1-40)"
+[[ -n "$PROJECT_NAME" ]] && SCOPE_LABEL="${SCOPE_LABEL} (${PROJECT_NAME})"
 
 # Background refresh from REST API when cache is stale (>120s)
 if [ $(( _NOW - ${CACHE_TS:-0} )) -gt 120 ]; then
