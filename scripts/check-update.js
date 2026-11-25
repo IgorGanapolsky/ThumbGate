@@ -198,7 +198,8 @@ async function checkUpdate(options = {}) {
 }
 
 // Hook runtime version skew: hooks run the cached ~/.thumbgate/runtime, which never
-// auto-upgrades by design. Detect and report only; never install.
+// auto-upgrades on its own. This module detects and reports; the MCP server starts the background
+// refresh in scripts/runtime-auto-update.js.
 // See docs/decisions/2026-11-24-revenue-funnel-activation.md (loop 2).
 
 const SKEW_REPORT_INTERVAL_MS = 24 * 60 * 60 * 1000;
@@ -282,7 +283,12 @@ function detectSkew({ currentVersion, dir, settingsFiles } = {}) {
   return { skewed: false, runtimeVersion: null, currentVersion };
 }
 
-function buildSkewNotice(runtimeVersion, currentVersion) {
+function buildSkewNotice(runtimeVersion, currentVersion, { updating = false } = {}) {
+  if (updating) {
+    return `ThumbGate's hooks on this machine run v${runtimeVersion}; they are being updated to v${currentVersion} in the background `
+      + `and pick it up on the next hook run. If the person asks about ThumbGate or its gates and the hooks still look old, `
+      + `\`${UPDATE_COMMAND}\` updates them by hand.`;
+  }
   return `ThumbGate's hooks on this machine run v${runtimeVersion}, but v${currentVersion} is installed for the MCP server, `
     + `so fixes since v${runtimeVersion} are not active in the hooks. If the person asks about ThumbGate or its gates, `
     + `tell them once that \`${UPDATE_COMMAND}\` updates the hooks.`;

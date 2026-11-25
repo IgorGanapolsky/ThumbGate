@@ -1070,6 +1070,36 @@ function postOwnerWebhook(platform, webhookUrl, title, message) {
   });
 }
 
+const TRANSIENT_ALERTS = new Set(['stripe_unreadable', 'telemetry_unreadable', 'money_unchecked', 'health_unchecked']);
+// An unreadable-source alert is sent only when it is still failing on this many checks in a row (checks are 15 minutes apart).
+const TRANSIENT_CHECKS_TO_SEND = 3;
+const failingFor = (sinceIso, nowMs) => {
+  const minutes = Math.max(1, Math.round((nowMs - Date.parse(sinceIso)) / 60000));
+  return minutes < 90 ? minutes + ' minutes' : Math.round(minutes / 60) + ' hours';
+};
+
+// Pure step of the delivery check: which alerts fire, which are still being counted, and the new streaks.
+function nextAlertDeliveryState(deliverable, state, nowMs = Date.now()) {
+  const before = new Set(Array.isArray(state?.firing) ? state.firing : []);
+  const streaks = {};
+  const firing = [];
+  const pending = [];
+  const added = [];
+  for (const alert of deliverable) {
+    if (!TRANSIENT_ALERTS.has(alert.id)) { firing.push(alert); if (!before.has(alert.id)) added.push(alert); continue; }
+    const prev = state?.streaks?.[alert.id]
+      || (Array.isArray(state?.pending) && state.pending.includes(alert.id) ? { count: 1, since: state.checkedAt || new Date(nowMs).toISOString() } : null);
+    if (before.has(alert.id)) { firing.push(alert); continue; }
+    const count = (prev?.count || 0) + 1;
+    const since = prev?.since || new Date(nowMs).toISOString();
+    if (count >= TRANSIENT_CHECKS_TO_SEND) {
+      firing.push(alert);
+      added.push({ ...alert, text: alert.text + ' It has been failing for ' + failingFor(since, nowMs) + '.' });
+    } else { pending.push(alert.id); streaks[alert.id] = { count, since }; }
+  }
+  return { firing: firing.map((alert) => alert.id), pending, streaks, added };
+}
+
 // Checks the alerts every 15 minutes and sends the new ones to the channels above. Does nothing when none is set.
 function startAlertDelivery(makeDeps, { intervalMs = 15 * 60 * 1000, firstCheckMs = 60000, send } = {}) {
   const channels = alertChannels();
@@ -1093,11 +1123,13 @@ function startAlertDelivery(makeDeps, { intervalMs = 15 * 60 * 1000, firstCheckM
     try {
       const deps = makeDeps();
       const result = await collectAlerts(deps, AbortSignal.timeout(30000));
-      const firing = result.data.alerts.filter(ownerAlerts.isDeliverable);
       const state = readState(deps);
-      const before = new Set(Array.isArray(state?.firing) ? state.firing : []);
-      const added = firing.filter((alert) => !before.has(alert.id));
-      writeState(deps, { confirmedAt: state?.confirmedAt || new Date().toISOString(), channels, firing: firing.map((alert) => alert.id), checkedAt: new Date().toISOString() });
+      // A read that fails (Stripe or telemetry unreadable, a check that timed out) is usually a slow answer or a cold
+      // start after a deploy, so it is sent only when it is still failing on the third check in a row (checks are
+      // 15 minutes apart), with how long it has been failing. One good check clears the count. Red alerts are not counted.
+      const deliverable = result.data.alerts.filter(ownerAlerts.isDeliverable);
+      const { firing, pending, streaks, added } = nextAlertDeliveryState(deliverable, state);
+      writeState(deps, { confirmedAt: state?.confirmedAt || new Date().toISOString(), channels, firing, pending, streaks, checkedAt: new Date().toISOString() });
       if (!state?.confirmedAt) await deliver({ title: 'ThumbGate: alert delivery is on', message: 'This is the one-time test that owner alerts reach you. New alerts from thumbgate.ai/admin will arrive here, each once, checked every 15 minutes. Firing right now: ' + firing.length + '.\nhttps://thumbgate.ai/admin' });
       console.log('[owner-alerts] checked: ' + firing.length + ' firing, ' + added.length + ' new');
       if (!added.length) return;
@@ -1139,4 +1171,4 @@ async function collectAdminSection(route, deps, externalSignal) {
   }
 }
 
-module.exports = { paymentAccessCheck, PRIVATE_HEADERS, RESPONSE_LIMIT, monthlyRecurring, collectAlerts, startAlertDelivery,adminPath, parseAdminRoute, readOwnerIdentity, readSessionState, collectMoney, collectAnalytics, collectSummary, summaryParts, collectAdminSection, createRuntimeObservations, githubCommitTitle, collectObservability, projectAnalytics, projectStripe, readObject, countRecords, guardPath };
+module.exports = { paymentAccessCheck, PRIVATE_HEADERS, RESPONSE_LIMIT, monthlyRecurring, collectAlerts, startAlertDelivery, nextAlertDeliveryState, adminPath, parseAdminRoute, readOwnerIdentity, readSessionState, collectMoney, collectAnalytics, collectSummary, summaryParts, collectAdminSection, createRuntimeObservations, githubCommitTitle, collectObservability, projectAnalytics, projectStripe, readObject, countRecords, guardPath };

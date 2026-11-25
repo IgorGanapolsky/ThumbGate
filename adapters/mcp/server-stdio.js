@@ -1964,12 +1964,14 @@ async function handleRequest(message) {
       serverInfo: SERVER_INFO,
     };
     // Old hook runtimes never self-upgrade, so the (usually @latest) MCP server is the one
-    // place that can notice the gap. Detect and report only; never install. Best-effort.
+    // place that can notice the gap. It starts a detached background refresh (at most once a day,
+    // THUMBGATE_NO_AUTO_UPDATE=1 opts out) and never waits for it. Best-effort.
     try {
       const skewLib = require('../../scripts/check-update');
       const skew = skewLib.detectSkew({ currentVersion: SERVER_INFO.version });
       if (skew.skewed) {
-        result.instructions = skewLib.buildSkewNotice(skew.runtimeVersion, skew.currentVersion);
+        const update = require('../../scripts/runtime-auto-update').scheduleRuntimeAutoUpdate({ skew });
+        result.instructions = skewLib.buildSkewNotice(skew.runtimeVersion, skew.currentVersion, { updating: update.started });
         skewLib.reportSkewOnce({ skew });
       }
     } catch { /* never fail initialize */ }

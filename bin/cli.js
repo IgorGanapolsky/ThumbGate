@@ -4091,6 +4091,9 @@ function help() {
   console.log('  gate-check            Evaluate PreToolUse payload from stdin -> ALLOW/BLOCK');
   console.log('  cache-update          Refresh Claude statusline cache from stdin');
   console.log('  statusline-render     Render ThumbGate Claude status line');
+  console.log('  canary <status|add PATH|remove PATH>  Decoy credential file: deny and record any action that reaches it (off until you add one)');
+  console.log('  boundary-check        Run scripted outside-the-project actions through the hook and count what ThumbGate stops (no model calls)');
+  console.log('  prompt-lint [FILE...] Warn about CLAUDE.md / AGENTS.md wording tied to agents reaching outside the task (warning only)');
   console.log('  hook-auto-capture     Process Claude UserPromptSubmit inline feedback');
   console.log('  claim-stop-check      Recheck configured factual claims before Claude stops');
   console.log('  observe-tool-result   Record swarm-claim.py exit 3, including a failed shell, and a Teams send that succeeded');
@@ -4577,6 +4580,33 @@ switch (COMMAND) {
       process.exit(1);
     });
     break;
+  case 'canary': {
+    const canary = require('../scripts/canary-gate');
+    const [sub, target] = process.argv.slice(3);
+    if (sub === 'add' && target) {
+      const next = [...new Set([...canary.loadCanaryPaths(), require('node:path').resolve(target)])];
+      console.log(`canary: on. Watching ${next.length} decoy path(s). Config: ${canary.writeCanaryPaths(next)}`);
+    } else if (sub === 'remove' && target) {
+      const gone = require('node:path').resolve(target);
+      const next = canary.loadCanaryPaths().filter((x) => x !== gone);
+      canary.writeCanaryPaths(next);
+      console.log(next.length ? `canary: on. Watching ${next.length} decoy path(s).` : 'canary: off. No decoy path configured.');
+    } else {
+      const status = canary.canaryStatus();
+      console.log(status.enabled ? `canary: on. Watching: ${status.paths.join(', ')}` : 'canary: off (no decoy path configured). Add one with: thumbgate canary add <path>');
+    }
+    break;
+  }
+  case 'boundary-check': {
+    const boundary = require('../scripts/boundary-check');
+    console.log(boundary.formatReport(boundary.runBoundaryCheck()));
+    break;
+  }
+  case 'prompt-lint': {
+    const lint = require('../scripts/prompt-risk-lint');
+    console.log(lint.formatFindings(lint.lintFiles(process.argv.slice(3))));
+    break;
+  }
   case 'cache-update':
     cacheUpdate();
     break;
