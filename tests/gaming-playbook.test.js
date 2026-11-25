@@ -51,8 +51,10 @@ describe('Gaming AI Agent Playbook Delivery & Route Verification', () => {
 
     // Monetization Rails
     assert.ok(html.includes('8x2dR91M84r4cSd9uj3sI3f'), 'Must include Pro Stripe checkout link slug');
-    assert.ok(html.includes('9B69ATbmI4r4aK5eOD3sI3k'), 'Must include $499 audit Stripe checkout link slug');
-    assert.ok(html.includes('LTQFR7P9AR3QG'), 'Must include sprint checkout link slug');
+    // The $499 audit and sprint checkouts are retired (410): CTAs request a team pilot instead.
+    assert.ok(html.includes('href="/pilot?utm_source=gaming_playbook"'), 'CTAs go to the team pilot request');
+    assert.ok(!html.includes('9B69ATbmI4r4aK5eOD3sI3k') && !html.includes('LTQFR7P9AR3QG'), 'no retired checkout slugs');
+    assert.ok(!/href="\/diagnostic/.test(html), 'no links to the retired /diagnostic page');
 
     // Security Invariants: No innerHTML usage
     assert.equal(html.includes('.innerHTML'), false, 'gaming-playbook.html must not use innerHTML');

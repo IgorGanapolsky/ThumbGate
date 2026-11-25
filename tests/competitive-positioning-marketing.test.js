@@ -113,7 +113,9 @@ test('platform-team use case page exists with rollout language', () => {
   assert.match(platformTeamsHtml, /one repo, one owner, and one repeated AI failure/i);
   assert.match(platformTeamsHtml, /shared lessons/i);
   assert.match(platformTeamsHtml, /managed workflow gate/i);
-  assert.match(platformTeamsHtml, /href="\/diagnostic"/i);
+  // The $499 diagnostic is retired (410); the team pilot is requested at /pilot.
+  assert.match(platformTeamsHtml, /href="\/pilot"/i);
+  assert.doesNotMatch(platformTeamsHtml, /href="\/diagnostic/i);
 });
 
 test('regulated workflow page exists without fake compliance claims', () => {

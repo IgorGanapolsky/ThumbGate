@@ -215,10 +215,12 @@ describe('SEO guide and comparison pages', () => {
     assert.ok(html.includes('$499 Agent Workflow Migration Diagnostic'));
     assert.ok(html.includes('Use the free CLI first'));
     assert.ok(html.includes('Use the free CLI first'));
-    assert.ok(html.includes('Start $499 diagnostic'));
+    // The $499 diagnostic checkout is retired (410); the CTA requests a team pilot.
+    assert.ok(html.includes('Request a team pilot'));
     assert.doesNotMatch(html, /href="\/checkout\/pro\?/);
     assert.ok(html.includes('href="/guide?'));
-    assert.ok(html.includes('href="/diagnostic?'));
+    assert.ok(html.includes('href="/pilot?'));
+    assert.ok(!html.includes('href="/diagnostic'));
     assert.equal(htmlHasBuyStripeHost(html), false, 'migration checklist must not hard-link buy.stripe.com');
     assert.ok(html.includes('workflow-sprint-intake'));
     assert.ok(html.includes('Free CLI + $499 one-time Setup Sprint'));
@@ -240,13 +242,12 @@ describe('SEO guide and comparison pages', () => {
       html.matchAll(/<a class="paid-offer [^"]+" href="([^"]+)"/g),
       (match) => match[1]
     );
+    // The $499 diagnostic and $1500 sprint checkouts are retired (410): one team pilot request remains.
     assert.deepEqual(paidOfferHrefs, [
-      '/diagnostic?utm_source=website&amp;utm_medium=seo_page&amp;utm_campaign=ai_agent_governance_sprint&amp;utm_content=diagnostic',
-      '/diagnostic?utm_source=website&amp;utm_medium=seo_page&amp;utm_campaign=ai_agent_governance_sprint&amp;utm_content=sprint#intake',
+      '/pilot?utm_source=website&amp;utm_medium=seo_page&amp;utm_campaign=ai_agent_governance_sprint&amp;utm_content=diagnostic',
     ]);
     assert.equal(htmlHasBuyStripeHost(html), false, 'governance sprint guide must not hard-link buy.stripe.com');
-    assert.ok(html.includes('$499'));
-    assert.ok(html.includes('$1500'));
+    assert.ok(!html.includes('href="/diagnostic'));
   });
 
   it('AI deployment readiness guide converts production rollout demand into one managed gate', () => {
@@ -260,9 +261,9 @@ describe('SEO guide and comparison pages', () => {
     assert.ok(html.includes('governance and proof layer'));
     assert.ok(html.includes('npx thumbgate background-governance --check --json'));
     assert.ok(html.includes('Setup Sprint'));
-    assert.ok(html.includes('$499'));
-    assert.ok(html.includes('/diagnostic?utm_source=website'));
+    assert.ok(html.includes('/pilot?utm_source=website'));
     assert.ok(html.includes('utm_content=diagnostic'));
+    assert.ok(!html.includes('href="/diagnostic'), 'no links to the retired /diagnostic page');
     assert.ok(!html.includes('workflow-sprint-intake'));
     assert.ok(!html.includes('Ready to scope the sprint?'));
     assert.ok(!html.includes('utm_content=sprint#intake'));

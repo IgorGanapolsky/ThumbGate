@@ -148,7 +148,9 @@ test('pro landing page keeps the $499 sprint separate from the Pro subscription'
   assert.match(sidebar, /Separate from Pro/);
   assert.match(sidebar, /not part of the Pro subscription/);
   assert.match(sidebar, /href="\/enterprise-governance"/);
-  assert.match(sidebar, /href="\/diagnostic#intake"/);
+  // The diagnostic intake is retired (410); team rollouts go to the pilot request.
+  assert.match(sidebar, /href="\/pilot"/);
+  assert.doesNotMatch(proPage, /href="\/diagnostic/);
   // the old pilot link landed on the homepage Pro card, not an intake form
   assert.doesNotMatch(proPage, /href="\/#workflow-sprint-intake/);
 });
