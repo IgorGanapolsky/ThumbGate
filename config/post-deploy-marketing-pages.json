@@ -22,9 +22,9 @@
       "description": "Pro checkout interstitial must require attributable buyer email before Stripe"
     },
     {
-      "route": "/pilot",
-      "sentinel": "Try ThumbGate with your team for 30 days.",
-      "description": "Request-only team pilot page (replaces the retired /diagnostic checkout, which now returns 410)"
+      "route": "/diagnostic",
+      "sentinel": "Exactly what the $499 Setup Sprint includes",
+      "description": "Managed gate checkout and fit-check page for high-intent warm traffic"
     },
     {
       "route": "/dashboard",
