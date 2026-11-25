@@ -804,7 +804,7 @@ $ ... "node scripts/migrate.js --env prod"
         <h2 class="section-title">Catch it. Signal it. Enforce it.</h2>
         <ol class="loop-3">
           <li><strong>1 · Catch</strong> Claude tries something you rejected before, like <code>npm publish</code> from the wrong branch, or mocking the database in an end-to-end test.</li>
-          <li><strong>2 · Signal</strong> One thumbs-down with the reason: <code>npx thumbgate capture --feedback=down --context="mocked the DB in an e2e test"</code></li>
+          <li><strong>2 · Signal</strong> Type a thumbs-down with the reason in Claude Code: <code>thumbs down, never mock the DB in e2e</code>. CLI <code>capture</code> saves a lesson, no hold.</li>
           <li><strong>3 · Enforce</strong> The local PreToolUse gate checks Claude Code's later tool calls in that project. A thumbs-down holds the command until you say "go ahead"; then a match warns Claude with your reason. A second thumbs-down makes it a deny.</li>
         </ol>
         <h3 style="margin-top:28px;font-size:1.1rem;">What <code>init</code> adds to your Claude Code settings</h3>
