@@ -9,6 +9,7 @@ const http = require('http');
 const https = require('https');
 const fs = require('fs');
 const path = require('path');
+const { applySecurityHeaders } = require('./security-headers');
 const crypto = require('node:crypto');
 const { EventEmitter } = require('node:events');
 const pkg = require('../../package.json');
@@ -7645,6 +7646,7 @@ function createUnscopedApiServer({ ownerAdminDependencies = {} } = {}) {
   const publishEvent = (payload) => eventBus.emit('broadcast', { scopeKey: dataScopeKey(), payload });
 
   return http.createServer(async (req, res) => {
+    applySecurityHeaders(res);
     const parsed = new URL(req.url, 'http://localhost');
     const pathname = parsed.pathname;
     const retiredOfferPages = new Set([
