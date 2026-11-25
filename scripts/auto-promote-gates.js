@@ -173,10 +173,16 @@ function triggerEvidence(falseBlocks, allowSampleSize) {
 // an audit of an existing gate must not count it as collateral damage.
 function incidentContextsForGate(gate) {
   const out = [];
+  if (gate && Array.isArray(gate.incidentContexts)) out.push(...gate.incidentContexts.map(String));
   if (gate && gate.incidentContext) out.push(String(gate.incidentContext));
   const m = /^Auto-promoted [^:]+: "(.*)" \(/.exec(String((gate && gate.message) || ''));
   if (m && m[1]) out.push(m[1]);
   return out;
+}
+
+// Untruncated, deduplicated incident contexts kept on a gate (bounded so the file stays small).
+function keepIncidentContexts(contexts) {
+  return [...new Set((contexts || []).map((c) => String(c || '')).filter(Boolean))].slice(0, 10).map((c) => c.slice(0, 2000));
 }
 
 // Replay every stored auto-promoted gate against the audit trail's prior allowed
@@ -759,6 +765,7 @@ function promote(feedbackLogPath, options) {
       }
       // Update occurrence count even if no action change
       data.gates[existingIdx].occurrences = group.count;
+      data.gates[existingIdx].incidentContexts = keepIncidentContexts(incidentContexts);
       // The deny text quotes the count; keep it in step so a block does not say "1 occurrences".
       if (String(data.gates[existingIdx].message || '').startsWith('Auto-promoted ')) {
         data.gates[existingIdx].message = buildGateRule(group, data.gates[existingIdx].action).message;
@@ -768,6 +775,8 @@ function promote(feedbackLogPath, options) {
 
     // New gate — respect explicit gateAction override (e.g. 'approve' for human-approval rules)
     const gate = buildGateRule(group, opts.gateAction);
+    // Full incident text (the message truncates it at 120 chars) so a later gate-audit can skip it.
+    gate.incidentContexts = keepIncidentContexts(incidentContexts);
 
     // Never persist a gate that cannot match the context that produced it. Such a
     // gate renders in the dashboard as an active blocking rule while enforcing

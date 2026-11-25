@@ -229,3 +229,30 @@ test('thumbgate gate-audit: CLI prints the audit table and JSON rows', () => {
   assert.strictEqual(json.status, 0, json.stderr);
   assert.deepStrictEqual(JSON.parse(json.stdout.trim()), []);
 });
+
+test('gate-audit skips an incident longer than the 120-char message (Codex review on #5270)', () => {
+  const dir = tmpDir();
+  process.env.THUMBGATE_FEEDBACK_DIR = dir;
+  try {
+    const longCmd = `python scripts/longincident.py --apply ${'--flag-value-xyz '.repeat(7)}`.trim();
+    assert.ok(longCmd.length > 120);
+    const logPath = path.join(dir, 'feedback-log.jsonl');
+    const entries = [0, 1, 2].map((d) => ({
+      ...require('../scripts/project-identity').resolveLocalProject(),
+      signal: 'negative', tags: ['longincident'], context: longCmd, timestamp: recentTimestamp(d),
+    }));
+    fs.writeFileSync(logPath, entries.map((e) => JSON.stringify(e)).join('\n') + '\n');
+    writeAudit(dir, [{
+      ...require('../scripts/project-identity').resolveLocalProject(),
+      decision: 'allow', toolName: 'Bash', toolInput: { command: longCmd },
+    }]);
+    const result = promote(logPath);
+    const gate = result.data.gates.find((g) => (g.incidentContexts || []).includes(longCmd));
+    assert.ok(gate, 'the full incident text is kept on the gate');
+    const row = auditGateTriggers({ data: result.data, auditTrailPath: path.join(dir, 'audit-trail.jsonl') })
+      .find((r) => r.gateId === gate.id);
+    assert.strictEqual(row.falseBlocks, 0, 'the original mistake is not collateral damage');
+  } finally {
+    delete process.env.THUMBGATE_FEEDBACK_DIR;
+  }
+});
