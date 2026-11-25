@@ -273,6 +273,21 @@ function renderSummaryTable(results) {
 
 function esc(t) { return String(t).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
 
+function jsonLd(results) {
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'TechArticle',
+    headline: 'Which agents ThumbGate hard-stops, and which only warn',
+    description: 'Per agent: does ThumbGate hard-stop a bad call, does the hook fail open or closed, and the test that shows it.',
+    url: 'https://thumbgate.ai/learn/enforcement-matrix',
+    author: { '@type': 'Organization', name: 'ThumbGate', url: 'https://thumbgate.ai' },
+    publisher: { '@type': 'Organization', name: 'ThumbGate', url: 'https://thumbgate.ai' },
+    about: { '@type': 'SoftwareApplication', name: 'ThumbGate', applicationCategory: 'DeveloperApplication', operatingSystem: 'macOS, Linux, Windows', url: 'https://thumbgate.ai' },
+    citation: [`${BLOB}docs/compat/host-gate-results.json`, `${BLOB}VERIFICATION_EVIDENCE.md`],
+    mentions: results.summary.map((sm) => sm.label),
+  };
+}
+
 function renderPage(results) {
   const rowsHtml = results.summary.map((sm) => {
     const stops = sm.hardStops === 'yes' ? `Yes (${esc(sm.gatesDenied)} gates denied)` : sm.hardStops === 'no' ? 'No, warns only' : 'Untested';
@@ -287,6 +302,9 @@ function renderPage(results) {
 <title>Which agents ThumbGate hard-stops, and which only warn - ThumbGate</title>
 <meta name="description" content="Per agent: does ThumbGate hard-stop a bad call, does the hook fail open or closed, and the test that shows it. Generated from real hook runs.">
 <link rel="canonical" href="https://thumbgate.ai/learn/enforcement-matrix">
+<script type="application/ld+json">
+${JSON.stringify(jsonLd(results), null, 2)}
+</script>
 <link rel="stylesheet" href="/learn/learn.css">
 <style>
   table { width: 100%; border-collapse: collapse; margin: 1rem 0; }
@@ -319,7 +337,7 @@ ${rowsHtml}
     </tbody>
   </table>
 
-  <p>Limits: a denial is the default configuration in a clean home folder. Text typed into a chat window or web page is never seen by a hook. Gates that need project state have no stateless denial to run and are not counted. The per-gate table is in <a href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/host-compatibility.md" rel="noopener">docs/host-compatibility.md</a>.</p>
+  <p>Limits: a denial is the default configuration in a clean home folder. Text typed into a chat window or web page is never seen by a hook. Gates that need project state have no stateless denial to run and are not counted. The per-gate table is in <a href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/host-compatibility.md" rel="noopener">docs/host-compatibility.md</a>. Verification record: <a href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/VERIFICATION_EVIDENCE.md" rel="noopener">VERIFICATION_EVIDENCE.md</a>. Machine-readable results from the probes: <a href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/compat/host-gate-results.json" rel="noopener">docs/compat/host-gate-results.json</a>.</p>
 
   <div class="cta-box">
     <h2 style="color:var(--text);font-size:1.3rem;margin:0 0 8px;">Install</h2>

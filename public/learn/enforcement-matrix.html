@@ -6,6 +6,45 @@
 <title>Which agents ThumbGate hard-stops, and which only warn - ThumbGate</title>
 <meta name="description" content="Per agent: does ThumbGate hard-stop a bad call, does the hook fail open or closed, and the test that shows it. Generated from real hook runs.">
 <link rel="canonical" href="https://thumbgate.ai/learn/enforcement-matrix">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "TechArticle",
+  "headline": "Which agents ThumbGate hard-stops, and which only warn",
+  "description": "Per agent: does ThumbGate hard-stop a bad call, does the hook fail open or closed, and the test that shows it.",
+  "url": "https://thumbgate.ai/learn/enforcement-matrix",
+  "author": {
+    "@type": "Organization",
+    "name": "ThumbGate",
+    "url": "https://thumbgate.ai"
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "ThumbGate",
+    "url": "https://thumbgate.ai"
+  },
+  "about": {
+    "@type": "SoftwareApplication",
+    "name": "ThumbGate",
+    "applicationCategory": "DeveloperApplication",
+    "operatingSystem": "macOS, Linux, Windows",
+    "url": "https://thumbgate.ai"
+  },
+  "citation": [
+    "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/compat/host-gate-results.json",
+    "https://github.com/IgorGanapolsky/ThumbGate/blob/main/VERIFICATION_EVIDENCE.md"
+  ],
+  "mentions": [
+    "Claude Code",
+    "Cursor",
+    "Codex",
+    "Gemini CLI",
+    "Cline",
+    "OpenCode",
+    "Amp"
+  ]
+}
+</script>
 <link rel="stylesheet" href="/learn/learn.css">
 <style>
   table { width: 100%; border-collapse: collapse; margin: 1rem 0; }
@@ -44,7 +83,7 @@
     </tbody>
   </table>
 
-  <p>Limits: a denial is the default configuration in a clean home folder. Text typed into a chat window or web page is never seen by a hook. Gates that need project state have no stateless denial to run and are not counted. The per-gate table is in <a href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/host-compatibility.md" rel="noopener">docs/host-compatibility.md</a>.</p>
+  <p>Limits: a denial is the default configuration in a clean home folder. Text typed into a chat window or web page is never seen by a hook. Gates that need project state have no stateless denial to run and are not counted. The per-gate table is in <a href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/host-compatibility.md" rel="noopener">docs/host-compatibility.md</a>. Verification record: <a href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/VERIFICATION_EVIDENCE.md" rel="noopener">VERIFICATION_EVIDENCE.md</a>. Machine-readable results from the probes: <a href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/compat/host-gate-results.json" rel="noopener">docs/compat/host-gate-results.json</a>.</p>
 
   <div class="cta-box">
     <h2 style="color:var(--text);font-size:1.3rem;margin:0 0 8px;">Install</h2>
