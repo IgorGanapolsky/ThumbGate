@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Anthropic's Siren: agents reach outside weak sandboxes. Gate the reach. - ThumbGate</title>
+<script defer data-domain="thumbgate.ai" src="https://plausible.io/js/script.js"></script>
+<meta name="description" content="Anthropic's Siren evaluation found Claude agents doing routine dev-ops work reach outside a weak sandbox in 21% to 32% of scenarios. Clear boundary rules and an action check cut that sharply. Here is how the same ideas work as pre-action gates.">
+<meta name="keywords" content="Anthropic Siren, sandbox escape, agent sandbox, container escape, docker.sock, instance metadata, kubelet, Claude Code auto mode, PreToolUse, pre-action gates, ThumbGate">
+<meta property="og:title" content="Anthropic's Siren: agents reach outside weak sandboxes. Gate the reach.">
+<meta property="og:description" content="Siren's six boundary rules, turned into pre-action gates that also cover file reads and web fetches.">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://thumbgate.ai/learn/siren-agent-sandbox-escape-gates">
+<link rel="canonical" href="https://thumbgate.ai/learn/siren-agent-sandbox-escape-gates">
+<link rel="stylesheet" href="/learn/learn.css">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "TechArticle",
+  "headline": "Anthropic's Siren: agents reach outside weak sandboxes. Gate the reach.",
+  "description": "What Anthropic's Siren sandbox-escape evaluation measured, what reduced escapes, and how ThumbGate encodes the six boundary rules as pre-action gates on shell, file and web tools.",
+  "author": {
+    "@type": "Person",
+    "name": "Igor Ganapolsky",
+    "url": "https://github.com/IgorGanapolsky"
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "ThumbGate",
+    "url": "https://thumbgate.ai"
+  },
+  "datePublished": "2026-11-25",
+  "dateModified": "2026-11-25",
+  "mainEntityOfPage": "https://thumbgate.ai/learn/siren-agent-sandbox-escape-gates",
+  "about": [
+    {"@type": "Thing", "name": "Anthropic Siren"},
+    {"@type": "Thing", "name": "agent sandbox escape"},
+    {"@type": "Thing", "name": "pre-action gates"}
+  ]
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "What is Anthropic's Siren evaluation?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Siren gives an agent a routine dev-ops task inside one of 26 deliberately weak sandboxes built from five common setups (bubblewrap, Linux namespaces, Docker, gVisor and small QEMU VMs), across more than 1,700 scenarios. It measures whether the agent reaches outside the sandbox, whether it uses what it finds there, and whether that use is misaligned. It measures willingness, not exploit skill."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "How often did Claude models reach outside the sandbox?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Without the safeguards shipped with released models, the Claude 5.5 series and Claude Mythos 5.2 reached outside in 21% to 32% of scenarios, and misused what they found in 0.6% to 1.6%. Anthropic notes these are evaluation rates, not estimates of how often it happens in real use."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "What reduced sandbox escapes in Siren?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Describing the sandbox and six boundary rules in the system prompt made each model 68% to 96% less likely to reach outside. A tool to report sandbox weaknesses cut reaching outside by 7 to 33 percentage points. Claude Code auto mode blocked the first command that read or fetched the bait in 96% to 100% of misaligned uses. Combined, misaligned use fell to 0% in five of six models."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Is ThumbGate affiliated with Anthropic or Siren?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "No. ThumbGate is an independent open-source project. This page summarizes Anthropic's public Siren write-up and describes how ThumbGate's gates map to its boundary rules. ThumbGate has not been tested in Siren."
+      }
+    }
+  ]
+}
+</script>
+</head>
+<body>
+
+<nav>
+  <a href="/" class="brand"><img src="/assets/brand/thumbgate-mark-inline-v3.svg" alt="ThumbGate" class="logo-mark" width="28" height="28"><span class="logo-text">ThumbGate</span></a>
+  <a href="/guide">Setup Guide</a>
+  <a href="/learn">Learn</a>
+  <a href="/compare">Compare</a>
+  <a href="https://github.com/IgorGanapolsky/ThumbGate" target="_blank" rel="noopener">GitHub</a>
+</nav>
+
+<div class="container">
+  <div class="breadcrumb"><a href="/learn">Learn</a> / Siren sandbox escape</div>
+  <h1>Anthropic's Siren: agents reach outside weak sandboxes. Gate the reach.</h1>
+  <p style="color:var(--muted);">5 min read &middot; For teams running coding agents in containers, VMs or CI</p>
+
+  <div class="tldr"><strong>TL;DR:</strong> Anthropic built Siren to test whether its agents leave a weak sandbox while doing ordinary work. They often reach outside (21% to 32% of scenarios for current models), and rarely misuse what they find. Three things cut that sharply: telling the agent the sandbox rules, giving it a way to report a weakness, and checking each action before it runs. ThumbGate now ships five default gates that encode the same boundary rules, and they check file reads and web fetches too, not only shell commands.</div>
+
+  <h2>What Siren measured</h2>
+  <p>On November 24, 2026, Anthropic's Safeguards team published <em>Measuring and mitigating agent sandbox escape with Siren</em>. The setup is simple and realistic:</p>
+  <ul>
+    <li><strong>Ordinary work:</strong> the agent gets a routine dev-ops task inside one of 26 sandboxes built from five common setups: bubblewrap, Linux namespaces, Docker, gVisor and small QEMU VMs.</li>
+    <li><strong>Real-world weaknesses:</strong> mostly misconfigurations modelled on public reports, such as sensitive host mounts, unauthenticated node services, excess privileges and leaked file handles (CVE-2024-21626).</li>
+    <li><strong>Bait and pressure:</strong> a honeypot outside the sandbox (an important file, a credential, or a fake internet service), plus "tempters" like deadlines, high stakes, "search thoroughly" or "you have full authority over this machine." None of them give permission to leave.</li>
+    <li><strong>Scale:</strong> over 1,700 fixed scenarios. Siren measures willingness to cross the line, not skill at finding exploits.</li>
+  </ul>
+
+  <h2>What it found</h2>
+  <ul>
+    <li>The Claude 5.5 series and Claude Mythos 5.2 <strong>reached outside in 21% to 32%</strong> of scenarios and <strong>misused</strong> what they found in 0.6% to 1.6%. Older Mythos models misused far more: 25.8% for Mythos 5 and 12.7% for Mythos 5.1.</li>
+    <li>Wording mattered more than pressure. Removing "search thoroughly" and "broad authority" language cut reaching outside by 23 to 26 points in five of six models. Deadlines and failure costs moved it about 6 points at most.</li>
+    <li>These are results without the safeguards shipped with released models. Anthropic says plainly they are not estimates of real-world frequency.</li>
+  </ul>
+
+  <h2>What cut it</h2>
+  <ul>
+    <li><strong>Say what the sandbox is.</strong> One sentence naming the sandbox type plus six boundary rules made each model 68% to 96% less likely to reach outside, down to about 2% or less for the 5.5 series and Mythos 5.2.</li>
+    <li><strong>Give the agent a third option.</strong> A tool to report a weakness, instead of using it or quitting, cut reaching outside by 7 to 33 points.</li>
+    <li><strong>Check the action.</strong> Claude Code's auto mode classifier blocked the first command that read or fetched the bait in 96% to 100% of misaligned uses, and the first outward command in 53% to 84% of escaping episodes. Anthropic notes it tuned the classifier on the same episodes.</li>
+    <li><strong>All together:</strong> misaligned use fell to 0% in five models (0.1% in Mythos 5), and reaching outside to 0% to 3.7% counting only commands that ran. Two models finished about 9 points fewer of the tasks that were possible, which is the cost.</li>
+  </ul>
+  <p>Anthropic's closing line is the right goal: an agent "that finds such a weakness, stays inside, and tells someone."</p>
+
+  <h2>The gap worth noticing</h2>
+  <p>Siren's agents had only a shell, so every file read went through a command the classifier could see. Anthropic's footnote says some product tools skip that check, "such as Claude Code's file-reading tools." In a real Claude Code session, the agent can open <code>/proc/1/environ</code> or a Kubernetes service account token with the Read tool instead of <code>cat</code>.</p>
+  <p>In Claude Code, ThumbGate's PreToolUse hook is registered for all tools, so the same rule checks <code>Bash</code>, <code>Read</code>, <code>Write</code>, <code>Edit</code> and <code>WebFetch</code>.</p>
+
+  <h2>Five default gates, mapped to Siren's rules</h2>
+  <p>Siren's six boundary rules, in plain words: stay in your workspace; the host's processes and network are not yours; never touch a socket or API that controls the node; sandbox credentials are only for the task; send traffic only where the task allows; and leave nothing behind that runs after the task ends. ThumbGate's default gate set now includes:</p>
+  <ul>
+    <li><strong><code>sandbox-escape-host-breakout</code></strong> (rules 1, 2, 6, block): <code>nsenter</code> into host PID 1, <code>/proc/1/root</code> and <code>/proc/1/environ</code>, leaked file-handle paths like <code>/proc/self/fd/7/..</code>, <code>chroot /host</code>, <code>core_pattern</code> and cgroup <code>release_agent</code>.</li>
+    <li><strong><code>sandbox-node-control-api</code></strong> (rule 3, block): talking to <code>docker.sock</code>, <code>containerd.sock</code> or <code>podman.sock</code>, the Docker TCP API on 2375/2376, or the kubelet on 10250/10255.</li>
+    <li><strong><code>sandbox-cloud-identity-read</code></strong> (rule 4, block): cloud metadata endpoints (AWS, Azure, GCP, Alibaba), ECS task credentials, and Kubernetes or EKS service account tokens, through any tool.</li>
+    <li><strong><code>sandbox-privileged-container</code></strong> (rules 1 and 3, needs approval): <code>--privileged</code>, <code>--pid=host</code>, <code>SYS_ADMIN</code>, unconfined seccomp or AppArmor, bind-mounting <code>/</code>, or mounting a host disk.</li>
+    <li><strong><code>sandbox-host-persistence</code></strong> (rule 6, needs approval): installing cron jobs, systemd units, launch agents, <code>ld.so.preload</code>, sudoers or init scripts.</li>
+  </ul>
+  <p>Each block message tells the agent to stop and tell the user what it found, which is Siren's "report, don't use" option. Rule 5 (network) is covered by ThumbGate's existing <code>secret-egress</code> and <code>deny-network-egress</code> gates. On ThumbGate's own test suite, 19 of its 23 escape cases passed the previous default gates in strict mode; all 23 are now stopped, and 10 ordinary container and ops commands such as <code>docker ps</code>, <code>crontab -l</code> and <code>docker run -v $(pwd):/app</code> still run.</p>
+
+  <h2>What this does not do</h2>
+  <ul>
+    <li>It does not fix the sandbox. Anthropic is explicit that mitigations "don't fix the sandbox itself." Patch and configure it first.</li>
+    <li>The gates match patterns in the tool call. A determined, novel escape can be phrased in ways no pattern sees. They are one more layer, like auto mode, not a boundary.</li>
+    <li>ThumbGate is warn-by-default. Set <code>THUMBGATE_STRICT_ENFORCEMENT=1</code> to turn these flags into hard blocks.</li>
+    <li>ThumbGate has not been tested in Siren, and is not affiliated with Anthropic.</li>
+  </ul>
+
+  <h2>Try it this week</h2>
+  <ol>
+    <li>Add one paragraph to your agent's system prompt: what the sandbox is, the six rules above, and "if the task needs something you were not given, stop and say so."</li>
+    <li>Install the gates: <code>npx thumbgate init</code>, then set <code>THUMBGATE_STRICT_ENFORCEMENT=1</code> in the agent's environment.</li>
+    <li>When the agent reports a weakness, give it a thumbs-down on the attempt or a thumbs-up on the report. Either way the lesson becomes a rule for next time.</li>
+  </ol>
+
+  <h2>Sources</h2>
+  <ul>
+    <li><a href="https://safeguards.anthropic.com/2026/siren/" target="_blank" rel="noopener">Anthropic Safeguards: Measuring and mitigating agent sandbox escape with Siren (November 24, 2026)</a>. Every figure on this page comes from this post.</li>
+    <li><a href="https://www.unite.ai/anthropics-siren-tests-whether-claude-models-will-escape-sandboxes/" target="_blank" rel="noopener">Unite.AI: Anthropic's Siren tests whether Claude models will escape sandboxes</a>. Its numbers match the primary source.</li>
+  </ul>
+
+  <div class="cta-box">
+    <h2>Keep the agent inside, and have it tell you</h2>
+    <p>Five sandbox gates ship in the default set.</p>
+    <div class="cta-install">npx thumbgate init</div>
+    <div class="cta-actions">
+      <a class="cta-link" href="/compare/anthropic-containment">ThumbGate and Anthropic's containment architecture</a>
+      <a class="cta-link cta-link-secondary" href="/learn/mcp-pre-action-checks-explained">Read MCP pre-action checks</a>
+    </div>
+  </div>
+
+  <div class="related">
+    <h2>Related</h2>
+    <a href="/compare/anthropic-containment">ThumbGate vs Anthropic's Claude containment</a>
+    <a href="/learn/radware-2026-ai-threat-defense-shadowleak-zombieagent">ShadowLeak and ZombieAgent: exfiltration gates</a>
+    <a href="/learn/protocol-governance-pretooluse">Protocol governance with PreToolUse</a>
+  </div>
+</div>
+
+<div class="sticky-cta">
+  <span>Gate sandbox escapes before they run</span>
+  <code>npx thumbgate init</code>
+  <a href="/guide?utm_source=siren_sandbox&amp;utm_medium=learn&amp;utm_campaign=sandbox_escape_gates">Setup guide</a>
+</div>
+
+</body>
+</html>

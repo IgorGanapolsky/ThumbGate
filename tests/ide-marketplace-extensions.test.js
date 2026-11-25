@@ -152,7 +152,9 @@ test('README and distribution docs promote IDE marketplaces without claiming pub
   assert.doesNotMatch(cursorReadme, /Search for \*\*ThumbGate\*\* in the Cursor marketplace and install/);
   assert.match(publishWorkflow, /Publish IDE Marketplace Extension/);
   assert.match(publishWorkflow, /OVSX_PAT/);
-  assert.match(publishWorkflow, /VSCE_PAT/);
+  assert.doesNotMatch(publishWorkflow, /VSCE_PAT/);
+  assert.match(publishWorkflow, /id-token: write/);
+  assert.match(publishWorkflow, /@vscode\/vsce@[\d.]+ publish .*--oidc/);
   assert.match(publishWorkflow, /Verify marketplace publishing credentials/);
   assert.match(publishWorkflow, /Missing marketplace publish secrets/);
   assert.match(publishWorkflow, /IDE Marketplace Publish Skipped/);
@@ -162,5 +164,5 @@ test('README and distribution docs promote IDE marketplaces without claiming pub
   assert.doesNotMatch(publishWorkflow, /IDE Marketplace Publish Blocked/);
   assert.match(publishWorkflow, /npm run build:vscode-extension/);
   assert.match(publishWorkflow, /ovsx publish/);
-  assert.match(publishWorkflow, /@vscode\/vsce publish/);
+  assert.match(publishWorkflow, /@vscode\/vsce(@[\d.]+)? publish/);
 });

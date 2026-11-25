@@ -75,6 +75,7 @@ const PLACEHOLDER_RULE =
 const REMINDER_HEADERS = [
   '[ThumbGate] Past mistakes relevant to this action',
   '[ThumbGate] Recent mistakes (last 24h)',
+  '[ThumbGate] Recently approved with a thumbs-up (last 24h)',
   '[ThumbGate] Recurring failure patterns',
   '[ThumbGate] Knowledge conflict warning',
 ];
