@@ -161,6 +161,13 @@ const CURSOR_LOOP_HOOKS = [
   { lifecycle: 'stop', subcommand: 'cursor-stop', extra: { timeout: 15, loop_limit: 1 } },
 ];
 
+// Match by subcommand, not the exact path: an npx cache or a global install puts cli.js somewhere else, and a
+// second copy of the same hook would place every hold twice.
+function isThumbgateLoopHook(entry, subcommand) {
+  const command = String((entry && entry.command) || '');
+  return /cli\.js['"]?\s/.test(command) && new RegExp(`\\s${subcommand}(\\s|$)`).test(command);
+}
+
 function wireCursorBeforeShellGate(options = {}) {
   const hooksPath = options.cursorHooksPath || cursorHooksJsonPath();
   const command = cursorShellGateHookCommand();
@@ -213,7 +220,7 @@ function wireCursorBeforeShellGate(options = {}) {
   for (const spec of CURSOR_LOOP_HOOKS) {
     const command = cursorCliHookCommand(spec.subcommand);
     if (!Array.isArray(existing.hooks[spec.lifecycle])) existing.hooks[spec.lifecycle] = [];
-    if (existing.hooks[spec.lifecycle].some((entry) => entry && entry.command === command)) continue;
+    if (existing.hooks[spec.lifecycle].some((entry) => isThumbgateLoopHook(entry, spec.subcommand))) continue;
     existing.hooks[spec.lifecycle].push({ command, ...spec.extra });
     added.push({ lifecycle: spec.lifecycle, command });
     loopAdded += 1;
@@ -1000,6 +1007,8 @@ function parseFlags(argv) {
 // --- Exports ---
 
 module.exports = {
+  CURSOR_LOOP_HOOKS,
+  isThumbgateLoopHook,
   detectAgent,
   wireHooks,
   wireClaudeHooks,

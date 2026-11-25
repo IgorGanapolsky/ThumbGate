@@ -158,3 +158,27 @@ test('Cursor via `thumbgate init --agent cursor`: the wired hooks.json commands 
   assert.equal(JSON.parse(held.last).permission, 'deny', 'the thumbs-down typed in Cursor holds the next post');
   assert.equal(held.status, 2);
 });
+
+test('Cursor self-heal: an install from the old init (shell gate only) gets the loop hooks on the next shell command, once', () => {
+  const w = world();
+  const hooksFile = path.join(w.project, '.cursor', 'hooks.json');
+  fs.mkdirSync(path.dirname(hooksFile), { recursive: true });
+  const shellGate = `node ${JSON.stringify(path.join(__dirname, '..', 'scripts', 'cursor-shell-gate.js'))}`;
+  fs.writeFileSync(hooksFile, JSON.stringify({ version: 1, hooks: { beforeShellExecution: [{ command: shellGate, timeout: 10, failClosed: true }] } }));
+  const shell = () => spawnSync('sh', ['-c', shellGate], { cwd: w.project, env: w.env, encoding: 'utf8', timeout: 60000, input: JSON.stringify({ command: 'ls', cwd: w.project, conversation_id: 'c', workspace_roots: [w.project] }) });
+  const first = shell();
+  assert.equal(JSON.parse(first.stdout.trim().split('\n').pop()).permission, 'allow', 'the decision is unchanged and stdout stays one JSON line');
+  const healed = JSON.parse(fs.readFileSync(hooksFile, 'utf8')).hooks;
+  for (const lifecycle of ['beforeSubmitPrompt', 'beforeMCPExecution', 'afterShellExecution', 'afterMCPExecution', 'afterAgentResponse', 'stop']) {
+    assert.equal((healed[lifecycle] || []).length, 1, `self-heal adds ${lifecycle}`);
+  }
+  shell();
+  assert.deepEqual(JSON.parse(fs.readFileSync(hooksFile, 'utf8')).hooks, healed, 'the second run changes nothing');
+
+  const other = world();
+  const otherFile = path.join(other.project, '.cursor', 'hooks.json');
+  fs.mkdirSync(path.dirname(otherFile), { recursive: true });
+  fs.writeFileSync(otherFile, JSON.stringify({ version: 1, hooks: { beforeShellExecution: [{ command: 'echo mine' }] } }));
+  const { repairCursorHooks } = require('../scripts/cursor-self-heal');
+  assert.equal(repairCursorHooks({ homeDir: other.project, env: {} }).reason, 'not-a-thumbgate-cursor-install', 'a hooks.json without ThumbGate is left alone');
+});
