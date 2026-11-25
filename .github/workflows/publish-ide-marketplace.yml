@@ -104,7 +104,7 @@ jobs:
         if: steps.marketplace-credentials.outputs.publish_ready == 'true'
         run: |
           cd plugins/vscode-extension
-          npx --yes ovsx publish "${{ steps.vsix.outputs.name }}" --pat "$OVSX_PAT"
+          npx --yes ovsx publish "${{ steps.vsix.outputs.name }}" --pat "$OVSX_PAT" --skip-duplicate
 
       # Trusted Publishing policy on publisher `igorganapolsky` allows
       # IgorGanapolsky/ThumbGate + publish-ide-marketplace.yml (no stored PAT).
@@ -112,4 +112,4 @@ jobs:
         if: steps.marketplace-credentials.outputs.publish_ready == 'true'
         run: |
           cd plugins/vscode-extension
-          npx --yes @vscode/vsce publish --packagePath "${{ steps.vsix.outputs.name }}" --oidc
+          npx --yes @vscode/vsce publish --packagePath "${{ steps.vsix.outputs.name }}" --oidc --skip-duplicate
