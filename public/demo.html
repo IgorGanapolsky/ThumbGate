@@ -124,7 +124,7 @@ footer { padding:24px 0 40px; border-top:1px solid var(--line); color:var(--mute
     <ul class="outcomes">
       <li><span><strong>Blocks the worst commands out of the box:</strong> force-push, <code>rm -rf</code> on home or root, <code>DROP TABLE</code>, secret leaks.</span></li>
       <li><span><strong>Learns from you:</strong> one thumbs-down stops the agent from retrying a mistake. Two make it a hard rule.</span></li>
-      <li><span><strong>Runs before the action:</strong> it checks each tool call in your agent's hook, on your machine, before anything executes.</span></li>
+      <li><span><strong>Runs before the action:</strong> in Claude Code, Codex and Gemini CLI it checks each tool call in the agent's pre-tool hook, on your machine, before anything executes.</span></li>
     </ul>
   </section>
 
@@ -140,7 +140,7 @@ footer { padding:24px 0 40px; border-top:1px solid var(--line); color:var(--mute
     <div>
       <div class="time">Chapter 1 of 5</div>
       <h2>Install in the project where your agent works.</h2>
-      <p><code>init</code> finds your agent (Claude Code, Cursor, Codex, Gemini CLI and other MCP agents) and wires ThumbGate into its pre-tool hook. <code>doctor</code> confirms the hooks are really wired and prints <code>Overall: READY</code>.</p>
+      <p><code>init</code> finds your agent and wires ThumbGate in. Claude Code, Codex and Gemini CLI get a hard pre-tool hook, and Cursor gets one for shell commands. Cline, OpenCode and other MCP agents get the checks as an advisory <code>gate_check</code> tool the model can skip, so the blocks below are guaranteed only where a hook is installed. <code>doctor</code> confirms the wiring and prints <code>Overall: READY</code>.</p>
       <p class="why">No account, no API key and no cloud service are needed for the checks. They run on your machine.</p>
       <button class="copy" type="button" data-copy="npx thumbgate init" data-cta="demo_copy_init"><span>npx thumbgate init</span><span class="tag">Copy</span></button>
       <div class="nav-row"><button class="btn primary" type="button" data-next>Next: a built-in block →</button></div>
@@ -323,7 +323,7 @@ ThumbGate hold: thumbs-down received. `npm run db:seed …` is refused until the
       document.querySelector('.journey').scrollIntoView({ block: 'start' });
       if (heading) { heading.tabIndex = -1; heading.focus({ preventScroll: true }); }
     }
-    ping('demo_chapter_view', { chapter: name, index: idx + 1 });
+    ping('demo_chapter_view', { sectionId: name, sectionLabel: 'chapter ' + (idx + 1) });
   }
 
   tabs.forEach(function (tab, i) {
@@ -348,11 +348,11 @@ ThumbGate hold: thumbs-down received. `npm run db:seed …` is refused until the
       var tag = b.querySelector('.tag');
       var done = function () { if (tag) { tag.textContent = 'Copied'; setTimeout(function () { tag.textContent = 'Copy'; }, 1600); } };
       try { navigator.clipboard.writeText(text).then(done, function () {}); } catch (_) {}
-      ping('cta_click', { cta: b.getAttribute('data-cta') || 'demo_copy', chapter: current });
+      ping('cta_click', { ctaId: b.getAttribute('data-cta') || 'demo_copy', sectionId: current });
     });
   });
   document.querySelectorAll('a[data-cta]').forEach(function (a) {
-    a.addEventListener('click', function () { ping('cta_click', { cta: a.getAttribute('data-cta'), chapter: current }); });
+    a.addEventListener('click', function () { ping('cta_click', { ctaId: a.getAttribute('data-cta'), sectionId: current }); });
   });
 
   // Cost-of-repeats calculator: the visitor's own numbers, nothing claimed by ThumbGate.
@@ -386,7 +386,7 @@ ThumbGate hold: thumbs-down received. `npm run db:seed …` is refused until the
           status.className = 'status ok';
           status.textContent = 'Request received (' + result.json.id + '). We will email you.';
           form.reset();
-          ping('cta_click', { cta: 'demo_pilot_submitted', chapter: 'team' });
+          ping('cta_click', { ctaId: 'demo_pilot_submitted', sectionId: 'team' });
         } else {
           status.className = 'status err';
           status.textContent = 'Please check: ' + ((result.json && result.json.fields) || ['the form']).join(', ') + '.';

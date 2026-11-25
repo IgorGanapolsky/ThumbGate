@@ -92,3 +92,12 @@ test('real server: /demo renders with placeholders filled and the sitemap lists 
     fs.rmSync(dir, { recursive: true, force: true });
   }
 });
+
+test('demo labels advisory MCP hosts and sends telemetry fields the ingestion schema keeps', () => {
+  assert.match(html, /Cline, OpenCode and other MCP agents get the checks as an advisory <code>gate_check<\/code> tool/);
+  const telemetry = fs.readFileSync(path.join(ROOT, 'scripts', 'telemetry-analytics.js'), 'utf8');
+  assert.match(telemetry, /sectionId: pickFirstText\(raw\.sectionId/);
+  assert.match(telemetry, /ctaId: pickFirstText\(raw\.ctaId\)/);
+  assert.match(html, /ping\('demo_chapter_view', \{ sectionId: name/);
+  assert.doesNotMatch(html, /\{ cta: |chapter: current/);
+});
