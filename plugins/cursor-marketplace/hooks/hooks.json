@@ -2,7 +2,8 @@
   "hooks": {
     "beforeShellExecution": [
       {
-        "command": "./scripts/gate-check.sh"
+        "command": "./scripts/gate-check.sh",
+        "failClosed": true
       }
     ],
     "beforeMCPExecution": [

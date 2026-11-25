@@ -6,6 +6,7 @@
  * Cursor sends `{"command":"..."}` on stdin and reads `{"permission":"allow"|"deny"}`.
  * ThumbGate `gate-check` speaks Claude Code PreToolUse JSON (`hookSpecificOutput.permissionDecision`).
  * This script maps between the two contracts without enabling THUMBGATE_STRICT_ENFORCEMENT.
+ * If the gate itself errors (bad input, engine failure) it answers deny: it fails closed.
  */
 
 const fs = require('fs');
@@ -187,8 +188,10 @@ async function main() {
     process.stdout.write(`${JSON.stringify(result)}\n`);
     process.exit(0);
   } catch (err) {
+    // Fail closed (AGENT-3667): a gate that could not decide must not let the command run.
     process.stderr.write(`cursor-shell-gate error: ${err.message}\n`);
-    process.stdout.write(`${JSON.stringify({ permission: 'allow' })}\n`);
+    const reason = `ThumbGate could not check this command (${err.message}), so it was blocked. Retry; if it keeps failing run: npx thumbgate doctor`;
+    process.stdout.write(`${JSON.stringify({ permission: 'deny', user_message: reason, agent_message: reason })}\n`);
     process.exit(0);
   }
 }
