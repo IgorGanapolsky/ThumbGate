@@ -58,16 +58,17 @@ test('public surfaces lead with outcomes instead of infrastructure abstractions'
   assert.doesNotMatch(readme, /Behavior control system/i);
 });
 
-test('README keeps the business sprint-first while preserving the Pro side lane', () => {
+test('README routes teams to the pilot while preserving the Pro side lane', () => {
   const readme = readText('README.md');
 
-  assert.match(readme, /Enterprise intake path/i);
+  assert.match(readme, /Team path/i);
   assert.match(readme, /Local technical path/i);
   assert.match(readme, /First-dollar activation path/i);
   assert.match(readme, /what repeated AI mistake would be worth catching before the tool executes/i);
   assert.match(readme, /Native ChatGPT rating buttons are not the ThumbGate capture path/i);
   assert.match(readme, /install the CLI and use `init` plus the documented setup/i);
-  assert.match(readme, /Setup Sprint/i);
+  assert.match(readme, /30-day team pilot/i);
+  assert.doesNotMatch(readme, /\$499|Setup Sprint/i);
   assert.match(readme, /Paid path for individual operators/i);
   assert.match(readme, /self-serve side lane/i);
   assert.match(readme, /https:\/\/thumbgate\.ai\/go\/pro-direct\?utm_source=github&utm_medium=readme&utm_campaign=pro_page/);
@@ -77,7 +78,6 @@ test('README keeps the business sprint-first while preserving the Pro side lane'
 test('README exposes prompt-shaped buyer questions with tracked guide links', () => {
   const readme = readText('README.md');
 
-  assert.match(readme, /Setup Sprint/i);
   assert.match(readme, /Popular buyer questions/i);
   assert.match(readme, /guides\/ai-search-topical-presence\?utm_source=github&utm_medium=readme&utm_campaign=buyer_questions/);
   assert.match(readme, /guides\/relational-knowledge-ai-recommendations\?utm_source=github&utm_medium=readme&utm_campaign=buyer_questions/);
@@ -97,8 +97,10 @@ test('README exposes prompt-shaped buyer questions with tracked guide links', ()
   assert.match(readme, /guides\/roo-code-alternative-cline\?utm_source=github&utm_medium=readme&utm_campaign=buyer_questions/);
   assert.match(readme, /https:\/\/thumbgate\.ai/);
   assert.doesNotMatch(readme, /https:\/\/usethumbgate\.com/i);
-  assert.match(readme, /\/go\/diagnostic\?utm_source=github&utm_medium=readme&utm_campaign=top_cta/);
-  assert.match(readme, /\/go\/diagnostic\?utm_source=github&utm_medium=readme&utm_campaign=team_rollout/);
+  // /go/diagnostic is retired (410); the README links the team pilot request.
+  assert.match(readme, /\/pilot\?utm_source=github&utm_medium=readme&utm_campaign=top_cta/);
+  assert.match(readme, /\/pilot\?utm_source=github&utm_medium=readme&utm_campaign=team_rollout/);
+  assert.doesNotMatch(readme, /\/go\/diagnostic/);
   assert.match(readme, /First Dollar Playbook/i);
 });
 
@@ -127,11 +129,10 @@ test('README keeps lesson search on Pro instead of the Free tier', () => {
 test('LLM context keeps the promoted offer and CLI positioning aligned with commercial truth', () => {
   const context = readText(path.join('public', 'llm-context.md'));
 
-  assert.match(context, /\$499 Setup Sprint/i);
-  assert.match(context, /one supported workflow/i);
-  assert.match(context, /60-minute working review/i);
-  assert.match(context, /regression test/i);
-  assert.match(context, /within two business days/i);
+  // The $499 Setup Sprint is retired; teams request the 30-day pilot.
+  assert.doesNotMatch(context, /\$499|Setup Sprint/i);
+  assert.match(context, /30-day team pilot/i);
+  assert.match(context, /https:\/\/thumbgate\.ai\/pilot/);
   assert.match(context, /Autoresearch Safety Pack/i);
   assert.match(context, /native-messaging-audit/i);
   assert.match(context, /background-governance/i);
