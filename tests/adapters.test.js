@@ -11,7 +11,8 @@ const {
 
 const root = path.join(__dirname, '..');
 const packageVersion = JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf-8')).version;
-const explicitServeArgs = ['--yes', '--package', `thumbgate@${packageVersion}`, 'thumbgate', 'serve'];
+// Setup examples follow npm latest (2026-11-25), so a copied config keeps updating.
+const explicitServeArgs = ['--yes', '--package', 'thumbgate@latest', 'thumbgate', 'serve'];
 const explicitLatestServeArgs = ['--yes', '--package', 'thumbgate@latest', 'thumbgate', 'serve'];
 
 function assertCodexLatestShellEntry(entry) {
@@ -114,7 +115,7 @@ test('codex config.toml contains mcp_servers section', () => {
     assert.match(content, /\[ -x /);
     assert.doesNotMatch(content, /npm \\"install\\"/);
   } else if (content.includes('command = "npx"')) {
-    assert.match(content, new RegExp(`thumbgate@${packageVersion.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`));
+    assert.match(content, /thumbgate@latest/);
   } else {
     assert.match(content, /command = "node"/);
     assert.match(content, /"serve"/);
@@ -133,7 +134,7 @@ test('codex plugin instructions use published ThumbGate CLI entrypoints', () => 
   assert.doesNotMatch(content, /npm run feedback:/, 'Codex plugin must not depend on repo-local npm scripts');
 });
 
-test('opencode adapter is valid JSON with a version-pinned local MCP server', () => {
+test('opencode adapter is valid JSON with a local MCP server that follows latest', () => {
   const filePath = path.join(root, 'adapters/opencode/opencode.json');
   const payload = JSON.parse(fs.readFileSync(filePath, 'utf-8'));
   const thumbgate = payload.mcp && payload.mcp.thumbgate;
@@ -484,34 +485,35 @@ test('Claude Codex bridge plugin surface is present and aligned to ThumbGate met
   assert.equal(pluginManifest.homepage, 'https://thumbgate.ai');
   assert.equal(pluginManifest.repository, 'https://github.com/IgorGanapolsky/ThumbGate');
   assert.equal(pluginManifest.name, 'codex-bridge');
-  assert.deepEqual(pluginConfig.mcpServers.thumbgate.args, explicitServeArgs);
+  // The bridge follows npm latest so it never stays on the version it was installed with.
+  assert.deepEqual(pluginConfig.mcpServers.thumbgate.args, ['--yes', '--package', 'thumbgate@latest', 'thumbgate', 'serve']);
   assert.match(readme, /Claude Code plugin/i);
   assert.match(readme, /adversarial review/i);
   assert.match(readme, /second-pass handoff/i);
 });
 
-test('vlt adapter config.toml pins version and includes gate-check hook', () => {
+test('vlt adapter config.toml runs thumbgate@latest and includes gate-check hook', () => {
   const filePath = path.join(root, 'adapters/vlt/config.toml');
   const content = fs.readFileSync(filePath, 'utf-8');
-  assert.match(content, new RegExp(`thumbgate@${packageVersion.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`), 'config.toml must pin shipped version');
+  assert.match(content, /thumbgate@latest/, 'config.toml must run thumbgate@latest');
   assert.match(content, /gate-check/, 'config.toml must include gate-check hook');
 });
 
-test('vlt adapter opencode.json pins version and is valid JSON', () => {
+test('vlt adapter opencode.json runs thumbgate@latest and is valid JSON', () => {
   const filePath = path.join(root, 'adapters/vlt/opencode.json');
   const payload = JSON.parse(fs.readFileSync(filePath, 'utf-8'));
   assert.ok(payload.mcp?.thumbgate, 'vlt opencode.json must have thumbgate MCP server');
   const serverStr = JSON.stringify(payload.mcp.thumbgate);
-  assert.match(serverStr, new RegExp(`thumbgate@${packageVersion.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`), 'must pin shipped version');
+  assert.match(serverStr, /thumbgate@latest/, 'must run thumbgate@latest');
 });
 
-test('vlt adapter .mcp.json pins version and includes preToolUse hook', () => {
+test('vlt adapter .mcp.json runs thumbgate@latest and includes preToolUse hook', () => {
   const filePath = path.join(root, 'adapters/vlt/.mcp.json');
   const payload = JSON.parse(fs.readFileSync(filePath, 'utf-8'));
   assert.ok(payload.mcpServers?.thumbgate, 'vlt .mcp.json must have thumbgate MCP server');
   assert.ok(payload.hooks?.preToolUse, 'vlt .mcp.json must have preToolUse hook');
   const mcpStr = JSON.stringify(payload);
-  assert.match(mcpStr, new RegExp(`thumbgate@${packageVersion.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`), 'must pin shipped version');
+  assert.match(mcpStr, /thumbgate@latest/, 'must run thumbgate@latest');
 });
 
 test('vlt adapter VLT.md references gate templates, model candidates, and launch announcement', () => {
@@ -520,17 +522,17 @@ test('vlt adapter VLT.md references gate templates, model candidates, and launch
   assert.match(content, /gate templates|Gate Template/i, 'VLT.md must reference gate templates');
   assert.match(content, /model candidates|Model Candidate/i, 'VLT.md must reference model candidates');
   assert.match(content, /vlt.io|launch|2026/i, 'VLT.md must reference the vlt launch announcement');
-  assert.match(content, new RegExp(`thumbgate@${packageVersion.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`), 'VLT.md must pin shipped version');
+  assert.match(content, /thumbgate@latest/, 'VLT.md must run thumbgate@latest');
 });
 
-test('hf-context adapter config.toml pins version and includes gate-check hook', () => {
+test('hf-context adapter config.toml runs thumbgate@latest and includes gate-check hook', () => {
   const filePath = path.join(root, 'adapters/huggingface-context-course/config.toml');
   const content = fs.readFileSync(filePath, 'utf-8');
-  assert.match(content, new RegExp(`thumbgate@${packageVersion.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`), 'config.toml must pin shipped version');
+  assert.match(content, /thumbgate@latest/, 'config.toml must run thumbgate@latest');
   assert.match(content, /gate-check/, 'config.toml must include gate-check hook');
 });
 
-test('hf-context adapter opencode.json pins version and is valid JSON', () => {
+test('hf-context adapter opencode.json runs thumbgate@latest and is valid JSON', () => {
   const filePath = path.join(root, 'adapters/huggingface-context-course/opencode.json');
   const payload = JSON.parse(fs.readFileSync(filePath, 'utf-8'));
   assert.ok(payload.mcp?.thumbgate, 'opencode.json must have thumbgate MCP server');
@@ -538,17 +540,17 @@ test('hf-context adapter opencode.json pins version and is valid JSON', () => {
   const notes = (payload.notes || '').toLowerCase();
   assert.ok(notes.includes('context course'), 'notes must reference the context course');
   const serverStr = JSON.stringify(payload.mcp.thumbgate);
-  assert.match(serverStr, new RegExp(`thumbgate@${packageVersion.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`), 'must pin shipped version');
+  assert.match(serverStr, /thumbgate@latest/, 'must run thumbgate@latest');
 });
 
-test('hf-context adapter .mcp.json pins version and includes preToolUse hook', () => {
+test('hf-context adapter .mcp.json runs thumbgate@latest and includes preToolUse hook', () => {
   const filePath = path.join(root, 'adapters/huggingface-context-course/.mcp.json');
   const payload = JSON.parse(fs.readFileSync(filePath, 'utf-8'));
   assert.ok(payload.mcpServers?.thumbgate, '.mcp.json must have thumbgate MCP server');
   assert.ok(payload.hooks?.preToolUse, '.mcp.json must have preToolUse hook');
   assert.match(payload.hooks.preToolUse.args.join(' '), /gate-check/, 'preToolUse must use gate-check');
   const mcpStr = JSON.stringify(payload);
-  assert.match(mcpStr, new RegExp(`thumbgate@${packageVersion.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`), 'must pin shipped version');
+  assert.match(mcpStr, /thumbgate@latest/, 'must run thumbgate@latest');
 });
 
 test('hf-context adapter HF_CONTEXT.md references gate templates, model candidates, and course URL', () => {
@@ -558,12 +560,12 @@ test('hf-context adapter HF_CONTEXT.md references gate templates, model candidat
   assert.match(content, /validate-context-before-codegen/, 'must reference gate template');
   assert.match(content, /huggingface\/context-engineering-agent/, 'must reference model candidate');
   assert.match(content, /context-engineering/, 'must reference context-engineering workload');
-  assert.match(content, new RegExp(`thumbgate@${packageVersion.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`), 'must pin shipped version');
+  assert.match(content, /thumbgate@latest/, 'must run thumbgate@latest');
   assert.match(content, /Unit 1/, 'must reference Unit 1');
   assert.match(content, /Unit 5/, 'must reference Unit 5');
 });
 
-test('Poolside adapter pins ThumbGate and preserves the native enforcement boundary', () => {
+test('Poolside adapter runs thumbgate@latest and preserves the native enforcement boundary', () => {
   const settingsPath = path.join(root, 'adapters/poolside/settings.yaml');
   const readmePath = path.join(root, 'adapters/poolside/README.md');
   const settings = fs.readFileSync(settingsPath, 'utf8');
@@ -573,8 +575,8 @@ test('Poolside adapter pins ThumbGate and preserves the native enforcement bound
   assert.match(settings, /command: npx/);
   assert.match(
     settings,
-    new RegExp(`thumbgate@${packageVersion.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`),
-    'Poolside settings must pin the shipped ThumbGate version',
+    /thumbgate@latest/,
+    'Poolside settings must run thumbgate@latest',
   );
   assert.match(readme, /fail-open/i);
   assert.match(readme, /native permissions/i);

@@ -258,7 +258,7 @@ function updateStatuslineWithLesson({ accepted, signal, memoryId, feedbackId, le
     try {
       const { refreshStatuslineCache } = require('./hook-thumbgate-cache-updater');
       // Human-only: the status bar shows the owner's own thumbs, not agent captures.
-      refreshStatuslineCache(analyzeFeedback(undefined, { humanOnly: true }), cachePath);
+      refreshStatuslineCache(humanCountedStats(analyzeFeedback(undefined, { humanOnly: true })), cachePath);
     } catch {
       /* keep lesson refresh best-effort */
     }
@@ -271,11 +271,17 @@ function updateStatuslineWithLesson({ accepted, signal, memoryId, feedbackId, le
  * log, so the counter must include it; without this the cache kept its old
  * counts until the next accepted capture.
  */
+function humanCountedStats(stats) {
+  // The one counter: the thumb totals come from computeHumanCounts, never from the log tally in analyzeFeedback.
+  const { applyHumanCounts } = require('./statusline-human-counts');
+  return applyHumanCounts(stats, { cwd: process.cwd() });
+}
+
 function refreshStatuslineCounts() {
   try {
     const cachePath = path.join(getFeedbackPaths().FEEDBACK_DIR, 'statusline_cache.json');
     const { refreshStatuslineCache } = require('./hook-thumbgate-cache-updater');
-    refreshStatuslineCache(analyzeFeedback(undefined, { humanOnly: true }), cachePath);
+    refreshStatuslineCache(humanCountedStats(analyzeFeedback(undefined, { humanOnly: true })), cachePath);
   } catch {
     /* statusline refresh is best-effort */
   }
@@ -2124,6 +2130,8 @@ function captureFeedback(params, options = {}) {
     try {
       const autoPromote = require('./auto-promote-gates');
       const promoteResult = autoPromote.promote(FEEDBACK_LOG_PATH, { gateAction: feedbackEvent.gateAction });
+      // A person's thumbs-down on an unchecked status claim becomes a claim-gate rule at the second one (item N).
+      try { require('./claim-gate-rules').recordFromFeedback(feedbackEvent, path.dirname(FEEDBACK_LOG_PATH)); } catch { /* rule writing is best effort */ }
       // Free tier: a 4th learned rule is stored but not enforced. Say so once, in one line.
       if (promoteResult && promoteResult.upgradeLine && !tenantDataScope()) {
         process.stderr.write(`${promoteResult.upgradeLine}\n`);

@@ -50,11 +50,15 @@ const FIXTURE = [
   row({ signal: 'down', reviewOrigin: 'automated', actionType: 'store-mistake', scope: agentScope, context: 'The agent noticed a missed check.' }), // agent negative
   row({ signal: 'down', projectKey, context: `${OTHER}Igor: thumbs down` }), // another project
   row({ signal: 'down', context: 'Explicit user thumbs-down' }), // no key, no evidence
+  // Would count as down 3, but a script wrote it: it is listed in not-counted-feedback.jsonl below, so it never counts.
+  row({ id: 'fb_probe_script', signal: 'down', projectKey, context: 'Igor: thumbs down (written by a probe script)' }),
 ];
 // The hook below adds one real thumbs-up from a person, so every surface should then read 3 up and 2 down.
 const EXPECTED = { up: 3, down: 2 };
 
 fs.writeFileSync(path.join(projectDir, '.thumbgate', 'feedback-log.jsonl'), `${FIXTURE.map((r) => JSON.stringify(r)).join('\n')}\n`);
+
+fs.writeFileSync(path.join(projectDir, '.thumbgate', 'not-counted-feedback.jsonl'), `${JSON.stringify({ id: 'fb_probe_script', reason: 'probe script' })}\n`);
 
 const cleanEnv = () => {
   // PWD is what a shell sets for the project folder; a child inherits the test runner's otherwise.
@@ -72,6 +76,29 @@ test('hook: the real cli-feedback script records a person\'s thumb and prints St
   assert.ok(match, `no Stats line in hook output: ${out.slice(0, 400)}`);
   surfaces.hook = { up: Number(match[1]), down: Number(match[2]) };
   assert.deepEqual(surfaces.hook, EXPECTED);
+});
+
+test('status line stats command (statusline-local-stats.js) prints the same numbers', () => {
+  const out = execFileSync(process.execPath, [path.join(ROOT, 'scripts', 'statusline-local-stats.js')], { cwd: projectDir, env: cleanEnv(), encoding: 'utf8' });
+  const data = JSON.parse(out);
+  surfaces.statsCommand = { up: Number(data.thumbs_up), down: Number(data.thumbs_down) };
+  assert.deepEqual(surfaces.statsCommand, EXPECTED);
+});
+
+test('status line cache written by the feedback loop holds the same numbers', () => {
+  const found = [];
+  const walk = (dir) => {
+    for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+      const full = path.join(dir, entry.name);
+      if (entry.isDirectory()) walk(full);
+      else if (entry.name === 'statusline_cache.json') found.push(full);
+    }
+  };
+  walk(home);
+  assert.ok(found.length, 'the hook run wrote no statusline_cache.json');
+  const cache = JSON.parse(fs.readFileSync(found[0], 'utf8'));
+  surfaces.loopCache = { up: Number(cache.thumbs_up), down: Number(cache.thumbs_down) };
+  assert.deepEqual(surfaces.loopCache, EXPECTED);
 });
 
 test('status line: the real statusline-render command prints the same numbers', () => {
@@ -95,6 +122,12 @@ test('dashboard server and headless browser read the same numbers', async () => 
     const data = await res.json();
     surfaces.api = { up: data.totalPositive ?? data.positive, down: data.totalNegative ?? data.negative };
     assert.deepEqual(surfaces.api, EXPECTED);
+
+    // The same endpoint with no project key: the unscoped branch of the server.
+    const bareRes = await fetch(`${origin}/v1/feedback/stats?projectDir=${encodeURIComponent(projectDir)}`, { headers: { authorization: `Bearer ${apiKey}` } });
+    const bare = await bareRes.json();
+    surfaces.apiUnscoped = { up: bare.totalPositive, down: bare.totalNegative };
+    assert.deepEqual(surfaces.apiUnscoped, EXPECTED);
 
     const { chromium } = require('playwright');
     try {
@@ -125,8 +158,8 @@ test('dashboard server and headless browser read the same numbers', async () => 
   }
 });
 
-test('all four surfaces agree', () => {
-  assert.deepEqual(Object.keys(surfaces).sort(), ['api', 'dashboardPage', 'hook', 'statusLine']);
+test('all surfaces agree', () => {
+  assert.deepEqual(Object.keys(surfaces).sort(), ['api', 'apiUnscoped', 'dashboardPage', 'hook', 'loopCache', 'statsCommand', 'statusLine']);
   for (const [name, counts] of Object.entries(surfaces)) {
     if (typeof counts === 'string') {
       assert.ok(process.env.CI, `${name} was skipped outside CI: ${counts}`);

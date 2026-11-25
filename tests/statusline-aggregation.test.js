@@ -107,8 +107,12 @@ test('statusline aggregation can be disabled for local-only compatibility', () =
   const projectStore = path.join(project, '.thumbgate');
   const globalStore = path.join(home, '.thumbgate', 'projects', 'other-project');
 
+  // One counter (AGENT-3667): a row counts for this project only when it carries the project's key, so the
+  // fixture row is keyed the way a real capture is.
+  fs.mkdirSync(project, { recursive: true }); // the key is derived from the real path, so the folder must exist
+  const { projectKey } = require('../scripts/project-identity').resolveLocalProject(project);
   writeJsonl(path.join(projectStore, 'feedback-log.jsonl'), [
-    feedback('local-up-1', 'positive'),
+    feedback('local-up-1', 'positive', 0, { projectKey }),
   ]);
   writeJsonl(path.join(globalStore, 'feedback-log.jsonl'), [
     feedback('global-down-1', 'negative'),

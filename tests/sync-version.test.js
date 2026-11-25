@@ -70,10 +70,11 @@ test('sync-version covers every version-pinned adapter launcher', serial, () => 
 
 test('sync-version detects and repairs adapter launcher package drift', serial, () => {
   const { syncVersion } = require('../scripts/sync-version');
-  const { version } = require('../package.json');
   const launcherPath = path.join(ROOT, 'adapters', 'hermes', 'config.toml');
   const original = fs.readFileSync(launcherPath, 'utf8');
-  const drifted = original.replaceAll(`thumbgate@${version}`, 'thumbgate@0.0.1');
+  assert.match(original, /thumbgate@latest/, 'setup examples run thumbgate@latest');
+  // A release pin creeping back in counts as drift and is rewritten to latest.
+  const drifted = original.replaceAll('thumbgate@latest', 'thumbgate@0.0.1');
 
   try {
     fs.writeFileSync(launcherPath, drifted);
@@ -85,7 +86,7 @@ test('sync-version detects and repairs adapter launcher package drift', serial, 
 
     syncVersion({ checkOnly: false });
     const repaired = fs.readFileSync(launcherPath, 'utf8');
-    assert.equal(repaired, original, 'adapter launcher should be restored to the package version');
+    assert.equal(repaired, original, 'adapter launcher should be restored to thumbgate@latest');
   } finally {
     fs.writeFileSync(launcherPath, original);
   }

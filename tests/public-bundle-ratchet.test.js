@@ -294,7 +294,10 @@ const path = require('node:path');
 // hooks-follow-latest).
 // 712 -> 715 (2026-11-25): canary-gate.js, boundary-check.js, prompt-risk-lint.js (AGENT-3667 item J).
 // 710 -> 711 (2026-11-25): config/gates/profiles/shared-tree.json, the opt-in shared-tree gate profile (bb6208a).
-const BASELINE_FILE_COUNT = 721;
+// 723 -> 724 (2026-11-25): scripts/clarity.js (Microsoft Clarity tag and owner-console export; changeset clarity-analytics).
+// 724 -> 725 (2026-11-25): scripts/deploy-proof-gate.js, the default-on deploy-proof check behind claim-stop-check.
+// 725 -> 726 (2026-11-25): public/udemy.html, the thumbgate.ai/udemy landing page (AGENT-3667).
+const BASELINE_FILE_COUNT = 726;
 function readBundleSnapshot() {
   const repoRoot = path.resolve(__dirname, '..');
   const stdout = execSync('npm pack --dry-run --json', {
