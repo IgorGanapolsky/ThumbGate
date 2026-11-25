@@ -5013,6 +5013,17 @@ function canonicalizeHookInput(input = {}) {
   };
 }
 
+/** Who sent the call, for the audit line: the hook's session id and the host that declared itself (item Q). */
+function hookAuditOptions(input = {}) {
+  const options = {};
+  const sessionId = input.session_id || input.sessionId;
+  if (sessionId) options.sessionId = String(sessionId);
+  if (input.thumbgate_host) options.host = String(input.thumbgate_host);
+  // permission_mode is a field Claude Code's PreToolUse payload carries; a host that sends it without declaring itself is logged as Claude Code.
+  else if (input.permission_mode) options.host = 'claude-code';
+  return options;
+}
+
 function evaluateUnconditionalHardFloor(rawInput = {}, options = {}) {
   const input = canonicalizeHookInput(rawInput);
   const secretGuard = evaluateSecretGuard(input);
@@ -5565,7 +5576,7 @@ async function runAsyncCore(rawInput) {
     return formatOutput(applyEnforcementPosture(sequenceGuard));
   }
 
-  const result = await evaluateGatesAsync(toolName, toolInput);
+  const result = await evaluateGatesAsync(toolName, toolInput, undefined, hookAuditOptions(input));
 
   // Attach security warnings to allow/warn results
   if (securityScan && securityScan.decision === 'warn') {
@@ -5614,7 +5625,7 @@ function run(rawInput) {
     return formatOutput(applyEnforcementPosture(sequenceGuard));
   }
 
-  const result = evaluateGates(toolName, toolInput);
+  const result = evaluateGates(toolName, toolInput, undefined, hookAuditOptions(input));
 
   // Attach security warnings to allow/warn results
   if (securityScan && securityScan.decision === 'warn') {

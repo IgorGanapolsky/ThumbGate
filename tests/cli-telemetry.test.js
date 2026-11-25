@@ -59,3 +59,45 @@ test('isOwnerAgentSession: only the owner account hash marks a session as owner;
   assert.equal(isOwnerAgentSession({ CLAUDE_CODE_USER_EMAIL: 'someone@example.test' }), false, 'any other account is a real user');
   assert.equal(isOwnerAgentSession({ CLAUDE_CODE_USER_EMAIL: ' Agent@Example.Test ', THUMBGATE_OWNER_ACCOUNT_HASHES: 'x, ' + hash('agent@example.test') }), true, 'trimmed, lower-cased, extra hashes honoured');
 });
+
+test('trackEventDetached hands the built payload to one detached child with ignored stdio', () => {
+  const { trackEventDetached } = require('../scripts/cli-telemetry');
+  const saved = { a: process.env.THUMBGATE_NO_TELEMETRY, b: process.env.DO_NOT_TRACK };
+  delete process.env.THUMBGATE_NO_TELEMETRY;
+  delete process.env.DO_NOT_TRACK;
+  try {
+    const calls = [];
+    const spawnFn = (cmd, args, opts) => { calls.push({ cmd, args, opts }); return { on() {}, unref() {} }; };
+    assert.equal(trackEventDetached('first_block_upsell_shown', { gateId: 'force-push' }, { spawnFn }), true);
+    assert.equal(calls.length, 1);
+    assert.equal(calls[0].cmd, process.execPath);
+    assert.match(calls[0].args[0], /cli-telemetry\.js$/);
+    assert.equal(calls[0].args[1], '--deliver');
+    assert.equal(calls[0].opts.detached, true);
+    assert.equal(calls[0].opts.stdio, 'ignore');
+    const payload = JSON.parse(calls[0].opts.env.THUMBGATE_TELEMETRY_PAYLOAD);
+    assert.equal(payload.eventType, 'first_block_upsell_shown');
+    assert.equal(payload.gateId, 'force-push');
+    assert.equal(payload.clientType, 'cli');
+    assert.ok(payload.installId);
+
+    process.env.THUMBGATE_NO_TELEMETRY = '1';
+    assert.equal(trackEventDetached('x', {}, { spawnFn: () => { throw new Error('must not spawn'); } }), false);
+  } finally {
+    if (saved.a === undefined) delete process.env.THUMBGATE_NO_TELEMETRY; else process.env.THUMBGATE_NO_TELEMETRY = saved.a;
+    if (saved.b === undefined) delete process.env.DO_NOT_TRACK; else process.env.DO_NOT_TRACK = saved.b;
+  }
+});
+
+test('trackEvent with awaitDelivery returns a promise, and false when telemetry is off', async () => {
+  const saved = process.env.THUMBGATE_NO_TELEMETRY;
+  process.env.THUMBGATE_NO_TELEMETRY = '1';
+  try {
+    const p = trackEvent('x', {}, { awaitDelivery: true });
+    assert.ok(p && typeof p.then === 'function');
+    assert.equal(await p, false);
+    assert.equal(trackEvent('x'), undefined);
+  } finally {
+    if (saved === undefined) delete process.env.THUMBGATE_NO_TELEMETRY; else process.env.THUMBGATE_NO_TELEMETRY = saved;
+  }
+});
