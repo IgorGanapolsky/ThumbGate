@@ -167,9 +167,19 @@ test('SSE subscription ownership is captured independently of the event publishe
   } finally { streams.forEach((stream) => stream.close()); }
 });
 
-test('fixed async DPO exports use the tenant default input in inline and subprocess modes', async () => {
+test('fixed async DPO exports use the tenant default input in inline and subprocess modes', async (t) => {
+  // Later tests count the rows in feedback-log.jsonl, so put the original file back when this test ends.
+  const originals = [legacy, ...dirs].map((dir) => {
+    const file = path.join(dir, 'feedback-log.jsonl');
+    return [file, fs.existsSync(file) ? fs.readFileSync(file) : null];
+  });
+  t.after(() => originals.forEach(([file, body]) => (body === null ? fs.rmSync(file, { force: true }) : fs.writeFileSync(file, body))));
+  const appendRows = (dir, file, rows) => fs.appendFileSync(path.join(dir, file), rows.map(JSON.stringify).join('\n') + '\n');
+  for (const [index, dir] of [legacy, ...dirs].entries()) appendRows(dir, 'feedback-log.jsonl', [
+    { id: `fb-${index}`, signal: 'negative', context: `private-export-${index} rejected action was wrong`, whatWentWrong: `private-export-${index} rejected action was wrong`, lastAction: `private-export-${index} rejected action`, conversationWindow: `User: do the task ${index}\nAssistant: private-export-${index} rejected action`, whatToChange: `private-export-${index} verified action` },
+  ]);
   for (const [index, dir] of [legacy, ...dirs].entries()) writeRows(dir, 'memory-log.jsonl', [
-    { id: `err-${index}`, title: `MISTAKE: private-export-${index}`, content: `private-export-${index} rejected action`, category: 'error', tags: ['synthetic-export'] },
+    { id: `err-${index}`, sourceFeedbackId: `fb-${index}`, title: `MISTAKE: private-export-${index}`, content: `private-export-${index} rejected action`, category: 'error', tags: ['synthetic-export'] },
     { id: `good-${index}`, title: `SUCCESS: private-export-${index}`, content: `private-export-${index} verified action`, category: 'learning', tags: ['synthetic-export'] },
   ]);
   for (const mode of ['inline', 'background']) {

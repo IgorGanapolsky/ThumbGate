@@ -359,7 +359,7 @@ test('dpo-export integration — exported pairs include reasoning traces', () =>
       rubricSummary: { weightedScore: 0.9, failingCriteria: [] },
     },
   ];
-  const result = exportDpoFromMemories(memories);
+  const result = exportDpoFromMemories(memories, { strict: false });
   assert.ok(result.reasoning, 'export must return reasoning aggregate');
   assert.ok(result.pairs.length >= 1);
   const pair = result.pairs[0];

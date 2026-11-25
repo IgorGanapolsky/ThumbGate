@@ -126,7 +126,8 @@ test('E2E: feedback capture -> memory -> DPO export -> prevention rules', async 
   await t.test('step 6: DPO export produces paired training data with reasoning', () => {
     const { MEMORY_LOG_PATH } = getFeedbackPaths();
     const memories = readJSONL(MEMORY_LOG_PATH);
-    const result = exportDpoFromMemories(memories);
+    // This step tests the legacy keyword matcher; strict pairing has its own tests.
+    const result = exportDpoFromMemories(memories, { strict: false });
 
     assert.equal(result.pairs.length, 1, 'should produce 1 DPO pair');
 

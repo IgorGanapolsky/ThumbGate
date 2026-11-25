@@ -155,7 +155,16 @@ test('export: exportDpoFromMemories redacts a planted secret in pairs and jsonl'
     },
   ];
 
-  const result = exportDpoFromMemories(memories);
+  memories[0].sourceFeedbackId = 'fb-secret';
+  const feedbackRows = [{
+    id: 'fb-secret',
+    signal: 'negative',
+    whatWentWrong: 'pasted a live credential straight into the fix',
+    lastAction: `Pasted the live key directly: ${FAKE.stripeLive}`,
+    conversationWindow: 'User: fix the billing call\nAssistant: pasted the live key into the code',
+    whatToChange: `Store keys in the vault, not inline like ${FAKE.awsAccessKey}`,
+  }];
+  const result = exportDpoFromMemories(memories, { feedbackRows });
   assert.ok(result.pairs.length >= 1, 'at least one pair built');
   assert.ok(!result.jsonl.includes(FAKE.stripeLive), 'rejected content secret redacted');
   assert.ok(!result.jsonl.includes(FAKE.awsAccessKey), 'chosen content secret redacted');
