@@ -4,6 +4,7 @@ const { isProjectFolder, parseProjectSelection, projectForCapture, projectForRec
 const { readProjectRows, buildProjectCatalog } = require('../../scripts/project-catalog');
 const ownerAdmin = require('../../scripts/owner-admin');
 const clarity = require('../../scripts/clarity');
+const orion = require('../../scripts/orion');
 const opsLog = require('../../scripts/ops-log');
 const http = require('http');
 const https = require('https');
@@ -4111,6 +4112,7 @@ function sendHtml(res, statusCode, html, extraHeaders = {}, options = {}) {
     let requestPath = '/admin';
     try { requestPath = new URL(res.req.url || '/', 'http://localhost').pathname; } catch { /* treat as private */ }
     html = clarity.injectClarityTag(html, { pathname: requestPath, headers: res.req.headers || {} });
+    html = orion.injectOrionTag(html, { pathname: requestPath, headers: res.req.headers || {} });
   }
   const originTrialTokens = extractOriginTrialTokens(html);
   const originTrialHeader = originTrialTokens.length > 0
