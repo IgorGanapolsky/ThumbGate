@@ -59,6 +59,7 @@ const REWRITES = [
   ['os.unlink in a heredoc script', `python3 - <<'PY'\nimport os\nos.unlink("${TARGET}")\nPY`],
   ['pathlib rmdir', `python3 -c "from pathlib import Path; Path('${TARGET}').rmdir()"`],
   ['subprocess rm -rf with an argument list', `python3 -c "import subprocess; subprocess.run(['rm', '-rf', '${TARGET}'])"`],
+  ['os.remove with shell-escaped double quotes', `python3 -c "import os; os.remove(\\"${TARGET}\\")"`],
 ];
 
 const HARMLESS = [
@@ -78,6 +79,8 @@ const HARMLESS = [
   ['mkdir of the target', `mkdir -p ${TARGET}`],
   ['echo mentioning a delete', 'echo "remember to call shutil.rmtree later"'],
   ['npm test', 'npm test'],
+  ['rm argument list that is only printed', `python3 -c "print(['rm', '-rf', '${TARGET}'])"`],
+  ['literal joined with a suffix at run time', `python3 -c "import shutil; shutil.rmtree('${TARGET}' + '-backup')"`],
 ];
 
 test('REQ-01: the learned shell delete itself is denied (setup check)', () => {
@@ -101,8 +104,8 @@ test('REQ-01: rewrite denied: a .py file written with the delete', () => {
   });
 });
 
-test('REQ-02: all 16 harmless controls stay allowed', () => {
-  assert.equal(HARMLESS.length, 16);
+test('REQ-02: all 18 harmless controls stay allowed', () => {
+  assert.equal(HARMLESS.length, 18);
   withLearnedDelete(({ decide }) => {
     for (const [name, command] of HARMLESS) {
       const decision = decide('Bash', { command });

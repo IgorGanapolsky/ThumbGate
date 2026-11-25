@@ -14,10 +14,12 @@ const os = require('node:os');
 const path = require('node:path');
 
 const RM_COMMANDS = new Set(['rm', 'rmdir', 'unlink']);
-const PY_PATH_CALL = /\b(?:shutil\s*\.\s*rmtree|os\s*\.\s*(?:remove|unlink|rmdir|removedirs))\s*\(\s*(?:[rbuf]{0,2})(['"])((?:(?!\1)[^\\\n]|\\.)*)\1/gi;
+// A literal path counts only when it is the whole argument: `'x' + '-backup'` is a different, computed path.
+const PY_PATH_CALL = /\b(?:shutil\s*\.\s*rmtree|os\s*\.\s*(?:remove|unlink|rmdir|removedirs))\s*\(\s*(?:[rbuf]{0,2})(['"])((?:(?!\1)[^\\\n]|\\.)*)\1(?=\s*[,)])/gi;
 const PY_PATHLIB_CALL = /\bPath\s*\(\s*(?:[rbuf]{0,2})(['"])((?:(?!\1)[^\\\n]|\\.)*)\1\s*\)\s*\.\s*(?:unlink|rmdir)\s*\(/gi;
-const PY_RM_LIST = /\[\s*(['"])(?:\/\S*\/)?rm\1\s*((?:,\s*(['"])(?:(?!\3)[^\\\n]|\\.)*\3\s*)*)\]/gi;
-const PY_RM_STRING = /\b(?:os\s*\.\s*system|subprocess\s*\.\s*(?:run|call|check_call|check_output|Popen))\s*\(\s*(?:[rbuf]{0,2})(['"])((?:(?!\1)[^\\\n]|\\.)*)\1/gi;
+// An rm argument list counts only when it is passed to a call that runs it, not when it is printed or stored.
+const PY_RM_LIST = /\b(?:subprocess\s*\.\s*(?:run|call|check_call|check_output|Popen)|os\s*\.\s*(?:execvp?|spawnvp?))\s*\(\s*(?:[^,()]*,\s*)?\[\s*(['"])(?:\/\S*\/)?rm\1\s*((?:,\s*(['"])(?:(?!\3)[^\\\n]|\\.)*\3\s*)*)\]/gi;
+const PY_RM_STRING = /\b(?:os\s*\.\s*system|subprocess\s*\.\s*(?:run|call|check_call|check_output|Popen))\s*\(\s*(?:[rbuf]{0,2})(['"])((?:(?!\1)[^\\\n]|\\.)*)\1(?=\s*[,)])/gi;
 
 function normalizePath(raw) {
   let value = String(raw || '').trim().replace(/^['"]|['"]$/g, '');
@@ -100,7 +102,12 @@ function looksLikePython(toolName, toolInput) {
 
 function textToScan(toolName, toolInput) {
   if (!toolInput) return '';
-  if (toolInput.command) return String(toolInput.command);
+  if (toolInput.command) {
+    // Inside shell double quotes, \" \\ \$ and \` reach Python without the backslash, so scan that form too.
+    const command = String(toolInput.command);
+    const unescaped = command.replace(/\\(["\\$`])/g, '$1');
+    return unescaped === command ? command : `${command}\n${unescaped}`;
+  }
   return String(toolInput.content || toolInput.new_string || toolInput.new_str || '');
 }
 
