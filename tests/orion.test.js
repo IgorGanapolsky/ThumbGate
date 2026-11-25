@@ -6,7 +6,7 @@ const crypto = require('node:crypto');
 const fs = require('node:fs');
 const path = require('node:path');
 
-const orion = require('../scripts/orion');
+const orion = require('../scripts/clarity');
 const { SECURITY_HEADERS } = require('../src/api/security-headers');
 
 const PAGE = '<!doctype html><html><head><meta charset="utf-8"><title>t</title></head><body>hi</body></html>';
@@ -49,6 +49,6 @@ test('REQ-05: the privacy page says Orion records visits and how to opt out; not
   assert.match(privacy, /Orion/);
   assert.match(privacy, /pointer movement, scrolling and clicks/);
   assert.match(privacy, /opt out/i);
-  const code = fs.readFileSync(path.join(__dirname, '..', 'scripts', 'orion.js'), 'utf8');
+  const code = fs.readFileSync(path.join(__dirname, '..', 'scripts', 'clarity.js'), 'utf8');
   assert.equal(/orion\.identify\(/.test(code.replace(/\/\/.*$/gm, '')), false, 'no identify call');
 });
