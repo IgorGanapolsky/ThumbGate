@@ -374,6 +374,112 @@
       "_ordering": "MUST precede env-file-edit and deny-network-egress: both are action:warn and match broadly (any .env mention / any curl to a non-allowlisted host). First-match-wins means either would swallow this critical block."
     },
     {
+      "id": "sandbox-escape-host-breakout",
+      "layer": "Execution",
+      "pattern": "\\bnsenter\\b[^\\n]*?(?:-t\\s*1\\b|--target[= ]1\\b)|/proc/1/(?:root|cwd|environ|ns/|mem\\b)|/proc/(?:self|thread-self|\\d+)/fd/\\d+/\\.\\.|\\bchroot\\s+/(?:host|hostfs|rootfs|mnt/host)\\b|/proc/sys/kernel/core_pattern|\\brelease_agent\\b|\\bnotify_on_release\\b",
+      "action": "block",
+      "message": "Sandbox boundary: this reaches the host from inside a sandbox (host PID 1 namespace, a leaked file handle, a host root mount, core_pattern or a cgroup release_agent). Do not use the weakness. Stop and tell the user what you found so they can fix the sandbox.",
+      "severity": "critical",
+      "source": "Siren (Anthropic Safeguards, 2026-11-24) boundary rules 1, 2 and 6",
+      "compliance": [
+        "NIST-SC-39",
+        "NIST-AC-6",
+        "CWE-668"
+      ],
+      "attack": [
+        "T1611"
+      ]
+    },
+    {
+      "id": "sandbox-node-control-api",
+      "layer": "Execution",
+      "pattern": "(?:--unix-socket[= ]\\s*|unix://|\\b(?:socat|nc|ncat|netcat)\\b[^\\n]*?|(?:-v|--volume|--mount)[= ][^\\n]*?)/(?:var/)?run/(?:docker|containerd/containerd|podman/podman|crio/crio|k3s/containerd/containerd|user/\\d+/docker)\\.sock|[\\w.\\]-]:(?:10250|10255|2375|2376)\\b",
+      "action": "block",
+      "message": "Sandbox boundary: this talks to a socket or API that controls the node (container engine socket, Docker TCP API, kubelet). An agent should never drive the machine it runs on. Stop and tell the user the socket is reachable instead of using it.",
+      "severity": "critical",
+      "source": "Siren (Anthropic Safeguards, 2026-11-24) boundary rule 3",
+      "compliance": [
+        "NIST-SC-7",
+        "NIST-AC-6",
+        "CWE-250"
+      ],
+      "attack": [
+        "T1611"
+      ]
+    },
+    {
+      "id": "sandbox-cloud-identity-read",
+      "layer": "Execution",
+      "pattern": "169\\.254\\.169\\.254|169\\.254\\.170\\.2|\\bfd00:ec2::254\\b|metadata\\.google\\.internal|100\\.100\\.100\\.200|/var/run/secrets/(?:kubernetes\\.io/serviceaccount|eks\\.amazonaws\\.com)|/run/secrets/kubernetes\\.io/serviceaccount",
+      "action": "block",
+      "message": "Sandbox boundary: this reads a cloud or cluster identity (instance metadata endpoint or Kubernetes service account token). Credentials inside a sandbox are only for the task's own resources. Stop and tell the user the identity is exposed instead of using it.",
+      "severity": "critical",
+      "source": "Siren (Anthropic Safeguards, 2026-11-24) boundary rule 4",
+      "compliance": [
+        "NIST-IA-5",
+        "NIST-SC-7",
+        "CWE-522"
+      ],
+      "attack": [
+        "T1552.005"
+      ]
+    },
+    {
+      "id": "sandbox-privileged-container",
+      "layer": "Execution",
+      "toolNames": [
+        "Bash"
+      ],
+      "pattern": "\\b(?:docker|podman|nerdctl)\\s+(?:container\\s+)?(?:run|create)\\b[^\\n]*?(?:--privileged\\b|--pid[= ]host\\b|--userns[= ]host\\b|--cap-add[= ](?:SYS_ADMIN|ALL)\\b|--security-opt[= ](?:apparmor|seccomp)[=:]unconfined\\b|(?:-v|--volume)[= ]\\s*/:|--mount[= ][^\\s]*source=/(?:,|\\s|$))|\\bmount\\s+[^\\n]*?/dev/(?:sd[a-z]|nvme\\d|xvd[a-z]|vd[a-z]|mapper/)",
+      "action": "approve",
+      "message": "Sandbox boundary: this starts a privileged container or mounts a host disk, which gives the agent the host. Human approval required. If the task needs it, say so and stop.",
+      "severity": "high",
+      "source": "Siren (Anthropic Safeguards, 2026-11-24) boundary rules 1 and 3",
+      "compliance": [
+        "NIST-AC-6",
+        "CWE-250"
+      ],
+      "attack": [
+        "T1611"
+      ]
+    },
+    {
+      "id": "sandbox-host-persistence",
+      "layer": "Execution",
+      "pattern": "(?:^|\\s)(?:Write|Edit|MultiEdit|NotebookEdit)\\s+\\S*(?:/etc/cron(?:tab\\b|\\.d/|\\.(?:hourly|daily|weekly|monthly)/)|/etc/systemd/system/|\\.config/systemd/user/|/Library/Launch(?:Agents|Daemons)/|/etc/ld\\.so\\.preload\\b|/etc/sudoers|/etc/rc\\.local\\b|/etc/init\\.d/)|(?:>>?|\\btee\\b(?:\\s+-a)?|\\b(?:cp|mv|ln|install)\\b)[^\\n;|&]*?(?:/etc/cron(?:tab\\b|\\.d/|\\.(?:hourly|daily|weekly|monthly)/)|/etc/systemd/system/|\\.config/systemd/user/|/Library/Launch(?:Agents|Daemons)/|/etc/ld\\.so\\.preload\\b|/etc/sudoers|/etc/rc\\.local\\b|/etc/init\\.d/)|\\|\\s*crontab\\s+-(?:\\s|$)|\\bcrontab\\s+(?!-[lr]\\b)(?:-e\\b|[^\\s-][^\\s;|&]*)|\\bsystemctl\\s+(?:--user\\s+)?enable\\b|\\blaunchctl\\s+(?:load|bootstrap)\\b",
+      "action": "approve",
+      "message": "Sandbox boundary: this plants something that keeps running after the task ends (cron, systemd, launchd, ld.so.preload, sudoers, init scripts). Human approval required.",
+      "severity": "high",
+      "source": "Siren (Anthropic Safeguards, 2026-11-24) boundary rule 6",
+      "compliance": [
+        "NIST-CM-7",
+        "CWE-506"
+      ],
+      "attack": [
+        "T1053.003",
+        "T1543"
+      ]
+    },
+    {
+      "id": "app-store-review-withdraw",
+      "layer": "Execution",
+      "trigger": "any:app_store_review_withdraw",
+      "pattern": "(?:(?=[^\\n]*(?:reviewSubmissions|appStoreVersionSubmissions))(?=[^\\n]*(?:\\bDELETE\\b|canceled\\W{0,4}:\\s*true))|\\breject_if_possible\\W{0,4}(?:true|1)\\b|(?:^|[_.])(?:cancel|withdraw|remove)[_-]?(?:review[_-]?|app[_-]?store[_-]?)?submission)",
+      "action": "block",
+      "adminOverride": {
+        "required": true,
+        "digestBound": true,
+        "singleUse": true,
+        "ttlMs": 900000
+      },
+      "message": "Blocked: this withdraws or cancels an App Store review submission. Apple sends a withdrawn app to the back of the review queue, so each withdrawal can cost days. Ask the owner first; they approve this exact action once. Reading the review status stays allowed.",
+      "severity": "critical",
+      "compliance": [
+        "SOC2-CC8.1",
+        "CWE-285"
+      ]
+    },
+    {
       "id": "env-file-edit",
       "layer": "Cloud",
       "trigger": "Edit:env_file",

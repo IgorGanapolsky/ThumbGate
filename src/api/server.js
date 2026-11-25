@@ -393,7 +393,18 @@ const { packCheckoutReference } = require('../../scripts/checkout-attribution-re
 const { normalizeCampaignId } = require('../../scripts/growth-campaigns');
 // OAuth 2.1 (PKCE) authorization-server state for the remote MCP connector
 // (Claude Connectors Directory requires OAuth for authenticated services).
-const oauthStore = mcpOauth.createStore();
+// Durable when the server has a data volume, so a redeploy does not sign every
+// claude.ai / Claude Desktop connector out (tokens are stored only as digests).
+function resolveOauthStorePath(env = process.env) {
+  if (env.THUMBGATE_OAUTH_STORE_PATH) return env.THUMBGATE_OAUTH_STORE_PATH;
+  if (env.RAILWAY_VOLUME_MOUNT_PATH) return path.join(env.RAILWAY_VOLUME_MOUNT_PATH, 'oauth', 'mcp-oauth-store.json');
+  if (env.THUMBGATE_FEEDBACK_DIR) return path.join(env.THUMBGATE_FEEDBACK_DIR, 'mcp-oauth-store.json');
+  return null;
+}
+const oauthStore = mcpOauth.createStore({
+  persistPath: resolveOauthStorePath(),
+  knownKeys: [process.env.THUMBGATE_API_KEY, process.env.THUMBGATE_OPERATOR_KEY, process.env.THUMBGATE_REVIEWER_KEY],
+});
 const pendingOauthAuthorizeRequests = new Map();
 const OAUTH_AUTHORIZE_REQUEST_TTL_MS = 10 * 60 * 1000;
 const resendMailer = require('../../scripts/mailer/resend-mailer');
@@ -1374,6 +1385,26 @@ function updateLessonRecord(feedbackDir, lessonId, updater, options = {}) {
   if (!changed) return null;
   return updated;
 }
+
+const SUPPORTED_MCP_PROTOCOL_VERSIONS = Object.freeze(['2025-06-18', '2025-03-26', '2024-11-05']);
+
+function negotiateMcpProtocolVersion(requested) {
+  // MCP lifecycle: answer with the client's version when we support it,
+  // otherwise with the latest version we support.
+  return SUPPORTED_MCP_PROTOCOL_VERSIONS.includes(requested) ? requested : SUPPORTED_MCP_PROTOCOL_VERSIONS[0];
+}
+
+// Sent in the MCP initialize result. Clients such as claude.ai, Claude Desktop
+// and Claude Code give server instructions to the model, which is how a typed
+// thumbs-up or thumbs-down in a chat becomes a recorded lesson, not only text.
+const HOSTED_MCP_INSTRUCTIONS = [
+  'ThumbGate records the user\'s thumbs-up and thumbs-down feedback and turns repeated mistakes into prevention rules.',
+  'When the user gives feedback on your work, such as a thumbs-up or thumbs-down emoji, "+1", "-1", "that was wrong", "good job", or "you did X again", call capture_feedback in the same turn, before you reply.',
+  'Use signal "down" for negative and "up" for positive feedback. Put what you just did in context, and fill whatWentWrong and whatToChange (down) or whatWorked (up) in one plain sentence each, naming the exact action.',
+  'Do not tell the user feedback was recorded unless capture_feedback returned accepted: true in this turn.',
+  'Before an action that is hard to undo (sending a message, posting, deploying, deleting, merging, paying), call gate_check with the action and follow a deny or warn result.',
+  'At the start of a task, call prevention_rules or search_lessons to read the rules learned so far.',
+].join(' ');
 
 function getPublicMcpTools() {
   const { getExposedTools } = require('../../adapters/mcp/server-stdio');
@@ -5171,6 +5202,7 @@ function renderSitemapXml(runtimeConfig) {
     { path: '/learn/five-walls-enterprise-agent-deployment', changefreq: 'weekly', priority: '0.85' },
     { path: '/learn/okta-mcp-governance-per-tool-call-gates', changefreq: 'weekly', priority: '0.85' },
     { path: '/learn/ai-finops-agent-spend-guardrails', changefreq: 'weekly', priority: '0.85' },
+    { path: '/learn/siren-agent-sandbox-escape-gates', changefreq: 'weekly', priority: '0.85' },
     { path: '/learn/proof-before-claim-deploy-gate', changefreq: 'weekly', priority: '0.85' },
     { path: '/compare/claude-code-hooks', changefreq: 'weekly', priority: '0.85' },
     { path: '/compare/bumblebee', changefreq: 'weekly', priority: '0.85' },
@@ -7798,13 +7830,15 @@ function createUnscopedApiServer({ ownerAdminDependencies = {} } = {}) {
                 jsonrpc: '2.0',
                 id: msg.id,
                 result: {
-                  protocolVersion: '2024-11-05',
+                  protocolVersion: negotiateMcpProtocolVersion(msg.params && msg.params.protocolVersion),
                   capabilities: { tools: {} },
                   serverInfo: { name: 'thumbgate', version: pkg.version },
+                  instructions: HOSTED_MCP_INSTRUCTIONS,
                 },
               });
-            } else if (msg.method === 'notifications/initialized') {
-              res.writeHead(204);
+            } else if (typeof msg.method === 'string' && msg.method.startsWith('notifications/')) {
+              // Streamable HTTP: notifications are acknowledged with 202 and no body.
+              res.writeHead(202);
               res.end();
             } else if (msg.method === 'tools/list') {
               sendJson(res, 200, {
@@ -7967,7 +8001,14 @@ function createUnscopedApiServer({ ownerAdminDependencies = {} } = {}) {
         return;
       }
       if (req.method === 'GET') {
-        // SSE upgrade or capability probe
+        // This server does not open a server-to-client SSE stream. Streamable
+        // HTTP clients that ask for one must get 405 so they fall back to POST.
+        if (String(req.headers.accept || '').includes('text/event-stream')) {
+          res.writeHead(405, { Allow: 'POST' });
+          res.end();
+          return;
+        }
+        // Capability probe
         sendJson(res, 200, {
           name: 'thumbgate',
           version: pkg.version,
@@ -10228,6 +10269,16 @@ a{color:#8b9}</style></head><body><form class="card" method="post" action="/oaut
       req.on('data', (c) => { body += c; if (body.length > 16384) req.destroy(); });
       req.on('end', () => {
         const form = new URLSearchParams(body);
+        if (form.get('grant_type') === 'refresh_token') {
+          const refreshed = mcpOauth.refreshAccessToken(oauthStore, {
+            refreshToken: form.get('refresh_token') || '',
+            clientId: form.get('client_id') || '',
+            scope: form.get('scope') || undefined,
+            resource: form.get('resource') || undefined,
+          });
+          sendJson(res, refreshed.error ? 400 : 200, refreshed, { 'Cache-Control': 'no-store' });
+          return;
+        }
         if (form.get('grant_type') !== 'authorization_code') {
           sendJson(res, 400, { error: 'unsupported_grant_type' });
           return;

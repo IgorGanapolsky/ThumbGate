@@ -79,8 +79,8 @@ Out of the box the defaults are deliberately conservative:
 | Verdict | Default behavior |
 |---------|------------------|
 | ⛔ Hard-block | Detected secret leaks; process-termination / environment-override self-disable attempts |
-| 👎 Warn + log | `rm -rf`, forced pushes, fetch-and-run, direct guardrail edits |
-| 👍 Allow | Everything else |
+| ⚠️ Warn + log | `rm -rf`, forced pushes, fetch-and-run, direct guardrail edits |
+| ✅ Allow | Everything else |
 
 **Verify it:** run your agent and ask it to do something on the warn list (for
 example, a forced push on a scratch branch of a throwaway repo). You should see the

@@ -88,7 +88,7 @@ npx thumbgate salt-code-policy-honesty --eval-prompt="Design me a delete user AP
           <li><strong>Deterministic Fail-Closed:</strong> Regex and AST diodes catch query-string tokens, unsanitized BOLA endpoints, and plain-text credentials before execution.</li>
           <li><strong>Zero LLM Tokens:</strong> Policy inspection uses zero tokens, preserving the agent's context window.</li>
           <li><strong>100% Offline:</strong> No external API calls, no third-party telemetry, fully air-gapped compatible.</li>
-          <li><strong>Self-Improving:</strong> When you give feedback (thumbs up / thumbs down), ThumbGate synthesizes new prevention rules using Thompson Sampling.</li>
+          <li><strong>Self-Improving:</strong> When you give a thumbs-down, repeated ones become prevention rules, ranked with Thompson Sampling. A thumbs-up is saved as a success lesson and does not create a rule.</li>
         </ul>
 
         <h2>1-Click Onboarding for 16 AI Coding Agents</h2>
