@@ -77,13 +77,37 @@ test('summarizeActivationFunnel counts activated -> shown -> checkout, skipping 
   assert.deepEqual(funnel, {
     cliInstalls: 2,
     activatedInstalls: 1,
+    upsellCapableActivatedInstalls: 0,
     upsellShownInstalls: 1,
     limitHitInstalls: 1,
+    runtimeSkewInstalls: 0,
+    runtimeAutoUpdatedInstalls: 0,
+    runtimeAutoUpdateFailedInstalls: 0,
     cliCheckoutViews: 1,
     cliCheckoutClicks: 1,
     cliCheckoutPaidPageViews: 1,
     firstBlockCheckoutViews: 1,
   });
+});
+
+test('summarizeActivationFunnel reports upgrade-capable activations and hook-runtime update results', () => {
+  const funnel = tracker.summarizeActivationFunnel([
+    { eventType: 'first_block', clientType: 'cli', installId: 'old', version: '1.39.1' },
+    { eventType: 'first_block', clientType: 'cli', installId: 'new', version: '1.40.13' },
+    { eventType: 'cli_capture', clientType: 'cli', installId: 'new', version: '1.42.0' },
+    { eventType: 'first_block', clientType: 'cli', installId: 'pk', pkgVersion: '1.40.14' },
+    { eventType: 'runtime_version_skew', clientType: 'cli', installId: 'old', version: '1.42.0' },
+    { eventType: 'runtime_version_skew', clientType: 'cli', installId: 'new', version: '1.42.0' },
+    { eventType: 'runtime_auto_update', clientType: 'cli', installId: 'old', reasonCode: 'install-failed' },
+    { eventType: 'runtime_auto_update', clientType: 'cli', installId: 'new', reasonCode: 'install-failed' },
+    { eventType: 'runtime_auto_update', clientType: 'cli', installId: 'new', reasonCode: 'updated', version: '1.42.0' },
+    { eventType: 'runtime_auto_update', clientType: 'cli', installId: 'own', reasonCode: 'updated', visitorType: 'owner' },
+  ]);
+  assert.equal(funnel.activatedInstalls, 3);
+  assert.equal(funnel.upsellCapableActivatedInstalls, 2);
+  assert.equal(funnel.runtimeSkewInstalls, 2);
+  assert.equal(funnel.runtimeAutoUpdatedInstalls, 1);
+  assert.equal(funnel.runtimeAutoUpdateFailedInstalls, 1);
 });
 
 test('summarizeFirstBlockEvents keeps a later timing sample for an install already counted', () => {
@@ -160,4 +184,21 @@ test('a valid key still reports on the account route only', async () => {
     server.close();
     fs.rmSync(stateDir, { recursive: true, force: true });
   }
+});
+
+test('summarizeInstallVersions counts each CLI install once, by its newest hook-side ping', () => {
+  const v = tracker.summarizeInstallVersions([
+    { eventType: 'cli_capture', clientType: 'cli', installId: 'a', version: '1.39.1', receivedAt: '2026-11-20T00:00:00Z' },
+    { eventType: 'first_block', clientType: 'cli', installId: 'a', version: '1.43.0', receivedAt: '2026-11-25T00:00:00Z' },
+    { eventType: 'runtime_version_skew', clientType: 'cli', installId: 'b', version: '1.43.0', receivedAt: '2026-11-25T00:00:00Z' },
+    { eventType: 'cli_capture', clientType: 'cli', installId: 'b', version: '1.40.2', receivedAt: '2026-11-24T00:00:00Z' },
+    { eventType: 'cli_capture', clientType: 'cli', installId: 'c', pkgVersion: '1.42.1', receivedAt: '2026-11-25T00:00:00Z' },
+    { eventType: 'cli_capture', clientType: 'cli', installId: 'o', version: '1.43.0', visitorType: 'owner' },
+    { eventType: 'landing_page_view', clientType: 'web', installId: 'w', version: '1.43.0' },
+  ], '1.43.0');
+  assert.equal(v.installs, 3);
+  assert.equal(v.onCurrent, 1);
+  assert.equal(v.onCurrentShare, 33.3);
+  assert.equal(v.onUpsellCapable, 2);
+  assert.deepEqual(v.topVersions.map((t) => t.version).sort(), ['1.40.2', '1.42.1', '1.43.0']);
 });

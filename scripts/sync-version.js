@@ -321,7 +321,7 @@ function syncVersion(opts) {
   if (fs.existsSync(path.join(PROJECT_ROOT, claudeCodexBridgeConfigPath))) {
     const bridgeConfig = readJson(claudeCodexBridgeConfigPath);
     const server = bridgeConfig.mcpServers && bridgeConfig.mcpServers.thumbgate;
-    const expectedArgs = explicitPinnedServeArgs(version);
+    const expectedArgs = explicitLatestServeArgs();
     const currentArgs = server && Array.isArray(server.args) ? server.args : [];
     if (server && server.command === 'npx' && JSON.stringify(currentArgs) !== JSON.stringify(expectedArgs)) {
       drifted.push({ file: claudeCodexBridgeConfigPath, field: 'mcpServers.thumbgate.args', current: JSON.stringify(currentArgs) });
@@ -350,7 +350,10 @@ function syncVersion(opts) {
     targets.push(cursorPluginConfigPath);
   }
 
-  // 10. docs/install files that pin the npm package version
+  // 10. docs/install files whose setup examples name the npm package. Since 2026-11-25 (Igor: "how do we ensure
+  // people's agents always use the latest version") copy-paste examples use thumbgate@latest instead of the
+  // release pin, so a config copied today keeps following npm. The only pins left are version labels that
+  // state which release is current (VERSION_LABEL_PATTERNS below), and they track the release.
   const pinnedPackageTargets = [
     'adapters/claude/.mcp.json',
     'adapters/claw/config.toml',
@@ -411,17 +414,22 @@ function syncVersion(opts) {
     'plugins/opencode-profile/INSTALL.md',
   ];
   const pinnedPackagePattern = new RegExp(`thumbgate@${VERSION_PATTERN}`, 'g');
+  // Version labels (not commands) that keep naming the current release.
+  const VERSION_LABEL_PATTERNS = [
+    new RegExp(`(<span>)thumbgate@${VERSION_PATTERN}(</span>)`, 'g'),
+    new RegExp(`(<span>\`)thumbgate@${VERSION_PATTERN}(\` is the canonical)`, 'g'),
+  ];
+  const LABEL_MARK = '\u0000thumbgate-label\u0000';
   for (const relPath of pinnedPackageTargets) {
     const filePath = path.join(PROJECT_ROOT, relPath);
     if (!fs.existsSync(filePath)) continue;
     const content = fs.readFileSync(filePath, 'utf-8');
-    const matches = content.match(pinnedPackagePattern) || [];
-    const hasDrift = matches.some((match) => match !== `thumbgate@${version}`);
-    if (hasDrift) {
-      drifted.push({ file: relPath, field: 'package-version-string', current: matches.join(', ') });
-      if (!checkOnly) {
-        fs.writeFileSync(filePath, content.replace(pinnedPackagePattern, `thumbgate@${version}`));
-      }
+    let next = content;
+    for (const pattern of VERSION_LABEL_PATTERNS) next = next.replace(pattern, `$1${LABEL_MARK}$2`);
+    next = next.replace(pinnedPackagePattern, 'thumbgate@latest').split(LABEL_MARK).join(`thumbgate@${version}`);
+    if (next !== content) {
+      drifted.push({ file: relPath, field: 'package-version-string', current: (content.match(pinnedPackagePattern) || []).join(', ') });
+      if (!checkOnly) fs.writeFileSync(filePath, next);
     }
     targets.push(relPath);
   }

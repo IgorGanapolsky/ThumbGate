@@ -215,9 +215,12 @@ function proveAdapterFilesExist(ROOT, PACKAGE_VERSION, adapterFiles) {
     const filePath = path.join(ROOT, file);
     check(fs.existsSync(filePath), `${file} must exist`);
     const content = fs.readFileSync(filePath, 'utf-8');
-    check(content.includes(`thumbgate@${PACKAGE_VERSION}`), `${file} must pin thumbgate@${PACKAGE_VERSION}`);
+    // Setup examples follow npm latest (sync-version rewrites release pins to @latest); an exact
+    // pin is still accepted when it matches the shipped version.
+    const follows = content.includes('thumbgate@latest') || content.includes(`thumbgate@${PACKAGE_VERSION}`);
+    check(follows, `${file} must use thumbgate@latest (or pin thumbgate@${PACKAGE_VERSION})`);
     results.push({
-      name: `${file} exists and pins thumbgate@${PACKAGE_VERSION}`,
+      name: `${file} exists and uses thumbgate@latest or thumbgate@${PACKAGE_VERSION}`,
       passed: true,
       details: { file, version: PACKAGE_VERSION },
     });

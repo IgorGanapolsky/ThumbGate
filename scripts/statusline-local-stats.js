@@ -9,6 +9,7 @@ const {
 const { normalizeStatsPayload } = require('./hook-thumbgate-cache-updater');
 const { syncClaudeHistoryFeedback } = require('./claude-feedback-sync');
 const { resolveProjectDir } = require('./feedback-paths');
+const { applyHumanCounts } = require('./statusline-human-counts');
 
 try {
   const projectDir = resolveProjectDir({ cwd: process.cwd(), env: process.env });
@@ -18,7 +19,7 @@ try {
   const scope = String(process.env.THUMBGATE_STATUSLINE_SCOPE || 'project').toLowerCase();
   const stats = scope === 'global' && shouldAggregateFeedback({ env: process.env })
     ? computeAggregateFeedbackStats({ projectDir, env: process.env })
-    : analyzeFeedback(undefined, { humanOnly: true, strictHuman: true });
+    : applyHumanCounts(analyzeFeedback(undefined, { humanOnly: true, strictHuman: true }), { cwd: process.cwd() });
   const payload = {
     ...normalizeStatsPayload(stats),
     aggregate: stats.aggregate || { enabled: false },

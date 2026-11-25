@@ -22,6 +22,7 @@ function cursorPayloadToPreToolUse(payload = {}) {
     tool_name: 'Bash',
     tool_input: { command: String(command) },
     cwd: payload.cwd || process.cwd(),
+    thumbgate_host: 'cursor',
     // Cursor's conversation id lets a later thumbs-down find the command it is about.
     ...(payload.conversation_id || payload.session_id ? { session_id: String(payload.conversation_id || payload.session_id) } : {}),
   };
