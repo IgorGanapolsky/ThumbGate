@@ -258,6 +258,7 @@ const {
 const {
   summarizeFirstBlockEvents,
   summarizeActivationFunnel,
+  summarizeInstallVersions,
 } = require('../../scripts/activation-tracker');
 const {
   evaluateOperationalIntegrity,
@@ -414,6 +415,7 @@ const PRO_PAGE_PATH = path.resolve(__dirname, '../../public/pro.html');
 const DASHBOARD_PAGE_PATH = path.resolve(__dirname, '../../public/dashboard.html');
 const LESSONS_PAGE_PATH = path.resolve(__dirname, '../../public/lessons.html');
 const GUIDE_PAGE_PATH = path.resolve(__dirname, '../../public/guide.html');
+const UDEMY_PAGE_PATH = path.resolve(__dirname, '../../public/udemy.html');
 const CHATGPT_APP_PAGE_PATH = path.resolve(__dirname, '../../public/chatgpt-app.html');
 const CODEX_PLUGIN_PAGE_PATH = path.resolve(__dirname, '../../public/codex-plugin.html');
 const COMPARE_PAGE_PATH = path.resolve(__dirname, '../../public/compare.html');
@@ -4454,6 +4456,10 @@ function loadAboutPageHtml(runtimeConfig, pageContext = {}) {
   return loadPublicMarketingTemplateHtml(ABOUT_PAGE_PATH, runtimeConfig, pageContext);
 }
 
+function loadUdemyPageHtml(runtimeConfig, pageContext = {}) {
+  return loadPublicMarketingTemplateHtml(UDEMY_PAGE_PATH, runtimeConfig, pageContext);
+}
+
 function loadGuidePageHtml(runtimeConfig, pageContext = {}) {
   return loadPublicMarketingTemplateHtml(GUIDE_PAGE_PATH, runtimeConfig, pageContext);
 }
@@ -5165,6 +5171,7 @@ function renderSitemapXml(runtimeConfig) {
     { path: '/learn/five-walls-enterprise-agent-deployment', changefreq: 'weekly', priority: '0.85' },
     { path: '/learn/okta-mcp-governance-per-tool-call-gates', changefreq: 'weekly', priority: '0.85' },
     { path: '/learn/ai-finops-agent-spend-guardrails', changefreq: 'weekly', priority: '0.85' },
+    { path: '/learn/proof-before-claim-deploy-gate', changefreq: 'weekly', priority: '0.85' },
     { path: '/compare/claude-code-hooks', changefreq: 'weekly', priority: '0.85' },
     { path: '/compare/bumblebee', changefreq: 'weekly', priority: '0.85' },
     { path: '/compare/anthropic-containment', changefreq: 'weekly', priority: '0.85' },
@@ -8855,6 +8862,32 @@ async function addContext(){
       return;
     }
 
+    // Landing page for students of the free Udemy course. A visit is recorded with utm_source=udemy even when the
+    // course link lost its query string; installs and checkout starts follow through the existing source capture.
+    if (isGetLikeRequest && (pathname === '/udemy' || pathname === '/udemy/' || pathname === '/udemy.html')) {
+      if (!parsed.searchParams.get('utm_source')) {
+        parsed.searchParams.set('utm_source', 'udemy');
+        parsed.searchParams.set('utm_medium', 'course');
+        parsed.searchParams.set('utm_campaign', 'free_course');
+      }
+      try {
+        servePublicMarketingPage({
+          req,
+          res,
+          parsed,
+          hostedConfig,
+          isHeadRequest,
+          renderHtml: loadUdemyPageHtml,
+          extraTelemetry: {
+            pageType: 'udemy',
+          },
+        });
+      } catch (err) {
+        sendText(res, 500, err.message || 'Udemy page unavailable');
+      }
+      return;
+    }
+
     if (isGetLikeRequest && (pathname === '/guide' || pathname === '/guide.html')) {
       try {
         servePublicMarketingPage({
@@ -10613,6 +10646,7 @@ a{color:#8b9}</style></head><body><form class="card" method="post" action="/oaut
           uniqueSessions: uniqueSessions30d.size,
           firstBlockedToolCall: summarizeFirstBlockEvents(last30),
           activationFunnel: summarizeActivationFunnel(last30),
+          installVersions: summarizeInstallVersions(last30, pkg.version),
         },
         last7Days: {
           total: recent.length,
@@ -10625,6 +10659,7 @@ a{color:#8b9}</style></head><body><form class="card" method="post" action="/oaut
           uniqueSessions: uniqueSessions7d.size,
           firstBlockedToolCall: summarizeFirstBlockEvents(recent),
           activationFunnel: summarizeActivationFunnel(recent),
+          installVersions: summarizeInstallVersions(recent, pkg.version),
         },
         byEventType,
         byVisitorType,
