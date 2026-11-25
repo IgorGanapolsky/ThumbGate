@@ -534,8 +534,9 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
     // 727 -> 728 (2026-11-25): scripts/cursor-self-heal.js (adds the thumbs-down loop to old Cursor installs).
     // 728 -> 729 (2026-11-25): src/api/security-headers.js, baseline security headers on every response (+1).
     // 729 -> 730 (2026-11-25): scripts/orion.js, the Orion tag injector the server requires (+1).
-    manifest.fileCount <= 730,
-    `npm package should stay <= 730 files, got ${manifest.fileCount}`
+    // 730 -> 731 (2026-11-25): public/host-matrix.html was added on main without a files entry; packaged here (+1).
+    manifest.fileCount <= 731,
+    `npm package should stay <= 731 files, got ${manifest.fileCount}`
   );
   // Ceiling bumped from 2.75 MB → 2.85 MB (2026-04-16) to accommodate the
   // incremental review-delta demo content in public/dashboard.html landing
