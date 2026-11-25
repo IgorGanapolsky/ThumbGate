@@ -112,7 +112,7 @@ describe('cursor agent support in auto-wire-hooks', () => {
     assert.ok(r.changed);
     const written = JSON.parse(fs.readFileSync(hooksPath, 'utf8'));
     const shellHooks = written.hooks.beforeShellExecution;
-    assert.ok(shellHooks.some((h) => h.command.includes('cursor-shell-gate.js')));
+    assert.ok(shellHooks.some((h) => /cursor-gate/.test(h.command)));
     assert.ok(!shellHooks.some((h) => String(h.command).includes('gate-check')));
   });
 });

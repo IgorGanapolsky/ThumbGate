@@ -187,4 +187,10 @@ function projectForCapture(input = {}, options = {}) {
   if ((input.projectKey && input.projectKey !== descriptor.projectKey) || (remote && remote.projectKey !== descriptor.projectKey)) throw invalid('Project key does not match execution directory');
   return descriptor;
 }
-module.exports = { KEY_RE, UNASSIGNED, hash, validProjectKey, safeProjectName, canonicalRemote, projectFromRemote, resolveLocalProject, isProjectFolder, legacyAlias, recordedRemotes, resolveProjectEvidence, projectForRecord, buildAliases, matchesProject, gateAppliesToProject, isGeneratedGate, parseProjectSelection, projectForCapture };
+// What `thumbgate dashboard --open` puts in the URL. A folder with no git remote (a scratch or Trash folder, the home folder)
+// is not a project, so the dashboard opens on all projects instead of silently showing that folder's few records.
+function dashboardProjectParam(projectDir, options = {}) {
+  const d = resolveLocalProject(projectDir, options);
+  return d.identitySource === 'remote' && d.projectKey ? d.projectKey : 'all';
+}
+module.exports = { dashboardProjectParam, KEY_RE, UNASSIGNED, hash, validProjectKey, safeProjectName, canonicalRemote, projectFromRemote, resolveLocalProject, isProjectFolder, legacyAlias, recordedRemotes, resolveProjectEvidence, projectForRecord, buildAliases, matchesProject, gateAppliesToProject, isGeneratedGate, parseProjectSelection, projectForCapture };
