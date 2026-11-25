@@ -91,11 +91,12 @@ It **hard-blocks detected secret leaks and two direct self-disable command class
 
 | You give | What ThumbGate does |
 |----------|---------------------|
-| 👎 with one sentence of context | Saves a lesson. From the first one, the agent sees it before a matching action. On the third matching 👎, a check fires on that action: a warning by default, a block with `THUMBGATE_STRICT_ENFORCEMENT=1`. |
+| 👎 typed in the agent session right after a command | Turns that command into a check. The first one warns on the next run. A second 👎 from you on the same command blocks it, with or without strict mode. |
+| 👎 from the CLI with only a sentence of context (no command attached) | Saves a lesson the agent sees before a matching action. On the third matching 👎, a check fires: a warning by default, a block with `THUMBGATE_STRICT_ENFORCEMENT=1`. |
 | 👍 with one sentence of context | Saves a success lesson and counts it in your stats. It does not create, loosen or lift a check. |
-| 👍 or 👎 with no context | Logged only. Nothing is stored or promoted. |
+| 👍 or 👎 with no context and no command | Logged only. Nothing is stored or promoted. |
 
-Example: you thumbs-down `npm run seed:prod-db` three times with *"it wiped production data"*. The next `npm run seed:prod-db` is flagged before it runs (denied in strict mode). A later 👍 on the same command is saved as a success lesson, and the check stays in place.
+Example: the agent runs `npm run deploy:staging` and you type *"thumbs down: that pushed to the wrong environment"*. The next `npm run deploy:staging` gets a warning before it runs. You thumbs-down it a second time, and the next run is denied. A later 👍 on the same command is saved as a success lesson, and the block stays in place.
 
 **Honest disclaimer:** ThumbGate does not update model weights. It intercepts tool calls at runtime. Local-first — no cloud required for the enforcement path.
 
