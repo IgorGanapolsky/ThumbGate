@@ -51,39 +51,25 @@ function classifyInstall() {
     return 'owner';
   }
 
-  // The owner's coding agents run in fresh cloud containers (user root, random hostname), each with a new install id,
-  // inside the owner's own repositories. Without this they were counted as real users.
-  if (insideOwnerRepo()) return 'owner';
+  // The owner's coding agents run in fresh cloud containers (user root, random hostname), each with a new install id.
+  // Without this they were counted as real users.
+  if (isOwnerAgentSession()) return 'owner';
 
   return 'real_user';
 }
 
-const OWNER_REMOTE = /github\.com[/:](igorganapolsky|igor-ganapolsky)\//i;
+// SHA-256 of the owner's Claude account address. Claude Code sets CLAUDE_CODE_USER_EMAIL in every session it runs, so
+// this matches the owner's own agent sessions on any machine and in any folder, and never a user who only cloned the
+// public repo. The address is hashed locally and compared; nothing new is sent. More hashes can be added with
+// THUMBGATE_OWNER_ACCOUNT_HASHES (comma separated).
+const OWNER_ACCOUNT_HASHES = ['fb84659fe07a0a2b2e86dc8e4c04137f5b6dec460946a020c713ff7d4753ba7c'];
 
-// True when the working directory (or a parent, up to 8 levels) is a git checkout whose remote belongs to the owner.
-// Reads only the local .git/config; nothing from it is sent anywhere.
-function insideOwnerRepo(start = process.env.CLAUDE_PROJECT_DIR || process.cwd()) {
-  let dir = path.resolve(start);
-  for (let i = 0; i < 8; i += 1) {
-    try {
-      const gitPath = path.join(dir, '.git');
-      const stat = fs.statSync(gitPath);
-      let configPath = path.join(gitPath, 'config');
-      if (stat.isFile()) {
-        // A worktree: .git is a file pointing at the real git dir.
-        const pointer = /gitdir:\s*(.+)/.exec(fs.readFileSync(gitPath, 'utf8'));
-        if (!pointer) return false;
-        const gitDir = path.resolve(dir, pointer[1].trim());
-        const common = path.join(gitDir, 'commondir');
-        configPath = fs.existsSync(common) ? path.join(path.resolve(gitDir, fs.readFileSync(common, 'utf8').trim()), 'config') : path.join(gitDir, 'config');
-      }
-      return OWNER_REMOTE.test(fs.readFileSync(configPath, 'utf8'));
-    } catch (_) { /* no .git here */ }
-    const parent = path.dirname(dir);
-    if (parent === dir) return false;
-    dir = parent;
-  }
-  return false;
+function isOwnerAgentSession(env = process.env) {
+  const account = String(env.CLAUDE_CODE_USER_EMAIL || '').trim().toLowerCase();
+  if (!account) return false;
+  const hash = crypto.createHash('sha256').update(account).digest('hex');
+  const extra = String(env.THUMBGATE_OWNER_ACCOUNT_HASHES || '').split(',').map((value) => value.trim().toLowerCase()).filter(Boolean);
+  return OWNER_ACCOUNT_HASHES.includes(hash) || extra.includes(hash);
 }
 
 /**
@@ -124,4 +110,4 @@ function trackEvent(eventType, metadata = {}) {
   } catch (_) {} // never crash the CLI
 }
 
-module.exports = { trackEvent, getInstallId, classifyInstall, insideOwnerRepo, INSTALL_ID_PATH, SESSION_ID };
+module.exports = { trackEvent, getInstallId, classifyInstall, isOwnerAgentSession, INSTALL_ID_PATH, SESSION_ID };
