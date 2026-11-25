@@ -331,11 +331,14 @@ function buildDiagnosis({ publicProbe, hostedAudit }) {
   if (gaRuntimeMissing) {
     gaps.push('GA4 runtime env is missing in Railway');
   }
+  // The Sprint payment links fall back to working built-in links (scripts/hosted-config.js), which is what
+  // the server reports as configured. An unset env var is a note, not a gap, so the two reports agree.
+  const notes = [];
   if (runtimePresenceKnown && !runtimePresence.THUMBGATE_SPRINT_DIAGNOSTIC_CHECKOUT_URL) {
-    gaps.push('Workflow Hardening Diagnostic payment link env is not set in Railway (built-in default link is used)');
+    notes.push('Workflow Hardening Diagnostic payment link uses the built-in link (no Railway override)');
   }
   if (runtimePresenceKnown && !runtimePresence.THUMBGATE_WORKFLOW_SPRINT_CHECKOUT_URL) {
-    gaps.push('Setup Sprint payment link env is not set in Railway (built-in default link is used)');
+    notes.push('Setup Sprint payment link uses the built-in link (no Railway override)');
   }
   if (runtimePresenceKnown && !runtimePresence.THUMBGATE_PUBLIC_APP_ORIGIN) {
     gaps.push('THUMBGATE_PUBLIC_APP_ORIGIN is not explicitly set in Railway runtime');
@@ -359,6 +362,7 @@ function buildDiagnosis({ publicProbe, hostedAudit }) {
     hostedAuditMethod: hostedAudit?.auditMethod || 'unknown',
     primaryIssue,
     gaps,
+    notes,
   };
 }
 
