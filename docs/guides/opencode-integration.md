@@ -7,7 +7,7 @@ This repository now includes a repo-local OpenCode profile plus a portable adapt
 - `opencode.json` for repo-local OpenCode usage
 - `.opencode/instructions/thumbgate-workflow.md` for worktree-only execution and evidence-first verification
 - `.opencode/agents/thumbgate-review.md` for a read-only review subagent focused on regressions and proof gaps
-- `adapters/opencode/opencode.json` for a version-pinned portable OpenCode MCP profile
+- `adapters/opencode/opencode.json` for a portable OpenCode MCP profile that follows npm latest
 - `plugins/opencode-profile/INSTALL.md` for installing the portable profile outside this repo
 
 ## Repo-Local Use
@@ -26,7 +26,7 @@ That gives OpenCode a repo-native permission surface instead of bolting on a sec
 
 If you want the same MCP server in a different OpenCode project, copy `adapters/opencode/opencode.json` into your OpenCode config and merge the `mcp.thumbgate` block.
 
-The portable profile stays version-pinned to `thumbgate@1.43.0`, and `scripts/sync-version.js` now checks it for drift.
+The portable profile runs `thumbgate@latest`, and `scripts/sync-version.js` checks that no release pin creeps back in.
 
 ## Why This Is High ROI
 

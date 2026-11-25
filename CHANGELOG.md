@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.43.1
+
+### Patch Changes
+
+- 940e7ff: The hook runtime now keeps itself on npm `latest`: `gate-check` and `session-start` check once a day in a detached child and refresh `~/.thumbgate/runtime` when a newer release exists (opt out with `THUMBGATE_NO_AUTO_UPDATE=1`). This covers Codex, plugin and hooks-only installs, which have no MCP server started from `@latest` to notice. The Claude plugin and the Claude Codex bridge now start the MCP server from `thumbgate@latest` instead of a cached or pinned version. `/v1/metrics/real` reports `installVersions`: the share of CLI installs on the current release.
+- Republish the 1.43.0 release (deploy-proof Stop gate, parked anti-claim reminder) as 1.43.1. npm staged the 1.43.0 upload for maintainer approval instead of publishing it, so `npm install thumbgate@latest` still resolved 1.42.1.
+
 ## 1.43.0
 
 ### Minor Changes

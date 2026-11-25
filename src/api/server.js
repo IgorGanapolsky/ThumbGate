@@ -258,6 +258,7 @@ const {
 const {
   summarizeFirstBlockEvents,
   summarizeActivationFunnel,
+  summarizeInstallVersions,
 } = require('../../scripts/activation-tracker');
 const {
   evaluateOperationalIntegrity,
@@ -10645,6 +10646,7 @@ a{color:#8b9}</style></head><body><form class="card" method="post" action="/oaut
           uniqueSessions: uniqueSessions30d.size,
           firstBlockedToolCall: summarizeFirstBlockEvents(last30),
           activationFunnel: summarizeActivationFunnel(last30),
+          installVersions: summarizeInstallVersions(last30, pkg.version),
         },
         last7Days: {
           total: recent.length,
@@ -10657,6 +10659,7 @@ a{color:#8b9}</style></head><body><form class="card" method="post" action="/oaut
           uniqueSessions: uniqueSessions7d.size,
           firstBlockedToolCall: summarizeFirstBlockEvents(recent),
           activationFunnel: summarizeActivationFunnel(recent),
+          installVersions: summarizeInstallVersions(recent, pkg.version),
         },
         byEventType,
         byVisitorType,
