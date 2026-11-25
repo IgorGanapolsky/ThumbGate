@@ -132,20 +132,22 @@ function refreshRuntime(dir, version, { install = defaultInstall } = {}) {
   }
 }
 
-function runChild(argv) {
+async function runChild(argv) {
   const [dir, version, source] = argv;
   if (!dir || !VERSION_RE.test(String(version || ''))) return;
   const result = refreshRuntime(dir, version);
   const file = path.join(path.dirname(dir), STATE_FILE);
   writeState(file, { ...readState(file), finishedAt: Date.now(), ok: result.ok, reason: result.reason || null, after: result.after || null });
+  // This child exits as soon as the work is done, so wait for the ping (about 3s at most).
+  // The server keeps `reason` (as reasonCode) and `version`, so success is sent as reason "updated".
   try {
-    require('./cli-telemetry').trackEvent('runtime_auto_update', {
+    await require('./cli-telemetry').trackEvent('runtime_auto_update', {
       ok: result.ok,
       runtimeVersion: result.before || null,
       targetVersion: version,
-      ...(result.reason ? { reason: result.reason } : {}),
+      reason: result.ok ? 'updated' : (result.reason || 'failed'),
       ...(source ? { source } : {}),
-    });
+    }, { awaitDelivery: true });
   } catch { /* telemetry is optional */ }
 }
 
@@ -158,5 +160,5 @@ module.exports = {
 };
 
 if (require.main === module && process.argv[2] === '--child') {
-  runChild(process.argv.slice(3));
+  runChild(process.argv.slice(3)).catch(() => {});
 }

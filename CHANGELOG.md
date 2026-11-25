@@ -1,5 +1,16 @@
 # Changelog
 
+## 1.42.1
+
+### Patch Changes
+
+- 2fc74ea: Every gate decision row in `audit-trail.jsonl` now carries the session id, the host that sent the call (Claude Code or Cursor when it declares itself), and a short hash of the gate catalog in force, and logged command text goes through the shared secret redactor. `npm run audit:export` (or `node scripts/audit-trail.js --export [--since ISO] [--verdict allow|deny|ask|warn] [--limit N]`) prints one JSON line per decision.
+- 8d4f432: The optional Stop-time claim gate now ships in the npm package, holds claims like "sign-in is refused" until a check from the same turn is attached (a health-page 200 or an old log file does not count), and two thumbs-downs from a person on one unchecked claim write a rule into `claim-gate-rules.json` with no file edit. It stays opt-in: it only runs where the Stop hook is installed.
+- 79e9e4e: Deliver the `first_block_upsell_shown`, `cli_limit_hit` and `runtime_auto_update` pings from processes that exit right away (hooks, the CLI limit path, the background updater) through a detached or awaited send, so the server receives them. The public activation funnel now also reports upgrade-capable activations and hook-runtime update results.
+- 195a697: Cursor: the plugin now runs the ThumbGate check on every shell command instead of only a few keywords (so `aws s3 rm`, `terraform destroy` and `kubectl delete` are no longer skipped), answers in the shape Cursor expects through the new `thumbgate cursor-gate` command, and captures a typed thumbs-down through `thumbgate cursor-prompt` so two thumbs-downs on one command become a gate. The Cursor adapter script now ships in the npm package.
+- cedd326: Add a generated table of which gates are enforced on which host (Claude Code, Cursor, Codex, Gemini CLI). `npm run compat:matrix` runs each gate's denial through the real Claude Code and Cursor hook paths and writes `docs/host-compatibility.md`, `docs/compat/host-gate-results.json` and a README block. A cell says "enforced" only with a recorded denial; hosts with no run say "untested".
+- 97a6bd2: Every thumb counter now reads one function: the status-line stats command, the feedback-loop cache refresh and the unscoped feedback-stats endpoint take their thumb totals from `computeHumanCounts`. A row id listed in `.thumbgate/not-counted-feedback.jsonl` (written by `scripts/not-a-thumb.js`) is left out of every count without editing the log. The status line names the project next to the counts.
+
 ## 1.42.0
 
 ### Minor Changes

@@ -223,7 +223,8 @@ function limitNudge(action, limitResult = {}) {
     ? String(limitResult.message).split('\n')[0]
     : 'Free tier limit reached.';
   // The free-tier wall is an upgrade moment; count it so the funnel can see it.
-  try { trackEvent('cli_limit_hit', { action, limitType: limitResult.limitType || null }); } catch (_) { /* best-effort */ }
+  // The CLI exits right after this message, so a detached child delivers the ping.
+  try { require('../scripts/cli-telemetry').trackEventDetached('cli_limit_hit', { action, limitType: limitResult.limitType || null }); } catch (_) { /* best-effort */ }
   process.stderr.write(
     `\n  🔒 ${reason}\n` +
     usageLine +
