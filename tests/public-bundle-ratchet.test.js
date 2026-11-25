@@ -301,7 +301,8 @@ const path = require('node:path');
 // 727 -> 728 (2026-11-25): scripts/send-gate.js (thumbs-down hold and chat send rules, PR 5213).
 // 728 -> 729 (2026-11-25): src/api/security-headers.js (PR 5250); scripts/cursor-self-heal.js landed in 5252 at 728.
 // 729 -> 730 (2026-11-25): scripts/assurance-report.js, the assurance-report CLI command.
-const BASELINE_FILE_COUNT = 730;
+// 730 -> 731 (2026-11-25): public/host-matrix.html (a1844d0 added the page on main without whitelisting it, which failed public-package-parity).
+const BASELINE_FILE_COUNT = 731;
 function readBundleSnapshot() {
   const repoRoot = path.resolve(__dirname, '..');
   const stdout = execSync('npm pack --dry-run --json', {
