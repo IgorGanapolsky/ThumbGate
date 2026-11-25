@@ -193,7 +193,9 @@ test('the one-line category claim agrees across every surface that defines the p
   // ("self-improving", "pre-action", "coding agents") but must not sell a
   // different category. Transactional sub-pages (pricing) inherit the claim and
   // are not required to restate it — they are covered by the conflict check below.
-  const categoryClaim = /firewall for (?:your )?ai(?:[- ]coding)? agents/i;
+  // Igor's homepage edit on 2026-11-25 (eec6a167) says "local pre-execution gate for AI coding agents"
+  // instead of "firewall"; both name the same category (a gate that checks tool calls before they run).
+  const categoryClaim = /(?:firewall|pre-execution gate) for (?:your )?ai(?:[- ]coding)? agents/i;
   const definingSurfaces = [
     'README.md',
     'public/llm-context.md',
@@ -205,7 +207,7 @@ test('the one-line category claim agrees across every surface that defines the p
     assert.match(
       readText(file),
       categoryClaim,
-      `${file} does not state the canonical category claim ("firewall for AI agents")`,
+      `${file} does not state the canonical category claim ("firewall for AI agents" or "pre-execution gate for AI agents")`,
     );
   }
 

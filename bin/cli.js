@@ -4585,6 +4585,8 @@ switch (COMMAND) {
     break;
   }
   case 'gate-check':
+    // Keeps the hook runtime on npm latest (one file read; at most one detached check per 24h).
+    try { require('../scripts/runtime-auto-update').scheduleLatestCheck(); } catch (_) { /* best-effort */ }
     gateCheck().catch((err) => {
       console.error(err && err.message ? err.message : err);
       process.exit(1);
@@ -4633,6 +4635,7 @@ switch (COMMAND) {
     observeToolResult();
     break;
   case 'session-start':
+    try { require('../scripts/runtime-auto-update').scheduleLatestCheck(); } catch (_) { /* best-effort */ }
     sessionStart();
     break;
   case 'capture':

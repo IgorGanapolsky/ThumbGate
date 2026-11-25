@@ -82,16 +82,88 @@ function scheduleRuntimeAutoUpdate({ skew, env = process.env, now = Date.now(), 
   }
 }
 
-function defaultInstall(prefix, version) {
-  const args = ['install', '--prefix', prefix, '--no-save', '--omit=dev', '--no-audit', '--no-fund', '--loglevel=error', `thumbgate@${version}`];
-  const opts = { stdio: 'ignore', timeout: INSTALL_TIMEOUT_MS, windowsHide: true };
+// True when this file is the copy inside the hook runtime, so source checkouts, global installs and
+// npx-cache runs never touch ~/.thumbgate/runtime from the hook path.
+function runningFromRuntime(dir, self = __filename) {
+  const root = path.resolve(dir) + path.sep;
+  return path.resolve(self).startsWith(root);
+}
+
+/**
+ * Hook-side update check, so every install keeps up with npm even when no MCP server started from
+ * @latest is around to notice (Codex and plugin installs run the MCP server from the runtime itself,
+ * and hooks-only installs have none). Called from gate-check and session-start. Costs one small
+ * file read; at most once per 24h it starts a detached child that asks npm for `latest` and, if the
+ * runtime is older, refreshes it the same way the MCP path does. Never throws, never blocks.
+ * @returns {{ started: boolean, reason?: string }}
+ */
+function scheduleLatestCheck({ env = process.env, now = Date.now(), dir, spawnFn, nodePath = process.execPath, self = __filename } = {}) {
+  try {
+    const target = dir || runtimeDir(env);
+    if (env.THUMBGATE_NO_AUTO_UPDATE === '1') return { started: false, reason: 'opted-out' };
+    if (env.CI === 'true' || env.CI === '1') return { started: false, reason: 'ci' };
+    if (!runningFromRuntime(target, self)) return { started: false, reason: 'not-runtime' };
+    if (!spawnFn && (env.NODE_TEST_CONTEXT || process.env.NODE_TEST_CONTEXT)) return { started: false, reason: 'test' };
+    const file = path.join(path.dirname(target), STATE_FILE);
+    const state = readState(file);
+    if (now - (Number(state.latestCheckedAt) || 0) < RETRY_INTERVAL_MS) return { started: false, reason: 'recently-checked' };
+    if (!writeState(file, { ...state, latestCheckedAt: now })) return { started: false, reason: 'state-unwritable' };
+    const child = (spawnFn || spawn)(nodePath, [self, '--check-latest', target], {
+      detached: true,
+      stdio: 'ignore',
+      windowsHide: true,
+      env,
+    });
+    if (child && typeof child.on === 'function') child.on('error', () => {});
+    if (child && typeof child.unref === 'function') child.unref();
+    return { started: true };
+  } catch {
+    return { started: false, reason: 'spawn-failed' };
+  }
+}
+
+function npmArgsRunner(args, opts) {
   if (process.platform === 'win32') {
     // npm.cmd needs cmd.exe; run npm-cli.js with node instead (same as check-update npmRunner).
     const cli = path.join(path.dirname(process.execPath), 'node_modules', 'npm', 'bin', 'npm-cli.js');
-    execFileSync(process.execPath, [cli, ...args], opts);
-    return;
+    return execFileSync(process.execPath, [cli, ...args], opts);
   }
-  execFileSync('npm', args, opts);
+  return execFileSync('npm', args, opts);
+}
+
+function defaultLatestVersion() {
+  const out = npmArgsRunner(['view', 'thumbgate@latest', 'version', '--loglevel=error'], {
+    encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'], timeout: 30 * 1000, windowsHide: true,
+  });
+  return String(out || '').trim();
+}
+
+/** Child side of scheduleLatestCheck: refresh the runtime when npm has a newer `latest`. */
+/** True while a refresh started from either path has not finished and has not yet timed out. */
+function refreshInProgress(state, now = Date.now()) {
+  const started = Number(state && state.startedAt) || 0;
+  const finished = Number(state && state.finishedAt) || 0;
+  return started > 0 && finished < started && now - started < INSTALL_TIMEOUT_MS * 2;
+}
+
+async function checkLatest(dir, { latestVersion = defaultLatestVersion, refresh = runChild, now = Date.now() } = {}) {
+  let latest = '';
+  try { latest = latestVersion(); } catch { return { updated: false, reason: 'lookup-failed' }; }
+  if (!VERSION_RE.test(latest)) return { updated: false, reason: 'bad-version' };
+  const current = readRuntimeVersion(dir);
+  if (!current || !isOlder(current, latest)) return { updated: false, reason: 'current' };
+  // Same lock the MCP path uses: skip while another refresh is still running, then take it.
+  const file = path.join(path.dirname(dir), STATE_FILE);
+  const last = readState(file);
+  if (refreshInProgress(last, now)) return { updated: false, reason: 'refresh-in-progress' };
+  if (!writeState(file, { startedAt: now, from: current, to: latest })) return { updated: false, reason: 'state-unwritable' };
+  await refresh([dir, latest, 'hook']);
+  return { updated: true, from: current, to: latest };
+}
+
+function defaultInstall(prefix, version) {
+  const args = ['install', '--prefix', prefix, '--no-save', '--omit=dev', '--no-audit', '--no-fund', '--loglevel=error', `thumbgate@${version}`];
+  npmArgsRunner(args, { stdio: 'ignore', timeout: INSTALL_TIMEOUT_MS, windowsHide: true });
 }
 
 /**
@@ -112,6 +184,12 @@ function refreshRuntime(dir, version, { install = defaultInstall } = {}) {
     if (staged !== version) {
       cleanup(staging);
       return { ok: false, before, reason: 'verify-failed' };
+    }
+    // A parallel refresh may have installed something newer meanwhile: never swap a downgrade in.
+    const live = readRuntimeVersion(dir);
+    if (live && !isOlder(live, version)) {
+      cleanup(staging);
+      return { ok: false, before, reason: 'not-older' };
     }
     let moved = false;
     if (fs.existsSync(dir)) {
@@ -152,7 +230,11 @@ async function runChild(argv) {
 }
 
 module.exports = {
+  refreshInProgress,
   scheduleRuntimeAutoUpdate,
+  scheduleLatestCheck,
+  checkLatest,
+  runningFromRuntime,
   refreshRuntime,
   skipReason,
   stateFile,
@@ -161,4 +243,8 @@ module.exports = {
 
 if (require.main === module && process.argv[2] === '--child') {
   runChild(process.argv.slice(3)).catch(() => {});
+}
+
+if (require.main === module && process.argv[2] === '--check-latest' && process.argv[3]) {
+  checkLatest(process.argv[3]).catch(() => {});
 }
