@@ -785,7 +785,7 @@
         for (const [name, value] of Object.entries(extra)) add(name, value);
         if (weeks) {
           const rows = [
-            ['People on the site', 'realVisitors'],
+            Number.isFinite(weeks.last7?.engagedVisitors) ? ['People who did something on the site', 'engagedVisitors'] : ['People on the site', 'realVisitors'],
             ['Checkout starts', 'checkoutStarts'],
             ['Active CLI installs', 'activeInstalls'],
           ];
@@ -1012,6 +1012,7 @@
               'Paying customers': shown(data.payingCustomers, why.payingCustomers, ' · from Stripe'),
               'Active Pro subscriptions': shown(data.activePro, why.activePro, ' · from Stripe'),
               'Checkouts started (7 days)': shown(checkouts ? checkouts.started : null, why.checkouts),
+              'People who did something: two or more events or any click (30 days)': shown(traffic ? traffic.engagedVisitors : null, why.visitors),
               'Observed visitor identifiers, excluding bot, internal and test (30 days)': shown(traffic ? traffic.realVisitors : null, why.visitors),
               'All observed visitor identifiers (30 days)': shown(traffic ? traffic.visitors : null, why.visitors),
               'Landing page views (30 days)': shown(traffic ? traffic.pageViews : null, why.visitors),

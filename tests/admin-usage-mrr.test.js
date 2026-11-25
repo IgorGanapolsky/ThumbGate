@@ -60,8 +60,8 @@ test('the newest 7 days are set against the 7 days before them', async () => {
     cli(1, 'cli_capture', 'i1'),
     cli(1, 'cli_init', 'i2'),
   ]);
-  assert.deepEqual(weeks.last7, { realVisitors: 2, pageViews: 3, checkoutStarts: 0, activeInstalls: 2 });
-  assert.deepEqual(weeks.prior7, { realVisitors: 1, pageViews: 1, checkoutStarts: 1, activeInstalls: 1 });
+  assert.deepEqual(weeks.last7, { realVisitors: 2, engagedVisitors: 0, pageViews: 3, checkoutStarts: 0, activeInstalls: 2 });
+  assert.deepEqual(weeks.prior7, { realVisitors: 1, engagedVisitors: 1, pageViews: 1, checkoutStarts: 1, activeInstalls: 1 });
 });
 
 test('MRR is each active item at list price scaled to one month, and pending cancels are counted', () => {
@@ -234,4 +234,28 @@ test('alert delivery sends a one-time confirmation, then each new alert once', a
     clearInterval(again);
     assert.deepEqual(sent, [], 'nothing is sent again after a restart');
   } finally { fs.rmSync(dir, { recursive: true, force: true }); }
+});
+
+test('engaged visitors: one id with a single page view is not counted as a person; two events or any click is', async () => {
+  const { traffic, weeks } = await read([
+    web(2, 'landing_page_view', 'crawler-1'),
+    web(2, 'landing_page_view', 'crawler-2'),
+    web(2, 'landing_page_view', 'reader'), web(2, 'landing_page_view', 'reader'),
+    web(3, 'cta_click', 'clicker'),
+    web(3, 'landing_page_view', 'bot', { isBotTraffic: true }), web(3, 'cta_click', 'bot', { isBotTraffic: true }),
+    web(10, 'landing_page_view', 'old-reader'), web(10, 'pricing_view', 'old-reader'),
+  ]);
+  assert.equal(traffic.realVisitors, 5, 'the existing count keeps every unflagged id');
+  assert.equal(traffic.engagedVisitors, 3, 'reader, clicker and old-reader; the single-view ids and the flagged bot are out');
+  assert.equal(weeks.last7.engagedVisitors, 2);
+  assert.equal(weeks.prior7.engagedVisitors, 1);
+});
+
+test('the visitors-drop alert follows engaged visitors when they are reported', () => {
+  const { evaluateAlerts } = require('../scripts/owner-alerts');
+  const money = (week) => ({ weekOverWeek: week, reasons: {}, usage30d: {} });
+  const crawlerSpike = { prior7: { realVisitors: 9000, engagedVisitors: 30 }, last7: { realVisitors: 100, engagedVisitors: 28 } };
+  assert.ok(!evaluateAlerts({ money: money(crawlerSpike), report: {} }).some((a) => a.id === 'visitors_drop'), 'a crawler swing alone is not a drop in people');
+  const realDrop = { prior7: { realVisitors: 100, engagedVisitors: 40 }, last7: { realVisitors: 100, engagedVisitors: 10 } };
+  assert.ok(evaluateAlerts({ money: money(realDrop), report: {} }).some((a) => a.id === 'visitors_drop'));
 });
