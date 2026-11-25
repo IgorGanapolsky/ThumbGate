@@ -9,7 +9,7 @@
 // - Never on private surfaces (admin, dashboard, sign-in, checkout, billing, success pages, JSON API).
 // - Never when the visitor sends Global Privacy Control or Do Not Track; the tag also re-checks in the browser.
 // - Forms and inputs are marked data-clarity-mask so typed text, emails and keys are never recorded.
-// - No consent grant is sent, so Clarity runs cookieless for EEA, UK and Swiss visitors (Clarity consent mode).
+// - consentv2 always denies ad storage; browsers in European time zones also deny analytics cookies (cookieless).
 //
 // Export rules: Clarity allows 10 export calls per project per day and only the last 1 to 3 days. The snapshot is
 // cached on disk, refreshed at most every 8 hours with 3 calls, so restarts and deploys never spend the budget.
@@ -21,7 +21,8 @@ const DEFAULT_PROJECT_ID = 'zjaflwztgq';
 const PROJECT_ID_PATTERN = /^[a-z0-9]{6,16}$/;
 const EXPORT_URL = 'https://www.clarity.ms/export-data/api/v1/project-live-insights';
 const REFRESH_MS = 8 * 60 * 60 * 1000;
-const FAILURE_RETRY_MS = 60 * 60 * 1000;
+// A failed refresh may have spent up to 3 of the 10 daily calls, so it waits as long as a successful one.
+const FAILURE_RETRY_MS = REFRESH_MS;
 const FETCH_TIMEOUT_MS = 7000;
 const CACHE_FILE = 'clarity-insights.json';
 const MAX_ROWS = 25;
@@ -121,11 +122,24 @@ function projectRow(row) {
   return out;
 }
 
+// Traffic keeps every row (Clarity returns at most 1,000) so breakdowns pick the busiest pages and sources;
+// other metrics keep their first rows.
 function projectMetrics(payload) {
   if (!Array.isArray(payload)) return [];
-  return payload.slice(0, 40).filter((m) => m && typeof m.metricName === 'string').map((m) => ({
-    name: clip(m.metricName, 64),
-    rows: (Array.isArray(m.information) ? m.information : []).slice(0, MAX_ROWS).map(projectRow),
+  return payload.slice(0, 40).filter((m) => m && typeof m.metricName === 'string').map((m) => {
+    const rows = Array.isArray(m.information) ? m.information : [];
+    const keep = m.metricName.toLowerCase() === 'traffic' ? 1000 : MAX_ROWS;
+    return { name: clip(m.metricName, 64), rows: rows.slice(0, keep).map(projectRow) };
+  });
+}
+
+// What the console shows and the cache keeps: Traffic trimmed to its busiest rows.
+function trimMetrics(metrics) {
+  return (metrics || []).map((m) => ({
+    name: m.name,
+    rows: m.name.toLowerCase() === 'traffic'
+      ? [...m.rows].sort((a, b) => (pick(b, ['totalSessionCount', 'sessionsCount']) || 0) - (pick(a, ['totalSessionCount', 'sessionsCount']) || 0)).slice(0, MAX_ROWS)
+      : m.rows,
   }));
 }
 
@@ -225,14 +239,14 @@ function wait(ms, signal) {
   });
 }
 
-async function refreshSnapshot({ token, feedbackDir, fetchImpl, now, previous }) {
+async function refreshSnapshot({ token, projectId, feedbackDir, fetchImpl, now, previous }) {
   const fetched = {};
   for (const query of EXPORT_QUERIES) {
     try {
       fetched[query.key] = await callExport(query, { token, fetchImpl });
     } catch (error) {
       // Keep whatever the earlier snapshot had and remember the failure so the next try waits.
-      const failed = { ...(previous || {}), lastAttemptAt: now, lastError: error.code };
+      const failed = { ...(previous || {}), projectId, lastAttemptAt: now, lastError: error.code };
       writeCache(feedbackDir, failed);
       return failed;
     }
@@ -242,7 +256,8 @@ async function refreshSnapshot({ token, feedbackDir, fetchImpl, now, previous })
     lastAttemptAt: now,
     lastError: null,
     window: 'last 24 hours (UTC)',
-    metrics: fetched.overall,
+    projectId,
+    metrics: trimMetrics(fetched.overall),
     summary: summarize(fetched.overall),
     topPages: breakdown(fetched.byUrl, 'Url'),
     topSources: breakdown(fetched.bySource, 'Source'),
@@ -270,12 +285,14 @@ async function collectClarity({ feedbackDir, env = process.env, fetchImpl = glob
   if (!projectId) return { data: base, warnings: ['clarity_tag_disabled'] };
   if (!token) return { data: base, warnings: ['clarity_export_token_missing'] };
   let snapshot = readCache(feedbackDir);
+  // A snapshot from another Clarity project is never shown under this one.
+  if (snapshot && snapshot.projectId !== projectId) snapshot = null;
   const fresh = snapshot?.fetchedAt && now - snapshot.fetchedAt < REFRESH_MS;
   const waiting = snapshot?.lastError && snapshot?.lastAttemptAt && now - snapshot.lastAttemptAt < FAILURE_RETRY_MS;
   if ((!fresh && !waiting) || force) {
     if (typeof fetchImpl !== 'function') return { data: base, warnings: ['clarity_unreachable'] };
     // The refresh is not tied to this request, so a slow Clarity answer still lands in the cache for the next view.
-    inFlight = inFlight || refreshSnapshot({ token, feedbackDir, fetchImpl, now, previous: snapshot }).finally(() => { inFlight = null; });
+    inFlight = inFlight || refreshSnapshot({ token, projectId, feedbackDir, fetchImpl, now, previous: snapshot }).finally(() => { inFlight = null; });
     const settled = await Promise.race([inFlight, wait(waitMs, signal)]);
     if (settled) snapshot = settled;
     else refreshing = true;

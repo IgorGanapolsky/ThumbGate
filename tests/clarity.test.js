@@ -84,3 +84,18 @@ test('export: missing token and rejected token are reported, not zeroed', async 
   await clarity.collectClarity({ feedbackDir: dir, env, fetchImpl: async () => { calls += 1; return { ok: false, status: 429 }; }, now: Date.now() + 1000 });
   assert.equal(calls, 1, 'a failure waits before the next try');
 });
+
+test('export: busiest traffic rows survive trimming, and another project\'s cache is ignored', async () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'clarity-'));
+  const rows = Array.from({ length: 30 }, (_, i) => ({ totalSessionCount: String(i), Url: 'p' + i }));
+  let calls = 0;
+  const fetchImpl = async () => { calls += 1; return { ok: true, status: 200, json: async () => [{ metricName: 'Traffic', information: rows }] }; };
+  const env = { THUMBGATE_CLARITY_API_TOKEN: 'synthetic-clarity-token-0123456789' };
+  const now = Date.UTC(2026, 10, 25, 18);
+  const out = await clarity.collectClarity({ feedbackDir: dir, env, fetchImpl, now });
+  assert.equal(out.data.topPages[0].url, 'p29');
+  assert.equal(out.data.topPages.length, 25);
+  assert.equal(out.data.metrics[0].rows[0].totalSessionCount, 29);
+  await clarity.collectClarity({ feedbackDir: dir, env: { ...env, THUMBGATE_CLARITY_PROJECT_ID: 'otherproj1' }, fetchImpl, now: now + 1000 });
+  assert.equal(calls, 6, 'a different project refreshes instead of reusing the cache');
+});

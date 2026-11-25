@@ -811,8 +811,10 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // (runtime requires that crashed or silently failed in the published package) and the pinned-hook fix.
   // Bumped 10.73 MB -> 10.75 MB (2026-11-25): scripts/not-a-thumb.js, the not-counted ledger and the one-counter
   // wiring (AGENT-3667 one-count follow-up); measured 10,731,089 before this commit's review fixes.
-  manifest.unpackedSize <= 10_750_000,
-  `npm package should stay <= 10.75 MB unpacked, got ${manifest.unpackedSize}`
+  // Bumped 10.75 MB -> 10.77 MB (2026-11-25): scripts/clarity.js (Clarity tag + owner-console export), the
+  // Visitor behavior tab in public/admin.html and the privacy note; measured 10,751,766.
+  manifest.unpackedSize <= 10_770_000,
+  `npm package should stay <= 10.77 MB unpacked, got ${manifest.unpackedSize}`
 );
 
   for (const file of requiredRuntimeFiles) {
