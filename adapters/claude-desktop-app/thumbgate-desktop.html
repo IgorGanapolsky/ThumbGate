@@ -23,16 +23,11 @@
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --bg: #11161c; --panel: #19212a; --fg: #e6ebf0; --muted: #9aa8b6; --line: #2a3541;
-    --accent: #6ea8ff; --accent-ink: #0b1420; --block: #ff7a84; --block-soft: #3a1c21;
-    --warn: #f2c45a; --warn-soft: #362a10; --ok: #5fd08f; color-scheme: dark;
-  }
-}
+    --bg: #11161c; --panel: #19212a; --fg: #e6ebf0; --muted: #9aa8b6; --line: #2a3541; --accent: #6ea8ff; --accent-ink: #0b1420;
+    --block: #ff7a84; --block-soft: #3a1c21; --warn: #f2c45a; --warn-soft: #362a10; --ok: #5fd08f; color-scheme: dark; } }
 :root[data-theme="dark"] {
-  --bg: #11161c; --panel: #19212a; --fg: #e6ebf0; --muted: #9aa8b6; --line: #2a3541;
-  --accent: #6ea8ff; --accent-ink: #0b1420; --block: #ff7a84; --block-soft: #3a1c21;
-  --warn: #f2c45a; --warn-soft: #362a10; --ok: #5fd08f; color-scheme: dark;
-}
+  --bg: #11161c; --panel: #19212a; --fg: #e6ebf0; --muted: #9aa8b6; --line: #2a3541; --accent: #6ea8ff; --accent-ink: #0b1420;
+  --block: #ff7a84; --block-soft: #3a1c21; --warn: #f2c45a; --warn-soft: #362a10; --ok: #5fd08f; color-scheme: dark; }
 body {
   background: var(--bg); color: var(--fg); font-family: var(--font-body); font-size: 14px; line-height: 1.45;
 }
@@ -101,7 +96,6 @@ ul.list li.empty { color: var(--muted); }
   padding: 5px 8px; border: 1px solid var(--line); border-radius: 6px; background: var(--panel); color: var(--fg);
 }
 @media (max-width: 380px) { .counters { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
 </style>
 
 <div class="wrap">
@@ -171,7 +165,7 @@ ul.list li.empty { color: var(--muted); }
     sample: true,
     totals: { blocked: 14, warned: 6, passed: 412, activeGates: 23, autoPromotedGates: 4, rules: 9, thumbsDown: 11, lessons: 27 },
     recentBlocks: [
-      { reason: 'Force push to a protected branch', context: 'git push --force origin main', timestamp: null },
+      { reason: 'Push to a protected branch', context: 'git push origin main', timestamp: null },
       { reason: 'Secret file write', context: 'Write .env', timestamp: null },
       { reason: 'Purchase without approval', context: 'stripe charges create', timestamp: null },
     ],

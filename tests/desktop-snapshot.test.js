@@ -22,7 +22,7 @@ function tmpFeedbackDir() {
     JSON.stringify({ id: 'l3', feedback: 'down', content: 'deleted the .env file', timestamp: '2026-11-22T10:00:00Z' }),
   ].join('\n'));
   fs.writeFileSync(path.join(dir, 'rejection-ledger.jsonl'), [
-    JSON.stringify({ id: 'b1', signal: 'negative', reason: 'force push blocked', context: 'git push --force', timestamp: '2026-11-23T10:00:00Z' }),
+    JSON.stringify({ id: 'b1', signal: 'negative', reason: 'protected branch push blocked', context: 'git push origin main', timestamp: '2026-11-23T10:00:00Z' }),
   ].join('\n'));
   fs.writeFileSync(path.join(dir, 'prevention-rules.md'), '# Rules\n\n## Never force-push main\nbody\n\n## Never delete .env\nbody\n');
   return dir;
@@ -32,7 +32,7 @@ test('snapshot has a stable schema with totals, blocks, thumbs-downs, rules and 
   const feedbackDir = tmpFeedbackDir();
   const snap = buildDesktopSnapshot({
     feedbackDir,
-    gateRuntime: { blocked: 7, warned: 3, passed: 40, byGate: { 'no-force-push': { blocked: 5 }, 'env-guard': { blocked: 2, warned: 3 }, idle: {} } },
+    gateRuntime: { blocked: 7, warned: 3, passed: 40, byGate: {} },
     gateConfig: { totalGates: 12, autoPromotedGates: 2 },
     isPro: false,
     now: new Date('2026-11-25T12:00:00Z'),
@@ -43,9 +43,8 @@ test('snapshot has a stable schema with totals, blocks, thumbs-downs, rules and 
     blocked: 7, warned: 3, passed: 40, activeGates: 12, autoPromotedGates: 2,
     rules: 2, thumbsDown: 2, lessons: 3,
   });
-  assert.deepEqual(snap.topGates.map((g) => g.id), ['no-force-push', 'env-guard']);
   assert.equal(snap.recentBlocks.length, 1);
-  assert.equal(snap.recentBlocks[0].reason, 'force push blocked');
+  assert.equal(snap.recentBlocks[0].reason, 'protected branch push blocked');
   assert.deepEqual(snap.recentThumbsDown.map((t) => t.id), ['l3', 'l1'], 'newest thumbs-down first, positives left out');
   assert.equal(snap.recentThumbsDown[1].promoted, true);
   assert.deepEqual(snap.rules.map((r) => r.title), ['Never force-push main', 'Never delete .env']);
@@ -71,19 +70,13 @@ test('a missing feedback dir still gives a valid, empty snapshot', () => {
 });
 
 test('long text is cut and limits are clamped', () => {
-  assert.equal(clampLimit('3'), 3);
-  assert.equal(clampLimit('0'), 10);
-  assert.equal(clampLimit('nope'), 10);
-  assert.equal(clampLimit('999'), 50);
+  assert.deepEqual(['3', '0', 'nope', '999'].map(clampLimit), [3, 10, 10, 50]);
+  for (const s of ['down', 'negative', 'NEGATIVE', 'thumbs_down']) assert.ok(isThumbsDown(s), s);
+  for (const s of ['up', 'positive', '', undefined]) assert.ok(!isThumbsDown(s), String(s));
   const dir = tmpFeedbackDir();
   fs.writeFileSync(path.join(dir, 'rejection-ledger.jsonl'), JSON.stringify({ id: 'x', reason: 'r'.repeat(1000) }));
   const snap = buildDesktopSnapshot({ feedbackDir: dir, gateRuntime: {}, gateConfig: {}, isPro: false });
   assert.ok(snap.recentBlocks[0].reason.length <= 280);
-});
-
-test('thumbs-down detection covers the signal spellings the logs use', () => {
-  for (const s of ['down', 'negative', 'NEGATIVE', 'thumbs_down']) assert.ok(isThumbsDown(s), s);
-  for (const s of ['up', 'positive', '', undefined]) assert.ok(!isThumbsDown(s), String(s));
 });
 
 test('the CLI prints the snapshot as JSON and is registered in the schema', () => {

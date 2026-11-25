@@ -265,18 +265,9 @@ function exploreGateFirings(options = {}) {
   return lines.join('\n');
 }
 
-// ---------------------------------------------------------------------------
-// Desktop snapshot: `thumbgate desktop-snapshot [--json] [--limit=N]`
-//
-// One small, stable JSON document describing what ThumbGate is doing on this
-// machine, for a desktop companion app (a Claude artifact installed as a Mac
-// or Windows app, see adapters/claude-desktop-app/) or any menu bar / tray
-// widget. Read-only: it reads the same local files as `stats`, `gate-stats`
-// and `explore`, and never writes, sends or captures anything. Each section
-// degrades to an empty value when its source is missing. It lives here, next
-// to the explore loaders it reuses, so the npm bundle gains no new file.
-// ---------------------------------------------------------------------------
-
+// Desktop snapshot (`thumbgate desktop-snapshot --json`): one read-only JSON
+// document for desktop/menu bar apps (adapters/claude-desktop-app/). Kept in
+// this file to reuse the loaders above without adding a file to the bundle.
 const DESKTOP_SNAPSHOT_SCHEMA = 'thumbgate.desktop-snapshot/v1';
 const DEFAULT_LIMIT = 10;
 const MAX_LIMIT = 50;
@@ -346,17 +337,6 @@ function buildDesktopSnapshot(options = {}) {
       timestamp: l.timestamp || l.createdAt || null,
     }));
 
-  const byGate = gateRuntime.byGate && typeof gateRuntime.byGate === 'object' ? gateRuntime.byGate : {};
-  const topGates = Object.entries(byGate)
-    .map(([id, v]) => ({
-      id,
-      blocked: Number((v && v.blocked) || 0),
-      warned: Number((v && v.warned) || 0),
-    }))
-    .filter((g) => g.blocked + g.warned > 0)
-    .sort((a, b) => (b.blocked - a.blocked) || (b.warned - a.warned))
-    .slice(0, limit);
-
   return {
     schema: DESKTOP_SNAPSHOT_SCHEMA,
     generatedAt: (options.now || new Date()).toISOString(),
@@ -372,7 +352,6 @@ function buildDesktopSnapshot(options = {}) {
       thumbsDown: lessons.filter((l) => isThumbsDown(l.signal || l.feedback)).length,
       lessons: lessons.length,
     },
-    topGates,
     recentBlocks: firings.map((f) => ({
       id: f.id || null,
       reason: shortText(f.reason),
@@ -395,20 +374,8 @@ function runDesktopSnapshotCli(argv = []) {
     return snapshot;
   }
   const t = snapshot.totals;
-  const lines = [
-    '',
-    'ThumbGate desktop snapshot',
-    '─'.repeat(40),
-    `  Blocked        : ${t.blocked}`,
-    `  Warned         : ${t.warned}`,
-    `  Active gates   : ${t.activeGates}`,
-    `  Rules          : ${t.rules}`,
-    `  Thumbs-down    : ${t.thumbsDown}`,
-    `  Plan           : ${snapshot.plan.tier}`,
-    '',
-    '  Desktop apps read this with: npx thumbgate desktop-snapshot --json',
-    '',
-  ];
+  const lines = [`ThumbGate: ${t.blocked} blocked, ${t.warned} warned, ${t.activeGates} gates, ${t.rules} rules, ${t.thumbsDown} thumbs-downs (${snapshot.plan.tier})`,
+    'For apps: npx thumbgate desktop-snapshot --json', ''];
   process.stdout.write(lines.join('\n'));
   return snapshot;
 }
