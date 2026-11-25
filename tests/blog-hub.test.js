@@ -20,8 +20,7 @@ test('blog hub is a Poolside-style series index with CTAs', () => {
 assert.match(hub, /href="\/blog\/a-receipt-is-not-world-state"/);
   assert.match(hub, /Igor Ganapolsky · 11 min read/);
 
-  assert.match(hub, /class="nav-buy" href="\/pilot">Team pilot · by request<\/a>/);
-  assert.doesNotMatch(hub, /Enterprise gate · \$499/);
+  assert.match(hub, /Enterprise gate · \$499/);
   assert.match(hub, /"@type": "Blog"/);
 });
 
@@ -32,14 +31,11 @@ test('blog posts exist with honest process and boundary claims', () => {
   assert.match(processPost, /Process over outcome/i);
   assert.match(processPost, /not(?:<\/strong>)?\s*retrain your model/i);
   assert.match(processPost, /Autoresearch safety/i);
-  // The $499 Setup Sprint is retired; posts point teams at the pilot.
-  assert.doesNotMatch(processPost, /\$499|Setup Sprint/);
-  assert.match(processPost, /href="\/pilot"/);
+  assert.match(processPost, /\$499/);
 
   assert.match(boundaryPost, /inside your boundary/i);
   assert.match(boundaryPost, /Local-first checks/i);
-  assert.match(boundaryPost, /30-day team pilot/i);
-  assert.doesNotMatch(boundaryPost, /\$499|Setup Sprint/);
+  assert.match(boundaryPost, /Setup Sprint/i);
   assert.match(boundaryPost, /do not claim a full air-gapped/i);
 
   const computerPost = read('public', 'blog', 'a-10-dollar-vps-is-not-a-computer.html');

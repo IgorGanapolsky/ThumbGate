@@ -1181,7 +1181,7 @@
           const leads = data.leadsBySource;
           if (leads) {
             detail(parent, 'Signups by source', leads.signups);
-            detail(parent, 'Team pilot leads by source', leads.workflowSprint?.bySource);
+            detail(parent, 'Setup Sprint leads by source', leads.workflowSprint?.bySource);
             detail(parent, 'Newsletter by source', leads.newsletter?.bySource);
           } else {
             parent.append(element('p', 'Signups and leads: ' + (why.leads || 'source not available right now'), 'notice'));

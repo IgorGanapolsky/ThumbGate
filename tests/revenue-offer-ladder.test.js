@@ -26,10 +26,6 @@ test('commercial truth names the team pilot and retires the Setup Sprint', () =>
   assert.doesNotMatch(commercialTruth, /only (?:currently )?promoted public (?:one-time service )?offer.*\$499/i);
 });
 
-test('the retired managed-gate page is gone', () => {
-  assert.equal(fs.existsSync(path.join(root, 'public/diagnostic.html')), false);
-});
-
 test('offer ladder prices match the runtime catalog defaults', () => {
   assert.equal(DEFAULT_SPRINT_DIAGNOSTIC_PRICE_DOLLARS, 499);
   assert.equal(DEFAULT_WORKFLOW_SPRINT_PRICE_DOLLARS, 1500);

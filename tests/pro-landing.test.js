@@ -52,7 +52,7 @@ test('pro landing page keeps the pricing section focused on the $19 Pro checkout
   assert.match(pricingSection, /Start Pro Now/);
   assert.match(pricingSection, /billed today/i);
   assert.match(pricingSection, /Restart|Start|Choose annual/);
-  assert.match(pricingSection, /Request a team pilot/);
+  assert.match(pricingSection, /Book an Enterprise Pilot Call/);
   assert.doesNotMatch(pricingSection, /<h3>ThumbGate Team/);
 });
 
@@ -100,7 +100,7 @@ test('pro landing page keeps services out of the Pro buyer path', () => {
   const proPage = readProPage();
 
   assert.match(proPage, /Enterprise diagnostics and custom services are handled through intake, not this buyer path/);
-  assert.match(proPage, /Request a team pilot/);
+  assert.match(proPage, /Book an Enterprise Pilot Call/);
   assert.doesNotMatch(proPage, /data-pro-paid-recovery/);
   assert.doesNotMatch(proPage, /data-first-rule-link/);
   assert.doesNotMatch(proPage, /data-quick-read-link/);
@@ -141,17 +141,14 @@ test('pro landing page captures buyer email and reuses it for checkout', () => {
   assert.doesNotMatch(proPage, /props:\s*\{\s*email:/);
 });
 
-test('pro landing page keeps the team pilot separate from the Pro subscription', () => {
+test('pro landing page keeps the $499 sprint separate from the Pro subscription', () => {
   const proPage = readProPage();
   const sidebar = proPage.slice(proPage.indexOf('<div class="pricing-sidebar">'), proPage.indexOf('<section class="section" id="faq">'));
 
   assert.match(sidebar, /Separate from Pro/);
-  assert.match(sidebar, /not part of the Pro subscription/i);
-  // The $499 Setup Sprint is retired.
-  assert.doesNotMatch(proPage, /\$499|Setup Sprint/);
-  // The diagnostic intake is retired (410); team rollouts go to the pilot request.
-  assert.match(sidebar, /href="\/pilot"/);
-  assert.doesNotMatch(proPage, /href="\/diagnostic/);
+  assert.match(sidebar, /not part of the Pro subscription/);
+  assert.match(sidebar, /href="\/enterprise-governance"/);
+  assert.match(sidebar, /href="\/diagnostic#intake"/);
   // the old pilot link landed on the homepage Pro card, not an intake form
   assert.doesNotMatch(proPage, /href="\/#workflow-sprint-intake/);
 });

@@ -39,10 +39,10 @@ test.describe('/agent-manager clickability — full link coverage', () => {
     await page.waitForURL(/\/dashboard$/);
   });
 
-  test('nav: clicking "Team pilot" navigates to /pilot', async ({ page }) => {
+  test('nav: clicking "Managed workflow gate" navigates to /diagnostic', async ({ page }) => {
     await page.goto('/agent-manager');
-    await page.locator('nav a', { hasText: 'Team pilot' }).click();
-    await page.waitForURL(/\/pilot$/);
+    await page.locator('nav a', { hasText: 'Managed workflow gate' }).click();
+    await page.waitForURL(/\/diagnostic$/);
   });
 
   test('nav: GitHub link has correct external href + opens in new tab', async ({ page }) => {
@@ -54,10 +54,10 @@ test.describe('/agent-manager clickability — full link coverage', () => {
 
   // --- primary CTAs in the bottom call-to-action card ---
 
-  test('primary CTA "Request a team pilot" navigates to /pilot', async ({ page }) => {
+  test('primary CTA "Get the managed workflow gate" navigates to /diagnostic', async ({ page }) => {
     await page.goto('/agent-manager');
-    await page.locator('a.cta', { hasText: /Request a team pilot/ }).click();
-    await page.waitForURL(/\/pilot$/);
+    await page.locator('a.cta', { hasText: /Get the managed workflow gate/ }).click();
+    await page.waitForURL(/\/diagnostic$/);
   });
 
   test('does not expose a competing Pro checkout CTA', async ({ page }) => {
