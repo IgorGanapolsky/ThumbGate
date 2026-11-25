@@ -534,8 +534,9 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
     // 727 -> 728 (2026-11-25): scripts/cursor-self-heal.js (adds the thumbs-down loop to old Cursor installs).
     // 728 -> 729 (2026-11-25): src/api/security-headers.js, baseline security headers on every response (+1).
     // 729 -> 730 (2026-11-25): public/demo.html, the chaptered thumbgate.ai/demo walkthrough (+1).
-    manifest.fileCount <= 730,
-    `npm package should stay <= 730 files, got ${manifest.fileCount}`
+    // 730 -> 731 (2026-11-25): public/host-matrix.html (a1844d0 landed on main without a files entry, which broke public-package-parity).
+    manifest.fileCount <= 731,
+    `npm package should stay <= 731 files, got ${manifest.fileCount}`
   );
   // Ceiling bumped from 2.75 MB → 2.85 MB (2026-04-16) to accommodate the
   // incremental review-delta demo content in public/dashboard.html landing
@@ -837,8 +838,9 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // and the portable Cursor shell gate (PRs #5255, #5257); measured 10,822,233 on main and on the release branch.
   // Bumped 10.83 MB -> 10.86 MB (2026-11-25): public/demo.html, the chaptered /demo walkthrough (28 KB);
   // measured 10,852,133.
-  manifest.unpackedSize <= 10_860_000,
-  `npm package should stay <= 10.86 MB unpacked, got ${manifest.unpackedSize}`
+  // Bumped 10.86 MB -> 10.87 MB (2026-11-25): public/host-matrix.html plus main's growth since; measured 10,866,384.
+  manifest.unpackedSize <= 10_870_000,
+  `npm package should stay <= 10.87 MB unpacked, got ${manifest.unpackedSize}`
 );
 
   for (const file of requiredRuntimeFiles) {
