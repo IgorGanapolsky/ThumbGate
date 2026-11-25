@@ -525,10 +525,10 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
     // 1.40.14), plus scripts/recent-commands.js (required by gates-engine.js) and scripts/lesson-effect.js
     // (required by statusline-human-counts.js) and scripts/pilot-request.js (required by src/api/server.js),
     // and scripts/checkout-price-guard.js (required by scripts/billing.js), which were missing from `files` (+6).
+    // 712 -> 715 (2026-11-25): canary-gate.js, boundary-check.js, prompt-risk-lint.js (AGENT-3667 item J).
     // 710 -> 711 (2026-11-25): config/gates/profiles/shared-tree.json, the opt-in shared-tree gate profile (bb6208a).
-    // 711 -> 712 (2026-11-25): scripts/runtime-auto-update.js, the background hook runtime refresh started by the MCP server.
-    manifest.fileCount <= 712,
-    `npm package should stay <= 712 files, got ${manifest.fileCount}`
+    manifest.fileCount <= 715,
+    `npm package should stay <= 715 files, got ${manifest.fileCount}`
   );
   // Ceiling bumped from 2.75 MB → 2.85 MB (2026-04-16) to accommodate the
   // incremental review-delta demo content in public/dashboard.html landing

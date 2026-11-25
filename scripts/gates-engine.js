@@ -5018,6 +5018,10 @@ function evaluateUnconditionalHardFloor(rawInput = {}, options = {}) {
   const secretGuard = evaluateSecretGuard(input);
   if (secretGuard) return { hardFloor: secretGuard, securityScan: null };
 
+  // Opt-in canary file: off unless the user named a decoy credential path (scripts/canary-gate.js).
+  const canary = require('./canary-gate').evaluateCanaryGate(input);
+  if (canary) return { hardFloor: canary, securityScan: null };
+
   const securityScan = evaluateSecurityScan(input);
   if (securityScan && securityScan.decision === 'deny') {
     return { hardFloor: securityScan, securityScan };
