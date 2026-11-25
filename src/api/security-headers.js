@@ -9,11 +9,11 @@
 // a per-response nonce. Everything else in the policy is locked down.
 const CONTENT_SECURITY_POLICY = [
   "default-src 'self'",
-  "script-src 'self' 'unsafe-inline' https://plausible.io https://www.googletagmanager.com",
+  "script-src 'self' 'unsafe-inline' https://plausible.io https://www.googletagmanager.com https://cdn.jsdelivr.net https://www.clarity.ms",
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' data: https:",
   "font-src 'self' data:",
-  "connect-src 'self' https://plausible.io https://*.google-analytics.com https://www.googletagmanager.com https://api.github.com https://api.npmjs.org",
+  "connect-src 'self' https://plausible.io https://*.google-analytics.com https://www.googletagmanager.com https://*.clarity.ms https://api.github.com https://api.npmjs.org",
   "frame-src 'none'",
   "object-src 'none'",
   "base-uri 'self'",

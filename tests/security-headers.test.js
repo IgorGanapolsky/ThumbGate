@@ -23,6 +23,15 @@ test('CSP forbids framing, plugins and base-uri hijack', () => {
   for (const d of ["frame-ancestors 'none'", "object-src 'none'", "base-uri 'self'", "default-src 'self'"]) assert.ok(csp.includes(d), d);
 });
 
+test('CSP keeps the third-party scripts existing pages load (dashboard Chart.js, Clarity tag)', () => {
+  const csp = SECURITY_HEADERS['Content-Security-Policy'];
+  const script = csp.split('; ').find((d) => d.startsWith('script-src '));
+  const connect = csp.split('; ').find((d) => d.startsWith('connect-src '));
+  assert.ok(script.includes('https://cdn.jsdelivr.net'), 'dashboard Chart.js');
+  assert.ok(script.includes('https://www.clarity.ms'), 'Clarity tag');
+  assert.ok(connect.includes('https://*.clarity.ms'), 'Clarity beacons');
+});
+
 test('the real server sends the headers on a page, an API route, health and a 404', async () => {
   if (process.env.CODEX_SANDBOX) return;
   const os = require('node:os');
