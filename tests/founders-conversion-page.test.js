@@ -13,8 +13,6 @@ process.env._TEST_API_KEYS_PATH = path.join(tmp, 'api-keys.json');
 
 const { startServer } = require('../src/api/server');
 const PUBLIC_DIR = path.resolve(__dirname, '..', 'public');
-const foundersHtml = fs.readFileSync(path.join(PUBLIC_DIR, 'founders.html'), 'utf8');
-const diagnosticHtml = fs.readFileSync(path.join(PUBLIC_DIR, 'diagnostic.html'), 'utf8');
 
 let handle;
 let origin = '';
@@ -30,56 +28,19 @@ test.after(async () => {
   await new Promise((resolve) => handle.server.close(resolve));
 });
 
-test('founders page is an Oceans-style cash-path landing with intent checkout', () => {
-  assert.match(foundersHtml, /action="\/go\/diagnostic-pay" method="POST"/);
-  assert.match(foundersHtml, /name="customer_email"[^>]*required/);
-  assert.match(foundersHtml, /name="plan_id" value="sprint_diagnostic"/);
-  assert.match(foundersHtml, /utm_campaign" value="oceans_inspired_conversion"/);
-  assert.match(foundersHtml, /cta_id" value="founders_hero_paid"/);
-  assert.match(foundersHtml, /landing_path" value="\/founders"/);
-  assert.match(foundersHtml, /Scale agent impact/);
-  assert.match(foundersHtml, /data-founders-offer/);
-  assert.match(foundersHtml, /table class="compare"/);
-  assert.match(foundersHtml, /we refund|Refund if not a supported fit/i);
-  assert.match(foundersHtml, /no affiliation with Oceans Talent/i);
-  assert.match(foundersHtml, /"@type": "FAQPage"/);
-  assert.match(foundersHtml, /"@type": "SoftwareApplication"/);
-  assert.match(foundersHtml, /isAiventyxTraffic/);
-  assert.match(foundersHtml, /founders_cta_click/);
-  assert.match(foundersHtml, /\/v1\/telemetry\/ping/);
-  assert.doesNotMatch(foundersHtml, /buy\.stripe\.com/);
-});
-
-test('diagnostic page steals high-ROI Oceans conversion blocks without raw Stripe links', () => {
-  assert.match(diagnosticHtml, /data-oceans-pain/);
-  assert.match(diagnosticHtml, /data-oceans-process/);
-  assert.match(diagnosticHtml, /data-oceans-compare/);
-  assert.match(diagnosticHtml, /data-oceans-faq/);
-  assert.match(diagnosticHtml, /You didn't hire AI agents to manage calendars of incidents/);
-  assert.match(diagnosticHtml, /wrong fit|we refund/i);
-  assert.match(diagnosticHtml, /href="\/founders/);
-  assert.doesNotMatch(diagnosticHtml, /buy\.stripe\.com/);
-});
-
-test('GET /founders and aliases serve filled conversion HTML', async () => {
+test('GET /founders and aliases redirect to the team pilot and keep utm parameters', async () => {
   for (const route of ['/founders', '/operators', '/founders.html', '/agent-operators']) {
-    const res = await fetch(`${origin}${route}`);
-    assert.equal(res.status, 200, `${route} should be 200`);
-    assert.match(res.headers.get('content-type') || '', /text\/html/);
-    const html = await res.text();
-    assert.match(html, /\$499/);
-    assert.match(html, /action="\/go\/diagnostic-pay" method="POST"/);
-    assert.match(html, /founders_hero_paid/);
-    assert.match(html, /canonical" href="[^"]+\/founders"/);
-    assert.doesNotMatch(html, /__SPRINT_DIAGNOSTIC_PRICE_DOLLARS__/);
+    const res = await fetch(`${origin}${route}?utm_source=x`, { redirect: 'manual' });
+    assert.equal(res.status, 301, `${route} should be 301`);
+    assert.equal(res.headers.get('location'), '/pilot?utm_source=x');
   }
+  assert.equal(fs.existsSync(path.join(PUBLIC_DIR, 'founders.html')), false);
 });
 
-test('GET /sitemap.xml includes /founders', async () => {
+test('GET /sitemap.xml no longer lists /founders', async () => {
   const res = await fetch(`${origin}/sitemap.xml`);
   assert.equal(res.status, 200);
-  const body = await res.text();
-  assert.match(body, /\/founders<\/loc>/);
+  assert.doesNotMatch(await res.text(), /\/founders<\/loc>/);
 });
 
 test('GET /diagnostic is retired even while other founder content remains available', async () => {
