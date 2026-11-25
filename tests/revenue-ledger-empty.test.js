@@ -35,6 +35,17 @@ test('a paid funnel event without a key (service order) keeps the ledger flagged
   }
 });
 
+test('an unreadable key store never reads as "nothing sold yet"', () => {
+  fs.writeFileSync(process.env._TEST_API_KEYS_PATH, '{not json');
+  try {
+    const found = codes();
+    assert.ok(found.includes('revenue_ledger_missing'), found.join(','));
+    assert.ok(!found.includes('revenue_ledger_empty'));
+  } finally {
+    fs.rmSync(process.env._TEST_API_KEYS_PATH, { force: true });
+  }
+});
+
 test('a missing revenue ledger with a Stripe-paid key is still flagged as missing', () => {
   fs.writeFileSync(process.env._TEST_API_KEYS_PATH, JSON.stringify({
     keys: { tg_test: { customerId: 'cus_123', source: 'stripe_webhook_checkout_completed', active: true } },

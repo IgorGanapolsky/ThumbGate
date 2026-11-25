@@ -329,6 +329,19 @@ function keyStoreHasPaidKeys(store = loadKeyStore()) {
   ));
 }
 
+// True when the key store is absent (no keys yet) or parses with a keys object. loadKeyStore() turns
+// a read or parse failure into an empty store, which must not count as proof that nothing was sold.
+function keyStoreReadable() {
+  try {
+    const target = resolveKeyStoreReadPath();
+    if (!fs.existsSync(target)) return true;
+    const parsed = JSON.parse(fs.readFileSync(target, 'utf-8'));
+    return Boolean(parsed && typeof parsed.keys === 'object');
+  } catch {
+    return false;
+  }
+}
+
 // Any confirmed payment in the funnel ledger (stage 'paid'), e.g. checkout_paid_confirmed.
 function funnelHasPaidEvents(descriptor) {
   return ((descriptor && descriptor.activePaths) || []).some((file) => (
@@ -437,7 +450,7 @@ function buildBillingSourceDiagnostics(feedbackDir) {
       'revenue_ledger_legacy_fallback',
       'Revenue events are loading only from a legacy feedback directory.'
     ));
-  } else if (revenueLedger.activeMode === 'missing' && !keyStoreHasPaidKeys() && !funnelHasPaidEvents(funnelLedger)) {
+  } else if (revenueLedger.activeMode === 'missing' && keyStoreReadable() && !keyStoreHasPaidKeys() && !funnelHasPaidEvents(funnelLedger)) {
     // The first paid event creates the ledger file. With no paid key and no paid funnel event (service
     // orders get no key), a missing ledger means nothing has been sold yet: a fact, not a broken source.
     warnings.push(buildSourceWarning(
@@ -447,7 +460,7 @@ function buildBillingSourceDiagnostics(feedbackDir) {
   } else if (revenueLedger.activeMode === 'missing') {
     warnings.push(buildSourceWarning(
       'revenue_ledger_missing',
-      'Revenue events are missing from both the active and legacy feedback directories, but paid keys exist.'
+      'Revenue events are missing from both the active and legacy feedback directories, but paid activity exists (a paid key or paid funnel event) or the key store could not be read.'
     ));
   }
 
