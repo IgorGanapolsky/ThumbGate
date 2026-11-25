@@ -634,7 +634,6 @@ function syncVersion(opts) {
   // the per-generator test (e.g. tests/codex-marketplace-revenue-pack.test.js).
   const POST_SYNC_GENERATORS = [
     { script: 'scripts/codex-marketplace-revenue-pack.js', args: ['--write-docs'], label: 'codex marketplace pack' },
-    { script: 'scripts/build-claude-directory-plugin.js', args: [], label: 'claude directory plugin' },
   ];
   const generatorResults = [];
   if (!checkOnly) {
