@@ -123,4 +123,27 @@ describe('buildRecentCorrectiveActionsContext', () => {
     assert.ok(ctx.includes('Actual error'));
     assert.ok(!ctx.includes('Random info'));
   });
+  test('lists a thumbs-up as approved, never under "do NOT repeat"', () => {
+    const now = new Date().toISOString();
+    writeMemoryLog(tempDir, [
+      { title: 'MISTAKE: Seeded the prod db', content: 'How to avoid: seed staging only', category: 'error', timestamp: now },
+      { title: 'SUCCESS: npm publish --tag next first', content: '', category: 'learning', timestamp: now },
+    ]);
+    const ctx = buildRecentCorrectiveActionsContext();
+    const [mistakeBlock, approvedBlock] = ctx.split('[ThumbGate] Recently approved');
+    assert.ok(mistakeBlock.includes('Seeded the prod db'));
+    assert.ok(!mistakeBlock.includes('npm publish'), 'the thumbs-up is not listed as a mistake');
+    assert.ok(approvedBlock && approvedBlock.includes('keep doing this'));
+    assert.ok(approvedBlock.includes('npm publish --tag next first'));
+    assert.ok(!approvedBlock.includes('SUCCESS:'), 'prefix stripped');
+  });
+
+  test('only thumbs-ups: no "do NOT repeat" header at all', () => {
+    writeMemoryLog(tempDir, [
+      { title: 'SUCCESS: ran the migration on staging first', content: '', category: 'learning', timestamp: new Date().toISOString() },
+    ]);
+    const ctx = buildRecentCorrectiveActionsContext();
+    assert.ok(ctx.startsWith('[ThumbGate] Recently approved with a thumbs-up'));
+    assert.ok(!ctx.includes('do NOT repeat'));
+  });
 });

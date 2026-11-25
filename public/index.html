@@ -900,7 +900,7 @@ $ ... "rm -rf ~/"
         <h2 class="section-title">What happens under the hood.</h2>
         <p class="section-lede">Corrections become local lessons, repeated thumbs-downs become gates, and the next action is checked before it runs. The model is not retrained. <strong style="color:var(--text)">Click a step</strong> to see what each one does; step 4 is open below.</p>
         <figure class="diagram-frame" style="margin-top:28px">
-          <img src="/assets/diagrams/self-improving-thumbs-loop.svg" width="1100" height="420" alt="Self-improving ThumbGate loop: thumbs up or thumbs down become a local lesson, then a prevention rule, then ALLOW WARN or DENY on the next tool call. The loop closes under your control without retraining the model." loading="lazy" decoding="async">
+          <img src="/assets/diagrams/self-improving-thumbs-loop.svg" width="1100" height="420" alt="Self-improving ThumbGate loop: thumbs up or thumbs down become a local lesson, repeated thumbs-downs become a prevention rule, then ALLOW WARN or DENY on the next tool call. The loop closes under your control without retraining the model." loading="lazy" decoding="async">
         </figure>
         <div class="loop" role="tablist" aria-label="Self-improving product loop — click a step for under-the-hood demo">
           <!-- Cards are divs (not <button>) so headings/chips stay valid HTML; browsers
@@ -1241,6 +1241,7 @@ $ ... "rm -rf ~/"
             '<span class="c">→ schema</span>    requires actionable context before storage',
           facts: [
             'Explicit thumbs-up/down with context becomes a feedback record',
+            'A 👍 is saved as a success lesson. It does not create, loosen or lift a gate',
             'Bare thumbs-down without context is rejected (no-action)',
             'Capture paths: CLI, hooks, MCP. Free records 2 a day, 10 in total',
           ],

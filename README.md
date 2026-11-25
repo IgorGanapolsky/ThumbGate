@@ -45,6 +45,14 @@ npx thumbgate doctor    # checks that the hooks are really wired
 
 That's it. The built-in checks are now active. Your agent can keep working as usual; ThumbGate only speaks up when a tool call matches a check.
 
+**See a block without risking anything.** This hands ThumbGate the same input your agent's hook would, without running the command:
+
+```bash
+echo '{"tool_name":"Bash","tool_input":{"command":"git push --force"}}' | npx thumbgate gate-check
+```
+
+You get `"permissionDecision":"deny"` and `[GATE:force-push] Force push blocked.` In a real session, the agent gets that answer and the push never runs.
+
 ### Teach it your first rule (optional)
 
 When your agent does something you never want repeated, give it a thumbs-down:
@@ -53,13 +61,7 @@ When your agent does something you never want repeated, give it a thumbs-down:
 npx thumbgate capture --feedback=down --context="Never run DROP on production tables" --what-went-wrong="agent proposed DROP" --what-to-change="require review for DROP"
 ```
 
-Later `DROP` attempts in the same scope surface the check:
-
-```
-⚠️ Check fired: "Never run DROP on production tables"
-   Pattern: DROP.*production
-   Verdict: 👎 WARN + LOG   (⛔ BLOCK when THUMBGATE_STRICT_ENFORCEMENT=1)
-```
+From then on the agent sees that lesson before a matching action. After three matching thumbs-downs it becomes a check that warns, or blocks with `THUMBGATE_STRICT_ENFORCEMENT=1`. (`DROP TABLE` itself is already denied by default.)
 
 To see your rules and what was caught, run `npx thumbgate dashboard --open`. An empty dashboard on day one is normal; it means nothing has fired yet.
 
@@ -105,6 +107,19 @@ npx -y thumbgate serve
 
 - Equivalent: `npx -y thumbgate mcp`
 - Do **not** use `npm start` for MCP — that launches the hosted HTTP API (`src/api/server.js`), not the agent-facing stdio server.
+
+---
+
+## What a 👍 and a 👎 do
+
+| You give | What ThumbGate does |
+|----------|---------------------|
+| 👎 typed in the agent session right after a command | Turns that command into a check. The first one warns on the next run. A second 👎 from you on the same command blocks it, with or without strict mode. |
+| 👎 from the CLI with only a sentence of context (no command attached) | Saves a lesson the agent sees before a matching action. On the third matching 👎, a check fires: a warning by default, a block with `THUMBGATE_STRICT_ENFORCEMENT=1`. |
+| 👍 with one sentence of context | Saves a success lesson and counts it in your stats. It does not create, loosen or lift a check. |
+| 👍 or 👎 with no context and no command | Logged only. Nothing is stored or promoted. |
+
+Example: the agent runs `npm run deploy:staging` and you type *"thumbs down: that pushed to the wrong environment"*. The next `npm run deploy:staging` gets a warning before it runs. You thumbs-down it a second time, and the next run is denied. A later 👍 on the same command is saved as a success lesson, and the block stays in place.
 
 ---
 
