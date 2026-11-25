@@ -814,8 +814,10 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // wiring (AGENT-3667 one-count follow-up); measured 10,731,089 before this commit's review fixes.
   // Bumped 10.75 MB -> 10.77 MB (2026-11-25): scripts/clarity.js (Clarity tag + owner-console export), the
   // Visitor behavior tab in public/admin.html and the privacy note; measured 10,751,766.
-  manifest.unpackedSize <= 10_770_000,
-  `npm package should stay <= 10.77 MB unpacked, got ${manifest.unpackedSize}`
+  // Bumped 10.77 MB -> 10.78 MB (2026-11-25): the active-price lookup in scripts/billing.js (PR #5164);
+  // measured 10,771,103 after merging main (main 10,767,503).
+  manifest.unpackedSize <= 10_780_000,
+  `npm package should stay <= 10.78 MB unpacked, got ${manifest.unpackedSize}`
 );
 
   for (const file of requiredRuntimeFiles) {
