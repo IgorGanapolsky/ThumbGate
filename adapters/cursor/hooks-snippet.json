@@ -1,8 +1,8 @@
 {
   "beforeShellExecution": [
     {
-      "command": "node /Users/iganapolsky/workspace/ThumbGate/scripts/cursor-shell-gate.js",
-      "timeout": 10
+      "command": "npx --yes --package thumbgate@latest thumbgate cursor-gate",
+      "timeout": 30
     }
   ]
 }
