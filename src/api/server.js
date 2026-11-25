@@ -258,6 +258,7 @@ const {
 const {
   summarizeFirstBlockEvents,
   summarizeActivationFunnel,
+  summarizeInstallVersions,
 } = require('../../scripts/activation-tracker');
 const {
   evaluateOperationalIntegrity,
@@ -5170,6 +5171,7 @@ function renderSitemapXml(runtimeConfig) {
     { path: '/learn/five-walls-enterprise-agent-deployment', changefreq: 'weekly', priority: '0.85' },
     { path: '/learn/okta-mcp-governance-per-tool-call-gates', changefreq: 'weekly', priority: '0.85' },
     { path: '/learn/ai-finops-agent-spend-guardrails', changefreq: 'weekly', priority: '0.85' },
+    { path: '/learn/proof-before-claim-deploy-gate', changefreq: 'weekly', priority: '0.85' },
     { path: '/compare/claude-code-hooks', changefreq: 'weekly', priority: '0.85' },
     { path: '/compare/bumblebee', changefreq: 'weekly', priority: '0.85' },
     { path: '/compare/anthropic-containment', changefreq: 'weekly', priority: '0.85' },
@@ -10644,6 +10646,7 @@ a{color:#8b9}</style></head><body><form class="card" method="post" action="/oaut
           uniqueSessions: uniqueSessions30d.size,
           firstBlockedToolCall: summarizeFirstBlockEvents(last30),
           activationFunnel: summarizeActivationFunnel(last30),
+          installVersions: summarizeInstallVersions(last30, pkg.version),
         },
         last7Days: {
           total: recent.length,
@@ -10656,6 +10659,7 @@ a{color:#8b9}</style></head><body><form class="card" method="post" action="/oaut
           uniqueSessions: uniqueSessions7d.size,
           firstBlockedToolCall: summarizeFirstBlockEvents(recent),
           activationFunnel: summarizeActivationFunnel(recent),
+          installVersions: summarizeInstallVersions(recent, pkg.version),
         },
         byEventType,
         byVisitorType,

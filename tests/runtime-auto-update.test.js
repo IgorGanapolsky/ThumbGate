@@ -91,3 +91,68 @@ test('the skew notice says the hooks are updating when a background update start
   assert.match(notice, /v1\.41\.0/);
   assert.ok(notice.includes(cu.UPDATE_COMMAND));
 });
+
+test('scheduleLatestCheck runs only from the hook runtime, once per 24h, detached', () => {
+  const home = tmpHome();
+  const dir = path.join(home, '.thumbgate', 'runtime');
+  const self = path.join(dir, 'node_modules', 'thumbgate', 'scripts', 'runtime-auto-update.js');
+  const calls = [];
+  const spawnFn = (cmd, args, opts) => { calls.push({ cmd, args, opts }); return { on() {}, unref() {} }; };
+  const t0 = Date.parse('2026-11-25T12:00:00Z');
+
+  assert.deepEqual(au.scheduleLatestCheck({ env: {}, now: t0, dir, spawnFn, self: path.join(home, 'src', 'scripts', 'x.js') }),
+    { started: false, reason: 'not-runtime' });
+  assert.deepEqual(au.scheduleLatestCheck({ env: {}, now: t0, dir, spawnFn, self, nodePath: 'node' }), { started: true });
+  assert.equal(calls.length, 1);
+  assert.deepEqual(calls[0].args, [self, '--check-latest', dir]);
+  assert.equal(calls[0].opts.detached, true);
+  assert.equal(calls[0].opts.stdio, 'ignore');
+  assert.equal(au.scheduleLatestCheck({ env: {}, now: t0 + 3600_000, dir, spawnFn, self }).reason, 'recently-checked');
+  assert.equal(au.scheduleLatestCheck({ env: {}, now: t0 + 25 * 3600_000, dir, spawnFn, self }).started, true);
+  assert.equal(au.scheduleLatestCheck({ env: { THUMBGATE_NO_AUTO_UPDATE: '1' }, now: t0 + 60 * 3600_000, dir, spawnFn, self }).reason, 'opted-out');
+  assert.equal(au.scheduleLatestCheck({ env: { CI: 'true' }, now: t0 + 60 * 3600_000, dir, spawnFn, self }).reason, 'ci');
+  assert.equal(calls.length, 2);
+});
+
+test('checkLatest refreshes only when npm latest is newer than the runtime', async () => {
+  const dir = path.join(tmpHome(), '.thumbgate', 'runtime');
+  writeRuntime(dir, '1.42.0');
+  const refreshed = [];
+  const refresh = async (argv) => { refreshed.push(argv); };
+  assert.deepEqual(await au.checkLatest(dir, { latestVersion: () => '1.42.0', refresh }), { updated: false, reason: 'current' });
+  assert.deepEqual(await au.checkLatest(dir, { latestVersion: () => 'not a version', refresh }), { updated: false, reason: 'bad-version' });
+  assert.deepEqual(await au.checkLatest(dir, { latestVersion: () => { throw new Error('offline'); }, refresh }), { updated: false, reason: 'lookup-failed' });
+  assert.deepEqual(await au.checkLatest(dir, { latestVersion: () => '1.43.0', refresh }), { updated: true, from: '1.42.0', to: '1.43.0' });
+  assert.deepEqual(refreshed, [[dir, '1.43.0', 'hook']]);
+  const state = JSON.parse(fs.readFileSync(path.join(path.dirname(dir), au.RUNTIME_AUTO_UPDATE_STATE_FILE), 'utf8'));
+  assert.equal(state.to, '1.43.0');
+});
+
+test('checkLatest waits for a refresh the MCP path already started, and takes over a stale lock', async () => {
+  const dir = path.join(tmpHome(), '.thumbgate', 'runtime');
+  writeRuntime(dir, '1.42.0');
+  const file = path.join(path.dirname(dir), au.RUNTIME_AUTO_UPDATE_STATE_FILE);
+  const t0 = Date.parse('2026-11-25T20:00:00Z');
+  fs.writeFileSync(file, JSON.stringify({ startedAt: t0, from: '1.42.0', to: '1.44.0' }));
+  const refreshed = [];
+  const refresh = async (argv) => { refreshed.push(argv); };
+  assert.deepEqual(await au.checkLatest(dir, { latestVersion: () => '1.43.0', refresh, now: t0 + 60_000 }), { updated: false, reason: 'refresh-in-progress' });
+  assert.equal(JSON.parse(fs.readFileSync(file, 'utf8')).to, '1.44.0');
+  assert.equal(refreshed.length, 0);
+  fs.writeFileSync(file, JSON.stringify({ startedAt: t0, finishedAt: t0 + 30_000, ok: false }));
+  assert.equal((await au.checkLatest(dir, { latestVersion: () => '1.43.0', refresh, now: t0 + 60_000 })).updated, true);
+  fs.writeFileSync(file, JSON.stringify({ startedAt: t0 }));
+  assert.equal((await au.checkLatest(dir, { latestVersion: () => '1.43.0', refresh, now: t0 + 11 * 60_000 })).updated, true);
+  assert.equal(refreshed.length, 2);
+});
+
+test('refreshRuntime never swaps in an older runtime than the one now live', () => {
+  const dir = path.join(tmpHome(), '.thumbgate', 'runtime');
+  writeRuntime(dir, '1.44.0');
+  const install = (prefix, version) => writeRuntime(prefix, version);
+  const result = au.refreshRuntime(dir, '1.43.0', { install });
+  assert.equal(result.ok, false);
+  assert.equal(result.reason, 'not-older');
+  assert.equal(JSON.parse(fs.readFileSync(path.join(dir, 'node_modules', 'thumbgate', 'package.json'), 'utf8')).version, '1.44.0');
+  assert.deepEqual(fs.readdirSync(path.dirname(dir)).filter((n) => n.includes('.next-')), []);
+});

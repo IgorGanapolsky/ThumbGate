@@ -821,9 +821,13 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // Visitor behavior tab in public/admin.html and the privacy note; measured 10,751,766.
   // Bumped 10.77 MB -> 10.78 MB (2026-11-25): public/udemy.html and the install-source field in
   // scripts/cli-telemetry.js (AGENT-3667 udemy source); measured 10,773,470 (main was 10,767,503).
-  // Bumped 10.78 MB -> 10.81 MB (2026-11-25): scripts/send-gate.js and the Cursor hook/claim gate changes (PR 5213).
-  manifest.unpackedSize <= 10_810_000,
-  `npm package should stay <= 10.81 MB unpacked, got ${manifest.unpackedSize}`
+  // Bumped 10.78 MB -> 10.79 MB (2026-11-25): hook-side daily latest check in scripts/runtime-auto-update.js
+  // and the install version share in scripts/activation-tracker.js; measured 10,780,497.
+  // Bumped 10.79 MB -> 10.80 MB (2026-11-25): the Sources tab (scripts/owner-admin.js, public/admin.html) and the
+  // checkout_click event, on top of the hook-side latest check above.
+  // Bumped 10.80 MB -> 10.83 MB (2026-11-25): scripts/send-gate.js and the Cursor hook/claim gate changes (PR 5213).
+  manifest.unpackedSize <= 10_830_000,
+  `npm package should stay <= 10.83 MB unpacked, got ${manifest.unpackedSize}`
 );
 
   for (const file of requiredRuntimeFiles) {

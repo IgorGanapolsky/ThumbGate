@@ -1,6 +1,6 @@
 {
   "name": "thumbgate",
-  "version": "1.43.0",
+  "version": "1.43.1",
   "description": "ThumbGate Pre-Action Checks self-improve from ranked lessons and repeated failures, hard-block detected secret leaks, and block matches in strict mode.",
   "homepage": "https://thumbgate.ai",
   "repository": {
@@ -26,6 +26,7 @@
     "!public/assets/diagrams/thumbgate-agent-meme.jpg",
     "!public/assets/diagrams/agent-integration.png",
     "!public/assets/diagrams/thumbgate-architecture.png",
+    "!public/assets/diagrams/deploy-proof-gate.png",
     "!public/js/webmcp.js",
     "!src/webmcp-governance.js",
     ".claude-plugin/plugin.json",
@@ -1502,7 +1503,7 @@
     "test:no-orphan-posthog": "node --test --test-force-exit tests/no-orphan-posthog.test.js",
     "test:admin-truth-ui": "node --test --test-force-exit tests/admin-truth-ui.test.js",
     "test:admin-usage-mrr": "node --test --test-force-exit tests/admin-usage-mrr.test.js",
-    "test:owner-admin": "node --test tests/clarity.test.js tests/unit-economics.test.js tests/admin-economics.test.js tests/owner-admin.test.js tests/owner-admin-payment-cursor.test.js tests/owner-reporting-semantics.test.js tests/owner-summary-quality.test.js",
+    "test:owner-admin": "node --test tests/clarity.test.js tests/site-sources-clarity.test.js tests/unit-economics.test.js tests/admin-economics.test.js tests/owner-admin.test.js tests/owner-admin-payment-cursor.test.js tests/owner-reporting-semantics.test.js tests/owner-summary-quality.test.js",
     "scenarios": "node tests/scenarios/run.js",
     "test:scenarios": "node --test tests/scenarios.test.js"
   },

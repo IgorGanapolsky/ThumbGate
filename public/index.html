@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="generator" content="ThumbGate">
   <meta name="author" content="Igor Ganapolsky">
-  <meta name="thumbgate-version" content="1.43.0">
+  <meta name="thumbgate-version" content="1.43.1">
   __GOOGLE_SITE_VERIFICATION_META__
   <link rel="icon" type="image/png" href="/thumbgate-icon.png">
   <link rel="canonical" href="__APP_ORIGIN__/">
@@ -882,6 +882,18 @@ $ ... "rm -rf ~/"
       </div>
     </section>
 
+    <section id="proof-before-claim">
+      <div class="shell">
+        <div class="section-kicker">New in 1.43.1 &middot; Claude Code</div>
+        <h2 class="section-title">"It's live" needs proof.</h2>
+        <p class="section-lede">When Claude Code says <em>deployed</em> or <em>live</em> with no production proof in the reply (curl output, <code>/health</code>, <code>buildSha</code>, HTTP 200), ThumbGate's Stop hook sends it back to run the check. On by default, and it blocks once so a reply can never loop.</p>
+        <figure class="diagram-frame" style="margin-top:24px">
+          <img src="/assets/diagrams/deploy-proof-gate.png" width="1100" height="392" alt="Terminal: the agent says the login fix is deployed and live, ThumbGate's Stop hook blocks the reply for lack of production proof, the agent runs curl on /health and pastes the JSON, and the reply is allowed." loading="lazy" decoding="async">
+        </figure>
+        <p class="hero-note">Real <code>claim-stop-check</code> output, frame redrawn. It checks that proof is present, not that it is true. <a href="/learn/proof-before-claim-deploy-gate">How the deploy-proof gate works</a></p>
+      </div>
+    </section>
+
     <section id="how-it-works">
       <div class="shell">
         <div class="section-kicker">Self-improving product loop</div>
@@ -979,6 +991,7 @@ $ ... "rm -rf ~/"
             <tr><th>Switching the gate off (gate process kill/bypass), for example <code>pkill -f thumbgate</code></th><td>Denied</td><td>Denied</td></tr>
             <tr><th>A command you gave a thumbs-down</th><td>Warns, with your reason</td><td>Denied from the third thumbs-down</td></tr>
             <tr><th>Other flagged actions, for example <code>git push origin main</code></th><td>Warns</td><td>Denied</td></tr>
+            <tr><th>Claude Code says "deployed" or "live" with no proof from production in the reply</th><td>Reply blocked once</td><td>Reply blocked once</td></tr>
             <tr><th>The same action, reworded</th><td colspan="2"><strong>Not caught.</strong> A learned rule matches the command you thumbed down, not its purpose. In the recording above, <code>rm -rf ../old-notes</code> is denied, but deleting the same folder with <code>python3 shutil.rmtree</code> only gets a warning.</td></tr>
             <tr><th>Cursor</th><td colspan="2">Shell commands are denied before they run; other tools are advisory. See <a href="#also-works-with">Also works with</a>.</td></tr>
             <tr><th>Cline, OpenCode, Amp</th><td colspan="2">Advisory or feedback only. They do not guarantee a block. See <a href="#also-works-with">Also works with</a>.</td></tr>
@@ -1049,7 +1062,7 @@ $ ... "rm -rf ~/"
 
   <footer>
     <div class="shell footer-inner">
-      <span>ThumbGate · MIT License · npm v1.43.0</span>
+      <span>ThumbGate · MIT License · npm v1.43.1</span>
       <div class="footer-links">
         <a href="https://github.com/IgorGanapolsky/ThumbGate" target="_blank" rel="noopener">GitHub</a>
         <a href="/guide">Technical setup</a>

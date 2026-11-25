@@ -645,7 +645,8 @@ test('homepage stays human-scannable instead of becoming a product monorepo', ()
   // 1450: the Claude-first rework adds the 3-step loop, the hooks comparison and Why Pro (16 Nov 2026).
   // 1520: catastrophic commands are denied by default, which the page now has to say (18 Nov 2026).
   // 1550: the coverage tables now say Cursor shell commands are denied, other Cursor tools advisory (24 Nov 2026).
-  assert.ok(words.length <= 1550, `visible homepage is ${words.length} words`);
+  // 1640: the proof-before-claim section and its coverage row say what the deploy-proof Stop gate does and does not catch (25 Nov 2026).
+  assert.ok(words.length <= 1640, `visible homepage is ${words.length} words`);
   assert.ok(h2Count <= 8, `homepage has ${h2Count} H2 headings`);
   assert.ok(h3Count <= 10, `homepage has ${h3Count} H3 headings`);
   for (const jargon of ['Thompson Sampling', 'DPO', 'LanceDB', 'ContextFS', 'MemAlign', 'FTS5']) {
