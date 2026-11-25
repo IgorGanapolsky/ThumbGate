@@ -30,7 +30,7 @@ const FREE_TIER_LIMITS = {
 
 const FREE_TIER_MAX_GATES = 3; // 3 active prevention rules on free; Pro is unlimited
 
-const UPGRADE_MESSAGE = `Pro: ${PRO_PRICE_LABEL} — unlimited rules, recall, lesson search, dashboard, and exports: ${PRO_MONTHLY_PAYMENT_LINK}\n  Enterprise: ${ENTERPRISE_PRICE_LABEL} after workflow qualification.`;
+const UPGRADE_MESSAGE = `Pro: ${PRO_PRICE_LABEL} — unlimited rules, recall, lesson search, dashboard, and exports: ${PRO_MONTHLY_PAYMENT_LINK}\n  Teams: ${ENTERPRISE_PRICE_LABEL} at https://thumbgate.ai/pilot.`;
 
 const PAYWALL_MESSAGES = {
   capture_feedback: 'Free tier: 2 captures/day (10 total). Your feedback is stored locally — upgrade to capture unlimited.',
@@ -152,7 +152,7 @@ function checkLimit(action, authContext) {
   const dailyCurrent = usage.counts[action] || 0;
   const lifetimeCurrent = usage.lifetime[action] || 0;
 
-  const upgradeMessage = `Pro: ${PRO_PRICE_LABEL} — unlimited rules, recall, lesson search, dashboard, and exports: ${PRO_MONTHLY_PAYMENT_LINK}\n  Enterprise: ${ENTERPRISE_PRICE_LABEL} after workflow qualification.`;
+  const upgradeMessage = `Pro: ${PRO_PRICE_LABEL} — unlimited rules, recall, lesson search, dashboard, and exports: ${PRO_MONTHLY_PAYMENT_LINK}\n  Teams: ${ENTERPRISE_PRICE_LABEL} at https://thumbgate.ai/pilot.`;
 
   // Check lifetime limit first (the hard wall)
   if (lifetimeLimit !== Infinity && lifetimeCurrent >= lifetimeLimit) {

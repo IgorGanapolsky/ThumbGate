@@ -13,7 +13,7 @@ const isQuiet = process.env.THUMBGATE_NO_NUDGE === '1' || process.env.npm_config
 if (isCI || isQuiet) process.exit(0);
 
 const DASHBOARD_URL = 'https://thumbgate.ai/dashboard?utm_source=npm&utm_medium=postinstall&utm_campaign=dashboard_nudge';
-const MANAGED_GATE_URL = 'https://thumbgate.ai/diagnostic?utm_source=npm&utm_medium=postinstall&utm_campaign=managed_workflow_gate';
+const TEAM_PILOT_URL = 'https://thumbgate.ai/pilot?utm_source=npm&utm_medium=postinstall&utm_campaign=team_pilot';
 
 process.stderr.write(`
   ╭─────────────────────────────────────────────────────╮
@@ -23,7 +23,7 @@ process.stderr.write(`
   │  Updates:    npx thumbgate subscribe you@company.com│
   │                                                     │
   │  Free after trial: 3 rules, 2 captures/day.        │
-  │  Need a hard gate built for you? $499 one-time.     │
+  │  Teams: request a 30-day pilot at thumbgate.ai/pilot│
   ╰─────────────────────────────────────────────────────╯
 
   Trial unlocks: unlimited rules and thumbs, recall, lesson search
@@ -32,6 +32,6 @@ process.stderr.write(`
   npx thumbgate subscribe you@company.com
 
   Dashboard: ${DASHBOARD_URL}
-  Managed workflow gate: ${MANAGED_GATE_URL}
+  Team pilot: ${TEAM_PILOT_URL}
 
 `);

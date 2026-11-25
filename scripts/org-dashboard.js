@@ -293,7 +293,7 @@ function generateOrgDashboard(opts = {}) {
   };
 
   if (!pro) {
-    summary.upgradeMessage = `Pro checkout: ${PRO_PRICE_LABEL} — ${PRO_MONTHLY_PAYMENT_LINK} | Enterprise: ${ENTERPRISE_PRICE_LABEL} after workflow qualification.`;
+    summary.upgradeMessage = `Pro checkout: ${PRO_PRICE_LABEL} — ${PRO_MONTHLY_PAYMENT_LINK} | Teams: ${ENTERPRISE_PRICE_LABEL} at https://thumbgate.ai/pilot.`;
   }
 
   return summary;
