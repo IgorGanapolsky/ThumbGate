@@ -73,6 +73,18 @@ describe('thumbgate.ai/udemy', () => {
     assert.match(res.body, /THUMBGATE_INSTALL_SOURCE=udemy npx thumbgate init/);
   });
 
+  it('the page carries SoftwareApplication structured data (AGENTS.md schema integrity)', async () => {
+    const res = await request('GET', '/udemy');
+    const block = res.body.match(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/);
+    assert.ok(block, 'JSON-LD block present');
+    const data = JSON.parse(block[1]);
+    assert.equal(data['@type'], 'SoftwareApplication');
+    assert.equal(data.name, 'ThumbGate');
+    assert.match(data.url, /\/udemy$/);
+    assert.doesNotMatch(data.url, /__APP_ORIGIN__/, 'origin placeholder is substituted');
+    assert.equal(data.offers.price, '0');
+  });
+
   it('REQ-03 (b): a test visit and an install ping show as their own udemy row in /v1/analytics/sources', async () => {
     const visit = await request('GET', `/udemy?utm_source=udemy&utm_medium=course&utm_campaign=free_course&marker=${MARKER}`);
     assert.equal(visit.status, 200);
