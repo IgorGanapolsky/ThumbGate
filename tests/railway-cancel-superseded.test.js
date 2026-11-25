@@ -7,17 +7,34 @@ const path = require('node:path');
 
 const { cancelSuperseded, pickSuperseded, authHeaders } = require('../scripts/railway-cancel-superseded');
 
-test('pickSuperseded keeps the newest waiting deploy and anything already deploying', () => {
+test('pickSuperseded keeps the head of the queue, the newest deploy and anything already deploying', () => {
   const ids = pickSuperseded([
     { id: 'live', status: 'SUCCESS', createdAt: '2026-11-25T15:52:00Z' },
     { id: 'handoff', status: 'DEPLOYING', createdAt: '2026-11-25T16:00:00Z' },
-    { id: 'q1', status: 'QUEUED', createdAt: '2026-11-25T16:05:00Z' },
+    { id: 'head', status: 'QUEUED', createdAt: '2026-11-25T16:05:00Z' },
     { id: 'q2', status: 'QUEUED', createdAt: '2026-11-25T18:27:00Z' },
+    { id: 'q3', status: 'QUEUED', createdAt: '2026-11-25T18:40:00Z' },
     { id: 'newest', status: 'BUILDING', createdAt: '2026-11-25T19:19:00Z' },
     { id: 'gone', status: 'REMOVED', createdAt: '2026-11-25T15:43:00Z' },
   ]);
-  assert.deepEqual(ids.sort(), ['q1', 'q2']);
+  assert.deepEqual(ids.sort(), ['q2', 'q3']);
   assert.deepEqual(pickSuperseded([{ id: 'only', status: 'QUEUED', createdAt: '2026-11-25T19:00:00Z' }]), []);
+});
+
+test('pickSuperseded never cancels the deploy at the head of the queue (no starvation)', () => {
+  // 2026-11-25: a merge every ~9 min and a ~1h volume handoff. Each run must keep the deploy that
+  // has waited longest, or the queue restarts and production never updates.
+  const head = { id: 'head', status: 'QUEUED', createdAt: '2026-11-25T21:22:00Z' };
+  const queue = [head];
+  for (let i = 1; i <= 6; i += 1) {
+    queue.push({ id: `q${i}`, status: 'QUEUED', createdAt: new Date(Date.parse(head.createdAt) + i * 9 * 60000).toISOString() });
+    const cancelled = pickSuperseded(queue);
+    assert.ok(!cancelled.includes('head'), `run ${i} must keep the head of the queue`);
+    assert.ok(!cancelled.includes(`q${i}`), `run ${i} must keep the newest deploy`);
+    for (const id of cancelled) queue.find((d) => d.id === id).status = 'REMOVED';
+    assert.ok(queue.filter((d) => d.status === 'QUEUED').length <= 2, 'at most two deploys wait');
+  }
+  assert.deepEqual(pickSuperseded([head, { id: 'tip', status: 'QUEUED', createdAt: '2026-11-25T21:31:00Z' }]), []);
 });
 
 test('authHeaders prefers the account token and falls back to the project token', () => {
@@ -37,6 +54,7 @@ test('cancelSuperseded resolves the service by name and cancels only superseded 
     } else if (query.includes('deployments(')) {
       data = { deployments: { edges: [
         { node: { id: 'q-old', status: 'QUEUED', createdAt: '2026-11-25T17:00:00Z' } },
+        { node: { id: 'q-mid', status: 'QUEUED', createdAt: '2026-11-25T18:00:00Z' } },
         { node: { id: 'q-new', status: 'QUEUED', createdAt: '2026-11-25T19:00:00Z' } },
         { node: { id: 'live', status: 'SUCCESS', createdAt: '2026-11-25T15:00:00Z' } },
       ] } };
@@ -50,9 +68,9 @@ test('cancelSuperseded resolves the service by name and cancels only superseded 
     fetchFn,
     log: () => {},
   });
-  assert.deepEqual(result.cancelled, ['q-old']);
+  assert.deepEqual(result.cancelled, ['q-mid']);
   const cancels = calls.filter((c) => c.query.includes('deploymentCancel'));
-  assert.deepEqual(cancels.map((c) => c.variables.id), ['q-old']);
+  assert.deepEqual(cancels.map((c) => c.variables.id), ['q-mid']);
   const list = calls.find((c) => c.query.includes('deployments('));
   assert.equal(list.variables.input.serviceId, '51362f55-be4b-443e-a2ca-015a32670d20');
 });
@@ -82,6 +100,7 @@ test('cancelSuperseded falls back to the project token when the account token is
     if (query.includes('deployments(')) {
       data = { deployments: { edges: [
         { node: { id: 'q-old', status: 'QUEUED', createdAt: '2026-11-25T17:00:00Z' } },
+        { node: { id: 'q-mid', status: 'QUEUED', createdAt: '2026-11-25T18:00:00Z' } },
         { node: { id: 'q-new', status: 'QUEUED', createdAt: '2026-11-25T19:00:00Z' } },
       ] } };
     } else {
@@ -97,7 +116,7 @@ test('cancelSuperseded falls back to the project token when the account token is
     fetchFn,
     log: () => {},
   });
-  assert.deepEqual(result.cancelled, ['q-old']);
+  assert.deepEqual(result.cancelled, ['q-mid']);
   assert.equal(seen[0], 'account');
   assert.ok(seen.slice(1).every((who) => who === 'project'));
 });

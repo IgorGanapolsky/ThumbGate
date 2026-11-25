@@ -7,11 +7,13 @@
 // from one deployment to the next and runs queued deployments one at a time, in order. On
 // 2026-11-24 and 2026-11-25 each handoff took up to an hour, while main took a push every few
 // minutes, so 15+ deployments sat QUEUED and production ran hours behind main (deployment
-// d3e76f6e built at 15:53Z and only started at 19:01Z). Every queued deploy except the newest is
-// wasted work: it will be replaced right after it goes live.
+// d3e76f6e built at 15:53Z and only started at 19:01Z). Every queued deploy between the oldest
+// (head of the queue) and the newest (main's tip) is wasted work: it would be replaced right
+// after it goes live.
 //
-// Run right after `railway up` in .github/workflows/deploy-railway.yml. It keeps the newest
-// waiting deployment and anything already DEPLOYING (mid-handoff), and cancels the rest.
+// Run right after `railway up` in .github/workflows/deploy-railway.yml. It keeps the oldest and
+// the newest waiting deployments and anything already DEPLOYING (mid-handoff), and cancels the
+// rest, so at most two deploys wait at any time.
 // Best effort: it prints what it did and always exits 0, so it can never block a deploy.
 //
 // Env: RAILWAY_API_TOKEN (account/team token), RAILWAY_TOKEN or RAILWAY_PROJECT_TOKEN_FALLBACK (project
@@ -66,12 +68,20 @@ async function resolveServiceId(fetchFn, headers, projectId, service) {
   return match.id;
 }
 
-/** Ids to cancel: every supersedable deployment except the newest one. */
+/**
+ * Ids to cancel: every supersedable deployment except the oldest and the newest.
+ *
+ * The oldest waiting deploy holds the head of Railway's FIFO queue: it is the one Railway starts
+ * when the volume frees up. Cancelling it (as the first version of this script did) put the
+ * newest deploy back at the end of the line on every merge, so with main taking a push every
+ * ~9 minutes and the handoff taking ~1h, nothing ever reached SUCCESS (2026-11-25 20:56-22:00Z).
+ * Keeping the oldest lets it through; keeping the newest means main's tip deploys right after.
+ */
 function pickSuperseded(deployments = []) {
   const waiting = deployments
     .filter((d) => d && SUPERSEDABLE.has(d.status))
-    .sort((a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt));
-  return waiting.slice(1).map((d) => d.id);
+    .sort((a, b) => Date.parse(a.createdAt) - Date.parse(b.createdAt));
+  return waiting.slice(1, -1).map((d) => d.id);
 }
 
 async function cancelSuperseded({ env = process.env, fetchFn = globalThis.fetch, log = console.log } = {}) {
