@@ -32,7 +32,7 @@ function requirePro(
   write(
     `\n  🔒 Pro Feature Required: ${desc}\n` +
     `     Pro: ${PRO_PRICE_LABEL} — ${PRO_URL}\n` +
-    `     Enterprise: ${ENTERPRISE_PRICE_LABEL} after workflow qualification\n` +
+    `     Teams: ${ENTERPRISE_PRICE_LABEL} at https://thumbgate.ai/pilot\n` +
     `     Or run: npx thumbgate pro\n\n`
   );
   return false;

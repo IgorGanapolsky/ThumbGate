@@ -202,9 +202,19 @@ test('social-quality-gate, validate-social-post, and gates-engine hard-block rea
 
   // 3. gates-engine hard-denies BrowserOS Neo & CLI social publishing of real-estate text (never demoted to warn)
   const gatesEngine = require('../scripts/gates-engine');
-  const defaultConfigPath = path.join(REPO_ROOT, 'config', 'gates', 'default.json');
+  // The outbound gate moved to the opt-in owner profile (0ca0cff). An explicit config path skips extra
+  // gates, so evaluate against default.json plus that profile, the same merge an owner install gets.
+  const defaultConfig = JSON.parse(fs.readFileSync(path.join(REPO_ROOT, 'config', 'gates', 'default.json'), 'utf8'));
+  const ownerProfile = JSON.parse(fs.readFileSync(path.join(REPO_ROOT, 'config', 'gates', 'profiles', 'private-owner.json'), 'utf8'));
+  const ownerConfigDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-owner-gates-'));
+  const defaultConfigPath = path.join(ownerConfigDir, 'gates.json');
+  fs.writeFileSync(defaultConfigPath, JSON.stringify({ ...defaultConfig, gates: [...defaultConfig.gates, ...ownerProfile.gates] }));
   const prevStrict = process.env.THUMBGATE_STRICT_ENFORCEMENT;
   delete process.env.THUMBGATE_STRICT_ENFORCEMENT;
+  // The Edit and git-commit probes below record session actions; keep them out of ~/.thumbgate so a
+  // second run is not blocked by state the first run left behind.
+  const prevSessionActionsPath = gatesEngine.SESSION_ACTIONS_PATH;
+  gatesEngine.SESSION_ACTIONS_PATH = path.join(ownerConfigDir, 'session-actions.json');
   try {
     const browserComposeDecision = gatesEngine.evaluateGates(
       'mcp__browseros-neo__run',
@@ -263,6 +273,8 @@ test('social-quality-gate, validate-social-post, and gates-engine hard-block rea
     }
   } finally {
     if (prevStrict !== undefined) process.env.THUMBGATE_STRICT_ENFORCEMENT = prevStrict;
+    gatesEngine.SESSION_ACTIONS_PATH = prevSessionActionsPath;
+    fs.rmSync(ownerConfigDir, { recursive: true, force: true });
   }
 
   // 4. Exception preserved: linkedin-monetization-sentinel skips real-estate/tax-deed posts
