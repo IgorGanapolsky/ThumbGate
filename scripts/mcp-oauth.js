@@ -16,6 +16,8 @@
  *   - RFC 7591 dynamic client registration (open registration)
  *   - Authorization-code grant with mandatory PKCE S256 (RFC 7636)
  *   - Bearer access tokens bound to a ThumbGate API key (so existing gating is unchanged)
+ *   - Refresh-token grant with rotation (RFC 6749 §6, OAuth 2.1 §4.3.1)
+ *   - Optional durable store (persistPath) so connectors survive a redeploy
  *
  * SECURITY NOTES:
  *   - PKCE S256 is mandatory; the plain method is rejected.
@@ -25,9 +27,12 @@
  */
 
 const crypto = require('crypto');
+const fs = require('fs');
+const path = require('path');
 
 const AUTH_CODE_TTL_MS = 60 * 1000; // 1 minute
 const ACCESS_TOKEN_TTL_MS = 60 * 60 * 1000; // 1 hour
+const REFRESH_TOKEN_TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
 const DEFAULT_SCOPE = 'mcp:read mcp:write';
 // Scope hierarchy (WorkOS / MCP Auth alignment): broader grants imply narrower ones.
 // mcp:write covers side-effecting tools AND read-only tools (write ⇒ read).
@@ -48,6 +53,7 @@ const SCOPE_IMPLIES = Object.freeze({
 const MAX_CLIENTS = 10000;
 const MAX_CODES = 10000;
 const MAX_TOKENS = 50000;
+const STORE_FILE_VERSION = 1;
 
 function now() {
   return Date.now();
@@ -61,23 +67,97 @@ function base64UrlSha256(input) {
   return crypto.createHash('sha256').update(String(input)).digest('base64url');
 }
 
+/** Tokens are kept (in memory and on disk) only as SHA-256 digests. */
+function tokenDigest(token) {
+  return crypto.createHash('sha256').update(String(token || '')).digest('hex');
+}
+
 /**
- * Create a fresh in-memory store.
+ * Create a store.
  *
- * DURABILITY (known limitation): this uses plain Maps, so a process restart or a
- * multi-instance / load-balanced deployment will drop issued tokens and
- * registered clients (clients see 401s, in-flight authorizations break). For
- * single-instance use this is fine; production multi-tenancy needs a durable,
- * shared backing (Redis/DB) — tracked as the per-user-data-scoping follow-up.
- * Entry counts are bounded (see MAX_* and capInsert) to prevent memory
- * exhaustion from anonymous calls to the registration/authorization endpoints.
+ * With no options it is a plain in-memory store (tests, local dev). With
+ * `persistPath` it is loaded from and saved to that JSON file, so registered
+ * clients, access tokens and refresh tokens survive a process restart (a
+ * Railway redeploy restarts the process several times a day; without this,
+ * every claude.ai / Claude Desktop connector lost its sign-in on each deploy).
+ *
+ * On disk: tokens are stored only as SHA-256 digests, and the ThumbGate key a
+ * token acts as is stored only as a digest (`boundKeyRef`). On load, a token is
+ * kept only if its `boundKeyRef` matches one of `knownKeys` (the keys the
+ * server is configured with right now), so rotating a key revokes every
+ * connector session that was bound to the old one.
+ *
+ * Still single-instance: a multi-instance deployment needs a shared backing.
  */
-function createStore() {
-  return {
+function createStore(options = {}) {
+  const store = {
     clients: new Map(),
     codes: new Map(),
     tokens: new Map(),
+    refreshTokens: new Map(),
+    persistPath: options.persistPath || null,
   };
+  if (store.persistPath) loadStore(store, options.knownKeys || []);
+  return store;
+}
+
+function loadStore(store, knownKeys = []) {
+  let raw;
+  try {
+    raw = JSON.parse(fs.readFileSync(store.persistPath, 'utf8'));
+  } catch {
+    return store; // missing or unreadable file: start empty
+  }
+  if (!raw || raw.version !== STORE_FILE_VERSION) return store;
+  const keyByRef = new Map();
+  for (const key of knownKeys) {
+    const k = String(key || '').trim();
+    if (k) keyByRef.set(tokenDigest(k), k);
+  }
+  const t = now();
+  for (const client of Array.isArray(raw.clients) ? raw.clients : []) {
+    if (client && client.client_id) capInsert(store.clients, client.client_id, client, MAX_CLIENTS);
+  }
+  const restore = (rows, map, max) => {
+    for (const row of Array.isArray(rows) ? rows : []) {
+      if (!row || !row.digest || !(row.expiresAt > t)) continue;
+      const boundKey = keyByRef.get(row.boundKeyRef);
+      if (!boundKey) continue; // key rotated or removed: drop the session
+      const { digest, boundKeyRef, ...rest } = row;
+      capInsert(map, digest, { ...rest, boundKey }, max);
+    }
+  };
+  restore(raw.tokens, store.tokens, MAX_TOKENS);
+  restore(raw.refreshTokens, store.refreshTokens, MAX_TOKENS);
+  return store;
+}
+
+/** Write the durable parts of the store (no-op for in-memory stores). */
+function saveStore(store) {
+  if (!store || !store.persistPath) return false;
+  const t = now();
+  const dump = (map) => [...map.entries()]
+    .filter(([, v]) => v && v.expiresAt > t)
+    .map(([digest, v]) => {
+      const { boundKey, ...rest } = v;
+      return { ...rest, digest, boundKeyRef: tokenDigest(boundKey || '') };
+    });
+  const payload = {
+    version: STORE_FILE_VERSION,
+    savedAt: new Date(t).toISOString(),
+    clients: [...store.clients.values()],
+    tokens: dump(store.tokens),
+    refreshTokens: dump(store.refreshTokens),
+  };
+  try {
+    fs.mkdirSync(path.dirname(store.persistPath), { recursive: true });
+    const tmp = `${store.persistPath}.${process.pid}.tmp`;
+    fs.writeFileSync(tmp, JSON.stringify(payload), { mode: 0o600 });
+    fs.renameSync(tmp, store.persistPath);
+    return true;
+  } catch {
+    return false; // never fail an auth request because the disk write failed
+  }
 }
 
 /** Insert into a Map, evicting the oldest entry (FIFO) once `max` is reached. */
@@ -121,7 +201,7 @@ function buildAuthServerMetadata(baseUrl) {
     registration_endpoint: `${base}/oauth/register`,
     scopes_supported: [...SUPPORTED_SCOPES],
     response_types_supported: ['code'],
-    grant_types_supported: ['authorization_code'],
+    grant_types_supported: ['authorization_code', 'refresh_token'],
     code_challenge_methods_supported: ['S256'],
     token_endpoint_auth_methods_supported: ['none'],
   };
@@ -158,12 +238,13 @@ function registerClient(store, body = {}) {
     client_id: clientId,
     redirect_uris: redirectUris,
     token_endpoint_auth_method: 'none',
-    grant_types: ['authorization_code'],
+    grant_types: ['authorization_code', 'refresh_token'],
     response_types: ['code'],
     client_name: typeof body.client_name === 'string' ? body.client_name.slice(0, 200) : 'mcp-client',
     created_at: now(),
   };
   capInsert(store.clients, clientId, record, MAX_CLIENTS);
+  saveStore(store);
   return record;
 }
 
@@ -292,28 +373,89 @@ function exchangeCode(store, { code, codeVerifier, clientId, redirectUri, resour
     return { error: 'invalid_target', error_description: 'resource indicator mismatch' };
   }
 
-  const accessToken = `tgat_${randomToken(32)}`;
-  capInsert(store.tokens, accessToken, {
+  return issueTokenPair(store, {
     boundKey: entry.boundKey,
     scope: entry.scope,
     clientId,
     aud: entry.resource || resource || '',
+  });
+}
+
+function issueTokenPair(store, { boundKey, scope, clientId, aud }) {
+  const accessToken = `tgat_${randomToken(32)}`;
+  const refreshToken = `tgrt_${randomToken(32)}`;
+  capInsert(store.tokens, tokenDigest(accessToken), {
+    boundKey,
+    scope,
+    clientId,
+    aud,
     expiresAt: now() + ACCESS_TOKEN_TTL_MS,
   }, MAX_TOKENS);
+  capInsert(store.refreshTokens, tokenDigest(refreshToken), {
+    boundKey,
+    scope,
+    clientId,
+    aud,
+    expiresAt: now() + REFRESH_TOKEN_TTL_MS,
+  }, MAX_TOKENS);
+  saveStore(store);
   return {
     access_token: accessToken,
     token_type: 'Bearer',
     expires_in: Math.floor(ACCESS_TOKEN_TTL_MS / 1000),
-    scope: entry.scope,
+    refresh_token: refreshToken,
+    scope,
   };
+}
+
+/**
+ * Refresh-token grant. Refresh tokens are single-use and rotate (OAuth 2.1
+ * §4.3.1 for public clients): the presented one is consumed and a new pair is
+ * issued. The scope may be narrowed, never widened.
+ */
+function refreshAccessToken(store, { refreshToken, clientId, scope, resource } = {}) {
+  const digest = tokenDigest(refreshToken);
+  const entry = refreshToken ? store.refreshTokens.get(digest) : null;
+  if (!entry) return { error: 'invalid_grant', error_description: 'unknown refresh token' };
+  store.refreshTokens.delete(digest);
+  if (now() > entry.expiresAt) {
+    saveStore(store);
+    return { error: 'invalid_grant', error_description: 'refresh token expired' };
+  }
+  if (entry.clientId !== clientId) {
+    saveStore(store);
+    return { error: 'invalid_grant', error_description: 'client mismatch' };
+  }
+  if (entry.aud && resource && entry.aud !== resource) {
+    saveStore(store);
+    return { error: 'invalid_target', error_description: 'resource indicator mismatch' };
+  }
+  let grantedScope = entry.scope;
+  if (scope) {
+    const granted = new Set(String(entry.scope).split(/\s+/).filter(Boolean));
+    const requested = String(scope).split(/\s+/).filter(Boolean);
+    if (requested.length === 0 || requested.some((s) => !granted.has(s))) {
+      saveStore(store);
+      return { error: 'invalid_scope', error_description: 'refresh may not widen scope' };
+    }
+    grantedScope = requested.join(' ');
+  }
+  return issueTokenPair(store, {
+    boundKey: entry.boundKey,
+    scope: grantedScope,
+    clientId: entry.clientId,
+    aud: entry.aud,
+  });
 }
 
 /** Resolve an access token to its session, or null if invalid/expired. */
 function resolveAccessToken(store, token) {
   if (!token) return null;
-  const entry = store.tokens.get(token);
+  const digest = tokenDigest(token);
+  const entry = store.tokens.get(digest) || store.tokens.get(token);
   if (!entry) return null;
   if (now() > entry.expiresAt) {
+    store.tokens.delete(digest);
     store.tokens.delete(token);
     return null;
   }
@@ -336,10 +478,18 @@ function pruneExpired(store) {
   const t = now();
   for (const [k, v] of store.codes) if (t > v.expiresAt) store.codes.delete(k);
   for (const [k, v] of store.tokens) if (t > v.expiresAt) store.tokens.delete(k);
+  if (store.refreshTokens) {
+    for (const [k, v] of store.refreshTokens) if (t > v.expiresAt) store.refreshTokens.delete(k);
+  }
 }
 
 module.exports = {
   createStore,
+  loadStore,
+  saveStore,
+  tokenDigest,
+  refreshAccessToken,
+  REFRESH_TOKEN_TTL_MS,
   buildProtectedResourceMetadata,
   buildAuthServerMetadata,
   registerClient,
