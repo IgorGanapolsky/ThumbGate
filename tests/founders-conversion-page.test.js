@@ -30,21 +30,19 @@ test.after(async () => {
   await new Promise((resolve) => handle.server.close(resolve));
 });
 
-test('founders page is an Oceans-style cash-path landing with intent checkout', () => {
-  assert.match(foundersHtml, /action="\/go\/diagnostic-pay" method="POST"/);
-  assert.match(foundersHtml, /name="customer_email"[^>]*required/);
-  assert.match(foundersHtml, /name="plan_id" value="sprint_diagnostic"/);
-  assert.match(foundersHtml, /utm_campaign" value="oceans_inspired_conversion"/);
-  assert.match(foundersHtml, /cta_id" value="founders_hero_paid"/);
-  assert.match(foundersHtml, /landing_path" value="\/founders"/);
+test('founders page is an Oceans-style landing whose CTAs request a team pilot', () => {
+  // The $499 diagnostic checkout (/go/diagnostic-pay) is retired and answers 410, so the page takes no payment.
+  assert.doesNotMatch(foundersHtml, /\/go\/diagnostic-pay|name="customer_email"|name="plan_id" value="sprint_diagnostic"|data-founders-pay-form|__SPRINT_DIAGNOSTIC_PRICE_DOLLARS__|\$499/);
+  assert.match(foundersHtml, /href="\/pilot\?utm_source=founders&amp;utm_medium=owned_page&amp;utm_campaign=oceans_inspired_conversion&amp;cta_id=founders_hero_pilot"[^>]*>Request a team pilot</);
+  assert.match(foundersHtml, /href="\/pilot\?utm_source=founders&amp;cta_id=founders_bottom_buy"/);
   assert.match(foundersHtml, /Scale agent impact/);
   assert.match(foundersHtml, /data-founders-offer/);
   assert.match(foundersHtml, /table class="compare"/);
-  assert.match(foundersHtml, /we refund|Refund if not a supported fit/i);
+  assert.match(foundersHtml, /No payment taken/);
+  assert.doesNotMatch(foundersHtml, /we refund|Refund if not a supported fit/i);
   assert.match(foundersHtml, /no affiliation with Oceans Talent/i);
   assert.match(foundersHtml, /"@type": "FAQPage"/);
   assert.match(foundersHtml, /"@type": "SoftwareApplication"/);
-  assert.match(foundersHtml, /isAiventyxTraffic/);
   assert.match(foundersHtml, /founders_cta_click/);
   assert.match(foundersHtml, /\/v1\/telemetry\/ping/);
   assert.doesNotMatch(foundersHtml, /buy\.stripe\.com/);
@@ -67,9 +65,11 @@ test('GET /founders and aliases serve filled conversion HTML', async () => {
     assert.equal(res.status, 200, `${route} should be 200`);
     assert.match(res.headers.get('content-type') || '', /text\/html/);
     const html = await res.text();
-    assert.match(html, /\$499/);
-    assert.match(html, /action="\/go\/diagnostic-pay" method="POST"/);
-    assert.match(html, /founders_hero_paid/);
+    // The $499 Setup Sprint is retired (its checkout answers 410); pages offer the request-only team pilot.
+    assert.match(html, /team pilot/i);
+    assert.doesNotMatch(html, /\$499|Setup Sprint/);
+    assert.doesNotMatch(html, /\/go\/diagnostic-pay/);
+    assert.match(html, /founders_hero_pilot/);
     assert.match(html, /canonical" href="[^"]+\/founders"/);
     assert.doesNotMatch(html, /__SPRINT_DIAGNOSTIC_PRICE_DOLLARS__/);
   }

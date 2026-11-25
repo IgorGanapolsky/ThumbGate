@@ -31,11 +31,15 @@ test('blog posts exist with honest process and boundary claims', () => {
   assert.match(processPost, /Process over outcome/i);
   assert.match(processPost, /not(?:<\/strong>)?\s*retrain your model/i);
   assert.match(processPost, /Autoresearch safety/i);
-  assert.match(processPost, /\$499/);
+  // The $499 Setup Sprint is retired (its checkout answers 410); pages offer the request-only team pilot.
+  assert.match(processPost, /team pilot/i);
+  assert.doesNotMatch(processPost, /\$499|Setup Sprint/);
 
   assert.match(boundaryPost, /inside your boundary/i);
   assert.match(boundaryPost, /Local-first checks/i);
-  assert.match(boundaryPost, /Setup Sprint/i);
+  // The $499 Setup Sprint is retired (its checkout answers 410); pages offer the request-only team pilot.
+  assert.match(boundaryPost, /team pilot/i);
+  assert.doesNotMatch(boundaryPost, /\$499|Setup Sprint/);
   assert.match(boundaryPost, /do not claim a full air-gapped/i);
 
   const computerPost = read('public', 'blog', 'a-10-dollar-vps-is-not-a-computer.html');

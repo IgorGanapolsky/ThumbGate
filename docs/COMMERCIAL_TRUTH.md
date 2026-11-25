@@ -9,9 +9,9 @@ This document is the source of truth for product, pricing, traction, and proof c
 
 - The open-source `thumbgate` package is free and MIT licensed.
 - The local CLI is the adoption wedge; it is not the primary monetization story.
-- For the current 30-day conversion experiment, the only promoted public offer is the **Setup Sprint** at **$499 one-time** via the email-backed `/go/diagnostic-pay` POST on `/`, `/pricing`, and `/diagnostic`. It covers one 60-minute review for one supported local workflow, one configured gate, one regression test, and written rollout and rollback proof within two business days after access and agreed materials are available. If the failure cannot be reduced to a supported gate, the order is refunded instead of silently upsold.
-- **Pro at $19/mo or $149/yr** remains a supported legacy self-serve subscription and the `$1,500` Setup Sprint remains an internal catalog/scoping rail, but neither is promoted on the homepage or pricing page during the single-offer experiment. Enterprise remains proposal-only after qualification.
-- The `$499` managed workflow gate is the only currently promoted public one-time service offer. Legacy Stripe Payment Links must remain deactivated or undistributed; they are not current public acquisition offers.
+- **The $499 Setup Sprint is retired (2026-11-25).** Its public entry points (`/diagnostic`, the sprint pages, `/go/diagnostic*`, `/go/sprint`, `/go/operator-diagnostic`, `/checkout/{sprint,diagnostic,workflow-sprint}`) answer `410` and point at `/pricing` (#5097). Public pages no longer quote it. Orders already paid under it keep the Module B delivery and refund terms in `/terms`.
+- The public team offer is a **request-only 30-day team pilot** at `/pilot`: no price is listed and no payment is taken on the site. It covers one supported local workflow: a 60-minute working review, one configured gate, one regression test, and written rollout and rollback proof.
+- **Pro at $19/mo or $149/yr** remains the self-serve subscription. The `$1,500` sprint remains an internal catalog/scoping rail only. Enterprise remains proposal-only after qualification.
 - Stripe revenue attribution never relies on a product name. `scripts/stripe-revenue-catalog.js` binds each reviewed offer to its exact price ID, product ID, integer amount, currency, cadence, and interval. The public `$499` checkout now uses the Stripe product name `Setup Sprint`; that product still has a separate active `$999` price, but its Payment Link is deactivated and it is not a current ThumbGate offer. `npm run stripe:catalog-audit` verifies the live prices, product/price active states, mode, and the exact Pro-monthly and managed-gate Payment Links without mutating Stripe. Catalog configuration is not payment evidence.
 - Active CLI receipts, paywall messages, SEO generators, email drafts, and social launch drafts must use first-party `thumbgate.ai` buyer paths. Raw Stripe or PayPal links are provider plumbing, not buyer-facing distribution assets. Retired kit catalogs are archived and cannot advertise their historical Payment Links as current offers.
 - Zernio is retired for ThumbGate publishing. Its historical adapter is read-only; every publish, schedule, upload, or delete mutation fails closed before a network request. Active publishing requires a direct platform adapter or an explicitly approved manual platform session.
@@ -58,7 +58,7 @@ This document is the source of truth for product, pricing, traction, and proof c
 
 ## Service Offer Ladder
 
-### Setup Sprint ($499 one-time)
+### Setup Sprint ($499 one-time, retired 2026-11-25; kept for orders already paid)
 
 - Buyer: one workflow owner with one repeated AI-agent failure and enough workflow evidence to review it
 - Buyer inputs: short intake, a 60-minute working review, and non-secret examples or logs needed to understand the failure

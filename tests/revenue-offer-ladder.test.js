@@ -21,10 +21,11 @@ const ladder = read('docs/REVENUE_OFFER_LADDER.md');
 const diagnostic = read('public/diagnostic.html');
 
 test('commercial truth names one promoted public service offer', () => {
-  assert.match(commercialTruth, /only promoted public offer.*Setup Sprint.*\$499 one-time/is);
-  assert.match(commercialTruth, /\/go\/diagnostic-pay/);
+  // The $499 Setup Sprint was retired on 2026-11-25 (#5097); the public team offer is the request-only pilot.
+  assert.match(commercialTruth, /\$499 Setup Sprint is retired/);
+  assert.match(commercialTruth, /answer `410`/);
+  assert.match(commercialTruth, /request-only 30-day team pilot\*\* at `\/pilot`: no price is listed and no payment is taken/);
   assert.match(commercialTruth, /\$1,500.*internal catalog\/scoping rail/i);
-  assert.match(commercialTruth, /\$499.*only currently promoted public one-time service offer/i);
 });
 
 test('managed-gate page states a complete fixed-scope implementation contract', () => {
@@ -44,7 +45,7 @@ test('managed-gate fit mechanics prevent an open-ended upsell', () => {
   assert.match(diagnostic, /data-diagnostic-fit-terms/);
   assert.match(diagnostic, /order is refunded instead of being silently converted/i);
   assert.doesNotMatch(diagnostic, /public Setup Sprint is/i);
-  assert.match(commercialTruth, /refunded instead of silently upsold/i);
+  assert.match(commercialTruth, /Orders already paid under it keep the Module B delivery and refund terms/);
 });
 
 test('unverified marketplace obligations cannot receive a payment diversion', () => {

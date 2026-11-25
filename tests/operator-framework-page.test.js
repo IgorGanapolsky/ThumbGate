@@ -46,7 +46,9 @@ test('GET /operator-framework serves the offers, partner program, and FAQ schema
   }
   assert.doesNotMatch(html, /href="\/go\/operator-diagnostic/, 'no link to the retired checkout');
   assert.doesNotMatch(html, /buy\.stripe\.com/, 'payment links stay behind /go/ redirects');
-  assert.match(html, /\$499/);
+  // The $499 Setup Sprint is retired (its checkout answers 410); pages offer the request-only team pilot.
+  assert.match(html, /team pilot/i);
+  assert.doesNotMatch(html, /\$499|Setup Sprint/);
   assert.match(html, /VERIFICATION_EVIDENCE\.md/);
   assert.match(html, /30% revenue share/);
   assert.match(html, /mailto:igor@igorganapolsky\.com/);

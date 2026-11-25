@@ -42,9 +42,9 @@ test('public diagnostic and pricing paths require explicit intent surfaces', () 
   assert.match(diagnostic, /name="customer_email"[^>]*required/);
   assert.match(pricing, /href="\/checkout\/pro"/);
   assert.doesNotMatch(pricing, /diagnostic-pay|sprint_diagnostic/);
-  assert.match(founders, /action="\/go\/diagnostic-pay" method="POST"/);
-  assert.match(founders, /name="customer_email"[^>]*required/);
-  assert.match(founders, /name="plan_id" value="sprint_diagnostic"/);
+  // /go/diagnostic-pay is retired (410): /founders takes no payment and sends buyers to the pilot request.
+  assert.doesNotMatch(founders, /diagnostic-pay|name="customer_email"|sprint_diagnostic/);
+  assert.match(founders, /href="\/pilot\?utm_source=founders/);
   assert.doesNotMatch(pricing, /\/checkout\/pro\?confirm=1/);
   assert.doesNotMatch(buyerIntent, /proHref[^;]+confirm\s*:\s*['"]1['"]/s);
 });

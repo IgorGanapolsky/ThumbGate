@@ -23,6 +23,8 @@ test('enterprise-governance: accurately bounds the approved local-workflow offer
  const schemas = [...html.matchAll(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/g)];
  assert.equal(schemas.length, 1);
  const schema = JSON.parse(schemas[0][1]);
- assert.equal(schema.offers.price, '499.00');
- assert.equal(schema.offers.name, 'Setup Sprint');
+ // The $499 Setup Sprint is retired (410); the offer is a request-only team pilot with no listed price.
+ assert.equal(schema.offers.price, undefined);
+ assert.equal(schema.offers.name, 'Team pilot');
+ assert.doesNotMatch(html, /\$499|Setup Sprint/);
 });

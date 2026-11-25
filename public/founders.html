@@ -3,11 +3,11 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>ThumbGate for Founders — Stop Agent Mistakes Before They Cost | $499 Diagnostic</title>
-<meta name="description" content="You didn't hire AI agents to babysit them. Turn one repeated agent failure into a proved gate in two business days. $499 managed diagnostic. Refund if not a fit.">
+<title>ThumbGate for Founders — Stop Agent Mistakes Before They Cost | Team Pilot</title>
+<meta name="description" content="You didn't hire AI agents to babysit them. Turn one repeated agent failure into a proved gate. Team pilot by request; no payment is taken.">
 <link rel="canonical" href="__APP_ORIGIN__/founders">
 <link rel="alternate" type="text/markdown" title="ThumbGate LLM context" href="__APP_ORIGIN__/llm-context.md">
-<meta property="og:title" content="ThumbGate for Founders — $499 Diagnostic Gate">
+<meta property="og:title" content="ThumbGate for Founders — Team Pilot">
 <meta property="og:description" content="Scale agent impact without the babysitting. One workflow, one gate, proof in two business days.">
 <meta property="og:url" content="__APP_ORIGIN__/founders">
 <meta property="og:type" content="website">
@@ -239,8 +239,7 @@ footer {
       "url": "__APP_ORIGIN__/",
       "offers": {
         "@type": "Offer",
-        "name": "Managed workflow diagnostic",
-        "price": "__SPRINT_DIAGNOSTIC_PRICE_DOLLARS__",
+        "name": "Team pilot (by request)",
         "priceCurrency": "USD",
         "url": "__APP_ORIGIN__/founders",
         "availability": "https://schema.org/InStock"
@@ -248,13 +247,12 @@ footer {
     },
     {
       "@type": "Service",
-      "name": "ThumbGate Managed Workflow Diagnostic",
+      "name": "ThumbGate Team Pilot",
       "description": "Managed implementation that turns one repeated AI-agent failure into a configured pre-action gate with regression and rollout proof.",
       "provider": { "@type": "Organization", "name": "ThumbGate", "url": "__APP_ORIGIN__/" },
       "offers": {
         "@type": "Offer",
-        "name": "Managed workflow diagnostic",
-        "price": "__SPRINT_DIAGNOSTIC_PRICE_DOLLARS__",
+        "name": "Team pilot (by request)",
         "priceCurrency": "USD",
         "url": "__APP_ORIGIN__/founders",
         "availability": "https://schema.org/InStock"
@@ -276,7 +274,7 @@ footer {
           "name": "What if the workflow is not a fit?",
           "acceptedAnswer": {
             "@type": "Answer",
-            "text": "If the repeated failure cannot be reduced to one supported ThumbGate gate, the managed diagnostic order is refunded. We do not silently expand into open consulting."
+            "text": "If the repeated failure cannot be reduced to one supported ThumbGate gate, we tell you it is not a fit. No payment is taken. We do not silently expand into open consulting."
           }
         },
         {
@@ -307,7 +305,7 @@ footer {
     <a class="brand" href="/">ThumbGate</a>
     <div class="nav-actions">
       <a class="btn" href="/pricing">Pricing</a>
-      <a class="btn primary" href="#buy" data-revenue-cta data-cta-id="founders_nav_buy" data-cta-placement="nav">Get started · $__SPRINT_DIAGNOSTIC_PRICE_DOLLARS__</a>
+      <a class="btn primary" href="/pilot?utm_source=founders&amp;cta_id=founders_nav_buy" data-revenue-cta data-cta-id="founders_nav_buy" data-cta-placement="nav">Request a team pilot</a>
     </div>
   </div>
 </header>
@@ -320,36 +318,24 @@ footer {
       <p class="lede">You have agents running lead gen, content, sales follow-up, and ops. One of them keeps doing the same wrong thing — the outbound that should never have sent, the write that should never have landed, the deploy, the charge — and you are the one who catches it. That is not delegation, that is a second job. Your agent team needs a firewall: one check that fires before the tool call, so you can hand work off the way a CEO does instead of reading every diff.</p>
       <div class="trust" aria-label="Proof points">
         <span>Local-first PreToolUse gates</span>
-        <span>Fixed $__SPRINT_DIAGNOSTIC_PRICE_DOLLARS__ diagnostic</span>
+        <span>Team pilot by request</span>
         <span>Two business days after access</span>
-        <span>Refund if not a supported fit</span>
+        <span>No payment taken</span>
       </div>
     </div>
 
     <aside class="card" id="buy" data-founders-offer>
-      <div class="eyebrow">Cash path · recommended</div>
-      <div class="price">$__SPRINT_DIAGNOSTIC_PRICE_DOLLARS__</div>
-      <p class="price-note">One-time managed diagnostic. One supported local workflow. No subscription required.</p>
-      <form action="/go/diagnostic-pay" method="POST" data-founders-pay-form>
-        <label for="founders-email">Work email for the receipt</label>
-        <input id="founders-email" type="email" name="customer_email" autocomplete="email" required placeholder="you@company.com">
-        <input type="hidden" name="plan_id" value="sprint_diagnostic">
-        <input type="hidden" name="utm_source" value="founders">
-        <input type="hidden" name="utm_medium" value="direct_checkout">
-        <input type="hidden" name="utm_campaign" value="oceans_inspired_conversion">
-        <input type="hidden" name="utm_content" value="hero_paid_diagnostic">
-        <input type="hidden" name="cta_id" value="founders_hero_paid">
-        <input type="hidden" name="cta_placement" value="hero">
-        <input type="hidden" name="landing_path" value="/founders">
-        <button class="btn primary block" type="submit" data-revenue-cta data-cta-id="founders_hero_paid" data-cta-placement="hero">Gate my worst agent failure · $__SPRINT_DIAGNOSTIC_PRICE_DOLLARS__</button>
-      </form>
+      <div class="eyebrow">Team pilot · by request</div>
+      <div class="price">By request</div>
+      <p class="price-note">30-day team pilot. One supported local workflow. No price listed and no checkout.</p>
+      <a class="btn primary block" href="/pilot?utm_source=founders&amp;utm_medium=owned_page&amp;utm_campaign=oceans_inspired_conversion&amp;cta_id=founders_hero_pilot" data-revenue-cta data-cta-id="founders_hero_pilot" data-cta-placement="hero">Request a team pilot</a>
       <ul class="checks">
         <li>One configured local gate for the agreed failure</li>
         <li>Regression test + rollout and rollback proof</li>
         <li>60-minute working review included</li>
-        <li>If it is not a supported fit, we refund</li>
+        <li>If it is not a supported fit, we say so</li>
       </ul>
-      <p class="fine" data-founders-payment-hint>No Stripe session until you submit. Secure checkout. Fit boundary is explicit.</p>
+      <p class="fine" data-founders-payment-hint>No payment is taken. Fit boundary is explicit.</p>
       <a class="fine" style="display:block;margin-top:12px;text-align:center;" href="/pilot" data-revenue-cta data-cta-id="founders_hero_fit" data-cta-placement="hero">Not sure it fits? Send us the failure first</a>
     </aside>
   </div>
@@ -402,7 +388,7 @@ footer {
       <article class="pain">
         <h3>Not sure yet?</h3>
         <p>Run the free local evaluate first. <code>npx thumbgate init</code> takes minutes, runs on your machine, and needs no card and no access to your repo. If it shows you the failure at the tool call, the managed diagnostic is just us doing the rest for you.</p>
-        <p style="margin-top:10px;"><a href="#buy" data-revenue-cta data-cta-id="founders_fit_buy" data-cta-placement="fit_section"><strong>Or skip ahead and gate my worst failure · $__SPRINT_DIAGNOSTIC_PRICE_DOLLARS__</strong></a></p>
+        <p style="margin-top:10px;"><a href="/pilot?utm_source=founders&amp;cta_id=founders_fit_buy" data-revenue-cta data-cta-id="founders_fit_buy" data-cta-placement="fit_section"><strong>Or skip ahead and request a team pilot</strong></a></p>
       </article>
     </div>
   </section>
@@ -415,7 +401,7 @@ footer {
       <article class="step">
         <div class="step-num">01 · 15–60 MIN</div>
         <h3>Discovery / fit</h3>
-        <p>Share the repeated failure. We map the tool call boundary. If it cannot become one supported gate, we say so — and refund if you already paid.</p>
+        <p>Share the repeated failure. We map the tool call boundary. If it cannot become one supported gate, we say so.</p>
       </article>
       <article class="step">
         <div class="step-num">02 · SAME ENGAGEMENT</div>
@@ -452,7 +438,7 @@ footer {
         <p>Thumbs-down and lessons promote into rules the agent cannot casually skip, so the next similar action is caught without you watching.</p>
       </article>
     </div>
-    <p class="fine">Not included at $__SPRINT_DIAGNOSTIC_PRICE_DOLLARS__: multi-system implementation, compliance certification, or guaranteed savings.</p>
+    <p class="fine">Not included in the pilot: multi-system implementation, compliance certification, or guaranteed savings.</p>
   </section>
 
   <section id="compare">
@@ -476,7 +462,7 @@ footer {
             <td>Model + review time</td>
             <td>$5.5k–7k+/mo loaded</td>
             <td>$2.5k–5k/mo varies</td>
-            <td>$__SPRINT_DIAGNOSTIC_PRICE_DOLLARS__ once</td>
+            <td>By request</td>
           </tr>
           <tr>
             <td>Time to first hard gate</td>
@@ -514,7 +500,7 @@ footer {
       </div>
       <div class="faq-item">
         <button class="faq-q" type="button" aria-expanded="false">What if the workflow is not a fit?</button>
-        <div class="faq-a">If the repeated failure cannot be reduced to one supported ThumbGate gate, the $__SPRINT_DIAGNOSTIC_PRICE_DOLLARS__ order is refunded. We do not silently expand into open consulting.</div>
+        <div class="faq-a">If the repeated failure cannot be reduced to one supported ThumbGate gate, we tell you it is not a fit. No payment is taken. We do not silently expand into open consulting.</div>
       </div>
       <div class="faq-item">
         <button class="faq-q" type="button" aria-expanded="false">Is this a long-term contract?</button>
@@ -530,10 +516,10 @@ footer {
         <h2>Two paths from here.</h2>
         <p><strong>Path one:</strong> nothing changes. The same failure runs again next week and you catch it — or you don't, and a customer does.<br>
         <strong>Path two:</strong> you name the failure today, and in two business days it is a gate with a regression test behind it and a fence written down.</p>
-        <p class="fine">Fixed $__SPRINT_DIAGNOSTIC_PRICE_DOLLARS__, one time · refunded if it is not a supported fit · gates run locally on your machine</p>
+        <p class="fine">Team pilot by request · no payment taken · gates run locally on your machine</p>
       </div>
       <div class="nav-actions" style="flex-direction:column; align-items:stretch;">
-        <a class="btn primary" href="#buy" data-revenue-cta data-cta-id="founders_bottom_buy" data-cta-placement="bottom_band">Gate my worst agent failure · $__SPRINT_DIAGNOSTIC_PRICE_DOLLARS__</a>
+        <a class="btn primary" href="/pilot?utm_source=founders&amp;cta_id=founders_bottom_buy" data-revenue-cta data-cta-id="founders_bottom_buy" data-cta-placement="bottom_band">Request a team pilot</a>
         <a class="btn" href="/#install" data-cta-id="founders_bottom_free">Install free CLI</a>
       </div>
     </div>
@@ -564,34 +550,6 @@ document.querySelectorAll('.faq-q').forEach((button) => {
 
 (function () {
   const search = new URLSearchParams(window.location.search);
-  const paidForm = document.querySelector('[data-founders-pay-form]');
-  const inboundSource = search.get('utm_source') || search.get('source');
-  const isAiventyxTraffic = String(inboundSource || '').trim().toLowerCase() === 'aiventyx';
-  if (paidForm && isAiventyxTraffic) {
-    paidForm.remove();
-    const paymentHint = document.querySelector('[data-founders-payment-hint]');
-    if (paymentHint) {
-      paymentHint.textContent = 'The Aiventyx payment path is paused while seller fees and downstream obligations remain unverified. Use Check workflow fit first without entering a marketplace payment or revenue-share commitment.';
-    }
-  } else if (paidForm) {
-    const passthrough = /^(utm_(source|medium|campaign|content|term)|source|acquisition_id|visitor_id|session_id|visitor_session_id|install_id|trace_id|creator|community|post_id|comment_id|campaign_variant|offer_code|referrer_host)$/i;
-    for (const [key, value] of search.entries()) {
-      if (!passthrough.test(key) || !value.trim()) continue;
-      let input = paidForm.querySelector(`input[name="${CSS.escape(key)}"]`);
-      if (!input) {
-        input = document.createElement('input');
-        input.type = 'hidden';
-        input.name = key;
-        paidForm.appendChild(input);
-      }
-      input.value = value.trim();
-    }
-    if (inboundSource && inboundSource.trim()) {
-      const sourceInput = paidForm.querySelector('input[name="utm_source"]');
-      if (sourceInput) sourceInput.value = inboundSource.trim();
-    }
-  }
-
   function privacySignalOptOut() {
     try {
       return navigator.globalPrivacyControl === true
@@ -620,19 +578,10 @@ document.querySelectorAll('.faq-q').forEach((button) => {
     telemetry('founders_cta_click', {
       ctaId: cta.getAttribute('data-cta-id') || '',
       ctaPlacement: cta.getAttribute('data-cta-placement') || '',
-      planId: cta.getAttribute('data-plan-id') || 'sprint_diagnostic'
+      planId: cta.getAttribute('data-plan-id') || 'team_pilot'
     });
   });
 
-  if (paidForm) {
-    paidForm.addEventListener('submit', function () {
-      telemetry('founders_checkout_submit', {
-        ctaId: 'founders_hero_paid',
-        ctaPlacement: 'hero',
-        planId: 'sprint_diagnostic'
-      });
-    });
-  }
 })();
 </script>
 </body>

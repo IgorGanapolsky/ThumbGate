@@ -467,23 +467,16 @@ test('every AI-discovery surface describes the promoted paid offer', () => {
   // An llms.txt/llm-context.md that lists tiers but silently omits the promoted
   // offer teaches retrieval engines an incomplete answer. Both must name it and
   // point at the canonical terms page.
-  const offerName = /Setup Sprint/;
-  const termsUrl = `${CANONICAL.appOrigin}/pricing`;
-  const canonicalDollars = wholeDollars(currentOffer('workflow_hardening_diagnostic'));
+  // The $499 Setup Sprint is retired (its checkout answers 410); the team offer is the request-only
+  // pilot, and its terms live on the pilot page.
+  const offerName = /team pilot/i;
+  const termsUrl = `${CANONICAL.appOrigin}/pilot`;
 
   for (const file of ['public/llm-context.md', '.well-known/llms.txt']) {
     const text = readText(file);
     assert.match(text, offerName, `${file} never names the promoted paid offer`);
-
-    // Terms must be resolvable from the surface itself: either it states the
-    // canonical amount inline, or it links to the canonical terms page.
-    const statesAmount = text.includes(`$${canonicalDollars}`);
-    const linksTerms = text.includes(termsUrl);
-    assert.ok(
-      statesAmount || linksTerms,
-      `${file} names the promoted paid offer but gives no way to resolve its terms — ` +
-        `state the canonical amount inline or link ${termsUrl}`,
-    );
+    assert.ok(text.includes(termsUrl), `${file} names the team pilot but does not link ${termsUrl}`);
+    assert.doesNotMatch(text, /\$499|Setup Sprint/, `${file} still describes the retired $499 Setup Sprint`);
   }
 });
 
