@@ -67,3 +67,10 @@ test('headers reach the response and a route-set header wins', async () => {
     assert.equal(strict.headers['content-security-policy'], "default-src 'none'");
   } finally { server.close(); }
 });
+
+test('applySecurityHeaders tolerates response objects without the header API', () => {
+  assert.doesNotThrow(() => applySecurityHeaders({}));
+  const set = {};
+  applySecurityHeaders({ setHeader: (name, value) => { set[name] = value; } });
+  assert.equal(set['X-Content-Type-Options'], 'nosniff');
+});
