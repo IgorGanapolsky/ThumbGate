@@ -122,6 +122,17 @@
     return stripped === text ? [text] : [text, stripped];
   }
 
+  // Rules a default install denies in Claude Code (checked with gate-check v1.40.10).
+  // Other "block" rules only warn until THUMBGATE_STRICT_ENFORCEMENT=1, and
+  // "suggested" rules are not installed until you add them.
+  var DEFAULT_DENY = { 'force-push': 1, 'git-reset-hard': 1, 'git-clean-force': 1, 'rm-rf-home-or-root': 1, 'secret-egress': 1, 'sql-drop': 1 };
+
+  function verdictFor(hit) {
+    if (hit.action !== 'block') return hit.action;
+    if (DEFAULT_DENY[hit.id]) return 'block';
+    return hit.source === 'suggested' ? 'suggested' : 'strict';
+  }
+
   function classifyCommands(input) {
     var lines = String(input || '').split(/\r?\n/);
     var results = [];
@@ -135,22 +146,23 @@
         if (rule.preview === false) continue;
         var re = new RegExp(rule.pattern, rule.flags || '');
         for (var c = 0; c < cands.length; c++) {
-          if (re.test(cands[c])) { hits.push({ id: rule.id, action: rule.action, message: rule.message }); break; }
+          if (re.test(cands[c])) { hits.push({ id: rule.id, action: rule.action, source: rule.source, message: rule.message }); break; }
         }
       }
-      results.push({ line: line, number: i + 1, verdict: hits.length ? hits[0].action : 'allow', hits: hits });
+      results.push({ line: line, number: i + 1, verdict: hits.length ? verdictFor(hits[0]) : 'allow', hits: hits });
     }
     return results;
   }
 
   function summarize(results) {
-    var blocked = 0, review = 0, allowed = 0;
+    var blocked = 0, review = 0, allowed = 0, strict = 0;
     results.forEach(function (r) {
       if (r.verdict === 'block') blocked++;
-      else if (r.verdict === 'allow') allowed++;
+      else if (r.verdict === 'allow' || r.verdict === 'suggested') allowed++;
+      else if (r.verdict === 'strict') strict++;
       else review++;
     });
-    return { total: results.length, blocked: blocked, review: review, allowed: allowed };
+    return { total: results.length, blocked: blocked, strict: strict, review: review, allowed: allowed };
   }
 
   // answers: { questionId: true|false }. true means the risky behaviour applies.
@@ -295,14 +307,16 @@
       var sum = summarize(results);
       out.textContent = '';
       if (!results.length) { out.appendChild(el(doc, 'p', { text: 'Paste at least one command.' })); return; }
-      out.appendChild(el(doc, 'p', { 'class': 'tg-summary', 'data-blocked': String(sum.blocked), text: sum.blocked + ' of ' + sum.total + ' actions would have been blocked, ' + sum.review + ' flagged for review, ' + sum.allowed + ' allowed.' }));
+      out.appendChild(el(doc, 'p', { 'class': 'tg-summary', 'data-blocked': String(sum.blocked), text: sum.blocked + ' of ' + sum.total + ' denied on a default install, ' + sum.strict + ' warned (denied in strict mode), ' + sum.review + ' warned, ' + sum.allowed + ' allowed.' }));
       var list = el(doc, 'ul', { 'class': 'tg-list' });
       results.forEach(function (r) {
-        var item = el(doc, 'li', { 'data-verdict': r.verdict }, [el(doc, 'strong', { text: r.verdict.toUpperCase() + ' ' }), el(doc, 'code', { text: r.line })]);
+        var label = { block: 'DENY', strict: 'WARN (DENY in strict mode)', suggested: 'ALLOW (DENY if you add the suggested rule)', approve: 'WARN (deploy approval)', warn: 'WARN', allow: 'ALLOW' }[r.verdict] || r.verdict.toUpperCase();
+        var item = el(doc, 'li', { 'data-verdict': r.verdict }, [el(doc, 'strong', { text: label + ' ' }), el(doc, 'code', { text: r.line })]);
         if (r.hits.length) item.appendChild(el(doc, 'div', { 'class': 'tg-why', text: r.hits[0].message }));
         list.appendChild(item);
       });
       out.appendChild(list);
+      out.appendChild(el(doc, 'p', { 'class': 'tg-privacy', text: 'Built-in rules only. Rules you teach with a thumbs-down match the exact command, so a reworded command is not caught.' }));
       out.appendChild(installOffer(doc, win, 'preview_commands'));
       sendTelemetry(win, 'preview_completed', { blocked: sum.blocked, total: sum.total });
     });

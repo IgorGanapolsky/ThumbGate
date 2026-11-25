@@ -34,20 +34,17 @@ const PRO_CHECKOUT_URL = PRO_MONTHLY_PAYMENT_LINK;
 const TRIAL_DAYS = 7;
 
 function checkoutUrlFor(source, content) {
+  // Every CLI upgrade link goes through thumbgate.ai/go/pro, never a raw Stripe payment link:
+  // only that route attributes the click, opens a session tied to the buyer, and provisions the key.
   try {
-    const base = content === 'capture_feedback'
-      ? 'https://buy.stripe.com/7sYfZhaiE1eSbO99uj3sI0d'
-      : PRO_CHECKOUT_URL;
-    const url = new URL(base);
+    const url = new URL(PRO_CHECKOUT_URL);
     url.searchParams.set('utm_source', source || 'cli');
     url.searchParams.set('utm_medium', 'cli');
     url.searchParams.set('utm_campaign', 'pro_conversion');
     if (content) url.searchParams.set('utm_content', content);
     return url.toString();
   } catch (_) {
-    return content === 'capture_feedback'
-      ? 'https://buy.stripe.com/7sYfZhaiE1eSbO99uj3sI0d'
-      : PRO_CHECKOUT_URL;
+    return PRO_CHECKOUT_URL;
   }
 }
 
@@ -107,7 +104,7 @@ function upgradeNudge() {
     '\n  Enterprise entry: $499 Setup Sprint for one workflow\n' +
     `  ${diagnosticUrl}\n` +
     `\n  Solo side lane: Pro — ${PRO_PRICE_LABEL}\n` +
-    '  Removes solo caps; adds personal recall, dashboard proof, exports, and managed adapters.\n' +
+    '  Keeps every learned rule active, unlimited thumbs; adds recall, lesson search, and exports.\n' +
     `  ${pricingUrl}\n\n`
   );
 }
@@ -207,7 +204,7 @@ function proNudge(context) {
   const checkoutUrl = checkoutUrlFor('cli_nudge', context || COMMAND || 'general');
   const pricingUrl = pricingUrlFor('cli_nudge', context || COMMAND || 'general');
   const messages = [
-    `\n  💡 Pro (${PRO_PRICE_LABEL}): personal recall, dashboard proof, exports, and managed adapters.\n     See pricing: ${pricingUrl}\n`,
+    `\n  💡 Pro (${PRO_PRICE_LABEL}): every learned rule active, unlimited thumbs, recall, lesson search, and exports.\n     See pricing: ${pricingUrl}\n`,
     `\n  💡 You just taught ThumbGate something locally. Pro keeps personal lessons searchable and exportable without free-tier caps.\n     See pricing: ${pricingUrl}\n`,
     `\n  💡 ThumbGate Pro maintains adapter coverage across Claude, Codex, Cursor, containers, and CI. ${PRO_PRICE_LABEL}.\n     Start Pro: ${checkoutUrl}\n`,
   ];
@@ -225,6 +222,9 @@ function limitNudge(action, limitResult = {}) {
   const reason = limitResult.message
     ? String(limitResult.message).split('\n')[0]
     : 'Free tier limit reached.';
+  // The free-tier wall is an upgrade moment; count it so the funnel can see it.
+  // The CLI exits right after this message, so a detached child delivers the ping.
+  try { require('../scripts/cli-telemetry').trackEventDetached('cli_limit_hit', { action, limitType: limitResult.limitType || null }); } catch (_) { /* best-effort */ }
   process.stderr.write(
     `\n  🔒 ${reason}\n` +
     usageLine +
@@ -239,7 +239,7 @@ function printInitConversionPrompt(email) {
   console.log('');
   console.log('  ┌──────────────────────────────────────────────────────────┐');
   console.log(`  │  7-day Pro trial active through ${trialDeadlineLabel()}.               │`);
-  console.log('  │  Pro keeps lessons/rules/dashboard synced everywhere.   │');
+  console.log('  │  Pro keeps every learned rule active and searchable.    │');
   console.log('  │  Add onboarding: npx thumbgate init --email you@company.com │');
   console.log(`  │  Upgrade: ${checkoutUrl}`);
   console.log('  └──────────────────────────────────────────────────────────┘');
@@ -1741,10 +1741,11 @@ function pro() {
     console.log('Self-serve side lane today: Pro ($19/mo or $149/yr).');
     console.log('Every licensed Pro user gets a personal local dashboard on localhost.');
     console.log('\nWhat is available:');
-    console.log('  - Personal recall: search lessons, rules, and proof');
-    console.log('  - Local Pro dashboard: your own browser dashboard for search, gates, and DPO export');
-    console.log('  - Managed adapters: Claude Code, Cursor, Codex, Gemini, Amp, Cline, OpenCode');
-    console.log('  - Setup Sprint: $499 for one supported workflow; hosted team sync and org dashboard are not GA');
+    console.log('  - Every learned rule stays active (free keeps 3); unlimited thumbs (free: 2 a day, 10 in total)');
+    console.log('  - Recall and lesson search: ask what the agent got wrong before');
+    console.log('  - Local Pro dashboard with search and DPO export (the project dashboard, npx thumbgate dashboard, is free)');
+    console.log('\nSeparate from Pro:');
+    console.log('  - Setup Sprint: $499 one-time service for one supported workflow; hosted team sync and org dashboard are not GA');
     console.log('  - Commercial truth doc: source of truth for traction, pricing, and proof claims');
     console.log('\nLinks:');
     console.log(`  Buy Pro         : ${PRO_CHECKOUT_URL}`);
@@ -3636,6 +3637,14 @@ function hookAutoCapture() {
     return;
   }
 
+  // Deliver the anti-claim reminder the last Stop hook parked for this session.
+  // Stop-hook stdout never reaches the model; UserPromptSubmit stdout does.
+  try {
+    const parked = require(path.join(PKG_ROOT, 'scripts', 'hook-stop-anti-claim'))
+      .takePendingReminder(promptEnvelope.sessionId || process.env.CLAUDE_SESSION_ID || '');
+    if (parked) process.stdout.write(`${parked}\n`);
+  } catch { /* a reminder never blocks a prompt */ }
+
   const detected = detectFeedbackSignal(prompt);
   if (!detected) {
     recordConversationEntry({
@@ -3643,6 +3652,15 @@ function hookAutoCapture() {
       text: prompt,
       source: 'claude_user_prompt',
     });
+    // Before the agent's first tool call, show the top three stored lessons that match this prompt's topic.
+    try {
+      const reminder = require(path.join(PKG_ROOT, 'scripts', 'prompt-lessons')).run({
+        prompt,
+        sessionId: promptEnvelope.sessionId || process.env.CLAUDE_SESSION_ID || '',
+        cwd: promptEnvelope.projectDir || CWD,
+      });
+      if (reminder) process.stdout.write(`${reminder}\n`);
+    } catch { /* a lesson lookup never blocks a prompt */ }
     return;
   }
 
@@ -3664,12 +3682,25 @@ function hookAutoCapture() {
     timestamp: promptEnvelope.timestamp,
     source: 'claude-user-prompt',
   });
+  // A thumbs-down is about the shell command the agent just ran. Attach it so repeated thumbs-downs on one command
+  // can become a gate (without it the entry names no action and auto-promotion has nothing to match).
+  let failedCommand;
+  if (signal === 'down') {
+    try {
+      const { resolveFeedbackDir } = require(path.join(PKG_ROOT, 'scripts', 'feedback-paths'));
+      failedCommand = require(path.join(PKG_ROOT, 'scripts', 'recent-commands')).lastCommand({
+        feedbackDir: resolveFeedbackDir({ cwd: promptEnvelope.projectDir || CWD }),
+        sessionId: promptEnvelope.sessionId || process.env.CLAUDE_SESSION_ID || '',
+      }) || undefined;
+    } catch { /* no recent command is fine */ }
+  }
   const result = processInlineFeedback({
     signal,
     context: prompt,
     chatHistory,
     whatWentWrong: signal === 'down' && !genericFeedback ? prompt : undefined,
     whatWorked: signal === 'up' && !genericFeedback ? prompt : undefined,
+    failedCommand,
     sourceEvent,
   });
   if (!result.feedbackResult || !result.feedbackResult.duplicate) {
@@ -4027,7 +4058,7 @@ function help() {
     console.log('  security-central                                  Free Agent Security Central posture report');
     console.log('  break-glass --reason="..."                       Short TTL recovery if gates over-fire');
     console.log('  brain [--write]                                   Build the agent-readable context brain (lessons + rules + gates)');
-    console.log('  pro                                               ThumbGate Pro (dashboard, exports, sync)');
+    console.log('  pro                                               ThumbGate Pro (license, recall, exports)');
     console.log('  diagnostic                                        $499 Setup Sprint for one repeated team failure');
     console.log('  subscribe <email>                                 Get the 5-min setup guide + weekly tips by email');
     console.log('');
@@ -4069,6 +4100,9 @@ function help() {
   console.log('  gate-check            Evaluate PreToolUse payload from stdin -> ALLOW/BLOCK');
   console.log('  cache-update          Refresh Claude statusline cache from stdin');
   console.log('  statusline-render     Render ThumbGate Claude status line');
+  console.log('  canary <status|add PATH|remove PATH>  Decoy credential file: deny and record any action that reaches it (off until you add one)');
+  console.log('  boundary-check        Run scripted outside-the-project actions through the hook and count what ThumbGate stops (no model calls)');
+  console.log('  prompt-lint [FILE...] Warn about CLAUDE.md / AGENTS.md wording tied to agents reaching outside the task (warning only)');
   console.log('  hook-auto-capture     Process Claude UserPromptSubmit inline feedback');
   console.log('  claim-stop-check      Recheck configured factual claims before Claude stops');
   console.log('  observe-tool-result   Record swarm-claim.py exit 3, including a failed shell, and a Teams send that succeeded');
@@ -4549,12 +4583,59 @@ switch (COMMAND) {
   case 'sync-gcp':
     syncGcp();
     break;
+  case 'cursor-prompt': {
+    // Cursor beforeSubmitPrompt adapter: a typed thumbs-down is captured exactly as in Claude Code (hook-auto-capture),
+    // then Cursor gets {"continue": true}. Capture output is not sent to Cursor, which only accepts its own JSON.
+    const { spawnSync } = require('node:child_process');
+    spawnSync(process.execPath, [__filename, 'hook-auto-capture'], { input: require('node:fs').readFileSync(0, 'utf8'), env: process.env, encoding: 'utf8', timeout: 20000 });
+    process.stdout.write('{"continue":true}\n');
+    process.exit(0);
+    break;
+  }
+  case 'cursor-gate': {
+    // Cursor beforeShellExecution adapter: reads Cursor's {"command":...} JSON, answers {"permission":...}; exit 2 blocks.
+    const cursorGate = require('../scripts/cursor-shell-gate');
+    cursorGate.runCursorShellGate(require('node:fs').readFileSync(0, 'utf8')).then((out) => {
+      process.stdout.write(JSON.stringify(out) + '\n');
+      process.exit(out.permission === 'deny' ? 2 : 0);
+    }).catch(() => { process.stdout.write('{"permission":"allow"}\n'); process.exit(0); });
+    break;
+  }
   case 'gate-check':
+    // Keeps the hook runtime on npm latest (one file read; at most one detached check per 24h).
+    try { require('../scripts/runtime-auto-update').scheduleLatestCheck(); } catch (_) { /* best-effort */ }
     gateCheck().catch((err) => {
       console.error(err && err.message ? err.message : err);
       process.exit(1);
     });
     break;
+  case 'canary': {
+    const canary = require('../scripts/canary-gate');
+    const [sub, target] = process.argv.slice(3);
+    if (sub === 'add' && target) {
+      const next = [...new Set([...canary.loadCanaryPaths(), require('node:path').resolve(target)])];
+      console.log(`canary: on. Watching ${next.length} decoy path(s). Config: ${canary.writeCanaryPaths(next)}`);
+    } else if (sub === 'remove' && target) {
+      const gone = require('node:path').resolve(target);
+      const next = canary.loadCanaryPaths().filter((x) => x !== gone);
+      canary.writeCanaryPaths(next);
+      console.log(next.length ? `canary: on. Watching ${next.length} decoy path(s).` : 'canary: off. No decoy path configured.');
+    } else {
+      const status = canary.canaryStatus();
+      console.log(status.enabled ? `canary: on. Watching: ${status.paths.join(', ')}` : 'canary: off (no decoy path configured). Add one with: thumbgate canary add <path>');
+    }
+    break;
+  }
+  case 'boundary-check': {
+    const boundary = require('../scripts/boundary-check');
+    console.log(boundary.formatReport(boundary.runBoundaryCheck()));
+    break;
+  }
+  case 'prompt-lint': {
+    const lint = require('../scripts/prompt-risk-lint');
+    console.log(lint.formatFindings(lint.lintFiles(process.argv.slice(3))));
+    break;
+  }
   case 'cache-update':
     cacheUpdate();
     break;
@@ -4571,6 +4652,7 @@ switch (COMMAND) {
     observeToolResult();
     break;
   case 'session-start':
+    try { require('../scripts/runtime-auto-update').scheduleLatestCheck(); } catch (_) { /* best-effort */ }
     sessionStart();
     break;
   case 'capture':

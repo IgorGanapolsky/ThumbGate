@@ -838,6 +838,12 @@ const CLI_COMMANDS = [
     ],
   },
   {
+    name: 'cursor-shell-gate',
+    description: 'Cursor beforeShellExecution hook: map command JSON to gate pipeline and emit permission allow/deny',
+    group: 'gates',
+    flags: [],
+  },
+  {
     name: 'force-gate',
     description: 'Immediately create a blocking gate from a pattern string',
     group: 'gates',

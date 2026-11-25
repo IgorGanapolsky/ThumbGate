@@ -161,6 +161,19 @@
         font-size: 12px;
         color: var(--muted);
       }
+      .delta {
+        font-size: 13px;
+        margin-top: 4px;
+      }
+      .delta.up {
+        color: #4ade80;
+      }
+      .delta.down {
+        color: #f87171;
+      }
+      .delta.flat {
+        color: var(--muted);
+      }
       .status {
         border-radius: 99px;
         padding: 3px 10px;
@@ -262,30 +275,61 @@
       <div id="content" aria-live="polite"></div>
     </main>
     <footer>
-      Customer data stays in this private view. Payments are charge records.
-      External booked revenue excludes identified internal and test purchases;
-      unknown identities remain excluded. Deployment time is only shown when
-      known.
+      Private and read-only. Owner and test purchases are left out of every
+      revenue number. JSON for agents: /v1/admin/summary, /v1/admin/economics and /v1/admin/alerts.
     </footer>
     <script nonce="__ADMIN_NONCE__">
       'use strict';
       const content = document.getElementById('content');
-      const sections = [
-        'money',
-        'overview',
-        'stripe',
-        'data',
-        'analytics',
-        'observability',
-      ];
+      // Today answers "does anything need me, and how did this week go". Overview repeated it, so it left the menu;
+      // its numbers stay in /v1/admin/summary for agents.
+      const sections = ['money', 'economics', 'analytics', 'behavior', 'sources', 'observability', 'stripe', 'data'];
       const titles = {
-        money: 'Money',
+        money: 'Today',
+        economics: 'Unit economics',
         overview: 'Overview',
         stripe: 'Stripe records',
         data: 'Hosted data',
-        analytics: 'Analytics',
-        observability: 'Observability',
+        analytics: 'Growth',
+        behavior: 'Visitor behavior',
+        sources: 'Sources',
+        observability: 'Health',
       };
+      // Sources tab: one block per source with the time of its last event, or a plain "no data yet" state. No number
+      // is filled in for a source this server does not read; each block links to that source's own dashboard.
+      const SOURCE_STATE_WORDS = {
+        ok: 'Last event seen',
+        no_data_yet: 'No data yet',
+        not_read_here: 'No data here yet: open its own dashboard',
+        not_installed: 'Not installed',
+        unavailable: 'Unavailable right now',
+      };
+      function renderSources(parent, data) {
+        const groups = [
+          ['analytics', 'Analytics tools on the site'],
+          ['funnel', 'Funnel, from our own first-party log (past 30 days)'],
+        ];
+        for (const [group, title] of groups) {
+          parent.append(element('h3', title));
+          for (const tile of data.tiles.filter((item) => item.group === group)) {
+            const block = element('div', undefined, 'card');
+            block.append(element('div', SOURCE_STATE_WORDS[tile.status] || label(tile.status), 'value'));
+            block.append(element('div', tile.label, 'label'));
+            if (tile.lastEventAt) block.append(element('div', 'Last event: ' + date(tile.lastEventAt), 'muted'));
+            if (Number.isFinite(tile.count30d)) block.append(element('div', 'Events in the past 30 days: ' + tile.count30d, 'muted'));
+            block.append(element('p', tile.note, 'muted'));
+            if (tile.dashboardUrl && /^https:\/\//.test(tile.dashboardUrl)) {
+              const link = element('a', 'Open ' + tile.label + ' dashboard');
+              link.href = tile.dashboardUrl;
+              link.target = '_blank';
+              link.rel = 'noopener noreferrer';
+              block.append(link);
+            }
+            parent.append(block);
+          }
+        }
+        parent.append(element('p', 'JSON for agents: /v1/admin/sources. Clarity recordings and heatmaps are read in the Clarity dashboard; a session only counts as seen there once it shows a real session.', 'muted'));
+      }
       let current = 'money';
       let resource = 'customers';
       let subscriptionId = null;
@@ -471,9 +515,9 @@
                 : 'N/A, not reported',
         });
         return [
-          row('Acquisition to activation', rates.acquisitionToActivation, stages.acquisition, 'no measured acquisition events'),
-          row('Activation to paid', rates.activationToPaid, stages.activation, 'no measured activations'),
-          row('Acquisition to paid', rates.acquisitionToPaid, stages.acquisition, 'no measured acquisition events'),
+          row('Acquisition event to first API-key use', rates.acquisitionToActivation, stages.acquisition, 'no measured acquisition events'),
+          row('First API-key use to paid', rates.activationToPaid, stages.activation, 'no recorded first API-key uses'),
+          row('Acquisition event to paid', rates.acquisitionToPaid, stages.acquisition, 'no measured acquisition events'),
         ];
       }
       function funnelTable(parent, funnel) {
@@ -483,7 +527,7 @@
         parent.append(
           element(
             'p',
-            'A lead is one distinct acquisition event identity (an acquisition, trace, visitor, session or install id) from a real checkout step; synthetic checkout sessions are excluded. ' +
+            'An acquisition identity is one distinct event identity (an acquisition, trace, visitor, session or install id) from a recorded acquisition event; synthetic checkout sessions are excluded. ' +
               'An activation is the first call made with an API key. Free local use without a key is not measured, so a 0 here means none observed, not none happened.',
             'muted',
           ),
@@ -503,6 +547,7 @@
           paid: 'Paid checkouts (Stripe)',
           subscriptions: 'Active subscriptions (Stripe)',
           checkouts: 'Checkout sessions (Stripe)',
+          recurring: 'Renewals and cancellations (Stripe)',
           traffic: 'Site visits (telemetry)',
           leads: 'Signups and leads (ledgers)',
         };
@@ -537,7 +582,7 @@
         if (paying > 0) return 'Money is arriving: ' + paying + ' paying customers.';
         const parts = [];
         if (Number.isFinite(leads) && leads > 0 && stages.activation === 0)
-          parts.push(leads + ' acquisition leads and 0 measured activations: no lead has made a first API-key call (free local use is not measured).');
+          parts.push(leads + ' distinct acquisition-event identities and 0 recorded first API-key uses. This does not establish unique people, installations or successful local use.');
         if (since && since.human === 0)
           parts.push('Since the bot check on ' + (panel.botCheckBeganLabel || 'its start date') + ', ' + since.started + ' checkout sessions started and 0 are classified as a browser (' + since.bot + ' bot-classified, ' + since.internal + ' owner or test).');
         else if (since && since.human > 0)
@@ -549,7 +594,7 @@
         if (m.value === null || m.value === undefined) return m.reason || 'Unavailable';
         if (typeof m.value === 'object') {
           const entries = Object.entries(m.value);
-          return entries.length ? entries.map(([c, a]) => money(a, c)).join(', ') : 'None in this window';
+          return entries.length ? entries.map(([c, a]) => money(a, c)).join(', ') : m.status === 'partial' ? 'No amounts found in partial evidence' : 'None in this window';
         }
         return String(m.value);
       }
@@ -569,7 +614,7 @@
         const mine = activeLoad;
         const box = element('div');
         parent.append(box);
-        box.append(element('p', 'Loading verified money and measured activation…', 'muted'));
+        box.append(element('p', 'Loading money and recorded first API-key use…', 'muted'));
         const read = (url) =>
           fetch(url, { credentials: 'same-origin', cache: 'no-store' }).then((r) => (r.ok ? r.json() : null)).catch(() => null);
         Promise.all([read('/v1/admin/summary'), read('/v1/admin/analytics')]).then(([summary, analytics]) => {
@@ -577,22 +622,23 @@
           box.replaceChildren();
           const fields = summary?.data?.fields;
           const funnel = analytics?.data?.funnel;
-          box.append(element('h3', 'Verified external money'));
+          box.append(element('h3', 'External money and verification state'));
           if (fields)
             table(
               box,
               [['Metric', (r) => r.name], ['Value', (r) => r.value], ['State', (r) => r.state], ['Source observed', (r) => r.observed]],
-              metricRows(fields, ['money.paying_customers', 'money.active_pro', 'money.revenue_30d', 'money.subscription_invoices_30d']),
+              metricRows(fields, ['money.paying_customers', 'money.active_pro', 'money.mrr', 'money.cancelling_at_period_end', 'money.revenue_30d', 'money.subscription_invoices_30d', 'usage.active_installs_7d', 'usage.active_installs_30d', 'usage.activated_installs_30d', 'usage.returning_installs_30d']),
             );
           else box.append(element('p', 'The money summary is unavailable right now. No zero is inferred.', 'notice'));
-          box.append(element('h3', 'Measured activation'));
+          box.append(element('h3', 'Recorded first API-key use'));
+          box.append(element('p', 'Free local use never calls an API key, so this funnel cannot see it. CLI installs that captured feedback, in the table above, are the activation measure for the free product.', 'muted'));
           if (funnel) {
             cards(
               box,
               {
-                'Unique acquisition leads': funnel.uniqueAcquisitionLeads,
+                'Distinct acquisition-event identities': funnel.uniqueAcquisitionLeads,
                 'Acquisition events': funnel.stageCounts?.acquisition,
-                'Measured activations': funnel.stageCounts?.activation,
+                'Recorded first API-key uses': funnel.stageCounts?.activation,
                 'Paid customers': funnel.uniquePaidCustomers,
                 'Excluded synthetic checkout sessions': funnel.excludedSyntheticCheckoutSessions,
               },
@@ -757,8 +803,290 @@
             'Data disk': r.disk.usedGb + ' GB of ' + r.disk.capacityGb + ' GB used (' + r.disk.percent + '%)',
           });
       }
+      // "+3 vs prior 7 days (12 → 15)": the change a reader would otherwise have to remember from last week.
+      function deltaWords(now, before) {
+        if (!Number.isFinite(now) || !Number.isFinite(before)) return { text: 'No earlier week to compare', tone: 'flat' };
+        const diff = now - before;
+        const pct = before > 0 ? ' (' + (diff >= 0 ? '+' : '') + Math.round((diff / before) * 100) + '%)' : '';
+        if (diff === 0) return { text: 'Same as the 7 days before', tone: 'flat' };
+        return { text: (diff > 0 ? '+' : '') + diff + pct + ' vs the 7 days before (' + before + ')', tone: diff > 0 ? 'up' : 'down' };
+      }
+      function weekCards(parent, weeks, extra = {}) {
+        const grid = element('div', undefined, 'cards');
+        const add = (name, value, delta) => {
+          const card = element('div', undefined, 'card');
+          card.append(element('div', value, 'value'), element('div', name, 'label'));
+          if (delta) card.append(element('div', delta.text, 'delta ' + delta.tone));
+          grid.append(card);
+        };
+        for (const [name, value] of Object.entries(extra)) add(name, value);
+        if (weeks) {
+          const rows = [
+            Number.isFinite(weeks.last7?.engagedVisitors) ? ['People who did something on the site', 'engagedVisitors'] : ['People on the site', 'realVisitors'],
+            ['Checkout starts', 'checkoutStarts'],
+            ['Active CLI installs', 'activeInstalls'],
+          ];
+          for (const [name, key] of rows) add(name + ', past 7 days', String(weeks.last7?.[key] ?? 'Unknown'), deltaWords(weeks.last7?.[key], weeks.prior7?.[key]));
+        }
+        parent.append(grid);
+      }
+      function mrrWords(mrr) {
+        if (!mrr) return null;
+        const entries = Object.entries(mrr);
+        return entries.length ? entries.map(([c, a]) => money(a, c)).join(', ') : money(0, 'usd');
+      }
+      // "Needs you": the alert rules from /v1/admin/alerts, worst first, each with what to do and a link to its tab.
+      function alertsBlock(parent) {
+        const mine = activeLoad;
+        const box = element('div', undefined, 'block');
+        box.append(element('h3', 'Needs you'));
+        const waiting = element('p', 'Checking alerts…', 'muted');
+        box.append(waiting);
+        parent.append(box);
+        fetch('/v1/admin/alerts', { credentials: 'same-origin', cache: 'no-store' })
+          .then((r) => (r.ok ? r.json() : null))
+          .catch(() => null)
+          .then((result) => {
+            if (mine !== activeLoad) return;
+            waiting.remove();
+            const alerts = result?.data?.alerts;
+            if (!Array.isArray(alerts)) {
+              box.append(element('p', 'Alerts could not be checked right now.', 'notice'));
+              return;
+            }
+            if (!alerts.length) {
+              box.append(element('p', 'Nothing needs you right now. Every alert rule passed.', 'banner green'));
+            }
+            for (const alert of alerts) {
+              const row = element('div', undefined, 'banner ' + (alert.level === 'red' ? 'red' : 'amber'));
+              row.append(element('div', alert.text), element('small', alert.action + ' '));
+              if (alert.tab && titles[alert.tab] && sections.includes(alert.tab)) {
+                const go = element('button', 'Open ' + titles[alert.tab]);
+                go.type = 'button';
+                go.addEventListener('click', () => {
+                  current = alert.tab;
+                  controls();
+                  load();
+                });
+                row.append(go);
+              }
+              box.append(row);
+            }
+            box.append(
+              element(
+                'p',
+                result.data.delivery === 'off'
+                  ? 'Alerts show here only. On Railway, THUMBGATE_OWNER_ALERT_EMAIL=on emails new ones to you; THUMBGATE_OWNER_ALERT_WEBHOOK posts them to Slack or Discord.'
+                  : 'New alerts are also sent (' + label(result.data.delivery).replace(/ on new alert$/, '') + '), checked every 15 minutes.',
+                'muted',
+              ),
+            );
+          });
+      }
+      // Retention by weekly install cohort: of the installs first seen in a week, the share seen again 1, 2, 3… weeks later.
+      function cohortTable(parent, read) {
+        parent.append(element('h3', 'Install retention by week first seen'));
+        if (!read || !Array.isArray(read.cohorts)) {
+          parent.append(element('p', 'Cohorts are unavailable right now. No zero is inferred.', 'notice'));
+          return;
+        }
+        const later = Math.max(0, ...read.cohorts.map((c) => c.retained.length - 1));
+        const columns = [
+          ['Week first seen', (c) => c.weekStart + (c.includesOlder ? ' or earlier' : '')],
+          ['Installs', (c) => c.size],
+        ];
+        for (let k = 1; k <= later; k += 1)
+          columns.push([
+            'Week ' + k,
+            (c) => (k >= c.retained.length ? '' : c.size ? Math.round((c.retained[k] / c.size) * 100) + '% (' + c.retained[k] + ')' : '–'),
+          ]);
+        table(parent, columns, read.cohorts);
+        parent.append(
+          element(
+            'p',
+            'Week 1 is the 7 days after the first week an install was seen. The oldest row also holds installs that began before this 8-week read.' +
+              (read.partial ? ' The telemetry log was cut short, so older weeks are lower bounds.' : ''),
+            'muted',
+          ),
+        );
+      }
+      function channelTable(parent, channels, why) {
+        parent.append(element('h3', 'Where buyers come from'));
+        if (!Array.isArray(channels)) {
+          parent.append(element('p', why || 'Source not available right now', 'notice'));
+          return;
+        }
+        table(
+          parent,
+          [
+            ['Channel', (r) => r.channel],
+            ['Checkout starts, 30 days', (r) => (r.checkoutStarts30d === null ? 'Not read' : r.checkoutStarts30d)],
+            ['Paying customers, 1 year', (r) => (r.paidCustomers === null ? 'Not read' : r.paidCustomers)],
+            ['Revenue, 30 days', (r) => (r.revenue30d === null ? 'Not read' : mrrWords(r.revenue30d))],
+          ],
+          channels,
+        );
+        parent.append(element('p', 'The channel is the utm source a checkout carried, or direct. Bots and your own checkouts are left out of starts; a customer counts once, for their first paid checkout.', 'muted'));
+      }
+      function minutesWords(m) {
+        if (m < 60) return Math.round(m) + ' min';
+        if (m < 1440) return Math.round((m / 60) * 10) / 10 + ' h';
+        return Math.round((m / 1440) * 10) / 10 + ' days';
+      }
+      const usd = (n) => (Number.isFinite(n) ? '$' + (Math.abs(n) < 1 && n !== 0 ? n.toFixed(4) : n.toFixed(2)) : null);
+      function economicsBlock(parent, data) {
+        const reasons = data.reasons || {};
+        const or = (value, reason) => (value === null || value === undefined ? reason || 'Source not available right now' : value);
+        const d = data.delivery || {};
+        parent.append(element('h3', 'Cost to deliver · past 30 days, US dollars'));
+        cards(parent, {
+          'Hosting (Railway, measured CPU and memory at list rates)': or(usd(d.hostingUsd), reasons.hosting),
+          'Email (sends counted by the app)': d.emailUsd === null || d.emailUsd === undefined ? 'Not counted yet' : usd(d.emailUsd) + ' · ' + d.emails + ' sent',
+          'Payment fees (Stripe)': or(usd(d.paymentFeesUsd), reasons.paymentFees),
+          'Fixed delivery costs': d.fixedUsd ? usd(d.fixedUsd) : 'None recorded',
+          'Total delivery cost': or(usd(d.totalUsd), 'Not complete yet'),
+          'Build and internal costs (kept apart)': data.build?.totalUsd ? usd(data.build.totalUsd) : 'None recorded',
+        }, true);
+        parent.append(element('h3', 'Per unit'));
+        cards(parent, {
+          'Serving cost per active install': or(usd(data.perActiveInstallUsd), reasons.activeInstalls || reasons.hosting),
+          'Delivery cost per paying customer': or(usd(data.perPayingCustomerUsd), reasons.payingCustomers || reasons.hosting),
+          'Revenue, past 30 days (one-time plus renewals)': or(usd(data.revenue?.totalUsd), 'Stripe not available right now'),
+          'Contribution (revenue minus delivery cost)': data.contribution ? usd(data.contribution.contributionUsd) + (Number.isFinite(data.contribution.marginPct) ? ' · ' + Math.round(data.contribution.marginPct * 1000) / 10 + '% margin' : '') : 'Not complete yet',
+        }, true);
+        parent.append(element('h3', 'Contribution per sale, by plan'));
+        const plans = Object.values(data.plans || {}).filter((plan) => plan && Number.isFinite(plan.priceUsd));
+        table(parent, [
+          ['Plan', (r) => r.name],
+          ['Price', (r) => usd(r.priceUsd) + (r.priceBasis === 'list_price' ? ' (list)' : ' (Stripe average)')],
+          ['Payment fee', (r) => usd(r.paymentFeeUsd)],
+          ['Serving cost', (r) => usd(r.deliveryCostUsd)],
+          ['Keeps', (r) => usd(r.contributionUsd) + ' · ' + Math.round(r.marginPct * 1000) / 10 + '%' + (r.laborNote ? ' · labor not counted' : '')],
+        ], plans);
+        const access = data.paymentAccess;
+        parent.append(element('h3', 'Payment to access'));
+        if (!access) parent.append(element('p', 'Stripe or the key store is not available right now, so the check did not run.', 'notice'));
+        else if (access.status === 'unavailable') parent.append(element('p', access.reason, 'notice'));
+        else {
+          cards(parent, {
+            'Entitled but no key': String(access.paidWithoutAccess),
+            'Failed payment, key still active': access.failedPaymentWithAccess === null ? 'Not checked' : String(access.failedPaymentWithAccess),
+            'Active paid keys with no Stripe payment': String(access.accessWithoutStripePayment),
+            'Subscriptions with a failed payment': access.failedPaymentSubscriptions === null ? 'Not checked' : String(access.failedPaymentSubscriptions),
+          }, true);
+          parent.append(element('p', 'Entitled means an active subscription or a credit pack bought in the past year; service orders and canceled subscriptions grant no key. Used-up credit packs (' + access.exhaustedCreditKeys + ') were provisioned, so they are not missing keys. Keys with no Stripe payment can be GitHub Marketplace, PayPal or manual grants, so they are listed for review, not called wrong. Trial and free keys are left out (' + access.activeTrialOrFreeKeys + ').' + (access.complete ? '' : ' Some Stripe lists were cut short, so these counts are a lower bound.'), 'muted'));
+        }
+        for (const reason of [reasons.fixed, reasons.build, reasons.currencies, d.hosting?.reason, d.emailBasis]) if (reason) parent.append(element('p', reason, 'muted'));
+        parent.append(element('p', 'Rates checked ' + data.ratesCheckedAt + ' and kept in config/unit-costs.json with their sources. JSON for agents: /v1/admin/economics.', 'muted'));
+      }
+      function usageBlock(parent, usage) {
+        parent.append(element('h3', 'Product usage · CLI installs, past 30 days'));
+        if (!usage) {
+          parent.append(element('p', 'CLI usage is unavailable right now. No zero is inferred.', 'notice'));
+          return;
+        }
+        const share = (n) => (usage.activeInstalls30d > 0 && Number.isFinite(n) ? ' (' + Math.round((n / usage.activeInstalls30d) * 100) + '%)' : '');
+        cards(
+          parent,
+          {
+            'Active installs, past 7 days': usage.activeInstalls7d,
+            'Active installs, past 30 days': usage.activeInstalls30d,
+            'Ran init in this window': usage.initsInWindow,
+            'Captured feedback (activated)': String(usage.activatedInstalls) + share(usage.activatedInstalls),
+            'Came back on a second day': String(usage.returningInstalls) + share(usage.returningInstalls),
+            'First value: a real gate blocked a tool call': Number.isFinite(usage.firstValueInstalls) ? String(usage.firstValueInstalls) + share(usage.firstValueInstalls) : 'Not reported by this telemetry yet',
+            'Time to first value (median)': usage.timeToFirstValue && Number.isFinite(usage.timeToFirstValue.medianMinutes) ? minutesWords(usage.timeToFirstValue.medianMinutes) + ' after install (' + usage.timeToFirstValue.installs + ' installs)' : 'N/A, no first block yet',
+          },
+          true,
+        );
+        parent.append(
+          element(
+            'p',
+            'An install is the anonymous id the CLI keeps in ~/.thumbgate. Your own machines, CI and flagged pings are left out (' +
+              usage.excludedInstalls +
+              ' excluded). Installs with telemetry turned off are not seen, so these are lower bounds. Gate blocks run locally; only the first block on each install is reported, with the minutes since install.',
+            'muted',
+          ),
+        );
+        detail(parent, 'CLI commands run', usage.eventsByType);
+        detail(parent, 'Installs by version', usage.byVersion);
+        detail(parent, 'Installs by platform', usage.byPlatform);
+      }
+      // Visitor behavior: Microsoft Clarity's last 24 hours (sessions, frustration signals, top pages and sources).
+      function behaviorBlock(parent, data) {
+        const links = element('p', undefined, 'muted');
+        for (const [name, href] of [['Clarity dashboard', data.dashboardUrl], ['Recordings', data.recordingsUrl], ['Heatmaps', data.heatmapsUrl]]) {
+          if (!href) continue;
+          const a = element('a', name + ' ↗');
+          a.href = href;
+          a.target = '_blank';
+          a.rel = 'noopener noreferrer';
+          links.append(a, document.createTextNode('  '));
+        }
+        parent.append(links);
+        parent.append(element('p', data.tagEnabled
+          ? 'Clarity tag is on for public pages (project ' + data.projectId + '). Not recorded: ' + data.tagExcludes + '. Form fields are masked.'
+          : 'Clarity tag is off (THUMBGATE_CLARITY_PROJECT_ID is set to off).', 'muted'));
+        if (!data.exportConfigured) {
+          parent.append(element('p', 'Numbers appear here once THUMBGATE_CLARITY_API_TOKEN is set in Railway (Clarity, Settings, Data Export). Recordings and heatmaps are in Clarity now.', 'notice'));
+          return;
+        }
+        const s = data.summary;
+        if (!s) {
+          parent.append(element('p', 'No Clarity snapshot yet. No zero total is inferred.', 'empty'));
+          return;
+        }
+        const pct = (v) => (Number.isFinite(v) ? Math.round(v * 10) / 10 + '%' : 'Not reported');
+        const num = (v) => (Number.isFinite(v) ? String(Math.round(v * 100) / 100) : 'Not reported');
+        parent.append(element('h3', 'Last 24 hours' + (data.fetchedAt ? ', fetched ' + date(data.fetchedAt) : '')));
+        cards(parent, {
+          'Sessions (humans)': num(s.sessions),
+          'Bot sessions': num(s.botSessions),
+          'Distinct visitors': num(s.distinctUsers),
+          'Pages per session': num(s.pagesPerSession),
+          'Average scroll depth': pct(s.averageScrollDepthPercent),
+          'Sessions with rage clicks': pct(s.rageClickSessionsPercent),
+          'Sessions with dead clicks': pct(s.deadClickSessionsPercent),
+          'Sessions with quick backs': pct(s.quickbackSessionsPercent),
+          'Sessions with script errors': pct(s.scriptErrorSessionsPercent),
+        }, true);
+        parent.append(element('h3', 'Top pages'));
+        table(parent, [['Page', (r) => r.url], ['Sessions', (r) => r.sessions], ['Visitors', (r) => r.distinctUsers], ['Pages per session', (r) => num(r.pagesPerSession)]], data.topPages || []);
+        parent.append(element('h3', 'Top sources'));
+        table(parent, [['Source', (r) => r.source], ['Sessions', (r) => r.sessions], ['Visitors', (r) => r.distinctUsers]], data.topSources || []);
+        for (const m of data.metrics || []) {
+          if (!m.rows?.length) continue;
+          const block = element('details');
+          block.append(element('summary', 'Raw Clarity metric: ' + m.name));
+          const keys = Object.keys(m.rows[0]);
+          table(block, keys.map((k) => [label(k), (r) => r[k]]), m.rows);
+          parent.append(block);
+        }
+      }
       function render(parent, section, data) {
+        if (section === 'economics') economicsBlock(parent, data);
+        if (section === 'behavior') behaviorBlock(parent, data);
         if (section === 'money') {
+          alertsBlock(parent);
+          parent.append(element('h3', 'This week at a glance'));
+          const recurring = data.recurring30d;
+          const recurringWhy = data.reasons?.recurring || 'Source not available right now';
+          weekCards(parent, data.weekOverWeek, {
+            'Monthly recurring revenue (list price)': data.mrr ? mrrWords(data.mrr) : (data.reasons?.mrr || 'Source not available right now'),
+            [recurring ? 'Renewal revenue, past 30 days (' + recurring.renewalInvoices + (recurring.renewalInvoices === 1 ? ' renewal)' : ' renewals)') : 'Renewal revenue, past 30 days']: recurring ? mrrWords(recurring.renewalRevenue) : recurringWhy,
+            [recurring ? 'Churn, past 30 days (' + recurring.churnedSubscriptions + ' cancelled)' : 'Churn, past 30 days']: recurring ? (Number.isFinite(recurring.churnRate) ? Math.round(recurring.churnRate * 1000) / 10 + '%' : 'N/A, no subscriptions') : recurringWhy,
+            'Subscriptions cancelling at period end': data.cancellingAtPeriodEnd === null || data.cancellingAtPeriodEnd === undefined ? (data.reasons?.mrr || 'Source not available right now') : String(data.cancellingAtPeriodEnd),
+          });
+          usageBlock(parent, data.usage30d);
+          channelTable(parent, data.channels, data.reasons?.revenue || data.reasons?.checkouts);
+          parent.append(element('h3', 'Biggest evidenced obstacle'));
+          parent.append(element('p', describeObstacle({ 'money.paying_customers': { value: data.payingCustomers }, 'money.checkout_bot_check': { value: data.checkoutBotCheck } }, null)));
+          // Everything below is the evidence behind the headline numbers, folded away until asked for.
+          const outer = parent;
+          parent = element('details');
+          parent.append(element('summary', 'Money detail: customers, checkouts, revenue, traffic and leads'));
+          outer.append(parent);
+          parent.append(element('h3', 'Customers and traffic'));
           const checkouts = data.checkouts7d;
           const traffic = data.traffic30d;
           const why = data.reasons || {};
@@ -773,6 +1101,7 @@
               'Paying customers': shown(data.payingCustomers, why.payingCustomers, ' · from Stripe'),
               'Active Pro subscriptions': shown(data.activePro, why.activePro, ' · from Stripe'),
               'Checkouts started (7 days)': shown(checkouts ? checkouts.started : null, why.checkouts),
+              'People who did something: two or more events or any click (30 days)': shown(traffic ? traffic.engagedVisitors : null, why.visitors),
               'Observed visitor identifiers, excluding bot, internal and test (30 days)': shown(traffic ? traffic.realVisitors : null, why.visitors),
               'All observed visitor identifiers (30 days)': shown(traffic ? traffic.visitors : null, why.visitors),
               'Landing page views (30 days)': shown(traffic ? traffic.pageViews : null, why.visitors),
@@ -842,7 +1171,7 @@
                 '. Active Pro: ' +
                 basis(data.activeProBasis) +
                 '. Revenue is the total of completed Checkout Sessions created in the last 30 days, after refunds. ' +
-                'Subscription renewal invoices are not read, so recurring revenue is not included: subscription invoices are not collected yet.',
+                'Renewals are counted apart, as renewal revenue, from paid subscription renewal invoices.',
               'muted',
             ),
           );
@@ -1024,7 +1353,7 @@
               'Checkout starts (30 days)': shown(traffic?.checkoutStarts, 'Telemetry store empty'),
               'Paid confirmations (30 days)': shown(traffic?.checkoutPaidConfirmations, 'Telemetry store empty'),
               'Email signups': shown(data.signups?.emailSignups, waiting),
-              'External paid orders': shown(external.paidOrders, waiting),
+              'External paid orders': shown(external.paidOrders, waiting) + (external.paidOrders !== undefined && (data.reconciliation?.status !== 'ok' || data.reconciliation?.complete !== true) ? ' (partial)' : ''),
             },
             true,
           );
@@ -1070,6 +1399,7 @@
               [
                 ['Day', (r) => r.date],
                 ['Visitors', (r) => r.visitors],
+                ['Active CLI installs', (r) => r.activeInstalls ?? 0],
                 ['Page views', (r) => r.pageViews],
                 ['Call to action clicks', (r) => r.ctaClicks],
                 ['Checkout starts', (r) => r.checkoutStarts],
@@ -1078,6 +1408,14 @@
               [...data.daily].reverse(),
             );
           }
+          if (data.weekOverWeek) {
+            parent.append(element('h3', 'Past 7 days against the 7 days before'));
+            weekCards(parent, data.weekOverWeek);
+          }
+          usageBlock(parent, data.usage);
+          cohortTable(parent, data.cohorts);
+          if (data.reconciliation?.status !== 'ok' || data.reconciliation?.complete !== true)
+            parent.append(element('p', 'Provider reconciliation is incomplete (' + (data.reconciliation?.status || 'not reported') + '). Paid-order and revenue totals are partial ledger evidence, not verified payment outcomes. Local installations and successful first local use are not measured.', 'notice'));
           parent.append(
             element('h3', 'External booked revenue · past 30 days'),
           );
@@ -1098,6 +1436,13 @@
               'muted',
             ),
           );
+          if (data.checkoutSessionDepth) {
+            parent.append(element('h3', 'Checkout-session evidence coverage'));
+            detail(parent, 'Existing checkout event IDs matched to Stripe session depth', data.checkoutSessionDepth, {
+              sessionsCreated: 'Recorded checkout-created events', raw: 'No email or payment-attempt evidence', identified: 'Email present, not proof of a buyer', paymentAttempt: 'Payment intent present, not proof of payment', paid: 'Stripe payment status paid', unresolved: 'Session evidence not resolved', qualifiedCheckoutStarts: 'Identified or later, not unique people', basis: 'Count basis', lookupStatus: 'Provider lookup coverage',
+            });
+            parent.append(element('p', 'This joins existing checkout-event evidence IDs to Stripe sessions. It does not join site visitor IDs to people, prove a payment attempt was declined, or explain abandonment. Unresolved events stay unknown.', 'muted'));
+          }
           funnelTable(parent, data.funnel);
           for (const key of [
             'funnel',
@@ -1121,6 +1466,9 @@
         }
         if (section === 'observability') {
           renderObservability(parent, data);
+        }
+        if (section === 'sources') {
+          renderSources(parent, data);
         }
       }
       function controls() {

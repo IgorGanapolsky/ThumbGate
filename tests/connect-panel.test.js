@@ -37,7 +37,17 @@ test('preview flags destructive commands and passes git status', () => {
 
 test('preview summary counts a mixed sample', () => {
   const sum = C.summarize(C.classifyCommands('git status\nrm -rf ~\n\ngit push --force origin main\n'));
-  assert.deepEqual(sum, { total: 3, blocked: 2, review: 0, allowed: 1 });
+  assert.deepEqual(sum, { total: 3, blocked: 2, strict: 0, review: 0, allowed: 1 });
+});
+
+test('preview only calls a command denied when a default install denies it', () => {
+  const verdict = (line) => C.classifyCommands(line)[0].verdict;
+  // protected-branch-push warns on a default install and denies only in strict mode
+  assert.equal(verdict('git push origin main'), 'strict');
+  // no-hook-bypass is a suggested rule that is not installed by default
+  assert.equal(verdict('git commit --no-verify -m x'), 'suggested');
+  const sum = C.summarize(C.classifyCommands('git push origin main\ngit commit --no-verify -m x\nrm -rf ~'));
+  assert.deepEqual(sum, { total: 3, blocked: 1, strict: 1, review: 0, allowed: 1 });
 });
 
 test('question weights sum to 100 and all-no scores 100, all-yes scores 0', () => {

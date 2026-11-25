@@ -258,6 +258,10 @@ function recordAuditEvent(params = {}) {
     timestamp: new Date().toISOString(),
     toolName: params.toolName || 'unknown',
     toolInput: sanitizeToolInput(params.toolInput || {}),
+    // AGENT-3667 item Q: enough to rebuild a decision later. Each is null when the caller did not declare it.
+    sessionId: auditSessionId(params),
+    host: auditHost(params),
+    catalogHash: gateCatalogHash(params.configPath),
     agentId: params.agentId || resolveAuditAgentId(),
     decision: params.decision || 'allow',
     gateId: params.gateId || null,
@@ -295,6 +299,42 @@ function recordAuditEvent(params = {}) {
   return record;
 }
 
+const KNOWN_HOSTS = new Set(['claude-code', 'cursor', 'codex', 'gemini-cli']);
+
+function auditSessionId(params = {}) {
+  const raw = params.sessionId || params.session_id || process.env.THUMBGATE_SESSION_ID || process.env.CLAUDE_SESSION_ID || null;
+  return raw ? String(raw).slice(0, 120) : null;
+}
+
+/** The host that sent the call, only when it declared itself (adapter field or THUMBGATE_HOST). Never guessed here. */
+function auditHost(params = {}) {
+  const raw = String(params.host || process.env.THUMBGATE_HOST || '').trim().toLowerCase();
+  return KNOWN_HOSTS.has(raw) ? raw : null;
+}
+
+let catalogCache = { key: '', hash: null };
+
+/** First 12 hex chars of the sha256 of the gate config in force, so an auditor knows which rule text decided. */
+function gateCatalogHash(configPath) {
+  try {
+    const file = configPath || process.env.THUMBGATE_GATES_CONFIG || path.join(__dirname, '..', 'config', 'gates', 'default.json');
+    const stat = fs.statSync(file);
+    const key = `${file}:${stat.mtimeMs}:${stat.size}`;
+    if (catalogCache.key !== key) catalogCache = { key, hash: crypto.createHash('sha256').update(fs.readFileSync(file)).digest('hex').slice(0, 12) };
+    return catalogCache.hash;
+  } catch {
+    return null;
+  }
+}
+
+function redactAuditString(value) {
+  try {
+    return require('./secret-redaction').redactSecrets(value);
+  } catch {
+    return value;
+  }
+}
+
 /**
  * Strip secrets and large payloads from tool input before audit storage.
  * Drop circular references so JSON.stringify never throws mid-gate evaluation.
@@ -311,9 +351,10 @@ function sanitizeToolInput(toolInput) {
       if (['content', 'new_string', 'old_string'].includes(key)) {
         safe[key] = `[redacted:${value.length} chars]`;
       } else {
-        safe[key] = value.length > MAX_VALUE_LEN
-          ? value.slice(0, MAX_VALUE_LEN) + '...'
-          : value;
+        const redacted = redactAuditString(value);
+        safe[key] = redacted.length > MAX_VALUE_LEN
+          ? redacted.slice(0, MAX_VALUE_LEN) + '...'
+          : redacted;
       }
     } else if (value && typeof value === 'object') {
       if (seen.has(value)) {
@@ -584,6 +625,8 @@ module.exports = {
   evaluateSelfHealTrigger,
   tuneCacheThreshold,
   getAuditLogPath,
+  exportAuditLines,
+  gateCatalogHash,
   sanitizeToolInput,
   AUDIT_LOG_FILENAME,
   GATE_EVENTS_LOG_FILENAME,
@@ -644,9 +687,41 @@ function latencyStats(logPath) {
   };
 }
 
+const VERDICTS = { allow: 'allow', deny: 'deny', approve: 'ask', warn: 'warn', log: 'log', override: 'override' };
+
+/**
+ * One JSON Lines row per gate decision, for an auditor (AGENT-3667 item Q). The stored row is passed through
+ * unchanged; `verdict` (approve is shown as "ask") and `reason` (the gate message) are added so a reader does not
+ * need to know our internal names.
+ */
+function exportAuditLines(entries, filter = {}) {
+  const since = filter.since ? Date.parse(filter.since) : null;
+  const wanted = filter.verdict ? String(filter.verdict).toLowerCase() : null;
+  const rows = [];
+  for (const entry of entries) {
+    const verdict = VERDICTS[entry.decision] || entry.decision || 'unknown';
+    if (wanted && verdict !== wanted) continue;
+    if (since && !(Date.parse(entry.timestamp) >= since)) continue;
+    rows.push(JSON.stringify({ ...entry, verdict, reason: entry.message || entry.reason || null }));
+  }
+  return filter.limit > 0 ? rows.slice(-filter.limit) : rows;
+}
+
+function optionValue(args, name) {
+  const at = args.indexOf(name);
+  return at !== -1 && args[at + 1] && !args[at + 1].startsWith('--') ? args[at + 1] : null;
+}
+
 if (require.main === module) {
   const args = process.argv.slice(2);
-  if (args.includes('--stats')) {
+  if (args.includes('--export')) {
+    const rows = exportAuditLines(readAuditLog(optionValue(args, '--file') || undefined), {
+      since: optionValue(args, '--since'),
+      verdict: optionValue(args, '--verdict'),
+      limit: Number(optionValue(args, '--limit')) || 0,
+    });
+    if (rows.length) process.stdout.write(`${rows.join('\n')}\n`);
+  } else if (args.includes('--stats')) {
     console.log(JSON.stringify(auditStats(), null, 2));
   } else if (args.includes('--adherence')) {
     console.log(JSON.stringify(skillAdherence(), null, 2));

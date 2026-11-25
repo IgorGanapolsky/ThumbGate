@@ -74,12 +74,14 @@ jobs:
       - name: Verify /dashboard renders
         id: dashboard
         run: |
-          body="$(curl -fsS --max-time 10 "${PROD_URL}/dashboard" 2>/dev/null || true)"
-          if printf '%s' "$body" | grep -q 'ThumbGate Dashboard'; then
-            printf '✅ /dashboard renders\n'
+          # A signed-out visit to the hosted /dashboard redirects to the one sign-in page
+          # (since 19 Nov 2026). Follow the redirect: the dashboard text or the sign-in page must render.
+          body="$(curl -fsSL --max-time 10 "${PROD_URL}/dashboard" 2>/dev/null || true)"
+          if printf '%s' "$body" | grep -q -e 'ThumbGate Dashboard' -e 'Sign in to ThumbGate'; then
+            printf '✅ /dashboard renders (dashboard or sign-in page)\n'
             printf 'ok=true\n' >> "$GITHUB_OUTPUT"
           else
-            printf '❌ /dashboard missing sentinel string "ThumbGate Dashboard"\n'
+            printf '❌ /dashboard shows neither "ThumbGate Dashboard" nor "Sign in to ThumbGate"\n'
             printf 'ok=false\n' >> "$GITHUB_OUTPUT"
             exit 1
           fi

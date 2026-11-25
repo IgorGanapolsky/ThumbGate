@@ -1,11 +1,146 @@
 # Changelog
 
-## Unreleased
+## 1.43.1
 
 ### Patch Changes
 
+- 940e7ff: The hook runtime now keeps itself on npm `latest`: `gate-check` and `session-start` check once a day in a detached child and refresh `~/.thumbgate/runtime` when a newer release exists (opt out with `THUMBGATE_NO_AUTO_UPDATE=1`). This covers Codex, plugin and hooks-only installs, which have no MCP server started from `@latest` to notice. The Claude plugin and the Claude Codex bridge now start the MCP server from `thumbgate@latest` instead of a cached or pinned version. `/v1/metrics/real` reports `installVersions`: the share of CLI installs on the current release.
+- Republish the 1.43.0 release (deploy-proof Stop gate, parked anti-claim reminder) as 1.43.1. npm staged the 1.43.0 upload for maintainer approval instead of publishing it, so `npm install thumbgate@latest` still resolved 1.42.1.
+
+## 1.43.0
+
+### Minor Changes
+
+- 94d8b8c: Deploy-proof gate: the Stop hook that `thumbgate init` installs (`claim-stop-check`), and now the Claude plugin's hooks file too, blocks a reply that says "deployed", "shipped", "now live" or "in production" unless the same reply or message shows proof from production: curl output, a /health JSON snapshot, a buildSha, an HTTP 200 from the host, or a CI line you name. It blocks once, so a reply can never loop. Name your production hosts in `.thumbgate/deploy-proof.json` (`{"hosts": ["app.example.com"], "sentinels": ["Deploy verified"]}`) or `THUMBGATE_PROD_HOSTS`; with none, proof from any https host counts. It is on by default; `THUMBGATE_DEPLOY_PROOF_GATE=0` turns it off. Other completion claims ("done", "fixed") still get the soft reminder unless `THUMBGATE_STRICT_ENFORCEMENT=1`.
+  
+  The soft anti-claim reminder now reaches the agent. Claude Code does not show a Stop hook's plain output to the model, so the reminder for an unproven "done" or "fixed" used to go nowhere. The Stop hook now also parks it for the session, and the next UserPromptSubmit hook (`hook-auto-capture`) prints it into the agent's context once.
+  
+  The deploy-proof gate wants a result, not a command: a curl line on its own, or one that reports a failure (connection refused, HTTP 5xx, `"status":"error"`), is not proof, and with hosts configured a health JSON or buildSha only counts next to a configured host. "Deployed to staging" (or dev, preview, test) is not a production claim.
+
+### Patch Changes
+
+- 96e6b1f: Microsoft Clarity heatmaps and masked session replay on public thumbgate.ai pages (never on admin, dashboard, sign-in, checkout, billing or success pages, never for GPC/DNT visitors, advertising storage always denied, cookieless for European time zones). The owner console gains a Visitor behavior tab that reads Clarity's Data Export API once `THUMBGATE_CLARITY_API_TOKEN` is set, cached on disk to stay inside the 10-calls-a-day limit.
+- d28c158: Return a non-cacheable retirement response for former service pages and checkout links, with current plans at /pricing.
+- 61b8f58: Add thumbgate.ai/udemy for students of the free Udemy course: the free install first, Pro below it as optional, every link tagged utm_source=udemy. A visit is recorded as udemy even if the link lost its query string. THUMBGATE_INSTALL_SOURCE=udemy on `npx thumbgate init` is remembered in ~/.thumbgate/install-source and sent as the source on later CLI pings, so installs show under udemy in /v1/analytics/sources.
+
+## 1.42.1
+
+### Patch Changes
+
+- 2fc74ea: Every gate decision row in `audit-trail.jsonl` now carries the session id, the host that sent the call (Claude Code or Cursor when it declares itself), and a short hash of the gate catalog in force, and logged command text goes through the shared secret redactor. `npm run audit:export` (or `node scripts/audit-trail.js --export [--since ISO] [--verdict allow|deny|ask|warn] [--limit N]`) prints one JSON line per decision.
+- 8d4f432: The optional Stop-time claim gate now ships in the npm package, holds claims like "sign-in is refused" until a check from the same turn is attached (a health-page 200 or an old log file does not count), and two thumbs-downs from a person on one unchecked claim write a rule into `claim-gate-rules.json` with no file edit. It stays opt-in: it only runs where the Stop hook is installed.
+- 79e9e4e: Deliver the `first_block_upsell_shown`, `cli_limit_hit` and `runtime_auto_update` pings from processes that exit right away (hooks, the CLI limit path, the background updater) through a detached or awaited send, so the server receives them. The public activation funnel now also reports upgrade-capable activations and hook-runtime update results.
+- 195a697: Cursor: the plugin now runs the ThumbGate check on every shell command instead of only a few keywords (so `aws s3 rm`, `terraform destroy` and `kubectl delete` are no longer skipped), answers in the shape Cursor expects through the new `thumbgate cursor-gate` command, and captures a typed thumbs-down through `thumbgate cursor-prompt` so two thumbs-downs on one command become a gate. The Cursor adapter script now ships in the npm package.
+- cedd326: Add a generated table of which gates are enforced on which host (Claude Code, Cursor, Codex, Gemini CLI). `npm run compat:matrix` runs each gate's denial through the real Claude Code and Cursor hook paths and writes `docs/host-compatibility.md`, `docs/compat/host-gate-results.json` and a README block. A cell says "enforced" only with a recorded denial; hosts with no run say "untested".
+- 97a6bd2: Every thumb counter now reads one function: the status-line stats command, the feedback-loop cache refresh and the unscoped feedback-stats endpoint take their thumb totals from `computeHumanCounts`. A row id listed in `.thumbgate/not-counted-feedback.jsonl` (written by `scripts/not-a-thumb.js`) is left out of every count without editing the log. The status line names the project next to the counts.
+
+## 1.42.0
+
+### Minor Changes
+
+- 381d384: The MCP server now updates old hook runtimes in the background. When it sees the hooks on a machine running an older ThumbGate (including installs pinned to their first version), it installs its own version into a staging folder next to `~/.thumbgate/runtime`, checks it, and swaps it in, at most once a day. It never blocks the MCP server. Set `THUMBGATE_NO_AUTO_UPDATE=1` to turn it off.
+- 48a7d6b: Opt-in canary file gate (`thumbgate canary add <path>`) that denies and records any Read, Edit, Write, Grep, Glob or Bash action reaching a decoy credential file, a `thumbgate boundary-check` command that runs scripted outside-the-project actions through the real hook and counts what was stopped (no model calls), and a warning-only `thumbgate prompt-lint` for CLAUDE.md and AGENTS.md wording that Anthropic reported as associated with more reaching outside in its sandbox tests.
+
+### Patch Changes
+
+- 5fe0124: Owner console: "People on the site" now counts visitor ids with two or more events or any click (engaged visitors). Ids with a single page view, which is what most crawlers that pass the bot check look like, stay in the raw identifier count but no longer pass as people, and the visitors-drop alert follows the engaged count.
+- 5fe0124: Package size tests: the npm bundle ceiling moves from 710 to 711 for `config/gates/profiles/shared-tree.json`, the opt-in shared-tree gate profile, and the public-core ceiling is brought back in lockstep (704 to 711).
+- 5fe0124: Telemetry: the CLI labels itself `owner` in a Claude Code session signed in to the owner's account (the account address is hashed and compared locally, nothing new is sent), and a first-block report made with a key issued to an owner address is logged as `owner`. The owner's cloud coding agents (fresh container, new install id, user root) were being counted as real installs, which inflated active installs, activation and first value on the owner console.
+- 0e18d64: Owner alert emails: "Stripe could not be read", "telemetry could not be read" and a timed-out check are sent only when the next check still sees them. A single failed read is usually the cold start right after a deploy.
+- 1ad4bc5: Owner alerts: an unreadable-source alert such as "Stripe could not be read" is emailed only when it is still failing on the third check in a row (checks run every 15 minutes), and the email says how long it has been failing. One slow Stripe answer no longer emails the owner. Red alerts still send on the first check.
+- 69d4ebb: The npm package now ships `scripts/hook-pre-tool-use.js` and the four modules it loads, so the Claude plugin hooks file no longer points at a script that is missing from the package. A new test fails when any path named in the plugin files, or any local module those scripts load, is absent from `npm pack`.
+
+## 1.41.0
+
+### Minor Changes
+
+- 0ca0cff: A fresh install now starts with only the gates a new user would want. The corporate-email-isolation and off-brand-posting gates moved out of the default config into an opt-in profile (`config/gates/profiles/private-owner.json`, loaded through `THUMBGATE_EXTRA_GATES` or `~/.config/thumbgate/extra-gates.json`), and a hook call on a free install no longer prints license text unless `THUMBGATE_LICENSE_ADVISORY=1` is set. The README and the site now say what Cursor really does: shell commands are denied before they run through its `beforeShellExecution` hook, every other Cursor tool is advisory, and the hook allows the command if it errors.
+- 03645e9: Three fixes to what ThumbGate blocks. (1) Two identical thumbs-downs from a person on one shell command now create a gate that denies that command, instead of a warning: a typed thumbs-down now carries the last command that ran in the session, and a gate earned by a person is exempt from the warn-by-default downgrade. (2) The default gates now deny `aws s3 rm --recursive`, `aws s3 rb --force`, `terraform destroy`, `terraform apply -destroy`, `kubectl delete namespace`, `kubectl delete` with all namespaces, `docker system prune -a`, `gcloud projects delete`, `az group delete`, a `find ... -delete` with no name, age or size filter, and a real IAM or policy change (`aws iam put-/attach-/create-...`, `gcloud add-iam-policy-binding`). A command piped through `base64 -d` or `--decode` is decoded first and the decoded text is matched against every gate. (3) Matching is on the action, not words: reading, searching or listing something that mentions billing or policy is allowed, and the old permission gate now matches only `chmod`, `chown` and `setfacl` at the start of a command.
+- 1d9424e: The status line now shows whether lessons helped: repeat misses per 100 injections. Each lesson shown at prompt time is logged; a later thumbs-down from the person that shares a specific tag with an injected lesson counts as that lesson not preventing the same mistake class. Generic capture tags never match, one thumbs-down counts once per injection, and with no injections the field is absent rather than zero.
+- 50978e3: Lessons now show up before the first tool call, not only after a miss. When a prompt is not a thumbs up or down, the UserPromptSubmit hook picks the top three stored lessons that match the prompt's topic (a tag match counts double, and one stray shared word is not enough) and prints them as context. Each injection is logged to lesson-injections.jsonl with the session, the prompt hash and the lesson id, which is the record the repeat-miss measure reads.
+- bb6208a: New opt-in shared-tree gate for checkouts that several agents use. Set `THUMBGATE_SHARED_TREE=1` and ThumbGate denies `git stash`, any `git reset`, `git checkout` and `git switch`, plain force pushes, and any force push (even with a lease) to `main`, `master` or `trunk`, with a one-line pointer to a linked worktree. `git status`, `git diff`, `git log`, `git worktree add`, `git commit` and `git push --force-with-lease` to your own branch stay allowed. It is off by default and not part of the default config.
+
+### Patch Changes
+
+- bf102c5: Checkout now verifies the Stripe price ids it is configured with. `/health` lists each id with its amount, interval and whether it is active (`checks.checkoutPrices`), and an archived or missing id is reported as degraded and kept out of the session metadata. Subscription sessions keep sending inline `price_data`, so Stripe lists a fresh inactive one-off price on each session by design.
+- 42a69e5: `thumbgate self-update` now also updates the cached hook runtime in `~/.thumbgate/runtime`, which is what hooks actually run; before, hooks stayed on the first version ever installed. The MCP server notices an older hook runtime, mentions the update command once in its instructions, and sends one `runtime_version_skew` ping a day. Nothing is installed automatically.
+- 600c73a: A first `thumbgate init` now wires Claude Code hooks to the stable launcher at `~/.thumbgate/bin/thumbgate-hook`, which runs `thumbgate@latest`. Before this, the hook table was built before the launcher existed, so every first install pinned its hooks to the version that ran `init` and never picked up a fix or the new upgrade line. Machines already pinned are now detected: the MCP server tells the agent once that `npx thumbgate@latest self-update` updates the hooks, and `self-update` updates the hook runtime first so a failed global install no longer leaves hooks on the old build. The first-block ping now carries the CLI version, platform and minutes since install, and `scripts/recent-commands.js`, `scripts/lesson-effect.js` and `scripts/pilot-request.js` ship in the package (they were required but missing).
+- dd15562: A new lesson that is only worded like an earlier one no longer replaces it. Before, three lessons that differed in one detail (which page of a form was not checked) were merged into one memory row that kept only the last text. Now only an identical lesson merges. A similar lesson keeps its own row, the earlier row keeps its own text, and the earlier row's repeat count still goes up so a repeated mistake is still promoted to a rule.
+- 001cb29: thumbgate.ai now has a "Request a 30-day team pilot" form at /pilot (name, work email, team size, which coding agent), linked from the home page and the pricing page. A request is stored in pilot-requests.jsonl on the hosted volume and emailed to the owner address set in THUMBGATE_OWNER_EMAILS.
+
+## 1.40.14
+
+### Patch Changes
+
+- 297d27f: Activated users now get a clickable, one-click path to checkout: the first-block upgrade line links straight to `https://thumbgate.ai/checkout/pro` (with the gate name in `utm_content`) instead of an unclickable `thumbgate.ai/pricing` text. The CLI's capture-limit link goes through `thumbgate.ai/go/pro` like every other upgrade link, instead of a raw Stripe payment link. New `first_block_upsell_shown` and `cli_limit_hit` pings and an `activationFunnel` block on `/v1/metrics/real` make activated → shown → checkout measurable. The public activation count now counts the `first_block` event production CLIs actually send (it read 0 while 109 had happened), and a rejected stored key no longer loses the activation or retries on every gate firing.
+- ae04afc: When a buyer clicks "Pay $19/mo with Stripe" and Stripe cannot open a session, the checkout page now says so ("We couldn't open the Stripe payment page just now. Nothing was charged.") instead of silently reloading the same page, and the failure is counted as a `checkout_session_failed` event with its reason code.
+- c6c692e: The hook's "Stats:" line now uses the same thumb counter as the status line and the dashboard headline, so the three show one number. A thumb counts only when a person gave it: text such as "Explicit user thumbs-up" in a row no longer counts by itself, and the MCP `capture_feedback` tool marks a thumb as human only when it carries the user-prompt hook tag. An end-to-end test now runs the real status line command, the dashboard server, the hook and a headless browser against one fixture log and checks that all four print the same counts.
+- 0536b7f: Owner alert emails and webhooks no longer carry the visitor, checkout-start and install count drops, or the activation rate. Those counts still include our own agents, tests and bots, so they stay on the admin page only until they are filtered.
+- 0688bf7: The status line and dashboard no longer show thumbs nobody gave. A feedback row with no project key now counts only when it shows a person typed the thumb (the user-prompt tag or a history-sync scrape beside it), and a row whose context names another project (for example "[Eci.Psn.StockService]") never counts here. No row is deleted or rewritten.
+
+## 1.40.13
+
+### Patch Changes
+
+- 550323e: Dashboard opened from a folder with no git remote (for example `~/workspace`) now opens on All projects and says "All projects · you are in ~/workspace (not a project)" instead of jumping to the most recent real project. A real project folder still opens on that project.
+- f6d5d8f: New learn page `/learn/ai-finops-agent-spend-guardrails`: AI FinOps for coding agents, with verified 2026 survey figures and what ThumbGate's gates do and do not do about agent spend.
+- 70e2d9c: Owner console: Unit economics tab and `/v1/admin/economics` (delivery cost per active install and per paying customer, contribution per plan), a payment-to-access check (paid without a key, failed payment still holding a key, paid keys with no Stripe payment; counts only), and time to first value from the CLI's first real gate block.
+  
+  The published package now holds 704 files (owner-alerts.js and the three unit-economics files), so the bundle ratchet baseline moves from 700 to 704.
+- f3d907c: Cost meter and unit-economics arithmetic for the owner console: `scripts/cost-meter.js` measures the hosted container's CPU and memory and counts sent emails for free, `config/unit-costs.json` holds the sourced Railway, Resend and Stripe rates, and `scripts/unit-economics.js` turns them into delivery cost per active install and per paying customer and contribution per plan. The console tab follows in the next PR.
+- 06890f1: Ship gate now also runs tests that use a changed file, says when it capped the test list, and labels `needs-fix` as soon as tests go red. The PR steward now finds branches far behind main and real merge conflicts through the REST API, so its update step actually runs.
+- ca12516: Add the ship gate: `config/ship-policy.json` approval policy, `ship-gate` workflow (policy review comment, matching tests, auto-merge of routine PRs on green with no open review threads) and CodeRabbit auto-review.
+- 7748351: Add `npm run ship` and the `/ship` command, and turn the stale-PR sweeper into a steward that rebases and labels PRs instead of closing them.
+- 55721ae: PR steward creates its labels when the repo lacks them and keeps sweeping when one PR fails.
+
+## 1.40.12
+
+### Patch Changes
+
+- 14bc498: Owner console: weekly CLI install retention cohorts on Growth, a "Where buyers come from" table on Today (checkout starts, paying customers and revenue by utm source), and optional alert emails to the owner through the app's existing mail provider (THUMBGATE_OWNER_ALERT_EMAIL=on, off by default).
+- Re-release as 1.40.12: the 1.40.11 publish failed its package safety gate (owner-alerts.js was missing from the package and owner-admin required a dev-only file), so its tag cannot be reused. No code change beyond what 1.40.11 carried.
+
+## 1.40.11
+
+### Patch Changes
+
+- 896b581: Owner console: a "Needs you" alert list at the top of a new Today tab (server errors, failed Stripe notifications, uptime, disk, sign-in failures, week-over-week drops, low activation, pending cancels, churn, unreadable sources), with /v1/admin/alerts for agents and optional delivery of new alerts to the owner's own Slack, Discord or Teams webhook via THUMBGATE_OWNER_ALERT_WEBHOOK. Renewal revenue and churn are now read from Stripe. The duplicate Overview tab left the menu and the evidence tables fold away.
+- 1406eb3: Owner console: show CLI product usage (active installs over 7 and 30 days, activated and returning installs, version mix), list-price MRR and pending cancels from active Stripe subscriptions, and week-over-week changes. Stored CLI pings now keep their package version, and the owner's own and CI CLI runs no longer count as real users.
+- f255662: auto-wire-hooks: --help, -h and --dry-run write nothing; hooks wired from a git worktree call the stable ~/.thumbgate/bin/thumbgate-hook launcher instead of a path inside the worktree.
+- f21333c: The local dashboard no longer pins its scripts, styles and pages in the browser as immutable for 24 hours. A tab kept the previous build's project-switcher.js after an upgrade and showed 0 feedback for a project that had 35. Scripts, styles and pages now revalidate on every load; images and fonts stay cached.
+- 9f6fa22: Dashboard: the headline feedback numbers now say which data folders they merge and how many automated events are excluded, the Project picker hides projects with no recorded activity and shows counts, home-folder sessions are named "Home folder (no project)", and the project block sits under the app nav in an aligned grid.
+- 5325e0f: auto-wire-hooks now prunes hook commands that run a missing script behind node, sh or bash (a deleted worktree path used to survive every cleanup). Adds a test that fails when a tracked .claude/settings.json hook points at a path that does not exist.
+- fe931d5: Serve `/connectors` (linked from `/pricing` but 404 in production), drop the deleted Pretix learn page from `/sitemap.xml`, and add a test that every sitemap URL resolves. README: move Quick Start above the fold and fix the verdict table, which listed the default-denied catastrophic commands under "Warn + log".
+- cd93a78: Thumbs-down lessons no longer quote an old pasted brief or system text as "you previously corrected me". Only the two latest short user messages can count as a correction, and when no specific mistake is known the lesson says so instead of claiming the mistake was repeated.
+- f21527f: Owner admin reporting: payment cursors accept ch_ and py_ ids, incomplete provider reconciliation is labelled partial, completed-but-unpaid checkout sessions no longer count as paid, checkout evidence coverage is shown, and activation labels say what is measured. Written by the Instinct assistant, reviewed and repaired here.
+- 554afb1: The dashboard opens on a project by default (the most recently active one) and loads the project list as soon as the page renders, instead of after a 10 second delay. "All projects" is an explicit choice that stays selected. The picker placeholder names the project folder instead of saying "Selected project".
+- e491efa: secret-exfiltration: reading a credentials file such as `.env` now gets read-specific advice (load values at runtime, or ask the user) instead of inline-literal advice, and deny messages advertise only `~/.thumbgate/secrets` and `~/.config/thumbgate` (`~/.resume_secrets` stays allowed for existing installs).
+
+## 1.40.10
+
+### Patch Changes
+
+- 0c06a74: Lifetime analytics no longer report fewer visitors than the 30-day window. When the telemetry log passed 64 MB the lifetime window silently read only a 4 MB tail while the 30-day window read 32 MB, so production showed 1,950 lifetime visitors against 13,947 for 30 days. The lifetime window now reads as much as the widest bounded window (64 MB). Counts are still marked partial (`telemetryWindowComplete: false`) when the log is larger than that.
+
+## 1.40.9
+
+### Patch Changes
+
+- Per-project dashboard: opening the dashboard for a project (status-line links now carry `project` and `projectDir`) shows the same up/down counts as the status line's this-project numbers, and the project switcher no longer keeps a stale folder. New `beforeShellExecution` adapter lets Cursor call the ThumbGate gate (`scripts/cursor-shell-gate.js`).
 - Attribution: a LinkedIn referrer (linkedin.com, lnkd.in) is named `linkedin`. The landing visit's `utm_source`, `utm_medium`, `utm_campaign`, `utm_content` and `utm_term` are kept in a 30-day first-party cookie and flow into the checkout form and the Stripe session metadata, so a buyer from a LinkedIn post shows up as `linkedin`, not `website`. New read-only `GET /v1/analytics/sources` (admin or operator key) groups visits, installs and checkout starts by `utm_source` for the last 7 and 30 days. The About page links the correct LinkedIn profile.
 - Checkout opens a Stripe session only after a confirmed human click. The Pro buttons post to the server with a short-lived single-use token that page JavaScript fetches after a real pointer or keyboard event. A bare GET, a request without a token, or more than 2 a minute from one IP gets no session, and `/go/pro*` GET links go to the confirm page instead of a payment link. Every session records landing page, referrer, browser class and button id. The npm package now ships `scripts/checkout-human-gate.js` and `scripts/cap-hit-counter.js` (+2 files, bundle baseline 690 -> 692).
+
+## 1.40.8
+
+### Patch Changes
+
+- Fix the status line showing "no human feedback this project" when the Claude Code session sits in a subfolder of the project. The status line now counts thumbs for the project root (the project dir Claude reports, else the git root), the same place captures are written.
+
+## 1.40.7
+
+### Patch Changes
+
+- The status-bar vote counter always reads the project's own feedback log, even when a feedback-directory override points at the shared store, and shows "feedback count unavailable" instead of "no human feedback" when the counter itself fails. Corrections that use the words done, live or force-push are no longer rejected by the reward check. Adds a Stop-hook script that asks for a label on unlabelled present-tense claims about outside state (not installed by default; see docs/guides/claim-gate-stop-hook.md).
 
 ## 1.40.6
 

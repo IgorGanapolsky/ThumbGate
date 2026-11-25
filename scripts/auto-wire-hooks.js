@@ -29,6 +29,8 @@ const {
   sessionStartHookCommand,
   statuslineCommand,
   userPromptHookCommand,
+  cursorShellGateHookCommand,
+  isDisposableCheckout,
 } = require('./hook-runtime');
 const { installShim } = require('./install-shim');
 
@@ -43,38 +45,44 @@ function getHome() {
 const OBSERVE_TOOL_MATCHER = '^(?:Bash|Shell|bash)$|teams.*(send|reply|post_message)';
 
 // --- Hook definitions ---
-const CLAUDE_HOOKS = {
-  PreToolUse: {
-    matcher: '.*',
-    hooks: [{ type: 'command', command: preToolHookCommand() }],
-  },
-  UserPromptSubmit: {
-    hooks: [{ type: 'command', command: userPromptHookCommand() }],
-  },
-  PostToolUse: [
-    {
-      matcher: 'mcp__thumbgate__feedback_stats|mcp__thumbgate__dashboard',
-      hooks: [{ type: 'command', command: cacheUpdateHookCommand() }],
-      legacyPattern: /(hook-thumbgate-cache-updater|cache-update\b)/,
+// Built on demand, never at module load: the commands depend on whether the stable shim at
+// ~/.thumbgate/bin/thumbgate-hook exists, and wireClaudeHooks installs it just before wiring.
+// Built at load time, a first install wired hooks pinned to `thumbgate@<init version>`, which
+// never update (2026-11-25, docs/decisions/2026-11-24-revenue-funnel-activation.md loop 3).
+function claudeHooks() {
+  return {
+    PreToolUse: {
+      matcher: '.*',
+      hooks: [{ type: 'command', command: preToolHookCommand() }],
     },
-    {
+    UserPromptSubmit: {
+      hooks: [{ type: 'command', command: userPromptHookCommand() }],
+    },
+    PostToolUse: [
+      {
+        matcher: 'mcp__thumbgate__feedback_stats|mcp__thumbgate__dashboard',
+        hooks: [{ type: 'command', command: cacheUpdateHookCommand() }],
+        legacyPattern: /(hook-thumbgate-cache-updater|cache-update\b)/,
+      },
+      {
+        matcher: OBSERVE_TOOL_MATCHER,
+        hooks: [{ type: 'command', command: observeToolResultHookCommand() }],
+        legacyPattern: /observe-tool-result\b/,
+      },
+    ],
+    PostToolUseFailure: {
       matcher: OBSERVE_TOOL_MATCHER,
       hooks: [{ type: 'command', command: observeToolResultHookCommand() }],
       legacyPattern: /observe-tool-result\b/,
     },
-  ],
-  PostToolUseFailure: {
-    matcher: OBSERVE_TOOL_MATCHER,
-    hooks: [{ type: 'command', command: observeToolResultHookCommand() }],
-    legacyPattern: /observe-tool-result\b/,
-  },
-  SessionStart: {
-    hooks: [{ type: 'command', command: sessionStartHookCommand() }],
-  },
-  Stop: {
-    hooks: [{ type: 'command', command: claimStopHookCommand() }],
-  },
-};
+    SessionStart: {
+      hooks: [{ type: 'command', command: sessionStartHookCommand() }],
+    },
+    Stop: {
+      hooks: [{ type: 'command', command: claimStopHookCommand() }],
+    },
+  };
+}
 
 const CODEX_HOOKS = {
   PreToolUse: {
@@ -134,6 +142,75 @@ function cursorMcpConfigPath() {
   return path.join(process.cwd(), '.cursor', 'mcp.json');
 }
 
+function cursorHooksJsonPath() {
+  return path.join(getHome(), '.cursor', 'hooks.json');
+}
+
+function isStaleCursorGateCheckHook(entry) {
+  const command = String(entry?.command || '');
+  return command.includes('thumbgate') && command.includes('gate-check');
+}
+
+function wireCursorBeforeShellGate(options = {}) {
+  const hooksPath = options.cursorHooksPath || cursorHooksJsonPath();
+  const command = cursorShellGateHookCommand();
+  const hookEntry = { command, timeout: 10, failClosed: true };
+  const added = [];
+
+  let existing = { hooks: { beforeShellExecution: [] }, version: 1 };
+  if (fs.existsSync(hooksPath)) {
+    try {
+      existing = JSON.parse(fs.readFileSync(hooksPath, 'utf8'));
+    } catch {
+      return { changed: false, error: `Could not parse ${hooksPath}`, settingsPath: hooksPath, added: [] };
+    }
+  }
+  if (!existing.hooks) existing.hooks = {};
+  if (!Array.isArray(existing.hooks.beforeShellExecution)) {
+    existing.hooks.beforeShellExecution = [];
+  }
+
+  const beforeShell = existing.hooks.beforeShellExecution;
+  const staleRemoved = beforeShell.filter(isStaleCursorGateCheckHook);
+  if (staleRemoved.length > 0) {
+    existing.hooks.beforeShellExecution = beforeShell.filter((entry) => !isStaleCursorGateCheckHook(entry));
+    for (const entry of staleRemoved) {
+      added.push({ lifecycle: 'beforeShellExecution (removed stale gate-check)', command: entry.command });
+    }
+  }
+
+  const alreadyWired = beforeShell.some((entry) => entry.command === command);
+  if (!alreadyWired) {
+    existing.hooks.beforeShellExecution.unshift(hookEntry);
+    added.unshift({ lifecycle: 'beforeShellExecution', command });
+  }
+
+  // Installs from before AGENT-3667 have our entry without failClosed; Cursor lets a crashed or timed-out hook through
+  // unless failClosed is true, so upgrade the entry in place.
+  let upgradedFailClosed = false;
+  for (const entry of existing.hooks.beforeShellExecution) {
+    if (entry.command === command && entry.failClosed !== true) {
+      entry.failClosed = true;
+      upgradedFailClosed = true;
+      added.push({ lifecycle: 'beforeShellExecution (failClosed set)', command });
+    }
+  }
+
+  const changed = staleRemoved.length > 0 || !alreadyWired || upgradedFailClosed;
+  if (!changed) {
+    return { changed: false, settingsPath: hooksPath, added: [] };
+  }
+
+  if (options.dryRun) {
+    return { changed: true, dryRun: true, settingsPath: hooksPath, added };
+  }
+
+  const dir = path.dirname(hooksPath);
+  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+  fs.writeFileSync(hooksPath, JSON.stringify(existing, null, 2) + '\n');
+  return { changed: true, settingsPath: hooksPath, added };
+}
+
 function wireCursorHooks(options = {}) {
   const mcpPath = cursorMcpConfigPath();
   const dir = path.dirname(mcpPath);
@@ -161,22 +238,51 @@ function wireCursorHooks(options = {}) {
     command: `${thumbgateServer.command} ${thumbgateServer.args.join(' ')}`,
   };
 
+  const shellGateOpts = {
+    ...options,
+    cursorHooksPath: options.cursorHooksPath,
+  };
+
   if (options.dryRun) {
-    return {
-      changed: before !== after,
+    const shellGate = wireCursorBeforeShellGate(shellGateOpts);
+    const mcpChanged = before !== after;
+  return {
+      changed: mcpChanged || shellGate.changed,
       dryRun: true,
-      settingsPath: mcpPath,
-      added: before === after ? [] : [addedEntry],
+      settingsPath: shellGate.settingsPath && shellGate.settingsPath !== mcpPath
+        ? `${mcpPath}, ${shellGate.settingsPath}`
+        : mcpPath,
+      added: (mcpChanged ? [addedEntry] : []).concat(shellGate.added || []),
+      shellGate,
     };
   }
 
   if (before === after) {
+    const shellGate = wireCursorBeforeShellGate(shellGateOpts);
+    if (shellGate.changed) {
+      return {
+        changed: true,
+        settingsPath: shellGate.settingsPath || mcpPath,
+        added: shellGate.added || [],
+        shellGate,
+      };
+    }
     return { changed: false, settingsPath: mcpPath, added: [] };
   }
 
   if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
   fs.writeFileSync(mcpPath, JSON.stringify(existing, null, 2) + '\n');
-  return { changed: true, settingsPath: mcpPath, added: [addedEntry] };
+  const shellGate = wireCursorBeforeShellGate(shellGateOpts);
+  const combinedAdded = [addedEntry].concat(shellGate.added || []);
+  const settingsPath = shellGate.settingsPath && shellGate.settingsPath !== mcpPath
+    ? `${mcpPath}, ${shellGate.settingsPath}`
+    : mcpPath;
+  return {
+    changed: true,
+    settingsPath,
+    added: combinedAdded,
+    shellGate,
+  };
 }
 
 // --- Claude Code wiring ---
@@ -249,11 +355,30 @@ function expandShellToken(token, resolveBase) {
 // missing script file, else null. Anything that doesn't look like a file
 // reference, or contains unresolved $VAR after expansion, returns null —
 // caller treats null as "keep the hook" (err on the side of NOT pruning).
+const SCRIPT_INTERPRETERS = new Set(['node', 'nodejs', 'sh', 'bash', 'zsh', 'python', 'python3']);
+
 function staleHookPath(command, resolveBase) {
   if (!command) return null;
-  const rawFirstToken = command.split(/\s+/)[0];
+  const tokens = command.trim().split(/\s+/);
+  let rawFirstToken = tokens[0];
+  let runsScript = false;
+  // `node /gone/script.js`: the interpreter is never a path, so check the script it runs.
+  // Without this a hook that points at a deleted worktree survives every cleanup and breaks
+  // each tool call (23 Nov 2026, ThumbGate-main-live).
+  if (SCRIPT_INTERPRETERS.has(path.basename(rawFirstToken))) {
+    // -c / -e / -p / --eval / --print run inline code, not a script file.
+    let script = null;
+    for (const token of tokens.slice(1)) {
+      if (/^(-[cep]|--eval|--print)$/.test(token)) return null;
+      if (!token.startsWith('-')) { script = token; break; }
+    }
+    if (!script) return null;
+    rawFirstToken = script;
+    runsScript = true;
+  }
   const firstToken = expandShellToken(rawFirstToken, resolveBase);
   const looksLikePath =
+    runsScript ||
     firstToken.includes('/') ||
     firstToken.includes('\\') ||
     firstToken.endsWith('.sh');
@@ -381,7 +506,9 @@ function wireClaudeHooks(options) {
   // The shim at ~/.thumbgate/bin/thumbgate-hook always resolves @latest,
   // so hooks never go stale across version bumps (Volta-style pattern).
   // Skip in source-checkout mode — developers use direct node commands.
-  if (!dryRun && !require('./mcp-config').isSourceCheckout(path.join(__dirname, '..'))) {
+  // Worktree checkouts get hooks that call the stable launcher, so it must exist.
+  const sourceRoot = path.join(__dirname, '..');
+  if (!dryRun && (!require('./mcp-config').isSourceCheckout(sourceRoot) || isDisposableCheckout(sourceRoot))) {
     try {
       installShim();
     } catch {
@@ -424,7 +551,7 @@ function wireClaudeHooks(options) {
     Stop: /(hook-stop-anti-claim\.js|claim-stop-check\b)/,
   };
 
-  for (const [lifecycle, hookDefOrList] of Object.entries(CLAUDE_HOOKS)) {
+  for (const [lifecycle, hookDefOrList] of Object.entries(claudeHooks())) {
     for (const hookDef of hookDefinitionList(hookDefOrList)) {
       const hookCommand = hookDef.hooks[0].command;
       const legacyPattern = hookDef.legacyPattern || legacyPatterns[lifecycle];
@@ -778,6 +905,7 @@ function parseFlags(argv) {
   const flags = {};
   for (const arg of argv) {
     if (arg === '--dry-run') flags.dryRun = true;
+    if (arg === '--help' || arg === '-h') flags.help = true;
     if (arg === '--wire-hooks') flags.wireHooks = true;
     if (arg.startsWith('--agent=')) flags.agent = arg.slice('--agent='.length);
     if (arg.startsWith('--agent') && !arg.includes('=')) {
@@ -796,6 +924,7 @@ module.exports = {
   detectAgent,
   wireHooks,
   wireClaudeHooks,
+  wireCursorBeforeShellGate,
   wireCodexHooks,
   wireGeminiHooks,
   wireForgeHooks,
@@ -812,16 +941,29 @@ module.exports = {
   syncClaudeStatusLine,
   forgeConfigPath,
   pruneStaleFileHooks,
+  staleHookPath,
   pruneStaleHooksInFile,
-  CLAUDE_HOOKS,
+  claudeHooks,
   preToolHookCommand,
   claimStopHookCommand,
   userPromptHookCommand,
   sessionStartHookCommand,
 };
+// Read at access time so the commands reflect whether the shim exists now.
+Object.defineProperty(module.exports, 'CLAUDE_HOOKS', { enumerable: true, get: claudeHooks });
+
+const USAGE = `Usage: node scripts/auto-wire-hooks.js [--agent=<claude-code|codex|gemini|forge|cursor>] [--dry-run] [--help]
+
+  --dry-run   print the entries that would be written; write nothing
+  --help, -h  print this text; write nothing
+`;
 
 if (require.main === module) {
   const flags = parseFlags(process.argv.slice(2));
+  if (flags.help) {
+    console.log(USAGE);
+    process.exit(0);
+  }
   const result = wireHooks(flags);
 
   if (result.error) {

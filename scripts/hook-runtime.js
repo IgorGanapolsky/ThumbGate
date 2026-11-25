@@ -34,9 +34,25 @@ function publishedHookCommandsAvailable(version) {
   return available;
 }
 
+// A linked git worktree (or anything under .thumbgate-worktrees) is deleted after merge.
+// A hook that points inside one breaks every tool call once it is gone (23 Nov 2026).
+function isDisposableCheckout(root) {
+  const normalized = String(root).split(path.sep).join('/');
+  if (normalized.includes('/.thumbgate-worktrees/') || normalized.includes('/worktrees/')) return true;
+  try {
+    return fs.statSync(path.join(root, '.git')).isFile();
+  } catch {
+    return false;
+  }
+}
+
 function resolveCliCommand(subcommand) {
-  // Source checkout: always use direct node command for development
+  // Source checkout: direct node command for development, but never from a disposable
+  // worktree. Those get the stable launcher at ~/.thumbgate/bin/thumbgate-hook.
   if (isSourceCheckout(PKG_ROOT)) {
+    if (isDisposableCheckout(PKG_ROOT)) {
+      return `${shellQuote(shimPath())} ${subcommand}`;
+    }
     return `node ${shellQuote(path.join(PKG_ROOT, 'bin', 'cli.js'))} ${subcommand}`;
   }
   // Prefer stable shim — always resolves @latest, survives version bumps
@@ -128,6 +144,10 @@ function codexStatuslineCommand() {
   return buildCodexPortableHookCommand('statusline-render');
 }
 
+function cursorShellGateHookCommand() {
+  return `node ${shellQuote(path.join(PKG_ROOT, 'scripts', 'cursor-shell-gate.js'))}`;
+}
+
 module.exports = {
   buildPortableHookCommand,
   buildCodexPortableHookCommand,
@@ -148,4 +168,6 @@ module.exports = {
   sessionStartHookCommand,
   statuslineCommand,
   userPromptHookCommand,
+  cursorShellGateHookCommand,
+  isDisposableCheckout,
 };

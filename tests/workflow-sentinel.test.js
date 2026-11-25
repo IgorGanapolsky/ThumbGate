@@ -1238,9 +1238,10 @@ test('workflow sentinel and gate_check warn on destructive-delete variants witho
       tool_input: { command },
     });
     const verdict = JSON.parse(mcpResult.content[0].text);
-    // The catastrophic clean-force command is a hard floor: gate_check blocks it by default.
+    // Hard floors that gate_check blocks by default: the catastrophic clean-force command, and an
+    // unfiltered `find ... -delete` (find-delete-broad, the bulk-destroy gates from 03645e9).
     // Every other variant here still warns.
-    const expected = /^git clean\b/.test(command) ? 'block' : 'warn';
+    const expected = /^git clean\b|^find\b[^;&|]*\s-delete\b/.test(command) ? 'block' : 'warn';
     assert.equal(verdict.decision, expected, `gate_check should ${expected} (not allow) on: ${command}`);
     assert.equal(verdict.flagged, true, `gate_check should set flagged=true on: ${command}`);
   }

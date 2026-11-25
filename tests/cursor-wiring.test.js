@@ -19,16 +19,20 @@ const { detectAgent, wireHooks } = require('../scripts/auto-wire-hooks');
 
 describe('cursor agent support in auto-wire-hooks', () => {
   let prevCwd;
+  let prevHome;
   let tempDir;
 
   beforeEach(() => {
     tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'tg-cursor-test-'));
     prevCwd = process.cwd();
+    prevHome = process.env.HOME;
+    process.env.HOME = path.join(tempDir, 'fake-home');
     process.chdir(tempDir);
   });
 
   afterEach(() => {
     process.chdir(prevCwd);
+    process.env.HOME = prevHome;
     try { fs.rmSync(tempDir, { recursive: true, force: true }); } catch {}
   });
 
@@ -41,9 +45,10 @@ describe('cursor agent support in auto-wire-hooks', () => {
     const r = wireHooks({ agent: 'cursor', dryRun: true });
     assert.equal(r.agent, 'cursor');
     assert.ok(r.changed, 'should plan to write MCP config');
-    assert.match(r.settingsPath, /\.cursor\/mcp\.json$/);
-    assert.ok(Array.isArray(r.added) && r.added.length === 1);
-    assert.match(r.added[0].command, /thumbgate/);
+    assert.match(r.settingsPath, /\.cursor\/mcp\.json/);
+    assert.ok(Array.isArray(r.added) && r.added.length >= 1);
+    assert.ok(r.added.some((entry) => entry.command.includes('thumbgate')));
+    assert.ok(r.added.some((entry) => entry.lifecycle === 'beforeShellExecution'));
   });
 
   test('wireHooks({ agent: "cursor" }) writes .cursor/mcp.json with thumbgate MCP server', () => {
@@ -85,5 +90,29 @@ describe('cursor agent support in auto-wire-hooks', () => {
     wireHooks({ agent: 'cursor' });
     const second = wireHooks({ agent: 'cursor' });
     assert.equal(second.changed, false, 'second run must be a no-op');
+  });
+
+  test('wireHooks adds cursor-shell-gate beforeShellExecution and drops stale gate-check', () => {
+    const hooksDir = path.join(process.env.HOME, '.cursor');
+    fs.mkdirSync(hooksDir, { recursive: true });
+    const hooksPath = path.join(hooksDir, 'hooks.json');
+    fs.writeFileSync(hooksPath, JSON.stringify({
+      version: 1,
+      hooks: {
+        beforeShellExecution: [
+          {
+            command: '/Users/iganapolsky/.local/bin/thumbgate gate-check',
+            matcher: 'git push',
+          },
+        ],
+      },
+    }, null, 2));
+
+    const r = wireHooks({ agent: 'cursor', cursorHooksPath: hooksPath });
+    assert.ok(r.changed);
+    const written = JSON.parse(fs.readFileSync(hooksPath, 'utf8'));
+    const shellHooks = written.hooks.beforeShellExecution;
+    assert.ok(shellHooks.some((h) => h.command.includes('cursor-shell-gate.js')));
+    assert.ok(!shellHooks.some((h) => String(h.command).includes('gate-check')));
   });
 });

@@ -14,7 +14,7 @@
 > Pre-action checks that flag repeated risky actions before execution and block matching actions when strict policy is enabled. Accepted feedback becomes local lessons; repeated failures can become prevention rules.
 
 ### Public Landing Page (thumbgate-production.up.railway.app)
-ThumbGate offers a free local CLI and self-serve Pro for recall, dashboard, adapters, and exports. Current plans: https://thumbgate.ai/pricing
+ThumbGate offers a free local CLI and self-serve Pro that keeps every learned rule active and adds recall, lesson search, and exports. Current plans: https://thumbgate.ai/pricing
 
 ### NPM package.json
 > ThumbGate Pre-Action Checks self-improve from ranked lessons and repeated failures, hard-block detected secret leaks, and block matches in strict mode.
@@ -27,7 +27,7 @@ ThumbGate offers a free local CLI and self-serve Pro for recall, dashboard, adap
 
 ### Stripe Pro Offer
 **Title:** ThumbGate Pro — Personal Local Dashboard + DPO Export
-ThumbGate offers a free local CLI and self-serve Pro for recall, dashboard, adapters, and exports. Compare current plans at /pricing. https://thumbgate.ai/pricing
+ThumbGate offers a free local CLI and self-serve Pro that keeps every learned rule active and adds recall, lesson search, and exports. Compare current plans at /pricing. https://thumbgate.ai/pricing
 
 ### DEV.TO Blog Post
 **Title:** I built pre-action checks that flag Claude Code's repeat mistakes — and hard-block secret exfiltration by default

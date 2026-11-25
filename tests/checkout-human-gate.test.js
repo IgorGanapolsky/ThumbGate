@@ -310,7 +310,7 @@ const NAV_HEADERS = {
   'sec-fetch-site': 'same-origin',
 };
 
-function makeFakeStripe({ failFirstWith } = {}) {
+function makeFakeStripe({ failFirstWith, failCode } = {}) {
   const calls = [];
   return {
     calls,
@@ -319,7 +319,11 @@ function makeFakeStripe({ failFirstWith } = {}) {
       sessions: {
         async create(payload) {
           calls.push(payload);
-          if (failFirstWith && calls.length === 1) throw new Error(failFirstWith);
+          if (failFirstWith && calls.length === 1) {
+            const failure = new Error(failFirstWith);
+            if (failCode) failure.code = failCode;
+            throw failure;
+          }
           return {
             id: `cs_test_fake_${calls.length}`,
             url: `https://checkout.example.invalid/pay/cs_test_fake_${calls.length}`,
@@ -565,6 +569,67 @@ describe('server wiring and session creation', () => {
     assert.equal(stripe.calls.length, 0);
   });
 
+  function sessionFailedEvents() {
+    try {
+      return fs.readFileSync(path.join(ENV.THUMBGATE_FEEDBACK_DIR, 'telemetry-pings.jsonl'), 'utf8')
+        .split('\n').filter(Boolean).map((line) => JSON.parse(line))
+        .filter((row) => (row.eventType || row.event) === 'checkout_session_failed');
+    } catch {
+      return [];
+    }
+  }
+
+  it('an admitted click whose Stripe session fails tells the buyer and is counted', async () => {
+    stripe = makeFakeStripe({ failFirstWith: 'stripe refused the session' });
+    billing._setStripeClient(stripe);
+    const before = sessionFailedEvents().length;
+    const res = await navigationPost('/go/pro-direct', { click_token: await freshToken() });
+    assert.equal(res.status, 302);
+    const location = new URL(res.headers.location, origin);
+    assert.equal(location.pathname, '/checkout/pro');
+    assert.equal(location.searchParams.get('gate_notice'), 'unavailable');
+    assert.equal(stripe.calls.length, 1, 'Stripe was asked once');
+    const note = await noteOnPage(res.headers.location);
+    assert.equal(note.hidden, false);
+    assert.match(note.text, /couldn't open the Stripe payment page just now\. Nothing was charged\./);
+    const events = sessionFailedEvents();
+    assert.equal(events.length, before + 1, 'one checkout_session_failed event');
+    assert.equal(events[events.length - 1].page, '/go/pro-direct');
+  });
+
+  // One click per test: the human gate allows only two clicks a minute from one address.
+  const REASON_CASES = [
+    ['a short code is kept', 'resource_missing', 'resource_missing'],
+    ['free text with an address becomes error', 'card declined for someone@example.com', 'error'],
+    ['a code over 40 characters becomes error', 'x'.repeat(41), 'error'],
+    ['a code with punctuation becomes error', 'bad code; DROP', 'error'],
+    ['no code becomes error', undefined, 'error'],
+  ];
+  for (const [label, failCode, expected] of REASON_CASES) {
+    it(`telemetry failure reason: ${label}`, async () => {
+      stripe = makeFakeStripe({ failFirstWith: 'stripe refused the session', failCode });
+      billing._setStripeClient(stripe);
+      const before = sessionFailedEvents().length;
+      const res = await navigationPost('/go/pro-direct', { click_token: await freshToken() });
+      assert.equal(res.status, 302, 'redirected to the confirm page');
+      assert.equal(new URL(res.headers.location, origin).searchParams.get('gate_notice'), 'unavailable', 'buyer is told');
+      assert.equal(stripe.calls.length, 1, 'Stripe was asked once');
+      const events = sessionFailedEvents();
+      assert.equal(events.length, before + 1, 'one failure event');
+      const reason = events[events.length - 1].reasonCode;
+      assert.equal(reason, expected, 'reason is the allowlisted code or error');
+      assert.match(reason, /^[A-Za-z0-9_]{1,40}$/, 'reason is always code-shaped');
+      assert.ok(!JSON.stringify(events[events.length - 1]).includes('example.com'), 'no free text from the error reaches telemetry');
+    });
+  }
+
+  it('a click that is refused at the gate is not counted as a session failure', async () => {
+    const before = sessionFailedEvents().length;
+    const res = await navigationPost('/go/pro-direct', {});
+    assert.equal(new URL(res.headers.location, origin).searchParams.get('gate_notice'), 'retry');
+    assert.equal(sessionFailedEvents().length, before);
+  });
+
   it('a replayed token gets the same notice and a third click in a minute is told to wait', async () => {
     const token = await freshToken();
     assert.equal((await navigationPost('/go/pro-direct', { click_token: token })).status, 303);
@@ -649,7 +714,7 @@ describe('server wiring and session creation', () => {
     assert.match(html, /name="click_token"/);
     assert.match(html, /isTrusted/);
     assert.match(html, /\.disabled\s*=\s*true/);
-    const scripts = [...html.matchAll(/<script>([\s\S]*?)<\/script>/g)].map((m) => m[1]);
+    const scripts = [...html.matchAll(/<script>([\s\S]*?)<\/script\s*>/g)].map((m) => m[1]);
     assert.ok(scripts.length >= 2);
     for (const code of scripts) assert.doesNotThrow(() => new vm.Script(code), 'inline script must be valid JavaScript');
   });

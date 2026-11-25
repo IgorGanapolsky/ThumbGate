@@ -191,7 +191,7 @@ test('LLM context positions ThumbGate as AI agent security infrastructure', () =
 
   assert.match(context, /AI Agent Security Infrastructure/);
   assert.match(context, /Self-protection/);
-  assert.match(context, /Budget enforcement/);
+  assert.doesNotMatch(context, /Budget enforcement/, 'unverified claim removed in the 24 Nov 2026 honesty pass');
   assert.match(context, /Compliance mapping/);
   assert.match(context, /NIST/);
   assert.match(context, /SOC2/);

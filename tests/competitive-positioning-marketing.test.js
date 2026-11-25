@@ -19,7 +19,7 @@ const regulatedHtml = read('public', 'use-cases', 'regulated-workflows.html');
 const deploymentReadinessHtml = read('public', 'guides', 'ai-deployment-readiness.html');
 
 test('homepage explains the enforcement point without an orchestration essay', () => {
-  assert.match(indexHtml, /Pre-action checks—and the systems that refine them/i);
+  assert.match(indexHtml, /What happens under the hood/i);
   assert.match(indexHtml, /Thumbs-down a Claude Code mistake once, and ThumbGate warns the next time it tries that command\. After three thumbs-downs on the same command, strict mode blocks it/i);
   assert.match(indexHtml, /Capture feedback/i);
   assert.match(indexHtml, /Remember locally/i);

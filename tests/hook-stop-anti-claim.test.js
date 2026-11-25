@@ -103,9 +103,22 @@ test('hook emits reminder when claim has no proof in same turn', () => {
       { type: 'text', text: 'The federal page is now live on production.' },
     ],
   });
-  const { stdout } = runHook(transcript);
+  const { stdout } = runHook(transcript, { env: { THUMBGATE_DEPLOY_PROOF_GATE: '0' } });
   assert.match(stdout, /anti-claim gate/i);
   assert.match(stdout, /is\s+live|now\s+live/i);
+});
+
+test('deploy claim with no production proof hard-blocks by default (deploy-proof gate)', () => {
+  const transcript = writeTranscript({
+    content: [
+      { type: 'text', text: 'The federal page is now live on production.' },
+    ],
+  });
+  const { stdout } = runHook(transcript, { env: { THUMBGATE_DEPLOY_PROOF_GATE: '' } });
+  const decision = JSON.parse(stdout.trim());
+  assert.equal(decision.decision, 'block');
+  assert.equal(decision.gate, 'deploy-proof');
+  assert.match(decision.reason, /now live/);
 });
 
 test('hook emits reminder for GitHub metadata verification claim with no proof', () => {
@@ -159,8 +172,19 @@ test('hook stays silent when claim is backed by a curl tool call in the same tur
       { type: 'tool_use', name: 'Bash', input: { command: 'curl -s https://thumbgate-production.up.railway.app/federal | head' } },
     ],
   });
-  const { stdout } = runHook(transcript);
+  const { stdout } = runHook(transcript, { env: { THUMBGATE_DEPLOY_PROOF_GATE: '0' } });
   assert.equal(stdout.trim(), '');
+});
+
+test('deploy-proof gate wants the curl result in the reply, not just the command', () => {
+  const transcript = writeTranscript({
+    content: [
+      { type: 'text', text: 'Verified — the federal page is live.' },
+      { type: 'tool_use', name: 'Bash', input: { command: 'curl -s https://thumbgate-production.up.railway.app/federal | head' } },
+    ],
+  });
+  const { stdout } = runHook(transcript, { env: { THUMBGATE_DEPLOY_PROOF_GATE: '' } });
+  assert.equal(JSON.parse(stdout.trim()).gate, 'deploy-proof');
 });
 
 test('findClaim catches the 2026-06-11 added completion phrases', () => {
@@ -373,4 +397,32 @@ test('extractText concatenates text blocks; extractToolUseSummary captures tool 
 test('CLAIM_PATTERNS and PROOF_PATTERNS are exported as arrays of RegExp', () => {
   assert.ok(Array.isArray(CLAIM_PATTERNS) && CLAIM_PATTERNS.every((p) => p instanceof RegExp));
   assert.ok(Array.isArray(PROOF_PATTERNS) && PROOF_PATTERNS.every((p) => p instanceof RegExp));
+});
+
+test('soft reminder is parked by the Stop hook and delivered once on the next prompt', () => {
+  const reminderDir = fs.mkdtempSync(path.join(os.tmpdir(), 'tg-claim-reminders-'));
+  const feedbackDir = fs.mkdtempSync(path.join(os.tmpdir(), 'tg-claim-reminders-fb-'));
+  const env = {
+    THUMBGATE_CLAIM_REMINDER_DIR: reminderDir,
+    THUMBGATE_DEPLOY_PROOF_GATE: '0',
+    THUMBGATE_STRICT_ENFORCEMENT: '',
+  };
+  const transcript = writeTranscript({
+    content: [{ type: 'text', text: 'Everything is done and working.' }],
+  });
+  const stop = runHook(transcript, { env, payload: { session_id: 'sess-123' } });
+  assert.match(stop.stdout, /anti-claim gate/i);
+  assert.ok(fs.existsSync(path.join(reminderDir, 'sess-123.json')), 'Stop hook should park the reminder');
+
+  const cli = path.join(__dirname, '..', 'bin', 'cli.js');
+  const prompt = (sessionId) => spawnSync(process.execPath, [cli, 'hook-auto-capture'], {
+    input: JSON.stringify({ session_id: sessionId, prompt: 'what next?', cwd: feedbackDir }),
+    env: { ...process.env, ...env, THUMBGATE_FEEDBACK_DIR: feedbackDir, THUMBGATE_STATE_DIR: feedbackDir, CLAUDE_USER_PROMPT: '' },
+    encoding: 'utf8',
+    timeout: 20000,
+  }).stdout;
+
+  assert.doesNotMatch(prompt('other-session'), /anti-claim gate/i, 'another session must not get it');
+  assert.match(prompt('sess-123'), /anti-claim gate/i, 'next prompt in the same session delivers it');
+  assert.doesNotMatch(prompt('sess-123'), /anti-claim gate/i, 'delivered only once');
 });

@@ -29,9 +29,11 @@
  */
 
 const fs = require('node:fs');
+const path = require('node:path');
 const {
   evaluateUniversalClaims,
 } = require('./universal-claim-evaluator');
+const { evaluateDeployProof } = require('./deploy-proof-gate');
 
 // Lie-phrase patterns. These match common "claim of completion" wording
 // the agent emits without verification. Word-boundary anchored to avoid
@@ -275,6 +277,48 @@ function factualClaimBlock(text, options = {}) {
   }
 }
 
+// A Stop hook's plain stdout (exit 0) is not shown to the model by Claude Code,
+// so the soft reminder used to go nowhere. It is now also parked in a small
+// per-session file and printed by the next UserPromptSubmit hook
+// (`thumbgate hook-auto-capture`), whose stdout Claude Code does add to context.
+const PENDING_REMINDER_TTL_MS = 60 * 60 * 1000;
+
+function pendingReminderPath(sessionId, options = {}) {
+  const dir = options.dir
+    || process.env.THUMBGATE_CLAIM_REMINDER_DIR
+    || path.join(require('node:os').tmpdir(), 'thumbgate-claim-reminders');
+  const safe = String(sessionId || 'default').replace(/[^A-Za-z0-9_-]/g, '_').slice(0, 120) || 'default';
+  return path.join(dir, `${safe}.json`);
+}
+
+function writePendingReminder(sessionId, reminder, options = {}) {
+  try {
+    const file = pendingReminderPath(sessionId, options);
+    fs.mkdirSync(path.dirname(file), { recursive: true });
+    fs.writeFileSync(file, JSON.stringify({ at: Date.now(), reminder }));
+    return file;
+  } catch {
+    return null;
+  }
+}
+
+/** Reads and deletes the parked reminder for a session. Returns text or ''. */
+function takePendingReminder(sessionId, options = {}) {
+  const file = pendingReminderPath(sessionId, options);
+  try {
+    if (!fs.existsSync(file)) return '';
+    const parsed = JSON.parse(fs.readFileSync(file, 'utf8'));
+    fs.rmSync(file, { force: true });
+    const now = options.now || Date.now();
+    if (!parsed || typeof parsed.reminder !== 'string') return '';
+    if (now - Number(parsed.at || 0) > PENDING_REMINDER_TTL_MS) return '';
+    return parsed.reminder;
+  } catch {
+    try { fs.rmSync(file, { force: true }); } catch { /* ignore */ }
+    return '';
+  }
+}
+
 function main() {
   const raw = readStdinSync();
   let payload = {};
@@ -306,6 +350,19 @@ function main() {
     return;
   }
 
+  // Deploy-proof gate: on by default. "deployed / shipped / live" with no
+  // production proof (curl, /health JSON, buildSha, HTTP 200) in the reply
+  // blocks the stop once. THUMBGATE_DEPLOY_PROOF_GATE=0 turns it off.
+  // The proof has to be in the reply itself: a curl command in a tool call
+  // shows that a check ran, not what it returned.
+  const deployBlock = evaluateDeployProof(text, {
+    cwd: payload.cwd || payload.workspace_root || process.cwd(),
+  });
+  if (deployBlock) {
+    process.stdout.write(`${JSON.stringify(deployBlock)}\n`);
+    return;
+  }
+
   const claim = findClaim(text);
   if (!claim) return; // no completion claim made; silent
 
@@ -332,6 +389,7 @@ function main() {
     '   If the work really is verified, re-state the claim with the proof.',
     '   If not, retract and run the verification before re-asserting.',
   ].join('\n');
+  writePendingReminder(payload.session_id, reminder);
   process.stdout.write(reminder + '\n');
 }
 
@@ -340,7 +398,6 @@ function main() {
 // in CommonJS, and CLAUDE.md "Hard-Won Lessons" pins the path-based form
 // as the portable fix (incident 2026-04-21 / PR #1115). Resolve BOTH sides
 // so the comparison is between two normalized absolute paths.
-const path = require('node:path');
 if (path.resolve(process.argv[1] || '') === path.resolve(__filename)) {
   try {
     main();
@@ -358,4 +415,7 @@ module.exports = {
   extractToolUseSummary,
   factualClaimBlock,
   main,
+  pendingReminderPath,
+  takePendingReminder,
+  writePendingReminder,
 };

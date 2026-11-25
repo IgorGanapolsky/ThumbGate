@@ -46,7 +46,7 @@
       "name": "What is a pre-action check for AI coding agents?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "A pre-action check is an enforcement layer that intercepts AI agent tool calls before they execute. Unlike prompt rules that agents can ignore, pre-action checks flag and log risky actions, and hard-block the most dangerous classes by default (secret exfiltration, supply-chain installs, and rm -rf-class deletes). Actions such as force-pushing to main, off-scope edits, or skipping tests warn by default and hard-block under strict enforcement mode (THUMBGATE_STRICT_ENFORCEMENT=1). ThumbGate implements pre-action checks via PreToolUse hooks that fire before every tool call."
+        "text": "A pre-action check is an enforcement layer that intercepts AI agent tool calls before they execute. Unlike prompt rules that agents can ignore, pre-action checks flag and log risky actions, and hard-block the most dangerous classes by default (secret exfiltration, supply-chain installs, and rm -rf-class deletes). Actions such as force-pushing to main, off-scope edits, or skipping tests warn by default and hard-block under strict enforcement mode (THUMBGATE_STRICT_ENFORCEMENT=1). ThumbGate implements pre-action checks via PreToolUse hooks that run before tool calls in supported integrations."
       }
     },
     {
@@ -210,7 +210,7 @@
   </tr>
   <tr>
     <td>Real-time pre-action checks</td>
-    <td class="yes">Yes -- fires before every tool call</td>
+    <td class="yes">Yes -- runs before tool calls (Claude Code)</td>
     <td class="no">No -- asynchronous review</td>
     <td class="no">No -- reactive only</td>
     <td class="no">No -- prompt-time only</td>
@@ -337,7 +337,7 @@
   <div class="step-card">
     <div class="step-number">2</div>
     <h3>Check</h3>
-    <p>Every tool call your agent makes passes through a pre-action check. Known-bad patterns are blocked before execution. Good actions pass through instantly.</p>
+    <p>In Claude Code, tool calls pass through a pre-action check. Known-bad patterns are blocked before execution. Good actions pass through instantly.</p>
   </div>
   <div class="step-card">
     <div class="step-number">3</div>
