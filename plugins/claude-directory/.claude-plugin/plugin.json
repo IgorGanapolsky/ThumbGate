@@ -1,0 +1,36 @@
+{
+  "name": "thumbgate",
+  "description": "Pre-action checks for Claude Code. A thumbs-down becomes a prevention rule, and a PreToolUse hook checks each tool call against your rules and the default gates before it runs.",
+  "version": "1.41.0",
+  "author": {
+    "name": "Igor Ganapolsky",
+    "url": "https://thumbgate.ai"
+  },
+  "homepage": "https://thumbgate.ai",
+  "repository": "https://github.com/IgorGanapolsky/ThumbGate",
+  "license": "MIT",
+  "keywords": [
+    "guardrails",
+    "pretooluse",
+    "hooks",
+    "agent-safety",
+    "pre-action-checks"
+  ],
+  "icon": "./.claude-plugin/icon.png",
+  "network": {
+    "hosts": [
+      "registry.npmjs.org",
+      "thumbgate.ai"
+    ]
+  },
+  "mcpServers": {
+    "thumbgate": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "thumbgate@1.41.0",
+        "serve"
+      ]
+    }
+  }
+}
