@@ -533,7 +533,7 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
     // 726 -> 727 (2026-11-25): scripts/delete-equivalence.js, a learned delete also denies the same delete written in Python (AGENT-3667) (+1).
     // 727 -> 728 (2026-11-25): scripts/cursor-self-heal.js (adds the thumbs-down loop to old Cursor installs).
     // 728 -> 729 (2026-11-25): src/api/security-headers.js, baseline security headers on every response (+1).
-    // 729 -> 730 (2026-11-25): public/host-matrix.html, the host enforcement matrix page (+1).
+    // 729 -> 730 (2026-11-25): public/host-matrix.html (a1844d0) added to package.json files (+1).
     manifest.fileCount <= 730,
     `npm package should stay <= 730 files, got ${manifest.fileCount}`
   );
@@ -835,8 +835,9 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // Bumped 10.81 MB -> 10.82 MB (2026-11-25, PR #5222, after merging main): measured 10,819,959.
   // Bumped 10.82 MB -> 10.83 MB (2026-11-25, release PR #5260): thumbs-up approval recording in scripts/send-gate.js
   // and the portable Cursor shell gate (PRs #5255, #5257); measured 10,822,233 on main and on the release branch.
-  // Bumped 10.83 MB -> 10.85 MB (2026-11-25, PR #5274): hook latency caches (scripts/gates-engine.js,
-  // scripts/project-identity.js) plus public/host-matrix.html, which main added without a files entry; measured 10,844,873.
+  // Bumped 10.83 MB -> 10.84 MB (2026-11-25): main measured 10,832,577 after the evening merges; 10,836,397 with public/host-matrix.html.
+  // Bumped 10.84 MB -> 10.85 MB (2026-11-25, PR #5274): hook latency caches in scripts/gates-engine.js and
+  // scripts/project-identity.js; measured 10,844,873 after merging main.
   manifest.unpackedSize <= 10_850_000,
   `npm package should stay <= 10.85 MB unpacked, got ${manifest.unpackedSize}`
 );
