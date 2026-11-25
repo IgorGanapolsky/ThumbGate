@@ -91,7 +91,7 @@
   <h1>Stop your AI agent from saying "deployed" without proof</h1>
   <p style="color:var(--muted);">4 min read &middot; For developers who ship with Claude Code</p>
 
-  <div class="tldr"><strong>TL;DR:</strong> Coding agents say "it's live" before anyone checked. ThumbGate's deploy-proof gate is a Claude Code Stop hook: if the reply claims a deploy and shows no proof from production, Claude Code hands the reply back to the agent with instructions to run the check and paste the output. It is on by default in ThumbGate 1.43.0 and later.</div>
+  <div class="tldr"><strong>TL;DR:</strong> Coding agents say "it's live" before anyone checked. ThumbGate's deploy-proof gate is a Claude Code Stop hook: if the reply claims a deploy and shows no proof from production, Claude Code hands the reply back to the agent with instructions to run the check and paste the output. It is on by default in ThumbGate 1.43.1 and later.</div>
 
   <figure class="shot">
     <img src="/assets/diagrams/deploy-proof-gate.png" width="1100" height="392" alt="Terminal: the agent says the login fix is deployed and live. ThumbGate's Stop hook blocks the reply because it shows no proof from production. The agent runs curl against the /health endpoint, pastes the JSON with version and buildSha, and the Stop hook allows the reply." loading="lazy" decoding="async">
