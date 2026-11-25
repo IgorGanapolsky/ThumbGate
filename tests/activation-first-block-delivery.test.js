@@ -77,13 +77,37 @@ test('summarizeActivationFunnel counts activated -> shown -> checkout, skipping 
   assert.deepEqual(funnel, {
     cliInstalls: 2,
     activatedInstalls: 1,
+    upsellCapableActivatedInstalls: 0,
     upsellShownInstalls: 1,
     limitHitInstalls: 1,
+    runtimeSkewInstalls: 0,
+    runtimeAutoUpdatedInstalls: 0,
+    runtimeAutoUpdateFailedInstalls: 0,
     cliCheckoutViews: 1,
     cliCheckoutClicks: 1,
     cliCheckoutPaidPageViews: 1,
     firstBlockCheckoutViews: 1,
   });
+});
+
+test('summarizeActivationFunnel reports upgrade-capable activations and hook-runtime update results', () => {
+  const funnel = tracker.summarizeActivationFunnel([
+    { eventType: 'first_block', clientType: 'cli', installId: 'old', version: '1.39.1' },
+    { eventType: 'first_block', clientType: 'cli', installId: 'new', version: '1.40.13' },
+    { eventType: 'cli_capture', clientType: 'cli', installId: 'new', version: '1.42.0' },
+    { eventType: 'first_block', clientType: 'cli', installId: 'pk', pkgVersion: '1.40.14' },
+    { eventType: 'runtime_version_skew', clientType: 'cli', installId: 'old', version: '1.42.0' },
+    { eventType: 'runtime_version_skew', clientType: 'cli', installId: 'new', version: '1.42.0' },
+    { eventType: 'runtime_auto_update', clientType: 'cli', installId: 'old', reasonCode: 'install-failed' },
+    { eventType: 'runtime_auto_update', clientType: 'cli', installId: 'new', reasonCode: 'install-failed' },
+    { eventType: 'runtime_auto_update', clientType: 'cli', installId: 'new', reasonCode: 'updated', version: '1.42.0' },
+    { eventType: 'runtime_auto_update', clientType: 'cli', installId: 'own', reasonCode: 'updated', visitorType: 'owner' },
+  ]);
+  assert.equal(funnel.activatedInstalls, 3);
+  assert.equal(funnel.upsellCapableActivatedInstalls, 2);
+  assert.equal(funnel.runtimeSkewInstalls, 2);
+  assert.equal(funnel.runtimeAutoUpdatedInstalls, 1);
+  assert.equal(funnel.runtimeAutoUpdateFailedInstalls, 1);
 });
 
 test('summarizeFirstBlockEvents keeps a later timing sample for an install already counted', () => {

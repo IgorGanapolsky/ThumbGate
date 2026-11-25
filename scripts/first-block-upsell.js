@@ -91,11 +91,13 @@ function readState(file) {
  * Decide whether to show the line for a real block, and record it when shown.
  * @returns {{ show: boolean, line?: string, reason?: string }}
  */
-// Fire-and-forget ping when the line is shown. Never in tests unless a tracker is injected.
+// Ping when the line is shown. Never in tests unless a tracker is injected. The hook process exits
+// right after printing, so a plain fire-and-forget ping never left the machine (upsellShown stayed 0
+// on production while the line was showing); a detached child delivers it instead.
 function defaultTrack(eventType, metadata, env) {
   if (env.NODE_TEST_CONTEXT || env.NODE_ENV === 'test' || process.env.NODE_TEST_CONTEXT) return;
   if (env.THUMBGATE_NO_TELEMETRY === '1' || env.DO_NOT_TRACK === '1') return;
-  try { require('./cli-telemetry').trackEvent(eventType, metadata); } catch { /* best-effort */ }
+  try { require('./cli-telemetry').trackEventDetached(eventType, metadata); } catch { /* best-effort */ }
 }
 
 function shown(gate, shownCount, track, env) {
