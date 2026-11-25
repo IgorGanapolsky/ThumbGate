@@ -154,12 +154,12 @@ __GA_BOOTSTRAP__
     <p class="section-lede">Use the local CLI path for immediate enforcement. Use marketplace installs where your editor supports them. Use the diagnostic path when you need a human-reviewed gate map for one risky workflow. New install: <a href="/guides/progressive-wiring">prove the pipe first</a> (doctor green, empty dashboard OK) before expecting a gate to fire.</p>
     <div class="grid">
       <article class="card" id="quickstart"><h3>First gate block in one command</h3><p>Promote your first prevention rule and watch ThumbGate stop a repeat mistake. Free includes the built-in rules and 3 learned rules, after a 7-day local Pro trial.</p><pre><code>npx thumbgate quickstart</code></pre></article>
-      <article class="card"><h3>CLI and MCP-compatible agents</h3><p>Fastest path for Claude Code, Cursor, Codex, Gemini CLI, Amp, Cline, OpenCode, and local MCP-compatible agents.</p><pre><code>npx -y thumbgate@1.43.0 init --agent claude
-npx -y thumbgate@1.43.0 doctor
-npx -y thumbgate@1.43.0 doctor --fix</code></pre></article>
-      <article class="card"><h3>Claude Desktop</h3><p>Use the npm-backed MCP server today. The Claude Desktop `.mcpb` directory submission packet is prepared separately.</p><pre><code>claude mcp add thumbgate -- npx --yes --package thumbgate@1.43.0 thumbgate serve</code></pre></article>
-      <article class="card"><h3>Cursor</h3><p>The public Cursor Marketplace listing is not live yet. Use the CLI wiring while the dashboard submission is resolved.</p><pre><code>npx -y thumbgate@1.43.0 init --agent cursor</code></pre></article>
-      <article class="card"><h3>Codex</h3><p>Use the local adapter now. Public Codex self-serve plugin publishing is not open yet, so the GitHub Release asset is the distribution proof.</p><pre><code>npx -y thumbgate@1.43.0 init --agent codex</code></pre></article>
+      <article class="card"><h3>CLI and MCP-compatible agents</h3><p>Fastest path for Claude Code, Cursor, Codex, Gemini CLI, Amp, Cline, OpenCode, and local MCP-compatible agents.</p><pre><code>npx -y thumbgate@latest init --agent claude
+npx -y thumbgate@latest doctor
+npx -y thumbgate@latest doctor --fix</code></pre></article>
+      <article class="card"><h3>Claude Desktop</h3><p>Use the npm-backed MCP server today. The Claude Desktop `.mcpb` directory submission packet is prepared separately.</p><pre><code>claude mcp add thumbgate -- npx --yes --package thumbgate@latest thumbgate serve</code></pre></article>
+      <article class="card"><h3>Cursor</h3><p>The public Cursor Marketplace listing is not live yet. Use the CLI wiring while the dashboard submission is resolved.</p><pre><code>npx -y thumbgate@latest init --agent cursor</code></pre></article>
+      <article class="card"><h3>Codex</h3><p>Use the local adapter now. Public Codex self-serve plugin publishing is not open yet, so the GitHub Release asset is the distribution proof.</p><pre><code>npx -y thumbgate@latest init --agent codex</code></pre></article>
       <article class="card" id="grok"><h3>Grok</h3><p>Grok Build CLI. There is no Grok store listing. This command adds the npm server. <code>npx thumbgate init</code> also writes the Claude-style config Grok reads.</p><pre><code>grok mcp add thumbgate -- npx -y thumbgate mcp</code></pre></article>
       <article class="card" id="hermes"><h3>Hermes</h3><p>Local hook for Nous Research Hermes. Merge <code>adapters/hermes/config.yaml</code> into <code>~/.hermes/config.yaml</code>. There is no Hermes directory listing.</p><pre><code>npx --yes --package thumbgate thumbgate hermes-gate</code></pre></article>
     </div>

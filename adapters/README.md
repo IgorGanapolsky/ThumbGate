@@ -4,10 +4,10 @@
 - `chatgpt/openapi.yaml`: import into GPT Actions.
 - `gemini/function-declarations.json`: Gemini function-calling definitions.
 - `mcp/server-stdio.js`: underlying local MCP stdio server implementation.
-- `claude/.mcp.json`: example Claude Code MCP config using `npx --yes --package thumbgate@1.43.0 thumbgate serve`.
-- `codex/config.toml`: example Codex MCP profile section using the same version-pinned portable launcher.
+- `claude/.mcp.json`: example Claude Code MCP config using `npx --yes --package thumbgate@latest thumbgate serve`.
+- `codex/config.toml`: example Codex MCP profile section using the same portable launcher, which follows npm latest.
 - `amp/skills/thumbgate-feedback/SKILL.md`: Amp skill template.
-- `opencode/opencode.json`: portable OpenCode MCP profile using the same version-pinned portable launcher.
+- `opencode/opencode.json`: portable OpenCode MCP profile using the same portable launcher, which follows npm latest.
 - `poolside/settings.yaml`, `poolside/README.md`: Pool terminal-agent MCP adapter. Pins ThumbGate, preserves Pool's native permission and sandbox boundary, and documents why Pool's fail-open hooks are observability rather than a security boundary.
 - `perplexity/.mcp.json`: Claude Code config with ThumbGate + Perplexity MCP servers side-by-side.
 - `perplexity/config.toml`: Codex config with ThumbGate + Perplexity MCP servers.
