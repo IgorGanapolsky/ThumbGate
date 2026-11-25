@@ -1,5 +1,30 @@
 # Changelog
 
+## 1.40.14
+
+### Patch Changes
+
+- 297d27f: Activated users now get a clickable, one-click path to checkout: the first-block upgrade line links straight to `https://thumbgate.ai/checkout/pro` (with the gate name in `utm_content`) instead of an unclickable `thumbgate.ai/pricing` text. The CLI's capture-limit link goes through `thumbgate.ai/go/pro` like every other upgrade link, instead of a raw Stripe payment link. New `first_block_upsell_shown` and `cli_limit_hit` pings and an `activationFunnel` block on `/v1/metrics/real` make activated → shown → checkout measurable. The public activation count now counts the `first_block` event production CLIs actually send (it read 0 while 109 had happened), and a rejected stored key no longer loses the activation or retries on every gate firing.
+- ae04afc: When a buyer clicks "Pay $19/mo with Stripe" and Stripe cannot open a session, the checkout page now says so ("We couldn't open the Stripe payment page just now. Nothing was charged.") instead of silently reloading the same page, and the failure is counted as a `checkout_session_failed` event with its reason code.
+- c6c692e: The hook's "Stats:" line now uses the same thumb counter as the status line and the dashboard headline, so the three show one number. A thumb counts only when a person gave it: text such as "Explicit user thumbs-up" in a row no longer counts by itself, and the MCP `capture_feedback` tool marks a thumb as human only when it carries the user-prompt hook tag. An end-to-end test now runs the real status line command, the dashboard server, the hook and a headless browser against one fixture log and checks that all four print the same counts.
+- 0536b7f: Owner alert emails and webhooks no longer carry the visitor, checkout-start and install count drops, or the activation rate. Those counts still include our own agents, tests and bots, so they stay on the admin page only until they are filtered.
+- 0688bf7: The status line and dashboard no longer show thumbs nobody gave. A feedback row with no project key now counts only when it shows a person typed the thumb (the user-prompt tag or a history-sync scrape beside it), and a row whose context names another project (for example "[Eci.Psn.StockService]") never counts here. No row is deleted or rewritten.
+
+## 1.40.13
+
+### Patch Changes
+
+- 550323e: Dashboard opened from a folder with no git remote (for example `~/workspace`) now opens on All projects and says "All projects · you are in ~/workspace (not a project)" instead of jumping to the most recent real project. A real project folder still opens on that project.
+- f6d5d8f: New learn page `/learn/ai-finops-agent-spend-guardrails`: AI FinOps for coding agents, with verified 2026 survey figures and what ThumbGate's gates do and do not do about agent spend.
+- 70e2d9c: Owner console: Unit economics tab and `/v1/admin/economics` (delivery cost per active install and per paying customer, contribution per plan), a payment-to-access check (paid without a key, failed payment still holding a key, paid keys with no Stripe payment; counts only), and time to first value from the CLI's first real gate block.
+  
+  The published package now holds 704 files (owner-alerts.js and the three unit-economics files), so the bundle ratchet baseline moves from 700 to 704.
+- f3d907c: Cost meter and unit-economics arithmetic for the owner console: `scripts/cost-meter.js` measures the hosted container's CPU and memory and counts sent emails for free, `config/unit-costs.json` holds the sourced Railway, Resend and Stripe rates, and `scripts/unit-economics.js` turns them into delivery cost per active install and per paying customer and contribution per plan. The console tab follows in the next PR.
+- 06890f1: Ship gate now also runs tests that use a changed file, says when it capped the test list, and labels `needs-fix` as soon as tests go red. The PR steward now finds branches far behind main and real merge conflicts through the REST API, so its update step actually runs.
+- ca12516: Add the ship gate: `config/ship-policy.json` approval policy, `ship-gate` workflow (policy review comment, matching tests, auto-merge of routine PRs on green with no open review threads) and CodeRabbit auto-review.
+- 7748351: Add `npm run ship` and the `/ship` command, and turn the stale-PR sweeper into a steward that rebases and labels PRs instead of closing them.
+- 55721ae: PR steward creates its labels when the repo lacks them and keeps sweeping when one PR fails.
+
 ## 1.40.12
 
 ### Patch Changes

@@ -633,7 +633,20 @@ test('capture_feedback tool can be called', async () => {
   assert.equal(Array.isArray(result.content), true);
   assert.match(result.content[0].text, /accepted|Feedback/i);
   const payload = JSON.parse(result.content[0].text);
-  assert.equal(payload.feedbackEvent.reviewOrigin, 'human', 'a capture_feedback call is a person\'s thumb');
+  assert.equal(payload.feedbackEvent.reviewOrigin, 'automated', 'an agent calling capture_feedback is not a person');
+});
+
+test('capture_feedback records a person only for the user-prompt hook tag', async () => {
+  const call = async (extra) => {
+    const result = await handleRequest({
+      jsonrpc: '2.0', id: 9, method: 'tools/call',
+      params: { name: 'capture_feedback', arguments: { signal: 'up', context: 'Igor: thumbs up ' + Math.random(), whatWorked: 'Evidence first', ...extra } },
+    });
+    return JSON.parse(result.content[0].text).feedbackEvent.reviewOrigin;
+  };
+  assert.equal(await call({ reviewOrigin: 'human', tags: ['verification'] }), 'automated', 'claiming human without the hook tag is refused');
+  assert.equal(await call({ reviewOrigin: 'human', tags: ['user-prompt-thumbs'] }), 'human');
+  assert.equal(await call({ tags: ['user-prompt-thumbs'] }), 'automated', 'the tag alone, without a human claim, is not enough');
 });
 
 test('capture_feedback keeps an explicit automated origin from script callers', async () => {

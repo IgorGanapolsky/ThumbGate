@@ -34,20 +34,17 @@ const PRO_CHECKOUT_URL = PRO_MONTHLY_PAYMENT_LINK;
 const TRIAL_DAYS = 7;
 
 function checkoutUrlFor(source, content) {
+  // Every CLI upgrade link goes through thumbgate.ai/go/pro, never a raw Stripe payment link:
+  // only that route attributes the click, opens a session tied to the buyer, and provisions the key.
   try {
-    const base = content === 'capture_feedback'
-      ? 'https://buy.stripe.com/7sYfZhaiE1eSbO99uj3sI0d'
-      : PRO_CHECKOUT_URL;
-    const url = new URL(base);
+    const url = new URL(PRO_CHECKOUT_URL);
     url.searchParams.set('utm_source', source || 'cli');
     url.searchParams.set('utm_medium', 'cli');
     url.searchParams.set('utm_campaign', 'pro_conversion');
     if (content) url.searchParams.set('utm_content', content);
     return url.toString();
   } catch (_) {
-    return content === 'capture_feedback'
-      ? 'https://buy.stripe.com/7sYfZhaiE1eSbO99uj3sI0d'
-      : PRO_CHECKOUT_URL;
+    return PRO_CHECKOUT_URL;
   }
 }
 
@@ -225,6 +222,8 @@ function limitNudge(action, limitResult = {}) {
   const reason = limitResult.message
     ? String(limitResult.message).split('\n')[0]
     : 'Free tier limit reached.';
+  // The free-tier wall is an upgrade moment; count it so the funnel can see it.
+  try { trackEvent('cli_limit_hit', { action, limitType: limitResult.limitType || null }); } catch (_) { /* best-effort */ }
   process.stderr.write(
     `\n  🔒 ${reason}\n` +
     usageLine +
@@ -3644,6 +3643,15 @@ function hookAutoCapture() {
       text: prompt,
       source: 'claude_user_prompt',
     });
+    // Before the agent's first tool call, show the top three stored lessons that match this prompt's topic.
+    try {
+      const reminder = require(path.join(PKG_ROOT, 'scripts', 'prompt-lessons')).run({
+        prompt,
+        sessionId: promptEnvelope.sessionId || process.env.CLAUDE_SESSION_ID || '',
+        cwd: promptEnvelope.projectDir || CWD,
+      });
+      if (reminder) process.stdout.write(`${reminder}\n`);
+    } catch { /* a lesson lookup never blocks a prompt */ }
     return;
   }
 
@@ -3665,12 +3673,25 @@ function hookAutoCapture() {
     timestamp: promptEnvelope.timestamp,
     source: 'claude-user-prompt',
   });
+  // A thumbs-down is about the shell command the agent just ran. Attach it so repeated thumbs-downs on one command
+  // can become a gate (without it the entry names no action and auto-promotion has nothing to match).
+  let failedCommand;
+  if (signal === 'down') {
+    try {
+      const { resolveFeedbackDir } = require(path.join(PKG_ROOT, 'scripts', 'feedback-paths'));
+      failedCommand = require(path.join(PKG_ROOT, 'scripts', 'recent-commands')).lastCommand({
+        feedbackDir: resolveFeedbackDir({ cwd: promptEnvelope.projectDir || CWD }),
+        sessionId: promptEnvelope.sessionId || process.env.CLAUDE_SESSION_ID || '',
+      }) || undefined;
+    } catch { /* no recent command is fine */ }
+  }
   const result = processInlineFeedback({
     signal,
     context: prompt,
     chatHistory,
     whatWentWrong: signal === 'down' && !genericFeedback ? prompt : undefined,
     whatWorked: signal === 'up' && !genericFeedback ? prompt : undefined,
+    failedCommand,
     sourceEvent,
   });
   if (!result.feedbackResult || !result.feedbackResult.duplicate) {

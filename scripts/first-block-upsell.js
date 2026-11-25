@@ -3,7 +3,12 @@
 /**
  * One plain upgrade line right after a user's FIRST real block, then at most once per 7 days.
  *
- * Shape: "ThumbGate just stopped <what>. Pro adds <feature> - thumbgate.ai/pricing?utm_source=cli&utm_medium=first_block"
+ * Shape: "ThumbGate just stopped <what>. Pro adds <feature> - https://thumbgate.ai/checkout/pro?utm_source=cli&..."
+ *
+ * The link carries a scheme so terminals make it clickable, and it opens the checkout page (one click
+ * to Stripe) instead of /pricing (two). Each showing sends a `first_block_upsell_shown` ping so the
+ * activated -> shown -> checkout funnel has a denominator.
+ * See docs/decisions/2026-11-24-revenue-funnel-activation.md.
  *
  * Channel: a PreToolUse hook is never a TTY (stdin and stdout are pipes), so the line is not printed.
  * It rides in the hook JSON's top-level `systemMessage`, which the host shows to the person and
@@ -19,7 +24,13 @@ const fs = require('node:fs');
 const path = require('node:path');
 
 const COOLDOWN_MS = 7 * 24 * 60 * 60 * 1000;
-const PRICING_URL = 'thumbgate.ai/pricing?utm_source=cli&utm_medium=first_block';
+const UPSELL_BASE_URL = 'https://thumbgate.ai/checkout/pro';
+const PRICING_URL = `${UPSELL_BASE_URL}?utm_source=cli&utm_medium=first_block&utm_campaign=first_block_upsell`;
+
+function upsellUrl(gateId) {
+  const safeGate = String(gateId || '').toLowerCase().replace(/[^a-z0-9-]/g, '').slice(0, 40);
+  return safeGate && STOPPED_PHRASES[safeGate] ? `${PRICING_URL}&utm_content=${safeGate}` : PRICING_URL;
+}
 const STATE_FILE = 'first-block-upsell.json';
 const CI_VARS = ['CI', 'GITHUB_ACTIONS', 'TRAVIS', 'CIRCLECI', 'JENKINS_URL', 'GITLAB_CI', 'CODEBUILD_BUILD_ID'];
 
@@ -47,7 +58,7 @@ function proFeature() {
 }
 
 function buildLine(gateId) {
-  return `ThumbGate just stopped ${stoppedPhrase(gateId)}. Pro adds ${proFeature()} - ${PRICING_URL}`;
+  return `ThumbGate just stopped ${stoppedPhrase(gateId)}. Pro adds ${proFeature()} - ${upsellUrl(gateId)}`;
 }
 
 // A paying, licensed, creator or owner install never sees the line. The 7-day trial is NOT exempt:
@@ -80,7 +91,19 @@ function readState(file) {
  * Decide whether to show the line for a real block, and record it when shown.
  * @returns {{ show: boolean, line?: string, reason?: string }}
  */
-function maybeUpsell({ gate, env = process.env, now = Date.now(), stateDir, exempt = defaultExempt } = {}) {
+// Fire-and-forget ping when the line is shown. Never in tests unless a tracker is injected.
+function defaultTrack(eventType, metadata, env) {
+  if (env.NODE_TEST_CONTEXT || env.NODE_ENV === 'test' || process.env.NODE_TEST_CONTEXT) return;
+  if (env.THUMBGATE_NO_TELEMETRY === '1' || env.DO_NOT_TRACK === '1') return;
+  try { require('./cli-telemetry').trackEvent(eventType, metadata); } catch { /* best-effort */ }
+}
+
+function shown(gate, shownCount, track, env) {
+  try { track('first_block_upsell_shown', { gateId: gate ? String(gate).slice(0, 120) : null, shownCount }, env); } catch { /* best-effort */ }
+  return { show: true, line: buildLine(gate) };
+}
+
+function maybeUpsell({ gate, env = process.env, now = Date.now(), stateDir, exempt = defaultExempt, track = defaultTrack } = {}) {
   try {
     if (env.THUMBGATE_NO_UPSELL === '1') return { show: false, reason: 'opt-out' };
     if (CI_VARS.some((name) => env[name])) return { show: false, reason: 'ci' };
@@ -102,7 +125,7 @@ function maybeUpsell({ gate, env = process.env, now = Date.now(), stateDir, exem
       } catch (err) {
         return { show: false, reason: err && err.code === 'EEXIST' ? 'claimed-elsewhere' : 'state-unwritable' };
       }
-      return { show: true, line: buildLine(gate) };
+      return shown(gate, 1, track, env);
     }
 
     if (state.corrupt) {
@@ -126,7 +149,7 @@ function maybeUpsell({ gate, env = process.env, now = Date.now(), stateDir, exem
     } catch {
       return { show: false, reason: 'state-unwritable' };
     }
-    return { show: true, line: buildLine(gate) };
+    return shown(gate, next.shownCount, track, env);
   } catch {
     return { show: false, reason: 'error' };
   }
@@ -177,6 +200,7 @@ module.exports = {
   COOLDOWN_MS,
   PRICING_URL,
   STATE_FILE,
+  upsellUrl,
   STOPPED_PHRASES,
   stoppedPhrase,
   buildLine,

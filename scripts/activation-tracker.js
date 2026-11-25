@@ -24,6 +24,7 @@
  * is a no-op for the lifetime of that install.
  */
 
+const crypto = require('node:crypto');
 const fs = require('node:fs');
 const { spawn } = require('node:child_process');
 const http = require('node:http');
@@ -186,6 +187,11 @@ function resolveActivationAccountAuth(options = {}) {
   return { apiKey, apiBaseUrl };
 }
 
+// A short one-way fingerprint, so the marker file never stores the key itself.
+function hashKeyForMarker(apiKey) {
+  return crypto.createHash('sha256').update(String(apiKey)).digest('hex').slice(0, 16);
+}
+
 function postActivationEvent(endpointUrl, apiKey, bodyObj, awaitDelivery = false) {
   const payload = JSON.stringify(bodyObj);
   const parsed = new URL(endpointUrl);
@@ -248,7 +254,13 @@ function reportFirstBlockActivation(metadata = {}) {
   const firstBlockAt = existing.firstBlockAt || metadata.firstBlockAt || existing.blockedAt || new Date().toISOString();
   const { apiKey, apiBaseUrl } = resolveActivationAccountAuth(metadata);
 
-  if (existing.firstBlockReportedAt || (!apiKey && existing.firstBlockAnonReportedAt)) {
+  const keyAlreadyRejected = Boolean(
+    apiKey
+    && existing.firstBlockAnonReportedAt
+    && existing.firstBlockAuthRejectedKeyHash
+    && existing.firstBlockAuthRejectedKeyHash === hashKeyForMarker(apiKey)
+  );
+  if (existing.firstBlockReportedAt || (!apiKey && existing.firstBlockAnonReportedAt) || keyAlreadyRejected) {
     if (!existing.firstBlockAt || existing.event !== 'first_block') {
       writeJsonSafe(markerPath, { ...existing, firstBlockAt, event: 'first_block', at: existing.at || firstBlockAt });
     }
@@ -283,6 +295,8 @@ function reportFirstBlockActivation(metadata = {}) {
     clientType: 'cli',
     firstBlockAt,
     installId,
+    // Without this the server classifies the event by User-Agent (node sends none) as a bot.
+    visitorType: (() => { try { return classifyInstall(); } catch { return undefined; } })(),
     ...(gateId ? { gateId: String(gateId).slice(0, 120) } : {}),
   };
 
@@ -292,6 +306,27 @@ function reportFirstBlockActivation(metadata = {}) {
       ? `${apiBaseUrl}/v1/activation/first-block`
       : `${apiBaseUrl}/v1/telemetry/ping`;
     return postActivationEvent(targetUrl, apiKey, eventPayload, true).then((res) => {
+      if (!res.ok && apiKey && (res.statusCode === 401 || res.statusCode === 403)) {
+        // The stored key no longer authenticates (rotated operator key, expired
+        // trial, wrong host). Don't lose the activation: report it anonymously,
+        // and remember the rejected key so every later gate firing stops retrying
+        // the account route with it.
+        const rejectedKeyHash = hashKeyForMarker(apiKey);
+        return postActivationEvent(`${apiBaseUrl}/v1/telemetry/ping`, '', eventPayload, true).then((anon) => {
+          const latest = readJsonSafe(markerPath) || nextMarker;
+          const stamp = new Date().toISOString();
+          writeJsonSafe(markerPath, {
+            ...latest,
+            at: latest.at || firstBlockAt,
+            firstBlockAt: latest.firstBlockAt || firstBlockAt,
+            event: 'first_block',
+            firstBlockAuthRejectedKeyHash: rejectedKeyHash,
+            firstBlockAuthRejectedAt: stamp,
+            ...(anon.ok ? { firstBlockAnonReportedAt: stamp } : {}),
+          });
+          return { reported: Boolean(anon.ok), statusCode: res.statusCode, fallback: 'anonymous', firstBlockAt };
+        });
+      }
       if (res.ok) {
         const latest = readJsonSafe(markerPath) || nextMarker;
         const stamp = new Date().toISOString();
@@ -347,19 +382,84 @@ function extractEntryBlockMinutes(e) {
   return typeof ms === 'number' && Number.isFinite(ms) ? Math.round((ms / 60_000) * 10) / 10 : null;
 }
 
+const FIRST_BLOCK_EVENT_NAMES = new Set(['first_block', 'first_blocked_tool_call']);
+const CHECKOUT_VIEW_EVENTS = new Set(['checkout_interstitial_view']);
+const CHECKOUT_CLICK_EVENTS = new Set(['checkout_interstitial_cta_clicked', 'stripe_redirect_started', 'checkout_start']);
+const CHECKOUT_PAID_EVENTS = new Set(['checkout_success_page_view']);
+
+function isInternalEntry(e) {
+  return e.visitorType === 'bot' || e.visitorType === 'ci' || e.visitorType === 'owner';
+}
+
+function isCliAttributed(e) {
+  const source = String(e.utmSource || e.source || '').toLowerCase();
+  return source === 'cli' || source.startsWith('cli_');
+}
+
+/**
+ * The activated -> upgrade-shown -> checkout funnel, counted per install (CLI stages) and per
+ * event (web stages that carry utm_source=cli). See docs/decisions/2026-11-24-revenue-funnel-activation.md.
+ */
+function summarizeActivationFunnel(entries = []) {
+  const installs = new Set();
+  const activated = new Set();
+  const upsellShown = new Set();
+  const limitHit = new Set();
+  const funnel = { cliCheckoutViews: 0, cliCheckoutClicks: 0, cliCheckoutPaidPageViews: 0, firstBlockCheckoutViews: 0 };
+  for (const e of Array.isArray(entries) ? entries : []) {
+    if (!e || isInternalEntry(e)) continue;
+    const type = e.eventType || e.event || '';
+    if (e.installId && (e.clientType === 'cli' || e.client === 'cli')) installs.add(e.installId);
+    if (e.installId && FIRST_BLOCK_EVENT_NAMES.has(type)) activated.add(e.installId);
+    if (e.installId && type === 'first_block_upsell_shown') upsellShown.add(e.installId);
+    if (e.installId && type === 'cli_limit_hit') limitHit.add(e.installId);
+    if (!isCliAttributed(e)) continue;
+    if (CHECKOUT_VIEW_EVENTS.has(type)) {
+      funnel.cliCheckoutViews += 1;
+      if (String(e.utmMedium || '').toLowerCase() === 'first_block') funnel.firstBlockCheckoutViews += 1;
+    }
+    if (CHECKOUT_CLICK_EVENTS.has(type)) funnel.cliCheckoutClicks += 1;
+    if (CHECKOUT_PAID_EVENTS.has(type)) funnel.cliCheckoutPaidPageViews += 1;
+  }
+  return {
+    cliInstalls: installs.size,
+    activatedInstalls: activated.size,
+    upsellShownInstalls: upsellShown.size,
+    limitHitInstalls: limitHit.size,
+    ...funnel,
+  };
+}
+
 function summarizeFirstBlockEvents(entries = []) {
   if (!Array.isArray(entries) || entries.length === 0) {
     return { count: 0, medianMinutes: null, under5MinutesCount: 0 };
   }
   let count = 0;
   const minutesList = [];
+  // installId -> its timing sample (null until an event for it carries one). The count is per
+  // install, but the timing may arrive on a later event of the same install (first_block carries
+  // none; first_blocked_tool_call carries minutesSinceInstall), so pick it independently.
+  const installTiming = new Map();
   for (const e of entries) {
-    if ((e?.eventType || e?.event) !== 'first_blocked_tool_call') continue;
-    if (e.visitorType === 'bot' || e.visitorType === 'ci') continue;
-    count += 1;
+    // Production CLIs report the activation as `first_block` (reportFirstBlockActivation);
+    // older builds sent `first_blocked_tool_call`. Count either, once per install.
+    if (!FIRST_BLOCK_EVENT_NAMES.has(e?.eventType || e?.event)) continue;
+    if (e.visitorType === 'bot' || e.visitorType === 'ci' || e.visitorType === 'owner') continue;
     const m = extractEntryBlockMinutes(e);
-    if (m !== null && m >= 0) minutesList.push(m);
+    const sample = m !== null && m >= 0 ? m : null;
+    if (e.installId) {
+      if (!installTiming.has(e.installId)) {
+        installTiming.set(e.installId, sample);
+        count += 1;
+      } else if (installTiming.get(e.installId) === null && sample !== null) {
+        installTiming.set(e.installId, sample);
+      }
+      continue;
+    }
+    count += 1;
+    if (sample !== null) minutesList.push(sample);
   }
+  for (const sample of installTiming.values()) if (sample !== null) minutesList.push(sample);
   if (count === 0 || minutesList.length === 0) {
     return { count, medianMinutes: null, under5MinutesCount: 0 };
   }
@@ -389,6 +489,7 @@ module.exports = {
   reportFirstBlockActivation,
   resolveActivationAccountAuth,
   summarizeFirstBlockEvents,
+  summarizeActivationFunnel,
   computeDaysSinceInstall,
   computeMinutesSinceInstall,
   readMarker,

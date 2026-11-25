@@ -119,7 +119,9 @@ if [ -n "$_HUMAN_JSON" ]; then
     @sh "SCOPE_LABEL=\(.label // "this project")",
     @sh "LD_TS=\(.latestDown.timestamp // "")",
     @sh "LD_LABEL=\(.latestDown.label // "")",
-    @sh "LD_TEXT=\(.latestDown.text // "")"
+    @sh "LD_TEXT=\(.latestDown.text // "")",
+    @sh "LE_PER100=\(.lessonEffect.repeatMissesPer100 // "")",
+    @sh "LE_INJ=\(.lessonEffect.injections // 0)"
   ' 2>/dev/null)"
 else
   # The counter printed nothing. That is a failure, not an absence of feedback.
@@ -275,6 +277,7 @@ if [[ "$UP" = "0" && "$DOWN" = "0" ]]; then
   printf '%b\n' "$LINE"
 else
   LINE="${LINE} · ${G}${BD}${UP}${RST}${UP_LINK} ${R}${BD}${DOWN}${RST}${DOWN_LINK} ${D}${SCOPE_LABEL}${RST}"
+  [[ -n "${LE_PER100:-}" ]] && LINE="${LINE} · ${D}${LE_PER100} repeat misses/100 injections (${LE_INJ})${RST}"
 
   # Control Tower alerts (if any)
   [[ "${SLO_V:-0}" -gt 0 ]] && LINE="${LINE} ${R}${SLO_V} SLO${RST}"
