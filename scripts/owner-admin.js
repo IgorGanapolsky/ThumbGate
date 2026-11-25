@@ -1070,6 +1070,8 @@ function postOwnerWebhook(platform, webhookUrl, title, message) {
   });
 }
 
+const TRANSIENT_ALERTS = new Set(['stripe_unreadable', 'telemetry_unreadable', 'money_unchecked', 'health_unchecked']);
+
 // Checks the alerts every 15 minutes and sends the new ones to the channels above. Does nothing when none is set.
 function startAlertDelivery(makeDeps, { intervalMs = 15 * 60 * 1000, firstCheckMs = 60000, send } = {}) {
   const channels = alertChannels();
@@ -1093,11 +1095,16 @@ function startAlertDelivery(makeDeps, { intervalMs = 15 * 60 * 1000, firstCheckM
     try {
       const deps = makeDeps();
       const result = await collectAlerts(deps, AbortSignal.timeout(30000));
-      const firing = result.data.alerts.filter(ownerAlerts.isDeliverable);
       const state = readState(deps);
       const before = new Set(Array.isArray(state?.firing) ? state.firing : []);
+      const seenOnce = new Set(Array.isArray(state?.pending) ? state.pending : []);
+      // A read that failed once (Stripe or telemetry unreadable, a check that timed out) is usually a cold start right
+      // after a deploy, so it is sent only when the next check, 15 minutes later, still sees it.
+      const deliverable = result.data.alerts.filter(ownerAlerts.isDeliverable);
+      const firing = deliverable.filter((alert) => !TRANSIENT_ALERTS.has(alert.id) || seenOnce.has(alert.id) || before.has(alert.id));
+      const pending = deliverable.filter((alert) => !firing.includes(alert)).map((alert) => alert.id);
       const added = firing.filter((alert) => !before.has(alert.id));
-      writeState(deps, { confirmedAt: state?.confirmedAt || new Date().toISOString(), channels, firing: firing.map((alert) => alert.id), checkedAt: new Date().toISOString() });
+      writeState(deps, { confirmedAt: state?.confirmedAt || new Date().toISOString(), channels, firing: firing.map((alert) => alert.id), pending, checkedAt: new Date().toISOString() });
       if (!state?.confirmedAt) await deliver({ title: 'ThumbGate: alert delivery is on', message: 'This is the one-time test that owner alerts reach you. New alerts from thumbgate.ai/admin will arrive here, each once, checked every 15 minutes. Firing right now: ' + firing.length + '.\nhttps://thumbgate.ai/admin' });
       console.log('[owner-alerts] checked: ' + firing.length + ' firing, ' + added.length + ' new');
       if (!added.length) return;
