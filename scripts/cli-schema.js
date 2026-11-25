@@ -132,6 +132,15 @@ const CLI_COMMANDS = [
     ],
   },
   {
+    name: 'desktop-snapshot',
+    description: 'One read-only JSON snapshot (blocks, thumbs-downs, rules, plan) for desktop and menu bar apps',
+    group: 'discovery',
+    flags: [
+      { name: 'json',  type: 'boolean', description: 'Output as JSON' },
+      { name: 'limit', type: 'number',  description: 'Items per list (default 10, max 50)' },
+    ],
+  },
+  {
     name: 'artifacts',
     aliases: ['artifact'],
     description: 'Operator decision artifacts - PR, reliability, revenue, and release pulses',

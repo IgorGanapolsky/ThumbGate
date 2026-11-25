@@ -34,9 +34,13 @@ const SCOPE_KEYWORDS = [
   /--project/,
 ];
 
-const SHARED_LOCAL_STORE_PHRASE = /same machine-local feedback store/i;
-const ISOLATED_DASHBOARD_PHRASE = /separate dashboard|isolated|per[- ]repo dashboard/i;
-const LESSON_PATH_PHRASE = /\.claude\/memory\/feedback\//;
+// What init really writes (verified 2026-11-25 in a clean HOME and repo):
+// hooks go machine-wide to ~/.claude/settings.json, lessons stay per repo
+// in <repo>/.thumbgate/. Earlier copy promised a shared cross-repo store and a
+// per-project hooks file, which init never wrote.
+const HOOKS_PATH_PHRASE = /~\/\.claude\/settings\.json/;
+const LESSON_PATH_PHRASE = /<repo>\/\.thumbgate\//;
+const FALSE_SHARED_STORE_PHRASE = /same machine-local feedback store|one shared dashboard across every repo|automatically flags the same mistake in/i;
 
 describe('install-scope documentation: README.md', () => {
   test('contains the dedicated "Install scope" section', () => {
@@ -53,14 +57,14 @@ describe('install-scope documentation: README.md', () => {
     }
   });
 
-  test('contrasts a shared local store with isolated per-project data', () => {
-    assert.match(README, SHARED_LOCAL_STORE_PHRASE, 'README must describe the machine-local shared-store outcome');
-    assert.match(README, ISOLATED_DASHBOARD_PHRASE, 'README must describe the isolated-dashboard outcome');
+  test('says hooks are machine-wide and lessons are per repo', () => {
+    assert.match(README, HOOKS_PATH_PHRASE, 'README must name the hooks file init writes');
     assert.match(README, /cross-repo blocking is not automatic/i);
+    assert.doesNotMatch(README, FALSE_SHARED_STORE_PHRASE, 'README must not promise a shared cross-repo lesson store');
   });
 
   test('shows where the lesson DB lives so users can find it', () => {
-    assert.match(README, LESSON_PATH_PHRASE, 'README must reference the .claude/memory/feedback/ lesson DB path');
+    assert.match(README, LESSON_PATH_PHRASE, 'README must reference the <repo>/.thumbgate/ lesson store');
   });
 });
 
@@ -73,9 +77,11 @@ describe('install-scope documentation: public/guide.html', () => {
     );
   });
 
-  test('renders the scope comparison table with both rows', () => {
+  test('renders the scope table with machine-wide hooks and per-project lessons', () => {
     assert.match(GUIDE_HTML, /<table[\s\S]+?Machine-wide[\s\S]+?Per-project[\s\S]+?<\/table>/i,
-      'guide.html must show a comparison table with both scope rows');
+      'guide.html must show a table with both scopes');
+    assert.match(GUIDE_HTML, /~\/\.claude\/settings\.json/);
+    assert.doesNotMatch(GUIDE_HTML, FALSE_SHARED_STORE_PHRASE, 'guide.html must not promise a shared cross-repo lesson store');
   });
 
   test('mentions --project flag and machine-wide default', () => {
@@ -98,6 +104,6 @@ describe('install-scope documentation: bin/cli.js help output', () => {
     assert.match(CLI_JS, /per-repo|per-project/i, 'CLI help must mention per-repo/per-project scope');
     assert.match(CLI_JS, /--project: per-repo|--project.*per-repo|--project.*per-project/i,
       'CLI help must associate --project with per-repo scope');
-    assert.match(CLI_JS, /--no-hooks/, 'CLI help must mention the --no-hooks opt-out');
+    assert.doesNotMatch(CLI_JS, /isolated dashboard|shared dashboard/, 'install-mcp writes only the MCP entry, not lessons');
   });
 });
