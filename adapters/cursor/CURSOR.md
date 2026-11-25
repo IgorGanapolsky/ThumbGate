@@ -22,7 +22,7 @@ Or after install:
 
 ```json
 {
-  "command": "npx --yes --package thumbgate@1.43.0 thumbgate cursor-shell-gate",
+  "command": "npx --yes --package thumbgate@1.43.1 thumbgate cursor-shell-gate",
   "timeout": 10
 }
 ```
