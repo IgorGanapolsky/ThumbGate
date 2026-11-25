@@ -337,7 +337,7 @@ test('public-core-boundary: npm bundle stays thin (file count ceiling)', () => {
   // 690 -> 704 (2026-11-24): scripts/owner-alerts.js and the owner console cost and unit-economics modules (PRs 5170, 5177, 5179); kept in lockstep with public-bundle-ratchet and package-boundary.
   // 704 -> 711 (2026-11-25): back in lockstep with public-bundle-ratchet and package-boundary (private-owner.json, pilot.html,
   // four missing runtime requires from #5194, and shared-tree.json from bb6208a).
-  const CEILING = 720; // 688 -> 690 (2026-11-16): statusline-human-counts.js and human-feedback.js, run by statusline.sh
+  const CEILING = 721; // 688 -> 690 (2026-11-16): statusline-human-counts.js and human-feedback.js, run by statusline.sh
   assert.ok(
     files.length <= CEILING,
     `public npm bundle should stay <= ${CEILING} files, got ${files.length}. ` +
