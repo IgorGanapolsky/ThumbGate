@@ -903,7 +903,7 @@
     "test:mcp-tool-annotations": "node --test tests/mcp-tool-annotations.test.js",
     "test:mcp-policy": "node --test tests/mcp-policy.test.js",
     "test:mcp-oauth": "node --test tests/mcp-oauth.test.js",
-    "test:mcp-oauth-flow": "node --test tests/mcp-oauth-flow.test.js",
+    "test:mcp-oauth-flow": "node --test tests/mcp-oauth-flow.test.js tests/hosted-feedback-everywhere.test.js",
     "test:plan-gate": "node --test tests/plan-gate.test.js",
     "test:pulse": "node --test tests/pulse.test.js",
     "test:semantic-layer": "node --test tests/semantic-layer.test.js",

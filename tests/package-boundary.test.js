@@ -821,8 +821,10 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // and the install version share in scripts/activation-tracker.js; measured 10,780,497.
   // Bumped 10.79 MB -> 10.80 MB (2026-11-25): the Sources tab (scripts/owner-admin.js, public/admin.html) and the
   // checkout_click event, on top of the hook-side latest check above.
-  manifest.unpackedSize <= 10_800_000,
-  `npm package should stay <= 10.80 MB unpacked, got ${manifest.unpackedSize}`
+  // Bumped 10.80 MB -> 10.81 MB (2026-11-25, PR #5232): durable OAuth store + refresh tokens in
+  // scripts/mcp-oauth.js and hosted MCP instructions in src/api/server.js; measured 10,802,087.
+  manifest.unpackedSize <= 10_810_000,
+  `npm package should stay <= 10.81 MB unpacked, got ${manifest.unpackedSize}`
 );
 
   for (const file of requiredRuntimeFiles) {
