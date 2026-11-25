@@ -5242,6 +5242,7 @@ function renderSitemapXml(runtimeConfig) {
     { path: '/learn/claude-artifact-desktop-apps', changefreq: 'weekly', priority: '0.85' },
     { path: '/learn/siren-agent-sandbox-escape-gates', changefreq: 'weekly', priority: '0.85' },
     { path: '/learn/proof-before-claim-deploy-gate', changefreq: 'weekly', priority: '0.85' },
+    { path: '/learn/claude-ship-agent-pr-rules', changefreq: 'weekly', priority: '0.85' },
     { path: '/compare/claude-code-hooks', changefreq: 'weekly', priority: '0.85' },
     { path: '/compare/bumblebee', changefreq: 'weekly', priority: '0.85' },
     { path: '/compare/anthropic-containment', changefreq: 'weekly', priority: '0.85' },
