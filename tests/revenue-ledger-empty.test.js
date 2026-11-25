@@ -24,6 +24,17 @@ test('a missing revenue ledger with no paid keys reads as "nothing sold yet", no
   assert.ok(!found.includes('revenue_ledger_missing'));
 });
 
+test('a paid funnel event without a key (service order) keeps the ledger flagged as missing', () => {
+  fs.writeFileSync(process.env._TEST_FUNNEL_LEDGER_PATH, `${JSON.stringify({ stage: 'paid', event: 'checkout_paid_confirmed', evidence: 'cs_test' })}\n`);
+  try {
+    const found = codes();
+    assert.ok(found.includes('revenue_ledger_missing'), found.join(','));
+    assert.ok(!found.includes('revenue_ledger_empty'));
+  } finally {
+    fs.rmSync(process.env._TEST_FUNNEL_LEDGER_PATH, { force: true });
+  }
+});
+
 test('a missing revenue ledger with a Stripe-paid key is still flagged as missing', () => {
   fs.writeFileSync(process.env._TEST_API_KEYS_PATH, JSON.stringify({
     keys: { tg_test: { customerId: 'cus_123', source: 'stripe_webhook_checkout_completed', active: true } },

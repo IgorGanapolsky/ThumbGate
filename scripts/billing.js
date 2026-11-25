@@ -329,6 +329,13 @@ function keyStoreHasPaidKeys(store = loadKeyStore()) {
   ));
 }
 
+// Any confirmed payment in the funnel ledger (stage 'paid'), e.g. checkout_paid_confirmed.
+function funnelHasPaidEvents(descriptor) {
+  return ((descriptor && descriptor.activePaths) || []).some((file) => (
+    loadJsonlFile(file).some((row) => row && row.stage === 'paid')
+  ));
+}
+
 function buildSourceWarning(code, message) {
   return { code, message };
 }
@@ -430,9 +437,9 @@ function buildBillingSourceDiagnostics(feedbackDir) {
       'revenue_ledger_legacy_fallback',
       'Revenue events are loading only from a legacy feedback directory.'
     ));
-  } else if (revenueLedger.activeMode === 'missing' && !keyStoreHasPaidKeys()) {
-    // The first paid event creates the ledger file. With no paid key either, a missing ledger means
-    // nothing has been sold yet: report that as a fact, not as a broken data source.
+  } else if (revenueLedger.activeMode === 'missing' && !keyStoreHasPaidKeys() && !funnelHasPaidEvents(funnelLedger)) {
+    // The first paid event creates the ledger file. With no paid key and no paid funnel event (service
+    // orders get no key), a missing ledger means nothing has been sold yet: a fact, not a broken source.
     warnings.push(buildSourceWarning(
       'revenue_ledger_empty',
       'No revenue events recorded yet; the revenue ledger is created by the first paid checkout.'
@@ -5191,7 +5198,7 @@ async function refreshCheckoutPriceStatus() {
 
 module.exports = {
   configuredCheckoutPrices, refreshCheckoutPriceStatus,
-  getStripeClient, classifyRevenueRecord, summarizeExternalRevenue, buildBillingSourceDiagnostics, keyStoreHasPaidKeys,
+  getStripeClient, classifyRevenueRecord, summarizeExternalRevenue, buildBillingSourceDiagnostics, keyStoreHasPaidKeys, funnelHasPaidEvents,
   withStripeReadSlot, getBillingAnalyticsReadPaths,
   _mergeRevenueEvents: mergeRevenueEvents,
   _buildStripeReconciledRevenueEvent: buildStripeReconciledRevenueEvent,
