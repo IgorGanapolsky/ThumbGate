@@ -198,6 +198,7 @@
     "scripts/codex-runbook-flywheel.js",
     "scripts/codex-self-heal.js",
     "scripts/claude-self-heal.js",
+    "scripts/cursor-self-heal.js",
     "scripts/colbert-style-maxsim.js",
     "scripts/commercial-offer.js",
     "scripts/context-engine.js",
