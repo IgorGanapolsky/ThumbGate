@@ -31,6 +31,7 @@ const RUNTIME_BIN = path.join(os.homedir(), '.thumbgate', 'runtime', 'node_modul
 function shimContent() {
   const escapedRuntimeBin = JSON.stringify(RUNTIME_BIN);
   const escapedRuntimeDir = JSON.stringify(path.join(os.homedir(), '.thumbgate', 'runtime'));
+  const escapedStamp = JSON.stringify(path.join(os.homedir(), '.thumbgate', 'shim-latest-check'));
 
   return `#!/usr/bin/env bash
 # ThumbGate hook shim — DO NOT EDIT
@@ -45,6 +46,20 @@ RUNTIME_DIR=${escapedRuntimeDir}
 
 # Fast path: cached runtime binary exists and is executable
 if [ -x "$RUNTIME_BIN" ]; then
+  # Once a day, detached: keep the cached runtime on npm latest. Runtimes older than 1.43.1 never check
+  # on their own, so the shim does it. Opt out with THUMBGATE_NO_AUTO_UPDATE=1; skipped in CI.
+  if [ "\${THUMBGATE_NO_AUTO_UPDATE:-0}" != "1" ] && [ "\${CI:-}" != "true" ] && [ "\${CI:-}" != "1" ]; then
+    STAMP=${escapedStamp}
+    if [ -z "$(find "$STAMP" -mtime -1 2>/dev/null)" ]; then
+      touch "$STAMP" 2>/dev/null || true
+      UPDATER="$RUNTIME_DIR/node_modules/thumbgate/scripts/runtime-auto-update.js"
+      if [ -f "$UPDATER" ] && grep -q -e '--check-latest' "$UPDATER" 2>/dev/null; then
+        ( nohup node "$UPDATER" --check-latest "$RUNTIME_DIR" >/dev/null 2>&1 & ) 2>/dev/null || true
+      else
+        ( nohup npm install --prefix "$RUNTIME_DIR" --no-save --omit=dev --no-audit --no-fund thumbgate@latest >/dev/null 2>&1 & ) 2>/dev/null || true
+      fi
+    fi
+  fi
   # Optional background upgrade. Disabled by default so hooks never mutate a
   # source checkout, enterprise pin, or dogfood runtime behind the operator's back.
   if [ "\${THUMBGATE_SHIM_AUTO_UPDATE:-0}" = "1" ]; then

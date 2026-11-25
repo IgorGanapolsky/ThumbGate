@@ -584,6 +584,14 @@ function wireClaudeHooks(options) {
     } catch {
       // Non-fatal: fall back to version-pinned commands
     }
+    // The hooks run the cached runtime, so a newer package than the runtime means init must refresh it
+    // (it used to print "already configured" and leave the runtime behind). Detached, opt-out with
+    // THUMBGATE_NO_AUTO_UPDATE=1.
+    try {
+      require('./runtime-auto-update').refreshRuntimeOnInit({ packageVersion: require('../package.json').version });
+    } catch {
+      // Best effort: the shim's daily check and the MCP path still catch up.
+    }
   }
 
   const desiredStatusLine = statuslineCommand();
