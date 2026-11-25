@@ -277,5 +277,77 @@
         }
       }
     }
+  ],
+  "summary": [
+    {
+      "id": "claude-code",
+      "label": "Claude Code",
+      "hardStops": "yes",
+      "gatesDenied": "9 of 9",
+      "failMode": "open",
+      "failCheck": "gate-check given unreadable input -> exit 0, permissionDecision none. If ThumbGate errors, the command runs: the hook exits 0 with no decision.",
+      "evidence": "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/host-compatibility.md",
+      "note": "If ThumbGate errors, the command runs: the hook exits 0 with no decision."
+    },
+    {
+      "id": "cursor",
+      "label": "Cursor",
+      "hardStops": "yes",
+      "gatesDenied": "9 of 9",
+      "failMode": "closed",
+      "failCheck": "plugin gate-check.sh when the ThumbGate command fails -> exit 2, permission deny. Every hook entry ThumbGate ships or writes sets failClosed: true. A crash or timeout inside Cursor itself follows Cursor's own rule and was not run here.",
+      "evidence": "https://github.com/IgorGanapolsky/ThumbGate/blob/main/tests/cursor-fail-closed.test.js",
+      "note": "Every hook entry ThumbGate ships or writes sets failClosed: true. A crash or timeout inside Cursor itself follows Cursor's own rule and was not run here."
+    },
+    {
+      "id": "codex",
+      "label": "Codex",
+      "hardStops": "untested",
+      "gatesDenied": "n/a",
+      "failMode": "untested",
+      "failCheck": "No test sends the gate this host's own payload, so nothing is claimed.",
+      "evidence": "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/host-compatibility.md",
+      "note": "No test sends the gate this host's own payload, so nothing is claimed."
+    },
+    {
+      "id": "gemini-cli",
+      "label": "Gemini CLI",
+      "hardStops": "untested",
+      "gatesDenied": "n/a",
+      "failMode": "untested",
+      "failCheck": "No test sends the gate this host's own payload, so nothing is claimed.",
+      "evidence": "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/host-compatibility.md",
+      "note": "No test sends the gate this host's own payload, so nothing is claimed."
+    },
+    {
+      "id": "cline",
+      "label": "Cline",
+      "hardStops": "no",
+      "gatesDenied": "n/a",
+      "failMode": "not applicable",
+      "failCheck": "No hook: init writes an MCP server entry and a .clinerules file. Advisory, because the model has to call gate_check itself.",
+      "evidence": "https://github.com/IgorGanapolsky/ThumbGate/blob/main/tests/advisory-hosts-honesty.test.js",
+      "note": "No hook: init writes an MCP server entry and a .clinerules file. Advisory, because the model has to call gate_check itself."
+    },
+    {
+      "id": "opencode",
+      "label": "OpenCode",
+      "hardStops": "no",
+      "gatesDenied": "n/a",
+      "failMode": "not applicable",
+      "failCheck": "No hook: init writes an MCP server entry only. Advisory, because the model has to call gate_check itself.",
+      "evidence": "https://github.com/IgorGanapolsky/ThumbGate/blob/main/tests/advisory-hosts-honesty.test.js",
+      "note": "No hook: init writes an MCP server entry only. Advisory, because the model has to call gate_check itself."
+    },
+    {
+      "id": "amp",
+      "label": "Amp",
+      "hardStops": "no",
+      "gatesDenied": "n/a",
+      "failMode": "not applicable",
+      "failCheck": "No hook: init writes an MCP server entry only. Feedback capture, not enforcement.",
+      "evidence": "https://github.com/IgorGanapolsky/ThumbGate/blob/main/tests/advisory-hosts-honesty.test.js",
+      "note": "No hook: init writes an MCP server entry only. Feedback capture, not enforcement."
+    }
   ]
 }
