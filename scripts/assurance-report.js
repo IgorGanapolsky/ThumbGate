@@ -22,6 +22,8 @@ const fs = require('node:fs');
 const path = require('node:path');
 const crypto = require('node:crypto');
 
+const { isCountedHumanFeedback, isLegacyMcpCapture } = require('./human-feedback');
+
 const SEVERITY_WEIGHT = { critical: 4, high: 3, medium: 2, low: 1 };
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -44,6 +46,17 @@ function severityWeight(severity) {
   return SEVERITY_WEIGHT[String(severity || '').toLowerCase()] || 1;
 }
 
+// An override's actor defaults to 'agent' (scripts/override-audit.js). Only a
+// recorded actor that is not an agent or bot is shown as a person's decision.
+function isAgentActor(actor) {
+  const a = String(actor || '').trim().toLowerCase();
+  return !a || /\b(agent|bot|claude|codex|cursor|gemini|copilot|automation|script)\b/.test(a);
+}
+
+function isPersonFeedback(entry) {
+  return isCountedHumanFeedback(entry) || isLegacyMcpCapture(entry);
+}
+
 function feedbackDirectionOf(entry) {
   const raw = String(entry.signal || entry.feedback || entry.rating || '').toLowerCase();
   if (['up', 'positive', 'thumbs_up', 'thumbsup', '+1', 'good'].includes(raw)) return 'up';
@@ -63,7 +76,11 @@ function buildAssuranceReport({ auditRows = [], feedbackRows = [], now = new Dat
   };
 
   const rows = auditRows.filter((r) => r && inWindow(r.timestamp));
-  const totals = { evaluated: rows.length, allowed: 0, stopped: 0, flagged: 0, overridden: 0 };
+  const totals = {
+    evaluated: rows.length, allowed: 0, stopped: 0, flagged: 0, neededApproval: 0,
+    overridden: 0, overriddenByAgent: 0, overriddenByPerson: 0,
+  };
+  const RISK_DECISIONS = new Set(['deny', 'warn', 'approve']);
   const findings = new Map();
   const catalogHashes = new Set();
   const sessions = new Set();
@@ -74,9 +91,14 @@ function buildAssuranceReport({ auditRows = [], feedbackRows = [], now = new Dat
     if (r.decision === 'allow') totals.allowed += 1;
     else if (r.decision === 'deny') totals.stopped += 1;
     else if (r.decision === 'warn') totals.flagged += 1;
-    else if (r.decision === 'override') totals.overridden += 1;
+    else if (r.decision === 'approve') totals.neededApproval += 1;
+    else if (r.decision === 'override') {
+      totals.overridden += 1;
+      if (isAgentActor(r.override && r.override.actor)) totals.overriddenByAgent += 1;
+      else totals.overriddenByPerson += 1;
+    }
 
-    if (r.decision !== 'deny' && r.decision !== 'warn') continue;
+    if (!RISK_DECISIONS.has(r.decision)) continue;
     const id = r.gateId || 'unnamed-rule';
     if (!findings.has(id)) {
       findings.set(id, {
@@ -85,6 +107,7 @@ function buildAssuranceReport({ auditRows = [], feedbackRows = [], now = new Dat
         message: r.message || null,
         stopped: 0,
         flagged: 0,
+        neededApproval: 0,
         tools: new Set(),
         sessions: new Set(),
         firstSeen: r.timestamp,
@@ -93,7 +116,9 @@ function buildAssuranceReport({ auditRows = [], feedbackRows = [], now = new Dat
       });
     }
     const f = findings.get(id);
-    if (r.decision === 'deny') f.stopped += 1; else f.flagged += 1;
+    if (r.decision === 'deny') f.stopped += 1;
+    else if (r.decision === 'warn') f.flagged += 1;
+    else f.neededApproval += 1;
     if (r.toolName) f.tools.add(r.toolName);
     if (r.sessionId) f.sessions.add(r.sessionId);
     if (!f.severity && r.severity) f.severity = r.severity;
@@ -105,13 +130,14 @@ function buildAssuranceReport({ auditRows = [], feedbackRows = [], now = new Dat
 
   const fixFirst = [...findings.values()]
     .map((f) => {
-      const hits = f.stopped + f.flagged;
+      const hits = f.stopped + f.flagged + f.neededApproval;
       return {
         gateId: f.gateId,
         severity: f.severity || 'unrated',
         message: f.message,
         stopped: f.stopped,
         flagged: f.flagged,
+        neededApproval: f.neededApproval,
         hits,
         score: severityWeight(f.severity) * hits,
         repeated: hits > 1,
@@ -125,9 +151,13 @@ function buildAssuranceReport({ auditRows = [], feedbackRows = [], now = new Dat
     .sort((a, b) => b.score - a.score || b.hits - a.hits || a.gateId.localeCompare(b.gateId))
     .map((f, i) => ({ rank: i + 1, ...f }));
 
-  const people = { thumbsUp: 0, thumbsDown: 0, overrides: totals.overridden };
+  const people = { thumbsUp: 0, thumbsDown: 0, overrides: totals.overriddenByPerson, automatedFeedbackSkipped: 0 };
   for (const e of feedbackRows) {
     if (!e || !inWindow(e.timestamp || e.ts || e.createdAt)) continue;
+    if (!isPersonFeedback(e)) {
+      if (feedbackDirectionOf(e)) people.automatedFeedbackSkipped += 1;
+      continue;
+    }
     const dir = feedbackDirectionOf(e);
     if (dir === 'up') people.thumbsUp += 1;
     else if (dir === 'down') people.thumbsDown += 1;
@@ -174,20 +204,21 @@ function formatAssuranceReport(report) {
   lines.push(`- Allowed: ${t.allowed}`);
   lines.push(`- Stopped before they ran: ${t.stopped}`);
   lines.push(`- Flagged with a warning: ${t.flagged}`);
-  lines.push(`- Overridden by a person: ${t.overridden}`);
+  lines.push(`- Held for a person's approval: ${t.neededApproval}`);
+  lines.push(`- Overrides recorded: ${t.overridden} (by an agent: ${t.overriddenByAgent}, by a named person: ${t.overriddenByPerson})`);
   lines.push(`- Agent sessions seen: ${t.sessions}`);
   lines.push('');
   lines.push('## Fix first');
   lines.push('');
   if (report.fixFirst.length === 0) {
-    lines.push('Nothing was stopped or flagged in this window.');
+    lines.push('Nothing was stopped, flagged or held for approval in this window.');
   } else {
     lines.push('Ranked by severity times how often it happened. A rule near the top that keeps firing means the agent keeps trying the same thing: fix the prompt, the task setup or the tool access behind it.');
     lines.push('');
-    lines.push('| # | Rule | Severity | Stopped | Flagged | Sessions | Last seen | What it guards |');
-    lines.push('|---|------|----------|---------|---------|----------|-----------|----------------|');
+    lines.push('| # | Rule | Severity | Stopped | Flagged | Held for approval | Sessions | Last seen | What it guards |');
+    lines.push('|---|------|----------|---------|---------|-------------------|----------|-----------|----------------|');
     for (const f of report.fixFirst) {
-      lines.push(`| ${f.rank} | ${mdCell(f.gateId)} | ${mdCell(f.severity)} | ${f.stopped} | ${f.flagged} | ${f.sessions} | ${mdCell(fmtTime(f.lastSeen))} | ${mdCell(f.message || '')} |`);
+      lines.push(`| ${f.rank} | ${mdCell(f.gateId)} | ${mdCell(f.severity)} | ${f.stopped} | ${f.flagged} | ${f.neededApproval} | ${f.sessions} | ${mdCell(fmtTime(f.lastSeen))} | ${mdCell(f.message || '')} |`);
     }
   }
   lines.push('');
@@ -195,7 +226,10 @@ function formatAssuranceReport(report) {
   lines.push('');
   lines.push(`- Thumbs up (agent did the right thing): ${report.people.thumbsUp}`);
   lines.push(`- Thumbs down (agent made a mistake, turned into a lesson): ${report.people.thumbsDown}`);
-  lines.push(`- Overrides (a person let a stopped action through): ${report.people.overrides}`);
+  lines.push(`- Overrides by a named person: ${report.people.overrides}`);
+  if (report.people.automatedFeedbackSkipped) {
+    lines.push(`- Not counted: ${report.people.automatedFeedbackSkipped} thumbs written by hooks or sync scripts, not by a person`);
+  }
   lines.push('');
   lines.push('## Evidence');
   lines.push('');
@@ -279,4 +313,6 @@ module.exports = {
   runAssuranceReport,
   severityWeight,
   feedbackDirectionOf,
+  isAgentActor,
+  isPersonFeedback,
 };

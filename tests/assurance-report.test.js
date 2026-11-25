@@ -12,6 +12,7 @@ const {
   runAssuranceReport,
   severityWeight,
   feedbackDirectionOf,
+  isAgentActor,
 } = require('../scripts/assurance-report');
 
 const NOW = new Date('2026-11-25T12:00:00Z');
@@ -47,40 +48,57 @@ test('buildAssuranceReport counts decisions and ranks fix-first by severity x hi
     row({ decision: 'warn', gateId: 'big-diff', severity: 'low', sessionId: 's2' }),
     row({ decision: 'warn', gateId: 'big-diff', severity: 'low', sessionId: 's3' }),
     row({ decision: 'warn', gateId: 'big-diff', severity: 'low', sessionId: 's3' }),
-    row({ decision: 'override', gateId: 'force-push' }),
+    row({ decision: 'override', gateId: 'force-push', override: { actor: 'agent' } }),
+    row({ decision: 'override', gateId: 'force-push', override: { actor: 'igor' } }),
+    row({ decision: 'approve', gateId: 'deploy-needs-ok', severity: 'high' }),
     row({ decision: 'deny', gateId: 'old', timestamp: '2026-09-01T00:00:00Z' }),
   ];
   const report = buildAssuranceReport({ auditRows, now: NOW, days: 30 });
   assert.deepEqual(
     { ...report.totals },
-    { evaluated: 6, allowed: 1, stopped: 1, flagged: 3, overridden: 1, sessions: 3 },
+    {
+      evaluated: 8, allowed: 1, stopped: 1, flagged: 3, neededApproval: 1,
+      overridden: 2, overriddenByAgent: 1, overriddenByPerson: 1, sessions: 3,
+    },
   );
-  assert.equal(report.fixFirst.length, 2, 'rows outside the window are left out');
-  assert.equal(report.fixFirst[0].gateId, 'force-push', 'critical x1 (4) outranks low x3 (3)');
-  assert.equal(report.fixFirst[1].gateId, 'big-diff');
-  assert.equal(report.fixFirst[1].sessions, 2);
-  assert.equal(report.fixFirst[1].repeated, true);
-  assert.equal(report.people.overrides, 1);
+  assert.deepEqual(report.fixFirst.map((f) => f.gateId), ['force-push', 'big-diff', 'deploy-needs-ok'],
+    'critical x1 (4) first; low x3 and high approval x1 tie at 3, more hits wins');
+  const bigDiff = report.fixFirst.find((f) => f.gateId === 'big-diff');
+  assert.equal(bigDiff.sessions, 2);
+  assert.equal(bigDiff.repeated, true);
+  assert.equal(report.fixFirst[2].neededApproval, 1);
+  assert.equal(report.people.overrides, 1, 'only the non-agent override counts as a person');
   assert.deepEqual(report.evidence.ruleCatalogHashes, ['abc123def456']);
 });
 
-test('buildAssuranceReport counts thumbs inside the window only', () => {
+test('isAgentActor treats the default and bot-like actors as agents', () => {
+  assert.equal(isAgentActor(undefined), true);
+  assert.equal(isAgentActor('agent'), true);
+  assert.equal(isAgentActor('claude-code'), true);
+  assert.equal(isAgentActor('igor'), false);
+});
+
+test('buildAssuranceReport counts only human thumbs inside the window', () => {
+  const human = { reviewOrigin: 'human' };
   const report = buildAssuranceReport({
     feedbackRows: [
-      { signal: 'up', timestamp: '2026-11-24T00:00:00Z' },
-      { signal: 'down', timestamp: '2026-11-24T00:00:00Z' },
-      { signal: 'down', timestamp: '2026-01-01T00:00:00Z' },
+      { ...human, signal: 'up', timestamp: '2026-11-24T00:00:00Z' },
+      { ...human, signal: 'down', timestamp: '2026-11-24T00:00:00Z' },
+      { ...human, signal: 'down', timestamp: '2026-01-01T00:00:00Z' },
+      { ...human, signal: 'down', tags: ['auto-capture'], timestamp: '2026-11-24T00:00:00Z' },
+      { reviewOrigin: 'automated', signal: 'up', timestamp: '2026-11-24T00:00:00Z' },
     ],
     now: NOW,
   });
   assert.equal(report.people.thumbsUp, 1);
   assert.equal(report.people.thumbsDown, 1);
+  assert.equal(report.people.automatedFeedbackSkipped, 2);
 });
 
 test('formatAssuranceReport says so plainly when nothing fired', () => {
   const md = formatAssuranceReport(buildAssuranceReport({ now: NOW }));
   assert.match(md, /# Agent assurance report/);
-  assert.match(md, /Nothing was stopped or flagged in this window\./);
+  assert.match(md, /Nothing was stopped, flagged or held for approval in this window\./);
   assert.match(md, /People decide what to do about them/);
 });
 
@@ -97,7 +115,7 @@ test('runAssuranceReport reads logs from a dir, hashes the log and writes --out'
   try {
     const audit = [row({ decision: 'deny', gateId: 'secret-exfiltration', severity: 'critical' })];
     fs.writeFileSync(path.join(dir, 'audit-trail.jsonl'), audit.map((r) => JSON.stringify(r)).join('\n') + '\n');
-    fs.writeFileSync(path.join(dir, 'feedback-log.jsonl'), `${JSON.stringify({ signal: 'down', timestamp: '2026-11-22T00:00:00Z' })}\nnot json\n`);
+    fs.writeFileSync(path.join(dir, 'feedback-log.jsonl'), `${JSON.stringify({ reviewOrigin: 'human', signal: 'down', timestamp: '2026-11-22T00:00:00Z' })}\nnot json\n`);
     const out = path.join(dir, 'report.md');
     const { report, written } = runAssuranceReport(['--out', out], { feedbackDir: dir, now: NOW });
     assert.equal(written, path.resolve(out));
