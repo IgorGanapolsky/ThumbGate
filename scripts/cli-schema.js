@@ -132,6 +132,16 @@ const CLI_COMMANDS = [
     ],
   },
   {
+    name: 'assurance-report',
+    description: 'Agent assurance report: what was stopped, which rules to fix first, what people decided, and the log evidence',
+    group: 'discovery',
+    flags: [
+      { name: 'days', type: 'number', description: 'How many days back to cover (default 30)' },
+      { name: 'json', type: 'boolean', description: 'Output as JSON' },
+      { name: 'out', type: 'string', description: 'Write the report to this file' },
+    ],
+  },
+  {
     name: 'desktop-snapshot',
     description: 'One read-only JSON snapshot (blocks, thumbs-downs, rules, plan) for desktop and menu bar apps',
     group: 'discovery',
