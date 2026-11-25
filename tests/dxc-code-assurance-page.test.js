@@ -35,3 +35,8 @@ test('DXC learn page is linked from the hub and sitemap, and disclaims any partn
   assert.ok(read('public/learn.html').includes(`href="/learn/${slug}"`));
   assert.ok(read('src/api/server.js').includes(`'/learn/${slug}'`));
 });
+
+test('pilot page keeps the shared width constraint on header, main and footer', () => {
+  const page = read('public/pilot.html');
+  assert.match(page, /header, main, footer \{ width:min\(1040px,calc\(100% - 32px\)\); margin:0 auto; \}/);
+});
