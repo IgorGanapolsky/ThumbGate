@@ -81,6 +81,28 @@ test('REQ-05: the aggregate stats path leaves marked rows out too', () => {
   }
 });
 
+test('REQ-06: a marked row copied into a second store is left out of both copies; an unreadable ledger is an error, not "nothing marked"', () => {
+  const { collectAggregateLogEntries } = require('../scripts/feedback-aggregate');
+  const p = makeProject();
+  try {
+    const second = path.join(p.home, 'second-store');
+    fs.mkdirSync(second, { recursive: true });
+    const probe = JSON.stringify({ id: 'probe_1', signal: 'negative', reviewOrigin: 'human', context: 'copy', timestamp: new Date().toISOString() });
+    fs.writeFileSync(path.join(second, 'feedback-log.jsonl'), `${probe}\n`);
+    markNotCounted(['probe_1'], 'probe', p.options);
+    const projectStore = path.join(p.project, '.thumbgate');
+    const { entries } = collectAggregateLogEntries('feedback-log.jsonl', { feedbackDir: projectStore, extraDirs: [second], roots: [second], env: p.options.env });
+    assert.equal(entries.filter((e) => e.id === 'probe_1').length, 0, 'no copy of a marked row survives');
+
+    // A ledger that cannot be read as a file (here a folder) must raise, not hide the exclusion.
+    const bad = path.join(p.home, 'bad-project', '.thumbgate');
+    fs.mkdirSync(path.join(bad, 'not-counted-feedback.jsonl'), { recursive: true });
+    assert.throws(() => require('../scripts/statusline-human-counts').collectHumanRows({ cwd: path.dirname(bad), projectDir: path.dirname(bad), env: p.options.env }), /EISDIR/);
+  } finally {
+    fs.rmSync(p.home, { recursive: true, force: true });
+  }
+});
+
 test('REQ-03: the status line names the project next to the counts and keeps the version', () => {
   const json = JSON.stringify({ up: 2, down: 5, label: 'this project', project: 'orchestrator' });
   const out = execFileSync('bash', [path.join(__dirname, '..', 'scripts', 'statusline.sh')], {

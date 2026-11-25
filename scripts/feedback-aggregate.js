@@ -164,6 +164,22 @@ function collectAggregateLogEntries(fileName, options = {}) {
   const seen = new Set();
   const entries = [];
 
+  // Row ids listed in any store's not-counted-feedback.jsonl are not a person's thumb (scripts/not-a-thumb.js). They are
+  // gathered across every store first, so a row copied into a second store is left out of both copies, the same as
+  // collectHumanRows does. Only a missing ledger means "nothing marked"; any other read error surfaces.
+  const notCounted = new Set();
+  for (const dir of stores) {
+    let text = '';
+    try { text = fs.readFileSync(path.join(dir, 'not-counted-feedback.jsonl'), 'utf8'); } catch (error) {
+      if (error && error.code === 'ENOENT') continue;
+      throw error;
+    }
+    for (const line of text.split('\n')) {
+      if (!line.trim()) continue;
+      try { const mark = JSON.parse(line); if (mark && mark.id) notCounted.add(String(mark.id)); } catch { /* skip a bad line */ }
+    }
+  }
+
   for (const dir of stores) {
     const logPath = path.join(dir, fileName);
     if (!safeExists(logPath)) continue;
@@ -182,14 +198,6 @@ function collectAggregateLogEntries(fileName, options = {}) {
       tail: !wantFull,
       full: wantFull,
     }) || [];
-    // Row ids listed in this store's not-counted-feedback.jsonl are not a person's thumb (scripts/not-a-thumb.js).
-    const notCounted = new Set();
-    try {
-      for (const line of fs.readFileSync(path.join(dir, 'not-counted-feedback.jsonl'), 'utf8').split('\n')) {
-        if (!line.trim()) continue;
-        try { const mark = JSON.parse(line); if (mark && mark.id) notCounted.add(String(mark.id)); } catch { /* skip a bad line */ }
-      }
-    } catch { /* no ledger in this store */ }
     for (let index = 0; index < rows.length; index += 1) {
       const rawEntry = rows[index];
       if (rawEntry && rawEntry.id && notCounted.has(String(rawEntry.id))) continue;

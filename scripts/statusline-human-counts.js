@@ -63,7 +63,12 @@ function readNotCounted(dirs) {
   const ids = new Map();
   for (const dir of dirs) {
     let text = '';
-    try { text = fs.readFileSync(path.join(dir, NOT_COUNTED_FILE), 'utf8'); } catch (_) { continue; }
+    // Only a missing ledger means "nothing marked". Any other read error (permissions, a directory) must surface,
+    // or rows the ledger excludes would be counted and a wrong total published.
+    try { text = fs.readFileSync(path.join(dir, NOT_COUNTED_FILE), 'utf8'); } catch (error) {
+      if (error && error.code === 'ENOENT') continue;
+      throw error;
+    }
     for (const line of text.split('\n')) {
       if (!line.trim()) continue;
       try {
