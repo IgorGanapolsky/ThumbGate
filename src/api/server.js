@@ -4331,14 +4331,17 @@ function loadPublicMarketingTemplateHtml(templatePath, runtimeConfig, pageContex
     ? `  <meta name="google-site-verification" content="${escapeHtmlAttribute(runtimeConfig.googleSiteVerification)}" />`
     : '';
   const privacyOptOut = Boolean(pageContext.privacyOptOut);
-  const gaBootstrap = (!privacyOptOut && runtimeConfig.gaMeasurementId)
+  // One gtag.js loader, one config call per property: page views and gtag events go to every configured property.
+  const gaIds = [runtimeConfig.gaMeasurementId, runtimeConfig.gaExtraMeasurementId]
+    .filter((id, at, all) => id && all.indexOf(id) === at);
+  const gaBootstrap = (!privacyOptOut && gaIds.length)
     ? [
-      `  <script async src="https://www.googletagmanager.com/gtag/js?id=${runtimeConfig.gaMeasurementId}"></script>`,
+      `  <script async src="https://www.googletagmanager.com/gtag/js?id=${gaIds[0]}"></script>`,
       '  <script>',
       '    window.dataLayer = window.dataLayer || [];',
       '    function gtag(){dataLayer.push(arguments);}',
       "    gtag('js', new Date());",
-      `    gtag('config', '${runtimeConfig.gaMeasurementId}');`,
+      ...gaIds.map((id) => `    gtag('config', '${id}');`),
       '  </script>',
     ].join('\n')
     : '';
@@ -4353,7 +4356,7 @@ function loadPublicMarketingTemplateHtml(templatePath, runtimeConfig, pageContex
     '__WORKFLOW_SPRINT_CHECKOUT_URL__': runtimeConfig.workflowSprintCheckoutUrl || WORKFLOW_SPRINT_CHECKOUT_URL,
     '__SPRINT_DIAGNOSTIC_PRICE_DOLLARS__': runtimeConfig.sprintDiagnosticPriceDollars || 499,
     '__WORKFLOW_SPRINT_PRICE_DOLLARS__': runtimeConfig.workflowSprintPriceDollars || 1500,
-    '__GA_MEASUREMENT_ID__': runtimeConfig.gaMeasurementId || '',
+    '__GA_MEASUREMENT_ID__': gaIds[0] || '',
     '__GA_BOOTSTRAP__': gaBootstrap,
     '__GOOGLE_SITE_VERIFICATION_META__': googleSiteVerificationMeta,
     '__SERVER_VISITOR_ID__': pageContext.serverVisitorId || '',
