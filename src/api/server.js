@@ -6868,6 +6868,13 @@ function renderSigninPage(nextPath, ssoError) {
 
 const DEFAULT_HOSTED_OWNER_EMAILS =['iganapolsky@gmail.com', 'igor.ganapolsky@gmail.com', 'igor@thumbgate.ai'];
 
+function isHostedOwnerEmail(address) {
+  const value = String(address || '').trim().toLowerCase();
+  if (!value) return false;
+  const { getOwnerEmails } = require('../../scripts/bot-detection');
+  return [...DEFAULT_HOSTED_OWNER_EMAILS, ...getOwnerEmails()].some((owner) => String(owner).trim().toLowerCase() === value);
+}
+
 function ensureHostedActivationsReady(baseFeedbackDir, extraOpts = {}) {
   const { backfillHostedAccountActivations } = require('../../scripts/dashboard');
   const { getOwnerEmails } = require('../../scripts/bot-detection');
@@ -7019,8 +7026,8 @@ async function handleFirstBlockActivationRoute(req, res, expectedApiKey, expecte
         clientType: 'cli',
         installId: trustedInstallId,
         firstBlockAt: recorded.firstBlockAt,
-        // Keep the CLI's own classification; an admin or operator key is the owner by definition.
-        visitorType: (isAdmin || isOperator)
+        // Keep the CLI's own classification; an admin or operator key, or a key issued to an owner address, is the owner.
+        visitorType: (isAdmin || isOperator || (validKey && isHostedOwnerEmail(validKey.customerEmail)))
           ? 'owner'
           : (['real_user', 'owner', 'ci'].includes(body?.visitorType) ? body.visitorType : 'real_user'),
         ...(typeof body?.gateId === 'string' ? { gateId: body.gateId.slice(0, 120) } : {}),

@@ -51,7 +51,39 @@ function classifyInstall() {
     return 'owner';
   }
 
+  // The owner's coding agents run in fresh cloud containers (user root, random hostname), each with a new install id,
+  // inside the owner's own repositories. Without this they were counted as real users.
+  if (insideOwnerRepo()) return 'owner';
+
   return 'real_user';
+}
+
+const OWNER_REMOTE = /github\.com[/:](igorganapolsky|igor-ganapolsky)\//i;
+
+// True when the working directory (or a parent, up to 8 levels) is a git checkout whose remote belongs to the owner.
+// Reads only the local .git/config; nothing from it is sent anywhere.
+function insideOwnerRepo(start = process.env.CLAUDE_PROJECT_DIR || process.cwd()) {
+  let dir = path.resolve(start);
+  for (let i = 0; i < 8; i += 1) {
+    try {
+      const gitPath = path.join(dir, '.git');
+      const stat = fs.statSync(gitPath);
+      let configPath = path.join(gitPath, 'config');
+      if (stat.isFile()) {
+        // A worktree: .git is a file pointing at the real git dir.
+        const pointer = /gitdir:\s*(.+)/.exec(fs.readFileSync(gitPath, 'utf8'));
+        if (!pointer) return false;
+        const gitDir = path.resolve(dir, pointer[1].trim());
+        const common = path.join(gitDir, 'commondir');
+        configPath = fs.existsSync(common) ? path.join(path.resolve(gitDir, fs.readFileSync(common, 'utf8').trim()), 'config') : path.join(gitDir, 'config');
+      }
+      return OWNER_REMOTE.test(fs.readFileSync(configPath, 'utf8'));
+    } catch (_) { /* no .git here */ }
+    const parent = path.dirname(dir);
+    if (parent === dir) return false;
+    dir = parent;
+  }
+  return false;
 }
 
 /**
@@ -92,4 +124,4 @@ function trackEvent(eventType, metadata = {}) {
   } catch (_) {} // never crash the CLI
 }
 
-module.exports = { trackEvent, getInstallId, classifyInstall, INSTALL_ID_PATH, SESSION_ID };
+module.exports = { trackEvent, getInstallId, classifyInstall, insideOwnerRepo, INSTALL_ID_PATH, SESSION_ID };
