@@ -12,6 +12,9 @@ on:
 
 permissions:
   contents: write
+  # VS Code Marketplace Trusted Publishing: vsce exchanges this job's GitHub OIDC
+  # token for a 15-minute Marketplace credential, so no Marketplace PAT is stored.
+  id-token: write
 
 concurrency:
   group: publish-ide-marketplace-${{ github.workflow }}-${{ github.ref }}
@@ -22,7 +25,6 @@ jobs:
     runs-on: ubuntu-latest
     env:
       OVSX_PAT: ${{ secrets.OVSX_PAT }}
-      VSCE_PAT: ${{ secrets.VSCE_PAT }}
       PUBLISH_IDE_MARKETPLACE_REQUIRED: ${{ vars.PUBLISH_IDE_MARKETPLACE_REQUIRED || '0' }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
@@ -57,7 +59,6 @@ jobs:
         run: |
           missing=()
           if [ -z "$OVSX_PAT" ]; then missing+=("OVSX_PAT"); fi
-          if [ -z "$VSCE_PAT" ]; then missing+=("VSCE_PAT"); fi
           if [ "${#missing[@]}" -gt 0 ]; then
             echo "publish_ready=false" >> "$GITHUB_OUTPUT"
             echo "::warning::Missing marketplace publish secrets: ${missing[*]}"
@@ -105,8 +106,10 @@ jobs:
           cd plugins/vscode-extension
           npx --yes ovsx publish "${{ steps.vsix.outputs.name }}" --pat "$OVSX_PAT"
 
+      # Trusted Publishing policy on publisher `igorganapolsky` allows
+      # IgorGanapolsky/ThumbGate + publish-ide-marketplace.yml (no stored PAT).
       - name: Publish to VS Code Marketplace
         if: steps.marketplace-credentials.outputs.publish_ready == 'true'
         run: |
           cd plugins/vscode-extension
-          npx --yes @vscode/vsce publish --packagePath "${{ steps.vsix.outputs.name }}" -p "$VSCE_PAT"
+          npx --yes @vscode/vsce publish --packagePath "${{ steps.vsix.outputs.name }}" --oidc
