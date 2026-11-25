@@ -56,6 +56,7 @@ jobs:
       - name: Run release safety checks
         run: |
           node scripts/sync-version.js --check
+          node scripts/check-version-truth.js --offline --allow-ahead
           npm run test:deployment
           npm run test:postinstall
           npm run prove:runtime
