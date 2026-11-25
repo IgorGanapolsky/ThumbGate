@@ -33,6 +33,24 @@ function getInstallId() {
   return id;
 }
 
+const INSTALL_SOURCE_PATH = path.join(path.dirname(INSTALL_ID_PATH), 'install-source');
+
+/**
+ * Where this install came from (for example "udemy"). Set once with THUMBGATE_INSTALL_SOURCE=udemy npx thumbgate init,
+ * kept in ~/.thumbgate/install-source so later runs without the variable still report it. The first value wins.
+ * Only a short lowercase word is accepted, so the file can never carry anything else. Returns {} when there is none.
+ */
+function installSourceFields(env = process.env) {
+  const clean = (v) => { const t = String(v || '').trim().toLowerCase(); return /^[a-z0-9_-]{2,32}$/.test(t) ? t : ''; };
+  let source = '';
+  try { source = clean(fs.readFileSync(INSTALL_SOURCE_PATH, 'utf8')); } catch (_) {}
+  if (!source) {
+    source = clean(env.THUMBGATE_INSTALL_SOURCE);
+    if (source) { try { fs.mkdirSync(path.dirname(INSTALL_SOURCE_PATH), { recursive: true }); fs.writeFileSync(INSTALL_SOURCE_PATH, source); } catch (_) {} }
+  }
+  return source ? { source, utmSource: source } : {};
+}
+
 /**
  * Classify this install: is it Igor, CI, or a real user?
  */
@@ -90,6 +108,7 @@ function trackEvent(eventType, metadata = {}) {
     nodeVersion: process.version,
     pkgVersion: (() => { try { return require('../package.json').version; } catch(_) { return 'unknown'; } })(),
     timestamp: new Date().toISOString(),
+    ...installSourceFields(),
     ...metadata,
   });
 
@@ -110,4 +129,4 @@ function trackEvent(eventType, metadata = {}) {
   } catch (_) {} // never crash the CLI
 }
 
-module.exports = { trackEvent, getInstallId, classifyInstall, isOwnerAgentSession, INSTALL_ID_PATH, SESSION_ID };
+module.exports = { installSourceFields, INSTALL_SOURCE_PATH, trackEvent, getInstallId, classifyInstall, isOwnerAgentSession, INSTALL_ID_PATH, SESSION_ID };
