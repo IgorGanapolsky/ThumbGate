@@ -124,7 +124,7 @@
 
   <h2>The gap worth noticing</h2>
   <p>Siren's agents had only a shell, so every file read went through a command the classifier could see. Anthropic's footnote says some product tools skip that check, "such as Claude Code's file-reading tools." In a real Claude Code session, the agent can open <code>/proc/1/environ</code> or a Kubernetes service account token with the Read tool instead of <code>cat</code>.</p>
-  <p>ThumbGate runs as a PreToolUse hook on every tool, so the same rule checks <code>Bash</code>, <code>Read</code>, <code>Write</code>, <code>Edit</code> and <code>WebFetch</code>.</p>
+  <p>In Claude Code, ThumbGate's PreToolUse hook is registered for all tools, so the same rule checks <code>Bash</code>, <code>Read</code>, <code>Write</code>, <code>Edit</code> and <code>WebFetch</code>.</p>
 
   <h2>Five default gates, mapped to Siren's rules</h2>
   <p>Siren's six boundary rules, in plain words: stay in your workspace; the host's processes and network are not yours; never touch a socket or API that controls the node; sandbox credentials are only for the task; send traffic only where the task allows; and leave nothing behind that runs after the task ends. ThumbGate's default gate set now includes:</p>

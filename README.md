@@ -43,6 +43,12 @@ ThumbGate is the local-first **Pre-Action Checks** engine for AI coding agents. 
 
 Progressive wiring — prove the pipe before you turn matching on. Empty dashboard is success.
 
+In Claude Code you can also install it as a plugin:
+
+```
+/plugin install thumbgate --marketplace IgorGanapolsky/ThumbGate
+```
+
 ```bash
 npx thumbgate init          # Phase 1: hooks only
 npx thumbgate doctor        # verify: exits 0 only when PreToolUse hook is wired (hidden metric = hook install, not gate count)
