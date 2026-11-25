@@ -1170,7 +1170,7 @@
     "perplexity:brief": "node scripts/perplexity-command-center.js brief",
     "perplexity:full": "node scripts/perplexity-command-center.js full",
     "perplexity:mcp-config": "node scripts/perplexity-command-center.js mcp-config",
-    "test:explore": "node --test tests/explore.test.js",
+    "test:explore": "node --test tests/explore.test.js tests/desktop-snapshot.test.js",
     "test:cli-schema": "node --test tests/cli-schema.test.js",
     "compat:matrix": "node scripts/host-gate-matrix.js --write",
     "compat:check": "node scripts/host-gate-matrix.js --check",
