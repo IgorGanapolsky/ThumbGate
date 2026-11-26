@@ -124,6 +124,15 @@ jobs:
             echo "range_base=${MERGE_SHA}~1" >> "$GITHUB_OUTPUT"
             exit 0
           fi
+          # An earlier hourly run already uploaded this commit and Railway is still holding it.
+          # That run's own verification posts the receipt; this run must not claim "not required".
+          if [ "${SCOPE_REASON}" = "scheduled_head_already_submitted" ]; then
+            echo "Hourly run skipped: ${MERGE_SHA} is already queued on Railway by an earlier run; no PR comment."
+            echo "pr=" >> "$GITHUB_OUTPUT"
+            echo "prs=" >> "$GITHUB_OUTPUT"
+            echo "range_base=${MERGE_SHA}~1" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
           RANGE_BASE="${MERGE_SHA}~1"
           COMMITS="${MERGE_SHA}"
           if [ -n "${PREVIOUS_SHA}" ] && [ "${PREVIOUS_SHA}" != "${MERGE_SHA}" ] \

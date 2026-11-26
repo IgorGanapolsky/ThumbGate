@@ -663,6 +663,78 @@ test('hourly deploy does not re-upload a commit an earlier hourly run already su
   assert.match(workflow, /id: recent-submit\n\s+if: github\.event_name == 'schedule'\n\s+continue-on-error: true/);
   assert.match(workflow, /select\(\.name == "Deploy to Railway" and \.conclusion == "success"\)/);
   assert.match(workflow, /DEPLOY_SCOPE_RECENT_SUBMIT_SHA='\$\{\{ steps\.recent-submit\.outputs\.sha \}\}'/);
+  assert.match(workflow, /  deploy:\n    runs-on: ubuntu-latest\n(?:    #.*\n)*    permissions:\n      contents: read\n      actions: read\n/);
+});
+
+function extractStepRun(workflow, stepId) {
+  const at = workflow.indexOf(`id: ${stepId}\n`);
+  assert.ok(at >= 0, `step ${stepId}`);
+  const runAt = workflow.indexOf('run: |\n', at);
+  const lines = workflow.slice(runAt + 'run: |\n'.length).split('\n');
+  const body = [];
+  for (const line of lines) {
+    if (line.trim() !== '' && !line.startsWith('          ')) break;
+    body.push(line.slice(10));
+  }
+  return body.join('\n');
+}
+
+function runRecentSubmitLookup({ runIds = '', uploaded = '0', apiFails = false }) {
+  const workflow = fs.readFileSync(path.join(PROJECT_ROOT, '.github', 'workflows', 'deploy-railway.yml'), 'utf8');
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-recent-submit-'));
+  try {
+    const binDir = path.join(dir, 'bin');
+    fs.mkdirSync(binDir);
+    // Stand-in for the gh CLI: answers the runs list and the jobs lookup from env, or fails like a broken API.
+    fs.writeFileSync(path.join(binDir, 'gh'), [
+      '#!/usr/bin/env bash',
+      'if [ "$FAKE_GH_FAIL" = "1" ]; then echo "HTTP 502" >&2; exit 1; fi',
+      'case "$*" in',
+      '  *"/runs?"*) for id in $FAKE_RUN_IDS; do echo "$id"; done ;;',
+      '  *"/jobs"*) echo "$FAKE_UPLOADED" ;;',
+      'esac',
+      '',
+    ].join('\n'), { mode: 0o755 });
+    const scriptPath = path.join(dir, 'step.sh');
+    fs.writeFileSync(scriptPath, extractStepRun(workflow, 'recent-submit'));
+    const outputPath = path.join(dir, 'out.txt');
+    fs.writeFileSync(outputPath, '');
+    execFileSync('bash', ['-e', scriptPath], {
+      env: {
+        ...process.env,
+        PATH: `${binDir}${path.delimiter}${process.env.PATH}`,
+        GITHUB_OUTPUT: outputPath,
+        GITHUB_REPOSITORY: 'owner/repo',
+        GITHUB_SHA: 'a'.repeat(40),
+        GITHUB_RUN_ID: '999',
+        FAKE_RUN_IDS: runIds,
+        FAKE_UPLOADED: uploaded,
+        FAKE_GH_FAIL: apiFails ? '1' : '0',
+      },
+      stdio: 'pipe',
+    });
+    const match = fs.readFileSync(outputPath, 'utf8').match(/^sha=(.*)$/m);
+    assert.ok(match, 'step writes a sha= output');
+    return match[1];
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+}
+
+test('recent-submit lookup returns HEAD only when an earlier run really uploaded it', () => {
+  assert.equal(runRecentSubmitLookup({ runIds: '101', uploaded: '1' }), 'a'.repeat(40), 'earlier upload succeeded');
+  assert.equal(runRecentSubmitLookup({ runIds: '101 102', uploaded: '0' }), '', 'earlier runs skipped the upload');
+  assert.equal(runRecentSubmitLookup({ runIds: '' }), '', 'no earlier run');
+  assert.equal(runRecentSubmitLookup({ runIds: '101', uploaded: '1', apiFails: true }), '', 'API failure means upload again');
+});
+
+test('deploy receipt stays quiet when an earlier hourly run already queued HEAD', () => {
+  const workflow = fs.readFileSync(path.join(PROJECT_ROOT, '.github', 'workflows', 'verify-deploy-comment.yml'), 'utf8');
+  const at = workflow.indexOf('"${SCOPE_REASON}" = "scheduled_head_already_submitted"');
+  assert.ok(at > 0, 'pending-deploy reason handled');
+  const branch = workflow.slice(at, workflow.indexOf('fi\n', at));
+  assert.match(branch, /echo "pr=" >> "\$GITHUB_OUTPUT"/);
+  assert.match(branch, /exit 0/);
 });
 
 test('ship gate does not dispatch a Railway deploy per merge', () => {

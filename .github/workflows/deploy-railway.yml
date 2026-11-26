@@ -16,6 +16,10 @@ concurrency:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    # checkout needs contents:read; the recent-submit lookup reads workflow runs and jobs.
+    permissions:
+      contents: read
+      actions: read
     env:
       THUMBGATE_API_KEY: ${{ secrets.THUMBGATE_API_KEY }}
       THUMBGATE_OPERATOR_KEY: ${{ secrets.THUMBGATE_OPERATOR_KEY }}
