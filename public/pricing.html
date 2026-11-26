@@ -349,5 +349,13 @@
 
     sendFirstPartyTelemetry('pricing_page_view', { landingPath: '/pricing', experimentId: 'value_packaging_v1' });
   </script>
+<script src="/tg-analytics.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  if (typeof tgTrack === 'function') {
+    tgTrack('pricing_view', tgUtm());
+  }
+});
+</script>
 </body>
 </html>

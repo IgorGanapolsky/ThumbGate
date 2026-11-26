@@ -1,0 +1,25 @@
+name: Find GA env
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  diagnostic:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Inspect GA configuration
+        shell: bash
+        run: |
+          set +e
+          echo '=== SKILL CONTEXT ==='
+          grep -n -B3 -A3 'G-SZR5039QN4' skills/applyops-deploy/SKILL.md
+
+          echo '=== ENV VAR CANDIDATES ==='
+          grep -rn -i -E 'GA_MEASUREMENT|MEASUREMENT_ID|GTAG|G-[A-Z0-9]{9,}' src/api/server.js | head -40
+
+          echo '=== ENV FILES ==='
+          for f in .env.example .env.sample railway.json Dockerfile; do echo "--- $f"; cat "$f" 2>/dev/null | grep -i -E 'GA_|MEASUREMENT|ANALYTICS' || echo 'no matches'; done
+
+          echo '=== HOW SERVER INJECTS ==='
+          grep -rn -i -E 'gtag|measurementId|G-' src/api/server.js | head -40
