@@ -5245,6 +5245,7 @@ function renderSitemapXml(runtimeConfig) {
     { path: '/learn/claude-artifact-desktop-apps', changefreq: 'weekly', priority: '0.85' },
     { path: '/learn/mellum-instruct-no-thinking-routing', changefreq: 'weekly', priority: '0.85' },
     { path: '/learn/siren-agent-sandbox-escape-gates', changefreq: 'weekly', priority: '0.85' },
+    { path: '/learn/trigger-audit-learned-rules', changefreq: 'weekly', priority: '0.85' },
     { path: '/learn/openai-shirudo-shields-for-agent-actions', changefreq: 'weekly', priority: '0.85' },
     { path: '/learn/proof-before-claim-deploy-gate', changefreq: 'weekly', priority: '0.85' },
     { path: '/compare/claude-code-hooks', changefreq: 'weekly', priority: '0.85' },
