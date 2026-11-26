@@ -9,8 +9,8 @@
 // - Never on private surfaces (admin, dashboard, sign-in, checkout, billing, success pages, JSON API).
 // - Never when the visitor sends Global Privacy Control or Do Not Track; the tag also re-checks in the browser.
 // - Forms and inputs are marked data-clarity-mask so typed text, emails and keys are never recorded.
-// - No consent call is made. Clarity's own Consent Mode applies to EEA, UK and Switzerland visitors (it waits for a
-//   consent signal before setting cookies); this site has no banner, so it sends none. No browser time-zone guess.
+// - Consent first: nothing from Clarity (or Orion) loads until the visitor accepts on the banner. Accepting sends
+//   Clarity consentv2 analytics granted (advertising always denied); declining or withdrawing sends the withdrawal.
 // - A click on a /checkout/pro link sends the Clarity custom event checkout_click (the page navigates as normal).
 //
 // Export rules: Clarity allows 10 export calls per project per day and only the last 1 to 3 days. The snapshot is
@@ -63,15 +63,24 @@ function hasPrivacySignal(headers = {}) {
   return get('sec-gpc') === '1' || get('dnt') === '1';
 }
 
+// ---- Consent-gated page tags (Clarity and Orion) ----
+// One inline consent manager per public page. Nothing from Clarity or Orion loads, and no request leaves the page,
+// until the visitor presses "Accept". "Decline" (or a later withdrawal) stores the refusal, sends Clarity's consent
+// withdrawal (which erases its cookies) and stops Orion. The choice is kept in localStorage under CONSENT_KEY; any
+// element with data-analytics-consent reopens the choice. GPC/DNT visitors get no banner and nothing loads.
+
+const CONSENT_KEY = 'thumbgate_analytics_consent';
+const CONSENT_MARKER = 'data-thumbgate-consent';
+
 // Pro checkout click: one custom event, then the link proceeds. The handler never touches the navigation.
 const CHECKOUT_HANDLER = [
-  "  l.addEventListener('click',function(e){",
-  '    try {',
-  "      var n=e.target; while (n && n.nodeType===1 && !(n.tagName==='A' && n.getAttribute('href'))) n=n.parentNode;",
-  '      if (!n || n.nodeType!==1) return;',
-  "      if (/^(https?:\\/\\/(www\\.)?thumbgate\\.ai)?\\/checkout\\/pro(\\?|#|$)/i.test(n.getAttribute('href'))) c[a]('event','checkout_click');",
-  '    } catch (_) {}',
-  '  },true);',
+  "      d.addEventListener('click',function(e){",
+  '        try {',
+  "          var n=e.target; while (n && n.nodeType===1 && !(n.tagName==='A' && n.getAttribute('href'))) n=n.parentNode;",
+  '          if (!n || n.nodeType!==1) return;',
+  "          if (/^(https?:\\/\\/(www\\.)?thumbgate\\.ai)?\\/checkout\\/pro(\\?|#|$)/i.test(n.getAttribute('href'))) w.clarity('event','checkout_click');",
+  '        } catch (_) {}',
+  '      },true);',
 ];
 
 // Pages that link to Pro checkout, or load a script that inserts such links (connect-panel.js, buyer-intent.js),
@@ -80,32 +89,77 @@ const PRO_CHECKOUT_LINK = /href=["'](https?:\/\/(www\.)?thumbgate\.ai)?\/checkou
 const CHECKOUT_LINK_SCRIPT = /<script\b[^>]*\bsrc=["'][^"']*\/js\/(connect-panel|buyer-intent)\.js/i;
 const linksToProCheckout = (html) => PRO_CHECKOUT_LINK.test(html) || CHECKOUT_LINK_SCRIPT.test(html);
 
-function buildClarityTag(projectId, { trackCheckout = true } = {}) {
-  if (!PROJECT_ID_PATTERN.test(projectId || '')) return '';
-  const checkoutHandler = trackCheckout ? CHECKOUT_HANDLER : [];
-  return [
-    '<script>',
-    '(function(c,l,a,r,i,t,y){',
-    "  try { if (navigator.globalPrivacyControl === true || navigator.doNotTrack === '1' || window.doNotTrack === '1') return; } catch (_) {}",
-    '  c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};',
-    '  t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;',
-    '  y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);',
-    // No consent call and no guess from the browser time zone. Clarity applies Consent Mode itself for visitors in the
-    // EEA, UK and Switzerland: it waits for a consent signal before setting cookies, and this site sends none.
-    ...checkoutHandler,
-    `})(window, document, "clarity", "script", "${projectId}");`,
+const BANNER_TEXT = 'May we measure how visitors use this site? With your OK, Microsoft Clarity and Orion record pages, '
+  + 'clicks and scrolling (form fields are masked). Nothing loads unless you accept.';
+
+function buildConsentTag({ clarityId = '', orionSrc = '', trackCheckout = false } = {}) {
+  const clarity = PROJECT_ID_PATTERN.test(clarityId || '') ? clarityId : '';
+  if (!clarity && !orionSrc) return '';
+  const lines = [
+    `<script ${CONSENT_MARKER}>`,
+    '(function(w,d,cfg){',
+    "  try { if (navigator.globalPrivacyControl === true || navigator.doNotTrack === '1' || w.doNotTrack === '1') return; } catch (_) {}",
+    '  var KEY=cfg.key, loaded=false;',
+    '  function get(){ try { return w.localStorage.getItem(KEY); } catch (_) { return null; } }',
+    '  function put(v){ try { w.localStorage.setItem(KEY,v); } catch (_) {} }',
+    "  function add(src){ var s=d.createElement('script'); s.async=true; s.src=src; var f=d.getElementsByTagName('script')[0]; f.parentNode.insertBefore(s,f); }",
+    '  function load(){',
+    '    if (loaded) return; loaded=true;',
+    '    if (cfg.clarity) {',
+    '      w.clarity=w.clarity||function(){(w.clarity.q=w.clarity.q||[]).push(arguments)};',
+    "      w.clarity('consentv2',{ad_Storage:'denied',analytics_Storage:'granted'});",
+    "      add('https://www.clarity.ms/tag/'+cfg.clarity);",
+    ...(trackCheckout && clarity ? CHECKOUT_HANDLER : []),
+    '    }',
+    '    if (cfg.orion) {',
+    `      ${ORION_STUB};`,
+    '      add(cfg.orion);',
+    '    }',
+    '  }',
+    '  function stop(){',
+    "    try { if (typeof w.clarity==='function') { w.clarity('consentv2',{ad_Storage:'denied',analytics_Storage:'denied'}); w.clarity('consent',false); } } catch (_) {}",
+    "    try { if (w.orion && typeof w.orion.stop==='function') w.orion.stop(); } catch (_) {}",
+    '  }',
+    "  function hide(){ var b=d.getElementById('tg-consent'); if (b && b.parentNode) b.parentNode.removeChild(b); }",
+    "  function choose(v){ put(v); hide(); if (v==='granted') load(); else stop(); }",
+    '  function show(){',
+    "    if (d.getElementById('tg-consent')) return;",
+    "    if (!d.body) { d.addEventListener('DOMContentLoaded',show); return; }",
+    "    var b=d.createElement('div'); b.id='tg-consent'; b.setAttribute('role','region'); b.setAttribute('aria-label','Analytics choice');",
+    "    b.style.cssText='position:fixed;left:16px;right:16px;bottom:16px;z-index:2147483647;max-width:560px;margin:0 auto;padding:14px 16px;border-radius:10px;background:#111827;color:#f9fafb;font:14px/1.45 system-ui,sans-serif;box-shadow:0 6px 24px rgba(0,0,0,.3)';",
+    "    var p=d.createElement('p'); p.style.margin='0 0 10px'; p.textContent=cfg.text; b.appendChild(p);",
+    "    var row=d.createElement('div'); row.style.cssText='display:flex;gap:8px;flex-wrap:wrap;align-items:center';",
+    "    function btn(label,v,primary){ var x=d.createElement('button'); x.type='button'; x.textContent=label; x.setAttribute('data-consent-choice',v);",
+    "      x.style.cssText='padding:7px 14px;border-radius:6px;border:1px solid #9ca3af;cursor:pointer;font:inherit;'+(primary?'background:#f9fafb;color:#111827':'background:transparent;color:#f9fafb');",
+    "      x.addEventListener('click',function(){ choose(v); }); row.appendChild(x); }",
+    "    btn('Accept','granted',true); btn('Decline','denied',false);",
+    "    var a=d.createElement('a'); a.href='/privacy'; a.textContent='Privacy'; a.style.color='#d1d5db'; row.appendChild(a);",
+    '    b.appendChild(row); d.body.appendChild(b);',
+    '  }',
+    "  w.thumbgateConsent={ accept:function(){ choose('granted'); }, decline:function(){ choose('denied'); }, open:show };",
+    "  d.addEventListener('click',function(e){ var n=e.target; while (n && n.nodeType===1 && !(n.hasAttribute && n.hasAttribute('data-analytics-consent'))) n=n.parentNode;",
+    "    if (n && n.nodeType===1) { if (e.preventDefault) e.preventDefault(); show(); } });",
+    "  var state=get(); if (state==='granted') load(); else if (state!=='denied') show();",
+    `})(window, document, ${JSON.stringify({ key: CONSENT_KEY, clarity, orion: orionSrc, text: BANNER_TEXT })});`,
     '</script>',
-  ].join('\n');
+  ];
+  return lines.join('\n');
 }
 
-// Adds the tag to a public HTML page. Returns the page unchanged when the tag must not load.
-function injectClarityTag(html, { pathname = '/', headers = {}, env = process.env } = {}) {
+// Adds the consent-gated tag to a public HTML page. Returns the page unchanged when nothing may load.
+function injectAnalyticsTags(html, { pathname = '/', headers = {}, env = process.env } = {}) {
   if (typeof html !== 'string' || !/<\/head>/i.test(html)) return html;
-  const projectId = resolveClarityProjectId(env);
-  if (!projectId || isPrivatePath(pathname) || hasPrivacySignal(headers)) return html;
-  if (html.includes('www.clarity.ms/tag/')) return html;
-  return maskFormFields(html).replace(/<\/head>/i, `${buildClarityTag(projectId, { trackCheckout: linksToProCheckout(html) })}\n</head>`);
+  if (isPrivatePath(pathname) || hasPrivacySignal(headers) || html.includes(CONSENT_MARKER)) return html;
+  const clarityId = resolveClarityProjectId(env) || '';
+  const orionSrc = orionEnabled(env) ? ORION_SRC : '';
+  const tag = buildConsentTag({ clarityId, orionSrc, trackCheckout: linksToProCheckout(html) });
+  if (!tag) return html;
+  const page = clarityId ? maskFormFields(html) : html;
+  return page.replace(/<\/head>/i, `${tag}\n</head>`);
 }
+
+// Kept for callers of the old name: Clarity and Orion now share the one consent-gated tag.
+const injectClarityTag = injectAnalyticsTags;
 
 // Marks forms and fields outside <script>, <style> and <template> blocks, so markup inside JS strings is untouched.
 function maskFormFields(html) {
@@ -335,32 +389,23 @@ async function collectClarity({ feedbackDir, env = process.env, fetchImpl = glob
   };
 }
 
-// ---- Orion visit-analytics tag (same private-path and GPC/DNT rules as the page tag above) ----
-// The tag is inserted as the first thing inside <head>. No visitor is identified: we never call orion.identify().
-// THUMBGATE_ORION=off removes the tag without a deploy of new code.
+// ---- Orion visit-analytics (loaded only through the consent tag above) ----
+// No visitor is identified: we never call orion.identify(). THUMBGATE_ORION=off removes Orion without new code.
 const ORION_SCRIPT_ORIGIN = 'https://t.paradigmmachines.ai';
+const ORION_SRC = `${ORION_SCRIPT_ORIGIN}/q6ksr42etswa3fz583qr.js`;
 const ORION_STUB = "!function(w){var h=w.__orion=w.__orion||{},o=w.orion=w.orion||{};h.q=h.q||[];['identify','stop'].forEach(function(m){var f=function(){h.q.push([m,[].slice.call(arguments)])};f.q=1;if(!o[m])o[m]=f;if(!h[m])h[m]=f})}(window)";
-// Hash of the stub, for a future nonce/hash-based CSP. It is NOT in the CSP today: a hash makes browsers ignore
-// 'unsafe-inline', which this site still needs. tests/orion.test.js checks it matches the stub.
-const ORION_STUB_CSP_HASH = "'sha256-Ehp57wkg1JOMKj8DHQ0Gs3mGr0CK82EjvNu82pWOq1c='";
-const ORION_TAG = `<script>${ORION_STUB}</script><script src="${ORION_SCRIPT_ORIGIN}/q6ksr42etswa3fz583qr.js" async></script>`;
 function orionEnabled(env = process.env) {
   return !OFF_VALUES.has(String((env && env.THUMBGATE_ORION) || '').trim().toLowerCase());
 }
 
-function injectOrionTag(html, { pathname = '/', headers = {}, env = process.env } = {}) {
-  if (typeof html !== 'string' || !orionEnabled(env)) return html;
-  if (html.includes(ORION_SCRIPT_ORIGIN) || isPrivatePath(pathname) || hasPrivacySignal(headers)) return html;
-  return html.replace(/<head(\s[^>]*)?>/i, (open) => `${open}${ORION_TAG}`);
-}
-
 module.exports = {
-  ORION_TAG,
+  CONSENT_KEY,
   ORION_STUB,
-  ORION_STUB_CSP_HASH,
+  ORION_SRC,
   ORION_SCRIPT_ORIGIN,
-  injectOrionTag,
   orionEnabled,
+  buildConsentTag,
+  injectAnalyticsTags,
   DEFAULT_PROJECT_ID,
   EXPORT_URL,
   EXPORT_QUERIES,
@@ -369,7 +414,6 @@ module.exports = {
   resolveClarityToken,
   isPrivatePath,
   hasPrivacySignal,
-  buildClarityTag,
   injectClarityTag,
   maskFormFields,
   projectMetrics,

@@ -4110,8 +4110,8 @@ function sendHtml(res, statusCode, html, extraHeaders = {}, options = {}) {
   if (options.clarity !== false && statusCode < 400 && res.req) {
     let requestPath = '/admin';
     try { requestPath = new URL(res.req.url || '/', 'http://localhost').pathname; } catch { /* treat as private */ }
-    html = clarity.injectClarityTag(html, { pathname: requestPath, headers: res.req.headers || {} });
-    html = clarity.injectOrionTag(html, { pathname: requestPath, headers: res.req.headers || {} });
+    // Clarity and Orion share one consent-gated tag: nothing loads until the visitor accepts.
+    html = clarity.injectAnalyticsTags(html, { pathname: requestPath, headers: res.req.headers || {} });
   }
   const originTrialTokens = extractOriginTrialTokens(html);
   const originTrialHeader = originTrialTokens.length > 0
