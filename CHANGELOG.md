@@ -1,5 +1,33 @@
 # Changelog
 
+## 1.47.0
+
+### Minor Changes
+
+- e544c8b: New `thumbgate gate-audit` command replays every learned rule against past allowed actions and reports false fires, the sample size, a 95% upper bound on the false-fire rate and an evidence label (none, weak, strong, fires-on-safe-actions). Newly promoted block rules now keep that audit on the rule. Idea from arXiv 2611.26450, which reports its compiled circuits' false triggers as a count over a large held-out sample.
+- f2d5171: A `git commit` that would add a provider key, token or private key to history is now denied by the secret guard, with a message naming the file and no key in the text.
+
+### Patch Changes
+
+- 87615f1: Owner console: new Leads tab (`/v1/admin/leads`) lists the emails captured on the install page and by the CLI subscribe prompt, newest first, without IP address or user agent.
+- 55138a0: Public pages now ask before loading Microsoft Clarity or Orion. Nothing loads until the visitor presses Accept; Decline or a later withdrawal sends Clarity's consent withdrawal and stops Orion. The privacy page has an "Analytics choices" link.
+- 7974666: Feedback capture keeps the action's command or input in lastAction (bounded to 400 characters, secrets redacted), and the capture_feedback tool schema documents lastAction, so a thumbs-down records what the agent actually ran and can become a DPO pair.
+- 10be7c5: Local dev and test servers (localhost, 127.0.0.1, [::1]) no longer get the Clarity tag, and loopback pages are left out of the /admin Visitor behavior tables.
+- 28c2e82: DPO export also pairs a thumbs-down whose action is the failed command or the last agent reply in its conversation, reports drop reasons in the API and dashboard, and adds a fixed self-test the production proof runs instead of requiring the operator's store to hold a pair.
+- f5d664d: DPO export pairs only a thumbs-down with its own action and prompt window to a corrective action on the same task, and reports every dropped record with a reason.
+- b3f4494: Homepage: say that ThumbGate decides before a command runs, with the limits kept. Privacy page: list exactly what optional CLI telemetry sends.
+- 8948db2: The Google tag the server adds to the marketing pages now also configures a second Google Analytics 4 property (G-QKENZBW1V8), so page views and the existing begin_checkout event reach both properties through one loader. It stays behind the Global Privacy Control and Do Not Track suppression. `THUMBGATE_GA_EXTRA_MEASUREMENT_ID` replaces the id; the value `off` removes it.
+- 734dccc: Thumbs-down holds now say how to get out: `npx thumbgate holds` lists, releases (`release`) and turns off (`off`, `on`) only the hold, repeated thumbs-downs are one hold, and the first hold explains the exits. README and the guide gain a "Holds" section.
+- 9be4dc7: The first thumbs-down in a project now explains what a hold is, how to say "go ahead", and `thumbgate holds off`. `thumbgate doctor` lists current holds and the command that clears them. The guide has a "Stuck? Do this" box.
+- b7dde66: The hourly production deploy no longer re-uploads a commit that an earlier hourly run already sent to Railway in the last 3 hours, so a deploy that Railway holds in its queue isn't replaced by an identical copy.
+- c9f8df9: The /learn page and the README link the free Udemy course, so course traffic from our own pages can be counted.
+- a8301ef: Landing page: the sticky nav now has an "Install free" link next to "Get Pro", so a visitor who scrolls back to the top finds the free install without hunting for it.
+- 70dc157: Add the Orion visit-analytics tag to public pages, allow it in the CSP, and say so on the privacy page.
+- 290c4fe: Production deploys run once an hour from the head of main instead of on every push, so Railway's 40 to 60 minute queue no longer replaces each deploy before it goes live.
+- 6f25936: Billing source diagnostics no longer call a missing revenue ledger a broken source when nothing has been sold yet. With no Stripe or marketplace key in the key store, the warning is now `revenue_ledger_empty` ("No revenue events recorded yet; the revenue ledger is created by the first paid checkout."). `revenue_ledger_missing` still fires when paid keys exist but the ledger does not.
+- 8948db2: Serve the shared analytics helper at /tg-analytics.js and the host matrix page at /host-matrix, send pricing_view and matrix_view page-view events (with campaign tags kept in session storage), and send page views to the second Google Analytics property. The privacy page lists what is stored.
+- f36848e: Added `npm run check:version-truth`: one check that fails when package.json, the git tag, npm latest, the live /health version and the top CHANGELOG heading disagree. The release workflow runs the offline form on every publish; the npm strategy and release rules are in docs/npm-strategy.md.
+
 ## 1.46.0
 
 ### Minor Changes
