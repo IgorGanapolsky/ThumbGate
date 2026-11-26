@@ -156,9 +156,17 @@ function buildConsentTag({ clarityId = '', orionSrc = '', trackCheckout = false 
 }
 
 // Adds the consent-gated tag to a public HTML page. Returns the page unchanged when nothing may load.
+// Local dev servers and test runs (localhost, 127.0.0.1, [::1]) never get the tag, so they stay out of Clarity.
+const LOOPBACK_HOST = /^(localhost|127(?:\.\d{1,3}){3}|\[::1\])(:\d+)?$/i;
+function isLoopbackHost(headers = {}) {
+  const host = String(headers.host || headers.Host || '').trim();
+  return LOOPBACK_HOST.test(host);
+}
+const isLoopbackUrl = (url) => /^https?:\/\/(localhost|127(?:\.\d{1,3}){3}|\[::1\])(:\d+)?(\/|$)/i.test(String(url || ''));
+
 function injectAnalyticsTags(html, { pathname = '/', headers = {}, env = process.env } = {}) {
   if (typeof html !== 'string' || !/<\/head>/i.test(html)) return html;
-  if (isPrivatePath(pathname) || hasPrivacySignal(headers) || html.includes(CONSENT_MARKER)) return html;
+  if (isPrivatePath(pathname) || hasPrivacySignal(headers) || isLoopbackHost(headers) || html.includes(CONSENT_MARKER)) return html;
   const clarityId = resolveClarityProjectId(env) || '';
   const orionSrc = orionEnabled(env) ? ORION_SRC : '';
   const tag = buildConsentTag({ clarityId, orionSrc, trackCheckout: linksToProCheckout(html) });
@@ -261,7 +269,11 @@ function summarize(overall) {
 function breakdown(metrics, dimension) {
   const traffic = (metrics || []).find((m) => m.name.toLowerCase() === 'traffic');
   if (!traffic) return [];
-  return traffic.rows.map((row) => {
+  return traffic.rows.filter((row) => {
+    const dimKey = Object.keys(row).find((key) => key.toLowerCase() === dimension.toLowerCase());
+    const value = dimKey ? String(row[dimKey]) : '';
+    return !isLoopbackUrl(value) && !/^(localhost|127\.0\.0\.1)$/i.test(value);
+  }).map((row) => {
     const dimKey = Object.keys(row).find((key) => key.toLowerCase() === dimension.toLowerCase());
     return {
       [dimension.toLowerCase()]: dimKey ? row[dimKey] : 'Unknown',

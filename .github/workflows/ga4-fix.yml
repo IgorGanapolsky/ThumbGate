@@ -1,0 +1,97 @@
+name: GA4 fix
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  ga4-fix:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Update GA4 and analytics on public pages
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          old_id='G-SZR5039QN4'
+          new_id='G-QKENZBW1V8'
+          shopt -s globstar nullglob
+          html_files=(public/**/*.html)
+          declare -A old_before=()
+
+          count_old_id() {
+            grep -oF -- "$old_id" "$1" 2>/dev/null | wc -l | tr -d '[:space:]' || true
+          }
+
+          for file in "${html_files[@]}"; do
+            old_before["$file"]=$(count_old_id "$file")
+            sed -i "s/${old_id}/${new_id}/g" "$file"
+          done
+
+          for file in public/index.html public/pricing.html public/host-matrix.html; do
+            [[ -f "$file" ]] || continue
+            case "$file" in
+              public/pricing.html) event='pricing_view' ;;
+              public/host-matrix.html) event='matrix_view' ;;
+              *) event='' ;;
+            esac
+
+            python3 - "$file" "$event" <<'PY'
+          from pathlib import Path
+          import re
+          import sys
+
+          path = Path(sys.argv[1])
+          event = sys.argv[2]
+          text = path.read_text(encoding="utf-8")
+
+          if "tg-analytics.js" not in text:
+              closing_bodies = list(re.finditer(r"</body\s*>", text, re.IGNORECASE))
+              if closing_bodies:
+                  pos = closing_bodies[-1].start()
+                  text = text[:pos] + '<script src="/tg-analytics.js"></script>\n' + text[pos:]
+
+          if event:
+              call = f"tgTrack('{event}', tgUtm())"
+              if call not in text:
+                  closing_bodies = list(re.finditer(r"</body\s*>", text, re.IGNORECASE))
+                  if closing_bodies:
+                      pos = closing_bodies[-1].start()
+                      block = (
+                          "<script>\n"
+                          "document.addEventListener('DOMContentLoaded', function () {\n"
+                          "  if (typeof tgTrack === 'function') {\n"
+                          f"    {call};\n"
+                          "  }\n"
+                          "});\n"
+                          "</script>\n"
+                      )
+                      text = text[:pos] + block + text[pos:]
+
+          path.write_text(text, encoding="utf-8")
+          PY
+          done
+
+          mapfile -d '' changed_files < <(git diff --name-only -z -- public)
+          for file in "${changed_files[@]}"; do
+            before=${old_before[$file]:-0}
+            after=$(count_old_id "$file")
+            printf 'Old-ID occurrences in %s: before=%s after=%s\n' "$file" "$before" "$after"
+          done
+
+          if ((${#changed_files[@]} > 0)); then
+            git add -- "${changed_files[@]}"
+            git -c user.name='github-actions[bot]' \
+                -c user.email='41898282+github-actions[bot]@users.noreply.github.com' \
+                commit -m 'Point GA4 at existing ThumbGate property, wire tg-analytics'
+            git push origin HEAD:main
+          else
+            echo 'No site files changed; nothing to commit or push.'
+          fi

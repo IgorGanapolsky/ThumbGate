@@ -895,7 +895,7 @@ $ ... "node scripts/migrate.js --env prod"
       <div class="shell">
         <div class="section-kicker">Self-improving product loop</div>
         <h2 class="section-title">What happens under the hood.</h2>
-        <p class="section-lede">Corrections become local lessons, repeated thumbs-downs become gates, and the next action is checked before it runs. The model is not retrained. <strong style="color:var(--text)">Click a step</strong> to see what each one does; step 4 is open below.</p>
+        <p class="section-lede">Corrections become local lessons, repeated thumbs-downs become gates, and the next action is checked before it runs. The model is not retrained. Checks that run after the agent finishes find the damage once it is done; in Claude Code, ThumbGate decides before each command runs. It is not a sandbox, and a reworded command can get past it. <strong style="color:var(--text)">Click a step</strong> to see what each one does; step 4 is open below.</p>
         <figure class="diagram-frame" style="margin-top:28px">
           <img src="/assets/diagrams/self-improving-thumbs-loop.svg" width="1100" height="420" alt="Self-improving ThumbGate loop: thumbs up or thumbs down become a local lesson, repeated thumbs-downs become a prevention rule, then ALLOW WARN or DENY on the next tool call. The loop closes under your control without retraining the model." loading="lazy" decoding="async">
         </figure>

@@ -367,6 +367,7 @@ Full index: **[docs/INDEX.md](docs/INDEX.md)**
 
 | Need | Link |
 |------|------|
+| Free video course (41 min) | [Claude Code + ThumbGate on Udemy](https://www.udemy.com/course/claude-code-thumbgate-understand-the-gate-and-its-limits/) |
 | Agent workflow contract | [WORKFLOW.md](WORKFLOW.md) |
 | Ready-for-agent intake | [.github/ISSUE_TEMPLATE/ready-for-agent.yml](.github/ISSUE_TEMPLATE/ready-for-agent.yml) |
 | Cloud-to-Mac dispatch loop | [docs/guides/mac-dispatch-loop.md](docs/guides/mac-dispatch-loop.md) |

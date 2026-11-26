@@ -132,7 +132,6 @@
   <script src="/js/webmcp.js" defer></script>
   <script src="/js/buyer-intent.js" defer></script>
   <script src="/js/connect-panel.js" defer></script>
-  __GA_BOOTSTRAP__
 </head>
 <body>
   <nav>
@@ -351,6 +350,12 @@
     sendFirstPartyTelemetry('pricing_page_view', { landingPath: '/pricing', experimentId: 'value_packaging_v1' });
   </script>
 <script src="/tg-analytics.js"></script>
-<script>tgTrack('pricing_view', tgUtm());</script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  if (typeof tgTrack === 'function') {
+    tgTrack('pricing_view', tgUtm());
+  }
+});
+</script>
 </body>
 </html>
