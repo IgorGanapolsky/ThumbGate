@@ -345,6 +345,10 @@ npx thumbgate init --agent gemini</code></pre>
 <p>Give a thumbs-down: "called staging API in production code." The check flags and logs tool calls that reference staging URLs in production contexts (and hard-blocks them under strict mode).</p>
 
 <h2 id="holds">Holds, and how to release or remove a gate</h2>
+<div class="stuck-box" role="note" style="border:2px solid #f59e0b;border-radius:8px;padding:12px 16px;margin:0 0 16px;background:rgba(245,158,11,.10)">
+<p style="margin:0 0 6px"><strong>Stuck? Do this.</strong></p>
+<p style="margin:0">1. Say "go ahead" to your agent, or give a thumbs-up.<br>2. Or run <code>npx thumbgate holds release</code>.<br>3. To stop holds for good, run <code>npx thumbgate holds off</code>. Your other gates stay on.</p>
+</div>
 <p>A hold is a pause. When you type a thumbs-down right after the agent ran something, ThumbGate refuses that same action (the same tool; for a shell command, the same first three words) until you say to go on. It stops the agent from repeating what you just marked wrong. A hold lasts up to 24 hours, and several thumbs-downs on the same action count as one hold.</p>
 <p>Three ways out: start your message with "go ahead" (or "continue", "proceed", "resume", "unblock"), or give a thumbs-up; run <code>npx thumbgate holds release</code> in the project folder to clear it now; or run <code>npx thumbgate holds off</code> to turn the hold off, even in a session that is already running (<code>npx thumbgate holds on</code> brings it back).</p>
 <p>Turning the hold off keeps every other gate on, including the commands denied by default and the chat send rules. <code>THUMBGATE_SEND_GATE=0</code> turns off the whole chat send gate, holds included. <code>npx thumbgate break-glass</code> does not lift a hold. A reworded command is not held, and ThumbGate is not a sandbox.</p>

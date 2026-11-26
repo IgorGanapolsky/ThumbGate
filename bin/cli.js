@@ -3632,7 +3632,7 @@ function applyThumbHold(detected, prompt, promptEnvelope) {
         ? 'New chat or colleague posts are refused until you edit the last bubble in place, or the person says "go ahead".'
         : `${hold.signature ? `\`${hold.signature} …\`` : hold.toolName} is refused until the person says "go ahead". Ask what to change.`;
       // The exits are taught once per project, in the first hold message; later ones stay short.
-      const lesson = sendGate.teachOnce({ feedbackDir }) ? ` First hold in this project, so tell the person what it is: a pause on the action they just marked wrong. ${sendGate.HOLD_EXITS}` : '';
+      const lesson = sendGate.teachOnce({ feedbackDir }) ? ` First hold in this project, so tell the person once, in plain words: a hold is a pause on the action they just marked wrong, so you do not repeat it. To continue they say "go ahead"; to stop holds they run \`thumbgate holds off\` (every other gate stays on). ${sendGate.HOLD_EXITS}` : '';
       return `ThumbGate hold${hold.repeated ? ' (already held, one release clears it)' : ''}: thumbs-down received. ${what}${lesson}`;
     }
     if ((detected && detected.signal === 'up') || (!detected && sendGate.isReleasePrompt(prompt))) {
@@ -4963,11 +4963,17 @@ switch (COMMAND) {
     const args = parseArgs(process.argv.slice(3));
     const report = generateAgentReadinessReport({ projectRoot: CWD });
     const wiring = wiringReport(CWD);
+    let holds = { holdsOff: false, holds: [] };
+    try {
+      const { resolveFeedbackDir } = require(path.join(PKG_ROOT, 'scripts', 'feedback-paths'));
+      holds = require(path.join(PKG_ROOT, 'scripts', 'send-gate')).listHolds({ feedbackDir: resolveFeedbackDir({ cwd: CWD }) });
+    } catch { /* holds are extra information; doctor still reports the rest */ }
     if (args.json) {
-      console.log(JSON.stringify({ ...report, wiring }, null, 2));
+      console.log(JSON.stringify({ ...report, wiring, holds }, null, 2));
     } else {
       process.stdout.write(reportToText(report));
       process.stdout.write(`\n${formatReport(wiring)}\n`);
+      process.stdout.write(`\n${require(path.join(PKG_ROOT, 'scripts', 'send-gate')).formatHolds(holds)}\n`);
     }
     const ready = report.overallStatus === 'ready' && wiring.overall !== 'error';
     process.exit(ready ? 0 : 1);
