@@ -649,7 +649,8 @@ test('homepage stays human-scannable instead of becoming a product monorepo', ()
   // 1645: the hero line says the enforcement path needs no cloud, matching the README and tests/enforcement-path-offline.test.js (25 Nov 2026).
   // 1745: the hero shows the real 1.45.1 thumbs-down hold transcript, and the deny list and coverage table add terraform destroy, kubectl delete, aws s3 rm and the hold row (25 Nov 2026).
   // 1775: the install block adds a one-paste setup prompt for Claude Code next to the command (26 Nov 2026).
-  assert.ok(words.length <= 1775, `visible homepage is ${words.length} words`);
+  // 1810: one sentence says checks after the agent finishes find the damage late while ThumbGate decides before the command runs, with the limits kept (26 Nov 2026).
+  assert.ok(words.length <= 1810,`visible homepage is ${words.length} words`);
   assert.ok(h2Count <= 8, `homepage has ${h2Count} H2 headings`);
   assert.ok(h3Count <= 10, `homepage has ${h3Count} H3 headings`);
   for (const jargon of ['Thompson Sampling', 'DPO', 'LanceDB', 'ContextFS', 'MemAlign', 'FTS5']) {
