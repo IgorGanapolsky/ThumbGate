@@ -895,6 +895,7 @@
     "test:broker-execution-receipts": "node --test tests/broker-execution-receipts.test.js",
     "test:provider-attestation": "node --test tests/provider-attestation-conformance.test.js",
     "test:learn-hub": "node --test tests/learn-hub.test.js",
+    "gates:audit": "node bin/cli.js gate-audit",
     "test:dxc-code-assurance": "node --test tests/dxc-code-assurance-page.test.js",
     "test:feedback-to-rules": "node --test tests/feedback-to-rules.test.js",
     "test:memory-firewall": "node --test tests/memory-firewall.test.js",
@@ -1511,7 +1512,7 @@
     "test:no-orphan-posthog": "node --test --test-force-exit tests/no-orphan-posthog.test.js",
     "test:admin-truth-ui": "node --test --test-force-exit tests/admin-truth-ui.test.js",
     "test:admin-usage-mrr": "node --test --test-force-exit tests/admin-usage-mrr.test.js",
-    "test:owner-admin": "node --test tests/clarity.test.js tests/site-sources-clarity.test.js tests/unit-economics.test.js tests/admin-economics.test.js tests/owner-admin.test.js tests/owner-admin-payment-cursor.test.js tests/owner-reporting-semantics.test.js tests/owner-summary-quality.test.js tests/privacy-clarity.test.js",
+    "test:owner-admin": "node --test tests/clarity.test.js tests/analytics-consent.test.js tests/site-sources-clarity.test.js tests/unit-economics.test.js tests/admin-economics.test.js tests/owner-admin.test.js tests/owner-admin-payment-cursor.test.js tests/owner-reporting-semantics.test.js tests/owner-summary-quality.test.js tests/privacy-clarity.test.js",
     "scenarios": "node tests/scenarios/run.js",
     "test:scenarios": "node --test tests/scenarios.test.js",
     "test:checkout-active-price-id": "node --test tests/checkout-active-price-id.test.js"
