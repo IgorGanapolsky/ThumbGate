@@ -14,6 +14,7 @@ const { EventEmitter } = require('events');
 const { spawn } = require('node:child_process');
 
 const { startServer } = require('../src/api/server');
+const { activePrices } = require('./helpers/fake-stripe-prices');
 
 let tmpDir;
 const billingTestRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'billing-suite-'));
@@ -787,6 +788,7 @@ describe('billing.js — funnel ledger', () => {
     const attempts = [];
     const restoreStripe = installStripeMock(function Stripe() {
       return {
+        prices: activePrices(),
         checkout: {
           sessions: {
             create: async (payload) => {
@@ -815,7 +817,10 @@ describe('billing.js — funnel ledger', () => {
       assert.equal(attempts.length, 2);
       assert.ok(attempts[0].branding_settings);
       assert.equal(Object.prototype.hasOwnProperty.call(attempts[1], 'branding_settings'), false);
-      assert.match(attempts[1].line_items[0].price_data.product_data.images[0], /thumbgate-icon-pro-512\.png$/);
+      // The configured active price is charged by id (its product carries the image in Stripe),
+      // so no inline price_data and no new ad hoc price per session.
+      assert.equal(attempts[1].line_items[0].price, billing.CONFIG.STRIPE_PRICE_ID_PRO_MONTHLY);
+      assert.equal(attempts[1].line_items[0].price_data, undefined);
     } finally {
       restoreStripe();
     }
