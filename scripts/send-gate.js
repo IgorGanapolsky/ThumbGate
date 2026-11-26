@@ -21,6 +21,8 @@
  *      bubble instead.
  *
  * State lives in <feedback dir>/send-gate-state.json. Disable everything with THUMBGATE_SEND_GATE=0.
+ * Disable only the thumbs-down hold with `thumbgate holds off` (read on every call, so it works in a live session)
+ * or THUMBGATE_THUMBS_DOWN_HOLD=0 (new sessions). `thumbgate holds release` clears the current holds.
  */
 
 const fs = require('node:fs');
@@ -129,10 +131,45 @@ function readState(feedbackDir) {
       actions: Array.isArray(data.actions) ? data.actions : [],
       posts: data.posts && typeof data.posts === 'object' ? data.posts : {},
       approved: Array.isArray(data.approved) ? data.approved : [],
+      holdsOff: data.holdsOff === true,
+      taughtAt: typeof data.taughtAt === 'string' ? data.taughtAt : null,
     };
   } catch {
-    return { holds: [], actions: [], posts: {}, approved: [] };
+    return { holds: [], actions: [], posts: {}, approved: [], holdsOff: false, taughtAt: null };
   }
+}
+
+// Only the thumbs-down hold is switched off by these; the send rules (raw URL, "I do not know", second bubble) stay on.
+// THUMBGATE_THUMBS_DOWN_HOLD=0 applies to new sessions; `thumbgate holds off` writes the state file, which every call reads.
+function holdsEnabled(state) {
+  return process.env.THUMBGATE_THUMBS_DOWN_HOLD !== '0' && !(state && state.holdsOff);
+}
+
+const HOLD_DOC_URL = 'https://thumbgate.ai/guide#holds';
+const HOLD_EXITS = `Ways out (tell the person): they say "go ahead" or give a thumbs-up; they run \`npx thumbgate holds release\` to clear it now; or \`npx thumbgate holds off\` turns off only this hold and keeps every other gate. ${HOLD_DOC_URL}`;
+
+/** Turn only the thumbs-down hold off or on for this project, and clear what is held when turning it off. */
+function setHoldsEnabled({ feedbackDir, enabled: on, now = Date.now() }) {
+  const state = readState(feedbackDir);
+  state.holdsOff = !on;
+  if (!on) for (const hold of activeHolds(state, now)) { hold.releasedAt = new Date(now).toISOString(); hold.releasedBy = 'holds-off'; }
+  writeState(feedbackDir, state);
+  return { holdsOff: state.holdsOff };
+}
+
+/** Active holds, for `thumbgate holds`. */
+function listHolds({ feedbackDir, now = Date.now() }) {
+  const state = readState(feedbackDir);
+  return { holdsOff: !holdsEnabled(state), holds: activeHolds(state, now) };
+}
+
+/** True the first time it is called for this project, so the exits are taught once. */
+function teachOnce({ feedbackDir, now = Date.now() }) {
+  const state = readState(feedbackDir);
+  if (state.taughtAt) return false;
+  state.taughtAt = new Date(now).toISOString();
+  writeState(feedbackDir, state);
+  return true;
 }
 
 function writeState(feedbackDir, state) {
@@ -155,6 +192,7 @@ function activeHolds(state, now) {
 function placeHold({ feedbackDir, sessionId = '', reason = '', now = Date.now() }) {
   if (!feedbackDir || !enabled()) return null;
   const state = readState(feedbackDir);
+  if (!holdsEnabled(state)) return null;
   const recent = state.actions.filter((a) => now - a.at <= LAST_ACTION_WINDOW_MS && (!sessionId || !a.sessionId || a.sessionId === sessionId));
   const last = recent[recent.length - 1] || null;
   const base = {
@@ -169,6 +207,9 @@ function placeHold({ feedbackDir, sessionId = '', reason = '', now = Date.now() 
   } else {
     hold = { ...base, kind: 'action', toolName: last.toolName, signature: last.signature || null };
   }
+  // Thumbs-downs in a row on the same action are one hold, not a pile that each needs releasing.
+  const same = activeHolds(state, now).find((h) => h.kind === hold.kind && h.toolName === hold.toolName && (h.signature || null) === (hold.signature || null) && (h.chatKey || null) === (hold.chatKey || null));
+  if (same) return { ...same, repeated: true };
   state.holds.push(hold);
   state.holds = state.holds.slice(-20);
   writeState(feedbackDir, state);
@@ -250,7 +291,7 @@ function evaluate({ feedbackDir, toolName, toolInput = {}, sessionId = '', now =
   if (!enabled() || !feedbackDir || !toolName) return null;
   const kind = classifyTool(toolName);
   const state = readState(feedbackDir);
-  const holds = activeHolds(state, now);
+  const holds = holdsEnabled(state) ? activeHolds(state, now) : [];
   const chatKey = kind ? chatKeyOf(toolName, toolInput) : null;
   const command = toolInput && (toolInput.command || toolInput.cmd);
   const signature = command ? shellSignature(command) : null;
@@ -258,10 +299,10 @@ function evaluate({ feedbackDir, toolName, toolInput = {}, sessionId = '', now =
   // 1. Holds from a thumbs-down.
   for (const hold of holds) {
     if (hold.kind === 'post' && kind === 'post') {
-      return deny('thumbs-down-hold', `The person gave a thumbs-down after your last post${hold.chatKey ? ` (${hold.chatKey})` : ''}. New posts are refused until you edit the last bubble in place with the edit-message tool, or the person says "go ahead". Do not send a new message, and do not switch to another chat or tool to get around this.`);
+      return deny('thumbs-down-hold', `The person gave a thumbs-down after your last post${hold.chatKey ? ` (${hold.chatKey})` : ''}. New posts are refused until you edit the last bubble in place with the edit-message tool, or the person says "go ahead". Do not send a new message, and do not switch to another chat or tool to get around this. ${HOLD_EXITS}`);
     }
     if (hold.kind === 'action' && hold.toolName === toolName && (!hold.signature || hold.signature === signature)) {
-      return deny('thumbs-down-hold', `The person gave a thumbs-down right after ${hold.signature ? `\`${hold.signature} …\`` : `the ${toolName} call`}. That action is held until the person says to go on (a thumbs-up or "go ahead"). Do not retry it or route around it with another tool; ask what to change.`);
+      return deny('thumbs-down-hold', `The person gave a thumbs-down right after ${hold.signature ? `\`${hold.signature} …\`` : `the ${toolName} call`}. That action is held until the person says to go on (a thumbs-up or "go ahead"). Do not retry it or route around it with another tool; ask what to change. ${HOLD_EXITS}`);
     }
   }
 
@@ -327,4 +368,8 @@ module.exports = {
   describeAction,
   evaluate,
   readState,
+  setHoldsEnabled,
+  listHolds,
+  teachOnce,
+  HOLD_EXITS,
 };

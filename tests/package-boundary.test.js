@@ -854,8 +854,10 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // one-paste setup prompt in public/pricing.html and public/index.html (about 7 KB); CI measured 10,945,440.
   // Bumped 10.95 MB -> 10.96 MB (2026-11-26, PR #5295): the owner console Leads tab
   // (collectLeads in scripts/owner-admin.js, renderLeads in public/admin.html). Measured 10,950,702.
-  manifest.unpackedSize <= 10_960_000,
-  `npm package should stay <= 10.96 MB unpacked, got ${manifest.unpackedSize}`
+  // Bumped 10.96 MB -> 10.97 MB (2026-11-26, hold exits): `thumbgate holds`, the hold exit text and switches in
+  // scripts/send-gate.js and bin/cli.js, and the Holds section in README.md and public/guide.html. Measured 10,961,084.
+  manifest.unpackedSize <= 10_970_000,
+  `npm package should stay <= 10.97 MB unpacked, got ${manifest.unpackedSize}`
 );
 
   for (const file of requiredRuntimeFiles) {
