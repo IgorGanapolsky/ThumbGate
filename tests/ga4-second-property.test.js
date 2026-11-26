@@ -79,22 +79,58 @@ test('REQ-03: with no first property, the extra one still loads and the page che
   assert.match(res.body, new RegExp(`const gaMeasurementId = '${EXTRA}'`));
 });
 
-test('REQ-04: the home page sends begin_checkout beside the Plausible checkout_start (same click handler)', () => {
+test('REQ-04: one home page checkout click sends one begin_checkout beside the Plausible checkout_start', () => {
   const html = fs.readFileSync(path.join(__dirname, '..', 'public', 'index.html'), 'utf8');
-  const at = html.indexOf("window.plausible('checkout_start'");
-  assert.ok(at > 0, 'plausible checkout_start call');
-  assert.match(html.slice(at, at + 200), /sendGa4Event\('begin_checkout'/);
+  const anchor = `querySelector('a[href="/checkout/pro"]').addEventListener('click', function () {`;
+  const start = html.indexOf(anchor);
+  assert.ok(start > 0, 'pro checkout click handler');
+  const bodyStart = start + anchor.length;
+  const bodyEnd = html.indexOf('\n      });', bodyStart);
+  assert.ok(bodyEnd > bodyStart, 'end of the click handler');
+  const calls = [];
+  // Run the page's own click handler with spies in place of the analytics senders.
+  const handler = new Function('privacySignalOptOut', 'window', 'sendGa4Event', 'sendFirstPartyTelemetry', html.slice(bodyStart, bodyEnd));
+  const click = (optOut) => handler(
+    () => optOut,
+    { plausible: (name, opts) => calls.push(['plausible', name, opts.props]) },
+    (name, props) => calls.push(['ga4', name, props]),
+    (name, props) => calls.push(['first-party', name, props]),
+  );
+  click(false);
+  const ga4 = calls.filter((c) => c[0] === 'ga4');
+  assert.equal(ga4.length, 1, 'exactly one GA4 event per click');
+  assert.equal(ga4[0][1], 'begin_checkout');
+  assert.equal(ga4[0][2].ctaId, 'homepage_pro_checkout');
+  assert.equal(ga4[0][2].planId, 'pro');
+  assert.equal(ga4[0][2].currency, 'USD');
+  assert.deepEqual(calls.filter((c) => c[0] === 'plausible').map((c) => c[1]), ['checkout_start']);
+  calls.length = 0;
+  click(true);
+  assert.equal(calls.length, 0, 'a privacy opt-out sends nothing');
 });
 
 test('REQ-05: a Global Privacy Control signal or "off" removes every Google tag', async () => {
   process.env.THUMBGATE_GA_MEASUREMENT_ID = 'G-TEST1234';
   const gpc = await get('/', { 'sec-gpc': '1' });
+  assert.equal(gpc.status, 200);
   assert.doesNotMatch(gpc.body, /googletagmanager\.com|gtag\('config'/);
   process.env.THUMBGATE_GA_EXTRA_MEASUREMENT_ID = 'off';
   const off = await get('/');
+  assert.equal(off.status, 200);
   assert.match(off.body, /gtag\('config', 'G-TEST1234'\)/);
   assert.doesNotMatch(off.body, new RegExp(EXTRA));
   delete process.env.THUMBGATE_GA_MEASUREMENT_ID;
   const none = await get('/');
+  assert.equal(none.status, 200);
   assert.doesNotMatch(none.body, /googletagmanager\.com/);
+});
+
+test('REQ-06: /tg-analytics.js serves the helper and the home page stores arrival campaign tags', async () => {
+  const res = await get('/tg-analytics.js');
+  assert.equal(res.status, 200);
+  assert.match(res.body, /window\.tgUtm = tgUtm/);
+  const html = fs.readFileSync(path.join(__dirname, '..', 'public', 'index.html'), 'utf8');
+  const helperAt = html.indexOf('<script src="/tg-analytics.js"></script>');
+  assert.ok(helperAt > 0, 'home page loads the helper');
+  assert.ok(html.indexOf('tgUtm();', helperAt) > helperAt, 'home page calls tgUtm() after the helper loads');
 });

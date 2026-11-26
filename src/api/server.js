@@ -8135,10 +8135,16 @@ function createUnscopedApiServer({ ownerAdminDependencies = {} } = {}) {
     }
 
     if (isGetLikeRequest && pathname === '/tg-analytics.js') {
+      let script;
       try {
-        res.writeHead(200, { 'Content-Type': 'application/javascript; charset=utf-8', 'Cache-Control': 'public, max-age=3600' });
-        res.end(isHeadRequest ? undefined : fs.readFileSync(TG_ANALYTICS_SCRIPT_PATH, 'utf-8'));
-      } catch { res.end(); }
+        script = fs.readFileSync(TG_ANALYTICS_SCRIPT_PATH, 'utf-8');
+      } catch {
+        res.writeHead(503, { 'Content-Type': 'text/plain; charset=utf-8', 'Cache-Control': 'no-store' });
+        res.end(isHeadRequest ? undefined : 'Analytics script unavailable');
+        return;
+      }
+      res.writeHead(200, { 'Content-Type': 'application/javascript; charset=utf-8', 'Cache-Control': 'public, max-age=3600' });
+      res.end(isHeadRequest ? undefined : script);
       return;
     }
 
