@@ -51,6 +51,15 @@ test.describe('/ free and Pro conversion path', () => {
     await expect(page.locator('a[href="/install"]').first()).toBeVisible();
   });
 
+  test('sticky nav offers the free install next to Get Pro', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.goto('/');
+    const link = page.locator('nav [data-cta-id="nav_install_free"]');
+    await expect(link).toHaveAttribute('href', '#install');
+    await expect(link).toBeVisible();
+    await expect(page.locator('#install')).toHaveCount(1);
+  });
+
   test('primary Pro button navigates with GET and never posts a retired checkout', async ({ page }) => {
     let request;
     await page.route('**/checkout/pro', async (route) => {
