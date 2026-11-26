@@ -2955,6 +2955,24 @@ test('dpo export endpoint returns downloadable records when requested by the das
   assert.ok(Array.isArray(body.records));
   assert.equal(body.pairCount, body.records.length);
   assert.equal(body.pairs, body.records.length);
+  assert.ok(body.droppedByReason && typeof body.droppedByReason === 'object');
+});
+
+test('dpo export self-test exports the fixed fixture: one known pair, every other record dropped with a reason', async () => {
+  const res = await fetch(apiUrl('/v1/dpo/export'), {
+    method: 'POST',
+    headers: { 'content-type': 'application/json', ...authHeader },
+    body: JSON.stringify({ includePairs: true, selfTest: true }),
+  });
+  assert.equal(res.status, 200);
+  const body = await res.json();
+  assert.equal(body.selfTest, true);
+  assert.equal(body.pairs, 1);
+  assert.equal(body.records[0].rejected, body.expected.rejected);
+  assert.equal(body.records[0].chosen, body.expected.chosen);
+  const dropped = Object.values(body.droppedByReason).reduce((a, b) => a + b, 0);
+  assert.equal(body.pairs + dropped, body.errors + body.learnings);
+  assert.equal(body.outputPath, null);
 });
 
 test('databricks export endpoint writes analytics bundle', async () => {

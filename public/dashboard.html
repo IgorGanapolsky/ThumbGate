@@ -685,10 +685,13 @@ h2{font-size:20px;font-weight:700;margin-bottom:16px;letter-spacing:-.02em}
       <h2>Export</h2><p class="section-sub">Export training data (DPO)</p>
       <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:24px;margin-bottom:24px;max-width:640px;">
         <h3 style="font-size:15px;margin-bottom:8px;">What is DPO?</h3>
-        <p style="color:var(--text-muted);font-size:14px;line-height:1.65;margin-bottom:12px;"><strong style="color:var(--text);">Direct Preference Optimization</strong> is a technique for fine-tuning LLMs using human preference data. Your 👍/👎 feedback is converted into training pairs:</p>
+        <p style="color:var(--text-muted);font-size:14px;line-height:1.65;margin-bottom:12px;"><strong style="color:var(--text);">Direct Preference Optimization</strong> is a technique for fine-tuning LLMs using human preference data. A 👎 becomes a training pair only when it recorded what the agent did and what it should have done, on the same task:</p>
         <div style="background:var(--bg-raised);border-radius:8px;padding:16px;font-family:var(--mono);font-size:13px;line-height:1.6;margin-bottom:12px;">
-          <div><span style="color:var(--green);">👍 "chosen"</span> — the response that worked</div>
-          <div><span style="color:var(--red);">👎 "rejected"</span> — the response that failed</div>
+          <div><span style="color:var(--text);">"prompt"</span> — the conversation before the agent acted</div>
+          <div><span style="color:var(--red);">👎 "rejected"</span> — the command or reply that got the 👎</div>
+          <div><span style="color:var(--green);">"chosen"</span> — the correction written for that 👎, or a 👍 on the same prompt</div>
+        </div>
+        <p style="color:var(--text-muted);font-size:13px;line-height:1.6;margin-bottom:12px;">A 👎 with no recorded action or no correction is left out, never matched to an unrelated 👍. The export tells you how many were left out and why.</p>
         </div>
         <p style="color:var(--text-muted);font-size:14px;line-height:1.65;">Use these pairs to fine-tune any model (OpenAI, Llama, Mistral) so it <strong style="color:var(--text);">actually learns from your corrections</strong> — not just flags mistakes at the gate, but stops making them.</p>
       </div>
@@ -2817,6 +2820,26 @@ window.addEventListener('DOMContentLoaded', function() {
     });
 });
 
+var DPO_DROP_REASON_TEXT = {
+  no_source_feedback_record: 'no feedback record',
+  vague_negative_feedback: 'too vague to say what was wrong',
+  no_rejected_action_recorded: 'no agent command or reply recorded',
+  rejected_action_has_no_content: 'only a tool name recorded',
+  no_prompt_context_recorded: 'no conversation recorded',
+  no_prompt_context_before_rejected_action: 'nothing recorded before the action',
+  no_corrective_or_same_prompt_positive_action: 'no correction recorded',
+  chosen_equals_rejected: 'correction same as the action',
+  positive_without_a_rejected_action_on_the_same_prompt: '👍 with no 👎 on the same prompt'
+};
+function describeDpoDrops(data) {
+  var reasons = data && data.droppedByReason;
+  if (!reasons || typeof reasons !== 'object') return '';
+  var parts = Object.keys(reasons).filter(function (k) { return reasons[k] > 0; })
+    .sort(function (a, b) { return reasons[b] - reasons[a]; })
+    .map(function (k) { return reasons[k] + ' ' + (DPO_DROP_REASON_TEXT[k] || k.replace(/_/g, ' ')); });
+  return parts.length ? 'Left out: ' + parts.join(', ') + '. ' : '';
+}
+
 async function exportDpo() {
   const status = document.getElementById('exportStatus');
   status.textContent = 'Exporting...';
@@ -2836,7 +2859,7 @@ async function exportDpo() {
     if (!Array.isArray(data.records)) throw new Error('Export response did not include DPO pairs');
     const records = data.records;
     if (!records.length) {
-      status.textContent = 'No preference pairs recorded in this dashboard. Capture real feedback locally with npx thumbgate feedback --feedback=up --context="Describe what worked", then use npx thumbgate dashboard --open to export local pairs. Local feedback is not automatically uploaded.';
+      status.textContent = '0 preference pairs. ' + describeDpoDrops(data) + 'A pair needs a 👎 that recorded the agent\'s command or reply and a correction (whatToChange) for that same 👎.';
       status.style.color = 'var(--text-muted)';
       return;
     }
@@ -2848,7 +2871,7 @@ async function exportDpo() {
     a.click();
     URL.revokeObjectURL(url);
     const count = records.length;
-    status.textContent = '✓ Exported ' + count + ' preference pairs';
+    status.textContent = '✓ Exported ' + count + ' preference pairs. ' + describeDpoDrops(data);
     status.style.color = 'var(--green)';
   } catch (e) {
     status.textContent = '✗ ' + e.message;

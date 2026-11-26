@@ -118,6 +118,40 @@ function isObject(value) {
   return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
 }
 
+// A DPO export response is well formed when every returned record is a full pair, the record count matches the
+// pair count, and every record that did not become a pair is counted under a drop reason.
+function dpoExportShape(body) {
+  const pairs = Number.isFinite(body.pairCount) ? body.pairCount : body.pairs;
+  const records = Array.isArray(body.records) ? body.records : [];
+  const validRecords = records.every((record) => isObject(record)
+    && String(record.prompt || '').trim()
+    && String(record.chosen || '').trim()
+    && String(record.rejected || '').trim()
+    && record.chosen !== record.rejected);
+  const dropped = isObject(body.droppedByReason)
+    ? Object.values(body.droppedByReason).reduce((sum, n) => sum + (Number.isFinite(n) ? n : NaN), 0)
+    : NaN;
+  const valid = Number.isFinite(pairs)
+    && pairs >= 0
+    && records.length === pairs
+    && validRecords
+    && Number.isFinite(body.errors)
+    && Number.isFinite(body.learnings)
+    && Number.isFinite(dropped)
+    && pairs + dropped === body.errors + body.learnings
+    && (body.outputPath === null || body.outputPath === undefined);
+  return {
+    valid,
+    metrics: {
+      pairs: Number.isFinite(pairs) ? pairs : null,
+      errors: Number.isFinite(body.errors) ? body.errors : null,
+      learnings: Number.isFinite(body.learnings) ? body.learnings : null,
+      dropped: Number.isFinite(dropped) ? dropped : null,
+      droppedByReason: isObject(body.droppedByReason) ? body.droppedByReason : null,
+    },
+  };
+}
+
 function sanitizeDiagnosticText(value, secrets = []) {
   let text = String(value || '').trim();
   for (const secret of secrets) {
@@ -270,28 +304,40 @@ function buildChecks({
       path: '/v1/dpo/export',
       authenticated: true,
       body: { includePairs: true },
+      // The operator's own store: the export must answer for every record. Each record is either a valid pair or
+      // dropped with a reason, so pairs + dropped === errors + learnings. A store whose thumbs-downs carry no recorded
+      // action honestly has 0 pairs; that is not a failure here. That pairing really works in production is proven by
+      // dpo_pairing_self_test below, which must make exactly its one known pair.
       validate(body) {
-        const pairs = Number.isFinite(body.pairCount) ? body.pairCount : body.pairs;
-        const records = Array.isArray(body.records) ? body.records : [];
-        const validRecords = records.every((record) => isObject(record)
-          && String(record.prompt || '').trim()
-          && String(record.chosen || '').trim()
-          && String(record.rejected || '').trim());
+        const shape = dpoExportShape(body);
         return {
-          valid: Number.isFinite(pairs)
-            && pairs > 0
-            && records.length === pairs
-            && validRecords
-            && Number.isFinite(body.errors)
+          valid: shape.valid
             && body.errors > 0
-            && Number.isFinite(body.learnings)
-            && body.learnings > 0
-            && (body.outputPath === null || body.outputPath === undefined),
-          metrics: {
-            pairs: Number.isFinite(pairs) ? pairs : null,
-            errors: Number.isFinite(body.errors) ? body.errors : null,
-            learnings: Number.isFinite(body.learnings) ? body.learnings : null,
-          },
+            && body.learnings > 0,
+          metrics: shape.metrics,
+        };
+      },
+    },
+    {
+      name: 'dpo_pairing_self_test',
+      method: 'POST',
+      path: '/v1/dpo/export',
+      authenticated: true,
+      body: { includePairs: true, selfTest: true },
+      validate(body) {
+        const shape = dpoExportShape(body);
+        const expected = isObject(body.expected) ? body.expected : {};
+        const record = Array.isArray(body.records) ? body.records[0] : null;
+        return {
+          valid: shape.valid
+            && body.selfTest === true
+            && shape.metrics.pairs === 1
+            && expected.pairs === 1
+            && isObject(record)
+            && record.rejected === expected.rejected
+            && record.chosen === expected.chosen
+            && !String(record.prompt).includes(record.rejected),
+          metrics: shape.metrics,
         };
       },
     },

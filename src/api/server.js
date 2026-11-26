@@ -99,6 +99,7 @@ const {
 const {
   readJSONL,
   exportDpoFromMemories,
+  DPO_SELF_TEST_FIXTURE,
   DEFAULT_LOCAL_MEMORY_LOG,
 } = require('../../scripts/export-dpo-pairs');
 const {
@@ -13191,6 +13192,26 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
           return;
         }
 
+        if (body.selfTest === true) {
+          // Export the fixed synthetic store DPO_SELF_TEST_FIXTURE: proves the deployed pairing code makes its one real
+          // pair and drops the rest, whatever the caller's own store holds. Reads and writes no store.
+          const fixture = DPO_SELF_TEST_FIXTURE;
+          const selfTest = exportDpoFromMemories(fixture.memories, { feedbackRows: fixture.feedback });
+          const selfTestResponse = {
+            selfTest: true,
+            pairs: selfTest.pairs.length,
+            pairCount: selfTest.pairs.length,
+            errors: selfTest.errors.length,
+            learnings: selfTest.learnings.length,
+            droppedByReason: selfTest.droppedByReason,
+            expected: fixture.expected,
+            outputPath: null,
+          };
+          if (body.includePairs === true) selfTestResponse.records = selfTest.pairs;
+          sendJson(res, 200, selfTestResponse);
+          return;
+        }
+
         const memories = body.inputPath ? loadDpoExportMemories(paths).map((row) => ({ ...row, ...projectForRecord(row) })) : readProjectRows(requestFeedbackDir, 'memory-log.jsonl', projectOptions);
         // Strict pairing reads this request's feedback-log.jsonl, not the default store.
         const result = exportDpoFromMemories(memories, body.inputPath ? projectOptions : { ...projectOptions, feedbackDir: requestFeedbackDir });
@@ -13206,6 +13227,8 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
           learnings: result.learnings.length,
           unpairedErrors: result.unpairedErrors.length,
           unpairedLearnings: result.unpairedLearnings.length,
+          // Why each record did not become a pair (counts only, no content), e.g. no_rejected_action_recorded.
+          droppedByReason: result.droppedByReason || {},
           outputPath: paths.outputPath,
         };
         if (body.includePairs === true) {

@@ -21,7 +21,24 @@ function response(status, body) {
   };
 }
 
-function passingBody(url) {
+// What production answers for { selfTest: true }: the real exporter run on the real fixture.
+function selfTestBody() {
+  const { exportDpoFromMemories, DPO_SELF_TEST_FIXTURE } = require('../scripts/export-dpo-pairs');
+  const result = exportDpoFromMemories(DPO_SELF_TEST_FIXTURE.memories, { feedbackRows: DPO_SELF_TEST_FIXTURE.feedback });
+  return {
+    selfTest: true,
+    pairs: result.pairs.length,
+    pairCount: result.pairs.length,
+    errors: result.errors.length,
+    learnings: result.learnings.length,
+    droppedByReason: result.droppedByReason,
+    expected: DPO_SELF_TEST_FIXTURE.expected,
+    outputPath: null,
+    records: result.pairs,
+  };
+}
+
+function passingBody(url, options = {}) {
   if (url.endsWith('/health')) {
     return { status: 'ok', degraded: false, version: '1.32.0', buildSha: 'abc123' };
   }
@@ -56,11 +73,14 @@ function passingBody(url) {
     };
   }
   if (url.endsWith('/v1/dpo/export')) {
+    const requestBody = options.body ? JSON.parse(options.body) : {};
+    if (requestBody.selfTest === true) return selfTestBody();
     return {
       pairs: 1,
       pairCount: 1,
       errors: 1,
       learnings: 1,
+      droppedByReason: { positive_without_a_rejected_action_on_the_same_prompt: 1 },
       outputPath: null,
       records: [{ prompt: 'Prompt', chosen: 'Correct', rejected: 'Incorrect' }],
     };
@@ -72,7 +92,7 @@ function passingFetch(url, options) {
   if (url.includes('/v1/search') && url.includes('limit=1') && !options.headers.authorization) {
     return response(401, { error: 'Unauthorized' });
   }
-  return response(200, passingBody(url));
+  return response(200, passingBody(url, options));
 }
 
 test('parseArgs captures release identity and retry controls', () => {
@@ -111,13 +131,14 @@ test('proof passes only when exact build, search, dashboard, and export contract
   });
 
   assert.equal(report.verdict, 'pass');
-  assert.equal(report.checks.length, 6);
+  assert.equal(report.checks.length, 7);
   assert.ok(report.checks.every((check) => check.ok));
   assert.equal(calls[0].options.headers.authorization, undefined, 'health stays public');
   assert.equal(calls[1].options.headers.authorization, undefined, 'auth boundary stays anonymous');
   assert.equal(calls[2].options.headers.authorization, 'Bearer secret-test-key');
   assert.equal(calls[5].options.method, 'POST');
   assert.deepEqual(JSON.parse(calls[5].options.body), { includePairs: true });
+  assert.deepEqual(JSON.parse(calls[6].options.body), { includePairs: true, selfTest: true });
 });
 
 test('proof fails closed when API key is missing', async () => {
@@ -354,4 +375,66 @@ test('proof retries transient throttling and valid-HTTP deployment lag', async (
   assert.equal(report.verdict, 'pass', JSON.stringify(report));
   assert.equal(healthCalls, 2);
   assert.equal(searchCalls, 2);
+});
+
+test('an honest zero-pair store passes when every record is accounted for and the self-test pairs', async () => {
+  const report = await runAuthenticatedProductionProof({
+    apiKey: 'secret-test-key',
+    baseUrl: DEFAULT_BASE_URL,
+    expectedSha: 'abc123',
+    expectedVersion: '1.32.0',
+    maxAttempts: 1,
+    fetchImpl: async (url, options) => {
+      if (url.endsWith('/v1/dpo/export') && !JSON.parse(options.body).selfTest) {
+        return response(200, {
+          pairs: 0, pairCount: 0, errors: 314, learnings: 131, records: [], outputPath: null,
+          droppedByReason: { no_rejected_action_recorded: 314, positive_without_a_rejected_action_on_the_same_prompt: 131 },
+        });
+      }
+      return passingFetch(url, options);
+    },
+  });
+  assert.equal(report.checks.find((check) => check.name === 'dpo_export').ok, true);
+  assert.equal(report.checks.find((check) => check.name === 'dpo_pairing_self_test').ok, true);
+});
+
+test('dpo_export fails when records are not accounted for or a pair is not a pair', async () => {
+  for (const body of [
+    { pairs: 0, pairCount: 0, errors: 314, learnings: 131, records: [], outputPath: null },
+    { pairs: 0, pairCount: 0, errors: 314, learnings: 131, records: [], outputPath: null, droppedByReason: { no_rejected_action_recorded: 10 } },
+    { pairs: 1, pairCount: 1, errors: 1, learnings: 1, outputPath: null, droppedByReason: { x: 1 }, records: [{ prompt: 'P', chosen: 'same', rejected: 'same' }] },
+  ]) {
+    const report = await runAuthenticatedProductionProof({
+      apiKey: 'secret-test-key',
+      baseUrl: DEFAULT_BASE_URL,
+      expectedSha: 'abc123',
+      expectedVersion: '1.32.0',
+      maxAttempts: 1,
+      fetchImpl: async (url, options) => (url.endsWith('/v1/dpo/export') && !JSON.parse(options.body).selfTest
+        ? response(200, body)
+        : passingFetch(url, options)),
+    });
+    assert.equal(report.checks.find((check) => check.name === 'dpo_export').ok, false, JSON.stringify(body));
+  }
+});
+
+test('dpo_pairing_self_test fails when production pairing makes no pair or the wrong one', async () => {
+  const good = selfTestBody();
+  for (const body of [
+    { ...good, pairs: 0, pairCount: 0, records: [], droppedByReason: { ...good.droppedByReason, no_rejected_action_recorded: 2 } },
+    { ...good, records: [{ ...good.records[0], rejected: 'something else' }] },
+    { ...good, selfTest: undefined },
+  ]) {
+    const report = await runAuthenticatedProductionProof({
+      apiKey: 'secret-test-key',
+      baseUrl: DEFAULT_BASE_URL,
+      expectedSha: 'abc123',
+      expectedVersion: '1.32.0',
+      maxAttempts: 1,
+      fetchImpl: async (url, options) => (url.endsWith('/v1/dpo/export') && JSON.parse(options.body).selfTest
+        ? response(200, body)
+        : passingFetch(url, options)),
+    });
+    assert.equal(report.checks.find((check) => check.name === 'dpo_pairing_self_test').ok, false);
+  }
 });

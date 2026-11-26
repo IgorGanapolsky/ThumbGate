@@ -98,3 +98,53 @@ test('REQ-08: feedbackDir picks the feedback log next to the exported memories',
     fs.rmSync(dir, { recursive: true, force: true });
   }
 });
+
+test('REQ-08: the failed command recorded by the pre-action hook is the rejected action when lastAction is only a tool name', () => {
+  const r = run([mem('m20', 'f20')], [fb('f20', { lastAction: { tool: 'Bash' }, failedCommand: BAD })]);
+  assert.equal(r.pairs.length, 1);
+  assert.equal(r.pairs[0].rejected, BAD);
+  assert.equal(r.pairs[0].metadata.rejectedSource, 'failed_command');
+  assert.equal(r.pairs[0].prompt, 'User: set up the project');
+});
+
+test('REQ-09: with no recorded action, the last agent reply in the window is the rejected response', () => {
+  const window = [
+    { role: 'user', content: 'Which port does the API use?' },
+    { role: 'assistant', content: 'It uses port 8080.' },
+  ];
+  const r = run([mem('m21', 'f21')], [fb('f21', { lastAction: null, conversationWindow: window, whatToChange: 'Read the port from config before answering: it is 3000.' })]);
+  assert.equal(r.pairs.length, 1);
+  assert.equal(r.pairs[0].rejected, 'It uses port 8080.');
+  assert.equal(r.pairs[0].prompt, 'user: Which port does the API use?');
+  assert.equal(r.pairs[0].metadata.rejectedSource, 'last_agent_reply');
+});
+
+test('REQ-10: an agent reply with nothing before it is not a pair (no prompt)', () => {
+  const r = run([mem('m22', 'f22')], [fb('f22', { lastAction: null, conversationWindow: [{ role: 'assistant', content: 'Done.' }] })]);
+  assert.equal(r.pairs.length, 0);
+  assert.equal(r.droppedByReason.no_rejected_action_recorded, 1);
+});
+
+test('REQ-11: the production self-test fixture makes exactly its one expected pair and accounts for every record', () => {
+  const { DPO_SELF_TEST_FIXTURE: f } = require('../scripts/export-dpo-pairs');
+  const r = exportDpoFromMemories(f.memories, { feedbackRows: f.feedback });
+  assert.equal(r.pairs.length, f.expected.pairs);
+  assert.equal(r.pairs[0].rejected, f.expected.rejected);
+  assert.equal(r.pairs[0].chosen, f.expected.chosen);
+  assert.ok(!r.pairs[0].prompt.includes(f.expected.rejected));
+  const dropped = Object.values(r.droppedByReason).reduce((a, b) => a + b, 0);
+  assert.equal(r.pairs.length + dropped, r.errors.length + r.learnings.length);
+});
+
+test('REQ-12: a repeated agent reply builds its prompt from the messages before the LAST occurrence', () => {
+  const window = [
+    { role: 'user', content: 'Which port does the worker use?' },
+    { role: 'assistant', content: 'It uses port 8080.' },
+    { role: 'user', content: 'Which port does the API use?' },
+    { role: 'assistant', content: 'It uses port 8080.' },
+  ];
+  const r = run([mem('m23', 'f23')], [fb('f23', { lastAction: null, conversationWindow: window, whatToChange: 'Read the API port from config: it is 3000.' })]);
+  assert.equal(r.pairs.length, 1);
+  assert.match(r.pairs[0].prompt, /Which port does the API use\?$/);
+  assert.match(r.pairs[0].prompt, /^user: Which port does the worker use\?/);
+});
