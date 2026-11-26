@@ -661,7 +661,6 @@ test('deploy verification covers every PR an hourly deploy shipped and stays qui
 test('hourly deploy does not re-upload a commit an earlier hourly run already submitted', () => {
   const workflow = fs.readFileSync(path.join(PROJECT_ROOT, '.github', 'workflows', 'deploy-railway.yml'), 'utf8');
   assert.match(workflow, /id: recent-submit\n\s+if: github\.event_name == 'schedule'\n\s+continue-on-error: true/);
-  assert.match(workflow, /select\(\.name == "Deploy to Railway" and \.conclusion == "success"\)/);
   assert.match(workflow, /DEPLOY_SCOPE_RECENT_SUBMIT_SHA='\$\{\{ steps\.recent-submit\.outputs\.sha \}\}'/);
   assert.match(workflow, /  deploy:\n    runs-on: ubuntu-latest\n(?:    #.*\n)*    permissions:\n      contents: read\n      actions: read\n/);
 });
@@ -679,20 +678,43 @@ function extractStepRun(workflow, stepId) {
   return body.join('\n');
 }
 
-function runRecentSubmitLookup({ runIds = '', uploaded = '0', apiFails = false }) {
+function isoAgo(hours) {
+  return new Date(Date.now() - hours * 3600 * 1000).toISOString().replace(/\.\d+Z$/, 'Z');
+}
+
+// runs: [{ id, conclusion, deployStep: { conclusion, completedHoursAgo } }]
+function runRecentSubmitLookup({ runs = [], apiFails = false }) {
   const workflow = fs.readFileSync(path.join(PROJECT_ROOT, '.github', 'workflows', 'deploy-railway.yml'), 'utf8');
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-recent-submit-'));
   try {
     const binDir = path.join(dir, 'bin');
+    const fixtures = path.join(dir, 'fixtures');
     fs.mkdirSync(binDir);
-    // Stand-in for the gh CLI: answers the runs list and the jobs lookup from env, or fails like a broken API.
+    fs.mkdirSync(fixtures);
+    fs.writeFileSync(path.join(fixtures, 'runs.json'), JSON.stringify({
+      workflow_runs: runs.map((r) => ({ id: r.id, conclusion: r.conclusion })),
+    }));
+    for (const r of runs) {
+      const step = r.deployStep;
+      fs.writeFileSync(path.join(fixtures, `jobs-${r.id}.json`), JSON.stringify({
+        jobs: [{ steps: [
+          { name: 'Checkout', conclusion: 'success', completed_at: isoAgo(3.9) },
+          ...(step ? [{ name: 'Deploy to Railway', conclusion: step.conclusion, completed_at: isoAgo(step.completedHoursAgo) }] : []),
+        ] }],
+      }));
+    }
+    // Stand-in for the gh CLI: applies the workflow's own --jq filter to fixture API responses with real jq.
     fs.writeFileSync(path.join(binDir, 'gh'), [
       '#!/usr/bin/env bash',
       'if [ "$FAKE_GH_FAIL" = "1" ]; then echo "HTTP 502" >&2; exit 1; fi',
-      'case "$*" in',
-      '  *"/runs?"*) for id in $FAKE_RUN_IDS; do echo "$id"; done ;;',
-      '  *"/jobs"*) echo "$FAKE_UPLOADED" ;;',
+      'url="$2"; filter=""',
+      'while [ $# -gt 0 ]; do if [ "$1" = "--jq" ]; then filter="$2"; fi; shift; done',
+      'case "$url" in',
+      '  *"/runs?"*) file="$FAKE_FIXTURES/runs.json" ;;',
+      '  */runs/*/jobs) id="${url%/jobs}"; id="${id##*/}"; file="$FAKE_FIXTURES/jobs-$id.json" ;;',
+      '  *) exit 1 ;;',
       'esac',
+      'jq -r "$filter" "$file"',
       '',
     ].join('\n'), { mode: 0o755 });
     const scriptPath = path.join(dir, 'step.sh');
@@ -707,8 +729,7 @@ function runRecentSubmitLookup({ runIds = '', uploaded = '0', apiFails = false }
         GITHUB_REPOSITORY: 'owner/repo',
         GITHUB_SHA: 'a'.repeat(40),
         GITHUB_RUN_ID: '999',
-        FAKE_RUN_IDS: runIds,
-        FAKE_UPLOADED: uploaded,
+        FAKE_FIXTURES: fixtures,
         FAKE_GH_FAIL: apiFails ? '1' : '0',
       },
       stdio: 'pipe',
@@ -721,11 +742,26 @@ function runRecentSubmitLookup({ runIds = '', uploaded = '0', apiFails = false }
   }
 }
 
-test('recent-submit lookup returns HEAD only when an earlier run really uploaded it', () => {
-  assert.equal(runRecentSubmitLookup({ runIds: '101', uploaded: '1' }), 'a'.repeat(40), 'earlier upload succeeded');
-  assert.equal(runRecentSubmitLookup({ runIds: '101 102', uploaded: '0' }), '', 'earlier runs skipped the upload');
-  assert.equal(runRecentSubmitLookup({ runIds: '' }), '', 'no earlier run');
-  assert.equal(runRecentSubmitLookup({ runIds: '101', uploaded: '1', apiFails: true }), '', 'API failure means upload again');
+test('recent-submit lookup returns HEAD only for a successful run that uploaded in the last 3 hours', () => {
+  const HEAD = 'a'.repeat(40);
+  const uploaded = (completedHoursAgo) => ({ conclusion: 'success', completedHoursAgo });
+  assert.equal(runRecentSubmitLookup({ runs: [{ id: 101, conclusion: 'success', deployStep: uploaded(1) }] }), HEAD, 'recent upload');
+  assert.equal(
+    runRecentSubmitLookup({ runs: [{ id: 101, conclusion: 'success', deployStep: uploaded(2.9) }] }),
+    HEAD,
+    'run started over 3h ago but uploaded inside the window',
+  );
+  assert.equal(runRecentSubmitLookup({ runs: [{ id: 101, conclusion: 'success', deployStep: uploaded(3.2) }] }), '', 'upload older than 3h');
+  assert.equal(runRecentSubmitLookup({ runs: [{ id: 101, conclusion: 'failure', deployStep: uploaded(1) }] }), '', 'failed run does not count');
+  assert.equal(
+    runRecentSubmitLookup({ runs: [{ id: 101, conclusion: 'success', deployStep: { conclusion: 'skipped', completedHoursAgo: 1 } }] }),
+    '',
+    'run that skipped the upload',
+  );
+  assert.equal(runRecentSubmitLookup({ runs: [{ id: 101, conclusion: 'success' }] }), '', 'run with no upload step');
+  assert.equal(runRecentSubmitLookup({ runs: [{ id: 999, conclusion: 'success', deployStep: uploaded(1) }] }), '', 'the current run is ignored');
+  assert.equal(runRecentSubmitLookup({ runs: [] }), '', 'no earlier run');
+  assert.equal(runRecentSubmitLookup({ runs: [{ id: 101, conclusion: 'success', deployStep: uploaded(1) }], apiFails: true }), '', 'API failure means upload again');
 });
 
 test('deploy receipt stays quiet when an earlier hourly run already queued HEAD', () => {

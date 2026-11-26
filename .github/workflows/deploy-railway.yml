@@ -72,16 +72,19 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          # Railway can hold a deploy QUEUED for hours. If an earlier hourly run in the last 3 hours
-          # already submitted this same commit, a second identical upload only replaces it in the queue.
+          # Railway can hold a deploy QUEUED for hours. If an earlier hourly run uploaded this same
+          # commit in the last 3 hours, a second identical upload only replaces it in the queue.
           since="$(date -u -d '3 hours ago' +%Y-%m-%dT%H:%M:%SZ)"
+          # The window runs from the upload, not the run start, so look at runs created an hour earlier too.
+          lookback="$(date -u -d '4 hours ago' +%Y-%m-%dT%H:%M:%SZ)"
           sha=""
-          # Only a run whose "Deploy to Railway" step succeeded counts, so a run that itself skipped
-          # never extends the window: 3 hours after the real upload, the next run uploads again.
-          for run_id in $(gh api "repos/${GITHUB_REPOSITORY}/actions/workflows/deploy-railway.yml/runs?event=schedule&head_sha=${GITHUB_SHA}&created=%3E%3D${since}&per_page=10" \
-            --jq ".workflow_runs[] | select(.id != ${GITHUB_RUN_ID}) | .id" || true); do
+          # Only a run that finished successfully and whose "Deploy to Railway" step succeeded inside the
+          # window counts. A failed run, or one that skipped the upload, never extends the window, so the
+          # next hourly run uploads again and its own verification posts the receipt.
+          for run_id in $(gh api "repos/${GITHUB_REPOSITORY}/actions/workflows/deploy-railway.yml/runs?event=schedule&head_sha=${GITHUB_SHA}&created=%3E%3D${lookback}&per_page=20" \
+            --jq ".workflow_runs[] | select(.id != ${GITHUB_RUN_ID} and .conclusion == \"success\") | .id" || true); do
             uploaded="$(gh api "repos/${GITHUB_REPOSITORY}/actions/runs/${run_id}/jobs" \
-              --jq '[.jobs[].steps[]? | select(.name == "Deploy to Railway" and .conclusion == "success")] | length' || echo 0)"
+              --jq "[.jobs[].steps[]? | select(.name == \"Deploy to Railway\" and .conclusion == \"success\" and (.completed_at // \"\") >= \"${since}\")] | length" || echo 0)"
             if [ "${uploaded:-0}" != "0" ]; then sha="${GITHUB_SHA}"; break; fi
           done
           echo "sha=${sha}" >> "$GITHUB_OUTPUT"
