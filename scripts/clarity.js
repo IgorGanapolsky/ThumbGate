@@ -356,7 +356,7 @@ async function collectClarity({ feedbackDir, env = process.env, fetchImpl = glob
   const base = {
     projectId: projectId || null,
     tagEnabled: Boolean(projectId),
-    tagExcludes: 'admin, dashboard, sign-in, checkout, billing and success pages; visitors with Global Privacy Control or Do Not Track',
+    tagExcludes: 'admin, dashboard, sign-in, checkout, billing and success pages; visitors with Global Privacy Control or Do Not Track; anyone who has not pressed Accept on the analytics banner',
     dashboardUrl: projectId ? `https://clarity.microsoft.com/projects/view/${projectId}/dashboard` : null,
     recordingsUrl: projectId ? `https://clarity.microsoft.com/projects/view/${projectId}/impressions` : null,
     heatmapsUrl: projectId ? `https://clarity.microsoft.com/projects/view/${projectId}/heatmaps` : null,

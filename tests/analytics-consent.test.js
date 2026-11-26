@@ -166,3 +166,10 @@ test('REQ-10: a withdrawal in another tab stops analytics in this one; an Accept
   assert.equal(fresh.banner(), null, 'banner closes');
   assert.equal(fresh.appended.length, 2);
 });
+
+test('REQ-11: no browser time-zone or region rule decides consent; the owner console says Accept is required', () => {
+  const code = require('node:fs').readFileSync(require('node:path').join(__dirname, '..', 'scripts', 'clarity.js'), 'utf8');
+  assert.equal(/Intl\.DateTimeFormat|timeZone|Europe\\\//.test(code), false, 'no time-zone consent guess');
+  const source = tagSource();
+  assert.equal(/analytics_Storage:'granted'/.test(source.slice(0, source.indexOf('function load'))), false, 'nothing grants before load()');
+});
