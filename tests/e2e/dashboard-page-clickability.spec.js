@@ -224,8 +224,8 @@ test.describe('/dashboard clickability — non-stat-card surfaces', () => {
     const exportBtn = page.locator('.export-btn', { hasText: /Download DPO Pairs/ });
     await exportBtn.click();
     const status = page.locator('#exportStatus');
-    await expect(status).toContainText('No preference pairs recorded in this dashboard');
-    await expect(status).toContainText('npx thumbgate feedback');
+    await expect(status).toContainText('0 preference pairs');
+    await expect(status).toContainText('A pair needs a 👎 that recorded');
   });
 
   test('exportDpo POSTs for records and downloads the real pair array', async ({ page }) => {

@@ -249,13 +249,34 @@ function loadFeedbackIndex(options = {}) {
   return { rows, byId };
 }
 
+const AGENT_ROLES = new Set(['assistant', 'agent', 'model', 'ai', 'claude']);
+
+// The thumbed-down action, from what capture actually records, in order of precision:
+//   1. lastAction with content (a command or tool input);
+//   2. failedCommand: the shell command the pre-action hook recorded for this thumbs-down;
+//   3. the last agent message in the conversation window: the reply the thumbs-down answered.
+// captureFeedback keeps only the tool NAME in lastAction, so before 2 and 3 were read almost no real record paired.
+function rejectedActionOf(feedback) {
+  const fromAction = actionContentOf(feedback.lastAction);
+  if (fromAction) return { text: fromAction, source: 'recorded_action' };
+  const command = textOf(feedback.failedCommand);
+  if (command) return { text: command, source: 'failed_command' };
+  if (Array.isArray(feedback.conversationWindow)) {
+    const messages = normalizeConversationWindow(feedback.conversationWindow);
+    for (let i = messages.length - 1; i > 0; i -= 1) {
+      if (AGENT_ROLES.has(messages[i].role.toLowerCase())) return { text: messages[i].content, source: 'last_agent_reply' };
+    }
+  }
+  return null;
+}
+
 function strictPairFor(error, feedback, positives) {
   if (!feedback) return { reason: 'no_source_feedback_record' };
   const whatWrong = textOf(feedback.whatWentWrong) || textOf(feedback.context);
   if (wordCount(whatWrong) < 4 || VAGUE_NEGATIVE.test(whatWrong)) return { reason: 'vague_negative_feedback' };
-  if (!feedback.lastAction) return { reason: 'no_rejected_action_recorded' };
-  const rejected = actionContentOf(feedback.lastAction);
-  if (!rejected) return { reason: 'rejected_action_has_no_content' };
+  const found = rejectedActionOf(feedback);
+  if (!found) return { reason: feedback.lastAction ? 'rejected_action_has_no_content' : 'no_rejected_action_recorded' };
+  const rejected = found.text;
   if (!textOf(feedback.conversationWindow)) return { reason: 'no_prompt_context_recorded' };
   const window = promptBefore(feedback.conversationWindow, rejected);
   if (!window) return { reason: 'no_prompt_context_before_rejected_action' };
@@ -272,7 +293,7 @@ function strictPairFor(error, feedback, positives) {
     chosenSource = 'thumbs_up_same_session_and_prompt';
   }
   if (chosen === rejected) return { reason: 'chosen_equals_rejected' };
-  return { pair: { prompt: window, rejected, chosen, chosenSource, whatWentWrong: whatWrong } };
+  return { pair: { prompt: window, rejected, chosen, chosenSource, rejectedSource: found.source, whatWentWrong: whatWrong } };
 }
 
 function buildStrictDpoPairs(errors, learnings, options = {}) {
@@ -289,7 +310,7 @@ function buildStrictDpoPairs(errors, learnings, options = {}) {
         prompt: result.pair.prompt,
         chosen: result.pair.chosen,
         rejected: result.pair.rejected,
-        metadata: { errorId: error.id, sourceFeedbackId: error.sourceFeedbackId, chosenSource: result.pair.chosenSource, whatWentWrong: result.pair.whatWentWrong },
+        metadata: { errorId: error.id, sourceFeedbackId: error.sourceFeedbackId, chosenSource: result.pair.chosenSource, rejectedSource: result.pair.rejectedSource, whatWentWrong: result.pair.whatWentWrong },
       });
     } else {
       dropped.push({ id: error.id, kind: 'error', reason: result.reason });
@@ -301,6 +322,36 @@ function buildStrictDpoPairs(errors, learnings, options = {}) {
   for (const d of dropped) reasons[d.reason] = (reasons[d.reason] || 0) + 1;
   return { pairs, dropped, droppedByReason: reasons };
 }
+
+// A fixed, synthetic store that the production proof exports on every deploy. It holds one thumbs-down that is a
+// real pair (its own prompt window, its own failed command, its own correction) and two records that must NOT pair:
+// a complaint with no recorded action (the claude-history-sync shape) and a praise-only thumbs-up. Expected result:
+// exactly one pair, two drops with reasons. This proves the deployed pairing code, independent of what the
+// operator's own store happens to hold.
+const DPO_SELF_TEST_FIXTURE = Object.freeze({
+  memories: [
+    { id: 'selftest_mem_pair', category: 'error', title: 'MISTAKE: forced an install instead of installing from the lockfile', content: 'Forced a fresh install over the lockfile.', tags: ['selftest'], sourceFeedbackId: 'selftest_fb_pair' },
+    { id: 'selftest_mem_noaction', category: 'error', title: 'MISTAKE: this is wrong, the call switched apps', content: 'this is wrong!!! the call switched to another app', tags: ['selftest'], sourceFeedbackId: 'selftest_fb_noaction' },
+    { id: 'selftest_mem_praise', category: 'learning', title: 'SUCCESS: great job', content: 'What worked: great job', tags: ['selftest'], sourceFeedbackId: 'selftest_fb_praise' },
+  ],
+  feedback: [
+    {
+      id: 'selftest_fb_pair',
+      signal: 'negative',
+      context: 'Agent forced a fresh install to fix a lockfile mismatch in CI.',
+      whatWentWrong: 'It ignored the lockfile and pulled newer versions than CI pins.',
+      whatToChange: 'Run npm ci so the install matches package-lock.json exactly.',
+      failedCommand: 'npm install --force',
+      conversationWindow: [
+        { role: 'user', content: 'CI fails with "lockfile out of sync". Fix it.' },
+        { role: 'assistant', content: 'Running: npm install --force' },
+      ],
+    },
+    { id: 'selftest_fb_noaction', signal: 'negative', context: 'this is wrong!!! the call switched to another app', whatWentWrong: 'this is wrong!!! the call switched to another app' },
+    { id: 'selftest_fb_praise', signal: 'positive', context: 'great job', whatWorked: 'great job' },
+  ],
+  expected: { pairs: 1, rejected: 'npm install --force', chosen: 'Run npm ci so the install matches package-lock.json exactly.' },
+});
 
 function toJSONL(pairs) {
   return `${pairs.map((p) => JSON.stringify(p)).join('\n')}\n`;
@@ -490,6 +541,8 @@ module.exports = {
   findDistractors,
   buildDpoPairs,
   buildStrictDpoPairs,
+  rejectedActionOf,
+  DPO_SELF_TEST_FIXTURE,
   toJSONL,
   exportDpoFromMemories,
   DEFAULT_LOCAL_MEMORY_LOG,
