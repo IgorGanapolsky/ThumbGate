@@ -1062,6 +1062,7 @@
     "test:audit-pr-bot-contamination": "node --test tests/audit-pr-bot-contamination.test.js",
     "test:stripe-bootstrap-saas-catalog": "node --test tests/stripe-bootstrap-saas-catalog.test.js",
     "test:bot-detection": "node --test tests/bot-detection.test.js",
+    "test:decision-check": "node --test tests/decision-check.test.js",
     "test:postgres-guard": "node --test tests/postgres-guard.test.js",
     "test:checkout-archived-product-guard": "node --test tests/checkout-archived-product-guard.test.js",
     "test:checkout-bot-guard": "node --test tests/checkout-bot-guard.test.js tests/checkout-recovery-consent.test.js tests/checkout-no-live-probe.test.js",
