@@ -43,7 +43,9 @@ function run({ source = tagSource(), gpc = false, dnt = null, stored = null } = 
     getElementsByTagName: () => [{ parentNode: { insertBefore: (node) => appended.push(node) } }],
     addEventListener: (name, fn) => { (docListeners[name] = docListeners[name] || []).push(fn); },
   };
-  const window = { document, doNotTrack: null, localStorage: { getItem: (k) => (store.has(k) ? store.get(k) : null), setItem: (k, v) => store.set(k, String(v)) } };
+  const winListeners = {};
+  let reloads = 0;
+  const window = { document, doNotTrack: null, location: { reload: () => { reloads += 1; } }, addEventListener: (n, fn) => { (winListeners[n] = winListeners[n] || []).push(fn); }, localStorage: { getItem: (k) => (store.has(k) ? store.get(k) : null), setItem: (k, v) => store.set(k, String(v)) } };
   window.window = window;
   vm.runInContext(source, vm.createContext({ window, document, navigator: { globalPrivacyControl: gpc, doNotTrack: dnt } }));
   const banner = () => document.getElementById('tg-consent');
@@ -58,7 +60,8 @@ function run({ source = tagSource(), gpc = false, dnt = null, stored = null } = 
     (docListeners.click || []).forEach((fn) => fn({ target: anchor, preventDefault() {} }));
   };
   const queue = () => JSON.parse(JSON.stringify(window.clarity && window.clarity.q ? window.clarity.q.map((args) => Array.from(args)) : []));
-  return { window, appended, store, banner, press, click, queue, srcs: () => appended.map((n) => n.src) };
+  const storageEvent = (newValue) => (winListeners.storage || []).forEach((fn) => fn({ key: 'thumbgate_analytics_consent', newValue }));
+  return { window, appended, store, banner, press, click, queue, storageEvent, reloads: () => reloads, srcs: () => appended.map((n) => n.src) };
 }
 
 test('REQ-01: before any choice, the banner shows and nothing loads or queues', () => {
@@ -138,4 +141,28 @@ test('REQ-08: Orion switched off leaves only Clarity behind the banner, and the 
   r.press('granted');
   assert.deepEqual(r.srcs(), [CLARITY_SRC]);
   assert.equal(/orion\.identify\(/.test(tagSource()), false);
+});
+
+test('REQ-09: accepting again after a withdrawal on the same page re-grants Clarity and reloads to restart Orion', () => {
+  const r = run({ stored: 'granted' });
+  r.window.thumbgateConsent.decline();
+  r.window.thumbgateConsent.accept();
+  assert.deepEqual(r.queue().slice(-1), [['consentv2', { ad_Storage: 'denied', analytics_Storage: 'granted' }]]);
+  assert.equal(r.reloads(), 1, 'Orion cannot restart after stop(), so the page reloads');
+  assert.equal(r.appended.length, 2, 'scripts are not added twice');
+  const clarityOnly = run({ source: tagSource(PAGE, { THUMBGATE_ORION: 'off' }), stored: 'granted' });
+  clarityOnly.window.thumbgateConsent.decline();
+  clarityOnly.window.thumbgateConsent.accept();
+  assert.equal(clarityOnly.reloads(), 0, 'Clarity alone needs no reload');
+});
+
+test('REQ-10: a withdrawal in another tab stops analytics in this one; an Accept elsewhere loads it here', () => {
+  const r = run({ stored: 'granted' });
+  r.storageEvent('denied');
+  assert.deepEqual(r.queue().slice(-2), [['consentv2', { ad_Storage: 'denied', analytics_Storage: 'denied' }], ['consent', false]]);
+  assert.ok(r.window.__orion.q.some(([method]) => method === 'stop'));
+  const fresh = run();
+  fresh.storageEvent('granted');
+  assert.equal(fresh.banner(), null, 'banner closes');
+  assert.equal(fresh.appended.length, 2);
 });
