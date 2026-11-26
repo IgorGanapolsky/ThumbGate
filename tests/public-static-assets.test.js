@@ -501,6 +501,18 @@ test('the AI FinOps learn page is served, listed in the sitemap, and claims no b
   assert.match(html, /does not cap tokens or dollars/i, 'the page says plainly what the gates do not do');
 });
 
+test('the Claude Ship rules learn page is served, listed, and describes only shipped gates', async () => {
+  const sitemap = await (await fetch(`${origin}/sitemap.xml`)).text();
+  assert.match(sitemap, /<loc>[^<]*\/learn\/claude-ship-agent-pr-rules<\/loc>/, 'sitemap must list the Claude Ship rules learn page');
+  const res = await fetch(`${origin}/learn/claude-ship-agent-pr-rules`);
+  assert.equal(res.status, 200);
+  const html = await res.text();
+  assert.match(html, /scripts\/three-strikes-gate\.js/, 'points at the shipped three-strikes gate');
+  assert.match(html, /THUMBGATE_PR_DISCIPLINE=1/, 'says how to turn the gates on');
+  assert.match(html, /It does not review code or approve PRs/, 'says plainly what ThumbGate does not do');
+  assert.match(html, /not affiliated with or endorsed by Anthropic/);
+});
+
 test('the Claude desktop apps learn page is served, listed, and says the app does not enforce', async () => {
   const sitemap = await (await fetch(`${origin}/sitemap.xml`)).text();
   assert.match(sitemap, /<loc>[^<]*\/learn\/claude-artifact-desktop-apps<\/loc>/, 'sitemap must list the Claude desktop apps learn page');
@@ -538,6 +550,20 @@ test('the Siren sandbox-escape learn page is served, in the sitemap, cites the p
   const named = html.match(/sandbox-[a-z-]+(?=<\/code>)/g) || [];
   assert.equal(new Set(named).size, 5, 'the page names the five sandbox gates');
   for (const id of named) assert.ok(gateIds.includes(id), `page names ${id}, which must be a real default gate`);
+});
+
+test('the trigger-audit learn page is served, in the sitemap, cites arXiv 2611.26450, and names a real CLI command', async () => {
+  const sitemap = await (await fetch(`${origin}/sitemap.xml`)).text();
+  assert.match(sitemap, /<loc>[^<]*\/learn\/trigger-audit-learned-rules<\/loc>/, 'sitemap must list the trigger-audit learn page');
+  const res = await fetch(`${origin}/learn/trigger-audit-learned-rules`);
+  assert.equal(res.status, 200);
+  const html = await res.text();
+  assert.match(html, /arxiv\.org\/abs\/2611\.26450/, 'every figure must trace to the paper');
+  assert.match(html, /does not edit model weights/i, 'the page says ThumbGate is not doing what the paper does');
+  assert.match(html, /not affiliated with the paper/i);
+  for (const figure of ['99.17%', '100.00%', '42.2%', '61.7%', '11,134', '12,800']) assert.ok(html.includes(figure), `page cites ${figure}`);
+  const { findCommand } = require('../scripts/cli-schema');
+  assert.ok(findCommand('gate-audit'), 'gate-audit must be a real CLI command');
 });
 
 test('the Shirudo learn page is served, in the sitemap, cites OpenAI, and claims only shipped protection', async () => {

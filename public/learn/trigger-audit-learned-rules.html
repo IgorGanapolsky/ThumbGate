@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>"A CPU Inside an LLM": exact rules need a trigger audit - ThumbGate</title>
+<script defer data-domain="thumbgate.ai" src="https://plausible.io/js/script.js"></script>
+<meta name="description" content="A new arXiv preprint compiles exact arithmetic straight into model weights, beats a 12,800-example fine-tune, and reports 0 false triggers in 11,134 unrelated cases. Here is what that means for rules learned from thumbs-down feedback.">
+<meta name="keywords" content="A CPU Inside an LLM, arXiv 2611.26450, zero-gradient compilation, circuit grafting, false positive rate, trigger audit, rule of three, learned rules, prevention rules, AI agent guardrails, ThumbGate">
+<meta property="og:title" content="&quot;A CPU Inside an LLM&quot;: exact rules need a trigger audit">
+<meta property="og:description" content="Compile exact rules, then prove they stay quiet on everything else. ThumbGate's gate-audit command does the second half for learned rules.">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://thumbgate.ai/learn/trigger-audit-learned-rules">
+<link rel="canonical" href="https://thumbgate.ai/learn/trigger-audit-learned-rules">
+<link rel="stylesheet" href="/learn/learn.css">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "TechArticle",
+  "headline": "\"A CPU Inside an LLM\": exact rules need a trigger audit",
+  "description": "What arXiv 2611.26450 shows about compiling exact rules instead of training them, and how ThumbGate audits learned rules for false triggers on past safe actions.",
+  "author": {
+    "@type": "Person",
+    "name": "Igor Ganapolsky",
+    "url": "https://github.com/IgorGanapolsky"
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "ThumbGate",
+    "url": "https://thumbgate.ai"
+  },
+  "datePublished": "2026-11-25",
+  "dateModified": "2026-11-25",
+  "mainEntityOfPage": "https://thumbgate.ai/learn/trigger-audit-learned-rules",
+  "about": [
+    {"@type": "Thing", "name": "zero-gradient circuit compilation"},
+    {"@type": "Thing", "name": "false trigger audit"},
+    {"@type": "Thing", "name": "learned prevention rules"}
+  ]
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "What does the paper \"A CPU Inside an LLM\" do?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "It writes exact arithmetic and Boolean circuits directly into the weights of pretrained language models, using closed-form math instead of training: zero training examples and zero gradient steps. On 6-digit arithmetic it reports 99.17% (IBM Granite 4.2 3B) and 100.00% (Qwen 3.5 4B) accuracy, against 42.2% and 61.7% for a LoRA fine-tune on 12,800 examples."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "What is a trigger audit?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Checking that an exact rule does not fire on input it was never meant for, and reporting how many unrelated cases you checked. The paper reports 0 out-of-distribution triggers in 11,134 cases. ThumbGate's gate-audit command replays each learned rule on past allowed actions and reports false fires, the sample size, and a 95% upper bound on the false-fire rate."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Does ThumbGate edit model weights?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "No. ThumbGate's rules run outside the model, as checks on each tool call before it runs. The idea taken from the paper is the evaluation discipline, not the weight editing. ThumbGate is not affiliated with the paper's author."
+      }
+    }
+  ]
+}
+</script>
+</head>
+<body>
+
+<nav>
+  <a href="/" class="brand"><img src="/assets/brand/thumbgate-mark-inline-v3.svg" alt="ThumbGate" class="logo-mark" width="28" height="28"><span class="logo-text">ThumbGate</span></a>
+  <a href="/guide">Setup Guide</a>
+  <a href="/learn">Learn</a>
+  <a href="/compare">Compare</a>
+  <a href="https://github.com/IgorGanapolsky/ThumbGate" target="_blank" rel="noopener">GitHub</a>
+</nav>
+
+<div class="container">
+  <div class="breadcrumb"><a href="/learn">Learn</a> / Trigger audit</div>
+  <h1>"A CPU Inside an LLM": exact rules need a trigger audit</h1>
+  <p style="color:var(--muted);">5 min read &middot; For teams that let feedback turn into rules for their coding agents</p>
+
+  <div class="tldr"><strong>TL;DR:</strong> A new arXiv preprint writes exact arithmetic straight into a language model's weights, with no training at all, and beats a 12,800-example fine-tune by a wide margin. Just as important is how it proves the graft is safe: it counts false triggers on a large set of unrelated input and reports 0 in 11,134. "It didn't fire" means little until you say how many times you checked. ThumbGate's new <code>gate-audit</code> command applies that test to rules learned from thumbs-down feedback.</div>
+
+  <h2>What the paper did</h2>
+  <p><em>A CPU Inside an LLM: Zero-Gradient Compilation of Exact Circuits into Pretrained Weights</em> (Tanmay Sah, arXiv 2611.26450, November 19, 2026) is a preprint. It starts from a familiar problem: language models are unreliable at exact multi-digit arithmetic unless you fine-tune them or hand the work to an external tool.</p>
+  <p>Instead of training, the paper builds the computation in by hand, with closed-form math. Its own words: "zero training examples and zero runtime hooks." An automated five-stage compiler turns 4 to 8 digit signed add, subtract and multiply circuits, plus small Boolean, majority and parity circuits, into extra weights for an existing model.</p>
+
+  <h2>What it reports</h2>
+  <ul>
+    <li><strong>Exact beats trained.</strong> On 6-digit arithmetic (1,200 problems), the compiled circuits reach 99.17% on IBM Granite 4.2 3B and 100.00% on Alibaba Qwen 3.5 4B (100% on both with a higher-precision sidecar). A LoRA fine-tune on 12,800 examples reached 42.2% and 61.7%, and 0% when the arithmetic appeared mid-sentence.</li>
+    <li><strong>Small footprint.</strong> The grafts use about 1.1 to 2.4 million non-zero weights, at most 0.057% of the model.</li>
+    <li><strong>Nothing else breaks.</strong> Both grafted models passed all 14 of 14 pre-registered checks that general reasoning and long-context ability did not get worse. The test plan was fixed before it ran.</li>
+    <li><strong>Quiet everywhere else.</strong> The circuits fired 0 times in 11,134 out-of-distribution cases, input they were never meant to handle.</li>
+  </ul>
+  <p>The paper is open about what remains: full arithmetic on the 42-layer Gemma 4 model and fused GPU kernels are future work. It also notes that hidden triggers in weights are a reason to audit model checkpoints.</p>
+
+  <h2>The lesson for agent rules</h2>
+  <p>ThumbGate does not edit model weights. Its rules sit outside the model and check each tool call before it runs. But two ideas from the paper carry over directly.</p>
+  <ul>
+    <li><strong>Hard rules should be exact, not trained.</strong> "Never force-push to main" is not a preference to nudge a model toward. It is a check that either matches or does not. The paper's gap between compiled and fine-tuned accuracy is a sharp reminder of why: training on examples gets you close, and close is not what you want for a hard rule. Use training data for taste, and exact checks for rules.</li>
+    <li><strong>An exact rule is only as good as its false-trigger count.</strong> A rule that blocks the mistake but also blocks ordinary work is a regression. And "0 false blocks" means nothing without a sample size. Zero false fires in 2 checks is almost no evidence. Zero in 300 is strong evidence.</li>
+  </ul>
+
+  <h2>What ThumbGate now does</h2>
+  <p>ThumbGate already replays a new block rule against the agent's past allowed actions before it goes live. If the rule would have blocked any of them, it is held back to a warning instead. That check now also reports how much its answer is worth:</p>
+  <ul>
+    <li><strong>A 95% upper bound on the false-fire rate.</strong> With zero fires in <em>n</em> past actions, the bound is 1 &minus; 0.05<sup>1/<em>n</em></sup>, about 3/<em>n</em> (the "rule of three"). With some fires, it uses the Wilson score interval.</li>
+    <li><strong>An evidence label</strong> for each rule: <code>none</code> (no past actions to check), <code>weak</code> (no fires, but the bound is still above 5%), <code>strong</code> (no fires and the bound is at or under 5%, which takes 59 or more clean checks), or <code>fires-on-safe-actions</code>.</li>
+    <li><strong>A command to audit every learned rule at any time:</strong> <code>npx thumbgate gate-audit</code> (add <code>--json</code> for scripts). It is read-only. It skips the original mistake each rule was learned from, since that action was allowed before anyone thumbs-downed it.</li>
+  </ul>
+  <p>Newly promoted block rules also keep their audit, so a rule's record shows "0 of 81 past actions, strong" instead of just "0".</p>
+
+  <h2>What this does not do</h2>
+  <ul>
+    <li>It does not change which rules get held back. A rule that fires on any past safe action is still held to a warning, and a rule with no history still goes live as before. The new numbers tell you how far to trust that decision.</li>
+    <li>The audit only knows the actions your agent has taken. A rule can look strong on your history and still misfire on something new.</li>
+    <li>The 95% bound treats past actions as independent samples, which repeated commands are not. Read it as a guide, not a guarantee.</li>
+    <li>ThumbGate is not affiliated with the paper or its author, and has not been evaluated in it.</li>
+  </ul>
+
+  <h2>Try it this week</h2>
+  <ol>
+    <li>Install or update: <code>npx thumbgate init</code>. The <code>gate-audit</code> command ships in the first npm release after 1.45.2.</li>
+    <li>Run <code>npx thumbgate gate-audit</code> and look for <code>weak</code> and <code>fires-on-safe-actions</code> rows.</li>
+    <li>Treat a <code>fires-on-safe-actions</code> rule as one to narrow or remove before you turn on strict enforcement, and a <code>weak</code> rule as untested, not proven.</li>
+  </ol>
+
+  <h2>Sources</h2>
+  <ul>
+    <li><a href="https://arxiv.org/abs/2611.26450" target="_blank" rel="noopener">Tanmay Sah: A CPU Inside an LLM: Zero-Gradient Compilation of Exact Circuits into Pretrained Weights (arXiv 2611.26450, November 19, 2026)</a>. Every figure on this page comes from this paper.</li>
+    <li><a href="https://www.alphaxiv.org/abs/2611.26450" target="_blank" rel="noopener">alphaXiv discussion page for the paper</a>.</li>
+  </ul>
+
+  <div class="cta-box">
+    <h2>Rules that block mistakes, and stay out of the way</h2>
+    <p>See how much evidence stands behind each learned rule.</p>
+    <div class="cta-install">npx thumbgate gate-audit</div>
+    <div class="cta-actions">
+      <a class="cta-link" href="/learn/deterministic-agent-workflows">Read deterministic agent workflows</a>
+      <a class="cta-link cta-link-secondary" href="/learn/mcp-pre-action-checks-explained">Read MCP pre-action checks</a>
+    </div>
+  </div>
+
+  <div class="related">
+    <h2>Related</h2>
+    <a href="/learn/deterministic-agent-workflows">Deterministic agent workflows</a>
+    <a href="/learn/siren-agent-sandbox-escape-gates">Anthropic's Siren: gate the reach</a>
+    <a href="/learn/feedback-loop-vs-decision-layer">Feedback loop vs decision layer</a>
+  </div>
+</div>
+
+<div class="sticky-cta">
+  <span>Audit your learned rules for false triggers</span>
+  <code>npx thumbgate init</code>
+  <a href="/guide?utm_source=trigger_audit&amp;utm_medium=learn&amp;utm_campaign=cpu_inside_llm">Setup guide</a>
+</div>
+
+</body>
+</html>

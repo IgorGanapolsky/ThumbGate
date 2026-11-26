@@ -844,9 +844,11 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // scripts/project-identity.js (about 8 KB); measured 10,874,860 after merging main.
   // Bumped 10.88 MB -> 10.90 MB (2026-11-25): scripts/assurance-report.js, the assurance-report CLI command (~14 KB with its CLI wiring).
   // Bumped 10.90 MB -> 10.91 MB (2026-11-25): #5164 and #5201 each fit alone but together measured 10,900,646.
-  // scripts/staged-secret-gate.js (about 3 KB) fits under 10.91 MB: measured 10,908,425 after merging main (2026-11-26).
-  manifest.unpackedSize <= 10_910_000,
-  `npm package should stay <= 10.91 MB unpacked, got ${manifest.unpackedSize}`
+  // Bumped 10.91 MB -> 10.92 MB (2026-11-26, PR #5270): gate-audit trigger audit in scripts/auto-promote-gates.js
+  // and bin/cli.js (about 7 KB); measured 10,910,088 after merging main.
+  // PLACEHOLDER_5258
+  manifest.unpackedSize <= 10_920_000,
+  `npm package should stay <= 10.92 MB unpacked, got ${manifest.unpackedSize}`
 );
 
   for (const file of requiredRuntimeFiles) {
