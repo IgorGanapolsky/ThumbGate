@@ -62,5 +62,13 @@ footer{margin-top:56px;color:#6c6c75;font-size:13px}
 <p>Results are payload-level probes against each host's hook surface, not live Claude Code sessions, except where the matrix marks a live run. Source data lives in <code>docs/compat/host-gate-results.json</code>.</p>
 
 <footer>ThumbGate - <a href="https://thumbgate.ai">thumbgate.ai</a> - <a href="https://github.com/IgorGanapolsky/ThumbGate">GitHub</a></footer>
+<script src="/tg-analytics.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  if (typeof tgTrack === 'function') {
+    tgTrack('matrix_view', tgUtm());
+  }
+});
+</script>
 </body>
 </html>
