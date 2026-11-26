@@ -35,6 +35,17 @@ get_deployed_sha() {
 if [[ "$EVENT_NAME" == "workflow_dispatch" ]]; then
   SHOULD_DEPLOY=true
   SCOPE_REASON='workflow_dispatch'
+elif [[ "$EVENT_NAME" == "schedule" ]]; then
+  # The hourly run deploys main HEAD only when production is not already serving it,
+  # so a quiet hour adds nothing to Railway's queue. Unknown live SHA -> deploy (fail-safe to ship).
+  DEPLOYED_SHA="$(get_deployed_sha || true)"
+  if [[ -n "$DEPLOYED_SHA" && "$DEPLOYED_SHA" == "$HEAD_SHA" ]]; then
+    SHOULD_DEPLOY=false
+    SCOPE_REASON='scheduled_prod_at_head'
+  else
+    SHOULD_DEPLOY=true
+    SCOPE_REASON='scheduled_catch_up'
+  fi
 elif [[ "$EVENT_NAME" == "push" && -n "$BEFORE_SHA" && "$BEFORE_SHA" != "0000000000000000000000000000000000000000" ]]; then
   if git cat-file -e "$BEFORE_SHA" 2>/dev/null; then
     CHANGED_FILES="$(git diff --name-only "$BEFORE_SHA" "$HEAD_SHA" | sed '/^$/d')"

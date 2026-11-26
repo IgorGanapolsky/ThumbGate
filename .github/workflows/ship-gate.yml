@@ -171,11 +171,11 @@ jobs:
       - name: Wait for other checks, then merge the tested commit
         env:
           # Labels and reads use GITHUB_TOKEN (its events start no runs);
-          # only the merge itself uses the PAT, so the push fires deploy.
+          # only the merge itself uses the PAT. Production deploys come from
+          # the hourly deploy-railway.yml schedule, not from this merge.
           GH_TOKEN: ${{ github.token }}
           MERGE_TOKEN: ${{ secrets.GH_PAT || github.token }}
           HEAD_SHA: ${{ needs.policy.outputs.head_sha }}
-          USED_PAT: ${{ secrets.GH_PAT != '' }}
         run: |
           set -euo pipefail
           wait_min="$(node -p "require('./config/ship-policy.json').checkWaitMinutes || 12")"
@@ -206,9 +206,5 @@ jobs:
           GH_TOKEN="$MERGE_TOKEN" gh pr merge "$PR_NUMBER" --squash --delete-branch --match-head-commit "$HEAD_SHA"
           echo "Merged #$PR_NUMBER at $HEAD_SHA" >> "$GITHUB_STEP_SUMMARY"
 
-          # A merge made with GITHUB_TOKEN does not fire push workflows, so
-          # start the Railway deploy explicitly in that case.
-          if [ "$USED_PAT" != true ]; then
-            gh workflow run deploy-railway.yml --ref main
-            echo "Dispatched deploy-railway.yml (merge used GITHUB_TOKEN)." >> "$GITHUB_STEP_SUMMARY"
-          fi
+          # No per-merge deploy dispatch: deploy-railway.yml runs hourly from main HEAD
+          # (one deploy per merge kept replacing itself in Railway's queue).

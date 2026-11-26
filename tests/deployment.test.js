@@ -623,6 +623,26 @@ test('deploy-scope forces a catch-up deploy when production has drifted behind m
   assert.equal(unknown.scopeReason, 'non_runtime_changes');
 });
 
+test('deploy-scope hourly schedule deploys only when production is not serving main HEAD', () => {
+  const atHead = runDeployScopeFixture('src/runtime-change.js', 'schedule', null, '__HEAD__');
+  assert.equal(atHead.shouldDeploy, false);
+  assert.equal(atHead.scopeReason, 'scheduled_prod_at_head');
+
+  const behind = runDeployScopeFixture('docs/only-a-note.md', 'schedule', null, '0000000000000000000000000000000000000000');
+  assert.equal(behind.shouldDeploy, true);
+  assert.equal(behind.scopeReason, 'scheduled_catch_up');
+
+  // Live SHA unknown -> deploy rather than risk production never catching up.
+  const unknown = runDeployScopeFixture('docs/only-a-note.md', 'schedule');
+  assert.equal(unknown.shouldDeploy, true);
+  assert.equal(unknown.scopeReason, 'scheduled_catch_up');
+});
+
+test('ship gate does not dispatch a Railway deploy per merge', () => {
+  const shipGate = fs.readFileSync(path.join(PROJECT_ROOT, '.github', 'workflows', 'ship-gate.yml'), 'utf8');
+  assert.doesNotMatch(shipGate, /gh workflow run deploy-railway\.yml/);
+});
+
 test('deploy-scope script decides from the actual push range and writes reusable evidence', () => {
   const docsOnly = runDeployScopeFixture('docs/release-note.md');
   assert.equal(docsOnly.shouldDeploy, false);
