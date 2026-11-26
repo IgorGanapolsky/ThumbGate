@@ -118,7 +118,8 @@ function createGuards() {
 function classify(result) {
   if (!result) return { decision: 'allow', gate: '', reason: '' };
   const raw = String(result.decision || result.action || '').toLowerCase();
-  const decision = raw === 'warn' ? 'warn' : (raw === 'allow' || raw === 'approve' ? 'allow' : 'block');
+  // 'approve' means the gate stops to ask a person first, so it counts as a warning, not an allow.
+  const decision = raw === 'warn' || raw === 'approve' ? 'warn' : (raw === 'allow' ? 'allow' : 'block');
   return {
     decision,
     gate: String(result.gate || result.gateId || result.id || ''),
