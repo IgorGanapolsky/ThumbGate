@@ -16,6 +16,10 @@ concurrency:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    # checkout needs contents:read; the recent-submit lookup reads workflow runs and jobs.
+    permissions:
+      contents: read
+      actions: read
     env:
       THUMBGATE_API_KEY: ${{ secrets.THUMBGATE_API_KEY }}
       THUMBGATE_OPERATOR_KEY: ${{ secrets.THUMBGATE_OPERATOR_KEY }}
@@ -61,9 +65,34 @@ jobs:
           # commits unavailable and turns valid ancestry into fail-closed
           # "unknown", blocking every main deployment between npm releases.
           fetch-depth: 0
+      - name: Find an earlier hourly deploy of this commit
+        id: recent-submit
+        if: github.event_name == 'schedule'
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          # Railway can hold a deploy QUEUED for hours. If an earlier hourly run uploaded this same
+          # commit in the last 3 hours, a second identical upload only replaces it in the queue.
+          since="$(date -u -d '3 hours ago' +%Y-%m-%dT%H:%M:%SZ)"
+          # The window runs from the upload, not the run start, so look at runs created an hour earlier too.
+          lookback="$(date -u -d '4 hours ago' +%Y-%m-%dT%H:%M:%SZ)"
+          sha=""
+          # Only a run that finished successfully and whose "Deploy to Railway" step succeeded inside the
+          # window counts. A failed run, or one that skipped the upload, never extends the window, so the
+          # next hourly run uploads again and its own verification posts the receipt.
+          for run_id in $(gh api "repos/${GITHUB_REPOSITORY}/actions/workflows/deploy-railway.yml/runs?event=schedule&head_sha=${GITHUB_SHA}&created=%3E%3D${lookback}&per_page=20" \
+            --jq ".workflow_runs[] | select(.id != ${GITHUB_RUN_ID} and .conclusion == \"success\") | .id" || true); do
+            uploaded="$(gh api "repos/${GITHUB_REPOSITORY}/actions/runs/${run_id}/jobs" \
+              --jq "[.jobs[].steps[]? | select(.name == \"Deploy to Railway\" and .conclusion == \"success\" and (.completed_at // \"\") >= \"${since}\")] | length" || echo 0)"
+            if [ "${uploaded:-0}" != "0" ]; then sha="${GITHUB_SHA}"; break; fi
+          done
+          echo "sha=${sha}" >> "$GITHUB_OUTPUT"
+          echo "Earlier hourly run for ${GITHUB_SHA} since ${since}: ${sha:-none}"
       - name: Detect deployable changes
         id: deploy-scope
         run: |
+          DEPLOY_SCOPE_RECENT_SUBMIT_SHA='${{ steps.recent-submit.outputs.sha }}' \
           BEFORE_SHA='${{ github.event.before }}' \
           HEAD_SHA="$GITHUB_SHA" \
           EVENT_NAME="$GITHUB_EVENT_NAME" \

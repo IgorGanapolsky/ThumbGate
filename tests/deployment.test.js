@@ -33,7 +33,7 @@ function deployUrl(pathname = '/') {
   return new URL(pathname, deployOrigin).toString();
 }
 
-function runDeployScopeFixture(changePath, eventName = 'push', beforeShaOverride = null, deployedSha = null) {
+function runDeployScopeFixture(changePath, eventName = 'push', beforeShaOverride = null, deployedSha = null, recentSubmitSha = null) {
   const repoDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-deploy-scope-'));
   const githubOutput = path.join(repoDir, 'github-output.txt');
   const jsonOutput = path.join(repoDir, 'deploy-scope.json');
@@ -60,6 +60,7 @@ function runDeployScopeFixture(changePath, eventName = 'push', beforeShaOverride
     execFileSync('git', ['commit', '-m', `change ${changePath}`], { cwd: repoDir, stdio: 'ignore' });
     const headSha = execFileSync('git', ['rev-parse', 'HEAD'], { cwd: repoDir, encoding: 'utf8' }).trim();
     const resolvedDeployedSha = deployedSha === '__HEAD__' ? headSha : (deployedSha || '');
+    const resolvedRecentSubmitSha = recentSubmitSha === '__HEAD__' ? headSha : (recentSubmitSha || '');
 
     execFileSync('bash', [DEPLOY_SCOPE_SCRIPT], {
       cwd: repoDir,
@@ -74,6 +75,7 @@ function runDeployScopeFixture(changePath, eventName = 'push', beforeShaOverride
         // Empty = "deployed SHA unknown" (preserves historical skip behaviour).
         RAILWAY_HEALTHCHECK_URL: '',
         DEPLOY_SCOPE_DEPLOYED_SHA: resolvedDeployedSha,
+        DEPLOY_SCOPE_RECENT_SUBMIT_SHA: resolvedRecentSubmitSha,
       },
       stdio: 'pipe',
     });
@@ -634,6 +636,11 @@ test('deploy-scope hourly schedule deploys only when production is not serving m
   // The verifier starts the batch's receipts from the build production served before this run.
   assert.equal(behind.previousDeployedSha, '0000000000000000000000000000000000000000');
 
+  // An earlier hourly run already submitted HEAD and Railway still holds it -> do not re-upload.
+  const pending = runDeployScopeFixture('docs/only-a-note.md', 'schedule', null, '0000000000000000000000000000000000000000', '__HEAD__');
+  assert.equal(pending.shouldDeploy, false);
+  assert.equal(pending.scopeReason, 'scheduled_head_already_submitted');
+
   // Live SHA unknown -> deploy rather than risk production never catching up.
   const unknown = runDeployScopeFixture('docs/only-a-note.md', 'schedule');
   assert.equal(unknown.shouldDeploy, true);
@@ -649,6 +656,121 @@ test('deploy verification covers every PR an hourly deploy shipped and stays qui
   assert.match(workflow, /for pr in \$\{PRS\}; do/);
   // deploy-scope must run before the PR lookup, since the lookup reads its range.
   assert.ok(workflow.indexOf('id: deploy-scope') < workflow.indexOf('id: find-pr'));
+});
+
+test('hourly deploy does not re-upload a commit an earlier hourly run already submitted', () => {
+  const workflow = fs.readFileSync(path.join(PROJECT_ROOT, '.github', 'workflows', 'deploy-railway.yml'), 'utf8');
+  assert.match(workflow, /id: recent-submit\n\s+if: github\.event_name == 'schedule'\n\s+continue-on-error: true/);
+  assert.match(workflow, /DEPLOY_SCOPE_RECENT_SUBMIT_SHA='\$\{\{ steps\.recent-submit\.outputs\.sha \}\}'/);
+  assert.match(workflow, /  deploy:\n    runs-on: ubuntu-latest\n(?:    #.*\n)*    permissions:\n      contents: read\n      actions: read\n/);
+});
+
+function extractStepRun(workflow, stepId) {
+  const at = workflow.indexOf(`id: ${stepId}\n`);
+  assert.ok(at >= 0, `step ${stepId}`);
+  const runAt = workflow.indexOf('run: |\n', at);
+  const lines = workflow.slice(runAt + 'run: |\n'.length).split('\n');
+  const body = [];
+  for (const line of lines) {
+    if (line.trim() !== '' && !line.startsWith('          ')) break;
+    body.push(line.slice(10));
+  }
+  return body.join('\n');
+}
+
+function isoAgo(hours) {
+  return new Date(Date.now() - hours * 3600 * 1000).toISOString().replace(/\.\d+Z$/, 'Z');
+}
+
+// runs: [{ id, conclusion, deployStep: { conclusion, completedHoursAgo } }]
+function runRecentSubmitLookup({ runs = [], apiFails = false }) {
+  const workflow = fs.readFileSync(path.join(PROJECT_ROOT, '.github', 'workflows', 'deploy-railway.yml'), 'utf8');
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-recent-submit-'));
+  try {
+    const binDir = path.join(dir, 'bin');
+    const fixtures = path.join(dir, 'fixtures');
+    fs.mkdirSync(binDir);
+    fs.mkdirSync(fixtures);
+    fs.writeFileSync(path.join(fixtures, 'runs.json'), JSON.stringify({
+      workflow_runs: runs.map((r) => ({ id: r.id, conclusion: r.conclusion })),
+    }));
+    for (const r of runs) {
+      const step = r.deployStep;
+      fs.writeFileSync(path.join(fixtures, `jobs-${r.id}.json`), JSON.stringify({
+        jobs: [{ steps: [
+          { name: 'Checkout', conclusion: 'success', completed_at: isoAgo(3.9) },
+          ...(step ? [{ name: 'Deploy to Railway', conclusion: step.conclusion, completed_at: isoAgo(step.completedHoursAgo) }] : []),
+        ] }],
+      }));
+    }
+    // Stand-in for the gh CLI: applies the workflow's own --jq filter to fixture API responses with real jq.
+    fs.writeFileSync(path.join(binDir, 'gh'), [
+      '#!/usr/bin/env bash',
+      'if [ "$FAKE_GH_FAIL" = "1" ]; then echo "HTTP 502" >&2; exit 1; fi',
+      'url="$2"; filter=""',
+      'while [ $# -gt 0 ]; do if [ "$1" = "--jq" ]; then filter="$2"; fi; shift; done',
+      'case "$url" in',
+      '  *"/runs?"*) file="$FAKE_FIXTURES/runs.json" ;;',
+      '  */runs/*/jobs) id="${url%/jobs}"; id="${id##*/}"; file="$FAKE_FIXTURES/jobs-$id.json" ;;',
+      '  *) exit 1 ;;',
+      'esac',
+      'jq -r "$filter" "$file"',
+      '',
+    ].join('\n'), { mode: 0o755 });
+    const scriptPath = path.join(dir, 'step.sh');
+    fs.writeFileSync(scriptPath, extractStepRun(workflow, 'recent-submit'));
+    const outputPath = path.join(dir, 'out.txt');
+    fs.writeFileSync(outputPath, '');
+    execFileSync('bash', ['-e', scriptPath], {
+      env: {
+        ...process.env,
+        PATH: `${binDir}${path.delimiter}${process.env.PATH}`,
+        GITHUB_OUTPUT: outputPath,
+        GITHUB_REPOSITORY: 'owner/repo',
+        GITHUB_SHA: 'a'.repeat(40),
+        GITHUB_RUN_ID: '999',
+        FAKE_FIXTURES: fixtures,
+        FAKE_GH_FAIL: apiFails ? '1' : '0',
+      },
+      stdio: 'pipe',
+    });
+    const match = fs.readFileSync(outputPath, 'utf8').match(/^sha=(.*)$/m);
+    assert.ok(match, 'step writes a sha= output');
+    return match[1];
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+}
+
+test('recent-submit lookup returns HEAD only for a successful run that uploaded in the last 3 hours', () => {
+  const HEAD = 'a'.repeat(40);
+  const uploaded = (completedHoursAgo) => ({ conclusion: 'success', completedHoursAgo });
+  assert.equal(runRecentSubmitLookup({ runs: [{ id: 101, conclusion: 'success', deployStep: uploaded(1) }] }), HEAD, 'recent upload');
+  assert.equal(
+    runRecentSubmitLookup({ runs: [{ id: 101, conclusion: 'success', deployStep: uploaded(2.9) }] }),
+    HEAD,
+    'run started over 3h ago but uploaded inside the window',
+  );
+  assert.equal(runRecentSubmitLookup({ runs: [{ id: 101, conclusion: 'success', deployStep: uploaded(3.2) }] }), '', 'upload older than 3h');
+  assert.equal(runRecentSubmitLookup({ runs: [{ id: 101, conclusion: 'failure', deployStep: uploaded(1) }] }), '', 'failed run does not count');
+  assert.equal(
+    runRecentSubmitLookup({ runs: [{ id: 101, conclusion: 'success', deployStep: { conclusion: 'skipped', completedHoursAgo: 1 } }] }),
+    '',
+    'run that skipped the upload',
+  );
+  assert.equal(runRecentSubmitLookup({ runs: [{ id: 101, conclusion: 'success' }] }), '', 'run with no upload step');
+  assert.equal(runRecentSubmitLookup({ runs: [{ id: 999, conclusion: 'success', deployStep: uploaded(1) }] }), '', 'the current run is ignored');
+  assert.equal(runRecentSubmitLookup({ runs: [] }), '', 'no earlier run');
+  assert.equal(runRecentSubmitLookup({ runs: [{ id: 101, conclusion: 'success', deployStep: uploaded(1) }], apiFails: true }), '', 'API failure means upload again');
+});
+
+test('deploy receipt stays quiet when an earlier hourly run already queued HEAD', () => {
+  const workflow = fs.readFileSync(path.join(PROJECT_ROOT, '.github', 'workflows', 'verify-deploy-comment.yml'), 'utf8');
+  const at = workflow.indexOf('"${SCOPE_REASON}" = "scheduled_head_already_submitted"');
+  assert.ok(at > 0, 'pending-deploy reason handled');
+  const branch = workflow.slice(at, workflow.indexOf('fi\n', at));
+  assert.match(branch, /echo "pr=" >> "\$GITHUB_OUTPUT"/);
+  assert.match(branch, /exit 0/);
 });
 
 test('ship gate does not dispatch a Railway deploy per merge', () => {
