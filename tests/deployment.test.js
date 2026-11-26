@@ -33,7 +33,7 @@ function deployUrl(pathname = '/') {
   return new URL(pathname, deployOrigin).toString();
 }
 
-function runDeployScopeFixture(changePath, eventName = 'push', beforeShaOverride = null, deployedSha = null) {
+function runDeployScopeFixture(changePath, eventName = 'push', beforeShaOverride = null, deployedSha = null, recentSubmitSha = null) {
   const repoDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-deploy-scope-'));
   const githubOutput = path.join(repoDir, 'github-output.txt');
   const jsonOutput = path.join(repoDir, 'deploy-scope.json');
@@ -60,6 +60,7 @@ function runDeployScopeFixture(changePath, eventName = 'push', beforeShaOverride
     execFileSync('git', ['commit', '-m', `change ${changePath}`], { cwd: repoDir, stdio: 'ignore' });
     const headSha = execFileSync('git', ['rev-parse', 'HEAD'], { cwd: repoDir, encoding: 'utf8' }).trim();
     const resolvedDeployedSha = deployedSha === '__HEAD__' ? headSha : (deployedSha || '');
+    const resolvedRecentSubmitSha = recentSubmitSha === '__HEAD__' ? headSha : (recentSubmitSha || '');
 
     execFileSync('bash', [DEPLOY_SCOPE_SCRIPT], {
       cwd: repoDir,
@@ -74,6 +75,7 @@ function runDeployScopeFixture(changePath, eventName = 'push', beforeShaOverride
         // Empty = "deployed SHA unknown" (preserves historical skip behaviour).
         RAILWAY_HEALTHCHECK_URL: '',
         DEPLOY_SCOPE_DEPLOYED_SHA: resolvedDeployedSha,
+        DEPLOY_SCOPE_RECENT_SUBMIT_SHA: resolvedRecentSubmitSha,
       },
       stdio: 'pipe',
     });
@@ -634,6 +636,11 @@ test('deploy-scope hourly schedule deploys only when production is not serving m
   // The verifier starts the batch's receipts from the build production served before this run.
   assert.equal(behind.previousDeployedSha, '0000000000000000000000000000000000000000');
 
+  // An earlier hourly run already submitted HEAD and Railway still holds it -> do not re-upload.
+  const pending = runDeployScopeFixture('docs/only-a-note.md', 'schedule', null, '0000000000000000000000000000000000000000', '__HEAD__');
+  assert.equal(pending.shouldDeploy, false);
+  assert.equal(pending.scopeReason, 'scheduled_head_already_submitted');
+
   // Live SHA unknown -> deploy rather than risk production never catching up.
   const unknown = runDeployScopeFixture('docs/only-a-note.md', 'schedule');
   assert.equal(unknown.shouldDeploy, true);
@@ -649,6 +656,13 @@ test('deploy verification covers every PR an hourly deploy shipped and stays qui
   assert.match(workflow, /for pr in \$\{PRS\}; do/);
   // deploy-scope must run before the PR lookup, since the lookup reads its range.
   assert.ok(workflow.indexOf('id: deploy-scope') < workflow.indexOf('id: find-pr'));
+});
+
+test('hourly deploy does not re-upload a commit an earlier hourly run already submitted', () => {
+  const workflow = fs.readFileSync(path.join(PROJECT_ROOT, '.github', 'workflows', 'deploy-railway.yml'), 'utf8');
+  assert.match(workflow, /id: recent-submit\n\s+if: github\.event_name == 'schedule'\n\s+continue-on-error: true/);
+  assert.match(workflow, /select\(\.name == "Deploy to Railway" and \.conclusion == "success"\)/);
+  assert.match(workflow, /DEPLOY_SCOPE_RECENT_SUBMIT_SHA='\$\{\{ steps\.recent-submit\.outputs\.sha \}\}'/);
 });
 
 test('ship gate does not dispatch a Railway deploy per merge', () => {

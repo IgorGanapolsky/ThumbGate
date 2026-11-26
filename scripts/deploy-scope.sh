@@ -44,6 +44,11 @@ elif [[ "$EVENT_NAME" == "schedule" ]]; then
   if [[ -n "$DEPLOYED_SHA" && "$DEPLOYED_SHA" == "$HEAD_SHA" ]]; then
     SHOULD_DEPLOY=false
     SCOPE_REASON='scheduled_prod_at_head'
+  elif [[ -n "${DEPLOY_SCOPE_RECENT_SUBMIT_SHA:-}" && "${DEPLOY_SCOPE_RECENT_SUBMIT_SHA}" == "$HEAD_SHA" ]]; then
+    # An earlier hourly run (last 3h) already submitted HEAD and Railway is still holding it.
+    # Re-uploading the same commit only replaces it in the queue (seen 2026-11-26 05:22Z).
+    SHOULD_DEPLOY=false
+    SCOPE_REASON='scheduled_head_already_submitted'
   else
     SHOULD_DEPLOY=true
     SCOPE_REASON='scheduled_catch_up'
