@@ -647,7 +647,8 @@ test('homepage stays human-scannable instead of becoming a product monorepo', ()
   // 1550: the coverage tables now say Cursor shell commands are denied, other Cursor tools advisory (24 Nov 2026).
   // 1640: the proof-before-claim section and its coverage row say what the deploy-proof Stop gate does and does not catch (25 Nov 2026).
   // 1645: the hero line says the enforcement path needs no cloud, matching the README and tests/enforcement-path-offline.test.js (25 Nov 2026).
-  assert.ok(words.length <= 1645, `visible homepage is ${words.length} words`);
+  // 1745: the hero shows the real 1.45.1 thumbs-down hold transcript, and the deny list and coverage table add terraform destroy, kubectl delete, aws s3 rm and the hold row (25 Nov 2026).
+  assert.ok(words.length <= 1745, `visible homepage is ${words.length} words`);
   assert.ok(h2Count <= 8, `homepage has ${h2Count} H2 headings`);
   assert.ok(h3Count <= 10, `homepage has ${h3Count} H3 headings`);
   for (const jargon of ['Thompson Sampling', 'DPO', 'LanceDB', 'ContextFS', 'MemAlign', 'FTS5']) {
@@ -664,11 +665,15 @@ test('hero states the approved workflow scope with fit-first and free paths', ()
   );
   const lede = normalizeHtmlText((hero.match(/<p class="hero-lede">([\s\S]*?)<\/p>/) || [])[1]);
 
-  assert.match(landingPage, /Thumbs-down a Claude Code mistake once/i);
-  assert.match(landingPage, /ThumbGate — Warn Claude Code before it repeats a mistake/i);
-  assert.match(hero, /<h1>Thumbs-down a Claude Code mistake once, and ThumbGate warns the next time it tries that command\. After three thumbs-downs on the same command, strict mode blocks it\.<\/h1>/i);
+  // 25 Nov 2026: since 1.45.0 one typed thumbs-down holds the command and a second one denies it (docs/demo/thumbs-down-hold).
+  assert.match(landingPage, /ThumbGate — Stop Claude Code from repeating a mistake/i);
+  assert.match(hero, /<h1>One thumbs-down stops Claude Code from retrying a mistake\. Two make it a hard rule\.<\/h1>/i);
+  assert.doesNotMatch(landingPage, /After three thumbs-downs|Denied from the third thumbs-down/i);
   assert.match(hero, /PreToolUse gate for Claude Code/i);
-  assert.match(hero, /Secret leaks, attempts to switch the gate off and five catastrophic commands are denied out of the box\. Other flagged actions warn, and strict mode blocks them/i);
+  assert.match(hero, /holds that command before it can run again, until you say "go ahead"/i);
+  assert.match(hero, /Denied on a fresh install, even in bypass mode:[\s\S]*terraform destroy[\s\S]*kubectl delete[\s\S]*aws s3 rm/i);
+  assert.match(hero, /thumbs-down-hold/);
+  assert.match(hero, /thumbgate 1\.45\.1/);
   assert.match(hero, /href="#coverage"/);
   assert.doesNotMatch(landingPage, /every tool call|every call|budget enforcement|no account/i);
   assert.match(hero, /data-recorded-deny/);
@@ -679,7 +684,7 @@ test('hero states the approved workflow scope with fit-first and free paths', ()
   assert.match(hero, /data-statusline-capture/);
   assert.match(hero, /0👍/);
   assert.match(hero, /this project/);
-  assert.match(hero, /Latest success/);
+  assert.match(hero, /Latest mistake/);
   assert.doesNotMatch(hero, /Cursor|Codex|Gemini|Cline|OpenCode|Amp\b/, 'other agents live under Also works with');
   assert.match(hero, /Get Pro — \$__PRO_PRICE_DOLLARS__\/month/);
   assert.match(hero, /Recorded PreToolUse decisions/i);
@@ -740,7 +745,9 @@ test('paid plan describes self-serve Pro features truthfully', () => {
 test('enforcement promise distinguishes default denies from strict-mode blocks', () => {
   const coverage = landingPage.slice(landingPage.indexOf('<section id="coverage">'), landingPage.indexOf('<section id="faq">'));
   assert.match(coverage, /<code>git push --force<\/code>[\s\S]*?<td>Denied<\/td><td>Denied<\/td>/);
-  assert.match(coverage, /A command you gave a thumbs-down<\/th><td>Warns, with your reason<\/td><td>Denied from the third thumbs-down<\/td>/);
+  assert.match(coverage, /The command right after you type a thumbs-down<\/th><td colspan="2">Held until you say "go ahead"/);
+  assert.match(coverage, /A command you gave a thumbs-down, later<\/th><td colspan="2">Warns, with your reason\. Denied from the second thumbs-down/);
+  assert.match(coverage, /<code>terraform destroy<\/code>[\s\S]*?<td>Denied<\/td><td>Denied<\/td>/);
   assert.match(coverage, /Other flagged actions[\s\S]*?<td>Warns<\/td><td>Denied<\/td>/);
   assert.match(coverage, /python3 shutil\.rmtree<\/code> only gets a warning/);
   assert.match(coverage, /id="preview-app"/, 'the in-browser preview is on the homepage');

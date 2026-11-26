@@ -703,9 +703,9 @@
         "NotebookEdit",
         "Bash"
       ],
-      "pattern": "(?:config/gates/|config/(?:budget|enforcement|mcp-allowlists)\\.json|\\.thumbgate/config\\.json|thumbgate\\.json)",
+      "pattern": "(?:config/gates/|config/(?:budget|enforcement|mcp-allowlists)\\.json|\\.thumbgate/config\\.json|thumbgate\\.json|(?:\\.thumbgate(?:-compat)?/(?:projects/[^/]+/)?|\\.claude/memory/feedback/)(?:auto-promoted-gates\\.json|claim-gate-rules\\.json|send-gate-state\\.json|prevention-rules\\.md|feedback-log\\.jsonl))",
       "action": "block",
-      "message": "Self-protection: agent cannot modify ThumbGate configuration, gate rules, or budget settings.",
+      "message": "Self-protection: agent cannot modify ThumbGate configuration, gate rules, learned rules (thumbs-down gates, claim rules, send holds, feedback log), or budget settings.",
       "severity": "critical",
       "compliance": [
         "NIST-AC-3",

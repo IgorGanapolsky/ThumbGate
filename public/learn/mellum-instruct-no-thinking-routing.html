@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>JetBrains Mellum2.1 Instruct skips thinking on routine agent work. Route your agents the same way - ThumbGate</title>
+<script defer data-domain="thumbgate.ai" src="https://plausible.io/js/script.js"></script>
+<meta name="description" content="JetBrains' open-weights Mellum2.1 Instruct drops the reasoning step and uses about 45% fewer tokens per agent task. ThumbGate's model routing now picks thinking or instruct per task, and can run both Mellum2.1 models locally.">
+<meta name="keywords" content="Mellum2.1 Instruct, JetBrains Mellum, reasoning mode, thinking vs instruct, local coding model, GGUF, sub-agents, AI coding agent guardrails, ThumbGate">
+<meta property="og:title" content="Mellum2.1 Instruct skips thinking on routine agent work. Route your agents the same way">
+<meta property="og:description" content="Thinking tokens cost time and money on small edits and tool loops. ThumbGate now says per task whether a reasoning step is worth it.">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://thumbgate.ai/learn/mellum-instruct-no-thinking-routing">
+<link rel="canonical" href="https://thumbgate.ai/learn/mellum-instruct-no-thinking-routing">
+<link rel="stylesheet" href="/learn/learn.css">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "TechArticle",
+  "headline": "JetBrains Mellum2.1 Instruct skips thinking on routine agent work. Route your agents the same way",
+  "description": "Mellum2.1 Instruct is an Apache 2.0, 12B mixture-of-experts coding model with 2.5B active parameters that answers without a chain of thought. ThumbGate's router now returns a reasoning mode per task and supports a local Mellum family.",
+  "publisher": {"@type": "Organization", "name": "ThumbGate", "url": "https://thumbgate.ai"},
+  "datePublished": "2026-11-25",
+  "dateModified": "2026-11-25",
+  "mainEntityOfPage": "https://thumbgate.ai/learn/mellum-instruct-no-thinking-routing"
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "When should an AI coding agent skip the reasoning step?",
+      "acceptedAnswer": {"@type": "Answer", "text": "On routine work: small code edits, tool loops, codebase lookups and tasks handed to a sub-agent. JetBrains found its non-thinking Mellum2.1 Instruct used about 45% fewer tokens per agent task than its Thinking sibling with nearly the same SWE-bench Verified score. Keep thinking for diagnosis, architecture and hard algorithmic or math problems."}
+    },
+    {
+      "@type": "Question",
+      "name": "Can ThumbGate run Mellum2.1 locally?",
+      "acceptedAnswer": {"@type": "Answer", "text": "Yes. Set THUMBGATE_LOCAL_MODEL_FAMILY=mellum and ThumbGate maps routine roles to JetBrains/Mellum2.1-12B-A2.5B-Instruct and the thinking role to JetBrains/Mellum2.1-12B-A2.5B-Thinking. Both are Apache 2.0 with GGUF builds on Hugging Face. You serve them yourself with a local OpenAI-compatible server."}
+    }
+  ]
+}
+</script>
+</head>
+<body>
+
+<nav>
+  <a href="/" class="brand"><img src="/assets/brand/thumbgate-mark-inline-v3.svg" alt="ThumbGate" class="logo-mark" width="28" height="28"><span class="logo-text">ThumbGate</span></a>
+  <a href="/guide">Setup Guide</a>
+  <a href="/learn">Learn</a>
+  <a href="/compare">Compare</a>
+  <a href="https://github.com/IgorGanapolsky/ThumbGate" target="_blank" rel="noopener">GitHub</a>
+</nav>
+
+<div class="container">
+  <div class="breadcrumb"><a href="/learn">Learn</a> / Thinking vs instruct routing</div>
+  <h1>JetBrains Mellum2.1 Instruct skips thinking on routine agent work. Route your agents the same way</h1>
+  <p style="color:var(--muted);">4 min read &middot; For developers running Claude Code and other coding agents</p>
+
+  <div class="tldr"><strong>TL;DR:</strong> On November 25, 2026 JetBrains released Mellum2.1 Instruct, an open-weights coding model that answers without a chain of thought. In JetBrains' agent tests it used about 45% fewer tokens per task than Mellum2.1 Thinking. Most of an agent's day is small edits and tool calls, where thinking adds time without adding quality. ThumbGate's model routing now says, per task, whether a reasoning step is worth paying for, and can run both Mellum2.1 models on your own machine.</div>
+
+  <h2>What JetBrains shipped</h2>
+  <p>These points come from The New Stack's report and the model cards on Hugging Face, linked below.</p>
+  <ul>
+    <li><strong>Same model, no thinking step.</strong> Mellum2.1 Instruct is a 12-billion-parameter mixture-of-experts model that activates 2.5 billion parameters per token. It got the same repository-level reinforcement learning as Mellum2.1 Thinking.</li>
+    <li><strong>Built for sub-agents, tool loops and chat.</strong> In JetBrains' words, "reasoning adds time and computing resources without adding quality," especially locally, where "every extra thinking token adds to the time you're waiting."</li>
+    <li><strong>Fewer tokens.</strong> About 5,600 tokens per agent task against 10,100 for Thinking, a 45% cut, or 73% when tool-call tokens are left out.</li>
+    <li><strong>Where it falls behind.</strong> The two score nearly the same on SWE-bench Verified (Instruct 40.4%), but on hard algorithmic and math benchmarks such as LiveCodeBench and AIME, JetBrains says Thinking "remains the better choice."</li>
+    <li><strong>Open weights.</strong> Apache 2.0 on Hugging Face, with a GGUF build for low-memory machines and a multi-token prediction head that JetBrains says speeds generation up to 1.8 times.</li>
+  </ul>
+
+  <h2>Why this matters for agent guardrails</h2>
+  <p>As agents hand work to other agents, the expensive mistake is no longer only a bad tool call. It is also paying a reasoning model to rename a variable a thousand times a day. The fix has the same shape as a gate: decide before the call, from what you know about the task.</p>
+  <p>ThumbGate already works that way for enforcement. Its PreToolUse gate check matches your prevention rules without calling a language model, so blocking a known-bad action costs no tokens. The new routing applies the same idea to the models your agents use around it.</p>
+
+  <h2>What ThumbGate does now</h2>
+  <ul>
+    <li><strong>A reasoning mode on every routing plan.</strong> <code>recommendExecutionPlan</code> returns <code>reasoningMode</code>: <code>instruct</code> for code edits, tool use, extraction and anything tagged <code>routine</code>, <code>sub-agent</code> or <code>tool-loop</code>; <code>thinking</code> for debugging, architecture, algorithmic and math work, or tags like <code>hard</code> and <code>investigate</code>.</li>
+    <li><strong>Escalate after failure, not before.</strong> A task that fails twice without thinking switches to thinking, using the same retry threshold as tier escalation.</li>
+    <li><strong>A local Mellum family.</strong> <code>THUMBGATE_LOCAL_MODEL_FAMILY=mellum</code> maps the normal, critique and compaction roles to Mellum2.1 Instruct and the thinking role to Mellum2.1 Thinking. Any role can still be overridden with <code>THUMBGATE_MODEL_ROLE_&lt;ROLE&gt;</code>.</li>
+  </ul>
+
+  <h2>What it does not do</h2>
+  <ul>
+    <li>It does not download or serve a model. You run the GGUF or safetensors build with your own OpenAI-compatible server.</li>
+    <li>It does not change how gates block. Enforcement still happens in ThumbGate's PreToolUse hook, with or without a local model.</li>
+    <li>The 45% figure is JetBrains' own measurement on its own tasks. Your savings depend on your workload.</li>
+  </ul>
+
+  <h2>Try it</h2>
+  <ol>
+    <li>Install ThumbGate in a project: <code>npx thumbgate init</code>.</li>
+    <li>Serve <code>JetBrains/Mellum2.1-12B-A2.5B-Instruct-GGUF</code>, and the Thinking build if you want both, with a local OpenAI-compatible server.</li>
+    <li>Set <code>THUMBGATE_LOCAL_MODEL_FAMILY=mellum</code> for routing.</li>
+    <li>For the dashboard's chat with your lessons, set <code>THUMBGATE_LOCAL_LLM_ENDPOINT</code> to that server and <code>THUMBGATE_LOCAL_LLM_MODEL</code> to the Instruct model, so questions never leave your machine.</li>
+  </ol>
+
+  <h2>Sources</h2>
+  <ul>
+    <li><a href="https://thenewstack.io/jetbrains-mellum2-1-instruct-coding-model/" target="_blank" rel="noopener">The New Stack: JetBrains' latest Mellum coding model uses 45% fewer tokens</a></li>
+    <li><a href="https://huggingface.co/JetBrains/Mellum2.1-12B-A2.5B-Instruct" target="_blank" rel="noopener">Hugging Face: JetBrains/Mellum2.1-12B-A2.5B-Instruct</a></li>
+    <li><a href="https://huggingface.co/JetBrains/Mellum2.1-12B-A2.5B-Instruct-GGUF" target="_blank" rel="noopener">Hugging Face: Mellum2.1 Instruct GGUF</a></li>
+    <li><a href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/scripts/model-tier-router.js" target="_blank" rel="noopener">ThumbGate: model-tier-router source</a></li>
+  </ul>
+  <p style="color:var(--muted);">ThumbGate is an independent project and is not affiliated with or endorsed by JetBrains.</p>
+
+  <div class="cta-box">
+    <h2>Stop paying for thinking you don't need</h2>
+    <p>Gates that cost no tokens, and routing that saves the rest.</p>
+    <div class="cta-install">npx thumbgate init</div>
+    <div class="cta-actions">
+      <a class="cta-link" href="/guide?utm_source=mellum&amp;utm_medium=learn&amp;utm_campaign=reasoning_mode">Setup guide</a>
+      <a class="cta-link cta-link-secondary" href="/learn/cost-aware-agent-gate-routing">Cost-aware gate routing</a>
+    </div>
+  </div>
+
+  <div class="related">
+    <h2>Related</h2>
+    <a href="/learn/cost-aware-agent-gate-routing">Cost-aware agent gate routing</a>
+    <a href="/learn/ai-finops-agent-spend-guardrails">AI FinOps: agent spend guardrails</a>
+    <a href="/learn/mcp-pre-action-checks-explained">MCP pre-action checks explained</a>
+  </div>
+</div>
+
+<div class="sticky-cta">
+  <span>Think only when it pays</span>
+  <code>npx thumbgate init</code>
+  <a href="/guide?utm_source=mellum&amp;utm_medium=learn&amp;utm_campaign=reasoning_mode">Setup guide</a>
+</div>
+
+</body>
+</html>

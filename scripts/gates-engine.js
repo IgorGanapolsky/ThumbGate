@@ -45,6 +45,32 @@ const {
   sanitizeFeedbackText,
 } = require('./feedback-sanitizer');
 
+const executableHashCache = new Map();
+
+// What `which <name>` prints, without spawning `which`: the first executable regular file named
+// `name` in a PATH directory. A name containing a slash is not looked up, as in `which`.
+function resolveOnPath(name) {
+  if (!name || name.includes('/') || name.includes('\\')) return null;
+  const dirs = String(process.env.PATH || '').split(path.delimiter).filter(Boolean);
+  const exts = process.platform === 'win32'
+    ? ['', ...String(process.env.PATHEXT || '.EXE;.CMD;.BAT;.COM').split(';').filter(Boolean)]
+    : [''];
+  for (const dir of dirs) {
+    for (const ext of exts) {
+      const candidate = path.join(dir, name + ext);
+      try {
+        const stat = fs.statSync(candidate);
+        if (!stat.isFile()) continue;
+        fs.accessSync(candidate, fs.constants.X_OK);
+        return candidate;
+      } catch {
+        continue;
+      }
+    }
+  }
+  return null;
+}
+
 /**
  * Computes the SHA-256 hash of an executable binary to prevent path-based bypasses.
  * (Layer 5: Supply Chain / Layer 3: Execution)
@@ -58,18 +84,19 @@ function computeExecutableHash(command) {
     // Resolve absolute path using 'which'. Use execFileSync (no shell) and pass
     // firstWord as an argv element, never interpolated into a command string, so
     // a hostile `command` value cannot inject shell metacharacters here.
-    let fullPath;
-    try {
-      fullPath = execFileSync('which', [firstWord], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim();
-    } catch (e) {
-      // If 'which' fails, it might be an absolute path or a non-existent command
-      fullPath = path.isAbsolute(firstWord) ? firstWord : null;
-    }
-    
+    // If the PATH lookup fails, it might be an absolute path or a non-existent command.
+    const fullPath = resolveOnPath(firstWord) || (path.isAbsolute(firstWord) ? firstWord : null);
+
     if (!fullPath || !fs.existsSync(fullPath) || !fs.lstatSync(fullPath).isFile()) return null;
 
+    const stat = fs.statSync(fullPath);
+    const cacheKey = `${fullPath}\0${stat.ino}\0${stat.size}\0${stat.mtimeMs}`;
+    if (executableHashCache.has(cacheKey)) return executableHashCache.get(cacheKey);
     const buffer = fs.readFileSync(fullPath);
-    return crypto.createHash('sha256').update(buffer).digest('hex');
+    const digest = crypto.createHash('sha256').update(buffer).digest('hex');
+    if (executableHashCache.size > 64) executableHashCache.clear();
+    executableHashCache.set(cacheKey, digest);
+    return digest;
   } catch (e) {
     return null;
   }
@@ -264,9 +291,29 @@ const CATASTROPHIC_DECLARATIVE_GATE_IDS = new Set([
   ...BULK_DESTROY_GATE_IDS,
   ...SHARED_TREE_GATE_IDS,
 ]);
-const SELF_PROTECT_CONFIG_TARGET_PATTERN = /(?:^|\/)(?:config\/gates\/|config\/(?:budget|enforcement|mcp-allowlists)\.json$|\.thumbgate\/config\.json$|thumbgate\.json$)/i;
+// The learned-rule store is protection state too: the gates a thumbs-down promoted, the claim
+// rules, the send holds and the feedback they came from. An agent that can rm or rewrite these
+// files can delete the rule that blocks it, so they get the same floor as config/gates/
+// (idea borrowed from Shirudo: shields are verified before loading and unauthorized changes
+// are restricted). ThumbGate's own node code writes them directly, not through agent tools.
+const LEARNED_RULE_STORE_DIR = String.raw`(?:\.thumbgate(?:-compat)?\/(?:projects\/[^/\s'";|]+\/)?|\.claude\/memory\/feedback\/)`;
+const LEARNED_RULE_STORE_FILE = String.raw`(?:auto-promoted-gates\.json|claim-gate-rules\.json|send-gate-state\.json|prevention-rules\.md|feedback-log\.jsonl)`;
+const SELF_PROTECT_CONFIG_TARGET_PATTERN = new RegExp(
+  String.raw`(?:^|\/)(?:config\/gates\/|config\/(?:budget|enforcement|mcp-allowlists)\.json$|\.thumbgate\/config\.json$|thumbgate\.json$)`
+  + String.raw`|(?:^|\/)` + LEARNED_RULE_STORE_DIR + LEARNED_RULE_STORE_FILE + '$',
+  'i',
+);
 const SELF_PROTECT_HOOK_TARGET_PATTERN = /(?:^|\/)(?:\.claude\/settings(?:\.local)?\.json|\.codex\/config\.toml|scripts\/hook-[^/]+\.(?:js|sh))$/i;
-const SELF_PROTECT_CONFIG_COMMAND_PATTERN = /(?:config\/gates(?:\/|$|\b)|config\/(?:budget|enforcement|mcp-allowlists)\.json\b|\.thumbgate\/config\.json\b|thumbgate\.json\b)/i;
+// A shell argument that IS a store directory (or one of its parents inside the project), so
+// `mv .thumbgate /tmp/x`, `rm -rf .claude/memory` or `rm -rf .thumbgate/*` cannot remove every
+// learned rule at once. Anchored to the whole argument: `.thumbgate/notes.md` does not match.
+const LEARNED_RULE_STORE_DIR_ARG = String.raw`^(?:.*\/)?(?:\.thumbgate(?:-compat)?(?:\/projects(?:\/[^/\s]+)?)?|\.claude(?:\/memory(?:\/feedback)?)?)\/?(?:\*)?$`;
+const SELF_PROTECT_CONFIG_COMMAND_PATTERN = new RegExp(
+  String.raw`(?:config\/gates(?:\/|$|\b)|config\/(?:budget|enforcement|mcp-allowlists)\.json\b|\.thumbgate\/config\.json\b|thumbgate\.json\b)`
+  + '|' + LEARNED_RULE_STORE_DIR + LEARNED_RULE_STORE_FILE + String.raw`\b`
+  + '|' + LEARNED_RULE_STORE_DIR_ARG,
+  'i',
+);
 const SELF_PROTECT_HOOK_COMMAND_PATTERN = /(?:\.claude\/settings(?:\.local)?\.json|\.codex\/config\.toml|scripts\/hook-[^/\s'";|]+\.(?:js|sh))\b/i;
 const SHELL_FILE_MUTATION_PATTERN = /\b(?:sed\s+-i|perl\s+-pi|python\d*\s+-c|node\s+-e|ruby\s+-e|tee|truncate|rm|mv|cp|install|patch|jq)\b|(?:^|[\s;&|])>{1,2}\s*\S/i;
 
@@ -1329,19 +1376,64 @@ function resolveRepoRoot(toolInput = {}) {
   }
 
   for (const cwd of candidates) {
-    try {
-      const root = execFileSync('git', ['rev-parse', '--show-toplevel'], {
-        cwd,
-        encoding: 'utf8',
-        stdio: ['ignore', 'pipe', 'ignore'],
-      }).trim();
-      if (root) return root;
-    } catch {
-      continue;
-    }
+    const root = gitToplevel(cwd);
+    if (root) return root;
   }
 
   return null;
+}
+
+// `git rev-parse --show-toplevel` ran about 20 times per gate-check (once per gate that looks
+// at affected files), about 70 ms of process spawns for one tool call. The answer only changes
+// when the nearest `.git` entry appears, disappears or is replaced, so it is cached against a
+// stamp of that entry. The stamp is a few stat calls, not a process.
+const gitToplevelCache = new Map();
+function nearestGitMarker(cwd) {
+  let dir = cwd;
+  for (let depth = 0; depth < 128; depth += 1) {
+    const marker = path.join(dir, '.git');
+    try {
+      const stat = fs.statSync(marker);
+      return `${marker}:${stat.ino}:${stat.mtimeMs}:${stat.isFile() ? 'f' : 'd'}`;
+    } catch (err) {
+      if (err && err.code !== 'ENOENT' && err.code !== 'ENOTDIR') return null;
+    }
+    const parent = path.dirname(dir);
+    if (parent === dir) break;
+    dir = parent;
+  }
+  try {
+    return `none:${fs.statSync(cwd).ino}`;
+  } catch {
+    return null;
+  }
+}
+
+function gitToplevelUncached(cwd) {
+  try {
+    return execFileSync('git', ['rev-parse', '--show-toplevel'], {
+      cwd,
+      encoding: 'utf8',
+      stdio: ['ignore', 'pipe', 'ignore'],
+    }).trim() || null;
+  } catch {
+    return null;
+  }
+}
+
+function gitToplevel(cwd) {
+  const env = process.env;
+  // Git's own location overrides change the answer without touching the tree, so they key the cache.
+  const key = [cwd, env.GIT_DIR, env.GIT_WORK_TREE, env.GIT_CEILING_DIRECTORIES, env.GIT_DISCOVERY_ACROSS_FILESYSTEM]
+    .map((v) => v || '').join('\0');
+  const stamp = nearestGitMarker(cwd);
+  if (!stamp) return gitToplevelUncached(cwd);
+  const hit = gitToplevelCache.get(key);
+  if (hit && hit.stamp === stamp) return hit.root;
+  const root = gitToplevelUncached(cwd);
+  if (gitToplevelCache.size > 256) gitToplevelCache.clear();
+  gitToplevelCache.set(key, { stamp, root });
+  return root;
 }
 
 function toRepoRelativePath(filePath, repoRoot) {
@@ -2251,7 +2343,8 @@ function evaluatePendingPrThreadResolutionGate(toolName, toolInput = {}, options
   const trackedRepoRoot = pendingEntry.metadata && pendingEntry.metadata.repoRoot;
   if (trackedRepoRoot) {
     const currentRepoRoot = resolveRepoRoot(toolInput);
-    if (currentRepoRoot && currentRepoRoot !== trackedRepoRoot) return null;
+    // An unknown current repo (cwd outside any git repo) must not inherit another repo's pending gate.
+    if (!currentRepoRoot || currentRepoRoot !== trackedRepoRoot) return null;
   }
 
   if (isThreadResolutionSatisfied(options)) return null;
@@ -3764,6 +3857,13 @@ async function evaluateGatesAsyncInner(toolName, toolInput, configPath, options 
     return agentIdentityLifecycleGate;
   }
 
+  // Catastrophic hard-floor gates run before the stateful PR-thread gate: that gate is demoted to warn by the
+  // enforcement posture, and an early return there used to hide a later terraform-destroy or force-push deny.
+  const earlyCatastrophicGate = evaluateCatastrophicDeclarativeGate(config, constraints, toolName, toolInput, execution);
+  if (earlyCatastrophicGate) {
+    return recordStructuralGateBlock(toolName, toolInput, earlyCatastrophicGate, execution);
+  }
+
   const pendingThreadResolutionGate = evaluatePendingPrThreadResolutionGate(toolName, toolInput, execution);
   if (pendingThreadResolutionGate) {
     recordStat(pendingThreadResolutionGate.gate, 'block', null, { ...execution, toolName, toolInput });
@@ -4105,6 +4205,13 @@ function evaluateGatesInner(toolName, toolInput, configPath, options = {}) {
     });
     auditToFeedback(identityAuditRecord);
     return agentIdentityLifecycleGate;
+  }
+
+  // Catastrophic hard-floor gates run before the stateful PR-thread gate: that gate is demoted to warn by the
+  // enforcement posture, and an early return there used to hide a later terraform-destroy or force-push deny.
+  const earlyCatastrophicGate = evaluateCatastrophicDeclarativeGate(config, constraints, toolName, toolInput, execution);
+  if (earlyCatastrophicGate) {
+    return recordStructuralGateBlock(toolName, toolInput, earlyCatastrophicGate, execution);
   }
 
   const pendingThreadResolutionGate = evaluatePendingPrThreadResolutionGate(toolName, toolInput, execution);

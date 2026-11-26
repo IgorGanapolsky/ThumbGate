@@ -3,6 +3,16 @@
 
 'use strict';
 
+// Every hook (PreToolUse runs before each tool call) starts a fresh Node process, and compiling
+// this CLI plus the gates engine is a large part of that start. Node 22.1+ can keep the compiled
+// code on disk between runs. Older Node has no such API and simply skips this.
+try {
+  const nodeModule = require('module');
+  if (typeof nodeModule.enableCompileCache === 'function' && process.env.THUMBGATE_COMPILE_CACHE !== '0') {
+    nodeModule.enableCompileCache();
+  }
+} catch (_) { /* best-effort speed-up only */ }
+
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
@@ -3846,8 +3856,8 @@ function dashboard() {
     const { resolveProjectDir } = require(path.join(PKG_ROOT, 'scripts', 'feedback-paths'));
     const projectDir = resolveProjectDir({ cwd: process.cwd(), env: process.env });
     const port = process.env.PORT || 3456;
-    const { resolveLocalProject } = require(path.join(PKG_ROOT, 'scripts', 'project-identity'));
-    const url = `http://127.0.0.1:${port}/dashboard?project=${encodeURIComponent(resolveLocalProject(projectDir).projectKey)}`;
+    const { dashboardProjectParam } = require(path.join(PKG_ROOT, 'scripts', 'project-identity'));
+    const url = `http://127.0.0.1:${port}/dashboard?project=${encodeURIComponent(dashboardProjectParam(projectDir))}`;
 
     progress.start(`Starting local dashboard on :${port}…`);
     ensureDash(Number(port))
@@ -4312,6 +4322,7 @@ function help() {
   console.log('  npx thumbgate lessons "force push" --json');
   console.log('  npx thumbgate lessons --query="deploy" --remote');
   console.log('  npx thumbgate gate-stats --json');
+  console.log('  npx thumbgate assurance-report --days=30 --out=assurance-report.md');
   console.log('  npx thumbgate desktop-snapshot --json');
   console.log('  npx thumbgate capture --feedback=down --context="agent broke deploy" --json');
   proNudge();
@@ -5566,6 +5577,12 @@ switch (COMMAND) {
   case 'gate-stats':
     gateStats();
     break;
+  case 'assurance-report': {
+    const { runAssuranceReport } = require(path.join(PKG_ROOT, 'scripts', 'assurance-report'));
+    const { output, written } = runAssuranceReport(process.argv.slice(3));
+    console.log(written ? `Assurance report written to ${written}` : output);
+    break;
+  }
   case 'desktop-snapshot':
     require(path.join(PKG_ROOT, 'scripts', 'explore-subcommands')).runDesktopSnapshotCli(process.argv.slice(3));
     break;

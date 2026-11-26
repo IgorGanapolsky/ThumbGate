@@ -4,7 +4,7 @@
   "pages": [
     {
       "route": "/",
-      "sentinel": "Thumbs-down a Claude Code mistake once, and ThumbGate warns the next time it tries that command.",
+      "sentinel": "One thumbs-down stops Claude Code from retrying a mistake.",
       "description": "Home page hero (lifeblood \u2014 never regress)"
     },
     {
@@ -25,6 +25,11 @@
       "route": "/pilot",
       "sentinel": "Try ThumbGate with your team for 30 days.",
       "description": "Request-only team pilot page (replaces the retired /diagnostic checkout, which now returns 410)"
+    },
+    {
+      "route": "/demo",
+      "sentinel": "See a thumbs-down become a gate.",
+      "description": "Chaptered product demo (install, built-in block, thumbs-down, learned gate, team pilot form)"
     },
     {
       "route": "/dashboard",

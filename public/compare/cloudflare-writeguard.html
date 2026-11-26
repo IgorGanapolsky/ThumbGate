@@ -58,6 +58,8 @@
 {
   "@context": "https://schema.org",
   "@type": "TechArticle",
+  "datePublished": "2026-08-20",
+  "dateModified": "2026-11-24",
   "headline": "ThumbGate vs Cloudflare WriteGuard",
   "description": "Cloudflare WriteGuard intercepts MCP requests at Cloudflare's portal, classifies operations from read-only to critical, and enforces tool-specific write policies centrally with agent-labeled audit logs. ThumbGate gates agent tool calls locally: mandatory PreToolUse hooks on hook-capable runtimes (Claude Code, Gemini CLI, and similar), and MCP gate_check plus advisory rules/skills on Cursor, Amp, Cline, and OpenCode. Same pre-action enforcement philosophy at two different layers.",
   "about": ["thumbgate vs writeguard", "MCP write safety", "pre-action gates for AI agents", "PreToolUse hooks vs network portal enforcement"],

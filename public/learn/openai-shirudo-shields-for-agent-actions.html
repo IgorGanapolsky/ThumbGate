@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Shirudo shields running Linux. ThumbGate shields agent actions. - ThumbGate</title>
+<script defer data-domain="thumbgate.ai" src="https://plausible.io/js/script.js"></script>
+<meta name="description" content="OpenAI and Cisco's Shirudo puts a temporary shield in front of a vulnerable code path while the patch rolls out. ThumbGate applies the same pattern one layer up: a thumbs-down becomes a shield in front of an AI coding agent's next tool call, and the agent cannot delete it.">
+<meta name="keywords" content="Shirudo, OpenAI Shirudo, Cisco Shirudo, eBPF shield, runtime protection, AI coding agent guardrails, pre-action gates, PreToolUse, self-protection, ThumbGate">
+<meta property="og:title" content="Shirudo shields running Linux. ThumbGate shields agent actions.">
+<meta property="og:description" content="Block the bad path now, keep the good work running, and make sure the thing being shielded cannot remove the shield.">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://thumbgate.ai/learn/openai-shirudo-shields-for-agent-actions">
+<link rel="canonical" href="https://thumbgate.ai/learn/openai-shirudo-shields-for-agent-actions">
+<link rel="stylesheet" href="/learn/learn.css">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "TechArticle",
+  "headline": "Shirudo shields running Linux. ThumbGate shields agent actions.",
+  "description": "What OpenAI and Cisco's Shirudo does, and the three ideas from it that apply to AI coding agent guardrails: block the bad path while good work keeps running, check a shield before you enforce it, and restrict unauthorized changes to the shields themselves.",
+  "author": {
+    "@type": "Person",
+    "name": "Igor Ganapolsky",
+    "url": "https://github.com/IgorGanapolsky"
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "ThumbGate",
+    "url": "https://thumbgate.ai"
+  },
+  "datePublished": "2026-11-25",
+  "dateModified": "2026-11-25",
+  "mainEntityOfPage": "https://thumbgate.ai/learn/openai-shirudo-shields-for-agent-actions",
+  "about": [
+    {"@type": "Thing", "name": "Shirudo"},
+    {"@type": "Thing", "name": "runtime protection"},
+    {"@type": "Thing", "name": "AI coding agent guardrails"},
+    {"@type": "Thing", "name": "pre-action gates"}
+  ]
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "What is Shirudo?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Shirudo is an open-source Linux runtime from OpenAI and Cisco, announced on November 23, 2026. It uses eBPF to deploy temporary shields that block the behavior a vulnerability exposes while legitimate requests keep working, so a running service is protected while the real patch is tested and rolled out. Shields are signed and verified before loading, and an operator approves a shield before it is deployed."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Is ThumbGate like Shirudo?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "They work at different layers. Shirudo protects running Linux services at the kernel level. ThumbGate protects a codebase and its accounts from an AI coding agent's next tool call, at the agent's pre-action hook. The shared idea is a targeted block in front of a known-bad path that leaves the rest of the work running."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Can an AI agent delete a ThumbGate rule that blocks it?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Not through its own tools. The gate config and the learned-rule store, which holds the gates a thumbs-down promoted, the claim rules, the send holds, prevention-rules.md and the feedback log, are covered by the self-protect-config hard floor. An agent Write, Edit, rm, mv, sed -i or shell redirect into those files is denied, and no bypass environment variable lifts it. An operator can grant a scoped, time-limited approval."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Is ThumbGate affiliated with OpenAI or Cisco?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "No. ThumbGate is not affiliated with, endorsed by, or integrated with OpenAI, Cisco or the Shirudo project. This page uses OpenAI's public announcement as a reference and describes an architectural parallel."
+      }
+    }
+  ]
+}
+</script>
+</head>
+<body>
+
+<nav>
+  <a href="/" class="brand"><img src="/assets/brand/thumbgate-mark-inline-v3.svg" alt="ThumbGate" class="logo-mark" width="28" height="28"><span class="logo-text">ThumbGate</span></a>
+  <a href="/guide">Setup Guide</a>
+  <a href="/learn">Learn</a>
+  <a href="/compare">Compare</a>
+  <a href="https://github.com/IgorGanapolsky/ThumbGate" target="_blank" rel="noopener">GitHub</a>
+</nav>
+
+<div class="container">
+  <div class="breadcrumb"><a href="/learn">Learn</a> / OpenAI Shirudo</div>
+  <h1>Shirudo shields running Linux. ThumbGate shields agent actions.</h1>
+  <p style="color:var(--muted);">4 min read &middot; For teams running AI coding agents on real repos</p>
+
+  <div class="tldr"><strong>TL;DR:</strong> OpenAI and Cisco's Shirudo puts a temporary shield in front of a vulnerable code path, so a running service stays protected while the patch is tested. The same pattern fits AI coding agents: when an agent makes a mistake, block that exact path before its next tool call and let the rest of the work continue. Shirudo also makes sure shields cannot be changed without authorization. As of this release, ThumbGate does the same for its learned rules, so the agent being gated cannot delete the rule that gates it.</div>
+
+  <h2>What Shirudo does</h2>
+  <p>On November 23, 2026, OpenAI and Cisco introduced Shirudo, an open-source runtime for Linux. Its premise, in OpenAI's words: "Testing and deploying a patch can still take days or weeks." Shirudo covers that gap. Here is what the announcement describes:</p>
+  <ul>
+    <li><strong>Shields, not restarts:</strong> eBPF programs block the behavior that exposes a vulnerability while legitimate requests still pass, without restarting the service.</li>
+    <li><strong>Watch before enforcing:</strong> teams can monitor how a proposed shield would affect applications before they turn it on.</li>
+    <li><strong>Agents propose, operators approve:</strong> agents can investigate a vulnerability, write a targeted shield and validate it against exploits and real workloads. Security teams decide what gets deployed.</li>
+    <li><strong>Trusted deployment:</strong> shields are cryptographically signed and verified before loading, the eBPF verifier checks them, and kernel controls restrict unauthorized changes.</li>
+    <li><strong>A verifiable record:</strong> a Trusted Platform Module backs a record of protections being loaded or removed.</li>
+  </ul>
+  <p>In OpenAI's controlled test, a Codex-generated shield attached to a running Elasticsearch process rejected an exploit attempt while the service kept running. The project is BSD 2-Clause licensed.</p>
+
+  <h2>The same problem, one layer up</h2>
+  <p>A coding agent that just force-pushed, deleted the wrong branch, or announced "deployed" without checking has the same shape of problem. The real fix is a better model, a better prompt or a better workflow, and that takes time. Meanwhile the agent keeps working, and the next session will make the same mistake.</p>
+  <p>ThumbGate is the shield for that gap. A thumbs-down becomes a prevention rule, and a <code>PreToolUse</code> hook checks every tool call against those rules before it runs. The matching call is blocked or flagged, and everything else goes through.</p>
+
+  <h2>Three Shirudo ideas, mapped to agent guardrails</h2>
+  <ul>
+    <li><strong>The shielded thing cannot remove the shield.</strong> Shirudo restricts unauthorized changes to loaded shields. Until this release, an agent blocked by a learned ThumbGate rule could, in principle, <code>rm .thumbgate/auto-promoted-gates.json</code> and try again. Now the learned-rule store has the same <code>self-protect-config</code> hard floor as the gate config: the promoted gates, claim rules, send holds, <code>prevention-rules.md</code> and the feedback log. Agent writes to those files are denied, and no bypass variable lifts the denial. Reads still work, and an operator can grant a scoped, time-limited approval.</li>
+    <li><strong>Check a shield before you enforce it.</strong> Shirudo lets teams watch a proposed shield before enforcing it. ThumbGate already replays a candidate block rule against the actions it previously allowed. If the rule would have blocked any of them, it is quarantined to a warning instead of a hard block. With <code>THUMBGATE_GOVERNANCE_MODE=simulation</code>, gates flag and log matching calls instead of blocking them. Hard floors still block.</li>
+    <li><strong>Agents propose, people approve.</strong> In Shirudo, agents draft shields and operators decide what ships. In ThumbGate, the person's thumbs-down is the approval: the rule exists because a human flagged the mistake, not because the agent decided to restrict itself.</li>
+  </ul>
+
+  <h2>What this does not do</h2>
+  <p>ThumbGate does not operate at the kernel level, use eBPF, or sign rules with hardware keys. It matches tool calls at the agent's hook, so it protects you from the agent, not from an attacker with a shell on the machine. Its shell parsing catches common write forms (redirects, <code>rm</code>, <code>mv</code>, <code>sed -i</code>, <code>tee</code>, inline <code>node -e</code> and <code>python -c</code> writes), not every possible obfuscation. A tamper-evident record of rule loads and removals, like Shirudo's TPM-backed record, is a possible next step and is not shipped.</p>
+
+  <h2>Try it this week</h2>
+  <ol>
+    <li>Run <code>npx thumbgate init</code> in a repo where your agent works.</li>
+    <li>Give one real mistake a thumbs-down and confirm the next matching call is flagged.</li>
+    <li>Ask the agent to delete <code>.thumbgate/auto-promoted-gates.json</code>. The call is denied with <code>[GATE:self-protect-config]</code>.</li>
+  </ol>
+
+  <h2>Sources and positioning</h2>
+  <p>Every statement about Shirudo on this page comes from OpenAI's announcement. ThumbGate is not affiliated with OpenAI or Cisco, and it is not part of, endorsed by, or integrated with the Shirudo project. The comparison is architectural.</p>
+  <ul>
+    <li><a href="https://openai.com/index/introducing-shirudo/" target="_blank" rel="noopener">OpenAI: OpenAI and Cisco introduce Shirudo (November 23, 2026)</a></li>
+    <li><a href="https://github.com/shirudo-dev/shirudo" target="_blank" rel="noopener">Shirudo on GitHub</a></li>
+  </ul>
+
+  <div class="cta-box">
+    <h2>Shield the next tool call</h2>
+    <p>Start with one mistake your agent should never repeat.</p>
+    <div class="cta-install">npx thumbgate init</div>
+    <div class="cta-actions">
+      <a class="cta-link" href="/learn/mcp-pre-action-checks-explained">Read MCP pre-action checks</a>
+      <a class="cta-link cta-link-secondary" href="/learn/siren-agent-sandbox-escape-gates">Anthropic's Siren and sandbox-escape gates</a>
+    </div>
+  </div>
+
+  <div class="related">
+    <h2>Related</h2>
+    <a href="/learn/siren-agent-sandbox-escape-gates">Anthropic's Siren: agents reach outside weak sandboxes</a>
+    <a href="/learn/stop-ai-agent-force-push">Stop your AI agent from force-pushing</a>
+    <a href="/learn/protocol-governance-pretooluse">Protocol governance with PreToolUse</a>
+  </div>
+</div>
+
+<div class="sticky-cta">
+  <span>Shield one agent mistake</span>
+  <code>npx thumbgate init</code>
+  <a href="/guide?utm_source=openai_shirudo&amp;utm_medium=learn&amp;utm_campaign=shirudo_shields">Setup guide</a>
+</div>
+
+</body>
+</html>
