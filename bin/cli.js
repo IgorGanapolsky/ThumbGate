@@ -3628,9 +3628,12 @@ function applyThumbHold(detected, prompt, promptEnvelope) {
     if (detected && detected.signal === 'down') {
       const hold = sendGate.placeHold({ feedbackDir, sessionId: promptEnvelope.sessionId || process.env.CLAUDE_SESSION_ID || '', reason: prompt });
       if (!hold) return null;
-      return hold.kind === 'post'
-        ? 'ThumbGate hold: thumbs-down received. New chat or colleague posts are refused until you edit the last bubble in place, or the person says "go ahead".'
-        : `ThumbGate hold: thumbs-down received. ${hold.signature ? `\`${hold.signature} …\`` : hold.toolName} is refused until the person says "go ahead". Ask what to change.`;
+      const what = hold.kind === 'post'
+        ? 'New chat or colleague posts are refused until you edit the last bubble in place, or the person says "go ahead".'
+        : `${hold.signature ? `\`${hold.signature} …\`` : hold.toolName} is refused until the person says "go ahead". Ask what to change.`;
+      // The exits are taught once per project, in the first hold message; later ones stay short.
+      const lesson = sendGate.teachOnce({ feedbackDir }) ? ` First hold in this project, so tell the person what it is: a pause on the action they just marked wrong. ${sendGate.HOLD_EXITS}` : '';
+      return `ThumbGate hold${hold.repeated ? ' (already held, one release clears it)' : ''}: thumbs-down received. ${what}${lesson}`;
     }
     if ((detected && detected.signal === 'up') || (!detected && sendGate.isReleasePrompt(prompt))) {
       const released = sendGate.releaseHolds({ feedbackDir });
@@ -4035,6 +4038,31 @@ function breakGlass() {
   console.log(`  Expires    : ${result.expiresAt}`);
   console.log('  Unlocked   : hook settings edits, pr_create_allowed, pr_threads_checked');
   console.log('  Still gated: local-only scope, force-push, protected branch push, unsafe chmod, broad rm -rf');
+  console.log('  Not lifted : a hold from a thumbs-down. Clear it with `npx thumbgate holds release`, or turn only that hold off with `npx thumbgate holds off`.');
+}
+
+// `thumbgate holds [list|release|off|on]`: see and clear the pauses a thumbs-down places, or switch only that hold off.
+function holdsCommand() {
+  const sendGate = require(path.join(PKG_ROOT, 'scripts', 'send-gate'));
+  const { resolveFeedbackDir } = require(path.join(PKG_ROOT, 'scripts', 'feedback-paths'));
+  const feedbackDir = resolveFeedbackDir({ cwd: CWD });
+  const action = String(process.argv[3] || 'list').toLowerCase();
+  if (action === 'release') {
+    console.log(`${sendGate.releaseHolds({ feedbackDir, by: 'cli' })} hold(s) released.`);
+  } else if (action === 'off' || action === 'on') {
+    sendGate.setHoldsEnabled({ feedbackDir, enabled: action === 'on' });
+    console.log(action === 'off'
+      ? 'Thumbs-down holds are off for this project (current holds cleared). Every other gate stays on. Turn back on with `npx thumbgate holds on`.'
+      : 'Thumbs-down holds are on for this project.');
+  } else if (action === 'list') {
+    const { holdsOff, holds } = sendGate.listHolds({ feedbackDir });
+    console.log(`Thumbs-down holds: ${holdsOff ? 'OFF' : 'on'}. Active: ${holds.length}.`);
+    for (const h of holds) console.log(`  - ${h.signature ? `${h.signature} …` : h.toolName || 'posts'} (since ${h.createdAt})`);
+    if (holds.length) console.log('Clear them: `npx thumbgate holds release`. Turn the hold off: `npx thumbgate holds off`.');
+  } else {
+    console.error('Usage: npx thumbgate holds [list|release|off|on]');
+    process.exit(1);
+  }
 }
 
 function aiInventory() {
@@ -5494,6 +5522,9 @@ switch (COMMAND) {
   case 'break-glass':
   case 'breakglass':
     breakGlass();
+    break;
+  case 'holds':
+    holdsCommand();
     break;
   case 'funnel':
     funnel();
