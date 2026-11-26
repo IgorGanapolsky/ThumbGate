@@ -775,6 +775,8 @@ $ ... "node scripts/migrate.js --env prod"
             <p class="cc-step"><strong>2 · Set up the status line and hooks</strong> <span class="cc-where">in your terminal, no manual config</span></p>
             <pre class="cc-cmd"><code>npx thumbgate init --agent claude</code> <button type="button" class="copy-cmd" data-copy-install data-cta-id="hero_install_copy">Copy</button></pre>
             <p class="hero-note">Step 2 writes the hooks and the status line into your Claude Code settings. Restart Claude Code and the line below appears. The hooks update themselves once a day (opt out: <code>THUMBGATE_NO_AUTO_UPDATE=1</code>).</p>
+            <p class="cc-step" id="agent-setup-prompt"><strong>Or paste this into Claude Code</strong></p>
+            <pre class="cc-cmd"><code data-agent-prompt style="white-space:pre-wrap">Run npx thumbgate init --agent claude, show me the hooks it added, then tell me to restart Claude Code. Change nothing else.</code> <button type="button" class="copy-cmd" data-copy-agent-prompt data-cta-id="hero_agent_prompt_copy">Copy prompt</button></pre>
           </div>
           </div>
           <figure class="hero-visual hero-statusline">
@@ -1484,6 +1486,25 @@ $ ... "node scripts/migrate.js --env prod"
         if (navigator.clipboard && navigator.clipboard.writeText) {
           navigator.clipboard.writeText(CMD).then(function () { flash('Copied'); }, fallback);
         } else { fallback(); }
+      });
+    });
+    document.querySelectorAll('[data-copy-agent-prompt]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var code = document.querySelector('[data-agent-prompt]');
+        var text = code ? code.textContent : '';
+        var prev = btn.textContent;
+        var flash = function (msg) { btn.textContent = msg; setTimeout(function () { btn.textContent = prev; }, 1800); };
+        var done = function () {
+          flash('Copied');
+          try {
+            if (navigator.globalPrivacyControl === true || navigator.doNotTrack === '1') return;
+            var body = JSON.stringify({ event: 'cta_click', page: '/', source: 'homepage', props: { ctaId: btn.getAttribute('data-cta-id'), ctaPlacement: 'install_agent_prompt' } });
+            if (navigator.sendBeacon) navigator.sendBeacon('/v1/telemetry/ping', new Blob([body], { type: 'application/json' }));
+          } catch (e) {}
+        };
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(text).then(done, function () { flash('Copy blocked — select it manually'); });
+        } else { flash('Copy blocked — select it manually'); }
       });
     });
     var loginBar = document.getElementById('paidLoginBar');
