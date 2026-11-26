@@ -18,7 +18,9 @@ const PROJECT_ROOT = path.join(__dirname, '..');
 
 test('GitHub Actions schedules stay limited to security maintenance', () => {
   const workflowsDir = path.join(PROJECT_ROOT, '.github', 'workflows');
-  const allowedScheduledWorkflows = new Set(['codeql.yml', 'pr-stale-sweeper.yml']);
+  // deploy-railway.yml deploys main HEAD hourly (PR #5286) because one deploy per merge kept
+  // replacing itself in Railway's 40-60 minute queue; it skips when production already serves HEAD.
+  const allowedScheduledWorkflows = new Set(['codeql.yml', 'pr-stale-sweeper.yml', 'deploy-railway.yml']);
   const offenders = fs.readdirSync(workflowsDir)
     .filter((name) => name.endsWith('.yml') || name.endsWith('.yaml'))
     .filter((name) => {

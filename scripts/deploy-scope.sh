@@ -9,6 +9,7 @@ EVENT_NAME="${EVENT_NAME:-${GITHUB_EVENT_NAME:-}}"
 CHANGED_FILES=''
 SHOULD_DEPLOY=true
 SCOPE_REASON='default_deploy'
+DEPLOYED_SHA=''
 
 # Positively determine production's currently-deployed commit SHA, if we can.
 # Order: explicit override (tests / pre-fetched) then the live /health buildSha.
@@ -35,6 +36,18 @@ get_deployed_sha() {
 if [[ "$EVENT_NAME" == "workflow_dispatch" ]]; then
   SHOULD_DEPLOY=true
   SCOPE_REASON='workflow_dispatch'
+  DEPLOYED_SHA="$(get_deployed_sha || true)"
+elif [[ "$EVENT_NAME" == "schedule" ]]; then
+  # The hourly run deploys main HEAD only when production is not already serving it,
+  # so a quiet hour adds nothing to Railway's queue. Unknown live SHA -> deploy (fail-safe to ship).
+  DEPLOYED_SHA="$(get_deployed_sha || true)"
+  if [[ -n "$DEPLOYED_SHA" && "$DEPLOYED_SHA" == "$HEAD_SHA" ]]; then
+    SHOULD_DEPLOY=false
+    SCOPE_REASON='scheduled_prod_at_head'
+  else
+    SHOULD_DEPLOY=true
+    SCOPE_REASON='scheduled_catch_up'
+  fi
 elif [[ "$EVENT_NAME" == "push" && -n "$BEFORE_SHA" && "$BEFORE_SHA" != "0000000000000000000000000000000000000000" ]]; then
   if git cat-file -e "$BEFORE_SHA" 2>/dev/null; then
     CHANGED_FILES="$(git diff --name-only "$BEFORE_SHA" "$HEAD_SHA" | sed '/^$/d')"
@@ -76,6 +89,7 @@ printf '%s\n' "${CHANGED_FILES:-<none>}"
 echo "deployable_pattern=$DEPLOYABLE_PATTERN"
 echo "should_deploy=$SHOULD_DEPLOY"
 echo "scope_reason=$SCOPE_REASON"
+echo "previous_deployed_sha=${DEPLOYED_SHA:-<none>}"
 
 if [[ -n "${GITHUB_OUTPUT:-}" ]]; then
   {
@@ -89,7 +103,7 @@ if [[ -n "${GITHUB_OUTPUT:-}" ]]; then
 fi
 
 if [[ -n "${DEPLOY_SCOPE_OUTPUT_JSON:-}" ]]; then
-  node - "$DEPLOY_SCOPE_OUTPUT_JSON" "$BEFORE_SHA" "$HEAD_SHA" "$EVENT_NAME" "$SHOULD_DEPLOY" "$SCOPE_REASON" "$DEPLOYABLE_PATTERN" "$CHANGED_FILES" <<'NODE'
+  node - "$DEPLOY_SCOPE_OUTPUT_JSON" "$BEFORE_SHA" "$HEAD_SHA" "$EVENT_NAME" "$SHOULD_DEPLOY" "$SCOPE_REASON" "$DEPLOYABLE_PATTERN" "$CHANGED_FILES" "$DEPLOYED_SHA" <<'NODE'
 const fs = require('fs');
 const [
   outputPath,
@@ -100,6 +114,7 @@ const [
   scopeReason,
   deployablePattern,
   changedFilesRaw,
+  previousDeployedSha,
 ] = process.argv.slice(2);
 
 const changedFiles = String(changedFilesRaw || '')
@@ -115,6 +130,9 @@ fs.writeFileSync(outputPath, JSON.stringify({
   scopeReason,
   deployablePattern,
   changedFiles,
+  // Live /health buildSha read before this run (empty when not read or unknown). The deploy
+  // verifier uses it as the start of the batch an hourly deploy ships.
+  previousDeployedSha: previousDeployedSha || null,
 }, null, 2) + '\n');
 NODE
 fi

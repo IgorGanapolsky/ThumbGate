@@ -1,6 +1,8 @@
 name: Verify Deploy and Comment on Merged PR
 
-# Runs AFTER deploy-railway.yml finishes for a push to main.
+# Runs AFTER deploy-railway.yml finishes on main (hourly schedule or manual dispatch).
+# One hourly deploy can ship several merges, so the receipt goes on every PR merged since
+# the build production served before the run (previousDeployedSha in the deploy-scope artifact).
 # Re-asserts CLAUDE.md's deployment-verification gate (buildSha, health, dashboard,
 # any new /learn or /guides routes added in the merge) and posts the result back
 # on the PR that introduced the merged commit. Makes "is this really deployed?"
@@ -67,28 +69,11 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
-          fetch-depth: 5
+          fetch-depth: 300
           ref: ${{ github.event.workflow_run.head_sha }}
-
-      - name: Find PR for merge commit
-        id: find-pr
-        env:
-          GH_TOKEN: ${{ secrets.GH_PAT || github.token }}
-        run: |
-          set -eu
-          PR_NUMBER="$(gh api -H "Accept: application/vnd.github+json" \
-            "repos/${GITHUB_REPOSITORY}/commits/${MERGE_SHA}/pulls" \
-            --jq '.[0].number // ""')"
-          if [ -z "${PR_NUMBER}" ]; then
-            echo "No PR associated with ${MERGE_SHA}; skipping comment."
-            echo "pr=" >> "$GITHUB_OUTPUT"
-          else
-            echo "pr=${PR_NUMBER}" >> "$GITHUB_OUTPUT"
-          fi
 
       - name: Detect whether Railway deploy was required
         id: deploy-scope
-        if: steps.find-pr.outputs.pr != ''
         env:
           GH_TOKEN: ${{ secrets.GH_PAT || github.token }}
         run: |
@@ -120,7 +105,50 @@ jobs:
           console.log('EOF');
           console.log(`deploy_required=${scope.shouldDeploy === false ? 'false' : 'true'}`);
           console.log(`scope_reason=${scope.scopeReason || 'unknown'}`);
+          console.log(`previous_sha=${scope.previousDeployedSha || ''}`);
           NODE
+
+      - name: Find PRs shipped by this deploy
+        id: find-pr
+        env:
+          GH_TOKEN: ${{ secrets.GH_PAT || github.token }}
+          SCOPE_REASON: ${{ steps.deploy-scope.outputs.scope_reason }}
+          PREVIOUS_SHA: ${{ steps.deploy-scope.outputs.previous_sha }}
+        run: |
+          set -eu
+          # A quiet hourly run (production already at main HEAD) shipped nothing: no receipt.
+          if [ "${SCOPE_REASON}" = "scheduled_prod_at_head" ]; then
+            echo "Hourly run skipped: production already serves ${MERGE_SHA}; no PR comment."
+            echo "pr=" >> "$GITHUB_OUTPUT"
+            echo "prs=" >> "$GITHUB_OUTPUT"
+            echo "range_base=${MERGE_SHA}~1" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          RANGE_BASE="${MERGE_SHA}~1"
+          COMMITS="${MERGE_SHA}"
+          if [ -n "${PREVIOUS_SHA}" ] && [ "${PREVIOUS_SHA}" != "${MERGE_SHA}" ] \
+            && git cat-file -e "${PREVIOUS_SHA}^{commit}" 2>/dev/null \
+            && git merge-base --is-ancestor "${PREVIOUS_SHA}" "${MERGE_SHA}"; then
+            RANGE_BASE="${PREVIOUS_SHA}"
+            COMMITS="$(git rev-list --first-parent "${PREVIOUS_SHA}..${MERGE_SHA}" | head -n 50)"
+          fi
+          echo "Deployed range: ${RANGE_BASE}..${MERGE_SHA}"
+          PRS=""
+          for commit in ${COMMITS}; do
+            n="$(gh api -H "Accept: application/vnd.github+json" \
+              "repos/${GITHUB_REPOSITORY}/commits/${commit}/pulls" \
+              --jq '.[0].number // ""' || true)"
+            if [ -n "$n" ] && ! printf ' %s ' "$PRS" | grep -q " $n "; then
+              PRS="${PRS}${n} "
+            fi
+          done
+          PRS="$(printf '%s' "$PRS" | sed 's/ *$//')"
+          if [ -z "${PRS}" ]; then
+            echo "No PR associated with ${RANGE_BASE}..${MERGE_SHA}; skipping comment."
+          fi
+          echo "pr=${PRS%% *}" >> "$GITHUB_OUTPUT"
+          echo "prs=${PRS}" >> "$GITHUB_OUTPUT"
+          echo "range_base=${RANGE_BASE}" >> "$GITHUB_OUTPUT"
 
       - name: Capture current production health for skipped deploys
         if: steps.find-pr.outputs.pr != '' && steps.deploy-scope.outputs.deploy_required == 'false'
@@ -168,15 +196,18 @@ jobs:
 
       - name: Probe required public routes
         if: steps.find-pr.outputs.pr != ''
+        env:
+          RANGE_BASE: ${{ steps.find-pr.outputs.range_base }}
         run: |
           # /health, /dashboard, and / always required.
-          # Any new /learn/* or /guides/* HTML files added in the merge commit
+          # Any new /learn/* or /guides/* HTML files added by the deployed merges
           # are also probed — these are the most common "the link in a fresh
           # social post 404s because Railway hadn't rebuilt yet" surface.
           REQUIRED_ROUTES="/ /health /dashboard"
 
+          # Range covers every merge this deploy shipped (see Find PRs shipped by this deploy).
           NEW_PUBLIC_ROUTES="$(git diff --diff-filter=A --name-only \
-            "${MERGE_SHA}~1" "${MERGE_SHA}" -- \
+            "${RANGE_BASE}" "${MERGE_SHA}" -- \
             'public/learn/*.html' 'public/guides/*.html' 'public/learn/**/*.html' 'public/guides/**/*.html' \
             2>/dev/null | sed 's|public||; s|\.html$||' | tr '\n' ' ')"
 
@@ -206,7 +237,8 @@ jobs:
         if: steps.find-pr.outputs.pr != ''
         env:
           GH_TOKEN: ${{ secrets.GH_PAT || github.token }}
-          PR: ${{ steps.find-pr.outputs.pr }}
+          PRS: ${{ steps.find-pr.outputs.prs }}
+          RANGE_BASE: ${{ steps.find-pr.outputs.range_base }}
         run: |
           BUILD_OK="${build_match:-false}"
           ROUTES_OK="${routes_clean:-false}"
@@ -228,7 +260,7 @@ jobs:
           BODY="$(cat <<EOF
           ## ${STATUS}
 
-          **Merge commit:** \`${MERGE_SHA}\`
+          **Deployed commit:** \`${MERGE_SHA}\` (range \`${RANGE_BASE}..${MERGE_SHA}\`, PRs: ${PRS})
           **Production buildSha:** \`${actual_sha:-unknown}\`
           **buildSha match:** ${BUILD_OK}
           **Railway deploy required:** ${DEPLOY_REQUIRED}
@@ -246,4 +278,6 @@ jobs:
           EOF
           )"
 
-          gh pr comment "${PR}" --repo "${GITHUB_REPOSITORY}" --body "${BODY}"
+          for pr in ${PRS}; do
+            gh pr comment "${pr}" --repo "${GITHUB_REPOSITORY}" --body "${BODY}"
+          done
