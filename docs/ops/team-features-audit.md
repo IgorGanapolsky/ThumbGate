@@ -13,7 +13,11 @@ Base commit: origin/main at the time of this audit (searched with `git grep`).
 
 ## What the code does not have
 
-A search of `scripts`, `src`, `adapters` and `bin` found no call to `requireEntitlement` for `hosted-sync`, `org-visibility`, `hosted-dashboard` or `learned-models`. The names exist in the tier table, but nothing in those folders checks them, so no team-only behaviour sits behind them. Shared team rules, lessons synced across machines and an org dashboard are not implemented as features.
+A search of `scripts`, `src`, `adapters` and `bin` found no call to `requireEntitlement` or `requirePaidFeature` for `hosted-sync`, `org-visibility` or `hosted-dashboard`. Those three names exist in the tier table, but nothing checks them.
+
+`learned-models` is different: it is checked. `requireLearnedModelsEntitlement()` in `scripts/entitlement.js` calls `requirePaidFeature('learned-models')`, and `scripts/thompson-sampling.js`, `scripts/risk-scorer.js`, `scripts/agent-reward-model.js`, `scripts/bayes-optimal-gate.js` and `scripts/intervention-policy.js` call it. With `THUMBGATE_ENFORCE_ENTITLEMENTS=1` those paths reject a user without the entitlement. Pro has `learned-models` too, so it is a paid feature, not a team-only one.
+
+The only team-only name is `org-visibility`, and it is unchecked. Shared team rules, lessons synced across machines and an org dashboard are not implemented as features.
 
 ## What the README and site say
 
@@ -27,4 +31,4 @@ README and site already match the code: they do not promise team features or a $
 
 ## Open question for Igor (not changed here)
 
-Keep or remove the hidden team checkout and the `team` tier names, since they price a plan that has no team-only features behind it.
+Keep or remove the hidden team checkout and the `team` tier names, since they price a plan whose only team-only feature (`org-visibility`) is not implemented.
