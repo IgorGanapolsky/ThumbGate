@@ -1,8 +1,12 @@
 name: Deploy to Railway
 
+# Production deploys at most once an hour, from the head of main, not on every push.
+# Railway holds each new deployment 40 to 60 minutes before the container starts and only the
+# newest queued one goes live, so a deploy per merge (8 in a row on 25 Nov 2026) replaced each
+# other and nothing shipped. Run it by hand for an urgent fix: gh workflow run deploy-railway.yml
 on:
-  push:
-    branches: [ main ]
+  schedule:
+    - cron: '17 * * * *'
   workflow_dispatch:
 
 concurrency:
