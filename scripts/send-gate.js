@@ -163,6 +163,22 @@ function listHolds({ feedbackDir, now = Date.now() }) {
   return { holdsOff: !holdsEnabled(state), holds: activeHolds(state, now) };
 }
 
+/** Plain text for `thumbgate doctor`: each current hold and the one command that clears it. */
+function formatHolds({ holdsOff, holds }) {
+  const lines = ['Holds (pauses after a thumbs-down)'];
+  if (holdsOff) lines.push('  holds: OFF for this project (`npx thumbgate holds on` turns them back on)');
+  if (!holds.length) {
+    lines.push('  none held right now');
+    return lines.join('\n');
+  }
+  for (const hold of holds) {
+    const what = hold.kind === 'post' ? `new chat posts${hold.chatKey ? ` (${hold.chatKey})` : ''}` : (hold.signature ? `\`${hold.signature} …\`` : hold.toolName);
+    lines.push(`  held: ${what}  clear it: npx thumbgate holds release`);
+  }
+  lines.push('  `npx thumbgate holds release` clears every hold at once.');
+  return lines.join('\n');
+}
+
 /** True the first time it is called for this project, so the exits are taught once. */
 function teachOnce({ feedbackDir, now = Date.now() }) {
   const state = readState(feedbackDir);
@@ -371,5 +387,6 @@ module.exports = {
   setHoldsEnabled,
   listHolds,
   teachOnce,
+  formatHolds,
   HOLD_EXITS,
 };
