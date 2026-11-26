@@ -291,9 +291,29 @@ const CATASTROPHIC_DECLARATIVE_GATE_IDS = new Set([
   ...BULK_DESTROY_GATE_IDS,
   ...SHARED_TREE_GATE_IDS,
 ]);
-const SELF_PROTECT_CONFIG_TARGET_PATTERN = /(?:^|\/)(?:config\/gates\/|config\/(?:budget|enforcement|mcp-allowlists)\.json$|\.thumbgate\/config\.json$|thumbgate\.json$)/i;
+// The learned-rule store is protection state too: the gates a thumbs-down promoted, the claim
+// rules, the send holds and the feedback they came from. An agent that can rm or rewrite these
+// files can delete the rule that blocks it, so they get the same floor as config/gates/
+// (idea borrowed from Shirudo: shields are verified before loading and unauthorized changes
+// are restricted). ThumbGate's own node code writes them directly, not through agent tools.
+const LEARNED_RULE_STORE_DIR = String.raw`(?:\.thumbgate(?:-compat)?\/(?:projects\/[^/\s'";|]+\/)?|\.claude\/memory\/feedback\/)`;
+const LEARNED_RULE_STORE_FILE = String.raw`(?:auto-promoted-gates\.json|claim-gate-rules\.json|send-gate-state\.json|prevention-rules\.md|feedback-log\.jsonl)`;
+const SELF_PROTECT_CONFIG_TARGET_PATTERN = new RegExp(
+  String.raw`(?:^|\/)(?:config\/gates\/|config\/(?:budget|enforcement|mcp-allowlists)\.json$|\.thumbgate\/config\.json$|thumbgate\.json$)`
+  + String.raw`|(?:^|\/)` + LEARNED_RULE_STORE_DIR + LEARNED_RULE_STORE_FILE + '$',
+  'i',
+);
 const SELF_PROTECT_HOOK_TARGET_PATTERN = /(?:^|\/)(?:\.claude\/settings(?:\.local)?\.json|\.codex\/config\.toml|scripts\/hook-[^/]+\.(?:js|sh))$/i;
-const SELF_PROTECT_CONFIG_COMMAND_PATTERN = /(?:config\/gates(?:\/|$|\b)|config\/(?:budget|enforcement|mcp-allowlists)\.json\b|\.thumbgate\/config\.json\b|thumbgate\.json\b)/i;
+// A shell argument that IS a store directory (or one of its parents inside the project), so
+// `mv .thumbgate /tmp/x`, `rm -rf .claude/memory` or `rm -rf .thumbgate/*` cannot remove every
+// learned rule at once. Anchored to the whole argument: `.thumbgate/notes.md` does not match.
+const LEARNED_RULE_STORE_DIR_ARG = String.raw`^(?:.*\/)?(?:\.thumbgate(?:-compat)?(?:\/projects(?:\/[^/\s]+)?)?|\.claude(?:\/memory(?:\/feedback)?)?)\/?(?:\*)?$`;
+const SELF_PROTECT_CONFIG_COMMAND_PATTERN = new RegExp(
+  String.raw`(?:config\/gates(?:\/|$|\b)|config\/(?:budget|enforcement|mcp-allowlists)\.json\b|\.thumbgate\/config\.json\b|thumbgate\.json\b)`
+  + '|' + LEARNED_RULE_STORE_DIR + LEARNED_RULE_STORE_FILE + String.raw`\b`
+  + '|' + LEARNED_RULE_STORE_DIR_ARG,
+  'i',
+);
 const SELF_PROTECT_HOOK_COMMAND_PATTERN = /(?:\.claude\/settings(?:\.local)?\.json|\.codex\/config\.toml|scripts\/hook-[^/\s'";|]+\.(?:js|sh))\b/i;
 const SHELL_FILE_MUTATION_PATTERN = /\b(?:sed\s+-i|perl\s+-pi|python\d*\s+-c|node\s+-e|ruby\s+-e|tee|truncate|rm|mv|cp|install|patch|jq)\b|(?:^|[\s;&|])>{1,2}\s*\S/i;
 
@@ -2323,7 +2343,8 @@ function evaluatePendingPrThreadResolutionGate(toolName, toolInput = {}, options
   const trackedRepoRoot = pendingEntry.metadata && pendingEntry.metadata.repoRoot;
   if (trackedRepoRoot) {
     const currentRepoRoot = resolveRepoRoot(toolInput);
-    if (currentRepoRoot && currentRepoRoot !== trackedRepoRoot) return null;
+    // An unknown current repo (cwd outside any git repo) must not inherit another repo's pending gate.
+    if (!currentRepoRoot || currentRepoRoot !== trackedRepoRoot) return null;
   }
 
   if (isThreadResolutionSatisfied(options)) return null;
@@ -3836,6 +3857,13 @@ async function evaluateGatesAsyncInner(toolName, toolInput, configPath, options 
     return agentIdentityLifecycleGate;
   }
 
+  // Catastrophic hard-floor gates run before the stateful PR-thread gate: that gate is demoted to warn by the
+  // enforcement posture, and an early return there used to hide a later terraform-destroy or force-push deny.
+  const earlyCatastrophicGate = evaluateCatastrophicDeclarativeGate(config, constraints, toolName, toolInput, execution);
+  if (earlyCatastrophicGate) {
+    return recordStructuralGateBlock(toolName, toolInput, earlyCatastrophicGate, execution);
+  }
+
   const pendingThreadResolutionGate = evaluatePendingPrThreadResolutionGate(toolName, toolInput, execution);
   if (pendingThreadResolutionGate) {
     recordStat(pendingThreadResolutionGate.gate, 'block', null, { ...execution, toolName, toolInput });
@@ -4177,6 +4205,13 @@ function evaluateGatesInner(toolName, toolInput, configPath, options = {}) {
     });
     auditToFeedback(identityAuditRecord);
     return agentIdentityLifecycleGate;
+  }
+
+  // Catastrophic hard-floor gates run before the stateful PR-thread gate: that gate is demoted to warn by the
+  // enforcement posture, and an early return there used to hide a later terraform-destroy or force-push deny.
+  const earlyCatastrophicGate = evaluateCatastrophicDeclarativeGate(config, constraints, toolName, toolInput, execution);
+  if (earlyCatastrophicGate) {
+    return recordStructuralGateBlock(toolName, toolInput, earlyCatastrophicGate, execution);
   }
 
   const pendingThreadResolutionGate = evaluatePendingPrThreadResolutionGate(toolName, toolInput, execution);

@@ -4322,6 +4322,7 @@ function help() {
   console.log('  npx thumbgate lessons "force push" --json');
   console.log('  npx thumbgate lessons --query="deploy" --remote');
   console.log('  npx thumbgate gate-stats --json');
+  console.log('  npx thumbgate assurance-report --days=30 --out=assurance-report.md');
   console.log('  npx thumbgate desktop-snapshot --json');
   console.log('  npx thumbgate capture --feedback=down --context="agent broke deploy" --json');
   proNudge();
@@ -5581,6 +5582,12 @@ switch (COMMAND) {
     const { auditGateTriggers, formatTriggerAudit } = require(path.join(PKG_ROOT, 'scripts', 'auto-promote-gates'));
     const rows = auditGateTriggers();
     console.log(process.argv.includes('--json') ? JSON.stringify(rows, null, 2) : '\n' + formatTriggerAudit(rows) + '\n');
+    break;
+  }
+  case 'assurance-report': {
+    const { runAssuranceReport } = require(path.join(PKG_ROOT, 'scripts', 'assurance-report'));
+    const { output, written } = runAssuranceReport(process.argv.slice(3));
+    console.log(written ? `Assurance report written to ${written}` : output);
     break;
   }
   case 'desktop-snapshot':

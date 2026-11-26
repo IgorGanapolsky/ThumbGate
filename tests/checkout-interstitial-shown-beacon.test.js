@@ -27,6 +27,7 @@ Object.assign(process.env, {
 
 const billing = require('../scripts/billing');
 const { startServer } = require('../src/api/server');
+const { activePrices } = require('./helpers/fake-stripe-prices');
 
 const CHROME_UA = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36';
 const TELEMETRY = path.join(FEEDBACK_DIR, 'telemetry-pings.jsonl');
@@ -99,7 +100,7 @@ describe('checkout confirm page reports that its script ran', () => {
         },
       },
       products: { retrieve: async () => ({ active: true }) },
-      prices: { retrieve: async () => ({ active: true, product: 'prod_x' }) },
+      prices: activePrices(),
     });
     handle = await startServer({ port: 0, host: '127.0.0.1' });
     origin = `http://127.0.0.1:${handle.port}`;

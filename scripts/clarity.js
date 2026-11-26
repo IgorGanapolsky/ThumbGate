@@ -335,7 +335,32 @@ async function collectClarity({ feedbackDir, env = process.env, fetchImpl = glob
   };
 }
 
+// ---- Orion visit-analytics tag (same private-path and GPC/DNT rules as the page tag above) ----
+// The tag is inserted as the first thing inside <head>. No visitor is identified: we never call orion.identify().
+// THUMBGATE_ORION=off removes the tag without a deploy of new code.
+const ORION_SCRIPT_ORIGIN = 'https://t.paradigmmachines.ai';
+const ORION_STUB = "!function(w){var h=w.__orion=w.__orion||{},o=w.orion=w.orion||{};h.q=h.q||[];['identify','stop'].forEach(function(m){var f=function(){h.q.push([m,[].slice.call(arguments)])};f.q=1;if(!o[m])o[m]=f;if(!h[m])h[m]=f})}(window)";
+// Hash of the stub, for a future nonce/hash-based CSP. It is NOT in the CSP today: a hash makes browsers ignore
+// 'unsafe-inline', which this site still needs. tests/orion.test.js checks it matches the stub.
+const ORION_STUB_CSP_HASH = "'sha256-Ehp57wkg1JOMKj8DHQ0Gs3mGr0CK82EjvNu82pWOq1c='";
+const ORION_TAG = `<script>${ORION_STUB}</script><script src="${ORION_SCRIPT_ORIGIN}/q6ksr42etswa3fz583qr.js" async></script>`;
+function orionEnabled(env = process.env) {
+  return !OFF_VALUES.has(String((env && env.THUMBGATE_ORION) || '').trim().toLowerCase());
+}
+
+function injectOrionTag(html, { pathname = '/', headers = {}, env = process.env } = {}) {
+  if (typeof html !== 'string' || !orionEnabled(env)) return html;
+  if (html.includes(ORION_SCRIPT_ORIGIN) || isPrivatePath(pathname) || hasPrivacySignal(headers)) return html;
+  return html.replace(/<head(\s[^>]*)?>/i, (open) => `${open}${ORION_TAG}`);
+}
+
 module.exports = {
+  ORION_TAG,
+  ORION_STUB,
+  ORION_STUB_CSP_HASH,
+  ORION_SCRIPT_ORIGIN,
+  injectOrionTag,
+  orionEnabled,
   DEFAULT_PROJECT_ID,
   EXPORT_URL,
   EXPORT_QUERIES,

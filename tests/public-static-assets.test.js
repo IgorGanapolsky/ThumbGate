@@ -554,6 +554,20 @@ test('the trigger-audit learn page is served, in the sitemap, cites arXiv 2611.2
   assert.ok(findCommand('gate-audit'), 'gate-audit must be a real CLI command');
 });
 
+test('the Shirudo learn page is served, in the sitemap, cites OpenAI, and claims only shipped protection', async () => {
+  const sitemap = await (await fetch(`${origin}/sitemap.xml`)).text();
+  assert.match(sitemap, /<loc>[^<]*\/learn\/openai-shirudo-shields-for-agent-actions<\/loc>/, 'sitemap must list the Shirudo learn page');
+  const res = await fetch(`${origin}/learn/openai-shirudo-shields-for-agent-actions`);
+  assert.equal(res.status, 200);
+  const html = await res.text();
+  assert.match(html, /openai\.com\/index\/introducing-shirudo\//, 'every Shirudo statement must trace to the OpenAI post');
+  assert.match(html, /not affiliated with OpenAI or Cisco/i);
+  assert.match(html, /What this does not do/);
+  assert.match(html, /is not shipped/, 'the tamper-evident record is labelled as not shipped');
+  const gateIds = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'config', 'gates', 'default.json'), 'utf8')).gates.map((g) => g.id);
+  assert.ok(gateIds.includes('self-protect-config'), 'the page names a real default gate');
+});
+
 test('GET /agents-cost-savings serves the FinOps-for-AI landing HTML', async () => {
   const [routeRes, htmlRes] = await Promise.all([
     fetch(`${origin}/agents-cost-savings`),
