@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Claude Ship's rules for agent PRs, as gates your agent can't skip - ThumbGate</title>
+<script defer data-domain="thumbgate.ai" src="https://plausible.io/js/script.js"></script>
+<meta name="description" content="Addy Osmani's guide to shipping with Claude Code sets out the rules the Claude Code team uses for agent PR work: three failed rounds means the wrong approach, a rule needs two repeats, verify before you claim, and rule files need a person. Here is how to turn each one into a pre-action gate.">
+<meta name="keywords" content="Claude Ship, Claude Code, /ship, /steward, PR Steward, Claude Approvals, REVIEW.md, three strikes rule, AI coding agent guardrails, PreToolUse, ThumbGate">
+<meta property="og:title" content="Claude Ship's rules for agent PRs, as gates your agent can't skip">
+<meta property="og:description" content="Three failed rounds means the approach is wrong. A rule needs two repeats. Don't report success without the steps. ThumbGate turns those habits into hooks.">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://thumbgate.ai/learn/claude-ship-agent-pr-rules">
+<link rel="canonical" href="https://thumbgate.ai/learn/claude-ship-agent-pr-rules">
+<link rel="stylesheet" href="/learn/learn.css">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "TechArticle",
+  "headline": "Claude Ship's rules for agent PRs, as gates your agent can't skip",
+  "description": "The practices in Addy Osmani's guide to shipping with Claude Code, and how ThumbGate enforces the ones that matter at the tool call: a three-strikes retry gate, rules that warn before they block, and proof before a completion claim.",
+  "author": {
+    "@type": "Person",
+    "name": "Igor Ganapolsky",
+    "url": "https://github.com/IgorGanapolsky"
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "ThumbGate",
+    "url": "https://thumbgate.ai"
+  },
+  "datePublished": "2026-11-25",
+  "dateModified": "2026-11-25",
+  "mainEntityOfPage": "https://thumbgate.ai/learn/claude-ship-agent-pr-rules",
+  "about": [
+    {"@type": "Thing", "name": "Claude Ship"},
+    {"@type": "Thing", "name": "AI agent pull requests"},
+    {"@type": "Thing", "name": "AI agent guardrails"}
+  ]
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "What is Claude Ship?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Three agents for the work after a pull request is opened: Code Review (generally available), PR Steward (beta), which keeps a PR green but does not approve or merge, and Claude Approvals (beta), which applies an approval policy the team writes as a file in the repository. The /ship and /steward commands let one developer try it on their own PRs in Claude Code."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "What is the three-strikes rule for agents?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "During a /ship watch, Claude pushes at most three times for one issue and then reports what it tried. If the same check keeps failing after three rounds, the approach is probably wrong. ThumbGate's three-strikes gate applies the same idea to any repeated failing command: a fourth identical try is blocked with the recent errors."
+      }
+    }
+  ]
+}
+</script>
+</head>
+<body>
+
+<nav>
+  <a href="/" class="brand"><img src="/assets/brand/thumbgate-mark-inline-v3.svg" alt="ThumbGate" class="logo-mark" width="28" height="28"><span class="logo-text">ThumbGate</span></a>
+  <a href="/guide">Setup Guide</a>
+  <a href="/learn">Learn</a>
+  <a href="/compare">Compare</a>
+  <a href="https://github.com/IgorGanapolsky/ThumbGate" target="_blank" rel="noopener">GitHub</a>
+</nav>
+
+<div class="container">
+  <div class="breadcrumb"><a href="/learn">Learn</a> / Claude Ship's rules for agent PRs</div>
+  <h1>Claude Ship's rules for agent PRs, as gates your agent can't skip</h1>
+  <p style="color:var(--muted);">5 min read &middot; For developers letting Claude Code and other agents work on their pull requests</p>
+
+  <div class="tldr"><strong>TL;DR:</strong> On November 25, 2026 Addy Osmani published a practical guide to shipping with Claude Code, alongside the launch of Claude Ship. Under the product, it is a set of habits the Claude Code team uses: review before you push, stop after three failed rounds, write a rule only after a comment repeats, verify before you claim, and keep rule files under a person's eye. Habits written in a prompt can be skipped. ThumbGate turns the ones that happen at the tool call into hooks that block.</div>
+
+  <h2>What Claude Ship is</h2>
+  <p>From the guide, Claude Ship is three agents for the work after a PR is opened:</p>
+  <ul>
+    <li><strong>Code Review</strong> reviews the PR through several lenses, checks its own findings and posts them. Generally available.</li>
+    <li><strong>PR Steward</strong> (beta) keeps a PR green: failing checks, merge conflicts, review feedback. It comments after every push with what it changed and how to undo it, and it is designed not to approve or merge.</li>
+    <li><strong>Claude Approvals</strong> (beta) applies an approval policy the team writes in <code>.claude/approvals.yml</code>, starting in an observe mode that logs what it would have decided.</li>
+  </ul>
+  <p>For one developer, <code>/code-review</code>, <code>/ship</code> and <code>/steward</code> run the same ideas in a local Claude Code session.</p>
+
+  <h2>The rules worth keeping, with or without Claude Ship</h2>
+  <ol>
+    <li><strong>Three strikes.</strong> During a watch Claude pushes at most three times for one issue, then reports the attempts. If a check keeps failing after three rounds, the approach is probably wrong.</li>
+    <li><strong>A rule needs two repeats.</strong> A review comment becomes a written rule only after it shows up on at least two PRs, and a person approves the PR that adds it. Delete rules that stop paying off.</li>
+    <li><strong>Repeat setup becomes a verify skill.</strong> Write down how to boot and exercise the app, and end with "Don't report success without" the steps you ran.</li>
+    <li><strong>Repeat maintenance becomes steward rules.</strong> Known flaky checks, how to regenerate the lockfile, what to leave to the author.</li>
+    <li><strong>Observe before you enforce.</strong> Run a policy in a mode that only logs, compare it with what reviewers did, then turn it on.</li>
+    <li><strong>Rule files need a person.</strong> The watch never commits <code>CLAUDE.md</code>, <code>REVIEW.md</code>, <code>.claude/</code> or <code>.github/</code>. Anyone who can merge can change the rules, so review those changes like CI changes.</li>
+    <li><strong>The person who called the agent owns the change.</strong> As if they typed it themselves.</li>
+  </ol>
+
+  <h2>Where a prompt rule stops working</h2>
+  <p>Rules one, three and five are about what the agent does next, in the middle of a long session. That is where written instructions are weakest: after a context compaction, or on the fourth try at a red test, the agent is reasoning about the failure, not about your house rules. A hook runs on every tool call whether the agent remembers the rule or not.</p>
+
+  <h2>How ThumbGate enforces them</h2>
+  <ul>
+    <li><strong>Three strikes.</strong> <code>scripts/three-strikes-gate.js</code> records each Bash result. After the same command fails three times in a row within 30 minutes, the fourth identical try is denied with the recent errors and a prompt to change the approach or report the attempts. A narrower command, such as only the failing test, is still allowed. Read-only probes like <code>grep</code> never count.</li>
+    <li><strong>Warn before block.</strong> A thumbs-down becomes a rule that warns on the first capture and blocks at three repeats, or at two thumbs-downs from a person on the same command. That is observe-then-enforce at the level of a single rule.</li>
+    <li><strong>Proof before claim.</strong> The anti-claim gates deny "done", "deployed" or "verified" when nothing in the current turn proves it, the same contract as a verify skill's last line.</li>
+    <li><strong>Rule files stay with a person.</strong> On our own repository, changes to the ship policy, hooks and workflows are labelled for the owner and never auto-merge.</li>
+  </ul>
+  <p>Turn on the PR gates with <code>THUMBGATE_PR_DISCIPLINE=1</code>. The wiring is in the <a href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/guides/anti-babysitting-gates.md" target="_blank" rel="noopener">anti-babysitting gates guide</a>. Every gate fails open on an internal error.</p>
+
+  <h2>What ThumbGate does not do</h2>
+  <ul>
+    <li>It does not review code or approve PRs. Use Code Review, CodeRabbit or a person for that.</li>
+    <li>It does not merge anything. Branch protection and your approval policy decide that.</li>
+    <li>The three-strikes gate compares commands, not intent. Two different commands that chase the same bug are two separate streaks.</li>
+  </ul>
+
+  <h2>Sources</h2>
+  <ul>
+    <li><a href="https://x.com/addyosmani/status/2125492213903978917" target="_blank" rel="noopener">Addy Osmani: A practical guide to shipping with Claude Code (X article, November 25, 2026)</a></li>
+    <li><a href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/scripts/three-strikes-gate.js" target="_blank" rel="noopener">ThumbGate: three-strikes gate source</a></li>
+    <li><a href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/scripts/auto-promote-gates.js" target="_blank" rel="noopener">ThumbGate: warn and block thresholds</a></li>
+  </ul>
+  <p style="color:var(--muted);">ThumbGate is an independent project and is not affiliated with or endorsed by Anthropic.</p>
+
+  <div class="cta-box">
+    <h2>Make your agent stop at strike three</h2>
+    <p>Install ThumbGate, then turn on the PR gates.</p>
+    <div class="cta-install">npx thumbgate init</div>
+    <div class="cta-actions">
+      <a class="cta-link" href="/guide?utm_source=claude_ship_rules&amp;utm_medium=learn&amp;utm_campaign=three_strikes">Setup guide</a>
+      <a class="cta-link cta-link-secondary" href="/learn/proof-before-claim-deploy-gate">Proof before claim</a>
+    </div>
+  </div>
+
+  <div class="related">
+    <h2>Related</h2>
+    <a href="/learn/proof-before-claim-deploy-gate">Proof before claim: a deploy gate for agents</a>
+    <a href="/learn/stop-ai-agent-force-push">Stop an AI agent from force-pushing</a>
+    <a href="/learn/background-agent-control-layer">A control layer for background agents</a>
+  </div>
+</div>
+
+<div class="sticky-cta">
+  <span>Three strikes, then a new approach</span>
+  <code>npx thumbgate init</code>
+  <a href="/guide?utm_source=claude_ship_rules&amp;utm_medium=learn&amp;utm_campaign=three_strikes">Setup guide</a>
+</div>
+
+</body>
+</html>

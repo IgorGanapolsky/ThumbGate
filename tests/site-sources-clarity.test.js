@@ -8,49 +8,12 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
-const vm = require('node:vm');
 
 const ROOT = path.join(__dirname, '..');
 const PUBLIC = path.join(ROOT, 'public');
 const clarity = require('../scripts/clarity');
 const CLARITY_ID = 'zjaflwztgq';
 const OTHER_SITE_ID = ['zjac22a5n1'].join('');
-
-function injectedTag() {
-  const html = clarity.injectClarityTag('<html><head></head><body><a href="/checkout/pro">Pro</a></body></html>', { pathname: '/', headers: {}, env: {} });
-  const match = /<script>([\s\S]*?)<\/script>/.exec(html);
-  assert.ok(match, 'the public home page gets the Clarity tag');
-  return { html, source: match[1] };
-}
-
-function runTag({ gpc = false, dnt = null, hrefs = [], timeZone = 'America/New_York' } = {}) {
-  const { source } = injectedTag();
-  const appended = [];
-  const calls = [];
-  const listeners = {};
-  const document = {
-    createElement: () => ({}),
-    getElementsByTagName: () => [{ parentNode: { insertBefore: (node) => appended.push(node) } }],
-    addEventListener: (name, fn) => { listeners[name] = fn; },
-  };
-  const window = { document, doNotTrack: null };
-  window.window = window;
-  const navigator = { globalPrivacyControl: gpc, doNotTrack: dnt };
-  const Intl = { DateTimeFormat: () => ({ resolvedOptions: () => ({ timeZone }) }) };
-  const context = vm.createContext({ window, document, navigator, Intl });
-  vm.runInContext(source, context);
-  if (typeof window.clarity === 'function') {
-    // The queue is replaced by a recorder after the snippet ran; calls made before this are in window.clarity.q.
-    for (const queued of (window.clarity.q || [])) calls.push(Array.from(queued));
-    window.clarity = (...args) => { calls.push(args); };
-  }
-  let stopped = false;
-  for (const href of hrefs) {
-    const anchor = { nodeType: 1, tagName: 'A', parentNode: null, getAttribute: () => href };
-    listeners.click?.({ target: { nodeType: 1, tagName: 'SPAN', parentNode: anchor, getAttribute: () => null }, preventDefault() { stopped = true; } });
-  }
-  return { appended, calls, listeners, preventedNavigation: stopped };
-}
 
 test('REQ-01: no second Clarity loader, and the other site\'s project id appears nowhere', () => {
   assert.equal(fs.existsSync(path.join(PUBLIC, 'js', 'clarity.js')), false, 'the server-injected tag is the only loader');
@@ -71,32 +34,7 @@ test('REQ-01: no second Clarity loader, and the other site\'s project id appears
   assert.deepEqual(pages, [], 'no page file carries its own copy of the tag');
 });
 
-test('REQ-02: the injected tag loads the ThumbGate project and does not guess consent from the time zone', () => {
-  const { html, source } = injectedTag();
-  assert.equal((html.match(/www\.clarity\.ms\/tag\//g) || []).length, 1);
-  assert.match(html, new RegExp(`"${CLARITY_ID}"`));
-  assert.equal(/consentv2|Intl\.DateTimeFormat|timeZone/.test(source), false);
-  for (const timeZone of ['America/New_York', 'Europe/Berlin', 'Europe/London', 'Asia/Tokyo']) {
-    const run = runTag({ timeZone });
-    assert.equal(run.appended.length, 1, timeZone);
-    assert.equal(run.calls.some((c) => c[0] === 'consentv2' || c[0] === 'consent'), false, `${timeZone}: no consent call from this site`);
-  }
-});
-
-test('REQ-02: a Pro checkout click sends checkout_click and leaves the navigation alone; other links send nothing', () => {
-  const run = runTag({ hrefs: ['/checkout/pro', 'https://thumbgate.ai/checkout/pro?x=1', '/pricing', '/checkout/team', 'https://buy.example.com/x'] });
-  const events = run.calls.filter((c) => c[0] === 'event');
-  assert.deepEqual(events, [['event', 'checkout_click'], ['event', 'checkout_click']]);
-  assert.equal(run.preventedNavigation, false);
-});
-
-test('REQ-02: the checkout_click handler does not register for Global Privacy Control or Do Not Track', () => {
-  for (const options of [{ gpc: true }, { dnt: '1' }]) {
-    const run = runTag(options);
-    assert.equal(run.appended.length, 0);
-    assert.equal(run.listeners.click, undefined);
-  }
-});
+// The consent banner, accept/decline/withdraw and the checkout_click event: tests/analytics-consent.test.js.
 
 test('REQ-03: the owner console never loads Clarity itself, and the Sources tab is on its menu', () => {
   const admin = fs.readFileSync(path.join(PUBLIC, 'admin.html'), 'utf8');
