@@ -311,11 +311,15 @@ async function collectLeads(deps, signal) {
     const safe = guardPath(root, path.join(root, 'marketing-install-emails.jsonl'));
     const stat = await fs.promises.lstat(safe);
     if (!stat.isFile()) throw failure('unsafe_path');
+    // The ledger is append-only, so a capped read takes its tail: the newest leads stay visible, and the cut-off first line is skipped.
     truncated = stat.size > LOG_LIMIT;
-    stream = fs.createReadStream(safe, { flags: fs.constants.O_RDONLY | fs.constants.O_NOFOLLOW, start: 0, end: LOG_LIMIT - 1, signal });
+    const start = truncated ? stat.size - LOG_LIMIT : 0;
+    stream = fs.createReadStream(safe, { flags: fs.constants.O_RDONLY | fs.constants.O_NOFOLLOW, start, end: Math.max(start, stat.size - 1), signal });
     lines = readline.createInterface({ input: stream, crlfDelay: Infinity });
+    let skipPartial = truncated;
     for await (const line of lines) {
       stopped(signal);
+      if (skipPartial) { skipPartial = false; continue; }
       if (!line.trim()) continue;
       let row;
       try { row = JSON.parse(line); } catch { malformedLines += 1; continue; }
@@ -324,7 +328,7 @@ async function collectLeads(deps, signal) {
     }
   } catch (error) {
     stopped(signal);
-    if (error.code === 'ENOENT') return envelope('install_email_ledger', { records: [], total: 0, uniqueEmails: 0, shown: 0 });
+    if (error.code === 'ENOENT') return envelope('install_email_ledger', { records: [], total: 0, uniqueEmails: 0, shown: 0, complete: true });
     return envelope('install_email_ledger', null, ['ledger_unreadable'], 'unavailable');
   } finally { lines?.close(); stream?.destroy(); }
   const uniqueEmails = new Set(rows.map((row) => row.email.trim().toLowerCase())).size;
@@ -339,7 +343,7 @@ async function collectLeads(deps, signal) {
   const warnings = [];
   if (malformedLines) warnings.push('malformed_lines');
   if (truncated) warnings.push('ledger_truncated');
-  return envelope('install_email_ledger', { records, total: rows.length, uniqueEmails, shown: records.length, malformedLines }, warnings);
+  return envelope('install_email_ledger', { records, total: rows.length, uniqueEmails, shown: records.length, malformedLines, complete: !truncated }, warnings);
 }
 
 const numericFields = (value, names) => Object.fromEntries(names.map((name) => [name, number(value?.[name])]));

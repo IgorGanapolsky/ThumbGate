@@ -298,9 +298,10 @@
       };
       // Leads tab: emails people typed on the install page or in the CLI subscribe prompt, newest first.
       function renderLeads(parent, data) {
+        const scope = data.complete === false ? ' (newest 16 MB of the ledger)' : ' (all time)';
         cards(parent, {
-          'Captured emails (all time)': String(data.total),
-          'Distinct addresses': String(data.uniqueEmails),
+          ['Captured emails' + scope]: String(data.total),
+          ['Distinct addresses' + scope]: String(data.uniqueEmails),
         }, true);
         parent.append(element('h3', 'Newest ' + data.shown));
         table(parent, [
@@ -310,7 +311,7 @@
           ['CLI version', (r) => r.cliVersion || 'None'],
           ['Looks like', (r) => label(r.classification || 'unknown')],
         ], data.records);
-        parent.append(element('p', 'Each address already got the automatic welcome email when it was captured. Check the do-not-contact list before writing to anyone. JSON for agents: /v1/admin/leads.', 'muted'));
+        parent.append(element('p', 'The capture tries to send an automatic welcome email, but whether it arrived is not recorded here (no mail key or a mailer error still saves the lead). Check the do-not-contact list before writing to anyone. JSON for agents: /v1/admin/leads.', 'muted'));
       }
       // Sources tab: one block per source with the time of its last event, or a plain "no data yet" state. No number
       // is filled in for a source this server does not read; each block links to that source's own dashboard.

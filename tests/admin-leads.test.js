@@ -46,3 +46,18 @@ test('leads is a routable admin section that takes no query options', () => {
   assert.deepEqual(parseAdminRoute('/v1/admin/leads', new URLSearchParams()).section, 'leads');
   assert.throws(() => parseAdminRoute('/v1/admin/leads', new URLSearchParams('limit=5')), /invalid_query/);
 });
+
+test('leads over the read cap shows the newest captures, not the oldest', async () => {
+  const dir = tmp();
+  const file = path.join(dir, 'marketing-install-emails.jsonl');
+  const filler = JSON.stringify({ capturedAt: '2026-01-01T00:00:00.000Z', email: 'old@example.org', source: 'install_page', pad: 'x'.repeat(1000) }) + '\n';
+  const fd = fs.openSync(file, 'w');
+  for (let i = 0; i < 17 * 1024; i += 1) fs.writeSync(fd, filler);
+  fs.writeSync(fd, JSON.stringify({ capturedAt: '2026-11-26T12:00:00.000Z', email: 'newest@example.org', source: 'install_page' }) + '\n');
+  fs.closeSync(fd);
+  const result = await collectLeads({ feedbackDir: dir });
+  assert.equal(result.data.records[0].email, 'newest@example.org');
+  assert.equal(result.data.complete, false);
+  assert.equal(result.data.malformedLines, 0, 'the cut-off first line is skipped, not counted as malformed');
+  assert.ok(result.warnings.includes('ledger_truncated'));
+});
