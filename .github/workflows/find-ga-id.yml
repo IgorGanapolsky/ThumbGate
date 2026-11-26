@@ -1,0 +1,33 @@
+name: Find GA ID
+on: workflow_dispatch
+permissions:
+  contents: write
+jobs:
+  diagnostic:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+      - name: Diagnostic scan and publish-path details
+        shell: bash
+        run: |
+          echo '=== OLD ID ==='
+          grep -rIl 'G-SZR5039QN4' . --exclude-dir=.git || echo 'NO MATCHES'
+          echo '=== NEW ID ==='
+          grep -rIl 'G-QKENZBW1V8' . --exclude-dir=.git || echo 'NO MATCHES'
+          echo '=== GTAG LOADS ==='
+          grep -rIl 'gtag(' . --exclude-dir=.git | head -50 || echo 'NO MATCHES'
+          echo '=== TG ANALYTICS ==='
+          grep -rIl 'tg-analytics' . --exclude-dir=.git || echo 'NO MATCHES'
+          echo '=== DEPLOY CONFIG CONTENTS ==='
+          for f in railway.json Dockerfile; do
+            if [ -f "$f" ]; then
+              echo "--- $f ---"
+              cat "$f"
+            fi
+          done
+          find .github/workflows -maxdepth 1 -type f -iname '*deploy*' -print -exec sh -c 'echo "--- $1 ---"; cat "$1"' _ {} \;
+          echo '=== PUBLIC LISTING ==='
+          ls -la public | head -60
