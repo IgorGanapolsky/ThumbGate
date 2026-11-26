@@ -501,6 +501,18 @@ test('the AI FinOps learn page is served, listed in the sitemap, and claims no b
   assert.match(html, /does not cap tokens or dollars/i, 'the page says plainly what the gates do not do');
 });
 
+test('the Claude Ship rules learn page is served, listed, and describes only shipped gates', async () => {
+  const sitemap = await (await fetch(`${origin}/sitemap.xml`)).text();
+  assert.match(sitemap, /<loc>[^<]*\/learn\/claude-ship-agent-pr-rules<\/loc>/, 'sitemap must list the Claude Ship rules learn page');
+  const res = await fetch(`${origin}/learn/claude-ship-agent-pr-rules`);
+  assert.equal(res.status, 200);
+  const html = await res.text();
+  assert.match(html, /scripts\/three-strikes-gate\.js/, 'points at the shipped three-strikes gate');
+  assert.match(html, /THUMBGATE_PR_DISCIPLINE=1/, 'says how to turn the gates on');
+  assert.match(html, /It does not review code or approve PRs/, 'says plainly what ThumbGate does not do');
+  assert.match(html, /not affiliated with or endorsed by Anthropic/);
+});
+
 test('the Claude desktop apps learn page is served, listed, and says the app does not enforce', async () => {
   const sitemap = await (await fetch(`${origin}/sitemap.xml`)).text();
   assert.match(sitemap, /<loc>[^<]*\/learn\/claude-artifact-desktop-apps<\/loc>/, 'sitemap must list the Claude desktop apps learn page');
