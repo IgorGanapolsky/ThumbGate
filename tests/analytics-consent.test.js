@@ -31,7 +31,7 @@ function makeElement(tag) {
 
 function walk(el, fn) { fn(el); for (const c of el.children) walk(c, fn); }
 
-function run({ source = tagSource(), gpc = false, dnt = null, stored = null } = {}) {
+function run({ source = tagSource(), gpc = false, dnt = null, stored = null, timeZone = 'UTC' } = {}) {
   const appended = [];
   const store = new Map(stored ? [['thumbgate_analytics_consent', stored]] : []);
   const body = makeElement('body');
@@ -47,7 +47,8 @@ function run({ source = tagSource(), gpc = false, dnt = null, stored = null } = 
   let reloads = 0;
   const window = { document, doNotTrack: null, location: { reload: () => { reloads += 1; } }, addEventListener: (n, fn) => { (winListeners[n] = winListeners[n] || []).push(fn); }, localStorage: { getItem: (k) => (store.has(k) ? store.get(k) : null), setItem: (k, v) => store.set(k, String(v)) } };
   window.window = window;
-  vm.runInContext(source, vm.createContext({ window, document, navigator: { globalPrivacyControl: gpc, doNotTrack: dnt } }));
+  const Intl = { DateTimeFormat: () => ({ resolvedOptions: () => ({ timeZone }) }) };
+  vm.runInContext(source, vm.createContext({ window, document, Intl, navigator: { globalPrivacyControl: gpc, doNotTrack: dnt } }));
   const banner = () => document.getElementById('tg-consent');
   const press = (choice) => {
     let button = null;
@@ -169,7 +170,13 @@ test('REQ-10: a withdrawal in another tab stops analytics in this one; an Accept
 
 test('REQ-11: no browser time-zone or region rule decides consent; the owner console says Accept is required', () => {
   const code = require('node:fs').readFileSync(require('node:path').join(__dirname, '..', 'scripts', 'clarity.js'), 'utf8');
-  assert.equal(/Intl\.DateTimeFormat|timeZone|Europe\\\//.test(code), false, 'no time-zone consent guess');
-  const source = tagSource();
-  assert.equal(/analytics_Storage:'granted'/.test(source.slice(0, source.indexOf('function load'))), false, 'nothing grants before load()');
+  assert.equal(/Intl\.DateTimeFormat|timeZone|Europe\//.test(code), false, 'no time-zone consent guess');
+  for (const timeZone of ['Europe/Berlin', 'Europe/London', 'America/New_York']) {
+    const r = run({ timeZone });
+    assert.deepEqual(r.appended, [], `${timeZone}: nothing loads before Accept`);
+    assert.deepEqual(r.queue(), [], `${timeZone}: nothing granted before Accept`);
+    r.press('granted');
+    assert.deepEqual(r.srcs(), [CLARITY_SRC, clarity.ORION_SRC], `${timeZone}: Accept loads`);
+    assert.deepEqual(r.queue()[0], ['consentv2', { ad_Storage: 'denied', analytics_Storage: 'granted' }]);
+  }
 });
