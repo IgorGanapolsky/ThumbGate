@@ -4111,6 +4111,7 @@ function sendHtml(res, statusCode, html, extraHeaders = {}, options = {}) {
     let requestPath = '/admin';
     try { requestPath = new URL(res.req.url || '/', 'http://localhost').pathname; } catch { /* treat as private */ }
     html = clarity.injectClarityTag(html, { pathname: requestPath, headers: res.req.headers || {} });
+    html = clarity.injectOrionTag(html, { pathname: requestPath, headers: res.req.headers || {} });
   }
   const originTrialTokens = extractOriginTrialTokens(html);
   const originTrialHeader = originTrialTokens.length > 0
@@ -5199,6 +5200,7 @@ function renderSitemapXml(runtimeConfig) {
   const entries = [
     { path: '/', changefreq: 'weekly', priority: '1.0' },
     { path: '/pricing', changefreq: 'weekly', priority: '0.9' },
+    { path: '/demo', changefreq: 'monthly', priority: '0.8' },
     { path: '/operator-framework', changefreq: 'weekly', priority: '0.9' },
     { path: '/peter', changefreq: 'weekly', priority: '0.9' },
     { path: '/install', changefreq: 'weekly', priority: '0.9' },
@@ -5238,9 +5240,12 @@ function renderSitemapXml(runtimeConfig) {
     { path: '/learn/future-agi-self-healing-agent-firewall', changefreq: 'weekly', priority: '0.85' },
     { path: '/learn/five-walls-enterprise-agent-deployment', changefreq: 'weekly', priority: '0.85' },
     { path: '/learn/okta-mcp-governance-per-tool-call-gates', changefreq: 'weekly', priority: '0.85' },
+    { path: '/learn/dxc-frontier-code-assurance-ai-written-code', changefreq: 'weekly', priority: '0.85' },
     { path: '/learn/ai-finops-agent-spend-guardrails', changefreq: 'weekly', priority: '0.85' },
     { path: '/learn/claude-artifact-desktop-apps', changefreq: 'weekly', priority: '0.85' },
+    { path: '/learn/mellum-instruct-no-thinking-routing', changefreq: 'weekly', priority: '0.85' },
     { path: '/learn/siren-agent-sandbox-escape-gates', changefreq: 'weekly', priority: '0.85' },
+    { path: '/learn/openai-shirudo-shields-for-agent-actions', changefreq: 'weekly', priority: '0.85' },
     { path: '/learn/proof-before-claim-deploy-gate', changefreq: 'weekly', priority: '0.85' },
     { path: '/learn/claude-ship-agent-pr-rules', changefreq: 'weekly', priority: '0.85' },
     { path: '/compare/claude-code-hooks', changefreq: 'weekly', priority: '0.85' },
@@ -9224,6 +9229,24 @@ async function addContext(){
       return;
     }
 
+    // Chaptered product demo (?chapter=install|block|thumbs|gate|team), ending in the team pilot form.
+    if (isGetLikeRequest && (pathname === '/demo' || pathname === '/demo.html' || pathname === '/demo/')) {
+      try {
+        servePublicMarketingPage({
+          req,
+          res,
+          parsed,
+          hostedConfig,
+          isHeadRequest,
+          renderHtml: (runtimeConfig, pageContext) => loadPublicMarketingTemplateHtml(path.join(PUBLIC_DIR, 'demo.html'), runtimeConfig, pageContext),
+          extraTelemetry: { pageType: 'product_demo' },
+        });
+      } catch {
+        sendJson(res, 404, { error: 'Demo page not found' });
+      }
+      return;
+    }
+
     if (isGetLikeRequest && (pathname === '/pilot' || pathname === '/pilot.html')) {
       try {
         servePublicMarketingPage({
@@ -9232,7 +9255,8 @@ async function addContext(){
           parsed,
           hostedConfig,
           isHeadRequest,
-          renderHtml: () => fs.readFileSync(path.join(PUBLIC_DIR, 'pilot.html'), 'utf-8'),
+          // Fill __APP_ORIGIN__ / __GA_BOOTSTRAP__ like every other marketing page (they shipped raw before).
+          renderHtml: (runtimeConfig, pageContext) => loadPublicMarketingTemplateHtml(path.join(PUBLIC_DIR, 'pilot.html'), runtimeConfig, pageContext),
           extraTelemetry: { pageType: 'pilot_request' },
         });
       } catch {

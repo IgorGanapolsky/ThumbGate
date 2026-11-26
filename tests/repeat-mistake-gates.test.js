@@ -11,6 +11,12 @@ const { buildAwsAccessKeyId } = require('../scripts/secret-fixture-tokens');
 const stateDir = fs.mkdtempSync(path.join(os.tmpdir(), 'tg-repeat-gates-'));
 process.env.THUMBGATE_STATE_DIR = stateDir;
 process.env.THUMBGATE_NO_NUDGE = '1';
+// These tests cover the repeat-mistake gates (Teams dedupe, swarm claims, cross-review).
+// The newer send gate (one new chat bubble per 15 min, scripts/send-gate.js) also fires on these
+// Teams sends and kept its state in the checkout's .thumbgate, so results depended on the order and
+// on leftovers from earlier runs. It has its own suite (tests/thumbs-down-enforcement.test.js).
+process.env.THUMBGATE_FEEDBACK_DIR = fs.mkdtempSync(path.join(os.tmpdir(), 'tg-repeat-gates-feedback-'));
+process.env.THUMBGATE_SEND_GATE = '0';
 
 const gates = require('../scripts/gates-engine');
 

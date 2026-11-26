@@ -525,6 +525,18 @@ test('the Claude desktop apps learn page is served, listed, and says the app doe
   assert.match(html, /not affiliated with or endorsed by Anthropic/);
 });
 
+test('the Mellum reasoning-mode learn page is served, listed, cites sources, and names the real env var', async () => {
+  const sitemap = await (await fetch(`${origin}/sitemap.xml`)).text();
+  assert.match(sitemap, /<loc>[^<]*\/learn\/mellum-instruct-no-thinking-routing<\/loc>/, 'sitemap must list the Mellum learn page');
+  const res = await fetch(`${origin}/learn/mellum-instruct-no-thinking-routing`);
+  assert.equal(res.status, 200);
+  const html = await res.text();
+  assert.match(html, /thenewstack\.io\/jetbrains-mellum2-1-instruct-coding-model/);
+  assert.match(html, /huggingface\.co\/JetBrains\/Mellum2\.1-12B-A2\.5B-Instruct/);
+  assert.match(html, /THUMBGATE_LOCAL_MODEL_FAMILY=mellum/);
+  assert.match(html, /not affiliated with or endorsed by JetBrains/);
+});
+
 test('the Siren sandbox-escape learn page is served, in the sitemap, cites the primary source, and names only real gates', async () => {
   const sitemap = await (await fetch(`${origin}/sitemap.xml`)).text();
   assert.match(sitemap, /<loc>[^<]*\/learn\/siren-agent-sandbox-escape-gates<\/loc>/, 'sitemap must list the Siren learn page');
@@ -538,6 +550,20 @@ test('the Siren sandbox-escape learn page is served, in the sitemap, cites the p
   const named = html.match(/sandbox-[a-z-]+(?=<\/code>)/g) || [];
   assert.equal(new Set(named).size, 5, 'the page names the five sandbox gates');
   for (const id of named) assert.ok(gateIds.includes(id), `page names ${id}, which must be a real default gate`);
+});
+
+test('the Shirudo learn page is served, in the sitemap, cites OpenAI, and claims only shipped protection', async () => {
+  const sitemap = await (await fetch(`${origin}/sitemap.xml`)).text();
+  assert.match(sitemap, /<loc>[^<]*\/learn\/openai-shirudo-shields-for-agent-actions<\/loc>/, 'sitemap must list the Shirudo learn page');
+  const res = await fetch(`${origin}/learn/openai-shirudo-shields-for-agent-actions`);
+  assert.equal(res.status, 200);
+  const html = await res.text();
+  assert.match(html, /openai\.com\/index\/introducing-shirudo\//, 'every Shirudo statement must trace to the OpenAI post');
+  assert.match(html, /not affiliated with OpenAI or Cisco/i);
+  assert.match(html, /What this does not do/);
+  assert.match(html, /is not shipped/, 'the tamper-evident record is labelled as not shipped');
+  const gateIds = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'config', 'gates', 'default.json'), 'utf8')).gates.map((g) => g.id);
+  assert.ok(gateIds.includes('self-protect-config'), 'the page names a real default gate');
 });
 
 test('GET /agents-cost-savings serves the FinOps-for-AI landing HTML', async () => {
