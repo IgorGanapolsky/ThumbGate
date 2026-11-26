@@ -10481,6 +10481,13 @@ a{color:#8b9}</style></head><body><form class="card" method="post" action="/oaut
         failing = true;
       }
 
+      // A set but malformed THUMBGATE_GA_MEASUREMENT_ID is dropped silently, so no page view is sent. Warn only (200).
+      const rawGaId = String(process.env.THUMBGATE_GA_MEASUREMENT_ID || '').trim();
+      if (rawGaId && !require('../../scripts/hosted-config').GA_MEASUREMENT_ID_PATTERN.test(rawGaId)) {
+        checks.gaMeasurementId = { ok: false, error: 'invalid_format', severity: 'degraded' };
+        degraded = true;
+      }
+
       // Check 3: build metadata loaded.
       // TELEMETRY-DEGRADED — observability gap, not a runtime outage. The
       // container still serves requests fine; we just can't tag responses with

@@ -86,6 +86,17 @@ test('REQ-04: the home page sends begin_checkout beside the Plausible checkout_s
   assert.match(html.slice(at, at + 200), /sendGa4Event\('begin_checkout'/);
 });
 
+test('REQ-06: /health warns (still 200) when the first property id is set but malformed, and is quiet when it is valid', async () => {
+  process.env.THUMBGATE_GA_MEASUREMENT_ID = 'UA-not-a-ga4-id';
+  const bad = await get('/health');
+  assert.equal(bad.status, 200);
+  assert.deepEqual(JSON.parse(bad.body).checks.gaMeasurementId, { ok: false, error: 'invalid_format', severity: 'degraded' });
+  process.env.THUMBGATE_GA_MEASUREMENT_ID = 'G-TEST1234';
+  const good = await get('/health');
+  assert.equal(JSON.parse(good.body).checks.gaMeasurementId, undefined);
+  delete process.env.THUMBGATE_GA_MEASUREMENT_ID;
+});
+
 test('REQ-05: a Global Privacy Control signal or "off" removes every Google tag', async () => {
   process.env.THUMBGATE_GA_MEASUREMENT_ID = 'G-TEST1234';
   const gpc = await get('/', { 'sec-gpc': '1' });
