@@ -102,3 +102,20 @@ test('export: busiest traffic rows survive trimming, and another project\'s cach
   await clarity.collectClarity({ feedbackDir: dir, env: { ...env, THUMBGATE_CLARITY_PROJECT_ID: 'otherproj1' }, fetchImpl, now: now + 1000 });
   assert.equal(calls, 6, 'a different project refreshes instead of reusing the cache');
 });
+
+test('local dev and test servers get no tag, and loopback pages stay out of the console tables', () => {
+  const html = '<html><head></head><body></body></html>';
+  const env = { THUMBGATE_CLARITY_PROJECT_ID: 'zjaflwztgq' };
+  for (const host of ['localhost:3000', '127.0.0.1:18901', '[::1]:8080', 'localhost']) {
+    assert.equal(clarity.injectAnalyticsTags(html, { pathname: '/', headers: { host }, env }), html, host);
+  }
+  assert.match(clarity.injectAnalyticsTags(html, { pathname: '/', headers: { host: 'thumbgate.ai' }, env }), /data-thumbgate-consent/);
+  const rows = clarity.breakdown([{ name: 'Traffic', rows: [
+    { Url: 'https://thumbgate.ai/', totalSessionCount: '3' },
+    { Url: 'http://127.0.0.1:18901/pricing', totalSessionCount: '0' },
+    { Url: 'http://localhost:3000/', totalSessionCount: '1' },
+  ] }], 'Url');
+  assert.deepEqual(rows.map((r) => r.url), ['https://thumbgate.ai/']);
+  const sources = clarity.breakdown([{ name: 'Traffic', rows: [{ Source: '127.0.0.1', totalSessionCount: '0' }, { Source: 'google', totalSessionCount: '2' }] }], 'Source');
+  assert.deepEqual(sources.map((r) => r.source), ['google']);
+});
