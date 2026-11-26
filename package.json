@@ -426,6 +426,7 @@
     "scripts/secret-fixture-tokens.js",
     "scripts/secret-redaction.js",
     "scripts/secret-scanner.js",
+    "scripts/staged-secret-gate.js",
     "scripts/security-scanner.js",
     "scripts/self-distill-agent.js",
     "scripts/self-harness-optimizer.js",

@@ -4468,6 +4468,11 @@ function buildSecretRemediation(toolName = '', toolInput = {}, findings = []) {
   const vaultDirs = listAdvertisedVaultDirs();
   const vaultList = vaultDirs.join(', ');
 
+  if (findings.some((f) => f && f.source === 'staged-commit')) {
+    const files = [...new Set(findings.map((f) => f.path).filter(Boolean))].join(', ');
+    return `This commit would add secret material to git history${files ? ` (${files})` : ''}. Remove the value from the file, read it from an environment variable or ${vaultList} at runtime, run \`git restore --staged <file>\` or re-stage the cleaned file, then commit again. If the key was ever pushed or shared, rotate it.`;
+  }
+
   if (EDIT_LIKE_TOOLS && EDIT_LIKE_TOOLS.has(toolName)) {
     const target = toolInput.file_path || toolInput.path || toolInput.filePath || toolInput.target_path;
     const where = target ? ` (you targeted ${redactText(String(target))})` : '';
@@ -4574,9 +4579,17 @@ function recordSecretViolation(input, scanResult) {
 }
 
 function evaluateSecretGuard(input = {}) {
-  const scanResult = scanHookInput(input);
+  let scanResult = scanHookInput(input);
   if (!scanResult.detected) {
-    return null;
+    // A `git commit` carries no secret in its own text; the key is in what is staged.
+    try {
+      scanResult = require('./staged-secret-gate').scanStagedForCommit(
+        input.tool_name || input.toolName,
+        input.tool_input || input.toolInput || {},
+        input.cwd
+      );
+    } catch { scanResult = null; } // a broken scan never blocks the agent
+    if (!scanResult) return null;
   }
   recordStat('secret-exfiltration', 'block', null, {
     toolName: input.tool_name || input.toolName || 'unknown',

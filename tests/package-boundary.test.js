@@ -536,8 +536,9 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
     // 729 -> 730 (2026-11-25): public/host-matrix.html (a1844d0) added to package.json files (+1).
     // 730 -> 731 (2026-11-25): public/demo.html, the chaptered thumbgate.ai/demo walkthrough (PR 5271) (+1).
     // 731 -> 732 (2026-11-25): scripts/assurance-report.js, the assurance-report CLI command (+1).
-    manifest.fileCount <= 732,
-    `npm package should stay <= 732 files, got ${manifest.fileCount}`
+    // 732 -> 733 (2026-11-26): scripts/staged-secret-gate.js, a git commit with a secret staged is denied (+1).
+    manifest.fileCount <= 733,
+    `npm package should stay <= 733 files, got ${manifest.fileCount}`
   );
   // Ceiling bumped from 2.75 MB → 2.85 MB (2026-04-16) to accommodate the
   // incremental review-delta demo content in public/dashboard.html landing
@@ -847,8 +848,10 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // and bin/cli.js (about 7 KB); measured 10,910,088 after merging main.
   // Bumped 10.92 MB -> 10.93 MB (2026-11-26, PR #5261): strict DPO pairing in scripts/export-dpo-pairs.js
   // (about 6 KB); measured 10,923,475 after merging main.
-  manifest.unpackedSize <= 10_930_000,
-  `npm package should stay <= 10.93 MB unpacked, got ${manifest.unpackedSize}`
+  // Bumped 10.93 MB -> 10.94 MB (2026-11-26, PR #5258): scripts/staged-secret-gate.js and its call in
+  // scripts/gates-engine.js, with -C/cd, pathspec and same-command `git add` handling (about 15 KB); measured 10,938,266 after merging main.
+  manifest.unpackedSize <= 10_940_000,
+  `npm package should stay <= 10.94 MB unpacked, got ${manifest.unpackedSize}`
 );
 
   for (const file of requiredRuntimeFiles) {
