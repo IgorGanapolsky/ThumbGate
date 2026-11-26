@@ -1408,6 +1408,25 @@ function inferLessonFromConversation(conversationWindow, signal) {
   };
 }
 
+const LAST_ACTION_CONTENT_MAX = 400;
+
+function boundedActionText(value) {
+  if (value == null || value === '') return null;
+  const text = typeof value === 'string' ? value : (() => { try { return JSON.stringify(value); } catch { return ''; } })();
+  const trimmed = redactSecrets(String(text || '').trim()).slice(0, LAST_ACTION_CONTENT_MAX);
+  return trimmed || null;
+}
+
+function actionContentFields(lastAction) {
+  if (!lastAction || typeof lastAction !== 'object') return {};
+  const command = boundedActionText(lastAction.command);
+  const input = command ? null : boundedActionText(lastAction.input ?? lastAction.args ?? lastAction.arguments);
+  return {
+    ...(command ? { command } : {}),
+    ...(input ? { input } : {}),
+  };
+}
+
 function captureFeedback(params, options = {}) {
   options = { ...options, hosted: options.hosted || Boolean(tenantDataScope()) };
   const _captureStart = Date.now();
@@ -1544,12 +1563,15 @@ function captureFeedback(params, options = {}) {
   });
 
   // Tool-call attribution: link feedback to specific action (#203)
+  // Keep the action itself (the command or tool input, bounded and secret-redacted), not only the tool name: a DPO
+  // pair's rejected side is this action, and two different Bash commands both read "Bash" without it.
   const lastAction = params.lastAction
     ? {
       tool: params.lastAction.tool || 'unknown',
       contextKey: params.lastAction.contextKey || null,
       file: params.lastAction.file || null,
       timestamp: params.lastAction.timestamp || null,
+      ...actionContentFields(params.lastAction),
     }
     : null;
 

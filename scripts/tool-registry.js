@@ -233,6 +233,16 @@ const TOOLS = [
         },
         tags: { type: 'array', items: { type: 'string' } },
         skill: { type: 'string' },
+        lastAction: {
+          type: 'object',
+          description: 'The exact action the feedback is about: the tool and its command or input (for example tool "Bash", command "npm install --force"). Becomes the rejected side of a DPO pair.',
+          properties: {
+            tool: { type: 'string' },
+            command: { type: 'string' },
+            input: { type: ['string', 'object'] },
+            file: { type: 'string' },
+          },
+        },
         conversationWindow: {
           type: 'array',
           items: {

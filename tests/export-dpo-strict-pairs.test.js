@@ -148,3 +148,40 @@ test('REQ-12: a repeated agent reply builds its prompt from the messages before 
   assert.match(r.pairs[0].prompt, /Which port does the API use\?$/);
   assert.match(r.pairs[0].prompt, /^user: Which port does the worker use\?/);
 });
+
+test('REQ-13: captureFeedback keeps the action command (secret-redacted, bounded), and the export pairs on it', () => {
+  const fs = require('node:fs');
+  const os = require('node:os');
+  const path = require('node:path');
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'tg-dpo-capture-'));
+  const prev = process.env.THUMBGATE_FEEDBACK_DIR;
+  process.env.THUMBGATE_FEEDBACK_DIR = dir;
+  try {
+    const { captureFeedback } = require('../scripts/feedback-loop');
+    const result = captureFeedback({
+      signal: 'down',
+      context: 'Agent forced a fresh install to fix a lockfile mismatch in CI',
+      whatWentWrong: 'It ignored the lockfile and pulled newer versions than CI pins',
+      whatToChange: 'Run npm ci so the install matches package-lock.json exactly',
+      lastAction: { tool: 'Bash', command: `npm install --force --token=ghp_${'a'.repeat(36)} ${'x'.repeat(600)}` },
+      conversationWindow: [
+        { role: 'user', content: 'CI fails with lockfile out of sync. Fix it.' },
+        { role: 'assistant', content: 'Running the install now.' },
+      ],
+    }, { feedbackDir: dir });
+    const action = result.feedbackEvent.lastAction;
+    assert.equal(action.tool, 'Bash');
+    assert.match(action.command, /^npm install --force --token=\[REDACTED/);
+    assert.ok(action.command.length <= 400);
+    assert.doesNotMatch(JSON.stringify(result.feedbackEvent), /ghp_a{36}/);
+
+    const memories = result.memoryRecord ? [result.memoryRecord] : [];
+    assert.equal(memories.length, 1, 'thumbs-down with a correction is promoted to a memory');
+    const r = exportDpoFromMemories(memories, { feedbackRows: [result.feedbackEvent] });
+    assert.equal(r.pairs.length, 1);
+    assert.equal(r.pairs[0].rejected, action.command);
+    assert.equal(r.pairs[0].metadata.rejectedSource, 'recorded_action');
+  } finally {
+    if (prev === undefined) delete process.env.THUMBGATE_FEEDBACK_DIR; else process.env.THUMBGATE_FEEDBACK_DIR = prev;
+  }
+});
