@@ -648,7 +648,8 @@ test('homepage stays human-scannable instead of becoming a product monorepo', ()
   // 1640: the proof-before-claim section and its coverage row say what the deploy-proof Stop gate does and does not catch (25 Nov 2026).
   // 1645: the hero line says the enforcement path needs no cloud, matching the README and tests/enforcement-path-offline.test.js (25 Nov 2026).
   // 1745: the hero shows the real 1.45.1 thumbs-down hold transcript, and the deny list and coverage table add terraform destroy, kubectl delete, aws s3 rm and the hold row (25 Nov 2026).
-  assert.ok(words.length <= 1745, `visible homepage is ${words.length} words`);
+  // 1775: the install block adds a one-paste setup prompt for Claude Code next to the command (26 Nov 2026).
+  assert.ok(words.length <= 1775, `visible homepage is ${words.length} words`);
   assert.ok(h2Count <= 8, `homepage has ${h2Count} H2 headings`);
   assert.ok(h3Count <= 10, `homepage has ${h3Count} H3 headings`);
   for (const jargon of ['Thompson Sampling', 'DPO', 'LanceDB', 'ContextFS', 'MemAlign', 'FTS5']) {
@@ -1084,4 +1085,14 @@ test('signed-in app nav removes Landing Page link, links logo to /, and shares o
   assert.match(lessonsHtml, /<a href="\/lessons" class="nav-tab active" aria-current="page">Lessons<\/a>/);
   assert.match(detailHtml, /<a href="\/lessons" class="nav-tab active" aria-current="page">Lessons<\/a>/);
   // End shared app-top-nav assertions
+});
+
+test('homepage offers a one-paste setup prompt for Claude Code next to the install command', () => {
+  const prompt = landingPage.match(/<code data-agent-prompt[^>]*>([^<]+)<\/code>/);
+  assert.ok(prompt, 'agent setup prompt must be on the homepage');
+  assert.match(prompt[1], /npx thumbgate init --agent claude/);
+  assert.match(prompt[1], /Change nothing else\./);
+  assert.match(landingPage, /data-copy-agent-prompt data-cta-id="hero_agent_prompt_copy"/);
+  assert.match(landingPage, /ctaPlacement: 'install_agent_prompt'/);
+  assert.match(landingPage, /navigator\.globalPrivacyControl === true \|\| navigator\.doNotTrack === '1'/);
 });

@@ -850,10 +850,12 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // (about 6 KB); measured 10,923,475 after merging main.
   // Bumped 10.93 MB -> 10.94 MB (2026-11-26, PR #5258): scripts/staged-secret-gate.js and its call in
   // scripts/gates-engine.js, with -C/cd, pathspec and same-command `git add` handling (about 15 KB); measured 10,938,266 after merging main.
-  // Bumped 10.94 MB -> 10.945 MB (2026-11-26, tinynature analytics): /tg-analytics.js and /host-matrix routes,
-  // second GA4 property, privacy text (about 2 KB); measured 10,940,570.
-  manifest.unpackedSize <= 10_945_000,
-  `npm package should stay <= 10.945 MB unpacked, got ${manifest.unpackedSize}`
+  // Bumped 10.94 MB -> 10.95 MB (2026-11-26, PR #5288): the /pricing stage picker and the homepage
+  // one-paste setup prompt in public/pricing.html and public/index.html (about 7 KB); CI measured 10,945,440.
+  // PR #5289 (tinynature analytics): /tg-analytics.js and /host-matrix routes, second GA4 property and
+  // privacy text (about 2 KB) still fit under 10.95 MB after merging main; measured 10,947,685.
+  manifest.unpackedSize <= 10_950_000,
+  `npm package should stay <= 10.95 MB unpacked, got ${manifest.unpackedSize}`
 );
 
   for (const file of requiredRuntimeFiles) {

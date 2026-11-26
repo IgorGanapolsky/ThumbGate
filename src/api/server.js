@@ -5255,6 +5255,7 @@ function renderSitemapXml(runtimeConfig) {
     { path: '/learn/openai-shirudo-shields-for-agent-actions', changefreq: 'weekly', priority: '0.85' },
     { path: '/learn/proof-before-claim-deploy-gate', changefreq: 'weekly', priority: '0.85' },
     { path: '/learn/claude-ship-agent-pr-rules', changefreq: 'weekly', priority: '0.85' },
+    { path: '/learn/review-then-post-agent-outbound-gate', changefreq: 'weekly', priority: '0.85' },
     { path: '/compare/claude-code-hooks', changefreq: 'weekly', priority: '0.85' },
     { path: '/compare/bumblebee', changefreq: 'weekly', priority: '0.85' },
     { path: '/compare/anthropic-containment', changefreq: 'weekly', priority: '0.85' },
