@@ -47,3 +47,16 @@ test('pricing preserves private first-party page views and Pro checkout clicks',
   assert.match(pricingHtml, /window.doNotTrack === '1'/);
   assert.match(pricingHtml, /if \(privacySignalOptOut\(\)\) return;/);
 });
+
+test('pricing stage picker routes each stage to one next step and records the pick', () => {
+  assert.match(pricingHtml, /id="stage-picker"/);
+  assert.match(pricingHtml, /Where are you right now\?/);
+  for (const stage of ['exploring', 'broke_once', 'repeats_mistakes', 'team_rollout']) {
+    assert.match(pricingHtml, new RegExp(`data-stage="${stage}"`));
+    assert.match(pricingHtml, new RegExp(`data-stage-answer="${stage}"`));
+  }
+  assert.match(pricingHtml, /data-stage-answer="repeats_mistakes"[\s\S]*?href="\/checkout\/pro"[^>]*data-cta-id="pricing_stage_repeats_pro"/);
+  assert.match(pricingHtml, /data-stage-answer="team_rollout"[\s\S]*?href="\/pilot"/);
+  assert.match(pricingHtml, /sendFirstPartyTelemetry\('stage_picked'/);
+  assert.match(pricingHtml, /if \(!record \|\| privacySignalOptOut\(\)\) return;/);
+});

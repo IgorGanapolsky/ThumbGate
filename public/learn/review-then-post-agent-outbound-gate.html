@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Review, then post: the draft-first rule for agents that talk to the outside world - ThumbGate</title>
+<script defer data-domain="thumbgate.ai" src="https://plausible.io/js/script.js"></script>
+<meta name="description" content="AI growth agents now draft Reddit replies, X posts and emails every day. The ones worth trusting stop at a draft and let a person send. Here is the same rule for Claude Code: drafts are allowed, sends need an approval bound to the exact action.">
+<meta name="keywords" content="AI marketing agent, review then post, draft first, outbound email gate, Claude Code, Gmail MCP send_message, agent approval, PreToolUse, ThumbGate">
+<meta property="og:title" content="Review, then post: the draft-first rule for agents that talk to the outside world">
+<meta property="og:description" content="A send can't be taken back. ThumbGate lets your agent write drafts and holds the send until a person approves that exact message.">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://thumbgate.ai/learn/review-then-post-agent-outbound-gate">
+<link rel="canonical" href="https://thumbgate.ai/learn/review-then-post-agent-outbound-gate">
+<link rel="stylesheet" href="/learn/learn.css">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "TechArticle",
+  "headline": "Review, then post: the draft-first rule for agents that talk to the outside world",
+  "description": "Why AI agents that post or send for you should stop at a draft, and how ThumbGate enforces that at the tool call: drafts are allowed, and a send needs a single-use approval bound to the exact action.",
+  "author": {
+    "@type": "Person",
+    "name": "Igor Ganapolsky",
+    "url": "https://github.com/IgorGanapolsky"
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "ThumbGate",
+    "url": "https://thumbgate.ai"
+  },
+  "datePublished": "2026-11-26",
+  "dateModified": "2026-11-26",
+  "mainEntityOfPage": "https://thumbgate.ai/learn/review-then-post-agent-outbound-gate",
+  "about": [
+    {"@type": "Thing", "name": "AI marketing agents"},
+    {"@type": "Thing", "name": "Outbound message approval"},
+    {"@type": "Thing", "name": "AI agent guardrails"}
+  ]
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "What is the review-then-post rule?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "An agent may research, write and queue a message, but a person approves it before it is sent or posted. A draft can be fixed. A sent email or a public reply cannot be taken back."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Does ThumbGate block my agent from sending email?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Yes, by default. The outbound-email-send gate denies Gmail MCP send_message and send_draft, Gmail API messages/send calls, smtplib, sendmail and nodemailer transports. Creating and updating drafts stays allowed. A send goes through only with an admin approval bound to that exact action, used once, within 15 minutes."
+      }
+    }
+  ]
+}
+</script>
+</head>
+<body>
+
+<nav>
+  <a href="/" class="brand"><img src="/assets/brand/thumbgate-mark-inline-v3.svg" alt="ThumbGate" class="logo-mark" width="28" height="28"><span class="logo-text">ThumbGate</span></a>
+  <a href="/guide">Setup Guide</a>
+  <a href="/learn">Learn</a>
+  <a href="/compare">Compare</a>
+  <a href="https://github.com/IgorGanapolsky/ThumbGate" target="_blank" rel="noopener">GitHub</a>
+</nav>
+
+<div class="container">
+  <div class="breadcrumb"><a href="/learn">Learn</a> / Review, then post</div>
+  <h1>Review, then post: the draft-first rule for agents that talk to the outside world</h1>
+  <p style="color:var(--muted);">4 min read &middot; For founders and developers who let an agent write emails, replies or posts for them</p>
+
+  <div class="tldr"><strong>TL;DR:</strong> A new wave of AI growth tools, such as HeyCatch, drafts social replies, posts and blog articles for solo founders every day. The design choice that makes them safe to use is simple: the agent drafts, a person reviews, then it posts. Your coding agent has the same reach once you connect Gmail or Slack to it, and usually no such stop. ThumbGate puts it at the tool call: drafts are allowed, sends are held until a person approves that exact message.</div>
+
+  <h2>Why a send is different from every other action</h2>
+  <p>Most agent mistakes can be undone. A bad edit gets reverted, a broken branch gets reset, a wrong file gets restored from git. An email to a customer, a reply on Reddit or a post on X cannot be called back. It is read, screenshotted and sometimes reported. Platforms also watch how often an account posts, so a burst of agent replies can get an account limited or banned.</p>
+  <p>That is why the better growth agents do not post on their own. They write the reply in your voice, show it to you, and send it only after you approve it.</p>
+
+  <h2>The same problem inside Claude Code</h2>
+  <p>Connect a mail or chat tool to a coding agent and it can send as you. A long session asked to "follow up with the people who signed up" can write twenty emails and send them, and the instruction in your prompt that says "show me first" is exactly the kind of rule that gets lost after a context compaction. A hook runs on every tool call, whether the agent remembers your rule or not.</p>
+
+  <h2>What ThumbGate does</h2>
+  <ul>
+    <li><strong>Sends are denied by default.</strong> The <code>outbound-email-send</code> gate in <code>config/gates/default.json</code> denies Gmail MCP <code>send_message</code> and <code>send_draft</code>, Gmail API <code>messages/send</code> calls made with curl or a client library, <code>smtplib</code>, <code>sendmail</code> and <code>nodemailer</code> transports.</li>
+    <li><strong>Drafts stay allowed.</strong> <code>create_draft</code>, <code>update_draft</code> and <code>list_drafts</code> are not blocked, so the agent can still do the writing.</li>
+    <li><strong>An approval covers one message.</strong> A send goes through only with an approval from a separately signed-in admin, bound to the digest of that exact action. It works once and expires after 15 minutes. An approval the agent writes for itself is rejected.</li>
+    <li><strong>Other posting tools learn from a thumbs-down.</strong> If your agent posts somewhere ThumbGate does not cover by default, type "thumbs down" after it. ThumbGate turns that into a learned rule that warns when the agent makes the same call again, and blocks it in strict mode.</li>
+  </ul>
+  <p>The tests for the email gate are in <a href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/tests/gates-engine-outbound-email.test.js" target="_blank" rel="noopener">tests/gates-engine-outbound-email.test.js</a>.</p>
+
+  <h2>What ThumbGate does not do</h2>
+  <ul>
+    <li>It does not judge what a message says. It stops the send, and a person reads the draft.</li>
+    <li>It does not count or pace posts per platform. It is not a scheduler.</li>
+    <li>A learned rule matches the call you thumbed down, not its purpose, so a reworded call through a different tool is not caught.</li>
+  </ul>
+
+  <h2>Sources</h2>
+  <ul>
+    <li><a href="https://heycatch.ai/" target="_blank" rel="noopener">HeyCatch: AI marketing co-founder (product site)</a></li>
+    <li><a href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/config/gates/default.json" target="_blank" rel="noopener">ThumbGate: default gates, including outbound-email-send</a></li>
+  </ul>
+  <p style="color:var(--muted);">ThumbGate is an independent project and is not affiliated with or endorsed by HeyCatch.</p>
+
+  <div class="cta-box">
+    <h2>Let your agent write. Keep the send button.</h2>
+    <p>Install ThumbGate free. The send gate is on from the first command.</p>
+    <div class="cta-install">npx thumbgate init --agent claude</div>
+    <div class="cta-actions">
+      <a class="cta-link" href="/install?utm_source=review_then_post&amp;utm_medium=learn&amp;utm_campaign=outbound_gate">Install free</a>
+      <a class="cta-link cta-link-secondary" href="/pricing?utm_source=review_then_post&amp;utm_medium=learn&amp;utm_campaign=outbound_gate">Free vs Pro</a>
+    </div>
+  </div>
+
+  <div class="related">
+    <h2>Related</h2>
+    <a href="/learn/proof-before-claim-deploy-gate">Proof before claim: a deploy gate for agents</a>
+    <a href="/learn/vibe-coding-safety-net">A safety net for vibe coding</a>
+    <a href="/learn/stop-ai-agent-force-push">Stop an AI agent from force-pushing</a>
+  </div>
+</div>
+
+<div class="sticky-cta">
+  <span>Drafts yes, sends with your OK</span>
+  <code>npx thumbgate init</code>
+  <a href="/install?utm_source=review_then_post&amp;utm_medium=learn&amp;utm_campaign=outbound_gate">Install free</a>
+</div>
+
+</body>
+</html>

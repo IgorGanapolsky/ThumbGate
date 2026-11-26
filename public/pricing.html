@@ -108,6 +108,15 @@
     .faq-q { width:100%; border:0; background:transparent; padding:18px 0; color:var(--ink); font:inherit; font-weight:800; text-align:left; cursor:pointer; }
     .faq-a { display:none; padding:0 0 18px; color:var(--muted); }
     .faq-item.open .faq-a { display:block; }
+    .stage-picker { max-width:660px; margin:0 0 28px; border:1px solid var(--line); border-radius:14px; background:var(--card); padding:18px 20px; }
+    .stage-picker h2 { margin:0 0 10px; font-size:1.15rem; letter-spacing:-.01em; }
+    .stage-options { display:flex; flex-wrap:wrap; gap:8px; }
+    .stage-options button { border:1px solid var(--line); border-radius:999px; background:#fff; color:var(--ink); padding:8px 14px; font:inherit; font-size:.92rem; cursor:pointer; }
+    .stage-options button[aria-pressed="true"] { border-color:var(--green); background:#e9f3ee; color:var(--green2); font-weight:800; }
+    .stage-answer { margin:14px 0 0; }
+    .stage-answer[hidden] { display:none; }
+    .stage-answer p { margin:0 0 10px; }
+    .stage-answer .button { width:auto; margin-top:0; }
     footer { border-top:1px solid var(--line); padding:28px 0; color:var(--muted); font-size:.85rem; }
     .footer-inner { display:flex; flex-wrap:wrap; justify-content:space-between; gap:24px; }
     .footer-links { display:flex; flex-wrap:wrap; min-width:0; gap:12px 18px; }
@@ -150,6 +159,32 @@
         <p class="audience" id="pricing-audience"><strong>Who it's for:</strong> Claude Code users whose agent has already broken something once. The local CLI is free and stays free.</p>
         <p class="lede">Free local gates for Claude Code, or self-serve Pro. Choose the plan that fits your workflow.</p>
         <p class="lede"><a href="/pilot" data-pilot-link="pricing">Request a 30-day team pilot</a> if you are rolling this out to a team.</p>
+
+        <div class="stage-picker" id="stage-picker">
+          <h2>Where are you right now?</h2>
+          <div class="stage-options" role="group" aria-label="Pick the one that fits">
+            <button type="button" aria-pressed="false" data-stage="exploring">Just looking</button>
+            <button type="button" aria-pressed="false" data-stage="broke_once">My agent broke something once</button>
+            <button type="button" aria-pressed="false" data-stage="repeats_mistakes">It keeps repeating the same mistake</button>
+            <button type="button" aria-pressed="false" data-stage="team_rollout">Rolling agents out to a team</button>
+          </div>
+          <div class="stage-answer" data-stage-answer="exploring" hidden>
+            <p>Start free. The default gates deny force-push, <code>git reset --hard</code> and secret leaks from the first command, and you can read every hook it writes.</p>
+            <a class="button" href="/install" data-stage-cta data-cta-id="pricing_stage_exploring_install">Install free</a>
+          </div>
+          <div class="stage-answer" data-stage-answer="broke_once" hidden>
+            <p>Free covers this. Type "thumbs down" after the bad command and ThumbGate holds it before it can run again. Your first 3 learned rules stay active on the free plan.</p>
+            <a class="button" href="/install" data-stage-cta data-cta-id="pricing_stage_broke_once_install">Install free</a>
+          </div>
+          <div class="stage-answer" data-stage-answer="repeats_mistakes" hidden>
+            <p>That is what Pro is for. Free keeps 3 learned rules active, so a fourth one does not stay active. Pro keeps every rule active and adds recall and lesson search.</p>
+            <a class="button" href="/checkout/pro" data-offer-link data-stage-cta data-value="__PRO_PRICE_DOLLARS__" data-revenue-cta data-cta-id="pricing_stage_repeats_pro" data-cta-placement="stage_picker" data-plan-id="pro" data-segment="repeats_mistakes">Get Pro</a>
+          </div>
+          <div class="stage-answer" data-stage-answer="team_rollout" hidden>
+            <p>Teams start with a 30-day pilot. Tell us what your agents touch and a person writes back. There is no team checkout.</p>
+            <a class="button" href="/pilot" data-stage-cta data-pilot-link="pricing_stage" data-cta-id="pricing_stage_team_pilot">Request a team pilot</a>
+          </div>
+        </div>
 
         <figure class="gate-demo" id="gate-demo">
           <video id="gate-demo-video" width="960" height="722" controls autoplay muted loop playsinline preload="auto" poster="/media/thumbgate-gate-demo-poster.jpg" aria-label="Recording: ThumbGate's built-in deny rules block a destructive Claude Code command before it runs. The denial comes from built-in rules, not from rules learned from a thumbs-down.">
@@ -285,6 +320,32 @@
         }
       });
     });
+
+    (function () {
+      const picker = document.getElementById('stage-picker');
+      if (!picker) return;
+      const buttons = picker.querySelectorAll('[data-stage]');
+      const answers = picker.querySelectorAll('[data-stage-answer]');
+      function show(stage, record) {
+        buttons.forEach(function (b) { b.setAttribute('aria-pressed', String(b.dataset.stage === stage)); });
+        answers.forEach(function (a) { a.hidden = a.dataset.stageAnswer !== stage; });
+        document.querySelectorAll('[data-primary-checkout] [data-offer-link]').forEach(function (link) { link.dataset.segment = stage; });
+        try { sessionStorage.setItem('tg_stage', stage); } catch (_) {}
+        if (!record || privacySignalOptOut()) return;
+        window.plausible('stage_picked', { props: { segment: stage } });
+        sendFirstPartyTelemetry('stage_picked', { segment: stage, ctaPlacement: 'stage_picker', experimentId: 'stage_picker_v1' });
+      }
+      buttons.forEach(function (b) { b.addEventListener('click', function () { show(b.dataset.stage, true); }); });
+      picker.querySelectorAll('[data-stage-cta]:not([data-offer-link])').forEach(function (link) {
+        link.addEventListener('click', function () {
+          sendFirstPartyTelemetry('cta_click', { ctaId: link.dataset.ctaId, ctaPlacement: 'stage_picker', segment: link.closest('[data-stage-answer]').dataset.stageAnswer, experimentId: 'stage_picker_v1' });
+        });
+      });
+      try {
+        const saved = sessionStorage.getItem('tg_stage');
+        if (saved && picker.querySelector('[data-stage="' + saved + '"]')) show(saved, false);
+      } catch (_) {}
+    })();
 
     sendFirstPartyTelemetry('pricing_page_view', { landingPath: '/pricing', experimentId: 'value_packaging_v1' });
   </script>

@@ -501,6 +501,18 @@ test('the AI FinOps learn page is served, listed in the sitemap, and claims no b
   assert.match(html, /does not cap tokens or dollars/i, 'the page says plainly what the gates do not do');
 });
 
+test('the review-then-post learn page is served, listed, and names only the shipped send gate', async () => {
+  const sitemap = await (await fetch(`${origin}/sitemap.xml`)).text();
+  assert.match(sitemap, /<loc>[^<]*\/learn\/review-then-post-agent-outbound-gate<\/loc>/, 'sitemap must list the review-then-post learn page');
+  const res = await fetch(`${origin}/learn/review-then-post-agent-outbound-gate`);
+  assert.equal(res.status, 200);
+  const html = await res.text();
+  assert.match(html, /outbound-[a-z]+-send/, 'names the shipped default gate');
+  assert.match(html, /tests\/gates-engine-outbound-[a-z]+\.test\.js/, 'links the tests behind the claim');
+  assert.match(html, /It does not judge what a message says/, 'says plainly what ThumbGate does not do');
+  assert.match(html, /not affiliated with or endorsed by HeyCatch/);
+});
+
 test('the Claude Ship rules learn page is served, listed, and describes only shipped gates', async () => {
   const sitemap = await (await fetch(`${origin}/sitemap.xml`)).text();
   assert.match(sitemap, /<loc>[^<]*\/learn\/claude-ship-agent-pr-rules<\/loc>/, 'sitemap must list the Claude Ship rules learn page');
