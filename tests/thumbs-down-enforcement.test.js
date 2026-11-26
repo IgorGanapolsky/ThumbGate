@@ -192,3 +192,82 @@ test('Cursor loop hooks are recognised in every spelling, so init and self-heal 
   assert.ok(!isThumbgateLoopHook({ command: 'echo cursor-prompt' }, 'cursor-prompt'), 'someone else\'s hook');
   assert.ok(!isThumbgateLoopHook({ command: 'node "/repo/bin/cli.js" cursor-record' }, 'cursor-prompt'), 'another subcommand');
 });
+
+test('Cursor self-heal: a shell gate pinned to a folder that is gone is moved to the portable runtime, and shell commands run again', () => {
+  const w = world();
+  const hooksFile = path.join(w.project, '.cursor', 'hooks.json');
+  fs.mkdirSync(path.dirname(hooksFile), { recursive: true });
+  const dead = 'node "/tmp/gone-npx-cache/node_modules/thumbgate/scripts/cursor-shell-gate.js"';
+  fs.writeFileSync(hooksFile, JSON.stringify({ version: 1, hooks: { beforeShellExecution: [{ command: 'echo mine' }, { command: dead, timeout: 10, failClosed: true }] } }));
+  const { repairCursorHooks } = require('../scripts/cursor-self-heal');
+  const result = repairCursorHooks({ homeDir: w.project, env: {} });
+  assert.equal(result.changed, true);
+  const shell = JSON.parse(fs.readFileSync(hooksFile, 'utf8')).hooks.beforeShellExecution;
+  assert.equal(shell.length, 2, 'the entry is replaced in place, not duplicated');
+  assert.equal(shell[0].command, 'echo mine', 'someone else\'s hook is untouched');
+  assert.ok(!/gone-npx-cache/.test(shell[1].command) && /cursor-gate/.test(shell[1].command), shell[1].command);
+  assert.equal(shell[1].failClosed, true, 'still fails closed when the gate itself cannot decide');
+  const out = spawnSync('sh', ['-c', shell[1].command], { cwd: w.project, env: w.env, encoding: 'utf8', timeout: 60000, input: JSON.stringify({ command: 'ls', cwd: w.project }) });
+  assert.equal(JSON.parse(out.stdout.trim().split('\n').pop()).permission, 'allow', 'the repaired gate answers');
+
+  const { wireCursorBeforeShellGate } = require('../scripts/auto-wire-hooks');
+  wireCursorBeforeShellGate({ cursorHooksPath: hooksFile });
+  assert.equal(JSON.parse(fs.readFileSync(hooksFile, 'utf8')).hooks.beforeShellExecution.length, 2, 'init after the repair adds no second shell gate');
+});
+
+function sendGateState(w) {
+  return JSON.parse(fs.readFileSync(path.join(w.feedbackDir, 'send-gate-state.json'), 'utf8'));
+}
+
+test('Claude Code: a thumbs-up lifts the hold and records the approved action for the next run', () => {
+  const w = world();
+  const run = (command) => claudeDecision(w, 'Bash', { command }).decision;
+  assert.equal(run('npm run deploy:staging'), 'allow');
+  cli(w, 'hook-auto-capture', { prompt: 'thumbs down', session_id: 's1', cwd: w.project });
+  assert.equal(run('npm run deploy:staging'), 'deny', 'held after the thumbs-down');
+
+  const up = cli(w, 'hook-auto-capture', { prompt: 'thumbs up', session_id: 's1', cwd: w.project });
+  assert.match(up.stdout, /hold\(s\) released/, 'the agent is told the hold is lifted');
+  assert.match(up.stdout, /Thumbs-up recorded on `npm run deploy:staging …`/, 'the agent is told which action was approved');
+  assert.equal(run('npm run deploy:staging'), 'allow', 'the approved action runs again');
+
+  const state = sendGateState(w);
+  assert.equal(state.holds.filter((h) => !h.releasedAt).length, 0);
+  const approval = state.approved.find((a) => a.signature === 'npm run deploy:staging');
+  assert.ok(approval, 'the approved pattern is stored');
+  assert.equal(approval.count, 1);
+
+  cli(w, 'hook-auto-capture', { prompt: 'thumbs up', session_id: 's1', cwd: w.project });
+  assert.equal(sendGateState(w).approved.find((a) => a.signature === 'npm run deploy:staging').count, 2, 'a second thumbs-up reinforces the same pattern');
+});
+
+test('Cursor: a typed thumbs-up lifts a thumbs-down hold through the prompt hook and records the approved post', () => {
+  const w = world();
+  const base = { conversation_id: 'conv-1', generation_id: 'gen-1', workspace_roots: [w.project] };
+  const mcpSend = (chat, text) => {
+    const out = cli(w, 'cursor-mcp-gate', { ...base, hook_event_name: 'beforeMCPExecution', mcp_server_name: 'teams', tool_name: 'send_chat_message', tool_input: JSON.stringify({ chat_id: chat, text }) });
+    return JSON.parse(out.stdout.trim().split('\n').pop()).permission;
+  };
+  assert.equal(mcpSend('chat-a', 'Update one.'), 'allow');
+  cli(w, 'cursor-prompt', { ...base, hook_event_name: 'beforeSubmitPrompt', prompt: 'thumbs down' });
+  assert.equal(mcpSend('chat-b', 'Update two.'), 'deny', 'held after the thumbs-down');
+  cli(w, 'cursor-prompt', { ...base, hook_event_name: 'beforeSubmitPrompt', prompt: 'thumbs up' });
+  assert.equal(mcpSend('chat-b', 'Update two.'), 'allow', 'the thumbs-up lifts the hold before the next tool call');
+  const state = sendGateState(w);
+  assert.ok(state.approved.some((a) => a.toolName === 'mcp__teams__send_chat_message'), 'the approved post is stored');
+});
+
+test('thumbs-up on two different posts to the same chat keeps two approvals, one per wording', () => {
+  const sendGate = require('../scripts/send-gate');
+  const feedbackDir = fs.mkdtempSync(path.join(os.tmpdir(), 'tg-td-up-'));
+  const toolName = 'mcp__teams__send_chat_message';
+  const t0 = Date.now();
+  const t1 = t0 + 3 * 60 * 60 * 1000; // past the second-bubble window
+  assert.equal(sendGate.evaluate({ feedbackDir, toolName, toolInput: { chat_id: 'chat-a', text: 'Release is out.' }, now: t0 }), null);
+  sendGate.recordApproval({ feedbackDir, now: t0 + 1000 });
+  assert.equal(sendGate.evaluate({ feedbackDir, toolName, toolInput: { chat_id: 'chat-a', text: 'Docs are updated.' }, now: t1 }), null);
+  sendGate.recordApproval({ feedbackDir, now: t1 + 1000 });
+  const approved = JSON.parse(fs.readFileSync(path.join(feedbackDir, 'send-gate-state.json'), 'utf8')).approved;
+  assert.equal(approved.length, 2, 'different wordings are separate approvals');
+  assert.ok(approved.every((a) => a.count === 1 && a.textHash), 'each keeps its own wording hash');
+});

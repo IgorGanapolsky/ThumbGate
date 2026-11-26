@@ -30,6 +30,7 @@ const {
   statuslineCommand,
   userPromptHookCommand,
   cursorShellGateHookCommand,
+  isPinnedCursorShellGateCommand,
   cursorCliHookCommand,
   isDisposableCheckout,
 } = require('./hook-runtime');
@@ -188,15 +189,17 @@ function wireCursorBeforeShellGate(options = {}) {
   }
 
   const beforeShell = existing.hooks.beforeShellExecution;
-  const staleRemoved = beforeShell.filter(isStaleCursorGateCheckHook);
+  const isStale = (entry) => isStaleCursorGateCheckHook(entry) || isPinnedCursorShellGateCommand(entry && entry.command);
+  const staleRemoved = beforeShell.filter(isStale);
   if (staleRemoved.length > 0) {
-    existing.hooks.beforeShellExecution = beforeShell.filter((entry) => !isStaleCursorGateCheckHook(entry));
+    existing.hooks.beforeShellExecution = beforeShell.filter((entry) => !isStale(entry));
     for (const entry of staleRemoved) {
-      added.push({ lifecycle: 'beforeShellExecution (removed stale gate-check)', command: entry.command });
+      const why = isPinnedCursorShellGateCommand(entry.command) ? 'replaced install-pinned shell gate' : 'removed stale gate-check';
+      added.push({ lifecycle: `beforeShellExecution (${why})`, command: entry.command });
     }
   }
 
-  const alreadyWired = beforeShell.some((entry) => entry.command === command);
+  const alreadyWired = existing.hooks.beforeShellExecution.some((entry) => isThumbgateLoopHook(entry, 'cursor-gate'));
   if (!alreadyWired) {
     existing.hooks.beforeShellExecution.unshift(hookEntry);
     added.unshift({ lifecycle: 'beforeShellExecution', command });
@@ -206,7 +209,7 @@ function wireCursorBeforeShellGate(options = {}) {
   // unless failClosed is true, so upgrade the entry in place.
   let upgradedFailClosed = false;
   for (const entry of existing.hooks.beforeShellExecution) {
-    if (entry.command === command && entry.failClosed !== true) {
+    if (isThumbgateLoopHook(entry, 'cursor-gate') && entry.failClosed !== true) {
       entry.failClosed = true;
       upgradedFailClosed = true;
       added.push({ lifecycle: 'beforeShellExecution (failClosed set)', command });
@@ -580,6 +583,14 @@ function wireClaudeHooks(options) {
       installShim();
     } catch {
       // Non-fatal: fall back to version-pinned commands
+    }
+    // The hooks run the cached runtime, so a newer package than the runtime means init must refresh it
+    // (it used to print "already configured" and leave the runtime behind). Detached, opt-out with
+    // THUMBGATE_NO_AUTO_UPDATE=1.
+    try {
+      require('./runtime-auto-update').refreshRuntimeOnInit({ packageVersion: require('../package.json').version });
+    } catch {
+      // Best effort: the shim's daily check and the MCP path still catch up.
     }
   }
 

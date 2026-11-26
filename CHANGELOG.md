@@ -1,5 +1,37 @@
 # Changelog
 
+## 1.46.0
+
+### Minor Changes
+
+- e180676: New `thumbgate assurance-report` command: one Markdown (or `--json`) report from your local decision log covering what agents tried, what was stopped or flagged, the rules to fix first (ranked by severity times hits), what people decided (thumbs and overrides), and the evidence behind each number (log path, SHA-256, rule catalog versions, sample entry ids).
+
+## 1.45.3
+
+Never published to npm (its publish failed the package size check); these changes ship in 1.46.0.
+
+### Patch Changes
+
+- dfbbff2: thumbgate.ai's sitemap now gives each page a `<lastmod>` taken from the page's own JSON-LD `dateModified` (or `datePublished`), so answer engines can see which pages are fresh. `/llms-full.txt` now serves the long-form `llm-context.md` instead of a 404.
+- 9f0ec2c: `thumbgate dashboard --open` from a folder with no git remote now opens on all projects instead of pinning that folder as a project.
+- 5b3dc08: Add thumbgate.ai/demo: a five-chapter walkthrough (install, built-in block, thumbs-down, learned gate, team pilot) with real CLI output, a cost-of-repeats calculator and the team pilot form. /pilot now fills its canonical URL and analytics placeholders like every other marketing page.
+- 16582c8: The PreToolUse hook is about twice as fast (about 255 ms down to about 135 ms per tool call in our benchmark). It now asks git for the repo root once per tool call instead of about 20 times, keeps project identity in a small cache file between hook runs, finds executables on PATH without spawning `which`, uses Node's compile cache on Node 22.1+, and refreshes the learned intervention policy at most every 5 minutes instead of on every audited call.
+- a6c4377: A hard-block gate now still denies when an earlier gate is demoted to a warning. A pending PR-thread check left by another repo used to hide `terraform destroy`, force-push and similar denies, and it no longer applies from a folder outside any git repo; Claude `gate-check` and Cursor `cursor-gate` both deny. The hook runtime now keeps up with npm: `thumbgate init` refreshes an older cached runtime instead of printing "already configured", a finished update no longer blocks a newer release for 24 hours, and the hook shim checks npm once a day itself (opt out with `THUMBGATE_NO_AUTO_UPDATE=1`), so runtimes older than 1.43.1 catch up too.
+- d0d6668: Homepage hero now shows what 1.45 does: one typed thumbs-down holds the command until you say "go ahead", a second one makes it a deny, and terraform destroy, kubectl delete and aws s3 rm are denied on a fresh install. The hero transcript and status line are real captures from the published 1.45.1 package.
+- 821083b: Self-protection now covers the learned-rule store. An agent can no longer `rm`, truncate, `sed` or `Write` over the gates a thumbs-down promoted (`auto-promoted-gates.json`), the claim rules, the send holds, `prevention-rules.md` or the feedback log in `.thumbgate/`, `.thumbgate-compat/`, `~/.thumbgate/projects/<name>/` or `.claude/memory/feedback/`. These writes hit the `self-protect-config` hard floor, which no bypass env lifts. Reads stay allowed, ThumbGate's own code still writes the files, and an operator can still grant a scoped, time-limited approval with the `approve_protected_action` MCP tool.
+- fb855e1: Model routing now says whether a task needs a reasoning step. Routine edits, tool loops and sub-agent work get `reasoningMode: "instruct"`; debugging, architecture and hard algorithmic or math work get `"thinking"`, and so does a task that failed twice without it. New local family `THUMBGATE_LOCAL_MODEL_FAMILY=mellum` maps roles to JetBrains' open-weights Mellum2.1 Instruct and Thinking models (Apache 2.0).
+- 300b1f7: The /pilot page now explains how a 30-day team pilot runs (one repo, the team's thumbs decide, an `npx thumbgate inventory` evidence report, a day-30 decision), and a new learn page compares DXC Frontier Code Assurance with pre-action gates.
+- e8e1659: Privacy page now says exactly what Clarity does: no consent signal is sent and there is no banner.
+- fe45106: `thumbgate cfo`, `north-star` and the telemetry sync now honor `NO_PROXY`. Behind an HTTPS proxy they used to send every hosted request through it, including requests to localhost or internal hosts listed in `NO_PROXY`, which made those reads fail and fall back to local data.
+- f31ae67: Terms of Service and Support now say the $499 Hardened Workflow Gate is no longer offered and that its terms and refund rule apply only to orders placed before November 25, 2026.
+
+## 1.45.2
+
+### Patch Changes
+
+- e28ac60: The Cursor shell gate no longer points at one install's folder. `thumbgate init --agent cursor` used to write `node <install>/scripts/cursor-shell-gate.js` with `failClosed: true` into the user-wide `~/.cursor/hooks.json`; when that npx cache or checkout went away, every shell command in every Cursor project was blocked. It now writes the same portable runtime command as the other hooks (`thumbgate cursor-gate` through the shim or pinned `npm exec`). Existing installs are moved over on the next ThumbGate MCP server start or shell command, in place, keeping other hooks untouched. `thumbgate cursor-gate` now fails closed on an internal error, like the script it replaces, instead of allowing the command.
+- 232eaf1: A thumbs-up now does more than lift a thumbs-down hold: it records the approved action (tool and command or post) in the send-gate state, a repeat thumbs-up on the same pattern raises its count, and the agent is told which action was approved. Works from Claude Code's prompt hook and Cursor's `beforeSubmitPrompt` hook.
+
 ## 1.45.1
 
 ### Patch Changes
