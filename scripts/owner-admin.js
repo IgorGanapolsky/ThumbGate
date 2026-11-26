@@ -17,7 +17,8 @@ const JSON_LIMIT = 8 * 1024 * 1024;
 const LOG_LIMIT = 16 * 1024 * 1024;
 const RESPONSE_LIMIT = 1024 * 1024;
 const RESOURCES = Object.freeze({ customers: 'cus', subscriptions: 'sub', payments: 'ch', refunds: 're', products: 'prod', prices: 'price', 'subscription-items': 'si' });
-const SECTIONS = new Set(['overview', 'money', 'data', 'analytics', 'observability', 'summary', 'alerts', 'economics', 'behavior', 'sources']);
+const SECTIONS = new Set(['overview', 'money', 'data', 'analytics', 'observability', 'summary', 'alerts', 'economics', 'behavior', 'sources', 'leads']);
+const LEADS_SHOWN = 200;
 const MONEY_CACHE_MS = 60000;
 let moneyCache = null;
 const PRIVATE_HEADERS = Object.freeze({ 'Cache-Control': 'private, no-store', Vary: 'Cookie', 'X-Robots-Tag': 'noindex, nofollow', 'Referrer-Policy': 'no-referrer', 'X-Content-Type-Options': 'nosniff' });
@@ -294,6 +295,51 @@ async function collectData(route, deps, signal) {
   const lessons = await countRecords(root, path.join(root, 'memory-log.jsonl'), signal);
   if (!feedback.complete || !lessons.complete) warnings.push('legacy_counts_partial');
   return envelope('current_known_accounts', { records, totalKnown: ordered.length, total: inventoryComplete ? ordered.length : null, inventoryComplete, hasMore: route.offset + page.length < ordered.length, nextCursor: route.offset + page.length < ordered.length ? Buffer.from('accounts:' + (route.offset + page.length)).toString('base64url') : null, coverage: 'current_known_accounts_not_lifetime_signups', unattributedLegacy: { feedback, lessons }, projects: { status: 'unavailable', reason: 'project_scope_not_integrated' } }, [...new Set(warnings)]);
+}
+
+// Emails people typed into the install page or the CLI subscribe prompt (marketing-install-emails.jsonl, written by
+// POST /v1/marketing/install-email). Owner-only, newest first. IP address and user agent stay on the volume.
+async function collectLeads(deps, signal) {
+  stopped(signal);
+  const root = deps.feedbackDir;
+  let stream;
+  let lines;
+  const rows = [];
+  let malformedLines = 0;
+  let truncated = false;
+  try {
+    const safe = guardPath(root, path.join(root, 'marketing-install-emails.jsonl'));
+    const stat = await fs.promises.lstat(safe);
+    if (!stat.isFile()) throw failure('unsafe_path');
+    truncated = stat.size > LOG_LIMIT;
+    stream = fs.createReadStream(safe, { flags: fs.constants.O_RDONLY | fs.constants.O_NOFOLLOW, start: 0, end: LOG_LIMIT - 1, signal });
+    lines = readline.createInterface({ input: stream, crlfDelay: Infinity });
+    for await (const line of lines) {
+      stopped(signal);
+      if (!line.trim()) continue;
+      let row;
+      try { row = JSON.parse(line); } catch { malformedLines += 1; continue; }
+      if (!object(row) || typeof row.email !== 'string') { malformedLines += 1; continue; }
+      rows.push(row);
+    }
+  } catch (error) {
+    stopped(signal);
+    if (error.code === 'ENOENT') return envelope('install_email_ledger', { records: [], total: 0, uniqueEmails: 0, shown: 0 });
+    return envelope('install_email_ledger', null, ['ledger_unreadable'], 'unavailable');
+  } finally { lines?.close(); stream?.destroy(); }
+  const uniqueEmails = new Set(rows.map((row) => row.email.trim().toLowerCase())).size;
+  const records = rows.slice(-LEADS_SHOWN).reverse().map((row) => ({
+    capturedAt: text(row.capturedAt, 40),
+    email: text(row.email.trim(), 320),
+    source: text(row.source, 64),
+    cliVersion: text(row.cliVersion, 32),
+    hasInstallId: typeof row.installId === 'string' && row.installId.length > 0,
+    classification: billing.classifyRevenueRecord({ email: row.email }),
+  }));
+  const warnings = [];
+  if (malformedLines) warnings.push('malformed_lines');
+  if (truncated) warnings.push('ledger_truncated');
+  return envelope('install_email_ledger', { records, total: rows.length, uniqueEmails, shown: records.length, malformedLines }, warnings);
 }
 
 const numericFields = (value, names) => Object.fromEntries(names.map((name) => [name, number(value?.[name])]));
@@ -1255,6 +1301,7 @@ async function collectAdminSection(route, deps, externalSignal) {
       if (route.section === 'alerts') return collectAlerts(deps, controller.signal);
       if (route.section === 'economics') return collectEconomics(deps, controller.signal);
       if (route.section === 'sources') return collectSources(deps, controller.signal);
+      if (route.section === 'leads') return collectLeads(deps, controller.signal);
       if (route.section === 'stripe') return collectStripe(route, deps, controller.signal);
       if (route.section === 'data') return collectData(route, deps, controller.signal);
       if (route.section === 'observability') return collectObservability(deps, controller.signal);
@@ -1269,4 +1316,4 @@ async function collectAdminSection(route, deps, externalSignal) {
   }
 }
 
-module.exports = { collectSources, paymentAccessCheck, PRIVATE_HEADERS, RESPONSE_LIMIT, monthlyRecurring, collectAlerts, startAlertDelivery, nextAlertDeliveryState, adminPath, parseAdminRoute, readOwnerIdentity, readSessionState, collectMoney, collectAnalytics, collectSummary, summaryParts, collectAdminSection, createRuntimeObservations, githubCommitTitle, collectObservability, projectAnalytics, projectStripe, readObject, countRecords, guardPath };
+module.exports = { collectLeads, collectSources,paymentAccessCheck, PRIVATE_HEADERS, RESPONSE_LIMIT, monthlyRecurring, collectAlerts, startAlertDelivery, nextAlertDeliveryState, adminPath, parseAdminRoute, readOwnerIdentity, readSessionState, collectMoney, collectAnalytics, collectSummary, summaryParts, collectAdminSection, createRuntimeObservations, githubCommitTitle, collectObservability, projectAnalytics, projectStripe, readObject, countRecords, guardPath };
