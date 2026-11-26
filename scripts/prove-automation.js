@@ -209,7 +209,9 @@ async function runAutomationProof(options = {}) {
     {
       const { MEMORY_LOG_PATH } = getFeedbackPaths();
       const memories = readJSONL(MEMORY_LOG_PATH);
-      const result = exportDpoFromMemories(memories);
+      // This step proves rubric-delta metadata, which only the legacy keyword matcher computes. Real-pair quality is
+      // covered by tests/export-dpo-strict-pairs.test.js, so this proof opts out of strict pairing explicitly.
+      const result = exportDpoFromMemories(memories, { strict: false });
       check(result.pairs.length >= 1, 'expected at least one DPO pair');
       const first = result.pairs[0];
       check(Boolean(first.metadata && first.metadata.rubric), 'expected rubric metadata in DPO pair');

@@ -13166,7 +13166,8 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
         }
 
         const memories = body.inputPath ? loadDpoExportMemories(paths).map((row) => ({ ...row, ...projectForRecord(row) })) : readProjectRows(requestFeedbackDir, 'memory-log.jsonl', projectOptions);
-        const result = exportDpoFromMemories(memories, projectOptions);
+        // Strict pairing reads this request's feedback-log.jsonl, not the default store.
+        const result = exportDpoFromMemories(memories, body.inputPath ? projectOptions : { ...projectOptions, feedbackDir: requestFeedbackDir });
         if (paths.outputPath) {
           fs.mkdirSync(path.dirname(paths.outputPath), { recursive: true });
           fs.writeFileSync(paths.outputPath, result.jsonl);

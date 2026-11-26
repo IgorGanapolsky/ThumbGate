@@ -59,6 +59,17 @@ const feedbackEntries = [
     whatToChange: 'run the linter before every commit',
     timestamp: new Date().toISOString(),
   },
+  {
+    // A real pair source: the rejected action, the prompt window, and the corrective action on the same task.
+    id: 'fb-proof-pair',
+    signal: 'negative',
+    context: 'skipped the database integration test and missed a migration failure',
+    whatWentWrong: 'skipped the database integration test and missed a migration failure',
+    lastAction: 'release without running the database integration test',
+    conversationWindow: 'User: ship the migration\nAssistant: released without running the database integration test',
+    whatToChange: 'run the database integration test before the release',
+    timestamp: new Date().toISOString(),
+  },
 ];
 
 fs.writeFileSync(
@@ -76,6 +87,7 @@ fs.writeFileSync(
       category: 'error',
       importance: 'high',
       tags: ['database', 'testing'],
+      sourceFeedbackId: 'fb-proof-pair',
       timestamp: new Date().toISOString(),
     },
     {

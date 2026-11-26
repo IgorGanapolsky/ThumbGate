@@ -104,9 +104,19 @@ test.after(async () => {
 test('async DPO export launches as a hosted job and persists its output artifact', async () => {
   const memoryLogPath = path.join(tmpFeedbackDir, 'memory-log.jsonl');
   const outputPath = path.join(tmpFeedbackDir, 'exports', 'dpo.jsonl');
+  fs.writeFileSync(path.join(tmpFeedbackDir, 'feedback-log.jsonl'), JSON.stringify({
+    id: 'fb-err-1',
+    signal: 'negative',
+    context: 'pushed straight to main before anyone reviewed it',
+    whatWentWrong: 'pushed straight to main before anyone reviewed it',
+    lastAction: 'push directly to main',
+    conversationWindow: 'User: land the change\nAssistant: pushed directly to main',
+    whatToChange: 'open a PR and run verification before merge',
+  }) + '\n', 'utf8');
   fs.writeFileSync(memoryLogPath, [
     JSON.stringify({
       id: 'err-1',
+      sourceFeedbackId: 'fb-err-1',
       category: 'error',
       title: 'ERROR: force push to main',
       content: 'Force-pushed directly to main before review.',

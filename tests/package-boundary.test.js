@@ -845,8 +845,10 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // Bumped 10.90 MB -> 10.91 MB (2026-11-25): #5164 and #5201 each fit alone but together measured 10,900,646.
   // Bumped 10.91 MB -> 10.92 MB (2026-11-26, PR #5270): gate-audit trigger audit in scripts/auto-promote-gates.js
   // and bin/cli.js (about 7 KB); measured 10,910,088 after merging main.
-  manifest.unpackedSize <= 10_920_000,
-  `npm package should stay <= 10.92 MB unpacked, got ${manifest.unpackedSize}`
+  // Bumped 10.92 MB -> 10.93 MB (2026-11-26, PR #5261): strict DPO pairing in scripts/export-dpo-pairs.js
+  // (about 6 KB); measured 10,923,475 after merging main.
+  manifest.unpackedSize <= 10_930_000,
+  `npm package should stay <= 10.93 MB unpacked, got ${manifest.unpackedSize}`
 );
 
   for (const file of requiredRuntimeFiles) {
