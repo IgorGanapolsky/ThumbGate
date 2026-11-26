@@ -157,6 +157,30 @@ function redactSecretsDeep(value) {
   }
   return value;
 }
+/**
+ * Like redactSecretsDeep, but also redacts every value stored under a credential-named key
+ * ({ password: '...' }, { apiKey: '...' }, { authorization: '...' }), whatever the value looks like.
+ * Use it before serializing structured input: the string patterns cannot see a JSON key's name.
+ *
+ * @param {*} value
+ * @returns {*} redacted copy
+ */
+const CREDENTIAL_HEADER_KEY = /^(?:authorization|proxy-authorization|cookie|set-cookie|auth)$/i;
+function redactSecretKeysDeep(value) {
+  if (typeof value === 'string') return redactSecrets(value);
+  if (Array.isArray(value)) return value.map((item) => redactSecretKeysDeep(item));
+  if (value && typeof value === 'object') {
+    const out = {};
+    for (const [key, val] of Object.entries(value)) {
+      const credentialKey = (SECRET_KEY_NAME.test(key) && !PUBLIC_KEY_NAME.test(key)) || CREDENTIAL_HEADER_KEY.test(key);
+      out[key] = credentialKey && val != null && typeof val !== 'object' && String(val) !== ''
+        ? REDACTED('secret_key_value')
+        : redactSecretKeysDeep(val);
+    }
+    return out;
+  }
+  return value;
+}
 const crypto = require('node:crypto');
 const fs = require('node:fs');
 const path = require('node:path');
@@ -362,6 +386,7 @@ module.exports = {
   SECRET_REDACTION_PATTERNS,
   redactSecrets,
   redactSecretsDeep,
+  redactSecretKeysDeep,
   containsSecret,
   computeLuhnCheckDigit,
   tokenizeFormatPreservingVaultless,
