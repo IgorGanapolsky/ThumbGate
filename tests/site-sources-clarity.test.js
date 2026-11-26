@@ -40,7 +40,7 @@ test('REQ-03: the owner console never loads Clarity itself, and the Sources tab 
   const admin = fs.readFileSync(path.join(PUBLIC, 'admin.html'), 'utf8');
   assert.equal(/clarity\.ms\/tag|\/js\/clarity\.js|plausible\.io|googletagmanager/i.test(admin), false);
   assert.match(admin, /sources: 'Sources'/);
-  assert.match(admin, /'behavior', 'sources', 'observability'/);
+  assert.match(admin, /'behavior', 'sources', 'leads', 'observability'/);
   const injected = clarity.injectClarityTag('<html><head></head></html>', { pathname: '/admin', headers: {}, env: {} });
   assert.equal(injected.includes('clarity.ms'), false, 'the server leaves /admin alone');
 });
