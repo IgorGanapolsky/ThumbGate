@@ -129,6 +129,20 @@ npx -y thumbgate serve
 
 Example: the agent runs `npm run deploy:staging` and you type *"thumbs down: that pushed to the wrong environment"*. The next `npm run deploy:staging` gets a warning before it runs. You thumbs-down it a second time, and the next run is denied. A later 👍 on the same command is saved as a success lesson, and the block stays in place.
 
+### Holds, and how to release or remove a gate
+
+A **hold** is a pause. When you type a 👎 right after the agent ran something, ThumbGate refuses that same action (the same tool; for a shell command, the same first three words) until you say to go on. After a chat post, new posts are refused until the last message is edited in place. It exists so the agent cannot repeat what you just marked wrong. A hold lasts up to 24 hours, and several 👎 on the same action count as one hold.
+
+Three ways out:
+
+1. **Say it.** Start your message with "go ahead", "continue", "proceed", "resume" or "unblock", or give a 👍.
+2. **Clear it now.** Run `npx thumbgate holds release` in the project folder. `npx thumbgate holds` lists what is held.
+3. **Turn the hold off.** Run `npx thumbgate holds off`. It takes effect in the session that is already running, and `npx thumbgate holds on` brings it back. Setting `THUMBGATE_THUMBS_DOWN_HOLD=0` before you start a session does the same for that session.
+
+Turning the hold off keeps every other gate: the denied-by-default commands (force-push, secrets sent out, `rm -rf` on home and the like) and the chat send rules stay on. `THUMBGATE_SEND_GATE=0` is the switch for the whole chat send gate, holds included. `npx thumbgate break-glass` does not lift a hold.
+
+Limits: a hold matches the same tool or the same first three words, so a reworded command is not held, and ThumbGate is not a sandbox.
+
 ---
 
 ## How it works (short)
