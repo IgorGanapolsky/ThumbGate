@@ -226,7 +226,7 @@ function exportHfDataset(options = {}) {
 
   if (memories.length > 0) {
     try {
-      const dpoResult = exportDpoFromMemories(memories);
+      const dpoResult = exportDpoFromMemories(memories, { feedbackDir });
       preferenceRows = dpoResult.pairs.map((pair, i) => buildPreferenceRow(pair, i));
     } catch {
       // DPO export failure should not break the traces export

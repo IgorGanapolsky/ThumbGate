@@ -10,6 +10,7 @@ const { projectForRecord, matchesProject } = require('./project-identity');
 const path = require('path');
 const { traceForDpoPair, aggregateTraces } = require('./code-reasoning');
 const { resolveFeedbackDir } = require('./feedback-paths');
+const { normalizeConversationWindow } = require('./conversation-context');
 const { redactSecretsDeep } = require('./secret-redaction');
 
 const DEFAULT_LOCAL_MEMORY_LOG = path.join(resolveFeedbackDir(), 'memory-log.jsonl');
@@ -179,6 +180,128 @@ function buildDpoPairs(errors, learnings, { maxDistractors = 2 } = {}) {
   };
 }
 
+// ---- Strict pairing -------------------------------------------------------------------------------------------
+// A DPO pair is two responses or actions to the SAME prompt/context. The keyword matcher above joined two unrelated
+// records that shared a tag ("Task domain: feedback, ..." / "great job, Claude" / an unrelated complaint), which is not
+// a pair. The strict builder pairs only inside one feedback record or one prompt:
+//   rejected = the action that was thumbed down (lastAction), prompt = the conversation window before it,
+//   chosen   = the corrective action written for that same record (whatToChange), or a thumbs-up recorded on the same
+//              session AND the same prompt id whose lastAction is the better action.
+// Everything else is reported in `dropped` with a reason.
+const VAGUE_NEGATIVE = /^(thumbs?[- ]?down|bad|wrong|no|nope|nah|fix (it|this)|this is (wrong|bad)[!.]*|\W*)$/i;
+const PRAISE_ONLY = /^(?:what worked:\s*)?(?:great|good|nice|perfect|awesome|excellent|thanks|thank you|love it|well done|works?)\b[^.]{0,40}$/i;
+const REINFORCE = /^when answering .*: reinforce\b/i;
+
+function textOf(value) {
+  if (value == null) return '';
+  if (typeof value === 'string') return value.trim();
+  if (Array.isArray(value)) return value.map(textOf).filter(Boolean).join('\n').trim();
+  if (typeof value === 'object') {
+    const direct = value.text || value.content || value.command || value.summary || value.description;
+    if (direct) return textOf(direct);
+    const tool = value.tool || value.toolName || value.name;
+    const input = value.input || value.args || value.arguments;
+    if (tool) return `${tool}${input ? ` ${typeof input === 'string' ? input : JSON.stringify(input)}` : ''}`.trim();
+  }
+  return '';
+}
+
+function wordCount(text) { return String(text || '').split(/\s+/).filter(Boolean).length; }
+
+// The action itself: a command, input or text. A bare tool name ("Bash") is not an action: captureFeedback stores
+// only tool/contextKey/file/timestamp in lastAction, and two different Bash commands would both read "Bash".
+function actionContentOf(value) {
+  if (value == null) return '';
+  if (typeof value === 'string') return value.trim();
+  if (typeof value !== 'object' || Array.isArray(value)) return textOf(value);
+  const direct = value.command || value.text || value.content || value.summary || value.description;
+  if (direct) return textOf(direct);
+  const input = value.input || value.args || value.arguments;
+  if (input == null || input === '') return '';
+  const tool = value.tool || value.toolName || value.name;
+  return `${tool ? `${tool} ` : ''}${typeof input === 'string' ? input : JSON.stringify(input)}`.trim();
+}
+
+// The prompt is the context at the decision point: role-preserving, and ending before the rejected action.
+// A plain-text window is cut at the first occurrence of the action; a message window drops the message that
+// contains the action and everything after it. If nothing is left before the action, there is no prompt.
+function promptBefore(windowValue, rejected) {
+  if (Array.isArray(windowValue)) {
+    const messages = normalizeConversationWindow(windowValue);
+    const cut = messages.findIndex((m) => m.content.includes(rejected));
+    const kept = cut === -1 ? messages : messages.slice(0, cut);
+    return kept.map((m) => `${m.role}: ${m.content}`).join('\n').trim();
+  }
+  const text = textOf(windowValue);
+  const at = text.indexOf(rejected);
+  if (at === -1) return text;
+  let before = text.slice(0, at);
+  // Drop the partial line that introduced the action ("Assistant: ran ") so the prompt ends on a whole turn.
+  const lineStart = before.lastIndexOf('\n');
+  before = lineStart === -1 ? '' : before.slice(0, lineStart);
+  return before.trim();
+}
+
+function loadFeedbackIndex(options = {}) {
+  const rows = options.feedbackRows || readJSONL(path.join(options.feedbackDir || resolveFeedbackDir(), 'feedback-log.jsonl'));
+  const byId = new Map();
+  for (const row of rows) if (row && row.id) byId.set(row.id, row);
+  return { rows, byId };
+}
+
+function strictPairFor(error, feedback, positives) {
+  if (!feedback) return { reason: 'no_source_feedback_record' };
+  const whatWrong = textOf(feedback.whatWentWrong) || textOf(feedback.context);
+  if (wordCount(whatWrong) < 4 || VAGUE_NEGATIVE.test(whatWrong)) return { reason: 'vague_negative_feedback' };
+  if (!feedback.lastAction) return { reason: 'no_rejected_action_recorded' };
+  const rejected = actionContentOf(feedback.lastAction);
+  if (!rejected) return { reason: 'rejected_action_has_no_content' };
+  if (!textOf(feedback.conversationWindow)) return { reason: 'no_prompt_context_recorded' };
+  const window = promptBefore(feedback.conversationWindow, rejected);
+  if (!window) return { reason: 'no_prompt_context_before_rejected_action' };
+  let chosen = textOf(feedback.whatToChange);
+  let chosenSource = 'same_record_corrective_action';
+  if (chosen && (REINFORCE.test(chosen) || PRAISE_ONLY.test(chosen))) chosen = '';
+  if (!chosen) {
+    const promptId = feedback.sourceEvent && feedback.sourceEvent.promptIdHash;
+    const session = feedback.scope && feedback.scope.sessionId;
+    const match = promptId && session ? positives.find((p) => p.sourceEvent && p.sourceEvent.promptIdHash === promptId
+      && p.scope && p.scope.sessionId === session && actionContentOf(p.lastAction) && !PRAISE_ONLY.test(actionContentOf(p.lastAction))) : null;
+    if (!match) return { reason: 'no_corrective_or_same_prompt_positive_action' };
+    chosen = actionContentOf(match.lastAction);
+    chosenSource = 'thumbs_up_same_session_and_prompt';
+  }
+  if (chosen === rejected) return { reason: 'chosen_equals_rejected' };
+  return { pair: { prompt: window, rejected, chosen, chosenSource, whatWentWrong: whatWrong } };
+}
+
+function buildStrictDpoPairs(errors, learnings, options = {}) {
+  const { byId, rows } = loadFeedbackIndex(options);
+  const positives = rows.filter((r) => r && r.signal === 'positive');
+  const pairs = [];
+  const dropped = [];
+  for (const error of errors) {
+    const feedback = byId.get(error.sourceFeedbackId);
+    const result = strictPairFor(error, feedback, positives);
+    if (result.pair) {
+      pairs.push({
+        ...projectForRecord(error),
+        prompt: result.pair.prompt,
+        chosen: result.pair.chosen,
+        rejected: result.pair.rejected,
+        metadata: { errorId: error.id, sourceFeedbackId: error.sourceFeedbackId, chosenSource: result.pair.chosenSource, whatWentWrong: result.pair.whatWentWrong },
+      });
+    } else {
+      dropped.push({ id: error.id, kind: 'error', reason: result.reason });
+    }
+  }
+  // A learning (thumbs-up) alone has no rejected side. A learning only enters a pair as a same-prompt positive above.
+  for (const learning of learnings) dropped.push({ id: learning.id, kind: 'learning', reason: 'positive_without_a_rejected_action_on_the_same_prompt' });
+  const reasons = {};
+  for (const d of dropped) reasons[d.reason] = (reasons[d.reason] || 0) + 1;
+  return { pairs, dropped, droppedByReason: reasons };
+}
+
 function toJSONL(pairs) {
   return `${pairs.map((p) => JSON.stringify(p)).join('\n')}\n`;
 }
@@ -193,7 +316,19 @@ function exportDpoFromMemories(memories, options = {}) {
   }
   const errors = memories.filter((m) => m.category === 'error');
   const learnings = memories.filter((m) => m.category === 'learning');
-  const result = buildDpoPairs(errors, learnings);
+  const strict = options.strict !== false;
+  let result;
+  let strictReport = null;
+  if (strict) {
+    strictReport = buildStrictDpoPairs(errors, learnings, options);
+    // How many pairs the old keyword matcher would have made: reported so the drop is visible, never exported.
+    const keywordOnly = buildDpoPairs(errors, learnings).pairs.length;
+    strictReport.droppedKeywordOnlyCandidates = keywordOnly;
+    const usedErrorIds = new Set(strictReport.pairs.map((p) => p.metadata.errorId));
+    result = { pairs: strictReport.pairs, unpairedErrors: errors.filter((e) => !usedErrorIds.has(e.id)), unpairedLearnings: learnings };
+  } else {
+    result = buildDpoPairs(errors, learnings);
+  }
 
   const traces = result.pairs.map((pair) => traceForDpoPair(pair));
   const reasoning = aggregateTraces(traces);
@@ -224,6 +359,10 @@ function exportDpoFromMemories(memories, options = {}) {
     errors,
     learnings,
     reasoning,
+    strict,
+    dropped: strictReport ? strictReport.dropped : [],
+    droppedByReason: strictReport ? strictReport.droppedByReason : {},
+    droppedKeywordOnlyCandidates: strictReport ? strictReport.droppedKeywordOnlyCandidates : 0,
     jsonl: toJSONL(redactedPairs),
   };
 }
@@ -350,6 +489,7 @@ module.exports = {
   buildRubricDelta,
   findDistractors,
   buildDpoPairs,
+  buildStrictDpoPairs,
   toJSONL,
   exportDpoFromMemories,
   DEFAULT_LOCAL_MEMORY_LOG,

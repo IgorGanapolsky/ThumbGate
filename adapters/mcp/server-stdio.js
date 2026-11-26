@@ -729,6 +729,7 @@ function buildContextEvaluationResponse(args = {}) {
 
 function buildExportDpoResponse(args = {}) {
   let memories = [];
+  let dpoOptions = {};
 
   if (args.inputPath) {
     const inputPath = resolveSafePath(args.inputPath, { mustExist: true });
@@ -740,9 +741,11 @@ function buildExportDpoResponse(args = {}) {
       ? resolveSafePath(args.memoryLogPath, { mustExist: true })
       : DEFAULT_LOCAL_MEMORY_LOG;
     memories = readJSONL(memoryLogPath);
+    // Strict pairing reads feedback-log.jsonl next to the memory log, not the default store.
+    dpoOptions = { feedbackDir: path.dirname(memoryLogPath) };
   }
 
-  const result = exportDpoFromMemories(memories);
+  const result = exportDpoFromMemories(memories, dpoOptions);
   if (args.outputPath) {
     const outputPath = resolveSafePath(args.outputPath);
     fs.mkdirSync(path.dirname(outputPath), { recursive: true });
