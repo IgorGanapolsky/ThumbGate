@@ -953,6 +953,7 @@
     "test:quality": "node --test tests/validate-feedback.test.js tests/feedback-quality-eval-python.test.js tests/eval-gate-classifier.test.js",
     "test:intelligence": "node --test tests/intelligence.test.js",
     "test:training-export": "node --test tests/training-export.test.js tests/databricks-export.test.js",
+    "decision-check": "node scripts/decision-check.js",
     "check:npm-versions": "node scripts/check-npm-published-versions.js",
     "test:deployment": "node --test tests/deployment.test.js tests/deploy-policy.test.js tests/railway-workflow-auth.test.js tests/railway-cancel-superseded.test.js tests/publish-decision.test.js tests/changeset-check.test.js tests/release-notes.test.js tests/sonarcloud-workflow.test.js tests/codeql-workflow-lockstep.test.js tests/package-boundary.test.js tests/public-package-boundary.test.js tests/packed-feedback-retrieval-e2e.test.js tests/packed-provider-payment-reconciler-e2e.test.js tests/packed-revenue-remediation-e2e.test.js tests/ensure-production-search-corpus.test.js tests/prove-production-authenticated.test.js tests/verify-npm-githead.test.js tests/npm-oidc-sept2026-publish.test.js tests/check-npm-published-versions.test.js",
     "test:operational-integrity": "node --test tests/operational-integrity.test.js tests/sync-branch-protection.test.js tests/sync-repository-rulesets.test.js",
