@@ -631,11 +631,24 @@ test('deploy-scope hourly schedule deploys only when production is not serving m
   const behind = runDeployScopeFixture('docs/only-a-note.md', 'schedule', null, '0000000000000000000000000000000000000000');
   assert.equal(behind.shouldDeploy, true);
   assert.equal(behind.scopeReason, 'scheduled_catch_up');
+  // The verifier starts the batch's receipts from the build production served before this run.
+  assert.equal(behind.previousDeployedSha, '0000000000000000000000000000000000000000');
 
   // Live SHA unknown -> deploy rather than risk production never catching up.
   const unknown = runDeployScopeFixture('docs/only-a-note.md', 'schedule');
   assert.equal(unknown.shouldDeploy, true);
   assert.equal(unknown.scopeReason, 'scheduled_catch_up');
+});
+
+test('deploy verification covers every PR an hourly deploy shipped and stays quiet on idle hours', () => {
+  const workflow = fs.readFileSync(path.join(PROJECT_ROOT, '.github', 'workflows', 'verify-deploy-comment.yml'), 'utf8');
+  assert.match(workflow, /previous_sha=\$\{scope\.previousDeployedSha \|\| ''\}/);
+  assert.match(workflow, /scheduled_prod_at_head/);
+  assert.match(workflow, /git rev-list --first-parent "\$\{PREVIOUS_SHA\}\.\.\$\{MERGE_SHA\}"/);
+  assert.match(workflow, /"\$\{RANGE_BASE\}" "\$\{MERGE_SHA\}"/);
+  assert.match(workflow, /for pr in \$\{PRS\}; do/);
+  // deploy-scope must run before the PR lookup, since the lookup reads its range.
+  assert.ok(workflow.indexOf('id: deploy-scope') < workflow.indexOf('id: find-pr'));
 });
 
 test('ship gate does not dispatch a Railway deploy per merge', () => {
