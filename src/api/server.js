@@ -444,6 +444,8 @@ const ENTERPRISE_GOVERNANCE_PAGE_PATH = path.resolve(__dirname, '../../public/en
 const GAMING_PLAYBOOK_PAGE_PATH = path.resolve(__dirname, '../../public/gaming-playbook.html');
 const YT_PAGE_PATH = path.resolve(__dirname, '../../public/yt.html');
 const PRICING_PAGE_PATH = path.resolve(__dirname, '../../public/pricing.html');
+const HOST_MATRIX_PAGE_PATH = path.resolve(__dirname, '../../public/host-matrix.html');
+const TG_ANALYTICS_SCRIPT_PATH = path.resolve(__dirname, '../../public/tg-analytics.js');
 const ABOUT_PAGE_PATH = path.resolve(__dirname, '../../public/about.html');
 const PARTNER_INTAKE_PAGE_PATH = path.resolve(__dirname, '../../public/partner-intake.html');
 const PETER_PAGE_PATH = path.resolve(__dirname, '../../public/peter.html');
@@ -4372,14 +4374,16 @@ function loadPublicMarketingTemplateHtml(templatePath, runtimeConfig, pageContex
     ? `  <meta name="google-site-verification" content="${escapeHtmlAttribute(runtimeConfig.googleSiteVerification)}" />`
     : '';
   const privacyOptOut = Boolean(pageContext.privacyOptOut);
-  const gaBootstrap = (!privacyOptOut && runtimeConfig.gaMeasurementId)
+  const gaIds = [runtimeConfig.gaMeasurementId, runtimeConfig.gaExtraMeasurementId]
+    .filter((id, at, all) => id && all.indexOf(id) === at);
+  const gaBootstrap = (!privacyOptOut && gaIds.length)
     ? [
-      `  <script async src="https://www.googletagmanager.com/gtag/js?id=${runtimeConfig.gaMeasurementId}"></script>`,
+      `  <script async src="https://www.googletagmanager.com/gtag/js?id=${gaIds[0]}"></script>`,
       '  <script>',
       '    window.dataLayer = window.dataLayer || [];',
       '    function gtag(){dataLayer.push(arguments);}',
       "    gtag('js', new Date());",
-      `    gtag('config', '${runtimeConfig.gaMeasurementId}');`,
+      ...gaIds.map((id) => `    gtag('config', '${id}');`),
       '  </script>',
     ].join('\n')
     : '';
@@ -4394,7 +4398,7 @@ function loadPublicMarketingTemplateHtml(templatePath, runtimeConfig, pageContex
     '__WORKFLOW_SPRINT_CHECKOUT_URL__': runtimeConfig.workflowSprintCheckoutUrl || WORKFLOW_SPRINT_CHECKOUT_URL,
     '__SPRINT_DIAGNOSTIC_PRICE_DOLLARS__': runtimeConfig.sprintDiagnosticPriceDollars || 499,
     '__WORKFLOW_SPRINT_PRICE_DOLLARS__': runtimeConfig.workflowSprintPriceDollars || 1500,
-    '__GA_MEASUREMENT_ID__': runtimeConfig.gaMeasurementId || '',
+    '__GA_MEASUREMENT_ID__': gaIds[0] || '',
     '__GA_BOOTSTRAP__': gaBootstrap,
     '__GOOGLE_SITE_VERIFICATION_META__': googleSiteVerificationMeta,
     '__SERVER_VISITOR_ID__': pageContext.serverVisitorId || '',
@@ -4466,6 +4470,8 @@ function loadInstallPageHtml(runtimeConfig, pageContext = {}) {
 function loadPreviewPageHtml(runtimeConfig, pageContext = {}) {
   return loadPublicMarketingTemplateHtml(PREVIEW_PAGE_PATH, runtimeConfig, pageContext);
 }
+
+const loadHostMatrixPageHtml = (cfg, ctx = {}) => loadPublicMarketingTemplateHtml(HOST_MATRIX_PAGE_PATH, cfg, ctx);
 
 function loadPricingPageHtml(runtimeConfig, pageContext = {}) {
   return loadPublicMarketingTemplateHtml(PRICING_PAGE_PATH, runtimeConfig, pageContext);
@@ -8124,6 +8130,19 @@ function createUnscopedApiServer({ ownerAdminDependencies = {} } = {}) {
       } catch (err) {
         sendText(res, 500, err.message || 'Preview page unavailable');
       }
+      return;
+    }
+
+    if (isGetLikeRequest && pathname === '/tg-analytics.js') {
+      try {
+        res.writeHead(200, { 'Content-Type': 'application/javascript; charset=utf-8', 'Cache-Control': 'public, max-age=3600' });
+        res.end(isHeadRequest ? undefined : fs.readFileSync(TG_ANALYTICS_SCRIPT_PATH, 'utf-8'));
+      } catch { res.end(); }
+      return;
+    }
+
+    if (isGetLikeRequest && (pathname === '/host-matrix' || pathname === '/host-matrix.html')) {
+      servePublicMarketingPage({ req, res, parsed, hostedConfig, isHeadRequest, renderHtml: loadHostMatrixPageHtml, extraTelemetry: { pageType: 'host_matrix' } });
       return;
     }
 

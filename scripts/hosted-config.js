@@ -17,6 +17,13 @@ const DEFAULT_WORKFLOW_SPRINT_PRICE_DOLLARS = 1500;
 const DEFAULT_SPRINT_DIAGNOSTIC_CHECKOUT_URL = 'https://buy.stripe.com/9B69ATbmI4r4aK5eOD3sI3k';
 const DEFAULT_WORKFLOW_SPRINT_CHECKOUT_URL = 'https://www.paypal.com/ncp/payment/LTQFR7P9AR3QG';
 const GA_MEASUREMENT_ID_PATTERN = /^G-[A-Z0-9]+$/i;
+// Second GA4 property (public tag id). THUMBGATE_GA_EXTRA_MEASUREMENT_ID overrides it; "off" disables it.
+const DEFAULT_GA_EXTRA_MEASUREMENT_ID = 'G-QKENZBW1V8';
+
+function resolveGaExtraMeasurementId(raw) {
+  if (typeof raw === 'string' && raw.trim().toLowerCase() === 'off') return '';
+  return normalizeTrackingId(raw, GA_MEASUREMENT_ID_PATTERN) || DEFAULT_GA_EXTRA_MEASUREMENT_ID;
+}
 
 function normalizeOrigin(value) {
   if (!value || typeof value !== 'string') {
@@ -128,6 +135,7 @@ function resolveHostedBillingConfig({ requestOrigin } = {}, env = process.env) {
   const proPriceDollars = normalizePriceDollars(env.THUMBGATE_PRO_PRICE_DOLLARS) || DEFAULT_PRO_PRICE_DOLLARS;
   const proPriceLabel = env.THUMBGATE_PRO_PRICE_LABEL || DEFAULT_PRO_PRICE_LABEL;
   const gaMeasurementId = normalizeTrackingId(env.THUMBGATE_GA_MEASUREMENT_ID, GA_MEASUREMENT_ID_PATTERN);
+  const gaExtraMeasurementId = resolveGaExtraMeasurementId(env.THUMBGATE_GA_EXTRA_MEASUREMENT_ID);
   const posthogApiKey = env.POSTHOG_API_KEY || '';
   const googleSiteVerification = normalizeTrackingId(env.THUMBGATE_GOOGLE_SITE_VERIFICATION);
   const sprintDiagnosticCheckoutUrl = normalizeAbsoluteUrl(env.THUMBGATE_SPRINT_DIAGNOSTIC_CHECKOUT_URL)
@@ -152,12 +160,15 @@ function resolveHostedBillingConfig({ requestOrigin } = {}, env = process.env) {
     workflowSprintPriceDollars: normalizePriceDollars(env.THUMBGATE_WORKFLOW_SPRINT_PRICE_DOLLARS)
       || DEFAULT_WORKFLOW_SPRINT_PRICE_DOLLARS,
     gaMeasurementId,
+    gaExtraMeasurementId,
     googleSiteVerification,
     posthogApiKey,
   };
 }
 
 module.exports = {
+  DEFAULT_GA_EXTRA_MEASUREMENT_ID,
+  resolveGaExtraMeasurementId,
   DEFAULT_PUBLIC_APP_ORIGIN,
   DEFAULT_CHECKOUT_FALLBACK_URL,
   DEFAULT_PRO_PRICE_DOLLARS,
