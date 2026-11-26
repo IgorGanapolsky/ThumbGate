@@ -10,6 +10,7 @@ const { projectForRecord, matchesProject } = require('./project-identity');
 const path = require('path');
 const { traceForDpoPair, aggregateTraces } = require('./code-reasoning');
 const { resolveFeedbackDir } = require('./feedback-paths');
+const { normalizeConversationWindow } = require('./conversation-context');
 const { redactSecretsDeep } = require('./secret-redaction');
 
 const DEFAULT_LOCAL_MEMORY_LOG = path.join(resolveFeedbackDir(), 'memory-log.jsonl');
@@ -207,6 +208,40 @@ function textOf(value) {
 
 function wordCount(text) { return String(text || '').split(/\s+/).filter(Boolean).length; }
 
+// The action itself: a command, input or text. A bare tool name ("Bash") is not an action: captureFeedback stores
+// only tool/contextKey/file/timestamp in lastAction, and two different Bash commands would both read "Bash".
+function actionContentOf(value) {
+  if (value == null) return '';
+  if (typeof value === 'string') return value.trim();
+  if (typeof value !== 'object' || Array.isArray(value)) return textOf(value);
+  const direct = value.command || value.text || value.content || value.summary || value.description;
+  if (direct) return textOf(direct);
+  const input = value.input || value.args || value.arguments;
+  if (input == null || input === '') return '';
+  const tool = value.tool || value.toolName || value.name;
+  return `${tool ? `${tool} ` : ''}${typeof input === 'string' ? input : JSON.stringify(input)}`.trim();
+}
+
+// The prompt is the context at the decision point: role-preserving, and ending before the rejected action.
+// A plain-text window is cut at the first occurrence of the action; a message window drops the message that
+// contains the action and everything after it. If nothing is left before the action, there is no prompt.
+function promptBefore(windowValue, rejected) {
+  if (Array.isArray(windowValue)) {
+    const messages = normalizeConversationWindow(windowValue);
+    const cut = messages.findIndex((m) => m.content.includes(rejected));
+    const kept = cut === -1 ? messages : messages.slice(0, cut);
+    return kept.map((m) => `${m.role}: ${m.content}`).join('\n').trim();
+  }
+  const text = textOf(windowValue);
+  const at = text.indexOf(rejected);
+  if (at === -1) return text;
+  let before = text.slice(0, at);
+  // Drop the partial line that introduced the action ("Assistant: ran ") so the prompt ends on a whole turn.
+  const lineStart = before.lastIndexOf('\n');
+  before = lineStart === -1 ? '' : before.slice(0, lineStart);
+  return before.trim();
+}
+
 function loadFeedbackIndex(options = {}) {
   const rows = options.feedbackRows || readJSONL(path.join(options.feedbackDir || resolveFeedbackDir(), 'feedback-log.jsonl'));
   const byId = new Map();
@@ -218,10 +253,12 @@ function strictPairFor(error, feedback, positives) {
   if (!feedback) return { reason: 'no_source_feedback_record' };
   const whatWrong = textOf(feedback.whatWentWrong) || textOf(feedback.context);
   if (wordCount(whatWrong) < 4 || VAGUE_NEGATIVE.test(whatWrong)) return { reason: 'vague_negative_feedback' };
-  const window = textOf(feedback.conversationWindow);
-  const rejected = textOf(feedback.lastAction);
-  if (!rejected) return { reason: 'no_rejected_action_recorded' };
-  if (!window) return { reason: 'no_prompt_context_recorded' };
+  if (!feedback.lastAction) return { reason: 'no_rejected_action_recorded' };
+  const rejected = actionContentOf(feedback.lastAction);
+  if (!rejected) return { reason: 'rejected_action_has_no_content' };
+  if (!textOf(feedback.conversationWindow)) return { reason: 'no_prompt_context_recorded' };
+  const window = promptBefore(feedback.conversationWindow, rejected);
+  if (!window) return { reason: 'no_prompt_context_before_rejected_action' };
   let chosen = textOf(feedback.whatToChange);
   let chosenSource = 'same_record_corrective_action';
   if (chosen && (REINFORCE.test(chosen) || PRAISE_ONLY.test(chosen))) chosen = '';
@@ -229,9 +266,9 @@ function strictPairFor(error, feedback, positives) {
     const promptId = feedback.sourceEvent && feedback.sourceEvent.promptIdHash;
     const session = feedback.scope && feedback.scope.sessionId;
     const match = promptId && session ? positives.find((p) => p.sourceEvent && p.sourceEvent.promptIdHash === promptId
-      && p.scope && p.scope.sessionId === session && textOf(p.lastAction) && !PRAISE_ONLY.test(textOf(p.lastAction))) : null;
+      && p.scope && p.scope.sessionId === session && actionContentOf(p.lastAction) && !PRAISE_ONLY.test(actionContentOf(p.lastAction))) : null;
     if (!match) return { reason: 'no_corrective_or_same_prompt_positive_action' };
-    chosen = textOf(match.lastAction);
+    chosen = actionContentOf(match.lastAction);
     chosenSource = 'thumbs_up_same_session_and_prompt';
   }
   if (chosen === rejected) return { reason: 'chosen_equals_rejected' };

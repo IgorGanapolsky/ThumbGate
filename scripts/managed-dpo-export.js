@@ -55,7 +55,8 @@ function loadMemories(args) {
 function run(argv = process.argv.slice(2)) {
   const args = parseArgs(argv);
   const memories = loadMemories(args);
-  const result = exportDpoFromMemories(memories);
+  // Strict pairing reads feedback-log.jsonl next to the memory log, not the default store.
+  const result = exportDpoFromMemories(memories, args.memoryLogPath && !args.inputPath ? { feedbackDir: path.dirname(path.resolve(args.memoryLogPath)) } : {});
 
   let outputPath = null;
   if (args.outputPath) {

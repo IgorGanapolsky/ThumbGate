@@ -22,7 +22,8 @@ test('REQ-01: a thumbs-down with its action, prompt window and corrective action
   assert.equal(r.pairs.length, 1);
   assert.equal(r.pairs[0].rejected, BAD);
   assert.equal(r.pairs[0].chosen, GOOD);
-  assert.equal(r.pairs[0].prompt, WINDOW);
+  // The prompt ends before the rejected action: the line that ran it is not part of the conditioning context.
+  assert.equal(r.pairs[0].prompt, 'User: set up the project');
 });
 
 test('REQ-02: praise-only and "reinforce" records never pair', () => {
@@ -58,4 +59,42 @@ test('REQ-05: a thumbs-up on the same session and prompt supplies the chosen act
   assert.equal(r.pairs[0].metadata.chosenSource, 'thumbs_up_same_session_and_prompt');
   const other = { ...up, sourceEvent: { promptIdHash: 'p2' } };
   assert.equal(run([mem('m8', 'f8')], [fb('f8', { whatToChange: null }), other]).pairs.length, 0);
+});
+
+test('REQ-06: a lastAction that is only a tool name is not an action and never pairs', () => {
+  const toolOnly = { tool: 'Bash', contextKey: 'k', file: null, timestamp: null };
+  const r = run([mem('m10', 'f10')], [fb('f10', { lastAction: toolOnly })]);
+  assert.equal(r.pairs.length, 0);
+  assert.equal(r.droppedByReason.rejected_action_has_no_content, 1);
+  const withInput = run([mem('m11', 'f11')], [fb('f11', { lastAction: { tool: 'Bash', input: { command: BAD } } })]);
+  assert.equal(withInput.pairs.length, 1);
+  assert.match(withInput.pairs[0].rejected, /make clean-all/);
+});
+
+test('REQ-07: a message window keeps roles and stops before the message holding the rejected action', () => {
+  const window = [
+    { role: 'user', content: 'set up the project' },
+    { role: 'assistant', content: 'ran make clean-all' },
+    { role: 'user', content: 'no, that wiped the cache' },
+  ];
+  const r = run([mem('m12', 'f12')], [fb('f12', { conversationWindow: window })]);
+  assert.equal(r.pairs.length, 1);
+  assert.equal(r.pairs[0].prompt, 'user: set up the project');
+  const onlyAction = run([mem('m13', 'f13')], [fb('f13', { conversationWindow: [{ role: 'assistant', content: 'make clean-all' }] })]);
+  assert.equal(onlyAction.pairs.length, 0);
+  assert.equal(onlyAction.droppedByReason.no_prompt_context_before_rejected_action, 1);
+});
+
+test('REQ-08: feedbackDir picks the feedback log next to the exported memories', () => {
+  const fs = require('node:fs');
+  const os = require('node:os');
+  const path = require('node:path');
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'dpo-strict-'));
+  try {
+    fs.writeFileSync(path.join(dir, 'feedback-log.jsonl'), JSON.stringify(fb('f14')) + '\n');
+    const r = exportDpoFromMemories([mem('m14', 'f14')], { feedbackDir: dir });
+    assert.equal(r.pairs.length, 1);
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
 });
