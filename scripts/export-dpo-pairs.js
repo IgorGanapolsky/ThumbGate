@@ -264,7 +264,11 @@ function rejectedActionOf(feedback) {
   if (Array.isArray(feedback.conversationWindow)) {
     const messages = normalizeConversationWindow(feedback.conversationWindow);
     for (let i = messages.length - 1; i > 0; i -= 1) {
-      if (AGENT_ROLES.has(messages[i].role.toLowerCase())) return { text: messages[i].content, source: 'last_agent_reply' };
+      if (AGENT_ROLES.has(messages[i].role.toLowerCase())) {
+        // Keep the position: the prompt is the messages before THIS reply, not before the first identical text.
+        const prompt = messages.slice(0, i).map((m) => `${m.role}: ${m.content}`).join('\n').trim();
+        return { text: messages[i].content, source: 'last_agent_reply', prompt };
+      }
     }
   }
   return null;
@@ -278,7 +282,7 @@ function strictPairFor(error, feedback, positives) {
   if (!found) return { reason: feedback.lastAction ? 'rejected_action_has_no_content' : 'no_rejected_action_recorded' };
   const rejected = found.text;
   if (!textOf(feedback.conversationWindow)) return { reason: 'no_prompt_context_recorded' };
-  const window = promptBefore(feedback.conversationWindow, rejected);
+  const window = found.prompt != null ? found.prompt : promptBefore(feedback.conversationWindow, rejected);
   if (!window) return { reason: 'no_prompt_context_before_rejected_action' };
   let chosen = textOf(feedback.whatToChange);
   let chosenSource = 'same_record_corrective_action';

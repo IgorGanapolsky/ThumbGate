@@ -135,3 +135,16 @@ test('REQ-11: the production self-test fixture makes exactly its one expected pa
   const dropped = Object.values(r.droppedByReason).reduce((a, b) => a + b, 0);
   assert.equal(r.pairs.length + dropped, r.errors.length + r.learnings.length);
 });
+
+test('REQ-12: a repeated agent reply builds its prompt from the messages before the LAST occurrence', () => {
+  const window = [
+    { role: 'user', content: 'Which port does the worker use?' },
+    { role: 'assistant', content: 'It uses port 8080.' },
+    { role: 'user', content: 'Which port does the API use?' },
+    { role: 'assistant', content: 'It uses port 8080.' },
+  ];
+  const r = run([mem('m23', 'f23')], [fb('f23', { lastAction: null, conversationWindow: window, whatToChange: 'Read the API port from config: it is 3000.' })]);
+  assert.equal(r.pairs.length, 1);
+  assert.match(r.pairs[0].prompt, /Which port does the API use\?$/);
+  assert.match(r.pairs[0].prompt, /^user: Which port does the worker use\?/);
+});
