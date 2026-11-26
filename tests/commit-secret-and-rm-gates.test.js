@@ -89,7 +89,11 @@ test('git commit of clean staged files, a removed key, --dry-run and a non-repo 
     cp.execFileSync('git', ['commit', '-q', '-m', 'clean'], { cwd: w.project });
     stage(w, 'src/old.js', `x = '${FAKE_KEY}'\n`);
     assert.notEqual(gate(w, 'git commit --dry-run').decision, 'deny', '--dry-run writes nothing');
-    cp.execFileSync('git', ['rm', '-q', '-f', 'src/old.js'], { cwd: w.project });
+    // Commit the key first so removing it is a real deletion in the cached diff (CodeRabbit review on #5258).
+    cp.execFileSync('git', ['commit', '-q', '-m', 'old key'], { cwd: w.project });
+    cp.execFileSync('git', ['rm', '-q', 'src/old.js'], { cwd: w.project });
+    const cached = cp.execFileSync('git', ['diff', '--cached', '-U0'], { cwd: w.project, encoding: 'utf8' });
+    assert.ok(cached.includes(`-x = '${FAKE_KEY}'`), 'the cached diff holds the deletion of the key line');
     assert.notEqual(gate(w, 'git commit -m "remove it"').decision, 'deny', 'a deletion adds no line');
   } finally { w.done(); }
 });
@@ -132,4 +136,60 @@ test('parseCommitFlags keeps option values out of the pathspecs', () => {
   assert.deepEqual(parseCommitFlags(' -m msg --author "A <a@b.c>" -- x y').pathspecs, ['x', 'y']);
   assert.deepEqual(parseCommitFlags(' -F msg.txt src/a.js').pathspecs, ['src/a.js']);
   assert.deepEqual(parseCommitFlags(' --message=hi a.js').pathspecs, ['a.js']);
+  assert.deepEqual(parseCommitFlags(' -m"fix config"').pathspecs, [], 'an attached quoted message is one argument');
+  assert.equal(parseCommitFlags(' --pathspec-from-file=paths.txt').pathspecFromFile, 'paths.txt');
+});
+
+// CodeRabbit review on #5258: command shapes the first parser missed.
+test('a staged key is denied after a newline, with leading spaces, with -m"..." and outside a closed subshell cd', () => {
+  const w = world();
+  try {
+    stage(w, 'src/k.js', `k = '${FAKE_KEY}'\n`);
+    assert.equal(gate(w, 'true\ngit commit -m test').decision, 'deny', 'a commit on its own line');
+    assert.equal(gate(w, '   git commit -m test').decision, 'deny', 'leading whitespace');
+    assert.equal(gate(w, 'git commit -m"fix config"').decision, 'deny', 'attached quoted message is not a pathspec');
+    const other = path.join(w.home, 'other');
+    fs.mkdirSync(other);
+    cp.execFileSync('git', ['init', '-q'], { cwd: other });
+    assert.equal(gate(w, '(cd ../other && true); git commit -m test').decision, 'deny', 'the subshell cd does not move the commit');
+    assert.notEqual(gate(w, 'cd ../other && git commit -m test').decision, 'deny', 'a real cd still selects the other repo');
+  } finally { w.done(); }
+});
+
+test('pathspec-from-file, -diff attributes and "+++" added lines do not hide a key', () => {
+  const w = world();
+  try {
+    stage(w, 'config.txt', 'a = 1\n');
+    stage(w, 'paths.txt', 'config.txt\n');
+    cp.execFileSync('git', ['commit', '-q', '-m', 'init'], { cwd: w.project });
+    fs.writeFileSync(path.join(w.project, 'config.txt'), `a = '${FAKE_KEY}'\n`);
+    assert.equal(gate(w, 'git commit -m test --pathspec-from-file=paths.txt').decision, 'deny');
+    cp.execFileSync('git', ['checkout', '-q', '--', 'config.txt'], { cwd: w.project });
+
+    stage(w, '.gitattributes', 'secret.txt -diff\n');
+    stage(w, 'secret.txt', `k = '${FAKE_KEY}'\n`);
+    assert.equal(gate(w, 'git commit -m test').decision, 'deny', 'a -diff attribute does not turn the file into binary');
+    cp.execFileSync('git', ['rm', '-q', '--cached', 'secret.txt'], { cwd: w.project });
+
+    stage(w, 'src/c.js', `++counter; // ${FAKE_KEY}\n`);
+    assert.equal(gate(w, 'git commit -m test').decision, 'deny', 'an added line starting with ++ is still scanned');
+  } finally { w.done(); }
+});
+
+test('git add X && git commit in one command reads X from disk; a key only in the index stays out of a path commit', () => {
+  const w = world();
+  try {
+    stage(w, 'clean.txt', 'b = 1\n');
+    cp.execFileSync('git', ['commit', '-q', '-m', 'init'], { cwd: w.project });
+    fs.writeFileSync(path.join(w.project, 'config.txt'), `a = '${FAKE_KEY}'\n`);
+    assert.equal(gate(w, 'git add config.txt && git commit -m test').decision, 'deny', 'staged by the same command');
+    assert.equal(gate(w, 'git add . && git commit -m test').decision, 'deny', 'git add . reads untracked files too');
+    assert.notEqual(gate(w, 'git add clean.txt && git commit -m test').decision, 'deny', 'adding only a clean file');
+    fs.rmSync(path.join(w.project, 'config.txt'));
+
+    stage(w, 'clean.txt', `b = '${FAKE_KEY}'\n`);
+    fs.writeFileSync(path.join(w.project, 'clean.txt'), 'b = 2\n');
+    assert.notEqual(gate(w, 'git commit -m test -- clean.txt').decision, 'deny', 'the working tree no longer has the key');
+    assert.equal(gate(w, 'git commit -m test').decision, 'deny', 'a plain commit takes the index, which has it');
+  } finally { w.done(); }
 });

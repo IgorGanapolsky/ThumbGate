@@ -849,7 +849,7 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // Bumped 10.92 MB -> 10.93 MB (2026-11-26, PR #5261): strict DPO pairing in scripts/export-dpo-pairs.js
   // (about 6 KB); measured 10,923,475 after merging main.
   // Bumped 10.93 MB -> 10.94 MB (2026-11-26, PR #5258): scripts/staged-secret-gate.js and its call in
-  // scripts/gates-engine.js, with -C/cd and pathspec handling (about 9 KB); measured 10,932,097 after merging main.
+  // scripts/gates-engine.js, with -C/cd, pathspec and same-command `git add` handling (about 15 KB); measured 10,938,266 after merging main.
   manifest.unpackedSize <= 10_940_000,
   `npm package should stay <= 10.94 MB unpacked, got ${manifest.unpackedSize}`
 );
