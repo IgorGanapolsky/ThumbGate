@@ -93,3 +93,43 @@ test('git commit of clean staged files, a removed key, --dry-run and a non-repo 
     assert.notEqual(gate(w, 'git commit -m "remove it"').decision, 'deny', 'a deletion adds no line');
   } finally { w.done(); }
 });
+
+test('git -C <dir> commit and cd <dir> && git commit scan <dir>, not the hook cwd (Codex review on #5258)', () => {
+  const w = world();
+  try {
+    const other = path.join(w.home, 'other');
+    fs.mkdirSync(other);
+    cp.execFileSync('git', ['init', '-q'], { cwd: other });
+    fs.writeFileSync(path.join(other, 'k.js'), `k = '${FAKE_KEY}'\n`);
+    cp.execFileSync('git', ['add', 'k.js'], { cwd: other });
+    assert.equal(gate(w, `git -C ${other} commit -m test`).decision, 'deny');
+    assert.equal(gate(w, 'git -C ../other commit -m test').decision, 'deny', 'a relative -C resolves from the hook cwd');
+    assert.equal(gate(w, `cd ${other} && git commit -m test`).decision, 'deny');
+    assert.notEqual(gate(w, 'git commit -m test').decision, 'deny', 'the hook cwd itself has nothing staged');
+  } finally { w.done(); }
+});
+
+test('git commit with explicit paths scans those paths as they are in the working tree (Codex review on #5258)', () => {
+  const w = world();
+  try {
+    stage(w, 'config.txt', 'a = 1\n');
+    stage(w, 'clean.txt', 'b = 1\n');
+    cp.execFileSync('git', ['commit', '-q', '-m', 'init'], { cwd: w.project });
+    fs.writeFileSync(path.join(w.project, 'config.txt'), `a = '${FAKE_KEY}'\n`);
+    assert.equal(gate(w, 'git commit -m test -- config.txt').decision, 'deny', 'an unstaged key in a named path is committed');
+    assert.equal(gate(w, 'git commit -m "x y" config.txt').decision, 'deny');
+    cp.execFileSync('git', ['add', 'config.txt'], { cwd: w.project });
+    fs.writeFileSync(path.join(w.project, 'clean.txt'), 'b = 2\n');
+    assert.notEqual(gate(w, 'git commit -m test -- clean.txt').decision, 'deny', 'a path-only commit leaves the staged key out');
+    assert.equal(gate(w, 'git commit -i -m test clean.txt').decision, 'deny', '--include also commits the whole index');
+  } finally { w.done(); }
+});
+
+test('parseCommitFlags keeps option values out of the pathspecs', () => {
+  const { parseCommitFlags } = require('../scripts/staged-secret-gate');
+  assert.deepEqual(parseCommitFlags(' -am "fix it" ').pathspecs, []);
+  assert.equal(parseCommitFlags(' -am "fix it" ').all, true);
+  assert.deepEqual(parseCommitFlags(' -m msg --author "A <a@b.c>" -- x y').pathspecs, ['x', 'y']);
+  assert.deepEqual(parseCommitFlags(' -F msg.txt src/a.js').pathspecs, ['src/a.js']);
+  assert.deepEqual(parseCommitFlags(' --message=hi a.js').pathspecs, ['a.js']);
+});
