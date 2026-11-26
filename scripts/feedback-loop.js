@@ -48,7 +48,7 @@ const {
 } = require('./failure-diagnostics');
 const { getEffectiveSetting } = require('./evolution-state');
 const { ensureDir, readTextTail } = require('./fs-utils');
-const { redactSecrets } = require('./secret-redaction');
+const { redactSecrets, redactSecretKeysDeep } = require('./secret-redaction');
 const {
   buildFeedbackPathsFromDir,
   getFeedbackPaths: resolveFeedbackPaths,
@@ -1412,7 +1412,8 @@ const LAST_ACTION_CONTENT_MAX = 400;
 
 function boundedActionText(value) {
   if (value == null || value === '') return null;
-  const text = typeof value === 'string' ? value : (() => { try { return JSON.stringify(value); } catch { return ''; } })();
+  // Structured input: redact credential-named keys before serializing, since the string patterns cannot see key names.
+  const text = typeof value === 'string' ? value : (() => { try { return JSON.stringify(redactSecretKeysDeep(value)); } catch { return ''; } })();
   const trimmed = redactSecrets(String(text || '').trim()).slice(0, LAST_ACTION_CONTENT_MAX);
   return trimmed || null;
 }

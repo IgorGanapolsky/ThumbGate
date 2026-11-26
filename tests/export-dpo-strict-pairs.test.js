@@ -185,3 +185,44 @@ test('REQ-13: captureFeedback keeps the action command (secret-redacted, bounded
     if (prev === undefined) delete process.env.THUMBGATE_FEEDBACK_DIR; else process.env.THUMBGATE_FEEDBACK_DIR = prev;
   }
 });
+
+test('REQ-14: structured action input never stores a credential held under a credential-named key', () => {
+  const fs = require('node:fs');
+  const os = require('node:os');
+  const path = require('node:path');
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'tg-dpo-capture-'));
+  const prev = process.env.THUMBGATE_FEEDBACK_DIR;
+  process.env.THUMBGATE_FEEDBACK_DIR = dir;
+  try {
+    const { captureFeedback } = require('../scripts/feedback-loop');
+    const result = captureFeedback({
+      signal: 'down',
+      context: 'Agent logged in to the staging admin with a shared account',
+      whatWentWrong: 'It used the shared admin account instead of the service user',
+      whatToChange: 'Use the deploy service user from the vault',
+      lastAction: { tool: 'login', input: { user: 'admin', password: 'example-password-123456789', headers: { Authorization: 'Basic abc' } } },
+    }, { feedbackDir: dir });
+    const stored = JSON.stringify(result.feedbackEvent);
+    assert.doesNotMatch(stored, /example-password-123456789/);
+    assert.doesNotMatch(stored, /Basic abc/);
+    assert.match(result.feedbackEvent.lastAction.input, /"user":"admin"/);
+    const log = fs.readFileSync(path.join(dir, 'feedback-log.jsonl'), 'utf8');
+    assert.doesNotMatch(log, /example-password-123456789/);
+  } finally {
+    if (prev === undefined) delete process.env.THUMBGATE_FEEDBACK_DIR; else process.env.THUMBGATE_FEEDBACK_DIR = prev;
+  }
+});
+
+test('REQ-15: a redacted stored command still cuts the prompt before the raw command in the window', () => {
+  const token = `ghp_${'b'.repeat(36)}`;
+  const window = [
+    { role: 'user', content: 'Ship the hotfix to staging.' },
+    { role: 'assistant', content: `Running: deploy --prod --token=${token}` },
+    { role: 'user', content: 'No! staging, not prod.' },
+  ];
+  const { redactSecrets } = require('../scripts/secret-redaction');
+  const stored = redactSecrets(`deploy --prod --token=${token}`);
+  const r = run([mem('m24', 'f24')], [fb('f24', { lastAction: { tool: 'Bash', command: stored }, conversationWindow: window, whatToChange: 'deploy --staging' })]);
+  assert.equal(r.pairs.length, 1);
+  assert.equal(r.pairs[0].prompt, 'user: Ship the hotfix to staging.');
+});

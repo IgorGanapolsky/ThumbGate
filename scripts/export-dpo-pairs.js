@@ -11,7 +11,7 @@ const path = require('path');
 const { traceForDpoPair, aggregateTraces } = require('./code-reasoning');
 const { resolveFeedbackDir } = require('./feedback-paths');
 const { normalizeConversationWindow } = require('./conversation-context');
-const { redactSecretsDeep } = require('./secret-redaction');
+const { redactSecrets, redactSecretsDeep } = require('./secret-redaction');
 
 const DEFAULT_LOCAL_MEMORY_LOG = path.join(resolveFeedbackDir(), 'memory-log.jsonl');
 
@@ -228,12 +228,18 @@ function actionContentOf(value) {
 function promptBefore(windowValue, rejected) {
   if (Array.isArray(windowValue)) {
     const messages = normalizeConversationWindow(windowValue);
-    const cut = messages.findIndex((m) => m.content.includes(rejected));
+    // Capture stores the action secret-redacted while the window may hold it raw: match either form.
+    const cut = messages.findIndex((m) => m.content.includes(rejected) || redactSecrets(m.content).includes(rejected));
     const kept = cut === -1 ? messages : messages.slice(0, cut);
     return kept.map((m) => `${m.role}: ${m.content}`).join('\n').trim();
   }
-  const text = textOf(windowValue);
-  const at = text.indexOf(rejected);
+  let text = textOf(windowValue);
+  let at = text.indexOf(rejected);
+  if (at === -1) {
+    const redacted = redactSecrets(text);
+    const redactedAt = redacted.indexOf(rejected);
+    if (redactedAt !== -1) { text = redacted; at = redactedAt; }
+  }
   if (at === -1) return text;
   let before = text.slice(0, at);
   // Drop the partial line that introduced the action ("Assistant: ran ") so the prompt ends on a whole turn.
