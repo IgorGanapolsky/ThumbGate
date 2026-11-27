@@ -805,7 +805,7 @@
     "test:hook-stop-verify-deploy": "node --test tests/hook-stop-verify-deploy.test.js",
     "test:hook-stop-anti-claim": "node --test tests/hook-stop-anti-claim.test.js tests/reply-discipline-gates.test.js tests/pr-discipline-gates.test.js tests/three-strikes-gate.test.js",
     "test:deploy-proof-gate": "node --test tests/deploy-proof-gate.test.js",
-    "test:claim-gate-stop": "node --test tests/claim-gate-stop.test.js",
+    "test:claim-gate-stop": "node --test tests/claim-gate-stop.test.js tests/claim-gate-quiet.test.js",
     "test:feedback-reward-claim-lessons": "node --test tests/feedback-reward-claim-lessons.test.js",
     "test:email-triage-quoting": "node --test tests/email-triage-applescript-injection.test.js",
     "test:stop-hook-json-contract": "node --test tests/stop-hook-json-contract.test.js",
