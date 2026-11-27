@@ -332,9 +332,90 @@ function extractExecutableAction(entry) {
   return null;
 }
 
+// ---- Condition gate "repeat-after-deny" ----
+// An identical tool call (same tool, same input digest) already denied in this session is refused until the person
+// takes another turn. The gate's `pattern` never matches, so an engine without `condition` leaves every call alone.
+const CONDITION = 'repeat-after-deny';
+const NEVER_MATCHES = '(?!)';
+const GATE_ID = 'repeat-after-deny';
+const STATE_FILE = 'repeat-after-deny-state.json';
+const DENY_TTL_MS = 24 * 60 * 60 * 1000;
+const DENY_KEEP = 200;
+
+const RETRY = '(?:re-?tr(?:y|ied|ies|ying)|re-?r[au]n(?:ning)?|repeat(?:ed|ing|s)?)';
+const DENIED = '(?:denied|blocked|refused|rejected)';
+const RETRY_DENIED_RE = new RegExp(`\\b${RETRY}\\b[^.\\n]{0,60}\\b${DENIED}\\b|\\b${DENIED}\\b[^.\\n]{0,60}\\b${RETRY}\\b`, 'i');
+const WITHOUT_YES_RE = /\bwithout\b[^.\n]{0,40}\b(?:yes|approval|permission|ok(?:ay)?|consent|asking)\b/i;
+
+/** The condition a piece of negative feedback describes, or null when it names none we can check. */
+function conditionFor(text) {
+  const value = String(text || '');
+  return RETRY_DENIED_RE.test(value) && WITHOUT_YES_RE.test(value) ? CONDITION : null;
+}
+
+function stable(value) {
+  if (Array.isArray(value)) return `[${value.map(stable).join(',')}]`;
+  if (value && typeof value === 'object') {
+    return `{${Object.keys(value).sort().map((k) => `${JSON.stringify(k)}:${stable(value[k])}`).join(',')}}`;
+  }
+  return JSON.stringify(value) ?? 'null';
+}
+
+function callDigest(toolName, toolInput = {}) {
+  // A shell call is its command: the description beside it is reworded on every retry.
+  const input = toolInput && toolInput.command ? { command: toolInput.command } : toolInput;
+  return require('node:crypto').createHash('sha256').update(`${toolName}\n${stable(input)}`).digest('hex');
+}
+
+function readState(feedbackDir) {
+  try {
+    const data = JSON.parse(fs.readFileSync(path.join(feedbackDir, STATE_FILE), 'utf8'));
+    return Array.isArray(data.denied) ? data.denied : [];
+  } catch {
+    return [];
+  }
+}
+
+function writeState(feedbackDir, denied) {
+  fs.mkdirSync(feedbackDir, { recursive: true });
+  fs.writeFileSync(path.join(feedbackDir, STATE_FILE), `${JSON.stringify({ denied: denied.slice(-DENY_KEEP) })}\n`);
+}
+
+function recordDeny({ feedbackDir, sessionId, toolName, toolInput, now = Date.now() }) {
+  if (!feedbackDir || !sessionId || !toolName) return;
+  const denied = readState(feedbackDir).filter((d) => now - d.at < DENY_TTL_MS);
+  const digest = callDigest(toolName, toolInput);
+  const others = denied.filter((d) => !(d.sessionId === sessionId && d.digest === digest));
+  others.push({ sessionId, digest, at: now });
+  writeState(feedbackDir, others);
+}
+
+// The UserPromptSubmit hook already logs each prompt with its time; a prompt after the deny is the person's new turn.
+// The log carries no session id, so a prompt in another session of this project releases too.
+function lastUserTurnAt(feedbackDir) {
+  const { readRecentConversationWindow } = require('./feedback-history-distiller');
+  return readRecentConversationWindow({ feedbackDir, limit: 50 })
+    .filter((e) => e.author === 'user')
+    .reduce((latest, e) => Math.max(latest, Date.parse(e.timestamp) || 0), 0);
+}
+
+function wasDenied({ feedbackDir, sessionId, toolName, toolInput, now = Date.now() }) {
+  if (!feedbackDir || !sessionId || !toolName) return false;
+  const digest = callDigest(toolName, toolInput);
+  const hit = readState(feedbackDir).find((d) => d.sessionId === sessionId && d.digest === digest && now - d.at < DENY_TTL_MS);
+  if (!hit) return false;
+  const turn = lastUserTurnAt(feedbackDir);
+  // No recent prompt on record means we cannot see the person's turns here, so never hold: a yes could not release it.
+  return turn > 0 && turn <= hit.at && hit.at - turn < DENY_TTL_MS;
+}
+
+const repeatAfterDeny = { CONDITION, NEVER_MATCHES, GATE_ID, conditionFor, callDigest, recordDeny, wasDenied };
+
 function extractPatternKey(entry) {
   // Enforcement groups by executable action only. Tags remain diagnostic metadata
   // and must not create hard-block thresholds for a single unrelated latest command.
+  const condition = repeatAfterDeny.conditionFor([entry && entry.context, entry && entry.whatWentWrong].filter(Boolean).join('\n'));
+  if (condition) return 'condition:' + condition;
   const action = extractExecutableAction(entry);
   if (!action) return null;
   return normalizeCommandSignature(action).slice(0, 100);
@@ -498,9 +579,49 @@ function gateMatchesOwnContext(gate, context) {
   }
 }
 
+const GATE_PROMPT = 'Saved as a lesson, but nothing can enforce it yet. Reply with the tool and the condition to check, '
+  + 'for example "Bash: npm publish" or "retried a denied action without my yes".';
+
+/** A question for the person when negative feedback is prose only, or null when a check can be built from it. */
+function gatePromptFor(entry) {
+  const text = [entry && entry.context, entry && entry.whatWentWrong, entry && entry.whatToChange].filter(Boolean).join('\n');
+  if (repeatAfterDeny.conditionFor(text) || deriveSurfacePattern(text)) return null;
+  const executable = extractExecutableAction(entry);
+  return executable && !isInertProsePattern(contextToPattern(executable)) ? null : GATE_PROMPT;
+}
+
+// Feedback that names a condition we can check becomes a condition gate, not a text pattern.
+function checkableCondition(g) {
+  const texts = [g.latestContext, ...(g.entries || []).flatMap((e) => [e && e.context, e && e.whatWentWrong])];
+  return texts.map(repeatAfterDeny.conditionFor).find(Boolean) || null;
+}
+
+function buildConditionRule(g) {
+  const project = require('./project-identity').projectForRecord(g);
+  const manual = g.count === 'MANUAL';
+  return {
+    ...project,
+    scope: 'project',
+    active: project.projectKey !== 'unassigned',
+    id: repeatAfterDeny.GATE_ID + '-' + require('./project-identity').hash(project.projectKey).slice(0, 16),
+    trigger: 'condition:' + repeatAfterDeny.CONDITION,
+    condition: repeatAfterDeny.CONDITION,
+    pattern: repeatAfterDeny.NEVER_MATCHES,
+    action: 'block',
+    message: 'This exact call was already denied in this session. Do not retry it; ask the person and wait for their answer.',
+    severity: 'critical',
+    occurrences: manual ? 1 : Number(g.count) || 0,
+    promotedAt: new Date().toISOString(),
+    expiresAt: manual ? null : new Date(Date.now() + getRuleTtlMs()).toISOString(),
+    lastFiredAt: null,
+    source: g.source || 'auto-promote',
+  };
+}
+
 function buildGateRule(group, actionOverride) {
   // Tests and callers may pass partial groups; never crash on missing fields.
   const g = group && typeof group === 'object' ? group : {};
+  if (checkableCondition(g)) return buildConditionRule(g);
   // Two thumbs-downs from a person on the same command are enough; agent-written entries still need three.
   const blocks = g.count >= BLOCK_THRESHOLD || Number(g.humanCount || 0) >= HUMAN_BLOCK_THRESHOLD;
   const action = actionOverride || (g.count === 'MANUAL' ? g.manualAction || 'block' : (blocks ? 'block' : 'warn'));
@@ -638,7 +759,7 @@ function forcePromote(context, action = 'block', options = {}) {
   if (executable && surfacePattern && !/^(?:sudo\s+)?(?:kubectl|git|npm|npx|curl|python|python3|node|bash|sh|zsh|rm)\b/i.test(executable)) {
     executable = null;
   }
-  if (!executable && !surfacePattern) {
+  if (!executable && !surfacePattern && !repeatAfterDeny.conditionFor(context)) {
     throw new Error(
       'force-promote refused: context is prose without a matchable tool surface. '
       + 'Pass an executable command (e.g. "git push --force") or describe a known '
@@ -709,7 +830,7 @@ function promote(feedbackLogPath, options) {
   // Drop permanently inert prose gates left by older force-promote / promotion bugs.
   const inertRemoved = [];
   data.gates = (data.gates || []).filter((g) => {
-    if (g && isInertProsePattern(g.pattern)) {
+    if (g && !g.condition && isInertProsePattern(g.pattern)) {
       inertRemoved.push(g);
       return false;
     }
@@ -783,7 +904,7 @@ function promote(feedbackLogPath, options) {
     // nothing, which reads as "the agent learned" when it did not.
     // Surface-derived patterns (email send, force-push) intentionally do NOT match
     // the English prose incident text — they match the tool surface instead.
-    if (!gate.surfaceDerived && !gateMatchesOwnContext(gate, group.latestContext)) {
+    if (!gate.condition && !gate.surfaceDerived && !gateMatchesOwnContext(gate, group.latestContext)) {
       promotions.push({
         type: 'skipped-unmatchable',
         gateId: gate.id,
@@ -792,7 +913,7 @@ function promote(feedbackLogPath, options) {
       });
       continue;
     }
-    if (!gate.pattern || isInertProsePattern(gate.pattern)) {
+    if (!gate.condition && (!gate.pattern || isInertProsePattern(gate.pattern))) {
       promotions.push({
         type: 'skipped-inert-prose',
         gateId: gate.id,
@@ -904,6 +1025,8 @@ module.exports = {
   promote,
   forcePromote,
   runCli,
+  gatePromptFor,
+  repeatAfterDeny,
   loadAutoGates,
   saveAutoGates,
   getAutoGatesPath,
