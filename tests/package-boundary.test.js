@@ -877,8 +877,9 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // (mail-note and own-site gate fixes) plus the release CHANGELOG entry. Measured 11,030,188.
   // Bumped 11.04 MB -> 11.05 MB (2026-11-27): scripts/cloud-rules-export.js and the export-rules CLI command, on top
   // of #5326 (spend-guard research fix). Measured 11,042,740.
-  manifest.unpackedSize <= 11_050_000,
-  `npm package should stay <= 11.05 MB unpacked, got ${manifest.unpackedSize}`
+  // Bumped 11.05 MB -> 11.07 MB (2026-11-27): #5321, #5327 and #5328 landed together; main measured 11,054,183.
+  manifest.unpackedSize <= 11_070_000,
+  `npm package should stay <= 11.07 MB unpacked, got ${manifest.unpackedSize}`
 );
 
   for (const file of requiredRuntimeFiles) {
