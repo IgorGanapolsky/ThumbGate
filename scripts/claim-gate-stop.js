@@ -132,32 +132,20 @@ function hasEvidence(text) {
   return EVIDENCE_RE.test(String(text || ''));
 }
 
-function lessonText(lesson) {
-  const raw = lesson.rule && typeof lesson.rule === 'object'
-    ? (lesson.rule.rule || lesson.rule.text || lesson.rule.description || '')
-    : '';
-  const body = String(raw || lesson.content || lesson.title || '').replace(/\s+/g, ' ').trim();
-  return body.slice(0, 260);
-}
-
-function retrieveLessons(claims, options = {}) {
-  try {
-    const { retrieveRelevantLessons } = require('./lesson-retrieval');
-    const query = `${claims.map((c) => c.sentence).join(' ')} unverified state claim stated without a check this turn`;
-    const lessons = retrieveRelevantLessons('Stop', query, {
-      maxResults: options.maxResults || 3,
-      feedbackDir: options.feedbackDir,
-    });
-    return (lessons || []).filter((l) => l && l.signal !== 'positive').slice(0, options.maxResults || 3);
-  } catch {
-    return [];
-  }
+// Claude Code can take Stop feedback without printing a hook error. Older and unknown hosts ignore that shape, which
+// would switch the gate off, so only a transcript from a version known to accept it gets it.
+const FEEDBACK_SINCE = [2, 1, 163];
+function acceptsStopFeedback(version) {
+  const parts = String(version || '').split('.').map(Number);
+  if (parts.length !== 3 || parts.some((part) => !Number.isInteger(part))) return false;
+  const differs = FEEDBACK_SINCE.findIndex((least, i) => parts[i] !== least);
+  return differs === -1 || parts[differs] > FEEDBACK_SINCE[differs];
 }
 
 /**
  * Decide on a draft reply.
  * @param {string} text the draft assistant text for this turn
- * @param {{toolNames?: string[], feedbackDir?: string, retrieve?: Function}} options
+ * @param {{toolNames?: string[], toolCalls?: object[], feedbackDir?: string}} options
  * @returns {{block: boolean, claims: object[], lessons: object[], reason: string|null, checked: boolean}}
  */
 function evaluateDraft(text, options = {}) {
@@ -175,20 +163,12 @@ function evaluateDraft(text, options = {}) {
     .filter((c) => !checked || STALE_PRONE_KINDS.has(c.kind) || (c.kind === 'learned' && c.requiresEvidence && !evidenceInReply));
   if (claims.length === 0) return { block: false, claims, lessons: [], reason: null, checked };
 
-  const lessons = (options.retrieve || retrieveLessons)(claims, options);
-  const ruleLines = [...new Set(claims.filter((c) => c.ruleMessage).map((c) => c.ruleMessage))];
-  const lessonLines = ruleLines.length ? ruleLines.map((m, i) => `${i + 1}. ${m}`).join('\n') : lessons.length
-    ? lessons.map((l, i) => `${i + 1}. ${lessonText(l)}`).join('\n')
-    : '1. Never state the present condition of a tab, app, chat, job or message from memory; check it this turn or label it.';
-  const quoted = claims.slice(0, 3).map((c) => `- "${c.sentence}"`).join('\n');
-  const reason = [
-    'ThumbGate claim gate: this reply states the current condition of something outside the conversation with no check this turn and no label.',
-    quoted,
-    'Lessons Igor recorded about this:',
-    lessonLines,
-    'Run a check now and restate with the result, or label each claim: "live" (checked this turn), "as of <time>" (older reading), or "not checked". Open with the corrected fact.',
-  ].join('\n');
-  return { block: true, claims, lessons, reason, checked };
+  // One line, and only the rule that fired: retrieved lessons were noise on screen.
+  const rules = [...new Set(claims.filter((c) => c.ruleMessage).map((c) => c.ruleMessage))].join(' ');
+  const sentence = String(claims[0].sentence).replace(/\s+/g, ' ').slice(0, 120);
+  const more = claims.length > 1 ? ` (+${claims.length - 1} more)` : '';
+  const reason = `ThumbGate claim gate: unchecked claim "${sentence}"${more}. Check it now, or label it "live", "as of <time>" or "not checked".${rules ? ` ${rules.replace(/\s+/g, ' ')}` : ''}`;
+  return { block: true, claims, lessons: [], reason, checked };
 }
 
 function textOf(message) {
@@ -257,8 +237,11 @@ function main() {
   let text = '';
   let toolNames = [];
   let toolCalls = null;
+  let version = null;
   if (file && fs.existsSync(file)) {
-    const turns = collectTurns(readTranscript(file));
+    const entries = readTranscript(file);
+    version = entries.map((entry) => entry && entry.version).filter(Boolean).pop();
+    const turns = collectTurns(entries);
     const turn = turns[turns.length - 1];
     if (turn) { text = turn.text.join('\n'); toolNames = turn.tools; toolCalls = turn.calls; }
   } else {
@@ -267,7 +250,11 @@ function main() {
   if (!text.trim()) return;
 
   const verdict = evaluateDraft(text, { toolNames, toolCalls, feedbackDir: process.env.THUMBGATE_FEEDBACK_DIR });
-  if (verdict.block) process.stdout.write(`${JSON.stringify({ decision: 'block', reason: verdict.reason })}\n`);
+  if (!verdict.block) return;
+  const out = acceptsStopFeedback(version)
+    ? { hookSpecificOutput: { hookEventName: payload.hook_event_name === 'SubagentStop' ? 'SubagentStop' : 'Stop', additionalContext: verdict.reason } }
+    : { decision: 'block', reason: verdict.reason };
+  process.stdout.write(`${JSON.stringify(out)}\n`);
 }
 
 async function replay(file, since) {

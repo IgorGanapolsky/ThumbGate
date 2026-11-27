@@ -6,17 +6,19 @@ const path = require('node:path');
 
 const MAX_INJECTED_LESSONS = 2;
 const MAX_INJECTED_TOKENS = 150;
-const LESSON_REPEAT_MS = 30 * 60 * 1000;
 const CHARS_PER_TOKEN = 4;
 
 const TRANSCRIPT_PREFIXES = Object.freeze([
   '<task-notification>',
   '<pasted_content',
-  'it ignored a prior instruction: <',
+  // These two only quote the user's message back; they say nothing about what to do differently.
+  'it ignored a prior instruction:',
+  'follow the earlier instruction',
 ]);
 
 const COMMAND_TERMS = new Set([
   'push', 'merge', 'curl', 'deploy', 'health', 'force', 'approve', 'admin', 'railway', 'trunk',
+  'publish', 'rebase', 'reset', 'migrate', 'terraform', 'kubectl', 'destroy',
 ]);
 const FOREIGN_REPO_TAGS = new Set(['dayglass', 'stockservice', 'psn', 'screenpipe']);
 
@@ -29,10 +31,56 @@ function lessonDisplayText(lesson) {
   return String(lesson.whatToChange || lesson.howToAvoid || lesson.content || lesson.title || '').trim();
 }
 
+const PERSONAL_CONTACT = /[\w.+-]+@[\w-]+(?:\.[\w-]+)*\.[a-z]{2,}\b|(?:\+?1[ .-]?)?\(?\b\d{3}\)?[ .-]\d{3}[ .-]\d{4}\b/gi;
+
+// A house number, up to three capitalised or ordinal words, then a street word. Case-sensitive so that
+// ordinary sentences ("12 tests the same way") do not count.
+const STREET_ADDRESS = /\b\d{2,6}\s+(?:[NSEW]{1,2}\.?\s+)?(?:(?:[A-Z][a-z']+|\d+(?:st|nd|rd|th))\s+){1,3}(?:Street|St|Avenue|Ave|Road|Rd|Drive|Dr|Boulevard|Blvd|Lane|Ln|Court|Ct|Place|Pl|Circle|Cir|Terrace|Ter|Way|Parkway|Pkwy|Highway|Hwy)\b/g;
+
+// Pasted blocks go with their contents; any other tag goes and its text stays.
+function stripLessonMarkup(text) {
+  return String(text || '')
+    .replace(/<pasted_content\b[^>]*>[\s\S]*?(?:<\/pasted_content\b[^>]*>|$)/gi, ' ')
+    .replace(/<\/?[a-z][\w-]*\b[^<>]*>?/gi, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+// What of a lesson is fit to show on this call, or null.
+function presentableLesson({ title, advice }, actionContext) {
+  const [cleanTitle, cleanAdvice] = [title, advice].map((value) => (
+    isRawTranscriptFragment(value) || isRawTranscriptFragment(stripLessonMarkup(value)) ? '' : stripLessonMarkup(value)
+  ));
+  const shown = `${cleanTitle} ${cleanAdvice}`;
+  const context = String(actionContext || '').toLowerCase();
+  const contacts = [...(shown.match(PERSONAL_CONTACT) || []), ...(shown.match(STREET_ADDRESS) || [])];
+  if (contacts.some((contact) => !context.includes(contact.toLowerCase()))) return null;
+  if (!cleanTitle) return cleanAdvice ? { title: cleanAdvice, advice: '' } : null;
+  return { title: cleanTitle, advice: cleanAdvice };
+}
+
 function isRawTranscriptFragment(text) {
   const trimmed = String(text || '').trim().toLowerCase();
   if (!trimmed) return false;
   return TRANSCRIPT_PREFIXES.some((prefix) => trimmed.startsWith(prefix));
+}
+
+// Words that appear in almost any lesson or command, so sharing them says nothing about relevance.
+const COMMON_WORDS = new Set(('about after agent always avoid bash been before check claude command content could does done edit file from have home http https instead into json just like make mistake more must never next only over read said should some than that their them then there these this thumbgate tool user users went were what when where which will with without work workspace write wrong would your').split(' '));
+
+function significantWords(text) {
+  return new Set(String(text || '').toLowerCase().split(/[^a-z0-9]+/).filter((w) => w.length >= 4 && !/^\d+$/.test(w) && !COMMON_WORDS.has(w)));
+}
+
+/** Is the lesson about this call: a shared file or command term, or at least two shared words that mean something. */
+function lessonSharesAction(lesson, { toolName, actionContext } = {}) {
+  const blob = `${lesson.title || ''} ${lessonDisplayText(lesson)} ${(Array.isArray(lesson.tags) ? lesson.tags : []).join(' ')}`.toLowerCase();
+  if (actionMatchTerms(toolName, actionContext).some((term) => blob.includes(term))) return true;
+  const action = String(actionContext || '').split(String(toolName || '\u0000')).join(' ');
+  const words = significantWords(action);
+  words.delete(os.userInfo().username.toLowerCase());
+  const inLesson = significantWords(blob);
+  return [...words].filter((w) => inLesson.has(w)).length >= 2;
 }
 
 function lessonIdentity(lesson) {
@@ -106,7 +154,8 @@ function lessonMatchScore(lesson, { toolName, actionContext } = {}) {
   const terms = actionMatchTerms(toolName, actionContext);
   const blob = lessonBlob(lesson);
   const hitTerms = terms.filter((term) => blob.includes(term));
-  if (!toolHit && hitTerms.length === 0) return 0;
+  // A matching tool name only breaks ties: on its own it would match every call of that tool.
+  if (hitTerms.length === 0) return lessonSharesAction(lesson, { toolName, actionContext }) ? 1 : 0;
   let score = hitTerms.length + (toolHit ? 1 : 0);
   const gitMutation = hitTerms.some((term) => ['push', 'merge', 'force', 'approve', 'admin'].includes(term));
   if (gitMutation && blob.includes('branch protection')) score += 5;
@@ -159,8 +208,7 @@ function selectInjectableLessons(lessons, options = {}) {
     .sort((a, b) => b.score - a.score || a.index - b.index);
   for (const row of ranked) {
     const id = lessonIdentity(row.lesson);
-    const last = Number(seen[id] || 0);
-    if (id && last && now - last < LESSON_REPEAT_MS) continue;
+    if (id && seen[id]) continue; // once per session
     matched.push(row.lesson);
     if (matched.length >= MAX_INJECTED_LESSONS) break;
   }
@@ -181,11 +229,26 @@ function selectInjectableLessons(lessons, options = {}) {
   return kept;
 }
 
+/** Lessons not yet shown in this session; marks the ones returned. Without a session id nothing is remembered. */
+function takeUnseenLessons(lessons, { sessionId, seenDir, now = Date.now() } = {}) {
+  if (!sessionId || lessons.length === 0) return lessons;
+  const storePath = seenStorePath(sessionId, seenDir);
+  const seen = readSeen(storePath);
+  const unseen = lessons.filter((l) => !seen[lessonIdentity(l)]);
+  if (unseen.length) {
+    for (const l of unseen) seen[lessonIdentity(l)] = now;
+    try { writeSeen(storePath, seen); } catch { /* remembering never blocks a call */ }
+  }
+  return unseen;
+}
+
 function formatInjectableReminder(lessons) {
   const bodies = [];
   let used = estimateTokens('<system-reminder>\nThumbGate prior lesson for this tool call:\n</system-reminder>');
   for (const lesson of (lessons || []).slice(0, MAX_INJECTED_LESSONS)) {
-    let text = lessonDisplayText(lesson).replace(/\s+/g, ' ');
+    const raw = lessonDisplayText(lesson);
+    if (!raw || isRawTranscriptFragment(raw)) continue;
+    let text = stripLessonMarkup(raw);
     if (!text || isRawTranscriptFragment(text)) continue;
     const prefix = `${bodies.length + 1}. `;
     let room = (MAX_INJECTED_TOKENS - used - estimateTokens(prefix) - 1) * CHARS_PER_TOKEN;
@@ -207,11 +270,14 @@ function formatInjectableReminder(lessons) {
 module.exports = {
   MAX_INJECTED_LESSONS,
   MAX_INJECTED_TOKENS,
-  LESSON_REPEAT_MS,
   estimateTokens,
   isRawTranscriptFragment,
+  presentableLesson,
+  stripLessonMarkup,
   lessonDisplayText,
   lessonMatchesToolCall,
+  lessonSharesAction,
+  takeUnseenLessons,
   actionMatchTerms,
   selectInjectableLessons,
   formatInjectableReminder,

@@ -873,6 +873,7 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // public/guide.html (PR #5309, which left main at 11,001,184) and the opt-out and gate-id privacy fixes in
   // scripts/cli-telemetry.js. Measured 11,002,284.
   // Bumped 11.01 MB -> 11.02 MB (2026-11-27, PR #5311): the two entries above landed together. Measured 11,010,879.
+  // Bumped 11.02 MB -> 11.03 MB (2026-11-27, PR #5313): lesson text cleaning for the hook injectors. Measured 11,020,362.
   // Bumped 11.02 MB -> 11.03 MB (2026-11-27): scripts/ga-tag.js, the GA4 funnel tag on every public page, and the
   // Google Analytics line in public/privacy.html. Measured 11,023,272.
   // Bumped 11.03 MB -> 11.04 MB (2026-11-27, v1.48.0 release): main measured 11,030,172 after #5314 and #5319
@@ -883,8 +884,10 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // 11.08 -> 11.09 MB (2026-11-27, PR 5331): the PreSkillShellCommand hook. Measured 11,080,029.
   // 11.09 -> 11.11 MB (2026-11-27, PR #5324): authenticated-read classifier in secret-scanner.js plus the warn-only
   // advisory path in gates-engine.js and tailscale-october-access.js (~18 KB). Measured 11,098,009.
-  manifest.unpackedSize <= 11_110_000,
-  `npm package should stay <= 11.11 MB unpacked, got ${manifest.unpackedSize}`
+  // 11.11 -> 11.12 MB (2026-11-27, PR #5313): holds, reminder filtering and the one-line claim-gate feedback on top of
+  // #5324 and #5332. Measured 11,113,727.
+  manifest.unpackedSize <= 11_120_000,
+  `npm package should stay <= 11.12 MB unpacked, got ${manifest.unpackedSize}`
 );
 
   for (const file of requiredRuntimeFiles) {

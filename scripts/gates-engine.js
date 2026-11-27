@@ -5856,7 +5856,7 @@ function buildRelevantLessonContext(toolName, toolInput, options = {}) {
     if (entropy > KNOWLEDGE_ENTROPY_THRESHOLD) {
       return buildKnowledgeConflictContext(toolName, toolInput, lessons, entropy);
     }
-    return formatNegativeLessonContext(lessons);
+    return formatNegativeLessonContext(lessons, { toolName, actionContext, sessionId: options.sessionId, seenDir: options.seenDir });
   } catch {
     return null;
   }
@@ -5897,7 +5897,7 @@ async function buildRelevantLessonContextAsync(toolName, toolInput, options = {}
       return buildKnowledgeConflictContext(toolName, toolInput, lessons, entropy);
     }
 
-    return formatNegativeLessonContext(lessons);
+    return formatNegativeLessonContext(lessons, { toolName, actionContext, sessionId: options.sessionId, seenDir: options.seenDir });
   } catch {
     return null;
   }
@@ -5908,17 +5908,27 @@ async function buildRelevantLessonContextAsync(toolName, toolInput, options = {}
  * into the PreToolUse warning block. Retrieval already filters by relevance, so any
  * negative lesson present is relevant enough to surface.
  */
-function formatNegativeLessonContext(lessons) {
-  const negative = (lessons || []).filter((l) => {
+function formatNegativeLessonContext(lessons, options = {}) {
+  const { lessonSharesAction, takeUnseenLessons, presentableLesson } = require('./lesson-hook-relevance');
+  const shown = new Map();
+  const relevant = (lessons || []).filter((l) => {
     if (l.signal !== 'negative') return false;
+    const text = presentableLesson({
+      title: String(l.title || '').replace(/^MISTAKE:\s*/, ''),
+      advice: extractAvoidanceAdvice(l.content),
+    }, options.actionContext);
+    if (!text) return false;
+    shown.set(l, text);
+    if (options.actionContext && !lessonSharesAction(l, options)) return false;
     const score = Number(l.rerankedScore ?? l.relevanceScore ?? 0);
     return score >= MIN_LESSON_INJECTION_RELEVANCE;
   });
+  const negative = takeUnseenLessons(relevant, options);
   if (negative.length === 0) return null;
 
   const formatted = negative.map((l) => {
-    const title = (l.title || '').replace(/^MISTAKE:\s*/, '').slice(0, 140);
-    const advice = extractAvoidanceAdvice(l.content);
+    const { advice } = shown.get(l);
+    const title = shown.get(l).title.slice(0, 140);
     const body = advice ? `  • ${title}\n    → ${advice}` : `  • ${title}`;
     const notes = [l.graph?.lineageNote, l.graph?.conflictNote].filter(Boolean);
     return body + notes.map(note => `\n    ↳ ${String(note).slice(0, 220)}`).join('');
@@ -6084,13 +6094,14 @@ async function runAsyncCore(rawInput) {
 
   
   const behavioralContext = safeSecretStorageWrite ? null : buildBehavioralContext();
-  const lessonContext = safeSecretStorageWrite ? null : await buildRelevantLessonContextAsync(toolName, toolInput);
+  // Only a warning or no result prints the lesson text; any other call must not record the lesson as shown.
+  const posturedResult = applyEnforcementPosture(result);
+  const lessonContext = safeSecretStorageWrite ? null : await buildRelevantLessonContextAsync(toolName, toolInput, { sessionId: lessonSessionId(input, posturedResult) });
   
   if (lessonContext && lessonContext.decision === "deny") {
     return formatOutput(applyEnforcementPosture(lessonContext));
   }
 
-  const posturedResult = applyEnforcementPosture(result);
   if (isBlockingDecision(posturedResult)) {
     return formatOutput(posturedResult);
   }
@@ -6139,13 +6150,14 @@ function runCore(rawInput) {
 
   
   const behavioralContext = safeSecretStorageWrite ? null : buildBehavioralContext();
-  const lessonContext = safeSecretStorageWrite ? null : buildRelevantLessonContext(toolName, toolInput);
+  // Only a warning or no result prints the lesson text; any other call must not record the lesson as shown.
+  const posturedResult = applyEnforcementPosture(result);
+  const lessonContext = safeSecretStorageWrite ? null : buildRelevantLessonContext(toolName, toolInput, { sessionId: lessonSessionId(input, posturedResult) });
   
   if (lessonContext && lessonContext.decision === "deny") {
     return formatOutput(applyEnforcementPosture(lessonContext));
   }
 
-  const posturedResult = applyEnforcementPosture(result);
   if (isBlockingDecision(posturedResult)) {
     return formatOutput(posturedResult);
   }
@@ -6158,6 +6170,12 @@ function runCore(rawInput) {
   const combinedContext = combineWithSessionDedupe(input, lessonContext, recentContext, behavioralContext, designContext);
   return formatOutput(mergeAdvisories(posturedResult, advisories), combinedContext);
 
+}
+
+// The session to record a shown lesson under: none when this result will not print the lesson text.
+function lessonSessionId(input, result) {
+  if (result && result.decision !== 'warn') return undefined;
+  return input.session_id || input.sessionId || input.conversation_id;
 }
 
 // Recent-corrections and recurring-pattern text is identical call after call; inject it
@@ -6649,6 +6667,7 @@ function evaluateAgentIdentityLifecycleGate(toolName, toolInput) {
 }
 
 module.exports = {
+  formatNegativeLessonContext,
   evaluateUnconditionalHardFloor,
   compileGatePattern,
   evaluateAgentIdentityLifecycleGate,
@@ -6703,6 +6722,7 @@ module.exports = {
   isAutonomousRun,
   computeExecutableHash,
   formatOutput,
+  lessonSessionId,
   finalizeFinancialAuthorization,
   isApprovalGatesEnabled,
   runHardFloor,
