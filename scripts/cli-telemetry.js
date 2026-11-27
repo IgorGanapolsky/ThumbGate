@@ -198,7 +198,7 @@ function trackEventDetached(eventType, metadata = {}, { spawnFn } = {}) {
   }
 }
 
-module.exports = { publicGateId, installSourceFields, INSTALL_SOURCE_PATH, trackEvent, trackEventDetached, getInstallId, classifyInstall, isOwnerAgentSession, INSTALL_ID_PATH, SESSION_ID };
+module.exports = { publicGateId, installSourceFields, INSTALL_SOURCE_PATH, trackEvent, trackEventDetached, buildPayload, getInstallId, classifyInstall, isOwnerAgentSession, INSTALL_ID_PATH, SESSION_ID };
 
 if (require.main === module && process.argv[2] === '--deliver') {
   const payload = process.env.THUMBGATE_TELEMETRY_PAYLOAD || '';

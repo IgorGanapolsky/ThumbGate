@@ -4280,6 +4280,7 @@ function help() {
   console.log('  background-governance Background-agent run report and dispatch risk check');
   console.log('  analytics             Unified analytics snapshot (npm, GitHub, landing)');
   console.log('  inventory             Agent action inventory: tool calls, gate denies, false-deny rate');
+  console.log('  control               Where your data lives, what the usage ping sends, how to turn it off');
   console.log('  conflict-audit        Find controls that report success but enforce nothing');
   console.log('  start-api             Start the ThumbGate HTTPS API server');
   console.log('');
@@ -5741,6 +5742,20 @@ switch (COMMAND) {
       console.log(JSON.stringify(inventory, null, 2));
     } else {
       process.stdout.write(renderInventoryText(inventory));
+    }
+    break;
+  }
+  case 'control':
+  case 'data-control': {
+    // Read-only: where ThumbGate keeps your data, what the usage ping sends, the off switch.
+    // Writes nothing and opens no socket.
+    const controlArgs = parseArgs(process.argv.slice(3));
+    const { buildControlReport, renderControlReportText } = require(path.join(PKG_ROOT, 'scripts', 'data-control-report'));
+    const controlReport = buildControlReport({ dataDir: controlArgs['data-dir'] });
+    if (controlArgs.json) {
+      console.log(JSON.stringify(controlReport, null, 2));
+    } else {
+      process.stdout.write(renderControlReportText(controlReport));
     }
     break;
   }

@@ -305,7 +305,8 @@ const path = require('node:path');
 // 731 -> 732 (2026-11-25): scripts/assurance-report.js, the assurance-report CLI command.
 // 732 -> 733 (2026-11-26): scripts/staged-secret-gate.js, the staged-secret commit gate (PR 5258).
 // 733 -> 734 (2026-11-27): scripts/transcript-incident.js, the thumbed-down action and turns for DPO pairs (+1).
-const BASELINE_FILE_COUNT = 734;
+// 734 -> 735 (2026-11-27): scripts/data-control-report.js, the `thumbgate control` command (where data lives, what the usage ping sends).
+const BASELINE_FILE_COUNT = 735;
 function readBundleSnapshot() {
   const repoRoot = path.resolve(__dirname, '..');
   const stdout = execSync('npm pack --dry-run --json', {
