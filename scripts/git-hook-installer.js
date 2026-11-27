@@ -153,8 +153,20 @@ function ensureHookConfig(hookName, eventName, commandPath, readConfig, readConf
   return changed;
 }
 
+// Hook commands go into the config every worktree shares, so they must name the main
+// checkout: a path inside a linked worktree breaks all commits once it is removed.
+function mainRepoRoot(checkout) {
+  // Only a checkout itself; a copy under node_modules must not adopt the host repo.
+  if (!fs.existsSync(path.join(checkout, '.git'))) return checkout;
+  const res = spawnSync('git', ['rev-parse', '--path-format=absolute', '--git-common-dir'], { cwd: checkout, encoding: 'utf8' });
+  const commonDir = res.status === 0 ? res.stdout.trim() : '';
+  if (path.basename(commonDir) !== '.git') return checkout;
+  const root = path.dirname(commonDir);
+  return fs.existsSync(path.join(root, '.githooks')) ? root : checkout;
+}
+
 function installGitHooks(options = {}) {
-  const repoRoot = path.resolve(options.repoRoot || path.join(__dirname, '..'));
+  const repoRoot = path.resolve(options.repoRoot || mainRepoRoot(path.join(__dirname, '..')));
   const hooksDir = path.join(repoRoot, '.githooks');
 
   if (!fs.existsSync(hooksDir)) {
@@ -266,6 +278,7 @@ module.exports = {
   formatInstallSummary,
   installGitHooks,
   parseGitVersion,
+  mainRepoRoot,
   resolvesToRepoHooksDir,
   supportsConfigBasedHooks,
 };
