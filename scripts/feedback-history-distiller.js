@@ -8,20 +8,39 @@ const { redactSecretsDeep } = require('./secret-redaction');
 
 const DEFAULT_HISTORY_LIMIT = 10;
 
+// A correction pushes back on something done. An ordinary request ("use X", "it should be centred") is not one.
 const CORRECTION_PATTERNS = [
-  /\bdon['’]?t\b/i,
-  /\bdo not\b/i,
-  /\bnever\b/i,
-  /\bavoid\b/i,
-  /\bstop\b/i,
-  /\bmust\b/i,
-  /\bshould\b/i,
-  /\bneed to\b/i,
-  /\buse\b/i,
-  /\brun tests?\b/i,
-  /\binclude\b/i,
-  /\bprove\b/i,
+  /^(?:(?:no|again|please|hey)[,.!\s]+)*(?:don['’]?t|do not|never|stop|avoid|quit)\b/i,
+  /\byou\s+(?:ignored|didn['’]?t|did not|keep|kept|forgot|skipped|broke|should(?:n['’]?t)? have|were (?:told|supposed))\b/i,
+  /\bi\s+(?:already\s+)?(?:told|asked|said)\b/i,
+  /\b(?:not what i|should(?:n['’]?t)? have)\b/i,
 ];
+// Longer than this is a brief or a report, whatever words it contains.
+const MAX_CORRECTION_CHARS = 400;
+// Text another agent or the harness put into the conversation.
+const AGENT_REPORT = /<(?:agent-message|teammate-message|task-notification|system-reminder|channel)\b|another claude session sent a message|\bsubagent (?:report|hand-?back)\b|\[subagent hand-?back\]/i;
+const NOT_RECORDED = 'Not recorded: no thumbs-down or correction from the person.';
+
+function isFromPerson(entry) {
+  return !/^(?:assistant|tool|system|agent)$/i.test(String(entry.author || '')) && !AGENT_REPORT.test(String(entry.text || ''));
+}
+
+function isCorrection(text) {
+  return text.length <= MAX_CORRECTION_CHARS && matchesAny(text, CORRECTION_PATTERNS);
+}
+
+// What the prompt hook may record by itself: a typed thumbs-down, or a short message that says the work was wrong.
+// The words appearing somewhere inside a request or a report do not count.
+function isTypedThumbsDown(prompt) {
+  const text = String(prompt || '').trim();
+  if (AGENT_REPORT.test(text)) return false;
+  if (/^(?:👎|thumbs?[ -]?down\b)/iu.test(text)) return true;
+  if (text.length > MAX_CORRECTION_CHARS) return false;
+  return /👎|\bthumbs?[ -]?down[.!]*$/iu.test(text)
+    || /^(?:(?:no|and|but)[,.\s]+)?that (?:failed|was wrong)\b/i.test(text)
+    || /^fix this\W*$/i.test(text)
+    || isCorrection(text);
+}
 
 const FAILURE_PATTERNS = [
   /\bfailed\b/i,
@@ -227,12 +246,12 @@ function isCaptureFragment(text) {
 function inferNegativeDistillation(messages, params) {
   const correctionMessage = chooseMessage(messages, (entry) => {
     const text = normalizeText(entry.text);
-    return Boolean(text) && !isCaptureFragment(text) && matchesAny(text, CORRECTION_PATTERNS);
+    return Boolean(text) && !isCaptureFragment(text) && isFromPerson(entry) && isCorrection(text);
   });
 
   const failureMessage = chooseMessage(messages, (entry) => {
     const text = normalizeText(entry.text);
-    return Boolean(text) && !isCaptureFragment(text) && matchesAny(text, FAILURE_PATTERNS);
+    return Boolean(text) && !isCaptureFragment(text) && !AGENT_REPORT.test(text) && matchesAny(text, FAILURE_PATTERNS);
   }) || (() => {
     const fallback = buildLastActionMessage(params.lastAction);
     return fallback && !isCaptureFragment(fallback.text) ? fallback : null;
@@ -393,6 +412,8 @@ module.exports = {
   distillFeedbackHistory,
   findFeedbackEventById,
   getConversationPaths,
+  isTypedThumbsDown,
+  NOT_RECORDED,
   normalizeChatHistory,
   readRecentConversationWindow,
   recordConversationEntry,
