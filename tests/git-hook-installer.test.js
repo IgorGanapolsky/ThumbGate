@@ -256,3 +256,25 @@ describe('git-hook-installer', () => {
     }
   });
 });
+
+test('hook paths from a linked worktree resolve to the main checkout', () => {
+  const { execFileSync } = require('child_process');
+  const { mainRepoRoot } = require('../scripts/git-hook-installer');
+  const base = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), 'tg-hookroot-')));
+  const main = path.join(base, 'main');
+  const linked = path.join(base, 'linked');
+  const env = Object.fromEntries(Object.entries(process.env).filter(([k]) => !k.startsWith('GIT_')));
+  const git = (cwd, ...args) => execFileSync('git', ['-c', 'core.hooksPath=/dev/null', '-c', 'user.name=t', '-c', 'user.email=t@example.com', '-c', 'commit.gpgsign=false', ...args], { cwd, env, stdio: 'ignore' });
+  try {
+    fs.mkdirSync(path.join(main, '.githooks'), { recursive: true });
+    fs.writeFileSync(path.join(main, '.githooks', 'pre-push'), '');
+    git(main, 'init', '-q');
+    git(main, 'add', '.');
+    git(main, 'commit', '-qm', 'init');
+    git(main, 'worktree', 'add', '-q', linked);
+    assert.equal(mainRepoRoot(linked), main);
+    assert.equal(mainRepoRoot(main), main);
+  } finally {
+    fs.rmSync(base, { recursive: true, force: true });
+  }
+});
