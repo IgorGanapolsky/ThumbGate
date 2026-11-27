@@ -191,6 +191,8 @@ function buildDpoPairs(errors, learnings, { maxDistractors = 2 } = {}) {
 const VAGUE_NEGATIVE = /^(thumbs?[- ]?down|bad|wrong|no|nope|nah|fix (it|this)|this is (wrong|bad)[!.]*|\W*)$/i;
 const PRAISE_ONLY = /^(?:what worked:\s*)?(?:great|good|nice|perfect|awesome|excellent|thanks|thank you|love it|well done|works?)\b[^.]{0,40}$/i;
 const REINFORCE = /^when answering .*: reinforce\b/i;
+// The history distiller's fill-in sentences quote an older message; they are not a better action for this one.
+const DISTILLER_TEMPLATE = /^(?:follow the earlier instruction instead|inspect and correct the failing step before)/i;
 
 function textOf(value) {
   if (value == null) return '';
@@ -251,6 +253,13 @@ function promptBefore(windowValue, rejected) {
 function loadFeedbackIndex(options = {}) {
   const rows = options.feedbackRows || readJSONL(path.join(options.feedbackDir || resolveFeedbackDir(), 'feedback-log.jsonl'));
   const byId = new Map();
+  // A trimmed log leaves memories pointing at records that now live only in a backup beside it.
+  if (!options.feedbackRows || options.feedbackDir) {
+    const dir = options.feedbackDir || resolveFeedbackDir();
+    let backups = [];
+    try { backups = fs.readdirSync(dir).filter((name) => name.startsWith('feedback-log.jsonl.bak')).sort(); } catch { /* none */ }
+    for (const name of backups) for (const row of readJSONL(path.join(dir, name))) if (row && row.id) byId.set(row.id, row);
+  }
   for (const row of rows) if (row && row.id) byId.set(row.id, row);
   return { rows, byId };
 }
@@ -281,7 +290,7 @@ function rejectedActionOf(feedback) {
 }
 
 function strictPairFor(error, feedback, positives) {
-  if (!feedback) return { reason: 'no_source_feedback_record' };
+  if (!feedback) return { reason: error.sourceFeedbackId ? 'no_source_feedback_record' : 'memory_has_no_source_feedback_id' };
   const whatWrong = textOf(feedback.whatWentWrong) || textOf(feedback.context);
   if (wordCount(whatWrong) < 4 || VAGUE_NEGATIVE.test(whatWrong)) return { reason: 'vague_negative_feedback' };
   const found = rejectedActionOf(feedback);
@@ -292,7 +301,7 @@ function strictPairFor(error, feedback, positives) {
   if (!window) return { reason: 'no_prompt_context_before_rejected_action' };
   let chosen = textOf(feedback.whatToChange);
   let chosenSource = 'same_record_corrective_action';
-  if (chosen && (REINFORCE.test(chosen) || PRAISE_ONLY.test(chosen))) chosen = '';
+  if (chosen && (REINFORCE.test(chosen) || PRAISE_ONLY.test(chosen) || DISTILLER_TEMPLATE.test(chosen))) chosen = '';
   if (!chosen) {
     const promptId = feedback.sourceEvent && feedback.sourceEvent.promptIdHash;
     const session = feedback.scope && feedback.scope.sessionId;

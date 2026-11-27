@@ -1125,6 +1125,8 @@ async function callToolInner(name, args) {
       return toCaptureFeedbackTextResult(captureFeedback({
         ...pairedFeedback,
         cwd: resolveWorkspaceCwd(args.cwd),
+        // Lets capture find the transcript holding this exact call, so the rejected action is the real one.
+        matchTranscriptCall: args,
         lessonId: args.lessonId,
         lessonKey: args.lessonKey,
         // An agent calling this tool is not a person. A call is a person's thumb only when it carries the
