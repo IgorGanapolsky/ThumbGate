@@ -1002,15 +1002,24 @@ function wgetDefaultConfigUnsafe(tokens, env = process.env) {
 }
 
 // The command itself can point curl/wget at another config directory or file
-// (`CURL_HOME=/tmp/x curl …`, `export "HOME=…"; curl …`, `read -r WGETRC`). The gate cannot
-// see that file from its own environment, so any bare mention of one of these names voids the
-// exception, however it is quoted. Reading `$HOME`/`${HOME}` is fine; naming HOME is not.
+// (`CURL_HOME=/tmp/x curl …`, `export "HOME=…"`, `export C'URL'_HOME=…`, `read -r WGETRC`). The
+// gate cannot see that file from its own environment, so the exception is void when:
+// - after removing quotes and backslashes, the command names one of these variables
+//   (reading `$HOME`/`${HOME}` is fine; naming HOME is not), or
+// - it uses a builtin that can set a variable whose name is computed or hidden
+//   (export, declare, read, eval, source, printf -v, …).
 const CONFIG_LOCATION_NAME_RE = /(?:CURL_HOME|XDG_CONFIG_HOME|WGETRC|SYSTEM_WGETRC)|(?<![$\w{])HOME(?!\w)/;
+const VARIABLE_SETTING_BUILTIN_RE = /(?:^|[\s;&|(])(?:export|declare|typeset|local|readonly|read|eval|source|mapfile|readarray|let|printf\s+-v|set\s+-a)(?=\s|$)|(?:^|[;&|(]\s*)\.(?=\s)/;
+
+function setsConfigLocation(text) {
+  const bare = text.replace(/['"\\]/g, '');
+  return CONFIG_LOCATION_NAME_RE.test(bare) || VARIABLE_SETTING_BUILTIN_RE.test(bare);
+}
 
 function isAuthenticatedReadCommand(command) {
   const text = String(command || '');
   if (/\/dev\/tcp\//i.test(text) || /\$\(|`|<\(/.test(text)) return false;
-  if (CONFIG_LOCATION_NAME_RE.test(text)) return false;
+  if (setsConfigLocation(text)) return false;
   // printenv/env reads a secret without a $ reference; never part of a plain read.
   if (/\b(?:printenv|env)\s+[A-Za-z_]/.test(text)) return false;
   // Every segment that names a secret variable must be a read-only curl/wget whose
