@@ -55,6 +55,15 @@ afterEach(() => {
   fs.rmSync(sandboxDir, { recursive: true, force: true });
 });
 
+test('agent report-back tool is not email; Gmail send_message still is', () => {
+  const input = { session_id: 'abc', message: 'done: tests pass' };
+  assert.equal(evaluateGates('mcp__claude-code-remote__send_message', input, CONFIG), null);
+  for (const tool of ['mcp__claude_ai_Gmail__send_message', 'mcp__other__send_message']) {
+    const result = evaluateGates(tool, { to: ['a@example.com'], body: 'hi' }, CONFIG);
+    assert.equal(result && result.gate, 'outbound-email-send', tool);
+  }
+});
+
 test('buildMatchSurfaces includes tool name for MCP calls without command', () => {
   const surfaces = buildMatchSurfaces('mcp__claude_ai_Gmail__send_message', { to: ['a@b.com'] });
   assert.ok(surfaces.some((s) => s.includes('send_message')));

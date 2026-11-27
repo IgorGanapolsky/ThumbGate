@@ -2920,6 +2920,53 @@ function decodeShellPayloads(command, depth = 0) {
   return decoded;
 }
 
+// True only when every part of a command is `cd`, or echo/printf writing into a notes file. Such text mentions things;
+// it does not do them. Anything unsure (pipe, substitution, comment, other program or file type) is false.
+function isNotesOnlyWrite(command) {
+  const text = String(command || '');
+  // `cat >> notes.md <<'TAG'` with a quoted tag and nothing after the closing line: the body is only data.
+  const heredoc = text.match(/^\s*cat\s+>>?\s*[\w./~-]+\.(?:md|txt|log|jsonl|csv)\s+<<(-?)\s*(['"])(\w+)\2[ \t]*\n([\s\S]*)$/i);
+  if (heredoc) {
+    // `<<-` strips leading tabs before looking for the closing line, so an indented tag ends the body too.
+    const lines = heredoc[4].replace(/\n+$/, '').split('\n').map((line) => (heredoc[1] ? line.replace(/^\t+/, '') : line));
+    return lines.indexOf(heredoc[3]) === lines.length - 1;
+  }
+  const segments = [[]];
+  let word = '';
+  let quote = null;
+  const endWord = () => { if (word) segments[segments.length - 1].push(word); word = ''; };
+  for (let i = 0; i < text.length; i += 1) {
+    const c = text[i];
+    if (quote !== "'" && (c === '`' || (c === '$' && text[i + 1] === '('))) return false;
+    if (quote) {
+      if (c === quote) quote = null;
+      else if (c === '\\' && quote === '"') { word += text[i + 1] || ''; i += 1; } else word += c;
+    } else if (c === '$' && (text[i + 1] === "'" || text[i + 1] === '"')) return false;
+    else if (c === "'" || c === '"') quote = c;
+    else if (c === '\\') { word += text[i + 1] || ''; i += 1; }
+    else if ('|<()'.includes(c) || (c === '#' && !word)) return false;
+    else if (c === '>') { endWord(); segments[segments.length - 1].push('\u0000>'); if (text[i + 1] === '>') i += 1; }
+    else if (c === '&') {
+      if (text[i + 1] !== '&') return false;
+      endWord(); segments.push([]); i += 1;
+    } else if (c === ';' || c === '\n') { endWord(); segments.push([]); }
+    else if (/\s/.test(c)) endWord();
+    else word += c;
+  }
+  if (quote) return false;
+  endWord();
+  let writes = 0;
+  const safe = segments.filter((words) => words.length).every((words) => {
+    const at = words.indexOf('\u0000>');
+    if (words[0] === 'cd') return at === -1 && words.length === 2;
+    if ((words[0] !== 'echo' && words[0] !== 'printf') || String(words[1]).startsWith('-v')) return false;
+    const target = words[at + 1] || '';
+    writes += 1;
+    return at !== -1 && words.length === at + 2 && /^[^$\u0000]+\.(?:md|txt|log|jsonl|csv)$/i.test(target);
+  });
+  return safe && writes > 0;
+}
+
 function buildMatchSurfaces(toolName, toolInput = {}) {
   const name = String(toolName || '').trim();
   const command = String(toolInput.command || '').trim();
@@ -2953,8 +3000,18 @@ function buildMatchSurfaces(toolName, toolInput = {}) {
   return surfaces;
 }
 
+const NON_EMAIL_SEND_TOOLS = new Set(['mcp__claude-code-remote__send_message']);
+
 function matchGate(gate, toolName, toolInput = {}, options = {}) {
   if (!gateAppliesToProject(gate, gateExecution(toolInput, options).projectKey)) return { matched: false };
+  if (gate.id === 'outbound-email-send') {
+    // An agent reporting back to its own Claude project is not email. Exact name only.
+    if (NON_EMAIL_SEND_TOOLS.has(String(toolName || ''))) return { matched: false };
+    // A later pass judges a flattened command and keeps the real one in originalCommand; trust it only if they agree.
+    const raw = toolInput.originalCommand;
+    const written = raw && canonicalizeCommandForGates(raw) === toolInput.command ? raw : toolInput.command;
+    if (isNotesOnlyWrite(written)) return { matched: false };
+  }
   // Primary text for audit/reasoning: prefer command, then tool name (MCP).
   const matchSurfaces = buildMatchSurfaces(toolName, toolInput);
   let matchText = matchSurfaces[0] || String(toolName || '');
@@ -3045,6 +3102,10 @@ function matchGate(gate, toolName, toolInput = {}, options = {}) {
   }
 
   if (gate.id === 'outbound-off-brand-vertical-block') {
+    // A page read or a form lookup on the operator's own site (gate.ownHosts) is not a post.
+    if (isOwnSiteLookup(toolName, toolInput, gate.ownHosts)) {
+      return { matched: false, matchText, affectedFiles };
+    }
     if (EDIT_LIKE_TOOLS.has(toolName) || toolName === 'Read' || toolName === 'Glob' || toolName === 'Grep' || toolName === 'LS') {
       return { matched: false, matchText, affectedFiles };
     }
@@ -3149,6 +3210,62 @@ function matchGate(gate, toolName, toolInput = {}, options = {}) {
     taskScopeViolation,
     branchGovernanceViolation,
   };
+}
+
+// Tells a page read or a form lookup on the operator's own site apart from outbound posting, for a rule that names
+// browser tools. Anything it cannot read in full is not a lookup.
+const SOCIAL_HOST = /linkedin\.com|ugcPosts|bsky\.app|com\.atproto|threads\.(?:com|net)|\b(?:x|twitter)\.com|reddit\.com|substack\.com|medium\.com|dev\.to/i;
+// Browser tools that cannot write into a page.
+const READ_TOOL = /^mcp__browseros[-_]neo__(?:navigate|tabs|read|grep|snapshot|screenshot|diff|wait)$/;
+const RUN_TOOL = /^mcp__browseros[-_]neo__run$/;
+
+const LITERAL = String.raw`(?:'[^'\\\n]*'|"[^"\\\n]*"|\d+|\{[\w\s:,]*(?:(?:'[^'\\\n]*'|"[^"\\\n]*")[\w\s:,]*)*\})`;
+const ARGS = String.raw`\(\s*((?:${LITERAL}(?:\s*,\s*${LITERAL})*)?)\s*\)`;
+const OPEN = new RegExp(String.raw`^\s*(?:const|let)\s+(\w+)\s*=\s*await\s+browser\.open${ARGS}\s*;?`);
+const STEP = new RegExp(String.raw`^\s*(?:(?:const|let)\s+\w+\s*=\s*|return\s+)?await\s+(\w+)\.(goto|snapshot|read|grep|click|fill|type|press|selectOption|check|waitForSelector|waitForText)${ARGS}\s*;?`);
+const RETURN = /^\s*return\s+\w+(?:\.\w+)?\s*;?/;
+
+function isOwnUrl(argument, ownHosts) {
+  const text = /^\s*(['"])(.*?)\1/.exec(argument);
+  if (!text) return false;
+  try {
+    const url = new URL(text[2]);
+    return url.protocol === 'https:' && !url.username && ownHosts.includes(url.hostname);
+  } catch {
+    return false;
+  }
+}
+
+/** A script made only of literal steps on tabs it opened itself on an own site. */
+function isOwnSiteScript(code, ownHosts) {
+  const handles = new Set();
+  let rest = String(code || '');
+  while (rest.trim()) {
+    const open = OPEN.exec(rest);
+    if (open) {
+      if (!isOwnUrl(open[2], ownHosts)) return false;
+      handles.add(open[1]);
+      rest = rest.slice(open[0].length);
+      continue;
+    }
+    const step = STEP.exec(rest);
+    if (step) {
+      if (!handles.has(step[1]) || (step[2] === 'goto' && !isOwnUrl(step[3], ownHosts))) return false;
+      rest = rest.slice(step[0].length);
+      continue;
+    }
+    const done = RETURN.exec(rest);
+    if (!done) return false;
+    rest = rest.slice(done[0].length);
+  }
+  return handles.size > 0;
+}
+
+function isOwnSiteLookup(toolName, toolInput = {}, ownHosts = []) {
+  if (!Array.isArray(ownHosts) || ownHosts.length === 0) return false;
+  if (SOCIAL_HOST.test(JSON.stringify(toolInput))) return false;
+  if (READ_TOOL.test(toolName)) return true;
+  return RUN_TOOL.test(toolName) && isOwnSiteScript(toolInput.code, ownHosts);
 }
 
 function matchesGate(gate, toolName, toolInput, options = {}) {
