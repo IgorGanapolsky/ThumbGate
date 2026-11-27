@@ -1,5 +1,16 @@
 # Changelog
 
+## 1.50.0
+
+### Minor Changes
+
+- 84c88ea: Add `npx thumbgate decision-check`: runs 32 sample commands through the default gates of a fresh install (nothing is executed, learned rules and state are untouched) and prints allow, warn or block for each. The stop-Claude-Code-deleting-files guide now shows `find -delete` as a warning and links the command.
+
+### Patch Changes
+
+- 177b78e: During the Black Friday offer, the server creates the Stripe coupon at startup (and every 10 minutes) instead of waiting for the first buyer, and /health reports the coupon plus a Stripe invoice preview of the discounted first-year Pro price.
+- 7a15770: Link the free Udemy course from the Claude Code hooks guide with a tagged referral link, and check guide pages for the referral code.
+
 ## 1.49.2
 
 ### Patch Changes
