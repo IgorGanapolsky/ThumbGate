@@ -13,7 +13,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const { readProjectRows } = require('./project-catalog');
 const { resolveLocalProject, hash } = require('./project-identity');
-const { resolveProjectDir, resolveFeedbackDir, getHomeDir } = require('./feedback-paths');
+const { resolveProjectDir, resolveFeedbackDir, getHomeDir, isTrashedDir } = require('./feedback-paths');
 const { isCountedHumanFeedback, isLegacyMcpCapture } = require('./human-feedback');
 const { readInjections, computeLessonEffect } = require('./lesson-effect');
 
@@ -172,7 +172,7 @@ function collectHumanRows(options = {}) {
 }
 
 function computeHumanCounts(options = {}) {
-  const { rows, projectName, excluded, injectionDirs } = collectHumanRows(options);
+  const { rows, projectName, projectDir, excluded, injectionDirs } = collectHumanRows(options);
   let up = 0;
   let down = 0;
   let latestDown = null;
@@ -188,7 +188,13 @@ function computeHumanCounts(options = {}) {
     }
   }
   const lessonEffect = computeLessonEffect(readInjections(injectionDirs), downs);
-  return { up, down, label: 'this project', project: projectName, latestDown: describeLatestDown(latestDown), notCounted: excluded.unassignedNoEvidence, lessonEffect };
+  // The home folder is where resolution lands when the session's folder was deleted or is not a project at all.
+  const env = options.env || process.env;
+  const home = path.resolve(getHomeDir({ env }));
+  if (!projectDir || path.resolve(projectDir) === home || isTrashedDir(projectDir)) {
+    return { up, down, label: 'not in a project folder', project: null, projectDir: null, latestDown: describeLatestDown(latestDown), notCounted: excluded.unassignedNoEvidence, lessonEffect };
+  }
+  return { up, down, label: 'this project', project: projectName, projectDir, latestDown: describeLatestDown(latestDown), notCounted: excluded.unassignedNoEvidence, lessonEffect };
 }
 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];

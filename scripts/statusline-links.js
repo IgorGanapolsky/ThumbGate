@@ -7,7 +7,7 @@ const path = require('path');
 const http = require('http');
 const { spawn } = require('child_process');
 
-const { getHomeDir, getRuntimeDir, resolveProjectDir } = require('./feedback-paths');
+const { getHomeDir, getRuntimeDir, resolveProjectDir, isTrashedDir } = require('./feedback-paths');
 const { resolveProKey } = require('./pro-local-dashboard');
 
 const DEFAULT_ORIGIN = 'http://localhost:3456';
@@ -146,7 +146,9 @@ function buildLinkState({
   // status line shows, not for whichever directory the local server started in.
   const projectParam = projectDir ? `&projectDir=${encodeURIComponent(projectDir)}` : '';
   // Dashboard and Lessons open pinned to this project, never the account-wide view.
-  const pinned = projectDir ? `?${projectQuery(projectDir)}` : '';
+  // A deleted folder (Trash) or the home folder is not a project: open on All projects, clearly labelled, instead.
+  const notProject = Boolean(projectDir) && (isTrashedDir(projectDir) || path.resolve(projectDir) === path.resolve(getHomeDir({})));
+  const pinned = !projectDir ? '' : notProject ? '?project=all' : `?${projectQuery(projectDir)}`;
   if (ready) {
     return {
       state: 'ready',
