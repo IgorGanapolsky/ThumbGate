@@ -35,12 +35,19 @@ function getInstallId() {
 
 const INSTALL_SOURCE_PATH = path.join(path.dirname(INSTALL_ID_PATH), 'install-source');
 
+/** How the package got here when no source was named: a clone of the repo, or an npm install. Never written to disk. */
+function installChannel(root = path.join(__dirname, '..')) {
+  if (fs.existsSync(path.join(root, '.git'))) return 'git-clone';
+  return root.split(path.sep).includes('node_modules') ? 'npm' : '';
+}
+
 /**
  * Where this install came from (for example "udemy"). Set once with THUMBGATE_INSTALL_SOURCE=udemy npx thumbgate init,
  * kept in ~/.thumbgate/install-source so later runs without the variable still report it. The first value wins.
- * Only a short lowercase word is accepted, so the file can never carry anything else. Returns {} when there is none.
+ * Only a short lowercase word is accepted, so the file can never carry anything else. With no named source it reports
+ * installChannel(), and returns {} when that is unknown too.
  */
-function installSourceFields(env = process.env) {
+function installSourceFields(env = process.env, root) {
   const clean = (v) => { const t = String(v || '').trim().toLowerCase(); return /^[a-z0-9_-]{2,32}$/.test(t) ? t : ''; };
   let source = '';
   try { source = clean(fs.readFileSync(INSTALL_SOURCE_PATH, 'utf8')); } catch (_) {}
@@ -48,6 +55,7 @@ function installSourceFields(env = process.env) {
     source = clean(env.THUMBGATE_INSTALL_SOURCE);
     if (source) { try { fs.mkdirSync(path.dirname(INSTALL_SOURCE_PATH), { recursive: true }); fs.writeFileSync(INSTALL_SOURCE_PATH, source); } catch (_) {} }
   }
+  source = source || installChannel(root);
   return source ? { source, utmSource: source } : {};
 }
 
@@ -198,7 +206,7 @@ function trackEventDetached(eventType, metadata = {}, { spawnFn } = {}) {
   }
 }
 
-module.exports = { publicGateId, installSourceFields, INSTALL_SOURCE_PATH, trackEvent, trackEventDetached, buildPayload, getInstallId, classifyInstall, isOwnerAgentSession, INSTALL_ID_PATH, SESSION_ID };
+module.exports = { publicGateId, installChannel, installSourceFields, INSTALL_SOURCE_PATH, trackEvent, trackEventDetached, buildPayload, getInstallId, classifyInstall, isOwnerAgentSession, INSTALL_ID_PATH, SESSION_ID };
 
 if (require.main === module && process.argv[2] === '--deliver') {
   const payload = process.env.THUMBGATE_TELEMETRY_PAYLOAD || '';

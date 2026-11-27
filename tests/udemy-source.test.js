@@ -125,6 +125,6 @@ describe('install source on the CLI ping', () => {
     assert.deepEqual(out.later, { source: 'udemy', utmSource: 'udemy' }, 'kept for later runs');
     assert.deepEqual(out.other, { source: 'udemy', utmSource: 'udemy' }, 'the first value wins');
     const bad = JSON.parse(require('node:child_process').execFileSync(process.execPath, ['-e', code.replace(/'udemy'/, "'Bad Value; rm -rf /'")], { env: { ...process.env, HOME: fs.mkdtempSync(path.join(os.tmpdir(), 'tg-udemy-cli-home-')), USERPROFILE: home }, encoding: 'utf8' }));
-    assert.deepEqual(bad.first, {}, 'a value that is not a short word is dropped');
+    assert.deepEqual(bad.first, { source: 'git-clone', utmSource: 'git-clone' }, 'a value that is not a short word is dropped');
   });
 });
