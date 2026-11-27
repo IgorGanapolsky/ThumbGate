@@ -3743,8 +3743,8 @@ async function createCheckoutSession({ successUrl, cancelUrl, customerEmail, ins
   }
 
   const activePriceId = packId ? null : await resolveActiveStripePriceId(stripe, checkoutSelection);
-  // A live seasonal offer is applied for the buyer; any failure falls back to full price.
-  const offer = packId ? null : activeOffer(nowMs);
+  // A live seasonal offer is applied to Pro (not Team, not packs); any failure falls back to full price.
+  const offer = !packId && checkoutSelection.planId === 'pro' ? activeOffer(nowMs) : null;
   const discountCouponId = offer ? await ensureOfferCoupon(stripe, offer) : null;
   const sessionPayload = buildCheckoutSessionPayload({
     successUrl,

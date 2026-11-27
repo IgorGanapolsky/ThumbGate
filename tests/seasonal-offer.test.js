@@ -143,3 +143,18 @@ test('credit packs never get the subscription offer', () => {
   assert.equal(payload.discounts, undefined);
   assert.equal(payload.allow_promotion_codes, true);
 });
+
+test('Team subscriptions never get the Pro offer', async () => {
+  const stripe = fakeStripe();
+  stripe.prices.retrieve = async () => ({ id: 'price_team', active: true, currency: 'usd', unit_amount: 4900, recurring: { interval: 'month' } });
+  const payload = await open(stripe, IN_WINDOW, { planId: 'team', seatCount: 3 });
+  assert.equal(payload.discounts, undefined);
+  assert.equal(payload.allow_promotion_codes, true);
+  assert.equal(stripe.couponsCreated.length, 0);
+});
+
+test('the pricing banner stays hidden by CSS outside the window', () => {
+  const html = fs.readFileSync(path.join(__dirname, '..', 'public', 'pricing.html'), 'utf8');
+  assert.match(html, /\.bf-offer\[hidden\]\s*\{\s*display:none;/);
+  assert.match(html, /id="bf-offer"[^>]*\bhidden>/);
+});
