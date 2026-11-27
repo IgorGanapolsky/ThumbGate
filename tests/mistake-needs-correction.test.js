@@ -53,3 +53,8 @@ test('auto-capture still records a typed thumbs-down or correction', () => {
     assert.notEqual(auto(prompt).reason, 'Not recorded: no thumbs-down or correction from the person.', prompt);
   }
 });
+
+test("a correction found by history sync is not dropped by the prompt-hook check", () => {
+  const result = captureFeedback({ signal: "down", context: "this is wrong: the checkout still crashes when I click submit", tags: ["claude-history-sync", "auto-capture-fallback"] });
+  assert.notEqual(result.reason, "Not recorded: no thumbs-down or correction from the person.");
+});
