@@ -2919,6 +2919,53 @@ function decodeShellPayloads(command, depth = 0) {
   return decoded;
 }
 
+// True only when every part of a command is `cd`, or echo/printf writing into a notes file. Such text mentions things;
+// it does not do them. Anything unsure (pipe, substitution, comment, other program or file type) is false.
+function isNotesOnlyWrite(command) {
+  const text = String(command || '');
+  // `cat >> notes.md <<'TAG'` with a quoted tag and nothing after the closing line: the body is only data.
+  const heredoc = text.match(/^\s*cat\s+>>?\s*[\w./~-]+\.(?:md|txt|log|jsonl|csv)\s+<<(-?)\s*(['"])(\w+)\2[ \t]*\n([\s\S]*)$/i);
+  if (heredoc) {
+    // `<<-` strips leading tabs before looking for the closing line, so an indented tag ends the body too.
+    const lines = heredoc[4].replace(/\n+$/, '').split('\n').map((line) => (heredoc[1] ? line.replace(/^\t+/, '') : line));
+    return lines.indexOf(heredoc[3]) === lines.length - 1;
+  }
+  const segments = [[]];
+  let word = '';
+  let quote = null;
+  const endWord = () => { if (word) segments[segments.length - 1].push(word); word = ''; };
+  for (let i = 0; i < text.length; i += 1) {
+    const c = text[i];
+    if (quote !== "'" && (c === '`' || (c === '$' && text[i + 1] === '('))) return false;
+    if (quote) {
+      if (c === quote) quote = null;
+      else if (c === '\\' && quote === '"') { word += text[i + 1] || ''; i += 1; } else word += c;
+    } else if (c === '$' && (text[i + 1] === "'" || text[i + 1] === '"')) return false;
+    else if (c === "'" || c === '"') quote = c;
+    else if (c === '\\') { word += text[i + 1] || ''; i += 1; }
+    else if ('|<()'.includes(c) || (c === '#' && !word)) return false;
+    else if (c === '>') { endWord(); segments[segments.length - 1].push('\u0000>'); if (text[i + 1] === '>') i += 1; }
+    else if (c === '&') {
+      if (text[i + 1] !== '&') return false;
+      endWord(); segments.push([]); i += 1;
+    } else if (c === ';' || c === '\n') { endWord(); segments.push([]); }
+    else if (/\s/.test(c)) endWord();
+    else word += c;
+  }
+  if (quote) return false;
+  endWord();
+  let writes = 0;
+  const safe = segments.filter((words) => words.length).every((words) => {
+    const at = words.indexOf('\u0000>');
+    if (words[0] === 'cd') return at === -1 && words.length === 2;
+    if ((words[0] !== 'echo' && words[0] !== 'printf') || String(words[1]).startsWith('-v')) return false;
+    const target = words[at + 1] || '';
+    writes += 1;
+    return at !== -1 && words.length === at + 2 && /^[^$\u0000]+\.(?:md|txt|log|jsonl|csv)$/i.test(target);
+  });
+  return safe && writes > 0;
+}
+
 function buildMatchSurfaces(toolName, toolInput = {}) {
   const name = String(toolName || '').trim();
   const command = String(toolInput.command || '').trim();
@@ -2954,6 +3001,12 @@ function buildMatchSurfaces(toolName, toolInput = {}) {
 
 function matchGate(gate, toolName, toolInput = {}, options = {}) {
   if (!gateAppliesToProject(gate, gateExecution(toolInput, options).projectKey)) return { matched: false };
+  if (gate.id === 'outbound-email-send') {
+    // A later pass judges a flattened command and keeps the real one in originalCommand; trust it only if they agree.
+    const raw = toolInput.originalCommand;
+    const written = raw && canonicalizeCommandForGates(raw) === toolInput.command ? raw : toolInput.command;
+    if (isNotesOnlyWrite(written)) return { matched: false };
+  }
   // Primary text for audit/reasoning: prefer command, then tool name (MCP).
   const matchSurfaces = buildMatchSurfaces(toolName, toolInput);
   let matchText = matchSurfaces[0] || String(toolName || '');
