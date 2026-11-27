@@ -537,8 +537,9 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
     // 730 -> 731 (2026-11-25): public/demo.html, the chaptered thumbgate.ai/demo walkthrough (PR 5271) (+1).
     // 731 -> 732 (2026-11-25): scripts/assurance-report.js, the assurance-report CLI command (+1).
     // 732 -> 733 (2026-11-26): scripts/staged-secret-gate.js, a git commit with a secret staged is denied (+1).
-    manifest.fileCount <= 733,
-    `npm package should stay <= 733 files, got ${manifest.fileCount}`
+// 733 -> 734 (2026-11-27): scripts/transcript-incident.js, the thumbed-down action and turns for DPO pairs (+1).
+    manifest.fileCount <= 734,
+    `npm package should stay <= 734 files, got ${manifest.fileCount}`
   );
   // Ceiling bumped from 2.75 MB → 2.85 MB (2026-04-16) to accommodate the
   // incremental review-delta demo content in public/dashboard.html landing
@@ -858,8 +859,8 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // scripts/send-gate.js and bin/cli.js, and the Holds section in README.md and public/guide.html. Measured 10,961,084.
   // Bumped 10.97 MB -> 10.98 MB (2026-11-26, PR #5300): captureFeedback keeps lastAction's command, key-aware
   // credential redaction (redactSecretKeysDeep), and the capture_feedback lastAction schema. Measured 10,972,782.
-  manifest.unpackedSize <= 10_980_000,
-  `npm package should stay <= 10.98 MB unpacked, got ${manifest.unpackedSize}`
+  manifest.unpackedSize <= 10_990_000,
+  `npm package should stay <= 10.99 MB unpacked, got ${manifest.unpackedSize}`
 );
 
   for (const file of requiredRuntimeFiles) {
