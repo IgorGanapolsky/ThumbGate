@@ -92,7 +92,7 @@
   <main class="container">
     <h1>Stop Claude Code from deleting files</h1>
     <p class="lede">Put a check in front of every shell command Claude Code runs. ThumbGate denies the broad deletes by default. When the agent deletes something you wanted, you give it a thumbs-down: ThumbGate warns the next time it tries that command, and after three thumbs-downs on the same command, strict mode blocks it.</p>
-    <p class="updated">Updated 27 November 2026. Behavior below was checked against ThumbGate 1.47.2 with a fresh install and no learned rules.</p>
+    <p class="updated">Updated 27 November 2026. Behavior below was checked against ThumbGate 1.49.1 with a fresh install and no learned rules.</p>
 
     <section>
       <h2>What goes wrong in practice</h2>
@@ -118,12 +118,13 @@
           <tr><td><code>git clean -fdx</code></td><td class="deny">Denied</td><td>Can delete untracked work.</td></tr>
           <tr><td><code>git reset --hard</code></td><td class="deny">Denied</td><td>Can discard uncommitted changes.</td></tr>
           <tr><td><code>rm -rf ./build</code></td><td class="warn">Warns</td><td>A narrow delete is allowed with a risk warning. A thumbs-down turns it into a learned rule.</td></tr>
-          <tr><td><code>find . -name "*.log" -delete</code></td><td class="miss">Allowed</td><td>No default rule. Thumbs it down if you want it checked next time.</td></tr>
+          <tr><td><code>find . -name "*.log" -delete</code></td><td class="warn">Warns</td><td>Allowed with a risk warning. A thumbs-down turns it into a learned rule.</td></tr>
           <tr><td>A Python delete of a path ThumbGate has never seen</td><td class="miss">Allowed</td><td>Only caught when it matches a learned, blocking delete of the same literal path.</td></tr>
           <tr><td>A reworded delete, or a path built at run time</td><td class="miss">Not caught</td><td>Variables, joined paths and scripts the gate cannot read are outside what it checks.</td></tr>
         </tbody>
       </table>
       </div>
+      <p>To see these decisions on your own machine without running anything, run <code>npx thumbgate decision-check</code>. It passes 32 sample commands through the default gates and prints allow, warn or block for each.</p>
       <p>ThumbGate is not a sandbox and does not retrain the model. Keep version control and backups for anything you can't lose.</p>
     </section>
 

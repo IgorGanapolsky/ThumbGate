@@ -4387,6 +4387,7 @@ const SUBCOMMAND_HELP = {
   lessons:       'Usage: npx thumbgate lessons [--query="..."] [--limit=N]\n\nSearch the lesson database (Pro feature).',
   search:        'Usage: npx thumbgate search <query>\n\nSearch ThumbGate knowledge base (Pro feature).',
   'gate-check':  'Usage: npx thumbgate gate-check\n\nPreToolUse hook interface: reads tool call JSON from stdin, outputs gate verdict.',
+  'decision-check': 'Usage: npx thumbgate decision-check [--json]\n\nRun sample commands through the default gates of a fresh install and print what would be allowed, warned or blocked. Nothing is executed, and your learned rules, stats and session state are not read or changed. Tests decisions only.',
   'skill-shell-gate': 'Usage: npx thumbgate skill-shell-gate\n\nPreSkillShellCommand hook interface (Claude Code 2.1.332+): checks shell commands that skills run while they load. Warn-only unless THUMBGATE_SKILL_SHELL_GATE=enforce.',
   'claim-stop-check': 'Usage: npx thumbgate claim-stop-check [--config=.thumbgate/claim-verifiers.json] [--cwd=path] [--json]\n\nClaude Stop hook interface: reads hook JSON from stdin, rechecks configured factual claims before Claude stops.',
   'typesafe-typed-questions': 'Usage: npx thumbgate typesafe-typed-questions [--payload=path] [--tool-name=Bash] [--command="..."] [--json] [--map-only] [--clone-jev]\n\nTypeSafe FORMAT steal: typed noul/choice/score over a PreToolUse payload, code-owned pass/review/block. Does not install typesafe-sdk or call Jev.',
@@ -4744,6 +4745,21 @@ switch (COMMAND) {
       process.exit(1);
     });
     break;
+  case 'decision-check': {
+    // Sample commands through the default gates in a throwaway home; nothing is executed.
+    const decisionCheck = require('../scripts/decision-check');
+    decisionCheck.runDecisionCheck().then((result) => {
+      if (process.argv.includes('--json')) {
+        process.stdout.write(JSON.stringify(result, null, 2) + '\n');
+      } else {
+        process.stdout.write(decisionCheck.formatTable(result) + '\n');
+      }
+    }).catch((err) => {
+      console.error(err && err.message ? err.message : err);
+      process.exit(1);
+    });
+    break;
+  }
   case 'canary': {
     const canary = require('../scripts/canary-gate');
     const [sub, target] = process.argv.slice(3);
