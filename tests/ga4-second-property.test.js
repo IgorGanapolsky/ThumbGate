@@ -201,3 +201,26 @@ test('REQ-11: /tg-analytics.js serves the helper and the home page stores arriva
   assert.ok(helperAt > 0, 'home page loads the helper');
   assert.ok(html.indexOf('tgUtm();', helperAt) > helperAt, 'home page calls tgUtm() after the helper loads');
 });
+
+test('REQ-12: begin_checkout prices follow the plan and billing cycle', async () => {
+  const annual = await get('/checkout/pro?plan_id=pro&billing_cycle=annual');
+  const line = annual.body.split('\n').find((l) => l.includes("gtag('event', 'begin_checkout'"));
+  assert.ok(line, 'begin_checkout event');
+  assert.match(line, /"value":149/);
+  assert.match(line, /"item_variant":"annual","price":149/);
+});
+
+test('REQ-13: checkout and success pages get the analytics choice for Google Analytics only', () => {
+  const clarity = require('../scripts/clarity');
+  const page = `<html><head>${gaTag.buildGaBootstrap([THUMBGATE_ID])}</head><body></body></html>`;
+  const host = { host: 'thumbgate.ai' };
+  for (const p of ['/checkout/pro', '/success']) {
+    const out = clarity.injectAnalyticsTags(page, { pathname: p, headers: host });
+    assert.match(out, /data-thumbgate-consent/, p);
+    assert.match(out, /Google Analytics cookies to measure visits/, p);
+    assert.match(out, /"clarity":"","orion":""/, `${p}: nothing but GA`);
+  }
+  assert.doesNotMatch(clarity.injectAnalyticsTags(page, { pathname: '/admin', headers: host }), /data-thumbgate-consent/);
+  assert.doesNotMatch(clarity.injectAnalyticsTags('<html><head></head></html>', { pathname: '/checkout/pro', headers: host }),
+    /data-thumbgate-consent/, 'no GA, no banner');
+});

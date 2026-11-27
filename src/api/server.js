@@ -4117,16 +4117,30 @@ function extractOriginTrialTokens(html) {
 
 // GA4 ecommerce event for the Pro checkout funnel (begin_checkout, purchase). Values are plain strings and numbers;
 // nothing personal (no email) is ever included.
+// The price follows the selected plan and billing cycle (scripts/commercial-offer.js), the same table checkout charges.
 function buildGaCheckoutEvent(name, hostedConfig = {}, metadata = {}, extra = {}) {
-  const planId = String((metadata && metadata.planId) || 'pro').slice(0, 40);
-  const billingCycle = String((metadata && metadata.billingCycle) || 'monthly').slice(0, 20);
-  const price = Number(hostedConfig.proPriceDollars) || 19;
+  const offer = require('../../scripts/commercial-offer');
+  const planId = String((metadata && metadata.planId) || 'pro').trim().toLowerCase().slice(0, 40) || 'pro';
+  const rawCycle = String((metadata && metadata.billingCycle) || 'monthly').trim().toLowerCase();
+  const billingCycle = rawCycle === 'yearly' || rawCycle === 'annual' ? 'annual' : 'monthly';
+  const annual = billingCycle === 'annual';
+  let price;
+  let quantity = 1;
+  let itemName = 'ThumbGate Pro';
+  if (planId === 'team') {
+    itemName = 'ThumbGate Team';
+    const seats = Math.floor(Number(metadata && metadata.seatCount));
+    quantity = Number.isFinite(seats) && seats > 0 ? Math.min(seats, 1000) : offer.TEAM_MIN_SEATS;
+    price = annual ? offer.TEAM_ANNUAL_PRICE_DOLLARS : offer.TEAM_MONTHLY_PRICE_DOLLARS;
+  } else {
+    price = annual ? offer.PRO_ANNUAL_PRICE_DOLLARS : (Number(hostedConfig.proPriceDollars) || offer.PRO_MONTHLY_PRICE_DOLLARS);
+  }
   return {
     name,
     params: {
       currency: 'USD',
-      value: price,
-      items: [{ item_id: planId, item_name: 'ThumbGate Pro', item_variant: billingCycle, price, quantity: 1 }],
+      value: price * quantity,
+      items: [{ item_id: planId, item_name: itemName, item_variant: billingCycle, price, quantity }],
       ...extra,
     },
   };
@@ -10136,6 +10150,7 @@ async function addContext(){
         ? [buildGaCheckoutEvent('purchase', hostedConfig, {
           planId: parsed.searchParams.get('plan_id'),
           billingCycle: parsed.searchParams.get('billing_cycle'),
+          seatCount: parsed.searchParams.get('seat_count'),
         }, {
           transaction_id: parsed.searchParams.get('session_id'),
         })]

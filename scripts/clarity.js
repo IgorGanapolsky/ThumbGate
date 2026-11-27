@@ -93,9 +93,16 @@ const BANNER_TEXT = 'May we measure how visitors use this site? With your OK, Mi
   + 'clicks and scrolling (form fields are masked); neither loads unless you accept. Declining also turns off '
   + 'Google Analytics cookies.';
 
-function buildConsentTag({ clarityId = '', orionSrc = '', trackCheckout = false } = {}) {
-  const clarity = PROJECT_ID_PATTERN.test(clarityId || '') ? clarityId : '';
-  if (!clarity && !orionSrc) return '';
+// Checkout and post-purchase pages never load Clarity or Orion, but they carry Google Analytics, so they get the
+// same banner and controls with Google Analytics as the only thing the choice covers.
+const GA_ONLY_BANNER_TEXT = 'May we use Google Analytics cookies to measure visits to this page? It never receives '
+  + 'your email or payment details.';
+const GA_ONLY_PATH = /^\/(checkout|success)(\/|$|\.|\?)/i;
+
+function buildConsentTag({ clarityId = '', orionSrc = '', trackCheckout = false, gaOnly = false } = {}) {
+  const clarity = gaOnly ? '' : (PROJECT_ID_PATTERN.test(clarityId || '') ? clarityId : '');
+  if (gaOnly) orionSrc = '';
+  if (!clarity && !orionSrc && !gaOnly) return '';
   const lines = [
     `<script ${CONSENT_MARKER}>`,
     '(function(w,d,cfg){',
@@ -152,7 +159,7 @@ function buildConsentTag({ clarityId = '', orionSrc = '', trackCheckout = false 
     // A choice made in another tab applies here too (withdrawal stops this page's Clarity and Orion).
     "  try { w.addEventListener('storage',function(e){ if (e.key!==KEY) return; hide(); ga(e.newValue); if (e.newValue==='granted') load(); else if (e.newValue==='denied') stop(); }); } catch (_) {}",
     "  var state=get(); if (state==='granted') load(); else if (state!=='denied') show();",
-    `})(window, document, ${JSON.stringify({ key: CONSENT_KEY, clarity, orion: orionSrc, text: BANNER_TEXT })});`,
+    `})(window, document, ${JSON.stringify({ key: CONSENT_KEY, clarity, orion: orionSrc, text: gaOnly ? GA_ONLY_BANNER_TEXT : BANNER_TEXT })});`,
     '</script>',
   ];
   return lines.join('\n');
@@ -169,7 +176,12 @@ const isLoopbackUrl = (url) => /^https?:\/\/(localhost|127(?:\.\d{1,3}){3}|\[::1
 
 function injectAnalyticsTags(html, { pathname = '/', headers = {}, env = process.env } = {}) {
   if (typeof html !== 'string' || !/<\/head>/i.test(html)) return html;
-  if (isPrivatePath(pathname) || hasPrivacySignal(headers) || isLoopbackHost(headers) || html.includes(CONSENT_MARKER)) return html;
+  if (hasPrivacySignal(headers) || isLoopbackHost(headers) || html.includes(CONSENT_MARKER)) return html;
+  if (isPrivatePath(pathname)) {
+    // Google Analytics is on checkout and success pages (scripts/ga-tag.js marker), so the visitor can choose there too.
+    if (!GA_ONLY_PATH.test(String(pathname || '')) || !html.includes('data-thumbgate-ga')) return html;
+    return html.replace(/<\/head>/i, `${buildConsentTag({ gaOnly: true })}\n</head>`);
+  }
   const clarityId = resolveClarityProjectId(env) || '';
   const orionSrc = orionEnabled(env) ? ORION_SRC : '';
   const tag = buildConsentTag({ clarityId, orionSrc, trackCheckout: linksToProCheckout(html) });
