@@ -20,7 +20,9 @@ test('GitHub Actions schedules stay limited to security maintenance', () => {
   const workflowsDir = path.join(PROJECT_ROOT, '.github', 'workflows');
   // deploy-railway.yml deploys main HEAD hourly (PR #5286) because one deploy per merge kept
   // replacing itself in Railway's 40-60 minute queue; it skips when production already serves HEAD.
-  const allowedScheduledWorkflows = new Set(['codeql.yml', 'pr-stale-sweeper.yml', 'deploy-railway.yml']);
+  // daily-user-journeys.yml walks production, the npm release and main in a browser every morning (Igor, 2026-11-27:
+  // "you should every day"); the mocked e2e suite missed a dashboard that did not load at all.
+  const allowedScheduledWorkflows = new Set(['codeql.yml', 'pr-stale-sweeper.yml', 'deploy-railway.yml', 'daily-user-journeys.yml']);
   const offenders = fs.readdirSync(workflowsDir)
     .filter((name) => name.endsWith('.yml') || name.endsWith('.yaml'))
     .filter((name) => {

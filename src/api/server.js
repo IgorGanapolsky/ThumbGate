@@ -489,6 +489,12 @@ const STATIC_MIME_BY_EXT = Object.freeze({
   '.ttf': 'font/ttf',
   '.txt': 'text/plain; charset=utf-8',
   '.json': 'application/json; charset=utf-8',
+  // Scripts and styles need their real type: under X-Content-Type-Options: nosniff the browser refuses an
+  // octet-stream script. /project-switcher.js served that way left every dashboard on the sign-in card.
+  '.js': 'text/javascript; charset=utf-8',
+  '.mjs': 'text/javascript; charset=utf-8',
+  '.css': 'text/css; charset=utf-8',
+  '.html': 'text/html; charset=utf-8',
 });
 const PRIVATE_API_MODULES = Object.freeze({
   intentRouter: path.resolve(__dirname, '../../scripts/intent-router.js'),

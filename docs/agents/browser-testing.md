@@ -27,3 +27,24 @@ container, so they are environment failures, not Flashwright ones.
   code, and the e2e suite passes the same tests as pristine Playwright.
 - **Node 22.18 or newer** (Flashwright's `engines`). `.github/workflows/e2e.yml` uses Node 22.
 - **Revert** with `npm i -D --save-exact @playwright/test@1.65.1` and remove the `isolation` line. Nothing else changes.
+
+## User journeys (added 2026-11-27)
+
+`tests/e2e/` mocks the API and loads `dashboard.html` from disk, so it cannot see a broken server. On 2026-11-27 every
+mocked test passed while `/project-switcher.js` went out as `application/octet-stream` and every real dashboard
+stopped at "Sign in". `tests/journeys/` walks the real thing with nothing mocked:
+
+- `local-dashboard.journey.spec.js`: a fresh HOME and project, thumbs captured with the real CLI plus one agent
+  thumbs-down with its conversation, `thumbgate dashboard --open`, then the counts, every tab, Lessons, and
+  Export > Download DPO Pairs (a Pro user must get a file holding the recorded pair; a free user must get the Pro
+  message). Known bugs are `test.fail()` with a dated reason: they turn red the day the bug is fixed.
+- `production.journey.spec.js`: thumbgate.ai `/health` (equal to the npm `latest` version), landing, install, pricing,
+  the checkout page up to the Stripe button (never pressed), and the `/dashboard` and `/admin` sign-in redirects.
+
+Run `npm run test:journeys` (or `:local`, `:live`). `THUMBGATE_CLI=<installed package>/bin/cli.js` walks another
+build; `THUMBGATE_LIVE_URL` another deployment; `PW_CHROMIUM_PATH=/opt/pw-browsers/chromium` in a cloud container
+whose Chromium build differs from the pinned one. `.github/workflows/daily-user-journeys.yml` runs them every morning
+against production, the latest npm release and `main`, and on PRs that touch the dashboard, server or CLI. A failure
+opens one `user-journey-failure` issue.
+
+Before saying a user-facing feature is done, walk it in a browser the way the user will, and add the walk here.
