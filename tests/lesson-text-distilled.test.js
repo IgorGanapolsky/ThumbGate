@@ -46,6 +46,20 @@ test('a personal contact is only shown when the call is about it', () => {
   assert.match(formatNegativeLessonContext([personal], { actionContext: 'gws auth login someone@example.com mail account', toolName: 'Bash' }), /wrong account/);
 });
 
+test('a street address is only shown when the call is about it', () => {
+  for (const address of ['4821 NW 12th Ave', '77 Example Palm Court', '1500 Sample Blvd']) {
+    const home = lesson('h', 'Wrong property was scored', `Score ${address} before the offer`);
+    assert.equal(formatNegativeLessonContext([home]), null, address);
+    assert.match(formatNegativeLessonContext([home], { actionContext: `node score.js "${address}"`, toolName: 'Bash' }), /Wrong property/);
+  }
+});
+
+test('counts and commands are not mistaken for a street address', () => {
+  for (const advice of ['Run 12 tests the same way before pushing', 'Retry in 30 seconds, then check Drive']) {
+    assert.match(formatNegativeLessonContext([lesson('i', 'Pushed too early', advice)]), /Pushed too early/);
+  }
+});
+
 test('a package version is not mistaken for an email address', () => {
   assert.match(formatNegativeLessonContext([lesson('f', 'Hooks lagged', 'Update with thumbgate@1.45.1 first')]), /Hooks lagged/);
 });

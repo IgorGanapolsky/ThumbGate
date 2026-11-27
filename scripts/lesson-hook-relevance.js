@@ -33,6 +33,10 @@ function lessonDisplayText(lesson) {
 
 const PERSONAL_CONTACT = /[\w.+-]+@[\w-]+(?:\.[\w-]+)*\.[a-z]{2,}\b|(?:\+?1[ .-]?)?\(?\b\d{3}\)?[ .-]\d{3}[ .-]\d{4}\b/gi;
 
+// A house number, up to three capitalised or ordinal words, then a street word. Case-sensitive so that
+// ordinary sentences ("12 tests the same way") do not count.
+const STREET_ADDRESS = /\b\d{2,6}\s+(?:[NSEW]{1,2}\.?\s+)?(?:(?:[A-Z][a-z']+|\d+(?:st|nd|rd|th))\s+){1,3}(?:Street|St|Avenue|Ave|Road|Rd|Drive|Dr|Boulevard|Blvd|Lane|Ln|Court|Ct|Place|Pl|Circle|Cir|Terrace|Ter|Way|Parkway|Pkwy|Highway|Hwy)\b/g;
+
 // Pasted blocks go with their contents; any other tag goes and its text stays.
 function stripLessonMarkup(text) {
   return String(text || '')
@@ -49,7 +53,7 @@ function presentableLesson({ title, advice }, actionContext) {
   ));
   const shown = `${cleanTitle} ${cleanAdvice}`;
   const context = String(actionContext || '').toLowerCase();
-  const contacts = shown.match(PERSONAL_CONTACT) || [];
+  const contacts = [...(shown.match(PERSONAL_CONTACT) || []), ...(shown.match(STREET_ADDRESS) || [])];
   if (contacts.some((contact) => !context.includes(contact.toLowerCase()))) return null;
   if (!cleanTitle) return cleanAdvice ? { title: cleanAdvice, advice: '' } : null;
   return { title: cleanTitle, advice: cleanAdvice };
