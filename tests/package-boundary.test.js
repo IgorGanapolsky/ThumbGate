@@ -889,8 +889,10 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // #5324 and #5332. Measured 11,113,727.
   // 11.12 -> 11.13 MB (2026-11-27, PR 5343): scripts/decision-check.js (~8 KB) and the decision-check CLI entry, on
   // top of v1.49.2. Measured 11,129,058.
-  manifest.unpackedSize <= 11_130_000,
-  `npm package should stay <= 11.13 MB unpacked, got ${manifest.unpackedSize}`
+  // 11.13 -> 11.14 MB (2026-11-27, PR #5340): negated/quoted claim parsing and peer-message checks in the claim gates,
+  // on top of #5343. Measured 11,130,712.
+  manifest.unpackedSize <= 11_140_000,
+  `npm package should stay <= 11.14 MB unpacked, got ${manifest.unpackedSize}`
 );
 
   for (const file of requiredRuntimeFiles) {
