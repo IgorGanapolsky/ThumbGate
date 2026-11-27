@@ -81,6 +81,21 @@ test('pricing > Pro opens the checkout page with the Stripe button ready (not su
   expect(errors).toEqual([]);
 });
 
+// Google Analytics on every funnel page, with the one ThumbGate measurement id (never the ApplyOps one). Requests to
+// Google are aborted, so the walk reads the page's own gtag queue and sends nothing to GA. begin_checkout itself is
+// held back for this synthetic user agent on the server, so it is covered by tests/ga4-second-property.test.js.
+const GA_ID = 'G-QKENZBW1V8';
+test('every funnel page loads one Google tag for the ThumbGate property', async ({ page }) => {
+  await page.route(/google-analytics\.com|googletagmanager\.com/, (route) => route.abort());
+  for (const path of ['/', '/pricing', '/guide', '/checkout/pro']) {
+    await page.goto(`${BASE}${path}${path.includes('?') ? '&' : '?'}probe=1`);
+    expect(await page.locator('script[src*="googletagmanager.com/gtag/js"]').count(), path).toBe(1);
+    const configured = await page.evaluate(() => (window.dataLayer || [])
+      .filter((entry) => entry && entry[0] === 'config').map((entry) => entry[1]));
+    expect(configured, path).toEqual([GA_ID]);
+  }
+});
+
 test('/dashboard sends a signed-out visitor to sign in', async ({ page }) => {
   const errors = trackPageErrors(page);
   await page.goto(`${BASE}/dashboard`);

@@ -2576,7 +2576,16 @@ async function verifyPaidCheckoutSession(sessionId, { stripeClient = null } = {}
     } else {
       const paid = session.payment_status === 'paid'
         || (session.mode === 'subscription' && session.payment_status === 'no_payment_required');
-      result = paid ? { verified: true, reason: 'paid' } : { verified: false, reason: 'not_paid' };
+      const amountTotal = Number(session.amount_total);
+      result = paid
+        ? {
+          verified: true,
+          reason: 'paid',
+          // For the GA purchase event: the amount Stripe charged, in major units.
+          ...(Number.isFinite(amountTotal) ? { value: amountTotal / 100 } : {}),
+          ...(typeof session.currency === 'string' && session.currency ? { currency: session.currency.toUpperCase() } : {}),
+        }
+        : { verified: false, reason: 'not_paid' };
     }
   } catch (error) {
     result = { verified: false, reason: /no such/i.test(error?.message || '') ? 'unknown_session' : 'lookup_failed' };

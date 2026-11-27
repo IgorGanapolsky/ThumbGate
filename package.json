@@ -594,6 +594,7 @@
     "public/project-switcher.js",
     "scripts/owner-admin.js",
     "scripts/clarity.js",
+    "scripts/ga-tag.js",
     "scripts/delete-equivalence.js",
     "scripts/owner-alerts.js",
     "scripts/owner-telemetry.js",
