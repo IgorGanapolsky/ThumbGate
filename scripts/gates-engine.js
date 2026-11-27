@@ -13,6 +13,7 @@ const fs = require('fs');
 const path = require('path');
 const os = require('os');
 const crypto = require('crypto');
+const { isDeepStrictEqual } = require('util');
 const { execFileSync, spawnSync } = require('child_process');
 const { loadOptionalModule } = require('./private-core-boundary');
 
@@ -3502,27 +3503,96 @@ function matchSelfProtectHardFloor(gate, toolName, toolInput = {}) {
   };
 }
 
+const PROMPTING_PERMISSION_MODES = new Set(['default', 'acceptEdits', 'auto']);
+
+// The commands a settings edit adds under hooks.PreToolUse, or null unless that is the whole change: every existing
+// group kept unchanged and in order, nothing else in the file different, and only plain command hooks added.
+function addedPreToolUseCommands(input) {
+  const toolName = input.tool_name || input.toolName || '';
+  const toolInput = input.tool_input || input.toolInput || {};
+  const settingsFile = String(toolInput.file_path || '');
+  // Only an absolute, already-normalized path to a Claude Code settings file is ever read.
+  if (!path.isAbsolute(settingsFile) || path.normalize(settingsFile) !== settingsFile
+    || !/[\\/]\.claude[\\/]settings(?:\.local)?\.json$/.test(settingsFile)) return null;
+  try {
+    const current = fs.readFileSync(settingsFile, 'utf8');
+    let next = toolName === 'Write' ? toolInput.content : current;
+    if (toolName === 'Edit' || toolName === 'MultiEdit') {
+      for (const edit of toolName === 'Edit' ? [toolInput] : toolInput.edits) {
+        const parts = next.split(edit.old_string);
+        if (!edit.old_string || parts.length < 2 || (parts.length > 2 && !edit.replace_all)) return null;
+        next = parts.join(edit.new_string);
+      }
+    } else if (toolName !== 'Write') {
+      return null;
+    }
+    const split = (text) => {
+      const settings = JSON.parse(text);
+      const { PreToolUse = [], ...otherHooks } = settings.hooks || {};
+      return { rest: { ...settings, hooks: otherHooks }, groups: PreToolUse };
+    };
+    const before = split(current);
+    const after = split(next);
+    if (!isDeepStrictEqual(before.rest, after.rest)) return null;
+    let kept = 0;
+    const added = after.groups.filter((group) => {
+      if (kept < before.groups.length && isDeepStrictEqual(group, before.groups[kept])) {
+        kept += 1;
+        return false;
+      }
+      return true;
+    });
+    const onlyKeys = (value, keys) => Object.keys(value).every((key) => keys.includes(key));
+    const plain = added.every((group) => onlyKeys(group, ['matcher', 'hooks']) && group.hooks.length > 0
+      && group.hooks.every((hook) => hook.type === 'command' && typeof hook.command === 'string'
+        && hook.command.length <= 500 && onlyKeys(hook, ['type', 'command', 'timeout'])));
+    if (kept !== before.groups.length || added.length === 0 || !plain) return null;
+    return added.flatMap((group) => group.hooks.map((hook) => hook.command));
+  } catch {
+    // Unreadable or unparseable: not provably an addition.
+    return null;
+  }
+}
+
 function evaluateSelfProtectHardFloor(input = {}) {
   const toolName = input.tool_name || input.toolName || '';
   const toolInput = input.tool_input || input.toolInput || {};
   const config = loadGatesConfig(DEFAULT_CONFIG_PATH);
 
-  for (const gate of config.gates) {
-    if (!isSelfProtectGate(gate.id)) continue;
-    const matchDetails = matchSelfProtectHardFloor(gate, toolName, toolInput);
-    if (!matchDetails) continue;
-
-    const result = {
-      decision: 'deny',
-      gate: gate.id,
-      message: buildGateMessage(gate, matchDetails),
-      severity: gate.severity,
-      reasoning: buildReasoning(gate, toolName, toolInput, matchDetails),
-    };
-    return recordStructuralGateBlock(toolName, toolInput, result);
+  // An addition is put to the owner only when no other self-protection gate objects to the same call.
+  const matched = config.gates.filter((gate) => isSelfProtectGate(gate.id))
+    .map((gate) => ({ gate, matchDetails: matchSelfProtectHardFloor(gate, toolName, toolInput) }))
+    .filter((entry) => entry.matchDetails);
+  if (matched.length === 0) return null;
+  const { gate, matchDetails } = matched[0];
+  const added = matched.length === 1 && gate.id === 'self-protect-hooks-disable'
+    ? addedPreToolUseCommands(input)
+    : null;
+  let howToApprove = '';
+  if (added) {
+    const shown = added.map((command) => JSON.stringify(command)).join(', ');
+    // "ask" is used only where Claude Code will show the owner the prompt; anywhere else it stays a refusal.
+    const claudeCode = /[\\/]\.claude[\\/]/.test(String(input.transcript_path || ''));
+    if (claudeCode && !isAutonomousRun() && PROMPTING_PERMISSION_MODES.has(input.permission_mode)) {
+      return {
+        decision: 'ask',
+        gate: gate.id,
+        message: `This only adds a PreToolUse hook; no existing hook or setting changes. A hook can approve or rewrite tool calls, so approve only if you want this to run: ${shown}`,
+      };
+    }
+    if (claudeCode && input.permission_mode === 'bypassPermissions') {
+      howToApprove = ` This only adds a hook (${shown}). Owner: press Shift+Tab to leave bypass mode and have the agent retry; you will get one approval prompt.`;
+    }
   }
 
-  return null;
+  const result = {
+    decision: 'deny',
+    gate: gate.id,
+    message: `${buildGateMessage(gate, matchDetails)}${howToApprove}`,
+    severity: gate.severity,
+    reasoning: buildReasoning(gate, toolName, toolInput, matchDetails),
+  };
+  return recordStructuralGateBlock(toolName, toolInput, result);
 }
 
 function isSafeLocalCredentialHardeningCommand(toolName, toolInput = {}) {
@@ -5212,7 +5282,9 @@ function evaluateUnconditionalHardFloor(rawInput = {}, options = {}) {
   if (financialHardFloor) return { hardFloor: financialHardFloor, securityScan };
 
   const selfProtect = evaluateSelfProtectHardFloor(input);
-  if (selfProtect) return { hardFloor: selfProtect, securityScan };
+  // An "ask" does not end the floor: a later rule that refuses this call still wins.
+  const ask = selfProtect && selfProtect.decision === 'ask' ? selfProtect : null;
+  if (selfProtect && !ask) return { hardFloor: selfProtect, securityScan };
 
   // A person's thumbs-down holds the action that drew it, and chat posts pass the send rules (raw URL, "I do not
   // know", a second new bubble). Runs before the tool call on every host path (scripts/send-gate.js).
@@ -5230,7 +5302,7 @@ function evaluateUnconditionalHardFloor(rawInput = {}, options = {}) {
   const { evaluateGitLabSdlcPrompts } = require('./gitlab-sdlc-prompts');
   const sdlc = evaluateGitLabSdlcPrompts(view);
   return {
-    hardFloor: sdlc ? denyRepeatedMistake(view, sdlc) : null,
+    hardFloor: sdlc ? denyRepeatedMistake(view, sdlc) : ask,
     securityScan,
   };
 }
@@ -5359,6 +5431,15 @@ function buildBlockActionProCta() {
 }
 
 function formatOutput(result, behavioralContext) {
+  if (result && result.decision === 'ask') {
+    return JSON.stringify({
+      hookSpecificOutput: {
+        hookEventName: 'PreToolUse',
+        permissionDecision: 'ask',
+        permissionDecisionReason: `[GATE:${result.gate}] ${result.message}`,
+      },
+    });
+  }
   if (!result) {
     // No gate matched — inject behavioral context if available
     if (behavioralContext) {
