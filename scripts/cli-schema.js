@@ -124,6 +124,14 @@ const CLI_COMMANDS = [
     ],
   },
   {
+    name: 'decision-check',
+    description: 'Run sample commands through the default gates (nothing executed) and show allow / warn / block',
+    group: 'discovery',
+    flags: [
+      { name: 'json', type: 'boolean', description: 'Output as JSON' },
+    ],
+  },
+  {
     name: 'gate-stats',
     description: 'Check engine statistics — active checks, blocks, warns, time saved',
     group: 'discovery',

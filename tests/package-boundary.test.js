@@ -543,8 +543,9 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
     // 736 -> 737 (2026-11-27): scripts/cloud-rules-export.js, `thumbgate export-rules` for cloud agents (+1).
     // 737 -> 738 (2026-11-27): scripts/pii-scanner.js, which cloud-rules-export.js requires (+1).
     // 738 -> 740 (2026-11-27): scripts/skill-shell-gate.js and scripts/gate-check-core.js, the PreSkillShellCommand hook (PR 5331) (+2).
-    manifest.fileCount <= 740,
-    `npm package should stay <= 740 files, got ${manifest.fileCount}`
+    // 740 -> 741 (2026-11-27): scripts/decision-check.js, the `npx thumbgate decision-check` dry run of the default gates (PR 5343) (+1).
+    manifest.fileCount <= 741,
+    `npm package should stay <= 741 files, got ${manifest.fileCount}`
   );
   // Ceiling bumped from 2.75 MB → 2.85 MB (2026-04-16) to accommodate the
   // incremental review-delta demo content in public/dashboard.html landing
@@ -886,10 +887,12 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // advisory path in gates-engine.js and tailscale-october-access.js (~18 KB). Measured 11,098,009.
   // 11.11 -> 11.12 MB (2026-11-27, PR #5313): holds, reminder filtering and the one-line claim-gate feedback on top of
   // #5324 and #5332. Measured 11,113,727.
-  // 11.12 -> 11.13 MB (2026-11-27, PR #5344): Black Friday coupon pre-create + /health invoice preview in billing.js.
-  // Measured 11,122,363.
-  manifest.unpackedSize <= 11_130_000,
-  `npm package should stay <= 11.13 MB unpacked, got ${manifest.unpackedSize}`
+  // 11.12 -> 11.13 MB (2026-11-27, PR 5343): scripts/decision-check.js (~8 KB) and the decision-check CLI entry, on
+  // top of v1.49.2. Measured 11,129,058.
+  // 11.13 -> 11.14 MB (2026-11-27, PR #5344): Black Friday coupon pre-create + /health invoice preview in billing.js.
+  // Measured 11,131,988.
+  manifest.unpackedSize <= 11_140_000,
+  `npm package should stay <= 11.14 MB unpacked, got ${manifest.unpackedSize}`
 );
 
   for (const file of requiredRuntimeFiles) {
