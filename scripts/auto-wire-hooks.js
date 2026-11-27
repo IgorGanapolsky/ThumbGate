@@ -457,6 +457,12 @@ function expandShellToken(token, resolveBase) {
   } else if (s.startsWith("'") && s.includes("'", 1)) {
     s = s.slice(1, s.indexOf("'", 1)) + s.slice(s.indexOf("'", 1) + 1);
   }
+  // `python3 ~/.claude/hooks/x.py`: the shell expands ~ to the home folder. Without this the file reads as missing
+  // and init deleted a person's working hook (standing-orders.py, 27 Nov 2026).
+  if (s === '~' || s.startsWith('~/')) {
+    const home = process.env.HOME || process.env.USERPROFILE || require('os').homedir();
+    if (home) s = path.join(home, s.slice(1));
+  }
   const lookup = (name) => (name === 'CLAUDE_PROJECT_DIR'
     ? process.env.CLAUDE_PROJECT_DIR || resolveBase
     : process.env[name]);
@@ -504,6 +510,8 @@ function staleHookPath(command, resolveBase) {
     firstToken.endsWith('.sh');
   if (!looksLikePath) return null;
   if (firstToken.includes('$')) return null;
+  // ~otheruser/... is another account's home: never decide that is missing.
+  if (firstToken.startsWith('~')) return null;
   const resolved = path.isAbsolute(firstToken)
     ? firstToken
     : path.resolve(resolveBase, firstToken);

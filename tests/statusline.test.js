@@ -624,7 +624,7 @@ test('statusline preserves dashboard links under a tight width budget', () => {
     const plain = stripStatuslineFormatting(out).trim();
     assert.match(plain, /Dashboard/, 'should preserve the dashboard link label');
     assert.doesNotMatch(plain, /Lessons/, 'statusline no longer renders a separate lessons link label');
-    assert.match(plain, /Latest mistake \d{2}\/\d{2}\/\d{4} \d{2}:\d{2}:\d{2}:/, 'should clarify that the snippet is the latest mistake');
+    assert.match(plain, /Latest mistake [A-Z][a-z]{2} \d{1,2}, \d{1,2}:\d{2} [AP]M:/, 'should clarify that the snippet is the latest mistake');
     // localhost links are intentionally stripped from statusbar display; only real URLs are shown.
     assert.doesNotMatch(plain, /http:\/\/localhost/, 'should NOT include localhost links in statusbar');
   } finally {

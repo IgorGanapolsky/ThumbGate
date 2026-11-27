@@ -49,8 +49,9 @@ test.after(() => {
 
 test('REQ-01: every Udemy course link in public/ and README carries the referral code', () => {
   const root = path.join(__dirname, '..');
-  const files = [path.join(root, 'README.md'), ...fs.readdirSync(path.join(root, 'public'))
-    .filter((f) => f.endsWith('.html')).map((f) => path.join(root, 'public', f))];
+  const htmlIn = (dir) => fs.readdirSync(path.join(root, dir))
+    .filter((f) => f.endsWith('.html')).map((f) => path.join(root, dir, f));
+  const files = [path.join(root, 'README.md'), ...htmlIn('public'), ...htmlIn('public/guides')];
   for (const file of files) {
     for (const m of fs.readFileSync(file, 'utf8').matchAll(/udemy\.com\/course\/[^\s"')<]*/g)) {
       assert.ok(m[0].includes(CODE), `${path.basename(file)}: ${m[0]}`);
@@ -69,4 +70,13 @@ test('REQ-03: served /learn loads the Google tag and configures the property', a
   assert.ok(res.body.includes('googletagmanager.com/gtag/js?id=G-TESTLEARN1'));
   assert.ok(res.body.includes("gtag('config', 'G-TESTLEARN1')"));
   assert.ok(!res.body.includes('__GA_BOOTSTRAP__'), 'placeholder must be filled');
+});
+
+test('REQ-04: the Claude Code hooks guide links the course with a tagged referral link', () => {
+  const html = fs.readFileSync(path.join(__dirname, '..', 'public', 'guides', 'claude-code-hooks.html'), 'utf8');
+  const m = html.match(/data-udemy-course href="([^"]+)"/);
+  assert.ok(m, 'course link missing');
+  assert.ok(m[1].includes(CODE));
+  assert.ok(m[1].includes('utm_medium=guide'));
+  assert.ok(m[1].includes('utm_content=claude-code-hooks'));
 });
