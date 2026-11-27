@@ -3097,6 +3097,10 @@ function matchGate(gate, toolName, toolInput = {}, options = {}) {
   }
 
   if (gate.id === 'outbound-off-brand-vertical-block') {
+    // A page read or a form lookup on the operator's own site (gate.ownHosts) is not a post.
+    if (isOwnSiteLookup(toolName, toolInput, gate.ownHosts)) {
+      return { matched: false, matchText, affectedFiles };
+    }
     if (EDIT_LIKE_TOOLS.has(toolName) || toolName === 'Read' || toolName === 'Glob' || toolName === 'Grep' || toolName === 'LS') {
       return { matched: false, matchText, affectedFiles };
     }
@@ -3201,6 +3205,62 @@ function matchGate(gate, toolName, toolInput = {}, options = {}) {
     taskScopeViolation,
     branchGovernanceViolation,
   };
+}
+
+// Tells a page read or a form lookup on the operator's own site apart from outbound posting, for a rule that names
+// browser tools. Anything it cannot read in full is not a lookup.
+const SOCIAL_HOST = /linkedin\.com|ugcPosts|bsky\.app|com\.atproto|threads\.(?:com|net)|\b(?:x|twitter)\.com|reddit\.com|substack\.com|medium\.com|dev\.to/i;
+// Browser tools that cannot write into a page.
+const READ_TOOL = /^mcp__browseros[-_]neo__(?:navigate|tabs|read|grep|snapshot|screenshot|diff|wait)$/;
+const RUN_TOOL = /^mcp__browseros[-_]neo__run$/;
+
+const LITERAL = String.raw`(?:'[^'\\\n]*'|"[^"\\\n]*"|\d+|\{[\w\s:,]*(?:(?:'[^'\\\n]*'|"[^"\\\n]*")[\w\s:,]*)*\})`;
+const ARGS = String.raw`\(\s*((?:${LITERAL}(?:\s*,\s*${LITERAL})*)?)\s*\)`;
+const OPEN = new RegExp(String.raw`^\s*(?:const|let)\s+(\w+)\s*=\s*await\s+browser\.open${ARGS}\s*;?`);
+const STEP = new RegExp(String.raw`^\s*(?:(?:const|let)\s+\w+\s*=\s*|return\s+)?await\s+(\w+)\.(goto|snapshot|read|grep|click|fill|type|press|selectOption|check|waitForSelector|waitForText)${ARGS}\s*;?`);
+const RETURN = /^\s*return\s+\w+(?:\.\w+)?\s*;?/;
+
+function isOwnUrl(argument, ownHosts) {
+  const text = /^\s*(['"])(.*?)\1/.exec(argument);
+  if (!text) return false;
+  try {
+    const url = new URL(text[2]);
+    return url.protocol === 'https:' && !url.username && ownHosts.includes(url.hostname);
+  } catch {
+    return false;
+  }
+}
+
+/** A script made only of literal steps on tabs it opened itself on an own site. */
+function isOwnSiteScript(code, ownHosts) {
+  const handles = new Set();
+  let rest = String(code || '');
+  while (rest.trim()) {
+    const open = OPEN.exec(rest);
+    if (open) {
+      if (!isOwnUrl(open[2], ownHosts)) return false;
+      handles.add(open[1]);
+      rest = rest.slice(open[0].length);
+      continue;
+    }
+    const step = STEP.exec(rest);
+    if (step) {
+      if (!handles.has(step[1]) || (step[2] === 'goto' && !isOwnUrl(step[3], ownHosts))) return false;
+      rest = rest.slice(step[0].length);
+      continue;
+    }
+    const done = RETURN.exec(rest);
+    if (!done) return false;
+    rest = rest.slice(done[0].length);
+  }
+  return handles.size > 0;
+}
+
+function isOwnSiteLookup(toolName, toolInput = {}, ownHosts = []) {
+  if (!Array.isArray(ownHosts) || ownHosts.length === 0) return false;
+  if (SOCIAL_HOST.test(JSON.stringify(toolInput))) return false;
+  if (READ_TOOL.test(toolName)) return true;
+  return RUN_TOOL.test(toolName) && isOwnSiteScript(toolInput.code, ownHosts);
 }
 
 function matchesGate(gate, toolName, toolInput, options = {}) {
