@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>98% of AI buyers want control. What that means for agent guardrails - ThumbGate</title>
+<script defer data-domain="thumbgate.ai" src="https://plausible.io/js/script.js"></script>
+<meta name="description" content="Crusoe and MetaLab's 2026 AI Infrastructure Trends Report surveyed 332 AI decision-makers. Control was the one attribute more often called a differentiator than table stakes. Three findings, and what they mean for the guardrails on your coding agents.">
+<meta name="keywords" content="2026 AI infrastructure trends report, Crusoe, MetaLab, AI infrastructure control, AI transparency, agent guardrails, coding agent governance, local-first, PreToolUse, ThumbGate">
+<meta property="og:title" content="98% of AI buyers want control. What that means for agent guardrails">
+<meta property="og:description" content="Buyers want control, transparency and real support from AI infrastructure. The same three tests apply to the gate that sits in front of your coding agent.">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://thumbgate.ai/learn/ai-infrastructure-report-control-for-agent-guardrails">
+<link rel="canonical" href="https://thumbgate.ai/learn/ai-infrastructure-report-control-for-agent-guardrails">
+<link rel="stylesheet" href="/learn/learn.css">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "TechArticle",
+  "headline": "98% of AI buyers want control. What that means for agent guardrails",
+  "description": "Three findings from Crusoe and MetaLab's 2026 AI Infrastructure Trends Report (control, transparency, expert support) applied to pre-action guardrails for AI coding agents.",
+  "author": {
+    "@type": "Person",
+    "name": "Igor Ganapolsky",
+    "url": "https://github.com/IgorGanapolsky"
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "ThumbGate",
+    "url": "https://thumbgate.ai"
+  },
+  "datePublished": "2026-11-27",
+  "dateModified": "2026-11-27",
+  "mainEntityOfPage": "https://thumbgate.ai/learn/ai-infrastructure-report-control-for-agent-guardrails",
+  "about": [
+    {"@type": "Thing", "name": "AI infrastructure"},
+    {"@type": "Thing", "name": "agent guardrails"},
+    {"@type": "Thing", "name": "data control"},
+    {"@type": "Thing", "name": "pre-action gates"}
+  ]
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "What is the 2026 AI Infrastructure Trends Report?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "A report from Crusoe, an AI cloud provider, based on a study MetaLab ran for it: a survey of 332 people with responsibility for AI and cloud infrastructure in March 2025, plus interviews. Its six findings cover efficiency, dependability and cost transparency, control, expert support, ease of use, and responsible AI."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Where does ThumbGate keep its rules and feedback?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "In files on your machine, by default in a .thumbgate folder in the project. The gate runs locally in the agent's PreToolUse hook, so enforcement does not need a cloud service."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "What does ThumbGate send over the network?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "The CLI sends an anonymous usage ping (an event name, a random install id, platform, Node and package version, and a few event fields). Set THUMBGATE_NO_TELEMETRY=1 or DO_NOT_TRACK=1 to turn it off. Hosted features call the ThumbGate API only when you set an API key."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Is ThumbGate affiliated with Crusoe or MetaLab?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "No. ThumbGate is not a Crusoe or MetaLab partner, customer or product. This page cites their public report as market research and applies its findings to agent guardrails."
+      }
+    }
+  ]
+}
+</script>
+</head>
+<body>
+
+<nav>
+  <a href="/" class="brand"><img src="/assets/brand/thumbgate-mark-inline-v3.svg" alt="ThumbGate" class="logo-mark" width="28" height="28"><span class="logo-text">ThumbGate</span></a>
+  <a href="/guide">Setup Guide</a>
+  <a href="/learn">Learn</a>
+  <a href="/compare">Compare</a>
+  <a href="https://github.com/IgorGanapolsky/ThumbGate" target="_blank" rel="noopener">GitHub</a>
+</nav>
+
+<div class="container">
+  <div class="breadcrumb"><a href="/learn">Learn</a> / 2026 AI infrastructure report</div>
+  <h1>98% of AI buyers want control. What that means for agent guardrails</h1>
+  <p style="color:var(--muted);">4 min read &middot; For teams choosing guardrails for Claude Code, Cursor or Codex</p>
+
+  <div class="tldr"><strong>TL;DR:</strong> A survey of 332 AI decision-makers found that control is the one thing buyers treat as a real differentiator, that security, reliability and predictable cost are only the minimum, and that people drop vendors with better tech when the support is worse. Apply the same three tests to the gate in front of your coding agent: who owns the rules, can you see what it sends, and does a person help you set it up?</div>
+
+  <h2>What the report found</h2>
+  <p>Crusoe, an AI cloud provider, published the <em>2026 AI Infrastructure Trends Report</em>. MetaLab ran the research: a survey of 332 people responsible for AI and cloud infrastructure in March 2025, plus interviews. It is a vendor's report about its own market, so read it as buyer sentiment, not neutral science. Three of its six findings carry over to coding agents:</p>
+  <ul>
+    <li><strong>Control is the differentiator.</strong> 98% of decision-makers rated complete control over their own infrastructure as important. It was the only attribute more often called a differentiator than table stakes, ahead of performance, security and reliability.</li>
+    <li><strong>Security, reliability and clear costs are the minimum.</strong> With their current cloud providers, buyers ranked security and compliance concerns as the worst pain point (6.86 out of 10), then performance (6.84), scalability (6.65) and unpredictable costs (6.58).</li>
+    <li><strong>Support decides deals.</strong> Complexity was the top barrier to AI projects (5.40) and lack of in-house expertise came next (5.16). One leader said: "We've dropped cloud providers where the tech was better, but their team wasn't good enough."</li>
+  </ul>
+
+  <h2>Test 1: who owns the rules?</h2>
+  <p>A guardrail that lives in someone else's cloud is a rule you rent. If the vendor changes it, slows down or goes away, your agent's limits change with it.</p>
+  <p>ThumbGate keeps the learned rules, the feedback log and the decision log as files on your machine, by default in <code>.thumbgate/</code> in the project. The gate runs locally in the agent's PreToolUse hook. Enforcement does not wait on a network call, and you can read, version or delete every rule.</p>
+
+  <h2>Test 2: can you see what it sends?</h2>
+  <p>"Trust us" fails the transparency test. A buyer should be able to check, in a minute, what the tool keeps and what leaves the machine.</p>
+  <ul>
+    <li>The ThumbGate CLI sends an anonymous usage ping: the event name, a random install id, platform, Node and package version, and a few fields of the event itself. <code>THUMBGATE_NO_TELEMETRY=1</code> or <code>DO_NOT_TRACK=1</code> turns it off.</li>
+    <li>Hosted features call the ThumbGate API only when you set an API key.</li>
+    <li><code>npx thumbgate control</code> prints all of this for your own install: each store with its path and size, whether the ping is on, the exact fields, and the off switch. It writes nothing and sends nothing. It is in the npm release after 1.47.2.</li>
+    <li><code>npx thumbgate inventory</code> summarizes what the gate did: decisions per tool, the gates that blocked most, and the false-block rate.</li>
+  </ul>
+  <p>On cost: the free CLI keeps the default gates and your first 3 learned rules. Pro is one monthly price on the <a href="/pricing">pricing page</a>.</p>
+
+  <h2>Test 3: does a person help?</h2>
+  <p>The report's buyers want "knowledgeable guidance" and "real-time troubleshooting", not a ticket queue. Most teams have nobody whose job is agent guardrails yet.</p>
+  <p>For teams, the ThumbGate <a href="/pilot?utm_source=learn&amp;utm_medium=ai_infra_report_article">30-day pilot</a> is answered by a person. It starts on one repo, your team's thumbs decide the rules, and at day 30 you review a report built from your own logs. The rules and the log stay with you either way.</p>
+
+  <h2>What this page does not claim</h2>
+  <p>The report is about AI cloud infrastructure: data centers, GPUs and energy. It says nothing about ThumbGate or coding agents. The numbers above are the report's. Applying them to agent guardrails is our argument, not their finding.</p>
+
+  <h2>Sources and positioning</h2>
+  <p>ThumbGate is not a Crusoe or MetaLab partner, customer or product.</p>
+  <ul>
+    <li><a href="https://cdn.prod.website-files.com/6855c1aa175582ee23e0aa19/68f7e6410845fa422552dba7_2026_AI_Infrastructure_Trends_Report.pdf" target="_blank" rel="noopener">Crusoe: 2026 AI Infrastructure Trends Report (PDF)</a></li>
+  </ul>
+
+  <div class="cta-box">
+    <h2>A guardrail you own</h2>
+    <p>Rules in your repo, enforced on your machine, learned from your team's thumbs.</p>
+    <div class="cta-install">npx thumbgate init</div>
+    <div class="cta-actions">
+      <a class="cta-link" href="/pilot?utm_source=learn&amp;utm_medium=ai_infra_report_article">Request a team pilot</a>
+      <a class="cta-link cta-link-secondary" href="/learn/mcp-pre-action-checks-explained">How pre-action checks work</a>
+    </div>
+  </div>
+
+  <div class="related">
+    <h2>Related</h2>
+    <a href="/learn/dxc-frontier-code-assurance-ai-written-code">DXC checks the code after it is written. Who checks the agent while it writes?</a>
+    <a href="/learn/ai-finops-agent-spend-guardrails">AI FinOps for coding agents</a>
+    <a href="/learn/okta-mcp-governance-per-tool-call-gates">Okta governs the MCP connection. Who gates the tool call?</a>
+  </div>
+</div>
+
+<div class="sticky-cta">
+  <span>Own your agent's guardrails</span>
+  <code>npx thumbgate init</code>
+  <a href="/pilot?utm_source=learn&amp;utm_medium=ai_infra_report_article&amp;utm_campaign=ai_infra_report">Team pilot</a>
+</div>
+
+</body>
+</html>
