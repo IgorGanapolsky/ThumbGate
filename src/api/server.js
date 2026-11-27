@@ -10138,8 +10138,6 @@ async function addContext(){
           billingCycle: parsed.searchParams.get('billing_cycle'),
         }, {
           transaction_id: parsed.searchParams.get('session_id'),
-          ...(Number.isFinite(successCheck.value) ? { value: successCheck.value } : {}),
-          ...(successCheck.currency ? { currency: successCheck.currency } : {}),
         })]
         : [];
       sendHtml(
