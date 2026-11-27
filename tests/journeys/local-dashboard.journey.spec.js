@@ -155,7 +155,7 @@ test.describe('free user, fresh install', () => {
     await page.goto(ctx.url);
     await expect(page.locator('#statTotal')).toHaveText(/^\d+$/);
     await page.locator('div.tab[onclick="switchTab(\'export\')"]').click();
-    await page.getByRole('button', { name: /Download DPO Pairs/ }).click();
+    await page.getByRole('button', { name: /Download (DPO Pairs|training data)/ }).click();
     await expect(page.locator('#exportStatus')).toContainText(/requires Pro/i);
     await expect(page.locator('#exportStatus')).toContainText(/Upgrade/i);
     await expect(page.getByRole('button', { name: 'Talk to us' })).toBeVisible();
@@ -177,7 +177,7 @@ test.describe('free user, fresh install', () => {
     await page.goto(ctx.url);
     await expect(page.locator('#statTotal')).toHaveText(/^\d+$/);
     await page.locator('div.tab[onclick="switchTab(\'export\')"]').click();
-    await page.getByRole('button', { name: /Download DPO Pairs/ }).click();
+    await page.getByRole('button', { name: /Download (DPO Pairs|training data)/ }).click();
     await expect(page.locator('#exportStatus')).toContainText(/requires Pro/i);
     await expect(page.locator('#exportStatus a[href*="pricing"], #exportStatus a[href*="checkout"]')).toBeVisible({ timeout: 3_000 });
   });
@@ -212,7 +212,7 @@ test.describe('Pro user, license saved on the machine', () => {
     await page.goto(ctx.url);
     await expect(page.locator('#statTotal')).toHaveText(/^\d+$/);
     await page.locator('div.tab[onclick="switchTab(\'export\')"]').click();
-    const button = page.getByRole('button', { name: /Download DPO Pairs/ });
+    const button = page.getByRole('button', { name: /Download (DPO Pairs|training data)/ });
     await expect(button).toBeVisible();
     const [download] = await Promise.all([
       page.waitForEvent('download', { timeout: 20_000 }).catch(() => null),
@@ -221,13 +221,16 @@ test.describe('Pro user, license saved on the machine', () => {
     const status = (await page.locator('#exportStatus').textContent()) || '';
     expect(download, `a file downloads (status shown: "${status.trim()}")`).not.toBeNull();
     const body = fs.readFileSync(await download.path(), 'utf8');
-    const pairs = JSON.parse(body);
+    const file = JSON.parse(body);
+    // Since 2026-11-27 (#5305) the file is { dpo, kto }; older releases saved a bare array of DPO pairs.
+    const pairs = Array.isArray(file) ? file : file.dpo;
     expect(Array.isArray(pairs) && pairs.length, 'the file holds at least one pair').toBeGreaterThanOrEqual(1);
+    if (!Array.isArray(file)) expect(file.kto.length, 'labeled thumbs (KTO) are included').toBeGreaterThanOrEqual(1);
     const pair = pairs.find((p) => String(p.rejected).includes(REJECTED_COMMAND));
     expect(pair, 'the agent thumbs-down became a pair').toBeTruthy();
     expect(pair.chosen).toContain('npm ci');
     expect(String(pair.prompt)).toContain('lockfile out of sync');
-    await expect(page.locator('#exportStatus')).toContainText(/Exported \d+ preference pair/);
+    await expect(page.locator('#exportStatus')).toContainText(/(Exported|Downloaded) \d+ (preference|DPO) pair/);
     expect(errors).toEqual([]);
   });
 });

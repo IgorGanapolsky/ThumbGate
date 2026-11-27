@@ -1481,7 +1481,7 @@ function captureFeedback(params, options = {}) {
     ? distillation.inferredFields.context
     : submittedContext;
   const whatWentWrong = params.whatWentWrong || distillation.inferredFields.whatWentWrong || null;
-  const whatToChange = params.whatToChange || distillation.inferredFields.whatToChange || null;
+  let whatToChange = params.whatToChange || distillation.inferredFields.whatToChange || null;
   const whatWorked = params.whatWorked || distillation.inferredFields.whatWorked || null;
   extractAndSetConstraints(context);
 
@@ -1563,16 +1563,31 @@ function captureFeedback(params, options = {}) {
     rubricEvaluation,
   });
 
+  // The caller rarely sends the action or the turns before it; read them from the transcript that proves this session.
+  const hasAction = Object.keys(actionContentFields(params.lastAction)).length > 0;
+  const hasWindow = Array.isArray(params.conversationWindow) && params.conversationWindow.length > 0;
+  const incident = options.hosted || hasAction || hasWindow ? null : require('./transcript-incident').resolveIncident({
+    sourceEvent: params.sourceEvent,
+    mcpCall: params.matchTranscriptCall,
+    prompt: submittedContext,
+    hash: hashFeedbackSourcePart,
+  });
+  const actedOn = incident && incident.lastAction ? incident.lastAction : params.lastAction;
+  // The person's own correction beats a sentence distilled from older history.
+  if (incident && signal === 'negative' && !params.whatToChange) {
+    whatToChange = require('./transcript-incident').correctionIn(submittedContext) || whatToChange;
+  }
+
   // Tool-call attribution: link feedback to specific action (#203)
   // Keep the action itself (the command or tool input, bounded and secret-redacted), not only the tool name: a DPO
   // pair's rejected side is this action, and two different Bash commands both read "Bash" without it.
-  const lastAction = params.lastAction
+  const lastAction = actedOn
     ? {
-      tool: params.lastAction.tool || 'unknown',
-      contextKey: params.lastAction.contextKey || null,
-      file: params.lastAction.file || null,
-      timestamp: params.lastAction.timestamp || null,
-      ...actionContentFields(params.lastAction),
+      tool: actedOn.tool || 'unknown',
+      contextKey: actedOn.contextKey || null,
+      file: actedOn.file || null,
+      timestamp: actedOn.timestamp || null,
+      ...actionContentFields(actedOn),
     }
     : null;
 
@@ -1639,9 +1654,10 @@ function captureFeedback(params, options = {}) {
         content: (m.content || '').slice(0, 500),
         timestamp: m.timestamp || null,
       }))
-      : (Array.isArray(distillation.conversationWindow) && distillation.conversationWindow.length > 0
-        ? distillation.conversationWindow
-        : null),
+      : incident ? incident.conversationWindow
+        : (Array.isArray(distillation.conversationWindow) && distillation.conversationWindow.length > 0
+          ? distillation.conversationWindow
+          : null),
     structuredRule: structuredRule || null,
     ...(reflection && { reflection }),
     gateAction: params.gateAction || null,

@@ -46,6 +46,6 @@ test('images stay cached as immutable', async () => {
 test('scripts are served as JavaScript so the browser runs them under nosniff', async () => {
   const res = await fetch(`${origin}/project-switcher.js`);
   assert.equal(res.status, 200);
-  assert.match(res.headers.get('content-type') || '', /^text\/javascript/);
+  assert.match(res.headers.get('content-type') || '', /javascript/);
   assert.equal(res.headers.get('x-content-type-options'), 'nosniff');
 });

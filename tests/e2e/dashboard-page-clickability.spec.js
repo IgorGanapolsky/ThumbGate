@@ -219,16 +219,22 @@ test.describe('/dashboard clickability — non-stat-card surfaces', () => {
 
   // --- DPO export button (lives inside the Export tab) ---
 
-  test('clicking "Download DPO Pairs" explains when no pairs are recorded', async ({ page }) => {
+  test('clicking "Download training data" explains when nothing is recorded', async ({ page }) => {
+    await page.unroute(/\/v1\/dpo\/export/);
+    await page.route(/\/v1\/dpo\/export/, (route) => route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ pairs: 0, records: [], ktoRecords: [], droppedByReason: { no_rejected_action_recorded: 1 } }),
+    }));
     await page.goto('/dashboard#export');
-    const exportBtn = page.locator('.export-btn', { hasText: /Download DPO Pairs/ });
+    const exportBtn = page.locator('.export-btn', { hasText: /Download training data/ });
     await exportBtn.click();
     const status = page.locator('#exportStatus');
-    await expect(status).toContainText('0 preference pairs');
-    await expect(status).toContainText('A pair needs a 👎 that recorded');
+    await expect(status).toContainText('Nothing to download yet');
+    await expect(status).toContainText('1 no agent command or reply recorded');
   });
 
-  test('exportDpo POSTs for records and downloads the real pair array', async ({ page }) => {
+  test('exportDpo POSTs for records and downloads the DPO pairs and KTO rows', async ({ page }) => {
     let exportRequest = null;
     await page.unroute(/\/v1\/dpo\/export/);
     await page.route(/\/v1\/dpo\/export/, (route) => {
@@ -242,20 +248,21 @@ test.describe('/dashboard clickability — non-stat-card surfaces', () => {
         body: JSON.stringify({
           pairCount: 2,
           records: [{ chosen: 'a', rejected: 'b' }, { chosen: 'c', rejected: 'd' }],
+          ktoRecords: [{ prompt: 'p', completion: 'b', label: false }],
         }),
       });
     });
     await page.goto('/dashboard#export');
     const downloadPromise = page.waitForEvent('download');
-    await page.locator('.export-btn', { hasText: /Download DPO Pairs/ }).click();
+    await page.locator('.export-btn', { hasText: /Download training data/ }).click();
     const download = await downloadPromise;
-    await expect(page.locator('#exportStatus')).toHaveText('✓ Exported 2 preference pairs');
+    await expect(page.locator('#exportStatus')).toHaveText('✓ Downloaded 2 DPO pairs and 1 labeled 👍/👎 example (KTO).');
     expect(exportRequest).toEqual({ method: 'POST', body: { includePairs: true } });
     const savedPath = await download.path();
-    expect(JSON.parse(fs.readFileSync(savedPath, 'utf8'))).toEqual([
-      { chosen: 'a', rejected: 'b' },
-      { chosen: 'c', rejected: 'd' },
-    ]);
+    const saved = JSON.parse(fs.readFileSync(savedPath, 'utf8'));
+    expect(saved.format).toBe('thumbgate-training-data/v1');
+    expect(saved.dpo).toEqual([{ chosen: 'a', rejected: 'b' }, { chosen: 'c', rejected: 'd' }]);
+    expect(saved.kto).toEqual([{ prompt: 'p', completion: 'b', label: false }]);
   });
 
   // --- nav anchors ---

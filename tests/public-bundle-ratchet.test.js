@@ -304,7 +304,8 @@ const path = require('node:path');
 // 730 -> 731 (2026-11-25): public/demo.html, the chaptered thumbgate.ai/demo walkthrough (PR 5271).
 // 731 -> 732 (2026-11-25): scripts/assurance-report.js, the assurance-report CLI command.
 // 732 -> 733 (2026-11-26): scripts/staged-secret-gate.js, the staged-secret commit gate (PR 5258).
-const BASELINE_FILE_COUNT = 733;
+// 733 -> 734 (2026-11-27): scripts/transcript-incident.js, the thumbed-down action and turns for DPO pairs (+1).
+const BASELINE_FILE_COUNT = 734;
 function readBundleSnapshot() {
   const repoRoot = path.resolve(__dirname, '..');
   const stdout = execSync('npm pack --dry-run --json', {

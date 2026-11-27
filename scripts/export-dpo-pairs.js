@@ -191,6 +191,8 @@ function buildDpoPairs(errors, learnings, { maxDistractors = 2 } = {}) {
 const VAGUE_NEGATIVE = /^(thumbs?[- ]?down|bad|wrong|no|nope|nah|fix (it|this)|this is (wrong|bad)[!.]*|\W*)$/i;
 const PRAISE_ONLY = /^(?:what worked:\s*)?(?:great|good|nice|perfect|awesome|excellent|thanks|thank you|love it|well done|works?)\b[^.]{0,40}$/i;
 const REINFORCE = /^when answering .*: reinforce\b/i;
+// The history distiller's fill-in sentences quote an older message; they are not a better action for this one.
+const DISTILLER_TEMPLATE = /^(?:follow the earlier instruction instead|inspect and correct the failing step before)/i;
 
 function textOf(value) {
   if (value == null) return '';
@@ -251,6 +253,13 @@ function promptBefore(windowValue, rejected) {
 function loadFeedbackIndex(options = {}) {
   const rows = options.feedbackRows || readJSONL(path.join(options.feedbackDir || resolveFeedbackDir(), 'feedback-log.jsonl'));
   const byId = new Map();
+  // A trimmed log leaves memories pointing at records that now live only in a backup beside it.
+  if (!options.feedbackRows || options.feedbackDir) {
+    const dir = options.feedbackDir || resolveFeedbackDir();
+    let backups = [];
+    try { backups = fs.readdirSync(dir).filter((name) => name.startsWith('feedback-log.jsonl.bak')).sort(); } catch { /* none */ }
+    for (const name of backups) for (const row of readJSONL(path.join(dir, name))) if (row && row.id) byId.set(row.id, row);
+  }
   for (const row of rows) if (row && row.id) byId.set(row.id, row);
   return { rows, byId };
 }
@@ -281,7 +290,7 @@ function rejectedActionOf(feedback) {
 }
 
 function strictPairFor(error, feedback, positives) {
-  if (!feedback) return { reason: 'no_source_feedback_record' };
+  if (!feedback) return { reason: error.sourceFeedbackId ? 'no_source_feedback_record' : 'memory_has_no_source_feedback_id' };
   const whatWrong = textOf(feedback.whatWentWrong) || textOf(feedback.context);
   if (wordCount(whatWrong) < 4 || VAGUE_NEGATIVE.test(whatWrong)) return { reason: 'vague_negative_feedback' };
   const found = rejectedActionOf(feedback);
@@ -292,7 +301,7 @@ function strictPairFor(error, feedback, positives) {
   if (!window) return { reason: 'no_prompt_context_before_rejected_action' };
   let chosen = textOf(feedback.whatToChange);
   let chosenSource = 'same_record_corrective_action';
-  if (chosen && (REINFORCE.test(chosen) || PRAISE_ONLY.test(chosen))) chosen = '';
+  if (chosen && (REINFORCE.test(chosen) || PRAISE_ONLY.test(chosen) || DISTILLER_TEMPLATE.test(chosen))) chosen = '';
   if (!chosen) {
     const promptId = feedback.sourceEvent && feedback.sourceEvent.promptIdHash;
     const session = feedback.scope && feedback.scope.sessionId;
@@ -331,6 +340,43 @@ function buildStrictDpoPairs(errors, learnings, options = {}) {
   const reasons = {};
   for (const d of dropped) reasons[d.reason] = (reasons[d.reason] || 0) + 1;
   return { pairs, dropped, droppedByReason: reasons };
+}
+
+// KTO (TRL KTOTrainer, unpaired preference format): one { prompt, completion, label } row per thumbs record that
+// recorded both what the agent was asked and what it did. label false = 👎, true = 👍. Unlike a DPO pair it needs no
+// correction, so most real feedback qualifies: a store with zero pairs can still give a useful training file.
+// The prompt is cut before the completion, exactly as for pairs; a record with no prompt or no completion is skipped
+// with a reason, never padded with placeholder text.
+function buildKtoRecords(errors, learnings, options = {}) {
+  const { byId } = loadFeedbackIndex(options);
+  const records = [];
+  const skippedByReason = {};
+  const skip = (reason) => { skippedByReason[reason] = (skippedByReason[reason] || 0) + 1; };
+  const seen = new Set();
+  const add = (memory, label) => {
+    const feedback = byId.get(memory.sourceFeedbackId);
+    if (!feedback) return skip('no_source_feedback_record');
+    if (seen.has(feedback.id)) return skip('duplicate_feedback_record');
+    // The same sources serve a 👍: its recorded command, failed command or the agent reply it answered.
+    const found = rejectedActionOf(feedback);
+    if (!found) return skip(feedback.lastAction ? 'action_has_no_content' : 'no_agent_action_recorded');
+    if (!textOf(feedback.conversationWindow)) return skip('no_prompt_context_recorded');
+    const prompt = found.prompt != null ? found.prompt : promptBefore(feedback.conversationWindow, found.text);
+    if (!prompt) return skip('no_prompt_context_before_action');
+    if (prompt === found.text) return skip('prompt_equals_completion');
+    seen.add(feedback.id);
+    const note = label ? textOf(feedback.whatWorked) || textOf(feedback.context) : textOf(feedback.whatWentWrong) || textOf(feedback.context);
+    records.push(redactSecretsDeep({
+      ...projectForRecord(memory),
+      prompt,
+      completion: found.text,
+      label,
+      metadata: { memoryId: memory.id, sourceFeedbackId: feedback.id, signal: label ? 'positive' : 'negative', completionSource: found.source, note },
+    }));
+  };
+  for (const error of errors) add(error, false);
+  for (const learning of learnings) add(learning, true);
+  return { records, skippedByReason };
 }
 
 // A fixed, synthetic store that the production proof exports on every deploy. It holds one thumbs-down that is a
@@ -412,8 +458,11 @@ function exportDpoFromMemories(memories, options = {}) {
   // Redact secrets before the pairs leave this module — they are derived from memory content and
   // are shipped to disk here AND consumed by export-hf-dataset.js. See scripts/secret-redaction.js.
   const redactedPairs = pairsWithTraces.map((pair) => redactSecretsDeep(pair));
+  const kto = buildKtoRecords(errors, learnings, options);
 
   return {
+    ktoRecords: kto.records,
+    ktoSkippedByReason: kto.skippedByReason,
     pairs: redactedPairs,
     unpairedErrors: result.unpairedErrors,
     unpairedLearnings: result.unpairedLearnings,
@@ -551,6 +600,7 @@ module.exports = {
   findDistractors,
   buildDpoPairs,
   buildStrictDpoPairs,
+  buildKtoRecords,
   rejectedActionOf,
   DPO_SELF_TEST_FIXTURE,
   toJSONL,
