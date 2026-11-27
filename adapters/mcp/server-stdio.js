@@ -395,10 +395,11 @@ function resolveWorkspaceCwd(targetPath) {
 
 function toTextResult(payload) {
   const text = typeof payload === 'string' ? payload : JSON.stringify(payload, null, 2);
+  // MCP requires structuredContent to be an object, so a list goes under `results`.
   return {
     content: [{ type: 'text', text }],
     ...(payload !== null && typeof payload === 'object'
-      ? { structuredContent: payload }
+      ? { structuredContent: Array.isArray(payload) ? { results: payload } : payload }
       : {}),
   };
 }
