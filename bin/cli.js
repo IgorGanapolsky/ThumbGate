@@ -2343,6 +2343,38 @@ function rules() {
   console.log(`Wrote prevention rules to ${result.path}`);
 }
 
+function exportRulesCmd() {
+  const args = parseArgs(process.argv.slice(3));
+  const { exportRules } = require(path.join(PKG_ROOT, 'scripts', 'cloud-rules-export'));
+  const { getFeedbackPaths } = require(path.join(PKG_ROOT, 'scripts', 'feedback-loop'));
+  let result;
+  try {
+    result = exportRules({
+      cwd: CWD,
+      feedbackDir: getFeedbackPaths().FEEDBACK_DIR,
+      target: args.target || 'claude',
+      output: typeof args.output === 'string' ? args.output : undefined,
+      includeLessons: Boolean(args['include-lessons']),
+      check: Boolean(args.check),
+    });
+  } catch (err) {
+    console.error(err && err.message ? err.message : err);
+    process.exit(1);
+  }
+  if (args.json) {
+    console.log(JSON.stringify(result, null, 2));
+  } else {
+    const c = result.counts;
+    for (const f of result.files) {
+      const rel = path.relative(CWD, f.path) || f.path;
+      if (result.check) console.log(`${f.changed ? 'stale' : 'current'}: ${rel}`);
+      else console.log(`${f.changed ? 'Wrote' : 'Unchanged'} ${rel} (${c.gates} gates, ${c.claims} claim rules, ${c.prevention} learned rules${c.lessons ? `, ${c.lessons} lessons` : ''})`);
+    }
+    if (!result.check) console.log('Commit it so cloud agents (claude.ai projects, cloud Claude Code, Codex, Cursor background agents) read these rules from the repo. `thumbgate session-start` keeps it current from now on.');
+  }
+  if (!result.ok) process.exit(1);
+}
+
 function selfHeal() {
   try {
     const output = execSync(
@@ -3473,6 +3505,11 @@ function serve() {
     repairUnreadClaudeHooks();
   } catch (_) { /* self-heal is best-effort */ }
   try {
+    // Adds the PreSkillShellCommand hook to installs made before it existed.
+    const { repairMissingSkillShellHook } = require(path.join(PKG_ROOT, 'scripts', 'claude-self-heal'));
+    repairMissingSkillShellHook();
+  } catch (_) { /* self-heal is best-effort */ }
+  try {
     // Adds the thumbs-down loop hooks that older Cursor inits left out of ~/.cursor/hooks.json.
     const { repairCursorHooks } = require(path.join(PKG_ROOT, 'scripts', 'cursor-self-heal'));
     repairCursorHooks();
@@ -3511,65 +3548,8 @@ async function gateCheck() {
   try {
     const payload = readStdinText();
     const input = payload ? JSON.parse(payload) : {};
-    const gatesEngine = require(path.join(PKG_ROOT, 'scripts', 'gates-engine'));
-
-    const { evaluatePreToolUse } = require(path.join(PKG_ROOT, 'scripts', 'token-shunt-honesty'));
-    const shunt = evaluatePreToolUse({
-      toolName: input.tool_name || input.toolName,
-      toolInput: input.tool_input || input.toolInput || {},
-      cwd: input.cwd || process.cwd(),
-    });
-    if (shunt && shunt.ok === false) {
-      process.stdout.write(`${JSON.stringify({
-        decision: 'block',
-        reason: `token-shunt: ${shunt.reason}`,
-        hookSpecificOutput: {
-          hookEventName: 'PreToolUse',
-          permissionDecision: 'deny',
-          permissionDecisionReason: `token-shunt: ${shunt.reason}`,
-        },
-      })}\n`);
-      return;
-    }
-
-    const { evaluateMcpPreToolUse } = require(path.join(PKG_ROOT, 'scripts', 'third-author-governance'));
-    const thirdAuthor = evaluateMcpPreToolUse({
-      toolName: input.tool_name || input.toolName,
-      toolInput: input.tool_input || input.toolInput || {},
-      authorContext: { isAgent: true, cwd: input.cwd || process.cwd() },
-    });
-    if (thirdAuthor && thirdAuthor.permissionDecision === 'deny') {
-      process.stdout.write(`${JSON.stringify({
-        decision: 'block',
-        reason: thirdAuthor.permissionDecisionReason,
-        hookSpecificOutput: {
-          hookEventName: 'PreToolUse',
-          permissionDecision: 'deny',
-          permissionDecisionReason: thirdAuthor.permissionDecisionReason,
-          findingId: thirdAuthor.findingId,
-          alternatives: thirdAuthor.alternatives,
-        },
-      })}\n`);
-      return;
-    }
-
-    // The operator bypass only skips advisory and strict-mode gates. Security and
-    // self-protection floors are evaluated before the early approval path.
-    if (process.env.THUMBGATE_HOTFIX_BYPASS === '1') {
-      const hardFloorOutput = gatesEngine.runHardFloor(input);
-      if (hardFloorOutput) {
-        process.stdout.write(hardFloorOutput + '\n');
-        return;
-      }
-      process.stdout.write(JSON.stringify({
-        decision: 'approve',
-        reason: 'operator-bypass-opt-in',
-        hookSpecificOutput: { hookEventName: 'PreToolUse', additionalContext: '' }
-      }) + '\n');
-      return;
-    }
-
-    const output = await gatesEngine.runAsync(input);
+    const { evaluateGateCheck } = require(path.join(PKG_ROOT, 'scripts', 'gate-check-core'));
+    const output = await evaluateGateCheck(input);
     process.stdout.write(output + '\n');
   } catch (err) {
     process.stderr.write(`gate-check error: ${err.message}\n`);
@@ -3580,6 +3560,20 @@ async function gateCheck() {
       }
     }) + '\n');
   }
+}
+
+// PreSkillShellCommand hook (Claude Code 2.1.332+): shell commands a skill or slash
+// command runs while it loads never reach PreToolUse. Warn-only unless
+// THUMBGATE_SKILL_SHELL_GATE=enforce; see scripts/skill-shell-gate.js.
+async function skillShellGate() {
+  let input = {};
+  try {
+    const payload = readStdinText();
+    input = payload ? JSON.parse(payload) : {};
+  } catch (_) { input = {}; }
+  const { runSkillShellGate } = require(path.join(PKG_ROOT, 'scripts', 'skill-shell-gate'));
+  const output = await runSkillShellGate(input);
+  process.stdout.write(JSON.stringify(output) + '\n');
 }
 
 function cacheUpdate() {
@@ -3778,6 +3772,12 @@ function sessionStart() {
   const { analyzeFeedback } = require(path.join(PKG_ROOT, 'scripts', 'feedback-loop'));
   const { refreshStatuslineCache } = require(path.join(PKG_ROOT, 'scripts', 'hook-thumbgate-cache-updater'));
   refreshStatuslineCache(analyzeFeedback(undefined, { humanOnly: true }));
+  // Keep the cloud-readable rule export current, but only where the user already ran `thumbgate export-rules`.
+  try {
+    const { refreshExistingExports } = require(path.join(PKG_ROOT, 'scripts', 'cloud-rules-export'));
+    const { getFeedbackPaths } = require(path.join(PKG_ROOT, 'scripts', 'feedback-loop'));
+    refreshExistingExports({ cwd: CWD, feedbackDir: getFeedbackPaths().FEEDBACK_DIR });
+  } catch (_) { /* best-effort */ }
 
   // Build a top-level <system-reminder> block that Claude Code's SessionStart
   // hook surfaces to the agent as first-class context — not buried stderr.
@@ -4387,6 +4387,7 @@ const SUBCOMMAND_HELP = {
   lessons:       'Usage: npx thumbgate lessons [--query="..."] [--limit=N]\n\nSearch the lesson database (Pro feature).',
   search:        'Usage: npx thumbgate search <query>\n\nSearch ThumbGate knowledge base (Pro feature).',
   'gate-check':  'Usage: npx thumbgate gate-check\n\nPreToolUse hook interface: reads tool call JSON from stdin, outputs gate verdict.',
+  'skill-shell-gate': 'Usage: npx thumbgate skill-shell-gate\n\nPreSkillShellCommand hook interface (Claude Code 2.1.332+): checks shell commands that skills run while they load. Warn-only unless THUMBGATE_SKILL_SHELL_GATE=enforce.',
   'claim-stop-check': 'Usage: npx thumbgate claim-stop-check [--config=.thumbgate/claim-verifiers.json] [--cwd=path] [--json]\n\nClaude Stop hook interface: reads hook JSON from stdin, rechecks configured factual claims before Claude stops.',
   'typesafe-typed-questions': 'Usage: npx thumbgate typesafe-typed-questions [--payload=path] [--tool-name=Bash] [--command="..."] [--json] [--map-only] [--clone-jev]\n\nTypeSafe FORMAT steal: typed noul/choice/score over a PreToolUse payload, code-owned pass/review/block. Does not install typesafe-sdk or call Jev.',
   'ci-gha-buildkite-patterns': 'Usage: npx thumbgate ci-gha-buildkite-patterns [--jobs-json=path] [--workflow=path] [--json] [--map-only]\n\nBuildkite pipeline FORMAT on GitHub Actions: first-fail step, PR fail-fast, needs:/skip/annotations. Does not add Buildkite.',
@@ -4433,6 +4434,7 @@ const SUBCOMMAND_HELP = {
   'setup-vertex': 'Usage: npx thumbgate setup-vertex [--dry-run]\n\nAuto-enable Vertex AI API on GCP and write local Vertex routing config to .env. With --dry-run, only detect the active account/project and print the planned changes. This does not create or verify a Dialogflow CX agent; use the Dialogflow CX REST API or console for live-agent evidence.',
   'ai-inventory': 'Usage: npx thumbgate ai-inventory [--root <dir>] [--format=summary|json|cyclonedx] [--output <path>] [--max-files=N]\n\nScan source/manifests/model artifacts for AI, ML, agent-framework, vector DB, Vertex, Gemini, and Dialogflow CX components. Use --format=cyclonedx to produce exportable ML-BOM evidence for enterprise reviews.',
   brain: 'Usage: npx thumbgate brain [--write] [--json] [--limit=N]\n\nBuild the agent-readable "context brain" — a single artifact consolidating this\nrepo\'s lessons, prevention rules, active gates, and project context for a coding\nagent to read BEFORE acting. --write saves it to .thumbgate/BRAIN.md (versioned,\ndeterministic). --json emits the structured model. --limit caps lessons (default 15).',
+  'export-rules': 'Usage: npx thumbgate export-rules [--target=claude|agents|all] [--output=path] [--include-lessons] [--check] [--json]\n\nWrite this project\'s learned rules (auto-promoted gates, claim rules, prevention rules) into files cloud agents read from the repo: .claude/rules/thumbgate.md for Claude Code (default), a marked block in AGENTS.md for Codex, Cursor and others, or both. Hooks never run in cloud sessions, so this is how those agents follow the rules. Lesson text stays out unless --include-lessons. Every line is secret- and PII-redacted. --check exits 1 when a file is stale. Once exported, `thumbgate session-start` refreshes it.',
   'team-sync': 'Usage: npx thumbgate team-sync\n\nSynchronize prevention rules and context brain with your team\'s git repository (git pull --rebase & git push), then auto-rebuild the local brain.',
 };
 
@@ -4727,6 +4729,13 @@ switch (COMMAND) {
     process.exit(0);
     break;
   }
+  case 'skill-shell-gate':
+    // Never breaks a skill load on an internal error: print "no decision".
+    skillShellGate().catch(() => {
+      process.stdout.write('{}\n');
+      process.exit(0);
+    });
+    break;
   case 'gate-check':
     // Keeps the hook runtime on npm latest (one file read; at most one detached check per 24h).
     try { require('../scripts/runtime-auto-update').scheduleLatestCheck(); } catch (_) { /* best-effort */ }
@@ -5047,6 +5056,10 @@ switch (COMMAND) {
     break;
   case 'rules':
     rules();
+    break;
+  case 'export-rules':
+  case 'cloud-rules':
+    exportRulesCmd();
     break;
   case 'context-packs':
     contextPacks();
