@@ -44,6 +44,9 @@
     .nav-pro { display:inline-flex; justify-content:center; align-items:center; border:0; border-radius:10px; background:var(--green); color:#fff; padding:12px 18px; font:inherit; font-weight:800; text-decoration:none; }
     .nav-enterprise { display:inline-flex; justify-content:center; align-items:center; border:1px solid var(--green); border-radius:10px; color:var(--green); padding:10px 14px; font:inherit; font-weight:800; text-decoration:none; background:transparent; }
     main { padding:70px 0 84px; }
+    .bf-offer { margin:0 0 28px; padding:16px 20px; border:2px solid var(--green); border-radius:12px; background:#fff; display:flex; flex-wrap:wrap; gap:10px 18px; align-items:center; justify-content:space-between; }
+    .bf-offer p { margin:0; }
+    .bf-offer strong { color:var(--green); }
     .hero { display:grid; grid-template-columns:minmax(0,1.05fr) minmax(300px,.95fr); gap:28px; align-items:start; }
     .offer-grid { display:grid; grid-template-columns:1fr; gap:18px; }
     .pro-card { border:1px solid var(--line); border-radius:18px; background:var(--card); box-shadow:0 18px 50px rgba(38,45,41,.09); padding:30px; }
@@ -152,6 +155,18 @@
   </nav>
 
   <main class="shell">
+    <div class="bf-offer" id="bf-offer" data-offer-starts="2026-11-27T05:00:00Z" data-offer-ends="2026-12-02T04:59:59Z" hidden>
+      <p><strong>Black Friday: 40% off your first year of Pro.</strong> Yearly is $89.40 instead of $149, or monthly is 40% off for 12 months. Applied at checkout automatically, no code to type. Ends Monday, Dec 1 at 11:59 PM ET.</p>
+      <a class="button" href="/checkout/pro?billing_cycle=annual" data-offer-link data-value="89.40" data-revenue-cta data-cta-id="pricing_bf_annual_checkout" data-cta-placement="bf_banner" data-plan-id="pro_annual">Get Pro yearly for $89.40</a>
+    </div>
+    <script>
+      (function () {
+        var el = document.getElementById('bf-offer');
+        if (!el) return;
+        var now = Date.now();
+        if (now >= Date.parse(el.dataset.offerStarts) && now <= Date.parse(el.dataset.offerEnds)) el.hidden = false;
+      })();
+    </script>
     <div class="hero">
       <div>
         <div class="eyebrow">Claude Code guardrails. Free local gates, optional Pro.</div>
