@@ -651,7 +651,8 @@ test('homepage stays human-scannable instead of becoming a product monorepo', ()
   // 1775: the install block adds a one-paste setup prompt for Claude Code next to the command (26 Nov 2026).
   // 1810: one sentence says checks after the agent finishes find the damage late while ThumbGate decides before the command runs, with the limits kept (26 Nov 2026).
   // 1820: one line under the install block links the free video course (27 Nov 2026).
-  assert.ok(words.length <= 1820,`visible homepage is ${words.length} words`);
+  // 2030: the compact "What stays under your control" table (what runs locally, what is sent, free and Pro, what is not protected); main was already at 1854 after the "You own the rules" line (27 Nov 2026).
+  assert.ok(words.length <= 2030,`visible homepage is ${words.length} words`);
   // Versions on the page must be the released one, so a hand-typed one cannot go stale. "New in X" says when a
   // feature arrived, so it is history, not the current version.
   const { version } = require('../package.json');
@@ -785,7 +786,8 @@ test('checkout intent keeps first-party, Plausible, and optional GA4 telemetry',
   assert.match(landingPage, /\/v1\/telemetry\/ping/);
   assert.doesNotMatch(landingPage, /\/v1\/telemetry\/event/);
   assert.match(landingPage, /window\.plausible\('checkout_start'/);
-  assert.match(landingPage, /sendGa4Event\('begin_checkout'/);
+  // begin_checkout fires once on /checkout/pro (scripts/ga-tag.js); the landing click is its own event.
+  assert.match(landingPage, /sendGa4Event\('checkout_cta_click'/);
   assert.match(landingPage, /sendFirstPartyTelemetry\('checkout_start'/);
   assert.match(landingPage, /planId: 'pro'/);
   assert.match(landingPage, /const serverTelemetryCaptured = '__SERVER_TELEMETRY_CAPTURED__' === 'true'/);

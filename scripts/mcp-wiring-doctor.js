@@ -204,6 +204,13 @@ function wiringReport(projectRoot = process.cwd(), env = process.env) {
     overall = 'warning';
   }
 
+  // A folder with no project MCP file is the normal first visit. When feedback can still be saved, say what to do once.
+  if (!hasProjectMcpFile && unattendedCaptureReady && lessonsStore.writable) {
+    overall = 'warning';
+    findings.splice(0, findings.length,
+      'Missing project .mcp.json: feedback still saves; to add the MCP tools here run: npx thumbgate init --agent claude-code');
+  }
+
   return {
     overall,
     findings,
