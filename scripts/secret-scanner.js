@@ -888,9 +888,12 @@ function segmentNetworkVerbIndex(tokens) {
   return index;
 }
 
-function isLiteralQueryBody(value) {
+function isLiteralQueryBody(value, flag = '') {
   const body = String(value || '');
-  return !body.startsWith('@') && !hasSecretEnvVarRef(body) && !/\$\{?[A-Za-z_]/.test(body);
+  if (body.startsWith('@')) return false;
+  // --data-urlencode name@file uploads that file (curl --manual); only name=content is literal.
+  if (/^--data-urlencode/.test(flag) && /^[^=]*@/.test(body)) return false;
+  return !hasSecretEnvVarRef(body) && !/\$\{?[A-Za-z_]/.test(body);
 }
 
 function curlSegmentIsAuthenticatedRead(tokens) {
@@ -915,12 +918,12 @@ function curlSegmentIsAuthenticatedRead(tokens) {
     }
     if (/^--request=/.test(token) && !QUERY_METHODS.has(token.split('=')[1].toUpperCase())) return false;
     if (CURL_DATA_FLAGS.has(token)) {
-      if (!isLiteralQueryBody(next)) return false;
+      if (!isLiteralQueryBody(next, token)) return false;
       i += 1;
       continue;
     }
     if (/^--(?:data(?:-[a-z]+)?|json)=/.test(token)) {
-      if (!isLiteralQueryBody(token.slice(token.indexOf('=') + 1))) return false;
+      if (!isLiteralQueryBody(token.slice(token.indexOf('=') + 1), token)) return false;
       continue;
     }
     if (/^-[a-zA-Z]*d/.test(token) && !token.startsWith('--')) return false; // attached -d'…' / -sd
