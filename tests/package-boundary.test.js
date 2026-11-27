@@ -540,8 +540,9 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
 // 733 -> 734 (2026-11-27): scripts/transcript-incident.js, the thumbed-down action and turns for DPO pairs (+1).
     // 735 -> 736 (2026-11-27): scripts/ga-tag.js, the GA4 funnel tag on every public page (+1).
     // 734 -> 735 (2026-11-27): scripts/data-control-report.js, the `thumbgate control` command (+1).
-    manifest.fileCount <= 736,
-    `npm package should stay <= 736 files, got ${manifest.fileCount}`
+    // 736 -> 737 (2026-11-27): scripts/cloud-rules-export.js, `thumbgate export-rules` for cloud agents (+1).
+    manifest.fileCount <= 737,
+    `npm package should stay <= 737 files, got ${manifest.fileCount}`
   );
   // Ceiling bumped from 2.75 MB → 2.85 MB (2026-04-16) to accommodate the
   // incremental review-delta demo content in public/dashboard.html landing
@@ -874,10 +875,13 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // Google Analytics line in public/privacy.html. Measured 11,023,272.
   // Bumped 11.03 MB -> 11.04 MB (2026-11-27, v1.48.0 release): main measured 11,030,172 after #5314 and #5319
   // (mail-note and own-site gate fixes) plus the release CHANGELOG entry. Measured 11,030,188.
-  // Bumped 11.04 MB -> 11.05 MB (2026-11-27, PR #5324): authenticated-read classifier in scripts/secret-scanner.js
-  // plus the warn-only advisory path in gates-engine.js and tailscale-october-access.js (~9.4 KB). Measured 11,039,554.
-  manifest.unpackedSize <= 11_050_000,
-  `npm package should stay <= 11.05 MB unpacked, got ${manifest.unpackedSize}`
+  // Bumped 11.04 MB -> 11.05 MB (2026-11-27): scripts/cloud-rules-export.js and the export-rules CLI command, on top
+  // of #5326 (spend-guard research fix). Measured 11,042,740.
+  // Bumped 11.05 MB -> 11.07 MB (2026-11-27, PR #5324): authenticated-read classifier in scripts/secret-scanner.js
+  // plus the warn-only advisory path in gates-engine.js and tailscale-october-access.js (~9.4 KB) on top of the
+  // entry above. Measured 11,063,360.
+  manifest.unpackedSize <= 11_070_000,
+  `npm package should stay <= 11.07 MB unpacked, got ${manifest.unpackedSize}`
 );
 
   for (const file of requiredRuntimeFiles) {
