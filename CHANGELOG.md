@@ -1,5 +1,30 @@
 # Changelog
 
+## 1.49.0
+
+### Minor Changes
+
+- 6a64b2c: New `thumbgate export-rules` command. It writes this project's learned rules (live auto-promoted gates, claim rules and prevention rules) to `.claude/rules/thumbgate.md`, a marked block in `AGENTS.md`, or both. Cloud agents that never run ThumbGate hooks, such as claude.ai projects, Claude Code on the web, Codex cloud and Cursor background agents, then follow the rules from the repo. Output is redacted and deterministic. `--check` exits 1 when stale, and `session-start` refreshes a file that was exported before.
+- 5407031: A thumbs-down saying a denied action was retried without your yes now becomes a gate that refuses the identical call until you take another turn. Prose-only feedback returns gatePrompt, asking for a tool and condition.
+- 38c5f24: Gate shell commands that skills and slash commands run while they load. Claude Code 2.1.332 added the `PreSkillShellCommand` hook, and PreToolUse never fires for these commands. `npx thumbgate init` now wires `thumbgate skill-shell-gate` there when the installed Claude Code supports it, and the MCP server adds it to older installs on start. It runs the same gate-check engine, warns by default (law 12), and blocks with `THUMBGATE_SKILL_SHELL_GATE=enforce`.
+
+### Patch Changes
+
+- b9f9844: Black Friday offer: Pro checkouts between Fri Nov 27 and Mon Dec 1 11:59 PM ET get 40% off the first year applied automatically, with a self-hiding banner on /pricing.
+- 20c7461: The homepage has a "What stays under your control" table, and the privacy page now says what releases up to 27 November 2026 send in a learned-rule ping and that `DO_NOT_TRACK` alone does not stop their install ping.
+- bab0f47: Ship scripts/pii-scanner.js: `thumbgate export-rules` requires it and crashed from the npm package.
+- ffcbd69: Google Analytics now measures the whole checkout funnel on thumbgate.ai. Every public page, including /pricing, /guide, /checkout/pro and /success, loads one Google tag for the ThumbGate property (G-QKENZBW1V8); the ApplyOps id (G-SZR5039QN4) a stale variable still carried is refused. /checkout/pro sends begin_checkout and a Stripe-verified /success sends purchase with the session id as the transaction id. Consent Mode v2 keeps advertising storage denied, starts analytics storage denied in the EEA, UK and Switzerland, and follows the site's analytics banner; GPC/DNT visitors and private pages get no tag. The homepage Pro click is now checkout_cta_click so begin_checkout is counted once.
+- 2d8ff43: Git hook install from a linked worktree now writes the main checkout hook paths into the shared config.
+- ed33899: Lesson search now says whether a lesson is proven enforced (a blocking gate built from it) or advice only, and counts later thumbs-downs that match it, labelled as a text match.
+- 60c6e15: MCP tools that return a list (such as `retrieve_lessons`) now send it as `structuredContent.results`, so clients no longer reject the call. The text block is unchanged.
+- 56d2a7a: The outbound mail rule no longer refuses a command that only writes text into a notes file with echo or printf.
+- 95f9d84: The owner-profile outbound-post rule no longer refuses a page read or a literal form lookup on a site listed in the rule's `ownHosts`. Anything it cannot read in full stays refused.
+- afedb68: A folder without a project `.mcp.json` no longer reports "RAG wiring: ERROR" when feedback capture works; it shows one warning line with the command to run.
+- f9b9c92: The outbound email gate no longer treats mcp__claude-code-remote__send_message (an agent reporting back to its project) as an email send.
+- efbad9c: The spend guard no longer hard-blocks read-only web research. WebFetch, WebSearch and MCP fetch/search tools that read documentation, forum or blog pages mentioning billing, checkout, plans or upgrades are allowed. Live payment hosts (Stripe Checkout, Payment Links, billing portal, Apollo app, Paddle, PayPal) and commerce paths such as `/checkout` or `/billing` on product sites stay denied, and a fetch that sends a body or a write method still gets the full rules.
+- 9319afc: New guide at /guides/stop-claude-code-deleting-files: what ThumbGate denies by default, how a thumbs-down turns a delete into a warning and then a block, and which deletes it does not catch.
+- b742ac8: Only a typed thumbs-down or a real correction creates a mistake. New requests and subagent reports are no longer recorded as an ignored instruction.
+
 ## 1.48.0
 
 ### Minor Changes
