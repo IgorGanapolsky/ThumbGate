@@ -353,7 +353,7 @@ npx thumbgate gate-audit    # replays learned gates on past allowed actions: fal
 <table class="comparison-table">
   <tr><th>Feature</th><th>ThumbGate</th><th>SpecLock</th><th>Mem0</th></tr>
   <tr><td>Flags mistakes before execution</td><td>Yes — PreToolUse checks (built-in rules deny a short list; other matches warn)</td><td>Yes — Patch Firewall</td><td>No</td></tr>
-  <tr><td>Learns from feedback</td><td>Yes — thumbs up/down</td><td>Not stated in its README; it reads existing rule files</td><td>Yes — auto-capture</td></tr>
+  <tr><td>Turns feedback into rules</td><td>Yes — thumbs up/down</td><td>Not stated in its README; it reads existing rule files</td><td>Yes — auto-capture</td></tr>
   <tr><td>Auto-generates rules</td><td>Auto-promotes a warning rule from repeated thumbs-downs</td><td>Not compared</td><td>No</td></tr>
   <tr><td>Agent support</td><td>Claude Code, Codex, Gemini, Amp, Cursor, OpenCode</td><td>Claude Code, Cursor, Windsurf, Cline</td><td>Claude, Cursor</td></tr>
   <tr><td>Install</td><td><code>npx thumbgate init</code></td><td><code>npx speclock setup</code></td><td>Cloud signup</td></tr>
