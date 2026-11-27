@@ -13,7 +13,6 @@ const {
   formatInjectableReminder,
   MAX_INJECTED_LESSONS,
   MAX_INJECTED_TOKENS,
-  LESSON_REPEAT_MS,
 } = require('../scripts/lesson-hook-relevance');
 const { distillFeedbackHistory } = require('../scripts/feedback-history-distiller');
 
@@ -35,7 +34,7 @@ const otherRepoLesson = {
   scope: { projectId: 'Eci.Psn.StockService' },
 };
 
-test('a lesson matches on repo scope and either the tool name or a command term', () => {
+test('a lesson matches on repo scope and a command or file term, never the tool name alone', () => {
   assert.equal(lessonMatchesToolCall(thumbgateLesson, {
     toolName: 'Bash',
     actionContext: 'node scripts/billing.js --check',
@@ -55,7 +54,7 @@ test('a lesson matches on repo scope and either the tool name or a command term'
     toolName: 'Bash',
     actionContext: 'echo hello',
     project: 'thumbgate',
-  }), true);
+  }), false);
   assert.equal(lessonMatchesToolCall({
     id: 'no-tool',
     whatToChange: 'Return 403 from scripts/billing.js when createCheckoutSession sees a fixture email.',
@@ -109,7 +108,7 @@ test('nothing matches means no reminder and no hot-risk filler', () => {
   assert.doesNotMatch(formatInjectableReminder([]), /HOT RISK SIGNALS/);
 });
 
-test('injection is capped at two lessons and 150 tokens, and a lesson repeats only after 30 minutes', () => {
+test('injection is capped at two lessons and 150 tokens, and a lesson shows once per session', () => {
   const lessons = [1, 2, 3].map((n) => ({
     id: `lesson-${n}`,
     whatToChange: `Fix scripts/billing.js path ${n} ${'detail '.repeat(40)}`,
@@ -137,7 +136,7 @@ test('injection is capped at two lessons and 150 tokens, and a lesson repeats on
     project: 'thumbgate',
     sessionId: 'sess-relevance',
     seenDir: dir,
-    now: 1_000 + LESSON_REPEAT_MS - 1,
+    now: 1_000 + 1,
   });
   assert.ok(repeated.every((lesson) => lesson.id === 'lesson-3'));
   assert.ok(!repeated.some((lesson) => lesson.id === 'lesson-1' || lesson.id === 'lesson-2'));
@@ -148,9 +147,9 @@ test('injection is capped at two lessons and 150 tokens, and a lesson repeats on
     project: 'thumbgate',
     sessionId: 'sess-relevance',
     seenDir: dir,
-    now: 1_000 + LESSON_REPEAT_MS,
+    now: 1_000 + 24 * 60 * 60 * 1000,
   });
-  assert.equal(later.length, MAX_INJECTED_LESSONS);
+  assert.deepEqual(later, [], 'all three were shown already in this session');
 });
 
 test('labeled ThumbGate calls recall the matching lesson and stay quiet otherwise', () => {

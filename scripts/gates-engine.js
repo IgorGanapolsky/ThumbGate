@@ -5560,7 +5560,7 @@ function buildRelevantLessonContext(toolName, toolInput, options = {}) {
     if (entropy > KNOWLEDGE_ENTROPY_THRESHOLD) {
       return buildKnowledgeConflictContext(toolName, toolInput, lessons, entropy);
     }
-    return formatNegativeLessonContext(lessons);
+    return formatNegativeLessonContext(lessons, { toolName, actionContext, sessionId: options.sessionId, seenDir: options.seenDir });
   } catch {
     return null;
   }
@@ -5601,7 +5601,7 @@ async function buildRelevantLessonContextAsync(toolName, toolInput, options = {}
       return buildKnowledgeConflictContext(toolName, toolInput, lessons, entropy);
     }
 
-    return formatNegativeLessonContext(lessons);
+    return formatNegativeLessonContext(lessons, { toolName, actionContext, sessionId: options.sessionId, seenDir: options.seenDir });
   } catch {
     return null;
   }
@@ -5612,12 +5612,17 @@ async function buildRelevantLessonContextAsync(toolName, toolInput, options = {}
  * into the PreToolUse warning block. Retrieval already filters by relevance, so any
  * negative lesson present is relevant enough to surface.
  */
-function formatNegativeLessonContext(lessons) {
-  const negative = (lessons || []).filter((l) => {
+function formatNegativeLessonContext(lessons, options = {}) {
+  const { lessonSharesAction, takeUnseenLessons, isRawTranscriptFragment } = require('./lesson-hook-relevance');
+  const relevant = (lessons || []).filter((l) => {
     if (l.signal !== 'negative') return false;
+    const title = String(l.title || '').replace(/^MISTAKE:\s*/, '');
+    if (isRawTranscriptFragment(title) || title.includes('<pasted_content')) return false;
+    if (options.actionContext && !lessonSharesAction(l, options)) return false;
     const score = Number(l.rerankedScore ?? l.relevanceScore ?? 0);
     return score >= MIN_LESSON_INJECTION_RELEVANCE;
   });
+  const negative = takeUnseenLessons(relevant, options);
   if (negative.length === 0) return null;
 
   const formatted = negative.map((l) => {
@@ -5774,7 +5779,7 @@ async function runAsyncCore(rawInput) {
 
   
   const behavioralContext = safeSecretStorageWrite ? null : buildBehavioralContext();
-  const lessonContext = safeSecretStorageWrite ? null : await buildRelevantLessonContextAsync(toolName, toolInput);
+  const lessonContext = safeSecretStorageWrite ? null : await buildRelevantLessonContextAsync(toolName, toolInput, { sessionId: input.session_id || input.sessionId || input.conversation_id });
   
   if (lessonContext && lessonContext.decision === "deny") {
     return formatOutput(applyEnforcementPosture(lessonContext));
@@ -5823,7 +5828,7 @@ function run(rawInput) {
 
   
   const behavioralContext = safeSecretStorageWrite ? null : buildBehavioralContext();
-  const lessonContext = safeSecretStorageWrite ? null : buildRelevantLessonContext(toolName, toolInput);
+  const lessonContext = safeSecretStorageWrite ? null : buildRelevantLessonContext(toolName, toolInput, { sessionId: input.session_id || input.sessionId || input.conversation_id });
   
   if (lessonContext && lessonContext.decision === "deny") {
     return formatOutput(applyEnforcementPosture(lessonContext));
@@ -6333,6 +6338,7 @@ function evaluateAgentIdentityLifecycleGate(toolName, toolInput) {
 }
 
 module.exports = {
+  formatNegativeLessonContext,
   compileGatePattern,
   evaluateAgentIdentityLifecycleGate,
   loadGatesConfig,

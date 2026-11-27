@@ -10,7 +10,8 @@
  *    - the last action was a chat or colleague post: every new post is refused until the last bubble is edited in
  *      place (an edit-message call on that chat releases the hold);
  *    - the last action was anything else: the same tool (for a shell command, the same first three words) is refused
- *      until the person says to go on (the same first three words; a thumbs-up, "go ahead", "continue", "unblock", "release").
+ *      until the person says to go on (the same first three words; a thumbs-up, "go ahead", "continue", "unblock", "release",
+ *      or a plain order to fix). Read-only calls are never held, and a hold lands on the last call that was not a read.
  *    - no recorded last action: new posts are refused until an edit or the person says to go on.
  *    Holds expire after 24 hours so a forgotten one never locks a project forever.
  *
@@ -116,6 +117,81 @@ function shellSignature(command) {
 }
 
 // ---------------------------------------------------------------------------
+// Read-only calls: never held by a thumbs-down, and never the action a hold lands on. Strict: anything unsure is a write.
+// ---------------------------------------------------------------------------
+
+const READ_TOOLS = new Set(['read', 'grep', 'glob', 'ls', 'notebookread', 'toolsearch', 'webfetch', 'websearch']);
+const READ_NAME_RE = /^(?:get|list|search|read|find|view|describe|show|fetch)(?:[_-]|$)/;
+const WRITE_WORD_RE = /(?:^|[_-])(?:create|delete|update|send|post|write|set|remove|add|run|exec|execute|mark|archive|trash|move|rename|label|edit|patch|upsert|insert|apply|merge|approve|cancel|start|stop|replace)(?:[_-]|$)/;
+const READ_PROGRAMS = new Set(['ls', 'cat', 'head', 'tail', 'grep', 'rg', 'wc', 'find', 'echo', 'printf', 'pwd', 'stat', 'file', 'which', 'date', 'jq', 'cut', 'sort', 'tr', 'cd', 'sleep', 'true', 'false']);
+const BANNED_ARGS = {
+  find: /^-(?:delete|exec|execdir|ok|okdir|fprint0?|fprintf|fls)$/,
+  sort: /^(?:-[a-zA-Z]*o|--output|--compress-program)/,
+  rg: /^--pre/,
+  date: /^(?:-s|--set)/,
+};
+const GIT_READS = new Set(['status', 'log', 'diff', 'show', 'rev-parse', 'ls-files', 'blame', 'grep']);
+const GH_READS = new Set(['pr view', 'pr list', 'pr checks', 'pr diff', 'pr status', 'issue view', 'issue list', 'run view', 'run list']);
+const SHELL_PREFIXES = new Set(['do', 'then', 'else', 'if', 'elif', 'while', 'until', '!', 'time']);
+
+/** Split a command into segments of words, or null when it redirects, substitutes, or cannot be parsed. */
+function shellSegments(command) {
+  const text = String(command || '').replace(/(?:[12]?>|&>)\s*\/dev\/null\b|[12]>&[12]\b/g, ' ');
+  const segments = [[]];
+  let word = '';
+  let quote = null;
+  const endWord = () => { if (word) segments[segments.length - 1].push(word); word = ''; };
+  for (let i = 0; i < text.length; i += 1) {
+    const c = text[i];
+    if (quote !== "'" && (c === '`' || (c === '$' && text[i + 1] === '('))) return null;
+    if (quote) {
+      if (c === quote) quote = null;
+      else if (c === '\\' && quote === '"') { word += text[i + 1] || ''; i += 1; } else word += c;
+    } else if (c === '#' && !word) {
+      while (i + 1 < text.length && text[i + 1] !== '\n') i += 1; // a comment, whatever quotes it holds
+    } else if (c === '$' && (text[i + 1] === "'" || text[i + 1] === '"')) return null;
+    else if (c === "'" || c === '"') quote = c;
+    else if (c === '\\') { if (text[i + 1] !== '\n') word += text[i + 1] || ''; i += 1; }
+    else if ('<>()'.includes(c)) return null;
+    else if (';|&\n'.includes(c)) { endWord(); segments.push([]); }
+    else if (/\s/.test(c)) endWord();
+    else word += c;
+  }
+  if (quote) return null;
+  endWord();
+  return segments.filter((s) => s.length);
+}
+
+function isReadSegment(words) {
+  let start = 0;
+  while (SHELL_PREFIXES.has(words[start])) start += 1;
+  const [program, ...args] = words.slice(start);
+  if (!program || program === 'done' || program === 'fi') return true;
+  // A loop value or a variable standing alone could smuggle in a flag, so neither may.
+  if (program === 'for') return !args.some((a) => /(?:^|\s)-/.test(a));
+  if ((program === 'git' || program === 'gh' || BANNED_ARGS[program]) && args.some((a) => a.startsWith('$'))) return false;
+  if (program === 'printf' && args[0] === '-v') return false;
+  if (program === 'git') return GIT_READS.has(args[0]) && !args.some((a) => /^(?:--output|--ext-diff|--open-files-in-pager|-[a-zA-Z]*O)/.test(a));
+  if (program === 'gh') {
+    // `gh api` is a GET only without a method or any field/body flag.
+    if (args[0] === 'api') return !args.some((a) => /^(?:-(?!-)[a-zA-Z]*[XfF]|--method|--field|--raw-field|--input)/.test(a));
+    return GH_READS.has(`${args[0]} ${args[1]}`) && !args.includes('--web') && !args.includes('-w');
+  }
+  return READ_PROGRAMS.has(program) && !(BANNED_ARGS[program] && args.some((a) => BANNED_ARGS[program].test(a)));
+}
+
+function isReadOnlyCall(toolName, toolInput = {}) {
+  const command = toolInput && (toolInput.command || toolInput.cmd);
+  const base = baseToolName(toolName);
+  if (command || base === 'bash' || base === 'shell') {
+    const segments = shellSegments(command);
+    return Boolean(segments && segments.length && segments.every(isReadSegment));
+  }
+  if (READ_TOOLS.has(base)) return true;
+  return READ_NAME_RE.test(base) && !WRITE_WORD_RE.test(base);
+}
+
+// ---------------------------------------------------------------------------
 // State
 // ---------------------------------------------------------------------------
 
@@ -209,7 +285,7 @@ function placeHold({ feedbackDir, sessionId = '', reason = '', now = Date.now() 
   if (!feedbackDir || !enabled()) return null;
   const state = readState(feedbackDir);
   if (!holdsEnabled(state)) return null;
-  const recent = state.actions.filter((a) => now - a.at <= LAST_ACTION_WINDOW_MS && (!sessionId || !a.sessionId || a.sessionId === sessionId));
+  const recent = state.actions.filter((a) => !a.readOnly && now - a.at <= LAST_ACTION_WINDOW_MS && (!sessionId || !a.sessionId || a.sessionId === sessionId));
   const last = recent[recent.length - 1] || null;
   const base = {
     id: `hold_${now.toString(36)}`,
@@ -234,8 +310,11 @@ function placeHold({ feedbackDir, sessionId = '', reason = '', now = Date.now() 
 
 const RELEASE_PROMPT_RE = /^\s*(?:ok(?:ay)?[,\s]+)?(?:go\s+ahead|continue|proceed|carry\s+on|resume|unblock|release(?:\s+the\s+hold)?|you\s+can\s+(?:send|post|go\s+on|continue))\b/i;
 
+// A plain order to fix what was marked wrong: "fix it", "please fix all problems", "ok, now repair this".
+const FIX_PROMPT_RE = /^\s*(?:(?:ok(?:ay)?|please|now|then|just)[,\s]+)*(?:fix|repair)\b/i;
+
 function isReleasePrompt(prompt) {
-  return RELEASE_PROMPT_RE.test(String(prompt || ''));
+  return RELEASE_PROMPT_RE.test(String(prompt || '')) || FIX_PROMPT_RE.test(String(prompt || ''));
 }
 
 /** The person said to go on: release every hold. Returns how many were released. */
@@ -312,8 +391,9 @@ function evaluate({ feedbackDir, toolName, toolInput = {}, sessionId = '', now =
   const command = toolInput && (toolInput.command || toolInput.cmd);
   const signature = command ? shellSignature(command) : null;
 
-  // 1. Holds from a thumbs-down.
-  for (const hold of holds) {
+  // 1. Holds from a thumbs-down. A read changes nothing, so it is never held.
+  const readOnly = !kind && isReadOnlyCall(toolName, toolInput);
+  for (const hold of readOnly ? [] : holds) {
     if (hold.kind === 'post' && kind === 'post') {
       return deny('thumbs-down-hold', `The person gave a thumbs-down after your last post${hold.chatKey ? ` (${hold.chatKey})` : ''}. New posts are refused until you edit the last bubble in place with the edit-message tool, or the person says "go ahead". Do not send a new message, and do not switch to another chat or tool to get around this. ${HOLD_EXITS}`);
     }
@@ -359,7 +439,7 @@ function evaluate({ feedbackDir, toolName, toolInput = {}, sessionId = '', now =
     const textHash = kind ? hashText(textOf(toolInput)) : null;
     const dup = prev && prev.toolName === toolName && prev.signature === signature && prev.chatKey === chatKey && (prev.textHash || null) === textHash && now - prev.at < 2000;
     if (!dup) {
-      state.actions.push({ at: now, sessionId: String(sessionId || ''), toolName, kind: kind || 'action', chatKey, signature, ...(textHash ? { textHash } : {}) });
+      state.actions.push({ at: now, sessionId: String(sessionId || ''), toolName, kind: kind || 'action', chatKey, signature, ...(textHash ? { textHash } : {}), ...(readOnly ? { readOnly: true } : {}) });
       state.actions = state.actions.slice(-KEEP_ACTIONS);
       changed = true;
     }
@@ -377,6 +457,7 @@ module.exports = {
   chatKeyOf,
   textOf,
   findRawUrl,
+  isReadOnlyCall,
   isReleasePrompt,
   placeHold,
   releaseHolds,

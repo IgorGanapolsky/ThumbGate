@@ -6,7 +6,6 @@ const path = require('node:path');
 
 const MAX_INJECTED_LESSONS = 2;
 const MAX_INJECTED_TOKENS = 150;
-const LESSON_REPEAT_MS = 30 * 60 * 1000;
 const CHARS_PER_TOKEN = 4;
 
 const TRANSCRIPT_PREFIXES = Object.freeze([
@@ -17,6 +16,7 @@ const TRANSCRIPT_PREFIXES = Object.freeze([
 
 const COMMAND_TERMS = new Set([
   'push', 'merge', 'curl', 'deploy', 'health', 'force', 'approve', 'admin', 'railway', 'trunk',
+  'publish', 'rebase', 'reset', 'migrate', 'terraform', 'kubectl', 'destroy',
 ]);
 const FOREIGN_REPO_TAGS = new Set(['dayglass', 'stockservice', 'psn', 'screenpipe']);
 
@@ -33,6 +33,24 @@ function isRawTranscriptFragment(text) {
   const trimmed = String(text || '').trim().toLowerCase();
   if (!trimmed) return false;
   return TRANSCRIPT_PREFIXES.some((prefix) => trimmed.startsWith(prefix));
+}
+
+// Words that appear in almost any lesson or command, so sharing them says nothing about relevance.
+const COMMON_WORDS = new Set(('about after agent always avoid bash been before check claude command content could does done edit file from have home http https instead into json just like make mistake more must never next only over read said should some than that their them then there these this thumbgate tool user users went were what when where which will with without work workspace write wrong would your').split(' '));
+
+function significantWords(text) {
+  return new Set(String(text || '').toLowerCase().split(/[^a-z0-9]+/).filter((w) => w.length >= 4 && !/^\d+$/.test(w) && !COMMON_WORDS.has(w)));
+}
+
+/** Is the lesson about this call: a shared file or command term, or at least two shared words that mean something. */
+function lessonSharesAction(lesson, { toolName, actionContext } = {}) {
+  const blob = `${lesson.title || ''} ${lessonDisplayText(lesson)} ${(Array.isArray(lesson.tags) ? lesson.tags : []).join(' ')}`.toLowerCase();
+  if (actionMatchTerms(toolName, actionContext).some((term) => blob.includes(term))) return true;
+  const action = String(actionContext || '').split(String(toolName || '\u0000')).join(' ');
+  const words = significantWords(action);
+  words.delete(os.userInfo().username.toLowerCase());
+  const inLesson = significantWords(blob);
+  return [...words].filter((w) => inLesson.has(w)).length >= 2;
 }
 
 function lessonIdentity(lesson) {
@@ -106,7 +124,8 @@ function lessonMatchScore(lesson, { toolName, actionContext } = {}) {
   const terms = actionMatchTerms(toolName, actionContext);
   const blob = lessonBlob(lesson);
   const hitTerms = terms.filter((term) => blob.includes(term));
-  if (!toolHit && hitTerms.length === 0) return 0;
+  // A matching tool name only breaks ties: on its own it would match every call of that tool.
+  if (hitTerms.length === 0) return 0;
   let score = hitTerms.length + (toolHit ? 1 : 0);
   const gitMutation = hitTerms.some((term) => ['push', 'merge', 'force', 'approve', 'admin'].includes(term));
   if (gitMutation && blob.includes('branch protection')) score += 5;
@@ -159,8 +178,7 @@ function selectInjectableLessons(lessons, options = {}) {
     .sort((a, b) => b.score - a.score || a.index - b.index);
   for (const row of ranked) {
     const id = lessonIdentity(row.lesson);
-    const last = Number(seen[id] || 0);
-    if (id && last && now - last < LESSON_REPEAT_MS) continue;
+    if (id && seen[id]) continue; // once per session
     matched.push(row.lesson);
     if (matched.length >= MAX_INJECTED_LESSONS) break;
   }
@@ -179,6 +197,19 @@ function selectInjectableLessons(lessons, options = {}) {
     writeSeen(storePath, next);
   }
   return kept;
+}
+
+/** Lessons not yet shown in this session; marks the ones returned. Without a session id nothing is remembered. */
+function takeUnseenLessons(lessons, { sessionId, seenDir, now = Date.now() } = {}) {
+  if (!sessionId || lessons.length === 0) return lessons;
+  const storePath = seenStorePath(sessionId, seenDir);
+  const seen = readSeen(storePath);
+  const unseen = lessons.filter((l) => !seen[lessonIdentity(l)]);
+  if (unseen.length) {
+    for (const l of unseen) seen[lessonIdentity(l)] = now;
+    try { writeSeen(storePath, seen); } catch { /* remembering never blocks a call */ }
+  }
+  return unseen;
 }
 
 function formatInjectableReminder(lessons) {
@@ -207,11 +238,12 @@ function formatInjectableReminder(lessons) {
 module.exports = {
   MAX_INJECTED_LESSONS,
   MAX_INJECTED_TOKENS,
-  LESSON_REPEAT_MS,
   estimateTokens,
   isRawTranscriptFragment,
   lessonDisplayText,
   lessonMatchesToolCall,
+  lessonSharesAction,
+  takeUnseenLessons,
   actionMatchTerms,
   selectInjectableLessons,
   formatInjectableReminder,
