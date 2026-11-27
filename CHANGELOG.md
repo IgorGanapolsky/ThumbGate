@@ -1,5 +1,17 @@
 # Changelog
 
+## 1.48.0
+
+### Minor Changes
+
+- c56bbb5: Add `npx thumbgate control`: a read-only report of where ThumbGate keeps your data (project store, older stores, machine-wide files, with sizes), whether the anonymous usage ping is on, where it goes, the exact fields it carries, and how to turn it off (`THUMBGATE_NO_TELEMETRY=1` or `DO_NOT_TRACK=1`). It writes nothing and sends nothing. `--json` for machine output.
+
+### Patch Changes
+
+- bb320fc: The setup guide has "Signs you need this" and "Your first week" sections, and no longer says a thumbs-down never blocks on first run.
+- c359a9e: The README now walks through a first gate for Claude Code, from install to the block to a passing doctor, with output from a real run.
+- 3020ac4: Privacy fixes: `DO_NOT_TRACK=1` now also stops the `cli_init` ping, and telemetry no longer sends the id of a learned or hand-written gate (a learned id contained words from the blocked command). Only ids of gates that ship with ThumbGate are sent; others are sent as `learned` or `custom`.
+
 ## 1.47.2
 
 ### Patch Changes

@@ -1,7 +1,7 @@
 [plugin]
 id = "thumbgate-approvals"
 name = "ThumbGate Approvals"
-version = "1.47.2"
+version = "1.48.0"
 minHerdrVersion = "0.7.0"
 description = "Pre-action governance, spend guard, and safety approval gates for multi-agent terminal sessions in Herdr."
 platforms = ["linux", "macos", "windows"]
