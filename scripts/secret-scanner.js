@@ -1002,14 +1002,15 @@ function wgetDefaultConfigUnsafe(tokens, env = process.env) {
 }
 
 // The command itself can point curl/wget at another config directory or file
-// (`CURL_HOME=/tmp/x curl …`, `export HOME=…; curl …`). The gate cannot see that file
-// from its own environment, so any such assignment voids the exception.
-const CONFIG_LOCATION_ASSIGNMENT_RE = /(?:^|[\s;&|(])(?:CURL_HOME|XDG_CONFIG_HOME|HOME|WGETRC|SYSTEM_WGETRC)=/;
+// (`CURL_HOME=/tmp/x curl …`, `export "HOME=…"; curl …`, `read -r WGETRC`). The gate cannot
+// see that file from its own environment, so any bare mention of one of these names voids the
+// exception, however it is quoted. Reading `$HOME`/`${HOME}` is fine; naming HOME is not.
+const CONFIG_LOCATION_NAME_RE = /(?:CURL_HOME|XDG_CONFIG_HOME|WGETRC|SYSTEM_WGETRC)|(?<![$\w{])HOME(?!\w)/;
 
 function isAuthenticatedReadCommand(command) {
   const text = String(command || '');
   if (/\/dev\/tcp\//i.test(text) || /\$\(|`|<\(/.test(text)) return false;
-  if (CONFIG_LOCATION_ASSIGNMENT_RE.test(text)) return false;
+  if (CONFIG_LOCATION_NAME_RE.test(text)) return false;
   // printenv/env reads a secret without a $ reference; never part of a plain read.
   if (/\b(?:printenv|env)\s+[A-Za-z_]/.test(text)) return false;
   // Every segment that names a secret variable must be a read-only curl/wget whose
