@@ -4775,8 +4775,12 @@ function evaluateSecretAdvisory(input, scanResult) {
   if (resolveGovernanceMode() === 'live') return null;
   const toolName = input.tool_name || input.toolName || 'unknown';
   const toolInput = input.tool_input || {};
-  const message = 'A secret environment variable is sent only as the credential of a read request '
-    + '(not in the body, URL or an upload). Allowed with a warning: confirm the host is the service that key belongs to.';
+  const localRead = findings.every((finding) => finding.advisoryKind === 'local_read_heuristic');
+  const message = localRead
+    ? 'This file has a line that looks like a secret assignment (often a test stub or an example). '
+      + 'Reading it locally is allowed with a warning; do not paste the value into a command, a commit or a message.'
+    : 'A secret environment variable is sent only as the credential of a read request '
+      + '(not in the body, URL or an upload). Allowed with a warning: confirm the host is the service that key belongs to.';
   recordStat('secret-exfiltration', 'warn', null, { toolName, toolInput });
   auditToFeedback(recordAuditEvent({
     toolName,
