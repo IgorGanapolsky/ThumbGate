@@ -13230,9 +13230,22 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
           return;
         }
 
-        const memories = body.inputPath ? loadDpoExportMemories(paths).map((row) => ({ ...row, ...projectForRecord(row) })) : readProjectRows(requestFeedbackDir, 'memory-log.jsonl', projectOptions);
+        let memories = body.inputPath ? loadDpoExportMemories(paths).map((row) => ({ ...row, ...projectForRecord(row) })) : readProjectRows(requestFeedbackDir, 'memory-log.jsonl', projectOptions);
+        // "All projects" on this machine also means the user's main ~/.thumbgate store. Loopback callers of a local
+        // server only: never a hosted tenant, and never a deployed server reading its own home directory.
+        let home = null;
+        if (!body.inputPath && !body.memoryLogPath && parsed.searchParams.get('project') === 'all'
+          && !requestDataIdentity.partition && !tenantDataScope() && !process.env.RAILWAY_ENVIRONMENT
+          && isLoopbackHost(getRequestHostHeader(req)) && /^(::1|(::ffff:)?127\.)/.test(req.socket.remoteAddress || '')) {
+          try {
+            home = require('../../scripts/export-dpo-pairs').homeStore(requestFeedbackDir, memories);
+          } catch (error) {
+            debugApiFallback('home store left out of the DPO export', error);
+          }
+          if (home) memories = home.memories;
+        }
         // Strict pairing reads this request's feedback-log.jsonl, not the default store.
-        const result = exportDpoFromMemories(memories, body.inputPath ? projectOptions : { ...projectOptions, feedbackDir: requestFeedbackDir });
+        const result = exportDpoFromMemories(memories, body.inputPath ? projectOptions : { ...projectOptions, feedbackDir: requestFeedbackDir, extraFeedbackDirs: home ? home.feedbackDirs : [] });
         if (paths.outputPath) {
           fs.mkdirSync(path.dirname(paths.outputPath), { recursive: true });
           fs.writeFileSync(paths.outputPath, result.jsonl);
@@ -13250,6 +13263,7 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
           // Unpaired KTO rows ({ prompt, completion, label }) from every thumbs record with a prompt and an agent action.
           ktoCount: (result.ktoRecords || []).length,
           ktoSkippedByReason: result.ktoSkippedByReason || {},
+          homeStoreMemories: home ? home.memoriesAdded : 0,
           outputPath: paths.outputPath,
         };
         if (body.includePairs === true) {

@@ -2860,7 +2860,9 @@ async function exportDpo() {
   const status = document.getElementById('exportStatus');
   status.textContent = 'Exporting...';
   try {
-    const res = await projectFetch('/v1/dpo/export', {
+    // With no project selected this asks for all projects, which on a local server includes ~/.thumbgate.
+    // A selected project replaces the value in projectFetch.
+    const res = await projectFetch('/v1/dpo/export?project=all', {
       method: 'POST',
       headers: getHeaders(),
       body: JSON.stringify({ includePairs: true })

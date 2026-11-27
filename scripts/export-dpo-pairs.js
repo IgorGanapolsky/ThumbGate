@@ -253,15 +253,33 @@ function promptBefore(windowValue, rejected) {
 function loadFeedbackIndex(options = {}) {
   const rows = options.feedbackRows || readJSONL(path.join(options.feedbackDir || resolveFeedbackDir(), 'feedback-log.jsonl'));
   const byId = new Map();
-  // A trimmed log leaves memories pointing at records that now live only in a backup beside it.
-  if (!options.feedbackRows || options.feedbackDir) {
-    const dir = options.feedbackDir || resolveFeedbackDir();
+  const addBackups = (dir) => {
     let backups = [];
     try { backups = fs.readdirSync(dir).filter((name) => name.startsWith('feedback-log.jsonl.bak')).sort(); } catch { /* none */ }
     for (const name of backups) for (const row of readJSONL(path.join(dir, name))) if (row && row.id) byId.set(row.id, row);
+  };
+  // Other stores whose records the memories may point at. Read first, so this request's own rows win on an id clash.
+  const extraRows = [];
+  for (const dir of options.extraFeedbackDirs || []) {
+    addBackups(dir);
+    for (const row of readJSONL(path.join(dir, 'feedback-log.jsonl'))) if (row && row.id) { byId.set(row.id, row); extraRows.push(row); }
   }
+  // A trimmed log leaves memories pointing at records that now live only in a backup beside it.
+  if (!options.feedbackRows || options.feedbackDir) addBackups(options.feedbackDir || resolveFeedbackDir());
   for (const row of rows) if (row && row.id) byId.set(row.id, row);
-  return { rows, byId };
+  return { rows: extraRows.length ? rows.concat(extraRows) : rows, byId };
+}
+
+// The user's main store (~/.thumbgate). A local "all projects" export adds it, because a dashboard started in a folder
+// with its own .thumbgate otherwise never sees it. Read-only. null when it is absent or already the request's store.
+function homeStore(requestFeedbackDir, memories) {
+  const root = path.join(process.env.HOME || require('node:os').homedir(), '.thumbgate');
+  const real = (dir) => { try { return fs.realpathSync(dir); } catch { return path.resolve(dir); } };
+  if (!fs.existsSync(root) || real(root) === real(requestFeedbackDir)) return null;
+  const { accountDirectories, readProjectRows } = require('./project-catalog');
+  const seen = new Set(memories.map((row) => row.id).filter(Boolean));
+  const added = readProjectRows(root, 'memory-log.jsonl', { projectKey: null }).filter((row) => !row.id || !seen.has(row.id));
+  return { memories: memories.concat(added), feedbackDirs: accountDirectories(root), memoriesAdded: added.length };
 }
 
 const AGENT_ROLES = new Set(['assistant', 'agent', 'model', 'ai', 'claude']);
@@ -602,6 +620,7 @@ module.exports = {
   buildStrictDpoPairs,
   buildKtoRecords,
   rejectedActionOf,
+  homeStore,
   DPO_SELF_TEST_FIXTURE,
   toJSONL,
   exportDpoFromMemories,
