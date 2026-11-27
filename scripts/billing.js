@@ -3597,7 +3597,82 @@ function resolveClickMetadata(humanClick) {
   return resolved;
 }
 
-async function createCheckoutSession({ successUrl, cancelUrl, customerEmail, installId, traceId, packId = null, metadata = {}, appOrigin, humanClick = null } = {}) {
+/**
+ * Time-boxed checkout offers (Black Friday to Cyber Monday 2026).
+ *
+ * During the window, Pro subscription checkouts get the offer's coupon applied
+ * automatically, so a buyer never has to find or type a code. Outside the
+ * window nothing changes. The coupon is created in Stripe on first use with a
+ * fixed id and a redeem_by at the window's end, so Stripe itself stops honoring
+ * it after the deadline even if this code were never redeployed.
+ *
+ * Any Stripe failure here returns null: an offer must never block a checkout.
+ */
+
+const SEASONAL_OFFERS = [
+  {
+    id: 'BLACKFRIDAY2026',
+    code: 'BLACKFRIDAY',
+    name: 'Black Friday: 40% off your first year of ThumbGate Pro',
+    percentOff: 40,
+    // 12 months covers the first annual invoice, or the first 12 monthly ones.
+    durationInMonths: 12,
+    // Friday Nov 27 12:00 AM ET through Monday Dec 1 11:59:59 PM ET.
+    startsAt: '2026-11-27T05:00:00Z',
+    endsAt: '2026-12-02T04:59:59Z',
+  },
+];
+
+function activeOffer(nowMs = Date.now(), offers = SEASONAL_OFFERS) {
+  return offers.find((offer) => {
+    const start = Date.parse(offer.startsAt);
+    const end = Date.parse(offer.endsAt);
+    return nowMs >= start && nowMs <= end;
+  }) || null;
+}
+
+const ensuredCoupons = new Map();
+
+async function ensureOfferCoupon(stripe, offer, { log = console.warn } = {}) {
+  if (!offer || !stripe || !stripe.coupons) return null;
+  if (typeof stripe.coupons.retrieve !== 'function' || typeof stripe.coupons.create !== 'function') return null;
+  if (ensuredCoupons.get(stripe) === offer.id) return offer.id;
+  try {
+    let coupon = null;
+    try {
+      coupon = await stripe.coupons.retrieve(offer.id);
+    } catch (err) {
+      if (err && (err.statusCode === 404 || err.code === 'resource_missing')) {
+        coupon = await stripe.coupons.create({
+          id: offer.id,
+          name: offer.name.slice(0, 40),
+          percent_off: offer.percentOff,
+          duration: 'repeating',
+          duration_in_months: offer.durationInMonths,
+          redeem_by: Math.floor(Date.parse(offer.endsAt) / 1000),
+          metadata: { offerCode: offer.code, source: 'thumbgate-seasonal-offer' },
+        });
+      } else {
+        throw err;
+      }
+    }
+    if (!coupon || coupon.valid === false) {
+      log(`[seasonal-offer] coupon ${offer.id} is not valid; checkout continues at full price`);
+      return null;
+    }
+    ensuredCoupons.set(stripe, offer.id);
+    return offer.id;
+  } catch (err) {
+    log(`[seasonal-offer] could not prepare coupon ${offer.id} (${err && err.message ? err.message : 'error'}); checkout continues at full price`);
+    return null;
+  }
+}
+
+function resetSeasonalOfferForTests() {
+  ensuredCoupons.clear();
+}
+
+async function createCheckoutSession({ successUrl, cancelUrl, customerEmail, installId, traceId, packId = null, metadata = {}, appOrigin, humanClick = null, nowMs = Date.now() } = {}) {
   const resolvedTraceId = traceId || metadata.traceId || createTraceId('checkout');
   const baseCheckoutMetadata = sanitizeMetadata({
     ...metadata,
@@ -3668,14 +3743,18 @@ async function createCheckoutSession({ successUrl, cancelUrl, customerEmail, ins
   }
 
   const activePriceId = packId ? null : await resolveActiveStripePriceId(stripe, checkoutSelection);
+  // A live seasonal offer is applied to Pro (not Team, not packs); any failure falls back to full price.
+  const offer = !packId && checkoutSelection.planId === 'pro' ? activeOffer(nowMs) : null;
+  const discountCouponId = offer ? await ensureOfferCoupon(stripe, offer) : null;
   const sessionPayload = buildCheckoutSessionPayload({
     successUrl,
     cancelUrl,
     customerEmail,
-    checkoutMetadata,
+    checkoutMetadata: discountCouponId ? { ...checkoutMetadata, offerCode: offer.code } : checkoutMetadata,
     packId,
     appOrigin,
     activePriceId,
+    discountCouponId,
   });
   const session =await createSessionDroppingRejectedOptionals(stripe, sessionPayload);
 
@@ -3748,7 +3827,7 @@ async function resolveActiveStripePriceId(stripe, checkoutSelection) {
   }
 }
 
-function buildCheckoutSessionPayload({ successUrl, cancelUrl, customerEmail, checkoutMetadata, packId = null, appOrigin, activePriceId = null } = {}) {
+function buildCheckoutSessionPayload({ successUrl, cancelUrl, customerEmail, checkoutMetadata, packId = null, appOrigin, activePriceId = null, discountCouponId = null } = {}) {
   const pack = packId ? CONFIG.CREDIT_PACKS[packId] : null;
   const checkoutSelection = pack ? null : resolveSubscriptionCheckoutSelection(checkoutMetadata);
   if (!pack && !checkoutSelection.priceId) {
@@ -3820,6 +3899,14 @@ function buildCheckoutSessionPayload({ successUrl, cancelUrl, customerEmail, che
     }),
     ...(pack ? { customer_creation: 'always' } : {}),
   };
+
+  // Stripe refuses discounts together with allow_promotion_codes, so an
+  // applied offer replaces the code box (on the session and its recovery link).
+  if (discountCouponId && !pack) {
+    sessionPayload.discounts = [{ coupon: discountCouponId }];
+    delete sessionPayload.allow_promotion_codes;
+    sessionPayload.after_expiration = { recovery: { enabled: true } };
+  }
 
   const normalizedCustomerEmail = normalizeText(customerEmail);
   if (normalizedCustomerEmail) {
@@ -5261,6 +5348,10 @@ module.exports = {
   _buildStripeReconciledRevenueEvent: buildStripeReconciledRevenueEvent,
   CONFIG, createCheckoutSession, isAutomatedCheckoutRequest, isSyntheticOrOwnerCheckoutEmail, createBillingPortalSession, getCheckoutSessionStatus, provisionApiKey, resolvePaidEntitlementForEmail, rotateApiKey, validateApiKey, recordUsage, recordAccountFirstBlock, disableCustomerKeys, handleWebhook, verifyWebhookSignature, verifyGithubWebhookSignature, verifyPayPalWebhookSignature, recordGithubMarketplaceWebhookDelivery, recordPayPalWebhookDelivery, handleGithubWebhook, loadKeyStore, appendFunnelEvent, appendRevenueEvent, loadFunnelLedger, loadRevenueLedger, loadGithubMarketplaceWebhookLedger, loadPayPalWebhookLedger, loadNewsletterSubscribers, loadResolvedRevenueEvents, getFunnelAnalytics, getBusinessAnalytics, getBillingSummary, getBillingSummaryLive, getBillingSummariesLive, listStripeReconciledRevenueEvents, listStripeCheckoutSessionDepth, classifyCheckoutSessionDepth, summarizeCheckoutSessionDepth, verifyPaidCheckoutSession, repairGithubMarketplaceRevenueLedger,
   _buildCheckoutSessionPayload: buildCheckoutSessionPayload,
+  _SEASONAL_OFFERS: SEASONAL_OFFERS,
+  _activeOffer: activeOffer,
+  _ensureOfferCoupon: ensureOfferCoupon,
+  _resetSeasonalOfferForTests: resetSeasonalOfferForTests,
   _resolveActiveStripePriceId: resolveActiveStripePriceId,
   _setStripeClient: setStripeClientForTests,
   _filterQualifiedCheckoutFunnelEvents: filterQualifiedCheckoutFunnelEvents,

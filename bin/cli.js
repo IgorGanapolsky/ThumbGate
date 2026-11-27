@@ -2343,6 +2343,38 @@ function rules() {
   console.log(`Wrote prevention rules to ${result.path}`);
 }
 
+function exportRulesCmd() {
+  const args = parseArgs(process.argv.slice(3));
+  const { exportRules } = require(path.join(PKG_ROOT, 'scripts', 'cloud-rules-export'));
+  const { getFeedbackPaths } = require(path.join(PKG_ROOT, 'scripts', 'feedback-loop'));
+  let result;
+  try {
+    result = exportRules({
+      cwd: CWD,
+      feedbackDir: getFeedbackPaths().FEEDBACK_DIR,
+      target: args.target || 'claude',
+      output: typeof args.output === 'string' ? args.output : undefined,
+      includeLessons: Boolean(args['include-lessons']),
+      check: Boolean(args.check),
+    });
+  } catch (err) {
+    console.error(err && err.message ? err.message : err);
+    process.exit(1);
+  }
+  if (args.json) {
+    console.log(JSON.stringify(result, null, 2));
+  } else {
+    const c = result.counts;
+    for (const f of result.files) {
+      const rel = path.relative(CWD, f.path) || f.path;
+      if (result.check) console.log(`${f.changed ? 'stale' : 'current'}: ${rel}`);
+      else console.log(`${f.changed ? 'Wrote' : 'Unchanged'} ${rel} (${c.gates} gates, ${c.claims} claim rules, ${c.prevention} learned rules${c.lessons ? `, ${c.lessons} lessons` : ''})`);
+    }
+    if (!result.check) console.log('Commit it so cloud agents (claude.ai projects, cloud Claude Code, Codex, Cursor background agents) read these rules from the repo. `thumbgate session-start` keeps it current from now on.');
+  }
+  if (!result.ok) process.exit(1);
+}
+
 function selfHeal() {
   try {
     const output = execSync(
@@ -3740,6 +3772,12 @@ function sessionStart() {
   const { analyzeFeedback } = require(path.join(PKG_ROOT, 'scripts', 'feedback-loop'));
   const { refreshStatuslineCache } = require(path.join(PKG_ROOT, 'scripts', 'hook-thumbgate-cache-updater'));
   refreshStatuslineCache(analyzeFeedback(undefined, { humanOnly: true }));
+  // Keep the cloud-readable rule export current, but only where the user already ran `thumbgate export-rules`.
+  try {
+    const { refreshExistingExports } = require(path.join(PKG_ROOT, 'scripts', 'cloud-rules-export'));
+    const { getFeedbackPaths } = require(path.join(PKG_ROOT, 'scripts', 'feedback-loop'));
+    refreshExistingExports({ cwd: CWD, feedbackDir: getFeedbackPaths().FEEDBACK_DIR });
+  } catch (_) { /* best-effort */ }
 
   // Build a top-level <system-reminder> block that Claude Code's SessionStart
   // hook surfaces to the agent as first-class context — not buried stderr.
@@ -4396,6 +4434,7 @@ const SUBCOMMAND_HELP = {
   'setup-vertex': 'Usage: npx thumbgate setup-vertex [--dry-run]\n\nAuto-enable Vertex AI API on GCP and write local Vertex routing config to .env. With --dry-run, only detect the active account/project and print the planned changes. This does not create or verify a Dialogflow CX agent; use the Dialogflow CX REST API or console for live-agent evidence.',
   'ai-inventory': 'Usage: npx thumbgate ai-inventory [--root <dir>] [--format=summary|json|cyclonedx] [--output <path>] [--max-files=N]\n\nScan source/manifests/model artifacts for AI, ML, agent-framework, vector DB, Vertex, Gemini, and Dialogflow CX components. Use --format=cyclonedx to produce exportable ML-BOM evidence for enterprise reviews.',
   brain: 'Usage: npx thumbgate brain [--write] [--json] [--limit=N]\n\nBuild the agent-readable "context brain" — a single artifact consolidating this\nrepo\'s lessons, prevention rules, active gates, and project context for a coding\nagent to read BEFORE acting. --write saves it to .thumbgate/BRAIN.md (versioned,\ndeterministic). --json emits the structured model. --limit caps lessons (default 15).',
+  'export-rules': 'Usage: npx thumbgate export-rules [--target=claude|agents|all] [--output=path] [--include-lessons] [--check] [--json]\n\nWrite this project\'s learned rules (auto-promoted gates, claim rules, prevention rules) into files cloud agents read from the repo: .claude/rules/thumbgate.md for Claude Code (default), a marked block in AGENTS.md for Codex, Cursor and others, or both. Hooks never run in cloud sessions, so this is how those agents follow the rules. Lesson text stays out unless --include-lessons. Every line is secret- and PII-redacted. --check exits 1 when a file is stale. Once exported, `thumbgate session-start` refreshes it.',
   'team-sync': 'Usage: npx thumbgate team-sync\n\nSynchronize prevention rules and context brain with your team\'s git repository (git pull --rebase & git push), then auto-rebuild the local brain.',
 };
 
@@ -5017,6 +5056,10 @@ switch (COMMAND) {
     break;
   case 'rules':
     rules();
+    break;
+  case 'export-rules':
+  case 'cloud-rules':
+    exportRulesCmd();
     break;
   case 'context-packs':
     contextPacks();
