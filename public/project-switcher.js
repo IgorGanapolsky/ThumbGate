@@ -89,7 +89,12 @@
       var folder = nonProject && data.projectDir ? String(data.projectDir).replace(/^\/Users\/[^/]+/, '~') : '';
       var movedNote = new URL(window.location.href).searchParams.get('moved') === 'empty' ? 'The link named a project with nothing recorded, so the dashboard moved to where your data is. ' : '';
       document.getElementById('projectStatus').textContent = movedNote + (current ? displayName(current) + (where ? ' · ' + where : '') : folder ? 'All projects · you are in ' + folder + ' (not a project)' : 'All projects: account-wide, mixes every project. Pick a project for its own numbers.');
-      document.getElementById('projectGlobalGates').textContent = (data.globalGateCount || 0) + ' global gates shared across projects';
+      // The Active gates card counts global gates plus this project's own, so name both parts: "48 active gates here: 47 global + 1 for this project".
+      var globalGates = data.globalGateCount || 0;
+      var ownGates = current && current.counts ? (current.counts.gates || 0) : 0;
+      document.getElementById('projectGlobalGates').textContent = current
+        ? (globalGates + ownGates) + ' active gates here: ' + globalGates + ' global (shared across projects) + ' + ownGates + ' for this project'
+        : globalGates + ' global gates shared across projects';
       var cards = document.getElementById('projectCards'); cards.replaceChildren();
       if (!selected) shown.forEach(function (project) {
         var card = document.createElement('a'); card.href = '?project=' + encodeURIComponent(project.projectKey); card.style.cssText = 'display:flex;flex-direction:column;gap:4px;border:1px solid var(--border,#444);border-radius:8px;padding:12px;color:inherit;min-width:0;text-decoration:none';
