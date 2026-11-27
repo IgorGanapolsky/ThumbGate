@@ -20,7 +20,7 @@ const deploymentReadinessHtml = read('public', 'guides', 'ai-deployment-readines
 
 test('homepage explains the enforcement point without an orchestration essay', () => {
   assert.match(indexHtml, /What happens under the hood/i);
-  assert.match(indexHtml, /One thumbs-down stops Claude Code from retrying a mistake\. Two make it a hard rule/i);
+  assert.match(indexHtml, /ThumbGate blocks risky actions and unchecked claims\./i);
   assert.match(indexHtml, /Capture feedback/i);
   assert.match(indexHtml, /Remember locally/i);
   assert.match(indexHtml, /Rank and refine/i);

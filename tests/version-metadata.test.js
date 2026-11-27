@@ -282,7 +282,7 @@ test('hosted origin and repository metadata stay canonical across live-facing ar
   assert.doesNotMatch(publicLanding, /\/go\/pro-direct/);
   assert.match(publicLanding, /__GA_BOOTSTRAP__/);
   assert.match(publicLanding, /__GOOGLE_SITE_VERIFICATION_META__/);
-  assert.match(publicLanding, /One thumbs-down stops Claude Code from retrying a mistake\. Two make it a hard rule/i);
+  assert.match(publicLanding, /ThumbGate blocks risky actions and unchecked claims\./i);
   assert.match(publicLanding, /test-backed verification evidence/i);
   assert.match(publicLanding, /What it catches, and what it misses/i);
   assert.match(publicLanding, /Pro is about memory/i);
