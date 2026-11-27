@@ -208,16 +208,16 @@ function stripLessonPrefix(lessonText = '') {
   return String(lessonText || '').replace(/^(MISTAKE|SUCCESS|LEARNING|PREFERENCE):\s*/i, '').trim();
 }
 
+const STAMP_MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+// The reader's own clock, 12-hour, the same shape as the status line's thumb stamp: "Nov 27, 2:47 PM".
+// It used to print UTC in 24-hour form ("11/27/2026 19:47:24"), which read as the wrong time.
 function formatLessonTimestamp(createdAt = '') {
   const parsed = new Date(createdAt);
   if (!Number.isFinite(parsed.getTime())) return '';
-  const mm = String(parsed.getUTCMonth() + 1).padStart(2, '0');
-  const dd = String(parsed.getUTCDate()).padStart(2, '0');
-  const yyyy = parsed.getUTCFullYear();
-  const HH = String(parsed.getUTCHours()).padStart(2, '0');
-  const MM = String(parsed.getUTCMinutes()).padStart(2, '0');
-  const ss = String(parsed.getUTCSeconds()).padStart(2, '0');
-  return `${mm}/${dd}/${yyyy} ${HH}:${MM}:${ss}`;
+  const hour = parsed.getHours() % 12 || 12;
+  const minute = String(parsed.getMinutes()).padStart(2, '0');
+  return `${STAMP_MONTHS[parsed.getMonth()]} ${parsed.getDate()}, ${hour}:${minute} ${parsed.getHours() < 12 ? 'AM' : 'PM'}`;
 }
 
 function buildStatusbarLessonLabel(lesson = {}) {

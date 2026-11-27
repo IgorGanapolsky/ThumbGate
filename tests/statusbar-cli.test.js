@@ -124,7 +124,7 @@ test('statusline-lesson.js outputs valid JSON', () => {
   const parsed = JSON.parse(result);
   assert.equal(parsed.hasLesson, true);
   assert.ok(parsed.text.includes('Deploy health check'));
-  assert.match(parsed.label, /^Latest mistake \d{2}\/\d{2}\/\d{4} \d{2}:\d{2}:\d{2}$/);
+  assert.match(parsed.label, /^Latest mistake [A-Z][a-z]{2} \d{1,2}, \d{1,2}:\d{2} [AP]M$/);
   assert.match(parsed.link, /\/lessons#lesson_/);
 });
 
@@ -141,7 +141,7 @@ test('statusline-lesson.js falls back to the latest success when no mistakes exi
     });
     const parsed = JSON.parse(result);
     assert.equal(parsed.hasLesson, true);
-    assert.match(parsed.label, /^Latest success \d{2}\/\d{2}\/\d{4} \d{2}:\d{2}:\d{2}$/);
+    assert.match(parsed.label, /^Latest success [A-Z][a-z]{2} \d{1,2}, \d{1,2}:\d{2} [AP]M$/);
     assert.ok(parsed.text.includes('Deploy health check passed'));
   } finally {
     if (previousFeedbackDir === undefined) {
