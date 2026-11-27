@@ -164,3 +164,22 @@ for (const [command, gate] of STILL_DENIED) {
     }
   });
 }
+
+// curl loads a default .curlrc unless -q/--disable comes first; one that adds a body or upload
+// voids the exception. HOME points at a temp dir so the real one is never read or written.
+test('a default .curlrc that adds an upload keeps the deny; -q skips it', () => {
+  const home = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-curlrc-'));
+  try {
+    fs.writeFileSync(path.join(home, '.curlrc'), 'data-binary = "@/tmp/customer-dump.csv"\n');
+    const env = { HOME: home, CURL_HOME: home, XDG_CONFIG_HOME: home };
+    const read = 'curl -s -H "Authorization: Bearer $ACCESS_TOKEN" https://db.example.com/rest/v1/orders';
+    const denied = gateCheck(...bash(read), env);
+    assert.equal(denied.decision, 'deny', JSON.stringify(denied));
+    assert.match(denied.reason, /secret-exfiltration/);
+    const skipped = gateCheck(...bash(read.replace('curl -s', 'curl -q -s')), env);
+    assert.equal(skipped.decision, 'allow', JSON.stringify(skipped));
+    assert.match(skipped.context, /\[(?:GATE:)?secret-exfiltration\]/);
+  } finally {
+    fs.rmSync(home, { recursive: true, force: true });
+  }
+});

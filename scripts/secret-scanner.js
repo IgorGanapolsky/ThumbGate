@@ -954,6 +954,33 @@ function wgetSegmentIsAuthenticatedRead(tokens) {
   return true;
 }
 
+// curl reads a default config (.curlrc) unless -q/--disable is its first argument. That file
+// can add a body, upload or another config, so a default config with any such option voids
+// the exception. A config that cannot be read counts as unsafe.
+const CURLRC_UNSAFE_OPTION_RE = /^\s*-{0,2}(?:d|F|T|K|X|data[\w-]*|form[\w-]*|json|upload-file|config|request|post\d*)\b/m;
+
+function curlDefaultConfigUnsafe(tokens, env = process.env) {
+  const first = String(tokens[1] || '');
+  if (first === '-q' || first === '--disable') return false;
+  const dirs = [env.CURL_HOME, env.XDG_CONFIG_HOME, env.HOME || os.homedir()].filter(Boolean);
+  const candidates = [];
+  for (const dir of dirs) {
+    candidates.push(path.join(dir, '.curlrc'));
+    candidates.push(path.join(dir, 'curlrc'));
+  }
+  for (const file of candidates) {
+    let text;
+    try {
+      if (!fs.existsSync(file)) continue;
+      text = fs.readFileSync(file, 'utf8');
+    } catch {
+      return true;
+    }
+    if (CURLRC_UNSAFE_OPTION_RE.test(text)) return true;
+  }
+  return false;
+}
+
 function isAuthenticatedReadCommand(command) {
   const text = String(command || '');
   if (/\/dev\/tcp\//i.test(text) || /\$\(|`|<\(/.test(text)) return false;
@@ -973,7 +1000,7 @@ function isAuthenticatedReadCommand(command) {
     if (tokens.slice(0, index).some((token) => isShellAssignment(token) && hasSecretEnvVarRef(token))) return false;
     const verb = path.basename(String(tokens[index] || '')).toLowerCase();
     const rest = tokens.slice(index);
-    if (verb === 'curl' && curlSegmentIsAuthenticatedRead(rest)) { sawAuthRead = true; continue; }
+    if (verb === 'curl' && curlSegmentIsAuthenticatedRead(rest) && !curlDefaultConfigUnsafe(rest)) { sawAuthRead = true; continue; }
     if (verb === 'wget' && wgetSegmentIsAuthenticatedRead(rest)) { sawAuthRead = true; continue; }
     return false;
   }
