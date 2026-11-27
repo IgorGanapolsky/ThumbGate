@@ -71,7 +71,7 @@ function clauseAround(text, index, length) {
 // 27 Nov 2026: "hasn't shipped" and "nothing was deployed" deny a deploy; "Live at 1:29 PM" is a reading's time label.
 const CONTRACTED_OR_EMPTY_BEFORE = /(?:n['’]t|\bnothing|\bnone|\bno one|\bnobody)(?:\s+[A-Za-z]+){0,2}\s*$/i;
 // Only a label that opens the sentence ("Live at 1:29 PM: ..."): "the site went live at 2 PM" is still a claim.
-const TIME_LABEL_AFTER = /^\s*\d{1,2}(?::\d{2})?\s*(?:[ap]\.?m\.?)?(?:\s+[A-Z]{2,4})?\s*[:,—]/i;
+const TIME_LABEL_AFTER = /^\s*\d{1,2}(?::\d{2})?\s*(?:[ap]\.?m\.?)?(?:\s+[A-Z]{2,4})?\s*[:,—](?!\d)/i;
 const SENTENCE_START_BEFORE = /(?:^|[.!?]\s|\n)[-*#\s]*$/;
 
 /** Drop quoted and code text: a word someone quotes is not a claim the reply makes. */

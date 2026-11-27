@@ -24,6 +24,9 @@ Object.assign(env, { HOME: home, USERPROFILE: home, THUMBGATE_NO_TELEMETRY: '1',
 
 function cli(args, payload) {
   const out = spawnSync(process.execPath, [CLI, ...args], { cwd: project, env, input: payload ? JSON.stringify(payload) : '', encoding: 'utf8', timeout: 90000 });
+  // A crashed hook prints nothing and would read as "allow": fail the replay instead. 0 and 2 are the hook contract.
+  const detail = `${args.join(' ')}: status=${out.status} signal=${out.signal} ${out.error ? out.error.message : ''}\n${String(out.stderr || '').slice(-2000)}`;
+  assert.ok(!out.error && !out.signal && (out.status === 0 || out.status === 2), detail);
   return { status: out.status, stdout: String(out.stdout || '') };
 }
 const lastJson = (stdout) => {
@@ -137,4 +140,20 @@ test('real destructive commands and duplicate chat posts stay blocked, and say h
   const second = post('A second bubble.');
   assert.equal(second.decision, 'deny');
   assert.match(second.reason, /edit/i);
+});
+
+test('a time label needs its separator after the whole timestamp', () => {
+  const { findDeployClaim } = require(path.join(PKG, 'scripts', 'deploy-proof-gate.js'));
+  assert.ok(findDeployClaim('Live at 1:29 PM on production.'), 'the colon inside 1:29 is not a label separator');
+  assert.equal(findDeployClaim('Live at 1:29 PM: the pull request is open.'), null);
+  const { isLabelled } = require(path.join(PKG, 'scripts', 'claim-gate-stop.js'));
+  assert.equal(isLabelled('Live at 1:29 PM on production.'), false);
+  assert.equal(isLabelled('Live at 1:29 PM: the pull request is open.'), true);
+});
+
+test('a commit into a -C $VAR folder is still scanned', () => {
+  const { scanStagedForCommit } = require(path.join(PKG, 'scripts', 'staged-secret-gate.js'));
+  // The shell expands $PWD to a real repo; the parser sees a literal path that does not exist, which must not skip the scan.
+  assert.notEqual(scanStagedForCommit('Bash', { command: 'git -C "$PWD" commit -m x' }, project), null);
+  assert.equal(scanStagedForCommit('Bash', { command: `git -C ${path.join(home, 'no-such-repo')} commit -m x` }, project), null);
 });

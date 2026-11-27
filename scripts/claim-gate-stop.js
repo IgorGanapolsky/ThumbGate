@@ -51,7 +51,7 @@ const LABEL_RE = new RegExp([
   String.raw`(?:saved|cached|old|earlier|last)\s+(?:reading|read|state|file|snapshot)`,
   String.raw`i\s+don'?t\s+know`,
 ].map((p) => `(?:${p})`).join('|'), 'i');
-const LEADING_LIVE_RE = /^\s*(?:[-*>]\s*)?live(?:\s+(?:at|as\s+of)\s+\d{1,2}(?::\d{2})?\s*(?:[ap]\.?m\.?)?(?:\s+[A-Z]{2,4})?)?\s*[:,—-]/i;
+const LEADING_LIVE_RE = /^\s*(?:[-*>]\s*)?live(?:\s+(?:at|as\s+of)\s+\d{1,2}(?::\d{2})?\s*(?:[ap]\.?m\.?)?(?:\s+[A-Z]{2,4})?)?\s*[:,—-](?!\d)/i;
 
 const HEDGE_RE = /\b(?:if|whether|would|could|should|might|may|unless|can'?t\s+tell|assuming|suppose)\b/i;
 
