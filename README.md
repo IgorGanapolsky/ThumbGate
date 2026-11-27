@@ -53,6 +53,56 @@ echo '{"tool_name":"Bash","tool_input":{"command":"git push --force"}}' | npx th
 
 You get `"permissionDecision":"deny"` and `[GATE:force-push] Force push blocked.` In a real session, the agent gets that answer and the push never runs.
 
+### Your first gate, start to finish (Claude Code)
+
+Run in an empty git project with an empty `HOME` from the published package on 27 Nov 2026. `…` marks lines cut for length. The two `echo` lines send the hooks what Claude Code sends them, so nothing is deployed.
+
+**1. Install**
+
+```console
+$ npx thumbgate init --agent claude-code
+…
+  Claude Code: wired PreToolUse hook
+…
+```
+
+**2. The agent is about to run a command.** `{}` means ThumbGate has no objection.
+
+```console
+$ echo '{"tool_name":"Bash","tool_input":{"command":"npm run deploy:staging"},"session_id":"demo"}' | npx thumbgate gate-check
+{}
+```
+
+**3. Create the gate.** In Claude Code you just type `thumbs down: that deployed to the wrong environment`. From a terminal:
+
+```console
+$ echo '{"prompt":"thumbs down: that deployed to the wrong environment","session_id":"demo"}' | npx thumbgate hook-auto-capture
+ThumbGate hold: thumbs-down received. `npm run deploy:staging …` is refused until the person says "go ahead". Ask what to change. …
+✅ Feedback captured …
+```
+
+**4. Trigger it: the block**
+
+```console
+$ echo '{"tool_name":"Bash","tool_input":{"command":"npm run deploy:staging"},"session_id":"demo"}' | npx thumbgate gate-check
+{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"deny","permissionDecisionReason":"[GATE:thumbs-down-hold] The person gave a thumbs-down right after `npm run deploy:staging …`. That action is held until the person says to go on (a thumbs-up or \"go ahead\"). …"}}
+```
+
+**5. Check the wiring**
+
+```console
+$ npx thumbgate doctor
+…
+Overall: READY
+…
+ThumbGate MCP wiring doctor: OK
+…
+  held: `npm run deploy:staging …`  clear it: npx thumbgate holds release
+…
+```
+
+This gate is a [hold](#holds-and-how-to-release-or-remove-a-gate): `npx thumbgate holds release` clears it.
+
 ### Teach it your first rule (optional)
 
 When your agent does something you never want repeated, give it a thumbs-down:
