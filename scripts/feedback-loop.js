@@ -1449,6 +1449,13 @@ function captureFeedback(params, options = {}) {
     };
   }
 
+  // The prompt hook matches words anywhere in a message; only a real thumbs-down or correction may create a mistake.
+  // Exact tag: `auto-capture-fallback` is history sync, which has already recognised the correction.
+  if (signal === 'negative' && String(params.tags || '').split(',').map((tag) => tag.trim()).includes('auto-capture')) {
+    const { isTypedThumbsDown, NOT_RECORDED } = require('./feedback-history-distiller');
+    if (!isTypedThumbsDown(params.context)) return { accepted: false, reason: NOT_RECORDED };
+  }
+
   // Record vote on lesson if lessonId or lessonKey is provided
   const targetLessonId = params.lessonId || params.lessonKey;
   let lessonVoteResult = null;
