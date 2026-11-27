@@ -677,10 +677,11 @@ test('hero states the approved workflow scope with fit-first and free paths', ()
   const lede = normalizeHtmlText((hero.match(/<p class="hero-lede">([\s\S]*?)<\/p>/) || [])[1]);
 
   // 25 Nov 2026: since 1.45.0 one typed thumbs-down holds the command and a second one denies it (docs/demo/thumbs-down-hold).
-  assert.match(landingPage, /ThumbGate — Stop Claude Code from repeating a mistake/i);
-  assert.match(hero, /<h1>One thumbs-down stops Claude Code from retrying a mistake\. Two make it a hard rule\.<\/h1>/i);
+  assert.match(landingPage, /ThumbGate — Blocks risky actions and unchecked claims/i);
+  assert.match(hero, /<h1>ThumbGate blocks risky actions and unchecked claims\.<\/h1>/i);
   assert.doesNotMatch(landingPage, /After three thumbs-downs|Denied from the third thumbs-down/i);
   assert.match(hero, /PreToolUse gate for Claude Code/i);
+  assert.doesNotMatch(landingPage, /self-improving (?:product|ThumbGate) loop|self-improving firewall/i);
   assert.match(hero, /holds that command before it can run again, until you say "go ahead"/i);
   assert.match(hero, /Denied on a fresh install, even in bypass mode:[\s\S]*terraform destroy[\s\S]*kubectl delete[\s\S]*aws s3 rm/i);
   assert.match(hero, /thumbs-down-hold/);

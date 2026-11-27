@@ -134,7 +134,7 @@
   <section class="hero">
     <div class="container">
       <span class="eyebrow">ThumbGate vs Claude for Legal</span>
-      <h1>Anthropic generates the legal action. ThumbGate learns from the attorney and gates the legal action.</h1>
+      <h1>Anthropic generates the legal action. ThumbGate records the attorney's feedback and gates the legal action.</h1>
       <p><strong>Claude for Legal</strong> (launched 2026-05-12) is a vertical bundle: Claude Opus 4.7 (90.9% on Harvey's BigLaw Bench), 12 practice-area plugins (Commercial, Employment, Privacy, Corporate, AI Governance, and more), and 20+ connectors (DocuSign, Ironclad, iManage, NetDocuments, LexisNexis, Thomson Reuters, Box, Everlaw, LSuite) embedded into Word, Outlook, Claude Cowork, and Claude Projects. <strong>ThumbGate</strong> is the full feedback-to-enforcement loop underneath: every 👍 / 👎 an attorney gives on any AI answer becomes a lesson in a local lesson DB, recurring lessons get promoted to prevention rules, and those rules then fire at the PreToolUse hook before Claude's next proposed tool call executes. Anthropic's safety story is <em>"human in the loop on decision making."</em> Ours is <em>"the attorney's vote becomes the rule, and the rule fires deterministically before the next decision is even shown to a human."</em> Most regulated firms need both.</p>
       <p style="margin-top:18px; padding:14px 18px; border-left:3px solid #a78bfa; background:rgba(167,139,250,0.08); border-radius:0 6px 6px 0; max-width:760px;">
         <strong style="color:#a78bfa">No public-facing chatbot? You still have the risk surface.</strong>
@@ -175,7 +175,7 @@
             <li><strong>Rule promotion.</strong> When a 👎 pattern recurs across distinct sessions, Thompson Sampling promotes it from a one-off lesson to a deterministic prevention rule. The rule is human-readable and editable &mdash; your ethics team can audit, soften, or override it. Wins get reinforced the same way: patterns the attorneys consistently approved become the routing the agent prefers.</li>
             <li><strong>Enforcement.</strong> The promoted rules fire at the PreToolUse hook before Claude's next proposed tool call executes. Allow, warn, block, or route-to-human, with an artifact-level audit log (rule ID, version, matched pattern, audit ID, ISO 27001 control mapping). The attorney's vote from stage 1 is now an enforced constraint that fires deterministically before any human is asked to approve again.</li>
           </ol>
-          <p>That is what "infrastructure firewall for AI coding agents" means in practice. Claude for Legal generates the legal action. ThumbGate <em>learns from the attorney's vote on that action</em>, then <em>enforces the lesson on the next one</em>. The two products are stacked, not competing.</p>
+          <p>That is what "infrastructure firewall for AI coding agents" means in practice. Claude for Legal generates the legal action. ThumbGate <em>records the attorney's vote on that action</em>; a rule built from it is <em>checked against the next one</em>. The two products are stacked, not competing.</p>
         </section>
 
         <section class="detail-section">
