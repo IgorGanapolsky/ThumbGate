@@ -92,39 +92,21 @@ async function runSkillShellGate(input = {}, options = {}) {
   }
   if (!verdict.blocked) return {};
 
-  const reason = verdict.reason || 'matches a ThumbGate prevention rule';
+  // Redact before anything is written or echoed: the reason can quote the command.
+  const { redactText } = require('./secret-scanner');
+  const reason = redactText(verdict.reason || 'matches a ThumbGate prevention rule');
   appendLog({
-    ts: new Date().toISOString(),
-    event: HOOK_EVENT,
-    mode,
-    action: mode === 'enforce' ? 'denied' : 'warned',
-    command: command.slice(0, 500),
-    skill: input.command_name || '',
-    source: input.command_source || '',
-    invokedBy: input.invoked_by || '',
-    gateDecision: verdict.decision,
-    reason: reason.slice(0, 500),
+    ts: new Date().toISOString(), event: HOOK_EVENT, mode, action: mode === 'enforce' ? 'denied' : 'warned',
+    command: redactText(command).slice(0, 500), skill: input.command_name || '', source: input.command_source || '',
+    invokedBy: input.invoked_by || '', gateDecision: verdict.decision, reason: reason.slice(0, 500),
   }, options.logPath);
 
   if (mode === 'enforce') {
-    return {
-      hookSpecificOutput: {
-        hookEventName: HOOK_EVENT,
-        permissionDecision: 'deny',
-        permissionDecisionReason: `ThumbGate: ${reason}`,
-      },
-    };
+    return { hookSpecificOutput: { hookEventName: HOOK_EVENT, permissionDecision: 'deny', permissionDecisionReason: `ThumbGate: ${reason}` } };
   }
   return {
     systemMessage: `ThumbGate (warn-only) would block a shell command that ${skillLabel(input)} runs while loading: ${reason}. It ran anyway. Set THUMBGATE_SKILL_SHELL_GATE=enforce to block it.`,
   };
 }
 
-module.exports = {
-  HOOK_EVENT,
-  LOG_FILE,
-  readVerdict,
-  runSkillShellGate,
-  skillShellMode,
-  toPreToolUseInput,
-};
+module.exports = { HOOK_EVENT, LOG_FILE, readVerdict, runSkillShellGate, skillShellMode, toPreToolUseInput };

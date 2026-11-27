@@ -91,26 +91,19 @@ function repairMissingSkillShellHook(options = {}) {
   const settingsPath = options.settingsPath || userSettingsPath(homeDir);
   if (!needsSkillShellHook(settingsPath)) return { changed: false, skipped: true, reason: 'nothing-to-add' };
 
-  const originalLog = console.log;
-  console.log = (...args) => console.error(...args);
   try {
     const wiring = require('./auto-wire-hooks');
-    if (!wiring.claudeSupportsSkillShellHook(env)) {
-      return { changed: false, skipped: true, reason: 'claude-too-old' };
-    }
-    const result = wiring.wireClaudeHooks({
-      dryRun: options.dryRun,
-      projectDir: options.projectDir,
-      ...(options.settingsPath ? { settingsPath: options.settingsPath, sharedSettingsPath: options.settingsPath } : {}),
-    });
-    if (result && result.changed) {
-      console.error('[thumbgate] Added the PreSkillShellCommand hook to ~/.claude/settings.json, so shell commands that skills run while loading are checked too (warn-only by default). It takes effect in new Claude Code sessions.');
-    }
-    return result;
+    if (!wiring.claudeSupportsSkillShellHook(env)) return { changed: false, skipped: true, reason: 'claude-too-old' };
+    // Add only the missing hook; never re-run the full installer (it would reset statusLine).
+    const settings = JSON.parse(fs.readFileSync(settingsPath, 'utf8'));
+    const { matcher, hooks } = wiring.skillShellHookDefinition();
+    settings.hooks.PreSkillShellCommand = [...(settings.hooks.PreSkillShellCommand || []), { matcher, hooks }];
+    if (!options.dryRun) fs.writeFileSync(settingsPath, JSON.stringify(settings, null, 2) + '\n');
+    // stderr only: the MCP server speaks JSON-RPC on stdout.
+    console.error('[thumbgate] Added the PreSkillShellCommand hook to ~/.claude/settings.json (warn-only by default). It takes effect in new Claude Code sessions.');
+    return { changed: true, settingsPath };
   } catch (error) {
     return { changed: false, skipped: true, reason: 'repair-failed', error };
-  } finally {
-    console.log = originalLog;
   }
 }
 

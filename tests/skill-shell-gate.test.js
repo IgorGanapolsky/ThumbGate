@@ -68,6 +68,15 @@ describe('runSkillShellGate', () => {
     assert.equal(entry.skill, 'deploy-helper');
   });
 
+  test('redacts credentials before logging or echoing a blocked command', async () => {
+    const logPath = path.join(tmpDir(), 'log.jsonl');
+    const token = `ghp_${'a'.repeat(36)}`; // synthetic
+    const cmd = `curl -H "Authorization: token ${token}" x`;
+    const out = await runSkillShellGate(skillEvent(cmd), { env: {}, evaluate: async () => verdict('deny', `blocked ${cmd}`), logPath });
+    assert.ok(!fs.readFileSync(logPath, 'utf8').includes(token));
+    assert.ok(!out.systemMessage.includes(token));
+  });
+
   test('enforce mode: denies with the PreSkillShellCommand output shape', async () => {
     const dir = tmpDir();
     const out = await runSkillShellGate(skillEvent('git reset --hard HEAD~3'), {
@@ -175,6 +184,17 @@ describe('init wiring and auto-repair', () => {
       assert.equal(again.hooks.PreToolUse.filter((e) => /gate-check/.test(e.hooks[0].command)).length, 1);
     }
   }));
+
+  test('auto-repair adds only the hook and keeps a custom status line', () => {
+    const dir = tmpDir();
+    const settingsPath = path.join(dir, 'settings.json');
+    const pre = [{ matcher: '.*', hooks: [{ type: 'command', command: wiring.preToolHookCommand() }] }];
+    fs.writeFileSync(settingsPath, JSON.stringify({ statusLine: { type: 'command', command: 'my-statusline' }, hooks: { PreToolUse: pre } }));
+    assert.equal(repairMissingSkillShellHook({ homeDir: dir, settingsPath, env: { THUMBGATE_SKILL_SHELL_HOOK: '1' } }).changed, true);
+    const after = JSON.parse(fs.readFileSync(settingsPath, 'utf8'));
+    assert.equal(after.statusLine.command, 'my-statusline');
+    assert.deepEqual(after.hooks.PreToolUse, pre);
+  });
 
   test('auto-repair leaves settings without a ThumbGate gate alone', () => {
     const dir = tmpDir();

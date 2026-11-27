@@ -1098,6 +1098,7 @@ module.exports = {
   pruneStaleHooksInFile,
   claudeHooks,
   claudeSupportsSkillShellHook,
+  skillShellHookDefinition,
   parseClaudeVersion,
   versionAtLeast,
   SKILL_SHELL_MIN_CLAUDE,
