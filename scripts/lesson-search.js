@@ -241,6 +241,8 @@ function buildGateMatches(memory, parsed, limit = 3, options = {}) {
       message: gate.message,
       occurrences: gate.occurrences,
       promotedAt: gate.promotedAt,
+      sourceLessonId: gate.sourceLessonId,
+      sourceFeedbackId: gate.sourceFeedbackId,
       score: Number(score.toFixed(4)),
     }));
 }
@@ -333,6 +335,36 @@ function buildHarnessRecommendations(memory, parsed, sourceFeedback, ruleMatches
   });
 }
 
+// Says plainly what a lesson does. A gate counts only when it records that it was built from this lesson:
+// the gates in `linkedAutoGates` are matched by shared words, which is not proof.
+function describeEnforcement(memory, ruleMatches, gateMatches) {
+  const built = gateMatches.filter((gate) => (gate.sourceLessonId && gate.sourceLessonId === memory.id)
+    || (gate.sourceFeedbackId && gate.sourceFeedbackId === memory.sourceFeedbackId));
+  if (built.some((gate) => gate.action === 'block')) {
+    return { adviceOnly: false, adviceNote: 'A gate built from this lesson blocks the matching action.' };
+  }
+  let note = 'Advice only: no gate is linked, so this lesson is shown to the agent and blocks nothing by itself.';
+  if (built.length) note = 'Advice only: its gate warns before the action but does not block it.';
+  else if (gateMatches.length) note = `Not proven enforced: ${gateMatches.length} gate(s) share words with this lesson, but none records that it was built from it. Treat it as advice.`;
+  else if (ruleMatches.length) note = 'Advice only: a written rule shares its subject, but no gate checks tool calls.';
+  return { adviceOnly: true, adviceNote: note };
+}
+
+const REPEAT_SIMILARITY = 0.4;
+
+// Later thumbs-downs whose words match the lesson. A text match: a repeat nobody thumbed down is not counted.
+function measureRepeats(result, feedbackEntries) {
+  const saved = Date.parse(result.timestamp);
+  const source = result.systemResponse.sourceFeedback;
+  const about = tokenize((source && source.context) || result.lesson.whatWentWrong || result.title);
+  const later = feedbackEntries.filter((entry) => /^(?:negative|down)$/i.test(entry.signal || entry.feedback || '')
+    && entry.projectKey === result.projectKey
+    && (!source || entry.id !== source.id)
+    && Date.parse(entry.timestamp) > saved);
+  const count = later.filter((entry) => jaccardSimilarity(about, tokenize(entry.context || entry.whatWentWrong || '')) >= REPEAT_SIMILARITY).length;
+  return { since: result.timestamp, count, laterThumbsDown: later.length, method: 'text-match' };
+}
+
 function buildLifecycle(memory, parsed, sourceFeedback, ruleMatches, gateMatches, recommendations) {
   const correctiveActionCaptured = Boolean(parsed.howToAvoid || parsed.actionNeeded || parsed.whatWorked || parsed.approach);
   const preventionRuleLinked = ruleMatches.length > 0;
@@ -360,6 +392,7 @@ function buildLifecycle(memory, parsed, sourceFeedback, ruleMatches, gateMatches
     enforcementState,
     verificationState,
     impactMeasured: verificationState === 'closed_loop',
+    ...describeEnforcement(memory, ruleMatches, gateMatches),
     openRecommendations: recommendations.length,
     stage,
   };
@@ -616,7 +649,9 @@ function searchLessons(query = '', options = {}) {
     totalLessons: memories.length,
     excludedLessons: allMemories.length - memories.length,
     returned: Math.min(limit, results.length),
-    results: results.slice(0, limit),
+    results: results.slice(0, limit).map((entry) => (entry.category === 'error' && entry.systemResponse.lifecycle
+    ? { ...entry, repeats: measureRepeats(entry, feedbackEntries) }
+    : entry)),
     backend: 'jsonl-jaccard',
   };
 }
@@ -734,6 +769,13 @@ function formatLessonSearchResults(payload) {
     if (result.systemResponse.memoryLifecycle) {
       const memoryLifecycle = result.systemResponse.memoryLifecycle;
       lines.push(`   Memory: scope=${memoryLifecycle.scope} | decay=${memoryLifecycle.decay.state} | hybrid=${memoryLifecycle.retrievalHints.hybridScore}`);
+    }
+    const { lifecycle } = result.systemResponse;
+    if (lifecycle && lifecycle.adviceNote) {
+      lines.push(`   Enforcement: ${lifecycle.adviceNote}`);
+    }
+    if (result.repeats) {
+      lines.push(`   Repeats since saved: ${result.repeats.count} of ${result.repeats.laterThumbsDown} later thumbs-downs (text match; repeats nobody thumbed down are not counted)`);
     }
     if (result.lesson.summary) {
       lines.push(`   Lesson: ${result.lesson.summary}`);
