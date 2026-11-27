@@ -2999,9 +2999,13 @@ function buildMatchSurfaces(toolName, toolInput = {}) {
   return surfaces;
 }
 
+const NON_EMAIL_SEND_TOOLS = new Set(['mcp__claude-code-remote__send_message']);
+
 function matchGate(gate, toolName, toolInput = {}, options = {}) {
   if (!gateAppliesToProject(gate, gateExecution(toolInput, options).projectKey)) return { matched: false };
   if (gate.id === 'outbound-email-send') {
+    // An agent reporting back to its own Claude project is not email. Exact name only.
+    if (NON_EMAIL_SEND_TOOLS.has(String(toolName || ''))) return { matched: false };
     // A later pass judges a flattened command and keeps the real one in originalCommand; trust it only if they agree.
     const raw = toolInput.originalCommand;
     const written = raw && canonicalizeCommandForGates(raw) === toolInput.command ? raw : toolInput.command;
