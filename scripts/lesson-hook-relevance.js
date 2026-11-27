@@ -11,7 +11,9 @@ const CHARS_PER_TOKEN = 4;
 const TRANSCRIPT_PREFIXES = Object.freeze([
   '<task-notification>',
   '<pasted_content',
-  'it ignored a prior instruction: <',
+  // These two only quote the user's message back; they say nothing about what to do differently.
+  'it ignored a prior instruction:',
+  'follow the earlier instruction',
 ]);
 
 const COMMAND_TERMS = new Set([
@@ -27,6 +29,30 @@ function estimateTokens(text) {
 function lessonDisplayText(lesson) {
   if (!lesson || typeof lesson !== 'object') return '';
   return String(lesson.whatToChange || lesson.howToAvoid || lesson.content || lesson.title || '').trim();
+}
+
+const PERSONAL_CONTACT = /[\w.+-]+@[\w-]+(?:\.[\w-]+)*\.[a-z]{2,}\b|(?:\+?1[ .-]?)?\(?\b\d{3}\)?[ .-]\d{3}[ .-]\d{4}\b/gi;
+
+// Pasted blocks go with their contents; any other tag goes and its text stays.
+function stripLessonMarkup(text) {
+  return String(text || '')
+    .replace(/<pasted_content\b[^>]*>[\s\S]*?(?:<\/pasted_content\b[^>]*>|$)/gi, ' ')
+    .replace(/<\/?[a-z][\w-]*\b[^<>]*>?/gi, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+// What of a lesson is fit to show on this call, or null.
+function presentableLesson({ title, advice }, actionContext) {
+  const [cleanTitle, cleanAdvice] = [title, advice].map((value) => (
+    isRawTranscriptFragment(value) ? '' : stripLessonMarkup(value)
+  ));
+  const shown = `${cleanTitle} ${cleanAdvice}`;
+  const context = String(actionContext || '').toLowerCase();
+  const contacts = shown.match(PERSONAL_CONTACT) || [];
+  if (contacts.some((contact) => !context.includes(contact.toLowerCase()))) return null;
+  if (!cleanTitle) return cleanAdvice ? { title: cleanAdvice, advice: '' } : null;
+  return { title: cleanTitle, advice: cleanAdvice };
 }
 
 function isRawTranscriptFragment(text) {
@@ -216,8 +242,10 @@ function formatInjectableReminder(lessons) {
   const bodies = [];
   let used = estimateTokens('<system-reminder>\nThumbGate prior lesson for this tool call:\n</system-reminder>');
   for (const lesson of (lessons || []).slice(0, MAX_INJECTED_LESSONS)) {
-    let text = lessonDisplayText(lesson).replace(/\s+/g, ' ');
-    if (!text || isRawTranscriptFragment(text)) continue;
+    const raw = lessonDisplayText(lesson);
+    if (!raw || isRawTranscriptFragment(raw)) continue;
+    let text = stripLessonMarkup(raw);
+    if (!text) continue;
     const prefix = `${bodies.length + 1}. `;
     let room = (MAX_INJECTED_TOKENS - used - estimateTokens(prefix) - 1) * CHARS_PER_TOKEN;
     if (room < 24) break;
@@ -240,6 +268,8 @@ module.exports = {
   MAX_INJECTED_TOKENS,
   estimateTokens,
   isRawTranscriptFragment,
+  presentableLesson,
+  stripLessonMarkup,
   lessonDisplayText,
   lessonMatchesToolCall,
   lessonSharesAction,

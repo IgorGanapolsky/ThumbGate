@@ -5613,11 +5613,16 @@ async function buildRelevantLessonContextAsync(toolName, toolInput, options = {}
  * negative lesson present is relevant enough to surface.
  */
 function formatNegativeLessonContext(lessons, options = {}) {
-  const { lessonSharesAction, takeUnseenLessons, isRawTranscriptFragment } = require('./lesson-hook-relevance');
+  const { lessonSharesAction, takeUnseenLessons, presentableLesson } = require('./lesson-hook-relevance');
+  const shown = new Map();
   const relevant = (lessons || []).filter((l) => {
     if (l.signal !== 'negative') return false;
-    const title = String(l.title || '').replace(/^MISTAKE:\s*/, '');
-    if (isRawTranscriptFragment(title) || title.includes('<pasted_content')) return false;
+    const text = presentableLesson({
+      title: String(l.title || '').replace(/^MISTAKE:\s*/, ''),
+      advice: extractAvoidanceAdvice(l.content),
+    }, options.actionContext);
+    if (!text) return false;
+    shown.set(l, text);
     if (options.actionContext && !lessonSharesAction(l, options)) return false;
     const score = Number(l.rerankedScore ?? l.relevanceScore ?? 0);
     return score >= MIN_LESSON_INJECTION_RELEVANCE;
@@ -5626,8 +5631,8 @@ function formatNegativeLessonContext(lessons, options = {}) {
   if (negative.length === 0) return null;
 
   const formatted = negative.map((l) => {
-    const title = (l.title || '').replace(/^MISTAKE:\s*/, '').slice(0, 140);
-    const advice = extractAvoidanceAdvice(l.content);
+    const { advice } = shown.get(l);
+    const title = shown.get(l).title.slice(0, 140);
     const body = advice ? `  • ${title}\n    → ${advice}` : `  • ${title}`;
     const notes = [l.graph?.lineageNote, l.graph?.conflictNote].filter(Boolean);
     return body + notes.map(note => `\n    ↳ ${String(note).slice(0, 220)}`).join('');

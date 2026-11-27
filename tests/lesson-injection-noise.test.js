@@ -48,5 +48,6 @@ test('the second injector: a shared tool name alone is not a match, and a repeat
 
 test('pasted markup is never injected as a lesson', () => {
   const pasted = lesson('l6', 'It ignored a prior instruction: <pasted_content id="x"> npm publish everything', 'npm publish');
-  assert.equal(formatNegativeLessonContext([pasted], PUBLISH_CALL), null);
+  const out = formatNegativeLessonContext([pasted], PUBLISH_CALL) || '';
+  assert.doesNotMatch(out, /pasted_content|everything|ignored a prior instruction/);
 });

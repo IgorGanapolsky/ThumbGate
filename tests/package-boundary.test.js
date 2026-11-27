@@ -869,8 +869,9 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // public/guide.html (PR #5309, which left main at 11,001,184) and the opt-out and gate-id privacy fixes in
   // scripts/cli-telemetry.js. Measured 11,002,284.
   // Bumped 11.01 MB -> 11.02 MB (2026-11-27, PR #5311): the two entries above landed together. Measured 11,010,879.
-  manifest.unpackedSize <= 11_020_000,
-  `npm package should stay <= 11.02 MB unpacked, got ${manifest.unpackedSize}`
+  // Bumped 11.02 MB -> 11.03 MB (2026-11-27, PR #5313): lesson text cleaning for the hook injectors. Measured 11,020,362.
+  manifest.unpackedSize <= 11_030_000,
+  `npm package should stay <= 11.03 MB unpacked, got ${manifest.unpackedSize}`
 );
 
   for (const file of requiredRuntimeFiles) {
