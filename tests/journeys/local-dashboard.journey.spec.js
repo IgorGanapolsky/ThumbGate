@@ -150,43 +150,39 @@ test.describe('free user, fresh install', () => {
     expect(errors).toEqual([]);
   });
 
-  test('Export > Download DPO Pairs tells a free user it needs Pro, with the way to upgrade', async ({ page }) => {
+  // The three upgrade-path bugs found by walking this on 2026-11-27, each now fixed and held by a test.
+  test('Export > Download tells a free user DPO export is a Pro feature, with a link to upgrade', async ({ page }) => {
     const errors = trackPageErrors(page);
     await page.goto(ctx.url);
     await expect(page.locator('#statTotal')).toHaveText(/^\d+$/);
     await page.locator('div.tab[onclick="switchTab(\'export\')"]').click();
     await page.getByRole('button', { name: /Download (DPO Pairs|training data)/ }).click();
-    await expect(page.locator('#exportStatus')).toContainText(/requires Pro/i);
-    await expect(page.locator('#exportStatus')).toContainText(/Upgrade/i);
+    await expect(page.locator('#exportStatus')).toContainText(/Pro feature/i);
+    const upgrade = page.locator('#exportStatus a[data-upgrade-link]');
+    await expect(upgrade).toBeVisible();
+    await expect(upgrade).toHaveAttribute('href', /^https:\/\/thumbgate\.ai\/checkout\/pro\?/);
     await expect(page.getByRole('button', { name: 'Talk to us' })).toBeVisible();
     expect(errors).toEqual([]);
   });
 
-
-  // Known bugs found by walking this path on 2026-11-27. test.fail() keeps the run green while the bug stands and
-  // turns red the day it is fixed, so whoever fixes it removes the marker.
-  test('a free user is not told a Pro license is active', async ({ page }) => {
-    test.fail(true, 'Known bug 2026-11-27: loopback dashboards say "Pro License Active" with no license saved');
+  test('a free user is told they are on the Free plan, never that a Pro license is active', async ({ page }) => {
+    const errors = trackPageErrors(page);
     await page.goto(ctx.url);
     await expect(page.locator('#statTotal')).toHaveText(/^\d+$/);
-    await expect(page.locator('body')).not.toContainText('Pro License Active', { timeout: 3_000 });
+    await expect(page.locator('#authTitle')).toHaveText('Free plan');
+    await expect(page.locator('#authHelp a[data-upgrade-link]')).toHaveAttribute('href', /checkout\/pro/);
+    await expect(page.locator('body')).not.toContainText('Pro License Active');
+    await expect(page.locator('body')).not.toContainText('Local Pro connected');
+    expect(errors).toEqual([]);
   });
 
-  test('the Pro-required export message has a clickable upgrade link', async ({ page }) => {
-    test.fail(true, 'Known bug 2026-11-27: the message says "Upgrade at /pricing" as plain text, with no link to click');
-    await page.goto(ctx.url);
-    await expect(page.locator('#statTotal')).toHaveText(/^\d+$/);
-    await page.locator('div.tab[onclick="switchTab(\'export\')"]').click();
-    await page.getByRole('button', { name: /Download (DPO Pairs|training data)/ }).click();
-    await expect(page.locator('#exportStatus')).toContainText(/requires Pro/i);
-    await expect(page.locator('#exportStatus a[href*="pricing"], #exportStatus a[href*="checkout"]')).toBeVisible({ timeout: 3_000 });
-  });
-
-  test('the Lessons page tells a free user lesson search needs Pro, not that data is temporarily unavailable', async ({ page }) => {
-    test.fail(true, 'Known bug 2026-11-27: /v1/lessons/search answers 429 for free users and the page says "temporarily unavailable"');
+  test('the Lessons page tells a free user lesson search is a Pro feature, not that data is unavailable', async ({ page }) => {
+    const errors = trackPageErrors(page);
     await page.goto(ctx.url.replace('/dashboard', '/lessons'));
-    await expect(page.locator('body')).toContainText(/Pro/);
-    await expect(page.locator('body')).not.toContainText('temporarily unavailable', { timeout: 3_000 });
+    await expect(page.locator('#lessonsMode')).toContainText('Free plan');
+    await expect(page.locator('#lessonsMode a[data-upgrade-link]')).toHaveAttribute('href', /checkout\/pro/);
+    await expect(page.locator('#lessonsMode')).not.toContainText('temporarily unavailable');
+    expect(errors).toEqual([]);
   });
 });
 
@@ -195,6 +191,13 @@ test.describe('Pro user, license saved on the machine', () => {
   let ctx;
   test.beforeAll(async () => { ctx = await startUserDashboard({ pro: true }); });
   test.afterAll(() => stopUserDashboard(ctx));
+
+  test('a Pro user sees the license as active and no upgrade prompt', async ({ page }) => {
+    await page.goto(ctx.url);
+    await expect(page.locator('#statTotal')).toHaveText(/^\d+$/);
+    await expect(page.locator('#authTitle')).toHaveText(/License Active/);
+    await expect(page.locator('#authHelp a[data-upgrade-link]')).toHaveCount(0);
+  });
 
   test('Lessons page opens from the dashboard and lists the captured lessons', async ({ page }) => {
     const errors = trackPageErrors(page);

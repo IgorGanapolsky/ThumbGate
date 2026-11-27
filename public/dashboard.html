@@ -1047,6 +1047,11 @@ function disconnectKey() {
   return Promise.resolve();
 }
 
+// Every free-tier wall gets a link a user can click, not "Upgrade at /pricing" as plain text.
+function renderUpgradeLinkHtml(content) {
+  return '<a data-upgrade-link="' + escAttr(content) + '" href="https://thumbgate.ai/checkout/pro?utm_source=local_dashboard&utm_medium=free_tier_limit&utm_content=' + encodeURIComponent(content) + '" style="color:var(--cyan);font-weight:600;margin-left:4px;">Upgrade to Pro ($19/mo)</a>';
+}
+
 function renderFreeTierTalkToUsHtml(workflow) {
   return '<span data-talk-wrap style="display:inline-flex;gap:6px;align-items:center;flex-wrap:wrap;margin-left:4px;"><input type="email" data-talk-email placeholder="you@company.com" aria-label="Work email" style="display:none;padding:4px 8px;border-radius:6px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:12px;"><button type="button" data-talk-to-us data-workflow="' + escAttr(workflow || 'Free-tier dashboard limit (Talk to us)') + '" onclick="submitDashboardTalkToUs(this)" style="background:transparent;border:1px solid var(--cyan);color:var(--cyan);padding:3px 10px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;">Talk to us</button><span data-talk-status style="font-size:12px;color:var(--cyan);"></span></span>';
 }
@@ -1117,6 +1122,9 @@ async function connect(options) {
       isEnterprise = (data.tier === 'Enterprise');
       tierName = data.tier;
     }
+    // A loopback dashboard opens for every local user; only a saved license makes it Pro (server: localLicenseActive).
+    var freeLocal = Boolean(opts.localPro) && data.localLicenseActive === false;
+    if (freeLocal) { isEnterprise = false; tierName = 'Free'; }
     
     if (data.localLlmConfigured) {
       var modelLabel = data.localLlmModel ? ' (' + data.localLlmModel + ')' : '';
@@ -1139,7 +1147,7 @@ async function connect(options) {
     }
 
     status.className = 'auth-status ok';
-    status.textContent = opts.localPro ? `✓ Local ${tierName} connected` : '✓ Connected';
+    status.textContent = freeLocal ? '✓ Local dashboard connected (Free plan)' : (opts.localPro ? `✓ Local ${tierName} connected` : '✓ Connected');
     if (!opts.localPro && API_KEY) {
       try {
         var sessionRes = await projectFetch('/v1/auth/session', {
@@ -1158,7 +1166,9 @@ async function connect(options) {
     syncAuthBarVisibility('signed_in', { localPro: Boolean(opts.localPro) });
     const titleEl = document.getElementById('authTitle');
     if (titleEl) {
-      if (opts.localPro) {
+      if (freeLocal) {
+        titleEl.textContent = 'Free plan';
+      } else if (opts.localPro) {
         titleEl.textContent = `${tierName} License Active`;
       } else if (opts.ssoProvider) {
         titleEl.textContent = opts.ssoEmail ? `Signed in (${opts.ssoEmail})` : `${String(opts.ssoProvider).toUpperCase()} SSO Connected`;
@@ -1179,6 +1189,10 @@ async function connect(options) {
       btn.disabled = true;
       document.getElementById('demoBtn').style.display = 'none';
       document.getElementById('authHelp').textContent = isEnterprise ? localEnterpriseActiveMessage : localProActiveMessage;
+      if (freeLocal) {
+        input.placeholder = 'Local dashboard (Free plan)';
+        document.getElementById('authHelp').innerHTML = 'Free plan on this machine: your thumbs and gates work here. Lesson search, recall and DPO export need Pro.' + renderUpgradeLinkHtml('free_plan_banner');
+      }
     }
     renderStats(data);
     setSelectedCard('all');
@@ -1351,7 +1365,7 @@ async function search() {
     });
     if (res.status === 429) {
       var limitErr = await res.json().catch(function() { return {}; });
-      container.innerHTML = '<div class="empty">' + escHtml(limitErr.detail || limitErr.error || 'Free tier limit reached.') + ' ' + renderFreeTierTalkToUsHtml('Free-tier search limit (Talk to us)') + '</div>';
+      container.innerHTML = '<div class="empty">' + escHtml(limitErr.detail || limitErr.error || 'Free tier limit reached.') + ' ' + renderUpgradeLinkHtml('search') + ' ' + renderFreeTierTalkToUsHtml('Free-tier search limit (Talk to us)') + '</div>';
       return;
     }
     if (!res.ok) throw new Error('Search failed');
@@ -1512,7 +1526,7 @@ function selectCard(el, action) {
     .then(async function(res) {
       var data = await res.json().catch(function() { return {}; });
       if (res.status === 429) {
-        container.innerHTML = '<div class="empty">' + escHtml(data.detail || data.error || 'Free tier limit reached.') + ' ' + renderFreeTierTalkToUsHtml('Free-tier search limit (Talk to us)') + '</div>';
+        container.innerHTML = '<div class="empty">' + escHtml(data.detail || data.error || 'Free tier limit reached.') + ' ' + renderUpgradeLinkHtml('search') + ' ' + renderFreeTierTalkToUsHtml('Free-tier search limit (Talk to us)') + '</div>';
         return;
       }
       var items = data.results || [];
@@ -2853,7 +2867,7 @@ async function exportDpo() {
     });
     const data = await res.json();
     if (res.status === 429) {
-      status.innerHTML = '✗ ' + escHtml(data.detail || data.error || 'Free tier limit reached.') + ' ' + renderFreeTierTalkToUsHtml('Free-tier DPO export limit (Talk to us)');
+      status.innerHTML = '✗ ' + escHtml(data.detail || data.error || 'Free tier limit reached.') + ' ' + renderUpgradeLinkHtml('dpo_export') + ' ' + renderFreeTierTalkToUsHtml('Free-tier DPO export limit (Talk to us)');
       status.style.color = 'var(--red)';
       return;
     }
