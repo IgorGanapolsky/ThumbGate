@@ -62,6 +62,26 @@ const DIRECT_CHECKOUT_PATH =
 const DIRECT_PAYMENT_API_PATH =
   /\bapi\.stripe\.com\/v1\/[A-Za-z0-9_\/-]+/i;
 
+// Read-only web tools (fetch a page, run a search) cannot move money: a GET of a
+// docs page or a search query is research, not spend. They are judged by the
+// URL alone: live payment hosts and commerce paths stay denied, documentation
+// pages that merely mention billing/checkout/plans are allowed (2026-11-27:
+// 10 research fetches were hard-denied as checkout_path /
+// financial_action_and_object).
+const READ_ONLY_WEB_TOOL =
+  /^(?:web[_-]?fetch|web[_-]?search|fetch|fetch[_-]?url)$|__(?:web[_-]?fetch|web[_-]?search|fetch|fetch[_-]?url|fetch[_-]?content|fetch[_-]?page|search)$/i;
+
+const PAYMENT_HOST =
+  /^(?:checkout\.stripe\.com|buy\.stripe\.com|billing\.stripe\.com|invoice\.stripe\.com|pay\.stripe\.com|app\.apollo\.io|checkout\.paddle\.com|buy\.paddle\.com|[a-z0-9-]+\.lemonsqueezy\.com|checkout\.shopify\.com|www\.paypal\.com|paypal\.com)$/i;
+
+const DOCS_HOST =
+  /^(?:docs?|developers?|dev|help|support|learn|wiki|kb|knowledge|blog|community|forum|changelog)\.|^(?:github\.com|gist\.github\.com|raw\.githubusercontent\.com|gitlab\.com|bitbucket\.org|stackoverflow\.com|[a-z]+\.stackexchange\.com|news\.ycombinator\.com|(?:www\.|old\.)?reddit\.com|medium\.com|dev\.to|en\.wikipedia\.org|www\.npmjs\.com|pypi\.org)$/i;
+
+const DOCS_PATH =
+  /\/(?:docs?|documentation|guides?|reference|api-reference|tutorials?|learn|blog|changelog|wiki|kb|help|support|articles?|blob|tree|raw|issues|pull|discussions|questions)(?:\/|$)/i;
+
+const URL_IN_TEXT = /\bhttps?:\/\/[^\s"'<>]+/gi;
+
 const PRICE_AMOUNT = /\$\s*\d[\d,]*(?:\.\d{2})?\b/;
 
 const VENDOR_UPSELL =
@@ -160,6 +180,48 @@ function hasNearbyDistinctMatches(text, leftPattern, rightPattern, maxGap = 80) 
   }));
 }
 
+function webToolUrls(toolInput) {
+  const input = toolInput && typeof toolInput === 'object' ? toolInput : {};
+  const fields = [input.url, input.uri, input.href, input.link, input.endpoint, input.urls, input.links]
+    .flat()
+    .filter((value) => typeof value === 'string');
+  const found = fields.join(' ').match(URL_IN_TEXT) || [];
+  return [...new Set(found)];
+}
+
+function classifyWebUrl(rawUrl) {
+  let parsed;
+  try {
+    parsed = new URL(rawUrl);
+  } catch {
+    return DIRECT_CHECKOUT_PATH.test(rawUrl) ? 'commerce' : 'research';
+  }
+  const host = parsed.hostname.toLowerCase();
+  if (PAYMENT_HOST.test(host)) return 'payment_host';
+  const route = `${parsed.pathname}${parsed.hash}`;
+  if (DOCS_HOST.test(host) || DOCS_PATH.test(parsed.pathname)) return 'research';
+  if (DIRECT_CHECKOUT_PATH.test(route)) return 'commerce';
+  return 'research';
+}
+
+// Returns a verdict for read-only web tools, or null when the tool is not one.
+function evaluateReadOnlyWebTool(name, toolInput) {
+  if (!READ_ONLY_WEB_TOOL.test(name.trim())) return null;
+  const input = toolInput && typeof toolInput === 'object' ? toolInput : {};
+  // A generic fetch tool that sends a body or a non-GET method can mutate:
+  // fall back to the full rule set.
+  const method = String(input.method || input.httpMethod || 'GET').trim().toUpperCase();
+  if (!['GET', 'HEAD', ''].includes(method)) return null;
+  if (['body', 'data', 'json', 'form', 'payload'].some((key) => input[key] != null && input[key] !== '')) return null;
+  for (const url of webToolUrls(toolInput)) {
+    const kind = classifyWebUrl(url);
+    if (kind === 'payment_host' || kind === 'commerce') {
+      return { decision: 'deny', ruleId: 'checkout_path', reason: DENY_REASON };
+    }
+  }
+  return { decision: 'allow' };
+}
+
 function evaluateSpend(toolName, toolInput) {
   const name = String(toolName || '');
   const text = flattenSideEffect(name, toolInput);
@@ -199,6 +261,9 @@ function evaluateSpend(toolName, toolInput) {
   if (PROTECTED_GUARD_PATH.test(text) && !isReadOnlyTool) {
     return { decision: 'deny', ruleId: 'guard_tampering', reason: DENY_REASON };
   }
+
+  const webVerdict = evaluateReadOnlyWebTool(name, toolInput);
+  if (webVerdict) return webVerdict;
 
   const isInteractiveUi = /(?:browser|chrome|computer[_-]?use|playwright)/i.test(name);
   const hasInteractiveAction =
@@ -382,6 +447,7 @@ if (process.argv[1] && path.resolve(process.argv[1]) === path.resolve(__filename
 module.exports = {
   DENY_REASON,
   DIRECT_TOOL_RULES,
+  classifyWebUrl,
   evaluateSpend,
   flatten,
   flattenSideEffect,

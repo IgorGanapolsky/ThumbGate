@@ -20,6 +20,10 @@ const path = require('path');
 const { test, describe, before, after } = require('node:test');
 const assert = require('node:assert/strict');
 
+// Keep the hook bundle the same on every machine: PreSkillShellCommand is wired only
+// when the local `claude` is 2.1.332+, and tests/skill-shell-gate.test.js covers it.
+process.env.THUMBGATE_SKILL_SHELL_HOOK = '0';
+
 const {
   detectAgent,
   wireHooks,

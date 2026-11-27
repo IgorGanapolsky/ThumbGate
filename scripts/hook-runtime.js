@@ -116,6 +116,10 @@ function observeToolResultHookCommand() {
   return buildPortableHookCommand('observe-tool-result');
 }
 
+function skillShellHookCommand() {
+  return buildPortableHookCommand('skill-shell-gate');
+}
+
 function statuslineCommand() {
   return buildPortableHookCommand('statusline-render');
 }
@@ -171,6 +175,7 @@ module.exports = {
   claimStopHookCommand,
   codexObserveToolResultHookCommand,
   observeToolResultHookCommand,
+  skillShellHookCommand,
   codexCacheUpdateHookCommand,
   codexPreToolHookCommand,
   codexSessionStartHookCommand,

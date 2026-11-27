@@ -4,6 +4,7 @@ const { isProjectFolder, parseProjectSelection, projectForCapture, projectForRec
 const { readProjectRows, buildProjectCatalog } = require('../../scripts/project-catalog');
 const ownerAdmin = require('../../scripts/owner-admin');
 const clarity = require('../../scripts/clarity');
+const gaTag = require('../../scripts/ga-tag');
 const opsLog = require('../../scripts/ops-log');
 const http = require('http');
 const https = require('https');
@@ -241,6 +242,7 @@ const {
   createTraceId,
   buildHostedSuccessUrl,
   buildHostedCancelUrl,
+  resolveGaMeasurementIds,
 } = require('../../scripts/hosted-config');
 const {
   generateSkills,
@@ -4113,12 +4115,54 @@ function extractOriginTrialTokens(html) {
   return Array.from(matches, (m) => m[1].trim()).filter(Boolean);
 }
 
+// GA4 ecommerce event for the Pro checkout funnel (begin_checkout, purchase). Values are plain strings and numbers;
+// nothing personal (no email) is ever included.
+// The price follows the selected plan and billing cycle (scripts/commercial-offer.js), the same table checkout charges.
+function buildGaCheckoutEvent(name, hostedConfig = {}, metadata = {}, extra = {}) {
+  const offer = require('../../scripts/commercial-offer');
+  const planId = String((metadata && metadata.planId) || 'pro').trim().toLowerCase().slice(0, 40) || 'pro';
+  const rawCycle = String((metadata && metadata.billingCycle) || 'monthly').trim().toLowerCase();
+  const billingCycle = rawCycle === 'yearly' || rawCycle === 'annual' ? 'annual' : 'monthly';
+  const annual = billingCycle === 'annual';
+  let price;
+  let quantity = 1;
+  let itemName = 'ThumbGate Pro';
+  if (planId === 'team') {
+    itemName = 'ThumbGate Team';
+    const seats = Math.floor(Number(metadata && metadata.seatCount));
+    quantity = Number.isFinite(seats) && seats > 0 ? Math.min(seats, 1000) : offer.TEAM_MIN_SEATS;
+    price = annual ? offer.TEAM_ANNUAL_PRICE_DOLLARS : offer.TEAM_MONTHLY_PRICE_DOLLARS;
+  } else {
+    price = annual ? offer.PRO_ANNUAL_PRICE_DOLLARS : (Number(hostedConfig.proPriceDollars) || offer.PRO_MONTHLY_PRICE_DOLLARS);
+  }
+  return {
+    name,
+    params: {
+      currency: 'USD',
+      value: price * quantity,
+      items: [{ item_id: planId, item_name: itemName, item_variant: billingCycle, price, quantity }],
+      ...extra,
+    },
+  };
+}
+
 function sendHtml(res, statusCode, html, extraHeaders = {}, options = {}) {
   const { headOnly = false } = options;
+  let requestPath = '/admin';
+  try { requestPath = new URL((res.req && res.req.url) || '/', 'http://localhost').pathname; } catch { /* treat as private */ }
+  // Google Analytics on every public page (scripts/ga-tag.js skips private paths and GPC/DNT visitors), plus the
+  // page's funnel events (begin_checkout on /checkout/pro, purchase on a Stripe-verified /success). It goes in
+  // before the consent manager below, so gtag exists when the visitor's banner choice is applied.
+  if (options.ga !== false && statusCode < 400 && res.req) {
+    html = gaTag.injectGaTag(html, {
+      pathname: requestPath,
+      headers: res.req.headers || {},
+      ids: resolveGaMeasurementIds(process.env),
+      events: Array.isArray(options.gaEvents) ? options.gaEvents : [],
+    });
+  }
   // Microsoft Clarity on public pages only; scripts/clarity.js skips private paths and GPC/DNT visitors.
   if (options.clarity !== false && statusCode < 400 && res.req) {
-    let requestPath = '/admin';
-    try { requestPath = new URL(res.req.url || '/', 'http://localhost').pathname; } catch { /* treat as private */ }
     // Clarity and Orion share one consent-gated tag: nothing loads until the visitor accepts.
     html = clarity.injectAnalyticsTags(html, { pathname: requestPath, headers: res.req.headers || {} });
   }
@@ -4383,17 +4427,7 @@ function loadPublicMarketingTemplateHtml(templatePath, runtimeConfig, pageContex
   const privacyOptOut = Boolean(pageContext.privacyOptOut);
   const gaIds = [runtimeConfig.gaMeasurementId, runtimeConfig.gaExtraMeasurementId]
     .filter((id, at, all) => id && all.indexOf(id) === at);
-  const gaBootstrap = (!privacyOptOut && gaIds.length)
-    ? [
-      `  <script async src="https://www.googletagmanager.com/gtag/js?id=${gaIds[0]}"></script>`,
-      '  <script>',
-      '    window.dataLayer = window.dataLayer || [];',
-      '    function gtag(){dataLayer.push(arguments);}',
-      "    gtag('js', new Date());",
-      ...gaIds.map((id) => `    gtag('config', '${id}');`),
-      '  </script>',
-    ].join('\n')
-    : '';
+  const gaBootstrap = (!privacyOptOut && gaIds.length) ? gaTag.buildGaBootstrap(gaIds) : '';
   let rendered = fillTemplate(template, {
     '__PACKAGE_VERSION__': pkg.version,
     '__APP_ORIGIN__': runtimeConfig.appOrigin,
@@ -9857,7 +9891,9 @@ async function addContext(){
         const html = renderCheckoutIntentPage(prefilledEmail, parsed, {
           includeHiddenAttribution: !botClassification.isBot,
         });
-        sendHtml(res, 200, html, responseHeaders);
+        sendHtml(res, 200, html, responseHeaders, {
+          gaEvents: botClassification.isBot ? [] : [buildGaCheckoutEvent('begin_checkout', hostedConfig, analyticsMetadata)],
+        });
         return;
       }
 
@@ -10109,11 +10145,22 @@ async function addContext(){
         ...buildCheckoutPageTelemetryMetadata(parsed, req, journeyState, '/success'),
         ...(successCheck.verified ? {} : { reasonCode: successCheck.reason }),
       }, req.headers, successEventType);
+      // GA purchase only for a session Stripe reports paid; transaction_id lets GA drop a reloaded page's repeat.
+      const gaPurchase = successCheck.verified
+        ? [buildGaCheckoutEvent('purchase', hostedConfig, {
+          planId: parsed.searchParams.get('plan_id'),
+          billingCycle: parsed.searchParams.get('billing_cycle'),
+          seatCount: parsed.searchParams.get('seat_count'),
+        }, {
+          transaction_id: parsed.searchParams.get('session_id'),
+        })]
+        : [];
       sendHtml(
         res,
         200,
         renderCheckoutSuccessPage(hostedConfig),
-        journeyState.setCookieHeaders.length ? { 'Set-Cookie': journeyState.setCookieHeaders } : {}
+        journeyState.setCookieHeaders.length ? { 'Set-Cookie': journeyState.setCookieHeaders } : {},
+        { gaEvents: gaPurchase }
       );
       return;
     }

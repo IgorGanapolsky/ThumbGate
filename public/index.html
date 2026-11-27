@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="generator" content="ThumbGate">
   <meta name="author" content="Igor Ganapolsky">
-  <meta name="thumbgate-version" content="1.47.2">
+  <meta name="thumbgate-version" content="1.48.0">
   __GOOGLE_SITE_VERIFICATION_META__
   <link rel="icon" type="image/png" href="/thumbgate-icon.png">
   <link rel="canonical" href="__APP_ORIGIN__/">
@@ -1077,7 +1077,7 @@ $ ... "node scripts/migrate.js --env prod"
 
   <footer>
     <div class="shell footer-inner">
-      <span>ThumbGate · MIT License · npm v1.47.2</span>
+      <span>ThumbGate · MIT License · npm v1.48.0</span>
       <div class="footer-links">
         <a href="https://github.com/IgorGanapolsky/ThumbGate" target="_blank" rel="noopener">GitHub</a>
         <a href="/guide">Technical setup</a>
@@ -1209,7 +1209,8 @@ $ ... "node scripts/migrate.js --env prod"
           currency: 'USD',
         };
         window.plausible('checkout_start', { props: props });
-        sendGa4Event('begin_checkout', props);
+        // begin_checkout itself fires once on /checkout/pro (scripts/ga-tag.js), so the click is its own event.
+        sendGa4Event('checkout_cta_click', props);
         sendFirstPartyTelemetry('checkout_start', props);
       });
     }

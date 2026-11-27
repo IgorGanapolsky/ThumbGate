@@ -538,9 +538,13 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
     // 731 -> 732 (2026-11-25): scripts/assurance-report.js, the assurance-report CLI command (+1).
     // 732 -> 733 (2026-11-26): scripts/staged-secret-gate.js, a git commit with a secret staged is denied (+1).
 // 733 -> 734 (2026-11-27): scripts/transcript-incident.js, the thumbed-down action and turns for DPO pairs (+1).
+    // 735 -> 736 (2026-11-27): scripts/ga-tag.js, the GA4 funnel tag on every public page (+1).
     // 734 -> 735 (2026-11-27): scripts/data-control-report.js, the `thumbgate control` command (+1).
-    manifest.fileCount <= 735,
-    `npm package should stay <= 735 files, got ${manifest.fileCount}`
+    // 736 -> 737 (2026-11-27): scripts/cloud-rules-export.js, `thumbgate export-rules` for cloud agents (+1).
+    // 737 -> 738 (2026-11-27): scripts/pii-scanner.js, which cloud-rules-export.js requires (+1).
+    // 738 -> 740 (2026-11-27): scripts/skill-shell-gate.js and scripts/gate-check-core.js, the PreSkillShellCommand hook (PR 5331) (+2).
+    manifest.fileCount <= 740,
+    `npm package should stay <= 740 files, got ${manifest.fileCount}`
   );
   // Ceiling bumped from 2.75 MB → 2.85 MB (2026-04-16) to accommodate the
   // incremental review-delta demo content in public/dashboard.html landing
@@ -869,8 +873,16 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // public/guide.html (PR #5309, which left main at 11,001,184) and the opt-out and gate-id privacy fixes in
   // scripts/cli-telemetry.js. Measured 11,002,284.
   // Bumped 11.01 MB -> 11.02 MB (2026-11-27, PR #5311): the two entries above landed together. Measured 11,010,879.
-  manifest.unpackedSize <= 11_020_000,
-  `npm package should stay <= 11.02 MB unpacked, got ${manifest.unpackedSize}`
+  // Bumped 11.02 MB -> 11.03 MB (2026-11-27): scripts/ga-tag.js, the GA4 funnel tag on every public page, and the
+  // Google Analytics line in public/privacy.html. Measured 11,023,272.
+  // Bumped 11.03 MB -> 11.04 MB (2026-11-27, v1.48.0 release): main measured 11,030,172 after #5314 and #5319
+  // (mail-note and own-site gate fixes) plus the release CHANGELOG entry. Measured 11,030,188.
+  // Bumped 11.04 MB -> 11.05 MB (2026-11-27): scripts/cloud-rules-export.js and the export-rules CLI command, on top
+  // of #5326 (spend-guard research fix). Measured 11,042,740.
+  // 11.05 -> 11.08 MB (2026-11-27): pii-scanner.js (required by export-rules) and the repeat-after-deny condition gate.
+  // 11.08 -> 11.09 MB (2026-11-27, PR 5331): the PreSkillShellCommand hook. Measured 11,080,029.
+  manifest.unpackedSize <= 11_090_000,
+  `npm package should stay <= 11.09 MB unpacked, got ${manifest.unpackedSize}`
 );
 
   for (const file of requiredRuntimeFiles) {
