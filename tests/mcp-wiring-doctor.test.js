@@ -315,13 +315,20 @@ test('a fresh folder where capture works gets one warning line, not an error', (
 
 test('a missing project MCP file stays an error when nothing can capture', () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'tg-wiring-nocapture-'));
+  const realAccess = fs.accessSync;
   try {
     const readOnly = path.join(dir, 'store');
-    fs.mkdirSync(readOnly, { mode: 0o500 });
+    fs.mkdirSync(readOnly);
+    // Deny the write here instead of with a file mode: root ignores modes.
+    fs.accessSync = (target, mode) => {
+      if (target === readOnly) throw Object.assign(new Error('EACCES'), { code: 'EACCES' });
+      return realAccess(target, mode);
+    };
     const report = wiringReport(dir, { HOME: dir, container: '1', THUMBGATE_FEEDBACK_DIR: readOnly });
     assert.equal(report.unattendedCaptureReady, false);
     assert.equal(report.overall, 'error');
   } finally {
+    fs.accessSync = realAccess;
     fs.rmSync(dir, { recursive: true, force: true });
   }
 });
