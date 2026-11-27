@@ -863,6 +863,107 @@ function detectScpRsyncExfil(command) {
   return findings;
 }
 
+// Authenticated read: the secret env var is only the credential for the request
+// (curl -H "Authorization: Bearer $TOKEN" https://db.example/rest/v1/orders),
+// never its body, URL or upload. That is how a database REST or SQL-over-HTTP API is
+// read, so it is reported as an advisory finding (warn) instead of exfiltration (deny).
+// A secret in the body, URL or another header, an @file body, a form or upload,
+// PUT/PATCH/DELETE, command substitution or /dev/tcp keeps the hard deny.
+const AUTH_HEADER_RE = /^\s*(?:authorization|proxy-authorization|apikey|api-key|x-api-key|x-auth-token|private-token|x-supabase-key)\s*:/i;
+const CURL_AUTH_VALUE_FLAGS = new Set(['-u', '--user', '--oauth2-bearer']);
+const CURL_HEADER_FLAGS = new Set(['-H', '--header']);
+// A literal query body (--data '{"sql":"select 1"}') is how SQL-over-HTTP APIs read;
+// it stays a read as long as it carries no secret and no @file. Forms and uploads never do.
+const CURL_DATA_FLAGS = new Set(['-d', '--data', '--data-raw', '--data-ascii', '--data-binary', '--data-urlencode', '--json']);
+const CURL_UPLOAD_FLAG_RE = /^(?:-F|--form(?:-string)?|-T|--upload-file)$|^--(?:form|form-string|upload-file)=|^-[a-zA-Z]*[FT]/;
+const CURL_METHOD_FLAGS = new Set(['-X', '--request']);
+const QUERY_METHODS = new Set(['GET', 'HEAD', 'OPTIONS', 'POST']);
+const WGET_BODY_FLAG_RE = /^--(?:post-data|post-file|body-data|body-file)(?:=|$)/i;
+const WGET_AUTH_FLAG_RE = /^--(?:header|http-password|http-user|password|user)=/i;
+
+function segmentNetworkVerbIndex(tokens) {
+  let index = 0;
+  while (isShellAssignment(tokens[index])) index += 1;
+  while (OUTBOUND_COMMAND_WRAPPERS.has(path.basename(String(tokens[index] || '')).toLowerCase())) index += 1;
+  return index;
+}
+
+function isLiteralQueryBody(value) {
+  const body = String(value || '');
+  return !body.startsWith('@') && !hasSecretEnvVarRef(body) && !/\$\{?[A-Za-z_]/.test(body);
+}
+
+function curlSegmentIsAuthenticatedRead(tokens) {
+  for (let i = 1; i < tokens.length; i += 1) {
+    const token = String(tokens[i]);
+    const next = tokens[i + 1] === undefined ? '' : String(tokens[i + 1]);
+    if (CURL_HEADER_FLAGS.has(token)) {
+      if (hasSecretEnvVarRef(next) && !AUTH_HEADER_RE.test(next)) return false;
+      i += 1;
+      continue;
+    }
+    if (CURL_AUTH_VALUE_FLAGS.has(token)) { i += 1; continue; }
+    if (CURL_METHOD_FLAGS.has(token)) {
+      if (!QUERY_METHODS.has(next.toUpperCase())) return false;
+      i += 1;
+      continue;
+    }
+    if (/^--(?:header|user|oauth2-bearer)=/.test(token)) {
+      const value = token.slice(token.indexOf('=') + 1);
+      if (token.startsWith('--header=') && hasSecretEnvVarRef(value) && !AUTH_HEADER_RE.test(value)) return false;
+      continue;
+    }
+    if (/^--request=/.test(token) && !QUERY_METHODS.has(token.split('=')[1].toUpperCase())) return false;
+    if (CURL_DATA_FLAGS.has(token)) {
+      if (!isLiteralQueryBody(next)) return false;
+      i += 1;
+      continue;
+    }
+    if (/^--(?:data(?:-[a-z]+)?|json)=/.test(token)) {
+      if (!isLiteralQueryBody(token.slice(token.indexOf('=') + 1))) return false;
+      continue;
+    }
+    if (/^-[a-zA-Z]*d/.test(token) && !token.startsWith('--')) return false; // attached -d'…' / -sd
+    if (CURL_UPLOAD_FLAG_RE.test(token)) return false;
+    if (hasSecretEnvVarRef(token)) return false; // secret in URL or another argument
+  }
+  return true;
+}
+
+function wgetSegmentIsAuthenticatedRead(tokens) {
+  for (let i = 1; i < tokens.length; i += 1) {
+    const token = String(tokens[i]);
+    if (WGET_BODY_FLAG_RE.test(token) || /^--method=(?!(?:GET|HEAD)$)/i.test(token)) return false;
+    if (WGET_AUTH_FLAG_RE.test(token)) {
+      const value = token.slice(token.indexOf('=') + 1);
+      if (/^--header=/i.test(token) && hasSecretEnvVarRef(value) && !AUTH_HEADER_RE.test(value)) return false;
+      continue;
+    }
+    if (hasSecretEnvVarRef(token)) return false;
+  }
+  return true;
+}
+
+function isAuthenticatedReadCommand(command) {
+  const text = String(command || '');
+  if (/\/dev\/tcp\//i.test(text) || /\$\(|`|<\(/.test(text)) return false;
+  // Every segment that names a secret variable must be a read-only curl/wget whose
+  // only use of the secret is as the request's credential.
+  let sawAuthRead = false;
+  for (const segment of splitCommandSegments(text)) {
+    if (!hasSecretEnvVarRef(segment)) continue;
+    const tokens = tokenizeCommand(segment);
+    const index = segmentNetworkVerbIndex(tokens);
+    if (tokens.slice(0, index).some((token) => isShellAssignment(token) && hasSecretEnvVarRef(token))) return false;
+    const verb = path.basename(String(tokens[index] || '')).toLowerCase();
+    const rest = tokens.slice(index);
+    if (verb === 'curl' && curlSegmentIsAuthenticatedRead(rest)) { sawAuthRead = true; continue; }
+    if (verb === 'wget' && wgetSegmentIsAuthenticatedRead(rest)) { sawAuthRead = true; continue; }
+    return false;
+  }
+  return sawAuthRead;
+}
+
 function detectEnvVarNetworkExfil(command) {
   // echo $API_KEY | curl  OR  curl -d "$OPENAI_API_KEY" https://…
   // printenv API_KEY | curl
@@ -876,6 +977,15 @@ function detectEnvVarNetworkExfil(command) {
   const networkVerb = segmentHasNetworkExfil(command);
   if (!networkVerb && !/\/dev\/tcp\//i.test(command)) {
     return [];
+  }
+  if (isAuthenticatedReadCommand(text)) {
+    return [{
+      id: 'secret_env_auth_read',
+      label: 'Secret environment variable used as a request credential',
+      source: 'env_auth_read',
+      advisory: true,
+      reason: `Secret-bearing environment variable sent only as the ${networkVerb} request credential (not in the body, URL or an upload)`,
+    }];
   }
   return [{
     id: 'secret_env_exfil',
