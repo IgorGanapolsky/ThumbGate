@@ -1,9 +1,10 @@
 'use strict';
 
-// AGENT-3667 item R: the second Google Analytics 4 property (G-QKENZBW1V8) is configured next to the first on every
-// page the server injects the Google tag into, behind the same Global Privacy Control / Do Not Track suppression, and
-// can be turned off or replaced with THUMBGATE_GA_EXTRA_MEASUREMENT_ID. No browser is opened here; the headless run
-// that watches the real requests is described in the item report.
+// Google Analytics on thumbgate.ai: one measurement id (the ThumbGate property's stream, never the ApplyOps id a
+// stale Railway variable carries), a tag on every public page including /pricing, /guide, /checkout/pro and
+// /success, begin_checkout on the checkout page, purchase only on a Stripe-verified /success, Consent Mode v2 that
+// follows the site's analytics banner, and nothing for GPC/DNT visitors or private pages.
+// (File name kept from the earlier "second property" suite; package.json test:feedback-reward runs it.)
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
@@ -22,24 +23,35 @@ Object.assign(process.env, {
   RAILWAY_PROJECT_ID: '',
 });
 fs.mkdirSync(process.env.THUMBGATE_FEEDBACK_DIR, { recursive: true });
+delete process.env.THUMBGATE_GA_MEASUREMENT_ID;
+delete process.env.THUMBGATE_GA_EXTRA_MEASUREMENT_ID;
 
-const { DEFAULT_GA_EXTRA_MEASUREMENT_ID, resolveGaExtraMeasurementId } = require('../scripts/hosted-config');
+const {
+  DEFAULT_GA_MEASUREMENT_ID,
+  resolveGaMeasurementId,
+  resolveGaExtraMeasurementId,
+  resolveGaMeasurementIds,
+} = require('../scripts/hosted-config');
+const gaTag = require('../scripts/ga-tag');
 const { startServer } = require('../src/api/server');
 
-const EXTRA = 'G-QKENZBW1V8';
+const THUMBGATE_ID = 'G-QKENZBW1V8';
+const APPLYOPS_ID = 'G-SZR5039QN4';
 const CHROME_UA = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36';
 let handle;
 let origin;
 
 function get(urlPath, headers = {}) {
   return new Promise((resolve, reject) => {
-    http.get(origin + urlPath, { headers: { 'user-agent': CHROME_UA, ...headers } }, (res) => {
+    http.get(origin + urlPath, { headers: { 'user-agent': CHROME_UA, accept: 'text/html', ...headers } }, (res) => {
       let data = '';
       res.on('data', (c) => { data += c; });
       res.on('end', () => resolve({ status: res.statusCode, body: data }));
     }).on('error', reject);
   });
 }
+
+const loaders = (html) => (html.match(/googletagmanager\.com\/gtag\/js/g) || []).length;
 
 test.before(async () => {
   handle = await startServer({ port: 0, host: '127.0.0.1' });
@@ -53,42 +65,117 @@ test.after(() => {
   delete process.env.THUMBGATE_GA_EXTRA_MEASUREMENT_ID;
 });
 
-test('REQ-01: the extra property id defaults to the ThumbGate stream and can be replaced or turned off', () => {
-  assert.equal(DEFAULT_GA_EXTRA_MEASUREMENT_ID, EXTRA);
-  assert.equal(resolveGaExtraMeasurementId(undefined), EXTRA);
-  assert.equal(resolveGaExtraMeasurementId('G-OTHER12345'), 'G-OTHER12345');
-  assert.equal(resolveGaExtraMeasurementId('not-an-id'), EXTRA, 'a malformed value falls back to the default');
-  assert.equal(resolveGaExtraMeasurementId('off'), '');
+test('REQ-01: one measurement id, the ThumbGate stream; the ApplyOps id is refused, "off" removes it', () => {
+  assert.equal(DEFAULT_GA_MEASUREMENT_ID, THUMBGATE_ID);
+  assert.equal(resolveGaMeasurementId(undefined), THUMBGATE_ID);
+  assert.equal(resolveGaMeasurementId(APPLYOPS_ID), THUMBGATE_ID, 'the stale ApplyOps variable falls back');
+  assert.equal(resolveGaMeasurementId('G-OTHER12345'), 'G-OTHER12345');
+  assert.equal(resolveGaMeasurementId('not-an-id'), THUMBGATE_ID);
+  assert.equal(resolveGaMeasurementId('off'), '');
+  assert.equal(resolveGaExtraMeasurementId(undefined), '', 'no second property by default');
+  assert.equal(resolveGaExtraMeasurementId(APPLYOPS_ID), '');
+  assert.deepEqual(resolveGaMeasurementIds({ THUMBGATE_GA_MEASUREMENT_ID: APPLYOPS_ID }), [THUMBGATE_ID]);
+  assert.deepEqual(resolveGaMeasurementIds({ THUMBGATE_GA_EXTRA_MEASUREMENT_ID: THUMBGATE_ID }), [THUMBGATE_ID]);
 });
 
-test('REQ-02: with the first property set, the home page configures both ids with one loader', async () => {
-  process.env.THUMBGATE_GA_MEASUREMENT_ID = 'G-TEST1234';
-  delete process.env.THUMBGATE_GA_EXTRA_MEASUREMENT_ID;
+test('REQ-02: with the stale ApplyOps variable set, the home page loads only the ThumbGate id, once', async () => {
+  process.env.THUMBGATE_GA_MEASUREMENT_ID = APPLYOPS_ID;
   const res = await get('/');
   assert.equal(res.status, 200);
-  assert.equal((res.body.match(/googletagmanager\.com\/gtag\/js/g) || []).length, 1, 'one loader');
-  assert.match(res.body, /gtag\/js\?id=G-TEST1234/);
-  assert.match(res.body, /gtag\('config', 'G-TEST1234'\)/);
-  assert.match(res.body, new RegExp(`gtag\\('config', '${EXTRA}'\\)`));
-});
-
-test('REQ-03: with no first property, the extra one still loads and the page checkout event guard sees an id', async () => {
+  assert.equal(loaders(res.body), 1, 'one loader');
+  assert.match(res.body, new RegExp(`gtag/js\\?id=${THUMBGATE_ID}`));
+  assert.match(res.body, new RegExp(`gtag\\('config', '${THUMBGATE_ID}'`));
+  assert.doesNotMatch(res.body, new RegExp(APPLYOPS_ID));
+  assert.match(res.body, new RegExp(`const gaMeasurementId = '${THUMBGATE_ID}'`));
   delete process.env.THUMBGATE_GA_MEASUREMENT_ID;
-  const res = await get('/');
-  assert.match(res.body, new RegExp(`gtag/js\\?id=${EXTRA}`));
-  assert.match(res.body, new RegExp(`const gaMeasurementId = '${EXTRA}'`));
 });
 
-test('REQ-04: one home page checkout click sends one begin_checkout beside the Plausible checkout_start', () => {
+test('REQ-03: /pricing, /guide and /checkout/pro each carry exactly one GA loader', async () => {
+  for (const page of ['/pricing', '/guide', '/checkout/pro']) {
+    const res = await get(page);
+    assert.equal(res.status, 200, page);
+    assert.equal(loaders(res.body), 1, `${page} has one loader`);
+    assert.match(res.body, new RegExp(`gtag\\('config', '${THUMBGATE_ID}'`), page);
+  }
+});
+
+test('REQ-04: /checkout/pro fires begin_checkout with the Pro item and no email', async () => {
+  const res = await get('/checkout/pro?customer_email=buyer%40example.test&utm_source=test');
+  assert.equal(res.status, 200);
+  const line = res.body.split('\n').find((l) => l.includes("gtag('event', 'begin_checkout'"));
+  assert.ok(line, 'begin_checkout event');
+  assert.match(line, /"currency":"USD"/);
+  assert.match(line, /"item_id":"pro"/);
+  assert.doesNotMatch(line, /example\.test/, 'the event never carries the email');
+});
+
+test('REQ-05: /success is tagged, and an unverified session sends no purchase', async () => {
+  const res = await get('/success?session_id=cs_test_notreal123');
+  assert.equal(res.status, 200);
+  assert.equal(loaders(res.body), 1);
+  assert.doesNotMatch(res.body, /'purchase'/);
+});
+
+test('REQ-06: a purchase event carries the transaction id and value, and joins a page that has its own loader', () => {
+  const bootstrap = gaTag.buildGaBootstrap([THUMBGATE_ID]);
+  const page = `<html><head>${bootstrap}</head><body></body></html>`;
+  const events = [{ name: 'purchase', params: { transaction_id: 'cs_test_abc', value: 19, currency: 'USD' } }];
+  const out = gaTag.injectGaTag(page, { pathname: '/success', ids: [THUMBGATE_ID], events });
+  assert.equal(loaders(out), 1, 'no second loader');
+  assert.match(out, /gtag\('event', 'purchase', \{"transaction_id":"cs_test_abc","value":19,"currency":"USD"\}\)/);
+  const fresh = gaTag.injectGaTag('<html><head></head></html>', { pathname: '/success', ids: [THUMBGATE_ID], events });
+  assert.match(fresh, /gtag\('event', 'purchase'/);
+  const hostile = gaTag.injectGaTag('<html><head></head></html>', {
+    ids: [THUMBGATE_ID], events: [{ name: 'purchase', params: { x: '</script><script>alert(1)</script>' } }],
+  });
+  assert.doesNotMatch(hostile, /<\/script><script>alert/);
+});
+
+test('REQ-07: Consent Mode v2 denies ads always, denies analytics in the EEA/UK/CH, and follows the banner choice', () => {
+  const tag = gaTag.buildGaBootstrap([THUMBGATE_ID]);
+  const defaults = tag.split('\n').filter((l) => l.includes("gtag('consent', 'default'"));
+  assert.equal(defaults.length, 2);
+  assert.match(defaults[0], /"analytics_storage":"denied","region":\[[^\]]*"DE"[^\]]*"GB"[^\]]*"CH"\]/);
+  assert.match(defaults[1], /"analytics_storage":"granted"/);
+  for (const line of defaults) assert.match(line, /"ad_storage":"denied","ad_user_data":"denied","ad_personalization":"denied"/);
+  assert.match(tag, /localStorage\.getItem\("thumbgate_analytics_consent"\)/);
+  assert.ok(tag.indexOf("gtag('consent', 'default'") < tag.indexOf("gtag('config'"), 'consent defaults before config');
+  const consentJs = fs.readFileSync(path.join(__dirname, '..', 'scripts', 'clarity.js'), 'utf8');
+  assert.match(consentJs, /w\.gtag\('consent','update',\{analytics_storage:v==='granted'\?'granted':'denied'\}\)/);
+});
+
+test('REQ-08: GPC/DNT visitors and private pages get no Google tag', async () => {
+  for (const headers of [{ 'sec-gpc': '1' }, { dnt: '1' }]) {
+    const res = await get('/pricing', headers);
+    assert.equal(res.status, 200);
+    assert.equal(loaders(res.body), 0, JSON.stringify(headers));
+  }
+  const home = await get('/', { 'sec-gpc': '1' });
+  assert.equal(loaders(home.body), 0);
+  for (const p of ['/admin', '/dashboard', '/signin', '/v1/health', '/lessons']) {
+    assert.ok(gaTag.isSkippedPath(p), p);
+  }
+  assert.ok(!gaTag.isSkippedPath('/checkout/pro'));
+  assert.ok(!gaTag.isSkippedPath('/success'));
+});
+
+test('REQ-09: "off" removes every Google tag', async () => {
+  process.env.THUMBGATE_GA_MEASUREMENT_ID = 'off';
+  const home = await get('/');
+  const pricing = await get('/pricing');
+  assert.equal(loaders(home.body), 0);
+  assert.equal(loaders(pricing.body), 0);
+  delete process.env.THUMBGATE_GA_MEASUREMENT_ID;
+});
+
+test('REQ-10: the home page checkout click sends checkout_cta_click, so begin_checkout is counted once', () => {
   const html = fs.readFileSync(path.join(__dirname, '..', 'public', 'index.html'), 'utf8');
   const anchor = `querySelector('a[href="/checkout/pro"]').addEventListener('click', function () {`;
   const start = html.indexOf(anchor);
   assert.ok(start > 0, 'pro checkout click handler');
   const bodyStart = start + anchor.length;
   const bodyEnd = html.indexOf('\n      });', bodyStart);
-  assert.ok(bodyEnd > bodyStart, 'end of the click handler');
   const calls = [];
-  // Run the page's own click handler with spies in place of the analytics senders.
   const handler = new Function('privacySignalOptOut', 'window', 'sendGa4Event', 'sendFirstPartyTelemetry', html.slice(bodyStart, bodyEnd));
   const click = (optOut) => handler(
     () => optOut,
@@ -98,34 +185,14 @@ test('REQ-04: one home page checkout click sends one begin_checkout beside the P
   );
   click(false);
   const ga4 = calls.filter((c) => c[0] === 'ga4');
-  assert.equal(ga4.length, 1, 'exactly one GA4 event per click');
-  assert.equal(ga4[0][1], 'begin_checkout');
-  assert.equal(ga4[0][2].ctaId, 'homepage_pro_checkout');
+  assert.deepEqual(ga4.map((c) => c[1]), ['checkout_cta_click']);
   assert.equal(ga4[0][2].planId, 'pro');
-  assert.equal(ga4[0][2].currency, 'USD');
-  assert.deepEqual(calls.filter((c) => c[0] === 'plausible').map((c) => c[1]), ['checkout_start']);
   calls.length = 0;
   click(true);
   assert.equal(calls.length, 0, 'a privacy opt-out sends nothing');
 });
 
-test('REQ-05: a Global Privacy Control signal or "off" removes every Google tag', async () => {
-  process.env.THUMBGATE_GA_MEASUREMENT_ID = 'G-TEST1234';
-  const gpc = await get('/', { 'sec-gpc': '1' });
-  assert.equal(gpc.status, 200);
-  assert.doesNotMatch(gpc.body, /googletagmanager\.com|gtag\('config'/);
-  process.env.THUMBGATE_GA_EXTRA_MEASUREMENT_ID = 'off';
-  const off = await get('/');
-  assert.equal(off.status, 200);
-  assert.match(off.body, /gtag\('config', 'G-TEST1234'\)/);
-  assert.doesNotMatch(off.body, new RegExp(EXTRA));
-  delete process.env.THUMBGATE_GA_MEASUREMENT_ID;
-  const none = await get('/');
-  assert.equal(none.status, 200);
-  assert.doesNotMatch(none.body, /googletagmanager\.com/);
-});
-
-test('REQ-06: /tg-analytics.js serves the helper and the home page stores arrival campaign tags', async () => {
+test('REQ-11: /tg-analytics.js serves the helper and the home page stores arrival campaign tags', async () => {
   const res = await get('/tg-analytics.js');
   assert.equal(res.status, 200);
   assert.match(res.body, /window\.tgUtm = tgUtm/);
@@ -133,4 +200,27 @@ test('REQ-06: /tg-analytics.js serves the helper and the home page stores arriva
   const helperAt = html.indexOf('<script src="/tg-analytics.js"></script>');
   assert.ok(helperAt > 0, 'home page loads the helper');
   assert.ok(html.indexOf('tgUtm();', helperAt) > helperAt, 'home page calls tgUtm() after the helper loads');
+});
+
+test('REQ-12: begin_checkout prices follow the plan and billing cycle', async () => {
+  const annual = await get('/checkout/pro?plan_id=pro&billing_cycle=annual');
+  const line = annual.body.split('\n').find((l) => l.includes("gtag('event', 'begin_checkout'"));
+  assert.ok(line, 'begin_checkout event');
+  assert.match(line, /"value":149/);
+  assert.match(line, /"item_variant":"annual","price":149/);
+});
+
+test('REQ-13: checkout and success pages get the analytics choice for Google Analytics only', () => {
+  const clarity = require('../scripts/clarity');
+  const page = `<html><head>${gaTag.buildGaBootstrap([THUMBGATE_ID])}</head><body></body></html>`;
+  const host = { host: 'thumbgate.ai' };
+  for (const p of ['/checkout/pro', '/success']) {
+    const out = clarity.injectAnalyticsTags(page, { pathname: p, headers: host });
+    assert.match(out, /data-thumbgate-consent/, p);
+    assert.match(out, /Google Analytics cookies to measure visits/, p);
+    assert.match(out, /"clarity":"","orion":""/, `${p}: nothing but GA`);
+  }
+  assert.doesNotMatch(clarity.injectAnalyticsTags(page, { pathname: '/admin', headers: host }), /data-thumbgate-consent/);
+  assert.doesNotMatch(clarity.injectAnalyticsTags('<html><head></head></html>', { pathname: '/checkout/pro', headers: host }),
+    /data-thumbgate-consent/, 'no GA, no banner');
 });

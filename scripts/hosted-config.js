@@ -17,12 +17,34 @@ const DEFAULT_WORKFLOW_SPRINT_PRICE_DOLLARS = 1500;
 const DEFAULT_SPRINT_DIAGNOSTIC_CHECKOUT_URL = 'https://buy.stripe.com/9B69ATbmI4r4aK5eOD3sI3k';
 const DEFAULT_WORKFLOW_SPRINT_CHECKOUT_URL = 'https://www.paypal.com/ncp/payment/LTQFR7P9AR3QG';
 const GA_MEASUREMENT_ID_PATTERN = /^G-[A-Z0-9]+$/i;
-// Second GA4 property (public tag id). THUMBGATE_GA_EXTRA_MEASUREMENT_ID overrides it; "off" disables it.
-const DEFAULT_GA_EXTRA_MEASUREMENT_ID = 'G-QKENZBW1V8';
+// The one GA4 web stream for thumbgate.ai: property "ThumbGate" (properties/565856706), the only property with
+// thumbgate.ai traffic. THUMBGATE_GA_MEASUREMENT_ID replaces it; "off" removes the tag.
+const DEFAULT_GA_MEASUREMENT_ID = 'G-QKENZBW1V8';
+// Ids that belong to other sites and must never tag thumbgate.ai. G-SZR5039QN4 is the ApplyOps stream
+// (igorganapolsky.github.io, skills/applyops-deploy); a stale Railway variable still carries it.
+const FOREIGN_GA_MEASUREMENT_IDS = new Set(['G-SZR5039QN4']);
+// No second property by default. THUMBGATE_GA_EXTRA_MEASUREMENT_ID adds one; kept for compatibility.
+const DEFAULT_GA_EXTRA_MEASUREMENT_ID = '';
+const isOff = (raw) => typeof raw === 'string' && raw.trim().toLowerCase() === 'off';
 
-function resolveGaExtraMeasurementId(raw) {
-  if (typeof raw === 'string' && raw.trim().toLowerCase() === 'off') return '';
-  return normalizeTrackingId(raw, GA_MEASUREMENT_ID_PATTERN) || DEFAULT_GA_EXTRA_MEASUREMENT_ID;
+function resolveGaMeasurementId(raw) {
+  if (isOff(raw)) return '';
+  const id = normalizeTrackingId(raw, GA_MEASUREMENT_ID_PATTERN).toUpperCase();
+  return id && !FOREIGN_GA_MEASUREMENT_IDS.has(id) ? id : DEFAULT_GA_MEASUREMENT_ID;
+}
+
+function resolveGaExtraMeasurementId(raw, primaryId = '') {
+  if (isOff(raw)) return '';
+  const id = normalizeTrackingId(raw, GA_MEASUREMENT_ID_PATTERN).toUpperCase();
+  if (!id || FOREIGN_GA_MEASUREMENT_IDS.has(id) || id === primaryId) return DEFAULT_GA_EXTRA_MEASUREMENT_ID;
+  return id;
+}
+
+// Every GA id the public pages configure, primary first, without duplicates.
+function resolveGaMeasurementIds(env = process.env) {
+  const primary = resolveGaMeasurementId(env.THUMBGATE_GA_MEASUREMENT_ID);
+  const extra = resolveGaExtraMeasurementId(env.THUMBGATE_GA_EXTRA_MEASUREMENT_ID, primary);
+  return [primary, extra].filter(Boolean);
 }
 
 function normalizeOrigin(value) {
@@ -134,8 +156,7 @@ function resolveHostedBillingConfig({ requestOrigin } = {}, env = process.env) {
   const billingApiBaseUrl = resolveNormalizedOrigin(env.THUMBGATE_BILLING_API_BASE_URL, appOrigin) || appOrigin;
   const proPriceDollars = normalizePriceDollars(env.THUMBGATE_PRO_PRICE_DOLLARS) || DEFAULT_PRO_PRICE_DOLLARS;
   const proPriceLabel = env.THUMBGATE_PRO_PRICE_LABEL || DEFAULT_PRO_PRICE_LABEL;
-  const gaMeasurementId = normalizeTrackingId(env.THUMBGATE_GA_MEASUREMENT_ID, GA_MEASUREMENT_ID_PATTERN);
-  const gaExtraMeasurementId = resolveGaExtraMeasurementId(env.THUMBGATE_GA_EXTRA_MEASUREMENT_ID);
+  const [gaMeasurementId = '', gaExtraMeasurementId = ''] = resolveGaMeasurementIds(env);
   const posthogApiKey = env.POSTHOG_API_KEY || '';
   const googleSiteVerification = normalizeTrackingId(env.THUMBGATE_GOOGLE_SITE_VERIFICATION);
   const sprintDiagnosticCheckoutUrl = normalizeAbsoluteUrl(env.THUMBGATE_SPRINT_DIAGNOSTIC_CHECKOUT_URL)
@@ -167,8 +188,12 @@ function resolveHostedBillingConfig({ requestOrigin } = {}, env = process.env) {
 }
 
 module.exports = {
+  DEFAULT_GA_MEASUREMENT_ID,
   DEFAULT_GA_EXTRA_MEASUREMENT_ID,
+  FOREIGN_GA_MEASUREMENT_IDS,
+  resolveGaMeasurementId,
   resolveGaExtraMeasurementId,
+  resolveGaMeasurementIds,
   DEFAULT_PUBLIC_APP_ORIGIN,
   DEFAULT_CHECKOUT_FALLBACK_URL,
   DEFAULT_PRO_PRICE_DOLLARS,

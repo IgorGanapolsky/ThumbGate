@@ -538,9 +538,10 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
     // 731 -> 732 (2026-11-25): scripts/assurance-report.js, the assurance-report CLI command (+1).
     // 732 -> 733 (2026-11-26): scripts/staged-secret-gate.js, a git commit with a secret staged is denied (+1).
 // 733 -> 734 (2026-11-27): scripts/transcript-incident.js, the thumbed-down action and turns for DPO pairs (+1).
+    // 735 -> 736 (2026-11-27): scripts/ga-tag.js, the GA4 funnel tag on every public page (+1).
     // 734 -> 735 (2026-11-27): scripts/data-control-report.js, the `thumbgate control` command (+1).
-    manifest.fileCount <= 735,
-    `npm package should stay <= 735 files, got ${manifest.fileCount}`
+    manifest.fileCount <= 736,
+    `npm package should stay <= 736 files, got ${manifest.fileCount}`
   );
   // Ceiling bumped from 2.75 MB → 2.85 MB (2026-04-16) to accommodate the
   // incremental review-delta demo content in public/dashboard.html landing
@@ -869,8 +870,10 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // public/guide.html (PR #5309, which left main at 11,001,184) and the opt-out and gate-id privacy fixes in
   // scripts/cli-telemetry.js. Measured 11,002,284.
   // Bumped 11.01 MB -> 11.02 MB (2026-11-27, PR #5311): the two entries above landed together. Measured 11,010,879.
-  manifest.unpackedSize <= 11_020_000,
-  `npm package should stay <= 11.02 MB unpacked, got ${manifest.unpackedSize}`
+  // Bumped 11.02 MB -> 11.03 MB (2026-11-27): scripts/ga-tag.js, the GA4 funnel tag on every public page, and the
+  // Google Analytics line in public/privacy.html. Measured 11,023,272.
+  manifest.unpackedSize <= 11_030_000,
+  `npm package should stay <= 11.03 MB unpacked, got ${manifest.unpackedSize}`
 );
 
   for (const file of requiredRuntimeFiles) {

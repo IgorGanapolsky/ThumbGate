@@ -328,7 +328,7 @@ test('runtime hosted billing config defaults to the live pro price label', () =>
     assert.equal(runtimeConfig.proPriceLabel, '$19/mo or $149/yr (individual)');
     assert.equal(runtimeConfig.proPriceDollars, 19);
     assert.equal(runtimeConfig.checkoutFallbackUrl, DEFAULT_CHECKOUT_FALLBACK_URL);
-    assert.equal(runtimeConfig.gaMeasurementId, '');
+    assert.equal(runtimeConfig.gaMeasurementId, 'G-QKENZBW1V8', 'defaults to the ThumbGate GA4 stream');
     assert.equal(runtimeConfig.googleSiteVerification, '');
   } finally {
     if (previousLabel === undefined) {

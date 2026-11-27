@@ -1209,7 +1209,8 @@ $ ... "node scripts/migrate.js --env prod"
           currency: 'USD',
         };
         window.plausible('checkout_start', { props: props });
-        sendGa4Event('begin_checkout', props);
+        // begin_checkout itself fires once on /checkout/pro (scripts/ga-tag.js), so the click is its own event.
+        sendGa4Event('checkout_cta_click', props);
         sendFirstPartyTelemetry('checkout_start', props);
       });
     }

@@ -786,7 +786,8 @@ test('checkout intent keeps first-party, Plausible, and optional GA4 telemetry',
   assert.match(landingPage, /\/v1\/telemetry\/ping/);
   assert.doesNotMatch(landingPage, /\/v1\/telemetry\/event/);
   assert.match(landingPage, /window\.plausible\('checkout_start'/);
-  assert.match(landingPage, /sendGa4Event\('begin_checkout'/);
+  // begin_checkout fires once on /checkout/pro (scripts/ga-tag.js); the landing click is its own event.
+  assert.match(landingPage, /sendGa4Event\('checkout_cta_click'/);
   assert.match(landingPage, /sendFirstPartyTelemetry\('checkout_start'/);
   assert.match(landingPage, /planId: 'pro'/);
   assert.match(landingPage, /const serverTelemetryCaptured = '__SERVER_TELEMETRY_CAPTURED__' === 'true'/);
