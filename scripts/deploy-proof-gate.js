@@ -68,16 +68,31 @@ function clauseAround(text, index, length) {
   return { clause: text.slice(start, end), terminator: text[end] || '' };
 }
 
+// 27 Nov 2026: "hasn't shipped" and "nothing was deployed" deny a deploy; "Live at 1:29 PM" is a reading's time label.
+const CONTRACTED_OR_EMPTY_BEFORE = /(?:n['’]t|\bnothing|\bnone|\bno one|\bnobody)(?:\s+[A-Za-z]+){0,2}\s*$/i;
+const TIME_LABEL_AFTER = /^\s*(?:\d{1,2}:\d{2}|\d{1,2}\s*[ap]\.?m\b)/i;
+
+/** Drop quoted and code text: a word someone quotes is not a claim the reply makes. */
+function stripQuoted(text) {
+  return String(text || '')
+    .replace(/```[\s\S]*?```/g, ' ')
+    .replace(/^\s*>.*$/gm, ' ')
+    .replace(/`[^`\n]*`/g, ' ')
+    .replace(/"[^"\n]{1,200}"|“[^”\n]{1,200}”|‘[^’\n]{1,80}’/g, ' ')
+    .replace(/(?<![A-Za-z])'[^'\n]{1,80}'(?![A-Za-z])/g, ' ');
+}
+
 /** Returns the first un-negated deploy claim in the text, or null. */
 function findDeployClaim(text) {
-  const response = String(text || '');
+  const response = stripQuoted(text);
   const re = new RegExp(CLAIM_SOURCE, 'gi');
   let match;
   while ((match = re.exec(response)) !== null) {
     const before = response.slice(Math.max(0, match.index - 30), match.index);
     const after = response.slice(match.index + match[0].length, match.index + match[0].length + 15);
     const { clause, terminator } = clauseAround(response, match.index, match[0].length);
-    if (NEGATION_BEFORE.test(before) || NEGATION_AFTER.test(after)) continue;
+    if (NEGATION_BEFORE.test(before) || NEGATION_AFTER.test(after) || CONTRACTED_OR_EMPTY_BEFORE.test(before)) continue;
+    if (/^live at$/i.test(match[0]) && TIME_LABEL_AFTER.test(response.slice(match.index + match[0].length))) continue;
     if (NON_PROD_TARGET.test(response.slice(match.index + match[0].length, match.index + match[0].length + 40))) continue;
     if (HEDGE_IN_CLAUSE.test(clause)) continue;
     if (terminator === '?') continue; // a question, not a claim

@@ -63,6 +63,8 @@ const POST_RE = /(?:^|[_.-])(?:send|post|reply)(?:[_.-]?(?:to[_.-]?)?(?:chat[_.-
 function classifyTool(toolName) {
   const base = baseToolName(toolName);
   if (!base) return null;
+  // Agent-to-agent messages (Claude Code SendMessage, a mesh peer send) are not chat bubbles a person reads.
+  if (toolName === 'SendMessage' || /(?:^|_)(?:send_peer|peer_message)$/.test(base)) return null;
   // Email has its own gate (outbound-email-send); these rules are for chat and colleague posts.
   if (/mail/.test(String(toolName).toLowerCase())) return null;
   if (EDIT_RE.test(base)) return 'edit';

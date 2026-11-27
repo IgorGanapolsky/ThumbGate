@@ -46,6 +46,7 @@ const LABEL_RE = new RegExp([
   String.raw`as\s+of\s+(?:the\s+)?(?:last|my|this|that|earlier|today|now|just\s+now)`,
   String.raw`(?:checked|verified|confirmed|read|queried|looked)\s+(?:live|just\s+now|this\s+turn|at\s+\d{1,2}:\d{2})`,
   String.raw`live\s+(?:check|read|call|query|reading|state|api|screen)`,
+  String.raw`live\s+(?:at|as\s+of)\s+\d{1,2}(?::\d{2})?`,
   String.raw`\(live\)`,
   String.raw`per\s+(?:the\s+)?(?:check|output|log|script|api|screenshot|reading)`,
   String.raw`(?:saved|cached|old|earlier|last)\s+(?:reading|read|state|file|snapshot)`,
