@@ -33,7 +33,7 @@ test('a lesson dropped by a denial is still shown on the next allowed call', () 
 
 test('an expansion inside an argument keeps a command from counting as read-only', () => {
   const { isReadOnlyCall } = require('../scripts/send-gate');
-  for (const command of ['find . -${action}', 'printf -v"x" y', 'printf -${flag} y', 'git log --pretty="x" -${n}']) {
+  for (const command of ['find . -${action}', 'printf -v"x" y', 'printf -${flag} y', 'git log --pretty="x" -${n}', 'find x${HIDDEN} -name y', 'for a in $LIST; do find $a; done']) {
     assert.equal(isReadOnlyCall('Bash', { command }), false, command);
   }
   assert.equal(isReadOnlyCall('Bash', { command: 'find . -name "*.js"' }), true);

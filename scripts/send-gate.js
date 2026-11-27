@@ -162,14 +162,21 @@ function shellSegments(command) {
   return segments.filter((s) => s.length);
 }
 
-function isReadSegment(words) {
+/** An argument whose expansion cannot add a flag: no `$`, or this command's own loop variable inside a plain word. */
+function safeArgument(arg, loopVars) {
+  if (!arg.includes('$')) return true;
+  if (arg.startsWith('$') || arg.startsWith('-')) return false;
+  return arg.split('$').slice(1).every((rest) => loopVars.has((/^\{?([A-Za-z_]\w*)/.exec(rest) || [])[1]));
+}
+
+function isReadSegment(words, loopVars) {
   let start = 0;
   while (SHELL_PREFIXES.has(words[start])) start += 1;
   const [program, ...args] = words.slice(start);
   if (!program || program === 'done' || program === 'fi') return true;
   // A loop value or a variable standing alone could smuggle in a flag, so neither may.
-  if (program === 'for') return !args.some((a) => /(?:^|\s)-/.test(a));
-  if ((program === 'git' || program === 'gh' || BANNED_ARGS[program]) && args.some((a) => a.includes('$'))) return false;
+  if (program === 'for') return !args.slice(1).some((a) => a.includes('$') || /(?:^|\s)-/.test(a));
+  if ((program === 'git' || program === 'gh' || BANNED_ARGS[program]) && !args.every((a) => safeArgument(a, loopVars))) return false;
   // `-v` writes a variable (and evaluates an array subscript); a leading expansion could turn into it.
   if (program === 'printf' && /^(?:-v|-?\$)/.test(args[0] || '')) return false;
   if (program === 'git') return GIT_READS.has(args[0]) && !args.some((a) => /^(?:--output|--ext-diff|--open-files-in-pager|-[a-zA-Z]*O)/.test(a));
@@ -186,7 +193,8 @@ function isReadOnlyCall(toolName, toolInput = {}) {
   const base = baseToolName(toolName);
   if (command || base === 'bash' || base === 'shell') {
     const segments = shellSegments(command);
-    return Boolean(segments && segments.length && segments.every(isReadSegment));
+    const loopVars = new Set((segments || []).filter((words) => words[0] === 'for').map((words) => words[1]));
+    return Boolean(segments && segments.length && segments.every((words) => isReadSegment(words, loopVars)));
   }
   if (READ_TOOLS.has(base)) return true;
   return READ_NAME_RE.test(base) && !WRITE_WORD_RE.test(base);
