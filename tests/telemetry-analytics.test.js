@@ -381,6 +381,21 @@ test('getTelemetryAnalytics summarizes visitors, CTAs, and CLI installs', () => 
   assert.equal(analytics.cli.byPlatform.darwin, 1);
 });
 
+test('getTelemetryAnalytics measures quick-start completion from init to a passing doctor', () => {
+  const cli = (eventType, installId) => appendTelemetryEvent(tmpDir, { eventType, clientType: 'cli', installId, platform: 'darwin' });
+  cli('cli_init', 'inst_a');
+  cli('cli_doctor_pass', 'inst_a');
+  cli('cli_init', 'inst_b');
+  cli('cli_doctor_fail', 'inst_b');
+  cli('cli_init', 'inst_c');
+  cli('cli_doctor_pass', 'inst_d'); // a doctor pass without an init in the window does not count
+
+  const { quickStart } = getTelemetryAnalytics(tmpDir).cli;
+  assert.equal(quickStart.initInstalls, 3);
+  assert.equal(quickStart.doctorPassInstalls, 1);
+  assert.equal(quickStart.completionRate, 0.3333);
+});
+
 test('getTelemetryAnalytics summarizes buyer-loss, abandonment, and SEO telemetry', () => {
   appendTelemetryEvent(tmpDir, {
     eventType: 'landing_page_view',

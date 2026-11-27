@@ -5018,6 +5018,8 @@ switch (COMMAND) {
       process.stdout.write(`\n${require(path.join(PKG_ROOT, 'scripts', 'send-gate')).formatHolds(holds)}\n`);
     }
     const ready = report.overallStatus === 'ready' && wiring.overall !== 'error';
+    // Quick-start funnel: init (cli_init) to a doctor that passes. Detached, because exit follows.
+    try { require('../scripts/cli-telemetry').trackEventDetached(ready ? 'cli_doctor_pass' : 'cli_doctor_fail', { command: 'doctor' }); } catch (_) { /* best-effort */ }
     process.exit(ready ? 0 : 1);
     break;
   }

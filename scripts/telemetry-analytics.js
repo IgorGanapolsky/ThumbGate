@@ -1009,6 +1009,10 @@ function getTelemetrySummary(feedbackDir, options = {}) {
   const webSessions = new Set();
   const webCheckoutStarters = new Set();
   const cliInstalls = new Set();
+  // Quick-start funnel: installs that ran `thumbgate init`, and installs whose
+  // `thumbgate doctor` later reported ready (cli_doctor_pass).
+  const quickStartInitInstalls = new Set();
+  const quickStartDoctorPassInstalls = new Set();
   const pageViewsBySource = {};
   const pageViewsByCampaign = {};
   const pageViewsByPath = {};
@@ -1319,6 +1323,9 @@ function getTelemetrySummary(feedbackDir, options = {}) {
 
     if ((entry.clientType || entry.client) === 'cli') {
       if (entry.installId) cliInstalls.add(entry.installId);
+      const cliEvent = entry.eventType || entry.event;
+      if (entry.installId && cliEvent === 'cli_init') quickStartInitInstalls.add(entry.installId);
+      if (entry.installId && cliEvent === 'cli_doctor_pass') quickStartDoctorPassInstalls.add(entry.installId);
       incrementCounter(cliByPlatform, entry.platform);
       incrementCounter(cliByVersion, entry.version);
     }
@@ -1454,6 +1461,14 @@ function getTelemetrySummary(feedbackDir, options = {}) {
     cli: {
       uniqueInstalls: cliInstalls.size,
       initPings: byEventType.cli_init || 0,
+      quickStart: (() => {
+        const completed = [...quickStartDoctorPassInstalls].filter((id) => quickStartInitInstalls.has(id)).length;
+        return {
+          initInstalls: quickStartInitInstalls.size,
+          doctorPassInstalls: completed,
+          completionRate: safeRate(completed, quickStartInitInstalls.size),
+        };
+      })(),
       byPlatform: cliByPlatform,
       byVersion: cliByVersion,
     },
