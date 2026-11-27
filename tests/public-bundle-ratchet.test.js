@@ -308,7 +308,8 @@ const path = require('node:path');
 // 734 -> 735 (2026-11-27): scripts/data-control-report.js, the `thumbgate control` command (where data lives, what the usage ping sends).
 // 735 -> 736 (2026-11-27): scripts/ga-tag.js, the GA4 funnel tag (page views everywhere, begin_checkout, purchase).
 // 736 -> 738 (2026-11-27): scripts/cloud-rules-export.js (export-rules, whose bump landed only in package-boundary) and scripts/pii-scanner.js, which it requires (+2).
-const BASELINE_FILE_COUNT = 738;
+// 738 -> 740 (2026-11-27): scripts/skill-shell-gate.js and scripts/gate-check-core.js, the PreSkillShellCommand hook (PR 5331) (+2).
+const BASELINE_FILE_COUNT = 740;
 function readBundleSnapshot() {
   const repoRoot = path.resolve(__dirname, '..');
   const stdout = execSync('npm pack --dry-run --json', {

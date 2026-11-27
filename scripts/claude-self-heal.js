@@ -58,8 +58,59 @@ function repairUnreadClaudeHooks(options = {}) {
   }
 }
 
+function userSettingsPath(homeDir) {
+  return path.join(homeDir, '.claude', 'settings.json');
+}
+
+function entriesHaveCommand(entries, pattern) {
+  return Array.isArray(entries) && entries.some((entry) => {
+    const list = Array.isArray(entry && entry.hooks) ? entry.hooks : [];
+    return list.some((hook) => hook && typeof hook.command === 'string' && pattern.test(hook.command));
+  });
+}
+
+// Older installs have the PreToolUse gate but no PreSkillShellCommand hook; add it on MCP start.
+function needsSkillShellHook(filePath) {
+  try {
+    if (!fs.existsSync(filePath)) return false;
+    const settings = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+    const hooks = settings && settings.hooks;
+    if (!hooks || typeof hooks !== 'object') return false;
+    if (!entriesHaveCommand(hooks.PreToolUse, /\bgate-check\b/)) return false;
+    return !entriesHaveCommand(hooks.PreSkillShellCommand, /\bskill-shell-gate\b/);
+  } catch {
+    return false;
+  }
+}
+
+function repairMissingSkillShellHook(options = {}) {
+  const env = options.env || process.env;
+  const homeDir = options.homeDir || env.HOME || env.USERPROFILE || '';
+  if (!homeDir) return { changed: false, skipped: true, reason: 'no-home' };
+  if (env.THUMBGATE_DISABLE_CLAUDE_SELF_HEAL === '1') return { changed: false, skipped: true, reason: 'disabled' };
+  const settingsPath = options.settingsPath || userSettingsPath(homeDir);
+  if (!needsSkillShellHook(settingsPath)) return { changed: false, skipped: true, reason: 'nothing-to-add' };
+
+  try {
+    const wiring = require('./auto-wire-hooks');
+    if (!wiring.claudeSupportsSkillShellHook(env)) return { changed: false, skipped: true, reason: 'claude-too-old' };
+    // Add only the missing hook; never re-run the full installer (it would reset statusLine).
+    const settings = JSON.parse(fs.readFileSync(settingsPath, 'utf8'));
+    const { matcher, hooks } = wiring.skillShellHookDefinition();
+    settings.hooks.PreSkillShellCommand = [...(settings.hooks.PreSkillShellCommand || []), { matcher, hooks }];
+    if (!options.dryRun) fs.writeFileSync(settingsPath, JSON.stringify(settings, null, 2) + '\n');
+    // stderr only: the MCP server speaks JSON-RPC on stdout.
+    console.error('[thumbgate] Added the PreSkillShellCommand hook to ~/.claude/settings.json (warn-only by default). It takes effect in new Claude Code sessions.');
+    return { changed: true, settingsPath };
+  } catch (error) {
+    return { changed: false, skipped: true, reason: 'repair-failed', error };
+  }
+}
+
 module.exports = {
   legacyLocalSettingsPath,
+  needsSkillShellHook,
+  repairMissingSkillShellHook,
   repairUnreadClaudeHooks,
   unreadFileHasThumbgateHooks,
 };
