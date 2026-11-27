@@ -859,8 +859,11 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // scripts/send-gate.js and bin/cli.js, and the Holds section in README.md and public/guide.html. Measured 10,961,084.
   // Bumped 10.97 MB -> 10.98 MB (2026-11-26, PR #5300): captureFeedback keeps lastAction's command, key-aware
   // credential redaction (redactSecretKeysDeep), and the capture_feedback lastAction schema. Measured 10,972,782.
-  manifest.unpackedSize <= 10_990_000,
-  `npm package should stay <= 10.99 MB unpacked, got ${manifest.unpackedSize}`
+  // Bumped 10.99 MB -> 11.00 MB (2026-11-27, PR #5307): the free-plan upgrade path (localLicenseActive in
+  // src/api/server.js, the Free plan header and upgrade links in public/dashboard.html and public/lessons.html).
+  // Measured 10,991,855.
+  manifest.unpackedSize <= 11_000_000,
+  `npm package should stay <= 11.00 MB unpacked, got ${manifest.unpackedSize}`
 );
 
   for (const file of requiredRuntimeFiles) {
