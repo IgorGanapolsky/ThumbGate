@@ -809,7 +809,7 @@ $ ... "node scripts/migrate.js --env prod"
           <tbody>
             <tr><th>Runs on your machine</th><td>The rule check in your agent's hook. Feedback, lessons and learned rules are stored locally unless you point ThumbGate at a hosted endpoint.</td></tr>
             <tr><th>Sent off it</th><td>Usage pings with a random install ID; <code>THUMBGATE_NO_TELEMETRY=1</code> stops them. In releases up to 27 November 2026, <code>DO_NOT_TRACK=1</code> alone does not stop the install ping, and learned-rule pings carry words from the command. Also: package downloads and version checks (npm, GitHub; <code>THUMBGATE_NO_AUTO_UPDATE=1</code> stops the daily update), a search model from huggingface.co, and whatever hosted features you sign up for. <a href="/privacy">Privacy</a>.</td></tr>
-            <tr><th>Free and Pro</th><td>Free keeps the shipped safety rules and enforces your first 3 learned rules. Pro ($19/mo or $149/yr) enforces every learned rule and adds recall and lesson search. New installs get 7 days of Pro.</td></tr>
+            <tr><th>Free and Pro</th><td>Free keeps the shipped safety rules and enforces your first 3 learned rules. Pro ($__PRO_PRICE_DOLLARS__/mo) enforces every learned rule and adds recall and lesson search. New installs get 7 days of Pro.</td></tr>
             <tr><th>Not protected</th><td>Anything that skips your agent's hook, a reworded action, or damage from an allowed command: ThumbGate is not a sandbox. Many flagged actions only warn unless you turn on strict mode. <a href="#coverage">What it catches and misses</a>.</td></tr>
           </tbody>
         </table>
