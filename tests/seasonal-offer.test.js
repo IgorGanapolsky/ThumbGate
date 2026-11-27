@@ -47,6 +47,7 @@ function fakeStripe({ existingCoupon = null, couponError = null } = {}) {
       retrieve: async () => {
         if (couponError) throw couponError;
         if (existingCoupon) return existingCoupon;
+        if (couponsCreated.length) return { ...couponsCreated[couponsCreated.length - 1], valid: true };
         const err = new Error('No such coupon'); err.statusCode = 404; err.code = 'resource_missing'; throw err;
       },
       create: async (params) => { couponsCreated.push(params); return { ...params, valid: true }; },
@@ -157,4 +158,59 @@ test('the pricing banner stays hidden by CSS outside the window', () => {
   const html = fs.readFileSync(path.join(__dirname, '..', 'public', 'pricing.html'), 'utf8');
   assert.match(html, /\.bf-offer\[hidden\]\s*\{\s*display:none;/);
   assert.match(html, /id="bf-offer"[^>]*\bhidden>/);
+});
+
+test('the price refresh pre-creates the coupon and proves the $89.40 first year', async () => {
+  billing._resetSeasonalOfferForTests();
+  const stripe = fakeStripe();
+  const previews = [];
+  stripe.invoices = {
+    createPreview: async (params) => {
+      previews.push(params);
+      const pct = params.discounts && params.discounts[0] ? 0.4 : 0;
+      return { subtotal: 14900, total_excluding_tax: Math.round(14900 * (1 - pct)), currency: 'usd' };
+    },
+  };
+  const status = await billing.refreshSeasonalOfferStatus({ stripe, nowMs: IN_WINDOW, annualPriceId: 'price_annual' });
+  assert.equal(stripe.couponsCreated.length, 1);
+  assert.equal(status.ok, true);
+  assert.equal(status.couponId, 'BLACKFRIDAY2026');
+  assert.equal(status.coupon.percentOff, 40);
+  assert.deepEqual(previews[0].discounts, [{ coupon: 'BLACKFRIDAY2026' }]);
+  assert.deepEqual(previews[0].subscription_details.items, [{ price: 'price_annual', quantity: 1 }]);
+  assert.equal(status.annualPreview.totalExcludingTax, 8940);
+  assert.equal(billing.getSeasonalOfferStatus(), status);
+});
+
+test('the refresh reports not ok when the coupon cannot be prepared', async () => {
+  billing._resetSeasonalOfferForTests();
+  const warn = console.warn;
+  console.warn = () => {};
+  try {
+    const stripe = fakeStripe({ couponError: Object.assign(new Error('boom'), { statusCode: 500 }) });
+    const status = await billing.refreshSeasonalOfferStatus({ stripe, nowMs: IN_WINDOW, annualPriceId: 'price_annual' });
+    assert.equal(status.active, true);
+    assert.equal(status.ok, false);
+    assert.equal(status.couponId, null);
+  } finally {
+    console.warn = warn;
+  }
+});
+
+test('outside the window the refresh creates nothing', async () => {
+  billing._resetSeasonalOfferForTests();
+  const stripe = fakeStripe();
+  const status = await billing.refreshSeasonalOfferStatus({ stripe, nowMs: AFTER_WINDOW });
+  assert.equal(status.active, false);
+  assert.equal(stripe.couponsCreated.length, 0);
+});
+
+test('a failed invoice preview marks the offer unverified', async () => {
+  billing._resetSeasonalOfferForTests();
+  const stripe = fakeStripe();
+  stripe.invoices = { createPreview: async () => { throw Object.assign(new Error('nope'), { code: 'parameter_invalid' }); } };
+  const status = await billing.refreshSeasonalOfferStatus({ stripe, nowMs: IN_WINDOW, annualPriceId: 'price_annual' });
+  assert.equal(status.coupon.valid, true);
+  assert.equal(status.annualPreview.error, 'parameter_invalid');
+  assert.equal(status.ok, false);
 });
