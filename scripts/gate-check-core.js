@@ -1,20 +1,10 @@
 'use strict';
 
-// The PreToolUse verdict that `thumbgate gate-check` prints, as a function, so
-// other hook surfaces (PreSkillShellCommand, scripts/skill-shell-gate.js) run the
-// exact same checks in the same order instead of a copy that drifts.
+// The verdict `thumbgate gate-check` prints, shared with scripts/skill-shell-gate.js.
 
 function denyOutput(reason, extra = {}) {
-  return JSON.stringify({
-    decision: 'block',
-    reason,
-    hookSpecificOutput: {
-      hookEventName: 'PreToolUse',
-      permissionDecision: 'deny',
-      permissionDecisionReason: reason,
-      ...extra,
-    },
-  });
+  return JSON.stringify({ decision: 'block', reason,
+    hookSpecificOutput: { hookEventName: 'PreToolUse', permissionDecision: 'deny', permissionDecisionReason: reason, ...extra } });
 }
 
 async function evaluateGateCheck(input = {}, options = {}) {

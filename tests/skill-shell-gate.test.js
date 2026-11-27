@@ -10,42 +10,21 @@ const { spawnSync } = require('child_process');
 const { test, describe } = require('node:test');
 const assert = require('node:assert/strict');
 
-const {
-  readVerdict,
-  runSkillShellGate,
-  skillShellMode,
-  toPreToolUseInput,
-} = require('../scripts/skill-shell-gate');
+const { readVerdict, runSkillShellGate, skillShellMode, toPreToolUseInput } = require('../scripts/skill-shell-gate');
 const wiring = require('../scripts/auto-wire-hooks');
 const { needsSkillShellHook, repairMissingSkillShellHook } = require('../scripts/claude-self-heal');
 
 const CLI = path.join(__dirname, '..', 'bin', 'cli.js');
-
-function tmpDir() {
-  return fs.mkdtempSync(path.join(os.tmpdir(), 'tg-skill-shell-'));
-}
-
-function skillEvent(command, extra = {}) {
-  return {
-    hook_event_name: 'PreSkillShellCommand',
-    tool_name: 'Bash',
-    tool_input: { command },
-    tool_use_id: 'abc:inner:preamble-0',
-    command_name: 'deploy-helper',
-    command_source: 'plugin',
-    invoked_by: 'claude',
-    ...extra,
-  };
-}
-
-const DENY = JSON.stringify({
-  decision: 'block',
-  reason: 'force-push blocked',
-  hookSpecificOutput: { hookEventName: 'PreToolUse', permissionDecision: 'deny', permissionDecisionReason: 'force-push blocked' },
+const tmpDir = () => fs.mkdtempSync(path.join(os.tmpdir(), 'tg-skill-shell-'));
+const skillEvent = (command, extra = {}) => ({
+  hook_event_name: 'PreSkillShellCommand', tool_name: 'Bash', tool_input: { command },
+  command_name: 'deploy-helper', command_source: 'plugin', invoked_by: 'claude', ...extra,
 });
-const ASK = JSON.stringify({
-  hookSpecificOutput: { hookEventName: 'PreToolUse', permissionDecision: 'ask', permissionDecisionReason: 'needs a look' },
+const verdict = (permissionDecision, reason) => JSON.stringify({
+  hookSpecificOutput: { hookEventName: 'PreToolUse', permissionDecision, permissionDecisionReason: reason },
 });
+const DENY = verdict('deny', 'hard reset blocked');
+const ASK = verdict('ask', 'needs a look');
 const ALLOW = JSON.stringify({ hookSpecificOutput: { hookEventName: 'PreToolUse', additionalContext: '' } });
 
 describe('skill-shell-gate verdict mapping', () => {
@@ -77,7 +56,7 @@ describe('runSkillShellGate', () => {
   test('warn mode: command still runs, Claude Code shows a warning, hit is logged', async () => {
     const dir = tmpDir();
     const logPath = path.join(dir, 'log.jsonl');
-    const out = await runSkillShellGate(skillEvent('git push --force origin main'), {
+    const out = await runSkillShellGate(skillEvent('git reset --hard HEAD~3'), {
       env: {}, evaluate: async () => DENY, logPath,
     });
     assert.equal(out.hookSpecificOutput, undefined, 'warn-only must not emit a decision');
@@ -85,20 +64,20 @@ describe('runSkillShellGate', () => {
     assert.match(out.systemMessage, /\/deploy-helper/);
     const entry = JSON.parse(fs.readFileSync(logPath, 'utf8').trim());
     assert.equal(entry.action, 'warned');
-    assert.equal(entry.command, 'git push --force origin main');
+    assert.equal(entry.command, 'git reset --hard HEAD~3');
     assert.equal(entry.skill, 'deploy-helper');
   });
 
   test('enforce mode: denies with the PreSkillShellCommand output shape', async () => {
     const dir = tmpDir();
-    const out = await runSkillShellGate(skillEvent('git push --force origin main'), {
+    const out = await runSkillShellGate(skillEvent('git reset --hard HEAD~3'), {
       env: { THUMBGATE_SKILL_SHELL_GATE: 'enforce' }, evaluate: async () => DENY, logPath: path.join(dir, 'l.jsonl'),
     });
     assert.deepEqual(out, {
       hookSpecificOutput: {
         hookEventName: 'PreSkillShellCommand',
         permissionDecision: 'deny',
-        permissionDecisionReason: 'ThumbGate: force-push blocked',
+        permissionDecisionReason: 'ThumbGate: hard reset blocked',
       },
     });
   });
@@ -125,34 +104,32 @@ describe('runSkillShellGate', () => {
   test('runs the real gate-check engine end to end through the CLI', () => {
     const home = tmpDir();
     const project = tmpDir();
-    const env = {
-      ...process.env,
-      HOME: home,
-      USERPROFILE: home,
-      THUMBGATE_FEEDBACK_DIR: path.join(project, '.thumbgate'),
-      THUMBGATE_NO_AUTO_UPDATE: '1',
-      THUMBGATE_SKILL_SHELL_GATE: 'enforce',
+    const env = { ...process.env, HOME: home, USERPROFILE: home, THUMBGATE_FEEDBACK_DIR: path.join(project, '.thumbgate'),
+      THUMBGATE_NO_AUTO_UPDATE: '1', THUMBGATE_SKILL_SHELL_GATE: 'enforce' };
+    const cli = (sub, payload) => {
+      const r = spawnSync(process.execPath, [CLI, sub], { cwd: project, env, input: JSON.stringify(payload), encoding: 'utf8', timeout: 60000 });
+      assert.equal(r.status, 0, r.stderr);
+      return r.stdout.trim().split('\n').pop();
     };
-    const run = (cmd) => spawnSync(process.execPath, [CLI, 'skill-shell-gate'], {
-      cwd: project, env, input: JSON.stringify(skillEvent(cmd, { cwd: project })), encoding: 'utf8', timeout: 60000,
-    });
-    const gateRun = (cmd) => spawnSync(process.execPath, [CLI, 'gate-check'], {
-      cwd: project, env, input: JSON.stringify({ tool_name: 'Bash', tool_input: { command: cmd }, cwd: project }), encoding: 'utf8', timeout: 60000,
-    });
-
-    const benign = run('echo hello');
-    assert.equal(benign.status, 0, benign.stderr);
-    assert.deepEqual(JSON.parse(benign.stdout.trim().split('\n').pop()), {});
+    assert.deepEqual(JSON.parse(cli('skill-shell-gate', skillEvent('echo hello', { cwd: project }))), {});
 
     // Whatever gate-check decides for a command, the skill hook decides the same.
-    const risky = 'git push --force origin main';
-    const pre = readVerdict(gateRun(risky).stdout.trim().split('\n').pop());
-    const skill = JSON.parse(run(risky).stdout.trim().split('\n').pop());
-    assert.equal(pre.blocked, true, 'gate-check should block a force-push to main');
+    const risky = 'git reset --hard HEAD~3';
+    const pre = readVerdict(cli('gate-check', { tool_name: 'Bash', tool_input: { command: risky }, cwd: project }));
+    const skill = JSON.parse(cli('skill-shell-gate', skillEvent(risky, { cwd: project })));
+    assert.equal(pre.blocked, true, 'gate-check should block a hard reset');
     assert.equal(skill.hookSpecificOutput.hookEventName, 'PreSkillShellCommand');
     assert.equal(skill.hookSpecificOutput.permissionDecision, 'deny');
   });
 });
+
+function withHookFlag(value, fn) {
+  const prev = process.env.THUMBGATE_SKILL_SHELL_HOOK;
+  process.env.THUMBGATE_SKILL_SHELL_HOOK = value;
+  try { return fn(); } finally {
+    if (prev === undefined) delete process.env.THUMBGATE_SKILL_SHELL_HOOK; else process.env.THUMBGATE_SKILL_SHELL_HOOK = prev;
+  }
+}
 
 describe('init wiring and auto-repair', () => {
   test('parses and compares Claude Code versions', () => {
@@ -165,36 +142,25 @@ describe('init wiring and auto-repair', () => {
   });
 
   test('claudeHooks includes PreSkillShellCommand only when supported', () => {
-    const prev = process.env.THUMBGATE_SKILL_SHELL_HOOK;
-    try {
-      process.env.THUMBGATE_SKILL_SHELL_HOOK = '1';
-      const on = wiring.claudeHooks();
-      assert.match(on.PreSkillShellCommand.hooks[0].command, /\bskill-shell-gate\b/);
-      assert.equal(on.PreSkillShellCommand.matcher, '.*');
-      process.env.THUMBGATE_SKILL_SHELL_HOOK = '0';
-      assert.equal(wiring.claudeHooks().PreSkillShellCommand, undefined);
-    } finally {
-      if (prev === undefined) delete process.env.THUMBGATE_SKILL_SHELL_HOOK;
-      else process.env.THUMBGATE_SKILL_SHELL_HOOK = prev;
-    }
+    const on = withHookFlag('1', () => wiring.claudeHooks());
+    assert.match(on.PreSkillShellCommand.hooks[0].command, /\bskill-shell-gate\b/);
+    assert.equal(on.PreSkillShellCommand.matcher, '.*');
+    assert.equal(withHookFlag('0', () => wiring.claudeHooks()).PreSkillShellCommand, undefined);
   });
 
-  test('init wires the hook once, and auto-repair adds it to an older install', () => {
-    const prev = process.env.THUMBGATE_SKILL_SHELL_HOOK;
+  test('init wires the hook once, and auto-repair adds it to an older install', () => withHookFlag('1', () => {
     const dir = tmpDir();
     const settingsPath = path.join(dir, 'settings.json');
-    try {
+    {
       // An older install: ThumbGate's PreToolUse gate, no PreSkillShellCommand.
       fs.writeFileSync(settingsPath, JSON.stringify({
         hooks: { PreToolUse: [{ matcher: '.*', hooks: [{ type: 'command', command: wiring.preToolHookCommand() }] }] },
       }));
       assert.equal(needsSkillShellHook(settingsPath), true);
 
-      process.env.THUMBGATE_SKILL_SHELL_HOOK = '0';
       const tooOld = repairMissingSkillShellHook({ homeDir: dir, settingsPath, env: { THUMBGATE_SKILL_SHELL_HOOK: '0' }, projectDir: dir });
       assert.equal(tooOld.reason, 'claude-too-old');
 
-      process.env.THUMBGATE_SKILL_SHELL_HOOK = '1';
       const repaired = repairMissingSkillShellHook({ homeDir: dir, settingsPath, env: { THUMBGATE_SKILL_SHELL_HOOK: '1' }, projectDir: dir });
       assert.equal(repaired.changed, true);
       const settings = JSON.parse(fs.readFileSync(settingsPath, 'utf8'));
@@ -207,11 +173,8 @@ describe('init wiring and auto-repair', () => {
       const again = JSON.parse(fs.readFileSync(settingsPath, 'utf8'));
       assert.equal(again.hooks.PreSkillShellCommand.length, 1);
       assert.equal(again.hooks.PreToolUse.filter((e) => /gate-check/.test(e.hooks[0].command)).length, 1);
-    } finally {
-      if (prev === undefined) delete process.env.THUMBGATE_SKILL_SHELL_HOOK;
-      else process.env.THUMBGATE_SKILL_SHELL_HOOK = prev;
     }
-  });
+  }));
 
   test('auto-repair leaves settings without a ThumbGate gate alone', () => {
     const dir = tmpDir();

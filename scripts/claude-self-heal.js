@@ -69,10 +69,7 @@ function entriesHaveCommand(entries, pattern) {
   });
 }
 
-// Installs made before the PreSkillShellCommand hook existed have ThumbGate's
-// PreToolUse gate but nothing on PreSkillShellCommand, so shell commands that
-// skills run while loading skip the gate. On MCP start, once the installed Claude
-// Code supports the hook, add it (wireClaudeHooks adds only what is missing).
+// Older installs have the PreToolUse gate but no PreSkillShellCommand hook; add it on MCP start.
 function needsSkillShellHook(filePath) {
   try {
     if (!fs.existsSync(filePath)) return false;

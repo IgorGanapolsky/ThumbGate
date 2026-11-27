@@ -52,11 +52,8 @@ const OBSERVE_TOOL_MATCHER = '^(?:Bash|Shell|bash)$|teams.*(send|reply|post_mess
 // ~/.thumbgate/bin/thumbgate-hook exists, and wireClaudeHooks installs it just before wiring.
 // Built at load time, a first install wired hooks pinned to `thumbgate@<init version>`, which
 // never update (2026-11-25, docs/decisions/2026-11-24-revenue-funnel-activation.md loop 3).
-// PreSkillShellCommand (Claude Code 2.1.332, 2026-11-24) is the only hook that sees
-// shell commands a skill runs while it loads; PreToolUse never fires for them.
-// Older Claude Code ignores the key but warns about it on every start, so it is
-// wired only when the installed `claude` is new enough. Self-heal adds it later,
-// after the user upgrades. THUMBGATE_SKILL_SHELL_HOOK=1 forces it on, =0 off.
+// PreSkillShellCommand (Claude Code 2.1.332) sees skill load-time shell commands. Older
+// versions warn about the key on every start, so wire it only for 2.1.332+ (=1/=0 forces).
 const SKILL_SHELL_MIN_CLAUDE = [2, 1, 332];
 let cachedClaudeVersion;
 

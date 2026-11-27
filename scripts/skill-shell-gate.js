@@ -1,24 +1,11 @@
 'use strict';
 
-// PreSkillShellCommand hook (Claude Code 2.1.332, 2026-11-24).
-//
-// A skill or slash command can embed shell commands (!`cmd`) that Claude Code runs
-// while the skill loads, before the model sees it. Those commands never fire
-// PreToolUse, so `thumbgate gate-check` never saw them: a skill from a plugin or an
-// MCP server could run a command a thumbs-down had already blocked. Checked live on
-// 2026-11-27 with Claude Code 2.1.332: a skill's `echo` fired only
-// PreSkillShellCommand, and a deny from that hook kept it from running.
-//
-// This hook runs the same gate-check engine on the command. Per law 12 (new gates
-// ship warn-only first) it only warns by default: the skill's command still runs,
-// Claude Code shows the warning, and the hit is logged to
-// <feedback dir>/skill-shell-gate-log.jsonl so false positives can be counted.
-//   THUMBGATE_SKILL_SHELL_GATE=enforce  deny the command (Claude Code skips it)
-//   THUMBGATE_SKILL_SHELL_GATE=off      do nothing
-//
-// Output contract (from Claude Code 2.1.332): `{}` means no decision and the
-// command runs. permissionDecision deny/ask/defer and any updatedInput all keep it
-// from running, so this hook never emits ask or updatedInput.
+// PreSkillShellCommand hook (Claude Code 2.1.332). Shell commands a skill embeds
+// (!`cmd`) run at load time and never fire PreToolUse (checked live 2026-11-27).
+// Runs the gate-check engine on them. Warn-only by default (law 12), logged to
+// <feedback dir>/skill-shell-gate-log.jsonl; THUMBGATE_SKILL_SHELL_GATE=enforce
+// denies, =off skips. `{}` lets the command run; ask and updatedInput would also
+// block it, so this hook never emits them.
 
 const fs = require('fs');
 const path = require('path');
