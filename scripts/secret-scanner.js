@@ -900,6 +900,8 @@ function curlSegmentIsAuthenticatedRead(tokens) {
   for (let i = 1; i < tokens.length; i += 1) {
     const token = String(tokens[i]);
     const next = tokens[i + 1] === undefined ? '' : String(tokens[i + 1]);
+    // A config file (-K/--config) can carry any option, so the request cannot be validated.
+    if (token === '-K' || token === '--config' || /^--config=/.test(token) || /^-[a-zA-Z]*K/.test(token)) return false;
     if (CURL_HEADER_FLAGS.has(token)) {
       if (hasSecretEnvVarRef(next) && !AUTH_HEADER_RE.test(next)) return false;
       i += 1;
@@ -937,6 +939,11 @@ function wgetSegmentIsAuthenticatedRead(tokens) {
   for (let i = 1; i < tokens.length; i += 1) {
     const token = String(tokens[i]);
     if (WGET_BODY_FLAG_RE.test(token) || /^--method=(?!(?:GET|HEAD)$)/i.test(token)) return false;
+    if (token === '--method') {
+      if (!/^(?:GET|HEAD)$/i.test(String(tokens[i + 1] || ''))) return false;
+      i += 1;
+      continue;
+    }
     if (WGET_AUTH_FLAG_RE.test(token)) {
       const value = token.slice(token.indexOf('=') + 1);
       if (/^--header=/i.test(token) && hasSecretEnvVarRef(value) && !AUTH_HEADER_RE.test(value)) return false;
@@ -950,12 +957,18 @@ function wgetSegmentIsAuthenticatedRead(tokens) {
 function isAuthenticatedReadCommand(command) {
   const text = String(command || '');
   if (/\/dev\/tcp\//i.test(text) || /\$\(|`|<\(/.test(text)) return false;
+  // printenv/env reads a secret without a $ reference; never part of a plain read.
+  if (/\b(?:printenv|env)\s+[A-Za-z_]/.test(text)) return false;
   // Every segment that names a secret variable must be a read-only curl/wget whose
-  // only use of the secret is as the request's credential.
+  // only use of the secret is as the request's credential, and no other segment may
+  // reach the network (that would be a second, unvalidated outbound request).
   let sawAuthRead = false;
   for (const segment of splitCommandSegments(text)) {
-    if (!hasSecretEnvVarRef(segment)) continue;
     const tokens = tokenizeCommand(segment);
+    if (!hasSecretEnvVarRef(segment)) {
+      if (segmentHasNetworkExfil(segment)) return false;
+      continue;
+    }
     const index = segmentNetworkVerbIndex(tokens);
     if (tokens.slice(0, index).some((token) => isShellAssignment(token) && hasSecretEnvVarRef(token))) return false;
     const verb = path.basename(String(tokens[index] || '')).toLowerCase();

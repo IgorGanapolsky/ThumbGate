@@ -4698,11 +4698,11 @@ function recordSecretViolation(input, scanResult) {
 // An authenticated read (the secret env var is only the request's credential, see
 // isAuthenticatedReadCommand in secret-scanner.js) is a precision fix for database
 // reads that were hard-denied as exfiltration. Per the warn-only-first rule it
-// warns by default; THUMBGATE_STRICT_ENFORCEMENT=1 keeps the old deny.
+// warns by default; live mode (THUMBGATE_STRICT_ENFORCEMENT=1 or THUMBGATE_GOVERNANCE_MODE=live) keeps the deny.
 function evaluateSecretAdvisory(input, scanResult) {
   const findings = scanResult.findings || [];
   if (!findings.length || !findings.every((finding) => finding && finding.advisory === true)) return null;
-  if (process.env.THUMBGATE_STRICT_ENFORCEMENT === '1') return null;
+  if (resolveGovernanceMode() === 'live') return null;
   const toolName = input.tool_name || input.toolName || 'unknown';
   const toolInput = input.tool_input || {};
   const message = 'A secret environment variable is sent only as the credential of a read request '
@@ -5380,8 +5380,20 @@ function evaluateUnconditionalHardFloor(rawInput = {}, options = {}) {
   const view = repeatedMistakeView(input);
   const { evaluateTailscaleOctoberAccess } = require('./tailscale-october-access');
   const october = evaluateTailscaleOctoberAccess(view);
-  if (october && october.decision === 'warn') advisories.push(october);
-  else if (october) return { hardFloor: denyRepeatedMistake(view, october), securityScan, advisories };
+  if (october && october.decision === 'warn' && resolveGovernanceMode() !== 'live') advisories.push(october);
+  else if (october && october.decision === 'warn') {
+    return {
+      hardFloor: denyRepeatedMistake(view, {
+        ...october,
+        decision: 'deny',
+        severity: 'critical',
+        failureReason: october.denyFailureReason || october.failureReason,
+        message: 'Denied database credential in the command: a password does not belong on the laptop. Use an identity that is not pasted into the shell.',
+      }),
+      securityScan,
+      advisories,
+    };
+  } else if (october) return { hardFloor: denyRepeatedMistake(view, october), securityScan, advisories };
 
   const { evaluateGitLabSdlcPrompts } = require('./gitlab-sdlc-prompts');
   const sdlc = evaluateGitLabSdlcPrompts(view);

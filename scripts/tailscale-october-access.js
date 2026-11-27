@@ -403,15 +403,16 @@ function evaluateTailscaleOctoberAccess(view = {}) {
   if (invocation) return invocation;
   const attachedMysqlPassword = /\b(?:mysql|mariadb)\b/i.test(body)
     && ATTACHED_MYSQL_PASSWORD_RE.test(body);
-  if (process.env.THUMBGATE_STRICT_ENFORCEMENT !== '1' && !attachedMysqlPassword && DB_PASSWORD_RE.test(body)
+  if (!attachedMysqlPassword && DB_PASSWORD_RE.test(body)
     && !DB_PASSWORD_RE.test(body.replace(DB_PASSWORD_ENV_REFERENCE_RE, ' '))) {
     // PGPASSWORD="$DB_PASSWORD" psql …: the value is a variable the shell expands, so no
-    // password is pasted into the command. Warn-only first; THUMBGATE_STRICT_ENFORCEMENT=1 keeps the deny.
+    // password is pasted into the command. Warn-only first; gates-engine turns it back into the deny in live mode.
     return {
       decision: 'warn',
       gate: GATE,
       severity: 'medium',
       failureReason: 'db_password_env_reference',
+      denyFailureReason: 'shared_db_password',
       message: 'The database password comes from an environment variable, not a literal in the command. Allowed with a warning: prefer an identity (IAM, .pgpass, a socket) over a shared password.',
     };
   }
