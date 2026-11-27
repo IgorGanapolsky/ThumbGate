@@ -78,7 +78,7 @@ test('replies that claim nothing unproven are not stopped', () => {
 });
 
 test('a real unproven shipping claim is still sent back and says how to continue', () => {
-  for (const reply of ['The fix is deployed.', 'We shipped it to production.', 'The new page is live at https://example.com/pricing.']) {
+  for (const reply of ['The fix is deployed.', 'We shipped it to production.', 'The new site went live at 1:29 PM.', 'The fix went live at 2 PM on app.example.com.', 'The new page is live at https://example.com/pricing.']) {
     const found = objections(reply);
     assert.ok(found.length > 0, reply);
     assert.match(found[0].text, /not verified|not checked|check/i, 'says how to continue');
@@ -116,6 +116,12 @@ test('after a thumbs-down, reads, local notes and peer messages are not held', (
 test('a local file edit that only names a send tool is not an outbound send', { todo: 'narrowing the email gate needs its own review' }, () => {
   const command = "node -e \"require('fs').writeFileSync('notes.txt', 'mcp__slack__slack_send_message')\"";
   assert.notEqual(preTool(newSession(), 'Bash', { command }).decision, 'deny');
+});
+
+test('a commit into a folder that does not exist is not called too large to scan', () => {
+  const missing = path.join(home, 'no-such-repo');
+  const out = preTool(newSession(), 'Bash', { command: `git -C ${missing} commit -m "x"` });
+  assert.doesNotMatch(out.reason, /scan incomplete|secret/i);
 });
 
 test('real destructive commands and duplicate chat posts stay blocked, and say how to continue', () => {

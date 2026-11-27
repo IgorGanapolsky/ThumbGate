@@ -291,7 +291,10 @@ function scanStagedForCommit(toolName, toolInput, cwd) {
 
   const lines = [];
   let incomplete = false;
+  // A lone commit into a folder that does not exist fails by itself; a chained command could create it first.
+  const lone = !/[;&|\n`]|\$\(/.test(command);
   for (const { flags, dir, staged } of invocations) {
+    if (lone && dir && !fs.existsSync(dir)) continue;
     const diffs = diffArgsFor(flags, dir);
     if (!diffs) continue;
     for (const args of diffs) {

@@ -70,7 +70,9 @@ function clauseAround(text, index, length) {
 
 // 27 Nov 2026: "hasn't shipped" and "nothing was deployed" deny a deploy; "Live at 1:29 PM" is a reading's time label.
 const CONTRACTED_OR_EMPTY_BEFORE = /(?:n['’]t|\bnothing|\bnone|\bno one|\bnobody)(?:\s+[A-Za-z]+){0,2}\s*$/i;
-const TIME_LABEL_AFTER = /^\s*(?:\d{1,2}:\d{2}|\d{1,2}\s*[ap]\.?m\b)/i;
+// Only a label that opens the sentence ("Live at 1:29 PM: ..."): "the site went live at 2 PM" is still a claim.
+const TIME_LABEL_AFTER = /^\s*\d{1,2}(?::\d{2})?\s*(?:[ap]\.?m\.?)?(?:\s+[A-Z]{2,4})?\s*[:,—]/i;
+const SENTENCE_START_BEFORE = /(?:^|[.!?]\s|\n)[-*#\s]*$/;
 
 /** Drop quoted and code text: a word someone quotes is not a claim the reply makes. */
 function stripQuoted(text) {
@@ -92,7 +94,7 @@ function findDeployClaim(text) {
     const after = response.slice(match.index + match[0].length, match.index + match[0].length + 15);
     const { clause, terminator } = clauseAround(response, match.index, match[0].length);
     if (NEGATION_BEFORE.test(before) || NEGATION_AFTER.test(after) || CONTRACTED_OR_EMPTY_BEFORE.test(before)) continue;
-    if (/^live at$/i.test(match[0]) && TIME_LABEL_AFTER.test(response.slice(match.index + match[0].length))) continue;
+    if (/^live at$/i.test(match[0]) && SENTENCE_START_BEFORE.test(response.slice(0, match.index)) && TIME_LABEL_AFTER.test(response.slice(match.index + match[0].length))) continue;
     if (NON_PROD_TARGET.test(response.slice(match.index + match[0].length, match.index + match[0].length + 40))) continue;
     if (HEDGE_IN_CLAUSE.test(clause)) continue;
     if (terminator === '?') continue; // a question, not a claim
