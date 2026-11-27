@@ -166,8 +166,15 @@ function shellSegments(command) {
   const text = String(command || '').replace(/(?:[12]?>|&>)\s*\/dev\/null\b|[12]>&[12]\b/g, ' ');
   const segments = [[]];
   let word = '';
+  let bare = ''; // the unquoted characters of the word, where the shell can still expand braces
+  let braces = false;
   let quote = null;
-  const endWord = () => { if (word) segments[segments.length - 1].push(word); word = ''; };
+  const endWord = () => {
+    if (/\{[^{}]*(?:,|\.\.)[^{}]*\}/.test(bare)) braces = true;
+    if (word) segments[segments.length - 1].push(word);
+    word = '';
+    bare = '';
+  };
   for (let i = 0; i < text.length; i += 1) {
     const c = text[i];
     if (quote !== "'" && (c === '`' || (c === '$' && text[i + 1] === '('))) return null;
@@ -182,10 +189,11 @@ function shellSegments(command) {
     else if ('<>()'.includes(c)) return null;
     else if (';|&\n'.includes(c)) { endWord(); segments.push([]); }
     else if (/\s/.test(c)) endWord();
-    else word += c;
+    else { word += c; bare += c; }
   }
   if (quote) return null;
   endWord();
+  if (braces) return null; // `{-delete,-print}` becomes flags that no check here would see
   return segments.filter((s) => s.length);
 }
 
@@ -220,11 +228,23 @@ function isReadOnlyCall(toolName, toolInput = {}) {
   const base = baseToolName(toolName);
   if (command || base === 'bash' || base === 'shell') {
     const segments = shellSegments(command);
-    const loopVars = new Set((segments || []).filter((words) => words[0] === 'for').map((words) => words[1]));
+    // Only plain literal values: a space or a glob could add a flag when the variable is expanded unquoted.
+    const loopVars = new Set((segments || [])
+      .filter((words) => words[0] === 'for' && words.slice(3).every((value) => /^[\w.:/@%+=,][\w.:/@%+=,-]*$/.test(value)))
+      .map((words) => words[1]));
     return Boolean(segments && segments.length && segments.every((words) => isReadSegment(words, loopVars)));
   }
   if (READ_TOOLS.has(base)) return true;
   return READ_NAME_RE.test(base) && !WRITE_WORD_RE.test(base);
+}
+
+// ---------------------------------------------------------------------------
+// History: the newest records, plus each session's latest action, so reads cannot push out what a hold lands on.
+function trimActions(actions, now) {
+  const latest = new Map();
+  for (const a of actions) if (!a.readOnly && now - a.at <= LAST_ACTION_WINDOW_MS) latest.set(a.sessionId, a);
+  const kept = new Set(latest.values());
+  return actions.filter((a, i) => i >= actions.length - KEEP_ACTIONS || kept.has(a));
 }
 
 // ---------------------------------------------------------------------------
@@ -473,10 +493,10 @@ function evaluate({ feedbackDir, toolName, toolInput = {}, sessionId = '', now =
     const prev = state.actions[state.actions.length - 1];
     // Posts and edits have no command, so their wording (hashed) is what tells two approved posts apart.
     const textHash = kind ? hashText(textOf(toolInput)) : null;
-    const dup = prev && prev.toolName === toolName && prev.signature === signature && prev.chatKey === chatKey && (prev.textHash || null) === textHash && now - prev.at < 2000;
+    const dup = prev && prev.toolName === toolName && prev.signature === signature && prev.chatKey === chatKey && (prev.textHash || null) === textHash && Boolean(prev.readOnly) === readOnly && now - prev.at < 2000;
     if (!dup) {
       state.actions.push({ at: now, sessionId: String(sessionId || ''), toolName, kind: kind || 'action', chatKey, signature, ...(textHash ? { textHash } : {}), ...(readOnly ? { readOnly: true } : {}) });
-      state.actions = state.actions.slice(-KEEP_ACTIONS);
+      state.actions = trimActions(state.actions, now);
       changed = true;
     }
     if (changed) {

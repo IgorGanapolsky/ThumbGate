@@ -49,7 +49,7 @@ function stripLessonMarkup(text) {
 // What of a lesson is fit to show on this call, or null.
 function presentableLesson({ title, advice }, actionContext) {
   const [cleanTitle, cleanAdvice] = [title, advice].map((value) => (
-    isRawTranscriptFragment(value) ? '' : stripLessonMarkup(value)
+    isRawTranscriptFragment(value) || isRawTranscriptFragment(stripLessonMarkup(value)) ? '' : stripLessonMarkup(value)
   ));
   const shown = `${cleanTitle} ${cleanAdvice}`;
   const context = String(actionContext || '').toLowerCase();
@@ -155,7 +155,7 @@ function lessonMatchScore(lesson, { toolName, actionContext } = {}) {
   const blob = lessonBlob(lesson);
   const hitTerms = terms.filter((term) => blob.includes(term));
   // A matching tool name only breaks ties: on its own it would match every call of that tool.
-  if (hitTerms.length === 0) return 0;
+  if (hitTerms.length === 0) return lessonSharesAction(lesson, { toolName, actionContext }) ? 1 : 0;
   let score = hitTerms.length + (toolHit ? 1 : 0);
   const gitMutation = hitTerms.some((term) => ['push', 'merge', 'force', 'approve', 'admin'].includes(term));
   if (gitMutation && blob.includes('branch protection')) score += 5;
@@ -249,7 +249,7 @@ function formatInjectableReminder(lessons) {
     const raw = lessonDisplayText(lesson);
     if (!raw || isRawTranscriptFragment(raw)) continue;
     let text = stripLessonMarkup(raw);
-    if (!text) continue;
+    if (!text || isRawTranscriptFragment(text)) continue;
     const prefix = `${bodies.length + 1}. `;
     let room = (MAX_INJECTED_TOKENS - used - estimateTokens(prefix) - 1) * CHARS_PER_TOKEN;
     if (room < 24) break;

@@ -38,3 +38,10 @@ test('an expansion inside an argument keeps a command from counting as read-only
   }
   assert.equal(isReadOnlyCall('Bash', { command: 'find . -name "*.js"' }), true);
 });
+
+test("a lesson is recorded as shown only for a result that prints it", () => {
+  const { lessonSessionId } = require("../scripts/gates-engine");
+  const input = { session_id: "s" };
+  for (const decision of ["allow", "deny", "approve", "log"]) assert.equal(lessonSessionId(input, { decision }), undefined, decision);
+  for (const result of [null, { decision: "warn" }]) assert.equal(lessonSessionId(input, result), "s");
+});

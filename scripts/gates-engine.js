@@ -5897,9 +5897,9 @@ async function runAsyncCore(rawInput) {
 
   
   const behavioralContext = safeSecretStorageWrite ? null : buildBehavioralContext();
-  // A denial drops the lesson text, so such a call must not record the lesson as shown.
+  // Only a warning or no result prints the lesson text; any other call must not record the lesson as shown.
   const posturedResult = applyEnforcementPosture(result);
-  const lessonContext = safeSecretStorageWrite ? null : await buildRelevantLessonContextAsync(toolName, toolInput, { sessionId: isBlockingDecision(posturedResult) ? undefined : input.session_id || input.sessionId || input.conversation_id });
+  const lessonContext = safeSecretStorageWrite ? null : await buildRelevantLessonContextAsync(toolName, toolInput, { sessionId: lessonSessionId(input, posturedResult) });
   
   if (lessonContext && lessonContext.decision === "deny") {
     return formatOutput(applyEnforcementPosture(lessonContext));
@@ -5947,9 +5947,9 @@ function run(rawInput) {
 
   
   const behavioralContext = safeSecretStorageWrite ? null : buildBehavioralContext();
-  // A denial drops the lesson text, so such a call must not record the lesson as shown.
+  // Only a warning or no result prints the lesson text; any other call must not record the lesson as shown.
   const posturedResult = applyEnforcementPosture(result);
-  const lessonContext = safeSecretStorageWrite ? null : buildRelevantLessonContext(toolName, toolInput, { sessionId: isBlockingDecision(posturedResult) ? undefined : input.session_id || input.sessionId || input.conversation_id });
+  const lessonContext = safeSecretStorageWrite ? null : buildRelevantLessonContext(toolName, toolInput, { sessionId: lessonSessionId(input, posturedResult) });
   
   if (lessonContext && lessonContext.decision === "deny") {
     return formatOutput(applyEnforcementPosture(lessonContext));
@@ -5967,6 +5967,12 @@ function run(rawInput) {
   const combinedContext = combineWithSessionDedupe(input, lessonContext, recentContext, behavioralContext, designContext);
   return formatOutput(posturedResult, combinedContext);
 
+}
+
+// The session to record a shown lesson under: none when this result will not print the lesson text.
+function lessonSessionId(input, result) {
+  if (result && result.decision !== 'warn') return undefined;
+  return input.session_id || input.sessionId || input.conversation_id;
 }
 
 // Recent-corrections and recurring-pattern text is identical call after call; inject it
@@ -6512,6 +6518,7 @@ module.exports = {
   isAutonomousRun,
   computeExecutableHash,
   formatOutput,
+  lessonSessionId,
   finalizeFinancialAuthorization,
   isApprovalGatesEnabled,
   runHardFloor,

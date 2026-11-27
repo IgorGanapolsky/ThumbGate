@@ -51,3 +51,17 @@ test('pasted markup is never injected as a lesson', () => {
   const out = formatNegativeLessonContext([pasted], PUBLISH_CALL) || '';
   assert.doesNotMatch(out, /pasted_content|everything|ignored a prior instruction/);
 });
+
+test("a good lesson survives pasted markup, which is removed", () => {
+  const mixed = lesson("l9", "Ran npm publish unchecked", "Check npm publish output <pasted_content id=\"x\">secret paste</pasted_content>");
+  const out = formatNegativeLessonContext([mixed], PUBLISH_CALL);
+  assert.match(out, /Check npm publish output/);
+  assert.doesNotMatch(out, /pasted_content|secret paste/);
+});
+
+test("markup cannot hide a quoted-back message, and two shared words are enough in both injectors", () => {
+  const wrapped = lesson("l7", "<b>It ignored a prior instruction: npm publish everything", "<i>follow the earlier instruction npm publish");
+  assert.equal(formatNegativeLessonContext([wrapped], PUBLISH_CALL), null);
+  const rule = { id: "l8", whatToChange: "Back up the invoice ledger first" };
+  assert.equal(relevance.selectInjectableLessons([rule], { toolName: "Bash", actionContext: "Bash mv invoice ledger", record: false }).length, 1);
+});

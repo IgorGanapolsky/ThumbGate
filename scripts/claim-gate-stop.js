@@ -134,7 +134,7 @@ function hasEvidence(text) {
 
 // Claude Code can take Stop feedback without printing a hook error. Older and unknown hosts ignore that shape, which
 // would switch the gate off, so only a transcript from a version known to accept it gets it.
-const FEEDBACK_SINCE = [2, 1, 332];
+const FEEDBACK_SINCE = [2, 1, 163];
 function acceptsStopFeedback(version) {
   const parts = String(version || '').split('.').map(Number);
   if (parts.length !== 3 || parts.some((part) => !Number.isInteger(part))) return false;

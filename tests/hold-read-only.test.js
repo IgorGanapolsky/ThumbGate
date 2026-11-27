@@ -22,8 +22,9 @@ test('the two refused calls from 27 Nov run while a hold is active', () => {
   for (const [toolName, input] of [['mcp__claude_ai_Gmail__get_message', { messageId: 'm1' }], bash(GH_LOOP)]) {
     const dir = fresh();
     const t = Date.now();
-    call(dir, toolName, input, t);
+    call(dir, ...bash('git push origin main'), t);
     down(dir, t + 1000);
+    assert.equal(sg.listHolds({ feedbackDir: dir }).holds.length, 1, 'a hold is active');
     assert.equal(call(dir, toolName, input, t + 2000), null, `${toolName} is a read`);
   }
 });
@@ -77,4 +78,32 @@ test('replay: thumbs down, then "fix all problems" through the real prompt hook 
   assert.equal(sg.listHolds({ feedbackDir: dir }).holds.length, 1, 'the thumbs-down placed a hold');
   prompt('fix all problems');
   assert.equal(sg.listHolds({ feedbackDir: dir }).holds.length, 0, 'released');
+});
+
+test("brace expansion and loop values that can add a flag are not reads", () => {
+  for (const command of [
+    "find . {-delete,-print}", "gh api repos/o/r {-XDELETE,}",
+    "for a in *; do find ./$a; done", "for a in x?y; do gh api repos/o/r/$a; done", "for a in {x,y}; do find ./$a; done",
+  ]) assert.equal(sg.isReadOnlyCall(...bash(command)), false, command);
+  for (const command of [GH_LOOP, "find . -name \"*.{js,ts}\"", "git show HEAD@{1}", "echo ${HOME}"]) {
+    assert.equal(sg.isReadOnlyCall(...bash(command)), true, command);
+  }
+});
+
+test("a write right after a read of the same address is still the action that gets held", () => {
+  const dir = fresh();
+  const t = Date.now();
+  call(dir, ...bash("gh api repos/o/r"), t);
+  call(dir, ...bash("gh api repos/o/r -X DELETE"), t + 500);
+  down(dir, t + 1000);
+  assert.equal(call(dir, ...bash("gh api repos/o/r -X DELETE"), t + 5000)?.gate, "thumbs-down-hold");
+});
+
+test("many reads do not push the marked action out of the history", () => {
+  const dir = fresh();
+  const t = Date.now();
+  call(dir, ...bash("git push origin main"), t);
+  for (let i = 0; i < 45; i += 1) call(dir, "Read", { file_path: "/f" + i }, t + 3000 * (i + 1));
+  down(dir, t + 140000);
+  assert.equal(call(dir, ...bash("git push origin main"), t + 141000)?.gate, "thumbs-down-hold");
 });

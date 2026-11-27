@@ -43,5 +43,6 @@ test('a current Claude Code gets hook feedback, not a hook error', () => {
 });
 
 test('older or unknown hosts still get the blocking form', () => {
-  for (const version of ['2.1.100', '1.9.999', undefined]) assert.equal(stop(version).decision, 'block', String(version));
+  assert.equal(stop('2.1.163').decision, undefined);
+  for (const version of ['2.1.162', '2.1.100', '1.9.999', undefined]) assert.equal(stop(version).decision, 'block', String(version));
 });
