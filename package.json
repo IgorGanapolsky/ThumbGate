@@ -1107,7 +1107,7 @@
     "test:reflector-agent": "node --test tests/reflector-agent.test.js",
     "test:public-core-boundary": "node --test tests/public-core-boundary.test.js",
     "test:feedback-session": "node --test tests/feedback-session.test.js",
-    "test:feedback-history-distiller": "node --test tests/feedback-history-distiller.test.js tests/mistake-needs-correction.test.js",
+    "test:feedback-history-distiller": "node --test tests/feedback-history-distiller.test.js tests/mistake-needs-correction.test.js tests/capture-says-advice-only.test.js",
     "test:hallucination-detector": "node --test tests/hallucination-detector.test.js",
     "test:history-distiller": "node --test tests/history-distiller.test.js",
     "test:predictive-insights": "node --test tests/predictive-insights.test.js",

@@ -2108,7 +2108,9 @@ function captureFeedback(params, options = {}) {
     promoted: true,
     promotionAccepted: true,
     status: 'promoted',
-    message: 'Feedback promoted to reusable memory.',
+    message: signal === 'negative'
+      ? 'Feedback promoted to reusable memory. This lesson is advice only: it blocks nothing until a gate is built from it.'
+      : 'Feedback promoted to reusable memory.',
     feedbackEvent,
     memoryRecord,
     _captureMs,
