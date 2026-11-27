@@ -133,7 +133,7 @@ function renderControlReportText(report) {
   lines.push(`    Fields: ${ping.fields.join(', ')} (+ ${ping.optionalFields.join(', ')} if you set an install source)`);
   lines.push(`    ${ping.eventMetadata}`);
   lines.push(`    Anonymous install id: ${ping.installIdPath}${ping.installIdExists ? '' : ' (not created yet)'}`);
-  if (ping.enabled) lines.push(`    Turn it off: export ${ping.offSwitch}`);
+  if (ping.enabled) lines.push('    Turn it off:  export THUMBGATE_NO_TELEMETRY=1', '    DO_NOT_TRACK=1 works too.');
   lines.push(`  Hosted API key (THUMBGATE_API_KEY): ${report.hostedKeySet ? 'set; commands that use the hosted API will call it' : 'not set'}`);
   lines.push('', 'Take it with you');
   lines.push(`  See what agents did:  ${report.actions.inventory}`);

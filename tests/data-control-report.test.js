@@ -46,7 +46,7 @@ test('report lists the store, the ping state and the off switch, and writes noth
   const text = renderControlReportText(on);
   assert.match(text, /feedback-log\.jsonl/);
   assert.match(text, /Usage ping: ON/);
-  assert.match(text, /THUMBGATE_NO_TELEMETRY=1/);
+  assert.match(text, /^    Turn it off:  export THUMBGATE_NO_TELEMETRY=1$/m);
 
   const off = buildControlReport({ env: { HOME: home, DO_NOT_TRACK: '1', THUMBGATE_API_KEY: 'tg_x' }, dataDir });
   assert.equal(off.usagePing.enabled, false);
