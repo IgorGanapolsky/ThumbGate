@@ -981,9 +981,35 @@ function curlDefaultConfigUnsafe(tokens, env = process.env) {
   return false;
 }
 
+// wget reads $WGETRC, ~/.wgetrc and /etc/wgetrc unless --no-config is given; one that sets a
+// body, a post file or a method voids the exception, as for curl.
+const WGETRC_UNSAFE_OPTION_RE = /^\s*(?:post_data|post_file|body_data|body_file|method)\s*=/im;
+
+function wgetDefaultConfigUnsafe(tokens, env = process.env) {
+  if (tokens.some((token) => token === '--no-config')) return false;
+  const candidates = [env.WGETRC, path.join(env.HOME || os.homedir(), '.wgetrc'), '/etc/wgetrc'].filter(Boolean);
+  for (const file of candidates) {
+    let text;
+    try {
+      if (!fs.existsSync(file)) continue;
+      text = fs.readFileSync(file, 'utf8');
+    } catch {
+      return true;
+    }
+    if (WGETRC_UNSAFE_OPTION_RE.test(text)) return true;
+  }
+  return false;
+}
+
+// The command itself can point curl/wget at another config directory or file
+// (`CURL_HOME=/tmp/x curl …`, `export HOME=…; curl …`). The gate cannot see that file
+// from its own environment, so any such assignment voids the exception.
+const CONFIG_LOCATION_ASSIGNMENT_RE = /(?:^|[\s;&|(])(?:CURL_HOME|XDG_CONFIG_HOME|HOME|WGETRC|SYSTEM_WGETRC)=/;
+
 function isAuthenticatedReadCommand(command) {
   const text = String(command || '');
   if (/\/dev\/tcp\//i.test(text) || /\$\(|`|<\(/.test(text)) return false;
+  if (CONFIG_LOCATION_ASSIGNMENT_RE.test(text)) return false;
   // printenv/env reads a secret without a $ reference; never part of a plain read.
   if (/\b(?:printenv|env)\s+[A-Za-z_]/.test(text)) return false;
   // Every segment that names a secret variable must be a read-only curl/wget whose
@@ -1001,7 +1027,7 @@ function isAuthenticatedReadCommand(command) {
     const verb = path.basename(String(tokens[index] || '')).toLowerCase();
     const rest = tokens.slice(index);
     if (verb === 'curl' && curlSegmentIsAuthenticatedRead(rest) && !curlDefaultConfigUnsafe(rest)) { sawAuthRead = true; continue; }
-    if (verb === 'wget' && wgetSegmentIsAuthenticatedRead(rest)) { sawAuthRead = true; continue; }
+    if (verb === 'wget' && wgetSegmentIsAuthenticatedRead(rest) && !wgetDefaultConfigUnsafe(rest)) { sawAuthRead = true; continue; }
     return false;
   }
   return sawAuthRead;
