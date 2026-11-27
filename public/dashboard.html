@@ -195,7 +195,7 @@ h2{font-size:20px;font-weight:700;margin-bottom:16px;letter-spacing:-.02em}
   .ob-btn.safe { border-color:rgba(74,222,128,0.35); background:rgba(74,222,128,0.04); }
   .ob-btn code { font-family:var(--mono); font-size:11px; color:var(--text-muted); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 </style>
-<script src="/project-switcher.js?v=20261124"></script>
+<script src="/project-switcher.js?v=20261127"></script>
 </head>
 <body data-revenue-assist="off">
 
@@ -682,7 +682,7 @@ h2{font-size:20px;font-weight:700;margin-bottom:16px;letter-spacing:-.02em}
   
   <div class="tab-content" id="tab-export">
     <div class="export-section">
-      <h2>Export</h2><p class="section-sub">Export training data (DPO)</p>
+      <h2>Export</h2><p class="section-sub">Export training data (DPO and KTO)</p>
       <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:24px;margin-bottom:24px;max-width:640px;">
         <h3 style="font-size:15px;margin-bottom:8px;">What is DPO?</h3>
         <p style="color:var(--text-muted);font-size:14px;line-height:1.65;margin-bottom:12px;"><strong style="color:var(--text);">Direct Preference Optimization</strong> is a technique for fine-tuning LLMs using human preference data. A 👎 becomes a training pair only when it recorded what the agent did and what it should have done, on the same task:</p>
@@ -691,11 +691,13 @@ h2{font-size:20px;font-weight:700;margin-bottom:16px;letter-spacing:-.02em}
           <div><span style="color:var(--red);">👎 "rejected"</span> — the command or reply that got the 👎</div>
           <div><span style="color:var(--green);">"chosen"</span> — the correction written for that 👎, or a 👍 on the same prompt</div>
         </div>
-        <p style="color:var(--text-muted);font-size:13px;line-height:1.6;margin-bottom:12px;">A 👎 with no recorded action or no correction is left out, never matched to an unrelated 👍. The export tells you how many were left out and why.</p>
+        <p style="color:var(--text-muted);font-size:13px;line-height:1.6;margin-bottom:12px;">A 👎 with no recorded action or no correction is left out of the pairs, never matched to an unrelated 👍. The export tells you how many were left out and why.</p>
+        <h3 style="font-size:15px;margin:16px 0 8px;">Every 👍 and 👎 counts (KTO)</h3>
+        <p style="color:var(--text-muted);font-size:13px;line-height:1.6;margin-bottom:12px;">The same file has a <code>kto</code> list: one <code>{ prompt, completion, label }</code> row for each 👍 (<code>label: true</code>) or 👎 (<code>label: false</code>) that recorded what the agent was asked and what it did. No correction is needed, so most feedback qualifies. Load <code>dpo</code> with TRL's DPOTrainer and <code>kto</code> with its KTOTrainer.</p>
         </div>
         <p style="color:var(--text-muted);font-size:14px;line-height:1.65;">Use these pairs to fine-tune any model (OpenAI, Llama, Mistral) so it <strong style="color:var(--text);">actually learns from your corrections</strong> — not just flags mistakes at the gate, but stops making them.</p>
       </div>
-      <button class="export-btn" onclick="exportDpo()">📥 Download DPO Pairs (JSON)</button>
+      <button class="export-btn" onclick="exportDpo()">📥 Download training data (JSON)</button>
       <div id="exportStatus" style="margin-top:12px;font-size:13px;color:var(--text-muted);"></div>
     </div>
   </div>
@@ -2857,21 +2859,24 @@ async function exportDpo() {
     }
     if (!res.ok) throw new Error(data.detail || data.error || 'Export failed');
     if (!Array.isArray(data.records)) throw new Error('Export response did not include DPO pairs');
-    const records = data.records;
-    if (!records.length) {
-      status.textContent = '0 preference pairs. ' + describeDpoDrops(data) + 'A pair needs a 👎 that recorded the agent\'s command or reply and a correction (whatToChange) for that same 👎.';
+    const pairs = data.records;
+    const kto = Array.isArray(data.ktoRecords) ? data.ktoRecords : [];
+    if (!pairs.length && !kto.length) {
+      status.textContent = 'Nothing to download yet: none of this project\'s 👍/👎 recorded both the request and the agent\'s command or reply. ' + describeDpoDrops(data) + 'Feedback given from Claude Code, Codex or Cursor with ThumbGate installed records both.';
       status.style.color = 'var(--text-muted)';
       return;
     }
-    const blob = new Blob([JSON.stringify(records, null, 2)], { type: 'application/json' });
+    // One file, two TRL-ready sets: dpo rows { prompt, chosen, rejected } for DPOTrainer, kto rows
+    // { prompt, completion, label } for KTOTrainer. Every 👍/👎 with a request and an agent action is a kto row.
+    const file = { format: 'thumbgate-training-data/v1', exportedAt: new Date().toISOString(), dpo: pairs, kto: kto };
+    const blob = new Blob([JSON.stringify(file, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = 'thumbgate-dpo-pairs-' + new Date().toISOString().slice(0,10) + '.json';
+    a.download = 'thumbgate-training-data-' + new Date().toISOString().slice(0,10) + '.json';
     a.click();
     URL.revokeObjectURL(url);
-    const count = records.length;
-    status.textContent = '✓ Exported ' + count + ' preference pairs. ' + describeDpoDrops(data);
+    status.textContent = '✓ Downloaded ' + pairs.length + ' DPO pair' + (pairs.length === 1 ? '' : 's') + ' and ' + kto.length + ' labeled 👍/👎 example' + (kto.length === 1 ? '' : 's') + ' (KTO). ' + describeDpoDrops(data);
     status.style.color = 'var(--green)';
   } catch (e) {
     status.textContent = '✗ ' + e.message;

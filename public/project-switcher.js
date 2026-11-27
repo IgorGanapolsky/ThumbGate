@@ -56,6 +56,20 @@
       var select = document.getElementById('projectSwitcher');
       while (select.options.length > 1) select.remove(1);
       var projects = Array.isArray(data.projects) ? data.projects : [];
+      // A link that names a project with nothing recorded (an old link, a folder with no git remote) opened an empty
+      // dashboard with 0 feedback and an empty DPO export while real projects had data. Move to the most recent
+      // project that has activity, else All projects. A real (repo_) project the catalog knows stays put.
+      var selectedEntry = selected ? projects.find(function (project) { return project.projectKey === selected; }) : null;
+      var emptyLink = selected && (!selectedEntry || (!isRealProject(selectedEntry) && !hasActivity(selectedEntry)));
+      if (emptyLink) {
+        var withData = projects.filter(function (project) { return isRealProject(project) && hasActivity(project) && project.lastActivity; }).sort(function (a, b) { return new Date(b.lastActivity) - new Date(a.lastActivity); })[0];
+        var moved = new URL(window.location.href);
+        moved.searchParams.delete('projectDir');
+        moved.searchParams.set('project', withData ? withData.projectKey : 'all');
+        moved.searchParams.set('moved', 'empty');
+        window.location.replace(moved.href);
+        return;
+      }
       if (selected && !projects.some(function (project) { return project.projectKey === selected; })) projects.push({ projectKey: selected, projectName: selectedDir ? selectedDir.split('/').filter(Boolean).pop() : 'Project with no recorded activity', counts: {} });
       // Leftover identities with nothing recorded are not worth a pick: hide them and say how many.
       // A bare dashboard URL opens on a project; "All projects" is an explicit pick (project=all).
@@ -73,7 +87,8 @@
       var current = projects.find(function (project) { return project.projectKey === selected; });
       var where = selectedDir ? selectedDir.replace(/^\/Users\/[^/]+/, '~') : '';
       var folder = nonProject && data.projectDir ? String(data.projectDir).replace(/^\/Users\/[^/]+/, '~') : '';
-      document.getElementById('projectStatus').textContent = current ? displayName(current) + (where ? ' · ' + where : '') : folder ? 'All projects · you are in ' + folder + ' (not a project)' : 'All projects: account-wide, mixes every project. Pick a project for its own numbers.';
+      var movedNote = new URL(window.location.href).searchParams.get('moved') === 'empty' ? 'The link named a project with nothing recorded, so the dashboard moved to where your data is. ' : '';
+      document.getElementById('projectStatus').textContent = movedNote + (current ? displayName(current) + (where ? ' · ' + where : '') : folder ? 'All projects · you are in ' + folder + ' (not a project)' : 'All projects: account-wide, mixes every project. Pick a project for its own numbers.');
       document.getElementById('projectGlobalGates').textContent = (data.globalGateCount || 0) + ' global gates shared across projects';
       var cards = document.getElementById('projectCards'); cards.replaceChildren();
       if (!selected) shown.forEach(function (project) {
