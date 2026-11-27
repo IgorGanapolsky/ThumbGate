@@ -27,6 +27,7 @@ const {
   codexUserPromptHookCommand,
   preToolHookCommand,
   sessionStartHookCommand,
+  skillShellHookCommand,
   statuslineCommand,
   userPromptHookCommand,
   cursorShellGateHookCommand,
@@ -51,8 +52,57 @@ const OBSERVE_TOOL_MATCHER = '^(?:Bash|Shell|bash)$|teams.*(send|reply|post_mess
 // ~/.thumbgate/bin/thumbgate-hook exists, and wireClaudeHooks installs it just before wiring.
 // Built at load time, a first install wired hooks pinned to `thumbgate@<init version>`, which
 // never update (2026-11-25, docs/decisions/2026-11-24-revenue-funnel-activation.md loop 3).
+// PreSkillShellCommand (Claude Code 2.1.332) sees skill load-time shell commands. Older
+// versions warn about the key on every start, so wire it only for 2.1.332+ (=1/=0 forces).
+const SKILL_SHELL_MIN_CLAUDE = [2, 1, 332];
+let cachedClaudeVersion;
+
+function parseClaudeVersion(text) {
+  const match = String(text || '').match(/(\d+)\.(\d+)\.(\d+)/);
+  return match ? match.slice(1, 4).map(Number) : null;
+}
+
+function versionAtLeast(version, minimum) {
+  if (!version) return false;
+  for (let i = 0; i < minimum.length; i += 1) {
+    if (version[i] !== minimum[i]) return version[i] > minimum[i];
+  }
+  return true;
+}
+
+function installedClaudeVersion() {
+  if (cachedClaudeVersion !== undefined) return cachedClaudeVersion;
+  cachedClaudeVersion = null;
+  try {
+    const { spawnSync } = require('child_process');
+    const result = spawnSync('claude', ['--version'], {
+      encoding: 'utf8',
+      timeout: 5000,
+      stdio: ['ignore', 'pipe', 'ignore'],
+      windowsHide: true,
+      shell: process.platform === 'win32',
+    });
+    if (result.status === 0) cachedClaudeVersion = parseClaudeVersion(result.stdout);
+  } catch {
+    cachedClaudeVersion = null;
+  }
+  return cachedClaudeVersion;
+}
+
+function claudeSupportsSkillShellHook(env = process.env) {
+  const flag = String(env.THUMBGATE_SKILL_SHELL_HOOK || '').trim();
+  if (flag === '1') return true;
+  if (flag === '0') return false;
+  return versionAtLeast(installedClaudeVersion(), SKILL_SHELL_MIN_CLAUDE);
+}
+
+function skillShellHookDefinition() {
+  return { matcher: '.*', hooks: [{ type: 'command', command: skillShellHookCommand() }], legacyPattern: /\bskill-shell-gate\b/ };
+}
+
 function claudeHooks() {
   return {
+    ...(claudeSupportsSkillShellHook() ? { PreSkillShellCommand: skillShellHookDefinition() } : {}),
     PreToolUse: {
       matcher: '.*',
       hooks: [{ type: 'command', command: preToolHookCommand() }],
@@ -1043,6 +1093,11 @@ module.exports = {
   staleHookPath,
   pruneStaleHooksInFile,
   claudeHooks,
+  claudeSupportsSkillShellHook,
+  skillShellHookDefinition,
+  parseClaudeVersion,
+  versionAtLeast,
+  SKILL_SHELL_MIN_CLAUDE,
   preToolHookCommand,
   claimStopHookCommand,
   userPromptHookCommand,
