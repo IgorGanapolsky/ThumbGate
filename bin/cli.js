@@ -3473,6 +3473,11 @@ function serve() {
     repairUnreadClaudeHooks();
   } catch (_) { /* self-heal is best-effort */ }
   try {
+    // Adds the PreSkillShellCommand hook to installs made before it existed.
+    const { repairMissingSkillShellHook } = require(path.join(PKG_ROOT, 'scripts', 'claude-self-heal'));
+    repairMissingSkillShellHook();
+  } catch (_) { /* self-heal is best-effort */ }
+  try {
     // Adds the thumbs-down loop hooks that older Cursor inits left out of ~/.cursor/hooks.json.
     const { repairCursorHooks } = require(path.join(PKG_ROOT, 'scripts', 'cursor-self-heal'));
     repairCursorHooks();
@@ -3511,65 +3516,8 @@ async function gateCheck() {
   try {
     const payload = readStdinText();
     const input = payload ? JSON.parse(payload) : {};
-    const gatesEngine = require(path.join(PKG_ROOT, 'scripts', 'gates-engine'));
-
-    const { evaluatePreToolUse } = require(path.join(PKG_ROOT, 'scripts', 'token-shunt-honesty'));
-    const shunt = evaluatePreToolUse({
-      toolName: input.tool_name || input.toolName,
-      toolInput: input.tool_input || input.toolInput || {},
-      cwd: input.cwd || process.cwd(),
-    });
-    if (shunt && shunt.ok === false) {
-      process.stdout.write(`${JSON.stringify({
-        decision: 'block',
-        reason: `token-shunt: ${shunt.reason}`,
-        hookSpecificOutput: {
-          hookEventName: 'PreToolUse',
-          permissionDecision: 'deny',
-          permissionDecisionReason: `token-shunt: ${shunt.reason}`,
-        },
-      })}\n`);
-      return;
-    }
-
-    const { evaluateMcpPreToolUse } = require(path.join(PKG_ROOT, 'scripts', 'third-author-governance'));
-    const thirdAuthor = evaluateMcpPreToolUse({
-      toolName: input.tool_name || input.toolName,
-      toolInput: input.tool_input || input.toolInput || {},
-      authorContext: { isAgent: true, cwd: input.cwd || process.cwd() },
-    });
-    if (thirdAuthor && thirdAuthor.permissionDecision === 'deny') {
-      process.stdout.write(`${JSON.stringify({
-        decision: 'block',
-        reason: thirdAuthor.permissionDecisionReason,
-        hookSpecificOutput: {
-          hookEventName: 'PreToolUse',
-          permissionDecision: 'deny',
-          permissionDecisionReason: thirdAuthor.permissionDecisionReason,
-          findingId: thirdAuthor.findingId,
-          alternatives: thirdAuthor.alternatives,
-        },
-      })}\n`);
-      return;
-    }
-
-    // The operator bypass only skips advisory and strict-mode gates. Security and
-    // self-protection floors are evaluated before the early approval path.
-    if (process.env.THUMBGATE_HOTFIX_BYPASS === '1') {
-      const hardFloorOutput = gatesEngine.runHardFloor(input);
-      if (hardFloorOutput) {
-        process.stdout.write(hardFloorOutput + '\n');
-        return;
-      }
-      process.stdout.write(JSON.stringify({
-        decision: 'approve',
-        reason: 'operator-bypass-opt-in',
-        hookSpecificOutput: { hookEventName: 'PreToolUse', additionalContext: '' }
-      }) + '\n');
-      return;
-    }
-
-    const output = await gatesEngine.runAsync(input);
+    const { evaluateGateCheck } = require(path.join(PKG_ROOT, 'scripts', 'gate-check-core'));
+    const output = await evaluateGateCheck(input);
     process.stdout.write(output + '\n');
   } catch (err) {
     process.stderr.write(`gate-check error: ${err.message}\n`);
@@ -3580,6 +3528,20 @@ async function gateCheck() {
       }
     }) + '\n');
   }
+}
+
+// PreSkillShellCommand hook (Claude Code 2.1.332+): shell commands a skill or slash
+// command runs while it loads never reach PreToolUse. Warn-only unless
+// THUMBGATE_SKILL_SHELL_GATE=enforce; see scripts/skill-shell-gate.js.
+async function skillShellGate() {
+  let input = {};
+  try {
+    const payload = readStdinText();
+    input = payload ? JSON.parse(payload) : {};
+  } catch (_) { input = {}; }
+  const { runSkillShellGate } = require(path.join(PKG_ROOT, 'scripts', 'skill-shell-gate'));
+  const output = await runSkillShellGate(input);
+  process.stdout.write(JSON.stringify(output) + '\n');
 }
 
 function cacheUpdate() {
@@ -4387,6 +4349,7 @@ const SUBCOMMAND_HELP = {
   lessons:       'Usage: npx thumbgate lessons [--query="..."] [--limit=N]\n\nSearch the lesson database (Pro feature).',
   search:        'Usage: npx thumbgate search <query>\n\nSearch ThumbGate knowledge base (Pro feature).',
   'gate-check':  'Usage: npx thumbgate gate-check\n\nPreToolUse hook interface: reads tool call JSON from stdin, outputs gate verdict.',
+  'skill-shell-gate': 'Usage: npx thumbgate skill-shell-gate\n\nPreSkillShellCommand hook interface (Claude Code 2.1.332+): checks shell commands that skills run while they load. Warn-only unless THUMBGATE_SKILL_SHELL_GATE=enforce.',
   'claim-stop-check': 'Usage: npx thumbgate claim-stop-check [--config=.thumbgate/claim-verifiers.json] [--cwd=path] [--json]\n\nClaude Stop hook interface: reads hook JSON from stdin, rechecks configured factual claims before Claude stops.',
   'typesafe-typed-questions': 'Usage: npx thumbgate typesafe-typed-questions [--payload=path] [--tool-name=Bash] [--command="..."] [--json] [--map-only] [--clone-jev]\n\nTypeSafe FORMAT steal: typed noul/choice/score over a PreToolUse payload, code-owned pass/review/block. Does not install typesafe-sdk or call Jev.',
   'ci-gha-buildkite-patterns': 'Usage: npx thumbgate ci-gha-buildkite-patterns [--jobs-json=path] [--workflow=path] [--json] [--map-only]\n\nBuildkite pipeline FORMAT on GitHub Actions: first-fail step, PR fail-fast, needs:/skip/annotations. Does not add Buildkite.',
@@ -4727,6 +4690,13 @@ switch (COMMAND) {
     process.exit(0);
     break;
   }
+  case 'skill-shell-gate':
+    // Never breaks a skill load on an internal error: print "no decision".
+    skillShellGate().catch(() => {
+      process.stdout.write('{}\n');
+      process.exit(0);
+    });
+    break;
   case 'gate-check':
     // Keeps the hook runtime on npm latest (one file read; at most one detached check per 24h).
     try { require('../scripts/runtime-auto-update').scheduleLatestCheck(); } catch (_) { /* best-effort */ }

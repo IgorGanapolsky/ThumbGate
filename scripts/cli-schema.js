@@ -821,6 +821,12 @@ const CLI_COMMANDS = [
     flags: [],
   },
   {
+    name: 'skill-shell-gate',
+    description: 'PreSkillShellCommand hook: checks shell commands skills run while loading (warn-only unless THUMBGATE_SKILL_SHELL_GATE=enforce)',
+    group: 'gates',
+    flags: [],
+  },
+  {
     name: 'verify-claims',
     aliases: ['verify-claim'],
     description: 'Recheck factual claims against configured SQLite, filesystem, and JSON sources',
