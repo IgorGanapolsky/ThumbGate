@@ -886,8 +886,10 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // advisory path in gates-engine.js and tailscale-october-access.js (~18 KB). Measured 11,098,009.
   // 11.11 -> 11.12 MB (2026-11-27, PR #5313): holds, reminder filtering and the one-line claim-gate feedback on top of
   // #5324 and #5332. Measured 11,113,727.
-  manifest.unpackedSize <= 11_120_000,
-  `npm package should stay <= 11.12 MB unpacked, got ${manifest.unpackedSize}`
+  // 11.12 -> 11.13 MB (2026-11-27, PR #5344): Black Friday coupon pre-create + /health invoice preview in billing.js.
+  // Measured 11,122,363.
+  manifest.unpackedSize <= 11_130_000,
+  `npm package should stay <= 11.13 MB unpacked, got ${manifest.unpackedSize}`
 );
 
   for (const file of requiredRuntimeFiles) {
