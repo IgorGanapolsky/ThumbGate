@@ -49,9 +49,20 @@ test('formatTable states that only decisions are tested', () => {
 
 test('CLI decision-check --json runs the real gates in an isolated home', () => {
   const home = fs.mkdtempSync(path.join(os.tmpdir(), 'decision-check-home-'));
+  // Inherited state overrides must not receive gate stats or cooldowns from the dry run.
+  const stateDir = fs.mkdtempSync(path.join(os.tmpdir(), 'decision-check-state-'));
+  const xdgState = fs.mkdtempSync(path.join(os.tmpdir(), 'decision-check-xdg-'));
+  const feedbackDir = fs.mkdtempSync(path.join(os.tmpdir(), 'decision-check-feedback-'));
   const result = spawnSync(process.execPath, [CLI, 'decision-check', '--json'], {
     cwd: os.tmpdir(),
-    env: { ...process.env, HOME: home, THUMBGATE_NO_NUDGE: '1' },
+    env: {
+      ...process.env,
+      HOME: home,
+      THUMBGATE_NO_NUDGE: '1',
+      THUMBGATE_STATE_DIR: stateDir,
+      XDG_STATE_HOME: xdgState,
+      THUMBGATE_FEEDBACK_DIR: feedbackDir,
+    },
     encoding: 'utf8',
     timeout: 60000,
   });
@@ -68,5 +79,15 @@ test('CLI decision-check --json runs the real gates in an isolated home', () => 
   const written = fs.existsSync(path.join(home, '.thumbgate')) ? fs.readdirSync(path.join(home, '.thumbgate')) : [];
   const allowed = new Set(['install-id', 'activation-recorded.json']);
   assert.deepEqual(written.filter((name) => !allowed.has(name)), []);
+  for (const dir of [stateDir, xdgState, feedbackDir]) {
+    assert.deepEqual(fs.readdirSync(dir), [], `${dir} must stay untouched`);
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
   fs.rmSync(home, { recursive: true, force: true });
+});
+
+test('runDecisionCheck restores the caller environment', async () => {
+  const before = { ...process.env };
+  await runDecisionCheck({ cases: [{ kind: 'harmless', command: 'ls' }], evaluate: () => '{}' });
+  assert.deepEqual({ ...process.env }, before);
 });

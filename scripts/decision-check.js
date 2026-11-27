@@ -91,18 +91,31 @@ function isolateEnvironment() {
     fs.mkdirSync(path.dirname(file), { recursive: true });
     fs.writeFileSync(file, content);
   }
+  const savedEnv = { ...process.env };
+  // Drop every inherited override that could point the engine at real state: state, feedback, runtime and ledger
+  // paths, XDG state, and enforcement or credential settings.
+  for (const key of Object.keys(process.env)) {
+    if (/^THUMBGATE_.*(DIR|PATH|FILE|HOME|ROOT|LEDGER)$/.test(key)
+      || /^THUMBGATE_(STRICT_ENFORCEMENT|GOVERNANCE_MODE|API_KEY|OPERATOR_KEY)$/.test(key)
+      || key === 'XDG_STATE_HOME') {
+      delete process.env[key];
+    }
+  }
   process.env.HOME = home;
   process.env.USERPROFILE = home;
+  // Modules loaded before this point (the CLI loads its telemetry at start) cached the real home. Every state writer
+  // the gates reach checks THUMBGATE_STATE_DIR first, so pinning it keeps cooldowns and gate stats in the throwaway root.
+  process.env.THUMBGATE_STATE_DIR = path.join(home, '.thumbgate');
+  process.env.THUMBGATE_RUNTIME_DIR = path.join(home, '.thumbgate');
   process.env.THUMBGATE_FEEDBACK_DIR = feedback;
+  process.env.THUMBGATE_PROJECT_DIR = work;
   process.env.THUMBGATE_NO_NUDGE = '1';
-  for (const key of Object.keys(process.env)) {
-    if (/^THUMBGATE_(STRICT_ENFORCEMENT|GOVERNANCE_MODE|API_KEY|OPERATOR_KEY)$/.test(key)) delete process.env[key];
-  }
-  return { root, work };
+  fs.mkdirSync(process.env.THUMBGATE_STATE_DIR, { recursive: true });
+  return { root, work, savedEnv };
 }
 
 async function runDecisionCheck({ cases = SAMPLE_CASES, evaluate } = {}) {
-  const { root, work } = isolateEnvironment();
+  const { root, work, savedEnv } = isolateEnvironment();
   const evaluator = evaluate || require('./gate-check-core').evaluateGateCheck;
   const rows = [];
   const originalCwd = process.cwd();
@@ -120,6 +133,8 @@ async function runDecisionCheck({ cases = SAMPLE_CASES, evaluate } = {}) {
     }
   } finally {
     process.chdir(originalCwd);
+    for (const key of Object.keys(process.env)) if (!(key in savedEnv)) delete process.env[key];
+    Object.assign(process.env, savedEnv);
     fs.rmSync(root, { recursive: true, force: true });
   }
   const totals = rows.reduce((acc, row) => {
