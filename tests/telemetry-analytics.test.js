@@ -396,6 +396,18 @@ test('getTelemetryAnalytics measures quick-start completion from init to a passi
   assert.equal(quickStart.completionRate, 0.3333);
 });
 
+test('quick-start completion ignores a doctor pass that came before init', () => {
+  const cli = (eventType, installId) => appendTelemetryEvent(tmpDir, { eventType, clientType: 'cli', installId, platform: 'darwin' });
+  cli('cli_doctor_pass', 'inst_e');
+  cli('cli_init', 'inst_e');
+  cli('cli_doctor_fail', 'inst_e');
+
+  const { quickStart } = getTelemetryAnalytics(tmpDir).cli;
+  assert.equal(quickStart.initInstalls, 1);
+  assert.equal(quickStart.doctorPassInstalls, 0);
+  assert.equal(quickStart.completionRate, 0);
+});
+
 test('getTelemetryAnalytics summarizes buyer-loss, abandonment, and SEO telemetry', () => {
   appendTelemetryEvent(tmpDir, {
     eventType: 'landing_page_view',
