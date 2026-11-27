@@ -446,6 +446,22 @@ function setMode(message, demoMode) {
   el.style.color = demoMode ? 'var(--text-muted)' : 'var(--green)';
 }
 
+// Free plan: lesson search and the timeline are Pro features. The message names the plan and links to checkout.
+function setProRequiredMode() {
+  isDemo = false;
+  var el = document.getElementById('lessonsMode');
+  if (!el) return;
+  el.textContent = 'Free plan — your lessons are saved, but searching them here is a Pro feature. ';
+  var link = document.createElement('a');
+  link.href = 'https://thumbgate.ai/checkout/pro?utm_source=local_dashboard&utm_medium=lessons_page&utm_content=pro_required';
+  link.textContent = 'Upgrade to Pro ($19/mo)';
+  link.setAttribute('data-upgrade-link', 'lessons');
+  link.style.cssText = 'color:var(--cyan);font-weight:600;';
+  el.appendChild(link);
+  el.style.borderColor = 'rgba(56,215,255,0.3)';
+  el.style.color = 'var(--text)';
+}
+
 function formatDate(value) {
   if (!value) return '';
   var ts = new Date(value);
@@ -1084,6 +1100,12 @@ async function loadLive() {
       projectFetch('/v1/search?q=*&limit=40&source=feedback', reqInit),
       projectFetch('/v1/dashboard', reqInit)
     ]);
+    // 429 on lesson search is the free-tier limit, not an outage: say so and show how to upgrade.
+    if (responses.some(function(res) { return res.status === 429; })) {
+      var limitErr = new Error('Pro required');
+      limitErr.proRequired = true;
+      throw limitErr;
+    }
     if (responses.some(function(res) { return !res.ok; })) {
       throw new Error('Live lessons session unavailable');
     }
@@ -1118,6 +1140,10 @@ async function loadLive() {
     setMode(formatLessonsModePrefix(paidSession, tierName) + ' — this lessons view is reading your live rules, feedback timeline, and insights.', false);
   } catch (_err) {
     document.getElementById('proBadge').style.display = 'none';
+    if (_err && _err.proRequired) {
+      setProRequiredMode();
+      return;
+    }
     var fallbackTier = resolveLessonsTierName(paidSession, null);
     setMode(formatLessonsModePrefix(paidSession, fallbackTier) + ' — live data temporarily unavailable; refresh to retry.', false);
   }

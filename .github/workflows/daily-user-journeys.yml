@@ -1,0 +1,125 @@
+name: Daily User Journeys
+
+# Browser tests that walk what a real user does, with nothing mocked (tests/journeys, Flashwright/Playwright):
+#   live     thumbgate.ai: /health (= latest npm version), landing, install, pricing > checkout page, sign-in redirects
+#   npm      the latest npm release: fresh project -> CLI feedback -> `thumbgate dashboard --open` -> every tab -> DPO download
+#   checkout the same local journey against this commit (PRs that touch the dashboard, server or CLI)
+# Every morning at 7:15 AM Eastern. A failure opens (or comments on) one issue labelled user-journey-failure,
+# which the daily Claude journey run picks up and fixes. Nothing here pays: the checkout walk stops before Stripe.
+
+on:
+  schedule:
+    - cron: '15 12 * * *'
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - 'tests/journeys/**'
+      - 'playwright.journeys.config.js'
+      - 'public/dashboard.html'
+      - 'public/lessons.html'
+      - 'public/project-switcher.js'
+      - 'src/api/server.js'
+      - 'bin/cli.js'
+      - 'scripts/export-dpo-pairs.js'
+      - 'scripts/feedback-loop.js'
+      - '.github/workflows/daily-user-journeys.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: user-journeys-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  journeys:
+    name: Journeys (${{ matrix.target }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        # A PR only walks its own build; the schedule also walks production and the npm release.
+        target: ${{ github.event_name == 'pull_request' && fromJSON('["checkout"]') || fromJSON('["live","npm","checkout"]') }}
+    env:
+      CI: 'true'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Setup Node
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install deps
+        run: npm ci --onnxruntime-node-install-cuda=skip --no-audit --no-fund
+
+      - name: Resolve Playwright version
+        id: pw
+        run: echo "version=$(node -p "require('@playwright/test/package.json').version")" >> "$GITHUB_OUTPUT"
+
+      - name: Cache Playwright browsers
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.cache/ms-playwright
+          key: pw-browsers-${{ runner.os }}-${{ steps.pw.outputs.version }}
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+
+      - name: Install the latest npm release in a clean folder
+        if: matrix.target == 'npm'
+        run: |
+          mkdir -p "$RUNNER_TEMP/npm-latest"
+          cd "$RUNNER_TEMP/npm-latest"
+          npm init -y >/dev/null
+          npm install thumbgate@latest --no-audit --no-fund --onnxruntime-node-install-cuda=skip
+          echo "THUMBGATE_CLI=$RUNNER_TEMP/npm-latest/node_modules/thumbgate/bin/cli.js" >> "$GITHUB_ENV"
+          echo "Testing thumbgate@$(node -p "require('./node_modules/thumbgate/package.json').version")"
+
+      - name: Run journeys
+        run: |
+          case "${{ matrix.target }}" in
+            live)
+              expected="$(npm view thumbgate version)" || { echo "npm view thumbgate version failed"; exit 1; }
+              [ -n "$expected" ] || { echo "npm view thumbgate version returned nothing"; exit 1; }
+              export THUMBGATE_EXPECT_VERSION="$expected"
+              npm run test:journeys:live ;;
+            *)
+              npm run test:journeys:local ;;
+          esac
+
+      - name: Upload traces and screenshots
+        if: failure()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          name: journey-failure-${{ matrix.target }}
+          path: journey-results/
+          retention-days: 14
+
+  report-failure:
+    name: Open or update the failure issue
+    needs: [journeys]
+    if: failure() && github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+    steps:
+      - name: Open or comment on the user-journey-failure issue
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          gh label create user-journey-failure --repo "$GITHUB_REPOSITORY" --color B60205 \
+            --description "A daily browser journey failed" 2>/dev/null || true
+          existing="$(gh issue list --repo "$GITHUB_REPOSITORY" --label user-journey-failure --state open \
+            --json number --jq '.[0].number // empty')"
+          body="A user journey failed on $(date -u +%F). Run, traces and screenshots: $RUN_URL"
+          if [ -n "$existing" ]; then
+            gh issue comment "$existing" --repo "$GITHUB_REPOSITORY" --body "$body"
+          else
+            gh issue create --repo "$GITHUB_REPOSITORY" --label user-journey-failure \
+              --title "Daily user journey failed" --body "$body"
+          fi

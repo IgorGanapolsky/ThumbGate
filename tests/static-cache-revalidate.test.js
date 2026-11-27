@@ -40,3 +40,12 @@ test('images stay cached as immutable', async () => {
   assert.equal(res.status, 200);
   assert.match(res.headers.get('cache-control') || '', /max-age=\d+, immutable/);
 });
+
+// The X-Content-Type-Options: nosniff header makes the browser refuse a script served as application/octet-stream.
+// On 2026-11-27 /project-switcher.js went out that way and every dashboard stuck on "Sign in" (local and hosted).
+test('scripts are served as JavaScript so the browser runs them under nosniff', async () => {
+  const res = await fetch(`${origin}/project-switcher.js`);
+  assert.equal(res.status, 200);
+  assert.match(res.headers.get('content-type') || '', /javascript/);
+  assert.equal(res.headers.get('x-content-type-options'), 'nosniff');
+});

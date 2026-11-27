@@ -4521,6 +4521,16 @@ function escapeJsonForInlineScript(value) {
   return JSON.stringify(value).replaceAll('<', String.raw`\u003c`);
 }
 
+// On a loopback dashboard, whether this machine holds a Pro license: the same check the free-tier limits use
+// (checkLimit -> isProTier). The page bootstraps every loopback visit as "local", so without this a free user read
+// "Pro License Active" and then hit "requires Pro" on export. Hosted requests get no field.
+function localLicenseField(req) {
+  if (!isLoopbackHost(getRequestHostHeader(req))) return {};
+  let active = false;
+  try { active = Boolean(isProTier()); } catch (_) { active = false; }
+  return { localLicenseActive: active };
+}
+
 function resolveLocalPageBootstrap(req, expectedApiKey) {
   const forwardedHost = req.headers['x-forwarded-host'];
   const hostHeader = Array.isArray(forwardedHost)
@@ -12107,8 +12117,9 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
           projectKey: requestProjectKey, ...projectOptions, humanOnly: true,
           projectDir: getEffectiveRequestedProjectSelection(req, parsed) || undefined });
         const tier = resolvePaidSessionTier(extractApiKey(req), expectedApiKey, expectedOperatorKey) || 'pro';
-        if (pathname === '/v1/dashboard') sendJson(res, 200, { ...data, tier });
-        else sendJson(res, 200, { ...data.feedbackAnalysis, projectKey: requestProjectKey, tier, gateStats: data.gateStats, activeGateCount: data.gateStats.totalGates, todayOverview: data.todayOverview });
+        const localLicense = localLicenseField(req);
+        if (pathname === '/v1/dashboard') sendJson(res, 200, { ...data, tier, ...localLicense });
+        else sendJson(res, 200, { ...data.feedbackAnalysis, projectKey: requestProjectKey, tier, ...localLicense, gateStats: data.gateStats, activeGateCount: data.gateStats.totalGates, todayOverview: data.todayOverview });
         return;
       }
       if (requestProjectKey != null && unavailableProjectRoutes.includes(pathname)) {
@@ -12134,6 +12145,7 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
           debugApiFallback('statusline meta unavailable', error);
           stats.tier = authenticatedTier || 'Pro';
         }
+        Object.assign(stats, localLicenseField(req));
 
         try {
           const { computeGateStats, computeTodayOverview } = require('../../scripts/dashboard');
@@ -13165,7 +13177,7 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
       if (req.method === 'POST' && pathname === '/v1/dpo/export') {
         const dpoLimit = checkLimit('export_dpo');
         if (!dpoLimit.allowed) {
-          sendJson(res, 429, { error: 'Free tier: DPO export requires Pro. Upgrade at /pricing', code: 'PRO_REQUIRED' });
+          sendJson(res, 429, { error: 'Free plan: DPO export is a Pro feature.', code: 'PRO_REQUIRED', upgradeUrl: 'https://thumbgate.ai/checkout/pro' });
           return;
         }
         const body = await readProjectBody(req);
