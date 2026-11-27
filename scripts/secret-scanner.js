@@ -145,6 +145,56 @@ const CURL_UPLOAD_FILE_OPTIONS = new Set(['-T', '--upload-file']);
 const WGET_POST_FILE_OPTIONS = new Set(['--post-file', '--body-file']);
 
 const EDIT_LIKE_TOOLS = new Set(['Edit', 'Write', 'MultiEdit']);
+// Tools that only bring a file into the agent's own context. Any other tool that takes a path
+// (an upload, a send) keeps every finding at full strength.
+const READ_ONLY_FILE_TOOLS = new Set(['Read', 'Grep', 'Glob', 'LS', 'NotebookRead']);
+
+// The "Likely secret assignment" pattern is a heuristic (a name like token/secret/password next
+// to a 16+ character value). In a file that is only being read locally (Read, or a Bash
+// sed/grep/cat with nothing that reaches the network) a match is usually a test stub or an
+// example, so it warns instead of denying (warn-only first). Every high-confidence pattern
+// (cloud keys, private keys, JWTs, live Stripe keys), every secret file path (.env, id_rsa) and
+// every send stays a deny.
+const READ_HEURISTIC_IDS = new Set(['generic_assignment']);
+
+function markLocalReadHeuristic(finding) {
+  if (!finding || !READ_HEURISTIC_IDS.has(finding.id)) return finding;
+  return { ...finding, advisory: true, advisoryKind: 'local_read_heuristic' };
+}
+
+// A positive list, not "no known network tool": every segment must be one of these plain
+// read/filter commands, so an interpreter (`| node -e …`), a shell or anything unknown voids it.
+// Options that run another program (rg --pre, sort --compress-program) or sed scripts other than
+// plain line/regex prints (sed can `e`xecute or `w`rite) void it too.
+const LOCAL_READ_VERBS = new Set(['cd', 'cat', 'head', 'tail', 'grep', 'egrep', 'fgrep', 'rg', 'sed', 'cut', 'sort', 'uniq', 'wc', 'nl', 'tr']);
+const SED_PRINT_SCRIPT_RE = /^(?:(?:\d+|\$)(?:,(?:\d+|\$))?|\/[^/]*\/)p$/;
+
+function segmentIsLocalRead(segment) {
+  const tokens = tokenizeCommand(segment);
+  if (!tokens.length) return true;
+  const verb = String(tokens[0]);
+  if (!LOCAL_READ_VERBS.has(verb)) return false;
+  const args = tokens.slice(1).map(String);
+  if (args.some((arg) => /^--(?:pre|pre-glob|compress-program)\b/.test(arg))) return false;
+  if (verb === 'sed') {
+    const scripts = [];
+    for (let i = 0; i < args.length; i += 1) {
+      const arg = args[i];
+      if (arg === '-n' || arg === '-E' || arg === '-r') continue;
+      if (arg === '-e') { scripts.push(args[i + 1] || ''); i += 1; continue; }
+      if (arg.startsWith('-')) return false;
+      if (!scripts.length) scripts.push(arg);
+    }
+    if (!scripts.length || !scripts.every((script) => SED_PRINT_SCRIPT_RE.test(script))) return false;
+  }
+  return true;
+}
+
+function commandStaysLocal(command) {
+  const text = String(command || '');
+  if (/\/dev\/(?:tcp|udp)\//i.test(text) || /\$\(|`|<\(|>\(/.test(text)) return false;
+  return splitCommandSegments(text).every(segmentIsLocalRead);
+}
 const SAFE_SECRET_STORAGE_DIRS = [
   '.resume_secrets',
   '.thumbgate/secrets',
@@ -679,10 +729,11 @@ function scanCommandReadFiles(command, cwd, provider) {
     const resolved = resolvePathToken(token, cwd);
     const fileScan = scanFile(resolved, { provider });
     if (!fileScan.detected) continue;
-    findings.push(...fileScan.findings.map((finding) => ({
-      ...finding,
-      source: 'command_file',
-    })));
+    const local = commandStaysLocal(command);
+    findings.push(...fileScan.findings.map((finding) => {
+      const tagged = { ...finding, source: 'command_file' };
+      return local ? markLocalReadHeuristic(tagged) : tagged;
+    }));
   }
   return findings;
 }
@@ -1314,7 +1365,9 @@ function scanHookPaths(state, toolName, toolInput, cwd) {
     if (!result.detected) continue;
     state.provider = result.provider;
     state.fileHashes.push(result.fileHash);
-    state.findings.push(...result.findings);
+    state.findings.push(...(READ_ONLY_FILE_TOOLS.has(toolName)
+      ? result.findings.map(markLocalReadHeuristic)
+      : result.findings));
   }
 }
 
