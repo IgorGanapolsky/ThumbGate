@@ -287,17 +287,28 @@ function normalizeCommandSignature(input) {
  * Prefer an executable action we can match at PreToolUse time.
  * Tag-only or pure prose feedback is useful memory — not an enforcement pattern.
  */
-function extractExecutableAction(entry) {
+/**
+ * The command of the tool call a thumbs-down is about, as the capture recorded it.
+ * captureFeedback stores it on `lastAction.command`; older callers used the other fields.
+ * Real tool-call text is never English prose, however many words it has.
+ */
+function recordedCommand(entry) {
   if (!entry || typeof entry !== 'object') return null;
   const fromTool =
     (entry.toolInput && (entry.toolInput.command || entry.toolInput.pattern))
     || (entry.tool_input && (entry.tool_input.command || entry.tool_input.pattern))
     || entry.command
     || entry.failedCommand
+    || (entry.lastAction && typeof entry.lastAction === 'object' && entry.lastAction.command)
     || null;
-  if (fromTool && String(fromTool).trim().length >= 4) {
-    return String(fromTool).trim();
-  }
+  const text = typeof fromTool === 'string' ? fromTool.trim() : '';
+  return text.length >= 4 ? text : null;
+}
+
+function extractExecutableAction(entry) {
+  if (!entry || typeof entry !== 'object') return null;
+  const fromTool = recordedCommand(entry);
+  if (fromTool) return fromTool;
 
   const ctx = String(entry.context || entry.whatWentWrong || '').trim();
   if (ctx.length < 4) return null;
@@ -479,6 +490,7 @@ function groupNegativeFeedback(entries, windowDays) {
       const action = extractExecutableAction(entry);
       groups[key].latestContext = action || entry.context || entry.whatWentWrong || '';
       groups[key].latestExecutable = action || '';
+      groups[key].fromToolCall = Boolean(action && recordedCommand(entry) === action);
     }
   }
 
@@ -586,6 +598,7 @@ const GATE_PROMPT = 'Saved as a lesson, but nothing can enforce it yet. Reply wi
 function gatePromptFor(entry) {
   const text = [entry && entry.context, entry && entry.whatWentWrong, entry && entry.whatToChange].filter(Boolean).join('\n');
   if (repeatAfterDeny.conditionFor(text) || deriveSurfacePattern(text)) return null;
+  if (recordedCommand(entry)) return null;
   const executable = extractExecutableAction(entry);
   return executable && !isInertProsePattern(contextToPattern(executable)) ? null : GATE_PROMPT;
 }
@@ -672,6 +685,8 @@ function buildGateRule(group, actionOverride) {
     // Two thumbs-downs from a person on one command is the person's own "never again": deny it, not just warn.
     ...(action === 'block' && Number(g.humanCount || 0) >= HUMAN_BLOCK_THRESHOLD ? { hardDeny: true } : {}),
     ...(surfacePattern && !fromExecutable ? { surfaceDerived: true } : {}),
+    // Escaped text of a recorded tool call: matchable by construction, so never quarantined as prose.
+    ...(g.fromToolCall && fromExecutable ? { fromToolCall: true } : {}),
   };
 }
 
@@ -830,7 +845,7 @@ function promote(feedbackLogPath, options) {
   // Drop permanently inert prose gates left by older force-promote / promotion bugs.
   const inertRemoved = [];
   data.gates = (data.gates || []).filter((g) => {
-    if (g && !g.condition && isInertProsePattern(g.pattern)) {
+    if (g && !g.condition && !g.fromToolCall && isInertProsePattern(g.pattern)) {
       inertRemoved.push(g);
       return false;
     }
@@ -913,7 +928,7 @@ function promote(feedbackLogPath, options) {
       });
       continue;
     }
-    if (!gate.condition && (!gate.pattern || isInertProsePattern(gate.pattern))) {
+    if (!gate.condition && (!gate.pattern || (!gate.fromToolCall && isInertProsePattern(gate.pattern)))) {
       promotions.push({
         type: 'skipped-inert-prose',
         gateId: gate.id,
@@ -1026,6 +1041,7 @@ module.exports = {
   forcePromote,
   runCli,
   gatePromptFor,
+  recordedCommand,
   repeatAfterDeny,
   loadAutoGates,
   saveAutoGates,
