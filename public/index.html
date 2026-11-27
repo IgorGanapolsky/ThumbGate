@@ -752,7 +752,7 @@
           <div class="hero-terminal" id="hero-recorded-deny" aria-label="Recorded PreToolUse decisions">
             <div class="terminal-chrome" aria-hidden="true">
               <div class="dots"><span></span><span></span><span></span></div>
-              <span class="title">recorded · thumbgate 1.45.1 · default install</span>
+              <span class="title">recorded · published package · default install</span>
               <span>exit 0</span>
             </div>
 <pre data-recorded-deny># Claude ran a prod migration. You type: thumbs down, wrong database, that was prod
@@ -767,7 +767,7 @@ $ ... "node scripts/migrate.js --env prod --force" | thumbgate gate-check
 $ ... "node scripts/migrate.js --env prod"
  "permissionDecision":"deny","permissionDecisionReason":"[GATE:auto-node-scripts-migrate-js-env-prod-…] Auto-promoted repeated executable action ... (2 occurrences in 30 days)"</pre>
           </div>
-          <p class="hero-note">Published thumbgate 1.45.1, 25 Nov 2026, no strict mode, lines shortened. <a href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/demo/thumbs-down-hold/transcript-1.45.1.txt" target="_blank" rel="noopener">Full transcript</a>. Other flagged actions only warn unless you turn on strict mode: <code>THUMBGATE_STRICT_ENFORCEMENT=1</code>.</p>
+          <p class="hero-note">Recorded from the published package on 25 Nov 2026, no strict mode, lines shortened. <a href="https://github.com/IgorGanapolsky/ThumbGate/tree/main/docs/demo/thumbs-down-hold" target="_blank" rel="noopener">Transcript and version</a>. Other flagged actions only warn unless you turn on strict mode: <code>THUMBGATE_STRICT_ENFORCEMENT=1</code>.</p>
           <p class="hero-note" id="adoption-line" hidden></p>
           <div class="cc-install" id="install">
             <p class="cc-step"><strong>1 · Install the plugin</strong> <span class="cc-where">inside Claude Code</span></p>
@@ -782,20 +782,20 @@ $ ... "node scripts/migrate.js --env prod"
           </div>
           </div>
           <figure class="hero-visual hero-statusline">
-            <div class="sl-terminal" role="img" aria-label="ThumbGate status line at the bottom of Claude Code: ThumbGate v1.45.1, Free, 0 thumbs up, 2 thumbs down this project, Dashboard, Latest mistake">
+            <div class="sl-terminal" role="img" aria-label="ThumbGate status line at the bottom of Claude Code: ThumbGate, Free, 0 thumbs up, 2 thumbs down this project, Dashboard, Latest mistake">
               <div class="terminal-chrome" aria-hidden="true">
                 <div class="dots"><span></span><span></span><span></span></div>
                 <span class="title">Claude Code · bottom status line</span>
                 <span>live</span>
               </div>
-              <p class="sl-line" data-statusline-capture><span class="sl-dim">ThumbGate v1.45.1 · Free</span> · <span class="sl-up">0👍</span> <span class="sl-down">2👎</span> <span class="sl-dim">this project (my-app)</span> · <span class="sl-link">Dashboard</span> · <span class="sl-dim">Latest mistake 11/25/2026 22:47:15: 👎 still wrong, never against prod</span></p>
+              <p class="sl-line" data-statusline-capture><span class="sl-dim">ThumbGate · Free</span> · <span class="sl-up">0👍</span> <span class="sl-down">2👎</span> <span class="sl-dim">this project (my-app)</span> · <span class="sl-link">Dashboard</span> · <span class="sl-dim">Latest mistake 11/25/2026 22:47:15: 👎 still wrong, never against prod</span></p>
             </div>
             <ul class="sl-key">
               <li><strong>0👍 2👎 this project</strong> Thumbs you gave in this project. Automated feedback is not counted.</li>
               <li><strong>Dashboard</strong> One click opens your dashboard.</li>
               <li><strong>Latest mistake …</strong> The newest lesson.</li>
             </ul>
-            <figcaption class="hero-note">Real <code>statusline-render</code> output from thumbgate 1.45.1 on 25 Nov 2026, free plan. Your counts and lesson will differ.</figcaption>
+            <figcaption class="hero-note">Real <code>statusline-render</code> output on 25 Nov 2026, free plan, version removed. Your counts and lesson will differ.</figcaption>
           </figure>
         </div>
     </section>
@@ -981,7 +981,7 @@ $ ... "node scripts/migrate.js --env prod"
         <h2 class="section-title">What it catches, and what it misses.</h2>
         <span id="proof" aria-hidden="true"></span>
         <table class="compare">
-          <caption>What a default install of ThumbGate does in Claude Code, checked with the published thumbgate 1.45.1 on 25 Nov 2026</caption>
+          <caption>What a default install of ThumbGate does in Claude Code, checked with the published package on 25 Nov 2026</caption>
           <thead><tr><th>Situation</th><th>Default install</th><th>Strict mode</th></tr></thead>
           <tbody>
             <tr><th><code>git push --force</code>, <code>git reset --hard</code>, <code>git clean -f</code>, <code>rm -rf</code> on home or root, <code>DROP TABLE</code></th><td>Denied</td><td>Denied</td></tr>
