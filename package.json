@@ -137,6 +137,7 @@
     "scripts/admin-override.js",
     "scripts/agent-action-inventory.js",
     "scripts/data-control-report.js",
+    "scripts/decision-check.js",
     "scripts/agent-audit-trace.js",
     "scripts/agentic-prompt-pipelines.js",
     "scripts/agent-design-governance.js",

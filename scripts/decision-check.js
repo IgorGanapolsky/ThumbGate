@@ -92,14 +92,10 @@ function isolateEnvironment() {
     fs.writeFileSync(file, content);
   }
   const savedEnv = { ...process.env };
-  // Drop every inherited override that could point the engine at real state: state, feedback, runtime and ledger
-  // paths, XDG state, and enforcement or credential settings.
+  // A fresh install has no THUMBGATE_* settings, so drop every inherited one: state and ledger paths, bypasses such as
+  // THUMBGATE_HOTFIX_BYPASS, strict or careful modes, and credentials. XDG state would also redirect gate stats.
   for (const key of Object.keys(process.env)) {
-    if (/^THUMBGATE_.*(DIR|PATH|FILE|HOME|ROOT|LEDGER)$/.test(key)
-      || /^THUMBGATE_(STRICT_ENFORCEMENT|GOVERNANCE_MODE|API_KEY|OPERATOR_KEY)$/.test(key)
-      || key === 'XDG_STATE_HOME') {
-      delete process.env[key];
-    }
+    if (key.startsWith('THUMBGATE_') || key === 'XDG_STATE_HOME') delete process.env[key];
   }
   process.env.HOME = home;
   process.env.USERPROFILE = home;

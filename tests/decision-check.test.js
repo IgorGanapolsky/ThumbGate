@@ -40,6 +40,42 @@ test('decision check never executes the commands it evaluates', async () => {
   fs.rmSync(sentinelDir, { recursive: true, force: true });
 });
 
+test('the real evaluator does not execute sample commands', async () => {
+  const sentinelDir = fs.mkdtempSync(path.join(os.tmpdir(), 'decision-check-real-'));
+  const sentinel = path.join(sentinelDir, 'keep.txt');
+  const created = path.join(sentinelDir, 'created.txt');
+  fs.writeFileSync(sentinel, 'keep');
+  const { rows } = await runDecisionCheck({
+    cases: [
+      { kind: 'destructive', command: `rm -rf ${sentinelDir}` },
+      { kind: 'harmless', command: `touch ${created}` },
+      { kind: 'harmless', command: `python3 -c "open('${created}', 'w')"` },
+    ],
+  });
+  assert.equal(rows.length, 3);
+  assert.ok(rows.every((row) => row.verdict !== 'error'), JSON.stringify(rows));
+  assert.ok(fs.existsSync(sentinel), 'rm -rf must not run');
+  assert.ok(!fs.existsSync(created), 'touch and python must not run');
+  fs.rmSync(sentinelDir, { recursive: true, force: true });
+});
+
+test('an inherited bypass does not change the reported decisions', async () => {
+  process.env.THUMBGATE_HOTFIX_BYPASS = '1';
+  try {
+    const { rows } = await runDecisionCheck({ cases: [{ kind: 'destructive', command: 'git reset --hard' }] });
+    assert.equal(rows[0].verdict, 'block');
+  } finally {
+    delete process.env.THUMBGATE_HOTFIX_BYPASS;
+  }
+});
+
+test('the published package ships decision-check and its evaluator', () => {
+  const pkg = JSON.parse(fs.readFileSync(path.join(ROOT, 'package.json'), 'utf8'));
+  for (const file of ['scripts/decision-check.js', 'scripts/gate-check-core.js']) {
+    assert.ok(pkg.files.includes(file), `${file} must be in package.json files`);
+  }
+});
+
 test('formatTable states that only decisions are tested', () => {
   const out = formatTable({ rows: [{ kind: 'harmless', command: 'ls', verdict: 'allow', gate: '' }], totals: { allow: 1 } });
   assert.match(out, /nothing executed/);
