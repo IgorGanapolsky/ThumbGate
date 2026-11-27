@@ -97,11 +97,7 @@ function claudeSupportsSkillShellHook(env = process.env) {
 }
 
 function skillShellHookDefinition() {
-  return {
-    matcher: '.*',
-    hooks: [{ type: 'command', command: skillShellHookCommand() }],
-    legacyPattern: /\bskill-shell-gate\b/,
-  };
+  return { matcher: '.*', hooks: [{ type: 'command', command: skillShellHookCommand() }], legacyPattern: /\bskill-shell-gate\b/ };
 }
 
 function claudeHooks() {

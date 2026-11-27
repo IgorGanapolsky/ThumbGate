@@ -29,10 +29,8 @@ const ALLOW = JSON.stringify({ hookSpecificOutput: { hookEventName: 'PreToolUse'
 
 describe('skill-shell-gate verdict mapping', () => {
   test('mode defaults to warn-only (law 12); enforce and off are opt-in', () => {
-    assert.equal(skillShellMode({}), 'warn');
-    assert.equal(skillShellMode({ THUMBGATE_SKILL_SHELL_GATE: 'enforce' }), 'enforce');
-    assert.equal(skillShellMode({ THUMBGATE_SKILL_SHELL_GATE: 'off' }), 'off');
-    assert.equal(skillShellMode({ THUMBGATE_SKILL_SHELL_GATE: 'garbage' }), 'warn');
+    const mode = (v) => skillShellMode(v === undefined ? {} : { THUMBGATE_SKILL_SHELL_GATE: v });
+    assert.deepEqual([undefined, 'enforce', 'off', 'garbage'].map(mode), ['warn', 'enforce', 'off', 'warn']);
   });
 
   test('maps the skill event onto the PreToolUse shape the gate engine reads', () => {
@@ -142,12 +140,9 @@ function withHookFlag(value, fn) {
 
 describe('init wiring and auto-repair', () => {
   test('parses and compares Claude Code versions', () => {
-    assert.deepEqual(wiring.parseClaudeVersion('2.1.332 (Claude Code)'), [2, 1, 332]);
-    assert.equal(wiring.parseClaudeVersion('nope'), null);
-    assert.equal(wiring.versionAtLeast([2, 1, 332], wiring.SKILL_SHELL_MIN_CLAUDE), true);
-    assert.equal(wiring.versionAtLeast([2, 2, 0], wiring.SKILL_SHELL_MIN_CLAUDE), true);
-    assert.equal(wiring.versionAtLeast([2, 1, 331], wiring.SKILL_SHELL_MIN_CLAUDE), false);
-    assert.equal(wiring.versionAtLeast(null, wiring.SKILL_SHELL_MIN_CLAUDE), false);
+    const { parseClaudeVersion: parse, versionAtLeast: atLeast, SKILL_SHELL_MIN_CLAUDE: min } = wiring;
+    assert.deepEqual([parse('2.1.332 (Claude Code)'), parse('nope')], [[2, 1, 332], null]);
+    assert.deepEqual([[2, 1, 332], [2, 2, 0], [2, 1, 331], null].map((v) => atLeast(v, min)), [true, true, false, false]);
   });
 
   test('claudeHooks includes PreSkillShellCommand only when supported', () => {
