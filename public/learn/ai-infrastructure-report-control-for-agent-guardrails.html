@@ -115,7 +115,7 @@
   <ul>
     <li>The ThumbGate CLI sends an anonymous usage ping: the event name, a random install id, platform, Node and package version, and a few fields of the event itself. <code>THUMBGATE_NO_TELEMETRY=1</code> or <code>DO_NOT_TRACK=1</code> turns it off.</li>
     <li>Hosted features call the ThumbGate API only when you set an API key.</li>
-    <li><code>npx thumbgate control</code> prints all of this for your own install: each store with its path and size, whether the ping is on, the exact fields, and the off switch. It writes nothing and sends nothing. It is in the npm release after 1.47.2.</li>
+    <li><code>npx thumbgate control</code> prints all of this for your own install: each store with its path and size, whether the ping is on, the exact fields, and the off switch. It writes nothing and sends nothing. It ships in ThumbGate 1.48.0 and later.</li>
     <li><code>npx thumbgate inventory</code> summarizes what the gate did: decisions per tool, the gates that blocked most, and the false-block rate.</li>
   </ul>
   <p>On cost: the free CLI keeps the default gates and your first 3 learned rules. Pro is one monthly price on the <a href="/pricing">pricing page</a>.</p>

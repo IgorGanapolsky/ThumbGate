@@ -872,8 +872,10 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // Bumped 11.01 MB -> 11.02 MB (2026-11-27, PR #5311): the two entries above landed together. Measured 11,010,879.
   // Bumped 11.02 MB -> 11.03 MB (2026-11-27): scripts/ga-tag.js, the GA4 funnel tag on every public page, and the
   // Google Analytics line in public/privacy.html. Measured 11,023,272.
-  manifest.unpackedSize <= 11_030_000,
-  `npm package should stay <= 11.03 MB unpacked, got ${manifest.unpackedSize}`
+  // Bumped 11.03 MB -> 11.04 MB (2026-11-27, v1.48.0 release): main measured 11,030,172 after #5314 and #5319
+  // (mail-note and own-site gate fixes) plus the release CHANGELOG entry. Measured 11,030,188.
+  manifest.unpackedSize <= 11_040_000,
+  `npm package should stay <= 11.04 MB unpacked, got ${manifest.unpackedSize}`
 );
 
   for (const file of requiredRuntimeFiles) {
