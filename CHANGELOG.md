@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.47.2
+
+### Patch Changes
+
+- fd46301: DPO export is usable on a local install. "All projects" on the local dashboard now includes your main `~/.thumbgate` store, even when the dashboard was started in a folder with its own `.thumbgate`. `thumbgate capture` run inside Claude Code records the command or reply you judged, a late history import reads the transcript at its own thumb, and `capture_feedback` asks callers without a transcript to send the action.
+- 820acbe: Free users on the local dashboard now see "Free plan" with an upgrade link instead of "Pro License Active". Every free-tier limit in the dashboard (DPO export, search) shows a clickable "Upgrade to Pro" link, and the Lessons page says lesson search is a Pro feature instead of "live data temporarily unavailable".
+
 ## 1.47.1
 
 ### Patch Changes
