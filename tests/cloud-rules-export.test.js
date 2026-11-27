@@ -14,6 +14,8 @@ const ex = require('../scripts/cloud-rules-export');
 
 const CLI = path.join(__dirname, '..', 'bin', 'cli.js');
 const DAY = 24 * 60 * 60 * 1000;
+// Built at runtime so the repo's secret scanners don't flag a fixture as a real token.
+const FAKE_TOKEN = ['gh', 'p_', 'abcdefghijklmnopqrstuvwxyz0123456789'].join('');
 
 function fixture() {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'tg-cloud-rules-'));
@@ -26,7 +28,7 @@ function fixture() {
   fs.writeFileSync(path.join(feedbackDir, 'auto-promoted-gates.json'), JSON.stringify({
     version: 1,
     gates: [
-      { id: 'force-push', active: true, action: 'block', pattern: 'git\\s+push\\s+--force', message: 'Auto-promoted repeated executable action: "git push --force" (3 occurrences in 30 days)', expiresAt: future },
+      { id: 'rm-rf', active: true, action: 'block', pattern: 'rm\\s+-rf\\s+/', message: 'Auto-promoted repeated executable action: "rm -rf /" (3 occurrences in 30 days)', expiresAt: future },
       { id: 'npm-publish', active: true, action: 'warn', pattern: 'npm\\s+publish', message: 'Ask before publishing', expiresAt: null },
       { id: 'expired', active: true, action: 'block', pattern: 'old-thing', message: 'expired gate', expiresAt: past },
       { id: 'off', active: false, action: 'block', pattern: 'disabled-thing', message: 'inactive gate' },
@@ -34,7 +36,7 @@ function fixture() {
   }));
   fs.writeFileSync(path.join(feedbackDir, 'claim-gate-rules.json'), JSON.stringify({
     version: 1,
-    rules: [{ id: 'claim-host', key: 'class:host', pattern: 'x', message: 'A host claim needs a check this turn. Mail ops@example.com, token ghp_abcdefghijklmnopqrstuvwxyz0123456789' }],
+    rules: [{ id: 'claim-host', key: 'class:host', pattern: 'x', message: `A host claim needs a check this turn. Mail ops@example.com, token ${FAKE_TOKEN}` }],
     evidence: {},
   }));
   fs.writeFileSync(path.join(feedbackDir, 'prevention-rules.md'), [
@@ -53,7 +55,7 @@ test('export writes live learned gates, claim rules and rules to .claude/rules/t
   assert.equal(result.files[0].changed, true);
   const md = fs.readFileSync(file, 'utf8');
   assert.ok(md.startsWith(ex.MARKER));
-  assert.match(md, /## Blocked: do not run\n\n- `git\\s\+push\\s\+--force`/);
+  assert.match(md, /## Blocked: do not run\n\n- `rm\\s\+-rf\\s\+\/`/);
   assert.match(md, /## Ask the user first\n\n- `npm\\s\+publish`.*Ask before publishing/);
   assert.match(md, /A host claim needs a check this turn/);
   assert.match(md, /- never force push main \(git-workflow\)/);
