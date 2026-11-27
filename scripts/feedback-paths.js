@@ -77,10 +77,27 @@ function getActiveProjectStatePath(options = {}) {
   return path.join(getRuntimeDir(options), 'active-project.json');
 }
 
+// A folder the person deleted is not a project. macOS keeps a running shell's cwd pointing at the folder after it
+// moves to ~/.Trash, so a session started in ~/workspace/iphone reads as ~/.Trash/iphone once that folder is trashed.
+const TRASH_SEGMENTS = [
+  ['.Trash'],
+  ['.Trashes'],
+  ['.local', 'share', 'Trash'],
+  ['$Recycle.Bin'],
+];
+
+function isTrashedDir(dirPath) {
+  const normalizedDir = normalizeDir(dirPath);
+  if (!normalizedDir) return false;
+  const parts = normalizedDir.split(/[\\/]+/).filter(Boolean);
+  return TRASH_SEGMENTS.some((segment) => parts.some((_, i) => segment.every((name, j) => parts[i + j] === name)));
+}
+
 function isTransientProjectDir(dirPath, options = {}) {
   const normalizedDir = normalizeDir(dirPath);
   if (!normalizedDir) return true;
   if (!dirExists(normalizedDir)) return true;
+  if (isTrashedDir(normalizedDir)) return true;
 
   // MCP hosts and desktop launchers commonly start global servers from `/` or
   // the user's home directory. Those are launcher contexts, not projects. If
@@ -157,7 +174,10 @@ function resolveProjectDir(options = {}) {
     }
   }
 
-  return normalizeDir(options.cwd || env.PWD || PROJECT_ROOT) || PROJECT_ROOT;
+  // Nothing real to use: never fall back to a deleted folder. The home folder reads as "not a project".
+  const fallback = normalizeDir(options.cwd || env.PWD || PROJECT_ROOT) || PROJECT_ROOT;
+  if (isTrashedDir(fallback) || !dirExists(fallback)) return normalizeDir(getHomeDir(options)) || PROJECT_ROOT;
+  return fallback;
 }
 
 function getProjectName(cwd = process.cwd()) {
@@ -295,6 +315,7 @@ module.exports = {
   hasExplicitProjectScope,
   readActiveProjectState,
   listFallbackFeedbackDirs,
+  isTrashedDir,
   listFeedbackArtifactPaths,
   resolveProjectDir,
   resolveFallbackArtifactPath,

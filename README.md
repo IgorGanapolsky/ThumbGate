@@ -20,12 +20,13 @@
 
 ## What it does
 
-AI coding agents repeat mistakes — and one wrong tool call can wipe a directory, leak a key, or push broken code.
+**ThumbGate blocks risky actions and unchecked claims** in AI coding agents. One wrong tool call can wipe a directory, leak a key, or push broken code.
 
 ThumbGate is the local-first **Pre-Action Checks** engine for AI coding agents. It runs in the PreToolUse hook to evaluate the proposed tool call before execution — so costly mistakes can be caught before they happen.
 
 - **Blocks the worst commands out of the box:** secret leaks, force-push, `git reset --hard`, `rm -rf` on home or root, `DROP TABLE`.
-- **Learns from your 👎:** tell it once what went wrong, and the same mistake gets flagged next time.
+- **Holds after your 👎:** the command your agent just ran is held until you say go ahead.
+- **Checks some claims:** in Claude Code, a reply that says "deployed" with no proof, or states that something is open or running with no check, is sent back to the agent.
 - **Runs on your machine:** no account and no cloud needed for the checks.
 
 Works with **Claude Code, Cursor, Codex, Gemini CLI, Amp, Cline, OpenCode**, and other MCP agents. [**▶ 90-second demo**](https://thumbgate.ai/#demo?utm_source=github&utm_medium=readme&utm_campaign=demo_video) · [GIF walkthrough](docs/media/thumbgate-demo.gif)
@@ -220,7 +221,7 @@ It **hard-blocks detected secret leaks and two direct self-disable command class
 | 👎 **Warn + log** | fetch-and-run, direct guardrail edits, other matching rules (become hard denies with `THUMBGATE_STRICT_ENFORCEMENT=1`) |
 | 👍 **Allow** | Everything else |
 
-**Accepted feedback is stored as local lessons.** Repeated concrete failures can become prevention rules that promote from warnings to blocking gates. The firewall improves from operations without retraining the model. Prompt evaluation (`npx thumbgate eval`) turns accepted feedback into reusable eval cases and local proof reports.
+**Accepted feedback is stored as local lessons.** Repeated concrete failures can become prevention rules that promote from warnings to blocking gates. The model is not retrained. Prompt evaluation (`npx thumbgate eval`) turns accepted feedback into reusable eval cases and local proof reports.
 
 **Honest disclaimer:** ThumbGate does not update model weights. It intercepts tool calls at runtime. Local-first — no cloud required for the enforcement path.
 

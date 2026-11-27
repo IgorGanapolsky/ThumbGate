@@ -6881,7 +6881,14 @@ function resolvePaidAuthSessionKey(req) {
 function resolvePaidSessionTier(candidate, expectedApiKey, expectedOperatorKey) {
   const key = String(candidate || '').trim();
   if (!key) return null;
-  if (expectedApiKey && safeKeyEqual(key, expectedApiKey)) return 'Enterprise';
+  if (expectedApiKey && safeKeyEqual(key, expectedApiKey)) {
+    // A local dashboard is launched with this machine's own license key, so a match says nothing about the plan.
+    // Name the tier the status line names, from the same function, so the two never disagree (Pro vs Enterprise).
+    if (process.env.THUMBGATE_PRO_MODE === '1') {
+      try { return require('../../scripts/statusline-meta').getStatuslineMeta({ env: process.env }).tier; } catch (_) { /* fall through */ }
+    }
+    return 'Enterprise';
+  }
   if (expectedOperatorKey && safeKeyEqual(key, expectedOperatorKey)) return 'Enterprise';
   const validation = validateApiKey(key);
   if (validation && validation.valid === true) {
@@ -10575,6 +10582,15 @@ a{color:#8b9}</style></head><body><form class="card" method="post" action="/oaut
         } else {
           checks.checkoutPrices = { ok: false, status: 'inactive_or_missing', severity: 'degraded', checkedAt: priceStatus.checkedAt, prices: priceStatus.prices };
           degraded = true;
+        }
+      }
+
+      // Check 5: a running seasonal offer has its coupon ready in Stripe before the first buyer arrives.
+      {
+        const offerStatus = require('../../scripts/billing').getSeasonalOfferStatus();
+        if (offerStatus && offerStatus.active) {
+          checks.seasonalOffer = offerStatus.ok ? { ...offerStatus } : { ...offerStatus, severity: 'degraded' };
+          if (!offerStatus.ok) degraded = true;
         }
       }
 

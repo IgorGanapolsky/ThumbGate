@@ -34,6 +34,12 @@ if [ -n "$PROJECT_CWD" ] && [ -d "$PROJECT_CWD" ]; then
   fi
 fi
 
+# A folder in the Trash is a deleted project, not this one (macOS keeps a session's cwd on the folder after it is
+# trashed). Leave the project unset so the counter falls back to the last real project, never the deleted one.
+case "/${PROJECT_CWD}/" in
+  */.Trash/*|*/.Trashes/*|*/.local/share/Trash/*) PROJECT_CWD="" ;;
+esac
+
 if [ -n "$PROJECT_CWD" ] && [ -d "$PROJECT_CWD" ]; then
   export THUMBGATE_PROJECT_DIR="$PROJECT_CWD"
   if [ -z "${THUMBGATE_FEEDBACK_DIR:-}" ]; then
@@ -118,6 +124,7 @@ if [ -n "$_HUMAN_JSON" ]; then
     @sh "DOWN=\(.down // 0)",
     @sh "SCOPE_LABEL=\(.label // "this project")",
     @sh "PROJECT_NAME=\(.project // "")",
+    @sh "PROJECT_PATH=\(.projectDir // "")",
     @sh "LD_TS=\(.latestDown.timestamp // "")",
     @sh "LD_LABEL=\(.latestDown.label // "")",
     @sh "LD_TEXT=\(.latestDown.text // "")",
@@ -130,7 +137,18 @@ else
 fi
 # Name the project the counts belong to, so another project's pane does not read as this one's.
 PROJECT_NAME="$(printf '%s' "${PROJECT_NAME:-}" | tr -cd 'A-Za-z0-9._ -' | cut -c1-40)"
-[[ -n "$PROJECT_NAME" ]] && SCOPE_LABEL="${SCOPE_LABEL} (${PROJECT_NAME})"
+# And where it lives, so a same-named folder elsewhere (or a stale one) is obvious: "(iphone · ~/workspace)".
+PROJECT_PARENT=""
+if [[ -n "${PROJECT_PATH:-}" ]]; then
+  PROJECT_PARENT="$(dirname "$PROJECT_PATH")"
+  [[ -n "${HOME:-}" && "$PROJECT_PARENT" == "$HOME"* ]] && PROJECT_PARENT="~${PROJECT_PARENT#"$HOME"}"
+  PROJECT_PARENT="$(printf '%s' "$PROJECT_PARENT" | tr -cd 'A-Za-z0-9._/~ -' | tail -c 30)"
+fi
+if [[ -n "$PROJECT_NAME" && -n "$PROJECT_PARENT" ]]; then
+  SCOPE_LABEL="${SCOPE_LABEL} (${PROJECT_NAME} · ${PROJECT_PARENT})"
+elif [[ -n "$PROJECT_NAME" ]]; then
+  SCOPE_LABEL="${SCOPE_LABEL} (${PROJECT_NAME})"
+fi
 
 # Background refresh from REST API when cache is stale (>120s)
 if [ $(( _NOW - ${CACHE_TS:-0} )) -gt 120 ]; then

@@ -922,7 +922,7 @@ test('root serves the landing page by default', async () => {
 
   const body = await res.text();
   assert.match(body, /ThumbGate/);
-  assert.match(body, /One thumbs-down stops Claude Code from retrying a mistake\. Two make it a hard rule/i);
+  assert.match(body, /ThumbGate blocks risky actions and unchecked claims\./i);
   assert.match(body, /warn by default/i);
   assert.match(body, /strict mode/i);
   assert.doesNotMatch(body, /learns from every mistake/i);

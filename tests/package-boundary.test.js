@@ -543,8 +543,9 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
     // 736 -> 737 (2026-11-27): scripts/cloud-rules-export.js, `thumbgate export-rules` for cloud agents (+1).
     // 737 -> 738 (2026-11-27): scripts/pii-scanner.js, which cloud-rules-export.js requires (+1).
     // 738 -> 740 (2026-11-27): scripts/skill-shell-gate.js and scripts/gate-check-core.js, the PreSkillShellCommand hook (PR 5331) (+2).
-    manifest.fileCount <= 740,
-    `npm package should stay <= 740 files, got ${manifest.fileCount}`
+    // 740 -> 741 (2026-11-27): scripts/decision-check.js, the `npx thumbgate decision-check` dry run of the default gates (PR 5343) (+1).
+    manifest.fileCount <= 741,
+    `npm package should stay <= 741 files, got ${manifest.fileCount}`
   );
   // Ceiling bumped from 2.75 MB → 2.85 MB (2026-04-16) to accommodate the
   // incremental review-delta demo content in public/dashboard.html landing
@@ -873,6 +874,7 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // public/guide.html (PR #5309, which left main at 11,001,184) and the opt-out and gate-id privacy fixes in
   // scripts/cli-telemetry.js. Measured 11,002,284.
   // Bumped 11.01 MB -> 11.02 MB (2026-11-27, PR #5311): the two entries above landed together. Measured 11,010,879.
+  // Bumped 11.02 MB -> 11.03 MB (2026-11-27, PR #5313): lesson text cleaning for the hook injectors. Measured 11,020,362.
   // Bumped 11.02 MB -> 11.03 MB (2026-11-27): scripts/ga-tag.js, the GA4 funnel tag on every public page, and the
   // Google Analytics line in public/privacy.html. Measured 11,023,272.
   // Bumped 11.03 MB -> 11.04 MB (2026-11-27, v1.48.0 release): main measured 11,030,172 after #5314 and #5319
@@ -881,8 +883,16 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // of #5326 (spend-guard research fix). Measured 11,042,740.
   // 11.05 -> 11.08 MB (2026-11-27): pii-scanner.js (required by export-rules) and the repeat-after-deny condition gate.
   // 11.08 -> 11.09 MB (2026-11-27, PR 5331): the PreSkillShellCommand hook. Measured 11,080,029.
-  manifest.unpackedSize <= 11_090_000,
-  `npm package should stay <= 11.09 MB unpacked, got ${manifest.unpackedSize}`
+  // 11.09 -> 11.11 MB (2026-11-27, PR #5324): authenticated-read classifier in secret-scanner.js plus the warn-only
+  // advisory path in gates-engine.js and tailscale-october-access.js (~18 KB). Measured 11,098,009.
+  // 11.11 -> 11.12 MB (2026-11-27, PR #5313): holds, reminder filtering and the one-line claim-gate feedback on top of
+  // #5324 and #5332. Measured 11,113,727.
+  // 11.12 -> 11.13 MB (2026-11-27, PR 5343): scripts/decision-check.js (~8 KB) and the decision-check CLI entry, on
+  // top of v1.49.2. Measured 11,129,058.
+  // 11.13 -> 11.14 MB (2026-11-27, PR #5344): Black Friday coupon pre-create + /health invoice preview in billing.js.
+  // Measured 11,131,988.
+  manifest.unpackedSize <= 11_140_000,
+  `npm package should stay <= 11.14 MB unpacked, got ${manifest.unpackedSize}`
 );
 
   for (const file of requiredRuntimeFiles) {

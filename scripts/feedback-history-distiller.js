@@ -268,11 +268,13 @@ function inferNegativeDistillation(messages, params) {
   }
 
   const evidence = [correctionMessage, failureMessage].filter(Boolean).map((entry) => truncate(entry.text));
+  const { stripLessonMarkup } = require('./lesson-hook-relevance');
+  const quoted = (message) => truncate(stripLessonMarkup(message.text), 140);
   const whatWentWrong = correctionMessage
-    ? `It ignored a prior instruction: ${truncate(correctionMessage.text, 140)}`
+    ? `It ignored a prior instruction: ${quoted(correctionMessage)}`
     : `The failure centered on: ${truncate(failureMessage.text, 140)}`;
   const whatToChange = correctionMessage
-    ? `Follow the earlier instruction instead of repeating the same pattern: ${truncate(correctionMessage.text, 140)}`
+    ? `Follow the earlier instruction instead of repeating the same pattern: ${quoted(correctionMessage)}`
     : failureMessage
       ? `Inspect and correct the failing step before repeating it: ${truncate(failureMessage.text, 140)}`
       : null;

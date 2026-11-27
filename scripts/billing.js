@@ -5334,14 +5334,73 @@ function configuredCheckoutPrices() {
 async function refreshCheckoutPriceStatus() {
   if (!CONFIG.STRIPE_SECRET_KEY) return null;
   try {
-    return await priceGuard.verifyCheckoutPrices({ stripe: getStripeClient(), configured: configuredCheckoutPrices() });
+    const stripe = getStripeClient();
+    const result = await priceGuard.verifyCheckoutPrices({ stripe, configured: configuredCheckoutPrices() });
+    await refreshSeasonalOfferStatus({ stripe }).catch(() => {});
+    return result;
   } catch {
     return null;
   }
 }
 
+// While a seasonal offer runs, create its coupon ahead of the first buyer and prove the discounted
+// first-year price with a Stripe invoice preview (no checkout session, no customer). /health reports it.
+let seasonalOfferStatus = null;
+
+async function refreshSeasonalOfferStatus({ stripe, nowMs = Date.now(), annualPriceId = CONFIG.STRIPE_PRICE_ID_PRO_ANNUAL } = {}) {
+  const checkedAt = new Date(nowMs).toISOString();
+  const offer = activeOffer(nowMs);
+  if (!offer) {
+    seasonalOfferStatus = { active: false, checkedAt };
+    return seasonalOfferStatus;
+  }
+  const status = { active: true, code: offer.code, endsAt: offer.endsAt, checkedAt, ok: false };
+  const couponId = await ensureOfferCoupon(stripe, offer);
+  status.couponId = couponId;
+  if (couponId) {
+    try {
+      const coupon = await stripe.coupons.retrieve(couponId);
+      status.coupon = {
+        valid: coupon.valid === true,
+        percentOff: coupon.percent_off ?? null,
+        duration: coupon.duration || null,
+        durationInMonths: coupon.duration_in_months ?? null,
+        redeemBy: coupon.redeem_by ? new Date(coupon.redeem_by * 1000).toISOString() : null,
+      };
+      status.ok = status.coupon.valid;
+    } catch (err) {
+      status.error = `coupon_lookup_failed:${(err && err.code) || 'error'}`;
+    }
+  }
+  if (status.ok && annualPriceId && stripe.invoices && typeof stripe.invoices.createPreview === 'function') {
+    try {
+      const preview = await stripe.invoices.createPreview({
+        customer_details: { address: { country: 'US' } },
+        subscription_details: { items: [{ price: annualPriceId, quantity: 1 }] },
+        discounts: [{ coupon: couponId }],
+      });
+      status.annualPreview = {
+        priceId: annualPriceId,
+        subtotal: preview.subtotal ?? null,
+        totalExcludingTax: preview.total_excluding_tax ?? null,
+        currency: preview.currency || null,
+      };
+    } catch (err) {
+      status.annualPreview = { priceId: annualPriceId, error: (err && (err.code || err.type)) || 'error', message: String((err && err.message) || '').slice(0, 160) };
+      // A ready coupon without a working discounted-price preview is not a verified offer.
+      status.ok = false;
+    }
+  }
+  seasonalOfferStatus = status;
+  return status;
+}
+
+function getSeasonalOfferStatus() {
+  return seasonalOfferStatus;
+}
+
 module.exports = {
-  configuredCheckoutPrices, refreshCheckoutPriceStatus,
+  configuredCheckoutPrices, refreshCheckoutPriceStatus, refreshSeasonalOfferStatus, getSeasonalOfferStatus,
   getStripeClient, classifyRevenueRecord, summarizeExternalRevenue, buildBillingSourceDiagnostics, keyStoreHasPaidKeys, funnelHasPaidEvents,
   withStripeReadSlot, getBillingAnalyticsReadPaths,
   _mergeRevenueEvents: mergeRevenueEvents,

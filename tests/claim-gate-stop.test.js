@@ -65,11 +65,11 @@ test('an absence or no-reply claim needs a label even when the turn ran a tool',
   assert.equal(evaluateDraft("As of 12:44 PM, tinyNature hasn't replied.", { toolNames: ['Bash'], ...noLessons }).block, false);
 });
 
-test('the block reason carries the retrieved lesson text', () => {
+test('the block reason says how to label the claim and attaches no retrieved lessons', () => {
   const lesson = { rule: null, content: 'Never say a tab is absent without a check from this turn.', signal: 'negative' };
   const verdict = evaluateDraft(MUST_FLAG[2], { toolNames: [], retrieve: () => [lesson] });
   assert.equal(verdict.block, true);
-  assert.match(verdict.reason, /Never say a tab is absent without a check from this turn/);
+  assert.doesNotMatch(verdict.reason, /Never say a tab is absent/);
   assert.match(verdict.reason, /"live"/);
 });
 

@@ -13,6 +13,7 @@ const fs = require('fs');
 const path = require('path');
 const os = require('os');
 const crypto = require('crypto');
+const { isDeepStrictEqual } = require('util');
 const { execFileSync, spawnSync } = require('child_process');
 const { loadOptionalModule } = require('./private-core-boundary');
 
@@ -3619,27 +3620,96 @@ function matchSelfProtectHardFloor(gate, toolName, toolInput = {}) {
   };
 }
 
+const PROMPTING_PERMISSION_MODES = new Set(['default', 'acceptEdits', 'auto']);
+
+// The commands a settings edit adds under hooks.PreToolUse, or null unless that is the whole change: every existing
+// group kept unchanged and in order, nothing else in the file different, and only plain command hooks added.
+function addedPreToolUseCommands(input) {
+  const toolName = input.tool_name || input.toolName || '';
+  const toolInput = input.tool_input || input.toolInput || {};
+  const settingsFile = String(toolInput.file_path || '');
+  // Only an absolute, already-normalized path to a Claude Code settings file is ever read.
+  if (!path.isAbsolute(settingsFile) || path.normalize(settingsFile) !== settingsFile
+    || !/[\\/]\.claude[\\/]settings(?:\.local)?\.json$/.test(settingsFile)) return null;
+  try {
+    const current = fs.readFileSync(settingsFile, 'utf8');
+    let next = toolName === 'Write' ? toolInput.content : current;
+    if (toolName === 'Edit' || toolName === 'MultiEdit') {
+      for (const edit of toolName === 'Edit' ? [toolInput] : toolInput.edits) {
+        const parts = next.split(edit.old_string);
+        if (!edit.old_string || parts.length < 2 || (parts.length > 2 && !edit.replace_all)) return null;
+        next = parts.join(edit.new_string);
+      }
+    } else if (toolName !== 'Write') {
+      return null;
+    }
+    const split = (text) => {
+      const settings = JSON.parse(text);
+      const { PreToolUse = [], ...otherHooks } = settings.hooks || {};
+      return { rest: { ...settings, hooks: otherHooks }, groups: PreToolUse };
+    };
+    const before = split(current);
+    const after = split(next);
+    if (!isDeepStrictEqual(before.rest, after.rest)) return null;
+    let kept = 0;
+    const added = after.groups.filter((group) => {
+      if (kept < before.groups.length && isDeepStrictEqual(group, before.groups[kept])) {
+        kept += 1;
+        return false;
+      }
+      return true;
+    });
+    const onlyKeys = (value, keys) => Object.keys(value).every((key) => keys.includes(key));
+    const plain = added.every((group) => onlyKeys(group, ['matcher', 'hooks']) && group.hooks.length > 0
+      && group.hooks.every((hook) => hook.type === 'command' && typeof hook.command === 'string'
+        && hook.command.length <= 500 && onlyKeys(hook, ['type', 'command', 'timeout'])));
+    if (kept !== before.groups.length || added.length === 0 || !plain) return null;
+    return added.flatMap((group) => group.hooks.map((hook) => hook.command));
+  } catch {
+    // Unreadable or unparseable: not provably an addition.
+    return null;
+  }
+}
+
 function evaluateSelfProtectHardFloor(input = {}) {
   const toolName = input.tool_name || input.toolName || '';
   const toolInput = input.tool_input || input.toolInput || {};
   const config = loadGatesConfig(DEFAULT_CONFIG_PATH);
 
-  for (const gate of config.gates) {
-    if (!isSelfProtectGate(gate.id)) continue;
-    const matchDetails = matchSelfProtectHardFloor(gate, toolName, toolInput);
-    if (!matchDetails) continue;
-
-    const result = {
-      decision: 'deny',
-      gate: gate.id,
-      message: buildGateMessage(gate, matchDetails),
-      severity: gate.severity,
-      reasoning: buildReasoning(gate, toolName, toolInput, matchDetails),
-    };
-    return recordStructuralGateBlock(toolName, toolInput, result);
+  // An addition is put to the owner only when no other self-protection gate objects to the same call.
+  const matched = config.gates.filter((gate) => isSelfProtectGate(gate.id))
+    .map((gate) => ({ gate, matchDetails: matchSelfProtectHardFloor(gate, toolName, toolInput) }))
+    .filter((entry) => entry.matchDetails);
+  if (matched.length === 0) return null;
+  const { gate, matchDetails } = matched[0];
+  const added = matched.length === 1 && gate.id === 'self-protect-hooks-disable'
+    ? addedPreToolUseCommands(input)
+    : null;
+  let howToApprove = '';
+  if (added) {
+    const shown = added.map((command) => JSON.stringify(command)).join(', ');
+    // "ask" is used only where Claude Code will show the owner the prompt; anywhere else it stays a refusal.
+    const claudeCode = /[\\/]\.claude[\\/]/.test(String(input.transcript_path || ''));
+    if (claudeCode && !isAutonomousRun() && PROMPTING_PERMISSION_MODES.has(input.permission_mode)) {
+      return {
+        decision: 'ask',
+        gate: gate.id,
+        message: `This only adds a PreToolUse hook; no existing hook or setting changes. A hook can approve or rewrite tool calls, so approve only if you want this to run: ${shown}`,
+      };
+    }
+    if (claudeCode && input.permission_mode === 'bypassPermissions') {
+      howToApprove = ` This only adds a hook (${shown}). Owner: press Shift+Tab to leave bypass mode and have the agent retry; you will get one approval prompt.`;
+    }
   }
 
-  return null;
+  const result = {
+    decision: 'deny',
+    gate: gate.id,
+    message: `${buildGateMessage(gate, matchDetails)}${howToApprove}`,
+    severity: gate.severity,
+    reasoning: buildReasoning(gate, toolName, toolInput, matchDetails),
+  };
+  return recordStructuralGateBlock(toolName, toolInput, result);
 }
 
 function isSafeLocalCredentialHardeningCommand(toolName, toolInput = {}) {
@@ -4695,6 +4765,45 @@ function recordSecretViolation(input, scanResult) {
   });
 }
 
+// An authenticated read (the secret env var is only the request's credential, see
+// isAuthenticatedReadCommand in secret-scanner.js) is a precision fix for database
+// reads that were hard-denied as exfiltration. Per the warn-only-first rule it
+// warns by default; live mode (THUMBGATE_STRICT_ENFORCEMENT=1 or THUMBGATE_GOVERNANCE_MODE=live) keeps the deny.
+function evaluateSecretAdvisory(input, scanResult) {
+  const findings = scanResult.findings || [];
+  if (!findings.length || !findings.every((finding) => finding && finding.advisory === true)) return null;
+  if (resolveGovernanceMode() === 'live') return null;
+  const toolName = input.tool_name || input.toolName || 'unknown';
+  const toolInput = input.tool_input || {};
+  const localRead = findings.every((finding) => finding.advisoryKind === 'local_read_heuristic');
+  const message = localRead
+    ? 'This file has a line that looks like a secret assignment (often a test stub or an example). '
+      + 'Reading it locally is allowed with a warning; do not paste the value into a command, a commit or a message.'
+    : 'A secret environment variable is sent only as the credential of a read request '
+      + '(not in the body, URL or an upload). Allowed with a warning: confirm the host is the service that key belongs to.';
+  recordStat('secret-exfiltration', 'warn', null, { toolName, toolInput });
+  auditToFeedback(recordAuditEvent({
+    toolName,
+    toolInput,
+    decision: 'warn',
+    gateId: 'secret-exfiltration',
+    message,
+    severity: 'medium',
+    source: 'secret-guard',
+  }));
+  return {
+    decision: 'warn',
+    gate: 'secret-exfiltration',
+    message,
+    severity: 'medium',
+    advisory: true,
+    secretScan: {
+      provider: scanResult.provider,
+      findings: findings.map((finding) => ({ id: finding.id, label: finding.label, source: finding.source || null, reason: finding.reason || null })),
+    },
+  };
+}
+
 function evaluateSecretGuard(input = {}) {
   let scanResult = scanHookInput(input);
   if (!scanResult.detected) {
@@ -4708,6 +4817,8 @@ function evaluateSecretGuard(input = {}) {
     } catch { scanResult = null; } // a broken scan never blocks the agent
     if (!scanResult) return null;
   }
+  const advisory = evaluateSecretAdvisory(input, scanResult);
+  if (advisory) return advisory;
   recordStat('secret-exfiltration', 'block', null, {
     toolName: input.tool_name || input.toolName || 'unknown',
     toolInput: input.tool_input || {},
@@ -5357,44 +5468,61 @@ function rememberDeniedCall(rawInput, output) {
 function evaluateUnconditionalHardFloor(rawInput = {}, options = {}) {
   const input = canonicalizeHookInput(rawInput);
   const secretGuard = evaluateSecretGuard(input);
-  if (secretGuard) return { hardFloor: secretGuard, securityScan: null };
+  if (secretGuard && secretGuard.decision === 'deny') return { hardFloor: secretGuard, securityScan: null, advisories: [] };
+  const advisories = secretGuard ? [secretGuard] : [];
 
   // Opt-in canary file: off unless the user named a decoy credential path (scripts/canary-gate.js).
   const canary = require('./canary-gate').evaluateCanaryGate(input);
-  if (canary) return { hardFloor: canary, securityScan: null };
+  if (canary) return { hardFloor: canary, securityScan: null, advisories };
 
   const securityScan = evaluateSecurityScan(input);
   if (securityScan && securityScan.decision === 'deny') {
-    return { hardFloor: securityScan, securityScan };
+    return { hardFloor: securityScan, securityScan, advisories };
   }
 
   const financialHardFloor = evaluateFinancialHardFloor(input, false, options);
-  if (financialHardFloor) return { hardFloor: financialHardFloor, securityScan };
+  if (financialHardFloor) return { hardFloor: financialHardFloor, securityScan, advisories };
 
   const selfProtect = evaluateSelfProtectHardFloor(input);
-  if (selfProtect) return { hardFloor: selfProtect, securityScan };
+  // An "ask" does not end the floor: a later rule that refuses this call still wins.
+  const ask = selfProtect && selfProtect.decision === 'ask' ? selfProtect : null;
+  if (selfProtect && !ask) return { hardFloor: selfProtect, securityScan, advisories };
 
   // A person's thumbs-down holds the action that drew it, and chat posts pass the send rules (raw URL, "I do not
   // know", a second new bubble). Runs before the tool call on every host path (scripts/send-gate.js).
   const sendGate = evaluateSendGate(input);
-  if (sendGate) return { hardFloor: sendGate, securityScan };
+  if (sendGate) return { hardFloor: sendGate, securityScan, advisories };
 
   const retried = evaluateRepeatAfterDeny(input);
-  if (retried) return { hardFloor: retried, securityScan };
+  if (retried) return { hardFloor: retried, securityScan, advisories };
 
   const repeated = evaluateRepeatedMistakeGates(input);
-  if (repeated) return { hardFloor: repeated, securityScan };
+  if (repeated) return { hardFloor: repeated, securityScan, advisories };
 
   const view = repeatedMistakeView(input);
   const { evaluateTailscaleOctoberAccess } = require('./tailscale-october-access');
   const october = evaluateTailscaleOctoberAccess(view);
-  if (october) return { hardFloor: denyRepeatedMistake(view, october), securityScan };
+  if (october && october.decision === 'warn' && resolveGovernanceMode() !== 'live') advisories.push(october);
+  else if (october && october.decision === 'warn') {
+    return {
+      hardFloor: denyRepeatedMistake(view, {
+        ...october,
+        decision: 'deny',
+        severity: 'critical',
+        failureReason: october.denyFailureReason || october.failureReason,
+        message: 'Denied database credential in the command: a password does not belong on the laptop. Use an identity that is not pasted into the shell.',
+      }),
+      securityScan,
+      advisories,
+    };
+  } else if (october) return { hardFloor: denyRepeatedMistake(view, october), securityScan, advisories };
 
   const { evaluateGitLabSdlcPrompts } = require('./gitlab-sdlc-prompts');
   const sdlc = evaluateGitLabSdlcPrompts(view);
   return {
-    hardFloor: sdlc ? denyRepeatedMistake(view, sdlc) : null,
+    hardFloor: sdlc ? denyRepeatedMistake(view, sdlc) : ask,
     securityScan,
+    advisories,
   };
 }
 
@@ -5522,6 +5650,15 @@ function buildBlockActionProCta() {
 }
 
 function formatOutput(result, behavioralContext) {
+  if (result && result.decision === 'ask') {
+    return JSON.stringify({
+      hookSpecificOutput: {
+        hookEventName: 'PreToolUse',
+        permissionDecision: 'ask',
+        permissionDecisionReason: `[GATE:${result.gate}] ${result.message}`,
+      },
+    });
+  }
   if (!result) {
     // No gate matched — inject behavioral context if available
     if (behavioralContext) {
@@ -5723,7 +5860,7 @@ function buildRelevantLessonContext(toolName, toolInput, options = {}) {
     if (entropy > KNOWLEDGE_ENTROPY_THRESHOLD) {
       return buildKnowledgeConflictContext(toolName, toolInput, lessons, entropy);
     }
-    return formatNegativeLessonContext(lessons);
+    return formatNegativeLessonContext(lessons, { toolName, actionContext, sessionId: options.sessionId, seenDir: options.seenDir });
   } catch {
     return null;
   }
@@ -5764,7 +5901,7 @@ async function buildRelevantLessonContextAsync(toolName, toolInput, options = {}
       return buildKnowledgeConflictContext(toolName, toolInput, lessons, entropy);
     }
 
-    return formatNegativeLessonContext(lessons);
+    return formatNegativeLessonContext(lessons, { toolName, actionContext, sessionId: options.sessionId, seenDir: options.seenDir });
   } catch {
     return null;
   }
@@ -5775,17 +5912,27 @@ async function buildRelevantLessonContextAsync(toolName, toolInput, options = {}
  * into the PreToolUse warning block. Retrieval already filters by relevance, so any
  * negative lesson present is relevant enough to surface.
  */
-function formatNegativeLessonContext(lessons) {
-  const negative = (lessons || []).filter((l) => {
+function formatNegativeLessonContext(lessons, options = {}) {
+  const { lessonSharesAction, takeUnseenLessons, presentableLesson } = require('./lesson-hook-relevance');
+  const shown = new Map();
+  const relevant = (lessons || []).filter((l) => {
     if (l.signal !== 'negative') return false;
+    const text = presentableLesson({
+      title: String(l.title || '').replace(/^MISTAKE:\s*/, ''),
+      advice: extractAvoidanceAdvice(l.content),
+    }, options.actionContext);
+    if (!text) return false;
+    shown.set(l, text);
+    if (options.actionContext && !lessonSharesAction(l, options)) return false;
     const score = Number(l.rerankedScore ?? l.relevanceScore ?? 0);
     return score >= MIN_LESSON_INJECTION_RELEVANCE;
   });
+  const negative = takeUnseenLessons(relevant, options);
   if (negative.length === 0) return null;
 
   const formatted = negative.map((l) => {
-    const title = (l.title || '').replace(/^MISTAKE:\s*/, '').slice(0, 140);
-    const advice = extractAvoidanceAdvice(l.content);
+    const { advice } = shown.get(l);
+    const title = shown.get(l).title.slice(0, 140);
     const body = advice ? `  • ${title}\n    → ${advice}` : `  • ${title}`;
     const notes = [l.graph?.lineageNote, l.graph?.conflictNote].filter(Boolean);
     return body + notes.map(note => `\n    ↳ ${String(note).slice(0, 220)}`).join('');
@@ -5910,9 +6057,22 @@ async function runAsync(rawInput) {
   }
 }
 
+// Advisory hard-floor findings (warn-only precision fixes) never block. They surface as
+// a warning unless a later gate already blocks, in which case that block stands.
+function mergeAdvisories(result, advisories = []) {
+  if (!advisories || !advisories.length) return result;
+  if (isBlockingDecision(result)) return result;
+  const lead = advisories[0];
+  const message = advisories.map((item) => `[${item.gate}] ${item.message}`).join(' ');
+  if (!result || result.decision !== 'warn') {
+    return { ...lead, decision: 'warn', message: advisories.length > 1 ? message : lead.message };
+  }
+  return { ...result, message: `${result.message} ${message}` };
+}
+
 async function runAsyncCore(rawInput) {
   const input = canonicalizeHookInput(rawInput);
-  const { hardFloor, securityScan } = evaluateUnconditionalHardFloor(input);
+  const { hardFloor, securityScan, advisories } = evaluateUnconditionalHardFloor(input);
   if (hardFloor) return formatOutput(hardFloor);
 
   const toolName = input.tool_name || '';
@@ -5932,19 +6092,20 @@ async function runAsyncCore(rawInput) {
       result.securityWarnings = securityScan.securityScan.findings;
       result.reasoning = (result.reasoning || []).concat(securityScan.reasoning);
     } else {
-      return formatOutput(securityScan);
+      return formatOutput(mergeAdvisories(securityScan, advisories));
     }
   }
 
   
   const behavioralContext = safeSecretStorageWrite ? null : buildBehavioralContext();
-  const lessonContext = safeSecretStorageWrite ? null : await buildRelevantLessonContextAsync(toolName, toolInput);
+  // Only a warning or no result prints the lesson text; any other call must not record the lesson as shown.
+  const posturedResult = applyEnforcementPosture(result);
+  const lessonContext = safeSecretStorageWrite ? null : await buildRelevantLessonContextAsync(toolName, toolInput, { sessionId: lessonSessionId(input, posturedResult) });
   
   if (lessonContext && lessonContext.decision === "deny") {
     return formatOutput(applyEnforcementPosture(lessonContext));
   }
 
-  const posturedResult = applyEnforcementPosture(result);
   if (isBlockingDecision(posturedResult)) {
     return formatOutput(posturedResult);
   }
@@ -5955,7 +6116,7 @@ async function runAsyncCore(rawInput) {
   const recentContext = buildRecentCorrectiveActionsContext();
   const designContext = safeSecretStorageWrite ? null : buildDesignSelfCorrectionContext(toolName, toolInput);
   const combinedContext = combineWithSessionDedupe(input, lessonContext, recentContext, behavioralContext, designContext);
-  return formatOutput(posturedResult, combinedContext);
+  return formatOutput(mergeAdvisories(posturedResult, advisories), combinedContext);
 
 }
 
@@ -5967,7 +6128,7 @@ function run(rawInput) {
 
 function runCore(rawInput) {
   const input = canonicalizeHookInput(rawInput);
-  const { hardFloor, securityScan } = evaluateUnconditionalHardFloor(input);
+  const { hardFloor, securityScan, advisories } = evaluateUnconditionalHardFloor(input);
   if (hardFloor) return formatOutput(hardFloor);
 
   const toolName = input.tool_name || '';
@@ -5987,19 +6148,20 @@ function runCore(rawInput) {
       result.securityWarnings = securityScan.securityScan.findings;
       result.reasoning = (result.reasoning || []).concat(securityScan.reasoning);
     } else {
-      return formatOutput(securityScan);
+      return formatOutput(mergeAdvisories(securityScan, advisories));
     }
   }
 
   
   const behavioralContext = safeSecretStorageWrite ? null : buildBehavioralContext();
-  const lessonContext = safeSecretStorageWrite ? null : buildRelevantLessonContext(toolName, toolInput);
+  // Only a warning or no result prints the lesson text; any other call must not record the lesson as shown.
+  const posturedResult = applyEnforcementPosture(result);
+  const lessonContext = safeSecretStorageWrite ? null : buildRelevantLessonContext(toolName, toolInput, { sessionId: lessonSessionId(input, posturedResult) });
   
   if (lessonContext && lessonContext.decision === "deny") {
     return formatOutput(applyEnforcementPosture(lessonContext));
   }
 
-  const posturedResult = applyEnforcementPosture(result);
   if (isBlockingDecision(posturedResult)) {
     return formatOutput(posturedResult);
   }
@@ -6010,8 +6172,14 @@ function runCore(rawInput) {
   const recentContext = buildRecentCorrectiveActionsContext();
   const designContext = safeSecretStorageWrite ? null : buildDesignSelfCorrectionContext(toolName, toolInput);
   const combinedContext = combineWithSessionDedupe(input, lessonContext, recentContext, behavioralContext, designContext);
-  return formatOutput(posturedResult, combinedContext);
+  return formatOutput(mergeAdvisories(posturedResult, advisories), combinedContext);
 
+}
+
+// The session to record a shown lesson under: none when this result will not print the lesson text.
+function lessonSessionId(input, result) {
+  if (result && result.decision !== 'warn') return undefined;
+  return input.session_id || input.sessionId || input.conversation_id;
 }
 
 // Recent-corrections and recurring-pattern text is identical call after call; inject it
@@ -6503,6 +6671,7 @@ function evaluateAgentIdentityLifecycleGate(toolName, toolInput) {
 }
 
 module.exports = {
+  formatNegativeLessonContext,
   evaluateUnconditionalHardFloor,
   compileGatePattern,
   evaluateAgentIdentityLifecycleGate,
@@ -6557,6 +6726,7 @@ module.exports = {
   isAutonomousRun,
   computeExecutableHash,
   formatOutput,
+  lessonSessionId,
   finalizeFinancialAuthorization,
   isApprovalGatesEnabled,
   runHardFloor,

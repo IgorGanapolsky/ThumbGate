@@ -65,3 +65,20 @@ test('staleHookPath catches a dead script behind an interpreter (the 23 Nov 2026
   assert.equal(staleHookPath('npx thumbgate gate-check', dir), null, 'non-interpreter commands are left alone');
   fs.rmSync(dir, { recursive: true, force: true });
 });
+
+test('staleHookPath expands ~ like the shell, so a working ~/ hook is never pruned (27 Nov 2026)', () => {
+  const home = fs.mkdtempSync(path.join(os.tmpdir(), 'tg-hookhome-'));
+  fs.mkdirSync(path.join(home, '.claude', 'hooks'), { recursive: true });
+  fs.writeFileSync(path.join(home, '.claude', 'hooks', 'standing-orders.py'), 'print("ok")\n');
+  const saved = process.env.HOME;
+  process.env.HOME = home;
+  try {
+    assert.equal(staleHookPath('python3 ~/.claude/hooks/standing-orders.py', '/'), null, 'an existing ~/ script is kept');
+    assert.equal(staleHookPath('~/.claude/hooks/standing-orders.py', '/'), null);
+    assert.equal(staleHookPath('python3 ~/.claude/hooks/gone.py', '/'), '~/.claude/hooks/gone.py', 'a missing ~/ script is still caught');
+    assert.equal(staleHookPath('python3 ~someone/hook.py', '/'), null, 'another account\'s home is never judged missing');
+  } finally {
+    process.env.HOME = saved;
+    fs.rmSync(home, { recursive: true, force: true });
+  }
+});

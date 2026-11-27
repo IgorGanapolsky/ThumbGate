@@ -1,5 +1,70 @@
 # Changelog
 
+## 1.50.1
+
+### Patch Changes
+
+- fda20dd: Reading a file locally no longer gets a hard deny just because a line in it looks like a secret assignment (the "Likely secret assignment" heuristic, often a test stub such as `token: 'stub-token-for-unit-tests'`). The Read tool, and Bash `cat`/`sed`/`grep`/`head` with nothing that reaches the network, now warn instead of denying in the default mode. `THUMBGATE_STRICT_ENFORCEMENT=1` keeps the old deny. High-confidence key patterns (AWS, GitHub, Stripe live, private keys, JWTs), secret files such as `.env`, and any command that sends the file stay denied in every mode. Fixtures in `tests/read-only-file-precision.test.js`.
+
+## 1.50.0
+
+### Minor Changes
+
+- 84c88ea: Add `npx thumbgate decision-check`: runs 32 sample commands through the default gates of a fresh install (nothing is executed, learned rules and state are untouched) and prints allow, warn or block for each. The stop-Claude-Code-deleting-files guide now shows `find -delete` as a warning and links the command.
+
+### Patch Changes
+
+- 177b78e: During the Black Friday offer, the server creates the Stripe coupon at startup (and every 10 minutes) instead of waiting for the first buyer, and /health reports the coupon plus a Stripe invoice preview of the discounted first-year Pro price.
+- 7a15770: Link the free Udemy course from the Claude Code hooks guide with a tagged referral link, and check guide pages for the referral code.
+
+## 1.49.2
+
+### Patch Changes
+
+- c18cb29: `thumbgate init` no longer deletes a working hook whose path starts with `~/` (for example `python3 ~/.claude/hooks/standing-orders.py`): it expands `~` like the shell before deciding a file is missing, and never judges `~otheruser/` paths. The status line's "Latest mistake" / "Latest lesson" stamp now uses your local 12-hour time ("Nov 27, 2:47 PM") instead of UTC 24-hour.
+
+## 1.49.1
+
+### Patch Changes
+
+- b726b01: Authenticated database reads no longer get a hard deny by default. When a secret environment variable is only the request's credential (`curl -H "Authorization: Bearer $ACCESS_TOKEN" https://…/rest/v1/orders`, `-u "app:$DB_PASSWORD"`, a literal SQL-over-HTTP query body) the secret-exfiltration gate now warns instead of denying, and `PGPASSWORD="$DB_PASSWORD" psql …` (a variable, not a pasted password) warns instead of denying. `THUMBGATE_STRICT_ENFORCEMENT=1` keeps the old deny. A secret in the body, URL or any other header, an `@file` body, a form or upload, PUT/PATCH/DELETE, command substitution, a pipe into another network tool, and literal database passwords stay denied in every mode. Synthetic fixtures in `tests/db-read-precision.test.js`.
+- ac06baa: A thumbs-down hold no longer refuses read-only calls, and "fix it" releases it. Past-mistake notes appear only when they are about the call, once per session.
+  Injected lessons no longer quote the user's message back, pasted markup is stripped, and a lesson holding an email address or phone number is only shown when the call is about it.
+  The claim gate's Stop message is one line with no attached lessons, and current Claude Code shows it as hook feedback instead of a hook error.
+  
+  A thumbs-down hold now covers the command that acted, not the setup in front of it (a shared credential export no longer holds unrelated commands, and adding one no longer slips past a hold).
+- 7764945: `thumbgate doctor` now sends an anonymous `cli_doctor_pass` or `cli_doctor_fail` event (off with `THUMBGATE_NO_TELEMETRY=1` or `DO_NOT_TRACK=1`), and telemetry analytics reports `cli.quickStart`: installs that ran init, how many of those later got a passing doctor, and the completion rate.
+- fc5c4ce: Self-protection: an edit that only adds a PreToolUse command hook is now put to the owner as one approval prompt in Claude Code (gate-check path). Removing, replacing or weakening hooks is still refused.
+- 0147e85: A thumbs-down on a real tool call now becomes a rule. The promoter read the command from `lastAction.command`, where capture records it, instead of falling back to the person's prose and skipping every attempt as inert.
+- 3f4ca09: Status line and dashboard agree on the project: a folder moved to the Trash is never "this project" (falls back to the last real project, or All projects), the status line names the project and where it lives, the dashboard gates line shows global + this project's own gates adding up to the Active gates card, and the local dashboard names the same tier as the status line.
+- 8bf9746: A thumbs-down now says its lesson is advice only until a gate is built from it, instead of promising that prevention rules will auto-update.
+- 3086d36: The package description, README and homepage lead with "blocks risky actions and unchecked claims" and no longer promise that ThumbGate learns or improves the agent.
+
+## 1.49.0
+
+### Minor Changes
+
+- 6a64b2c: New `thumbgate export-rules` command. It writes this project's learned rules (live auto-promoted gates, claim rules and prevention rules) to `.claude/rules/thumbgate.md`, a marked block in `AGENTS.md`, or both. Cloud agents that never run ThumbGate hooks, such as claude.ai projects, Claude Code on the web, Codex cloud and Cursor background agents, then follow the rules from the repo. Output is redacted and deterministic. `--check` exits 1 when stale, and `session-start` refreshes a file that was exported before.
+- 5407031: A thumbs-down saying a denied action was retried without your yes now becomes a gate that refuses the identical call until you take another turn. Prose-only feedback returns gatePrompt, asking for a tool and condition.
+- 38c5f24: Gate shell commands that skills and slash commands run while they load. Claude Code 2.1.332 added the `PreSkillShellCommand` hook, and PreToolUse never fires for these commands. `npx thumbgate init` now wires `thumbgate skill-shell-gate` there when the installed Claude Code supports it, and the MCP server adds it to older installs on start. It runs the same gate-check engine, warns by default (law 12), and blocks with `THUMBGATE_SKILL_SHELL_GATE=enforce`.
+
+### Patch Changes
+
+- b9f9844: Black Friday offer: Pro checkouts between Fri Nov 27 and Mon Dec 1 11:59 PM ET get 40% off the first year applied automatically, with a self-hiding banner on /pricing.
+- 20c7461: The homepage has a "What stays under your control" table, and the privacy page now says what releases up to 27 November 2026 send in a learned-rule ping and that `DO_NOT_TRACK` alone does not stop their install ping.
+- bab0f47: Ship scripts/pii-scanner.js: `thumbgate export-rules` requires it and crashed from the npm package.
+- ffcbd69: Google Analytics now measures the whole checkout funnel on thumbgate.ai. Every public page, including /pricing, /guide, /checkout/pro and /success, loads one Google tag for the ThumbGate property (G-QKENZBW1V8); the ApplyOps id (G-SZR5039QN4) a stale variable still carried is refused. /checkout/pro sends begin_checkout and a Stripe-verified /success sends purchase with the session id as the transaction id. Consent Mode v2 keeps advertising storage denied, starts analytics storage denied in the EEA, UK and Switzerland, and follows the site's analytics banner; GPC/DNT visitors and private pages get no tag. The homepage Pro click is now checkout_cta_click so begin_checkout is counted once.
+- 2d8ff43: Git hook install from a linked worktree now writes the main checkout hook paths into the shared config.
+- ed33899: Lesson search now says whether a lesson is proven enforced (a blocking gate built from it) or advice only, and counts later thumbs-downs that match it, labelled as a text match.
+- 60c6e15: MCP tools that return a list (such as `retrieve_lessons`) now send it as `structuredContent.results`, so clients no longer reject the call. The text block is unchanged.
+- 56d2a7a: The outbound mail rule no longer refuses a command that only writes text into a notes file with echo or printf.
+- 95f9d84: The owner-profile outbound-post rule no longer refuses a page read or a literal form lookup on a site listed in the rule's `ownHosts`. Anything it cannot read in full stays refused.
+- afedb68: A folder without a project `.mcp.json` no longer reports "RAG wiring: ERROR" when feedback capture works; it shows one warning line with the command to run.
+- f9b9c92: The outbound email gate no longer treats mcp__claude-code-remote__send_message (an agent reporting back to its project) as an email send.
+- efbad9c: The spend guard no longer hard-blocks read-only web research. WebFetch, WebSearch and MCP fetch/search tools that read documentation, forum or blog pages mentioning billing, checkout, plans or upgrades are allowed. Live payment hosts (Stripe Checkout, Payment Links, billing portal, Apollo app, Paddle, PayPal) and commerce paths such as `/checkout` or `/billing` on product sites stay denied, and a fetch that sends a body or a write method still gets the full rules.
+- 9319afc: New guide at /guides/stop-claude-code-deleting-files: what ThumbGate denies by default, how a thumbs-down turns a delete into a warning and then a block, and which deletes it does not catch.
+- b742ac8: Only a typed thumbs-down or a real correction creates a mistake. New requests and subagent reports are no longer recorded as an ignored instruction.
+
 ## 1.48.0
 
 ### Minor Changes

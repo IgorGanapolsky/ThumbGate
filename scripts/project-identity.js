@@ -199,6 +199,8 @@ function resolveLocalProjectUncached(cwd = process.cwd(), options = {}) {
 // A folder is a real project only when its git remote identifies it (the same rule as isRealProject in public/project-switcher.js).
 function isProjectFolder(dir, options = {}) {
   if (!dir || typeof dir !== 'string') return false;
+  // A deleted folder (in the Trash) is not a project, even when it still holds a git remote.
+  if (require('./feedback-paths').isTrashedDir(dir)) return false;
   try { return resolveLocalProject(dir, options).identitySource === 'remote'; } catch { return false; }
 }
 function legacyAlias(record = {}, options = {}) {
@@ -276,6 +278,7 @@ function projectForCapture(input = {}, options = {}) {
 // What `thumbgate dashboard --open` puts in the URL. A folder with no git remote (a scratch or Trash folder, the home folder)
 // is not a project, so the dashboard opens on all projects instead of silently showing that folder's few records.
 function dashboardProjectParam(projectDir, options = {}) {
+  if (require('./feedback-paths').isTrashedDir(projectDir)) return 'all';
   const d = resolveLocalProject(projectDir, options);
   return d.identitySource === 'remote' && d.projectKey ? d.projectKey : 'all';
 }

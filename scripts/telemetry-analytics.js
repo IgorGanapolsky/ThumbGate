@@ -1009,6 +1009,12 @@ function getTelemetrySummary(feedbackDir, options = {}) {
   const webSessions = new Set();
   const webCheckoutStarters = new Set();
   const cliInstalls = new Set();
+  // Quick-start funnel: installs that ran `thumbgate init`, and installs whose
+  // `thumbgate doctor` later reported ready (cli_doctor_pass).
+  // A doctor pass counts only when it comes at or after that install's first init.
+  const quickStartInitAt = new Map();
+  const quickStartDoctorPassInstalls = new Set();
+  let quickStartSeq = 0;
   const pageViewsBySource = {};
   const pageViewsByCampaign = {};
   const pageViewsByPath = {};
@@ -1319,6 +1325,20 @@ function getTelemetrySummary(feedbackDir, options = {}) {
 
     if ((entry.clientType || entry.client) === 'cli') {
       if (entry.installId) cliInstalls.add(entry.installId);
+      const cliEvent = entry.eventType || entry.event;
+      if (entry.installId && (cliEvent === 'cli_init' || cliEvent === 'cli_doctor_pass')) {
+        // Order by event time; fall back to log order when a row has no usable time.
+        quickStartSeq += 1;
+        const parsed = Date.parse(entry.receivedAt || entry.timestamp || '');
+        const at = Number.isFinite(parsed) ? parsed : quickStartSeq;
+        if (cliEvent === 'cli_init') {
+          if (!quickStartInitAt.has(entry.installId) || at < quickStartInitAt.get(entry.installId)) {
+            quickStartInitAt.set(entry.installId, at);
+          }
+        } else if (quickStartInitAt.has(entry.installId) && at >= quickStartInitAt.get(entry.installId)) {
+          quickStartDoctorPassInstalls.add(entry.installId);
+        }
+      }
       incrementCounter(cliByPlatform, entry.platform);
       incrementCounter(cliByVersion, entry.version);
     }
@@ -1454,6 +1474,14 @@ function getTelemetrySummary(feedbackDir, options = {}) {
     cli: {
       uniqueInstalls: cliInstalls.size,
       initPings: byEventType.cli_init || 0,
+      quickStart: (() => {
+        const completed = quickStartDoctorPassInstalls.size;
+        return {
+          initInstalls: quickStartInitAt.size,
+          doctorPassInstalls: completed,
+          completionRate: safeRate(completed, quickStartInitAt.size),
+        };
+      })(),
       byPlatform: cliByPlatform,
       byVersion: cliByVersion,
     },
