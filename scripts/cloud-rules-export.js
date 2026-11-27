@@ -50,9 +50,12 @@ function isLive(gate, nowMs) {
 function collectRules({ feedbackDir, cwd = process.cwd(), includeLessons = false, now = Date.now() } = {}) {
   const { loadAutoGates } = require('./auto-promote-gates');
   const claimRules = require('./claim-gate-rules');
+  const { resolveLocalProject, gateAppliesToProject } = require('./project-identity');
   const auto = safe(() => loadAutoGates({ feedbackDir }), { gates: [] });
+  // Same project scoping as live enforcement: a gate learned in another repo never lands in this repo's file.
+  const projectKey = safe(() => resolveLocalProject(cwd).projectKey, 'unassigned');
   const gates = (auto.gates || [])
-    .filter((g) => isLive(g, now) && (g.pattern || g.message))
+    .filter((g) => isLive(g, now) && (g.pattern || g.message) && gateAppliesToProject(g, projectKey))
     // The "(N occurrences in 30 days)" tail changes on every fire; leave it out so the file only changes with the rule.
     .map((g) => ({ id: String(g.id || ''), action: String(g.action || 'warn'), pattern: g.pattern || '', message: String(g.message || '').replace(/\s*\((?:\d+ occurrences|manual)[^)]*\)\s*$/, '') }))
     .sort((a, b) => a.id.localeCompare(b.id));
@@ -167,9 +170,15 @@ function exportRules({ cwd = process.cwd(), feedbackDir, target = 'claude', outp
   };
 }
 
-/** Refresh exports that already exist (the user opted in by running export-rules once). Never creates a file. */
+/**
+ * Refresh exports that already exist (the user opted in by running export-rules once). Never creates a file, and never
+ * empties one: on a fresh clone or a teammate's machine the local store has no rules, and the committed file is the
+ * only copy, so a store with zero rules leaves it alone.
+ */
 function refreshExistingExports({ cwd = process.cwd(), feedbackDir } = {}) {
   const refreshed = [];
+  const model = collectRules({ feedbackDir, cwd });
+  if (!model.gates.length && !model.claims.length && !model.prevention.length) return refreshed;
   const claudeFile = path.join(cwd, CLAUDE_RULES_FILE);
   if (safe(() => fs.readFileSync(claudeFile, 'utf8').startsWith(MARKER), false)) {
     const r = exportRules({ cwd, feedbackDir, target: 'claude' });

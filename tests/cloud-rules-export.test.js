@@ -32,6 +32,7 @@ function fixture() {
       { id: 'npm-publish', active: true, action: 'warn', pattern: 'npm\\s+publish', message: 'Ask before publishing', expiresAt: null },
       { id: 'expired', active: true, action: 'block', pattern: 'old-thing', message: 'expired gate', expiresAt: past },
       { id: 'off', active: false, action: 'block', pattern: 'disabled-thing', message: 'inactive gate' },
+      { id: 'other-repo', active: true, scope: 'project', projectKey: 'repo_' + 'a'.repeat(64), action: 'block', pattern: 'other-repo-thing', message: 'learned in another repo' },
     ],
   }));
   fs.writeFileSync(path.join(feedbackDir, 'claim-gate-rules.json'), JSON.stringify({
@@ -60,6 +61,7 @@ test('export writes live learned gates, claim rules and rules to .claude/rules/t
   assert.match(md, /A host claim needs a check this turn/);
   assert.match(md, /- never force push main \(git-workflow\)/);
   assert.doesNotMatch(md, /old-thing|disabled-thing/, 'expired and inactive gates stay out');
+  assert.doesNotMatch(md, /other-repo-thing|another repo/, "another project's gates stay out");
   assert.doesNotMatch(md, /occurrences in 30 days/, 'fire counts stay out so the file is stable');
   assert.doesNotMatch(md, /Recurrence count|weighted/);
   assert.deepEqual(result.counts, { gates: 2, claims: 1, prevention: 1, lessons: 0 });
@@ -130,4 +132,27 @@ test('CLI: export-rules writes the file, --check exits 1 when stale, a bad targe
   fs.appendFileSync(path.join(feedbackDir, 'prevention-rules.md'), '\n## deploy\n- Rule: verify before claiming\n');
   assert.equal(spawnSync(process.execPath, [CLI, 'export-rules', '--check'], { cwd, env }).status, 1);
   assert.equal(spawnSync(process.execPath, [CLI, 'export-rules', '--target=bogus'], { cwd, env }).status, 1);
+});
+
+test('refresh never empties a committed export when this machine has no rules', () => {
+  const { feedbackDir, cwd } = fixture();
+  ex.exportRules({ cwd, feedbackDir });
+  const file = path.join(cwd, '.claude', 'rules', 'thumbgate.md');
+  const before = fs.readFileSync(file, 'utf8');
+  const emptyStore = fs.mkdtempSync(path.join(os.tmpdir(), 'tg-cloud-rules-empty-'));
+  assert.deepEqual(ex.refreshExistingExports({ cwd, feedbackDir: emptyStore }), []);
+  assert.equal(fs.readFileSync(file, 'utf8'), before);
+});
+
+test("a gate scoped to this repo's own project is kept", () => {
+  const { feedbackDir, cwd } = fixture();
+  const { resolveLocalProject } = require('../scripts/project-identity');
+  const own = resolveLocalProject(cwd).projectKey;
+  const file = path.join(feedbackDir, 'auto-promoted-gates.json');
+  const data = JSON.parse(fs.readFileSync(file, 'utf8'));
+  data.gates.push({ id: 'mine', active: true, scope: 'project', projectKey: own, action: 'block', pattern: 'own-repo-thing', message: 'learned here' });
+  fs.writeFileSync(file, JSON.stringify(data));
+  const md = ex.renderMarkdown(ex.collectRules({ feedbackDir, cwd }));
+  if (own === 'unassigned') assert.doesNotMatch(md, /own-repo-thing/, 'unassigned never matches, same as enforcement');
+  else assert.match(md, /own-repo-thing/);
 });
