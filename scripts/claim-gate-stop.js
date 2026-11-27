@@ -167,7 +167,7 @@ function evaluateDraft(text, options = {}) {
   const rules = [...new Set(claims.filter((c) => c.ruleMessage).map((c) => c.ruleMessage))].join(' ');
   const sentence = String(claims[0].sentence).replace(/\s+/g, ' ').slice(0, 120);
   const more = claims.length > 1 ? ` (+${claims.length - 1} more)` : '';
-  const reason = `ThumbGate: unchecked claim "${sentence}"${more}. Check it now, or label it "live", "as of <time>" or "not checked".${rules ? ` ${rules.replace(/\s+/g, ' ')}` : ''}`;
+  const reason = `ThumbGate claim gate: unchecked claim "${sentence}"${more}. Check it now, or label it "live", "as of <time>" or "not checked".${rules ? ` ${rules.replace(/\s+/g, ' ')}` : ''}`;
   return { block: true, claims, lessons: [], reason, checked };
 }
 
