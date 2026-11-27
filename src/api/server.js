@@ -10585,6 +10585,15 @@ a{color:#8b9}</style></head><body><form class="card" method="post" action="/oaut
         }
       }
 
+      // Check 5: a running seasonal offer has its coupon ready in Stripe before the first buyer arrives.
+      {
+        const offerStatus = require('../../scripts/billing').getSeasonalOfferStatus();
+        if (offerStatus && offerStatus.active) {
+          checks.seasonalOffer = offerStatus.ok ? { ...offerStatus } : { ...offerStatus, severity: 'degraded' };
+          if (!offerStatus.ok) degraded = true;
+        }
+      }
+
       const statusCode = failing ? 503 : 200;
       const status = failing ? 'failing' : (degraded ? 'degraded' : 'ok');
       sendJson(res, statusCode, {
