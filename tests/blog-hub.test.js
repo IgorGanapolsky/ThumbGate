@@ -10,7 +10,7 @@ const read = (...parts) => fs.readFileSync(path.join(root, ...parts), 'utf8');
 
 test('blog hub is a Poolside-style series index with CTAs', () => {
   const hub = read('public', 'blog.html');
-  assert.match(hub, /Self-Improving Firewall Engineering/i);
+  assert.match(hub, /Agent Firewall Engineering/i);
   assert.match(hub, /Process over outcome/i);
   assert.match(hub, /Inside your boundary/i);
   assert.match(hub, /href="\/blog\/process-over-outcome-gates"/);
