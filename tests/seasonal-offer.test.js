@@ -204,3 +204,13 @@ test('outside the window the refresh creates nothing', async () => {
   assert.equal(status.active, false);
   assert.equal(stripe.couponsCreated.length, 0);
 });
+
+test('a failed invoice preview marks the offer unverified', async () => {
+  billing._resetSeasonalOfferForTests();
+  const stripe = fakeStripe();
+  stripe.invoices = { createPreview: async () => { throw Object.assign(new Error('nope'), { code: 'parameter_invalid' }); } };
+  const status = await billing.refreshSeasonalOfferStatus({ stripe, nowMs: IN_WINDOW, annualPriceId: 'price_annual' });
+  assert.equal(status.coupon.valid, true);
+  assert.equal(status.annualPreview.error, 'parameter_invalid');
+  assert.equal(status.ok, false);
+});

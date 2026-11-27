@@ -5387,6 +5387,8 @@ async function refreshSeasonalOfferStatus({ stripe, nowMs = Date.now(), annualPr
       };
     } catch (err) {
       status.annualPreview = { priceId: annualPriceId, error: (err && (err.code || err.type)) || 'error', message: String((err && err.message) || '').slice(0, 160) };
+      // A ready coupon without a working discounted-price preview is not a verified offer.
+      status.ok = false;
     }
   }
   seasonalOfferStatus = status;
