@@ -881,8 +881,10 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // of #5326 (spend-guard research fix). Measured 11,042,740.
   // 11.05 -> 11.08 MB (2026-11-27): pii-scanner.js (required by export-rules) and the repeat-after-deny condition gate.
   // 11.08 -> 11.09 MB (2026-11-27, PR 5331): the PreSkillShellCommand hook. Measured 11,080,029.
-  manifest.unpackedSize <= 11_090_000,
-  `npm package should stay <= 11.09 MB unpacked, got ${manifest.unpackedSize}`
+  // 11.09 -> 11.11 MB (2026-11-27, PR #5324): authenticated-read classifier in secret-scanner.js plus the warn-only
+  // advisory path in gates-engine.js and tailscale-october-access.js (~18 KB). Measured 11,098,009.
+  manifest.unpackedSize <= 11_110_000,
+  `npm package should stay <= 11.11 MB unpacked, got ${manifest.unpackedSize}`
 );
 
   for (const file of requiredRuntimeFiles) {

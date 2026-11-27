@@ -24,6 +24,8 @@ const DB_PASSWORD_RE = new RegExp([
   String.raw`--password(?:=|\s+)\S+`,
   String.raw`(?:postgres|postgresql|mysql|mariadb|mongodb(?:\+srv)?|rediss?):\/\/[^\s:@]+:[^\s@]+@`,
 ].join('|'), 'i');
+// PGPASSWORD=$VAR, PGPASSWORD="${VAR}", MYSQL_PWD='$VAR': a plain variable reference only.
+const DB_PASSWORD_ENV_REFERENCE_RE = /\b(?:PGPASSWORD|MYSQL_PWD)\s*=\s*(["']?)\$(?:\{[A-Za-z_]\w*\}|[A-Za-z_]\w*)\1(?=\s|$)/gi;
 const ATTACHED_MYSQL_PASSWORD_RE = /(?:^|\s)-p(?!\s)\S+/;
 
 function deny(failureReason, message) {
@@ -401,6 +403,19 @@ function evaluateTailscaleOctoberAccess(view = {}) {
   if (invocation) return invocation;
   const attachedMysqlPassword = /\b(?:mysql|mariadb)\b/i.test(body)
     && ATTACHED_MYSQL_PASSWORD_RE.test(body);
+  if (!attachedMysqlPassword && DB_PASSWORD_RE.test(body)
+    && !DB_PASSWORD_RE.test(body.replace(DB_PASSWORD_ENV_REFERENCE_RE, ' '))) {
+    // PGPASSWORD="$DB_PASSWORD" psql …: the value is a variable the shell expands, so no
+    // password is pasted into the command. Warn-only first; gates-engine turns it back into the deny in live mode.
+    return {
+      decision: 'warn',
+      gate: GATE,
+      severity: 'medium',
+      failureReason: 'db_password_env_reference',
+      denyFailureReason: 'shared_db_password',
+      message: 'The database password comes from an environment variable, not a literal in the command. Allowed with a warning: prefer an identity (IAM, .pgpass, a socket) over a shared password.',
+    };
+  }
   if (DB_PASSWORD_RE.test(body) || attachedMysqlPassword) {
     return deny(
       'shared_db_password',

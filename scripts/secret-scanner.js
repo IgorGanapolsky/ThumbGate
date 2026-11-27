@@ -863,6 +863,188 @@ function detectScpRsyncExfil(command) {
   return findings;
 }
 
+// Authenticated read: the secret env var is only the credential for the request
+// (curl -H "Authorization: Bearer $TOKEN" https://db.example/rest/v1/orders),
+// never its body, URL or upload. That is how a database REST or SQL-over-HTTP API is
+// read, so it is reported as an advisory finding (warn) instead of exfiltration (deny).
+// A secret in the body, URL or another header, an @file body, a form or upload,
+// PUT/PATCH/DELETE, command substitution or /dev/tcp keeps the hard deny.
+const AUTH_HEADER_RE = /^\s*(?:authorization|proxy-authorization|apikey|api-key|x-api-key|x-auth-token|private-token|x-supabase-key)\s*:/i;
+const CURL_AUTH_VALUE_FLAGS = new Set(['-u', '--user', '--oauth2-bearer']);
+const CURL_HEADER_FLAGS = new Set(['-H', '--header']);
+// A literal query body (--data '{"sql":"select 1"}') is how SQL-over-HTTP APIs read;
+// it stays a read as long as it carries no secret and no @file. Forms and uploads never do.
+const CURL_DATA_FLAGS = new Set(['-d', '--data', '--data-raw', '--data-ascii', '--data-binary', '--data-urlencode', '--json']);
+const CURL_UPLOAD_FLAG_RE = /^(?:-F|--form(?:-string)?|-T|--upload-file)$|^--(?:form|form-string|upload-file)=|^-[a-zA-Z]*[FT]/;
+const CURL_METHOD_FLAGS = new Set(['-X', '--request']);
+const QUERY_METHODS = new Set(['GET', 'HEAD', 'OPTIONS', 'POST']);
+const WGET_BODY_FLAG_RE = /^--(?:post-data|post-file|body-data|body-file)(?:=|$)/i;
+const WGET_AUTH_FLAG_RE = /^--(?:header|http-password|http-user|password|user)=/i;
+
+function segmentNetworkVerbIndex(tokens) {
+  let index = 0;
+  while (isShellAssignment(tokens[index])) index += 1;
+  while (OUTBOUND_COMMAND_WRAPPERS.has(path.basename(String(tokens[index] || '')).toLowerCase())) index += 1;
+  return index;
+}
+
+function isLiteralQueryBody(value, flag = '') {
+  const body = String(value || '');
+  if (body.startsWith('@')) return false;
+  // --data-urlencode name@file uploads that file (curl --manual); only name=content is literal.
+  if (/^--data-urlencode/.test(flag) && /^[^=]*@/.test(body)) return false;
+  return !hasSecretEnvVarRef(body) && !/\$\{?[A-Za-z_]/.test(body);
+}
+
+function curlSegmentIsAuthenticatedRead(tokens) {
+  for (let i = 1; i < tokens.length; i += 1) {
+    const token = String(tokens[i]);
+    const next = tokens[i + 1] === undefined ? '' : String(tokens[i + 1]);
+    // A config file (-K/--config) can carry any option, so the request cannot be validated.
+    if (token === '-K' || token === '--config' || /^--config=/.test(token) || /^-[a-zA-Z]*K/.test(token)) return false;
+    if (CURL_HEADER_FLAGS.has(token)) {
+      if (hasSecretEnvVarRef(next) && !AUTH_HEADER_RE.test(next)) return false;
+      i += 1;
+      continue;
+    }
+    if (CURL_AUTH_VALUE_FLAGS.has(token)) { i += 1; continue; }
+    if (CURL_METHOD_FLAGS.has(token)) {
+      if (!QUERY_METHODS.has(next.toUpperCase())) return false;
+      i += 1;
+      continue;
+    }
+    if (/^--(?:header|user|oauth2-bearer)=/.test(token)) {
+      const value = token.slice(token.indexOf('=') + 1);
+      if (token.startsWith('--header=') && hasSecretEnvVarRef(value) && !AUTH_HEADER_RE.test(value)) return false;
+      continue;
+    }
+    if (/^--request=/.test(token) && !QUERY_METHODS.has(token.split('=')[1].toUpperCase())) return false;
+    if (CURL_DATA_FLAGS.has(token)) {
+      if (!isLiteralQueryBody(next, token)) return false;
+      i += 1;
+      continue;
+    }
+    if (/^--(?:data(?:-[a-z]+)?|json)=/.test(token)) {
+      if (!isLiteralQueryBody(token.slice(token.indexOf('=') + 1), token)) return false;
+      continue;
+    }
+    if (/^-[a-zA-Z]*d/.test(token) && !token.startsWith('--')) return false; // attached -d'…' / -sd
+    if (CURL_UPLOAD_FLAG_RE.test(token)) return false;
+    if (hasSecretEnvVarRef(token)) return false; // secret in URL or another argument
+  }
+  return true;
+}
+
+function wgetSegmentIsAuthenticatedRead(tokens) {
+  for (let i = 1; i < tokens.length; i += 1) {
+    const token = String(tokens[i]);
+    if (WGET_BODY_FLAG_RE.test(token) || /^--method=(?!(?:GET|HEAD)$)/i.test(token)) return false;
+    if (token === '--method') {
+      if (!/^(?:GET|HEAD)$/i.test(String(tokens[i + 1] || ''))) return false;
+      i += 1;
+      continue;
+    }
+    if (WGET_AUTH_FLAG_RE.test(token)) {
+      const value = token.slice(token.indexOf('=') + 1);
+      if (/^--header=/i.test(token) && hasSecretEnvVarRef(value) && !AUTH_HEADER_RE.test(value)) return false;
+      continue;
+    }
+    if (hasSecretEnvVarRef(token)) return false;
+  }
+  return true;
+}
+
+// curl reads a default config (.curlrc) unless -q/--disable is its first argument. That file
+// can add a body, upload or another config, so a default config with any such option voids
+// the exception. A config that cannot be read counts as unsafe.
+const CURLRC_UNSAFE_OPTION_RE = /^\s*-{0,2}(?:d|F|T|K|X|data[\w-]*|form[\w-]*|json|upload-file|config|request|post\d*)\b/m;
+
+function curlDefaultConfigUnsafe(tokens, env = process.env) {
+  const first = String(tokens[1] || '');
+  if (first === '-q' || first === '--disable') return false;
+  const home = env.HOME || os.homedir();
+  // curl's lookup: $CURL_HOME, $XDG_CONFIG_HOME, $HOME, $HOME/.config, and %APPDATA% on Windows.
+  const dirs = [env.CURL_HOME, env.XDG_CONFIG_HOME, home, home && path.join(home, '.config'), env.APPDATA].filter(Boolean);
+  const candidates = [];
+  for (const dir of dirs) {
+    candidates.push(path.join(dir, '.curlrc'));
+    candidates.push(path.join(dir, 'curlrc'));
+  }
+  for (const file of candidates) {
+    let text;
+    try {
+      if (!fs.existsSync(file)) continue;
+      text = fs.readFileSync(file, 'utf8');
+    } catch {
+      return true;
+    }
+    if (CURLRC_UNSAFE_OPTION_RE.test(text)) return true;
+  }
+  return false;
+}
+
+// wget reads $WGETRC, ~/.wgetrc and /etc/wgetrc unless --no-config is given; one that sets a
+// body, a post file or a method voids the exception, as for curl.
+const WGETRC_UNSAFE_OPTION_RE = /^\s*(?:post_data|post_file|body_data|body_file|method)\s*=/im;
+
+function wgetDefaultConfigUnsafe(tokens, env = process.env) {
+  if (tokens.some((token) => token === '--no-config')) return false;
+  const candidates = [env.WGETRC, path.join(env.HOME || os.homedir(), '.wgetrc'), '/etc/wgetrc'].filter(Boolean);
+  for (const file of candidates) {
+    let text;
+    try {
+      if (!fs.existsSync(file)) continue;
+      text = fs.readFileSync(file, 'utf8');
+    } catch {
+      return true;
+    }
+    if (WGETRC_UNSAFE_OPTION_RE.test(text)) return true;
+  }
+  return false;
+}
+
+// The command itself can point curl/wget at another config directory or file
+// (`CURL_HOME=/tmp/x curl …`, `export "HOME=…"`, `export C'URL'_HOME=…`, `read -r WGETRC`). The
+// gate cannot see that file from its own environment, so the exception is void when:
+// - after removing quotes and backslashes, the command names one of these variables
+//   (reading `$HOME`/`${HOME}` is fine; naming HOME is not), or
+// - it uses a builtin that can set a variable whose name is computed or hidden
+//   (export, declare, read, eval, source, printf -v, …).
+const CONFIG_LOCATION_NAME_RE = /(?:CURL_HOME|XDG_CONFIG_HOME|WGETRC|SYSTEM_WGETRC)|(?<![$\w{])HOME(?!\w)/;
+const VARIABLE_SETTING_BUILTIN_RE = /(?:^|[\s;&|(])(?:export|declare|typeset|local|readonly|read|eval|source|mapfile|readarray|let|printf\s+-v|set\s+-a)(?=\s|$)|(?:^|[;&|(]\s*)\.(?=\s)/;
+
+function setsConfigLocation(text) {
+  const bare = text.replace(/['"\\]/g, '');
+  return CONFIG_LOCATION_NAME_RE.test(bare) || VARIABLE_SETTING_BUILTIN_RE.test(bare);
+}
+
+function isAuthenticatedReadCommand(command) {
+  const text = String(command || '');
+  if (/\/dev\/tcp\//i.test(text) || /\$\(|`|<\(/.test(text)) return false;
+  if (setsConfigLocation(text)) return false;
+  // printenv/env reads a secret without a $ reference; never part of a plain read.
+  if (/\b(?:printenv|env)\s+[A-Za-z_]/.test(text)) return false;
+  // Every segment that names a secret variable must be a read-only curl/wget whose
+  // only use of the secret is as the request's credential, and no other segment may
+  // reach the network (that would be a second, unvalidated outbound request).
+  let sawAuthRead = false;
+  for (const segment of splitCommandSegments(text)) {
+    const tokens = tokenizeCommand(segment);
+    if (!hasSecretEnvVarRef(segment)) {
+      if (segmentHasNetworkExfil(segment)) return false;
+      continue;
+    }
+    const index = segmentNetworkVerbIndex(tokens);
+    if (tokens.slice(0, index).some((token) => isShellAssignment(token) && hasSecretEnvVarRef(token))) return false;
+    const verb = path.basename(String(tokens[index] || '')).toLowerCase();
+    const rest = tokens.slice(index);
+    if (verb === 'curl' && curlSegmentIsAuthenticatedRead(rest) && !curlDefaultConfigUnsafe(rest)) { sawAuthRead = true; continue; }
+    if (verb === 'wget' && wgetSegmentIsAuthenticatedRead(rest) && !wgetDefaultConfigUnsafe(rest)) { sawAuthRead = true; continue; }
+    return false;
+  }
+  return sawAuthRead;
+}
+
 function detectEnvVarNetworkExfil(command) {
   // echo $API_KEY | curl  OR  curl -d "$OPENAI_API_KEY" https://…
   // printenv API_KEY | curl
@@ -876,6 +1058,15 @@ function detectEnvVarNetworkExfil(command) {
   const networkVerb = segmentHasNetworkExfil(command);
   if (!networkVerb && !/\/dev\/tcp\//i.test(command)) {
     return [];
+  }
+  if (isAuthenticatedReadCommand(text)) {
+    return [{
+      id: 'secret_env_auth_read',
+      label: 'Secret environment variable used as a request credential',
+      source: 'env_auth_read',
+      advisory: true,
+      reason: `Secret-bearing environment variable sent only as the ${networkVerb} request credential (not in the body, URL or an upload)`,
+    }];
   }
   return [{
     id: 'secret_env_exfil',
