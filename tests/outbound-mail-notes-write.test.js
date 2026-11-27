@@ -51,5 +51,6 @@ test('anything that sends, or could run the written text, is still refused', () 
     `printf -v out '${SEND}' >> notes.md`,
     `cat >> notes.md <<'EOF'\nnote\nEOF\n${SEND}`,
     `cat >> run.command <<'EOF'\n${SEND}\nEOF`,
+    `cat >> notes.md <<-'EOF'\nnote\n\tEOF\n${SEND}\nEOF`,
   ]) assert.equal(verdict(command), 'refused', command);
 });

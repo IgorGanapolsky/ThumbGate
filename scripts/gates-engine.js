@@ -2924,10 +2924,11 @@ function decodeShellPayloads(command, depth = 0) {
 function isNotesOnlyWrite(command) {
   const text = String(command || '');
   // `cat >> notes.md <<'TAG'` with a quoted tag and nothing after the closing line: the body is only data.
-  const heredoc = text.match(/^\s*cat\s+>>?\s*[\w./~-]+\.(?:md|txt|log|jsonl|csv)\s+<<-?\s*(['"])(\w+)\1[ \t]*\n([\s\S]*)$/i);
+  const heredoc = text.match(/^\s*cat\s+>>?\s*[\w./~-]+\.(?:md|txt|log|jsonl|csv)\s+<<(-?)\s*(['"])(\w+)\2[ \t]*\n([\s\S]*)$/i);
   if (heredoc) {
-    const lines = heredoc[3].replace(/\n+$/, '').split('\n');
-    return lines.indexOf(heredoc[2]) === lines.length - 1;
+    // `<<-` strips leading tabs before looking for the closing line, so an indented tag ends the body too.
+    const lines = heredoc[4].replace(/\n+$/, '').split('\n').map((line) => (heredoc[1] ? line.replace(/^\t+/, '') : line));
+    return lines.indexOf(heredoc[3]) === lines.length - 1;
   }
   const segments = [[]];
   let word = '';
