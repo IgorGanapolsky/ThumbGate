@@ -99,7 +99,7 @@ function buildControlReport(options = {}) {
       installIdPath,
       installIdExists: fs.existsSync(installIdPath),
       offSwitch: OFF_SWITCH,
-      eventMetadata: 'Each event can add a few fields of its own, such as the ThumbGate subcommand name or a gate id. The full body is built in scripts/cli-telemetry.js.',
+      eventMetadata: 'Each event can add a few fields of its own, such as the ThumbGate subcommand name or the id of a built-in gate. The full body is built in scripts/cli-telemetry.js.',
     },
     hostedKeySet: Boolean(String(env.THUMBGATE_API_KEY || '').trim()),
     actions: {

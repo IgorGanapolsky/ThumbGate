@@ -1,6 +1,6 @@
 {
   "name": "thumbgate",
-  "version": "1.47.2",
+  "version": "1.48.0",
   "description": "ThumbGate Pre-Action Checks self-improve from ranked lessons and repeated failures, hard-block detected secret leaks, and block matches in strict mode.",
   "homepage": "https://thumbgate.ai",
   "repository": {
@@ -1125,7 +1125,7 @@
     "test:per-step-scoring": "node --test tests/per-step-scoring.test.js",
     "test:weekly-auto-post": "node --test tests/weekly-auto-post.test.js",
     "test:social-post-hourly": "node --test tests/social-post-hourly.test.js",
-    "test:social-quality-gate": "node --test tests/social-quality-gate.test.js tests/validate-social-post.test.js tests/no-real-estate-outbound.test.js tests/brand-standards-gate.test.js",
+    "test:social-quality-gate": "node --test tests/social-quality-gate.test.js tests/validate-social-post.test.js tests/no-real-estate-outbound.test.js tests/own-site-lookup.test.js tests/brand-standards-gate.test.js",
     "test:brand-standards": "node --test tests/brand-standards-gate.test.js",
     "test:a2ui-engine": "node --test tests/a2ui-engine.test.js",
     "test:gate-satisfy": "node --test tests/gate-satisfy.test.js",
@@ -1357,7 +1357,7 @@
     "test:secret-egress": "node --test tests/secret-egress-gate.test.js",
     "test:sandbox-escape-gates": "node --test tests/sandbox-escape-gates.test.js",
     "test:harness-tool-names": "node --test tests/harness-tool-names.test.js",
-    "test:feedback-reward": "node --test tests/hold-exits.test.js tests/hold-read-only.test.js tests/hold-credential-prefix.test.js tests/hold-teach-doctor.test.js tests/readme-claims.test.js tests/enforcement-path-offline.test.js tests/commit-secret-and-rm-gates.test.js tests/gate-mask-pending-pr-thread.test.js tests/runtime-update-gaps.test.js tests/host-enforcement-summary.test.js tests/enforcement-matrix-route.test.js tests/cursor-fail-closed.test.js tests/advisory-hosts-honesty.test.js tests/feedback-reward-score.test.js tests/feedback-thumbs-down-promotion.test.js tests/pilot-request.test.js tests/demo-page.test.js tests/lesson-distinct-kept.test.js tests/prompt-lessons.test.js tests/lesson-effect.test.js tests/bulk-destroy-gates.test.js tests/default-gates-clean.test.js tests/checkout-price-guard.test.js tests/shared-tree-gate.test.js tests/canary-boundary-lint.test.js tests/plugin-hook-paths-shipped.test.js tests/cursor-gate-path.test.js tests/claim-gate-rules.test.js tests/host-gate-matrix.test.js tests/audit-decision-line.test.js tests/not-a-thumb.test.js tests/udemy-source.test.js tests/paraphrase-test-script.test.js tests/thumbs-down-enforcement.test.js tests/ga4-second-property.test.js",
+    "test:feedback-reward": "node --test tests/outbound-mail-notes-write.test.js tests/hold-exits.test.js tests/hold-teach-doctor.test.js tests/readme-claims.test.js tests/enforcement-path-offline.test.js tests/commit-secret-and-rm-gates.test.js tests/gate-mask-pending-pr-thread.test.js tests/runtime-update-gaps.test.js tests/host-enforcement-summary.test.js tests/enforcement-matrix-route.test.js tests/cursor-fail-closed.test.js tests/advisory-hosts-honesty.test.js tests/feedback-reward-score.test.js tests/feedback-thumbs-down-promotion.test.js tests/pilot-request.test.js tests/demo-page.test.js tests/lesson-distinct-kept.test.js tests/prompt-lessons.test.js tests/lesson-effect.test.js tests/bulk-destroy-gates.test.js tests/default-gates-clean.test.js tests/checkout-price-guard.test.js tests/shared-tree-gate.test.js tests/canary-boundary-lint.test.js tests/plugin-hook-paths-shipped.test.js tests/cursor-gate-path.test.js tests/claim-gate-rules.test.js tests/host-gate-matrix.test.js tests/audit-decision-line.test.js tests/not-a-thumb.test.js tests/udemy-source.test.js tests/paraphrase-test-script.test.js tests/thumbs-down-enforcement.test.js tests/ga4-second-property.test.js tests/hold-read-only.test.js tests/hold-credential-prefix.test.js",
     "test:capability-wiring": "node --test tests/capability-wiring-ratchet.test.js && node --test tests/prove-vlt-dogfood.test.js && node --test tests/context-engineering-checklist.test.js",
     "test:llm-gateway": "node --test tests/llm-gateway-provider.test.js",
     "test:request-envelope": "node --test tests/request-envelope.test.js",
