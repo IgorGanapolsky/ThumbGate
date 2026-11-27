@@ -1,11 +1,19 @@
 // thumbgate.ai, walked the way a visitor walks it: land, read the install command, go to pricing, start checkout,
 // and hit the signed-in pages. Nothing is mocked and nothing is paid: the walk stops at the checkout page's
-// "Pay with Stripe" button and never submits it, so no Stripe session or checkout-start event is created.
+// "Pay with Stripe" button and never submits it, so no Stripe session is created; the browser's user agent names
+// Playwright so analytics counts none of these visits, clicks or checkout-start beacons.
 // Every request carries ?probe=1 where the server supports it, which marks the visit as a synthetic probe.
 // THUMBGATE_LIVE_URL points the walk at another deployment. THUMBGATE_EXPECT_VERSION makes /health match a version.
 const { test, expect } = require('@playwright/test');
 
 const BASE = (process.env.THUMBGATE_LIVE_URL || 'https://thumbgate.ai').replace(/\/$/, '');
+
+// Page beacons (pricing_page_view, cta_click, checkout_start) do not carry ?probe=1, so the browser itself must say it
+// is synthetic: scripts/bot-detection.js and scripts/telemetry-analytics.js drop user agents naming Playwright.
+test.use({
+  userAgent: 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36 '
+    + 'ThumbGateJourney/1 (synthetic; Playwright)',
+});
 
 function trackPageErrors(page) {
   const errors = [];
