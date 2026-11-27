@@ -83,7 +83,9 @@ jobs:
         run: |
           case "${{ matrix.target }}" in
             live)
-              export THUMBGATE_EXPECT_VERSION="$(npm view thumbgate version)"
+              expected="$(npm view thumbgate version)" || { echo "npm view thumbgate version failed"; exit 1; }
+              [ -n "$expected" ] || { echo "npm view thumbgate version returned nothing"; exit 1; }
+              export THUMBGATE_EXPECT_VERSION="$expected"
               npm run test:journeys:live ;;
             *)
               npm run test:journeys:local ;;

@@ -52,6 +52,10 @@ test('landing page shows the pitch, the install command and a working Pro button
   await expect(page.locator('body')).toContainText('npx thumbgate init');
   const pro = page.locator('a[href^="/checkout/pro"]').first();
   await expect(pro).toBeVisible();
+  // Follow it: a renamed or broken destination must fail here, not only on the pricing page.
+  await pro.click();
+  await expect(page).toHaveURL(/\/checkout\/pro/);
+  await expect(page.getByRole('button', { name: /Pay .* with Stripe/ })).toBeVisible();
   expect(errors).toEqual([]);
 });
 

@@ -64,7 +64,7 @@ async function startUserDashboard({ pro }) {
     DO_NOT_TRACK: '1',
   };
   for (const key of Object.keys(env)) {
-    if (/^THUMBGATE_.*(?:_API_KEY|_PRO_KEY)$|^THUMBGATE_LICENSE/.test(key)) delete env[key];
+    if (/^THUMBGATE_(?:.*_)?(?:API_KEY|PRO_KEY)$|^THUMBGATE_LICENSE/.test(key)) delete env[key];
   }
   for (const key of ['THUMBGATE_FEEDBACK_DIR', 'THUMBGATE_PROJECT_DIR', 'CLAUDE_PROJECT_DIR', 'INIT_CWD']) delete env[key];
 
