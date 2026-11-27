@@ -76,3 +76,26 @@ test('a gate recorded as built from the lesson counts', () => {
   assert.equal(lifecycle.adviceOnly, false);
   assert.match(lifecycle.adviceNote, /^A gate built from this lesson blocks/);
 });
+
+test("a blocking gate built from the lesson counts even when it shares no words with it", () => {
+  gates({ id: "auto-zz", pattern: "qqq_zzz", message: "xyzzy plugh", sourceFeedbackId: "fb_source" });
+  const { lifecycle } = searchLessons("weekly summary email greeting", { feedbackDir }).results[0].systemResponse;
+  assert.equal(lifecycle.adviceOnly, false);
+});
+
+test("a scoped search counts only thumbs-downs from that scope", () => {
+  const alice = { entityId: "alice", projectId: "p", processId: "a", sessionId: "s1" };
+  const bob = { ...alice, entityId: "bob" };
+  jsonl("feedback-log.jsonl", [
+    { ...down("fb_source", "10", COMPLAINT), ...alice },
+    { ...down("fb_bob", "12", COMPLAINT), ...bob },
+  ]);
+  jsonl("memory-log.jsonl", [{
+    ...alice, id: "mem_greeting", title: "MISTAKE: wrong greeting in the weekly summary email",
+    content: "What went wrong: " + COMPLAINT, category: "error", tags: ["email"],
+    sourceFeedbackId: "fb_source", timestamp: "2026-11-10T10:00:01.000Z",
+  }]);
+  const [result] = searchLessons("weekly summary email greeting", { feedbackDir, scope: alice, includeShared: false }).results;
+  assert.equal(result.repeats.count, 0);
+  assert.equal(result.repeats.laterThumbsDown, 0);
+});

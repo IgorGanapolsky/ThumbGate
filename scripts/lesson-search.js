@@ -337,8 +337,9 @@ function buildHarnessRecommendations(memory, parsed, sourceFeedback, ruleMatches
 
 // Says plainly what a lesson does. A gate counts only when it records that it was built from this lesson:
 // the gates in `linkedAutoGates` are matched by shared words, which is not proof.
-function describeEnforcement(memory, ruleMatches, gateMatches) {
-  const built = gateMatches.filter((gate) => (gate.sourceLessonId && gate.sourceLessonId === memory.id)
+function describeEnforcement(memory, ruleMatches, gateMatches, allGates = gateMatches) {
+  // Provenance is looked up in every gate: the word matches are scored and cut to a few.
+  const built = allGates.filter((gate) => (gate.sourceLessonId && gate.sourceLessonId === memory.id)
     || (gate.sourceFeedbackId && gate.sourceFeedbackId === memory.sourceFeedbackId));
   if (built.some((gate) => gate.action === 'block')) {
     return { adviceOnly: false, adviceNote: 'A gate built from this lesson blocks the matching action.' };
@@ -365,7 +366,7 @@ function measureRepeats(result, feedbackEntries) {
   return { since: result.timestamp, count, laterThumbsDown: later.length, method: 'text-match' };
 }
 
-function buildLifecycle(memory, parsed, sourceFeedback, ruleMatches, gateMatches, recommendations) {
+function buildLifecycle(memory, parsed, sourceFeedback, ruleMatches, gateMatches, recommendations, allGates) {
   const correctiveActionCaptured = Boolean(parsed.howToAvoid || parsed.actionNeeded || parsed.whatWorked || parsed.approach);
   const preventionRuleLinked = ruleMatches.length > 0;
   const gateLinked = gateMatches.length > 0;
@@ -392,7 +393,7 @@ function buildLifecycle(memory, parsed, sourceFeedback, ruleMatches, gateMatches
     enforcementState,
     verificationState,
     impactMeasured: verificationState === 'closed_loop',
-    ...describeEnforcement(memory, ruleMatches, gateMatches),
+    ...describeEnforcement(memory, ruleMatches, gateMatches, allGates),
     openRecommendations: recommendations.length,
     stage,
   };
@@ -460,7 +461,7 @@ function buildLessonResult(memory, sourceFeedback, options = {}) {
   const gateMatches = buildGateMatches(memory, parsed, Number(options.gateLimit || 3), options);
   const { score, evidenceScore, priorScore, matchedTokens } = scoreLesson(options.query || '', memory, parsed, sourceFeedback);
   const harnessRecommendations = buildHarnessRecommendations(memory, parsed, sourceFeedback, ruleMatches, gateMatches);
-  const lifecycle = buildLifecycle(memory, parsed, sourceFeedback, ruleMatches, gateMatches, harnessRecommendations);
+  const lifecycle = buildLifecycle(memory, parsed, sourceFeedback, ruleMatches, gateMatches, harnessRecommendations, readAutoGates(options).gates || []);
   const memoryLifecycle = buildMemoryLifecycleView(memory, { query: options.query || '' });
 
   return {
@@ -543,6 +544,10 @@ function searchLessons(query = '', options = {}) {
   const allMemories = require('./project-catalog').readProjectRows(FEEDBACK_DIR, 'memory-log.jsonl', options);
   const memories = selectRetrievalMemories(allMemories, options);
   const feedbackEntries = require('./project-catalog').readProjectRows(FEEDBACK_DIR, 'feedback-log.jsonl', options);
+  // A scoped search must not count, or reveal, another user's or session's thumbs-downs.
+  const scopedFeedback = options.scope
+    ? require('./memory-scope-readiness').selectRecordsForScope(feedbackEntries, options.scope, { includeShared: options.includeShared !== false }).allowed
+    : feedbackEntries;
   const feedbackKey = (projectKey, id) => `${projectKey}\0${id}`;
   const feedbackById = new Map(feedbackEntries.map((entry) => [feedbackKey(entry.projectKey, entry.id), entry]));
   const parsedLimit = Number(options.limit || 10);
@@ -650,7 +655,7 @@ function searchLessons(query = '', options = {}) {
     excludedLessons: allMemories.length - memories.length,
     returned: Math.min(limit, results.length),
     results: results.slice(0, limit).map((entry) => (entry.category === 'error' && entry.systemResponse.lifecycle
-    ? { ...entry, repeats: measureRepeats(entry, feedbackEntries) }
+    ? { ...entry, repeats: measureRepeats(entry, scopedFeedback) }
     : entry)),
     backend: 'jsonl-jaccard',
   };
