@@ -1,6 +1,6 @@
 {
   "name": "thumbgate",
-  "version": "1.48.0",
+  "version": "1.49.0",
   "description": "ThumbGate Pre-Action Checks self-improve from ranked lessons and repeated failures, hard-block detected secret leaks, and block matches in strict mode.",
   "homepage": "https://thumbgate.ai",
   "repository": {
@@ -1107,7 +1107,7 @@
     "test:reflector-agent": "node --test tests/reflector-agent.test.js",
     "test:public-core-boundary": "node --test tests/public-core-boundary.test.js",
     "test:feedback-session": "node --test tests/feedback-session.test.js",
-    "test:feedback-history-distiller": "node --test tests/feedback-history-distiller.test.js tests/mistake-needs-correction.test.js",
+    "test:feedback-history-distiller": "node --test tests/feedback-history-distiller.test.js tests/mistake-needs-correction.test.js tests/capture-says-advice-only.test.js",
     "test:hallucination-detector": "node --test tests/hallucination-detector.test.js",
     "test:history-distiller": "node --test tests/history-distiller.test.js",
     "test:predictive-insights": "node --test tests/predictive-insights.test.js",
@@ -1304,7 +1304,7 @@
     "test:plugin-hooks-manifest": "node --test tests/plugin-hooks-manifest.test.js tests/hook-command-paths.test.js tests/auto-wire-hooks-cli-safety.test.js",
     "test:hook-self-protection": "node --test tests/hook-self-protection.test.js",
     "test:never-bypass-branch-protection": "node --test tests/never-bypass-branch-protection.test.js",
-    "test:self-protect-enforcement": "node --test tests/self-protect-enforcement.test.js tests/learned-rule-store-self-protect.test.js",
+    "test:self-protect-enforcement": "node --test tests/self-protect-enforcement.test.js tests/learned-rule-store-self-protect.test.js tests/self-protect-additive-hook.test.js",
     "test:pack-runtime-integrity": "node --test tests/pack-runtime-integrity.test.js",
     "test:packed-cli-require-closure": "node --test tests/packed-cli-require-closure.test.js",
     "test:entitlement": "node --test tests/entitlement.test.js",

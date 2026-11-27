@@ -165,7 +165,7 @@ function main() {
     console.log(`  Type        : ${mem.type || ev.actionType}`);
     console.log(`  Storage     : JSONL log + LanceDB vector index`);
     console.log('');
-    console.log(`  Action: promoted to reusable memory. Prevention rules will auto-update.`);
+    console.log(`  Action: ${result.message}`);
     console.log(`  DPO export: run \`npx thumbgate export-dpo\` to generate training pairs.`);
     console.log('');
     return;
