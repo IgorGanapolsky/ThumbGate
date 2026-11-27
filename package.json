@@ -1082,7 +1082,7 @@
     "test:revenue-observability-doctor": "node --test tests/revenue-observability-doctor.test.js",
     "test:postinstall": "node --test tests/postinstall.test.js",
     "test:funnel-invariants": "node --test tests/funnel-invariants.test.js",
-    "test:cli-telemetry": "node --test tests/cli-telemetry.test.js",
+    "test:cli-telemetry": "node --test tests/cli-telemetry.test.js tests/telemetry-privacy.test.js",
     "test:pro-parity": "node --test tests/pro-parity.test.js",
     "test:pricing-page-telemetry": "node --test tests/pricing-page-telemetry.test.js tests/stripe-checkout-abandonment-fix.test.js",
     "test:skill-exporter": "node --test tests/skill-exporter.test.js",

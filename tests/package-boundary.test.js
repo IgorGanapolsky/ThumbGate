@@ -865,8 +865,12 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // Measured 10,991,855.
   // Bumped 11.00 MB -> 11.01 MB (2026-11-27): scripts/data-control-report.js, the `thumbgate control` command
   // (about 6 KB). Measured 11,004,279.
-  manifest.unpackedSize <= 11_010_000,
-  `npm package should stay <= 11.01 MB unpacked, got ${manifest.unpackedSize}`
+  // Bumped 11.00 MB -> 11.01 MB (2026-11-27): the "Signs you need this" and "Your first week" sections in
+  // public/guide.html (PR #5309, which left main at 11,001,184) and the opt-out and gate-id privacy fixes in
+  // scripts/cli-telemetry.js. Measured 11,002,284.
+  // Bumped 11.01 MB -> 11.02 MB (2026-11-27, PR #5311): the two entries above landed together. Measured 11,010,879.
+  manifest.unpackedSize <= 11_020_000,
+  `npm package should stay <= 11.02 MB unpacked, got ${manifest.unpackedSize}`
 );
 
   for (const file of requiredRuntimeFiles) {
