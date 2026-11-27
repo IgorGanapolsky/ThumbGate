@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.47.1
+
+### Patch Changes
+
+- 72eafd1: Fix the dashboard's DPO download. The project picker script was served as `application/octet-stream`, so browsers refused it and the dashboard failed to connect. A link naming a project with nothing recorded now moves to the project that has data. Download now saves one file with DPO pairs and a KTO list: one `{ prompt, completion, label }` row for every 👍/👎 that recorded the request and the agent's action, so feedback without a written correction is no longer lost.
+- 7cab346: A thumbs-down from the Claude Code hook or MCP capture_feedback now stores the real rejected action and the turns before it, read from the transcript that proves the session. The strict DPO export also finds source records kept in feedback-log backups.
+- fb24701: The homepage no longer shows an old version number on its recorded demo and status line; the only current version on the page is the released one, and a test fails if another appears.
+- 005a018: The homepage install block and the install page link the free Udemy video course, with their own utm_medium so the traffic can be counted.
+
 ## 1.47.0
 
 ### Minor Changes
