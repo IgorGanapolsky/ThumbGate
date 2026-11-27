@@ -5311,6 +5311,49 @@ function evaluateSendGate(input = {}) {
   }
 }
 
+function repeatAfterDenyCall(input = {}) {
+  return {
+    feedbackDir: require('./feedback-paths').resolveFeedbackDir({ cwd: input.cwd || process.cwd() }),
+    sessionId: String(input.session_id || input.sessionId || input.conversation_id || ''),
+    toolName: input.tool_name || input.toolName || '',
+    toolInput: input.tool_input || input.toolInput || {},
+  };
+}
+
+// A person's "do not retry a denied action" rule (scripts/repeat-after-deny.js).
+function evaluateRepeatAfterDeny(input = {}) {
+  try {
+    const call = repeatAfterDenyCall(input);
+    const repeatAfterDeny = require('./auto-promote-gates').repeatAfterDeny;
+    if (!repeatAfterDeny.wasDenied(call)) return null;
+    const projectKey = gateExecution(call.toolInput, { cwd: input.cwd }).projectKey;
+    const learned = require('./auto-promote-gates').loadAutoGates({ feedbackDir: call.feedbackDir }).gates;
+    // Same cap as every other learned rule (see loadGatesConfig).
+    const gate = (isProTier() ? learned : learned.slice(0, FREE_TIER_MAX_GATES))
+      .find((g) => g && g.condition === repeatAfterDeny.CONDITION && g.active !== false
+        && (g.expiresAt == null || Date.parse(g.expiresAt) > Date.now()) && gateAppliesToProject(g, projectKey));
+    if (!gate) return null;
+    const result = { decision: 'deny', gate: gate.id, message: gate.message, severity: 'critical', reasoning: [] };
+    try {
+      recordStat(gate.id, 'block', null, { toolName: call.toolName, toolInput: call.toolInput });
+      auditToFeedback(recordAuditEvent({ toolName: call.toolName, toolInput: call.toolInput, decision: 'deny', gateId: gate.id, message: gate.message, severity: 'critical', source: 'repeat-after-deny' }));
+    } catch { /* audit is best effort */ }
+    return result;
+  } catch {
+    return null; // a broken state file never blocks the agent
+  }
+}
+
+// Remember what was denied, so the same call cannot simply be sent again.
+function rememberDeniedCall(rawInput, output) {
+  try {
+    if (!/"permissionDecision"\s*:\s*"deny"|"decision"\s*:\s*"block"/.test(String(output || ''))) return;
+    // An admin-override deny has its own approval path; the approved retry must get through.
+    if (/Approval request:/.test(String(output))) return;
+    require('./auto-promote-gates').repeatAfterDeny.recordDeny(repeatAfterDenyCall(canonicalizeHookInput(rawInput || {})));
+  } catch { /* recording a deny is best effort */ }
+}
+
 function evaluateUnconditionalHardFloor(rawInput = {}, options = {}) {
   const input = canonicalizeHookInput(rawInput);
   const secretGuard = evaluateSecretGuard(input);
@@ -5335,6 +5378,9 @@ function evaluateUnconditionalHardFloor(rawInput = {}, options = {}) {
   // know", a second new bubble). Runs before the tool call on every host path (scripts/send-gate.js).
   const sendGate = evaluateSendGate(input);
   if (sendGate) return { hardFloor: sendGate, securityScan };
+
+  const retried = evaluateRepeatAfterDeny(input);
+  if (retried) return { hardFloor: retried, securityScan };
 
   const repeated = evaluateRepeatedMistakeGates(input);
   if (repeated) return { hardFloor: repeated, securityScan };
@@ -5856,6 +5902,7 @@ function rememberAllowedShellCommand(rawInput, output) {
 async function runAsync(rawInput) {
   const output = await runAsyncCore(rawInput);
   rememberAllowedShellCommand(rawInput, output);
+  rememberDeniedCall(rawInput, output);
   try {
     return require('./first-block-upsell').withFirstBlockUpsell(output);
   } catch {
@@ -5913,6 +5960,12 @@ async function runAsyncCore(rawInput) {
 }
 
 function run(rawInput) {
+  const output = runCore(rawInput);
+  rememberDeniedCall(rawInput, output);
+  return output;
+}
+
+function runCore(rawInput) {
   const input = canonicalizeHookInput(rawInput);
   const { hardFloor, securityScan } = evaluateUnconditionalHardFloor(input);
   if (hardFloor) return formatOutput(hardFloor);
@@ -6450,6 +6503,7 @@ function evaluateAgentIdentityLifecycleGate(toolName, toolInput) {
 }
 
 module.exports = {
+  evaluateUnconditionalHardFloor,
   compileGatePattern,
   evaluateAgentIdentityLifecycleGate,
   loadGatesConfig,

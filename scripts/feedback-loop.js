@@ -2218,6 +2218,10 @@ function captureFeedback(params, options = {}) {
         }
       }
     } catch { /* Gate promotion is non-critical */ }
+    try {
+      const gatePrompt = require('./auto-promote-gates').gatePromptFor(feedbackEvent);
+      if (gatePrompt) result.gatePrompt = gatePrompt;
+    } catch { /* the prompt is advisory */ }
   }
 
   // Auto-export to Obsidian if configured (deferred but tracked)

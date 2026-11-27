@@ -541,8 +541,10 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
     // 735 -> 736 (2026-11-27): scripts/ga-tag.js, the GA4 funnel tag on every public page (+1).
     // 734 -> 735 (2026-11-27): scripts/data-control-report.js, the `thumbgate control` command (+1).
     // 736 -> 737 (2026-11-27): scripts/cloud-rules-export.js, `thumbgate export-rules` for cloud agents (+1).
-    manifest.fileCount <= 737,
-    `npm package should stay <= 737 files, got ${manifest.fileCount}`
+    // 737 -> 738 (2026-11-27): scripts/pii-scanner.js, which cloud-rules-export.js requires (+1).
+    // 738 -> 740 (2026-11-27): scripts/skill-shell-gate.js and scripts/gate-check-core.js, the PreSkillShellCommand hook (PR 5331) (+2).
+    manifest.fileCount <= 740,
+    `npm package should stay <= 740 files, got ${manifest.fileCount}`
   );
   // Ceiling bumped from 2.75 MB → 2.85 MB (2026-04-16) to accommodate the
   // incremental review-delta demo content in public/dashboard.html landing
@@ -877,8 +879,10 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // (mail-note and own-site gate fixes) plus the release CHANGELOG entry. Measured 11,030,188.
   // Bumped 11.04 MB -> 11.05 MB (2026-11-27): scripts/cloud-rules-export.js and the export-rules CLI command, on top
   // of #5326 (spend-guard research fix). Measured 11,042,740.
-  manifest.unpackedSize <= 11_050_000,
-  `npm package should stay <= 11.05 MB unpacked, got ${manifest.unpackedSize}`
+  // 11.05 -> 11.08 MB (2026-11-27): pii-scanner.js (required by export-rules) and the repeat-after-deny condition gate.
+  // 11.08 -> 11.09 MB (2026-11-27, PR 5331): the PreSkillShellCommand hook. Measured 11,080,029.
+  manifest.unpackedSize <= 11_090_000,
+  `npm package should stay <= 11.09 MB unpacked, got ${manifest.unpackedSize}`
 );
 
   for (const file of requiredRuntimeFiles) {
