@@ -652,6 +652,13 @@ test('homepage stays human-scannable instead of becoming a product monorepo', ()
   // 1810: one sentence says checks after the agent finishes find the damage late while ThumbGate decides before the command runs, with the limits kept (26 Nov 2026).
   // 1820: one line under the install block links the free video course (27 Nov 2026).
   assert.ok(words.length <= 1820,`visible homepage is ${words.length} words`);
+  // Versions on the page must be the released one, so a hand-typed one cannot go stale. "New in X" says when a
+  // feature arrived, so it is history, not the current version.
+  const { version } = require('../package.json');
+  const current = landingPage.replace(/New in \d+\.\d+\.\d+/g, 'New in');
+  const shown = [...current.matchAll(/(?:thumbgate[ @-]v?|\bv|\bversion" content=")(\d+\.\d+\.\d+)/gi)].map((m) => m[1]);
+  assert.ok(shown.length >= 2, 'the page still names the released version (meta and footer)');
+  assert.deepEqual([...new Set(shown)], [version], `homepage names ${shown.join(', ')}; released is ${version}`);
   assert.ok(h2Count <= 8, `homepage has ${h2Count} H2 headings`);
   assert.ok(h3Count <= 10, `homepage has ${h3Count} H3 headings`);
   for (const jargon of ['Thompson Sampling', 'DPO', 'LanceDB', 'ContextFS', 'MemAlign', 'FTS5']) {
@@ -676,7 +683,7 @@ test('hero states the approved workflow scope with fit-first and free paths', ()
   assert.match(hero, /holds that command before it can run again, until you say "go ahead"/i);
   assert.match(hero, /Denied on a fresh install, even in bypass mode:[\s\S]*terraform destroy[\s\S]*kubectl delete[\s\S]*aws s3 rm/i);
   assert.match(hero, /thumbs-down-hold/);
-  assert.match(hero, /thumbgate 1\.45\.1/);
+  assert.match(hero, /Recorded from the published package on 25 Nov 2026/);
   assert.match(hero, /href="#coverage"/);
   assert.doesNotMatch(landingPage, /every tool call|every call|budget enforcement|no account/i);
   assert.match(hero, /data-recorded-deny/);
