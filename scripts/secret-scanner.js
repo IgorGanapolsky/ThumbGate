@@ -962,7 +962,9 @@ const CURLRC_UNSAFE_OPTION_RE = /^\s*-{0,2}(?:d|F|T|K|X|data[\w-]*|form[\w-]*|js
 function curlDefaultConfigUnsafe(tokens, env = process.env) {
   const first = String(tokens[1] || '');
   if (first === '-q' || first === '--disable') return false;
-  const dirs = [env.CURL_HOME, env.XDG_CONFIG_HOME, env.HOME || os.homedir()].filter(Boolean);
+  const home = env.HOME || os.homedir();
+  // curl's lookup: $CURL_HOME, $XDG_CONFIG_HOME, $HOME, $HOME/.config, and %APPDATA% on Windows.
+  const dirs = [env.CURL_HOME, env.XDG_CONFIG_HOME, home, home && path.join(home, '.config'), env.APPDATA].filter(Boolean);
   const candidates = [];
   for (const dir of dirs) {
     candidates.push(path.join(dir, '.curlrc'));
