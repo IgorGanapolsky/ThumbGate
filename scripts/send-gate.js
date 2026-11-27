@@ -169,8 +169,9 @@ function isReadSegment(words) {
   if (!program || program === 'done' || program === 'fi') return true;
   // A loop value or a variable standing alone could smuggle in a flag, so neither may.
   if (program === 'for') return !args.some((a) => /(?:^|\s)-/.test(a));
-  if ((program === 'git' || program === 'gh' || BANNED_ARGS[program]) && args.some((a) => a.startsWith('$'))) return false;
-  if (program === 'printf' && args[0] === '-v') return false;
+  if ((program === 'git' || program === 'gh' || BANNED_ARGS[program]) && args.some((a) => a.includes('$'))) return false;
+  // `-v` writes a variable (and evaluates an array subscript); a leading expansion could turn into it.
+  if (program === 'printf' && /^(?:-v|-?\$)/.test(args[0] || '')) return false;
   if (program === 'git') return GIT_READS.has(args[0]) && !args.some((a) => /^(?:--output|--ext-diff|--open-files-in-pager|-[a-zA-Z]*O)/.test(a));
   if (program === 'gh') {
     // `gh api` is a GET only without a method or any field/body flag.

@@ -5784,13 +5784,14 @@ async function runAsyncCore(rawInput) {
 
   
   const behavioralContext = safeSecretStorageWrite ? null : buildBehavioralContext();
-  const lessonContext = safeSecretStorageWrite ? null : await buildRelevantLessonContextAsync(toolName, toolInput, { sessionId: input.session_id || input.sessionId || input.conversation_id });
+  // A denial drops the lesson text, so such a call must not record the lesson as shown.
+  const posturedResult = applyEnforcementPosture(result);
+  const lessonContext = safeSecretStorageWrite ? null : await buildRelevantLessonContextAsync(toolName, toolInput, { sessionId: isBlockingDecision(posturedResult) ? undefined : input.session_id || input.sessionId || input.conversation_id });
   
   if (lessonContext && lessonContext.decision === "deny") {
     return formatOutput(applyEnforcementPosture(lessonContext));
   }
 
-  const posturedResult = applyEnforcementPosture(result);
   if (isBlockingDecision(posturedResult)) {
     return formatOutput(posturedResult);
   }
@@ -5833,13 +5834,14 @@ function run(rawInput) {
 
   
   const behavioralContext = safeSecretStorageWrite ? null : buildBehavioralContext();
-  const lessonContext = safeSecretStorageWrite ? null : buildRelevantLessonContext(toolName, toolInput, { sessionId: input.session_id || input.sessionId || input.conversation_id });
+  // A denial drops the lesson text, so such a call must not record the lesson as shown.
+  const posturedResult = applyEnforcementPosture(result);
+  const lessonContext = safeSecretStorageWrite ? null : buildRelevantLessonContext(toolName, toolInput, { sessionId: isBlockingDecision(posturedResult) ? undefined : input.session_id || input.sessionId || input.conversation_id });
   
   if (lessonContext && lessonContext.decision === "deny") {
     return formatOutput(applyEnforcementPosture(lessonContext));
   }
 
-  const posturedResult = applyEnforcementPosture(result);
   if (isBlockingDecision(posturedResult)) {
     return formatOutput(posturedResult);
   }
