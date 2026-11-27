@@ -43,8 +43,13 @@ function hosts() {
     .map((h) => h.replace(/\\/g, ''));
 }
 
+// Denies exercised here are fixtures: keep them out of the operator's real receipt log.
+const RECEIPT_DIR = fs.mkdtempSync(path.join(require('node:os').tmpdir(), 'tg-spend-receipts-'));
+test.after(() => fs.rmSync(RECEIPT_DIR, { recursive: true, force: true }));
+
 function runGuard(payload) {
   const res = spawnSync(process.execPath, [GUARD], {
+    env: { ...process.env, THUMBGATE_SPEND_GUARD_RECEIPT_DIR: RECEIPT_DIR },
     input: JSON.stringify(payload),
     encoding: 'utf8',
     timeout: 15000,
