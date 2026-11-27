@@ -874,8 +874,10 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // Google Analytics line in public/privacy.html. Measured 11,023,272.
   // Bumped 11.03 MB -> 11.04 MB (2026-11-27, v1.48.0 release): main measured 11,030,172 after #5314 and #5319
   // (mail-note and own-site gate fixes) plus the release CHANGELOG entry. Measured 11,030,188.
-  manifest.unpackedSize <= 11_040_000,
-  `npm package should stay <= 11.04 MB unpacked, got ${manifest.unpackedSize}`
+  // Bumped 11.04 MB -> 11.05 MB (2026-11-27, PR #5324): authenticated-read classifier in scripts/secret-scanner.js
+  // plus the warn-only advisory path in gates-engine.js and tailscale-october-access.js (~9.4 KB). Measured 11,039,554.
+  manifest.unpackedSize <= 11_050_000,
+  `npm package should stay <= 11.05 MB unpacked, got ${manifest.unpackedSize}`
 );
 
   for (const file of requiredRuntimeFiles) {
