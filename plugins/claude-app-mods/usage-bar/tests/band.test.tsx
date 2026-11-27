@@ -48,9 +48,33 @@ test('the band shows usage, limits and ThumbGate counts', async ($, on) => {
     expect(limits?.text).toContain('context 19% (191k/1.0M)')
     expect(limits?.text).toContain('weekly limit 83%, resets Mon 12:00 PM ET')
     const tg = await ui.find({ type: 'Text', text: /ThumbGate/ })
-    expect(tg?.text).toContain('ThumbGate v1.50.0 · 1👍 9👎 (your Mac, degrading)')
+    expect(tg?.text).toContain('ThumbGate v1.50.0 · 1👍 9👎 (this machine, degrading)')
     await ui.unmount()
   }
+})
+
+test('a local thumbgate server is read first', async ($, on) => {
+  const asked: string[] = []
+  on('command.register', () => ({ value: { command: 'usage-bar-refresh' } }))
+  on('session.start', (_, e) => ({ cwd: e.cwd }))
+  on('session.usage', () => ({ value: { startedAt: 0, context: { window: 1000000 }, rateLimits: [] } }))
+  on('clock.now', () => ({ value: 0 }))
+  on('clock.every', () => ({ value: undefined }))
+  on('session.info', () => ({ value: { transcriptPath: '/t.jsonl' } }))
+  on('fs.read', () => ({ value: '' }))
+  on('http.fetch', () => ({ value: { status: 500, ok: false, headers: {}, text: '' } }))
+  on('mcp.call', (_, e: any) => {
+    asked.push(`${e.server}/${e.tool}`)
+    return { value: { isError: false, content: [{ type: 'text', text: '{"totalPositive":2,"totalNegative":3}' }] } }
+  })
+
+  await $.session.start({ cwd: '/', surface: 'terminal', isInteractive: true })
+  await $.command.run({ command: 'usage-bar-refresh', args: '', origin: { kind: 'human' }, presentation: 'text' } as any)
+
+  const ui = await $.ui.mount({ ...BAND, surface: 'terminal' })
+  expect((await ui.find({ type: 'Text', text: /ThumbGate/ }))?.text).toContain('2👍 3👎 (this machine)')
+  expect(asked[0]).toBe('thumbgate/feedback_stats')
+  await ui.unmount()
 })
 
 test('in a cloud session the counts come from the project copy', async ($, on) => {

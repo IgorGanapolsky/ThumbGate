@@ -11,8 +11,12 @@ const thumbs = atom({ plugin: 'usage-bar', key: 'thumbs' } as const, null, {
 })
 
 const DASHBOARD = 'https://thumbgate.ai/dashboard'
-const MAC_SERVER = 'remote-devices'
-const MAC_STATS_TOOL = 'thumbgate__feedback_stats'
+// Where ThumbGate's feedback_stats tool lives: the local server this repo's
+// .mcp.json registers, then the same server reached through the Claude app.
+const STATS_ROUTES: ReadonlyArray<readonly [string, string]> = [
+  ['thumbgate', 'feedback_stats'],
+  ['remote-devices', 'thumbgate__feedback_stats'],
+]
 // In a cloud session a mod can't reach tools on the person's computer, so a
 // project task copies the Mac's counts here; the band reads the copy.
 const BRIDGE = '/mnt/project-files/usage-bar/thumbgate.json'
@@ -116,20 +120,23 @@ async function refreshThumbs($: any): Promise<void> {
   } catch {
     // leave version unknown
   }
-  try {
-    const res = await $.mcp.call(MAC_SERVER, MAC_STATS_TOOL, {})
-    const block = res.content.find((c: any) => c.type === 'text') as any
-    if (!res.isError && block) {
+  for (const [server, tool] of STATS_ROUTES) {
+    try {
+      const res = await $.mcp.call(server, tool, {})
+      const block = res.content.find((c: any) => c.type === 'text') as any
+      if (res.isError || !block) continue
       const stats = JSON.parse(block.text)
-      up = stats.totalPositive ?? null
+      if (typeof stats.totalPositive !== 'number') continue
+      up = stats.totalPositive
       down = stats.totalNegative ?? null
       trend = stats.trend ?? null
-    } else {
-      source = '👍/👎 live on your Mac only'
+      source = server === 'thumbgate' ? 'this machine' : 'your Mac'
+      break
+    } catch {
+      // not connected here, or refused in a cloud session: try the next route
     }
-  } catch {
-    source = '👍/👎 live on your Mac only'
   }
+  if (up === null) source = '👍/👎 live on your Mac only'
   if (up === null) {
     try {
       const copy = JSON.parse(await $.fs.read(BRIDGE))
