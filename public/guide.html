@@ -201,7 +201,7 @@
   .proof-links a strong { color: var(--cyan); display: block; margin-bottom: 0.2rem; }
   .proof-links a span { color: var(--muted); font-size: 0.95rem; }
   .buyer-paths { margin-top: 1rem; }
-  @media (max-width: 600px) { h1 { font-size: 1.6rem; } .container { padding: 1rem; } }
+  @media (max-width: 600px) { h1 { font-size: 1.6rem; } .container { padding: 1rem; } table { display: block; overflow-x: auto; } }
 </style>
 </head>
 <body>
@@ -245,7 +245,7 @@ npx thumbgate init --agent claude-code
 npx thumbgate init --agent codex
 npx thumbgate init --agent cursor
 npx thumbgate init --agent gemini</code></pre>
-<p><strong>First run:</strong> a thumbs-down is saved and shown back as a warning on similar commands; it does not block. To make one command block right now, run <code>thumbgate force-gate "&lt;command&gt;"</code>. That gate denies only when strict enforcement is on (<code>THUMBGATE_STRICT_ENFORCEMENT=1</code>); in default mode it warns. Measured 24 Nov 2026 on a throwaway directory: warn in default mode, deny in strict mode, including <code>bash -c "&lt;command&gt;"</code>.</p>
+<p><strong>First run:</strong> a thumbs-down typed right after the agent ran a command <a href="#holds">holds</a> that command until you say to go on. A thumbs-down that is only a sentence, with no command attached, is saved as a lesson and does not block at first. To gate one command without a thumbs-down, run <code>thumbgate force-gate "&lt;command&gt;"</code>. That gate denies only when strict enforcement is on (<code>THUMBGATE_STRICT_ENFORCEMENT=1</code>); in default mode it warns. Measured 24 Nov 2026 on a throwaway directory: warn in default mode, deny in strict mode, including <code>bash -c "&lt;command&gt;"</code>.</p>
 
 <h3>Install scope: machine-wide vs per-project</h3>
 <table>
@@ -268,6 +268,33 @@ npx thumbgate init --agent gemini</code></pre>
   </tbody>
 </table>
 <p>Both scopes also write the MCP entry to <code>&lt;repo&gt;/.mcp.json</code>. Lessons stay per repo either way: a thumbs-down in <code>repo-A</code> does not flag anything in <code>repo-B</code>. Keep <code>.thumbgate/</code> gitignored. For an MCP-only install, <code>npx thumbgate install-mcp</code> adds the server to <code>~/.claude/settings.json</code>, and <code>npx thumbgate install-mcp --project</code> adds it to <code>&lt;repo&gt;/.claude/settings.json</code>. Neither writes hooks.</p>
+
+<h2 id="signs">Signs you need this</h2>
+<ul>
+  <li>Your agent repeated a mistake you had already corrected.</li>
+  <li>The rule is written in your instructions file and the agent ran the command anyway.</li>
+  <li>The agent can run something that is hard to undo: a deploy, a migration, a force-push, a delete.</li>
+  <li>You let it work without reading every tool call.</li>
+</ul>
+<p>If none of these fit, you may not need it yet. ThumbGate checks tool calls before they run; it is not a sandbox.</p>
+
+<h2 id="first-week">Your first week</h2>
+<h3>Day 1: install and pick one repeated mistake</h3>
+<pre><code>npx thumbgate init
+npx thumbgate doctor    # look for: Overall: READY</code></pre>
+<p>Pick one command your agent has run when it should not have.</p>
+<h3>Day 2: gate it and trigger it once</h3>
+<p>Right after the agent runs that command, type <code>thumbs down:</code> and the reason. Ask it to run the command again: it is refused, because the command is now <a href="#holds">held</a>. Say "go ahead" to release the hold. For a block that stays, thumbs-down the same command a second time; it is then denied even after "go ahead".</p>
+<h3>Days 3 to 7: count real blocks and false blocks</h3>
+<pre><code>npx thumbgate gate-stats    # Actions blocked, Actions warned, Top blocked gate
+npx thumbgate gate-audit    # replays learned gates on past allowed actions: false-fire rate</code></pre>
+<p>The counts include the test you ran on day 2. ThumbGate cannot know that a block was wrong, so when one stops something you wanted, write it down. With few past actions, <code>gate-audit</code> has no rate to show yet.</p>
+<h3>Day 7: keep, tune or remove</h3>
+<ul>
+  <li><strong>Keep</strong> it if it stopped the mistake and you noted no false blocks. Nothing to do.</li>
+  <li><strong>Tune</strong> it if it was too broad: remove it, then give a thumbs-down right after the exact command you mean, with a clearer reason.</li>
+  <li><strong>Remove</strong> a learned gate yourself: delete its entry from <code>.thumbgate/auto-promoted-gates.json</code> in the project, using the id <code>gate-stats</code> or the block message shows. Another thumbs-down on the same command can bring it back. A hold clears with <code>npx thumbgate holds release</code>.</li>
+</ul>
 
 <h2>How It Works</h2>
 
