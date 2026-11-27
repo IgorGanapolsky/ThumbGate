@@ -1,5 +1,21 @@
 # Changelog
 
+## 1.49.1
+
+### Patch Changes
+
+- b726b01: Authenticated database reads no longer get a hard deny by default. When a secret environment variable is only the request's credential (`curl -H "Authorization: Bearer $ACCESS_TOKEN" https://…/rest/v1/orders`, `-u "app:$DB_PASSWORD"`, a literal SQL-over-HTTP query body) the secret-exfiltration gate now warns instead of denying, and `PGPASSWORD="$DB_PASSWORD" psql …` (a variable, not a pasted password) warns instead of denying. `THUMBGATE_STRICT_ENFORCEMENT=1` keeps the old deny. A secret in the body, URL or any other header, an `@file` body, a form or upload, PUT/PATCH/DELETE, command substitution, a pipe into another network tool, and literal database passwords stay denied in every mode. Synthetic fixtures in `tests/db-read-precision.test.js`.
+- ac06baa: A thumbs-down hold no longer refuses read-only calls, and "fix it" releases it. Past-mistake notes appear only when they are about the call, once per session.
+  Injected lessons no longer quote the user's message back, pasted markup is stripped, and a lesson holding an email address or phone number is only shown when the call is about it.
+  The claim gate's Stop message is one line with no attached lessons, and current Claude Code shows it as hook feedback instead of a hook error.
+  
+  A thumbs-down hold now covers the command that acted, not the setup in front of it (a shared credential export no longer holds unrelated commands, and adding one no longer slips past a hold).
+- 7764945: `thumbgate doctor` now sends an anonymous `cli_doctor_pass` or `cli_doctor_fail` event (off with `THUMBGATE_NO_TELEMETRY=1` or `DO_NOT_TRACK=1`), and telemetry analytics reports `cli.quickStart`: installs that ran init, how many of those later got a passing doctor, and the completion rate.
+- fc5c4ce: Self-protection: an edit that only adds a PreToolUse command hook is now put to the owner as one approval prompt in Claude Code (gate-check path). Removing, replacing or weakening hooks is still refused.
+- 3f4ca09: Status line and dashboard agree on the project: a folder moved to the Trash is never "this project" (falls back to the last real project, or All projects), the status line names the project and where it lives, the dashboard gates line shows global + this project's own gates adding up to the Active gates card, and the local dashboard names the same tier as the status line.
+- 8bf9746: A thumbs-down now says its lesson is advice only until a gate is built from it, instead of promising that prevention rules will auto-update.
+- 3086d36: The package description, README and homepage lead with "blocks risky actions and unchecked claims" and no longer promise that ThumbGate learns or improves the agent.
+
 ## 1.49.0
 
 ### Minor Changes
