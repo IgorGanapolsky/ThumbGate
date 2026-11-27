@@ -1,0 +1,11 @@
+{
+  "name": "usage-bar",
+  "version": "0.1.0",
+  "description": "Live token, cost, context and weekly-limit band plus the ThumbGate line, above the prompt",
+  "types": "./types/index.d.ts",
+  "license": "MIT",
+  "author": {
+    "name": "Igor Ganapolsky",
+    "url": "https://thumbgate.ai"
+  }
+}
