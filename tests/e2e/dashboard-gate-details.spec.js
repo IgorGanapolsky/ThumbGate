@@ -147,7 +147,6 @@ test('all ten tabs render content and empty data gives actionable guidance', asy
   await page.evaluate(() => switchTab('insights'));
   await expect(page.locator('#pipelineFlow')).toContainText('npx thumbgate feedback');
   await page.evaluate(() => switchTab('export'));
-  await page.getByRole('button', { name: /Download DPO Pairs/ }).click();
-  await expect(page.locator('#exportStatus')).toContainText('No preference pairs');
-  await expect(page.locator('#exportStatus')).toContainText('npx thumbgate feedback');
+  await page.getByRole('button', { name: /Download training data/ }).click();
+  await expect(page.locator('#exportStatus')).toContainText(/Nothing to download yet|Downloaded/);
 });

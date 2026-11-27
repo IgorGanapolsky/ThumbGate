@@ -342,6 +342,43 @@ function buildStrictDpoPairs(errors, learnings, options = {}) {
   return { pairs, dropped, droppedByReason: reasons };
 }
 
+// KTO (TRL KTOTrainer, unpaired preference format): one { prompt, completion, label } row per thumbs record that
+// recorded both what the agent was asked and what it did. label false = 👎, true = 👍. Unlike a DPO pair it needs no
+// correction, so most real feedback qualifies: a store with zero pairs can still give a useful training file.
+// The prompt is cut before the completion, exactly as for pairs; a record with no prompt or no completion is skipped
+// with a reason, never padded with placeholder text.
+function buildKtoRecords(errors, learnings, options = {}) {
+  const { byId } = loadFeedbackIndex(options);
+  const records = [];
+  const skippedByReason = {};
+  const skip = (reason) => { skippedByReason[reason] = (skippedByReason[reason] || 0) + 1; };
+  const seen = new Set();
+  const add = (memory, label) => {
+    const feedback = byId.get(memory.sourceFeedbackId);
+    if (!feedback) return skip('no_source_feedback_record');
+    if (seen.has(feedback.id)) return skip('duplicate_feedback_record');
+    // The same sources serve a 👍: its recorded command, failed command or the agent reply it answered.
+    const found = rejectedActionOf(feedback);
+    if (!found) return skip(feedback.lastAction ? 'action_has_no_content' : 'no_agent_action_recorded');
+    if (!textOf(feedback.conversationWindow)) return skip('no_prompt_context_recorded');
+    const prompt = found.prompt != null ? found.prompt : promptBefore(feedback.conversationWindow, found.text);
+    if (!prompt) return skip('no_prompt_context_before_action');
+    if (prompt === found.text) return skip('prompt_equals_completion');
+    seen.add(feedback.id);
+    const note = label ? textOf(feedback.whatWorked) || textOf(feedback.context) : textOf(feedback.whatWentWrong) || textOf(feedback.context);
+    records.push(redactSecretsDeep({
+      ...projectForRecord(memory),
+      prompt,
+      completion: found.text,
+      label,
+      metadata: { memoryId: memory.id, sourceFeedbackId: feedback.id, signal: label ? 'positive' : 'negative', completionSource: found.source, note },
+    }));
+  };
+  for (const error of errors) add(error, false);
+  for (const learning of learnings) add(learning, true);
+  return { records, skippedByReason };
+}
+
 // A fixed, synthetic store that the production proof exports on every deploy. It holds one thumbs-down that is a
 // real pair (its own prompt window, its own failed command, its own correction) and two records that must NOT pair:
 // a complaint with no recorded action (the claude-history-sync shape) and a praise-only thumbs-up. Expected result:
@@ -421,8 +458,11 @@ function exportDpoFromMemories(memories, options = {}) {
   // Redact secrets before the pairs leave this module — they are derived from memory content and
   // are shipped to disk here AND consumed by export-hf-dataset.js. See scripts/secret-redaction.js.
   const redactedPairs = pairsWithTraces.map((pair) => redactSecretsDeep(pair));
+  const kto = buildKtoRecords(errors, learnings, options);
 
   return {
+    ktoRecords: kto.records,
+    ktoSkippedByReason: kto.skippedByReason,
     pairs: redactedPairs,
     unpairedErrors: result.unpairedErrors,
     unpairedLearnings: result.unpairedLearnings,
@@ -560,6 +600,7 @@ module.exports = {
   findDistractors,
   buildDpoPairs,
   buildStrictDpoPairs,
+  buildKtoRecords,
   rejectedActionOf,
   DPO_SELF_TEST_FIXTURE,
   toJSONL,

@@ -489,6 +489,12 @@ const STATIC_MIME_BY_EXT = Object.freeze({
   '.ttf': 'font/ttf',
   '.txt': 'text/plain; charset=utf-8',
   '.json': 'application/json; charset=utf-8',
+  // Without these, /project-switcher.js went out as application/octet-stream with nosniff, the browser refused to
+  // run it, and the dashboard failed to connect ("Cannot read properties of undefined (reading 'url')").
+  '.js': 'application/javascript; charset=utf-8',
+  '.mjs': 'application/javascript; charset=utf-8',
+  '.css': 'text/css; charset=utf-8',
+  '.html': 'text/html; charset=utf-8',
 });
 const PRIVATE_API_MODULES = Object.freeze({
   intentRouter: path.resolve(__dirname, '../../scripts/intent-router.js'),
@@ -13229,10 +13235,14 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
           unpairedLearnings: result.unpairedLearnings.length,
           // Why each record did not become a pair (counts only, no content), e.g. no_rejected_action_recorded.
           droppedByReason: result.droppedByReason || {},
+          // Unpaired KTO rows ({ prompt, completion, label }) from every thumbs record with a prompt and an agent action.
+          ktoCount: (result.ktoRecords || []).length,
+          ktoSkippedByReason: result.ktoSkippedByReason || {},
           outputPath: paths.outputPath,
         };
         if (body.includePairs === true) {
           response.records = result.pairs;
+          response.ktoRecords = result.ktoRecords || [];
         }
         sendJson(res, 200, response);
         return;
