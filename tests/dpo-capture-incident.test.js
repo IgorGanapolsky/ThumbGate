@@ -108,6 +108,108 @@ test('MCP capture_feedback finds the transcript holding this exact call', async 
   assertOnePair(feedbackDir);
 });
 
+const actionOfOnlyRow = (feedbackDir) => {
+  const { rejectedActionOf } = require('../scripts/export-dpo-pairs');
+  const rows = jsonl(path.join(feedbackDir, 'feedback-log.jsonl'));
+  assert.equal(rows.length, 1);
+  return rejectedActionOf(rows[0]);
+};
+
+function runCliCapture(feedbackDir, transcripts, sessionId) {
+  const env = {
+    ...process.env,
+    THUMBGATE_FEEDBACK_DIR: feedbackDir,
+    THUMBGATE_TRANSCRIPTS_DIR: transcripts,
+    CLAUDE_CODE_SESSION_ID: sessionId,
+    THUMBGATE_NO_NUDGE: '1',
+    THUMBGATE_NO_TELEMETRY: '1',
+    THUMBGATE_DISABLE_CLAUDE_HISTORY_SYNC: '1',
+  };
+  return spawnSync(process.execPath, [CLI, 'capture', '--feedback=down',
+    '--context=Force pushed over the shared branch and lost a commit',
+    '--what-to-change=Rebase on origin/main and push without force'], { cwd: ROOT, env, encoding: 'utf8' });
+}
+
+test('CLI capture inside a Claude Code session records the command judged, not itself', (t) => {
+  const { feedbackDir, transcripts } = setup(t);
+  writeTranscript(transcripts, 'session-cli', [...base(), user(THUMB), ran('Bash', { command: 'npx thumbgate@latest capture --feedback=down' })]);
+  writeTranscript(transcripts, 'session-b', [user('unrelated'), ran('Bash', { command: 'ls' })]);
+  const result = runCliCapture(feedbackDir, transcripts, 'session-cli');
+  assert.equal(result.status, 0, result.stderr);
+  assert.equal(actionOfOnlyRow(feedbackDir).text, COMMAND);
+  assertOnePair(feedbackDir);
+});
+
+test('CLI capture for a session with no transcript records no action', (t) => {
+  const { feedbackDir, transcripts } = setup(t);
+  writeTranscript(transcripts, 'session-b', base());
+  const result = runCliCapture(feedbackDir, transcripts, 'session-cli');
+  assert.equal(result.status, 0, result.stderr);
+  assert.equal(actionOfOnlyRow(feedbackDir), null);
+});
+
+test('hook thumbs-down on a reply with no tool call records that reply', (t) => {
+  const { feedbackDir, transcripts } = setup(t);
+  const reply = 'The deploy is live and every check passed.';
+  writeTranscript(transcripts, 'session-a', [user('Is it deployed?'), said(reply), user(THUMB)]);
+  assert.equal(runHook(feedbackDir, transcripts, 'session-a').status, 0);
+  assert.equal(actionOfOnlyRow(feedbackDir).text, reply);
+});
+
+function withStores(t, feedbackDir, transcripts) {
+  const saved = { THUMBGATE_FEEDBACK_DIR: process.env.THUMBGATE_FEEDBACK_DIR, THUMBGATE_TRANSCRIPTS_DIR: process.env.THUMBGATE_TRANSCRIPTS_DIR };
+  Object.assign(process.env, { THUMBGATE_FEEDBACK_DIR: feedbackDir, THUMBGATE_TRANSCRIPTS_DIR: transcripts });
+  t.after(() => {
+    for (const [key, value] of Object.entries(saved)) {
+      if (value === undefined) delete process.env[key]; else process.env[key] = value;
+    }
+  });
+}
+
+test('MCP capture with only the user turns still reads what the agent did from the transcript', async (t) => {
+  const { feedbackDir, transcripts } = setup(t);
+  withStores(t, feedbackDir, transcripts);
+  const args = {
+    signal: 'down',
+    context: 'Overwrote the shared branch while pushing and dropped a commit',
+    whatWentWrong: 'Overwrote the shared branch while pushing and dropped a commit',
+    whatToChange: 'Fetch first and push only a rebased branch',
+    conversationWindow: [{ role: 'user', content: 'Get my branch onto main' }],
+  };
+  writeTranscript(transcripts, 'session-mcp-user', [...base(), user(THUMB), ran('mcp__thumbgate__capture_feedback', args)]);
+  const { callTool } = require('../adapters/mcp/server-stdio');
+  await callTool('capture_feedback', args);
+  assert.equal(actionOfOnlyRow(feedbackDir).text, COMMAND);
+});
+
+test('MCP capture with no transcript keeps the action the caller sends', async (t) => {
+  const { feedbackDir, transcripts } = setup(t);
+  withStores(t, feedbackDir, transcripts);
+  const { callTool } = require('../adapters/mcp/server-stdio');
+  await callTool('capture_feedback', {
+    signal: 'down',
+    context: 'Installed with force and pulled versions CI does not pin',
+    whatWentWrong: 'Installed with force and pulled versions CI does not pin',
+    whatToChange: 'Install from the lockfile',
+    lastAction: { tool: 'Shell', command: 'npm install --force' },
+    conversationWindow: [{ role: 'user', content: 'Fix the lockfile error' }],
+  });
+  assert.equal(actionOfOnlyRow(feedbackDir).text, 'npm install --force');
+});
+
+test('a late history import cuts the transcript at its own thumb, not at later work', (t) => {
+  const { feedbackDir, transcripts } = setup(t);
+  withStores(t, feedbackDir, transcripts);
+  const later = [user('Now delete the old tags'), said('Deleting.'), ran('Bash', { command: 'git tag -d v1' })];
+  writeTranscript(transcripts, 'session-h', [...base(), user(THUMB), said('Sorry.'), ...later]);
+  const history = path.join(path.dirname(feedbackDir), 'history.jsonl');
+  fs.writeFileSync(history, `${JSON.stringify({ display: THUMB, sessionId: 'session-h', project: ROOT, timestamp: Date.now() })}\n`);
+  const { syncClaudeHistoryFeedback } = require('../scripts/claude-feedback-sync');
+  const result = syncClaudeHistoryFeedback({ feedbackDir, historyPath: history, projectDir: ROOT, disabled: false });
+  assert.equal(result.importedCount, 1, JSON.stringify(result));
+  assert.equal(actionOfOnlyRow(feedbackDir).text, COMMAND);
+});
+
 test('a complaint with no correction yields none, and distiller boilerplate is never the chosen side', () => {
   const { correctionIn } = require('../scripts/transcript-incident');
   assert.equal(correctionIn('👎 this is completely broken again'), null);

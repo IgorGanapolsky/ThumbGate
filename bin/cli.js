@@ -1376,6 +1376,8 @@ function capture() {
     tags: args.tags,
     gateAction: gateAction || undefined,
     reviewOrigin: 'human',
+    // Run from inside Claude Code, this names the session whose last command or reply is being judged.
+    transcriptSessionId: process.env.CLAUDE_CODE_SESSION_ID || undefined,
   });
 
   if (result.accepted) {

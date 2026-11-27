@@ -1565,10 +1565,13 @@ function captureFeedback(params, options = {}) {
 
   // The caller rarely sends the action or the turns before it; read them from the transcript that proves this session.
   const hasAction = Object.keys(actionContentFields(params.lastAction)).length > 0;
-  const hasWindow = Array.isArray(params.conversationWindow) && params.conversationWindow.length > 0;
-  const incident = options.hosted || hasAction || hasWindow ? null : require('./transcript-incident').resolveIncident({
+  const callerWindow = Array.isArray(params.conversationWindow) ? params.conversationWindow : [];
+  // A window that holds no agent turn records nothing the agent did, so it does not stop the transcript lookup.
+  const hasAgentTurn = callerWindow.some((m, i) => i > 0 && /^(?:assistant|agent|model|ai|claude)$/i.test(String((m && m.role) || '')));
+  const incident = options.hosted || hasAction || hasAgentTurn ? null : require('./transcript-incident').resolveIncident({
     sourceEvent: params.sourceEvent,
     mcpCall: params.matchTranscriptCall,
+    sessionId: params.transcriptSessionId,
     prompt: submittedContext,
     hash: hashFeedbackSourcePart,
   });
@@ -1648,8 +1651,8 @@ function captureFeedback(params, options = {}) {
       : null,
     actionType: action.type,
     actionReason: action.reason || null,
-    conversationWindow: Array.isArray(params.conversationWindow) && params.conversationWindow.length > 0
-      ? params.conversationWindow.slice(-10).map(m => ({
+    conversationWindow: !incident && callerWindow.length > 0
+      ? callerWindow.slice(-10).map(m => ({
         role: m.role,
         content: (m.content || '').slice(0, 500),
         timestamp: m.timestamp || null,

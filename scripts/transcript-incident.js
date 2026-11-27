@@ -1,8 +1,8 @@
 'use strict';
 
 // What was thumbed down: the last tool call (or reply) and the turns before it, read from the Claude Code transcript.
-// A transcript is picked only by proof, never by "most recent": its session id hashes to the hook's sessionHash, or
-// it holds this exact capture_feedback call. No proof means no incident.
+// A transcript is picked only by proof, never by "most recent": its session id hashes to the hook's sessionHash, it is
+// the Claude Code session the CLI is running in, or it holds this exact capture_feedback call. No proof, no incident.
 
 const fs = require('node:fs');
 const os = require('node:os');
@@ -13,6 +13,7 @@ const TAIL_BYTES = 2 * 1024 * 1024;
 const RECENT_MS = 10 * 60 * 1000;
 const OWN_TOOLS = /thumbgate|capture_feedback|^ToolSearch$/i;
 const THUMB = /👎|thumbs?[\s_-]*down|^\s*(?:bad|wrong)\b/i;
+const CLI_CAPTURE = /(?:thumbgate|cli\.js)\S*["']?\s+(?:capture|feedback)\b/;
 
 function transcriptRoot() {
   return process.env.THUMBGATE_TRANSCRIPTS_DIR
@@ -73,7 +74,7 @@ function itemsOf(entries) {
       if (block.type === 'text' && block.text && block.text.trim()) {
         // System-injected user text starts with a tag; it is not the person talking.
         if (role === 'user' && block.text.trimStart().startsWith('<')) continue;
-        items.push({ role, text: block.text.trim() });
+        items.push({ role, text: block.text.trim(), at: Date.parse(entry.timestamp) });
       } else if (role === 'assistant' && block.type === 'tool_use') {
         items.push({ role, tool: block.name || 'tool', input: block.input || {} });
       }
@@ -131,6 +132,28 @@ function beforePrompt(items, prompt) {
   return items;
 }
 
+// A history import runs long after the thumb, so the transcript has moved on: cut at that very prompt, wherever it is.
+// Not found, or typed more than once with no way to tell which, means no incident rather than a later one.
+function atPrompt(items, prompt, timestamp) {
+  const wanted = String(prompt || '').trim();
+  const hits = items.flatMap((item, i) => (item.role === 'user' && item.text === wanted ? [i] : []));
+  if (hits.length < 2) return hits.length ? items.slice(0, hits[0]) : null;
+  const stamp = Date.parse(timestamp);
+  const near = hits.filter((i) => Math.abs(items[i].at - stamp) < 60 * 1000);
+  return near.length === 1 ? items.slice(0, near[0]) : null;
+}
+
+// CLI path: `thumbgate capture` run from inside a session. Cut before that command, and before the thumb it answers.
+function beforeCliCapture(items) {
+  const isCapture = (item) => Boolean(item.tool) && CLI_CAPTURE.test(String(item.input.command || ''));
+  let at = items.length - 1;
+  while (at >= 0 && !isCapture(items[at])) at -= 1;
+  const kept = (at >= 0 ? items.slice(0, at) : items).filter((item) => !isCapture(item));
+  let prompt = kept.length - 1;
+  while (prompt >= 0 && kept[prompt].role !== 'user') prompt -= 1;
+  return prompt >= 0 && THUMB.test(kept[prompt].text) ? kept.slice(0, prompt) : kept;
+}
+
 function findBySession(sessionHash, hash) {
   return listTranscripts().find((file) => {
     const own = hash(path.basename(file, '.jsonl'));
@@ -162,15 +185,22 @@ function findByCall(call) {
   return matches.length === 1 ? matches[0] : null;
 }
 
-function resolveIncident({ sourceEvent, mcpCall, prompt, hash }) {
+function resolveIncident({ sourceEvent, mcpCall, sessionId, prompt, hash }) {
   try {
+    if (sessionId) {
+      const file = listTranscripts().find((candidate) => path.basename(candidate, '.jsonl') === sessionId);
+      return file ? incidentFrom(beforeCliCapture(itemsOf(readEntries(file)))) : null;
+    }
     if (mcpCall) {
       const items = findByCall(mcpCall);
       return items ? incidentFrom(items) : null;
     }
     if (!sourceEvent || !sourceEvent.sessionHash) return null;
     const file = findBySession(sourceEvent.sessionHash, hash);
-    return file ? incidentFrom(beforePrompt(itemsOf(readEntries(file)), prompt)) : null;
+    if (!file) return null;
+    const items = itemsOf(readEntries(file));
+    const kept = sourceEvent.source === 'claude-history' ? atPrompt(items, prompt, sourceEvent.timestamp) : beforePrompt(items, prompt);
+    return kept ? incidentFrom(kept) : null;
   } catch {
     return null; // capture must never fail because a transcript is odd
   }
