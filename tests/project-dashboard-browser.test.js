@@ -33,8 +33,9 @@ test('dashboard and Lessons preserve selection and display actual selected recor
   t.after(() => browser.close());
   const page = await browser.newPage({ extraHTTPHeaders: { authorization: 'Bearer ' + key } });
   await page.route('**/*', (route) => new URL(route.request().url()).origin === origin ? route.continue() : route.abort());
-  await page.goto(origin + '/dashboard', { waitUntil: 'domcontentloaded' });
-  await page.waitForFunction(() => document.querySelector('#projectSwitcher option')?.textContent === 'All projects' && document.querySelectorAll('#projectSwitcher option').length >= 3);
+  // A bare /dashboard opens on the most recent project now; the project cards show on the explicit All projects view.
+  await page.goto(origin + '/dashboard?project=all', { waitUntil: 'domcontentloaded' });
+  await page.waitForFunction(() => /^All projects/.test(document.querySelector('#projectSwitcher option')?.textContent || '') && document.querySelectorAll('#projectSwitcher option').length >= 3);
   for (const [project, feedbackCount] of [[a, 1], [b, 2]]) {
     const card = page.locator('#projectCards a').filter({ has: page.locator('strong', { hasText: project.projectName }) });
     const text = await card.innerText();
@@ -47,6 +48,12 @@ test('dashboard and Lessons preserve selection and display actual selected recor
   await page.selectOption('#projectSwitcher', b.projectKey);
   await page.waitForURL('**project=' + b.projectKey);
   await page.waitForFunction(() => document.querySelector('#projectStatus')?.textContent === 'Beta' && document.querySelector('#statTotal')?.textContent === '2');
+  // The gates line names both parts of the Active gates card, and its sum is the card's number.
+  await page.waitForFunction(() => /^\d+ active gates here: \d+ global \(shared across projects\) \+ \d+ for this project$/.test(document.querySelector('#projectGlobalGates')?.textContent || '') && /^\d+$/.test(document.querySelector('#statGates')?.textContent || ''));
+  const gatesLine = (await page.locator('#projectGlobalGates').innerText()).match(/^(\d+) active gates here: (\d+) global .* \+ (\d+) for this project$/);
+  assert.equal(Number(gatesLine[1]), Number(gatesLine[2]) + Number(gatesLine[3]));
+  assert.equal(Number(gatesLine[3]), 1);
+  assert.equal(gatesLine[1], await page.locator('#statGates').innerText());
   const lessons = page.locator('a[href^="/lessons"]').first();
   await lessons.click();
   await page.waitForURL('**/lessons?project=' + b.projectKey);

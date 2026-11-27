@@ -6881,7 +6881,14 @@ function resolvePaidAuthSessionKey(req) {
 function resolvePaidSessionTier(candidate, expectedApiKey, expectedOperatorKey) {
   const key = String(candidate || '').trim();
   if (!key) return null;
-  if (expectedApiKey && safeKeyEqual(key, expectedApiKey)) return 'Enterprise';
+  if (expectedApiKey && safeKeyEqual(key, expectedApiKey)) {
+    // A local dashboard is launched with this machine's own license key, so a match says nothing about the plan.
+    // Name the tier the status line names, from the same function, so the two never disagree (Pro vs Enterprise).
+    if (process.env.THUMBGATE_PRO_MODE === '1') {
+      try { return require('../../scripts/statusline-meta').getStatuslineMeta({ env: process.env }).tier; } catch (_) { /* fall through */ }
+    }
+    return 'Enterprise';
+  }
   if (expectedOperatorKey && safeKeyEqual(key, expectedOperatorKey)) return 'Enterprise';
   const validation = validateApiKey(key);
   if (validation && validation.valid === true) {

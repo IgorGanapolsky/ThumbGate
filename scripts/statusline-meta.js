@@ -18,6 +18,10 @@ function readDiskOperatorKey(homeDir) {
 }
 
 function resolveActiveTier(licenseResult, apiKey, options, env, homeDir) {
+  // The local dashboard launches with the creator key's enterprise plan; the status line must say the same.
+  let creator = false;
+  try { creator = require('./pro-local-dashboard').isCreatorDev({ env, homeDir }); } catch { creator = false; }
+  if (creator) return 'Enterprise';
   if ((licenseResult.valid && licenseResult.tier === 'enterprise') || apiKey.startsWith('tg_ent_')) {
     return 'Enterprise';
   }
