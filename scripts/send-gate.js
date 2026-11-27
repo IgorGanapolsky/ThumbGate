@@ -111,10 +111,37 @@ function hashText(text) {
   return require('node:crypto').createHash('sha256').update(String(text || '')).digest('hex').slice(0, 16);
 }
 
-// The first three words: `rm -rf tests/` holds that deletion, not every `rm -rf`; `git push origin` holds pushes there.
-function shellSignature(command) {
-  return String(command || '').trim().toLowerCase().split(/\s+/).slice(0, 3).join(' ');
+// The first three words of each part that acts: `rm -rf tests/` holds that deletion, not every `rm -rf`. Setup in
+// front of it (`export GH_TOKEN="$(gh auth token)"`, `cd`) and reads are not the action, so they hold nothing.
+const firstWords = (words) => words.slice(0, 3).join(' ').toLowerCase().replace(/\s+/g, ' ');
+
+/** The word lists of the parts of a command that act, including inside `$(…)`; null when it cannot be parsed. */
+function actingSegments(command) {
+  let text = String(command || '');
+  if (text.includes('<<')) return null;
+  const texts = [];
+  for (let m = /\$\(([^()]*)\)/.exec(text); m; m = /\$\(([^()]*)\)/.exec(text)) {
+    texts.push(m[1]);
+    text = `${text.slice(0, m.index)}SUB${text.slice(m.index + m[0].length)}`;
+  }
+  const parsed = [text, ...texts].map((part) => shellSegments(part.replace(/\d*>>?\s*(?:"[^"]*"|'[^']*'|[^\s;|&<>()"']+)/g, ' ')));
+  if (parsed.includes(null)) return null;
+  return parsed.flat().map((words) => {
+    let start = 0;
+    while (SHELL_PREFIXES.has(words[start]) || /^[A-Za-z_]\w*\+?=/.test(words[start] || '')) start += 1;
+    return words.slice(start);
+  }).filter((words) => words.length && !['export', 'set'].includes(words[0])
+    && firstWords(words) !== 'gh auth token' && !isReadSegment(words, new Set()));
 }
+
+function shellSignature(command) {
+  const acting = actingSegments(command);
+  if (!acting || !acting.length) return firstWords(String(command || '').trim().split(/\s+/));
+  return [...new Set(acting.map(firstWords))].join('\n');
+}
+
+const sameAction = (held, current) => Boolean(current) && held.split('\n').some((part) => current.split('\n').includes(part));
+const shownAction = (signature) => signature.split('\n').join(' …` and `');
 
 // ---------------------------------------------------------------------------
 // Read-only calls: never held by a thumbs-down, and never the action a hold lands on. Strict: anything unsure is a write.
@@ -257,7 +284,7 @@ function formatHolds({ holdsOff, holds }) {
     return lines.join('\n');
   }
   for (const hold of holds) {
-    const what = hold.kind === 'post' ? `new chat posts${hold.chatKey ? ` (${hold.chatKey})` : ''}` : (hold.signature ? `\`${hold.signature} …\`` : hold.toolName);
+    const what = hold.kind === 'post' ? `new chat posts${hold.chatKey ? ` (${hold.chatKey})` : ''}` : (hold.signature ? `\`${shownAction(hold.signature)} …\`` : hold.toolName);
     lines.push(`  held: ${what}  clear it: npx thumbgate holds release`);
   }
   lines.push('  `npx thumbgate holds release` clears every hold at once.');
@@ -374,7 +401,7 @@ function recordApproval({ feedbackDir, sessionId = '', now = Date.now() }) {
 
 function describeAction(a) {
   if (!a) return '';
-  if (a.signature) return `\`${a.signature} …\``;
+  if (a.signature) return `\`${shownAction(a.signature)} …\``;
   return a.chatKey && !String(a.chatKey).startsWith('tool:') ? `${a.toolName} (${a.chatKey})` : a.toolName;
 }
 
@@ -406,8 +433,8 @@ function evaluate({ feedbackDir, toolName, toolInput = {}, sessionId = '', now =
     if (hold.kind === 'post' && kind === 'post') {
       return deny('thumbs-down-hold', `The person gave a thumbs-down after your last post${hold.chatKey ? ` (${hold.chatKey})` : ''}. New posts are refused until you edit the last bubble in place with the edit-message tool, or the person says "go ahead". Do not send a new message, and do not switch to another chat or tool to get around this. ${HOLD_EXITS}`);
     }
-    if (hold.kind === 'action' && hold.toolName === toolName && (!hold.signature || hold.signature === signature)) {
-      return deny('thumbs-down-hold', `The person gave a thumbs-down right after ${hold.signature ? `\`${hold.signature} …\`` : `the ${toolName} call`}. That action is held until the person says to go on (a thumbs-up or "go ahead"). Do not retry it or route around it with another tool; ask what to change. ${HOLD_EXITS}`);
+    if (hold.kind === 'action' && hold.toolName === toolName && (!hold.signature || sameAction(hold.signature, signature))) {
+      return deny('thumbs-down-hold', `The person gave a thumbs-down right after ${hold.signature ? `\`${shownAction(hold.signature)} …\`` : `the ${toolName} call`}. That action is held until the person says to go on (a thumbs-up or "go ahead"). Do not retry it or route around it with another tool; ask what to change. ${HOLD_EXITS}`);
     }
   }
 
