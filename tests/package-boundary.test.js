@@ -538,8 +538,9 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
     // 731 -> 732 (2026-11-25): scripts/assurance-report.js, the assurance-report CLI command (+1).
     // 732 -> 733 (2026-11-26): scripts/staged-secret-gate.js, a git commit with a secret staged is denied (+1).
 // 733 -> 734 (2026-11-27): scripts/transcript-incident.js, the thumbed-down action and turns for DPO pairs (+1).
-    manifest.fileCount <= 734,
-    `npm package should stay <= 734 files, got ${manifest.fileCount}`
+    // 734 -> 735 (2026-11-27): scripts/data-control-report.js, the `thumbgate control` command (+1).
+    manifest.fileCount <= 735,
+    `npm package should stay <= 735 files, got ${manifest.fileCount}`
   );
   // Ceiling bumped from 2.75 MB → 2.85 MB (2026-04-16) to accommodate the
   // incremental review-delta demo content in public/dashboard.html landing
@@ -862,8 +863,10 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // Bumped 10.99 MB -> 11.00 MB (2026-11-27, PR #5307): the free-plan upgrade path (localLicenseActive in
   // src/api/server.js, the Free plan header and upgrade links in public/dashboard.html and public/lessons.html).
   // Measured 10,991,855.
-  manifest.unpackedSize <= 11_000_000,
-  `npm package should stay <= 11.00 MB unpacked, got ${manifest.unpackedSize}`
+  // Bumped 11.00 MB -> 11.01 MB (2026-11-27): scripts/data-control-report.js, the `thumbgate control` command
+  // (about 6 KB). Measured 11,004,279.
+  manifest.unpackedSize <= 11_010_000,
+  `npm package should stay <= 11.01 MB unpacked, got ${manifest.unpackedSize}`
 );
 
   for (const file of requiredRuntimeFiles) {
