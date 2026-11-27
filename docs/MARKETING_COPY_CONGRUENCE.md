@@ -1,8 +1,8 @@
 # Marketing Copy Congruence
 
 ## Core Identity
-**Store story:** ThumbGate: the self-improving firewall for AI agents — Every approval teaches it what to allow, block, or escalate next time.
-**Qualifier:** self-improving under your control (not silent policy rewrite).
+**Store story:** ThumbGate blocks risky actions and unchecked claims in AI coding agents.
+**Qualifier:** no promise that it learns or improves the agent until the repeat rate is measured.
 **Hierarchy:** Hermes Mobile = control surface; ThumbGate = learning safety layer inside it.
 
 **Product Name:** ThumbGate
@@ -17,11 +17,11 @@
 ThumbGate offers a free local CLI and self-serve Pro that keeps every learned rule active and adds recall, lesson search, and exports. Current plans: https://thumbgate.ai/pricing
 
 ### NPM package.json
-> ThumbGate Pre-Action Checks self-improve from ranked lessons and repeated failures, hard-block detected secret leaks, and block matches in strict mode.
+> ThumbGate Pre-Action Checks block risky actions and unchecked claims, hard-block detected secret leaks, and block matches in strict mode.
 
 ### GitHub Repo About
 **Canonical source:** `config/github-about.json`
-> ThumbGate Pre-Action Checks self-improve from ranked lessons and repeated failures, hard-block detected secret leaks, and block matches in strict mode.
+> ThumbGate Pre-Action Checks block risky actions and unchecked claims, hard-block detected secret leaks, and block matches in strict mode.
 
 **Canonical topics:** `thumbgate`, `pre-action-checks`, `mcp`, `mcp-server`, `ai-agents`, `agent-reliability`, `guardrails`, `ai-safety`, `developer-tools`, `feedback-loop`, `claude-code`, `cursor`, `codex`, `gemini`, `amp`, `opencode`, `thompson-sampling`, `self-improving-agents`
 
@@ -99,4 +99,4 @@ ThumbGate offers a free local CLI and self-serve Pro that keeps every learned ru
 - Mention history-aware lesson distillation when the surface is describing vague thumbs feedback, linked follow-up notes, or rule proposals from conversation history.
 - Do not claim a standalone VS Code extension. Say VS Code works through the MCP-compatible agent running inside the editor.
 
-Canonical landing description: One thumbs-down holds the command Claude Code just ran until you say go ahead; a second one makes it a hard deny. Free local PreToolUse gates; Pro adds recall and every learned rule.
+Canonical landing description: ThumbGate blocks risky actions and unchecked claims. One thumbs-down holds the command Claude Code just ran until you say go ahead; a second one makes it a hard deny. Free local PreToolUse gates; Pro adds recall and every learned rule.

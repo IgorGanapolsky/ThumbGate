@@ -17,7 +17,7 @@ test('package metadata leads with the concrete enforcement contract', () => {
   const packageJson = readJson('package.json');
 
   assert.match(packageJson.description, /ThumbGate Pre-Action Checks/i);
-  assert.match(packageJson.description, /repeated failures/i);
+  assert.match(packageJson.description, /block risky actions and unchecked claims/i);
   assert.match(packageJson.description, /hard-block detected secret leaks/i);
   assert.match(packageJson.description, /strict mode/i);
   assert.doesNotMatch(packageJson.description, /every mistake|every thumbs-down/i);
@@ -48,9 +48,10 @@ test('public surfaces lead with outcomes instead of infrastructure abstractions'
     assert.match(surface, /Pre-Action Checks/i);
   }
 
-  assert.match(readme, /AI coding agents repeat mistakes/i);
+  assert.match(readme, /ThumbGate blocks risky actions and unchecked claims/i);
   assert.match(readme, /evaluate the proposed tool call before execution/i);
-  assert.match(landingPage, /One thumbs-down stops Claude Code from retrying a mistake\. Two make it a hard rule/i);
+  assert.match(landingPage, /ThumbGate blocks risky actions and unchecked claims\./i);
+  assert.match(landingPage, /One thumbs-down holds the command Claude Code just ran until you say go ahead; a second one makes it a hard deny/i);
   assert.match(landingPage, /allowed, warned, or denied/i);
   assert.match(landingPage, /Free local PreToolUse gates/i);
   assert.match(gptInstructions, /Sell outcomes before infrastructure/i);

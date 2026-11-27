@@ -1,11 +1,11 @@
-# ThumbGate — Self-Improving Firewall for AI Agents
+# ThumbGate — Firewall for AI Agents
 
 ## Store story (canonical)
 
-> **ThumbGate: the self-improving firewall for AI agents**  
+> **ThumbGate blocks risky actions and unchecked claims: a firewall for AI agents**  
 > Every approval teaches it what to allow, block, or escalate next time.
 
-The strongest promise is **self-improving under your control**, not an autonomous firewall that silently rewrites its own policy. "Firewall for AI agents" is the category; "self-improving" is the differentiator; "under your control" is the trust boundary.
+ThumbGate blocks risky actions and unchecked claims before they count. "Firewall for AI agents" is the category. Feedback you give can become local rules under your control; it does not retrain the model, and no measured claim is made that the agent improves.
 
 ## Product hierarchy (cross-product)
 
@@ -25,7 +25,7 @@ Do **not** claim active-gate demotion from positive feedback, gate re-ranking am
 
 ## What ThumbGate Is
 
-ThumbGate is the self-improving firewall for AI coding agents under operator control: it prevents expensive AI mistakes before they happen, then improves the defense layer from real operational feedback. Engineering teams use it to check risky commands, file edits, deploys, payments, API calls, and other AI agent actions before execution across Claude Code, Cursor, Codex, Gemini CLI, Amp, OpenCode, ChatGPT Actions, CI, and MCP-compatible runtimes.
+ThumbGate is a firewall for AI coding agents under operator control: it blocks risky actions and unchecked claims, and your feedback can add local rules. Engineering teams use it to check risky commands, file edits, deploys, payments, API calls, and other AI agent actions before execution across Claude Code, Cursor, Codex, Gemini CLI, Amp, OpenCode, ChatGPT Actions, CI, and MCP-compatible runtimes.
 
 This is not a static allowlist and not model fine-tuning. ThumbGate captures thumbs-up/down feedback as reviewable local lessons, re-ranks relevant lessons for each proposed action, promotes repeated negative patterns from warnings into blocking gates, expires stale auto-promoted gates, archives stale lessons, and gates the next tool call through PreToolUse hooks. The buyer outcome is simple: prevent expensive AI mistakes, make AI catch repeating mistakes, and turn a smart assistant into a reliable operator. It is warn-by-default: the gate always fires and logs every decision, and by default it hard-blocks secret exfiltration and attempts to disable ThumbGate's own guardrails, while downgrading everything else — rm -rf-class destructive filesystem commands, force-push, security/supply-chain risks — to a warning; set THUMBGATE_STRICT_ENFORCEMENT=1 to hard-block every rule. Unlike CLAUDE.md rules or .cursorrules files, which are suggestions the agent can ignore, the ThumbGate gate operates at the tool-call level and cannot be reasoned away once the action is routed through ThumbGate. Self-serve paid software is Pro for one person; teams can request a 30-day pilot at https://thumbgate.ai/pilot.
 
@@ -254,7 +254,7 @@ thumbgate-dashboard
 
 ## Comparison vs Alternatives
 
-| Approach | Blocks actions before execution | Learns from feedback | Shared team enforcement | Audit trail |
+| Approach | Blocks actions before execution | Turns feedback into rules | Shared team enforcement | Audit trail |
 |---|---|---|---|---|
 | **ThumbGate** | Yes — PreToolUse hooks | Yes — auto-generates rules | Yes — shared lesson DB | Yes — full log |
 | Langfuse / LangSmith / Braintrust / Arize | No — observe/score after or during generation (LLM traces + evals) | Partial — human labels / automated judges on traces | Partial — shared projects | Yes — traces |

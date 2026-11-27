@@ -4765,6 +4765,41 @@ function recordSecretViolation(input, scanResult) {
   });
 }
 
+// An authenticated read (the secret env var is only the request's credential, see
+// isAuthenticatedReadCommand in secret-scanner.js) is a precision fix for database
+// reads that were hard-denied as exfiltration. Per the warn-only-first rule it
+// warns by default; live mode (THUMBGATE_STRICT_ENFORCEMENT=1 or THUMBGATE_GOVERNANCE_MODE=live) keeps the deny.
+function evaluateSecretAdvisory(input, scanResult) {
+  const findings = scanResult.findings || [];
+  if (!findings.length || !findings.every((finding) => finding && finding.advisory === true)) return null;
+  if (resolveGovernanceMode() === 'live') return null;
+  const toolName = input.tool_name || input.toolName || 'unknown';
+  const toolInput = input.tool_input || {};
+  const message = 'A secret environment variable is sent only as the credential of a read request '
+    + '(not in the body, URL or an upload). Allowed with a warning: confirm the host is the service that key belongs to.';
+  recordStat('secret-exfiltration', 'warn', null, { toolName, toolInput });
+  auditToFeedback(recordAuditEvent({
+    toolName,
+    toolInput,
+    decision: 'warn',
+    gateId: 'secret-exfiltration',
+    message,
+    severity: 'medium',
+    source: 'secret-guard',
+  }));
+  return {
+    decision: 'warn',
+    gate: 'secret-exfiltration',
+    message,
+    severity: 'medium',
+    advisory: true,
+    secretScan: {
+      provider: scanResult.provider,
+      findings: findings.map((finding) => ({ id: finding.id, label: finding.label, source: finding.source || null, reason: finding.reason || null })),
+    },
+  };
+}
+
 function evaluateSecretGuard(input = {}) {
   let scanResult = scanHookInput(input);
   if (!scanResult.detected) {
@@ -4778,6 +4813,8 @@ function evaluateSecretGuard(input = {}) {
     } catch { scanResult = null; } // a broken scan never blocks the agent
     if (!scanResult) return null;
   }
+  const advisory = evaluateSecretAdvisory(input, scanResult);
+  if (advisory) return advisory;
   recordStat('secret-exfiltration', 'block', null, {
     toolName: input.tool_name || input.toolName || 'unknown',
     toolInput: input.tool_input || {},
@@ -5427,46 +5464,61 @@ function rememberDeniedCall(rawInput, output) {
 function evaluateUnconditionalHardFloor(rawInput = {}, options = {}) {
   const input = canonicalizeHookInput(rawInput);
   const secretGuard = evaluateSecretGuard(input);
-  if (secretGuard) return { hardFloor: secretGuard, securityScan: null };
+  if (secretGuard && secretGuard.decision === 'deny') return { hardFloor: secretGuard, securityScan: null, advisories: [] };
+  const advisories = secretGuard ? [secretGuard] : [];
 
   // Opt-in canary file: off unless the user named a decoy credential path (scripts/canary-gate.js).
   const canary = require('./canary-gate').evaluateCanaryGate(input);
-  if (canary) return { hardFloor: canary, securityScan: null };
+  if (canary) return { hardFloor: canary, securityScan: null, advisories };
 
   const securityScan = evaluateSecurityScan(input);
   if (securityScan && securityScan.decision === 'deny') {
-    return { hardFloor: securityScan, securityScan };
+    return { hardFloor: securityScan, securityScan, advisories };
   }
 
   const financialHardFloor = evaluateFinancialHardFloor(input, false, options);
-  if (financialHardFloor) return { hardFloor: financialHardFloor, securityScan };
+  if (financialHardFloor) return { hardFloor: financialHardFloor, securityScan, advisories };
 
   const selfProtect = evaluateSelfProtectHardFloor(input);
   // An "ask" does not end the floor: a later rule that refuses this call still wins.
   const ask = selfProtect && selfProtect.decision === 'ask' ? selfProtect : null;
-  if (selfProtect && !ask) return { hardFloor: selfProtect, securityScan };
+  if (selfProtect && !ask) return { hardFloor: selfProtect, securityScan, advisories };
 
   // A person's thumbs-down holds the action that drew it, and chat posts pass the send rules (raw URL, "I do not
   // know", a second new bubble). Runs before the tool call on every host path (scripts/send-gate.js).
   const sendGate = evaluateSendGate(input);
-  if (sendGate) return { hardFloor: sendGate, securityScan };
+  if (sendGate) return { hardFloor: sendGate, securityScan, advisories };
 
   const retried = evaluateRepeatAfterDeny(input);
-  if (retried) return { hardFloor: retried, securityScan };
+  if (retried) return { hardFloor: retried, securityScan, advisories };
 
   const repeated = evaluateRepeatedMistakeGates(input);
-  if (repeated) return { hardFloor: repeated, securityScan };
+  if (repeated) return { hardFloor: repeated, securityScan, advisories };
 
   const view = repeatedMistakeView(input);
   const { evaluateTailscaleOctoberAccess } = require('./tailscale-october-access');
   const october = evaluateTailscaleOctoberAccess(view);
-  if (october) return { hardFloor: denyRepeatedMistake(view, october), securityScan };
+  if (october && october.decision === 'warn' && resolveGovernanceMode() !== 'live') advisories.push(october);
+  else if (october && october.decision === 'warn') {
+    return {
+      hardFloor: denyRepeatedMistake(view, {
+        ...october,
+        decision: 'deny',
+        severity: 'critical',
+        failureReason: october.denyFailureReason || october.failureReason,
+        message: 'Denied database credential in the command: a password does not belong on the laptop. Use an identity that is not pasted into the shell.',
+      }),
+      securityScan,
+      advisories,
+    };
+  } else if (october) return { hardFloor: denyRepeatedMistake(view, october), securityScan, advisories };
 
   const { evaluateGitLabSdlcPrompts } = require('./gitlab-sdlc-prompts');
   const sdlc = evaluateGitLabSdlcPrompts(view);
   return {
     hardFloor: sdlc ? denyRepeatedMistake(view, sdlc) : ask,
     securityScan,
+    advisories,
   };
 }
 
@@ -6001,9 +6053,22 @@ async function runAsync(rawInput) {
   }
 }
 
+// Advisory hard-floor findings (warn-only precision fixes) never block. They surface as
+// a warning unless a later gate already blocks, in which case that block stands.
+function mergeAdvisories(result, advisories = []) {
+  if (!advisories || !advisories.length) return result;
+  if (isBlockingDecision(result)) return result;
+  const lead = advisories[0];
+  const message = advisories.map((item) => `[${item.gate}] ${item.message}`).join(' ');
+  if (!result || result.decision !== 'warn') {
+    return { ...lead, decision: 'warn', message: advisories.length > 1 ? message : lead.message };
+  }
+  return { ...result, message: `${result.message} ${message}` };
+}
+
 async function runAsyncCore(rawInput) {
   const input = canonicalizeHookInput(rawInput);
-  const { hardFloor, securityScan } = evaluateUnconditionalHardFloor(input);
+  const { hardFloor, securityScan, advisories } = evaluateUnconditionalHardFloor(input);
   if (hardFloor) return formatOutput(hardFloor);
 
   const toolName = input.tool_name || '';
@@ -6023,7 +6088,7 @@ async function runAsyncCore(rawInput) {
       result.securityWarnings = securityScan.securityScan.findings;
       result.reasoning = (result.reasoning || []).concat(securityScan.reasoning);
     } else {
-      return formatOutput(securityScan);
+      return formatOutput(mergeAdvisories(securityScan, advisories));
     }
   }
 
@@ -6047,7 +6112,7 @@ async function runAsyncCore(rawInput) {
   const recentContext = buildRecentCorrectiveActionsContext();
   const designContext = safeSecretStorageWrite ? null : buildDesignSelfCorrectionContext(toolName, toolInput);
   const combinedContext = combineWithSessionDedupe(input, lessonContext, recentContext, behavioralContext, designContext);
-  return formatOutput(posturedResult, combinedContext);
+  return formatOutput(mergeAdvisories(posturedResult, advisories), combinedContext);
 
 }
 
@@ -6059,7 +6124,7 @@ function run(rawInput) {
 
 function runCore(rawInput) {
   const input = canonicalizeHookInput(rawInput);
-  const { hardFloor, securityScan } = evaluateUnconditionalHardFloor(input);
+  const { hardFloor, securityScan, advisories } = evaluateUnconditionalHardFloor(input);
   if (hardFloor) return formatOutput(hardFloor);
 
   const toolName = input.tool_name || '';
@@ -6079,7 +6144,7 @@ function runCore(rawInput) {
       result.securityWarnings = securityScan.securityScan.findings;
       result.reasoning = (result.reasoning || []).concat(securityScan.reasoning);
     } else {
-      return formatOutput(securityScan);
+      return formatOutput(mergeAdvisories(securityScan, advisories));
     }
   }
 
@@ -6103,7 +6168,7 @@ function runCore(rawInput) {
   const recentContext = buildRecentCorrectiveActionsContext();
   const designContext = safeSecretStorageWrite ? null : buildDesignSelfCorrectionContext(toolName, toolInput);
   const combinedContext = combineWithSessionDedupe(input, lessonContext, recentContext, behavioralContext, designContext);
-  return formatOutput(posturedResult, combinedContext);
+  return formatOutput(mergeAdvisories(posturedResult, advisories), combinedContext);
 
 }
 
