@@ -300,13 +300,27 @@ test('server discovery accepts legacy config shape and ignores malformed values'
   assert.equal(hasThumbgateServer('not-an-object'), false);
 });
 
-test('wiringReport diagnoses a missing project MCP file', () => {
+test('a fresh folder where capture works gets one warning line, not an error', () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'tg-wiring-missing-'));
   try {
     const report = wiringReport(dir, { HOME: dir });
-    assert.equal(report.overall, 'error');
+    assert.equal(report.overall, 'warning');
     assert.equal(report.mcp.projectMcpPresent, false);
-    assert.ok(report.findings.some((finding) => /Missing project \.mcp\.json/.test(finding)));
+    assert.equal(report.findings.length, 1);
+    assert.match(report.findings[0], /Missing project \.mcp\.json.*npx thumbgate init --agent claude-code/);
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('a missing project MCP file stays an error when nothing can capture', () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'tg-wiring-nocapture-'));
+  try {
+    const readOnly = path.join(dir, 'store');
+    fs.mkdirSync(readOnly, { mode: 0o500 });
+    const report = wiringReport(dir, { HOME: dir, container: '1', THUMBGATE_FEEDBACK_DIR: readOnly });
+    assert.equal(report.unattendedCaptureReady, false);
+    assert.equal(report.overall, 'error');
   } finally {
     fs.rmSync(dir, { recursive: true, force: true });
   }
