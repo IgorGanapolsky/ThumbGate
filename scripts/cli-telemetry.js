@@ -90,6 +90,26 @@ function isOwnerAgentSession(env = process.env) {
   return OWNER_ACCOUNT_HASHES.includes(hash) || extra.includes(hash);
 }
 
+// Only ids of gates that ship with the package may leave the machine. A learned gate's id is built from the
+// blocked command's own words, and a hand-written gate's id can hold anything.
+let shippedGateIds;
+function publicGateId(gateId) {
+  if (!gateId) return gateId;
+  const id = String(gateId);
+  if (!shippedGateIds) {
+    shippedGateIds = new Set(['learned-lesson', 'thumbs-down-hold']);
+    const dir = path.join(__dirname, '..', 'config', 'gates');
+    try {
+      for (const name of fs.readdirSync(dir).filter((file) => file.endsWith('.json'))) {
+        const { gates } = JSON.parse(fs.readFileSync(path.join(dir, name), 'utf8'));
+        for (const gate of Array.isArray(gates) ? gates : []) if (gate && gate.id) shippedGateIds.add(gate.id);
+      }
+    } catch (_) { /* unreadable files: fewer ids pass, never more */ }
+  }
+  if (shippedGateIds.has(id)) return id;
+  return id.startsWith('auto-') ? 'learned' : 'custom';
+}
+
 function buildPayload(eventType, metadata = {}) {
   return JSON.stringify({
     eventType,
@@ -104,6 +124,7 @@ function buildPayload(eventType, metadata = {}) {
     timestamp: new Date().toISOString(),
     ...installSourceFields(),
     ...metadata,
+    ...(metadata.gateId ? { gateId: publicGateId(metadata.gateId) } : {}),
   });
 }
 
@@ -177,7 +198,7 @@ function trackEventDetached(eventType, metadata = {}, { spawnFn } = {}) {
   }
 }
 
-module.exports = { installSourceFields, INSTALL_SOURCE_PATH, trackEvent, trackEventDetached, getInstallId, classifyInstall, isOwnerAgentSession, INSTALL_ID_PATH, SESSION_ID };
+module.exports = { publicGateId, installSourceFields, INSTALL_SOURCE_PATH, trackEvent, trackEventDetached, getInstallId, classifyInstall, isOwnerAgentSession, INSTALL_ID_PATH, SESSION_ID };
 
 if (require.main === module && process.argv[2] === '--deliver') {
   const payload = process.env.THUMBGATE_TELEMETRY_PAYLOAD || '';

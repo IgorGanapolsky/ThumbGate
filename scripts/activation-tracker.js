@@ -32,7 +32,7 @@ const https = require('node:https');
 const os = require('node:os');
 const path = require('node:path');
 
-const { trackEvent, getInstallId, classifyInstall, INSTALL_ID_PATH } = require('./cli-telemetry');
+const { trackEvent, getInstallId, classifyInstall, publicGateId, INSTALL_ID_PATH } = require('./cli-telemetry');
 
 const DEFAULT_API_HOST = 'https://thumbgate.ai';
 const ACTIVATION_RECORDED_PATH = path.join(path.dirname(INSTALL_ID_PATH), 'activation-recorded.json');
@@ -301,7 +301,7 @@ function reportFirstBlockActivation(metadata = {}) {
     pkgVersion: (() => { try { return require('../package.json').version; } catch { return undefined; } })(),
     platform: os.platform(),
     ...minutesSinceInstallField(firstBlockAt),
-    ...(gateId ? { gateId: String(gateId).slice(0, 120) } : {}),
+    ...(gateId ? { gateId: publicGateId(gateId) } : {}),
   };
 
   if (metadata.awaitDelivery) {

@@ -162,7 +162,7 @@ function syncActiveProjectContext(options = {}) {
 }
 
 function telemetryPing(installId) {
-  if (process.env.THUMBGATE_NO_TELEMETRY === '1') return;
+  if (process.env.THUMBGATE_NO_TELEMETRY === '1' || process.env.DO_NOT_TRACK === '1') return;
   const payloadObject = {
     installId,
     eventType: 'cli_init',

@@ -862,8 +862,11 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // Bumped 10.99 MB -> 11.00 MB (2026-11-27, PR #5307): the free-plan upgrade path (localLicenseActive in
   // src/api/server.js, the Free plan header and upgrade links in public/dashboard.html and public/lessons.html).
   // Measured 10,991,855.
-  manifest.unpackedSize <= 11_000_000,
-  `npm package should stay <= 11.00 MB unpacked, got ${manifest.unpackedSize}`
+  // Bumped 11.00 MB -> 11.01 MB (2026-11-27): the "Signs you need this" and "Your first week" sections in
+  // public/guide.html (PR #5309, which left main at 11,001,184) and the opt-out and gate-id privacy fixes in
+  // scripts/cli-telemetry.js. Measured 11,002,284.
+  manifest.unpackedSize <= 11_010_000,
+  `npm package should stay <= 11.01 MB unpacked, got ${manifest.unpackedSize}`
 );
 
   for (const file of requiredRuntimeFiles) {
