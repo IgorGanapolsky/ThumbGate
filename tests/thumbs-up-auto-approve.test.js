@@ -99,6 +99,13 @@ test('--min raises the bar for commands', () => {
   assert.equal(auto.applyAutoApprove(allowed, bash('npm run lint'), opts), allowed);
 });
 
+test('call-side check rejects excluded commands on its own, before any feedback lookup', () => {
+  for (const cmd of ['sudo npm test', 'NODE_OPTIONS=--require=x npm test', 'env FOO=1 npm test', "'sudo' -n true", './npm test', 'npm test && ls']) {
+    assert.equal(auto.keyForCall('Bash', { command: cmd }), null, cmd);
+  }
+  assert.deepEqual(auto.keyForCall('Bash', { command: 'npm test' }), { kind: 'command', key: 'Bash:npm test', label: 'npm test' });
+});
+
 test('a pathed executable does not inherit the bare command approval', () => {
   const opts = setup([up('Bash', 'git status')], { enabled: true });
   assert.equal(decision(auto.applyAutoApprove(allowed, bash('git status'), opts)), 'allow');
