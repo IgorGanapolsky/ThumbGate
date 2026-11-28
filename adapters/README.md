@@ -4,6 +4,7 @@
 - `chatgpt/openapi.yaml`: import into GPT Actions.
 - `gemini/function-declarations.json`: Gemini function-calling definitions.
 - `mcp/server-stdio.js`: underlying local MCP stdio server implementation.
+- `claude-agent-sdk/`: hooks for apps built on the Claude Agent SDK (TypeScript `thumbgateHooks()`, Python `thumbgate_hooks()`). PreToolUse runs the same gate check as the Claude Code hook; PostToolUse redacts secrets from tool output and flags prompt injection.
 - `claude/.mcp.json`: example Claude Code MCP config using `npx --yes --package thumbgate@latest thumbgate serve`.
 - `codex/config.toml`: example Codex MCP profile section using the same version-pinned portable launcher.
 - `amp/skills/thumbgate-feedback/SKILL.md`: Amp skill template.

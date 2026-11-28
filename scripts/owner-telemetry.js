@@ -123,7 +123,7 @@ const topCounts = (counts, limit = 10) => Object.fromEntries(Object.entries(coun
 async function readTrafficWindow(options) {
   const nowMs = Number.isFinite(options.now) ? options.now : Date.now();
   const weekOf = (time) => (time >= nowMs - 7 * DAY_MS ? 'last7' : time >= nowMs - 14 * DAY_MS ? 'prior7' : null);
-  const emptyWeek = () => ({ visitors: new Set(), flagged: new Set(), activity: new Map(), pageViews: 0, checkoutStarts: 0, activeInstalls: new Set() });
+  const emptyWeek = () => ({ visitors: new Set(), flagged: new Set(), beacon: new Set(), activity: new Map(), pageViews: 0, checkoutStarts: 0, activeInstalls: new Set() });
   const weeks = { last7: emptyWeek(), prior7: emptyWeek() };
   const installs = new Map();
   const excludedInstalls = new Set();
@@ -132,6 +132,9 @@ async function readTrafficWindow(options) {
   const visitors = new Set();
   const flagged = new Set();
   const pageViewers = new Set();
+  // Visitor ids that sent at least one event through the browser beacon, i.e. a browser that ran the page's script.
+  // Server-side page views count every HTML fetch, crawlers included, so this is the number to compare with GA4.
+  const beaconVisitors = new Set();
   // Per visitor id: how many events, and whether any was more than a landing page view. Most crawlers that pass the
   // bot check still show up as one id with one page view, so 'engaged' (two or more events, or any click or step) is
   // the honest count of people.
@@ -180,9 +183,9 @@ async function readTrafficWindow(options) {
       totals.webEvents += 1;
       const day = dayOf(time);
       const who = entry.visitorId || entry.installId || entry.sessionId || null;
-      if (who) { visitors.add(who); day.visitors.add(who); if (isFlagged(entry)) flagged.add(who); note(activity, who, kind(entry)); }
+      if (who) { visitors.add(who); day.visitors.add(who); if (isFlagged(entry)) flagged.add(who); if (entry.ingest === 'beacon') beaconVisitors.add(who); note(activity, who, kind(entry)); }
       if (week) {
-        if (who) { weeks[week].visitors.add(who); if (isFlagged(entry)) weeks[week].flagged.add(who); note(weeks[week].activity, who, kind(entry)); }
+        if (who) { weeks[week].visitors.add(who); if (isFlagged(entry)) weeks[week].flagged.add(who); if (entry.ingest === 'beacon') weeks[week].beacon.add(who); note(weeks[week].activity, who, kind(entry)); }
         if (kind(entry) === 'landing_page_view') weeks[week].pageViews += 1;
         if (telemetry.isCheckoutStartEvent(kind(entry))) weeks[week].checkoutStarts += 1;
       }
@@ -211,7 +214,8 @@ async function readTrafficWindow(options) {
     if (seen.days.size >= 2) returning += 1;
     if (seen.lastMs >= nowMs - 7 * DAY_MS) active7 += 1;
   }
-  const weekNumbers = (week) => ({ realVisitors: week.visitors.size - week.flagged.size, engagedVisitors: engagedOf(week.activity, week.flagged), pageViews: week.pageViews, checkoutStarts: week.checkoutStarts, activeInstalls: week.activeInstalls.size });
+  const confirmedOf = (ids, flaggedIds) => { let n = 0; for (const who of ids) if (!flaggedIds.has(who)) n += 1; return n; };
+  const weekNumbers = (week) => ({ realVisitors: week.visitors.size - week.flagged.size, engagedVisitors: engagedOf(week.activity, week.flagged), browserConfirmedVisitors: confirmedOf(week.beacon, week.flagged), pageViews: week.pageViews, checkoutStarts: week.checkoutStarts, activeInstalls: week.activeInstalls.size });
   return {
     ...meta,
     // CLI installs, from the anonymous install id the CLI sends. The owner's machines, CI and flagged pings are left out.
@@ -234,7 +238,7 @@ async function readTrafficWindow(options) {
     },
     // The newest 7 days against the 7 days before them, so a change shows without remembering last week.
     weeks: { last7: weekNumbers(weeks.last7), prior7: weekNumbers(weeks.prior7) },
-    traffic: { visitors: visitors.size, realVisitors: visitors.size - flagged.size, engagedVisitors: engagedOf(activity, flagged), botOrInternalVisitors: flagged.size, pageViewers: pageViewers.size, checkoutStartsByType: startsByType, sessions: sessions.size, pageViews: totals.pageViews, ctaClicks: totals.ctaClicks, checkoutStarts: totals.checkoutStarts, checkoutPaidConfirmations: totals.checkoutPaidConfirmations },
+    traffic: { visitors: visitors.size, realVisitors: visitors.size - flagged.size, engagedVisitors: engagedOf(activity, flagged), browserConfirmedVisitors: confirmedOf(beaconVisitors, flagged), botOrInternalVisitors: flagged.size, pageViewers: pageViewers.size, checkoutStartsByType: startsByType, sessions: sessions.size, pageViews: totals.pageViews, ctaClicks: totals.ctaClicks, checkoutStarts: totals.checkoutStarts, checkoutPaidConfirmations: totals.checkoutPaidConfirmations },
     daily,
   };
 }

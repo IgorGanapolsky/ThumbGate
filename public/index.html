@@ -189,7 +189,7 @@
     .cc-where { color: var(--muted); font-weight: 400; font-size: 13px; margin-left: 6px; }
     .cc-cmd { margin: 0; padding: 12px 14px; border: 1px solid var(--border); border-radius: 10px; background: rgba(255,255,255,0.03); font-size: 14px; line-height: 1.6; overflow-x: auto; display: flex; gap: 12px; align-items: flex-start; justify-content: space-between; }
     .cc-cmd code { white-space: pre; }
-    .hero-statusline { margin: 0; }
+    .hero-visual.hero-statusline { margin: 0; border: 0; border-radius: 0; background: none; box-shadow: none; overflow: visible; }
     .sl-terminal { border: 1px solid var(--border); border-radius: 14px; background: #0b0f14; overflow: hidden; }
     .sl-line { margin: 0; padding: 18px 16px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: clamp(12px, 1.5vw, 15px); line-height: 1.6; color: #e6edf3; overflow-wrap: anywhere; }
     .sl-dim { color: #8b98a8; } .sl-up { color: #56e39f; font-weight: 800; } .sl-down { color: #ff7a8c; font-weight: 800; } .sl-link { color: #38d7ff; }
@@ -1478,6 +1478,10 @@ $ ... "node scripts/migrate.js --env prod"
 
     if (!serverTelemetryCaptured) {
       sendFirstPartyTelemetry('page_view', { landingPath: '/' });
+    } else {
+      // The server already counted the page view. This beacon only proves a browser ran the page, so the owner
+      // console can count browser-confirmed visitors apart from crawlers; it is not another page view.
+      sendFirstPartyTelemetry('browser_confirmed', { landingPath: '/' });
     }
   </script>
 

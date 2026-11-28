@@ -595,7 +595,7 @@ const attempt = async (work, reasonOf) => {
 };
 const telemetryReason = (error) => (error?.code === 'collection_timeout' ? 'telemetry read timed out' : 'telemetry read failed');
 
-const trafficFields = (read) => ({ visitors: read.traffic.visitors, realVisitors: read.traffic.realVisitors, engagedVisitors: read.traffic.engagedVisitors, botOrInternalVisitors: read.traffic.botOrInternalVisitors, pageViewers: read.traffic.pageViewers, checkoutStartsByType: read.traffic.checkoutStartsByType, sessions: read.traffic.sessions, pageViews: read.traffic.pageViews, ctaClicks: read.traffic.ctaClicks, checkoutStarts: read.traffic.checkoutStarts, checkoutPaidConfirmations: read.traffic.checkoutPaidConfirmations });
+const trafficFields = (read) => ({ visitors: read.traffic.visitors, realVisitors: read.traffic.realVisitors, engagedVisitors: read.traffic.engagedVisitors, browserConfirmedVisitors: read.traffic.browserConfirmedVisitors, botOrInternalVisitors: read.traffic.botOrInternalVisitors, pageViewers: read.traffic.pageViewers, checkoutStartsByType: read.traffic.checkoutStartsByType, sessions: read.traffic.sessions, pageViews: read.traffic.pageViews, ctaClicks: read.traffic.ctaClicks, checkoutStarts: read.traffic.checkoutStarts, checkoutPaidConfirmations: read.traffic.checkoutPaidConfirmations });
 
 const attemptSync = (work) => { try { return work(); } catch { return { status: 'unavailable', reason: 'The key store could not be read.' }; } };
 

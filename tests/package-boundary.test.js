@@ -545,8 +545,11 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
     // 738 -> 740 (2026-11-27): scripts/skill-shell-gate.js and scripts/gate-check-core.js, the PreSkillShellCommand hook (PR 5331) (+2).
     // 740 -> 741 (2026-11-27): scripts/decision-check.js, the `npx thumbgate decision-check` dry run of the default gates (PR 5343) (+1).
     // 741 -> 742 (2026-11-28): scripts/self-improve.js, the `thumbgate improve` self-improvement cycle (+1).
-    manifest.fileCount <= 742,
-    `npm package should stay <= 742 files, got ${manifest.fileCount}`
+    // 742 -> 743 (2026-11-28): scripts/rule-mutation.js, reworded-variant testing for learned rules (+1).
+    // 743 -> 748 (2026-11-28): adapters/claude-agent-sdk (index.js, index.d.ts, bridge.js, Python helper, README) (+5).
+    // 748 -> 750 (2026-11-28): scripts/verify-stop.js and scripts/ralph-init.js (verify Stop hook, Ralph starter) (+2).
+    manifest.fileCount <= 750,
+    `npm package should stay <= 750 files, got ${manifest.fileCount}`
   );
   // Ceiling bumped from 2.75 MB → 2.85 MB (2026-04-16) to accommodate the
   // incremental review-delta demo content in public/dashboard.html landing
@@ -894,8 +897,11 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // Measured 11,131,988.
   // 11.14 -> 11.16 MB (2026-11-28): scripts/self-improve.js (~12 KB) and the `thumbgate improve` CLI entry plus its
   // daily session-start cycle. Measured 11,151,432.
-  manifest.unpackedSize <= 11_160_000,
-  `npm package should stay <= 11.16 MB unpacked, got ${manifest.unpackedSize}`
+  // 11.16 -> 11.18 MB (2026-11-28): scripts/rule-mutation.js (~13 KB), reworded-variant testing for learned rules.
+  // 11.18 -> 11.20 MB (2026-11-28): adapters/claude-agent-sdk (~14 KB). Measured 11,191,862.
+  // 11.20 -> 11.22 MB (2026-11-28): scripts/verify-stop.js + scripts/ralph-init.js (~13 KB). Measured 11,208,911.
+  manifest.unpackedSize <= 11_220_000,
+  `npm package should stay <= 11.22 MB unpacked, got ${manifest.unpackedSize}`
 );
 
   for (const file of requiredRuntimeFiles) {

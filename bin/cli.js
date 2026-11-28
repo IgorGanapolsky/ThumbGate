@@ -5098,6 +5098,20 @@ switch (COMMAND) {
   case 'self-improve':
     require(path.join(PKG_ROOT, 'scripts', 'self-improve')).improveCmd(process.argv.slice(3));
     break;
+  case 'verify-stop':
+    // Stop hook: run the project's verify command and send failures back to the agent (opt-in, .thumbgate/verify.json).
+    require(path.join(PKG_ROOT, 'scripts', 'verify-stop')).main();
+    break;
+  case 'ralph':
+    process.exitCode = require(path.join(PKG_ROOT, 'scripts', 'ralph-init')).runCli(process.argv.slice(3));
+    break;
+  case 'rule-test':
+    process.exitCode = require(path.join(PKG_ROOT, 'scripts', 'rule-mutation')).runCli(process.argv.slice(3));
+    break;
+  case 'sdk-bridge':
+    // Stdin/stdout hook bridge for Claude Agent SDK apps not written in JavaScript (adapters/claude-agent-sdk).
+    require(path.join(PKG_ROOT, 'adapters', 'claude-agent-sdk', 'bridge')).main();
+    break;
   case 'context-packs':
     contextPacks();
     break;
