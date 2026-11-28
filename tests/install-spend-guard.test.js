@@ -35,3 +35,11 @@ test('listRelativeRequires finds local deps of the spend guard', () => {
   const deps = listRelativeRequires(path.join(__dirname, '..', 'scripts', 'thumbgate-spend-guard.js'));
   assert.ok(deps.some((d) => d.includes('financial-control-plane')));
 });
+
+test('a directory module such as ./mailer resolves to its index.js and its own siblings', () => {
+  const { listRelativeRequires } = require('../scripts/install-spend-guard');
+  const billingDeps = listRelativeRequires(path.join(__dirname, '..', 'scripts', 'billing.js'));
+  assert.ok(billingDeps.includes('mailer/index.js'), billingDeps.join(', '));
+  const files = collectTree(['billing.js']);
+  for (const f of files) assert.ok(fs.existsSync(path.join(__dirname, '..', 'scripts', f)), `missing ${f}`);
+});

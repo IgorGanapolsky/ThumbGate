@@ -1,5 +1,16 @@
 # Changelog
 
+## 1.54.0
+
+### Minor Changes
+
+- f860d5d: Receipts can be signed with Ed25519, so an auditor can check them with a public key and no shared secret. `thumbgate receipts keygen` writes a private key to `~/.thumbgate/receipt-signing-ed25519.pem` (owner-only; or set `THUMBGATE_RECEIPT_ED25519_KEY`), and every new receipt then carries `ed25519KeyId` and `ed25519Signature` over its `entryHash`. `thumbgate receipts pubkey` prints the public key, and `thumbgate receipts verify --pubkey public.pem [--require-signed]` reports `bad_signature`, `signed_by_other_key` or `unsigned`. Without a key, receipts are unchanged.
+- 747629a: Action receipts are now tamper-evident. Each receipt in `action-receipts.jsonl` carries `seq`, `prevHash` (the hash of the receipt before it) and `entryHash`, so an edited, deleted, inserted or reordered receipt shows up. `thumbgate receipts verify` checks the ledger and exits 1 when it is broken. Each receipt also records `ruleId` (the gate or rule that decided) and `policy`: the ThumbGate version, a SHA-256 of every gate in force and the gate count. Receipts written before this change still read and verify as legacy lines. Cutting receipts off the end of the file can't be detected from the file alone, so keep the head hash that `verify` prints somewhere else.
+
+### Patch Changes
+
+- 979e59c: Pricing page: say that free blocking runs locally with no cloud service needed, a common question right before Pro checkout.
+
 ## 1.53.0
 
 ### Minor Changes

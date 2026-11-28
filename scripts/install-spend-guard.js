@@ -24,13 +24,17 @@ const ENTRY = 'thumbgate-spend-guard.js';
 const HARDENED = 'thumbgate-spend-guard.HARDENED.js';
 const DRY = process.argv.includes('--dry-run');
 
+// Local requires of a file, as paths relative to SRC_DIR. `./x` resolves next to the requiring file, to `x.js` or,
+// for a directory module such as `./mailer`, to `x/index.js`.
 function listRelativeRequires(filePath) {
   const text = fs.readFileSync(filePath, 'utf8');
   const out = [];
+  const baseDir = path.dirname(filePath);
   for (const m of text.matchAll(/require\(['"](\.\/[^'"]+)['"]\)/g)) {
-    let rel = m[1].slice(2);
-    if (!rel.endsWith('.js')) rel = `${rel}.js`;
-    out.push(rel);
+    const target = path.resolve(baseDir, m[1]);
+    const candidates = target.endsWith('.js') ? [target] : [`${target}.js`, path.join(target, 'index.js')];
+    const hit = candidates.find((c) => fs.existsSync(c)) || candidates[0];
+    out.push(path.relative(SRC_DIR, hit).split(path.sep).join('/'));
   }
   return out;
 }
@@ -75,7 +79,7 @@ function copyFile(name) {
     console.log(`dry-run: copy ${name}`);
     return;
   }
-  fs.mkdirSync(DST_DIR, { recursive: true, mode: 0o700 });
+  fs.mkdirSync(path.dirname(dst), { recursive: true, mode: 0o700 });
   fs.copyFileSync(src, dst);
   if (name.includes('spend-guard')) {
     fs.chmodSync(dst, 0o700);
