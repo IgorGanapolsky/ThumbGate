@@ -60,8 +60,8 @@ test('the newest 7 days are set against the 7 days before them', async () => {
     cli(1, 'cli_capture', 'i1'),
     cli(1, 'cli_init', 'i2'),
   ]);
-  assert.deepEqual(weeks.last7, { realVisitors: 2, engagedVisitors: 0, pageViews: 3, checkoutStarts: 0, activeInstalls: 2 });
-  assert.deepEqual(weeks.prior7, { realVisitors: 1, engagedVisitors: 1, pageViews: 1, checkoutStarts: 1, activeInstalls: 1 });
+  assert.deepEqual(weeks.last7, { realVisitors: 2, engagedVisitors: 0, browserConfirmedVisitors: 0, pageViews: 3, checkoutStarts: 0, activeInstalls: 2 });
+  assert.deepEqual(weeks.prior7, { realVisitors: 1, engagedVisitors: 1, browserConfirmedVisitors: 0, pageViews: 1, checkoutStarts: 1, activeInstalls: 1 });
 });
 
 test('MRR is each active item at list price scaled to one month, and pending cancels are counted', () => {
@@ -252,6 +252,24 @@ test('engaged visitors: one id with a single page view is not counted as a perso
   assert.equal(traffic.engagedVisitors, 3, 'reader, clicker and old-reader; the single-view ids and the flagged bot are out');
   assert.equal(weeks.last7.engagedVisitors, 2);
   assert.equal(weeks.prior7.engagedVisitors, 1);
+});
+
+test('browser-confirmed visitors: only ids that sent an event through the browser beacon, bots left out', async () => {
+  const { traffic, weeks } = await read([
+    web(2, 'landing_page_view', 'crawler'), web(2, 'pro_checkout_direct_stripe', 'crawler'),
+    web(2, 'landing_page_view', 'person'), web(2, 'section_view', 'person', { ingest: 'beacon' }),
+    web(3, 'section_view', 'headless', { ingest: 'beacon', isBotTraffic: true }),
+    web(10, 'page_exit', 'old-person', { ingest: 'beacon' }),
+  ]);
+  assert.equal(traffic.engagedVisitors, 3, 'two server-side events make the crawler look engaged');
+  assert.equal(traffic.browserConfirmedVisitors, 2, 'person and old-person ran the page script; the crawler never did');
+  assert.equal(weeks.last7.browserConfirmedVisitors, 1);
+  assert.equal(weeks.prior7.browserConfirmedVisitors, 1);
+});
+
+test('the beacon mark comes from the server, never from the payload', () => {
+  assert.equal(sanitizeTelemetryPayload({ eventType: 'section_view', ingest: 'beacon' }, {}).ingest, undefined);
+  assert.equal(sanitizeTelemetryPayload({ eventType: 'section_view' }, {}, { ingest: 'beacon' }).ingest, 'beacon');
 });
 
 test('the visitors-drop alert follows engaged visitors when they are reported', () => {
