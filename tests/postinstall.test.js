@@ -67,4 +67,20 @@ describe('postinstall banner', () => {
     assert.equal(stdout.trim(), '', 'should produce no stdout when nudge disabled');
     assert.equal(stderr.trim(), '', 'should produce no stderr when nudge disabled');
   });
+
+  it('a global install with a stale hook runtime still exits 0 and prints the banner', () => {
+    const fs = require('fs');
+    const os = require('os');
+    const home = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-postinstall-home-'));
+    try {
+      const pkgDir = path.join(home, '.thumbgate', 'runtime', 'node_modules', 'thumbgate');
+      fs.mkdirSync(pkgDir, { recursive: true });
+      fs.writeFileSync(path.join(pkgDir, 'package.json'), JSON.stringify({ version: '0.0.1' }));
+      const { stderr, exitCode } = runPostinstall({ HOME: home, USERPROFILE: home, npm_config_global: 'true', THUMBGATE_NO_AUTO_UPDATE: '1' });
+      assert.equal(exitCode, 0);
+      assert.ok(stderr.includes('ThumbGate'));
+    } finally {
+      fs.rmSync(home, { recursive: true, force: true });
+    }
+  });
 });

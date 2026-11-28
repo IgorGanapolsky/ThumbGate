@@ -382,3 +382,31 @@ test('a missing .mcp.json still fails doctor', () => {
     fs.rmSync(projectRoot, { recursive: true, force: true });
   }
 });
+
+test('doctor warns when the hooks run an older cached ThumbGate than the installed package', () => {
+  const { summarizeHookRuntime, reportToText: toText } = require('../scripts/agent-readiness');
+  const homeDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-runtime-home-'));
+  try {
+    assert.deepEqual(summarizeHookRuntime(null, '1.54.0'), { checked: false });
+    assert.equal(summarizeHookRuntime(homeDir, '1.54.0').present, false);
+
+    const pkgDir = path.join(homeDir, '.thumbgate', 'runtime', 'node_modules', 'thumbgate');
+    fs.mkdirSync(pkgDir, { recursive: true });
+    fs.writeFileSync(path.join(pkgDir, 'package.json'), JSON.stringify({ version: '1.53.0' }));
+
+    const stale = summarizeHookRuntime(homeDir, '1.54.0');
+    assert.equal(stale.stale, true);
+    assert.match(stale.recommendation, /1\.53\.0.*1\.54\.0.*npx thumbgate init/);
+
+    const report = generateAgentReadinessReport({ projectRoot: path.join(__dirname, '..'), mcpProfile: 'default', homeDir, packageVersion: '1.54.0' });
+    assert.ok(report.warnings.some((w) => /~\/\.thumbgate\/runtime/.test(w)));
+    assert.equal(report.overallStatus, 'needs_attention');
+    assert.match(toText(report), /Hook runtime: 1\.53\.0 \(stale\)/);
+
+    assert.equal(summarizeHookRuntime(homeDir, '1.53.0').stale, false);
+    const current = generateAgentReadinessReport({ projectRoot: path.join(__dirname, '..'), mcpProfile: 'default', homeDir, packageVersion: '1.53.0' });
+    assert.ok(!current.warnings.some((w) => /~\/\.thumbgate\/runtime/.test(w)));
+  } finally {
+    fs.rmSync(homeDir, { recursive: true, force: true });
+  }
+});

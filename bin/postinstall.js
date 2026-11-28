@@ -10,6 +10,14 @@
 const isCI = !!(process.env.CI || process.env.CONTINUOUS_INTEGRATION || process.env.GITHUB_ACTIONS);
 const isQuiet = process.env.THUMBGATE_NO_NUDGE === '1' || process.env.npm_config_loglevel === 'silent';
 
+// `npm i -g thumbgate` updates the CLI but not the hooks' cached copy in ~/.thumbgate/runtime.
+// Refresh it in the background so hooks pick up the release just installed. Never fails the install.
+if (process.env.npm_config_global === 'true') {
+  try {
+    require('../scripts/runtime-auto-update').refreshRuntimeOnInit({ packageVersion: require('../package.json').version });
+  } catch (_) { /* best effort */ }
+}
+
 if (isCI || isQuiet) process.exit(0);
 
 const DASHBOARD_URL = 'https://thumbgate.ai/dashboard?utm_source=npm&utm_medium=postinstall&utm_campaign=dashboard_nudge';
