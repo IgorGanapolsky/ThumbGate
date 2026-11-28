@@ -960,8 +960,6 @@ test('deriveSurfacePattern: null for unrelated prose', () => {
   assert.equal(deriveSurfacePattern('dashboard chart colors looked wrong'), null);
 });
 
-// -- promote: a gate a person loosened with `thumbgate improve --apply` stays warn until new feedback --
-
 test('promote: a self-tuned warn gate is not re-blocked by the feedback it was already tuned on', (t) => {
   const tmpDir = makeTmpDir();
   const logPath = path.join(tmpDir, 'feedback-log.jsonl');
@@ -971,12 +969,12 @@ test('promote: a self-tuned warn gate is not re-blocked by the feedback it was a
     try { fs.rmSync(tmpDir, { recursive: true, force: true }); } catch {}
   });
 
-  const cmd = 'git push --force origin feature/tuned';
+  const cmd = 'npm publish --tag tuned-gate';
   for (let i = 0; i < BLOCK_THRESHOLD; i++) appendJSONL(logPath, makeNegativeEntry(['execution-gap'], cmd, i));
   promote(logPath);
   const { applyVerdicts } = require('../scripts/self-improve');
   const before = loadAutoGates();
-  const gate = before.gates.find((g) => (g.pattern || '').includes('feature/tuned'));
+  const gate = before.gates.find((g) => (g.pattern || '').includes('tuned-gate'));
   assert.strictEqual(gate.action, 'block');
   const { data: tuned } = applyVerdicts(before, [{ gateId: gate.id, verdict: 'loosen', to: 'warn', reason: 'overridden' }]);
   saveAutoGates(tuned);

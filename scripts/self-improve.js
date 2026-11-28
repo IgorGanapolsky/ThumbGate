@@ -4,13 +4,8 @@
 // self-improve — the closed loop that turns ThumbGate's own evidence into
 // changes to its own gates, and records whether the agent is getting better.
 //
-// Inputs it already has (no new capture):
-//   - auto-promoted-gates.json   learned gates (from thumbs-downs)
-//   - gate-stats.json            how often each gate fired, recurring blocks
-//   - audit-trail.jsonl          overrides (a person or agent unlocking a block)
-//                                and prior allowed actions (trigger audit replay)
-//   - lesson-injections.jsonl +  repeat misses per 100 lesson injections
-//     the person's thumbs-downs  (scripts/lesson-effect.js)
+// Inputs (no new capture): auto-promoted-gates.json, gate-stats.json, audit-trail.jsonl (overrides and
+// prior allowed actions for the trigger replay), and lesson-effect.js (repeat misses per 100 injections).
 //
 // What it does each cycle:
 //   1. Tune: a block gate that fires on actions that were safe before, or that
