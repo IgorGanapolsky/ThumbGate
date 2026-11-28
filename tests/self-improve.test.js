@@ -10,7 +10,7 @@ const path = require('node:path');
 const { execFileSync } = require('node:child_process');
 
 const {
-  classifyGates, applyVerdicts, appendSnapshot, readHistory, summarizeTrend, selfTuneMode,
+  classifyGates, applyVerdicts, humanOverridesByGate, appendSnapshot, readHistory, summarizeTrend, selfTuneMode,
   isCycleDue, sessionReminder, formatReport, HISTORY_FILE,
 } = require('../scripts/self-improve');
 
@@ -28,13 +28,18 @@ test('a block gate that would have blocked earlier safe actions is proposed for 
   assert.match(v.reason, /2 of 40/);
 });
 
-test('a block gate overridden in a third of its fires is proposed for warn; one override is not enough', () => {
+test('a block gate a person overrode in a third of 6+ fires is proposed for warn; small samples are not enough', () => {
   const verdicts = classifyGates({
-    gates: [gate('noisy', 'block'), gate('once', 'block'), gate('fine', 'block')],
-    statsByGate: { noisy: { blocked: 6 }, once: { blocked: 1 }, fine: { blocked: 30 } },
-    overridesByGate: { noisy: 2, once: 1, fine: 2 },
+    gates: [gate('noisy', 'block'), gate('once', 'block'), gate('fine', 'block'), gate('small', 'block')],
+    statsByGate: { noisy: { blocked: 6 }, once: { blocked: 1 }, fine: { blocked: 30 }, small: { blocked: 3 } },
+    overridesByGate: { noisy: 2, once: 1, fine: 2, small: 2 },
   });
-  assert.deepEqual(verdicts.map((v) => v.verdict), ['loosen', 'keep', 'keep']);
+  assert.deepEqual(verdicts.map((v) => v.verdict), ['loosen', 'keep', 'keep', 'keep']);
+});
+
+test('only overrides a person made count; the agent unlocking its own block over MCP does not', () => {
+  const rec = (gateId, source) => ({ override: { gateId, source } });
+  assert.deepEqual(humanOverridesByGate([rec('g', 'cli'), rec('g', 'mcp'), rec('g', 'break-glass'), rec('h', 'unknown')]), { g: 2 });
 });
 
 test('a warn gate that keeps firing, is never overridden and has strong evidence is proposed for block', () => {
@@ -74,10 +79,14 @@ test('applying verdicts changes only the proposed gates, logs each change, and d
   assert.equal(next.promotionLog[0].type, 'self-tune');
 });
 
-test('proposals are the default; apply needs --apply or THUMBGATE_SELF_TUNE=apply', () => {
+test('proposals are the default; the unattended setting only tightens; loosening needs a person running --apply', () => {
   assert.equal(selfTuneMode({}, []), 'propose');
   assert.equal(selfTuneMode({}, ['--apply']), 'apply');
-  assert.equal(selfTuneMode({ THUMBGATE_SELF_TUNE: 'apply' }, []), 'apply');
+  assert.equal(selfTuneMode({ THUMBGATE_SELF_TUNE: 'apply' }, []), 'tighten-only');
+  const data = { gates: [gate('a', 'block'), gate('b', 'warn')], promotionLog: [] };
+  const verdicts = [{ gateId: 'a', verdict: 'loosen', to: 'warn', reason: 'r' }, { gateId: 'b', verdict: 'tighten', to: 'block', reason: 'r' }];
+  const { data: next } = applyVerdicts(data, verdicts, new Date(), { allowLoosen: false });
+  assert.deepEqual(next.gates.map((g) => g.action), ['block', 'block']);
 });
 
 test('one snapshot a day, and the trend compares the first and latest repeat-miss rate', () => {
@@ -106,7 +115,7 @@ test('the session reminder names the rate and the proposals, and stays silent wi
     applied: [],
     trend: { change: null },
   };
-  assert.match(sessionReminder(report.snapshot), /12\.5 per 100.*g1 block->warn/);
+  assert.match(sessionReminder(report.snapshot), /12\.5 per 100.*g1 block->warn \(proposed\)/);
   assert.match(formatReport(report), /proposed: g1 block -> warn/);
   assert.equal(sessionReminder({ repeatMissesPer100: null, changes: [] }), null);
   assert.equal(sessionReminder(null), null);

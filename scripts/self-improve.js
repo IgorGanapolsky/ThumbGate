@@ -31,12 +31,28 @@ const path = require('node:path');
 const HISTORY_FILE = 'self-improvement-history.jsonl';
 const SNAPSHOT_INTERVAL_MS = 20 * 60 * 60 * 1000; // one snapshot a day, with slack for session timing
 const LOOSEN_MIN_OVERRIDES = 2;
+const LOOSEN_MIN_FIRES = 6; // below this the override share is noise (3 clean fires bound precision at ~0.47)
 const LOOSEN_OVERRIDE_SHARE = 1 / 3; // a third of fires overridden => the gate is in the way more than it helps
 const TIGHTEN_MIN_FIRES = 3;
 
+// 'apply' (explicit --apply) changes gates both ways. THUMBGATE_SELF_TUNE=apply, the unattended
+// path, only tightens: loosening a guard always waits for a person to run --apply.
 function selfTuneMode(env = process.env, argv = []) {
   if (argv.includes('--apply')) return 'apply';
-  return String(env.THUMBGATE_SELF_TUNE || '').trim().toLowerCase() === 'apply' ? 'apply' : 'propose';
+  return String(env.THUMBGATE_SELF_TUNE || '').trim().toLowerCase() === 'apply' ? 'tighten-only' : 'propose';
+}
+
+// Overrides a person made. satisfy_gate over MCP is the agent unlocking its own block, so it never
+// counts toward loosening a gate.
+const HUMAN_OVERRIDE_SOURCES = new Set(['cli', 'break-glass', 'api']);
+function humanOverridesByGate(records = []) {
+  const byGate = {};
+  for (const rec of records) {
+    const o = (rec && rec.override) || {};
+    if (!o.gateId || !HUMAN_OVERRIDE_SOURCES.has(o.source)) continue;
+    byGate[o.gateId] = (byGate[o.gateId] || 0) + 1;
+  }
+  return byGate;
 }
 
 function isHandMade(gate) {
@@ -68,8 +84,8 @@ function classifyGates({ gates = [], statsByGate = {}, overridesByGate = {}, aud
       if (audit.evidence === 'fires-on-safe-actions') {
         return { ...base, verdict: 'loosen', to: 'warn', reason: `would have blocked ${audit.falseBlocks} of ${audit.allowSampleSize} earlier safe actions` };
       }
-      if (overrides >= LOOSEN_MIN_OVERRIDES && overrides / Math.max(fires, 1) >= LOOSEN_OVERRIDE_SHARE) {
-        return { ...base, verdict: 'loosen', to: 'warn', reason: `overridden ${overrides} times in ${fires} fires` };
+      if (fires >= LOOSEN_MIN_FIRES && overrides >= LOOSEN_MIN_OVERRIDES && overrides / fires >= LOOSEN_OVERRIDE_SHARE) {
+        return { ...base, verdict: 'loosen', to: 'warn', reason: `overridden by a person ${overrides} times in ${fires} fires` };
       }
     }
     if (gate.action === 'warn' && fires >= TIGHTEN_MIN_FIRES && overrides === 0 && audit.evidence === 'strong') {
@@ -80,8 +96,9 @@ function classifyGates({ gates = [], statsByGate = {}, overridesByGate = {}, aud
 }
 
 // Apply loosen/tighten verdicts to a gates file object. Returns { data, applied }.
-function applyVerdicts(data, verdicts, now = new Date()) {
-  const byId = new Map(verdicts.filter((v) => v.verdict === 'loosen' || v.verdict === 'tighten').map((v) => [v.gateId, v]));
+function applyVerdicts(data, verdicts, now = new Date(), { allowLoosen = true } = {}) {
+  const wanted = allowLoosen ? ['loosen', 'tighten'] : ['tighten'];
+  const byId = new Map(verdicts.filter((v) => wanted.includes(v.verdict)).map((v) => [v.gateId, v]));
   const applied = [];
   const gates = (data.gates || []).map((gate) => {
     const v = byId.get(gate.id);
@@ -148,8 +165,7 @@ function sessionReminder(snapshot) {
   const parts = [];
   if (snapshot.repeatMissesPer100 != null) parts.push(`repeat misses ${snapshot.repeatMissesPer100} per 100 lesson injections`);
   if (changes.length) {
-    const verb = snapshot.mode === 'apply' ? 'retuned' : 'proposed';
-    parts.push(`${changes.length} gate change(s) ${verb}: ${changes.slice(0, 3).map((c) => `${c.gateId} ${c.from}->${c.to}`).join(', ')}`);
+    parts.push(`${changes.length} gate change(s): ${changes.slice(0, 3).map((c) => `${c.gateId} ${c.from}->${c.to}${c.applied ? '' : ' (proposed)'}`).join(', ')}`);
   }
   return parts.length ? `ThumbGate daily self-review: ${parts.join('; ')}. Details: thumbgate improve` : null;
 }
@@ -181,14 +197,14 @@ function runSelfImprovement(options = {}) {
   const gateOpts = options.feedbackDir ? { feedbackDir: options.feedbackDir } : {};
   const data = safe(() => autoGates.loadAutoGates(gateOpts), { version: 1, gates: [], promotionLog: [] });
   const stats = safe(() => gatesEngine.loadStats(), { byGate: {} });
-  const overrides = safe(() => summarizeOverrides({ limit: 5000 }), { byGate: {}, total: 0 });
+  const overrides = safe(() => summarizeOverrides({ limit: 5000 }), { byGate: {}, total: 0, records: [] });
   const auditRows = safe(() => autoGates.auditGateTriggers({ ...gateOpts, data }), []);
   const human = safe(() => require('./statusline-human-counts').computeHumanCounts({ env }), null);
 
-  const verdicts = classifyGates({ gates: data.gates || [], statsByGate: stats.byGate || {}, overridesByGate: overrides.byGate || {}, auditRows });
+  const verdicts = classifyGates({ gates: data.gates || [], statsByGate: stats.byGate || {}, overridesByGate: humanOverridesByGate(overrides.records), auditRows });
   let applied = [];
-  if (mode === 'apply') {
-    const result = applyVerdicts(data, verdicts);
+  if (mode === 'apply' || mode === 'tighten-only') {
+    const result = applyVerdicts(data, verdicts, new Date(), { allowLoosen: mode === 'apply' });
     applied = result.applied;
     if (applied.length) autoGates.saveAutoGates(result.data, gateOpts);
   }
@@ -253,6 +269,7 @@ module.exports = {
   HISTORY_FILE,
   SNAPSHOT_INTERVAL_MS,
   selfTuneMode,
+  humanOverridesByGate,
   classifyGates,
   applyVerdicts,
   readHistory,
