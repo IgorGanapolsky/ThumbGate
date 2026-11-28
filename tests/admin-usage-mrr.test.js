@@ -326,3 +326,8 @@ test('owner alerts (c): a red alert (failed Stripe notifications) is sent on the
   const repeat = nextAlertDeliveryState(alerts, { firing: step.firing, pending: step.pending, streaks: step.streaks }, Date.parse('2026-11-25T10:15:00Z'));
   assert.deepEqual(repeat.added, [], 'does not repeat while it keeps firing');
 });
+
+test('the homepage sends a browser-confirmation beacon when the server already counted the page view', () => {
+  const html = fs.readFileSync(path.join(__dirname, '..', 'public', 'index.html'), 'utf8');
+  assert.match(html, /\} else \{[\s\S]{0,400}sendFirstPartyTelemetry\('browser_confirmed', \{ landingPath: '\/' \}\);/);
+});
