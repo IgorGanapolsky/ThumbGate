@@ -246,7 +246,6 @@ function normalizeReceipt(params = {}) {
 // ---------------------------------------------------------------------------
 
 const CHAIN_GENESIS = 'GENESIS';
-let policyCache = null;
 
 function sha256Hex(text) {
   return crypto.createHash('sha256').update(text).digest('hex');
@@ -263,21 +262,18 @@ function canonicalJson(value) {
 /**
  * The rule set in force: the ThumbGate version plus a hash of every gate the engine would load
  * (defaults, learned gates, extra gates). Two receipts with the same policyHash were decided by the same rules.
- * Cached per process; null when the gates cannot be loaded.
+ * Computed on every receipt, not cached: the gates differ per tenant and change when a rule is learned.
+ * Null when the gates cannot be loaded.
  */
 function currentPolicyVersion() {
-  if (policyCache && Date.now() - policyCache.at < 30000) return policyCache.value;
-  let value = null;
   try {
     const { version } = require('../package.json');
     const config = require('./gates-engine').loadGatesConfig();
     const gates = Array.isArray(config && config.gates) ? config.gates : [];
-    value = { thumbgateVersion: version, policyHash: sha256Hex(canonicalJson(gates)), gateCount: gates.length };
+    return { thumbgateVersion: version, policyHash: sha256Hex(canonicalJson(gates)), gateCount: gates.length };
   } catch {
-    value = null;
+    return null;
   }
-  policyCache = { at: Date.now(), value };
-  return value;
 }
 
 /** Hash of a chained entry: everything except the hash itself and any detached signature. */
@@ -349,7 +345,13 @@ function withLedgerLock(filePath, fn) {
 function verifyReceiptChain(options = {}) {
   const filePath = options.file || getReceiptsPath(options);
   let raw = '';
-  try { raw = fs.readFileSync(filePath, 'utf8'); } catch { return { ok: true, file: filePath, total: 0, chained: 0, legacy: 0, head: CHAIN_GENESIS, errors: [] }; }
+  try {
+    raw = fs.readFileSync(filePath, 'utf8');
+  } catch (error) {
+    // No ledger yet is an empty, valid ledger. Anything else (a directory, no permission, an I/O error) was not checked.
+    const missing = error && error.code === 'ENOENT';
+    return { ok: missing, file: filePath, total: 0, chained: 0, legacy: 0, head: CHAIN_GENESIS, errors: missing ? [] : [{ line: 0, reason: `unreadable: ${error && error.code}` }] };
+  }
   const lines = raw.split('\n').map((l) => l.trim()).filter(Boolean);
   const errors = [];
   let prev = { seq: 0, hash: CHAIN_GENESIS };

@@ -122,3 +122,27 @@ test('thumbgate receipts verify exits 0 on an intact ledger and 1 on a tampered 
   assert.equal(bad.status, 1);
   assert.equal(JSON.parse(bad.stdout).ok, false);
 });
+
+test('a ledger that cannot be read fails verification; a missing one is empty and valid', () => {
+  assert.equal(receipts.verifyReceiptChain({ file: path.join(tmpDir, 'absent.jsonl') }).ok, true);
+  const dir = fs.mkdtempSync(path.join(tmpDir, 'is-a-dir-'));
+  const result = receipts.verifyReceiptChain({ file: dir });
+  assert.equal(result.ok, false);
+  assert.match(result.errors[0].reason, /^unreadable/);
+});
+
+test('the policy hash follows the gates in force, with no stale cache', () => {
+  const gatesFile = path.join(tmpDir, 'gates.json');
+  const prev = process.env.THUMBGATE_GATES_CONFIG;
+  try {
+    process.env.THUMBGATE_GATES_CONFIG = gatesFile;
+    fs.writeFileSync(gatesFile, JSON.stringify({ version: 1, gates: [{ id: 'a', pattern: 'x', action: 'block' }] }));
+    const one = receipts.currentPolicyVersion();
+    fs.writeFileSync(gatesFile, JSON.stringify({ version: 1, gates: [{ id: 'a', pattern: 'x', action: 'block' }, { id: 'b', pattern: 'y', action: 'warn' }] }));
+    const two = receipts.currentPolicyVersion();
+    assert.notEqual(one.policyHash, two.policyHash);
+    assert.equal(two.gateCount - one.gateCount, 1);
+  } finally {
+    if (prev === undefined) delete process.env.THUMBGATE_GATES_CONFIG; else process.env.THUMBGATE_GATES_CONFIG = prev;
+  }
+});
