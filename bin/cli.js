@@ -3763,6 +3763,25 @@ function hookAutoCapture() {
   process.stdout.write(formatCliOutput(result) + '\n');
 }
 
+// Pull feedback recorded through the hosted connector (claude.ai, Claude
+// Desktop, Claude projects, cloud sessions) into this machine's store. Runs
+// detached so session start never waits on the network, and only when an
+// operator key is configured. THUMBGATE_HOSTED_SYNC=0 turns it off.
+function maybeSpawnHostedSync() {
+  if (process.env.THUMBGATE_HOSTED_SYNC === '0') return false;
+  const { resolveOperatorConfig } = require(path.join(PKG_ROOT, 'scripts', 'sync-telemetry-from-prod'));
+  if (!resolveOperatorConfig().apiKey) return false;
+  const { spawn } = require('child_process');
+  const child = spawn(process.execPath, [path.join(PKG_ROOT, 'bin', 'cli.js'), 'sync-hosted'], {
+    cwd: process.cwd(),
+    detached: true,
+    stdio: 'ignore',
+    env: process.env,
+  });
+  child.unref();
+  return true;
+}
+
 function sessionStart() {
   syncActiveProjectContext();
   try {
@@ -4819,7 +4838,12 @@ switch (COMMAND) {
     break;
   case 'session-start':
     try { require('../scripts/runtime-auto-update').scheduleLatestCheck(); } catch (_) { /* best-effort */ }
+    try { maybeSpawnHostedSync(); } catch (_) { /* best-effort */ }
     sessionStart();
+    break;
+  case 'sync-hosted':
+    require(path.join(PKG_ROOT, 'scripts', 'hosted-feedback-sync')).main(process.argv.slice(3))
+      .then((code) => { process.exitCode = code; });
     break;
   case 'capture':
   case 'feedback':
