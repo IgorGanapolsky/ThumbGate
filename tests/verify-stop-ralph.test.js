@@ -127,3 +127,26 @@ test('detectVerifyCommand covers common stacks', () => {
     assert.equal(ralph.detectVerifyCommand(dir), 'python -m pytest -q');
   } finally { fs.rmSync(dir, { recursive: true, force: true }); }
 });
+
+test('an untracked file with a non-ASCII name still changes the fingerprint when its content changes', () => {
+  const repo = tempRepo();
+  try {
+    const file = path.join(repo.dir, 'é.js');
+    fs.writeFileSync(file, 'module.exports = 1;\n');
+    const before = verifyStop.treeFingerprint(repo.dir);
+    fs.writeFileSync(file, 'module.exports = 2;\n');
+    assert.notEqual(verifyStop.treeFingerprint(repo.dir), before);
+  } finally { repo.cleanup(); }
+});
+
+test('ralph.sh does not accept the completion marker from a run that failed', () => {
+  const repo = tempRepo();
+  try {
+    ralph.ralphInit({ cwd: repo.dir, verifyCommand: PASS, wire: false });
+    const agent = path.join(repo.dir, 'stub-agent.sh');
+    fs.writeFileSync(agent, '#!/usr/bin/env bash\necho "<promise>COMPLETE</promise>"\nexit 1\n', { mode: 0o755 });
+    const r = spawnSync('bash', ['ralph.sh'], { cwd: repo.dir, encoding: 'utf8', env: { ...process.env, AGENT: agent, MAX_RUNS: '2' } });
+    assert.equal(r.status, 1, r.stdout + r.stderr);
+    assert.doesNotMatch(r.stdout, /All tasks pass/);
+  } finally { repo.cleanup(); }
+});

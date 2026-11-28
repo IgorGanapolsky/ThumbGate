@@ -75,7 +75,9 @@ for i in $(seq 1 "$MAX_RUNS"); do
   out=".thumbgate/ralph/run-$i.log"
   # shellcheck disable=SC2086
   if ! $AGENT < PROMPT.md | tee "$out"; then
+    # A failed run never counts as complete, even if it printed the marker.
     echo "Run $i exited with an error; see $out"
+    continue
   fi
   if grep -q '<promise>COMPLETE</promise>' "$out"; then
     echo "All tasks pass after $i runs."

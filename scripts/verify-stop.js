@@ -49,10 +49,11 @@ function treeFingerprint(cwd) {
   // ThumbGate's own state files change on every run; they are not the work.
   const notOurs = ['--', '.', ':(exclude).thumbgate'];
   const diff = git(cwd, ['diff', 'HEAD', ...notOurs]) || '';
-  const untracked = git(cwd, ['ls-files', '--others', '--exclude-standard', ...notOurs]) || '';
+  // -z: real file names, NUL-separated, without Git's quoting of unusual characters.
+  const untracked = git(cwd, ['ls-files', '-z', '--others', '--exclude-standard', ...notOurs]) || '';
   const hash = crypto.createHash('sha256').update(head).update(diff).update(untracked);
   // New files are part of the work too: hash their content, not only their names.
-  for (const rel of untracked.split('\n').filter(Boolean).slice(0, 500)) {
+  for (const rel of untracked.split('\0').filter(Boolean).slice(0, 500)) {
     try { hash.update(fs.readFileSync(path.join(cwd, rel))); } catch { /* unreadable: the name still counts */ }
   }
   return hash.digest('hex');
