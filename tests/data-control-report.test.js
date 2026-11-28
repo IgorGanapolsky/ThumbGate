@@ -27,8 +27,11 @@ test('usage ping field list matches what cli-telemetry actually posts', () => {
   delete env.THUMBGATE_INSTALL_SOURCE;
   const out = spawnSync(process.execPath, ['-e', script], { env, encoding: 'utf8' });
   assert.equal(out.status, 0, out.stderr);
-  const { USAGE_PING_FIELDS } = require('../scripts/data-control-report');
-  assert.deepEqual(JSON.parse(out.stdout).sort(), [...USAGE_PING_FIELDS].sort());
+  const { USAGE_PING_FIELDS, USAGE_PING_OPTIONAL_FIELDS } = require('../scripts/data-control-report');
+  const keys = JSON.parse(out.stdout);
+  // With no THUMBGATE_INSTALL_SOURCE, a git checkout still reports source=git-clone (see installChannel).
+  const inferred = fs.existsSync(path.join(root, '.git')) ? USAGE_PING_OPTIONAL_FIELDS : [];
+  assert.deepEqual(keys.sort(), [...USAGE_PING_FIELDS, ...inferred].sort());
 });
 
 test('report lists the store, the ping state and the off switch, and writes nothing', () => {

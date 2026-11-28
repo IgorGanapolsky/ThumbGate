@@ -130,7 +130,7 @@ function renderControlReportText(report) {
   const ping = report.usagePing;
   lines.push('', 'What leaves your machine');
   lines.push(`  Usage ping: ${ping.enabled ? 'ON' : 'OFF'}${ping.enabled ? ` -> ${ping.host}` : ''}`);
-  lines.push(`    Fields: ${ping.fields.join(', ')} (+ ${ping.optionalFields.join(', ')} if you set an install source)`);
+  lines.push(`    Fields: ${ping.fields.join(', ')} (+ ${ping.optionalFields.join(', ')} when the install source is known: the one you set, else git-clone or npm)`);
   lines.push(`    ${ping.eventMetadata}`);
   lines.push(`    Anonymous install id: ${ping.installIdPath}${ping.installIdExists ? '' : ' (not created yet)'}`);
   if (ping.enabled) lines.push('    Turn it off:  export THUMBGATE_NO_TELEMETRY=1', '    DO_NOT_TRACK=1 works too.');
