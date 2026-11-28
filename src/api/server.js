@@ -10619,7 +10619,7 @@ a{color:#8b9}</style></head><body><form class="card" method="post" action="/oaut
       const { FEEDBACK_DIR } = getFeedbackPaths();
       try {
         const payload = await readProjectBody(req, 16 * 1024);
-        const persisted = appendTelemetryPing(FEEDBACK_DIR, payload, req.headers);
+        const persisted = appendTelemetryPing(FEEDBACK_DIR, payload, req.headers, { ingest: 'beacon' });
         adminRuntime.recordTelemetry(Boolean(persisted));
       } catch (err) {
         try {

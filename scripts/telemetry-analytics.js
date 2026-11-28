@@ -685,6 +685,9 @@ function sanitizeTelemetryPayload(payload = {}, headers = {}, options = {}) {
   entry.isInternal = audience.isInternal;
   entry.isTest = audience.isTest;
   entry.isBotTraffic = audience.isBot;
+  // Set only by the server for events that arrived through the browser beacon endpoint, never from the payload, so a
+  // visitor id with a beacon event ran the page's script. Server-side page views (crawlers included) never carry it.
+  if (options.ingest === 'beacon') entry.ingest = 'beacon';
 
   return entry;
 }
@@ -697,11 +700,11 @@ function headerHasPrivacyOptOut(headers = {}) {
   return normalized['sec-gpc'] === '1' || normalized.dnt === '1';
 }
 
-function appendTelemetryEvent(feedbackDir, payload = {}, headers = {}) {
+function appendTelemetryEvent(feedbackDir, payload = {}, headers = {}, options = {}) {
   if (headerHasPrivacyOptOut(headers)) {
     return null;
   }
-  const entry = { ...sanitizeTelemetryPayload(payload, headers), ...require('./project-identity').projectForRecord(payload) };
+  const entry = { ...sanitizeTelemetryPayload(payload, headers, { ingest: options.ingest }), ...require('./project-identity').projectForRecord(payload) };
   const telemetryPath = getTelemetryPath(feedbackDir);
   fs.mkdirSync(path.dirname(telemetryPath), { recursive: true });
   fs.appendFileSync(telemetryPath, `${JSON.stringify(entry)}\n`, 'utf-8');

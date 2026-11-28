@@ -1478,6 +1478,10 @@ $ ... "node scripts/migrate.js --env prod"
 
     if (!serverTelemetryCaptured) {
       sendFirstPartyTelemetry('page_view', { landingPath: '/' });
+    } else {
+      // The server already counted the page view. This beacon only proves a browser ran the page, so the owner
+      // console can count browser-confirmed visitors apart from crawlers; it is not another page view.
+      sendFirstPartyTelemetry('browser_confirmed', { landingPath: '/' });
     }
   </script>
 
