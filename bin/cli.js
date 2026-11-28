@@ -4225,6 +4225,7 @@ function help() {
   // Internal / hook commands (called by agent runtime, not operator-facing schema).
   console.log('Internal hooks (called by agent runtime):');
   console.log('  gate-check            Evaluate PreToolUse payload from stdin -> ALLOW/BLOCK');
+  console.log('  auto-approve on|off   Opt in: tool calls you gave a thumbs-up skip the permission prompt');
   console.log('  cache-update          Refresh Claude statusline cache from stdin');
   console.log('  statusline-render     Render ThumbGate Claude status line');
   console.log('  canary <status|add PATH|remove PATH>  Decoy credential file: deny and record any action that reaches it (off until you add one)');
@@ -4770,6 +4771,9 @@ switch (COMMAND) {
       process.stdout.write('{}\n');
       process.exit(0);
     });
+    break;
+  case 'auto-approve':
+    process.exitCode = require('../scripts/thumbs-up-auto-approve').runCli(process.argv.slice(3));
     break;
   case 'gate-check':
     // Keeps the hook runtime on npm latest (one file read; at most one detached check per 24h).

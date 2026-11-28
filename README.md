@@ -179,6 +179,7 @@ npx -y thumbgate serve
 | 👎 from the CLI with only a sentence of context (no command attached) | Saves a lesson the agent sees before a matching action. On the third matching 👎, a check fires: a warning by default, a block with `THUMBGATE_STRICT_ENFORCEMENT=1`. |
 | 👍 with one sentence of context | Saves a success lesson and counts it in your stats. It does not create, loosen or lift a check. |
 | 👍 or 👎 with no context and no command | Logged only. Nothing is stored or promoted. |
+| 👍 right after a command, with auto-approve on (opt-in) | The next call with the same pattern (for example `npm test`, `git status`) skips Claude Code's permission prompt. Hard blocks still win, a later 👎 on the pattern revokes it, and chained commands, `sudo`, `rm`, force-push and `Write` are never auto-approved. Turn on with `npx thumbgate auto-approve on`; see what it learned with `npx thumbgate auto-approve status`. |
 
 Example: the agent runs `npm run deploy:staging` and you type *"thumbs down: that pushed to the wrong environment"*. The next `npm run deploy:staging` gets a warning before it runs. You thumbs-down it a second time, and the next run is denied. A later 👍 on the same command is saved as a success lesson, and the block stays in place.
 

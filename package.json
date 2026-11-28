@@ -484,6 +484,7 @@
     "scripts/thompson-sampling.js",
     "scripts/thumbgate-bench.js",
     "scripts/thumbgate-search.js",
+    "scripts/thumbs-up-auto-approve.js",
     "scripts/tier-budget-guard.js",
     "scripts/token-savings.js",
     "scripts/token-tco.js",
