@@ -901,8 +901,10 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // 11.16 -> 11.18 MB (2026-11-28): scripts/rule-mutation.js (~13 KB), reworded-variant testing for learned rules.
   // 11.18 -> 11.20 MB (2026-11-28): adapters/claude-agent-sdk (~14 KB). Measured 11,191,862.
   // 11.20 -> 11.22 MB (2026-11-28): scripts/verify-stop.js + scripts/ralph-init.js (~13 KB). Measured 11,208,911.
-  manifest.unpackedSize <= 11_220_000,
-  `npm package should stay <= 11.22 MB unpacked, got ${manifest.unpackedSize}`
+  // 11.22 -> 11.24 MB (2026-11-28): main had already reached 11,221,413 after 1.53.0; the receipt hash chain,
+  // policy version and `thumbgate receipts verify` add ~8 KB to scripts/action-receipts.js. Measured 11,229,276.
+  manifest.unpackedSize <= 11_240_000,
+  `npm package should stay <= 11.24 MB unpacked, got ${manifest.unpackedSize}`
 );
 
   for (const file of requiredRuntimeFiles) {

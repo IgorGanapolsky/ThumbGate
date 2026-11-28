@@ -1232,6 +1232,7 @@ const TOOLS = [
         target: { type: 'string', description: 'Optional target path, host, or resource the action touched' },
         principal: { type: 'string', description: 'Optional agent/principal identity recorded on the receipt' },
         decision: { type: 'string', description: 'Optional gate decision (allow/warn/deny)' },
+        ruleId: { type: 'string', description: 'Optional id of the gate or prevention rule that made the decision; the receipt also records the policy hash in force' },
         idempotencyKey: { type: 'string', description: 'Optional idempotency key for dedupe of the signed receipt' },
         providerEventId: { type: 'string', description: 'Optional upstream provider event id' },
         diff: { type: 'string', description: 'Optional unified diff or change summary produced by the action' },

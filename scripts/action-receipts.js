@@ -218,6 +218,11 @@ function normalizeReceipt(params = {}) {
     }
   }
 
+  // Which rule made the decision, and which policy it came from, so a receipt can be
+  // matched to the rule set that was live at the time.
+  const ruleId = safeString(params.ruleId || params.gateId || '') || null;
+  const policy = (params.policy && typeof params.policy === 'object') ? params.policy : currentPolicyVersion();
+
   return {
     actionId: safeString(params.actionId) || null,
     toolName,
@@ -231,7 +236,142 @@ function normalizeReceipt(params = {}) {
     signature,
     outcome,
     recordedAt,
+    ruleId,
+    policy,
   };
+}
+
+// ---------------------------------------------------------------------------
+// Policy version and hash chain
+// ---------------------------------------------------------------------------
+
+const CHAIN_GENESIS = 'GENESIS';
+let policyCache = null;
+
+function sha256Hex(text) {
+  return crypto.createHash('sha256').update(text).digest('hex');
+}
+
+/** JSON with sorted object keys, so the same receipt always hashes the same. */
+function canonicalJson(value) {
+  if (value === null || typeof value !== 'object') return JSON.stringify(value === undefined ? null : value);
+  if (Array.isArray(value)) return `[${value.map(canonicalJson).join(',')}]`;
+  const keys = Object.keys(value).filter((k) => value[k] !== undefined).sort();
+  return `{${keys.map((k) => `${JSON.stringify(k)}:${canonicalJson(value[k])}`).join(',')}}`;
+}
+
+/**
+ * The rule set in force: the ThumbGate version plus a hash of every gate the engine would load
+ * (defaults, learned gates, extra gates). Two receipts with the same policyHash were decided by the same rules.
+ * Cached per process; null when the gates cannot be loaded.
+ */
+function currentPolicyVersion() {
+  if (policyCache && Date.now() - policyCache.at < 30000) return policyCache.value;
+  let value = null;
+  try {
+    const { version } = require('../package.json');
+    const config = require('./gates-engine').loadGatesConfig();
+    const gates = Array.isArray(config && config.gates) ? config.gates : [];
+    value = { thumbgateVersion: version, policyHash: sha256Hex(canonicalJson(gates)), gateCount: gates.length };
+  } catch {
+    value = null;
+  }
+  policyCache = { at: Date.now(), value };
+  return value;
+}
+
+/** Hash of a chained entry: everything except the hash itself and any detached signature. */
+function receiptEntryHash(entry) {
+  const { entryHash, ed25519Signature, ...rest } = entry || {}; // eslint-disable-line no-unused-vars
+  return sha256Hex(canonicalJson(rest));
+}
+
+/** Last non-empty line of the ledger, read from the end so a large ledger is not read whole. */
+function readLastLine(filePath) {
+  let fd;
+  try {
+    fd = fs.openSync(filePath, 'r');
+    const size = fs.fstatSync(fd).size;
+    let chunk = 64 * 1024;
+    while (true) {
+      const start = Math.max(0, size - chunk);
+      const buf = Buffer.alloc(size - start);
+      fs.readSync(fd, buf, 0, buf.length, start);
+      const lines = buf.toString('utf8').split('\n').filter((l) => l.trim());
+      if (lines.length > (start === 0 ? 0 : 1) || start === 0) return lines.length ? lines[lines.length - 1] : null;
+      chunk *= 4;
+    }
+  } catch {
+    return null;
+  } finally {
+    if (fd !== undefined) try { fs.closeSync(fd); } catch { /* closed */ }
+  }
+}
+
+/** Where the next entry links to: the last entry's hash, the hash of a pre-chain line, or GENESIS. */
+function chainHead(filePath) {
+  const last = readLastLine(filePath);
+  if (!last) return { seq: 0, hash: CHAIN_GENESIS };
+  try {
+    const parsed = JSON.parse(last);
+    if (parsed && parsed.entryHash) return { seq: Number(parsed.seq) || 0, hash: parsed.entryHash };
+  } catch { /* malformed: link to its raw bytes */ }
+  return { seq: 0, hash: sha256Hex(last.trim()) };
+}
+
+// Two writers appending at once would both link to the same head. A short lock directory serialises them.
+function withLedgerLock(filePath, fn) {
+  const lock = `${filePath}.lock`;
+  const deadline = Date.now() + 2000;
+  let locked = false;
+  while (!locked) {
+    try {
+      fs.mkdirSync(lock);
+      locked = true;
+    } catch (error) {
+      if (error.code !== 'EEXIST') break;
+      try {
+        if (Date.now() - fs.statSync(lock).mtimeMs > 10000) { fs.rmdirSync(lock); continue; }
+      } catch { continue; }
+      if (Date.now() > deadline) break; // write anyway; verify will show the fork
+      Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 20);
+    }
+  }
+  try { return fn(); } finally { if (locked) try { fs.rmdirSync(lock); } catch { /* gone */ } }
+}
+
+/**
+ * Check the ledger. Each chained entry must hash to its entryHash (not edited) and point at the entry before it
+ * (nothing deleted, inserted or reordered). Lines written before the chain existed are counted as legacy.
+ * Cutting entries off the end is not visible from the file alone: compare `head` and `chained` with a value
+ * recorded elsewhere.
+ */
+function verifyReceiptChain(options = {}) {
+  const filePath = options.file || getReceiptsPath(options);
+  let raw = '';
+  try { raw = fs.readFileSync(filePath, 'utf8'); } catch { return { ok: true, file: filePath, total: 0, chained: 0, legacy: 0, head: CHAIN_GENESIS, errors: [] }; }
+  const lines = raw.split('\n').map((l) => l.trim()).filter(Boolean);
+  const errors = [];
+  let prev = { seq: 0, hash: CHAIN_GENESIS };
+  let chained = 0;
+  let legacy = 0;
+  lines.forEach((line, index) => {
+    const lineNo = index + 1;
+    let entry = null;
+    try { entry = JSON.parse(line); } catch { /* handled below */ }
+    if (!entry || !entry.entryHash) {
+      if (chained > 0) errors.push({ line: lineNo, reason: entry ? 'unchained_after_chain_start' : 'malformed' });
+      legacy += 1;
+      prev = { seq: 0, hash: sha256Hex(line) };
+      return;
+    }
+    chained += 1;
+    if (receiptEntryHash(entry) !== entry.entryHash) errors.push({ line: lineNo, reason: 'entry_edited' });
+    if (entry.prevHash !== prev.hash) errors.push({ line: lineNo, reason: 'chain_broken' });
+    if (prev.seq && Number(entry.seq) !== prev.seq + 1) errors.push({ line: lineNo, reason: 'seq_gap' });
+    prev = { seq: Number(entry.seq) || 0, hash: entry.entryHash };
+  });
+  return { ok: errors.length === 0, file: filePath, total: lines.length, chained, legacy, head: prev.hash, errors };
 }
 
 /**
@@ -241,11 +381,16 @@ function normalizeReceipt(params = {}) {
  * @returns {object} The stored receipt record (with recorded:true).
  */
 function recordReceipt(params = {}, options = {}) {
-  const receipt = normalizeReceipt(params);
+  const base = normalizeReceipt(params);
   const receiptsPath = getReceiptsPath(options);
   ensureDirFor(receiptsPath);
-  fs.appendFileSync(receiptsPath, `${JSON.stringify(receipt)}\n`, 'utf8');
-  return { recorded: true, ...receipt };
+  return withLedgerLock(receiptsPath, () => {
+    const head = chainHead(receiptsPath);
+    const receipt = { ...base, seq: head.seq + 1, prevHash: head.hash };
+    receipt.entryHash = receiptEntryHash(receipt);
+    fs.appendFileSync(receiptsPath, `${JSON.stringify(receipt)}\n`, 'utf8');
+    return { recorded: true, ...receipt };
+  });
 }
 
 /**
@@ -819,7 +964,28 @@ function evaluateOneShotPretool(toolName, toolInput) {
   return null;
 }
 
+/** `thumbgate receipts verify [--file <path>] [--json]`: exit 0 when the ledger is intact, 1 when it is not. */
+function runReceiptsCli(argv = []) {
+  const [sub, ...rest] = argv;
+  const flag = (name) => { const i = rest.indexOf(name); return i === -1 ? null : (rest[i + 1] || ''); };
+  if (sub !== 'verify') {
+    console.log('Usage: thumbgate receipts verify [--file <action-receipts.jsonl>] [--json]');
+    return sub ? 2 : 0;
+  }
+  const result = verifyReceiptChain(flag('--file') ? { file: flag('--file') } : {});
+  if (rest.includes('--json')) {
+    console.log(JSON.stringify(result, null, 2));
+  } else {
+    console.log(`${result.ok ? 'VALID' : 'INVALID'}: ${result.file}`);
+    console.log(`  ${result.chained} chained receipt(s), ${result.legacy} from before the chain; head ${result.head}`);
+    for (const e of result.errors.slice(0, 20)) console.log(`  line ${e.line}: ${e.reason}`);
+    if (result.ok && result.chained) console.log('  Keep the head hash somewhere else: it shows later whether entries were cut off the end.');
+  }
+  return result.ok ? 0 : 1;
+}
+
 module.exports = {
+  runReceiptsCli,
   RECEIPTS_FILE,
   getReceiptsPath,
   recordReceipt,
@@ -834,6 +1000,11 @@ module.exports = {
   resolveReceiptSigningKey,
   signReceiptDigest,
   verifyReceiptSignature,
+  verifyReceiptChain,
+  receiptEntryHash,
+  currentPolicyVersion,
+  canonicalJson,
+  CHAIN_GENESIS,
   hashOneShotAction,
   evaluateOneShotControl,
   evaluateOneShotGoalDone,
