@@ -1,5 +1,6 @@
 {
   "name": "thumbgate",
+  "displayName": "ThumbGate",
   "description": "Pre-action checks for AI coding agents. Turn a thumbs-down into a prevention rule, list your rules and what was blocked, and check your setup, through the hosted ThumbGate server.",
   "version": "1.50.1",
   "author": {
@@ -10,6 +11,9 @@
   "repository": "https://github.com/IgorGanapolsky/ThumbGate",
   "license": "MIT",
   "privacyPolicyUrl": "https://thumbgate.ai/privacy",
+  "termsOfServiceUrl": "https://thumbgate.ai/terms",
+  "supportUrl": "https://thumbgate.ai/support",
+  "documentationUrl": "https://thumbgate.ai/guide",
   "keywords": [
     "guardrails",
     "pretooluse",
