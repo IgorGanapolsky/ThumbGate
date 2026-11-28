@@ -90,3 +90,22 @@ test('the Python helper builds hooks without the SDK installed', { skip: spawnSy
   assert.equal(r.status, 0, r.stderr);
   assert.match(r.stdout, /PostToolUse.*PreToolUse/);
 });
+
+test('the Python helper fails closed on a crashed or hung bridge when asked, and leaves no process behind', { skip: spawnSync('python3', ['--version']).status !== 0 }, () => {
+  const code = [
+    'import asyncio, os, sys, subprocess',
+    'sys.path.insert(0, sys.argv[1])',
+    'import thumbgate_agent_sdk as t',
+    'os.environ["THUMBGATE_SDK_FAIL_CLOSED"] = "1"',
+    'os.environ["THUMBGATE_SDK_BRIDGE"] = "python3 -c \'import sys; sys.exit(1)\'"',
+    'print(asyncio.run(t._bridge("PreToolUse", {}))["hookSpecificOutput"]["permissionDecision"])',
+    'os.environ["THUMBGATE_SDK_BRIDGE"] = "sleep 37.5"',
+    'print(asyncio.run(t._bridge("PreToolUse", {}, timeout=0.3))["hookSpecificOutput"]["permissionDecision"])',
+    'print(subprocess.run(["pgrep", "-fc", "^sleep 37.5$"], capture_output=True, text=True).stdout.strip() or "0")',
+    'del os.environ["THUMBGATE_SDK_FAIL_CLOSED"]',
+    'print(asyncio.run(t._bridge("PreToolUse", {})))',
+  ].join('\n');
+  const r = spawnSync('python3', ['-I', '-c', code, ADAPTER], { encoding: 'utf8' });
+  assert.equal(r.status, 0, r.stderr);
+  assert.deepEqual(r.stdout.trim().split('\n'), ['deny', 'deny', '0', '{}']);
+});

@@ -27,23 +27,55 @@ except Exception:  # pragma: no cover
 DEFAULT_BRIDGE = "npx --yes thumbgate sdk-bridge"
 
 
+class BridgeError(RuntimeError):
+    """The Node bridge did not give a usable answer."""
+
+
+def _fail(event):
+    if os.environ.get("THUMBGATE_SDK_FAIL_CLOSED") == "1" and event == "PreToolUse":
+        return {"hookSpecificOutput": {"hookEventName": "PreToolUse", "permissionDecision": "deny",
+                                       "permissionDecisionReason": "ThumbGate check could not run"}}
+    return {}
+
+
 async def _bridge(event, hook_input, options=None, timeout=30):
     command = shlex.split(os.environ.get("THUMBGATE_SDK_BRIDGE", DEFAULT_BRIDGE))
     payload = json.dumps({"event": event, "input": hook_input, "options": options or {}}, default=str)
+    proc = None
     try:
         proc = await asyncio.create_subprocess_exec(
             *command,
             stdin=asyncio.subprocess.PIPE,
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.DEVNULL,
+            start_new_session=True,
         )
         out, _ = await asyncio.wait_for(proc.communicate(payload.encode()), timeout)
-        return json.loads(out.decode() or "{}")
-    except Exception:
-        if os.environ.get("THUMBGATE_SDK_FAIL_CLOSED") == "1" and event == "PreToolUse":
-            return {"hookSpecificOutput": {"hookEventName": "PreToolUse", "permissionDecision": "deny",
-                                           "permissionDecisionReason": "ThumbGate check could not run"}}
-        return {}
+        text = out.decode().strip()
+        # A failed or silent bridge is a failure, not an allow: the bridge always prints a JSON object.
+        if proc.returncode != 0 or not text:
+            raise BridgeError(f"bridge exited {proc.returncode} with {'no' if not text else 'some'} output")
+        result = json.loads(text)
+        if not isinstance(result, dict):
+            raise BridgeError("bridge output is not a JSON object")
+        return result
+    except BaseException as error:
+        if proc is not None and proc.returncode is None:
+            # Stop the bridge and anything it started (npx spawns node), then reap it.
+            try:
+                os.killpg(proc.pid, 9)
+            except Exception:
+                try:
+                    proc.kill()
+                except Exception:
+                    pass
+            try:
+                await asyncio.wait_for(proc.wait(), 5)
+            except Exception:
+                pass
+        if isinstance(error, asyncio.CancelledError):
+            raise
+        return _fail(event)
 
 
 def thumbgate_hooks(matcher=None, injection="warn", secrets=True, post=True):
