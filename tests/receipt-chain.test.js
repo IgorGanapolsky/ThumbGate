@@ -300,3 +300,12 @@ test('a key created while the process runs is used for the next receipt', () => 
     assert.equal(receipts.loadEd25519Signer().keyId, key.keyId);
   } finally { process.env.THUMBGATE_RECEIPT_ED25519_KEY = prev; }
 });
+
+test('--require-signed rejects unchained lines too, so stripping the chain and signatures does not pass', () => {
+  const file = freshLedger('stripped');
+  fs.writeFileSync(file, `${JSON.stringify({ actionId: 'edited', decision: 'allow' })}\n`);
+  const { publicKey } = crypto.generateKeyPairSync('ed25519');
+  const pem = publicKey.export({ type: 'spki', format: 'pem' });
+  assert.equal(receipts.verifyReceiptChain({ file, publicKey: pem }).ok, true, 'legacy lines still pass without strict mode');
+  assert.deepEqual(receipts.verifyReceiptChain({ file, publicKey: pem, requireSigned: true }).errors.map((e) => [e.line, e.reason]), [[1, 'unsigned']]);
+});

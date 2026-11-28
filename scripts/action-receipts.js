@@ -486,6 +486,8 @@ function verifyReceiptChain(options = {}) {
     if (!entry || !entry.entryHash) {
       if (!entry) errors.push({ line: lineNo, reason: 'malformed' });
       else if (chained > 0) errors.push({ line: lineNo, reason: 'unchained_after_chain_start' });
+      // A line with no hash carries no signature: strict mode must not let a stripped or pre-chain line through.
+      if (entry && options.requireSigned) errors.push({ line: lineNo, reason: 'unsigned' });
       legacy += 1;
       prev = { seq: 0, hash: sha256Hex(line) };
       return;
