@@ -112,7 +112,8 @@ function commandKey(command) {
   const program = tokens[0];
   const sub = tokens[1];
   if (!sub) return program;
-  return sub.startsWith('-') ? tokens.join(' ') : `${program} ${sub}`;
+  // The original string, not re-joined tokens: quoted whitespace is part of the argument.
+  return sub.startsWith('-') ? String(command).trim() : `${program} ${sub}`;
 }
 
 function keyForCall(toolName, toolInput) {

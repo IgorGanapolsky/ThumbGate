@@ -131,6 +131,9 @@ test('an approved flag never covers a different flag on the same program', () =>
   assert.equal(decision(auto.applyAutoApprove(allowed, bash('ls -la'), opts)), 'allow');
   assert.equal(auto.applyAutoApprove(allowed, bash('python -m attacker'), opts), allowed);
   assert.equal(auto.applyAutoApprove(allowed, bash('ls -la /etc'), opts), allowed);
+  const quoted = setup([up('Bash', "bash -l './safe  script.sh'")], { enabled: true });
+  assert.equal(decision(auto.applyAutoApprove(allowed, bash("bash -l './safe  script.sh'"), quoted)), 'allow');
+  assert.equal(auto.applyAutoApprove(allowed, bash("bash -l './safe script.sh'"), quoted), allowed);
 });
 
 test('--min must be a whole number of 1 or more, or nothing changes', () => {
