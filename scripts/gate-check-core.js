@@ -45,7 +45,10 @@ async function evaluateGateCheck(input = {}, options = {}) {
     });
   }
 
-  return gatesEngine.runAsync(input);
+  const output = await gatesEngine.runAsync(input);
+  // Opt-in (`thumbgate auto-approve on`): a call you gave a thumbs-up skips the permission prompt.
+  // Only ever upgrades a call every check above already let through.
+  return require('./thumbs-up-auto-approve').applyAutoApprove(output, input, { env });
 }
 
 module.exports = { evaluateGateCheck };

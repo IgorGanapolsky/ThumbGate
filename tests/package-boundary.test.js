@@ -905,8 +905,10 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // policy version and `thumbgate receipts verify` add ~8 KB to scripts/action-receipts.js. Measured 11,229,276.
   // 11.24 -> 11.25 MB (2026-11-28, PR #5371): main reached ~11.239 MB after the Ed25519 receipts (#5368) and the
   // 1.54.0 CHANGELOG; the doctor hook-runtime check and global-install refresh add ~2 KB. Measured 11,241,683.
-  manifest.unpackedSize <= 11_250_000,
-  `npm package should stay <= 11.25 MB unpacked, got ${manifest.unpackedSize}`
+  // 11.25 -> 11.27 MB (2026-11-28, PR #5373): scripts/thumbs-up-auto-approve.js (~13 KB), opt-in auto-approvals
+  // from thumbs-up for a prospect who asked for faster approvals. Measured 11,250,329.
+  manifest.unpackedSize <= 11_270_000,
+  `npm package should stay <= 11.27 MB unpacked, got ${manifest.unpackedSize}`
 );
 
   for (const file of requiredRuntimeFiles) {
