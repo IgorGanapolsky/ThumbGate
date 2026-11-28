@@ -1,6 +1,6 @@
 {
   "name": "usage-bar",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Live token, cost, context and weekly-limit band plus the ThumbGate line, above the prompt",
   "types": "./types/index.d.ts",
   "license": "MIT",

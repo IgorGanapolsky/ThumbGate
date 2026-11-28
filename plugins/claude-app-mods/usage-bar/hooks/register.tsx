@@ -1,7 +1,7 @@
 import { atom, read, update } from 'claude-code'
 import type { Register } from 'claude-code'
 
-import type { ModelTokens, ThumbSnap, UsageSnap } from '../types'
+import type { BandMode, ModelTokens, ThumbSnap, UsageSnap } from '../types'
 
 const usage = atom({ plugin: 'usage-bar', key: 'usage' } as const, null, {
   shape: 'usage-1',
@@ -204,14 +204,15 @@ async function todayOnMachine($: any, now: number): Promise<UsageSnap['today']> 
   }
   let tokens = 0
   let usd = 0
-  const perModel = new Map<string, number>()
+  const perModel = new Map<string, { tokens: number; usd: number }>()
   for (const r of all.values()) {
     tokens += r.tokens
     usd += r.usd
-    perModel.set(r.model, (perModel.get(r.model) ?? 0) + r.tokens)
+    const m = perModel.get(r.model) ?? { tokens: 0, usd: 0 }
+    perModel.set(r.model, { tokens: m.tokens + r.tokens, usd: m.usd + r.usd })
   }
   const models = [...perModel.entries()]
-    .map(([model, t]) => ({ model, tokens: t }))
+    .map(([model, m]) => ({ model, tokens: m.tokens, usd: m.usd }))
     .sort((a, b) => b.tokens - a.tokens)
   return { tokens, usd, models, files: files.length }
 }
@@ -291,23 +292,54 @@ async function refreshThumbs($: any): Promise<void> {
 
 }
 
-export const register: Register = on => {
-  let started = false
+let started = false
 
-  const safe = (p: Promise<void>) => p.catch(() => undefined)
+function safe(p: Promise<void>): void {
+  p.catch(() => undefined)
+}
+
+// Read once at once, then every minute (tokens) and every 5 minutes (thumbs).
+function start($: any): void {
+  if (started) return
+  started = true
+  safe(refreshUsage($))
+  safe(refreshThumbs($))
+  $.clock.every(60_000, () => safe(refreshUsage($)))
+  $.clock.every(5 * 60_000, () => safe(refreshThumbs($)))
+}
+
+const PANE = 'usage'
+const MODES: readonly BandMode[] = ['full', 'compact', 'off']
+
+async function modeOf($: any): Promise<BandMode> {
+  try {
+    const m = await $.store.get('mode')
+    return MODES.includes(m as BandMode) ? (m as BandMode) : 'full'
+  } catch {
+    return 'full'
+  }
+}
+
+export const register: Register = on => {
 
   on('session.start', async ($, e, next) => {
     const result = await next(e)
-    if (!started) {
-      started = true
-      void safe(refreshUsage($))
-      void safe(refreshThumbs($))
-      $.clock.every(60_000, () => void safe(refreshUsage($)))
-      $.clock.every(5 * 60_000, () => void safe(refreshThumbs($)))
-    }
+    start($)
     await $.command.register({
       name: 'usage-bar-refresh',
       description: 'Re-read token usage and ThumbGate stats now',
+      immediate: true,
+    })
+    await $.command.register({
+      name: 'usage',
+      description: "Open today's tokens and cost by model, limits and ThumbGate in a pane",
+      immediate: true,
+    })
+    await $.command.register({
+      name: 'usage-bar',
+      description: 'Set the band above the prompt: full, compact or off',
+      argumentHint: '[full|compact|off]',
+      immediate: true,
     })
     return result
   })
@@ -318,28 +350,40 @@ export const register: Register = on => {
     return { text: 'Usage bar refreshed.' }
   })
 
+  on('command.run', { command: 'usage' }, async $ => {
+    start($)
+    const opened = await $.ui.open({ id: PANE, title: 'Usage', closeOnEscape: true })
+    return { text: opened.isPlaced ? 'Usage pane open.' : `Usage pane waiting: ${opened.reason}` }
+  })
+
+  on('command.run', { command: 'usage-bar' }, async ($, e) => {
+    const want = String(e.args ?? '').trim().toLowerCase()
+    if (!MODES.includes(want as BandMode)) {
+      return { text: `Band is ${await modeOf($)}. Use /usage-bar full, compact or off.` }
+    }
+    await $.store.set('mode', want)
+    $.ui.invalidate('ui.render')
+    return { text: `Band set to ${want}.` }
+  })
+
   on('turn.complete', async ($, e, next) => {
     const result = await next(e)
-    if (!e.agentId) void safe(refreshUsage($))
+    if (!e.agentId) safe(refreshUsage($))
     return result
   })
 
   on('session.measure', async ($, e, next) => {
     const result = await next(e)
-    void safe(refreshUsage($))
+    safe(refreshUsage($))
     return result
   })
 
   on('ui.render', { component: 'AbovePrompt' }, async ($, e, next) => {
     // The terminal already has the person's own status line.
     if (e.props.hasSurvey || e.surface === 'terminal') return next(e)
-    if (!started) {
-      started = true
-      void safe(refreshUsage($))
-      void safe(refreshThumbs($))
-      $.clock.every(60_000, () => void safe(refreshUsage($)))
-      $.clock.every(5 * 60_000, () => void safe(refreshThumbs($)))
-    }
+    start($)
+    const mode = await modeOf($)
+    if (mode === 'off') return next(e)
     const u = await read($, usage)
     const t = await read($, thumbs)
     const { Box, Text, Link } = $.ui.resolve(e)
@@ -401,6 +445,17 @@ export const register: Register = on => {
       tg.push(t.source)
     }
 
+    // Narrow windows and compact mode get one line: today's cost, tokens,
+    // weekly limit and the thumbs.
+    if (mode === 'compact' || e.props.bodyColumns < 90) {
+      const bits: string[] = []
+      if (u?.today) bits.push(`Today $${u.today.usd.toFixed(2)} · ${compact(u.today.tokens)} tokens`)
+      else if (u) bits.push(`${compact(u.tokens)} tokens`)
+      if (u?.weeklyPercent != null) bits.push(`weekly ${Math.round(u.weeklyPercent)}%`)
+      if (t && t.up !== null && t.down !== null) bits.push(`ThumbGate ${t.up}👍 ${t.down}👎`)
+      return <Text dimColor>{bits.join(' · ') || 'Reading token usage…'}</Text>
+    }
+
     return (
       <Box flexDirection="column">
         <Text dimColor>{line1.join('')}</Text>
@@ -409,6 +464,72 @@ export const register: Register = on => {
           <Text color="cyan">{tg.join(' · ')} · </Text>
           <Link href={DASHBOARD} label="Dashboard" />
         </Box>
+      </Box>
+    )
+  })
+
+  on('ui.render', { component: 'Pane', requestId: PANE }, async ($, e) => {
+    start($)
+    const u = await read($, usage)
+    const t = await read($, thumbs)
+    const { Box, Text, Link } = $.ui.resolve(e)
+    const usd = (n: number) => `$${n.toFixed(2)}`
+    const thumbsLine =
+      t && t.up !== null && t.down !== null
+        ? `${t.up}👍 ${t.down}👎${t.trend ? ` (${t.trend})` : ''}`
+        : (t?.source ?? 'ThumbGate: reading…')
+
+    // The desktop's minimized pane: one glance, no clicks.
+    if (e.props.placement === 'widget') {
+      return (
+        <Box flexDirection="column">
+          <Text bold>{u?.today ? `Today ${usd(u.today.usd)}` : 'Today …'}</Text>
+          <Text dimColor>{u?.today ? `${compact(u.today.tokens)} tokens` : ''}</Text>
+          <Text color="cyan">{thumbsLine}</Text>
+        </Box>
+      )
+    }
+
+    const rows: string[] = []
+    if (u?.today) {
+      rows.push(`Today on this machine (since midnight ET): ${compact(u.today.tokens)} tokens, ${usd(u.today.usd)} at API prices`)
+      for (const m of u.today.models) {
+        rows.push(`  ${m.model.padEnd(7)} ${compact(m.tokens).padStart(6)} tokens  ${usd(m.usd ?? 0).padStart(8)}`)
+      }
+      rows.push(`  from ${u.today.files} transcript file${u.today.files === 1 ? '' : 's'}; your plan is flat-rate, so this is not a bill`)
+    }
+    if (u) {
+      rows.push(`This session: ${compact(u.tokens)} tokens${u.usd !== null ? `, ${usd(u.usd)}` : ''}`)
+      if (u.contextPercent !== null) {
+        rows.push(`Context: ${u.contextPercent}% (${compact(u.contextTokens ?? 0)} of ${compact(u.contextWindow)})`)
+      }
+      rows.push(
+        u.weeklyPercent !== null
+          ? `Weekly limit: ${Math.round(u.weeklyPercent)}%${u.weeklyResetsAt ? `, resets ${eastern(Date.parse(u.weeklyResetsAt), true)} ET` : ''}`
+          : 'Weekly limit: no reading yet',
+      )
+      if (u.fiveHourPercent !== null) rows.push(`5-hour limit: ${Math.round(u.fiveHourPercent)}%`)
+      rows.push(`Read ${eastern(u.readAt, false)} ET, every minute`)
+    } else {
+      rows.push('Reading token usage…')
+    }
+
+    return (
+      <Box flexDirection="column">
+        {rows.map((r, i) => (
+          <Text key={String(i)} dimColor={i > 0 && r.startsWith('  ')}>
+            {r}
+          </Text>
+        ))}
+        <Box>
+          <Text color="cyan">
+            ThumbGate {t?.version ? `v${t.version} · ` : ''}
+            {thumbsLine}
+            {t && t.up !== null ? ` · ${t.source}` : ''} ·{' '}
+          </Text>
+          <Link href={DASHBOARD} label="Dashboard" />
+        </Box>
+        <Text dimColor>/usage-bar full | compact | off sets the band above the prompt</Text>
       </Box>
     )
   })
