@@ -21,3 +21,9 @@ for (const page of ['public/index.html', 'public/pricing.html']) {
     assert.doesNotMatch(footer, /\/go\/|redirect/i, 'plain links, no tracking redirects');
   });
 }
+
+test('/pricing answers "does blocking need a cloud service?" with the README claim it rests on', () => {
+  const section = read('public/pricing.html').split('<section id="free-vs-pro">')[1].split('</section>')[0];
+  assert.match(section, /runs locally, with no cloud service needed for the enforcement path/);
+  assert.match(read('README.md'), /no cloud required for the enforcement path/, 'pricing claim must stay backed by the README');
+});

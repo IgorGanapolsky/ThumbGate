@@ -5129,6 +5129,9 @@ switch (COMMAND) {
   case 'ralph':
     process.exitCode = require(path.join(PKG_ROOT, 'scripts', 'ralph-init')).runCli(process.argv.slice(3));
     break;
+  case 'receipts':
+    process.exitCode = require(path.join(PKG_ROOT, 'scripts', 'action-receipts')).runReceiptsCli(process.argv.slice(3));
+    break;
   case 'rule-test':
     process.exitCode = require(path.join(PKG_ROOT, 'scripts', 'rule-mutation')).runCli(process.argv.slice(3));
     break;

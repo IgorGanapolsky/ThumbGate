@@ -218,6 +218,11 @@ function normalizeReceipt(params = {}) {
     }
   }
 
+  // Which rule made the decision, and which policy it came from, so a receipt can be
+  // matched to the rule set that was live at the time.
+  const ruleId = safeString(params.ruleId || params.gateId || '') || null;
+  const policy = (params.policy && typeof params.policy === 'object') ? params.policy : currentPolicyVersion();
+
   return {
     actionId: safeString(params.actionId) || null,
     toolName,
@@ -231,7 +236,200 @@ function normalizeReceipt(params = {}) {
     signature,
     outcome,
     recordedAt,
+    ruleId,
+    policy,
   };
+}
+
+// ---------------------------------------------------------------------------
+// Policy version and hash chain
+// ---------------------------------------------------------------------------
+
+const CHAIN_GENESIS = 'GENESIS';
+
+function sha256Hex(text) {
+  return crypto.createHash('sha256').update(text).digest('hex');
+}
+
+/** JSON with sorted object keys, so the same receipt always hashes the same. */
+function canonicalJson(value) {
+  if (value === null || typeof value !== 'object') return JSON.stringify(value === undefined ? null : value);
+  if (Array.isArray(value)) return `[${value.map(canonicalJson).join(',')}]`;
+  const keys = Object.keys(value).filter((k) => value[k] !== undefined).sort();
+  return `{${keys.map((k) => `${JSON.stringify(k)}:${canonicalJson(value[k])}`).join(',')}}`;
+}
+
+/**
+ * The rule set in force: the ThumbGate version plus a hash of every gate the engine would load
+ * (defaults, learned gates, extra gates). Two receipts with the same policyHash were decided by the same rules.
+ * Computed on every receipt, not cached: the gates differ per tenant and change when a rule is learned.
+ * Null when the gates cannot be loaded.
+ */
+function currentPolicyVersion() {
+  try {
+    const { version } = require('../package.json');
+    const config = require('./gates-engine').loadGatesConfig();
+    const gates = Array.isArray(config && config.gates) ? config.gates : [];
+    return { thumbgateVersion: version, policyHash: sha256Hex(canonicalJson(gates)), gateCount: gates.length };
+  } catch {
+    return null;
+  }
+}
+
+/** Hash of a chained entry: everything except the hash itself and any detached signature. */
+function receiptEntryHash(entry) {
+  const { entryHash, ed25519Signature, ...rest } = entry || {}; // eslint-disable-line no-unused-vars
+  return sha256Hex(canonicalJson(rest));
+}
+
+/** Last non-empty line of the ledger, read from the end so a large ledger is not read whole. */
+function readLastLine(filePath) {
+  let fd;
+  try {
+    fd = fs.openSync(filePath, 'r');
+    const size = fs.fstatSync(fd).size;
+    let chunk = 64 * 1024;
+    while (true) {
+      const start = Math.max(0, size - chunk);
+      const buf = Buffer.alloc(size - start);
+      fs.readSync(fd, buf, 0, buf.length, start);
+      const lines = buf.toString('utf8').split('\n').filter((l) => l.trim());
+      if (lines.length > (start === 0 ? 0 : 1) || start === 0) return lines.length ? lines[lines.length - 1] : null;
+      chunk *= 4;
+    }
+  } catch {
+    return null;
+  } finally {
+    if (fd !== undefined) try { fs.closeSync(fd); } catch { /* closed */ }
+  }
+}
+
+/** Where the next entry links to: the last entry's hash, the hash of a pre-chain line, or GENESIS. */
+function chainHead(filePath) {
+  const last = readLastLine(filePath);
+  if (!last) return { seq: 0, hash: CHAIN_GENESIS };
+  try {
+    const parsed = JSON.parse(last);
+    if (parsed && parsed.entryHash) return { seq: Number(parsed.seq) || 0, hash: parsed.entryHash };
+  } catch { /* malformed: link to its raw bytes */ }
+  return { seq: 0, hash: sha256Hex(last.trim()) };
+}
+
+// Two writers appending at once would both link to the same head, so appends hold an exclusive lock file. The lock
+// appears atomically with its owner already in it (pid + random token, hard-linked from a temp file), so no writer
+// ever sees an empty or half-written lock. A lock whose owner process is gone is cleared only by the one writer that
+// holds the reclaim guard for that owner, and only after re-reading that the lock still names the same dead owner, so a live writer's
+// fresh lock is never removed. A writer removes its own lock only while it still holds its token. If the lock can't
+// be had in time, the receipt is not written and the caller gets an error, rather than an append that forks the chain.
+const LOCK_WAIT_MS = Number(process.env.THUMBGATE_RECEIPT_LOCK_WAIT_MS) || 5000;
+
+function readOwner(lock) {
+  try { return fs.readFileSync(lock, 'utf8'); } catch (error) { return error.code === 'ENOENT' ? null : undefined; }
+}
+
+function ownerAlive(owner) {
+  const pid = Number(String(owner).split(':')[0]);
+  if (!Number.isInteger(pid) || pid <= 0) return true; // can't tell: never take it over
+  try { process.kill(pid, 0); return true; } catch (error) { return error.code !== 'ESRCH'; }
+}
+
+/** Create `target` holding `content`, or return false if it already exists. Atomic: link fails on EEXIST. */
+function createOwnedFile(target, content) {
+  const tmp = `${target}.${crypto.randomBytes(6).toString('hex')}.tmp`;
+  fs.writeFileSync(tmp, content, { flag: 'wx' });
+  try {
+    fs.linkSync(tmp, target);
+    return true;
+  } catch (error) {
+    if (error.code === 'EEXIST') return false;
+    throw error;
+  } finally {
+    fs.rmSync(tmp, { force: true });
+  }
+}
+
+/**
+ * Remove `target` only if it still names `deadOwner`. Returns true when it was cleared. Reclaimers of the same dead
+ * owner serialize on a guard file named after that owner; the guard holder re-reads `target` before removing it, so
+ * a lock that a live writer has since created is never touched. A guard left by a reclaimer that died is itself
+ * reclaimed the same way (its own guard is named after the dead reclaimer), so a crash at any step can't wedge writes.
+ */
+function reclaimStaleLock(target, deadOwner, token, depth = 0) {
+  if (depth > 8) return false;
+  const guard = `${target}.reclaim-${sha256Hex(String(deadOwner)).slice(0, 16)}`;
+  if (!createOwnedFile(guard, token)) {
+    const guardOwner = readOwner(guard);
+    if (guardOwner && !ownerAlive(guardOwner)) reclaimStaleLock(guard, guardOwner, token, depth + 1);
+    return false; // a live reclaimer is at work, or we just cleared a dead one: retry
+  }
+  try {
+    if (readOwner(target) !== deadOwner) return false; // already replaced by a live writer: leave it
+    fs.rmSync(target, { force: true });
+    return true;
+  } finally {
+    if (readOwner(guard) === token) fs.rmSync(guard, { force: true });
+  }
+}
+
+function withLedgerLock(filePath, fn) {
+  const lock = `${filePath}.lock`;
+  const token = `${process.pid}:${crypto.randomBytes(8).toString('hex')}`;
+  const deadline = Date.now() + LOCK_WAIT_MS;
+  while (!createOwnedFile(lock, token)) {
+    const owner = readOwner(lock);
+    if (owner === null) continue; // released between our attempt and the read
+    if (owner !== undefined && !ownerAlive(owner) && reclaimStaleLock(lock, owner, token)) continue;
+    if (Date.now() > deadline) throw new Error(`Receipt ledger is locked by another writer: ${lock}`);
+    Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 20);
+  }
+  try {
+    return fn();
+  } finally {
+    if (readOwner(lock) === token) fs.rmSync(lock, { force: true });
+  }
+}
+
+/**
+ * Check the ledger. Each chained entry must hash to its entryHash (not edited) and point at the entry before it
+ * (nothing deleted, inserted or reordered). Lines written before the chain existed are counted as legacy.
+ * Cutting entries off the end is not visible from the file alone: compare `head` and `chained` with a value
+ * recorded elsewhere.
+ */
+function verifyReceiptChain(options = {}) {
+  const filePath = options.file || getReceiptsPath(options);
+  let raw = '';
+  try {
+    raw = fs.readFileSync(filePath, 'utf8');
+  } catch (error) {
+    // No default ledger yet is an empty, valid ledger. A file the caller named that isn't there, or anything else
+    // (a directory, no permission, an I/O error), means nothing was checked.
+    const missing = error && error.code === 'ENOENT' && !options.file;
+    return { ok: missing, file: filePath, total: 0, chained: 0, legacy: 0, head: CHAIN_GENESIS, errors: missing ? [] : [{ line: 0, reason: error && error.code === 'ENOENT' ? 'missing' : `unreadable: ${error && error.code}` }] };
+  }
+  const lines = raw.split('\n').map((l) => l.trim()).filter(Boolean);
+  const errors = [];
+  let prev = { seq: 0, hash: CHAIN_GENESIS };
+  let chained = 0;
+  let legacy = 0;
+  lines.forEach((line, index) => {
+    const lineNo = index + 1;
+    let entry = null;
+    try { entry = JSON.parse(line); } catch { /* handled below */ }
+    if (!entry || !entry.entryHash) {
+      if (!entry) errors.push({ line: lineNo, reason: 'malformed' });
+      else if (chained > 0) errors.push({ line: lineNo, reason: 'unchained_after_chain_start' });
+      legacy += 1;
+      prev = { seq: 0, hash: sha256Hex(line) };
+      return;
+    }
+    chained += 1;
+    if (receiptEntryHash(entry) !== entry.entryHash) errors.push({ line: lineNo, reason: 'entry_edited' });
+    if (entry.prevHash !== prev.hash) errors.push({ line: lineNo, reason: 'chain_broken' });
+    // seq starts at 1 after GENESIS or a pre-chain line and goes up by exactly one.
+    if (!Number.isInteger(entry.seq) || entry.seq !== prev.seq + 1) errors.push({ line: lineNo, reason: 'seq_gap' });
+    prev = { seq: Number.isInteger(entry.seq) ? entry.seq : prev.seq + 1, hash: entry.entryHash };
+  });
+  return { ok: errors.length === 0, file: filePath, total: lines.length, chained, legacy, head: prev.hash, errors };
 }
 
 /**
@@ -241,11 +439,16 @@ function normalizeReceipt(params = {}) {
  * @returns {object} The stored receipt record (with recorded:true).
  */
 function recordReceipt(params = {}, options = {}) {
-  const receipt = normalizeReceipt(params);
+  const base = normalizeReceipt(params);
   const receiptsPath = getReceiptsPath(options);
   ensureDirFor(receiptsPath);
-  fs.appendFileSync(receiptsPath, `${JSON.stringify(receipt)}\n`, 'utf8');
-  return { recorded: true, ...receipt };
+  return withLedgerLock(receiptsPath, () => {
+    const head = chainHead(receiptsPath);
+    const receipt = { ...base, seq: head.seq + 1, prevHash: head.hash };
+    receipt.entryHash = receiptEntryHash(receipt);
+    fs.appendFileSync(receiptsPath, `${JSON.stringify(receipt)}\n`, 'utf8');
+    return { recorded: true, ...receipt };
+  });
 }
 
 /**
@@ -819,7 +1022,28 @@ function evaluateOneShotPretool(toolName, toolInput) {
   return null;
 }
 
+/** `thumbgate receipts verify [--file <path>] [--json]`: exit 0 when the ledger is intact, 1 when it is not. */
+function runReceiptsCli(argv = []) {
+  const [sub, ...rest] = argv;
+  const flag = (name) => { const i = rest.indexOf(name); return i === -1 ? null : (rest[i + 1] || ''); };
+  if (sub !== 'verify') {
+    console.log('Usage: thumbgate receipts verify [--file <action-receipts.jsonl>] [--json]');
+    return sub ? 2 : 0;
+  }
+  const result = verifyReceiptChain(flag('--file') ? { file: flag('--file') } : {});
+  if (rest.includes('--json')) {
+    console.log(JSON.stringify(result, null, 2));
+  } else {
+    console.log(`${result.ok ? 'VALID' : 'INVALID'}: ${result.file}`);
+    console.log(`  ${result.chained} chained receipt(s), ${result.legacy} from before the chain; head ${result.head}`);
+    for (const e of result.errors.slice(0, 20)) console.log(`  line ${e.line}: ${e.reason}`);
+    if (result.ok && result.chained) console.log('  Keep the head hash somewhere else: it shows later whether entries were cut off the end.');
+  }
+  return result.ok ? 0 : 1;
+}
+
 module.exports = {
+  runReceiptsCli,
   RECEIPTS_FILE,
   getReceiptsPath,
   recordReceipt,
@@ -834,6 +1058,12 @@ module.exports = {
   resolveReceiptSigningKey,
   signReceiptDigest,
   verifyReceiptSignature,
+  verifyReceiptChain,
+  reclaimStaleLock,
+  receiptEntryHash,
+  currentPolicyVersion,
+  canonicalJson,
+  CHAIN_GENESIS,
   hashOneShotAction,
   evaluateOneShotControl,
   evaluateOneShotGoalDone,
