@@ -1495,6 +1495,15 @@ $ ... "node scripts/migrate.js --env prod"
 <script>
   (function () {
     var CMD = 'npx thumbgate init --agent claude';
+    // A visitor from a Bluesky link gets the same command with a label so the install can be counted.
+    // The VAR=value form is not valid in Windows shells, so Windows keeps the plain command.
+    if (new URLSearchParams(location.search).get('utm_source') === 'bluesky' && !/Win/.test(navigator.userAgent)) {
+      var label = 'THUMBGATE_INSTALL_SOURCE=bluesky ';
+      CMD = label + CMD;
+      document.querySelectorAll('pre.cc-cmd code:not([data-agent-prompt])').forEach(function (code) {
+        code.textContent = code.textContent.replace('npx thumbgate init', label + 'npx thumbgate init');
+      });
+    }
     function legacyCopy() {
       var ta = document.createElement('textarea');
       ta.value = CMD;
