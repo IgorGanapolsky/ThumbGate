@@ -315,47 +315,67 @@ function chainHead(filePath) {
   return { seq: 0, hash: sha256Hex(last.trim()) };
 }
 
-// Two writers appending at once would both link to the same head, so appends hold an exclusive lock file. The file
-// names its owner (pid + a random token): a lock is taken over only when its owner process no longer exists, and a
-// writer removes the lock only while it still holds its own token. If the lock can't be had in time, the receipt is
-// not written and the caller gets an error, rather than an append that forks the chain.
+// Two writers appending at once would both link to the same head, so appends hold an exclusive lock file. The lock
+// appears atomically with its owner already in it (pid + random token, hard-linked from a temp file), so no writer
+// ever sees an empty or half-written lock. A lock whose owner process is gone is cleared only by the one writer that
+// holds `<lock>.reclaim`, and only after re-reading that the lock still names the same dead owner, so a live writer's
+// fresh lock is never removed. A writer removes its own lock only while it still holds its token. If the lock can't
+// be had in time, the receipt is not written and the caller gets an error, rather than an append that forks the chain.
 const LOCK_WAIT_MS = Number(process.env.THUMBGATE_RECEIPT_LOCK_WAIT_MS) || 5000;
 
-function lockOwnerGone(lock) {
-  let owner;
-  try { owner = fs.readFileSync(lock, 'utf8'); } catch (error) { return error.code === 'ENOENT'; }
+function readOwner(lock) {
+  try { return fs.readFileSync(lock, 'utf8'); } catch (error) { return error.code === 'ENOENT' ? null : undefined; }
+}
+
+function ownerAlive(owner) {
   const pid = Number(String(owner).split(':')[0]);
-  if (!Number.isInteger(pid) || pid <= 0) {
-    // Unreadable owner: treat it as abandoned only once it is old enough that no live writer can still be in it.
-    try { return Date.now() - fs.statSync(lock).mtimeMs > 60000; } catch { return true; }
+  if (!Number.isInteger(pid) || pid <= 0) return true; // can't tell: never take it over
+  try { process.kill(pid, 0); return true; } catch (error) { return error.code !== 'ESRCH'; }
+}
+
+/** Create `target` holding `content`, or return false if it already exists. Atomic: link fails on EEXIST. */
+function createOwnedFile(target, content) {
+  const tmp = `${target}.${crypto.randomBytes(6).toString('hex')}.tmp`;
+  fs.writeFileSync(tmp, content, { flag: 'wx' });
+  try {
+    fs.linkSync(tmp, target);
+    return true;
+  } catch (error) {
+    if (error.code === 'EEXIST') return false;
+    throw error;
+  } finally {
+    fs.rmSync(tmp, { force: true });
   }
-  try { process.kill(pid, 0); return false; } catch (error) { return error.code === 'ESRCH'; }
+}
+
+/** Remove `lock` only if it still names `deadOwner`. Returns true when the lock was cleared. */
+function reclaimStaleLock(lock, deadOwner, token) {
+  const guard = `${lock}.reclaim`;
+  if (!createOwnedFile(guard, token)) return false; // another writer is reclaiming; wait and retry
+  try {
+    if (readOwner(lock) !== deadOwner) return false; // already replaced by a live writer: leave it
+    fs.rmSync(lock, { force: true });
+    return true;
+  } finally {
+    if (readOwner(guard) === token) fs.rmSync(guard, { force: true });
+  }
 }
 
 function withLedgerLock(filePath, fn) {
   const lock = `${filePath}.lock`;
   const token = `${process.pid}:${crypto.randomBytes(8).toString('hex')}`;
   const deadline = Date.now() + LOCK_WAIT_MS;
-  for (;;) {
-    try {
-      fs.writeFileSync(lock, token, { flag: 'wx' });
-      break;
-    } catch (error) {
-      if (error.code !== 'EEXIST') throw error;
-      if (lockOwnerGone(lock)) {
-        // Take over through a rename so two writers can't both remove the stale lock and both proceed.
-        const stale = `${lock}.${token}.stale`;
-        try { fs.renameSync(lock, stale); fs.rmSync(stale, { force: true }); } catch { /* someone else took it */ }
-        continue;
-      }
-      if (Date.now() > deadline) throw new Error(`Receipt ledger is locked by another writer: ${lock}`);
-      Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 20);
-    }
+  while (!createOwnedFile(lock, token)) {
+    const owner = readOwner(lock);
+    if (owner === null) continue; // released between our attempt and the read
+    if (owner !== undefined && !ownerAlive(owner) && reclaimStaleLock(lock, owner, token)) continue;
+    if (Date.now() > deadline) throw new Error(`Receipt ledger is locked by another writer: ${lock}`);
+    Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 20);
   }
   try {
     return fn();
   } finally {
-    try { if (fs.readFileSync(lock, 'utf8') === token) fs.rmSync(lock, { force: true }); } catch { /* already gone */ }
+    if (readOwner(lock) === token) fs.rmSync(lock, { force: true });
   }
 }
 
@@ -371,9 +391,10 @@ function verifyReceiptChain(options = {}) {
   try {
     raw = fs.readFileSync(filePath, 'utf8');
   } catch (error) {
-    // No ledger yet is an empty, valid ledger. Anything else (a directory, no permission, an I/O error) was not checked.
-    const missing = error && error.code === 'ENOENT';
-    return { ok: missing, file: filePath, total: 0, chained: 0, legacy: 0, head: CHAIN_GENESIS, errors: missing ? [] : [{ line: 0, reason: `unreadable: ${error && error.code}` }] };
+    // No default ledger yet is an empty, valid ledger. A file the caller named that isn't there, or anything else
+    // (a directory, no permission, an I/O error), means nothing was checked.
+    const missing = error && error.code === 'ENOENT' && !options.file;
+    return { ok: missing, file: filePath, total: 0, chained: 0, legacy: 0, head: CHAIN_GENESIS, errors: missing ? [] : [{ line: 0, reason: error && error.code === 'ENOENT' ? 'missing' : `unreadable: ${error && error.code}` }] };
   }
   const lines = raw.split('\n').map((l) => l.trim()).filter(Boolean);
   const errors = [];
@@ -1028,6 +1049,7 @@ module.exports = {
   signReceiptDigest,
   verifyReceiptSignature,
   verifyReceiptChain,
+  reclaimStaleLock,
   receiptEntryHash,
   currentPolicyVersion,
   canonicalJson,

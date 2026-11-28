@@ -124,8 +124,13 @@ test('thumbgate receipts verify exits 0 on an intact ledger and 1 on a tampered 
   assert.equal(JSON.parse(bad.stdout).ok, false);
 });
 
-test('a ledger that cannot be read fails verification; a missing one is empty and valid', () => {
-  assert.equal(receipts.verifyReceiptChain({ file: path.join(tmpDir, 'absent.jsonl') }).ok, true);
+test('a ledger that cannot be read fails verification; only a missing default ledger is empty and valid', () => {
+  const missing = receipts.verifyReceiptChain({ file: path.join(tmpDir, 'absent.jsonl') });
+  assert.equal(missing.ok, false, 'a file the caller named must exist');
+  assert.equal(missing.errors[0].reason, 'missing');
+  const prev = process.env.THUMBGATE_FEEDBACK_DIR;
+  process.env.THUMBGATE_FEEDBACK_DIR = fs.mkdtempSync(path.join(tmpDir, 'fresh-'));
+  try { assert.equal(receipts.verifyReceiptChain().ok, true); } finally { process.env.THUMBGATE_FEEDBACK_DIR = prev; }
   const dir = fs.mkdtempSync(path.join(tmpDir, 'is-a-dir-'));
   const result = receipts.verifyReceiptChain({ file: dir });
   assert.equal(result.ok, false);
@@ -180,5 +185,36 @@ test('a lock left by a dead process is taken over; a lock held by a live one sto
     assert.throws(() => receipts.recordReceipt({ actionId: 'blocked' }), /locked by another writer/);
     assert.equal(fs.readFileSync(lock, 'utf8'), `${process.pid}:someone-else`, "another writer's lock is left alone");
     assert.equal(receipts.verifyReceiptChain().chained, 1, 'nothing appended without the lock');
+  } finally { process.env.THUMBGATE_FEEDBACK_DIR = prev; }
+});
+
+test('stale-lock takeover never removes a live writer\'s lock', () => {
+  const prev = process.env.THUMBGATE_FEEDBACK_DIR;
+  const dir = fs.mkdtempSync(path.join(tmpDir, 'race-'));
+  process.env.THUMBGATE_FEEDBACK_DIR = dir;
+  try {
+    const lock = `${receipts.getReceiptsPath()}.lock`;
+    const dead = spawnSync(process.execPath, ['-e', 'process.stdout.write(String(process.pid))'], { encoding: 'utf8' }).stdout;
+    // Writer B saw the dead owner, but writer A already cleared it and took a fresh lock before B acted.
+    fs.writeFileSync(lock, `${process.pid}:writer-a`);
+    assert.equal(receipts.reclaimStaleLock(lock, `${dead}:old`, `${process.pid}:writer-b`), false);
+    assert.equal(fs.readFileSync(lock, 'utf8'), `${process.pid}:writer-a`, "writer A's live lock survives");
+    assert.equal(fs.existsSync(`${lock}.reclaim`), false, 'reclaim guard released');
+
+    // While another writer is mid-reclaim, nobody else may clear the stale lock.
+    fs.writeFileSync(lock, `${dead}:old`);
+    fs.writeFileSync(`${lock}.reclaim`, `${process.pid}:writer-a`);
+    assert.equal(receipts.reclaimStaleLock(lock, `${dead}:old`, `${process.pid}:writer-b`), false);
+    assert.equal(fs.readFileSync(lock, 'utf8'), `${dead}:old`);
+    assert.equal(fs.readFileSync(`${lock}.reclaim`, 'utf8'), `${process.pid}:writer-a`, "the other reclaimer's guard is left alone");
+    fs.rmSync(`${lock}.reclaim`);
+
+    // An old lock with no readable owner is never taken over by age.
+    fs.writeFileSync(lock, '');
+    const old = new Date(Date.now() - 3600 * 1000);
+    fs.utimesSync(lock, old, old);
+    assert.throws(() => receipts.recordReceipt({ actionId: 'empty-lock' }), /locked by another writer/);
+    assert.equal(fs.existsSync(lock), true);
+    assert.equal(receipts.verifyReceiptChain().ok, true, 'nothing appended');
   } finally { process.env.THUMBGATE_FEEDBACK_DIR = prev; }
 });
