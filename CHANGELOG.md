@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.54.1
+
+### Patch Changes
+
+- 2ef3154: `npm i -g thumbgate` now refreshes the hooks' cached copy in `~/.thumbgate/runtime`, and `thumbgate doctor` warns when that copy is older than the installed package.
+- 9246642: The anonymous CLI ping now names how ThumbGate was installed (`npm` or `git-clone`) when no source was set, and the homepage labels the install command for visitors arriving from a Bluesky link. Telemetry opt-outs are unchanged.
+
 ## 1.54.0
 
 ### Minor Changes
