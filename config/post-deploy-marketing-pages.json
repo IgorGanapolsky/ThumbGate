@@ -4,7 +4,7 @@
   "pages": [
     {
       "route": "/",
-      "sentinel": "One thumbs-down stops Claude Code from retrying a mistake.",
+      "sentinel": "ThumbGate blocks risky actions and unchecked claims.",
       "description": "Home page hero (lifeblood \u2014 never regress)"
     },
     {
