@@ -187,9 +187,15 @@ async function checkLatest(dir, { latestVersion = defaultLatestVersion, refresh 
   return { updated: true, from: current, to: latest };
 }
 
+// `--location=project --global=false`: a refresh started from `npm i -g` inherits npm_config_global=true
+// (and npm_config_location=global on npm 9+), which would
+// put the package under <prefix>/lib/node_modules instead of <prefix>/node_modules.
+function defaultInstallArgs(prefix, version) {
+  return ['install', '--prefix', prefix, '--location=project', '--global=false', '--no-save', '--omit=dev', '--no-audit', '--no-fund', '--loglevel=error', `thumbgate@${version}`];
+}
+
 function defaultInstall(prefix, version) {
-  const args = ['install', '--prefix', prefix, '--no-save', '--omit=dev', '--no-audit', '--no-fund', '--loglevel=error', `thumbgate@${version}`];
-  npmArgsRunner(args, { stdio: 'ignore', timeout: INSTALL_TIMEOUT_MS, windowsHide: true });
+  npmArgsRunner(defaultInstallArgs(prefix, version), { stdio: 'ignore', timeout: INSTALL_TIMEOUT_MS, windowsHide: true });
 }
 
 /**
@@ -256,6 +262,7 @@ async function runChild(argv) {
 }
 
 module.exports = {
+  defaultInstallArgs,
   refreshInProgress,
   scheduleRuntimeAutoUpdate,
   scheduleLatestCheck,

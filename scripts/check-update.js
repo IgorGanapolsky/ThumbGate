@@ -345,7 +345,7 @@ function refreshHookRuntime(options = {}) {
   const run = options.run || npmRunner();
   try {
     console.log(`Updating hook runtime in ${dir} (was ${before ? `v${before}` : 'unknown'})`);
-    run('npm', ['install', '--prefix', dir, '--no-save', '--omit=dev', '--no-audit', '--no-fund', 'thumbgate@latest']);
+    run('npm', ['install', '--prefix', dir, '--location=project', '--global=false', '--no-save', '--omit=dev', '--no-audit', '--no-fund', 'thumbgate@latest']);
     return { refreshed: true, before, after: readRuntimeVersion(dir) };
   } catch (err) {
     console.error(`⚠️  Hook runtime update failed: ${err.message}. Run: npm install --prefix "${dir}" thumbgate@latest`);

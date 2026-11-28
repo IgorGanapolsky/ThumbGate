@@ -337,6 +337,27 @@ function summarizeGitScale(projectRoot) {
   }
 }
 
+// The hooks run their own cached copy in ~/.thumbgate/runtime, which `npm i -g` does not touch,
+// so a stale copy keeps enforcing old behaviour while `thumbgate --version` shows the new one.
+function summarizeHookRuntime(homeDir, packageVersion) {
+  if (!homeDir) return { checked: false };
+  const { readRuntimeVersion, isOlder } = require('./check-update');
+  const dir = path.join(homeDir, '.thumbgate', 'runtime');
+  const runtimeVersion = readRuntimeVersion(dir);
+  if (!runtimeVersion) return { checked: true, present: false, packageVersion };
+  const stale = isOlder(runtimeVersion, packageVersion);
+  return {
+    checked: true,
+    present: true,
+    runtimeVersion,
+    packageVersion,
+    stale,
+    recommendation: stale
+      ? `Hooks run ThumbGate ${runtimeVersion} from ~/.thumbgate/runtime, but ${packageVersion} is installed. Run \`npx thumbgate init\` to refresh the hook copy.`
+      : `Hooks run ThumbGate ${runtimeVersion}, matching the installed package.`,
+  };
+}
+
 function generateAgentReadinessReport(options = {}) {
   const projectRoot = options.projectRoot || PROJECT_ROOT;
   const mcpProfile = options.mcpProfile || null;
@@ -348,6 +369,7 @@ function generateAgentReadinessReport(options = {}) {
 
   const preToolUseHookRegistered = detectPreToolUseHookRegistered(projectRoot, fs.existsSync, fs.readFileSync, homeDir);
   const gitScale = summarizeGitScale(projectRoot);
+  const hookRuntime = summarizeHookRuntime(homeDir, options.packageVersion || require('../package.json').version);
   const progressiveSignoff = evaluateProgressiveSignoff({
     projectRoot,
     ...(options && options.progressiveSignoff ? options.progressiveSignoff : {}),
@@ -380,6 +402,7 @@ function generateAgentReadinessReport(options = {}) {
   if (!gitScale.skipped && !gitScale.ready) {
     warnings.push(gitScale.recommendation);
   }
+  if (hookRuntime.stale) warnings.push(hookRuntime.recommendation);
 
   return {
     generatedAt: new Date().toISOString(),
@@ -391,6 +414,7 @@ function generateAgentReadinessReport(options = {}) {
     claimVerification,
     preToolUseHookRegistered,
     gitScale,
+    hookRuntime,
     progressiveSignoff,
     articleAlignment: {
       runtimeIsolation: runtime.isolated,
@@ -418,6 +442,9 @@ function reportToText(report) {
   if (report.gitScale && !report.gitScale.skipped) {
     lines.push(`Git scale: ${report.gitScale.ready ? 'healthy' : 'needs_attention'}`);
     lines.push(`  Recommendation: ${report.gitScale.recommendation}`);
+  }
+  if (report.hookRuntime && report.hookRuntime.present) {
+    lines.push(`Hook runtime: ${report.hookRuntime.runtimeVersion} (${report.hookRuntime.stale ? 'stale' : 'current'})`);
   }
   lines.push(`Permissions: ${report.permissions.profile} (${report.permissions.tier})`);
   lines.push(`  Write-capable tools: ${report.permissions.writeCapableTools.length}`);
@@ -460,6 +487,7 @@ function reportToText(report) {
 }
 
 module.exports = {
+  summarizeHookRuntime,
   BOOTSTRAP_FILES,
   MCP_PROFILE_TIERS,
   detectRuntimeIsolation,
