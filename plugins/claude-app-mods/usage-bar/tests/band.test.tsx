@@ -1,5 +1,7 @@
 import { expect, test } from 'claude-code/testing'
 
+import { easternMidnight } from '../hooks/register'
+
 const BAND = {
   plugin: 'usage-bar',
   component: 'AbovePrompt',
@@ -117,4 +119,12 @@ test('in a cloud session the counts come from the project copy', async ($, on) =
   expect(tg?.text).toContain('1👍 9👎 (your Mac, 4:30 PM ET, degrading)')
   expect((await ui.find({ type: 'Text', text: /weekly/ }))?.text).toContain('weekly limit: no reading yet')
   await ui.unmount()
+})
+
+test('today starts at midnight Eastern', async () => {
+  // 4:50 PM EST (minute and second past 24) and 12:00:30 AM EST
+  expect(easternMidnight(Date.parse('2026-11-27T21:50:59Z'))).toBe(Date.parse('2026-11-27T05:00:00Z'))
+  expect(easternMidnight(Date.parse('2026-11-28T05:00:30Z'))).toBe(Date.parse('2026-11-28T05:00:00Z'))
+  // daylight time: 11:59 PM EDT on Jul 4
+  expect(easternMidnight(Date.parse('2026-07-05T03:59:00Z'))).toBe(Date.parse('2026-07-04T04:00:00Z'))
 })

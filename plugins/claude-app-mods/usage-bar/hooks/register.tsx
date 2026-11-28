@@ -124,8 +124,10 @@ export function easternMidnight(now: number): number {
     minute: '2-digit',
     second: '2-digit',
   }).formatToParts(new Date(now))
-  const n = (t: string) => Number(parts.find(x => x.type === t)?.value ?? 0) % 24
-  return now - ((n('hour') * 60 + n('minute')) * 60 + n('second')) * 1000 - (now % 1000)
+  const n = (t: string) => Number(parts.find(x => x.type === t)?.value ?? 0)
+  // Some engines print midnight as hour 24.
+  const hour = n('hour') % 24
+  return now - ((hour * 60 + n('minute')) * 60 + n('second')) * 1000 - (now % 1000)
 }
 
 type Row = { model: string; tokens: number; usd: number }
