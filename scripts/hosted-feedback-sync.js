@@ -142,12 +142,14 @@ async function syncHostedFeedback(options = {}) {
   const capture = options.captureImpl || captureFeedback;
   const imported = [];
   const failed = [];
+  const rejected = [];
   for (const lesson of fresh) {
     const signal = normalizeSignal(lesson.signal);
     if (!options.dryRun) {
-      try {
       const tags = [...new Set([...(Array.isArray(lesson.tags) ? lesson.tags : []), 'hosted-connector', 'hosted-sync'])];
-      capture({
+      let result;
+      try {
+        result = capture({
         signal,
         context: lesson.context || lesson.title || '',
         whatWentWrong: lesson.whatWentWrong || undefined,
@@ -170,6 +172,14 @@ async function syncHostedFeedback(options = {}) {
         failed.push({ id: lesson.id, error: err.message });
         continue;
       }
+      if (result && result.accepted === false) {
+        // A capture still in progress elsewhere may yet fail: retry next run.
+        if (result.pending) { failed.push({ id: lesson.id, error: result.reason || 'capture_in_progress' }); continue; }
+        // A permanent rejection (invalid payload, already captured) is not retried.
+        processed.add(lesson.id);
+        rejected.push({ id: lesson.id, reason: result.reason || result.status || 'rejected' });
+        continue;
+      }
       processed.add(lesson.id);
     }
     imported.push({ id: lesson.id, signal, timestamp: lesson.timestamp || null });
@@ -186,6 +196,7 @@ async function syncHostedFeedback(options = {}) {
     imported: imported.length,
     skippedOtherProject,
     failed,
+    rejected,
     importedIds: imported,
     dryRun: Boolean(options.dryRun),
   };

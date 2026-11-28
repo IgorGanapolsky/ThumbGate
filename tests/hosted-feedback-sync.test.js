@@ -114,6 +114,21 @@ test('a failed capture is reported and retried next run', async () => {
   assert.equal(second.failed.length, 0);
 });
 
+test('a pending duplicate is retried; a permanent rejection is not', async () => {
+  const dir = tmp('tg-hosted-reject-');
+  const results = { fb_p: [{ accepted: false, pending: true }, { accepted: true }], fb_r: [{ accepted: false, reason: 'invalid' }] };
+  const calls = { fb_p: 0, fb_r: 0 };
+  const captureImpl = (p) => { const id = Object.keys(calls).find((k) => p.context.includes(k)); return results[id][calls[id]++]; };
+  const opts = { apiKey: 'k', baseUrl: 'https://h.test', feedbackDir: dir, cwd: dir, localProject: LOCAL, captureImpl, fetchImpl: fakeFetch([lesson('fb_p'), lesson('fb_r')]) };
+  const first = await sync.syncHostedFeedback(opts);
+  assert.equal(first.imported, 0);
+  assert.deepEqual(first.failed.map((f) => f.id), ['fb_p']);
+  assert.deepEqual(first.rejected.map((r) => r.id), ['fb_r']);
+  const second = await sync.syncHostedFeedback(opts);
+  assert.equal(second.imported, 1);
+  assert.equal(calls.fb_r, 1, 'a rejected event is not retried');
+});
+
 test('HTTP errors throw with the status, and no key skips without fetching', async () => {
   await assert.rejects(
     sync.fetchHostedLessons({ baseUrl: 'https://h.test', apiKey: 'k', fetchImpl: async () => ({ ok: false, status: 401 }) }),
