@@ -1909,6 +1909,13 @@ test('robots and sitemap endpoints publish crawl metadata for the canonical app 
   assert.match(robotsBody, /User-agent: Claude-SearchBot/);
   assert.match(robotsBody, /User-agent: Claude-User/);
   assert.match(robotsBody, /User-agent: Perplexity-User/);
+  // Every named group must repeat the checkout Disallow: a crawler that matches
+  // its own group ignores the * group, and a crawled /checkout/ makes a Stripe session.
+  const groups = robotsBody.split(/\n\s*\n/).filter((g) => /^User-agent:/m.test(g));
+  assert.ok(groups.length >= 10);
+  for (const group of groups) {
+    assert.match(group, /Disallow: \/checkout\//, `missing checkout Disallow in: ${group.split('\n')[0]}`);
+  }
   assert.match(robotsBody, /# https:\/\/app\.example\.com\/llms\.txt/);
   assert.match(robotsBody, /Sitemap: https:\/\/app\.example\.com\/sitemap\.xml/);
 
