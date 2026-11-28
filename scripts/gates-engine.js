@@ -3117,6 +3117,7 @@ function matchGate(gate, toolName, toolInput = {}, options = {}) {
     }
   }
 
+  let intentOnly = false;
   if (gate.pattern) {
     try {
       if (gate.id === 'permission-change-approval') {
@@ -3139,7 +3140,10 @@ function matchGate(gate, toolName, toolInput = {}, options = {}) {
         // A learned delete command also matches the same delete written as a Python call (scripts/delete-equivalence.js).
         const anySurfaceMatch = surfaces.some((surface) => patternMatchesCommand(regex, surface))
           || require('./delete-equivalence').isReworkedLearnedDelete(gate, toolName, toolInput);
-        if (!anySurfaceMatch) {
+        // The same action spelled another way, recorded on the gate by scripts/rule-mutation.js when it was learned.
+        if (!anySurfaceMatch && gate.intent && require('./rule-mutation').intentMatches(gate, toolName, toolInput)) {
+          intentOnly = true;
+        } else if (!anySurfaceMatch) {
           return { matched: false, matchText, affectedFiles };
         }
       }
@@ -3209,6 +3213,20 @@ function matchGate(gate, toolName, toolInput = {}, options = {}) {
     affectedFiles,
     taskScopeViolation,
     branchGovernanceViolation,
+    ...(intentOnly ? { intentOnly: true } : {}),
+  };
+}
+
+// Law 12: a match through a gate's recorded intent (not its learned text) warns until THUMBGATE_INTENT_GATES=enforce.
+function gateForIntentMatch(gate, matchDetails) {
+  if (!matchDetails || !matchDetails.intentOnly || gate.action !== 'block') return gate;
+  if (require('./rule-mutation').intentEnforced()) return gate;
+  const { hardDeny, ...rest } = gate;
+  return {
+    ...rest,
+    action: 'warn',
+    severity: 'medium',
+    message: `${gate.message || gate.id} (same action written another way; warning only until ${require('./rule-mutation').INTENT_ENV}=enforce)`,
   };
 }
 
@@ -4116,10 +4134,11 @@ async function evaluateGatesAsyncInner(toolName, toolInput, configPath, options 
   const skipMetrics = METRIC_SKIP_TOOLS.includes(toolName);
 
   const sharedAffectedAsync = extractAffectedFiles(toolName, toolInput);
-  for (const gate of config.gates) {
-    if (!gateAppliesToProject(gate, execution.projectKey)) continue;
-    const matchDetails = matchGate(gate, toolName, toolInput, { ...execution, affected: sharedAffectedAsync, governanceState, constraints });
+  for (const listedGate of config.gates) {
+    if (!gateAppliesToProject(listedGate, execution.projectKey)) continue;
+    const matchDetails = matchGate(listedGate, toolName, toolInput, { ...execution, affected: sharedAffectedAsync, governanceState, constraints });
     if (!matchDetails.matched) continue;
+    const gate = gateForIntentMatch(listedGate, matchDetails);
 
     // EvoSkill Hardening: check contextual 'when' clause
     if (gate.when && !checkWhenClause(gate.when, constraints)) {
@@ -4461,10 +4480,11 @@ function evaluateGatesInner(toolName, toolInput, configPath, options = {}) {
     }
   }
   const sharedAffected = extractAffectedFiles(toolName, toolInput);
-  for (const gate of config.gates) {
-    if (!gateAppliesToProject(gate, execution.projectKey)) continue;
-    const matchDetails = matchGate(gate, toolName, toolInput, { ...execution, affected: sharedAffected, governanceState, constraints });
+  for (const listedGate of config.gates) {
+    if (!gateAppliesToProject(listedGate, execution.projectKey)) continue;
+    const matchDetails = matchGate(listedGate, toolName, toolInput, { ...execution, affected: sharedAffected, governanceState, constraints });
     if (!matchDetails.matched) continue;
+    const gate = gateForIntentMatch(listedGate, matchDetails);
 
     // EvoSkill Hardening: check contextual 'when' clause
     if (gate.when && !checkWhenClause(gate.when, constraints)) {
@@ -6704,6 +6724,7 @@ module.exports = {
   evaluateSecurityScan,
   buildSecretGuardResult,
   buildReasoning,
+  matchGate,
   matchesGate,
   evaluateGates,
   evaluateGatesAsync,

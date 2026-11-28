@@ -802,6 +802,8 @@ function forcePromote(context, action = 'block', options = {}) {
     );
   }
 
+  try { require('./rule-mutation').refineGate(gate); } catch { /* a rule still goes live as learned text */ }
+
   const gateId = gate.id;
   data.gates = data.gates.filter((existing) => existing.id !== gateId || existing.projectKey !== project.projectKey);
   data.gates.unshift(gate);
@@ -828,6 +830,7 @@ function forcePromote(context, action = 'block', options = {}) {
     action,
     pattern: gate.pattern,
     surfaceDerived: Boolean(gate.surfaceDerived),
+    ...(gate.mutationAudit ? { mutationAudit: gate.mutationAudit } : {}),
     totalGates: data.gates.length,
   };
 }
@@ -943,6 +946,9 @@ function promote(feedbackLogPath, options) {
       });
       continue;
     }
+
+    // Able-to-fail: test the new rule against reworded versions of the command and record its intent when some slip.
+    try { require('./rule-mutation').refineGate(gate); } catch { /* a rule still goes live as learned text */ }
 
     // Self-Harness stage 3: before a feedback rule goes live as a hard block,
     // regression-test it against prior allowed actions. If it would have blocked
