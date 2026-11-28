@@ -72,7 +72,7 @@ async function open(stripe, nowMs, metadata = { planId: 'pro', billingCycle: 'mo
   return stripe.created[0];
 }
 
-test('the window runs Friday 12:00 AM ET through Monday 11:59 PM ET', () => {
+test('the window runs Friday 12:00 AM ET through Tuesday Dec 1 11:59 PM ET', () => {
   assert.equal(billing._activeOffer(BEFORE_WINDOW), null);
   assert.equal(billing._activeOffer(IN_WINDOW).code, 'BLACKFRIDAY');
   assert.equal(billing._activeOffer(Date.parse('2026-12-02T04:59:59Z')).code, 'BLACKFRIDAY');
@@ -213,4 +213,12 @@ test('a failed invoice preview marks the offer unverified', async () => {
   assert.equal(status.coupon.valid, true);
   assert.equal(status.annualPreview.error, 'parameter_invalid');
   assert.equal(status.ok, false);
+});
+
+test('the pricing banner names the weekday the offer actually ends on', () => {
+  const end = new Date(Date.parse('2026-12-02T04:59:59Z'));
+  const weekday = end.toLocaleDateString('en-US', { weekday: 'long', timeZone: 'America/New_York' });
+  assert.equal(weekday, 'Tuesday');
+  const html = fs.readFileSync(path.join(__dirname, '..', 'public', 'pricing.html'), 'utf8');
+  assert.match(html, new RegExp(`Ends ${weekday}, Dec 1 at 11:59 PM ET`));
 });
