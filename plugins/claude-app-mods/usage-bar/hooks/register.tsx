@@ -88,6 +88,134 @@ async function transcriptTokens($: any): Promise<{ total: number; models: ModelT
   return { total, models }
 }
 
+// API list prices per million tokens: input, output, cache read, 5-minute
+// cache write, 1-hour cache write. The plan is flat-rate; this is what the
+// same tokens would cost on the API.
+const PRICES: Record<string, [number, number, number, number, number]> = {
+  Fable: [8, 40, 0.2, 10, 16],
+  Opus: [4, 20, 0.2, 5, 8],
+  Sonnet: [2, 10, 0.1, 2.5, 4],
+  Haiku: [0.1, 0.5, 0.01, 0.125, 0.2],
+}
+
+export function priceOf(model: string, u: any): number {
+  const p = PRICES[model]
+  if (!p) return 0
+  const cc = u.cache_creation ?? {}
+  const w1h = cc.ephemeral_1h_input_tokens ?? 0
+  const w5m =
+    cc.ephemeral_5m_input_tokens ?? Math.max(0, (u.cache_creation_input_tokens ?? 0) - w1h)
+  return (
+    ((u.input_tokens ?? 0) * p[0] +
+      (u.output_tokens ?? 0) * p[1] +
+      (u.cache_read_input_tokens ?? 0) * p[2] +
+      w5m * p[3] +
+      w1h * p[4]) /
+    1e6
+  )
+}
+
+// Midnight in New York on the day of `now`, as epoch ms.
+export function easternMidnight(now: number): number {
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone: 'America/New_York',
+    hour12: false,
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+  }).formatToParts(new Date(now))
+  const n = (t: string) => Number(parts.find(x => x.type === t)?.value ?? 0)
+  // Some engines print midnight as hour 24.
+  const hour = n('hour') % 24
+  return now - ((hour * 60 + n('minute')) * 60 + n('second')) * 1000 - (now % 1000)
+}
+
+type Row = { model: string; tokens: number; usd: number }
+type FileSum = { mtime: number; size: number; rows: Map<string, Row> }
+const fileCache = new Map<string, FileSum>()
+
+// Every assistant response on this machine since midnight ET, across all
+// Claude Code transcripts (sessions and their subagents), once per message id.
+// A file is re-read only when its size or mtime changed.
+async function todayOnMachine($: any, now: number): Promise<UsageSnap['today']> {
+  const { transcriptPath } = await $.session.info()
+  const segs = String(transcriptPath).split('/')
+  const root = segs.slice(0, segs.length - 2).join('/')
+  const since = easternMidnight(now)
+  const files: Array<{ path: string; mtime: number; size: number }> = []
+  const addDir = async (dir: string, depth: number): Promise<void> => {
+    let entries: any[] = []
+    try {
+      entries = await $.fs.list(dir)
+    } catch {
+      return
+    }
+    for (const e of entries) {
+      const path = `${dir}/${e.name}`
+      if (e.kind === 'file' && e.name.endsWith('.jsonl') && (e.mtimeMs ?? 0) >= since) {
+        files.push({ path, mtime: e.mtimeMs ?? 0, size: e.size ?? 0 })
+      } else if (e.kind === 'dir' && depth > 0) {
+        await addDir(path, depth - 1)
+      }
+    }
+  }
+  let projects: any[] = []
+  try {
+    projects = await $.fs.list(root)
+  } catch {
+    return null
+  }
+  for (const p of projects) if (p.kind === 'dir') await addDir(`${root}/${p.name}`, 2)
+
+  const all = new Map<string, Row>()
+  for (const f of files) {
+    let sum = fileCache.get(f.path)
+    if (!sum || sum.mtime !== f.mtime || sum.size !== f.size) {
+      const rows = new Map<string, Row>()
+      try {
+        const text: string = await $.fs.read(f.path)
+        for (const line of text.split('\n')) {
+          if (!line.includes('"usage"')) continue
+          let row: any
+          try {
+            row = JSON.parse(line)
+          } catch {
+            continue
+          }
+          const msg = row?.message
+          const u = msg?.usage
+          if (row?.type !== 'assistant' || !u || !msg?.model) continue
+          if (!(Date.parse(row.timestamp ?? '') >= since)) continue
+          const model = shortModel(msg.model)
+          const tokens =
+            (u.input_tokens ?? 0) +
+            (u.output_tokens ?? 0) +
+            (u.cache_creation_input_tokens ?? 0) +
+            (u.cache_read_input_tokens ?? 0)
+          rows.set(msg.id ?? row.uuid, { model, tokens, usd: priceOf(model, u) })
+        }
+      } catch {
+        continue
+      }
+      sum = { mtime: f.mtime, size: f.size, rows }
+      fileCache.set(f.path, sum)
+    }
+    for (const [id, r] of sum.rows) all.set(id, r)
+  }
+  let tokens = 0
+  let usd = 0
+  const perModel = new Map<string, number>()
+  for (const r of all.values()) {
+    tokens += r.tokens
+    usd += r.usd
+    perModel.set(r.model, (perModel.get(r.model) ?? 0) + r.tokens)
+  }
+  const models = [...perModel.entries()]
+    .map(([model, t]) => ({ model, tokens: t }))
+    .sort((a, b) => b.tokens - a.tokens)
+  return { tokens, usd, models, files: files.length }
+}
+
 async function refreshUsage($: any): Promise<void> {
   const u = await $.session.usage()
   const { total, models } = await transcriptTokens($)
@@ -103,7 +231,13 @@ async function refreshUsage($: any): Promise<void> {
     weeklyPercent: weekly?.percentUsed ?? null,
     weeklyResetsAt: weekly?.resetsAt ?? null,
     fiveHourPercent: five?.percentUsed ?? null,
+    today: null,
     readAt: await $.clock.now(),
+  }
+  try {
+    snap.today = await todayOnMachine($, snap.readAt)
+  } catch {
+    snap.today = null
   }
   await update($, usage, () => snap)
 }
@@ -197,7 +331,8 @@ export const register: Register = on => {
   })
 
   on('ui.render', { component: 'AbovePrompt' }, async ($, e, next) => {
-    if (e.props.hasSurvey) return next(e)
+    // The terminal already has the person's own status line.
+    if (e.props.hasSurvey || e.surface === 'terminal') return next(e)
     if (!started) {
       started = true
       void safe(refreshUsage($))
@@ -212,17 +347,30 @@ export const register: Register = on => {
     const line1: string[] = []
     const line2: string[] = []
     if (u) {
-      const parts = [`This thread: ${compact(u.tokens)} tokens`]
-      if (u.usd !== null) parts.push(`$${u.usd.toFixed(2)} at API prices (plan is flat-rate)`)
-      const sum = u.models.reduce((n, m) => n + m.tokens, 0)
-      if (sum > 0) {
-        parts.push(
-          u.models
-            .slice(0, 3)
-            .map(m => `${m.model} ${Math.round((m.tokens / sum) * 100)}%`)
-            .join(' / '),
-        )
+      const mix = (ms: ModelTokens[]) => {
+        const sum = ms.reduce((n, m) => n + m.tokens, 0)
+        return sum > 0
+          ? ms
+              .slice(0, 3)
+              .map(m => `${m.model} ${Math.round((m.tokens / sum) * 100)}%`)
+              .join(' / ')
+          : ''
       }
+      const parts: string[] = []
+      if (u.today) {
+        parts.push(`Today: ${compact(u.today.tokens)} tokens`)
+        parts.push(`$${u.today.usd.toFixed(2)} at API prices (plan is flat-rate)`)
+        const m = mix(u.today.models)
+        if (m) parts.push(m)
+        parts.push('this machine')
+      }
+      const here = [`this session ${compact(u.tokens)} tokens`]
+      if (u.usd !== null) here.push(`$${u.usd.toFixed(2)}`)
+      if (!u.today) {
+        const m = mix(u.models)
+        if (m) here.push(m)
+      }
+      parts.push(here.join(' '))
       parts.push(`read ${eastern(u.readAt, false)} ET, every minute`)
       line1.push(parts.join(' · '))
 
