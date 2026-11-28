@@ -25,3 +25,8 @@ test('phones get a slim consent bar with shorter wording', () => {
   assert.match(page, /left:0;right:0;bottom:0/);
   assert.match(page, /"short":"May Microsoft Clarity and Orion measure your visit\? Neither loads unless you accept\. Declining also turns off Google Analytics cookies\."/);
 });
+
+test('footer and offer link rows give standalone links a 24px target (WCAG 2.5.8)', () => {
+  assert.match(html, /\.footer-links a, \.offer-links a \{ display: inline-flex; align-items: center; min-height: 24px; \}/);
+  assert.match(html, /<p class="offer-links"><a href="\/install">Start with the free CLI<\/a>/);
+});

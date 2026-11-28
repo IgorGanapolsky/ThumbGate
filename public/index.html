@@ -493,6 +493,8 @@
     .footer-inner { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 18px; }
     .footer-links { display: flex; flex-wrap: wrap; gap: 18px; }
     .footer-links a { color: var(--muted); }
+    /* WCAG 2.2 SC 2.5.8: standalone links get a 24px-tall target on phones (daily grade, 28 Nov 2026). */
+    .footer-links a, .offer-links a { display: inline-flex; align-items: center; min-height: 24px; }
     @media (max-width: 840px) {
       .nav-links > a:not(.nav-buy):not(.nav-enterprise) { display: none; }
       .nav-links { gap: 10px; }
@@ -883,7 +885,7 @@ $ ... "node scripts/migrate.js --env prod"
               <li><span><strong>Not shipped yet:</strong> team-shared rules, lessons synced across machines, audit history.</span></li>
             </ul>
             <a class="button button-primary" href="/checkout/pro" data-revenue-cta data-cta-id="homepage_pro_checkout" data-cta-placement="offers" data-plan-id="pro">Get Pro — $__PRO_PRICE_DOLLARS__/month</a>
-            <p><a href="/install">Start with the free CLI</a> · <a href="/pricing">Free vs Pro table</a> · <a href="/pilot" data-pilot-link="home">Request a 30-day team pilot</a></p>
+            <p class="offer-links"><a href="/install">Start with the free CLI</a> · <a href="/pricing">Free vs Pro table</a> · <a href="/pilot" data-pilot-link="home">Request a 30-day team pilot</a></p>
           </aside>
         </div>
       </div>
