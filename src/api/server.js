@@ -5143,6 +5143,13 @@ async function deleteLesson() {
 </html>`;
 }
 
+const NAMED_CRAWLERS = [
+  'OAI-SearchBot', 'ChatGPT-User', 'GPTBot',
+  'ClaudeBot', 'Claude-SearchBot', 'Claude-User',
+  'PerplexityBot', 'Perplexity-User',
+  'Googlebot', 'Bingbot', 'anthropic-ai', 'Google-Extended',
+];
+
 function renderRobotsTxt(runtimeConfig) {
   return [
     'User-agent: *',
@@ -5156,48 +5163,16 @@ function renderRobotsTxt(runtimeConfig) {
     'Disallow: /v1/billing/',
     '',
     '# AI crawler access — allow all major LLM crawlers',
-    'User-agent: OAI-SearchBot',
-    'Allow: /',
-    'Disallow: /checkout/',
-    'Disallow: /v1/billing/',
-    '',
-    'User-agent: ChatGPT-User',
-    'Allow: /',
-    'Disallow: /checkout/',
-    'Disallow: /v1/billing/',
-    '',
-    'User-agent: GPTBot',
-    'Allow: /',
-    'Disallow: /checkout/',
-    'Disallow: /v1/billing/',
-    '',
-    'User-agent: ClaudeBot',
-    'Allow: /',
-    '',
-    'User-agent: Claude-SearchBot',
-    'Allow: /',
-    '',
-    'User-agent: Claude-User',
-    'Allow: /',
-    '',
-    'User-agent: PerplexityBot',
-    'Allow: /',
-    '',
-    'User-agent: Perplexity-User',
-    'Allow: /',
-    '',
-    'User-agent: Googlebot',
-    'Allow: /',
-    '',
-    'User-agent: Bingbot',
-    'Allow: /',
-    '',
-    'User-agent: anthropic-ai',
-    'Allow: /',
-    '',
-    'User-agent: Google-Extended',
-    'Allow: /',
-    '',
+    // A crawler that matches a named group ignores the * group, so every named
+    // group repeats the checkout and billing Disallow lines (2026-11-28: the
+    // Googlebot, Bingbot and Claude groups had only "Allow: /").
+    ...NAMED_CRAWLERS.flatMap((agent) => [
+      `User-agent: ${agent}`,
+      'Allow: /',
+      'Disallow: /checkout/',
+      'Disallow: /v1/billing/',
+      '',
+    ]),
     '# LLM context document — clean declarative content for AI retrieval',
     `# ${runtimeConfig.appOrigin}/llm-context.md`,
     `# ${runtimeConfig.appOrigin}/llms.txt`,
