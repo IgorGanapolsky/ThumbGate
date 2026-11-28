@@ -160,13 +160,13 @@ const PANE_PROPS = { title: 'Usage', isFocused: false, bodyColumns: 80, anchors:
 const run = (command: string, args = '') =>
   ({ command, args, origin: { kind: 'human' }, presentation: 'text' }) as any
 
-test('/usage opens a pane with cost by model, and a glance form as a desktop widget', async ($, on) => {
+test('/usage-pane opens a pane with cost by model, and a glance form as a desktop widget', async ($, on) => {
   wire(on)
   const opened: any[] = []
   on('ui.open', (_: unknown, e: any) => (opened.push(e), { value: { isPlaced: true } }))
   await $.session.start({ cwd: '/', surface: 'desktop', isInteractive: true })
   await $.command.run(run('usage-bar-refresh'))
-  await $.command.run(run('usage'))
+  await $.command.run(run('usage-pane'))
   expect(opened[0]?.id).toBe('usage')
 
   const pane = await $.ui.mount({

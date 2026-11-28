@@ -14,7 +14,7 @@ A band above the prompt (Claude desktop app and Code on the web; the terminal ke
 
 Commands:
 
-- `/usage` opens a pane with today's tokens and cost by model, the session, limits and ThumbGate. Minimized on the desktop app it becomes a small widget: today's cost, tokens and thumbs.
+- `/usage-pane` opens a pane with today's tokens and cost by model, the session, limits and ThumbGate. Minimized on the desktop app it becomes a small widget: today's cost, tokens and thumbs.
 - `/usage-bar full|compact|off` sets the band (kept between sessions). Narrow windows get the one-line form on their own.
 - `/usage-bar-refresh` re-reads everything now.
 

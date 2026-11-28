@@ -331,7 +331,7 @@ export const register: Register = on => {
       immediate: true,
     })
     await $.command.register({
-      name: 'usage',
+      name: 'usage-pane',
       description: "Open today's tokens and cost by model, limits and ThumbGate in a pane",
       immediate: true,
     })
@@ -350,7 +350,7 @@ export const register: Register = on => {
     return { text: 'Usage bar refreshed.' }
   })
 
-  on('command.run', { command: 'usage' }, async $ => {
+  on('command.run', { command: 'usage-pane' }, async $ => {
     start($)
     const opened = await $.ui.open({ id: PANE, title: 'Usage', closeOnEscape: true })
     return { text: opened.isPlaced ? 'Usage pane open.' : `Usage pane waiting: ${opened.reason}` }
