@@ -1914,7 +1914,7 @@ test('robots and sitemap endpoints publish crawl metadata for the canonical app 
   const groups = robotsBody.split(/\n\s*\n/).filter((g) => /^User-agent:/m.test(g));
   assert.ok(groups.length >= 10);
   for (const group of groups) {
-    assert.match(group, /Disallow: \/checkout\//, `missing checkout Disallow in: ${group.split('\n')[0]}`);
+    assert.match(group, /^Disallow: \/checkout\/\s*$/m, `missing checkout Disallow in: ${group.split('\n')[0]}`);
   }
   assert.match(robotsBody, /# https:\/\/app\.example\.com\/llms\.txt/);
   assert.match(robotsBody, /Sitemap: https:\/\/app\.example\.com\/sitemap\.xml/);
