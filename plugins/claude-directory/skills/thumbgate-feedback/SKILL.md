@@ -42,5 +42,5 @@ npm run feedback:rules
 
 ## References
 
-For deeper context and feedback workflows, see [best-practices.md](file:///Users/igorganapolsky/workspace/git/igor/ThumbGate/repo/skills/thumbgate-feedback/references/best-practices.md) in this skill's folder.
+For deeper context and feedback workflows, see [best-practices.md](references/best-practices.md) in this skill's folder.
 
