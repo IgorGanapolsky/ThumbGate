@@ -100,7 +100,7 @@ test('--min raises the bar for commands', () => {
 });
 
 test('call-side check rejects excluded commands on its own, before any feedback lookup', () => {
-  for (const cmd of ['sudo npm test', 'NODE_OPTIONS=--require=x npm test', 'env FOO=1 npm test', "'sudo' -n true", './npm test', 'npm test && ls']) {
+  for (const cmd of ['sudo npm test', 'NODE_OPTIONS=--require=x npm test', 'env FOO=1 npm test', "'sudo' -n true", './npm test', 'npm test && ls', "'rm' -rf build", 's\\udo npm test']) {
     assert.equal(auto.keyForCall('Bash', { command: cmd }), null, cmd);
   }
   assert.deepEqual(auto.keyForCall('Bash', { command: 'npm test' }), { kind: 'command', key: 'Bash:npm test', label: 'npm test' });
