@@ -7,6 +7,7 @@
     { "id": "adapter:amp", "purpose": "Amp skill pack for ThumbGate feedback" },
     { "id": "adapter:chatgpt", "purpose": "ChatGPT Actions OpenAPI install path" },
     { "id": "adapter:claude", "purpose": "Claude Code / Desktop MCP wiring" },
+    { "id": "adapter:claude-agent-sdk", "purpose": "Claude Agent SDK hooks: ThumbGate gates plus PostToolUse secret and injection scrubbing" },
     { "id": "adapter:claude-desktop-app", "purpose": "ThumbGate Desktop document for Claude artifact apps and the desktop-snapshot command" },
     { "id": "adapter:claw", "purpose": "Claw-style enterprise agent adapter docs" },
     { "id": "adapter:cline", "purpose": "Cline install path" },
