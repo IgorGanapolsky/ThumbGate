@@ -11,6 +11,7 @@ const { spawnSync } = require('node:child_process');
 
 const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'receipt-chain-test-'));
 process.env.THUMBGATE_FEEDBACK_DIR = tmpDir;
+process.env.THUMBGATE_RECEIPT_LOCK_WAIT_MS = '300';
 const receipts = require('../scripts/action-receipts');
 
 test.after(() => fs.rmSync(tmpDir, { recursive: true, force: true }));
@@ -145,4 +146,39 @@ test('the policy hash follows the gates in force, with no stale cache', () => {
   } finally {
     if (prev === undefined) delete process.env.THUMBGATE_GATES_CONFIG; else process.env.THUMBGATE_GATES_CONFIG = prev;
   }
+});
+
+test('a damaged line is reported even before the chain starts', () => {
+  const file = freshLedger('damaged');
+  fs.writeFileSync(file, '{"actionId":"x","tool\n');
+  const result = receipts.verifyReceiptChain({ file });
+  assert.deepEqual(result.errors.map((e) => e.reason), ['malformed']);
+});
+
+test('seq must start at 1 and go up by exactly one', () => {
+  const file = freshLedger('seq');
+  const zero = { actionId: 'z', seq: 0, prevHash: receipts.CHAIN_GENESIS };
+  zero.entryHash = receipts.receiptEntryHash(zero);
+  const jump = { actionId: 'j', seq: 8, prevHash: zero.entryHash };
+  jump.entryHash = receipts.receiptEntryHash(jump);
+  fs.writeFileSync(file, `${JSON.stringify(zero)}\n${JSON.stringify(jump)}\n`);
+  assert.deepEqual(receipts.verifyReceiptChain({ file }).errors.map((e) => [e.line, e.reason]), [[1, 'seq_gap'], [2, 'seq_gap']]);
+});
+
+test('a lock left by a dead process is taken over; a lock held by a live one stops the write', () => {
+  const prev = process.env.THUMBGATE_FEEDBACK_DIR;
+  const dir = fs.mkdtempSync(path.join(tmpDir, 'lock-'));
+  process.env.THUMBGATE_FEEDBACK_DIR = dir;
+  try {
+    const lock = `${receipts.getReceiptsPath()}.lock`;
+    const dead = spawnSync(process.execPath, ['-e', 'process.stdout.write(String(process.pid))'], { encoding: 'utf8' }).stdout;
+    fs.writeFileSync(lock, `${dead}:old`);
+    assert.equal(receipts.recordReceipt({ actionId: 'after-crash' }).recorded, true);
+    assert.equal(fs.existsSync(lock), false, 'lock released after the write');
+
+    fs.writeFileSync(lock, `${process.pid}:someone-else`);
+    assert.throws(() => receipts.recordReceipt({ actionId: 'blocked' }), /locked by another writer/);
+    assert.equal(fs.readFileSync(lock, 'utf8'), `${process.pid}:someone-else`, "another writer's lock is left alone");
+    assert.equal(receipts.verifyReceiptChain().chained, 1, 'nothing appended without the lock');
+  } finally { process.env.THUMBGATE_FEEDBACK_DIR = prev; }
 });

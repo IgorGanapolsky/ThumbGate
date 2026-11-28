@@ -315,25 +315,48 @@ function chainHead(filePath) {
   return { seq: 0, hash: sha256Hex(last.trim()) };
 }
 
-// Two writers appending at once would both link to the same head. A short lock directory serialises them.
+// Two writers appending at once would both link to the same head, so appends hold an exclusive lock file. The file
+// names its owner (pid + a random token): a lock is taken over only when its owner process no longer exists, and a
+// writer removes the lock only while it still holds its own token. If the lock can't be had in time, the receipt is
+// not written and the caller gets an error, rather than an append that forks the chain.
+const LOCK_WAIT_MS = Number(process.env.THUMBGATE_RECEIPT_LOCK_WAIT_MS) || 5000;
+
+function lockOwnerGone(lock) {
+  let owner;
+  try { owner = fs.readFileSync(lock, 'utf8'); } catch (error) { return error.code === 'ENOENT'; }
+  const pid = Number(String(owner).split(':')[0]);
+  if (!Number.isInteger(pid) || pid <= 0) {
+    // Unreadable owner: treat it as abandoned only once it is old enough that no live writer can still be in it.
+    try { return Date.now() - fs.statSync(lock).mtimeMs > 60000; } catch { return true; }
+  }
+  try { process.kill(pid, 0); return false; } catch (error) { return error.code === 'ESRCH'; }
+}
+
 function withLedgerLock(filePath, fn) {
   const lock = `${filePath}.lock`;
-  const deadline = Date.now() + 2000;
-  let locked = false;
-  while (!locked) {
+  const token = `${process.pid}:${crypto.randomBytes(8).toString('hex')}`;
+  const deadline = Date.now() + LOCK_WAIT_MS;
+  for (;;) {
     try {
-      fs.mkdirSync(lock);
-      locked = true;
+      fs.writeFileSync(lock, token, { flag: 'wx' });
+      break;
     } catch (error) {
-      if (error.code !== 'EEXIST') break;
-      try {
-        if (Date.now() - fs.statSync(lock).mtimeMs > 10000) { fs.rmdirSync(lock); continue; }
-      } catch { continue; }
-      if (Date.now() > deadline) break; // write anyway; verify will show the fork
+      if (error.code !== 'EEXIST') throw error;
+      if (lockOwnerGone(lock)) {
+        // Take over through a rename so two writers can't both remove the stale lock and both proceed.
+        const stale = `${lock}.${token}.stale`;
+        try { fs.renameSync(lock, stale); fs.rmSync(stale, { force: true }); } catch { /* someone else took it */ }
+        continue;
+      }
+      if (Date.now() > deadline) throw new Error(`Receipt ledger is locked by another writer: ${lock}`);
       Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 20);
     }
   }
-  try { return fn(); } finally { if (locked) try { fs.rmdirSync(lock); } catch { /* gone */ } }
+  try {
+    return fn();
+  } finally {
+    try { if (fs.readFileSync(lock, 'utf8') === token) fs.rmSync(lock, { force: true }); } catch { /* already gone */ }
+  }
 }
 
 /**
@@ -362,7 +385,8 @@ function verifyReceiptChain(options = {}) {
     let entry = null;
     try { entry = JSON.parse(line); } catch { /* handled below */ }
     if (!entry || !entry.entryHash) {
-      if (chained > 0) errors.push({ line: lineNo, reason: entry ? 'unchained_after_chain_start' : 'malformed' });
+      if (!entry) errors.push({ line: lineNo, reason: 'malformed' });
+      else if (chained > 0) errors.push({ line: lineNo, reason: 'unchained_after_chain_start' });
       legacy += 1;
       prev = { seq: 0, hash: sha256Hex(line) };
       return;
@@ -370,8 +394,9 @@ function verifyReceiptChain(options = {}) {
     chained += 1;
     if (receiptEntryHash(entry) !== entry.entryHash) errors.push({ line: lineNo, reason: 'entry_edited' });
     if (entry.prevHash !== prev.hash) errors.push({ line: lineNo, reason: 'chain_broken' });
-    if (prev.seq && Number(entry.seq) !== prev.seq + 1) errors.push({ line: lineNo, reason: 'seq_gap' });
-    prev = { seq: Number(entry.seq) || 0, hash: entry.entryHash };
+    // seq starts at 1 after GENESIS or a pre-chain line and goes up by exactly one.
+    if (!Number.isInteger(entry.seq) || entry.seq !== prev.seq + 1) errors.push({ line: lineNo, reason: 'seq_gap' });
+    prev = { seq: Number.isInteger(entry.seq) ? entry.seq : prev.seq + 1, hash: entry.entryHash };
   });
   return { ok: errors.length === 0, file: filePath, total: lines.length, chained, legacy, head: prev.hash, errors };
 }
