@@ -546,8 +546,9 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
     // 740 -> 741 (2026-11-27): scripts/decision-check.js, the `npx thumbgate decision-check` dry run of the default gates (PR 5343) (+1).
     // 741 -> 742 (2026-11-28): scripts/self-improve.js, the `thumbgate improve` self-improvement cycle (+1).
     // 742 -> 743 (2026-11-28): scripts/rule-mutation.js, reworded-variant testing for learned rules (+1).
-    manifest.fileCount <= 743,
-    `npm package should stay <= 743 files, got ${manifest.fileCount}`
+    // 743 -> 748 (2026-11-28): adapters/claude-agent-sdk (index.js, index.d.ts, bridge.js, Python helper, README) (+5).
+    manifest.fileCount <= 748,
+    `npm package should stay <= 748 files, got ${manifest.fileCount}`
   );
   // Ceiling bumped from 2.75 MB → 2.85 MB (2026-04-16) to accommodate the
   // incremental review-delta demo content in public/dashboard.html landing
@@ -896,8 +897,9 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // 11.14 -> 11.16 MB (2026-11-28): scripts/self-improve.js (~12 KB) and the `thumbgate improve` CLI entry plus its
   // daily session-start cycle. Measured 11,151,432.
   // 11.16 -> 11.18 MB (2026-11-28): scripts/rule-mutation.js (~13 KB), reworded-variant testing for learned rules.
-  manifest.unpackedSize <= 11_180_000,
-  `npm package should stay <= 11.18 MB unpacked, got ${manifest.unpackedSize}`
+  // 11.18 -> 11.20 MB (2026-11-28): adapters/claude-agent-sdk (~14 KB). Measured 11,191,862.
+  manifest.unpackedSize <= 11_200_000,
+  `npm package should stay <= 11.20 MB unpacked, got ${manifest.unpackedSize}`
 );
 
   for (const file of requiredRuntimeFiles) {

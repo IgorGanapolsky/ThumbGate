@@ -5101,6 +5101,10 @@ switch (COMMAND) {
   case 'rule-test':
     process.exitCode = require(path.join(PKG_ROOT, 'scripts', 'rule-mutation')).runCli(process.argv.slice(3));
     break;
+  case 'sdk-bridge':
+    // Stdin/stdout hook bridge for Claude Agent SDK apps not written in JavaScript (adapters/claude-agent-sdk).
+    require(path.join(PKG_ROOT, 'adapters', 'claude-agent-sdk', 'bridge')).main();
+    break;
   case 'context-packs':
     contextPacks();
     break;
