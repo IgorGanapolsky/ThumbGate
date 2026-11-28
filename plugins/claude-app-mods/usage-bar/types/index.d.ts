@@ -1,8 +1,9 @@
-export type ModelTokens = { model: string; tokens: number }
+export type ModelTokens = { model: string; tokens: number; usd?: number }
 
 export type UsageSnap = {
   tokens: number
   usd: number | null
+  today: { tokens: number; usd: number; models: ModelTokens[]; files: number } | null
   models: ModelTokens[]
   contextPercent: number | null
   contextTokens: number | null
@@ -12,6 +13,8 @@ export type UsageSnap = {
   fiveHourPercent: number | null
   readAt: number
 }
+
+export type BandMode = 'full' | 'compact' | 'off'
 
 export type ThumbSnap = {
   version: string | null
