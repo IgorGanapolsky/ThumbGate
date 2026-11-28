@@ -310,7 +310,8 @@ const path = require('node:path');
 // 736 -> 738 (2026-11-27): scripts/cloud-rules-export.js (export-rules, whose bump landed only in package-boundary) and scripts/pii-scanner.js, which it requires (+2).
 // 738 -> 740 (2026-11-27): scripts/skill-shell-gate.js and scripts/gate-check-core.js, the PreSkillShellCommand hook (PR 5331) (+2).
 // 740 -> 741 (2026-11-27): scripts/decision-check.js, the `npx thumbgate decision-check` CLI command, public shell (PR 5343) (+1).
-const BASELINE_FILE_COUNT = 741;
+// 741 -> 742 (2026-11-28): scripts/self-improve.js, the `thumbgate improve` self-improvement cycle (+1).
+const BASELINE_FILE_COUNT = 742;
 function readBundleSnapshot() {
   const repoRoot = path.resolve(__dirname, '..');
   const stdout = execSync('npm pack --dry-run --json', {
