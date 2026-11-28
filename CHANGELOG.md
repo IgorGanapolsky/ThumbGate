@@ -1,5 +1,18 @@
 # Changelog
 
+## 1.52.0
+
+### Minor Changes
+
+- 46b19b5: ThumbGate hooks for the Claude Agent SDK. `thumbgateHooks()` from `thumbgate/adapters/claude-agent-sdk/index.js` (TypeScript types included) and `thumbgate_hooks()` from the copy-in Python helper plug into the SDK's `hooks` option. PreToolUse runs the same gate check as the Claude Code hook. PostToolUse redacts secrets from tool output through `updatedToolOutput` and flags text that reads like instructions to the model (prompt injection) with `additionalContext`, or removes it with `injection: 'strip'`. `thumbgate sdk-bridge` is the stdin bridge the Python helper calls.
+- 64a8450: Learned rules are now tested against reworded versions of the command before they are saved. After a thumbs-down on `rm -rf ./build-cache`, ThumbGate tries 11 rewordings (`rm -fr`, long flags, `find -delete`, `shutil.rmtree`, `fs.rmSync`, `rsync --delete` and more). When some get past the learned text, it records what the command does (delete this path, force-push this branch) so the rule catches them too. Matches through that recorded intent warn for now; set `THUMBGATE_INTENT_GATES=enforce` to block them. `thumbgate rule-test --command "<cmd>"` shows the table. Turn it off with `THUMBGATE_RULE_MUTATION=0`.
+- 4798ec0: Two new commands for running Claude unattended. `thumbgate verify-stop` is a Stop hook: when the agent says it is done, it runs the check in `.thumbgate/verify.json` (for example `npm test`) and sends any failure back so the agent keeps working, at most 3 rounds per session. A tree that already passed is not checked twice. `thumbgate ralph init` sets up a Ralph loop starter in the current repo: `PROMPT.md`, `prd.json`, `progress.txt`, `ralph.sh` (a fresh agent run per task until `<promise>COMPLETE</promise>`) and `.thumbgate/verify.json` with a detected test command. It also adds the verify-stop hook to `.claude/settings.json` and keeps the hooks already there. Both are opt-in. The Ralph loop is Geoffrey Huntley's technique.
+
+### Patch Changes
+
+- ce5002c: Owner console: add `browserConfirmedVisitors`, the visitors who sent at least one event through the browser beacon. Server-side page views count every HTML fetch, crawlers included, so this is the number to compare with GA4 and Orion.
+- 57d6d7f: robots.txt now keeps every named crawler (Googlebot, Bingbot, ClaudeBot and the rest) out of /checkout/ and /v1/billing/, since a named group ignores the * rules. The homepage status-line panel no longer clips its caption against a second border.
+
 ## 1.51.0
 
 ### Minor Changes

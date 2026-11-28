@@ -311,7 +311,8 @@ const path = require('node:path');
 // 738 -> 740 (2026-11-27): scripts/skill-shell-gate.js and scripts/gate-check-core.js, the PreSkillShellCommand hook (PR 5331) (+2).
 // 740 -> 741 (2026-11-27): scripts/decision-check.js, the `npx thumbgate decision-check` CLI command, public shell (PR 5343) (+1).
 // 741 -> 742 (2026-11-28): scripts/self-improve.js, the `thumbgate improve` self-improvement cycle (+1).
-const BASELINE_FILE_COUNT = 742;
+// 742 -> 750 (2026-11-28): scripts/rule-mutation.js (#5358), adapters/claude-agent-sdk/{index.js,index.d.ts,bridge.js,thumbgate_agent_sdk.py,README.md} (#5359), scripts/verify-stop.js and scripts/ralph-init.js (#5360); public-shell adapters and hooks, kept in lockstep with package-boundary.
+const BASELINE_FILE_COUNT = 750;
 function readBundleSnapshot() {
   const repoRoot = path.resolve(__dirname, '..');
   const stdout = execSync('npm pack --dry-run --json', {
