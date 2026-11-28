@@ -544,8 +544,9 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
     // 737 -> 738 (2026-11-27): scripts/pii-scanner.js, which cloud-rules-export.js requires (+1).
     // 738 -> 740 (2026-11-27): scripts/skill-shell-gate.js and scripts/gate-check-core.js, the PreSkillShellCommand hook (PR 5331) (+2).
     // 740 -> 741 (2026-11-27): scripts/decision-check.js, the `npx thumbgate decision-check` dry run of the default gates (PR 5343) (+1).
-    manifest.fileCount <= 741,
-    `npm package should stay <= 741 files, got ${manifest.fileCount}`
+    // 741 -> 742 (2026-11-28): scripts/self-improve.js, the `thumbgate improve` self-improvement cycle (+1).
+    manifest.fileCount <= 742,
+    `npm package should stay <= 742 files, got ${manifest.fileCount}`
   );
   // Ceiling bumped from 2.75 MB → 2.85 MB (2026-04-16) to accommodate the
   // incremental review-delta demo content in public/dashboard.html landing
@@ -891,8 +892,10 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // top of v1.49.2. Measured 11,129,058.
   // 11.13 -> 11.14 MB (2026-11-27, PR #5344): Black Friday coupon pre-create + /health invoice preview in billing.js.
   // Measured 11,131,988.
-  manifest.unpackedSize <= 11_140_000,
-  `npm package should stay <= 11.14 MB unpacked, got ${manifest.unpackedSize}`
+  // 11.14 -> 11.16 MB (2026-11-28): scripts/self-improve.js (~12 KB) and the `thumbgate improve` CLI entry plus its
+  // daily session-start cycle. Measured 11,151,432.
+  manifest.unpackedSize <= 11_160_000,
+  `npm package should stay <= 11.16 MB unpacked, got ${manifest.unpackedSize}`
 );
 
   for (const file of requiredRuntimeFiles) {

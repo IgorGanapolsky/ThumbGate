@@ -3772,6 +3772,19 @@ function sessionStart() {
   const { analyzeFeedback } = require(path.join(PKG_ROOT, 'scripts', 'feedback-loop'));
   const { refreshStatuslineCache } = require(path.join(PKG_ROOT, 'scripts', 'hook-thumbgate-cache-updater'));
   refreshStatuslineCache(analyzeFeedback(undefined, { humanOnly: true }));
+  // Daily self-improvement cycle: tune learned gates from their own evidence and snapshot the repeat-miss rate.
+  // The cycle replays the audit trail, so it runs detached; this session reports the latest finished cycle.
+  let selfReviewLine = null;
+  try {
+    if (process.env.THUMBGATE_SELF_IMPROVE !== '0') {
+      const selfImprove = require(path.join(PKG_ROOT, 'scripts', 'self-improve'));
+      const { getFeedbackPaths } = require(path.join(PKG_ROOT, 'scripts', 'feedback-loop'));
+      const feedbackDir = getFeedbackPaths().FEEDBACK_DIR;
+      const history = selfImprove.readHistory(feedbackDir);
+      selfReviewLine = selfImprove.sessionReminder(history[history.length - 1]);
+      if (selfImprove.isCycleDue(feedbackDir)) selfImprove.startCycleInBackground(path.join(PKG_ROOT, 'bin', 'cli.js'));
+    }
+  } catch (_) { /* best-effort */ }
   // Keep the cloud-readable rule export current, but only where the user already ran `thumbgate export-rules`.
   try {
     const { refreshExistingExports } = require(path.join(PKG_ROOT, 'scripts', 'cloud-rules-export'));
@@ -3784,6 +3797,7 @@ function sessionStart() {
   // Contract: emit JSON `{hookSpecificOutput:{hookEventName:"SessionStart",
   // additionalContext:"..."}}` to stdout. Supported by Claude Code v0.4+.
   const reminderLines = [];
+  if (selfReviewLine) reminderLines.push(selfReviewLine);
 
   // Active hard-block rules from gate-program.md
   try {
@@ -4435,6 +4449,7 @@ const SUBCOMMAND_HELP = {
   'setup-vertex': 'Usage: npx thumbgate setup-vertex [--dry-run]\n\nAuto-enable Vertex AI API on GCP and write local Vertex routing config to .env. With --dry-run, only detect the active account/project and print the planned changes. This does not create or verify a Dialogflow CX agent; use the Dialogflow CX REST API or console for live-agent evidence.',
   'ai-inventory': 'Usage: npx thumbgate ai-inventory [--root <dir>] [--format=summary|json|cyclonedx] [--output <path>] [--max-files=N]\n\nScan source/manifests/model artifacts for AI, ML, agent-framework, vector DB, Vertex, Gemini, and Dialogflow CX components. Use --format=cyclonedx to produce exportable ML-BOM evidence for enterprise reviews.',
   brain: 'Usage: npx thumbgate brain [--write] [--json] [--limit=N]\n\nBuild the agent-readable "context brain" — a single artifact consolidating this\nrepo\'s lessons, prevention rules, active gates, and project context for a coding\nagent to read BEFORE acting. --write saves it to .thumbgate/BRAIN.md (versioned,\ndeterministic). --json emits the structured model. --limit caps lessons (default 15).',
+  improve: 'Usage: npx thumbgate improve [--apply] [--snapshot] [--json]\n\nRun the self-improvement cycle. Each learned gate is checked against its own evidence: a block gate that would have blocked earlier safe actions, or that a person overrode in a third of 6+ fires, is proposed for warn; a warn gate that fired 3+ times, was never overridden and has strong trigger evidence is proposed for block. Gates change with --apply; THUMBGATE_SELF_TUNE=apply applies tightening unattended but never loosens a gate. Hand-made gates are never changed. One snapshot a day of the repeat-miss rate (thumbs-downs that recur after a lesson was injected, per 100 injections) goes to self-improvement-history.jsonl. session-start runs the cycle once a day; THUMBGATE_SELF_IMPROVE=0 turns that off.',
   'export-rules': 'Usage: npx thumbgate export-rules [--target=claude|agents|all] [--output=path] [--include-lessons] [--check] [--json]\n\nWrite this project\'s learned rules (auto-promoted gates, claim rules, prevention rules) into files cloud agents read from the repo: .claude/rules/thumbgate.md for Claude Code (default), a marked block in AGENTS.md for Codex, Cursor and others, or both. Hooks never run in cloud sessions, so this is how those agents follow the rules. Lesson text stays out unless --include-lessons. Every line is secret- and PII-redacted. --check exits 1 when a file is stale. Once exported, `thumbgate session-start` refreshes it.',
   'team-sync': 'Usage: npx thumbgate team-sync\n\nSynchronize prevention rules and context brain with your team\'s git repository (git pull --rebase & git push), then auto-rebuild the local brain.',
 };
@@ -5078,6 +5093,10 @@ switch (COMMAND) {
   case 'export-rules':
   case 'cloud-rules':
     exportRulesCmd();
+    break;
+  case 'improve':
+  case 'self-improve':
+    require(path.join(PKG_ROOT, 'scripts', 'self-improve')).improveCmd(process.argv.slice(3));
     break;
   case 'context-packs':
     contextPacks();

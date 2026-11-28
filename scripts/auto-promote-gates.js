@@ -880,7 +880,13 @@ function promote(feedbackLogPath, options) {
     if (existingIdx !== -1) {
       const existing = data.gates[existingIdx];
       const newAction = (group.count >= BLOCK_THRESHOLD || Number(group.humanCount || 0) >= HUMAN_BLOCK_THRESHOLD) ? 'block' : 'warn';
-      if (existing.action !== newAction && newAction === 'block') {
+      // A person loosened this gate with `thumbgate improve --apply`. Keep it at warn until a thumbs-down
+      // newer than that decision lands in this gate's group; the old feedback already counted.
+      const heldBySelfTune = existing.tunedBy === 'self-improve' && existing.action === 'warn'
+        && existing.previousAction === 'block' && group.count <= Number(existing.occurrencesAtTune || 0);
+      if (heldBySelfTune && newAction === 'block') {
+        promotions.push({ type: 'upgrade-held-by-self-tune', gateId, occurrences: group.count, occurrencesAtTune: existing.occurrencesAtTune });
+      } else if (existing.action !== newAction && newAction === 'block') {
         // Self-Harness stage 3: regression-test before upgrading warn -> block.
         const regression = opts.skipRegression ? null : safeRegressionCheck(buildGateRule(group, 'block'), regressionOpts);
         if (regression && regression.falseBlocks > REGRESSION_FALSE_BLOCK_LIMIT) {

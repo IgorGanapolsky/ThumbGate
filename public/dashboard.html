@@ -301,6 +301,14 @@ h2{font-size:20px;font-weight:700;margin-bottom:16px;letter-spacing:-.02em}
     <a class="stat-card" data-card-action="gates" onclick="selectCard(this,'gates');return false;" href="#" style="cursor:pointer;text-decoration:none;color:inherit;display:block;" title="Click to view active checks"><div class="stat-label">Active Gates <span class="tooltip-trigger" onclick="event.stopPropagation(); event.preventDefault();">?<span class="tooltip-content">Configured pre-action rules available to check tool calls. This count does not mean feedback has been recorded.</span></span></div><div class="stat-value cyan" id="statGates">—</div></a>
   </div>
 
+  <div class="panel" id="selfImprovePanel" style="display:none;margin-bottom:20px;">
+    <h3 style="margin:0 0 8px 0;font-size:14px;letter-spacing:0.04em;text-transform:uppercase;color:var(--text-muted);">Self-improvement</h3>
+    <p id="selfImproveRate" style="margin:0 0 6px;font-size:15px;"></p>
+    <p id="selfImproveTrend" style="margin:0 0 6px;font-size:13px;color:var(--text-muted);"></p>
+    <ul id="selfImproveChanges" style="margin:0;padding-left:18px;font-size:13px;"></ul>
+    <p style="margin:8px 0 0;font-size:12px;color:var(--text-muted);">Repeat misses: thumbs-downs on the same kind of mistake after ThumbGate gave the agent that lesson, per 100 lessons given. Lower is better. Run <code>npx thumbgate improve</code> for the full cycle.</p>
+  </div>
+
   <div class="panel" id="hostedFeedbackEmpty" role="status" style="display:none;margin-bottom:20px;">
     <strong>No human feedback recorded on this hosted account yet.</strong>
     <p style="margin:8px 0 0;color:var(--text-muted);line-height:1.6;">Local feedback history is not automatically synced here. On the machine where you use ThumbGate, run <code>npx thumbgate dashboard --open</code> to view your local feedback. Configured gates are available rules; lessons are independent records, not human feedback.</p>
@@ -1830,6 +1838,28 @@ document.querySelectorAll('[data-flow-step]').forEach(function(button) {
   button.addEventListener('keydown', function(event) { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); showFlowStep(button); } });
 });
 
+function renderSelfImprovement(si) {
+  var panel = document.getElementById('selfImprovePanel');
+  if (!panel) return;
+  var latest = si && si.latest;
+  if (!latest) { panel.style.display = 'none'; return; }
+  panel.style.display = 'block';
+  document.getElementById('selfImproveRate').textContent = latest.repeatMissesPer100 == null
+    ? 'Repeat misses: no lessons given yet. ' + latest.learnedGates + ' learned gate(s) checked.'
+    : 'Repeat misses: ' + latest.repeatMissesPer100 + ' per 100 lessons (' + latest.repeatMisses + ' of ' + latest.lessonInjections + '). ' + latest.learnedGates + ' learned gate(s) checked.';
+  var t = si.trend || {};
+  document.getElementById('selfImproveTrend').textContent = t.change == null
+    ? 'Trend appears after two daily checks (' + (t.points || 0) + ' so far). Last check ' + String(latest.at || '').slice(0, 10) + '.'
+    : (t.change < 0 ? 'Down ' : t.change > 0 ? 'Up ' : 'Flat ') + Math.abs(t.change) + ' since ' + String(t.from.at).slice(0, 10) + ' (' + t.points + ' daily checks).';
+  var list = document.getElementById('selfImproveChanges');
+  list.textContent = '';
+  (latest.changes || []).slice(0, 5).forEach(function (c) {
+    var li = document.createElement('li');
+    li.textContent = c.gateId + ': ' + c.from + ' to ' + c.to + (c.applied ? ' (changed)' : ' (proposed)');
+    list.appendChild(li);
+  });
+}
+
 function renderDashboardData(data) {
   window.ThumbGateProjects.refresh(getHeaders());
   var proLimitNotice = document.getElementById('proLimitNotice');
@@ -1844,6 +1874,7 @@ function renderDashboardData(data) {
   }
   dashboardSnapshot = data;
   markDashboardRefreshed();
+  try { renderSelfImprovement(data.selfImprovement); } catch (_) { /* optional panel */ }
   var reviewButton = document.getElementById('reviewCheckpointBtn');
   if (reviewButton) reviewButton.disabled = false;
   const gates = data.gates || data.activeGates || [];
