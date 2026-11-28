@@ -903,8 +903,10 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // 11.20 -> 11.22 MB (2026-11-28): scripts/verify-stop.js + scripts/ralph-init.js (~13 KB). Measured 11,208,911.
   // 11.22 -> 11.24 MB (2026-11-28): main had already reached 11,221,413 after 1.53.0; the receipt hash chain,
   // policy version and `thumbgate receipts verify` add ~8 KB to scripts/action-receipts.js. Measured 11,229,276.
-  manifest.unpackedSize <= 11_240_000,
-  `npm package should stay <= 11.24 MB unpacked, got ${manifest.unpackedSize}`
+  // 11.24 -> 11.25 MB (2026-11-28, PR #5371): main reached ~11.239 MB after the Ed25519 receipts (#5368) and the
+  // 1.54.0 CHANGELOG; the doctor hook-runtime check and global-install refresh add ~2 KB. Measured 11,241,683.
+  manifest.unpackedSize <= 11_250_000,
+  `npm package should stay <= 11.25 MB unpacked, got ${manifest.unpackedSize}`
 );
 
   for (const file of requiredRuntimeFiles) {
