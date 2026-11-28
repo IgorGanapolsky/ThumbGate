@@ -1,0 +1,27 @@
+{
+  "name": "thumbgate",
+  "description": "Pre-action checks for AI coding agents. Turn a thumbs-down into a prevention rule, list your rules and what was blocked, and check your setup, through the hosted ThumbGate server.",
+  "version": "1.50.1",
+  "author": {
+    "name": "Igor Ganapolsky",
+    "url": "https://thumbgate.ai"
+  },
+  "homepage": "https://thumbgate.ai",
+  "repository": "https://github.com/IgorGanapolsky/ThumbGate",
+  "license": "MIT",
+  "privacyPolicyUrl": "https://thumbgate.ai/privacy",
+  "keywords": [
+    "guardrails",
+    "pretooluse",
+    "agent-safety",
+    "pre-action-checks",
+    "feedback"
+  ],
+  "icon": "./.claude-plugin/icon.png",
+  "mcpServers": {
+    "thumbgate": {
+      "type": "http",
+      "url": "https://thumbgate.ai/mcp"
+    }
+  }
+}
