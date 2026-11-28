@@ -13,6 +13,8 @@ const { spawnSync } = require('node:child_process');
 const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'receipt-chain-test-'));
 process.env.THUMBGATE_FEEDBACK_DIR = tmpDir;
 process.env.THUMBGATE_RECEIPT_LOCK_WAIT_MS = '300';
+// No signing key unless a test makes one, whatever is in the real home directory.
+process.env.THUMBGATE_RECEIPT_ED25519_KEY = path.join(tmpDir, 'no-key.pem');
 const receipts = require('../scripts/action-receipts');
 
 test.after(() => fs.rmSync(tmpDir, { recursive: true, force: true }));
@@ -224,4 +226,77 @@ test('stale-lock takeover never removes a live writer\'s lock', () => {
     assert.equal(fs.existsSync(lock), true);
     assert.equal(receipts.verifyReceiptChain().chained, 1, 'nothing appended');
   } finally { process.env.THUMBGATE_FEEDBACK_DIR = prev; }
+});
+
+test('with an Ed25519 key, receipts are signed and anyone with the public key can check them', () => {
+  const keyPath = path.join(tmpDir, 'signing.pem');
+  process.env.THUMBGATE_RECEIPT_ED25519_KEY = keyPath;
+  try {
+    const key = receipts.generateEd25519Key();
+    assert.equal(key.created, true);
+    assert.equal(fs.statSync(keyPath).mode & 0o077, 0, 'private key is owner-only');
+    const pub = path.join(tmpDir, 'public.pem');
+    fs.writeFileSync(pub, key.publicKeyPem);
+
+    const file = freshLedger('signed');
+    const written = writeChain(file, 2);
+    assert.equal(written[0].ed25519KeyId, key.keyId);
+    assert.ok(written[0].ed25519Signature);
+    const result = receipts.verifyReceiptChain({ file, publicKey: key.publicKeyPem, requireSigned: true });
+    assert.equal(result.ok, true, JSON.stringify(result.errors));
+    assert.equal(result.signed, 2);
+
+    // A forger without the private key re-hashes an edited entry and re-links the chain: the signature fails.
+    const all = lines(file);
+    const forged = JSON.parse(all[1]);
+    forged.decision = 'allow';
+    forged.entryHash = receipts.receiptEntryHash(forged);
+    all[1] = JSON.stringify(forged);
+    fs.writeFileSync(file, `${all.join('\n')}\n`);
+    const bad = receipts.verifyReceiptChain({ file, publicKey: key.publicKeyPem });
+    assert.deepEqual(bad.errors.map((e) => e.reason), ['bad_signature']);
+
+    // A different key is reported as such.
+    const other = crypto.generateKeyPairSync('ed25519').publicKey.export({ type: 'spki', format: 'pem' });
+    assert.ok(receipts.verifyReceiptChain({ file, publicKey: other }).errors.some((e) => e.reason === 'signed_by_other_key'));
+
+    const cli = path.join(__dirname, '..', 'bin', 'cli.js');
+    const env = { ...process.env, THUMBGATE_RECEIPT_ED25519_KEY: keyPath };
+    const shown = spawnSync(process.execPath, [cli, 'receipts', 'pubkey'], { encoding: 'utf8', env });
+    assert.equal(shown.stdout, key.publicKeyPem);
+    const cliBad = spawnSync(process.execPath, [cli, 'receipts', 'verify', '--file', file, '--pubkey', pub], { encoding: 'utf8', env });
+    assert.equal(cliBad.status, 1);
+    assert.match(cliBad.stdout, /bad_signature/);
+  } finally {
+    process.env.THUMBGATE_RECEIPT_ED25519_KEY = path.join(tmpDir, 'no-key.pem');
+  }
+});
+
+test('--require-signed rejects unsigned receipts', () => {
+  const file = freshLedger('unsigned');
+  writeChain(file, 1);
+  const { publicKey } = crypto.generateKeyPairSync('ed25519');
+  const pem = publicKey.export({ type: 'spki', format: 'pem' });
+  assert.equal(receipts.verifyReceiptChain({ file, publicKey: pem }).ok, true);
+  assert.deepEqual(receipts.verifyReceiptChain({ file, publicKey: pem, requireSigned: true }).errors.map((e) => e.reason), ['unsigned']);
+});
+
+test('--require-signed without a public key fails instead of passing unchecked', () => {
+  const file = freshLedger('needs-key');
+  writeChain(file, 1);
+  assert.deepEqual(receipts.verifyReceiptChain({ file, requireSigned: true }).errors.map((e) => e.reason), ['public_key_required']);
+  const cli = path.join(__dirname, '..', 'bin', 'cli.js');
+  const run = spawnSync(process.execPath, [cli, 'receipts', 'verify', '--file', file, '--require-signed'], { encoding: 'utf8', env: { ...process.env } });
+  assert.equal(run.status, 1, run.stdout + run.stderr);
+});
+
+test('a key created while the process runs is used for the next receipt', () => {
+  const keyPath = path.join(tmpDir, 'late.pem');
+  const prev = process.env.THUMBGATE_RECEIPT_ED25519_KEY;
+  process.env.THUMBGATE_RECEIPT_ED25519_KEY = keyPath;
+  try {
+    assert.equal(receipts.loadEd25519Signer(), null);
+    const key = receipts.generateEd25519Key();
+    assert.equal(receipts.loadEd25519Signer().keyId, key.keyId);
+  } finally { process.env.THUMBGATE_RECEIPT_ED25519_KEY = prev; }
 });

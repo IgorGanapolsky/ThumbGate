@@ -246,6 +246,65 @@ function normalizeReceipt(params = {}) {
 // ---------------------------------------------------------------------------
 
 const CHAIN_GENESIS = 'GENESIS';
+const ED25519_KEY_FILE = 'receipt-signing-ed25519.pem';
+
+// ---------------------------------------------------------------------------
+// Ed25519 signatures: anyone with the public key can check a receipt; only the key holder can sign one.
+// Opt-in: `thumbgate receipts keygen` writes a private key, or THUMBGATE_RECEIPT_ED25519_KEY points at a PEM file.
+// ---------------------------------------------------------------------------
+
+function ed25519KeyPath(env = process.env) {
+  return env.THUMBGATE_RECEIPT_ED25519_KEY || path.join(require('node:os').homedir(), '.thumbgate', ED25519_KEY_FILE);
+}
+
+let signerCache = null;
+function loadEd25519Signer(env = process.env) {
+  const keyPath = ed25519KeyPath(env);
+  // Keyed on the file's mtime too, so a key created, replaced or removed while a server runs is picked up.
+  let stamp = null;
+  try { stamp = fs.statSync(keyPath).mtimeMs; } catch { stamp = null; }
+  if (signerCache && signerCache.keyPath === keyPath && signerCache.stamp === stamp) return signerCache.signer;
+  let signer = null;
+  try {
+    const privateKey = crypto.createPrivateKey(fs.readFileSync(keyPath, 'utf8'));
+    if (privateKey.asymmetricKeyType === 'ed25519') {
+      const publicKey = crypto.createPublicKey(privateKey);
+      signer = { privateKey, publicKey, keyId: ed25519KeyId(publicKey) };
+    }
+  } catch { signer = null; }
+  signerCache = { keyPath, stamp, signer };
+  return signer;
+}
+
+/** Short, stable id for a public key: the first 16 hex characters of the SHA-256 of its DER encoding. */
+function ed25519KeyId(publicKey) {
+  return sha256Hex(publicKey.export({ type: 'spki', format: 'der' })).slice(0, 16);
+}
+
+function generateEd25519Key(options = {}) {
+  const keyPath = options.keyPath || ed25519KeyPath();
+  if (fs.existsSync(keyPath) && !options.force) return { keyPath, created: false, ...publicKeyInfo(loadEd25519Signer({ ...process.env, THUMBGATE_RECEIPT_ED25519_KEY: keyPath })) };
+  const { privateKey } = crypto.generateKeyPairSync('ed25519');
+  fs.mkdirSync(path.dirname(keyPath), { recursive: true });
+  // Remove first so the new file is created with owner-only permissions even when replacing a key (--force).
+  fs.rmSync(keyPath, { force: true });
+  fs.writeFileSync(keyPath, privateKey.export({ type: 'pkcs8', format: 'pem' }), { mode: 0o600, flag: 'wx' });
+  signerCache = null;
+  return { keyPath, created: true, ...publicKeyInfo(loadEd25519Signer({ ...process.env, THUMBGATE_RECEIPT_ED25519_KEY: keyPath })) };
+}
+
+function publicKeyInfo(signer) {
+  if (!signer) return { keyId: null, publicKeyPem: null };
+  return { keyId: signer.keyId, publicKeyPem: signer.publicKey.export({ type: 'spki', format: 'pem' }) };
+}
+
+function verifyEd25519(entry, publicKey) {
+  try {
+    return crypto.verify(null, Buffer.from(entry.entryHash, 'utf8'), publicKey, Buffer.from(String(entry.ed25519Signature), 'base64'));
+  } catch {
+    return false;
+  }
+}
 
 function sha256Hex(text) {
   return crypto.createHash('sha256').update(text).digest('hex');
@@ -404,13 +463,22 @@ function verifyReceiptChain(options = {}) {
     // No default ledger yet is an empty, valid ledger. A file the caller named that isn't there, or anything else
     // (a directory, no permission, an I/O error), means nothing was checked.
     const missing = error && error.code === 'ENOENT' && !options.file;
-    return { ok: missing, file: filePath, total: 0, chained: 0, legacy: 0, head: CHAIN_GENESIS, errors: missing ? [] : [{ line: 0, reason: error && error.code === 'ENOENT' ? 'missing' : `unreadable: ${error && error.code}` }] };
+    return { ok: missing, file: filePath, total: 0, chained: 0, legacy: 0, signed: 0, head: CHAIN_GENESIS, errors: missing ? [] : [{ line: 0, reason: error && error.code === 'ENOENT' ? 'missing' : `unreadable: ${error && error.code}` }] };
   }
   const lines = raw.split('\n').map((l) => l.trim()).filter(Boolean);
   const errors = [];
   let prev = { seq: 0, hash: CHAIN_GENESIS };
   let chained = 0;
   let legacy = 0;
+  let signed = 0;
+  let publicKey = null;
+  if (options.publicKey) {
+    try { publicKey = crypto.createPublicKey(options.publicKey); } catch { return { ok: false, file: filePath, total: 0, chained: 0, legacy: 0, signed: 0, head: CHAIN_GENESIS, errors: [{ line: 0, reason: 'bad_public_key' }] }; }
+  }
+  if (options.requireSigned && !publicKey) {
+    return { ok: false, file: filePath, total: 0, chained: 0, legacy: 0, signed: 0, head: CHAIN_GENESIS, errors: [{ line: 0, reason: 'public_key_required' }] };
+  }
+  const keyId = publicKey ? ed25519KeyId(publicKey) : null;
   lines.forEach((line, index) => {
     const lineNo = index + 1;
     let entry = null;
@@ -427,9 +495,19 @@ function verifyReceiptChain(options = {}) {
     if (entry.prevHash !== prev.hash) errors.push({ line: lineNo, reason: 'chain_broken' });
     // seq starts at 1 after GENESIS or a pre-chain line and goes up by exactly one.
     if (!Number.isInteger(entry.seq) || entry.seq !== prev.seq + 1) errors.push({ line: lineNo, reason: 'seq_gap' });
+    if (entry.ed25519Signature) signed += 1;
+    if (publicKey) {
+      if (!entry.ed25519Signature) {
+        if (options.requireSigned) errors.push({ line: lineNo, reason: 'unsigned' });
+      } else if (entry.ed25519KeyId !== keyId) {
+        errors.push({ line: lineNo, reason: 'signed_by_other_key' });
+      } else if (!verifyEd25519(entry, publicKey)) {
+        errors.push({ line: lineNo, reason: 'bad_signature' });
+      }
+    }
     prev = { seq: Number.isInteger(entry.seq) ? entry.seq : prev.seq + 1, hash: entry.entryHash };
   });
-  return { ok: errors.length === 0, file: filePath, total: lines.length, chained, legacy, head: prev.hash, errors };
+  return { ok: errors.length === 0, file: filePath, total: lines.length, chained, legacy, signed, signatureChecked: Boolean(publicKey), keyId, head: prev.hash, errors };
 }
 
 /**
@@ -445,7 +523,10 @@ function recordReceipt(params = {}, options = {}) {
   return withLedgerLock(receiptsPath, () => {
     const head = chainHead(receiptsPath);
     const receipt = { ...base, seq: head.seq + 1, prevHash: head.hash };
+    const signer = loadEd25519Signer();
+    if (signer) receipt.ed25519KeyId = signer.keyId; // inside the hash, so the key id can't be swapped
     receipt.entryHash = receiptEntryHash(receipt);
+    if (signer) receipt.ed25519Signature = crypto.sign(null, Buffer.from(receipt.entryHash, 'utf8'), signer.privateKey).toString('base64');
     fs.appendFileSync(receiptsPath, `${JSON.stringify(receipt)}\n`, 'utf8');
     return { recorded: true, ...receipt };
   });
@@ -1022,20 +1103,46 @@ function evaluateOneShotPretool(toolName, toolInput) {
   return null;
 }
 
-/** `thumbgate receipts verify [--file <path>] [--json]`: exit 0 when the ledger is intact, 1 when it is not. */
+/**
+ * `thumbgate receipts verify [--file <path>] [--pubkey <pem file>] [--require-signed] [--json]`
+ * `thumbgate receipts keygen` / `thumbgate receipts pubkey`
+ * verify exits 0 when the ledger is intact (and, with --pubkey, every signature checks out), 1 when it is not.
+ */
 function runReceiptsCli(argv = []) {
   const [sub, ...rest] = argv;
   const flag = (name) => { const i = rest.indexOf(name); return i === -1 ? null : (rest[i + 1] || ''); };
+  const json = rest.includes('--json');
+  if (sub === 'keygen' || sub === 'pubkey') {
+    const info = sub === 'keygen' ? generateEd25519Key({ force: rest.includes('--force') }) : { keyPath: ed25519KeyPath(), ...publicKeyInfo(loadEd25519Signer()) };
+    if (!info.publicKeyPem) {
+      console.error(`No Ed25519 receipt key at ${info.keyPath}. Run: thumbgate receipts keygen`);
+      return 1;
+    }
+    if (json) console.log(JSON.stringify(info, null, 2));
+    else if (sub === 'pubkey') process.stdout.write(info.publicKeyPem);
+    else {
+      console.log(`${info.created ? 'Created' : 'Already exists'}: ${info.keyPath} (private, keep it secret)`);
+      console.log(`Key id ${info.keyId}. New receipts are signed with it. Share this public key with whoever audits them:\n`);
+      process.stdout.write(info.publicKeyPem);
+    }
+    return 0;
+  }
   if (sub !== 'verify') {
-    console.log('Usage: thumbgate receipts verify [--file <action-receipts.jsonl>] [--json]');
+    console.log('Usage: thumbgate receipts verify [--file <action-receipts.jsonl>] [--pubkey <public.pem>] [--require-signed] [--json]');
+    console.log('       thumbgate receipts keygen | pubkey');
     return sub ? 2 : 0;
   }
-  const result = verifyReceiptChain(flag('--file') ? { file: flag('--file') } : {});
-  if (rest.includes('--json')) {
+  let publicKey = null;
+  if (flag('--pubkey')) {
+    try { publicKey = fs.readFileSync(flag('--pubkey'), 'utf8'); } catch (error) { console.error(`Cannot read ${flag('--pubkey')}: ${error.message}`); return 1; }
+  }
+  const result = verifyReceiptChain({ ...(flag('--file') ? { file: flag('--file') } : {}), publicKey, requireSigned: rest.includes('--require-signed') });
+  if (json) {
     console.log(JSON.stringify(result, null, 2));
   } else {
     console.log(`${result.ok ? 'VALID' : 'INVALID'}: ${result.file}`);
-    console.log(`  ${result.chained} chained receipt(s), ${result.legacy} from before the chain; head ${result.head}`);
+    console.log(`  ${result.chained} chained receipt(s), ${result.legacy} from before the chain, ${result.signed} signed; head ${result.head}`);
+    if (result.signatureChecked) console.log(`  Signatures checked against key ${result.keyId}.`);
     for (const e of result.errors.slice(0, 20)) console.log(`  line ${e.line}: ${e.reason}`);
     if (result.ok && result.chained) console.log('  Keep the head hash somewhere else: it shows later whether entries were cut off the end.');
   }
@@ -1060,6 +1167,9 @@ module.exports = {
   verifyReceiptSignature,
   verifyReceiptChain,
   reclaimStaleLock,
+  generateEd25519Key,
+  loadEd25519Signer,
+  ed25519KeyPath,
   receiptEntryHash,
   currentPolicyVersion,
   canonicalJson,
