@@ -2423,6 +2423,8 @@ function generateDashboard(feedbackDir, options = {}) {
   });
 
   const roiSummary = computeRoiSummary(gateStats, prevention, analytics, billingSummary);
+  let selfImprovement = null;
+  try { selfImprovement = require('./self-improve').dashboardPanel(feedbackDir); } catch { /* optional panel */ }
   return {
     operational: {
       source: options.billingSource || 'local',
@@ -2433,6 +2435,7 @@ function generateDashboard(feedbackDir, options = {}) {
     gateStats,
     gates,
     prevention,
+    selfImprovement,
     trend,
     health,
     gateAudit,

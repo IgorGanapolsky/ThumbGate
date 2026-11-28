@@ -179,6 +179,17 @@ function startCycleInBackground(cliPath, env = process.env) {
   return child.pid;
 }
 
+// Dashboard panel data: the latest cycle, the trend, and up to 30 daily repeat-miss points.
+function dashboardPanel(feedbackDir) {
+  const history = feedbackDir ? readHistory(feedbackDir) : [];
+  const latest = history[history.length - 1] || null;
+  return {
+    latest,
+    trend: summarizeTrend(history),
+    points: history.slice(-30).map((row) => ({ at: row.at, repeatMissesPer100: typeof row.repeatMissesPer100 === 'number' ? row.repeatMissesPer100 : null })),
+  };
+}
+
 function safe(fn, fallback) {
   try { return fn(); } catch { return fallback; }
 }
@@ -276,6 +287,7 @@ module.exports = {
   appendSnapshot,
   summarizeTrend,
   isCycleDue,
+  dashboardPanel,
   sessionReminder,
   startCycleInBackground,
   runSelfImprovement,

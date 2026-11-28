@@ -163,3 +163,24 @@ test('end to end: a learned block gate that hits earlier safe actions is propose
   assert.equal(saved.gates[0].tunedBy, 'self-improve');
   assert.equal(saved.promotionLog.at(-1).type, 'self-tune');
 });
+
+test('the dashboard panel carries the latest cycle, the trend and up to 30 points', () => {
+  const { dashboardPanel } = require('../scripts/self-improve');
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'tg-self-improve-panel-'));
+  assert.equal(dashboardPanel(dir).latest, null);
+  const day = 24 * 3600000;
+  const t0 = Date.parse('2026-11-01T09:00:00Z');
+  for (let i = 0; i < 35; i += 1) {
+    appendSnapshot(dir, { at: new Date(t0 + i * day).toISOString(), repeatMissesPer100: 40 - i, learnedGates: 2, changes: [] }, { nowMs: t0 + i * day });
+  }
+  const panel = dashboardPanel(dir);
+  assert.equal(panel.points.length, 30);
+  assert.equal(panel.latest.repeatMissesPer100, 6);
+  assert.equal(panel.trend.change, -34);
+});
+
+test('the dashboard page renders the panel from data.selfImprovement', () => {
+  const html = fs.readFileSync(path.join(__dirname, '..', 'public', 'dashboard.html'), 'utf8');
+  assert.match(html, /id="selfImprovePanel"/);
+  assert.match(html, /renderSelfImprovement\(data\.selfImprovement\)/);
+});
