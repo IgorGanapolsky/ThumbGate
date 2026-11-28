@@ -25,7 +25,7 @@ const DEFAULT_MIN_TOOL = 2;
 const SHELL_CHAINING = /[;&|`<>\n\r]|\$\(/;
 // Never auto-approved, whatever the thumbs-up history says.
 const NEVER_AUTO = [
-  /^(?:sudo|doas|su|rm|rmdir|dd|mkfs\S*|shred|chmod|chown|chgrp|kill|killall|pkill|eval|exec|source|\.)$/i,
+  /^(?:sudo|doas|su|env|xargs|nice|nohup|timeout|time|command|builtin|watch|rm|rmdir|dd|mkfs\S*|shred|chmod|chown|chgrp|kill|killall|pkill|eval|exec|source|\.)$/i,
 ];
 const NEVER_AUTO_COMMAND = [
   /\bgit\s+push\b.*(?:\s-f\b|--force|--delete|\s:\S)/i,
@@ -64,7 +64,10 @@ function readConfig(options = {}) {
 function writeConfig(config, options = {}) {
   const file = configPath(options);
   fs.mkdirSync(path.dirname(file), { recursive: true });
-  fs.writeFileSync(file, `${JSON.stringify(config, null, 2)}\n`);
+  // Write then rename, so a hook reading mid-write sees the old or new file, never half of one.
+  const tmp = `${file}.${process.pid}.tmp`;
+  fs.writeFileSync(tmp, `${JSON.stringify(config, null, 2)}\n`);
+  fs.renameSync(tmp, file);
   return file;
 }
 
@@ -92,21 +95,24 @@ function isNeverAutoCommand(command) {
   const tokens = tokenize(text);
   // A leading VAR=value can change what the command loads (LD_PRELOAD, NODE_OPTIONS...).
   if (/^[A-Za-z_][A-Za-z0-9_]*=/.test(tokens[0])) return true;
-  // A pathed program (./git, /tmp/x/git) is a different executable from the bare name you approved.
-  if (/[\\/~]/.test(tokens[0])) return true;
+  // Only a plain bare program name: a pathed program (./git, /tmp/x/git) is a different
+  // executable, and quoted or escaped names ('sudo', s\udo) hide what the shell runs.
+  if (!/^[A-Za-z0-9][A-Za-z0-9._+-]*$/.test(tokens[0])) return true;
   const program = tokens[0];
   if (NEVER_AUTO.some((re) => re.test(program))) return true;
   return NEVER_AUTO_COMMAND.some((re) => re.test(text));
 }
 
 // The pattern a thumbs-up teaches: the program plus its subcommand ("npm test",
-// "git status"), or just the program when the next word is a flag ("ls").
+// "git status"). When the next word is a flag ("python --version", "ls -la") the
+// exact command is the pattern, so one approved flag never covers another.
 function commandKey(command) {
   const tokens = tokenize(command);
   if (!tokens.length) return null;
   const program = tokens[0];
   const sub = tokens[1];
-  return sub && !sub.startsWith('-') ? `${program} ${sub}` : program;
+  if (!sub) return program;
+  return sub.startsWith('-') ? tokens.join(' ') : `${program} ${sub}`;
 }
 
 function keyForCall(toolName, toolInput) {
@@ -279,8 +285,14 @@ function runCli(args = [], options = {}) {
   };
   if (sub === 'on' || sub === 'off') {
     const config = { ...readConfig(options), enabled: sub === 'on' };
-    const min = flag('--min');
-    if (min !== undefined) config.minThumbsUp = Number(min);
+    if (args.includes('--min')) {
+      const min = flag('--min');
+      if (!/^[1-9]\d*$/.test(String(min || ''))) {
+        log('--min needs a whole number of 1 or more, for example --min 2. Nothing was changed.');
+        return 1;
+      }
+      config.minThumbsUp = Number(min);
+    }
     const file = writeConfig(config, options);
     log(`ThumbGate auto-approve is ${sub.toUpperCase()} (${file}).`);
     if (sub === 'on') {

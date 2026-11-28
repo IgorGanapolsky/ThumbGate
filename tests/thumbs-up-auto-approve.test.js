@@ -59,7 +59,10 @@ test('a later thumbs-down on the same pattern revokes it', () => {
 });
 
 test('dangerous or chained commands are never auto-approved', () => {
-  const learned = ['rm -rf build', 'git push -f origin main', 'npm test', 'node -e 1', 'git reset --hard HEAD'];
+  const learned = [
+    'rm -rf build', 'git push -f origin main', 'npm test', 'node -e 1', 'git reset --hard HEAD',
+    'sudo npm test', 'NODE_OPTIONS=--require=x npm test', 'env FOO=1 npm test', "'sudo' -n true",
+  ];
   const opts = setup(learned.map((c) => up('Bash', c)), { enabled: true });
   for (const cmd of [
     'rm -rf build',
@@ -73,6 +76,10 @@ test('dangerous or chained commands are never auto-approved', () => {
     'git reset --hard HEAD',
     'node -e "process.exit()"',
     'npm test > /etc/passwd',
+    'env FOO=1 npm test',
+    "'sudo' -n true",
+    "'rm' -rf build",
+    's\\udo npm test',
   ]) {
     assert.equal(auto.applyAutoApprove(allowed, bash(cmd), opts), allowed, cmd);
   }
@@ -109,6 +116,26 @@ test('only a person\'s thumbs-up teaches an approval', () => {
   for (const cmd of ['npm test', 'git status', 'npm run lint']) {
     assert.equal(auto.applyAutoApprove(allowed, bash(cmd), opts), allowed, cmd);
   }
+});
+
+test('an approved flag never covers a different flag on the same program', () => {
+  const opts = setup([up('Bash', 'python --version'), up('Bash', 'ls -la')], { enabled: true });
+  assert.equal(decision(auto.applyAutoApprove(allowed, bash('python --version'), opts)), 'allow');
+  assert.equal(decision(auto.applyAutoApprove(allowed, bash('ls -la'), opts)), 'allow');
+  assert.equal(auto.applyAutoApprove(allowed, bash('python -m attacker'), opts), allowed);
+  assert.equal(auto.applyAutoApprove(allowed, bash('ls -la /etc'), opts), allowed);
+});
+
+test('--min must be a whole number of 1 or more, or nothing changes', () => {
+  const opts = setup([], { enabled: false, minThumbsUp: 5 });
+  const log = () => {};
+  for (const bad of [['on', '--min'], ['on', '--min', 'nope'], ['on', '--min', '0'], ['on', '--min', '-2'], ['on', '--min', '1.5']]) {
+    assert.equal(auto.runCli(bad, { ...opts, log }), 1, bad.join(' '));
+    assert.equal(auto.settings(opts).enabled, false);
+    assert.equal(auto.settings(opts).minCommand, 5);
+  }
+  assert.equal(auto.runCli(['on', '--min', '3'], { ...opts, log }), 0);
+  assert.equal(auto.settings(opts).minCommand, 3);
 });
 
 test('unrelated commands are not approved', () => {
