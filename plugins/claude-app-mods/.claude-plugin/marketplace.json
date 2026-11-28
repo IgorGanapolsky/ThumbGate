@@ -6,7 +6,7 @@
       "name": "usage-bar",
       "description": "Live token, cost, context and weekly-limit band plus a ThumbGate line, above the prompt in the Claude app and terminal",
       "source": "./usage-bar",
-      "version": "0.1.0"
+      "version": "0.2.0"
     }
   ]
 }

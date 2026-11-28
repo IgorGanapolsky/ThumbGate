@@ -6,10 +6,12 @@ const BAND = {
   props: { hasSurvey: false, isCollapsed: false, isWorking: false, maxRows: 10, bodyColumns: 120, scroll: { offset: 0, bodyRows: 10 }, view: {} },
 } as const
 
+const T = '2026-11-27T21:00:00Z'
 const transcript = [
-  { type: 'assistant', message: { id: 'a', model: 'claude-opus-5-5', usage: { input_tokens: 600, output_tokens: 200, cache_read_input_tokens: 0, cache_creation_input_tokens: 0 } } },
-  { type: 'assistant', message: { id: 'a', model: 'claude-opus-5-5', usage: { input_tokens: 600, output_tokens: 200, cache_read_input_tokens: 0, cache_creation_input_tokens: 0 } } },
-  { type: 'assistant', message: { id: 'b', model: 'claude-haiku-5-5', usage: { input_tokens: 200, output_tokens: 0 } } },
+  { type: 'assistant', timestamp: '2026-11-26T12:00:00Z', message: { id: 'old', model: 'claude-opus-5-5', usage: { input_tokens: 0, output_tokens: 0 } } },
+  { type: 'assistant', timestamp: T, message: { id: 'a', model: 'claude-opus-5-5', usage: { input_tokens: 600, output_tokens: 200, cache_read_input_tokens: 0, cache_creation_input_tokens: 0 } } },
+  { type: 'assistant', timestamp: T, message: { id: 'a', model: 'claude-opus-5-5', usage: { input_tokens: 600, output_tokens: 200, cache_read_input_tokens: 0, cache_creation_input_tokens: 0 } } },
+  { type: 'assistant', timestamp: T, message: { id: 'b', model: 'claude-haiku-5-5', usage: { input_tokens: 200, output_tokens: 0 } } },
 ].map(r => JSON.stringify(r)).join('\n')
 
 test('the band shows usage, limits and ThumbGate counts', async ($, on) => {
@@ -28,7 +30,16 @@ test('the band shows usage, limits and ThumbGate counts', async ($, on) => {
   }))
   on('clock.now', () => ({ value: Date.parse('2026-11-27T21:12:39Z') }))
   on('clock.every', () => ({ value: undefined }))
-  on('session.info', () => ({ value: { transcriptPath: '/t.jsonl' } }))
+  on('session.info', () => ({ value: { transcriptPath: '/p/proj/t.jsonl' } }))
+  on('fs.list', (_, e: any) => ({
+    value:
+      String(e.path ?? e) === '/p'
+        ? [{ name: 'proj', kind: 'dir' as const, size: 0, mtimeMs: 0, isLink: false }]
+        : [
+            { name: 't.jsonl', kind: 'file', size: 10, mtimeMs: Date.parse(T), isLink: false },
+            { name: 'stale.jsonl', kind: 'file', size: 10, mtimeMs: Date.parse('2026-11-25T12:00:00Z'), isLink: false },
+          ],
+  }))
   on('fs.read', () => ({ value: transcript }))
   on('http.fetch', () => ({ value: { status: 200, ok: true, headers: {}, text: '{"version":"1.50.0"}' } }))
   on('mcp.call', () => ({
@@ -38,12 +49,12 @@ test('the band shows usage, limits and ThumbGate counts', async ($, on) => {
   await $.session.start({ cwd: '/', surface: 'desktop', isInteractive: true })
   await $.command.run({ command: 'usage-bar-refresh', args: '', origin: { kind: 'human' }, presentation: 'text' } as any)
 
-  for (const surface of ['desktop', 'mobile', 'terminal'] as const) {
+  for (const surface of ['desktop', 'mobile'] as const) {
     const ui = await $.ui.mount({ ...BAND, surface })
-    const top = await ui.find({ type: 'Text', text: /This thread/ })
-    expect(top?.text).toContain('1k tokens')
-    expect(top?.text).toContain('$4.50 at API prices')
-    expect(top?.text).toContain('Opus 80% / Haiku 20%')
+    const top = await ui.find({ type: 'Text', text: /Today/ })
+    // opus 600 in + 200 out = $0.0064, haiku 200 in = $0.00002
+    expect(top?.text).toContain('Today: 1k tokens · $0.01 at API prices (plan is flat-rate) · Opus 80% / Haiku 20% · this machine')
+    expect(top?.text).toContain('this session 1k tokens $4.50')
     const limits = await ui.find({ type: 'Text', text: /context/ })
     expect(limits?.text).toContain('context 19% (191k/1.0M)')
     expect(limits?.text).toContain('weekly limit 83%, resets Mon 12:00 PM ET')
@@ -51,6 +62,10 @@ test('the band shows usage, limits and ThumbGate counts', async ($, on) => {
     expect(tg?.text).toContain('ThumbGate v1.50.0 · 1👍 9👎 (this machine, degrading)')
     await ui.unmount()
   }
+
+  const term = await $.ui.mount({ ...BAND, surface: 'terminal' })
+  expect(await term.find({ type: 'Text', text: /ThumbGate/ })).toBeFalsy()
+  await term.unmount()
 })
 
 test('a local thumbgate server is read first', async ($, on) => {
@@ -68,10 +83,10 @@ test('a local thumbgate server is read first', async ($, on) => {
     return { value: { isError: false, content: [{ type: 'text', text: '{"totalPositive":2,"totalNegative":3}' }] } }
   })
 
-  await $.session.start({ cwd: '/', surface: 'terminal', isInteractive: true })
+  await $.session.start({ cwd: '/', surface: 'desktop', isInteractive: true })
   await $.command.run({ command: 'usage-bar-refresh', args: '', origin: { kind: 'human' }, presentation: 'text' } as any)
 
-  const ui = await $.ui.mount({ ...BAND, surface: 'terminal' })
+  const ui = await $.ui.mount({ ...BAND, surface: 'desktop' })
   expect((await ui.find({ type: 'Text', text: /ThumbGate/ }))?.text).toContain('2👍 3👎 (this machine)')
   expect(asked[0]).toBe('thumbgate/feedback_stats')
   await ui.unmount()
