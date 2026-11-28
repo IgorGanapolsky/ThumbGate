@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="generator" content="ThumbGate">
   <meta name="author" content="Igor Ganapolsky">
-  <meta name="thumbgate-version" content="1.51.0">
+  <meta name="thumbgate-version" content="1.53.0">
   __GOOGLE_SITE_VERIFICATION_META__
   <link rel="icon" type="image/png" href="/thumbgate-icon.png">
   <link rel="canonical" href="__APP_ORIGIN__/">
@@ -636,6 +636,9 @@
     .compare th, .compare td { border-bottom: 1px solid var(--line); padding: 10px 12px; text-align: left; vertical-align: top; color: var(--muted); }
     .compare th { color: var(--text); font-weight: 800; }
     .hero-note { margin: 12px 0 0; color: var(--muted); font-size: 14px; line-height: 1.45; }
+    .hero-proof { margin: -8px 0 16px; font-weight: 600; }
+    .hero-proof a { display: inline-block; padding: 10px 0; min-height: 44px; }
+    .hero-fine { margin-top: 24px; }
     .diagram-caption {
       margin: 14px 0 0;
       color: var(--muted);
@@ -678,6 +681,8 @@
     #limits li, #limits code { overflow-wrap: anywhere; }
     .terminal-chrome { flex-wrap: wrap; }
     #navPaidLoginBtn { white-space: nowrap; }
+    /* Phones: get both hero buttons above the fold (daily grade, 28 Nov 2026). */
+    @media (max-width: 520px) { .hero { padding-top: 20px; } h1 { font-size: 32px; margin: 8px 0 12px; } .hero-thumbs { display: none; } .hero-lede { font-size: 17px; margin-bottom: 16px; } }
     @media (max-width: 360px) { .nav-links { gap: 6px; } #navPaidLoginBtn { padding: 8px !important; font-size: 12px !important; } .nav-buy { padding: 0 8px; } }
   </style>
   <!-- WebMCP-ready: read-only agent tools via document.modelContext -->
@@ -747,9 +752,8 @@
             <button type="button" class="button-primary" data-copy-install data-cta-id="hero_install_copy_primary">Copy free install: npx thumbgate init --agent claude</button>
             <a class="button-pro" href="/checkout/pro" data-revenue-cta data-cta-placement="hero" data-plan-id="pro" data-cta-id="homepage_hero_pro_checkout">Get Pro — $__PRO_PRICE_DOLLARS__/month</a>
           </div>
-          <p class="hero-note">In Claude Code, an unproven "deployed" is sent back.</p>
-<p class="hero-note">Pro keeps every learned rule active. Free keeps your first 3. <a href="#why-pro">What Pro adds</a>.</p>
-          <p class="hero-audience" id="hero-audience"><strong>Denied on a fresh install, even in bypass mode:</strong> force-push, <code>git reset --hard</code>, <code>rm -rf ~</code>, <code>DROP TABLE</code>, <code>terraform destroy</code>, <code>kubectl delete</code>, <code>aws s3 rm</code>, secret leaks, and switching the gate off. The local CLI is free.</p>
+          <p class="hero-proof"><a href="/demo" data-cta-id="hero_demo_link">See the 2-minute demo</a></p>
+          <p class="hero-note" id="adoption-line" hidden></p>
           <div class="hero-terminal" id="hero-recorded-deny" aria-label="Recorded PreToolUse decisions">
             <div class="terminal-chrome" aria-hidden="true">
               <div class="dots"><span></span><span></span><span></span></div>
@@ -768,8 +772,7 @@ $ ... "node scripts/migrate.js --env prod --force" | thumbgate gate-check
 $ ... "node scripts/migrate.js --env prod"
  "permissionDecision":"deny","permissionDecisionReason":"[GATE:auto-node-scripts-migrate-js-env-prod-…] Auto-promoted repeated executable action ... (2 occurrences in 30 days)"</pre>
           </div>
-          <p class="hero-note">Recorded from the published package on 25 Nov 2026, no strict mode, lines shortened. <a href="https://github.com/IgorGanapolsky/ThumbGate/tree/main/docs/demo/thumbs-down-hold" target="_blank" rel="noopener">Transcript and version</a>. Other flagged actions only warn unless you turn on strict mode: <code>THUMBGATE_STRICT_ENFORCEMENT=1</code>.</p>
-          <p class="hero-note" id="adoption-line" hidden></p>
+          <p class="hero-note">Recorded from the published package on 25 Nov 2026, no strict mode, lines shortened. <a href="https://github.com/IgorGanapolsky/ThumbGate/tree/main/docs/demo/thumbs-down-hold" target="_blank" rel="noopener">Transcript and version</a>.</p>
           <div class="cc-install" id="install">
             <p class="cc-step"><strong>1 · Install the plugin</strong> <span class="cc-where">inside Claude Code</span></p>
             <pre class="cc-cmd"><code>/plugin marketplace add IgorGanapolsky/ThumbGate
@@ -780,6 +783,10 @@ $ ... "node scripts/migrate.js --env prod"
             <p class="cc-step" id="agent-setup-prompt"><strong>Or paste this into Claude Code</strong></p>
             <pre class="cc-cmd"><code data-agent-prompt style="white-space:pre-wrap">Run npx thumbgate init --agent claude, show me the hooks it added, then tell me to restart Claude Code. Change nothing else.</code> <button type="button" class="copy-cmd" data-copy-agent-prompt data-cta-id="hero_agent_prompt_copy">Copy prompt</button></pre>
             <p class="hero-note">New to it? <a data-udemy-course href="https://www.udemy.com/course/claude-code-thumbgate-understand-the-gate-and-its-limits/?referralCode=FB94D82DF875072CBA42&amp;utm_source=thumbgate&amp;utm_medium=site_home&amp;utm_campaign=udemy_course" target="_blank" rel="noopener">Free video course on Udemy</a>.</p>
+          </div>
+          <div class="hero-fine">
+          <p class="hero-audience" id="hero-audience"><strong>Denied on a fresh install, even in bypass mode:</strong> force-push, <code>git reset --hard</code>, <code>rm -rf ~</code>, <code>DROP TABLE</code>, <code>terraform destroy</code>, <code>kubectl delete</code>, <code>aws s3 rm</code>, secret leaks, and switching the gate off. The local CLI is free.</p>
+            <p class="hero-note">Pro keeps every learned rule active. Free keeps your first 3. <a href="#why-pro">What Pro adds</a>. In Claude Code, an unproven "deployed" is sent back. Other flagged actions only warn unless you turn on strict mode: <code>THUMBGATE_STRICT_ENFORCEMENT=1</code>.</p>
           </div>
           </div>
           <figure class="hero-visual hero-statusline">
@@ -1078,7 +1085,7 @@ $ ... "node scripts/migrate.js --env prod"
 
   <footer>
     <div class="shell footer-inner">
-      <span>ThumbGate · MIT License · npm v1.51.0</span>
+      <span>ThumbGate · MIT License · npm v1.53.0</span>
       <div class="footer-links">
         <a href="https://github.com/IgorGanapolsky/ThumbGate" target="_blank" rel="noopener">GitHub</a>
         <a href="/guide">Technical setup</a>

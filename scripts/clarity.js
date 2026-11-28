@@ -95,6 +95,9 @@ const BANNER_TEXT = 'May we measure how visitors use this site? With your OK, Mi
 
 // Checkout and post-purchase pages never load Clarity or Orion, but they carry Google Analytics, so they get the
 // same banner and controls with Google Analytics as the only thing the choice covers.
+// Phone wording: same choice, fewer lines, so the bar stays short.
+const SHORT_BANNER_TEXT = 'May Microsoft Clarity and Orion measure your visit? Neither loads unless you accept. Declining also turns off Google Analytics cookies.';
+
 const GA_ONLY_BANNER_TEXT = 'May we use Google Analytics cookies to measure visits to this page? It never receives '
   + 'your email or payment details.';
 const GA_ONLY_PATH = /^\/(checkout|success)(\/|$|\.|\?)/i;
@@ -143,11 +146,13 @@ function buildConsentTag({ clarityId = '', orionSrc = '', trackCheckout = false,
     "    if (d.getElementById('tg-consent')) return;",
     "    if (!d.body) { d.addEventListener('DOMContentLoaded',show); return; }",
     "    var b=d.createElement('div'); b.id='tg-consent'; b.setAttribute('role','region'); b.setAttribute('aria-label','Analytics choice');",
-    "    b.style.cssText='position:fixed;left:16px;right:16px;bottom:16px;z-index:2147483647;max-width:560px;margin:0 auto;padding:14px 16px;border-radius:10px;background:#111827;color:#f9fafb;font:14px/1.45 system-ui,sans-serif;box-shadow:0 6px 24px rgba(0,0,0,.3)';",
-    "    var p=d.createElement('p'); p.style.margin='0 0 10px'; p.textContent=cfg.text; b.appendChild(p);",
+    // Phones get a slim full-width bar on the bottom edge so it never covers the hero buttons.
+    "    var narrow=(w.innerWidth||1024)<640;",
+    "    b.style.cssText=narrow?'position:fixed;left:0;right:0;bottom:0;z-index:2147483647;padding:8px 12px;background:#111827;color:#f9fafb;font:12px/1.35 system-ui,sans-serif;box-shadow:0 -2px 12px rgba(0,0,0,.3)':'position:fixed;left:16px;right:16px;bottom:16px;z-index:2147483647;max-width:560px;margin:0 auto;padding:14px 16px;border-radius:10px;background:#111827;color:#f9fafb;font:14px/1.45 system-ui,sans-serif;box-shadow:0 6px 24px rgba(0,0,0,.3)';",
+    "    var p=d.createElement('p'); p.style.margin=narrow?'0 0 6px':'0 0 10px'; p.textContent=narrow?cfg.short:cfg.text; b.appendChild(p);",
     "    var row=d.createElement('div'); row.style.cssText='display:flex;gap:8px;flex-wrap:wrap;align-items:center';",
     "    function btn(label,v,primary){ var x=d.createElement('button'); x.type='button'; x.textContent=label; x.setAttribute('data-consent-choice',v);",
-    "      x.style.cssText='padding:7px 14px;border-radius:6px;border:1px solid #9ca3af;cursor:pointer;font:inherit;'+(primary?'background:#f9fafb;color:#111827':'background:transparent;color:#f9fafb');",
+    "      x.style.cssText='min-height:36px;padding:7px 14px;border-radius:6px;border:1px solid #9ca3af;cursor:pointer;font:inherit;'+(primary?'background:#f9fafb;color:#111827':'background:transparent;color:#f9fafb');",
     "      x.addEventListener('click',function(){ choose(v); }); row.appendChild(x); }",
     "    btn('Accept','granted',true); btn('Decline','denied',false);",
     "    var a=d.createElement('a'); a.href='/privacy'; a.textContent='Privacy'; a.style.color='#d1d5db'; row.appendChild(a);",
@@ -159,7 +164,7 @@ function buildConsentTag({ clarityId = '', orionSrc = '', trackCheckout = false,
     // A choice made in another tab applies here too (withdrawal stops this page's Clarity and Orion).
     "  try { w.addEventListener('storage',function(e){ if (e.key!==KEY) return; hide(); ga(e.newValue); if (e.newValue==='granted') load(); else if (e.newValue==='denied') stop(); }); } catch (_) {}",
     "  var state=get(); if (state==='granted') load(); else if (state!=='denied') show();",
-    `})(window, document, ${JSON.stringify({ key: CONSENT_KEY, clarity, orion: orionSrc, text: gaOnly ? GA_ONLY_BANNER_TEXT : BANNER_TEXT })});`,
+    `})(window, document, ${JSON.stringify({ key: CONSENT_KEY, clarity, orion: orionSrc, text: gaOnly ? GA_ONLY_BANNER_TEXT : BANNER_TEXT, short: gaOnly ? GA_ONLY_BANNER_TEXT : SHORT_BANNER_TEXT })});`,
     '</script>',
   ];
   return lines.join('\n');
