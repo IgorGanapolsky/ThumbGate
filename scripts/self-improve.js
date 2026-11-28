@@ -104,7 +104,8 @@ function applyVerdicts(data, verdicts, now = new Date(), { allowLoosen = true } 
     const v = byId.get(gate.id);
     if (!v || isHandMade(gate) || gate.action === v.to) return gate;
     applied.push({ gateId: gate.id, from: gate.action, to: v.to, reason: v.reason });
-    const next = { ...gate, action: v.to, previousAction: gate.action, tunedBy: 'self-improve', tunedAt: now.toISOString(), tuneReason: v.reason };
+    // occurrencesAtTune lets auto-promote tell new thumbs-downs from the ones this decision already weighed.
+    const next = { ...gate, action: v.to, previousAction: gate.action, tunedBy: 'self-improve', tunedAt: now.toISOString(), tuneReason: v.reason, occurrencesAtTune: Number(gate.occurrences) || 0 };
     if (v.to === 'warn') delete next.hardDeny;
     return next;
   });
