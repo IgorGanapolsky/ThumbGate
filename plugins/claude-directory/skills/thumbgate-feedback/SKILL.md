@@ -1,41 +1,21 @@
 ---
 name: thumbgate-feedback
-description: Capture thumbs up/down feedback into structured memories and prevention rules. Require one sentence of why before claiming memory promotion. Use when user gives explicit quality signals about agent work (e.g. "that worked", "that failed", "thumbs up/down"). Do NOT use for general questions, code generation, file operations, or any task that is not explicit feedback on prior agent output.
+description: Capture thumbs up/down feedback on agent work as structured ThumbGate memories through the hosted ThumbGate server. Require one sentence of why before claiming it became a lesson. Use when the user gives an explicit quality signal about agent work, such as "that worked", "that failed", "thumbs up" or "thumbs down". Do NOT use for general questions, code generation, file operations, or anything that is not feedback on prior agent output.
 ---
 
-# ThumbGate Feedback Skill
+# ThumbGate Feedback
 
-When user provides feedback, execute:
+Record the user's signal with the hosted `capture_feedback` MCP tool from this plugin's `thumbgate` server.
 
-```bash
-# negative
-node .claude/scripts/feedback/capture-feedback.js \
-  --feedback=down \
-  --context="<what failed>" \
-  --what-went-wrong="<specific failure>" \
-  --what-to-change="<prevention action>" \
-  --tags="<domain>,regression"
+## Workflow
 
-# positive
-node .claude/scripts/feedback/capture-feedback.js \
-  --feedback=up \
-  --context="<what succeeded>" \
-  --what-worked="<repeatable pattern>" \
-  --tags="<domain>,fix"
-```
-
-If the user only says `thumbs up`, `thumbs down`, `that worked`, or `that failed`, log the signal and ask one follow-up question before claiming it became reusable memory.
-
-At session start, run:
-
-```bash
-npm run feedback:summary
-npm run feedback:rules
-```
+1. **Down:** call `capture_feedback` with `signal: "down"`, `context` (one sentence on what failed), `whatWentWrong`, `whatToChange`, and `tags`. Pass `lastAction` (the tool and its input) when you know it.
+2. **Up:** call `capture_feedback` with `signal: "up"`, `context`, `whatWorked`, and `tags`.
+3. **Vague signal** (just "👎" or "that failed"): log it, then ask one follow-up question for the why before saying it became a reusable lesson.
+4. **Session start:** call `feedback_summary` and `prevention_rules` to load what was learned before.
 
 ## Gotchas
 
-- **Prompt / Context Bloat**: Over-capturing very specific or minor feedback patterns can cause rule congestion. Group similar failures under broader rules instead of creating duplicate gates.
-- **Clarification Prompts**: Central auto-capture triggers will prompt for a one-sentence explanation for vague feedback (like a simple "👎"). Do not skip or bypass this prompt; accurate context is required to synthesize clean prevention rules.
-- **Self-Protection Triggers**: Prevention rules that target edits to `.claude/settings.json` or `config/gates/` will trigger ThumbGate's self-protection hooks. Always verify hook configuration changes manually rather than letting the agent auto-write rules targeting those files.
-- **Auto-Capture Environment**: If natural language feedback signals (e.g. "that worked", "that failed") are not triggering capture, verify that the `THUMBGATE_AUTO_CAPTURE` env variable is not set to `0` or disabled in settings.
+- Group similar failures under one broader rule instead of many near-duplicates.
+- A captured lesson is memory, not a block. Blocking a tool call before it runs needs the local ThumbGate install; see https://thumbgate.ai/guide.
+- If `capture_feedback` errors, report the error as is. Never say feedback was saved when the call failed.
