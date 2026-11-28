@@ -15,7 +15,7 @@ function setup(entries = [], config) {
   return { feedbackDir: dir, env: {} };
 }
 
-const up = (tool, command) => ({ signal: 'positive', lastAction: { tool, ...(command ? { command } : {}) } });
+const up = (tool, command) => ({ signal: 'positive', reviewOrigin: 'human', lastAction: { tool, ...(command ? { command } : {}) } });
 const down = (tool, command) => ({ signal: 'negative', lastAction: { tool, ...(command ? { command } : {}) } });
 const allowed = JSON.stringify({ hookSpecificOutput: { hookEventName: 'PreToolUse', additionalContext: 'note' } });
 const bash = (command) => ({ tool_name: 'Bash', tool_input: { command } });
@@ -90,6 +90,25 @@ test('whole tools need two thumbs-up by default; Write is never auto-approved', 
 test('--min raises the bar for commands', () => {
   const opts = setup([up('Bash', 'npm run lint')], { enabled: true, minThumbsUp: 2 });
   assert.equal(auto.applyAutoApprove(allowed, bash('npm run lint'), opts), allowed);
+});
+
+test('a pathed executable does not inherit the bare command approval', () => {
+  const opts = setup([up('Bash', 'git status')], { enabled: true });
+  assert.equal(decision(auto.applyAutoApprove(allowed, bash('git status'), opts)), 'allow');
+  for (const cmd of ['./git status', '/tmp/untrusted/git status', '~/bin/git status']) {
+    assert.equal(auto.applyAutoApprove(allowed, bash(cmd), opts), allowed, cmd);
+  }
+});
+
+test('only a person\'s thumbs-up teaches an approval', () => {
+  const scripted = { ...up('Bash', 'npm test'), reviewOrigin: 'automated', tags: ['automated'] };
+  const scraped = { ...up('Bash', 'git status'), tags: ['claude-history-sync'] };
+  const marked = { ...up('Bash', 'npm run lint'), id: 'fb_probe' };
+  const opts = setup([scripted, scraped, marked], { enabled: true });
+  fs.writeFileSync(path.join(opts.feedbackDir, 'not-counted-feedback.jsonl'), `${JSON.stringify({ id: 'fb_probe', reason: 'test' })}\n`);
+  for (const cmd of ['npm test', 'git status', 'npm run lint']) {
+    assert.equal(auto.applyAutoApprove(allowed, bash(cmd), opts), allowed, cmd);
+  }
 });
 
 test('unrelated commands are not approved', () => {

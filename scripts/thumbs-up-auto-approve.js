@@ -92,7 +92,9 @@ function isNeverAutoCommand(command) {
   const tokens = tokenize(text);
   // A leading VAR=value can change what the command loads (LD_PRELOAD, NODE_OPTIONS...).
   if (/^[A-Za-z_][A-Za-z0-9_]*=/.test(tokens[0])) return true;
-  const program = path.basename(tokens[0]);
+  // A pathed program (./git, /tmp/x/git) is a different executable from the bare name you approved.
+  if (/[\\/~]/.test(tokens[0])) return true;
+  const program = tokens[0];
   if (NEVER_AUTO.some((re) => re.test(program))) return true;
   return NEVER_AUTO_COMMAND.some((re) => re.test(text));
 }
@@ -102,7 +104,7 @@ function isNeverAutoCommand(command) {
 function commandKey(command) {
   const tokens = tokenize(command);
   if (!tokens.length) return null;
-  const program = path.basename(tokens[0]);
+  const program = tokens[0];
   const sub = tokens[1];
   return sub && !sub.startsWith('-') ? `${program} ${sub}` : program;
 }
@@ -126,7 +128,7 @@ function keyForFeedback(entry) {
   const tool = action.tool || (entry.metadata && entry.metadata.tool) || '';
   if (!tool || tool === 'unknown') return null;
   if (/^(?:Bash|Shell|run_shell_command|exec_command)$/i.test(tool)) {
-    if (typeof action.command !== 'string') return null;
+    if (typeof action.command !== 'string' || isNeverAutoCommand(action.command)) return null;
     const key = commandKey(action.command);
     return key ? `Bash:${key}` : null;
   }
@@ -163,13 +165,43 @@ function readFeedbackTail(file) {
   }
 }
 
+// Ids marked "not a person's thumb" (scripts/not-a-thumb.js) never grant an approval.
+function notCountedIds(feedbackDir, options = {}) {
+  const dirs = new Set([feedbackDir]);
+  try {
+    const { resolveProjectDir } = require('./feedback-paths');
+    dirs.add(path.join(resolveProjectDir({ cwd: options.cwd || process.cwd(), env: options.env || process.env }), '.thumbgate'));
+  } catch { /* project dir is optional */ }
+  const ids = new Set();
+  for (const dir of dirs) {
+    let text = '';
+    try { text = fs.readFileSync(path.join(dir, 'not-counted-feedback.jsonl'), 'utf8'); } catch { continue; }
+    for (const line of text.split('\n')) {
+      try { const row = JSON.parse(line); if (row && row.id) ids.add(String(row.id)); } catch { /* skip */ }
+    }
+  }
+  return ids;
+}
+
+// Only a person's own thumb teaches an approval: script probes, history scrapes and
+// auto-capture fallbacks are left out, as they are from every human count.
+function isPersonsThumb(entry, excluded) {
+  if (entry && entry.id && excluded.has(String(entry.id))) return false;
+  const { isCountedHumanFeedback, isLegacyMcpCapture } = require('./human-feedback');
+  return isCountedHumanFeedback(entry) || isLegacyMcpCapture(entry);
+}
+
 // key -> { up, down, last } in log order, so the most recent thumb wins.
 function learnedPatterns(options = {}) {
-  const file = path.join(feedbackDirFor(options), 'feedback-log.jsonl');
+  const dir = feedbackDirFor(options);
+  const file = path.join(dir, 'feedback-log.jsonl');
+  const excluded = notCountedIds(dir, options);
   const patterns = new Map();
   for (const entry of readFeedbackTail(file)) {
     const signal = signalOf(entry);
     if (!signal) continue;
+    // A thumbs-down from anyone still revokes; only a thumbs-up must be a person's.
+    if (signal === 'up' && !isPersonsThumb(entry, excluded)) continue;
     const key = keyForFeedback(entry);
     if (!key) continue;
     const row = patterns.get(key) || { up: 0, down: 0, last: null };
