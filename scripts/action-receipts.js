@@ -318,7 +318,7 @@ function chainHead(filePath) {
 // Two writers appending at once would both link to the same head, so appends hold an exclusive lock file. The lock
 // appears atomically with its owner already in it (pid + random token, hard-linked from a temp file), so no writer
 // ever sees an empty or half-written lock. A lock whose owner process is gone is cleared only by the one writer that
-// holds `<lock>.reclaim`, and only after re-reading that the lock still names the same dead owner, so a live writer's
+// holds the reclaim guard for that owner, and only after re-reading that the lock still names the same dead owner, so a live writer's
 // fresh lock is never removed. A writer removes its own lock only while it still holds its token. If the lock can't
 // be had in time, the receipt is not written and the caller gets an error, rather than an append that forks the chain.
 const LOCK_WAIT_MS = Number(process.env.THUMBGATE_RECEIPT_LOCK_WAIT_MS) || 5000;
@@ -348,13 +348,23 @@ function createOwnedFile(target, content) {
   }
 }
 
-/** Remove `lock` only if it still names `deadOwner`. Returns true when the lock was cleared. */
-function reclaimStaleLock(lock, deadOwner, token) {
-  const guard = `${lock}.reclaim`;
-  if (!createOwnedFile(guard, token)) return false; // another writer is reclaiming; wait and retry
+/**
+ * Remove `target` only if it still names `deadOwner`. Returns true when it was cleared. Reclaimers of the same dead
+ * owner serialize on a guard file named after that owner; the guard holder re-reads `target` before removing it, so
+ * a lock that a live writer has since created is never touched. A guard left by a reclaimer that died is itself
+ * reclaimed the same way (its own guard is named after the dead reclaimer), so a crash at any step can't wedge writes.
+ */
+function reclaimStaleLock(target, deadOwner, token, depth = 0) {
+  if (depth > 8) return false;
+  const guard = `${target}.reclaim-${sha256Hex(String(deadOwner)).slice(0, 16)}`;
+  if (!createOwnedFile(guard, token)) {
+    const guardOwner = readOwner(guard);
+    if (guardOwner && !ownerAlive(guardOwner)) reclaimStaleLock(guard, guardOwner, token, depth + 1);
+    return false; // a live reclaimer is at work, or we just cleared a dead one: retry
+  }
   try {
-    if (readOwner(lock) !== deadOwner) return false; // already replaced by a live writer: leave it
-    fs.rmSync(lock, { force: true });
+    if (readOwner(target) !== deadOwner) return false; // already replaced by a live writer: leave it
+    fs.rmSync(target, { force: true });
     return true;
   } finally {
     if (readOwner(guard) === token) fs.rmSync(guard, { force: true });

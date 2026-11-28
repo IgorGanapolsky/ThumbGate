@@ -5,6 +5,7 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
+const crypto = require('node:crypto');
 const os = require('node:os');
 const path = require('node:path');
 const { spawnSync } = require('node:child_process');
@@ -199,15 +200,21 @@ test('stale-lock takeover never removes a live writer\'s lock', () => {
     fs.writeFileSync(lock, `${process.pid}:writer-a`);
     assert.equal(receipts.reclaimStaleLock(lock, `${dead}:old`, `${process.pid}:writer-b`), false);
     assert.equal(fs.readFileSync(lock, 'utf8'), `${process.pid}:writer-a`, "writer A's live lock survives");
-    assert.equal(fs.existsSync(`${lock}.reclaim`), false, 'reclaim guard released');
+    assert.deepEqual(fs.readdirSync(dir).filter((f) => f.includes('.reclaim')), [], 'reclaim guard released');
 
     // While another writer is mid-reclaim, nobody else may clear the stale lock.
     fs.writeFileSync(lock, `${dead}:old`);
-    fs.writeFileSync(`${lock}.reclaim`, `${process.pid}:writer-a`);
+    const guard = `${lock}.reclaim-${crypto.createHash('sha256').update(`${dead}:old`).digest('hex').slice(0, 16)}`;
+    fs.writeFileSync(guard, `${process.pid}:writer-a`);
     assert.equal(receipts.reclaimStaleLock(lock, `${dead}:old`, `${process.pid}:writer-b`), false);
     assert.equal(fs.readFileSync(lock, 'utf8'), `${dead}:old`);
-    assert.equal(fs.readFileSync(`${lock}.reclaim`, 'utf8'), `${process.pid}:writer-a`, "the other reclaimer's guard is left alone");
-    fs.rmSync(`${lock}.reclaim`);
+    assert.equal(fs.readFileSync(guard, 'utf8'), `${process.pid}:writer-a`, "a live reclaimer's guard is left alone");
+
+    // A reclaimer that died holding the guard doesn't wedge the ledger: its guard is cleared, then the lock.
+    fs.writeFileSync(guard, `${dead}:crashed-reclaimer`);
+    assert.equal(receipts.recordReceipt({ actionId: 'after-reclaimer-crash' }).recorded, true);
+    assert.equal(fs.existsSync(guard), false, 'dead guard cleared');
+    assert.equal(fs.existsSync(lock), false, 'lock released after the write');
 
     // An old lock with no readable owner is never taken over by age.
     fs.writeFileSync(lock, '');
@@ -215,6 +222,6 @@ test('stale-lock takeover never removes a live writer\'s lock', () => {
     fs.utimesSync(lock, old, old);
     assert.throws(() => receipts.recordReceipt({ actionId: 'empty-lock' }), /locked by another writer/);
     assert.equal(fs.existsSync(lock), true);
-    assert.equal(receipts.verifyReceiptChain().ok, true, 'nothing appended');
+    assert.equal(receipts.verifyReceiptChain().chained, 1, 'nothing appended');
   } finally { process.env.THUMBGATE_FEEDBACK_DIR = prev; }
 });
