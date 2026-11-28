@@ -111,6 +111,17 @@ test('intentFor and variantsFor describe the action, not the spelling', () => {
   assert.ok(m.variantsFor('rm -rf ./x').some(([label]) => label === 'python shutil.rmtree'));
 });
 
+test('a computed Node path is not the learned path, and variants use the real target', () => {
+  const m = require('../scripts/rule-mutation');
+  const gate = { intent: m.intentFor('rm -rf /tmp/data') };
+  assert.equal(m.intentMatches(gate, 'Bash', { command: `node -e "require('fs').rmSync('/tmp/data' + '-backup', {recursive:true})"` }), false);
+  assert.equal(m.intentMatches(gate, 'Bash', { command: `node -e "require('fs').rmSync('/tmp/data', {recursive:true})"` }), true);
+  const fromPython = m.variantsFor(`python3 -c "import shutil; shutil.rmtree('/tmp/data')"`);
+  assert.ok(fromPython.length > 0 && fromPython.every(([, cmd]) => cmd.includes('/tmp/data') && !cmd.includes('"import')), 'python learned command');
+  const afterCd = m.variantsFor('cd /tmp && rm -rf /tmp/data');
+  assert.ok(afterCd.every(([, cmd]) => cmd.includes('/tmp/data')), 'cd-prefixed learned command');
+});
+
 test('THUMBGATE_RULE_MUTATION=0 turns the refinement off', () => {
   withLearned(`rm -rf ${TARGET}`, { THUMBGATE_RULE_MUTATION: '0' }, ({ result, decide }) => {
     assert.equal(result.mutationAudit, undefined);

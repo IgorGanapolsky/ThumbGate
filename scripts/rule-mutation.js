@@ -90,7 +90,8 @@ function rsyncDeleteTargets(command) {
   return targets;
 }
 
-const NODE_DELETE = /\b(?:(?:fs|fsp|promises|fse|fsExtra)\s*\.\s*(?:rmSync|rmdirSync|rm|rmdir|removeSync|remove|emptyDirSync)|rimraf(?:\s*\.\s*sync)?|require\(\s*['"](?:node:)?fs['"]\s*\)\s*\.\s*(?:rmSync|rmdirSync|rm|rmdir))\s*\(\s*(['"`])([^'"`\n$]+)\1/g;
+// A literal counts only when it is the whole first argument: `'/tmp/data' + '-backup'` is a different, computed path.
+const NODE_DELETE = /\b(?:(?:fs|fsp|promises|fse|fsExtra)\s*\.\s*(?:rmSync|rmdirSync|rm|rmdir|removeSync|remove|emptyDirSync)|rimraf(?:\s*\.\s*sync)?|require\(\s*['"](?:node:)?fs['"]\s*\)\s*\.\s*(?:rmSync|rmdirSync|rm|rmdir))\s*\(\s*(['"`])([^'"`\n$]+)\1(?=\s*[,)])/g;
 
 function nodeDeleteTargets(text) {
   const targets = [];
@@ -206,18 +207,14 @@ function intentMatches(gate, toolName, toolInput) {
 
 // ---- variants ----------------------------------------------------------------------------------------------
 
-function quoteFor(target, raw) {
-  return raw || target;
-}
-
 // Reworded versions of a learned command: same action, different spelling. Each is [label, command].
 function variantsFor(command) {
   const text = String(command || '').trim();
   const intent = intentFor(text);
   const out = [];
   if (intent && intent.kind === 'delete-path') {
-    const raw = (words(segments(text)[0] || '').filter((w) => !w.startsWith('-')).slice(1)[0]) || intent.targets[0];
-    const t = quoteFor(intent.targets[0], raw);
+    // Built from the extracted target, not the first word of the command (which may be `cd` or a Python snippet).
+    const t = intent.targets[0];
     out.push(
       ['rm, flags swapped', `rm -fr ${t}`],
       ['rm, flags split', `rm -r -f ${t}`],
