@@ -548,8 +548,9 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
     // 742 -> 743 (2026-11-28): scripts/rule-mutation.js, reworded-variant testing for learned rules (+1).
     // 743 -> 748 (2026-11-28): adapters/claude-agent-sdk (index.js, index.d.ts, bridge.js, Python helper, README) (+5).
     // 748 -> 750 (2026-11-28): scripts/verify-stop.js and scripts/ralph-init.js (verify Stop hook, Ralph starter) (+2).
-    manifest.fileCount <= 750,
-    `npm package should stay <= 750 files, got ${manifest.fileCount}`
+    // 750 -> 751 (2026-11-28): scripts/hosted-feedback-sync.js, `thumbgate sync-hosted` pulls hosted-connector feedback (+1).
+    manifest.fileCount <= 751,
+    `npm package should stay <= 751 files, got ${manifest.fileCount}`
   );
   // Ceiling bumped from 2.75 MB → 2.85 MB (2026-04-16) to accommodate the
   // incremental review-delta demo content in public/dashboard.html landing
