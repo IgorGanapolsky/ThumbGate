@@ -96,7 +96,7 @@ const BANNER_TEXT = 'May we measure how visitors use this site? With your OK, Mi
 // Checkout and post-purchase pages never load Clarity or Orion, but they carry Google Analytics, so they get the
 // same banner and controls with Google Analytics as the only thing the choice covers.
 // Phone wording: same choice, fewer lines, so the bar stays short.
-const SHORT_BANNER_TEXT = 'Allow Microsoft Clarity, Orion and Google Analytics to measure visits? Nothing loads unless you accept.';
+const SHORT_BANNER_TEXT = 'May Microsoft Clarity and Orion measure your visit? Neither loads unless you accept. Declining also turns off Google Analytics cookies.';
 
 const GA_ONLY_BANNER_TEXT = 'May we use Google Analytics cookies to measure visits to this page? It never receives '
   + 'your email or payment details.';

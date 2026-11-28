@@ -23,5 +23,5 @@ test('phones get a slim consent bar with shorter wording', () => {
   const page = clarity.injectAnalyticsTags('<html><head></head><body></body></html>', { pathname: '/', headers: { host: 'thumbgate.ai' } });
   assert.match(page, /var narrow=\(w\.innerWidth\|\|1024\)<640/);
   assert.match(page, /left:0;right:0;bottom:0/);
-  assert.match(page, /"short":"Allow Microsoft Clarity, Orion and Google Analytics to measure visits\? Nothing loads unless you accept\."/);
+  assert.match(page, /"short":"May Microsoft Clarity and Orion measure your visit\? Neither loads unless you accept\. Declining also turns off Google Analytics cookies\."/);
 });
