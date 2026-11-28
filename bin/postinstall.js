@@ -14,7 +14,10 @@ const isQuiet = process.env.THUMBGATE_NO_NUDGE === '1' || process.env.npm_config
 // Refresh it in the background so hooks pick up the release just installed. Never fails the install.
 if (process.env.npm_config_global === 'true') {
   try {
-    require('../scripts/runtime-auto-update').refreshRuntimeOnInit({ packageVersion: require('../package.json').version });
+    const env = { ...process.env };
+    delete env.npm_config_global;
+    delete env.npm_config_location;
+    require('../scripts/runtime-auto-update').refreshRuntimeOnInit({ packageVersion: require('../package.json').version, env });
   } catch (_) { /* best effort */ }
 }
 

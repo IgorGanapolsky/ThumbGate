@@ -156,3 +156,21 @@ test('refreshRuntime never swaps in an older runtime than the one now live', () 
   assert.equal(JSON.parse(fs.readFileSync(path.join(dir, 'node_modules', 'thumbgate', 'package.json'), 'utf8')).version, '1.44.0');
   assert.deepEqual(fs.readdirSync(path.dirname(dir)).filter((n) => n.includes('.next-')), []);
 });
+
+test('runtime refresh installs locally even when npm_config_global is inherited', () => {
+  const { defaultInstallArgs } = require('../scripts/runtime-auto-update');
+  const args = defaultInstallArgs('/tmp/x', '1.54.0');
+  assert.ok(args.includes('--global=false'));
+  assert.ok(args.includes('--location=project'));
+  const { spawnSync } = require('node:child_process');
+  const prefix = fs.mkdtempSync(path.join(os.tmpdir(), 'tg-npm-root-'));
+  const root = spawnSync('npm', ['root', '--prefix', prefix, '--location=project', '--global=false'], {
+    encoding: 'utf8',
+    env: { ...process.env, npm_config_global: 'true', npm_config_location: 'global' },
+    shell: process.platform === 'win32',
+  });
+  if (root.status === 0) assert.equal(root.stdout.trim(), path.join(prefix, 'node_modules'));
+  fs.rmSync(prefix, { recursive: true, force: true });
+  assert.equal(args[args.indexOf('--prefix') + 1], '/tmp/x');
+  assert.equal(args.at(-1), 'thumbgate@1.54.0');
+});
